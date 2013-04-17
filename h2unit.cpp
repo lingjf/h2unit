@@ -119,67 +119,33 @@ typedef struct h2unit_stub
    unsigned char code[sizeof(void*) + 4];
 } h2unit_stub;
 
+typedef struct h2unit_unit
+{
+   const char* name;
+   h2unit_case* cases;
+   struct h2unit_unit* next;
+} h2unit_unit;
+
 class h2unit_listen
 {
-protected:
-   const char* unitname;
-   const char* casename;
-   const char* casefile;
-   int caseline;
-   const char* checkfile;
-   int checkline;
 public:
    class h2unit_listen* next;
 public:
    h2unit_listen()
    {
       next = NULL;
-      unitname = "";
-      casename = "";
-      casefile = "";
-      caseline = 0;
-      checkfile = "";
-      checkline = 0;
    }
    virtual ~h2unit_listen()
    {
    }
    virtual void on_task_start() = 0;
-   virtual void on_task_endup(int failed, int passed, int ignored, int filtered, int cases, int checks, long duration) = 0;
-   virtual void on_case_start(const char* unitname, const char* casename, const char* casefile, int caseline)
+   virtual void on_task_endup(int failed, int passed, int ignored, int filtered, int cases, int checks, long duration, h2unit_unit* unit_list) = 0;
+   virtual void on_case_start()
    {
-      this->unitname = unitname;
-      this->casename = casename;
-      this->casefile = casefile;
-      this->caseline = caseline;
    }
    virtual void on_case_endup(double percentage)
    {
-      this->unitname = "";
-      this->casename = "";
-      this->casefile = "";
-      this->caseline = 0;
    }
-   virtual void on_check_enter(const char* checkfile, int checkline)
-   {
-      this->checkfile = checkfile;
-      this->checkline = checkline;
-   }
-   virtual void on_case_ignored() = 0;
-   virtual void on_case_filtered() = 0;
-   virtual void on_case_failed() = 0;
-   virtual void on_case_passed(long duration) = 0;
-   virtual void on_case_leaked(int leakbytes) = 0;
-   virtual void on_case_leakat(int leakbytes, const char* leakfile, int leakline) = 0;
-   virtual void on_case_failed_check(const char* condition, bool result) = 0;
-   virtual void on_case_failed_integer(int expected, int actual) = 0;
-   virtual void on_case_failed_double(double expected, double actual) = 0;
-   virtual void on_case_failed_strcmp(char* expected, char* actual) = 0;
-   virtual void on_case_failed_strcmp_nocase(char* expected, char* actual) = 0;
-   virtual void on_case_failed_regex(char* express, char* actual) = 0;
-   virtual void on_case_failed_memcmp(unsigned char* expected, unsigned char* actual, int length) = 0;
-   virtual void on_case_failed_catch(const char* expected, const char* actual, const char* exceptype) = 0;
-   virtual void on_case_failed_stub(const char* express, const char* reason) = 0;
 };
 
 class h2unit_listens: public h2unit_listen
@@ -199,16 +165,16 @@ public:
          p->on_task_start();
       }
    }
-   void on_task_endup(int failed, int passed, int ignored, int filtered, int cases, int checks, long duration)
+   void on_task_endup(int failed, int passed, int ignored, int filtered, int cases, int checks, long duration, h2unit_unit* unit_list)
    {
       for (class h2unit_listen *p = next; p; p = p->next) {
-         p->on_task_endup(failed, passed, ignored, filtered, cases, checks, duration);
+         p->on_task_endup(failed, passed, ignored, filtered, cases, checks, duration, unit_list);
       }
    }
-   void on_case_start(const char* unitname, const char* casename, const char* casefile, int caseline)
+   void on_case_start()
    {
       for (class h2unit_listen *p = next; p; p = p->next) {
-         p->on_case_start(unitname, casename, casefile, caseline);
+         p->on_case_start();
       }
    }
    void on_case_endup(double percentage)
@@ -217,109 +183,18 @@ public:
          p->on_case_endup(percentage);
       }
    }
-   void on_check_enter(const char* checkfile, int checkline)
-   {
-      for (class h2unit_listen *p = next; p; p = p->next) {
-         p->on_check_enter(checkfile, checkline);
-      }
-   }
-   void on_case_ignored()
-   {
-      for (class h2unit_listen *p = next; p; p = p->next) {
-         p->on_case_ignored();
-      }
-   }
-   void on_case_filtered()
-   {
-      for (class h2unit_listen *p = next; p; p = p->next) {
-         p->on_case_filtered();
-      }
-   }
-   void on_case_failed()
-   {
-      for (class h2unit_listen *p = next; p; p = p->next) {
-         p->on_case_failed();
-      }
-   }
-   void on_case_passed(long duration)
-   {
-      for (class h2unit_listen *p = next; p; p = p->next) {
-         p->on_case_passed(duration);
-      }
-   }
-   void on_case_leaked(int leakbytes)
-   {
-      for (class h2unit_listen *p = next; p; p = p->next) {
-         p->on_case_leaked(leakbytes);
-      }
-   }
-   void on_case_leakat(int leakbytes, const char* leakfile, int leakline)
-   {
-      for (class h2unit_listen *p = next; p; p = p->next) {
-         p->on_case_leakat(leakbytes, leakfile, leakline);
-      }
-   }
-   void on_case_failed_check(const char* condition, bool result)
-   {
-      for (class h2unit_listen *p = next; p; p = p->next) {
-         p->on_case_failed_check(condition, result);
-      }
-   }
-   void on_case_failed_integer(int expected, int actual)
-   {
-      for (class h2unit_listen *p = next; p; p = p->next) {
-         p->on_case_failed_integer(expected, actual);
-      }
-   }
-   void on_case_failed_double(double expected, double actual)
-   {
-      for (class h2unit_listen *p = next; p; p = p->next) {
-         p->on_case_failed_double(expected, actual);
-      }
-   }
-   void on_case_failed_strcmp(char* expected, char* actual)
-   {
-      for (class h2unit_listen *p = next; p; p = p->next) {
-         p->on_case_failed_strcmp(expected, actual);
-      }
-   }
-   void on_case_failed_strcmp_nocase(char* expected, char* actual)
-   {
-      for (class h2unit_listen *p = next; p; p = p->next) {
-         p->on_case_failed_strcmp_nocase(expected, actual);
-      }
-   }
-   void on_case_failed_regex(char* express, char* actual)
-   {
-      for (class h2unit_listen *p = next; p; p = p->next) {
-         p->on_case_failed_regex(express, actual);
-      }
-   }
-   void on_case_failed_memcmp(unsigned char* expected, unsigned char* actual, int length)
-   {
-      for (class h2unit_listen *p = next; p; p = p->next) {
-         p->on_case_failed_memcmp(expected, actual, length);
-      }
-   }
-   void on_case_failed_catch(const char* expected, const char* actual, const char* exceptype)
-   {
-      for (class h2unit_listen *p = next; p; p = p->next) {
-         p->on_case_failed_catch(expected, actual, exceptype);
-      }
-   }
-   void on_case_failed_stub(const char* express, const char* reason)
-   {
-      for (class h2unit_listen *p = next; p; p = p->next) {
-         p->on_case_failed_stub(express, reason);
-      }
-   }
 };
 
 class h2unit_listen_text: public h2unit_listen
 {
 private:
    FILE *filp;
-
+   void print_string(h2unit_string* s)
+   {
+      for (h2unit_string* p = s; p; p = p->next) {
+         fprintf(filp, "%s", p->data);
+      }
+   }
 public:
    h2unit_listen_text()
    {
@@ -331,99 +206,57 @@ public:
    {
       filp = fopen("h2unit_text.log", "w");
    }
-   void on_task_endup(int failed, int passed, int ignored, int filtered, int cases, int checks, long duration)
+   void on_task_endup(int failed, int passed, int ignored, int filtered, int cases, int checks, long duration, h2unit_unit* unit_list)
    {
       if (failed > 0) {
-         fprintf(filp, "Failed <%d failed, %d passed, %d ignored, %d filtered, %d checks, %ld ms>\n", failed, passed, ignored, filtered, checks, duration);
+         fprintf(filp, "\nFailed <%d failed, %d passed, %d ignored, %d filtered, %d checks, %ld ms>\n", failed, passed, ignored, filtered, checks, duration);
       } else {
-         fprintf(filp, "Passed <%d passed, %d ignored, %d filtered, %d cases, %d checks, %ld ms>\n", passed, ignored, filtered, cases, checks, duration);
+         fprintf(filp, "\nPassed <%d passed, %d ignored, %d filtered, %d cases, %d checks, %ld ms>\n", passed, ignored, filtered, cases, checks, duration);
       }
       fclose(filp);
    }
-   void on_case_ignored()
+   void on_case_endup(double percentage)
    {
-      fprintf(filp, "H2CASE(%s, %s): Ignored at %s:%d\n", unitname, casename, casefile, caseline);
-   }
-   void on_case_filtered()
-   {
-   }
-   void on_case_passed(long duration)
-   {
-      fprintf(filp, "H2CASE(%s, %s): Passed - %ld ms     \n", unitname, casename, duration);
-   }
-   void on_case_leaked(int leakbytes)
-   {
-      fprintf(filp, "H2CASE(%s, %s): Memory Leaked %d bytes totally at %s:%d\n", unitname, casename, leakbytes, casefile, caseline);
-   }
-   void on_case_leakat(int leakbytes, const char* leakfile, int leakline)
-   {
-      fprintf(filp, "  Leaked %d bytes at %s:%d\n", leakbytes, leakfile, leakline);
-   }
-   void on_case_failed()
-   {
-      fprintf(filp, "H2CASE(%s, %s): Failed at %s:%d\n", unitname, casename, checkfile, checkline);
-   }
-   void on_case_failed_check(const char* condition, bool result)
-   {
-      on_case_failed();
-      fprintf(filp, "  H2CHECK(%s)\n", condition);
-   }
-   void on_case_failed_integer(int expected, int actual)
-   {
-      on_case_failed();
-      fprintf(filp, "  expected is <%d 0x%x>\n", expected, expected);
-      fprintf(filp, "  actually is <%d 0x%x>\n", actual, actual);
-   }
-   void on_case_failed_double(double expected, double actual)
-   {
-      on_case_failed();
-      fprintf(filp, "  expected is <%f>\n", expected);
-      fprintf(filp, "  actually is <%f>\n", actual);
-   }
-   void on_case_failed_strcmp(char* expected, char* actual)
-   {
-      on_case_failed();
-      fprintf(filp, "  expected is <%s>\n", expected);
-      fprintf(filp, "  actually is <%s>\n", actual);
-   }
-   void on_case_failed_strcmp_nocase(char* expected, char* actual)
-   {
-      on_case_failed();
-      fprintf(filp, "  expected is <%s>\n", expected);
-      fprintf(filp, "  actually is <%s>\n", actual);
-   }
-   void on_case_failed_regex(char* express, char* actual)
-   {
-      on_case_failed();
-      fprintf(filp, "  expected is <%s>\n", express);
-      fprintf(filp, "  actually is <%s>\n", actual);
-   }
-   void on_case_failed_memcmp(unsigned char* expected, unsigned char* actual, int length)
-   {
-      on_case_failed();
-      fprintf(filp, "  expected is [");
-      for (int i = 0; i < length; i++) {
-         fprintf(filp, "%02X", expected[i]);
+      h2unit_case* p = h2unit_case::_current_;
+      switch (p->_status_) {
+      case h2unit_case::_IGNORE_:
+         fprintf(filp, "H2CASE(%s, %s): Ignored at %s:%d\n", p->_unitname_, p->_casename_, p->_casefile_, p->_caseline_);
+         break;
+      case h2unit_case::_FILTER_:
+         break;
+      case h2unit_case::_PASSED_:
+         if (cfg._verbose) {
+            fprintf(filp, "H2CASE(%s, %s): Passed - %ld ms     \n", p->_unitname_, p->_casename_, p->_endup_ - p->_start_);
+         }
+         break;
+      case h2unit_case::_FAILED_:
+         fprintf(filp, "H2CASE(%s, %s): Failed at %s:%d\n", p->_unitname_, p->_casename_, p->_checkfile_, p->_checkline_);
+         if (p->_errormsg_) {
+            fprintf(filp, "  ");
+            print_string(h2unit_case::_current_->_errormsg_);
+            fprintf(filp, "\n");
+         }
+         if (p->_expected_) {
+            fprintf(filp, "  expected<");
+            print_string(h2unit_case::_current_->_expected_);
+            fprintf(filp, ">\n");
+         }
+         if (p->_actually_) {
+            fprintf(filp, "  actually<");
+            print_string(h2unit_case::_current_->_actually_);
+            fprintf(filp, ">\n");
+         }
+         if (p->_addition_) {
+            for (int i = 0; h2unit_case::_current_->_addition_[i]; i++) {
+               fprintf(filp, "   ");
+               print_string(h2unit_case::_current_->_addition_[i]);
+               fprintf(filp, "\n");
+            }
+         }
+         break;
       }
-      fprintf(filp, "]\n");
+   }
 
-      fprintf(filp, "  actually is [");
-      for (int i = 0; i < length; i++) {
-         fprintf(filp, "%02X", actual[i]);
-      }
-      fprintf(filp, "]\n");
-   }
-   void on_case_failed_catch(const char* expected, const char* actual, const char* exceptype)
-   {
-      on_case_failed();
-      fprintf(filp, "  expected is <%s %s>\n", expected, exceptype);
-      fprintf(filp, "  actually is <%s %s>\n", actual, exceptype);
-   }
-   void on_case_failed_stub(const char* express, const char* reason)
-   {
-      on_case_failed();
-      fprintf(filp, "  H2STUB(%s) : %s\n", express, reason);
-   }
 };
 
 class h2unit_listen_console: public h2unit_listen
@@ -493,6 +326,42 @@ private:
       return (const char*) _color_string;
    }
 
+   const char* color(const char *style)
+   {
+      if (!cfg._colored) return "";
+      char* p = _color_string;
+
+      p += sprintf(p, "\033[");
+
+      if (strstr(style, "reset")) {
+         p += sprintf(p, "%d;", RESET);
+      }
+      if (strstr(style, "bold")) {
+         p += sprintf(p, "%d;", BOLD_ON);
+      }
+      if (strstr(style, "underline")) {
+         p += sprintf(p, "%d;", UNDERLINE_ON);
+      }
+      if (strstr(style, "red")) {
+         p += sprintf(p, "%d;", RED);
+      }
+      if (strstr(style, "green")) {
+         p += sprintf(p, "%d;", GREEN);
+      }
+
+      *(p - 1) = 'm';
+      return (const char*) _color_string;
+   }
+
+   void print_string(h2unit_string* s)
+   {
+      for (h2unit_string* p = s; p; p = p->next) {
+         printf("%s", color(p->style));
+         printf("%s", p->data);
+         printf("%s", color("reset"));
+      }
+   }
+
 public:
    h2unit_listen_console()
    {
@@ -503,7 +372,7 @@ public:
    void on_task_start()
    {
    }
-   void on_task_endup(int failed, int passed, int ignored, int filtered, int cases, int checks, long duration)
+   void on_task_endup(int failed, int passed, int ignored, int filtered, int cases, int checks, long duration, h2unit_unit* unit_list)
    {
       printf("\r                                                    \n");
       if (failed > 0) {
@@ -517,227 +386,53 @@ public:
    }
    void on_case_endup(double percentage)
    {
-      h2unit_listen::on_case_endup(percentage);
+      h2unit_case* p = h2unit_case::_current_;
+      switch (p->_status_) {
+      case h2unit_case::_IGNORE_:
+         printf("%s", color(BOLD_ON, PURPLE));
+         printf("\rH2CASE(%s, %s): Ignored at %s:%d\n", p->_unitname_, p->_casename_, p->_casefile_, p->_caseline_);
+         printf("%s", color(RESET));
+         break;
+      case h2unit_case::_FILTER_:
+         break;
+      case h2unit_case::_PASSED_:
+         if (cfg._verbose) {
+            printf("%s", color(BLUE));
+            printf("\rH2CASE(%s, %s): Passed - %ld ms     \n", p->_unitname_, p->_casename_, p->_endup_ - p->_start_);
+            printf("%s", color(RESET));
+         }
+         break;
+      case h2unit_case::_FAILED_:
+         printf("%s", color(BOLD_ON, PURPLE));
+         printf("\rH2CASE(%s, %s): Failed at %s:%d\n", p->_unitname_, p->_casename_, p->_checkfile_, p->_checkline_);
+         printf("%s", color(RESET));
+         if (p->_errormsg_) {
+            printf("  ");
+            print_string(h2unit_case::_current_->_errormsg_);
+            printf("\n");
+         }
+         if (p->_expected_) {
+            printf("  expected<");
+            print_string(h2unit_case::_current_->_expected_);
+            printf(">\n");
+         }
+         if (p->_actually_) {
+            printf("  actually<");
+            print_string(h2unit_case::_current_->_actually_);
+            printf(">\n");
+         }
+         if (p->_addition_) {
+            for (int i = 0; h2unit_case::_current_->_addition_[i]; i++) {
+               printf("   ");
+               print_string(h2unit_case::_current_->_addition_[i]);
+               printf("\n");
+            }
+         }
+         break;
+      }
+
       printf("%s", color(BOLD_ON, BLUE));
       printf("\rH2UNIT running ... %d%% completed.", (int) (percentage));
-      printf("%s", color(RESET));
-   }
-   void on_case_ignored()
-   {
-      printf("%s", color(BOLD_ON, PURPLE));
-      printf("\rH2CASE(%s, %s): Ignored at %s:%d\n", unitname, casename, casefile, caseline);
-      printf("%s", color(RESET));
-   }
-   void on_case_filtered()
-   {
-   }
-   void on_case_passed(long duration)
-   {
-      if (cfg._verbose) {
-         printf("%s", color(BLUE));
-         printf("\rH2CASE(%s, %s): Passed - %ld ms     \n", unitname, casename, duration);
-         printf("%s", color(RESET));
-      }
-   }
-   void on_case_leaked(int leakbytes)
-   {
-      printf("%s", color(BOLD_ON, PURPLE));
-      printf("\rH2CASE(%s, %s): ", unitname, casename);
-      printf("%s", color(BOLD_ON, RED));
-      printf("Memory Leaked %d bytes totally ", leakbytes);
-      printf("%s", color(BOLD_ON, PURPLE));
-      printf("at %s:%d\n", casefile, caseline);
-      printf("%s", color(RESET));
-   }
-   void on_case_leakat(int leakbytes, const char* leakfile, int leakline)
-   {
-      printf("%s", color(BOLD_ON, RED));
-      printf("  Leaked %d bytes ", leakbytes);
-      printf("%s", color(BOLD_ON, PURPLE));
-      printf("at %s:%d\n", leakfile, leakline);
-      printf("%s", color(RESET));
-   }
-   void on_case_failed()
-   {
-      printf("%s", color(BOLD_ON, PURPLE));
-      printf("\rH2CASE(%s, %s): Failed at %s:%d\n", unitname, casename, checkfile, checkline);
-      printf("%s", color(RESET));
-   }
-   void on_case_failed_check(const char* condition, bool result)
-   {
-      on_case_failed();
-      printf("%s", color(BOLD_ON, PURPLE));
-      printf("  H2CHECK(");
-      printf("%s", color(RED));
-      printf("%s", condition);
-      printf("%s", color(PURPLE));
-      printf(")\n");
-      printf("%s", color(RESET));
-   }
-   void on_case_failed_integer(int expected, int actual)
-   {
-      on_case_failed();
-      printf("%s", color(BOLD_ON, PURPLE));
-      printf("  expected is <");
-      printf("%s", color(RED));
-      printf("%d 0x%x", expected, expected);
-      printf("%s", color(PURPLE));
-      printf(">\n  actually is <");
-      printf("%s", color(RED));
-      printf("%d 0x%x", actual, actual);
-      printf("%s", color(PURPLE));
-      printf(">\n");
-      printf("%s", color(RESET));
-   }
-   void on_case_failed_double(double expected, double actual)
-   {
-      on_case_failed();
-      printf("%s", color(BOLD_ON, PURPLE));
-      printf("  expected is <");
-      printf("%s", color(RED));
-      printf("%f", expected);
-      printf("%s", color(PURPLE));
-      printf(">\n  actually is <");
-      printf("%s", color(RED));
-      printf("%f", actual);
-      printf("%s", color(PURPLE));
-      printf(">\n");
-      printf("%s", color(RESET));
-   }
-   void on_case_failed_strcmp(char* expected, char* actual)
-   {
-      on_case_failed();
-      int i, j, n = 64;
-      int actual_length = strlen(actual);
-      int expected_length = strlen(expected);
-      int length = actual_length > expected_length ? actual_length : expected_length;
-      printf("%s", color(BOLD_ON, PURPLE));
-      for (i = 0; i < length; i += n) {
-         printf("  expected is \"");
-         for (j = 0; j < n && i + j < expected_length; j++) {
-            if (expected[i + j] == actual[i + j])
-               printf("%s", color(BLUE));
-            else
-               printf("%s", color(RED));
-            printf("%c", expected[i + j]);
-            printf("%s", color(BOLD_ON, PURPLE));
-         }
-         printf("\"\n");
-         printf("  actually is \"");
-         for (j = 0; j < n && i + j < actual_length; j++) {
-            if (expected[i + j] == actual[i + j])
-               printf("%s", color(BLUE));
-            else
-               printf("%s", color(RED));
-            printf("%c", actual[i + j]);
-            printf("%s", color(BOLD_ON, PURPLE));
-         }
-         printf("\"\n");
-      }
-      printf("%s", color(RESET));
-   }
-   void on_case_failed_strcmp_nocase(char* expected, char* actual)
-   {
-      on_case_failed();
-      int i, j, n = 64;
-      int actual_length = strlen(actual);
-      int expected_length = strlen(expected);
-      int length = actual_length > expected_length ? actual_length : expected_length;
-      printf("%s", color(BOLD_ON, PURPLE));
-      for (i = 0; i < length; i += n) {
-         printf("  expected is \"");
-         for (j = 0; j < n && i + j < expected_length; j++) {
-            if (tolower((int) expected[i + j]) == tolower((int) actual[i + j]))
-               printf("%s", color(BLUE));
-            else
-               printf("%s", color(RED));
-            printf("%c", expected[i + j]);
-            printf("%s", color(BOLD_ON, PURPLE));
-         }
-         printf("\"\n");
-         printf("  actually is \"");
-         for (j = 0; j < n && i + j < actual_length; j++) {
-            if (tolower((int) expected[i + j]) == tolower((int) actual[i + j]))
-               printf("%s", color(BLUE));
-            else
-               printf("%s", color(RED));
-            printf("%c", actual[i + j]);
-            printf("%s", color(BOLD_ON, PURPLE));
-         }
-         printf("\"\n");
-      }
-      printf("%s", color(RESET));
-   }
-   void on_case_failed_regex(char* express, char* actual)
-   {
-      on_case_failed();
-      printf("%s", color(BOLD_ON, PURPLE));
-      printf("  wildcard is <");
-      printf("%s", color(RED));
-      printf("%s", express);
-      printf("%s", color(PURPLE));
-      printf(">\n  actually is \"");
-      printf("%s", color(RED));
-      printf("%s", actual);
-      printf("%s", color(PURPLE));
-      printf("\"\n");
-      printf("%s", color(RESET));
-   }
-   void on_case_failed_memcmp(unsigned char* expected, unsigned char* actual, int length)
-   {
-      on_case_failed();
-      int i, j, n = 16;
-      printf("%s", color(BOLD_ON, PURPLE));
-      for (i = 0; i < length; i += n) {
-         printf("  expected is [");
-         for (j = 0; j < n && i + j < length; j++) {
-            if (expected[i + j] == actual[i + j])
-               printf("%s", color(BLUE));
-            else
-               printf("%s", color(RED));
-            printf(j < n / 2 ? "%02X " : " %02X", expected[i + j]);
-            printf("%s", color(BOLD_ON, PURPLE));
-         }
-         printf("]\n");
-         printf("  actually is [");
-         for (j = 0; j < n && i + j < length; j++) {
-            if (expected[i + j] == actual[i + j])
-               printf("%s", color(BLUE));
-            else
-               printf("%s", color(RED));
-            printf(j < n / 2 ? "%02X " : " %02X", actual[i + j]);
-            printf("%s", color(BOLD_ON, PURPLE));
-         }
-         printf("]\n");
-      }
-      printf("%s", color(RESET));
-   }
-   void on_case_failed_catch(const char* expected, const char* actual, const char* exceptype)
-   {
-      on_case_failed();
-      printf("%s", color(BOLD_ON, PURPLE));
-      printf("  expected is <");
-      printf("%s", color(RED));
-      printf("%s %s", expected, exceptype);
-      printf("%s", color(PURPLE));
-      printf(">\n  actually is <");
-      printf("%s", color(RED));
-      printf("%s %s", actual, exceptype);
-      printf("%s", color(PURPLE));
-      printf(">\n");
-      printf("%s", color(RESET));
-   }
-   void on_case_failed_stub(const char* express, const char* reason)
-   {
-      on_case_failed();
-      printf("%s", color(BOLD_ON, PURPLE));
-      printf("  H2STUB(");
-      printf("%s", color(RED));
-      printf("%s", express);
-      printf("%s", color(PURPLE));
-      printf(") : ");
-      printf("%s", color(RED));
-      printf("%s\n", reason);
       printf("%s", color(RESET));
    }
 };
@@ -765,8 +460,10 @@ public:
       fprintf(filp, "<table>");
 
    }
-   void on_task_endup(int failed, int passed, int ignored, int filtered, int cases, int checks, long duration)
+   void on_task_endup(int failed, int passed, int ignored, int filtered, int cases, int checks, long duration, h2unit_unit* unit_list)
    {
+      //h2unit_task::O();
+
       if (failed > 0) {
          fprintf(filp, "Failed <%d failed, %d passed, %d ignored, %d filtered, %d checks, %ld ms>\n", failed, passed, ignored, filtered, checks, duration);
       } else {
@@ -778,112 +475,11 @@ public:
       fprintf(filp, "</html>");
       fclose(filp);
    }
-   void on_case_start(const char* unitname, const char* casename, const char* casefile, int caseline)
+   void on_case_start()
    {
-      h2unit_listen::on_case_start(unitname, casename, casefile, caseline);
-      fprintf(filp, "<tr>");
    }
    void on_case_endup(double percentage)
    {
-      h2unit_listen::on_case_endup(percentage);
-      fprintf(filp, "</tr>");
-   }
-   void on_case_ignored()
-   {
-      fprintf(filp, "<td>%s</td><td>%s</td><td>Ignored</td><td>%s:%d</td>", unitname, casename, casefile, caseline);
-   }
-   void on_case_filtered()
-   {
-   }
-   void on_case_passed(long duration)
-   {
-      fprintf(filp, "<td>%s</td><td>%s</td><td>Passed</td><td> %ld</td>", unitname, casename, duration);
-   }
-   void on_case_leaked(int leakbytes)
-   {
-      fprintf(filp, "<td>%s</td><td>%s</td><td>Memory Leaked %d bytes</td><td>%s:%d</td>", unitname, casename, leakbytes, casefile, caseline);
-   }
-   void on_case_leakat(int leakbytes, const char* leakfile, int leakline)
-   {
-      //fprintf(filp, "  Leaked %d bytes at %s:%d\n", leakbytes, leakfile, leakline);
-   }
-   void on_case_failed()
-   {
-      fprintf(filp, "<td>%s</td><td>%s</td><td>Failed</td><td>%s:%d</td>", unitname, casename, casefile, caseline);
-   }
-   void on_case_failed_check(const char* condition, bool result)
-   {
-      on_case_failed();
-      fprintf(filp, "<td>H2CHECK(%s)</td>", condition);
-   }
-   void on_case_failed_integer(int expected, int actual)
-   {
-      on_case_failed();
-      fprintf(filp, "<td>");
-      fprintf(filp, "expected is <%d 0x%x>", expected, expected);
-      fprintf(filp, "actually is <%d 0x%x>", actual, actual);
-      fprintf(filp, "</td>");
-   }
-   void on_case_failed_double(double expected, double actual)
-   {
-      on_case_failed();
-      fprintf(filp, "<td>");
-      fprintf(filp, "  expected is <%f>\n", expected);
-      fprintf(filp, "  actually is <%f>\n", actual);
-      fprintf(filp, "</td>");
-   }
-   void on_case_failed_strcmp(char* expected, char* actual)
-   {
-      on_case_failed();
-      fprintf(filp, "<td>");
-      fprintf(filp, "  expected is <%s>\n", expected);
-      fprintf(filp, "  actually is <%s>\n", actual);
-      fprintf(filp, "</td>");
-   }
-   void on_case_failed_strcmp_nocase(char* expected, char* actual)
-   {
-      on_case_failed();
-      fprintf(filp, "<td>");
-      fprintf(filp, "  expected is <%s>\n", expected);
-      fprintf(filp, "  actually is <%s>\n", actual);
-      fprintf(filp, "</td>");
-   }
-   void on_case_failed_regex(char* express, char* actual)
-   {
-      on_case_failed();
-      fprintf(filp, "<td>");
-      fprintf(filp, "  expected is <%s>\n", express);
-      fprintf(filp, "  actually is <%s>\n", actual);
-      fprintf(filp, "</td>");
-   }
-   void on_case_failed_memcmp(unsigned char* expected, unsigned char* actual, int length)
-   {
-      on_case_failed();
-      fprintf(filp, "<td>");
-      fprintf(filp, "  expected is [");
-      for (int i = 0; i < length; i++) {
-         fprintf(filp, "%02X", expected[i]);
-      }
-      fprintf(filp, "]\n");
-
-      fprintf(filp, "  actually is [");
-      for (int i = 0; i < length; i++) {
-         fprintf(filp, "%02X", actual[i]);
-      }
-      fprintf(filp, "]\n");
-      fprintf(filp, "</td>");
-   }
-   void on_case_failed_catch(const char* expected, const char* actual, const char* exceptype)
-   {
-      on_case_failed();
-      fprintf(filp, "<td>");
-      fprintf(filp, "  expected is <%s %s>\n", expected, exceptype);
-      fprintf(filp, "  actually is <%s %s>\n", actual, exceptype);
-      fprintf(filp, "</td>");
-   }
-   void on_case_failed_stub(const char* express, const char* reason)
-   {
-
    }
 };
 
@@ -903,8 +499,16 @@ public:
       filp = fopen("h2unit_xml.xml", "w");
       fprintf(filp, "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n");
    }
-   void on_task_endup(int failed, int passed, int ignored, int filtered, int cases, int checks, long duration)
+   void on_task_endup(int failed, int passed, int ignored, int filtered, int cases, int checks, long duration, h2unit_unit* unit_list)
    {
+      for (h2unit_unit* p = unit_list; p; p = p->next) {
+         fprintf(filp, "<testsuite errors=\"0\" failures=\"%d\" hostname=\"localhost\" name=\"%s\" tests=\"%d\" time=\"%d.%03d\" timestamp=\"%s\">\n", 1, p->name, 1, 0, 0, "");
+         for (h2unit_case* c = p->cases; c; c = c->_next_) {
+            fprintf(filp, "  <testcase classname=\"%s\" name=\"%s\" time=\"%d.%03d\">\n", c->_unitname_, c->_casename_, 0, 0);
+            fprintf(filp, "  </testcase>\n");
+         }
+         fprintf(filp, "<system-out></system-out><system-err></system-err></testsuite>\n");
+      }
       if (failed > 0) {
          fprintf(filp, "Failed <%d failed, %d passed, %d ignored, %d filtered, %d checks, %ld ms>\n", failed, passed, ignored, filtered, checks, duration);
       } else {
@@ -912,125 +516,27 @@ public:
       }
       fclose(filp);
    }
-   void on_case_start(const char* unitname, const char* casename, const char* casefile, int caseline)
+   void on_case_start()
    {
-      h2unit_listen::on_case_start(unitname, casename, casefile, caseline);
-      fprintf(filp, "<testsuite errors=\"0\" failures=\"%d\" hostname=\"localhost\" name=\"%s\" tests=\"%d\" time=\"%d.%03d\" timestamp=\"%s\">\n", 1, unitname, 1, 0, 0, "");
-      fprintf(filp, "<properties></properties>");
-      fprintf(filp, "<testcase classname=\"%s\" name=\"%s\" time=\"%d.%03d\">\n", unitname, casename, 0, 0);
+      //fprintf(filp, "<testsuite errors=\"0\" failures=\"%d\" hostname=\"localhost\" name=\"%s\" tests=\"%d\" time=\"%d.%03d\" timestamp=\"%s\">\n", 1, unitname, 1, 0, 0, "");
+      //fprintf(filp, "<properties></properties>");
+      //fprintf(filp, "<testcase classname=\"%s\" name=\"%s\" time=\"%d.%03d\">\n", unitname, casename, 0, 0);
    }
    void on_case_endup(double percentage)
    {
-      h2unit_listen::on_case_endup(percentage);
-      fprintf(filp, "</testcase><system-out></system-out><system-err></system-err></testsuite>");
-   }
-   void on_case_ignored()
-   {
-      fprintf(filp, "<td>%s</td><td>%s</td><td>Ignored</td><td>%s:%d</td>", unitname, casename, casefile, caseline);
-   }
-   void on_case_filtered()
-   {
-   }
-   void on_case_passed(long duration)
-   {
-      fprintf(filp, "<td>%s</td><td>%s</td><td>Passed</td><td> %ld</td>", unitname, casename, duration);
-   }
-   void on_case_leaked(int leakbytes)
-   {
-      fprintf(filp, "<td>%s</td><td>%s</td><td>Memory Leaked %d bytes</td><td>%s:%d</td>", unitname, casename, leakbytes, casefile, caseline);
-   }
-   void on_case_leakat(int leakbytes, const char* leakfile, int leakline)
-   {
-      //fprintf(filp, "  Leaked %d bytes at %s:%d\n", leakbytes, leakfile, leakline);
-   }
-   void on_case_failed()
-   {
-      fprintf(filp, "<failure message=\"%s\"> </failure>", "");
-   }
-   void on_case_failed_check(const char* condition, bool result)
-   {
-      on_case_failed();
-      fprintf(filp, "<td>H2CHECK(%s)</td>", condition);
-   }
-   void on_case_failed_integer(int expected, int actual)
-   {
-      on_case_failed();
-      fprintf(filp, "<td>");
-      fprintf(filp, "expected is <%d 0x%x>", expected, expected);
-      fprintf(filp, "actually is <%d 0x%x>", actual, actual);
-      fprintf(filp, "</td>");
-   }
-   void on_case_failed_double(double expected, double actual)
-   {
-      on_case_failed();
-      fprintf(filp, "<td>");
-      fprintf(filp, "  expected is <%f>\n", expected);
-      fprintf(filp, "  actually is <%f>\n", actual);
-      fprintf(filp, "</td>");
-   }
-   void on_case_failed_strcmp(char* expected, char* actual)
-   {
-      on_case_failed();
-      fprintf(filp, "<td>");
-      fprintf(filp, "  expected is <%s>\n", expected);
-      fprintf(filp, "  actually is <%s>\n", actual);
-      fprintf(filp, "</td>");
-   }
-   void on_case_failed_strcmp_nocase(char* expected, char* actual)
-   {
-      on_case_failed();
-      fprintf(filp, "<td>");
-      fprintf(filp, "  expected is <%s>\n", expected);
-      fprintf(filp, "  actually is <%s>\n", actual);
-      fprintf(filp, "</td>");
-   }
-   void on_case_failed_regex(char* express, char* actual)
-   {
-      on_case_failed();
-      fprintf(filp, "<td>");
-      fprintf(filp, "  expected is <%s>\n", express);
-      fprintf(filp, "  actually is <%s>\n", actual);
-      fprintf(filp, "</td>");
-   }
-   void on_case_failed_memcmp(unsigned char* expected, unsigned char* actual, int length)
-   {
-      on_case_failed();
-      fprintf(filp, "<td>");
-      fprintf(filp, "  expected is [");
-      for (int i = 0; i < length; i++) {
-         fprintf(filp, "%02X", expected[i]);
-      }
-      fprintf(filp, "]\n");
-
-      fprintf(filp, "  actually is [");
-      for (int i = 0; i < length; i++) {
-         fprintf(filp, "%02X", actual[i]);
-      }
-      fprintf(filp, "]\n");
-      fprintf(filp, "</td>");
-   }
-   void on_case_failed_catch(const char* expected, const char* actual, const char* exceptype)
-   {
-      on_case_failed();
-      fprintf(filp, "<td>");
-      fprintf(filp, "  expected is <%s %s>\n", expected, exceptype);
-      fprintf(filp, "  actually is <%s %s>\n", actual, exceptype);
-      fprintf(filp, "</td>");
-   }
-   void on_case_failed_stub(const char* express, const char* reason)
-   {
-
+      //fprintf(filp, "</testcase><system-out></system-out><system-err></system-err></testsuite>");
    }
 };
 
 class h2unit_task
 {
 public:
-   int case_count, check_count;
+   int unit_count, case_count, case_excuted_count, check_count;
    int case_failed, case_passed, case_ignore, case_filter;
    h2unit_leak* leak_list;
    h2unit_stub* stub_list;
-   h2unit_case* case_list;
+   h2unit_unit* unit_list;
+   h2unit_case* case_chain;
    unsigned limited;
 
    h2unit_listen_text text_listener;
@@ -1041,13 +547,17 @@ public:
    h2unit_task()
    {
       case_failed = case_passed = case_ignore = case_filter = 0;
-      case_count = check_count = 0;
-      case_list = NULL;
+      unit_count = case_count = case_excuted_count = check_count = 0;
+      case_chain = NULL;
+
+      unit_list = NULL;
       stub_list = NULL;
       leak_list = NULL;
       limited = 0x7fffffff;
 
       listener.attach(&console_listener);
+      listener.attach(&text_listener);
+      listener.attach(&xml_listener);
    }
 
    static h2unit_task* O()
@@ -1058,25 +568,47 @@ public:
 
    void install(h2unit_case* testcase)
    {
-      testcase->_next_ = case_list;
-      case_list = testcase;
+      testcase->_chain_ = case_chain;
+      case_chain = testcase;
       case_count++;
+
+      h2unit_unit** p;
+      for (p = &unit_list; *p; p = &(*p)->next) {
+         if (strcmp((*p)->name, testcase->_unitname_) == 0) {
+            break;
+         }
+      }
+      if (*p == NULL) {
+         *p = (h2unit_unit*) malloc(sizeof(h2unit_unit));
+         memset(*p, 0, sizeof(h2unit_unit));
+         (*p)->name = testcase->_unitname_;
+         unit_count++;
+      }
+
+      h2unit_case** c;
+      for (c = &(*p)->cases; *c; c = &(*c)->_next_) {
+         if ((*c)->_caseline_ > testcase->_caseline_) {
+            break;
+         }
+      }
+      testcase->_next_ = *c;
+      *c = testcase;
    }
 
    void reorder()
    {
-      h2unit_case* p = case_list;
-      case_list = NULL;
+      h2unit_case* p = case_chain;
+      case_chain = NULL;
       srandom(__milliseconds());
       for (int i = 1; p; i++) {
-         h2unit_case* n = p->_next_;
+         h2unit_case* n = p->_chain_;
 
          int rpos = random() % i;
-         h2unit_case** ip = &case_list;
+         h2unit_case** ip = &case_chain;
          for (int j = 0; j < rpos; j++) {
-            ip = &((*ip)->_next_);
+            ip = &((*ip)->_chain_);
          }
-         p->_next_ = *ip;
+         p->_chain_ = *ip;
          *ip = p;
 
          p = n;
@@ -1085,41 +617,33 @@ public:
 
    void run()
    {
-      long total_starts = __milliseconds();
+      long start = __milliseconds();
       if (cfg._random) reorder();
       listener.on_task_start();
-      for (h2unit_case* p = case_list; (h2unit_case::_current_ = p); p = p->_next_) {
-         listener.on_case_start(p->_unitname_, p->_casename_, p->_casefile_, p->_caseline_);
-         long case_starts = __milliseconds();
+      for (h2unit_case* p = case_chain; (h2unit_case::_current_ = p); p = p->_chain_) {
+         listener.on_case_start();
          p->_execute_();
+         case_excuted_count += 1;
+         check_count += p->_checkcount_;
+
+         listener.on_case_endup(100.0 * case_excuted_count / case_count);
+
          switch (p->_status_) {
          case h2unit_case::_IGNORE_:
             case_ignore++;
-            listener.on_case_ignored();
             break;
          case h2unit_case::_FILTER_:
             case_filter++;
             break;
          case h2unit_case::_PASSED_:
             case_passed++;
-            listener.on_case_passed(__milliseconds() - case_starts);
             break;
          case h2unit_case::_FAILED_:
             case_failed++;
             break;
-         case h2unit_case::_LEAKED_:
-            case_failed++;
-            listener.on_case_leaked(p->_leakbytes_);
-            for (h2unit_leak* leak = leak_list; leak; leak = leak->next) {
-               if (leak->owner == p) {
-                  listener.on_case_leakat(leak->length, leak->file, leak->line);
-               }
-            }
-            break;
          }
-         listener.on_case_endup(100.0 * (case_passed + case_failed + case_ignore + case_filter) / case_count);
       }
-      listener.on_task_endup(case_failed, case_passed, case_ignore, case_filter, case_count, check_count, __milliseconds() - total_starts);
+      listener.on_task_endup(case_failed, case_passed, case_ignore, case_filter, case_count, check_count, __milliseconds() - start, unit_list);
    }
 
    bool enough(size_t size)
@@ -1217,9 +741,17 @@ h2unit_case::h2unit_case()
    _casefile_ = "";
    _caseline_ = 0;
    _status_ = _INITED_;
-   _leakbytes_ = 0;
 
-   h2unit_task::O()->install(this);
+   _checkfile_ = "";
+   _checkline_ = 0;
+   _checkcount_ = 0;
+
+   _errormsg_ = NULL;
+   _expected_ = NULL;
+   _actually_ = NULL;
+   _addition_ = NULL;
+
+   //h2unit_task::O()->install(this);
 }
 
 h2unit_case::~h2unit_case()
@@ -1232,16 +764,17 @@ void h2unit_case::_init_(const char* unitname, const char* casename, bool ignore
    _casename_ = casename;
    _casefile_ = file;
    _caseline_ = line;
+
+   _checkfile_ = file;
+   _checkline_ = line;
+
    if (ignored) _status_ = _IGNORE_;
+
+   h2unit_task::O()->install(this);
 }
 
 void h2unit_case::_prev_setup_()
 {
-   _leakbytes_ = 0;
-   h2unit_leak* leak;
-   for (leak = h2unit_task::O()->leak_list; leak; leak = leak->next) {
-      _leakbytes_ += leak->length;
-   }
 }
 
 void h2unit_case::_post_teardown_()
@@ -1251,13 +784,44 @@ void h2unit_case::_post_teardown_()
    h2unit_task::O()->del_stubs();
 
    /* memory leak detection */
-   long after = 0;
+   int leaked = 0, count = 0, i = 0;
    h2unit_leak* leak;
    for (leak = h2unit_task::O()->leak_list; leak; leak = leak->next) {
-      after += leak->length;
+      if (leak->owner == this) {
+         count++;
+         leaked += leak->length;
+      }
    }
-   _leakbytes_ = after - _leakbytes_;
-   if (_leakbytes_) _status_ = _LEAKED_;
+
+   if (leaked > 0) {
+      _status_ = _FAILED_;
+
+      h2unit_string* p;
+      p = _errormsg_ = (h2unit_string*) malloc(sizeof(h2unit_string));
+      p->style = "bold,red";
+      p->data = (char*) malloc(128);
+      sprintf(p->data, "Memory Leaked %d bytes totally", leaked);
+      p->next = NULL;
+
+      count++;
+      _addition_ = (h2unit_string**) malloc(count * sizeof(h2unit_string*));
+      memset(_addition_, 0, count * sizeof(h2unit_string*));
+
+      for (leak = h2unit_task::O()->leak_list; leak; leak = leak->next) {
+         if (leak->owner == this) {
+            p = _addition_[i++] = (h2unit_string*) malloc(sizeof(h2unit_string));
+            p->style = "bold,red";
+            p->data = (char*) malloc(128);
+            sprintf(p->data, "Leaked %d bytes", leak->length);
+
+            p = p->next = (h2unit_string*) malloc(sizeof(h2unit_string));
+            p->style = "";
+            p->data = (char*) malloc(512);
+            sprintf(p->data, " at %s:%d", leak->file, leak->line);
+            p->next = NULL;
+         }
+      }
+   }
 }
 
 void h2unit_case::setup()
@@ -1270,22 +834,25 @@ void h2unit_case::teardown()
 
 void h2unit_case::_execute_()
 {
+   _start_ = __milliseconds();
    if (cfg._filter != NULL && __pattern_cmp(cfg._filter, (char*) _unitname_) != 0) {
       _status_ = _FILTER_;
       return;
-   }
-   if (_status_ != _IGNORE_) {
-      _status_ = _PASSED_;
-      _prev_setup_();
-      setup();
-      try {
-         _testcase_();
-      } catch (class h2unit_fail) {
-         _status_ = _FAILED_;
+   } else {
+      if (_status_ != _IGNORE_) {
+         _status_ = _PASSED_;
+         _prev_setup_();
+         setup();
+         try {
+            _testcase_();
+         } catch (class h2unit_fail) {
+            _status_ = _FAILED_;
+         }
+         teardown();
+         _post_teardown_();
       }
-      teardown();
-      _post_teardown_();
    }
+   _endup_ = __milliseconds();
 }
 
 void h2unit_case::_limit_(unsigned long bytes)
@@ -1296,7 +863,7 @@ void h2unit_case::_limit_(unsigned long bytes)
 void h2unit_case::_stub_(void* orig, void* fake, const char* express)
 {
    char reason[128];
-   unsigned char *p = (unsigned char*) orig;
+   unsigned char *I = (unsigned char*) orig;
 #ifdef _WIN32
    DWORD saved;
    if (!VirtualProtect(orig, sizeof(void*) + 4, PAGE_WRITECOPY, &saved)) { //PAGE_EXECUTE_WRITECOPY
@@ -1316,38 +883,75 @@ void h2unit_case::_stub_(void* orig, void* fake, const char* express)
          goto failure;
       }
    }
-   //I32 __asm("jmp $fake") : 0xE9 {fake-orig-5}
-   //I32 __asm("movl $fake, %eax; jmpl %eax") : 0xB8 {fake} 0xFF 0xE0
-   //I32_64 __asm("movq $fake, %rax; jmpq %rax") : 0x48 0xB8 {fake} 0xFF 0xE0
+   //x86 __asm("jmp $fake") : 0xE9 {fake-orig-5}
+   //x86 __asm("movl $fake, %eax; jmpl %eax") : 0xB8 {fake} 0xFF 0xE0
+   //x86_64 __asm("movq $fake, %rax; jmpq %rax") : 0x48 0xB8 {fake} 0xFF 0xE0
 #ifdef __x86_64__
-   *p++ = 0x48;
-   *p++ = 0xB8;
+   *I++ = 0x48;
+   *I++ = 0xB8;
    memcpy(p, &fake, sizeof(void*));
-   p += sizeof(void*);
-   *p++ = 0xFF;
-   *p++ = 0xE0;
+   I += sizeof(void*);
+   *I++ = 0xFF;
+   *I++ = 0xE0;
 #else
-   *p++ = 0xE9;
+   *I++ = 0xE9;
    fake = (void*) ((unsigned long) fake - (unsigned long) orig - (sizeof(void*) + 1));
-   memcpy(p, &fake, sizeof(void*));
+   memcpy(I, &fake, sizeof(void*));
 #endif
 
    return;
 
-   failure: h2unit_task::O()->listener.on_case_failed_stub(express, reason);
+   failure: h2unit_string * p;
+
+   p = _errormsg_ = (h2unit_string*) malloc(sizeof(h2unit_string));
+   p->style = "bold,purple";
+   p->data = (char*) "H2STUB(";
+
+   p = p->next = (h2unit_string*) malloc(sizeof(h2unit_string));
+   p->style = "bold,red";
+   p->data = (char*) express;
+
+   p = p->next = (h2unit_string*) malloc(sizeof(h2unit_string));
+   p->style = "bold,purple";
+   p->data = (char*) ")";
+
+   p = p->next = (h2unit_string*) malloc(sizeof(h2unit_string));
+   p->style = "bold,red";
+   p->data = (char*) reason;
+
+   p = p->next = (h2unit_string*) malloc(sizeof(h2unit_string));
+   p->style = "bold,purple";
+   p->data = (char*) malloc(512);
+   sprintf(p->data, " at %s:%d\n", _checkfile_, _checkline_);
+   p->next = NULL;
    throw _fail;
 }
 
 void h2unit_case::_enter_check_(const char* file, int line)
 {
-   h2unit_task::O()->check_count++;
-   h2unit_task::O()->listener.on_check_enter(file, line);
+   _checkfile_ = file;
+   _checkline_ = line;
+   _checkcount_++;
 }
 
 void h2unit_case::_check_true_(const char* condition, bool result)
 {
    if (!result) {
-      h2unit_task::O()->listener.on_case_failed_check(condition, result);
+      h2unit_string* p;
+
+      p = _errormsg_ = (h2unit_string*) malloc(sizeof(h2unit_string));
+      p->style = "bold,purple";
+      p->data = (char*) "H2CHECK(";
+
+      p = p->next = (h2unit_string*) malloc(sizeof(h2unit_string));
+      p->style = "bold,red";
+      p->data = (char*) condition;
+
+      p = p->next = (h2unit_string*) malloc(sizeof(h2unit_string));
+      p->style = "bold,purple";
+      p->data = (char*) ")";
+      p->next = NULL;
+
       throw _fail;
    }
 }
@@ -1355,7 +959,18 @@ void h2unit_case::_check_true_(const char* condition, bool result)
 void h2unit_case::_check_equal_(int expected, int actual)
 {
    if (expected != actual) {
-      h2unit_task::O()->listener.on_case_failed_integer(expected, actual);
+      _expected_ = (h2unit_string*) malloc(sizeof(h2unit_string));
+      _expected_->style = "bold,red";
+      _expected_->data = (char*) malloc(256);
+      sprintf(_expected_->data, "%d 0x%x", expected, expected);
+      _expected_->next = NULL;
+
+      _actually_ = (h2unit_string*) malloc(sizeof(h2unit_string));
+      _actually_->style = "bold,red";
+      _actually_->data = (char*) malloc(256);
+      sprintf(_actually_->data, "%d 0x%x", actual, actual);
+      _actually_->next = NULL;
+
       throw _fail;
    }
 }
@@ -1365,7 +980,18 @@ void h2unit_case::_check_equal_(double expected, double actual, double threshold
    double delta = expected - actual;
    if (delta < 0) delta = -delta;
    if (delta > threshold) {
-      h2unit_task::O()->listener.on_case_failed_double(expected, actual);
+      _expected_ = (h2unit_string*) malloc(sizeof(h2unit_string));
+      _expected_->style = "bold,red";
+      _expected_->data = (char*) malloc(128);
+      sprintf(_expected_->data, "%f", expected);
+      _expected_->next = NULL;
+
+      _actually_ = (h2unit_string*) malloc(sizeof(h2unit_string));
+      _actually_->style = "bold,red";
+      _actually_->data = (char*) malloc(128);
+      sprintf(_actually_->data, "%f", actual);
+      _actually_->next = NULL;
+
       throw _fail;
    }
 }
@@ -1373,7 +999,42 @@ void h2unit_case::_check_equal_(double expected, double actual, double threshold
 void h2unit_case::_check_equal_(char* expected, char* actual)
 {
    if (strcmp(expected, actual) != 0) {
-      h2unit_task::O()->listener.on_case_failed_strcmp(expected, actual);
+      int actual_length = strlen(actual);
+      int expected_length = strlen(expected);
+      int length = actual_length > expected_length ? actual_length : expected_length;
+
+      char* eb = (char*) malloc(expected_length * 2 + 2);
+      char* ab = (char*) malloc(actual_length * 2 + 2);
+
+      h2unit_string** ep = &_expected_;
+      h2unit_string** ap = &_actually_;
+
+      for (int i = 0; i < length; i++) {
+         if (i <= expected_length) {
+            (*ep) = (h2unit_string*) malloc(sizeof(h2unit_string));
+            (*ep)->style = "bold,red";
+            (*ep)->data = eb;
+            eb += sprintf(eb, "%c", expected[i]) + 1;
+            (*ep)->next = NULL;
+            if (i <= actual_length && expected[i] == actual[i]) {
+               (*ep)->style = "bold,green";
+            }
+            ep = &(*ep)->next;
+         }
+         if (i <= actual_length) {
+            (*ap) = (h2unit_string*) malloc(sizeof(h2unit_string));
+            (*ap)->style = "bold,red";
+            (*ap)->data = ab;
+            ab += sprintf(ab, "%c", actual[i]) + 1;
+            (*ap)->next = NULL;
+            if (i <= expected_length && actual[i] == expected[i]) {
+               (*ap)->style = "bold,green";
+            }
+            ap = &(*ap)->next;
+         }
+
+      }
+
       throw _fail;
    }
 }
@@ -1381,7 +1042,41 @@ void h2unit_case::_check_equal_(char* expected, char* actual)
 void h2unit_case::_check_equal_strcmp_nocase_(char* expected, char* actual)
 {
    if (strcasecmp(expected, actual) != 0) {
-      h2unit_task::O()->listener.on_case_failed_strcmp_nocase(expected, actual);
+      int actual_length = strlen(actual);
+      int expected_length = strlen(expected);
+      int length = actual_length > expected_length ? actual_length : expected_length;
+
+      char* eb = (char*) malloc(expected_length * 2 + 2);
+      char* ab = (char*) malloc(actual_length * 2 + 2);
+
+      h2unit_string** ep = &_expected_;
+      h2unit_string** ap = &_actually_;
+
+      for (int i = 0; i < length; i++) {
+         if (i <= expected_length) {
+            (*ep) = (h2unit_string*) malloc(sizeof(h2unit_string));
+            (*ep)->style = "bold,red";
+            (*ep)->data = eb;
+            eb += sprintf(eb, "%c", expected[i]) + 1;
+            (*ep)->next = NULL;
+            if (i <= actual_length && tolower((int) expected[i]) == tolower((int) actual[i])) {
+               (*ep)->style = "bold,green";
+            }
+            ep = &(*ep)->next;
+         }
+         if (i <= actual_length) {
+            (*ap) = (h2unit_string*) malloc(sizeof(h2unit_string));
+            (*ap)->style = "bold,red";
+            (*ap)->data = ab;
+            ab += sprintf(ab, "%c", actual[i]) + 1;
+            (*ap)->next = NULL;
+            if (i <= expected_length && tolower((int) actual[i]) == tolower((int) expected[i])) {
+               (*ap)->style = "bold,green";
+            }
+            ap = &(*ap)->next;
+         }
+
+      }
       throw _fail;
    }
 }
@@ -1389,7 +1084,16 @@ void h2unit_case::_check_equal_strcmp_nocase_(char* expected, char* actual)
 void h2unit_case::_check_regex_(char* express, char* actual)
 {
    if (__pattern_cmp(express, actual) != 0) {
-      h2unit_task::O()->listener.on_case_failed_regex(express, actual);
+      _expected_ = (h2unit_string*) malloc(sizeof(h2unit_string));
+      _expected_->style = "bold,red";
+      _expected_->data = strdup(express);
+      _expected_->next = NULL;
+
+      _actually_ = (h2unit_string*) malloc(sizeof(h2unit_string));
+      _actually_->style = "bold,red";
+      _actually_->data = strdup(actual);
+      _actually_->next = NULL;
+
       throw _fail;
    }
 }
@@ -1397,7 +1101,37 @@ void h2unit_case::_check_regex_(char* express, char* actual)
 void h2unit_case::_check_equal_(unsigned char* expected, unsigned char* actual, int length)
 {
    if (memcmp(expected, actual, length) != 0) {
-      h2unit_task::O()->listener.on_case_failed_memcmp(expected, actual, length);
+      char* eb = (char*) malloc(length * 4);
+      char* ab = (char*) malloc(length * 4);
+
+      h2unit_string** ep = &_expected_;
+      h2unit_string** ap = &_actually_;
+
+      for (int i = 0; i < length; i++) {
+         (*ep) = (h2unit_string*) malloc(sizeof(h2unit_string));
+         (*ep)->style = "bold,red";
+         (*ep)->data = eb;
+         eb += sprintf(eb, i % 16 < 8 ? "%02X " : " %02X", expected[i]) + 1;
+         (*ep)->next = NULL;
+
+         (*ap) = (h2unit_string*) malloc(sizeof(h2unit_string));
+         (*ap)->style = "bold,red";
+         (*ap)->data = ab;
+         ab += sprintf(ab, i % 16 < 8 ? "%02X " : " %02X", actual[i]) + 1;
+         (*ap)->next = NULL;
+
+         if (expected[i] == actual[i]) {
+            (*ep)->style = "bold,green";
+            (*ap)->style = "bold,green";
+         } else {
+            (*ep)->style = "bold,red";
+            (*ap)->style = "bold,red";
+         }
+
+         ep = &(*ep)->next;
+         ap = &(*ap)->next;
+      }
+
       throw _fail;
    }
 }
@@ -1405,7 +1139,18 @@ void h2unit_case::_check_equal_(unsigned char* expected, unsigned char* actual, 
 void h2unit_case::_check_catch_(const char* expected, const char* actual, const char* exceptype)
 {
    if (expected != actual) {
-      h2unit_task::O()->listener.on_case_failed_catch(expected, actual, exceptype);
+      _expected_ = (h2unit_string*) malloc(sizeof(h2unit_string));
+      _expected_->style = "bold,red";
+      _expected_->data = (char*) malloc(strlen(expected) + strlen(exceptype) + 2);
+      sprintf(_expected_->data, "%s %s", expected, exceptype);
+      _expected_->next = NULL;
+
+      _actually_ = (h2unit_string*) malloc(sizeof(h2unit_string));
+      _actually_->style = "bold,red";
+      _actually_->data = (char*) malloc(strlen(actual) + strlen(exceptype) + 2);
+      sprintf(_actually_->data, "%s %s", actual, exceptype);
+      _actually_->next = NULL;
+
       throw _fail;
    }
 }
@@ -1505,9 +1250,9 @@ int main(int argc, char** argv)
       if (strstr(argv[1], "c")) cfg._colored = true;
       if (strstr(argv[1], "r")) cfg._random = true;
       if (strstr(argv[1], "u")) cfg._filter = argv[2];
-      if (strstr(argv[1], "t")) h2unit_task::O()->listener.attach(&h2unit_task::O()->text_listener);
-      if (strstr(argv[1], "h")) h2unit_task::O()->listener.attach(&h2unit_task::O()->html_listener);
-      if (strstr(argv[1], "x")) h2unit_task::O()->listener.attach(&h2unit_task::O()->xml_listener);
+      //if (strstr(argv[1], "t")) h2unit_task::O()->listener.attach(&h2unit_task::O()->text_listener);
+      //if (strstr(argv[1], "h")) h2unit_task::O()->listener.attach(&h2unit_task::O()->html_listener);
+      //if (strstr(argv[1], "x")) h2unit_task::O()->listener.attach(&h2unit_task::O()->xml_listener);
    }
    h2unit_task::O()->run();
    return 0;

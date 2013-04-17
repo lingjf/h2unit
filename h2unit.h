@@ -5,27 +5,44 @@
 
 #if defined(__cplusplus)
 
+
+typedef struct h2unit_string
+{
+   const char* style;
+   char* data;
+   struct h2unit_string * next;
+} h2unit_string;
+
 class h2unit_case
 {
-private:
+public:
    static const int _INITED_ = 0;
    static const int _PASSED_ = 1;
    static const int _FAILED_ = 2;
    static const int _IGNORE_ = 3;
    static const int _FILTER_ = 4;
-   static const int _LEAKED_ = 5;
+
    int _status_;
    const char* _unitname_;
    const char* _casename_;
    const char* _casefile_;
    int _caseline_;
+   h2unit_case* _chain_;
    h2unit_case* _next_;
-   int _leakbytes_;
+
    void _prev_setup_();
    void _post_teardown_();
    void _execute_();
-   void _summary_(long duration);
    friend class h2unit_task;
+public:
+   long _start_, _endup_;
+   const char* _checkfile_;
+   int _checkline_;
+   int _checkcount_;
+   h2unit_string* _errormsg_;
+   h2unit_string* _expected_;
+   h2unit_string* _actually_;
+   h2unit_string** _addition_;
 public:
    h2unit_case();
    virtual ~h2unit_case();
