@@ -10,7 +10,7 @@ typedef struct h2unit_string
 {
    const char* style;
    char* data;
-   struct h2unit_string * next;
+   struct h2unit_string* next;
 } h2unit_string;
 
 class h2unit_case
@@ -33,7 +33,7 @@ public:
    void _prev_setup_();
    void _post_teardown_();
    void _execute_();
-   friend class h2unit_task;
+
 public:
    long _start_, _endup_;
    const char* _checkfile_;

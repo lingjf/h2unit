@@ -20,4 +20,4 @@ test_product_2.o : example/test_product_2.cpp h2unit.h
 	g++ -Wall $(CXXFLAGS) -c -o test_product_2.o example/test_product_2.cpp
 	
 clean:
-	rm -rf run.tests *.o *.log
+	rm -rf run.tests *.o *.log *.xml *.html

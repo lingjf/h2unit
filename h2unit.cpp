@@ -122,6 +122,11 @@ typedef struct h2unit_stub
 typedef struct h2unit_unit
 {
    const char* name;
+   int case_count;
+   int case_passed;
+   int case_failed;
+   int case_ignored;
+   int case_filtered;
    h2unit_case* cases;
    struct h2unit_unit* next;
 } h2unit_unit;
@@ -138,8 +143,31 @@ public:
    virtual ~h2unit_listen()
    {
    }
-   virtual void on_task_start() = 0;
-   virtual void on_task_endup(int failed, int passed, int ignored, int filtered, int cases, int checks, long duration, h2unit_unit* unit_list) = 0;
+   virtual void on_task_start()
+   {
+   }
+   virtual void on_task_endup(int failed, int passed, int ignored, int filtered, int cases, int checks, long duration, h2unit_unit* unit_list)
+   {
+      for (h2unit_unit* p = unit_list; p; p = p->next) {
+         for (h2unit_case* c = p->cases; c; c = c->_next_) {
+            p->case_count++;
+            switch (c->_status_) {
+            case h2unit_case::_IGNORE_:
+               p->case_ignored++;
+               break;
+            case h2unit_case::_FILTER_:
+               p->case_filtered++;
+               break;
+            case h2unit_case::_PASSED_:
+               p->case_passed++;
+               break;
+            case h2unit_case::_FAILED_:
+               p->case_failed++;
+               break;
+            }
+         }
+      }
+   }
    virtual void on_case_start()
    {
    }
@@ -262,95 +290,45 @@ public:
 class h2unit_listen_console: public h2unit_listen
 {
 private:
-   char _color_string[128];
-   static const int RESET = 0;
-   static const int BOLD_ON = 1;
-   static const int ITALICS_ON = 3;
-   static const int UNDERLINE_ON = 4;
-   static const int INVERSE_ON = 7;
-   static const int STRIKETHROUGH_ON = 9;
-   static const int BOLD_OFF = 22;
-   static const int ITALICS_OFF = 23;
-   static const int UNDERLINE_OFF = 24;
-   static const int INVERSE_OFF = 27;
-   static const int STRIKETHROUGH_OFF = 29;
-   // foreground color
-   static const int BLACK = 30;
-   static const int RED = 31;
-   static const int GREEN = 32;
-   static const int YELLOW = 33;
-   static const int BLUE = 34;
-   static const int PURPLE = 35;
-   static const int CYAN = 36;
-   static const int WHITE = 37;
-   static const int DEFAULT = 39;
-   // background color
-   static const int BG_BLACK = 40;
-   static const int BG_RED = 41;
-   static const int BG_GREEN = 42;
-   static const int BG_YELLOW = 43;
-   static const int BG_BLUE = 44;
-   static const int BG_PURPLE = 45;
-   static const int BG_CYAN = 46;
-   static const int BG_WHITE = 47;
-   static const int BG_DEFAULT = 49;
-
-   const char* color(int code1, int code2 = -1, int code3 = -1, int code4 = -1, int code5 = -1, int code6 = -1, int code7 = -1, int code8 = -1)
-   {
-      if (!cfg._colored) return "";
-      char* p = _color_string;
-
-      p += sprintf(p, "\033[%d", code1);
-      if (code2 != -1) {
-         p += sprintf(p, ";%d", code2);
-         if (code3 != -1) {
-            p += sprintf(p, ";%d", code3);
-            if (code4 != -1) {
-               p += sprintf(p, ";%d", code4);
-               if (code5 != -1) {
-                  p += sprintf(p, ";%d", code5);
-                  if (code6 != -1) {
-                     p += sprintf(p, ";%d", code6);
-                     if (code7 != -1) {
-                        p += sprintf(p, ";%d", code7);
-                        if (code8 != -1) {
-                           p += sprintf(p, ";%d", code8);
-                        }
-                     }
-                  }
-               }
-            }
-         }
-      }
-      sprintf(p, "m");
-      return (const char*) _color_string;
-   }
 
    const char* color(const char *style)
    {
       if (!cfg._colored) return "";
-      char* p = _color_string;
 
+      struct st
+      {
+         const char *name;
+         const int value;
+      };
+
+      static struct st t[] = {
+      // normal style
+            { "reset", 0 }, { "bold", 1 }, { "italics", 3 }, { "underline", 4 }, { "inverse", 7 }, { "strikethrough", 9 },
+            // foreground color
+            { "black", 30 }, { "red", 31 }, { "green", 32 }, { "yellow", 33 }, { "blue", 34 }, { "purple", 35 }, { "cyan", 36 }, { "white", 37 }, { "default", 39 },
+            // background color
+            { "bg_black", 40 }, { "bg_red", 41 }, { "bg_green", 42 }, { "bg_yellow", 43 }, { "bg_blue", 44 }, { "bg_purple", 45 }, { "bg_cyan", 46 }, { "bg_white", 47 }, { "bg_default", 49 }
+
+      };
+
+      static char copied[512];
+      strncpy(copied, style, sizeof(copied));
+
+      static char buffer[128];
+      char *p = buffer;
       p += sprintf(p, "\033[");
 
-      if (strstr(style, "reset")) {
-         p += sprintf(p, "%d;", RESET);
-      }
-      if (strstr(style, "bold")) {
-         p += sprintf(p, "%d;", BOLD_ON);
-      }
-      if (strstr(style, "underline")) {
-         p += sprintf(p, "%d;", UNDERLINE_ON);
-      }
-      if (strstr(style, "red")) {
-         p += sprintf(p, "%d;", RED);
-      }
-      if (strstr(style, "green")) {
-         p += sprintf(p, "%d;", GREEN);
+      for (char* opt = strtok(copied, ","); opt; opt = strtok(NULL, ",")) {
+         for (unsigned i = 0; i < sizeof(t) / sizeof(t[0]); i++) {
+            if (strcmp(t[i].name, opt) == 0) {
+               p += sprintf(p, "%d;", t[i].value);
+               break;
+            }
+         }
       }
 
       *(p - 1) = 'm';
-      return (const char*) _color_string;
+      return (const char*) buffer;
    }
 
    void print_string(h2unit_string* s)
@@ -376,36 +354,34 @@ public:
    {
       printf("\r                                                    \n");
       if (failed > 0) {
-         printf("%s", color(BOLD_ON, RED));
+         printf("%s", color("bold,red"));
          printf("Failed <%d failed, %d passed, %d ignored, %d filtered, %d checks, %ld ms>\n", failed, passed, ignored, filtered, checks, duration);
       } else {
-         printf("%s", color(BOLD_ON, GREEN));
+         printf("%s", color("bold,green"));
          printf("Passed <%d passed, %d ignored, %d filtered, %d cases, %d checks, %ld ms>\n", passed, ignored, filtered, cases, checks, duration);
       }
-      printf("%s\n", color(RESET));
+      printf("%s\n", color("reset"));
    }
    void on_case_endup(double percentage)
    {
       h2unit_case* p = h2unit_case::_current_;
       switch (p->_status_) {
       case h2unit_case::_IGNORE_:
-         printf("%s", color(BOLD_ON, PURPLE));
          printf("\rH2CASE(%s, %s): Ignored at %s:%d\n", p->_unitname_, p->_casename_, p->_casefile_, p->_caseline_);
-         printf("%s", color(RESET));
          break;
       case h2unit_case::_FILTER_:
          break;
       case h2unit_case::_PASSED_:
          if (cfg._verbose) {
-            printf("%s", color(BLUE));
+            printf("%s", color("blue"));
             printf("\rH2CASE(%s, %s): Passed - %ld ms     \n", p->_unitname_, p->_casename_, p->_endup_ - p->_start_);
-            printf("%s", color(RESET));
+            printf("%s", color("reset"));
          }
          break;
       case h2unit_case::_FAILED_:
-         printf("%s", color(BOLD_ON, PURPLE));
+         printf("%s", color("bold,purple"));
          printf("\rH2CASE(%s, %s): Failed at %s:%d\n", p->_unitname_, p->_casename_, p->_checkfile_, p->_checkline_);
-         printf("%s", color(RESET));
+         printf("%s", color("reset"));
          if (p->_errormsg_) {
             printf("  ");
             print_string(h2unit_case::_current_->_errormsg_);
@@ -431,9 +407,9 @@ public:
          break;
       }
 
-      printf("%s", color(BOLD_ON, BLUE));
+      printf("%s", color("bold,blue"));
       printf("\rH2UNIT running ... %d%% completed.", (int) (percentage));
-      printf("%s", color(RESET));
+      printf("%s", color("reset"));
    }
 };
 
@@ -462,7 +438,35 @@ public:
    }
    void on_task_endup(int failed, int passed, int ignored, int filtered, int cases, int checks, long duration, h2unit_unit* unit_list)
    {
-      //h2unit_task::O();
+      for (h2unit_unit* p = unit_list; p; p = p->next) {
+         fprintf(filp, "<tr>");
+         fprintf(filp, "<td> %s </td>", p->name);
+         fprintf(filp, "<td><table>");
+         for (h2unit_case* c = p->cases; c; c = c->_next_) {
+            fprintf(filp, "<tr>");
+            const char* status;
+            switch (c->_status_) {
+            case h2unit_case::_IGNORE_:
+               status = "Ignored";
+               break;
+            case h2unit_case::_FILTER_:
+               status = "Filtered";
+               break;
+            case h2unit_case::_PASSED_:
+               status = "Passed";
+               break;
+            case h2unit_case::_FAILED_:
+               status = "Failed";
+               break;
+            }
+            fprintf(filp, "<td> %s </td>", c->_casename_);
+            fprintf(filp, "<td> %s </td>", status);
+            fprintf(filp, "</tr>");
+         }
+         fprintf(filp, "</table></td>");
+         fprintf(filp, "</tr>");
+      }
+      fprintf(filp, "</table>");
 
       if (failed > 0) {
          fprintf(filp, "Failed <%d failed, %d passed, %d ignored, %d filtered, %d checks, %ld ms>\n", failed, passed, ignored, filtered, checks, duration);
@@ -470,16 +474,9 @@ public:
          fprintf(filp, "Passed <%d passed, %d ignored, %d filtered, %d cases, %d checks, %ld ms>\n", passed, ignored, filtered, cases, checks, duration);
       }
 
-      fprintf(filp, "</table>");
       fprintf(filp, "</body>");
       fprintf(filp, "</html>");
       fclose(filp);
-   }
-   void on_case_start()
-   {
-   }
-   void on_case_endup(double percentage)
-   {
    }
 };
 
@@ -487,6 +484,13 @@ class h2unit_listen_xml: public h2unit_listen
 {
 private:
    FILE *filp;
+
+   void print_string(h2unit_string* s)
+   {
+      for (h2unit_string* p = s; p; p = p->next) {
+         fprintf(filp, "%s", p->data);
+      }
+   }
 public:
    h2unit_listen_xml()
    {
@@ -496,35 +500,65 @@ public:
    }
    void on_task_start()
    {
-      filp = fopen("h2unit_xml.xml", "w");
-      fprintf(filp, "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n");
    }
    void on_task_endup(int failed, int passed, int ignored, int filtered, int cases, int checks, long duration, h2unit_unit* unit_list)
    {
+      h2unit_listen::on_task_endup(failed, passed, ignored, filtered, cases, checks, duration, unit_list);
+      filp = fopen("h2unit_junit.xml", "w");
+      fprintf(filp, "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n");
+      fprintf(filp, "<testsuites>\n");
       for (h2unit_unit* p = unit_list; p; p = p->next) {
-         fprintf(filp, "<testsuite errors=\"0\" failures=\"%d\" hostname=\"localhost\" name=\"%s\" tests=\"%d\" time=\"%d.%03d\" timestamp=\"%s\">\n", 1, p->name, 1, 0, 0, "");
+         fprintf(filp, "  <testsuite errors=\"0\" failures=\"%d\" hostname=\"localhost\" name=\"%s\" skipped=\"%d\" tests=\"%d\" time=\"%d\" timestamp=\"%s\">\n", p->case_failed, p->name, p->case_ignored + p->case_filtered, p->case_count, 0, "");
          for (h2unit_case* c = p->cases; c; c = c->_next_) {
-            fprintf(filp, "  <testcase classname=\"%s\" name=\"%s\" time=\"%d.%03d\">\n", c->_unitname_, c->_casename_, 0, 0);
-            fprintf(filp, "  </testcase>\n");
+            const char* status;
+            switch (c->_status_) {
+            case h2unit_case::_IGNORE_:
+               status = "Ignored";
+               break;
+            case h2unit_case::_FILTER_:
+               status = "Filtered";
+               break;
+            case h2unit_case::_PASSED_:
+               status = "Passed";
+               break;
+            case h2unit_case::_FAILED_:
+               status = "Failed";
+               break;
+            }
+            fprintf(filp, "    <testcase classname=\"%s\" name=\"%s\" status=\"%s\" time=\"%.3f\">\n", c->_unitname_, c->_casename_, status, (c->_endup_ - c->_start_) / 1000.0);
+            if (c->_status_ == h2unit_case::_FAILED_) {
+               fprintf(filp, "      <failure message=\"Failed at %s:%d\"></failure>\n", c->_checkfile_, c->_checkline_);
+            }
+            if (c->_errormsg_) {
+               fprintf(filp, "      <failure message=\"");
+               print_string(c->_errormsg_);
+               fprintf(filp, "\"></failure>\n");
+            }
+            if (c->_expected_) {
+               fprintf(filp, "      <failure message=\"expected<");
+               print_string(c->_expected_);
+               printf("n");
+               fprintf(filp, ">\"></failure>\n");
+            }
+            if (c->_actually_) {
+               fprintf(filp, "      <failure message=\"actually<");
+               print_string(c->_actually_);
+               fprintf(filp, ">\"></failure>\n");
+            }
+            if (c->_addition_) {
+               for (int i = 0; c->_addition_[i]; i++) {
+                  fprintf(filp, "      <failure message=\"");
+                  print_string(c->_addition_[i]);
+                  fprintf(filp, "\"></failure>\n");
+               }
+            }
+            fprintf(filp, "      <system-out></system-out><system-err></system-err>\n");
+            fprintf(filp, "    </testcase>\n");
          }
-         fprintf(filp, "<system-out></system-out><system-err></system-err></testsuite>\n");
+         fprintf(filp, "  </testsuite>\n");
       }
-      if (failed > 0) {
-         fprintf(filp, "Failed <%d failed, %d passed, %d ignored, %d filtered, %d checks, %ld ms>\n", failed, passed, ignored, filtered, checks, duration);
-      } else {
-         fprintf(filp, "Passed <%d passed, %d ignored, %d filtered, %d cases, %d checks, %ld ms>\n", passed, ignored, filtered, cases, checks, duration);
-      }
+      fprintf(filp, "</testsuites>\n");
       fclose(filp);
-   }
-   void on_case_start()
-   {
-      //fprintf(filp, "<testsuite errors=\"0\" failures=\"%d\" hostname=\"localhost\" name=\"%s\" tests=\"%d\" time=\"%d.%03d\" timestamp=\"%s\">\n", 1, unitname, 1, 0, 0, "");
-      //fprintf(filp, "<properties></properties>");
-      //fprintf(filp, "<testcase classname=\"%s\" name=\"%s\" time=\"%d.%03d\">\n", unitname, casename, 0, 0);
-   }
-   void on_case_endup(double percentage)
-   {
-      //fprintf(filp, "</testcase><system-out></system-out><system-err></system-err></testsuite>");
    }
 };
 
@@ -558,6 +592,7 @@ public:
       listener.attach(&console_listener);
       listener.attach(&text_listener);
       listener.attach(&xml_listener);
+      listener.attach(&html_listener);
    }
 
    static h2unit_task* O()
@@ -736,22 +771,6 @@ h2unit_case* h2unit_case::_current_ = NULL;
 
 h2unit_case::h2unit_case()
 {
-   _unitname_ = "";
-   _casename_ = "";
-   _casefile_ = "";
-   _caseline_ = 0;
-   _status_ = _INITED_;
-
-   _checkfile_ = "";
-   _checkline_ = 0;
-   _checkcount_ = 0;
-
-   _errormsg_ = NULL;
-   _expected_ = NULL;
-   _actually_ = NULL;
-   _addition_ = NULL;
-
-   //h2unit_task::O()->install(this);
 }
 
 h2unit_case::~h2unit_case()
@@ -760,6 +779,7 @@ h2unit_case::~h2unit_case()
 
 void h2unit_case::_init_(const char* unitname, const char* casename, bool ignored, const char* file, int line)
 {
+   _status_ = _INITED_;
    _unitname_ = unitname;
    _casename_ = casename;
    _casefile_ = file;
@@ -767,6 +787,12 @@ void h2unit_case::_init_(const char* unitname, const char* casename, bool ignore
 
    _checkfile_ = file;
    _checkline_ = line;
+   _checkcount_ = 0;
+
+   _errormsg_ = NULL;
+   _expected_ = NULL;
+   _actually_ = NULL;
+   _addition_ = NULL;
 
    if (ignored) _status_ = _IGNORE_;
 
