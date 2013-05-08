@@ -915,7 +915,7 @@ void h2unit_case::_stub_(void* orig, void* fake, const char* express)
 #ifdef __x86_64__
    *I++ = 0x48;
    *I++ = 0xB8;
-   memcpy(p, &fake, sizeof(void*));
+   memcpy(I, &fake, sizeof(void*));
    I += sizeof(void*);
    *I++ = 0xFF;
    *I++ = 0xE0;
