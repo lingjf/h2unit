@@ -69,9 +69,14 @@ H2UNIT(dynamic_stub)
    }
 };
 
-int stub_func(int a)
+int stub_foo(int a)
 {
    return a + 2;
+}
+
+int stub_bar(int a)
+{
+   return a + 3;
 }
 
 int stub_atoi(const char* s)
@@ -79,17 +84,31 @@ int stub_atoi(const char* s)
    return 1;
 }
 
-H2CASE(dynamic_stub, "test dynamic stub 1")
+H2CASE(dynamic_stub, "test dynamic stub local extern function")
 {
-   H2EQUAL(1, isLegal(0, "0"));
-   H2STUB(orig_func, stub_func);
-   H2EQUAL(2, isLegal(0, "0"));
+   H2EQUAL(3, isLegal(0, "0"));
+   H2STUB(orig_foo, stub_foo);
+   H2EQUAL(4, isLegal(0, "0"));
 }
 
-H2CASE(dynamic_stub, "test dynamic stub 2")
+H2CASE(dynamic_stub, "test dynamic stub local static function")
 {
-   H2EQUAL(1, isLegal(0, "0"));
+   H2EQUAL(3, isLegal(0, "0"));
+   H2STUB_STATIC("orig_bar", stub_bar);
+   H2EQUAL(4, isLegal(0, "0"));
+}
+
+H2CASE(dynamic_stub, "test dynamic stub unknown function")
+{
+   H2EQUAL(3, isLegal(0, "0"));
+   H2STUB_STATIC("orig_fun", stub_bar);
+   H2EQUAL(4, isLegal(0, "0"));
+}
+
+H2CASE(dynamic_stub, "test dynamic stub libc function")
+{
+   H2EQUAL(3, isLegal(0, "0"));
    H2STUB(atoi, stub_atoi);
-   H2EQUAL(2, isLegal(0, "0"));
+   H2EQUAL(4, isLegal(0, "0"));
 }
 

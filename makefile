@@ -3,7 +3,7 @@ CXXFLAGS += -g -I . -include h2unit.h
 
 all : h2unit.o product_1.o product_2.o test_product_1.o test_product_2.o 
 	g++ -Wall -o run.tests *.o
-	./run.tests -vcr
+	./run.tests -vr
 
 	
 h2unit.o : h2unit.cpp h2unit.h

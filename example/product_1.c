@@ -14,13 +14,18 @@ double getCeil(double var)
    return (double) ((int) var);
 }
 
-int orig_func(int a)
+int orig_foo(int a)
 {
    return a + 1;
 }
 
+static int orig_bar(int a)
+{
+   return a + 2;
+}
+
 int isLegal(int var, const char* str)
 {
-   return orig_func(var) + atoi(str);
+   return orig_foo(var) + orig_bar(var) + atoi(str);
 }
 

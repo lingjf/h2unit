@@ -73,7 +73,7 @@ public:
    h2unit_config()
    {
       _verbose = false;
-      _colored = false;
+      _colored = true;
       _random = false;
       _filter = NULL;
    }
@@ -111,6 +111,13 @@ typedef struct h2unit_leak
    int line;
    h2unit_case* owner;
 } h2unit_leak;
+
+typedef struct h2unit_symb
+{
+   char* name;
+   void* addr;
+   struct h2unit_symb* next;
+} h2unit_symb;
 
 typedef struct h2unit_stub
 {
@@ -567,6 +574,8 @@ class h2unit_task
 public:
    int unit_count, case_count, case_excuted_count, check_count;
    int case_failed, case_passed, case_ignore, case_filter;
+   const char* symb_file;
+   h2unit_symb* symb_list;
    h2unit_leak* leak_list;
    h2unit_stub* stub_list;
    h2unit_unit* unit_list;
@@ -578,13 +587,17 @@ public:
    h2unit_listen_html html_listener;
    h2unit_listen_xml xml_listener;
    h2unit_listens listener;
+
    h2unit_task()
    {
       case_failed = case_passed = case_ignore = case_filter = 0;
       unit_count = case_count = case_excuted_count = check_count = 0;
       case_chain = NULL;
 
+      symb_file = "h2unit_sym.txt";
+
       unit_list = NULL;
+      symb_list = NULL;
       stub_list = NULL;
       leak_list = NULL;
       limited = 0x7fffffff;
@@ -601,7 +614,59 @@ public:
       return &_instance;
    }
 
-   void install(h2unit_case* testcase)
+   void build_symbols(char* path)
+   {
+      char buf[512];
+      char *line = buf;
+      size_t len = sizeof(buf);
+      int n;
+      /**
+       * TODO: for windows using dumpbin.exe
+       *
+       * http://support.microsoft.com/kb/177429
+       */
+      sprintf(buf, "nm %s > %s", path, symb_file);
+      system(buf);
+
+      FILE* filp = fopen(symb_file, "r");
+      if (filp == NULL) {
+         return;
+      }
+
+      while ((n = getline(&line, &len, filp)) != -1) {
+         char *t;
+         t = strtok(line, " ");
+         if (t && t[0] == '0') {
+            long a = strtol(t, NULL, 16);
+            t = strtok(NULL, " ");
+            t = strtok(NULL, " ");
+            h2unit_symb* s = (h2unit_symb*) malloc(sizeof(h2unit_symb));
+            s->name = strdup(t);
+            for (int l = strlen(s->name); l > 0 && isspace (s->name[l - 1]); l--) {
+               s->name[l - 1] = '\0';
+            }
+            s->addr = (void*)a;
+            s->next = symb_list;
+            symb_list = s;
+         }
+      }
+
+      fclose(filp);
+      sprintf(buf, "unlink %s", symb_file);
+      system(buf);
+   }
+
+   void* get_symbol_address(const char* symb)
+   {
+      for (h2unit_symb* p = symb_list; p != NULL; p = p->next) {
+         if (!strcmp(p->name, symb)) {
+            return p->addr;
+         }
+      }
+      return NULL;
+   }
+
+   void install_testcase(h2unit_case* testcase)
    {
       testcase->_chain_ = case_chain;
       case_chain = testcase;
@@ -630,7 +695,7 @@ public:
       *c = testcase;
    }
 
-   void reorder()
+   void random_sequence()
    {
       h2unit_case* p = case_chain;
       case_chain = NULL;
@@ -653,7 +718,7 @@ public:
    void run()
    {
       long start = __milliseconds();
-      if (cfg._random) reorder();
+      if (cfg._random) random_sequence();
       listener.on_task_start();
       for (h2unit_case* p = case_chain; (h2unit_case::_current_ = p); p = p->_chain_) {
          listener.on_case_start();
@@ -796,7 +861,7 @@ void h2unit_case::_init_(const char* unitname, const char* casename, bool ignore
 
    if (ignored) _status_ = _IGNORE_;
 
-   h2unit_task::O()->install(this);
+   h2unit_task::O()->install_testcase(this);
 }
 
 void h2unit_case::_prev_setup_()
@@ -864,20 +929,21 @@ void h2unit_case::_execute_()
    if (cfg._filter != NULL && __pattern_cmp(cfg._filter, (char*) _unitname_) != 0) {
       _status_ = _FILTER_;
       return;
-   } else {
-      if (_status_ != _IGNORE_) {
-         _status_ = _PASSED_;
-         _prev_setup_();
-         setup();
-         try {
-            _testcase_();
-         } catch (class h2unit_fail) {
-            _status_ = _FAILED_;
-         }
-         teardown();
-         _post_teardown_();
-      }
    }
+
+   if (_status_ != _IGNORE_) {
+      _status_ = _PASSED_;
+      _prev_setup_();
+      setup();
+      try {
+         _testcase_();
+      } catch (class h2unit_fail) {
+         _status_ = _FAILED_;
+      }
+      teardown();
+      _post_teardown_();
+   }
+
    _endup_ = __milliseconds();
 }
 
@@ -886,7 +952,43 @@ void h2unit_case::_limit_(unsigned long bytes)
    h2unit_task::O()->limited = bytes;
 }
 
-void h2unit_case::_stub_(void* orig, void* fake, const char* express)
+void h2unit_case::_stub_static_(const char* orig, void* fake, const char* orig_name, const char* fake_name)
+{
+   void *address = h2unit_task::O()->get_symbol_address(orig);
+   if (address == NULL) {
+      h2unit_string * p;
+      p = _errormsg_ = (h2unit_string*) malloc(sizeof(h2unit_string));
+      p->style = "";
+      p->data = (char*) "H2STUB(";
+
+      p = p->next = (h2unit_string*) malloc(sizeof(h2unit_string));
+      p->style = "bold,red";
+      p->data = (char*) orig_name;
+
+      p = p->next = (h2unit_string*) malloc(sizeof(h2unit_string));
+      p->style = "";
+      p->data = (char*) " <-- ";
+
+      p = p->next = (h2unit_string*) malloc(sizeof(h2unit_string));
+      p->style = "bold,red";
+      p->data = (char*) fake_name;
+
+      p = p->next = (h2unit_string*) malloc(sizeof(h2unit_string));
+      p->style = "";
+      p->data = (char*) ")";
+
+      p = p->next = (h2unit_string*) malloc(sizeof(h2unit_string));
+      p->style = "bold,purple";
+      p->data = (char*) malloc(512);
+      sprintf(p->data, " %s not found", orig_name);
+      p->next = NULL;
+      throw _fail;
+      return;
+   }
+   _stub_(address, fake, orig_name, fake_name);
+}
+
+void h2unit_case::_stub_(void* orig, void* fake, const char* orig_name, const char* fake_name)
 {
    char reason[128];
    unsigned char *I = (unsigned char*) orig;
@@ -935,7 +1037,15 @@ void h2unit_case::_stub_(void* orig, void* fake, const char* express)
 
    p = p->next = (h2unit_string*) malloc(sizeof(h2unit_string));
    p->style = "bold,red";
-   p->data = (char*) express;
+   p->data = (char*) orig_name;
+
+   p = p->next = (h2unit_string*) malloc(sizeof(h2unit_string));
+   p->style = "";
+   p->data = (char*) " <-- ";
+
+   p = p->next = (h2unit_string*) malloc(sizeof(h2unit_string));
+   p->style = "bold,red";
+   p->data = (char*) fake_name;
 
    p = p->next = (h2unit_string*) malloc(sizeof(h2unit_string));
    p->style = "bold,purple";
@@ -943,12 +1053,7 @@ void h2unit_case::_stub_(void* orig, void* fake, const char* express)
 
    p = p->next = (h2unit_string*) malloc(sizeof(h2unit_string));
    p->style = "bold,red";
-   p->data = (char*) reason;
-
-   p = p->next = (h2unit_string*) malloc(sizeof(h2unit_string));
-   p->style = "bold,purple";
-   p->data = (char*) malloc(512);
-   sprintf(p->data, " at %s:%d\n", _checkfile_, _checkline_);
+   p->data = strdup((char*) reason);
    p->next = NULL;
    throw _fail;
 }
@@ -966,7 +1071,7 @@ void h2unit_case::_check_true_(const char* condition, bool result)
       h2unit_string* p;
 
       p = _errormsg_ = (h2unit_string*) malloc(sizeof(h2unit_string));
-      p->style = "bold,purple";
+      p->style = "";
       p->data = (char*) "H2CHECK(";
 
       p = p->next = (h2unit_string*) malloc(sizeof(h2unit_string));
@@ -974,7 +1079,7 @@ void h2unit_case::_check_true_(const char* condition, bool result)
       p->data = (char*) condition;
 
       p = p->next = (h2unit_string*) malloc(sizeof(h2unit_string));
-      p->style = "bold,purple";
+      p->style = "";
       p->data = (char*) ")";
       p->next = NULL;
 
@@ -1271,14 +1376,12 @@ void operator delete[](void* object)
 
 int main(int argc, char** argv)
 {
+   h2unit_task::O()->build_symbols(argv[0]);
    if (argc > 1) {
       if (strstr(argv[1], "v")) cfg._verbose = true;
-      if (strstr(argv[1], "c")) cfg._colored = true;
+      if (strstr(argv[1], "b")) cfg._colored = false;
       if (strstr(argv[1], "r")) cfg._random = true;
       if (strstr(argv[1], "u")) cfg._filter = argv[2];
-      //if (strstr(argv[1], "t")) h2unit_task::O()->listener.attach(&h2unit_task::O()->text_listener);
-      //if (strstr(argv[1], "h")) h2unit_task::O()->listener.attach(&h2unit_task::O()->html_listener);
-      //if (strstr(argv[1], "x")) h2unit_task::O()->listener.attach(&h2unit_task::O()->xml_listener);
    }
    h2unit_task::O()->run();
    return 0;
