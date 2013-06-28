@@ -952,9 +952,9 @@ void h2unit_case::_limit_(unsigned long bytes)
    h2unit_task::O()->limited = bytes;
 }
 
-void h2unit_case::_stub_static_(const char* orig, void* fake, const char* orig_name, const char* fake_name)
+void h2unit_case::_stub_static_(const char* native, void* fake, const char* native_name, const char* fake_name)
 {
-   void *address = h2unit_task::O()->get_symbol_address(orig);
+   void *address = h2unit_task::O()->get_symbol_address(native);
    if (address == NULL) {
       h2unit_string * p;
       p = _errormsg_ = (h2unit_string*) malloc(sizeof(h2unit_string));
@@ -963,7 +963,7 @@ void h2unit_case::_stub_static_(const char* orig, void* fake, const char* orig_n
 
       p = p->next = (h2unit_string*) malloc(sizeof(h2unit_string));
       p->style = "bold,red";
-      p->data = (char*) orig_name;
+      p->data = (char*) native_name;
 
       p = p->next = (h2unit_string*) malloc(sizeof(h2unit_string));
       p->style = "";
@@ -980,18 +980,18 @@ void h2unit_case::_stub_static_(const char* orig, void* fake, const char* orig_n
       p = p->next = (h2unit_string*) malloc(sizeof(h2unit_string));
       p->style = "bold,purple";
       p->data = (char*) malloc(512);
-      sprintf(p->data, " %s not found", orig_name);
+      sprintf(p->data, " %s not found", native_name);
       p->next = NULL;
       throw _fail;
       return;
    }
-   _stub_(address, fake, orig_name, fake_name);
+   _stub_(address, fake, native_name, fake_name);
 }
 
-void h2unit_case::_stub_(void* orig, void* fake, const char* orig_name, const char* fake_name)
+void h2unit_case::_stub_(void* native, void* fake, const char* native_name, const char* fake_name)
 {
    char reason[128];
-   unsigned char *I = (unsigned char*) orig;
+   unsigned char *I = (unsigned char*) native;
 #ifdef _WIN32
    DWORD saved;
    if (!VirtualProtect(orig, sizeof(void*) + 4, PAGE_WRITECOPY, &saved)) { //PAGE_EXECUTE_WRITECOPY
@@ -1000,13 +1000,13 @@ void h2unit_case::_stub_(void* orig, void* fake, const char* orig_name, const ch
    }
 #else
    int pagesize = sysconf(_SC_PAGE_SIZE);
-   if (mprotect((void*) ((unsigned long) orig & (~(pagesize - 1))), pagesize, PROT_READ | PROT_WRITE | PROT_EXEC) != 0) {
+   if (mprotect((void*) ((unsigned long) native & (~(pagesize - 1))), pagesize, PROT_READ | PROT_WRITE | PROT_EXEC) != 0) {
       sprintf(reason, "mprotect:%s", strerror(errno));
       goto failure;
    }
 #endif
-   if (!h2unit_task::O()->get_stub(orig)) {
-      if (!h2unit_task::O()->add_stub(orig)) {
+   if (!h2unit_task::O()->get_stub(native)) {
+      if (!h2unit_task::O()->add_stub(native)) {
          sprintf(reason, "out of memory");
          goto failure;
       }
@@ -1023,7 +1023,7 @@ void h2unit_case::_stub_(void* orig, void* fake, const char* orig_name, const ch
    *I++ = 0xE0;
 #else
    *I++ = 0xE9;
-   fake = (void*) ((unsigned long) fake - (unsigned long) orig - (sizeof(void*) + 1));
+   fake = (void*) ((unsigned long) fake - (unsigned long) native - (sizeof(void*) + 1));
    memcpy(I, &fake, sizeof(void*));
 #endif
 
@@ -1037,7 +1037,7 @@ void h2unit_case::_stub_(void* orig, void* fake, const char* orig_name, const ch
 
    p = p->next = (h2unit_string*) malloc(sizeof(h2unit_string));
    p->style = "bold,red";
-   p->data = (char*) orig_name;
+   p->data = (char*) native_name;
 
    p = p->next = (h2unit_string*) malloc(sizeof(h2unit_string));
    p->style = "";

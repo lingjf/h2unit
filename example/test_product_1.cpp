@@ -87,7 +87,15 @@ int stub_atoi(const char* s)
 H2CASE(dynamic_stub, "test dynamic stub local extern function")
 {
    H2EQUAL(3, isLegal(0, "0"));
-   H2STUB(orig_foo, stub_foo);
+   H2STUB_FPOINT(orig_foo, stub_foo);
+   H2EQUAL(4, isLegal(0, "0"));
+}
+
+H2CASE(dynamic_stub, "test dynamic stub local extern function with smart interface")
+{
+   int i;
+   H2EQUAL(3, isLegal(0, "0"));
+   H2STUB("orig_foo", stub_foo);
    H2EQUAL(4, isLegal(0, "0"));
 }
 

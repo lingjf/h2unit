@@ -49,8 +49,8 @@ public:
    void _init_(const char* unitname, const char* casename, bool ignored, const char* file, int line);
    static h2unit_case* _current_;
    void _limit_(unsigned long bytes);
-   void _stub_(void* orig, void* fake, const char* orig_name, const char* fake_name);
-   void _stub_static_(const char* orig, void* fake, const char* orig_name, const char* fake_name);
+   void _stub_(void* native, void* fake, const char* native_name, const char* fake_name);
+   void _stub_static_(const char* native, void* fake, const char* native_name, const char* fake_name);
 
    void _enter_check_(const char* file, int line);
    void _check_true_(const char* condition, bool result);
@@ -175,22 +175,32 @@ public:
          expressions;                                                            \
       } catch(exceptype) {                                                       \
          catched = true;                                                         \
-      } catch(...) {  }                                                          \
+      } catch (...) {  }                                                         \
       if (!catched) {                                                            \
          h2unit_case::_current_->_check_catch_("throw", "lost", #exceptype);     \
       }                                                                          \
    } while(0)
 
-#define H2STUB(orig, fake)                                                       \
-   do {                                                                          \
-      h2unit_case::_current_->_enter_check_(__FILE__, __LINE__);                 \
-      h2unit_case::_current_->_stub_((void*)&orig, (void*)&fake, #orig, #fake);  \
+#define H2STUB_FPOINT(native, fake)                                                    \
+   do {                                                                                \
+      h2unit_case::_current_->_enter_check_(__FILE__, __LINE__);                       \
+      h2unit_case::_current_->_stub_((void*)&native, (void*)&fake, #native, #fake);    \
    } while(0)
 
-#define H2STUB_STATIC(orig, fake)                                                \
-   do {                                                                          \
-      h2unit_case::_current_->_enter_check_(__FILE__, __LINE__);                 \
-      h2unit_case::_current_->_stub_static_(orig, (void*)&fake, #orig, #fake);   \
+#define H2STUB_STATIC(native, fake)                                                    \
+   do {                                                                                \
+      h2unit_case::_current_->_enter_check_(__FILE__, __LINE__);                       \
+      h2unit_case::_current_->_stub_static_(native, (void*)&fake, #native, #fake);     \
+   } while(0)
+
+#define H2STUB(native, fake)                                                           \
+   do {                                                                                \
+      h2unit_case::_current_->_enter_check_(__FILE__, __LINE__);                       \
+      if (__builtin_types_compatible_p (typeof(native), char*)) {                       \
+         h2unit_case::_current_->_stub_((void*)&native, (void*)&fake, #native, #fake); \
+      } else {                                                                         \
+         h2unit_case::_current_->_stub_static_(native, (void*)&fake, #native, #fake);  \
+      }                                                                                \
    } while(0)
 
 /**
