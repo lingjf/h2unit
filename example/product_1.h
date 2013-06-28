@@ -7,6 +7,8 @@ double getCeil(double var);
 
 int orig_foo(int a);
 
-int isLegal(int var, const char* str);
+int getSum(int x);
+
+int isLegal(const char* str);
 
 #endif

@@ -49,7 +49,7 @@ public:
    void _init_(const char* unitname, const char* casename, bool ignored, const char* file, int line);
    static h2unit_case* _current_;
    void _limit_(unsigned long bytes);
-   void _stub_(void* native, void* fake, const char* native_name, const char* fake_name);
+   void _stub_fpoint_(void* native, void* fake, const char* native_name, const char* fake_name);
    void _stub_static_(const char* native, void* fake, const char* native_name, const char* fake_name);
 
    void _enter_check_(const char* file, int line);
@@ -181,35 +181,20 @@ public:
       }                                                                          \
    } while(0)
 
-#define H2STUB_FPOINT(native, fake)                                                    \
-   do {                                                                                \
-      h2unit_case::_current_->_enter_check_(__FILE__, __LINE__);                       \
-      h2unit_case::_current_->_stub_((void*)&native, (void*)&fake, #native, #fake);    \
+
+#include <typeinfo>
+
+#define H2STUB(native, fake)                                                                          \
+   do {                                                                                               \
+      h2unit_case::_current_->_enter_check_(__FILE__, __LINE__);                                      \
+      const char* ti = typeid(native).name();  /* ISO/IEC 14882 Section 5.2.8 */                      \
+      if (ti[0] == 'F' || (ti[0] == 'P' && ti[1] == 'F')) {                                           \
+         h2unit_case::_current_->_stub_fpoint_((void*)native, (void*)fake, #native, #fake);           \
+      } else {                                                                                        \
+         h2unit_case::_current_->_stub_static_((const char*)native, (void*)fake, #native, #fake);     \
+      }                                                                                               \
    } while(0)
 
-#define H2STUB_STATIC(native, fake)                                                    \
-   do {                                                                                \
-      h2unit_case::_current_->_enter_check_(__FILE__, __LINE__);                       \
-      h2unit_case::_current_->_stub_static_(native, (void*)&fake, #native, #fake);     \
-   } while(0)
-
-#define H2STUB(native, fake)                                                           \
-   do {                                                                                \
-      h2unit_case::_current_->_enter_check_(__FILE__, __LINE__);                       \
-      if (__builtin_types_compatible_p (typeof(native), char*)) {                       \
-         h2unit_case::_current_->_stub_((void*)&native, (void*)&fake, #native, #fake); \
-      } else {                                                                         \
-         h2unit_case::_current_->_stub_static_(native, (void*)&fake, #native, #fake);  \
-      }                                                                                \
-   } while(0)
-
-/**
- * TODO: 提供二个动态打桩的接口，一个是根据函数指针，一个是根据函数名。 打算将二个接口合并为一个。
- *       第一个参数  orig 既可以是函数指针也可以是函数名，在H2STUB宏内类型强转为 void*。
- *       之后在_stub_中查询 它所在的内存的属性，如果可执行则为函数指针，如果可读写则为函数名。
- *       Windows系统可以通过VirtualQuery()接口查询内存属性，Linux没有类似的接口。
- *       mprotect()可以设置，但不可以查询。
- */
 
 #define H2_FAULTY_INJECT_MEMORY(bytes)  h2unit_case::_current_->_limit_(bytes)
 

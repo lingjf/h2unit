@@ -19,13 +19,18 @@ int orig_foo(int a)
    return a + 1;
 }
 
-static int orig_bar(int a)
+static int orig_bar(int b)
 {
-   return a + 2;
+   return b + 1;
 }
 
-int isLegal(int var, const char* str)
+int getSum(int x)
 {
-   return orig_foo(var) + orig_bar(var) + atoi(str);
+   return orig_foo(x) + orig_bar(x);
+}
+
+int isLegal(const char* str)
+{
+   return atoi(str);
 }
 

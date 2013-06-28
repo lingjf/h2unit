@@ -985,10 +985,10 @@ void h2unit_case::_stub_static_(const char* native, void* fake, const char* nati
       throw _fail;
       return;
    }
-   _stub_(address, fake, native_name, fake_name);
+   _stub_fpoint_(address, fake, native_name, fake_name);
 }
 
-void h2unit_case::_stub_(void* native, void* fake, const char* native_name, const char* fake_name)
+void h2unit_case::_stub_fpoint_(void* native, void* fake, const char* native_name, const char* fake_name)
 {
    char reason[128];
    unsigned char *I = (unsigned char*) native;
