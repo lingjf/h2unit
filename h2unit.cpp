@@ -616,6 +616,7 @@ public:
 
    void build_symbols(char* path)
    {
+#ifndef _WIN32
       char buf[512];
       char *line = buf;
       size_t len = sizeof(buf);
@@ -654,6 +655,7 @@ public:
       fclose(filp);
       sprintf(buf, "unlink %s", symb_file);
       system(buf);
+#endif
    }
 
    void* get_symbol_address(const char* symb)
@@ -994,7 +996,7 @@ void h2unit_case::_stub_fpoint_(void* native, void* fake, const char* native_nam
    unsigned char *I = (unsigned char*) native;
 #ifdef _WIN32
    DWORD saved;
-   if (!VirtualProtect(orig, sizeof(void*) + 4, PAGE_WRITECOPY, &saved)) { //PAGE_EXECUTE_WRITECOPY
+   if (!VirtualProtect(native, sizeof(void*) + 4, PAGE_WRITECOPY, &saved)) { //PAGE_EXECUTE_WRITECOPY
       sprintf(reason, "VirtualProtect:%d", GetLastError());
       goto failure;
    }

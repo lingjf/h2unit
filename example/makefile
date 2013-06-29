@@ -21,4 +21,4 @@ test_product_2.o : test_product_2.cpp ../h2unit.h
 	g++ -Wall -g $(H2FLAGS) -c -o test_product_2.o test_product_2.cpp
 	
 clean:
-	rm -rf run.tests *.o *.log *.xml *.html
+	rm -rf run.tests *.o *.log *.xml *.html Debug *.ncb *.sln *.suo
