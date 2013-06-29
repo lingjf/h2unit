@@ -49,8 +49,8 @@ public:
    void _init_(const char* unitname, const char* casename, bool ignored, const char* file, int line);
    static h2unit_case* _current_;
    void _limit_(unsigned long bytes);
-   void _stub_fpoint_(void* native, void* fake, const char* native_name, const char* fake_name);
-   void _stub_static_(const char* native, void* fake, const char* native_name, const char* fake_name);
+   void* _addr_(const char* native, const char* native_name, const char* fake_name);
+   void _stub_(void* native, void* fake, const char* native_name, const char* fake_name);
 
    void _enter_check_(const char* file, int line);
    void _check_true_(const char* condition, bool result);
@@ -189,9 +189,10 @@ public:
       h2unit_case::_current_->_enter_check_(__FILE__, __LINE__);                                      \
       const char* ti = typeid(native).name();    /* ISO/IEC 14882 C++ Standard Section 5.2.8 */       \
       if (ti[0] == 'F' || (ti[0] == 'P' && ti[1] == 'F') || strstr(ti, "__cdecl")) {                  \
-         h2unit_case::_current_->_stub_fpoint_((void*)native, (void*)fake, #native, #fake);           \
+         h2unit_case::_current_->_stub_((void*)native, (void*)fake, #native, #fake);                  \
       } else {                                                                                        \
-         h2unit_case::_current_->_stub_static_((const char*)native, (void*)fake, #native, #fake);     \
+         void* addr = h2unit_case::_current_->_addr_((const char*)native, #native, #fake);            \
+         h2unit_case::_current_->_stub_(addr, (void*)fake, #native, #fake);                           \
       }                                                                                               \
    } while(0)
 

@@ -954,7 +954,7 @@ void h2unit_case::_limit_(unsigned long bytes)
    h2unit_task::O()->limited = bytes;
 }
 
-void h2unit_case::_stub_static_(const char* native, void* fake, const char* native_name, const char* fake_name)
+void* h2unit_case::_addr_(const char* native, const char* native_name, const char* fake_name)
 {
    void *address = h2unit_task::O()->get_symbol_address(native);
    if (address == NULL) {
@@ -985,12 +985,11 @@ void h2unit_case::_stub_static_(const char* native, void* fake, const char* nati
       sprintf(p->data, " %s not found", native_name);
       p->next = NULL;
       throw _fail;
-      return;
    }
-   _stub_fpoint_(address, fake, native_name, fake_name);
+   return address;
 }
 
-void h2unit_case::_stub_fpoint_(void* native, void* fake, const char* native_name, const char* fake_name)
+void h2unit_case::_stub_(void* native, void* fake, const char* native_name, const char* fake_name)
 {
    char reason[128];
    unsigned char *I = (unsigned char*) native;
