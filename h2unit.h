@@ -76,124 +76,117 @@ public:
 #define H2UNIT(_unit_)  \
    struct __H2UNIT_UNIT_NAME(_unit_): public h2unit_case
 
-#define H2CASE(_unit_, _case_)                                    \
-   class __H2UNIT_CASE_NAME(_unit_, __LINE__):                    \
-      public __H2UNIT_UNIT_NAME(_unit_)                           \
-   {  public:                                                     \
-      __H2UNIT_CASE_NAME(_unit_, __LINE__)()                      \
-      { _init_(#_unit_, _case_, false, __FILE__, __LINE__); }     \
-      void _testcase_();                                          \
-   } __H2UNIT_CASE_INST(_unit_, __LINE__);                        \
+#define H2CASE(_unit_, _case_)                                                                           \
+   class __H2UNIT_CASE_NAME(_unit_, __LINE__): public __H2UNIT_UNIT_NAME(_unit_)                         \
+   {  public:                                                                                            \
+      __H2UNIT_CASE_NAME(_unit_, __LINE__)() { _init_(#_unit_, _case_, false, __FILE__, __LINE__); }     \
+      void _testcase_();                                                                                 \
+   } __H2UNIT_CASE_INST(_unit_, __LINE__);                                                               \
    void __H2UNIT_CASE_NAME(_unit_, __LINE__)::_testcase_()
 
-#define H2CASE_IGNORE(_unit_, _case_)                             \
-   class __H2UNIT_CASE_NAME(_unit_, __LINE__):                    \
-      public __H2UNIT_UNIT_NAME(_unit_)                           \
-   {  public:                                                     \
-      __H2UNIT_CASE_NAME(_unit_, __LINE__)()                      \
-      { _init_(#_unit_, _case_, true, __FILE__, __LINE__); }      \
-      void _testcase_();                                          \
-   } __H2UNIT_CASE_INST(_unit_, __LINE__);                        \
+#define H2CASE_IGNORE(_unit_, _case_)                                                                    \
+   class __H2UNIT_CASE_NAME(_unit_, __LINE__): public __H2UNIT_UNIT_NAME(_unit_)                         \
+   {  public:                                                                                            \
+      __H2UNIT_CASE_NAME(_unit_, __LINE__)() { _init_(#_unit_, _case_, true, __FILE__, __LINE__); }      \
+      void _testcase_();                                                                                 \
+   } __H2UNIT_CASE_INST(_unit_, __LINE__);                                                               \
    void __H2UNIT_CASE_NAME(_unit_, __LINE__)::_testcase_()
 
-#define H2CHECK(condition)                                                       \
-   do {                                                                          \
-      h2unit_case::_current_->_enter_check_(__FILE__, __LINE__);                 \
-      h2unit_case::_current_->_check_true_(#condition, (condition));             \
+#define H2CHECK(condition)                                                                               \
+   do {                                                                                                  \
+      h2unit_case::_current_->_enter_check_(__FILE__, __LINE__);                                         \
+      h2unit_case::_current_->_check_true_(#condition, (condition));                                     \
    } while(0)
 
 #if defined(__GNUC__) || (defined(_WIN32) && _MSC_VER >= 1400)
-#define H2EQUAL(...)                                                             \
-   do {                                                                          \
-      h2unit_case::_current_->_enter_check_(__FILE__, __LINE__);                 \
-      h2unit_case::_current_->_check_equal_(__VA_ARGS__);                        \
+#define H2EQUAL(...)                                                                                     \
+   do {                                                                                                  \
+      h2unit_case::_current_->_enter_check_(__FILE__, __LINE__);                                         \
+      h2unit_case::_current_->_check_equal_(__VA_ARGS__);                                                \
    } while(0)
 #else
-#define H2EQUAL(expected, actual)                                                \
-   do {                                                                          \
-      h2unit_case::_current_->_enter_check_(__FILE__, __LINE__);                 \
-      h2unit_case::_current_->_check_equal_(expected, actual);                   \
+#define H2EQUAL(expected, actual)                                                                        \
+   do {                                                                                                  \
+      h2unit_case::_current_->_enter_check_(__FILE__, __LINE__);                                         \
+      h2unit_case::_current_->_check_equal_(expected, actual);                                           \
    } while(0)
 #endif
 
-#define H2EQUAL_INTEGER(expected, actual)                                        \
-   do {                                                                          \
-      h2unit_case::_current_->_enter_check_(__FILE__, __LINE__);                 \
-      h2unit_case::_current_->_check_equal_((int)(expected), (int)(actual));     \
+#define H2EQUAL_INTEGER(expected, actual)                                                                \
+   do {                                                                                                  \
+      h2unit_case::_current_->_enter_check_(__FILE__, __LINE__);                                         \
+      h2unit_case::_current_->_check_equal_((int)(expected), (int)(actual));                             \
    } while(0)
 
-#define H2EQUAL_DOUBLE(expected, actual, threshold)                              \
-   do {                                                                          \
-      h2unit_case::_current_->_enter_check_(__FILE__, __LINE__);                 \
-      h2unit_case::_current_->_check_equal_(                                     \
-         (double)(expected), (double)(actual), (double)(threshold) );            \
+#define H2EQUAL_DOUBLE(expected, actual, threshold)                                                      \
+   do {                                                                                                  \
+      h2unit_case::_current_->_enter_check_(__FILE__, __LINE__);                                         \
+      h2unit_case::_current_->_check_equal_((double)(expected), (double)(actual), (double)(threshold));  \
    } while(0)
 
-#define H2EQUAL_STRCMP(expected, actual)                                         \
-   do {                                                                          \
-      h2unit_case::_current_->_enter_check_(__FILE__, __LINE__);                 \
-      h2unit_case::_current_->_check_equal_((char*)(expected), (char*)(actual)); \
+#define H2EQUAL_STRCMP(expected, actual)                                                                 \
+   do {                                                                                                  \
+      h2unit_case::_current_->_enter_check_(__FILE__, __LINE__);                                         \
+      h2unit_case::_current_->_check_equal_((char*)(expected), (char*)(actual));                         \
    } while(0)
 
-#define H2EQUAL_STRCMP_NOCASE(expected, actual)                                  \
-   do {                                                                          \
-      h2unit_case::_current_->_enter_check_(__FILE__, __LINE__);                 \
-      h2unit_case::_current_->_check_equal_strcmp_nocase_(                       \
-         (char*)(expected), (char*)(actual) );                                   \
+#define H2EQUAL_STRCMP_NOCASE(expected, actual)                                                          \
+   do {                                                                                                  \
+      h2unit_case::_current_->_enter_check_(__FILE__, __LINE__);                                         \
+      h2unit_case::_current_->_check_equal_strcmp_nocase_((char*)(expected), (char*)(actual));           \
    } while(0)
 
-#define H2EQUAL_MEMCMP(expected, actual, length)                                 \
-   do {                                                                          \
-      h2unit_case::_current_->_enter_check_(__FILE__, __LINE__);                 \
-      h2unit_case::_current_->_check_equal_(                                     \
-         (unsigned char*)(expected), (unsigned char*)(actual), (int)(length) );  \
+#define H2EQUAL_MEMCMP(expected, actual, length)                                                         \
+   do {                                                                                                  \
+      h2unit_case::_current_->_enter_check_(__FILE__, __LINE__);                                         \
+      h2unit_case::_current_->_check_equal_((unsigned char*)(expected), (unsigned char*)(actual), (int)(length));  \
    } while(0)
 
-#define H2EQUAL_WILDCARD(expected, actual)                                       \
-   do {                                                                          \
-      h2unit_case::_current_->_enter_check_(__FILE__, __LINE__);                 \
-      h2unit_case::_current_->_check_regex_((char*)(expected), (char*)(actual)); \
+#define H2EQUAL_WILDCARD(expected, actual)                                                               \
+   do {                                                                                                  \
+      h2unit_case::_current_->_enter_check_(__FILE__, __LINE__);                                         \
+      h2unit_case::_current_->_check_regex_((char*)(expected), (char*)(actual));                         \
    } while(0)
 
 #define H2EQUAL_REGEX H2EQUAL_WILDCARD
 
-#define H2CATCH_NONE(expressions)                                                \
-   do {                                                                          \
-      h2unit_case::_current_->_enter_check_(__FILE__, __LINE__);                 \
-      try {                                                                      \
-         expressions;                                                            \
-      } catch(...) {                                                             \
-         h2unit_case::_current_->_check_catch_("throw none", "throw some", "" ); \
-      }                                                                          \
+#define H2CATCH_NONE(expressions)                                                                        \
+   do {                                                                                                  \
+      h2unit_case::_current_->_enter_check_(__FILE__, __LINE__);                                         \
+      try {                                                                                              \
+         expressions;                                                                                    \
+      } catch(...) {                                                                                     \
+         h2unit_case::_current_->_check_catch_("throw none", "throw some", "" );                         \
+      }                                                                                                  \
    } while(0)
 
-#define H2CATCH_THROW(expressions, exceptype)                                    \
-   do {                                                                          \
-      bool catched = false;                                                      \
-      h2unit_case::_current_->_enter_check_(__FILE__, __LINE__);                 \
-      try {                                                                      \
-         expressions;                                                            \
-      } catch(exceptype) {                                                       \
-         catched = true;                                                         \
-      } catch (...) {  }                                                         \
-      if (!catched) {                                                            \
-         h2unit_case::_current_->_check_catch_("throw", "lost", #exceptype);     \
-      }                                                                          \
+#define H2CATCH_THROW(expressions, exceptype)                                                            \
+   do {                                                                                                  \
+      bool catched = false;                                                                              \
+      h2unit_case::_current_->_enter_check_(__FILE__, __LINE__);                                         \
+      try {                                                                                              \
+         expressions;                                                                                    \
+      } catch(exceptype) {                                                                               \
+         catched = true;                                                                                 \
+      } catch (...) {  }                                                                                 \
+      if (!catched) {                                                                                    \
+         h2unit_case::_current_->_check_catch_("throw", "lost", #exceptype);                             \
+      }                                                                                                  \
    } while(0)
 
 
 #include <typeinfo>
 
-#define H2STUB(native, fake)                                                                          \
-   do {                                                                                               \
-      h2unit_case::_current_->_enter_check_(__FILE__, __LINE__);                                      \
-      const char* ti = typeid(native).name();    /* ISO/IEC 14882 C++ Standard Section 5.2.8 */       \
-      if (ti[0] == 'F' || (ti[0] == 'P' && ti[1] == 'F') || strstr(ti, "__cdecl")) {                  \
-         h2unit_case::_current_->_stub_((void*)native, (void*)fake, #native, #fake);                  \
-      } else {                                                                                        \
-         void* addr = h2unit_case::_current_->_addr_((const char*)native, #native, #fake);            \
-         h2unit_case::_current_->_stub_(addr, (void*)fake, #native, #fake);                           \
-      }                                                                                               \
+#define H2STUB(native, fake)                                                                             \
+   do {                                                                                                  \
+      h2unit_case::_current_->_enter_check_(__FILE__, __LINE__);                                         \
+      const char* ti = typeid(native).name();    /* ISO/IEC 14882 C++ Standard Section 5.2.8 */          \
+      if (ti[0] == 'F' || (ti[0] == 'P' && ti[1] == 'F') || strstr(ti, "__cdecl")) {                     \
+         h2unit_case::_current_->_stub_((void*)native, (void*)fake, #native, #fake);                     \
+      } else {                                                                                           \
+         void* addr = h2unit_case::_current_->_addr_((const char*)native, #native, #fake);               \
+         h2unit_case::_current_->_stub_(addr, (void*)fake, #native, #fake);                              \
+      }                                                                                                  \
    } while(0)
 
 

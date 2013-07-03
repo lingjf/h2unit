@@ -622,9 +622,15 @@ public:
       size_t len = sizeof(buf);
       int n;
       /**
-       * TODO: for windows using dumpbin.exe
+       * TODO: for windows using dumpbin.exe or BFD (Binary File Descriptor Library)
+       *
+       * dumpbin.exe should be invoked from Visual Studio Command Prompt.
+       * How to invoke dumpbin.exe with system() in code ?
+       *
+       * BFD is a very heavy library, it will break h2unit's principle : Light-Weight just like hydrogen !
        *
        * http://support.microsoft.com/kb/177429
+       * http://sourceware.org/binutils/docs-2.23.1/bfd/index.html
        */
       sprintf(buf, "nm %s > %s", path, symb_file);
       system(buf);
