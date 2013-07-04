@@ -56,6 +56,8 @@ public:
    void _enter_check_(const char* file, int line);
    void _check_equal_(bool result);
    void _check_equal_(int expected, int actually);
+   void _check_equal_(unsigned long expected, unsigned long actually);
+   void _check_equal_(unsigned long long expected, unsigned long long actually);
    void _check_equal_(double expected, double actually, double threshold = 0.000001);
    void _check_equal_(char* expected, char* actually);
    void _check_equal_(unsigned char* expected, unsigned char* actually, int length);

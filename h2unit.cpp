@@ -1113,6 +1113,31 @@ void h2unit_case::_check_equal_(int expected, int actually)
    }
 }
 
+void h2unit_case::_check_equal_(unsigned long expected, unsigned long actually)
+{
+   if (expected != actually) {
+      _message_(&_expected_, "bold,red", "%ld 0x%lx", (long)expected, expected);
+      _message_(&_actually_, "bold,red", "%ld 0x%lx", (long)actually, actually);
+
+      throw _fail;
+   }
+}
+
+void h2unit_case::_check_equal_(unsigned long long expected, unsigned long long actually)
+{
+   if (expected != actually) {
+#ifdef _WIN32
+      _message_(&_expected_, "bold,red", "%I64d 0x%I64x", (long long)expected, expected);
+      _message_(&_actually_, "bold,red", "%I64d 0x%I64x", (long long)actually, actually);
+#else
+      _message_(&_expected_, "bold,red", "%lld 0x%llx", (long long)expected, expected);
+      _message_(&_actually_, "bold,red", "%lld 0x%llx", (long long)actually, actually);
+#endif
+
+      throw _fail;
+   }
+}
+
 void h2unit_case::_check_equal_(double expected, double actually, double threshold)
 {
    double delta = expected - actually;
