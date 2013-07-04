@@ -40,12 +40,12 @@ H2UNIT(getEven)
  */
 H2CASE(getEven,"test for h2unit varible and setup")
 {
-   H2CHECK(2 == uv);
+   H2EQUAL_TRUE(2 == uv);
 }
 
 H2CASE(getEven,"test for global varible and h2check")
 {
-   H2CHECK(4 == gv);
+   H2EQUAL(4 == gv);
 }
 
 H2CASE(getEven,"test for general H2EQUAL")

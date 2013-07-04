@@ -53,7 +53,7 @@ public:
    void _stub_(void* native, void* fake, const char* native_name, const char* fake_name);
 
    void _enter_check_(const char* file, int line);
-   void _check_true_(const char* condition, bool result);
+   void _check_equal_(bool result);
    void _check_equal_(int expected, int actual);
    void _check_equal_(double expected, double actual, double threshold = 0.000001);
    void _check_equal_(char* expected, char* actual);
@@ -92,11 +92,7 @@ public:
    } __H2UNIT_CASE_INST(_unit_, __LINE__);                                                               \
    void __H2UNIT_CASE_NAME(_unit_, __LINE__)::_testcase_()
 
-#define H2CHECK(condition)                                                                               \
-   do {                                                                                                  \
-      h2unit_case::_current_->_enter_check_(__FILE__, __LINE__);                                         \
-      h2unit_case::_current_->_check_true_(#condition, (condition));                                     \
-   } while(0)
+
 
 #if defined(__GNUC__) || (defined(_WIN32) && _MSC_VER >= 1400)
 #define H2EQUAL(...)                                                                                     \
@@ -111,6 +107,12 @@ public:
       h2unit_case::_current_->_check_equal_(expected, actual);                                           \
    } while(0)
 #endif
+
+#define H2EQUAL_TRUE(condition)                                                                          \
+   do {                                                                                                  \
+      h2unit_case::_current_->_enter_check_(__FILE__, __LINE__);                                         \
+      h2unit_case::_current_->_check_equal_(condition);                                                  \
+   } while(0)
 
 #define H2EQUAL_INTEGER(expected, actual)                                                                \
    do {                                                                                                  \

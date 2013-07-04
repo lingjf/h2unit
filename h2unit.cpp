@@ -1139,23 +1139,20 @@ void h2unit_case::_enter_check_(const char* file, int line)
    _checkcount_++;
 }
 
-void h2unit_case::_check_true_(const char* condition, bool result)
+void h2unit_case::_check_equal_(bool result)
 {
    if (!result) {
-      h2unit_string* p;
+      _expected_ = (h2unit_string*) malloc(sizeof(h2unit_string));
+      _expected_->style = "bold,red";
+      _expected_->data = (char*) malloc(256);
+      sprintf(_expected_->data, "true");
+      _expected_->next = NULL;
 
-      p = _errormsg_ = (h2unit_string*) malloc(sizeof(h2unit_string));
-      p->style = "";
-      p->data = (char*) "H2CHECK(";
-
-      p = p->next = (h2unit_string*) malloc(sizeof(h2unit_string));
-      p->style = "bold,red";
-      p->data = (char*) condition;
-
-      p = p->next = (h2unit_string*) malloc(sizeof(h2unit_string));
-      p->style = "";
-      p->data = (char*) ")";
-      p->next = NULL;
+      _actually_ = (h2unit_string*) malloc(sizeof(h2unit_string));
+      _actually_->style = "bold,red";
+      _actually_->data = (char*) malloc(256);
+      sprintf(_actually_->data, "false");
+      _actually_->next = NULL;
 
       throw _fail;
    }
