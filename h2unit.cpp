@@ -102,15 +102,16 @@ static long __milliseconds()
 }
 #endif
 
-typedef struct h2unit_leak
+typedef struct h2unit_blob
 {
-   struct h2unit_leak* next;
-   void* data;
-   int length;
+   struct h2unit_blob* next;
+   void* ptr;
+   unsigned char* data;
+   size_t size;
    const char* file;
    int line;
    h2unit_case* owner;
-} h2unit_leak;
+} h2unit_blob;
 
 typedef struct h2unit_symb
 {
@@ -569,6 +570,17 @@ public:
    }
 };
 
+class h2unit_fail
+{
+public:
+   h2unit_fail() throw ()
+   {
+   }
+   ~h2unit_fail() throw ()
+   {
+   }
+} _fail;
+
 class h2unit_task
 {
 public:
@@ -576,11 +588,13 @@ public:
    int case_failed, case_passed, case_ignore, case_filter;
    const char* symb_file;
    h2unit_symb* symb_list;
-   h2unit_leak* leak_list;
+   h2unit_blob* leak_list;
    h2unit_stub* stub_list;
    h2unit_unit* unit_list;
    h2unit_case* case_chain;
    unsigned limited;
+   static const unsigned BLOB_GUARD_SIZE = 8;
+   static const unsigned BLOB_MAGIC_CODE = 0xbeafcafe;
 
    h2unit_listen_text text_listener;
    h2unit_listen_console console_listener;
@@ -754,44 +768,108 @@ public:
       listener.on_task_endup(case_failed, case_passed, case_ignore, case_filter, case_count, check_count, __milliseconds() - start, unit_list);
    }
 
-   bool enough(size_t size)
+   h2unit_blob* get_blob(void* ptr)
    {
-      return (size <= limited);
-   }
-
-   h2unit_leak* add_leak(void* data, int length, const char* file, int line, h2unit_case* testcase)
-   {
-      h2unit_leak* leak = (h2unit_leak*) malloc(sizeof(h2unit_leak));
-      if (leak) {
-         leak->data = data;
-         leak->length = length;
-         leak->file = file;
-         leak->line = line;
-         leak->owner = testcase;
-         leak->next = leak_list;
-         leak_list = leak;
-         limited -= length;
-      }
-      return leak;
-   }
-
-   h2unit_leak* get_leak(void* ptr)
-   {
-      h2unit_leak* leak;
-      for (leak = leak_list; leak; leak = leak->next) {
-         if (leak->data == ptr) return leak;
+      h2unit_blob* b;
+      for (b = leak_list; b; b = b->next) {
+         if (b->ptr == ptr) return b;
       }
       return NULL;
    }
 
-   void del_leak(h2unit_leak* leak)
+   h2unit_blob* add_blob(void* old, size_t size, const char* file, int line)
    {
-      h2unit_leak** ip;
+      h2unit_blob* old_blob = get_blob(old);
+      size_t old_size = old_blob ? old_blob->size : 0;
+
+      if (size > limited + old_size) return NULL;
+
+      void* data = malloc(size + BLOB_GUARD_SIZE * sizeof(unsigned) * 2);
+      if (!data) return NULL;
+      h2unit_blob* new_blob = (h2unit_blob*) malloc(sizeof(h2unit_blob));
+      if (!new_blob) {
+         free(data);
+         return NULL;
+      }
+      new_blob->data = (unsigned char*)data;
+      new_blob->ptr = new_blob->data + BLOB_GUARD_SIZE * sizeof(unsigned);
+      new_blob->size = size;
+      new_blob->file = file;
+      new_blob->line = line;
+      new_blob->owner = h2unit_case::_current_;
+      new_blob->next = leak_list;
+      leak_list = new_blob;
+      limited -= size;
+
+      unsigned* p = (unsigned*)(new_blob->data);
+      unsigned* q = (unsigned*)(new_blob->data + BLOB_GUARD_SIZE * sizeof(unsigned) + new_blob->size);
+      for (unsigned i = 0; i < BLOB_GUARD_SIZE; i++) {
+         p[i] = BLOB_MAGIC_CODE;
+         q[i] = BLOB_MAGIC_CODE;
+      }
+
+
+      if (old_blob) {
+         memcpy(new_blob->ptr, old_blob->ptr, old_size);
+         del_blob(old_blob);
+      }
+      return new_blob;
+   }
+
+   void del_blob(h2unit_blob* blob)
+   {
+      h2unit_blob** ip;
       for (ip = &leak_list; *ip; ip = &((*ip)->next)) {
-         if (*ip == leak) {
+         if (*ip == blob) {
             *ip = (*ip)->next;
-            limited += leak->length;
-            free(leak);
+            limited += blob->size;
+            /* overflow and under-flow checking */
+            unsigned* p = (unsigned*)(blob->data);
+            unsigned* q = (unsigned*)(blob->data + BLOB_GUARD_SIZE * sizeof(unsigned) + blob->size);
+            for (unsigned j = 0; j < BLOB_GUARD_SIZE; j++) {
+               if (q[j] != BLOB_MAGIC_CODE) {
+                  if (h2unit_case::_current_) {
+                     h2unit_string* p;
+                     p =  h2unit_case::_current_->_errormsg_ = (h2unit_string*) malloc(sizeof(h2unit_string));
+                     p->style = "bold,red";
+                     p->data = (char*) malloc(128);
+                     sprintf(p->data, "Memory OverFlow");
+                     p->next = NULL;
+
+                     p = p->next = (h2unit_string*) malloc(sizeof(h2unit_string));
+                     p->style = "";
+                     p->data = (char*) malloc(512);
+                     sprintf(p->data, " at %s:%d", blob->file, blob->line);
+                     p->next = NULL;
+
+                     throw _fail;
+                  }
+               }
+            }
+
+            for (unsigned i = 0; i < BLOB_GUARD_SIZE; i++) {
+               if (p[BLOB_GUARD_SIZE - 1 - i] != BLOB_MAGIC_CODE) {
+                  if (h2unit_case::_current_) {
+                     h2unit_string* p;
+                     p =  h2unit_case::_current_->_errormsg_ = (h2unit_string*) malloc(sizeof(h2unit_string));
+                     p->style = "bold,red";
+                     p->data = (char*) malloc(128);
+                     sprintf(p->data, "Memory UnderFlow");
+                     p->next = NULL;
+
+                     p = p->next = (h2unit_string*) malloc(sizeof(h2unit_string));
+                     p->style = "";
+                     p->data = (char*) malloc(512);
+                     sprintf(p->data, " at %s:%d", blob->file, blob->line);
+                     p->next = NULL;
+
+                     throw _fail;
+                  }
+               }
+            }
+
+            free(blob->data);
+            free(blob);
             return;
          }
       }
@@ -828,17 +906,6 @@ public:
       }
    }
 };
-
-class h2unit_fail
-{
-public:
-   h2unit_fail() throw ()
-   {
-   }
-   ~h2unit_fail() throw ()
-   {
-   }
-} _fail;
 
 h2unit_case* h2unit_case::_current_ = NULL;
 
@@ -884,11 +951,11 @@ void h2unit_case::_post_teardown_()
 
    /* memory leak detection */
    int leaked = 0, count = 0, i = 0;
-   h2unit_leak* leak;
+   h2unit_blob* leak;
    for (leak = h2unit_task::O()->leak_list; leak; leak = leak->next) {
       if (leak->owner == this) {
          count++;
-         leaked += leak->length;
+         leaked += leak->size;
       }
    }
 
@@ -911,7 +978,7 @@ void h2unit_case::_post_teardown_()
             p = _addition_[i++] = (h2unit_string*) malloc(sizeof(h2unit_string));
             p->style = "bold,red";
             p->data = (char*) malloc(128);
-            sprintf(p->data, "Leaked %d bytes", leak->length);
+            sprintf(p->data, "Leaked %d bytes", leak->size);
 
             p = p->next = (h2unit_string*) malloc(sizeof(h2unit_string));
             p->style = "";
@@ -1295,70 +1362,55 @@ void h2unit_case::_check_catch_(const char* expected, const char* actual, const 
 
 void* h2unit_malloc(size_t size, const char* file, int line)
 {
-   if (!h2unit_task::O()->enough(size)) return NULL;
-   void* data = malloc(size);
-   if (data == NULL) return NULL;
-   h2unit_task::O()->add_leak(data, size, file, line, h2unit_case::_current_);
-   return data;
+   h2unit_blob* b = h2unit_task::O()->add_blob(NULL, size, file, line);
+   return b ? b->ptr : NULL;
 }
 
 void* h2unit_calloc(size_t nmemb, size_t size, const char* file, int line)
 {
-   if (!h2unit_task::O()->enough(nmemb * size)) return NULL;
-   void* data = calloc(nmemb, size);
-   if (data == NULL) return NULL;
-   h2unit_task::O()->add_leak(data, nmemb * size, file, line, h2unit_case::_current_);
-   return data;
+   h2unit_blob* b = h2unit_task::O()->add_blob(NULL, nmemb * size, file, line);
+   if (b) {
+      memset(b->ptr, 0, nmemb * size);
+   }
+   return b ? b->ptr : NULL;
 }
 
 void* h2unit_realloc(void* ptr, size_t size, const char* file, int line)
 {
-   if (!ptr) {
-      return h2unit_malloc(size, file, line);
-   }
-   if (!size) {
+   if (size == 0) {
       h2unit_free(ptr, file, line);
       return NULL;
    }
-   h2unit_leak* leak = h2unit_task::O()->get_leak(ptr);
-   if (leak) {
-      if (!h2unit_task::O()->enough(size)) return NULL;
-      void* data = realloc(leak->data, size);
-      if (data == NULL) return NULL;
-      h2unit_task::O()->add_leak(data, size, file, line, h2unit_case::_current_);
-      h2unit_task::O()->del_leak(leak);
-      return data;
-   }
-   return NULL;
+   h2unit_blob* b = h2unit_task::O()->add_blob(ptr, size, file, line);
+   return b ? b->ptr : NULL;
 }
 
 void h2unit_free(void* ptr, const char* file, int line)
 {
-   h2unit_leak* leak = h2unit_task::O()->get_leak(ptr);
-   if (leak) h2unit_task::O()->del_leak(leak);
+   h2unit_blob* b = h2unit_task::O()->get_blob(ptr);
+   if (b) h2unit_task::O()->del_blob(b);
 }
 
 char* h2unit_strdup(const char* s, const char* file, int line)
 {
    size_t size = strlen(s) + 1;
-   if (!h2unit_task::O()->enough(size)) return NULL;
-   char* data = strdup(s);
-   if (data == NULL) return NULL;
-   h2unit_task::O()->add_leak(data, size, file, line, h2unit_case::_current_);
-   return data;
+   h2unit_blob* b = h2unit_task::O()->add_blob(NULL, size, file, line);
+   if (b) {
+      memcpy(b->ptr, (const void*)s, size);
+   }
+   return (char*) (b ? b->ptr : NULL);
 }
 
 char* h2unit_strndup(const char* s, size_t n, const char* file, int line)
 {
-   size_t len = strlen(s);
-   len = (len > n ? n : len) + 1;
-   if (!h2unit_task::O()->enough(len)) return NULL;
-   char* data = (char*) malloc(len);
-   if (data == NULL) return NULL;
-   data[len - 1] = '\0';
-   memcpy(data, s, len - 1);
-   h2unit_task::O()->add_leak(data, len, file, line, h2unit_case::_current_);
-   return data;
+   size_t size = strlen(s);
+   size = (size > n ? n : size) + 1;
+   h2unit_blob* b = h2unit_task::O()->add_blob(NULL, size, file, line);
+   if (b) {
+      memcpy(b->ptr, (const void*)s, size - 1);
+      ((char*)b->ptr)[size - 1] = '\0';
+   }
+   return (char*) (b ? b->ptr : NULL);
 }
 
 void* operator new(size_t size, const char* file, int line)

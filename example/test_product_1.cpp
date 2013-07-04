@@ -7,15 +7,27 @@ extern "C" {
 
 int gv;
 
+/*
+ * H2UNIT is a unit test Suite, which contains several test cases.
+ */
 H2UNIT(getEven)
 {
    int uv;
+
+   /*
+    * setup() will be executed before every test case belong to this suite.
+    * Typically it is used to prepare preconditions.
+    */
    void setup()
    {
       uv = 2;
       gv = 3;
    }
-
+   /*
+    * teardown() will be executed after every test case belong to this suite
+    * whatever test case passed or failed.
+    * Typically it is used to release resource.
+    */
    void teardown()
    {
       uv = 0;
@@ -23,6 +35,9 @@ H2UNIT(getEven)
    }
 };
 
+/*
+ * H2CASE is a unit test case
+ */
 H2CASE(getEven,"test for h2unit varible and setup")
 {
    H2CHECK(2 == uv);
@@ -45,6 +60,9 @@ H2CASE(getEven,"test for H2EQUAL_INTEGER")
 
 H2UNIT(getCeil)
 {
+  /*
+   * setup() and teardown() can be omitted.
+   */
 };
 
 H2CASE(getCeil, "test for general H2EQUAL")
@@ -57,6 +75,19 @@ H2CASE(getCeil, "test for H2EQUAL_DOUBLE")
 {
    H2EQUAL_DOUBLE(6.8, getCeil(6.8), 0.000001);
 }
+
+/*
+ * h2unit can replace function at runtime dynamically.
+ * Which this feature, it is helpful to stub functions.
+ *
+ * H2STUB(function_pointer, new_function)
+ *
+ * H2STUB("function_name_string", new_function)
+ *
+ * The 2nd is not support on Windows currently.
+ *
+ */
+
 
 H2UNIT(dynamic_stub)
 {
