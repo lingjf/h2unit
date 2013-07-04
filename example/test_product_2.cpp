@@ -45,11 +45,20 @@ H2CASE(wstring, "fromInt(12345)")
    H2EQUAL_MEMCMP(exp_buf, w.getData(), sizeof(exp_buf));
 }
 
-H2CASE_IGNORE(wstring, "show compare format")
+H2CASE_IGNORE(wstring, "todo feature")
 {
+
+}
+
+H2CASE(wstring, "show compare format")
+{
+   H2EQUAL_STRCMP_NOCASE(
+               "abcdefghijklmnopqrstuvwxyz1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ",
+               "abcdefghijklmnopqrstuvwXYZ1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ");
+
    H2EQUAL_STRCMP(
                "abcdefghijklmnopqrstuvwxyz1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ",
-               "abcdefghijklmnopqrstuvwxyz1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ");
+               "abcdefghijklmnopqrstuvwXYZ1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ");
 }
 
 /*

@@ -93,6 +93,7 @@ static long __milliseconds()
 #include <sys/mman.h>
 #include <unistd.h>
 #include <errno.h>
+#include <stdarg.h>
 static long __milliseconds()
 {
    struct timeval tv;
@@ -588,7 +589,7 @@ public:
    int case_failed, case_passed, case_ignore, case_filter;
    const char* symb_file;
    h2unit_symb* symb_list;
-   h2unit_blob* leak_list;
+   h2unit_blob* blob_list;
    h2unit_stub* stub_list;
    h2unit_unit* unit_list;
    h2unit_case* case_chain;
@@ -613,7 +614,7 @@ public:
       unit_list = NULL;
       symb_list = NULL;
       stub_list = NULL;
-      leak_list = NULL;
+      blob_list = NULL;
       limited = 0x7fffffff;
 
       listener.attach(&console_listener);
@@ -771,7 +772,7 @@ public:
    h2unit_blob* get_blob(void* ptr)
    {
       h2unit_blob* b;
-      for (b = leak_list; b; b = b->next) {
+      for (b = blob_list; b; b = b->next) {
          if (b->ptr == ptr) return b;
       }
       return NULL;
@@ -797,8 +798,8 @@ public:
       new_blob->file = file;
       new_blob->line = line;
       new_blob->owner = h2unit_case::_current_;
-      new_blob->next = leak_list;
-      leak_list = new_blob;
+      new_blob->next = blob_list;
+      blob_list = new_blob;
       limited -= size;
 
       unsigned* p = (unsigned*)(new_blob->data);
@@ -819,7 +820,7 @@ public:
    void del_blob(h2unit_blob* blob)
    {
       h2unit_blob** ip;
-      for (ip = &leak_list; *ip; ip = &((*ip)->next)) {
+      for (ip = &blob_list; *ip; ip = &((*ip)->next)) {
          if (*ip == blob) {
             *ip = (*ip)->next;
             limited += blob->size;
@@ -829,18 +830,8 @@ public:
             for (unsigned j = 0; j < BLOB_GUARD_SIZE; j++) {
                if (q[j] != BLOB_MAGIC_CODE) {
                   if (h2unit_case::_current_) {
-                     h2unit_string* p;
-                     p =  h2unit_case::_current_->_errormsg_ = (h2unit_string*) malloc(sizeof(h2unit_string));
-                     p->style = "bold,red";
-                     p->data = (char*) malloc(128);
-                     sprintf(p->data, "Memory OverFlow");
-                     p->next = NULL;
-
-                     p = p->next = (h2unit_string*) malloc(sizeof(h2unit_string));
-                     p->style = "";
-                     p->data = (char*) malloc(512);
-                     sprintf(p->data, " at %s:%d", blob->file, blob->line);
-                     p->next = NULL;
+                     h2unit_case::_current_->_message_(&h2unit_case::_current_->_errormsg_, "bold,red", "Memory OverFlow");
+                     h2unit_case::_current_->_message_(&h2unit_case::_current_->_errormsg_, "", " at %s:%d", blob->file, blob->line);
 
                      throw _fail;
                   }
@@ -850,18 +841,8 @@ public:
             for (unsigned i = 0; i < BLOB_GUARD_SIZE; i++) {
                if (p[BLOB_GUARD_SIZE - 1 - i] != BLOB_MAGIC_CODE) {
                   if (h2unit_case::_current_) {
-                     h2unit_string* p;
-                     p =  h2unit_case::_current_->_errormsg_ = (h2unit_string*) malloc(sizeof(h2unit_string));
-                     p->style = "bold,red";
-                     p->data = (char*) malloc(128);
-                     sprintf(p->data, "Memory UnderFlow");
-                     p->next = NULL;
-
-                     p = p->next = (h2unit_string*) malloc(sizeof(h2unit_string));
-                     p->style = "";
-                     p->data = (char*) malloc(512);
-                     sprintf(p->data, " at %s:%d", blob->file, blob->line);
-                     p->next = NULL;
+                     h2unit_case::_current_->_message_(&h2unit_case::_current_->_errormsg_, "bold,red", "Memory UnderFlow");
+                     h2unit_case::_current_->_message_(&h2unit_case::_current_->_errormsg_, "", " at %s:%d", blob->file, blob->line);
 
                      throw _fail;
                   }
@@ -882,7 +863,7 @@ public:
          stub->orig = orig;
          stub->next = stub_list;
          stub_list = stub;
-         memcpy(stub->code, orig, sizeof(void*) + 4);
+         memcpy(stub->code, orig, sizeof(stub->code));
       }
       return stub;
    }
@@ -901,7 +882,7 @@ public:
       while (stub_list) {
          h2unit_stub* stub = stub_list;
          stub_list = stub->next;
-         memcpy(stub->orig, stub->code, sizeof(void*) + 4);
+         memcpy(stub->orig, stub->code, sizeof(stub->code));
          free(stub);
       }
    }
@@ -951,40 +932,28 @@ void h2unit_case::_post_teardown_()
 
    /* memory leak detection */
    int leaked = 0, count = 0, i = 0;
-   h2unit_blob* leak;
-   for (leak = h2unit_task::O()->leak_list; leak; leak = leak->next) {
-      if (leak->owner == this) {
+   h2unit_blob* b;
+   for (b = h2unit_task::O()->blob_list; b; b = b->next) {
+      if (b->owner == this) {
          count++;
-         leaked += leak->size;
+         leaked += b->size;
       }
    }
 
    if (leaked > 0) {
       _status_ = _FAILED_;
 
-      h2unit_string* p;
-      p = _errormsg_ = (h2unit_string*) malloc(sizeof(h2unit_string));
-      p->style = "bold,red";
-      p->data = (char*) malloc(128);
-      sprintf(p->data, "Memory Leaked %d bytes totally", leaked);
-      p->next = NULL;
+      _message_(&_errormsg_, "bold,red", "Memory Leaked %d bytes totally", leaked);
 
       count++;
       _addition_ = (h2unit_string**) malloc(count * sizeof(h2unit_string*));
       memset(_addition_, 0, count * sizeof(h2unit_string*));
 
-      for (leak = h2unit_task::O()->leak_list; leak; leak = leak->next) {
-         if (leak->owner == this) {
-            p = _addition_[i++] = (h2unit_string*) malloc(sizeof(h2unit_string));
-            p->style = "bold,red";
-            p->data = (char*) malloc(128);
-            sprintf(p->data, "Leaked %d bytes", leak->size);
-
-            p = p->next = (h2unit_string*) malloc(sizeof(h2unit_string));
-            p->style = "";
-            p->data = (char*) malloc(512);
-            sprintf(p->data, " at %s:%d", leak->file, leak->line);
-            p->next = NULL;
+      for (b = h2unit_task::O()->blob_list; b; b = b->next) {
+         if (b->owner == this) {
+            _message_(&_addition_[i], "bold,red", "Leaked %d bytes", b->size);
+            _message_(&_addition_[i], "", " at %s:%d", b->file, b->line);
+            ++i;
          }
       }
    }
@@ -1027,36 +996,38 @@ void h2unit_case::_limit_(unsigned long bytes)
    h2unit_task::O()->limited = bytes;
 }
 
+void h2unit_case::_message_(h2unit_string** typed, const char *style, const char* format, ...)
+{
+   h2unit_string* p = (h2unit_string*) malloc(sizeof(h2unit_string));
+   while (*typed) typed = &(*typed)->next;
+   *typed = p;
+
+   va_list args;
+   va_start(args, format);
+   static char t[1024 * 8];
+   int sz = vsprintf(t, format, args);
+   va_end(args);
+
+   p->next = NULL;
+   p->style = style;
+   p->data = (char*) malloc(sz + 1);
+
+   va_start(args, format);
+   vsprintf(p->data, format, args);
+   va_end(args);
+}
+
 void* h2unit_case::_addr_(const char* native, const char* native_name, const char* fake_name)
 {
    void *address = h2unit_task::O()->get_symbol_address(native);
    if (address == NULL) {
-      h2unit_string * p;
-      p = _errormsg_ = (h2unit_string*) malloc(sizeof(h2unit_string));
-      p->style = "";
-      p->data = (char*) "H2STUB(";
+      _message_(&_errormsg_, "", "H2STUB(");
+      _message_(&_errormsg_, "bold,red", "%s", native_name);
+      _message_(&_errormsg_, "", " <-- ");
+      _message_(&_errormsg_, "bold,red", "%s", fake_name);
+      _message_(&_errormsg_, "", ")");
+      _message_(&_errormsg_, "bold,purple", " %s not found", native_name);
 
-      p = p->next = (h2unit_string*) malloc(sizeof(h2unit_string));
-      p->style = "bold,red";
-      p->data = (char*) native_name;
-
-      p = p->next = (h2unit_string*) malloc(sizeof(h2unit_string));
-      p->style = "";
-      p->data = (char*) " <-- ";
-
-      p = p->next = (h2unit_string*) malloc(sizeof(h2unit_string));
-      p->style = "bold,red";
-      p->data = (char*) fake_name;
-
-      p = p->next = (h2unit_string*) malloc(sizeof(h2unit_string));
-      p->style = "";
-      p->data = (char*) ")";
-
-      p = p->next = (h2unit_string*) malloc(sizeof(h2unit_string));
-      p->style = "bold,purple";
-      p->data = (char*) malloc(512);
-      sprintf(p->data, " %s not found", native_name);
-      p->next = NULL;
       throw _fail;
    }
    return address;
@@ -1103,32 +1074,15 @@ void h2unit_case::_stub_(void* native, void* fake, const char* native_name, cons
 
    return;
 
-   failure: h2unit_string * p;
+   failure:
 
-   p = _errormsg_ = (h2unit_string*) malloc(sizeof(h2unit_string));
-   p->style = "bold,purple";
-   p->data = (char*) "H2STUB(";
+   _message_(&_errormsg_, "", "H2STUB(");
+   _message_(&_errormsg_, "bold,red", "%s", native_name);
+   _message_(&_errormsg_, "", " <-- ");
+   _message_(&_errormsg_, "bold,red", "%s", fake_name);
+   _message_(&_errormsg_, "", ")");
+   _message_(&_errormsg_, "bold,red", " %s", reason);
 
-   p = p->next = (h2unit_string*) malloc(sizeof(h2unit_string));
-   p->style = "bold,red";
-   p->data = (char*) native_name;
-
-   p = p->next = (h2unit_string*) malloc(sizeof(h2unit_string));
-   p->style = "";
-   p->data = (char*) " <-- ";
-
-   p = p->next = (h2unit_string*) malloc(sizeof(h2unit_string));
-   p->style = "bold,red";
-   p->data = (char*) fake_name;
-
-   p = p->next = (h2unit_string*) malloc(sizeof(h2unit_string));
-   p->style = "bold,purple";
-   p->data = (char*) ")";
-
-   p = p->next = (h2unit_string*) malloc(sizeof(h2unit_string));
-   p->style = "bold,red";
-   p->data = strdup((char*) reason);
-   p->next = NULL;
    throw _fail;
 }
 
@@ -1142,216 +1096,96 @@ void h2unit_case::_enter_check_(const char* file, int line)
 void h2unit_case::_check_equal_(bool result)
 {
    if (!result) {
-      _expected_ = (h2unit_string*) malloc(sizeof(h2unit_string));
-      _expected_->style = "bold,red";
-      _expected_->data = (char*) malloc(256);
-      sprintf(_expected_->data, "true");
-      _expected_->next = NULL;
-
-      _actually_ = (h2unit_string*) malloc(sizeof(h2unit_string));
-      _actually_->style = "bold,red";
-      _actually_->data = (char*) malloc(256);
-      sprintf(_actually_->data, "false");
-      _actually_->next = NULL;
+      _message_(&_expected_, "bold,red", "true");
+      _message_(&_actually_, "bold,red", "false");
 
       throw _fail;
    }
 }
 
-void h2unit_case::_check_equal_(int expected, int actual)
+void h2unit_case::_check_equal_(int expected, int actually)
 {
-   if (expected != actual) {
-      _expected_ = (h2unit_string*) malloc(sizeof(h2unit_string));
-      _expected_->style = "bold,red";
-      _expected_->data = (char*) malloc(256);
-      sprintf(_expected_->data, "%d 0x%x", expected, expected);
-      _expected_->next = NULL;
-
-      _actually_ = (h2unit_string*) malloc(sizeof(h2unit_string));
-      _actually_->style = "bold,red";
-      _actually_->data = (char*) malloc(256);
-      sprintf(_actually_->data, "%d 0x%x", actual, actual);
-      _actually_->next = NULL;
+   if (expected != actually) {
+      _message_(&_expected_, "bold,red", "%d 0x%x", expected, expected);
+      _message_(&_actually_, "bold,red", "%d 0x%x", actually, actually);
 
       throw _fail;
    }
 }
 
-void h2unit_case::_check_equal_(double expected, double actual, double threshold)
+void h2unit_case::_check_equal_(double expected, double actually, double threshold)
 {
-   double delta = expected - actual;
+   double delta = expected - actually;
    if (delta < 0) delta = -delta;
    if (delta > threshold) {
-      _expected_ = (h2unit_string*) malloc(sizeof(h2unit_string));
-      _expected_->style = "bold,red";
-      _expected_->data = (char*) malloc(128);
-      sprintf(_expected_->data, "%f", expected);
-      _expected_->next = NULL;
-
-      _actually_ = (h2unit_string*) malloc(sizeof(h2unit_string));
-      _actually_->style = "bold,red";
-      _actually_->data = (char*) malloc(128);
-      sprintf(_actually_->data, "%f", actual);
-      _actually_->next = NULL;
+      _message_(&_expected_, "bold,red", "%f", expected);
+      _message_(&_actually_, "bold,red", "%f", actually);
 
       throw _fail;
    }
 }
 
-void h2unit_case::_check_equal_(char* expected, char* actual)
+void h2unit_case::_check_equal_(char* expected, char* actually)
 {
-   if (strcmp(expected, actual) != 0) {
-      int actual_length = strlen(actual);
+   if (strcmp(expected, actually) != 0) {
+      int actually_length = strlen(actually);
       int expected_length = strlen(expected);
-      int length = actual_length > expected_length ? actual_length : expected_length;
 
-      char* eb = (char*) malloc(expected_length * 2 + 2);
-      char* ab = (char*) malloc(actual_length * 2 + 2);
-
-      h2unit_string** ep = &_expected_;
-      h2unit_string** ap = &_actually_;
-
-      for (int i = 0; i < length; i++) {
-         if (i <= expected_length) {
-            (*ep) = (h2unit_string*) malloc(sizeof(h2unit_string));
-            (*ep)->style = "bold,red";
-            (*ep)->data = eb;
-            eb += sprintf(eb, "%c", expected[i]) + 1;
-            (*ep)->next = NULL;
-            if (i <= actual_length && expected[i] == actual[i]) {
-               (*ep)->style = "bold,green";
-            }
-            ep = &(*ep)->next;
-         }
-         if (i <= actual_length) {
-            (*ap) = (h2unit_string*) malloc(sizeof(h2unit_string));
-            (*ap)->style = "bold,red";
-            (*ap)->data = ab;
-            ab += sprintf(ab, "%c", actual[i]) + 1;
-            (*ap)->next = NULL;
-            if (i <= expected_length && actual[i] == expected[i]) {
-               (*ap)->style = "bold,green";
-            }
-            ap = &(*ap)->next;
-         }
-
+      for (int i = 0; i < expected_length; i++) {
+         _message_(&_expected_, i <= actually_length && expected[i] == actually[i] ? "bold,green" : "bold,red", "%c", expected[i]);
+      }
+      for (int j = 0; j < actually_length; j++) {
+         _message_(&_actually_, j <= expected_length && actually[j] == expected[j] ? "bold,green" : "bold,red", "%c", actually[j]);
       }
 
       throw _fail;
    }
 }
 
-void h2unit_case::_check_equal_strcmp_nocase_(char* expected, char* actual)
+void h2unit_case::_check_equal_strcmp_nocase_(char* expected, char* actually)
 {
-   if (strcasecmp(expected, actual) != 0) {
-      int actual_length = strlen(actual);
+   if (strcasecmp(expected, actually) != 0) {
+      int actually_length = strlen(actually);
       int expected_length = strlen(expected);
-      int length = actual_length > expected_length ? actual_length : expected_length;
 
-      char* eb = (char*) malloc(expected_length * 2 + 2);
-      char* ab = (char*) malloc(actual_length * 2 + 2);
-
-      h2unit_string** ep = &_expected_;
-      h2unit_string** ap = &_actually_;
-
-      for (int i = 0; i < length; i++) {
-         if (i <= expected_length) {
-            (*ep) = (h2unit_string*) malloc(sizeof(h2unit_string));
-            (*ep)->style = "bold,red";
-            (*ep)->data = eb;
-            eb += sprintf(eb, "%c", expected[i]) + 1;
-            (*ep)->next = NULL;
-            if (i <= actual_length && tolower((int) expected[i]) == tolower((int) actual[i])) {
-               (*ep)->style = "bold,green";
-            }
-            ep = &(*ep)->next;
-         }
-         if (i <= actual_length) {
-            (*ap) = (h2unit_string*) malloc(sizeof(h2unit_string));
-            (*ap)->style = "bold,red";
-            (*ap)->data = ab;
-            ab += sprintf(ab, "%c", actual[i]) + 1;
-            (*ap)->next = NULL;
-            if (i <= expected_length && tolower((int) actual[i]) == tolower((int) expected[i])) {
-               (*ap)->style = "bold,green";
-            }
-            ap = &(*ap)->next;
-         }
-
+      for (int i = 0; i < expected_length; i++) {
+         _message_(&_expected_, i <= actually_length && tolower((int) expected[i]) == tolower((int) actually[i]) ? "bold,green" : "bold,red", "%c", expected[i]);
       }
-      throw _fail;
-   }
-}
-
-void h2unit_case::_check_regex_(char* express, char* actual)
-{
-   if (__pattern_cmp(express, actual) != 0) {
-      _expected_ = (h2unit_string*) malloc(sizeof(h2unit_string));
-      _expected_->style = "bold,red";
-      _expected_->data = strdup(express);
-      _expected_->next = NULL;
-
-      _actually_ = (h2unit_string*) malloc(sizeof(h2unit_string));
-      _actually_->style = "bold,red";
-      _actually_->data = strdup(actual);
-      _actually_->next = NULL;
-
-      throw _fail;
-   }
-}
-
-void h2unit_case::_check_equal_(unsigned char* expected, unsigned char* actual, int length)
-{
-   if (memcmp(expected, actual, length) != 0) {
-      char* eb = (char*) malloc(length * 4);
-      char* ab = (char*) malloc(length * 4);
-
-      h2unit_string** ep = &_expected_;
-      h2unit_string** ap = &_actually_;
-
-      for (int i = 0; i < length; i++) {
-         (*ep) = (h2unit_string*) malloc(sizeof(h2unit_string));
-         (*ep)->style = "bold,red";
-         (*ep)->data = eb;
-         eb += sprintf(eb, i % 16 < 8 ? "%02X " : " %02X", expected[i]) + 1;
-         (*ep)->next = NULL;
-
-         (*ap) = (h2unit_string*) malloc(sizeof(h2unit_string));
-         (*ap)->style = "bold,red";
-         (*ap)->data = ab;
-         ab += sprintf(ab, i % 16 < 8 ? "%02X " : " %02X", actual[i]) + 1;
-         (*ap)->next = NULL;
-
-         if (expected[i] == actual[i]) {
-            (*ep)->style = "bold,green";
-            (*ap)->style = "bold,green";
-         } else {
-            (*ep)->style = "bold,red";
-            (*ap)->style = "bold,red";
-         }
-
-         ep = &(*ep)->next;
-         ap = &(*ap)->next;
+      for (int j = 0; j < actually_length; j++) {
+         _message_(&_actually_, j <= expected_length && tolower((int) actually[j]) == tolower((int) expected[j]) ? "bold,green" : "bold,red", "%c", actually[j]);
       }
 
       throw _fail;
    }
 }
 
-void h2unit_case::_check_catch_(const char* expected, const char* actual, const char* exceptype)
+void h2unit_case::_check_regex_(char* express, char* actually)
 {
-   if (expected != actual) {
-      _expected_ = (h2unit_string*) malloc(sizeof(h2unit_string));
-      _expected_->style = "bold,red";
-      _expected_->data = (char*) malloc(strlen(expected) + strlen(exceptype) + 2);
-      sprintf(_expected_->data, "%s %s", expected, exceptype);
-      _expected_->next = NULL;
+   if (__pattern_cmp(express, actually) != 0) {
+      _message_(&_expected_, "bold,red", "%s", express);
+      _message_(&_actually_, "bold,red", "%s", actually);
 
-      _actually_ = (h2unit_string*) malloc(sizeof(h2unit_string));
-      _actually_->style = "bold,red";
-      _actually_->data = (char*) malloc(strlen(actual) + strlen(exceptype) + 2);
-      sprintf(_actually_->data, "%s %s", actual, exceptype);
-      _actually_->next = NULL;
+      throw _fail;
+   }
+}
+
+void h2unit_case::_check_equal_(unsigned char* expected, unsigned char* actually, int length)
+{
+   if (memcmp(expected, actually, length) != 0) {
+      for (int i = 0; i < length; i++) {
+         _message_(&_expected_, expected[i] == actually[i] ? "bold,green" : "bold,red", i % 16 < 8 ? "%02X " : " %02X", expected[i]);
+         _message_(&_actually_, actually[i] == expected[i] ? "bold,green" : "bold,red", i % 16 < 8 ? "%02X " : " %02X", actually[i]);
+      }
+
+      throw _fail;
+   }
+}
+
+void h2unit_case::_check_catch_(const char* expected, const char* actually, const char* exceptype)
+{
+   if (expected != actually) {
+      _message_(&_expected_, "bold,red", "%s %s", expected, exceptype);
+      _message_(&_actually_, "bold,red", "%s %s", actually, exceptype);
 
       throw _fail;
    }

@@ -43,6 +43,7 @@ public:
    h2unit_string* _expected_;
    h2unit_string* _actually_;
    h2unit_string** _addition_;
+   void _message_(h2unit_string** typed, const char *style, const char* format, ...);
 public:
    h2unit_case();
    virtual ~h2unit_case();
@@ -54,13 +55,13 @@ public:
 
    void _enter_check_(const char* file, int line);
    void _check_equal_(bool result);
-   void _check_equal_(int expected, int actual);
-   void _check_equal_(double expected, double actual, double threshold = 0.000001);
-   void _check_equal_(char* expected, char* actual);
-   void _check_equal_(unsigned char* expected, unsigned char* actual, int length);
-   void _check_equal_strcmp_nocase_(char* expected, char* actual);
-   void _check_regex_(char* express, char* actual);
-   void _check_catch_(const char* expected, const char* actual, const char* exceptype);
+   void _check_equal_(int expected, int actually);
+   void _check_equal_(double expected, double actually, double threshold = 0.000001);
+   void _check_equal_(char* expected, char* actually);
+   void _check_equal_(unsigned char* expected, unsigned char* actually, int length);
+   void _check_equal_strcmp_nocase_(char* expected, char* actually);
+   void _check_regex_(char* express, char* actually);
+   void _check_catch_(const char* expected, const char* actually, const char* exceptype);
 
    virtual void setup();
    virtual void teardown();
@@ -101,10 +102,10 @@ public:
       h2unit_case::_current_->_check_equal_(__VA_ARGS__);                                                \
    } while(0)
 #else
-#define H2EQUAL(expected, actual)                                                                        \
+#define H2EQUAL(expected, actually)                                                                      \
    do {                                                                                                  \
       h2unit_case::_current_->_enter_check_(__FILE__, __LINE__);                                         \
-      h2unit_case::_current_->_check_equal_(expected, actual);                                           \
+      h2unit_case::_current_->_check_equal_(expected, actually);                                         \
    } while(0)
 #endif
 
@@ -114,40 +115,40 @@ public:
       h2unit_case::_current_->_check_equal_(condition);                                                  \
    } while(0)
 
-#define H2EQUAL_INTEGER(expected, actual)                                                                \
+#define H2EQUAL_INTEGER(expected, actually)                                                              \
    do {                                                                                                  \
       h2unit_case::_current_->_enter_check_(__FILE__, __LINE__);                                         \
-      h2unit_case::_current_->_check_equal_((int)(expected), (int)(actual));                             \
+      h2unit_case::_current_->_check_equal_((int)(expected), (int)(actually));                           \
    } while(0)
 
-#define H2EQUAL_DOUBLE(expected, actual, threshold)                                                      \
+#define H2EQUAL_DOUBLE(expected, actually, threshold)                                                    \
    do {                                                                                                  \
       h2unit_case::_current_->_enter_check_(__FILE__, __LINE__);                                         \
-      h2unit_case::_current_->_check_equal_((double)(expected), (double)(actual), (double)(threshold));  \
+      h2unit_case::_current_->_check_equal_((double)(expected), (double)(actually), (double)(threshold));\
    } while(0)
 
-#define H2EQUAL_STRCMP(expected, actual)                                                                 \
+#define H2EQUAL_STRCMP(expected, actually)                                                               \
    do {                                                                                                  \
       h2unit_case::_current_->_enter_check_(__FILE__, __LINE__);                                         \
-      h2unit_case::_current_->_check_equal_((char*)(expected), (char*)(actual));                         \
+      h2unit_case::_current_->_check_equal_((char*)(expected), (char*)(actually));                       \
    } while(0)
 
-#define H2EQUAL_STRCMP_NOCASE(expected, actual)                                                          \
+#define H2EQUAL_STRCMP_NOCASE(expected, actually)                                                        \
    do {                                                                                                  \
       h2unit_case::_current_->_enter_check_(__FILE__, __LINE__);                                         \
-      h2unit_case::_current_->_check_equal_strcmp_nocase_((char*)(expected), (char*)(actual));           \
+      h2unit_case::_current_->_check_equal_strcmp_nocase_((char*)(expected), (char*)(actually));         \
    } while(0)
 
-#define H2EQUAL_MEMCMP(expected, actual, length)                                                         \
+#define H2EQUAL_MEMCMP(expected, actually, length)                                                       \
    do {                                                                                                  \
       h2unit_case::_current_->_enter_check_(__FILE__, __LINE__);                                         \
-      h2unit_case::_current_->_check_equal_((unsigned char*)(expected), (unsigned char*)(actual), (int)(length));  \
+      h2unit_case::_current_->_check_equal_((unsigned char*)(expected), (unsigned char*)(actually), (int)(length));  \
    } while(0)
 
-#define H2EQUAL_WILDCARD(expected, actual)                                                               \
+#define H2EQUAL_WILDCARD(expected, actually)                                                             \
    do {                                                                                                  \
       h2unit_case::_current_->_enter_check_(__FILE__, __LINE__);                                         \
-      h2unit_case::_current_->_check_regex_((char*)(expected), (char*)(actual));                         \
+      h2unit_case::_current_->_check_regex_((char*)(expected), (char*)(actually));                       \
    } while(0)
 
 #define H2EQUAL_REGEX H2EQUAL_WILDCARD

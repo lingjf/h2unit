@@ -7,7 +7,11 @@ H2FLAGS +=  -I ..  -include h2unit.h
 # h2unit.cpp contains main() which execute test cases
 all : h2unit.o product_1.o product_2.o test_product_1.o test_product_2.o 
 	g++ -Wall -o h2unit.out h2unit.o product_1.o product_2.o test_product_1.o test_product_2.o 
-	./h2unit.out -vr
+	./h2unit.out -v
+	
+# -v : full output
+# -r : random execute sequence
+# -b : black-white color output	
 
 	
 h2unit.o : ../h2unit.cpp ../h2unit.h
