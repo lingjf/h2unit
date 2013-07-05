@@ -136,13 +136,9 @@ H2CASE(getCeil, "test for H2EQUAL_DOUBLE")
 
 H2UNIT(dynamic_stub)
 {
-   void setup()
-   {
-   }
+   void setup() { }
 
-   void teardown()
-   {
-   }
+   void teardown() { }
 };
 
 int stub_foo(int a)
@@ -195,5 +191,56 @@ H2CASE(dynamic_stub, "test dynamic stub libc function")
    H2EQUAL(0, isLegal("0"));
    H2STUB(atoi, stub_atoi);
    H2EQUAL(1, isLegal("0"));
+}
+
+
+H2UNIT(dynamic_stub_act_mock)
+{
+   void setup() { }
+   void teardown() { }
+};
+
+int stub_foo_mock1(int a)
+{
+   H2EQUAL(1, a); /* check the input parameter */
+   return 5; /* return wanted return value */
+}
+
+
+H2CASE(dynamic_stub_act_mock, "act mock")
+{
+   H2STUB(orig_foo, stub_foo_mock1);
+   H2EQUAL(7, getSum(1));
+   H2EQUAL(8, getSum(2));
+}
+
+int stub_foo_mock2(int a)
+{
+   static int call_seq = 0;
+   call_seq++;
+
+   if (call_seq == 1) {
+      H2EQUAL(1, a); /* check the input parameter */
+      return 1; /* return wanted return value */
+   } else if (call_seq == 2) {
+      H2EQUAL(2, a); /* check the input parameter */
+      return 2; /* return wanted return value */
+   } else {
+      H2EQUAL(call_seq, a); /* check the input parameter */
+      return 3; /* return wanted return value */
+   }
+
+   return 0;
+}
+
+H2CASE(dynamic_stub_act_mock, "act mock n call")
+{
+   H2STUB(orig_foo, stub_foo_mock2);
+   H2EQUAL(3, getSum(1));
+   H2EQUAL(5, getSum(2));
+
+   for (int i = 3; i < 1000; i++) {
+      H2EQUAL(i + 1 + 3, getSum(i));
+   }
 }
 
