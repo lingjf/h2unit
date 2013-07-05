@@ -96,8 +96,9 @@ public:
    void __H2UNIT_CASE_NAME(_unit_, __LINE__)::_testcase_()
 
 
+/** Visual C++ 8.0 2005 (_MSC_VER = 1400) and later version support 'variadic macros' */
 
-#if defined(__GNUC__) || (defined(_WIN32) && _MSC_VER >= 1400)
+#if defined(__GNUC__) || (defined(_MSC_VER) && _MSC_VER >= 1400)
 #define H2EQUAL(...)                                                                                     \
    do {                                                                                                  \
       h2unit_case::_current_->_enter_check_(__FILE__, __LINE__);                                         \
@@ -206,6 +207,7 @@ public:
 #else
 #include <stdio.h>
 #include <stdlib.h>
+#include <malloc.h>
 #include <string.h>
 #endif
 
@@ -213,10 +215,9 @@ public:
 extern "C" {
 #endif
 
-extern void* h2unit_malloc(size_t, const char*, int);
-extern void* h2unit_calloc(size_t, size_t, const char*, int);
-extern void* h2unit_realloc(void*, size_t, const char*, int);
+extern void* h2unit_alloc(void* ptr, size_t size, size_t alignment, unsigned char c, const char* file, int line);
 extern void h2unit_free(void*, const char*, int);
+extern int h2unit_posix_memalign(void**, size_t, size_t, const char*, int);
 extern char* h2unit_strdup(const char*, const char*, int);
 extern char* h2unit_strndup(const char*, size_t, const char*, int);
 
@@ -224,12 +225,38 @@ extern char* h2unit_strndup(const char*, size_t, const char*, int);
 }
 #endif
 
-#define malloc(a) h2unit_malloc(a, __FILE__, __LINE__)
-#define calloc(a, b) h2unit_calloc(a, b, __FILE__, __LINE__)
-#define realloc(a, b) h2unit_realloc(a, b, __FILE__, __LINE__)
-#define free(a) h2unit_free(a, __FILE__, __LINE__)
-#define strdup(a) h2unit_strdup(a, __FILE__, __LINE__)
-#define strndup(a, n) h2unit_strndup(a, n, __FILE__, __LINE__)
+#define malloc(size) h2unit_alloc(NULL, size, 1, 0xED, __FILE__, __LINE__)
+#define calloc(nmemb, size) h2unit_alloc(NULL, (nmemb) * (size), 1, 0x00, __FILE__, __LINE__)
+#define realloc(ptr, size) h2unit_alloc(ptr, size, 1, 0xED, __FILE__, __LINE__)
+#define free(ptr) h2unit_free(ptr, __FILE__, __LINE__)
+#define posix_memalign(memptr, alignment, size) h2unit_posix_memalign(memptr, alignment, size, __FILE__, __LINE__)
+#define memalign(boundary, size) h2unit_alloc(NULL, size, boundary, 0xED, __FILE__, __LINE__)
+#define strdup(s) h2unit_strdup(s, __FILE__, __LINE__)
+#define strndup(s, n) h2unit_strndup(s, n, __FILE__, __LINE__)
+
+#if defined(_WIN32)
+/* Windows specific allocator */
+#include <windows.h>
+#define _aligned_malloc(size, alignment) h2unit_alloc(NULL, size, alignment, 0xED, __FILE__, __LINE__)
+#define _aligned_free(memblock) h2unit_free(memblock, __FILE__, __LINE__)
+#define _aligned_realloc(memblock, size, alignment) h2unit_alloc(memblock, size, 1, 0xED, __FILE__, __LINE__)
+#define _aligned_recalloc(memblock, num, size, alignment) h2unit_alloc(memblock, (num) * (size), 1, 0x00, __FILE__, __LINE__)
+#define _aligned_offset_malloc(size, alignment, offset) h2unit_alloc(NULL, size, alignment, 0xED, __FILE__, __LINE__)
+#define _aligned_offset_realloc(memblock, size, alignment, offset) h2unit_alloc(memblock, size, alignment, 0xED, __FILE__, __LINE__)
+#define _aligned_offset_recalloc(memblock, num, size, alignment, offset) h2unit_alloc(memblock, (num) * (size), alignment, 0x00, __FILE__, __LINE__)
+
+#define CoTaskMemAlloc(size) h2unit_alloc(NULL, size, 1, 0xED, __FILE__, __LINE__)
+#define CoTaskMemRealloc(ptr, size) h2unit_alloc(ptr, size, 1, 0xED, __FILE__, __LINE__)
+#define CoTaskMemFree(ptr) h2unit_free(ptr, __FILE__, __LINE__)
+#define GlobalAlloc(flag, size) h2unit_alloc(NULL, size, 1, 0x00, __FILE__, __LINE__)
+#define GlobalFree(ptr) h2unit_free(ptr, __FILE__, __LINE__)
+#define HeapAlloc(hand, flag, size) h2unit_alloc(NULL, size, 1, 0x00, __FILE__, __LINE__)
+#define HeapReAlloc(hand, flag, ptr, size) h2unit_alloc(ptr, size, 1, 0x00, __FILE__, __LINE__)
+#define HeapFree(hand, flag, ptr) h2unit_free(ptr, __FILE__, __LINE__)
+#define LocalAlloc(flag, size) h2unit_alloc(NULL, size, 1, 0x00, __FILE__, __LINE__)
+#define LocalReAlloc(flag, ptr, size) h2unit_alloc(ptr, size, 1, 0x00, __FILE__, __LINE__)
+#define LocalFree(flag, ptr) h2unit_free(ptr, __FILE__, __LINE__)
+#endif
 
 #if defined(__cplusplus)
 #include <new>

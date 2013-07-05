@@ -78,6 +78,13 @@ void allocation()
    char *p6 = (char*) realloc(p5, 9);
    sprintf(p6, "cd");
 
+   char *m1 = NULL;
+   posix_memalign((void**)&m1, 4, 7);
+   sprintf(m1, "xyz");
+
+   char *m2 = (char*)memalign(4, 7);
+   sprintf(m2, "xyz123");
+
    char *p7 = strdup("abc");
    sprintf(p7, "ab");
    char *p8 = strndup("abcd", 3);

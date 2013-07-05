@@ -87,10 +87,15 @@ H2CASE(wstring, "test catch something")
  * -- realloc
  * -- strdup
  * -- strndup
- * ?? memalign not support
- * ?? posix_memalign not support
- * ?? valloc not support
- *
+ * -- memalign
+ * -- posix_memalign
+ * -- CoTaskMemAlloc/CoTaskMemRealloc
+ * -- GlobalAlloc
+ * -- HeapAlloc/HeapReAlloc
+ * -- LocalAlloc/LocalReAlloc
+ * ?? brk/sbrk not support
+ * ?? mmap/mnumap not support
+ * ?? VirtualAlloc not support
  */
 
 H2UNIT(memory_leak)

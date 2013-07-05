@@ -594,7 +594,7 @@ public:
    h2unit_unit* unit_list;
    h2unit_case* case_chain;
    unsigned limited;
-   static const unsigned BLOB_GUARD_SIZE = 8;
+   static const int BLOB_GUARD_SIZE = 8;
    static const unsigned BLOB_MAGIC_CODE = 0xbeafcafe;
 
    h2unit_listen_text text_listener;
@@ -778,14 +778,14 @@ public:
       return NULL;
    }
 
-   h2unit_blob* add_blob(void* old, size_t size, const char* file, int line)
+   h2unit_blob* add_blob(void* old, size_t size, size_t alignment, unsigned char c, const char* file, int line)
    {
       h2unit_blob* old_blob = get_blob(old);
       size_t old_size = old_blob ? old_blob->size : 0;
 
       if (size > limited + old_size) return NULL;
 
-      void* data = malloc(size + BLOB_GUARD_SIZE * sizeof(unsigned) * 2);
+      void* data = malloc(size + BLOB_GUARD_SIZE * sizeof(unsigned) * 2 + alignment);
       if (!data) return NULL;
       h2unit_blob* new_blob = (h2unit_blob*) malloc(sizeof(h2unit_blob));
       if (!new_blob) {
@@ -794,6 +794,7 @@ public:
       }
       new_blob->data = (unsigned char*)data;
       new_blob->ptr = new_blob->data + BLOB_GUARD_SIZE * sizeof(unsigned);
+      new_blob->ptr = (void*)(((unsigned)(new_blob->ptr)+((alignment)-1))&(~((alignment)-1)));
       new_blob->size = size;
       new_blob->file = file;
       new_blob->line = line;
@@ -802,10 +803,14 @@ public:
       blob_list = new_blob;
       limited -= size;
 
-      unsigned* p = (unsigned*)(new_blob->data);
-      unsigned* q = (unsigned*)(new_blob->data + BLOB_GUARD_SIZE * sizeof(unsigned) + new_blob->size);
-      for (unsigned i = 0; i < BLOB_GUARD_SIZE; i++) {
-         p[i] = BLOB_MAGIC_CODE;
+      for (int l = 0; l < (int)size; l++) {
+         ((unsigned char*)new_blob->ptr)[l] = c;
+      }
+
+      unsigned* p = (unsigned*)(new_blob->ptr) - 1;
+      unsigned* q = (unsigned*)((unsigned char*)(new_blob->ptr) + new_blob->size);
+      for (int i = 0; i < BLOB_GUARD_SIZE; i++) {
+         p[-i] = BLOB_MAGIC_CODE;
          q[i] = BLOB_MAGIC_CODE;
       }
 
@@ -825,23 +830,13 @@ public:
             *ip = (*ip)->next;
             limited += blob->size;
             /* overflow and under-flow checking */
-            unsigned* p = (unsigned*)(blob->data);
-            unsigned* q = (unsigned*)(blob->data + BLOB_GUARD_SIZE * sizeof(unsigned) + blob->size);
-            for (unsigned j = 0; j < BLOB_GUARD_SIZE; j++) {
-               if (q[j] != BLOB_MAGIC_CODE) {
-                  if (h2unit_case::_current_) {
-                     h2unit_case::_current_->_message_(&h2unit_case::_current_->_errormsg_, "bold,red", "Memory OverFlow");
-                     h2unit_case::_current_->_message_(&h2unit_case::_current_->_errormsg_, "", " at %s:%d", blob->file, blob->line);
 
-                     throw _fail;
-                  }
-               }
-            }
-
-            for (unsigned i = 0; i < BLOB_GUARD_SIZE; i++) {
-               if (p[BLOB_GUARD_SIZE - 1 - i] != BLOB_MAGIC_CODE) {
+            unsigned* p = (unsigned*)(blob->ptr) - 1;
+            unsigned* q = (unsigned*)((unsigned char*)(blob->ptr) + blob->size);
+            for (int i = 0; i < BLOB_GUARD_SIZE; i++) {
+               if (p[-i] != BLOB_MAGIC_CODE || q[i] != BLOB_MAGIC_CODE) {
                   if (h2unit_case::_current_) {
-                     h2unit_case::_current_->_message_(&h2unit_case::_current_->_errormsg_, "bold,red", "Memory UnderFlow");
+                     h2unit_case::_current_->_message_(&h2unit_case::_current_->_errormsg_, "bold,red", q[i] == BLOB_MAGIC_CODE ? "Memory OverFlow" : "Memory UnderFlow");
                      h2unit_case::_current_->_message_(&h2unit_case::_current_->_errormsg_, "", " at %s:%d", blob->file, blob->line);
 
                      throw _fail;
@@ -1216,28 +1211,13 @@ void h2unit_case::_check_catch_(const char* expected, const char* actually, cons
    }
 }
 
-void* h2unit_malloc(size_t size, const char* file, int line)
-{
-   h2unit_blob* b = h2unit_task::O()->add_blob(NULL, size, file, line);
-   return b ? b->ptr : NULL;
-}
-
-void* h2unit_calloc(size_t nmemb, size_t size, const char* file, int line)
-{
-   h2unit_blob* b = h2unit_task::O()->add_blob(NULL, nmemb * size, file, line);
-   if (b) {
-      memset(b->ptr, 0, nmemb * size);
-   }
-   return b ? b->ptr : NULL;
-}
-
-void* h2unit_realloc(void* ptr, size_t size, const char* file, int line)
+void* h2unit_alloc(void* ptr, size_t size, size_t alignment, unsigned char c, const char* file, int line)
 {
    if (size == 0) {
       h2unit_free(ptr, file, line);
       return NULL;
    }
-   h2unit_blob* b = h2unit_task::O()->add_blob(ptr, size, file, line);
+   h2unit_blob* b = h2unit_task::O()->add_blob(ptr, size, alignment, c, file, line);
    return b ? b->ptr : NULL;
 }
 
@@ -1247,10 +1227,24 @@ void h2unit_free(void* ptr, const char* file, int line)
    if (b) h2unit_task::O()->del_blob(b);
 }
 
+int h2unit_posix_memalign(void** ptr, size_t alignment, size_t size, const char* file, int line)
+{
+   alignment = 4;
+   h2unit_blob* b = h2unit_task::O()->add_blob(NULL, size, alignment, 0xED, file, line);
+   if (b) {
+      *ptr = b->ptr;
+      return 0;
+   }
+#ifndef ENOMEM
+#define ENOMEM -1
+#endif
+   return ENOMEM;
+}
+
 char* h2unit_strdup(const char* s, const char* file, int line)
 {
    size_t size = strlen(s) + 1;
-   h2unit_blob* b = h2unit_task::O()->add_blob(NULL, size, file, line);
+   h2unit_blob* b = h2unit_task::O()->add_blob(NULL, size, 4, 0xED, file, line);
    if (b) {
       memcpy(b->ptr, (const void*)s, size);
    }
@@ -1261,7 +1255,7 @@ char* h2unit_strndup(const char* s, size_t n, const char* file, int line)
 {
    size_t size = strlen(s);
    size = (size > n ? n : size) + 1;
-   h2unit_blob* b = h2unit_task::O()->add_blob(NULL, size, file, line);
+   h2unit_blob* b = h2unit_task::O()->add_blob(NULL, size, 4, 0xED, file, line);
    if (b) {
       memcpy(b->ptr, (const void*)s, size - 1);
       ((char*)b->ptr)[size - 1] = '\0';
@@ -1271,12 +1265,12 @@ char* h2unit_strndup(const char* s, size_t n, const char* file, int line)
 
 void* operator new(size_t size, const char* file, int line)
 {
-   return h2unit_malloc(size, file, line);
+   return h2unit_alloc(NULL, size, 4, 0x0, file, line);
 }
 
 void* operator new[](size_t size, const char* file, int line)
 {
-   return h2unit_malloc(size, file, line);
+   return h2unit_alloc(NULL, size, 4, 0x0, file, line);
 }
 
 void operator delete(void* object)
