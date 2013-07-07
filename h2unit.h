@@ -71,29 +71,32 @@ public:
 };
 
 #define __H2UNIT_UNIT_NAME(name) h2unit_##name##_unit
+
 #define ____H2UNIT_CASE_NAME(name, line) h2unit_##name##line##_case
-#define __H2UNIT_CASE_NAME(name, line) ____H2UNIT_CASE_NAME(name, line)
 #define ____H2UNIT_CASE_INST(name, line) h2unit_##name##line##_inst
-#define __H2UNIT_CASE_INST(name, line) ____H2UNIT_CASE_INST(name, line)
+#define ___H2UNIT_CASE_NAME(name, line) ____H2UNIT_CASE_NAME(name, line)
+#define ___H2UNIT_CASE_INST(name, line) ____H2UNIT_CASE_INST(name, line)
+#define __H2UNIT_CASE_NAME(name) ___H2UNIT_CASE_NAME(name, __LINE__)
+#define __H2UNIT_CASE_INST(name) ___H2UNIT_CASE_INST(name, __LINE__)
 
 #define H2UNIT(_unit_)  \
    struct __H2UNIT_UNIT_NAME(_unit_): public h2unit_case
 
 #define H2CASE(_unit_, _case_)                                                                           \
-   class __H2UNIT_CASE_NAME(_unit_, __LINE__): public __H2UNIT_UNIT_NAME(_unit_)                         \
+   class __H2UNIT_CASE_NAME(_unit_): public __H2UNIT_UNIT_NAME(_unit_)                                   \
    {  public:                                                                                            \
-      __H2UNIT_CASE_NAME(_unit_, __LINE__)() { _init_(#_unit_, _case_, false, __FILE__, __LINE__); }     \
+      __H2UNIT_CASE_NAME(_unit_)() { _init_(#_unit_, _case_, false, __FILE__, __LINE__); }               \
       void _testcase_();                                                                                 \
-   } __H2UNIT_CASE_INST(_unit_, __LINE__);                                                               \
-   void __H2UNIT_CASE_NAME(_unit_, __LINE__)::_testcase_()
+   } __H2UNIT_CASE_INST(_unit_);                                                                         \
+   void __H2UNIT_CASE_NAME(_unit_)::_testcase_()
 
 #define H2CASE_IGNORE(_unit_, _case_)                                                                    \
-   class __H2UNIT_CASE_NAME(_unit_, __LINE__): public __H2UNIT_UNIT_NAME(_unit_)                         \
+   class __H2UNIT_CASE_NAME(_unit_): public __H2UNIT_UNIT_NAME(_unit_)                                   \
    {  public:                                                                                            \
-      __H2UNIT_CASE_NAME(_unit_, __LINE__)() { _init_(#_unit_, _case_, true, __FILE__, __LINE__); }      \
+      __H2UNIT_CASE_NAME(_unit_)() { _init_(#_unit_, _case_, true, __FILE__, __LINE__); }                \
       void _testcase_();                                                                                 \
-   } __H2UNIT_CASE_INST(_unit_, __LINE__);                                                               \
-   void __H2UNIT_CASE_NAME(_unit_, __LINE__)::_testcase_()
+   } __H2UNIT_CASE_INST(_unit_);                                                                         \
+   void __H2UNIT_CASE_NAME(_unit_)::_testcase_()
 
 
 /** Visual C++ 8.0 2005 (_MSC_VER = 1400) and later version support 'variadic macros' */
@@ -124,7 +127,7 @@ public:
       h2unit_case::_current_->_check_equal_((unsigned long)(expected), (unsigned long)(actually));       \
    } while(0)
 
-#define H2EQUAL_DOUBLE(expected, actually, threshold)                                                    \
+#define H2EQUAL_FLOAT(expected, actually, threshold)                                                     \
    do {                                                                                                  \
       h2unit_case::_current_->_enter_check_(__FILE__, __LINE__);                                         \
       h2unit_case::_current_->_check_equal_((double)(expected), (double)(actually), (double)(threshold));\
