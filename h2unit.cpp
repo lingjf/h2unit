@@ -68,14 +68,16 @@ public:
    bool _colored;
    bool _verbose;
    bool _random;
-   char* _filter;
+   char* _include;
+   char* _exclude;
 
    h2unit_config()
    {
       _verbose = false;
       _colored = true;
       _random = false;
-      _filter = NULL;
+      _include = NULL;
+      _exclude = NULL;
    }
 } cfg;
 
@@ -164,7 +166,7 @@ public:
             case h2unit_case::_IGNORE_:
                p->case_ignored++;
                break;
-            case h2unit_case::_FILTER_:
+            case h2unit_case::_FILTED_:
                p->case_filtered++;
                break;
             case h2unit_case::_PASSED_:
@@ -259,7 +261,7 @@ public:
       case h2unit_case::_IGNORE_:
          fprintf(filp, "H2CASE(%s, %s): Ignored at %s:%d\n", p->_unitname_, p->_casename_, p->_casefile_, p->_caseline_);
          break;
-      case h2unit_case::_FILTER_:
+      case h2unit_case::_FILTED_:
          break;
       case h2unit_case::_PASSED_:
          if (cfg._verbose) {
@@ -378,7 +380,7 @@ public:
       case h2unit_case::_IGNORE_:
          printf("\rH2CASE(%s, %s): Ignored at %s:%d\n", p->_unitname_, p->_casename_, p->_casefile_, p->_caseline_);
          break;
-      case h2unit_case::_FILTER_:
+      case h2unit_case::_FILTED_:
          break;
       case h2unit_case::_PASSED_:
          if (cfg._verbose) {
@@ -458,7 +460,7 @@ public:
             case h2unit_case::_IGNORE_:
                status = "Ignored";
                break;
-            case h2unit_case::_FILTER_:
+            case h2unit_case::_FILTED_:
                status = "Filtered";
                break;
             case h2unit_case::_PASSED_:
@@ -524,7 +526,7 @@ public:
             case h2unit_case::_IGNORE_:
                status = "Ignored";
                break;
-            case h2unit_case::_FILTER_:
+            case h2unit_case::_FILTED_:
                status = "Filtered";
                break;
             case h2unit_case::_PASSED_:
@@ -587,7 +589,6 @@ class h2unit_task
 public:
    int unit_count, case_count, case_excuted_count, check_count;
    int case_failed, case_passed, case_ignore, case_filter;
-   const char* symb_file;
    h2unit_symb* symb_list;
    h2unit_blob* blob_list;
    h2unit_stub* stub_list;
@@ -608,8 +609,6 @@ public:
       case_failed = case_passed = case_ignore = case_filter = 0;
       unit_count = case_count = case_excuted_count = check_count = 0;
       case_chain = NULL;
-
-      symb_file = "h2unit_sym.txt";
 
       unit_list = NULL;
       symb_list = NULL;
@@ -633,9 +632,10 @@ public:
    {
 #ifndef _WIN32
       char buf[512];
-      char *line = buf;
+      char* line = buf;
       size_t len = sizeof(buf);
       int n;
+      const char* symb_file = "h2unit_sym.txt";
       /**
        * TODO: for windows using dumpbin.exe or BFD (Binary File Descriptor Library)
        *
@@ -658,18 +658,21 @@ public:
       while ((n = getline(&line, &len, filp)) != -1) {
          char *t;
          t = strtok(line, " ");
-         if (t && t[0] == '0') {
+         if (t && t[0] == '0' && strlen(t) > 4) {
             long a = strtol(t, NULL, 16);
             t = strtok(NULL, " ");
-            t = strtok(NULL, " ");
-            h2unit_symb* s = (h2unit_symb*) malloc(sizeof(h2unit_symb));
-            s->name = strdup(t);
-            for (int l = strlen(s->name); l > 0 && isspace (s->name[l - 1]); l--) {
-               s->name[l - 1] = '\0';
+            if (t && tolower((int)t[0]) == 't' && strlen(t) == 1) {
+               t = strtok(NULL, " ");
+               h2unit_symb* s = (h2unit_symb*) malloc(sizeof(h2unit_symb));
+               s->name = strdup(t);
+               for (int l = strlen(s->name); l > 0 && isspace (s->name[l - 1]); l--) {
+                  s->name[l - 1] = '\0';
+               }
+               s->addr = (void*)a;
+               s->next = symb_list;
+               symb_list = s;
+
             }
-            s->addr = (void*)a;
-            s->next = symb_list;
-            symb_list = s;
          }
       }
 
@@ -684,6 +687,12 @@ public:
       for (h2unit_symb* p = symb_list; p != NULL; p = p->next) {
          if (!strcmp(p->name, symb)) {
             return p->addr;
+         }
+         /* some compiler prefix _ to all symbols */
+         if (p->name[0] == '_') {
+            if (!strcmp(p->name + 1, symb)) {
+               return p->addr;
+            }
          }
       }
       return NULL;
@@ -755,7 +764,7 @@ public:
          case h2unit_case::_IGNORE_:
             case_ignore++;
             break;
-         case h2unit_case::_FILTER_:
+         case h2unit_case::_FILTED_:
             case_filter++;
             break;
          case h2unit_case::_PASSED_:
@@ -794,7 +803,7 @@ public:
       }
       new_blob->data = (unsigned char*)data;
       new_blob->ptr = new_blob->data + BLOB_GUARD_SIZE * sizeof(unsigned);
-      new_blob->ptr = (void*)(((unsigned)(new_blob->ptr)+((alignment)-1))&(~((alignment)-1)));
+      new_blob->ptr = (void*)(((unsigned long)(new_blob->ptr)+((alignment)-1))&(~((alignment)-1)));
       new_blob->size = size;
       new_blob->file = file;
       new_blob->line = line;
@@ -836,8 +845,8 @@ public:
             for (int i = 0; i < BLOB_GUARD_SIZE; i++) {
                if (p[-i] != BLOB_MAGIC_CODE || q[i] != BLOB_MAGIC_CODE) {
                   if (h2unit_case::_current_) {
-                     h2unit_case::_current_->_message_(&h2unit_case::_current_->_errormsg_, "bold,red", q[i] == BLOB_MAGIC_CODE ? "Memory OverFlow" : "Memory UnderFlow");
-                     h2unit_case::_current_->_message_(&h2unit_case::_current_->_errormsg_, "", " at %s:%d", blob->file, blob->line);
+                     h2unit_case::_current_->_vmsg_(&h2unit_case::_current_->_errormsg_, "bold,red", q[i] == BLOB_MAGIC_CODE ? "Memory OverFlow" : "Memory UnderFlow");
+                     h2unit_case::_current_->_vmsg_(&h2unit_case::_current_->_errormsg_, "", " at %s:%d", blob->file, blob->line);
 
                      throw _fail;
                   }
@@ -938,7 +947,7 @@ void h2unit_case::_post_teardown_()
    if (leaked > 0) {
       _status_ = _FAILED_;
 
-      _message_(&_errormsg_, "bold,red", "Memory Leaked %d bytes totally", leaked);
+      _vmsg_(&_errormsg_, "bold,red", "Memory Leaked %d bytes totally", leaked);
 
       count++;
       _addition_ = (h2unit_string**) malloc(count * sizeof(h2unit_string*));
@@ -946,8 +955,8 @@ void h2unit_case::_post_teardown_()
 
       for (b = h2unit_task::O()->blob_list; b; b = b->next) {
          if (b->owner == this) {
-            _message_(&_addition_[i], "bold,red", "Leaked %d bytes", b->size);
-            _message_(&_addition_[i], "", " at %s:%d", b->file, b->line);
+            _vmsg_(&_addition_[i], "bold,red", "Leaked %d bytes", b->size);
+            _vmsg_(&_addition_[i], "", " at %s:%d", b->file, b->line);
             ++i;
          }
       }
@@ -965,8 +974,12 @@ void h2unit_case::teardown()
 void h2unit_case::_execute_()
 {
    _start_ = __milliseconds();
-   if (cfg._filter != NULL && __pattern_cmp(cfg._filter, (char*) _unitname_) != 0) {
-      _status_ = _FILTER_;
+   if (cfg._include != NULL && (__pattern_cmp(cfg._include, (char*) _unitname_) != 0 && __pattern_cmp(cfg._include, (char*) _casename_) != 0)) {
+      _status_ = _FILTED_;
+      return;
+   }
+   if (cfg._exclude != NULL && (__pattern_cmp(cfg._exclude, (char*) _unitname_) == 0 || __pattern_cmp(cfg._exclude, (char*) _casename_) == 0)) {
+      _status_ = _FILTED_;
       return;
    }
 
@@ -991,7 +1004,7 @@ void h2unit_case::_limit_(unsigned long bytes)
    h2unit_task::O()->limited = bytes;
 }
 
-void h2unit_case::_message_(h2unit_string** typed, const char *style, const char* format, ...)
+void h2unit_case::_vmsg_(h2unit_string** typed, const char *style, const char* format, ...)
 {
    h2unit_string* p = (h2unit_string*) malloc(sizeof(h2unit_string));
    while (*typed) typed = &(*typed)->next;
@@ -1016,12 +1029,12 @@ void* h2unit_case::_addr_(const char* native, const char* native_name, const cha
 {
    void *address = h2unit_task::O()->get_symbol_address(native);
    if (address == NULL) {
-      _message_(&_errormsg_, "", "H2STUB(");
-      _message_(&_errormsg_, "bold,red", "%s", native_name);
-      _message_(&_errormsg_, "", " <-- ");
-      _message_(&_errormsg_, "bold,red", "%s", fake_name);
-      _message_(&_errormsg_, "", ")");
-      _message_(&_errormsg_, "bold,purple", " %s not found", native_name);
+      _vmsg_(&_errormsg_, "", "H2STUB(");
+      _vmsg_(&_errormsg_, "bold,red", "%s", native_name);
+      _vmsg_(&_errormsg_, "", " <-- ");
+      _vmsg_(&_errormsg_, "bold,red", "%s", fake_name);
+      _vmsg_(&_errormsg_, "", ")");
+      _vmsg_(&_errormsg_, "bold,purple", " %s not found", native_name);
 
       throw _fail;
    }
@@ -1071,12 +1084,12 @@ void h2unit_case::_stub_(void* native, void* fake, const char* native_name, cons
 
    failure:
 
-   _message_(&_errormsg_, "", "H2STUB(");
-   _message_(&_errormsg_, "bold,red", "%s", native_name);
-   _message_(&_errormsg_, "", " <-- ");
-   _message_(&_errormsg_, "bold,red", "%s", fake_name);
-   _message_(&_errormsg_, "", ")");
-   _message_(&_errormsg_, "bold,red", " %s", reason);
+   _vmsg_(&_errormsg_, "", "H2STUB(");
+   _vmsg_(&_errormsg_, "bold,red", "%s", native_name);
+   _vmsg_(&_errormsg_, "", " <-- ");
+   _vmsg_(&_errormsg_, "bold,red", "%s", fake_name);
+   _vmsg_(&_errormsg_, "", ")");
+   _vmsg_(&_errormsg_, "bold,red", " %s", reason);
 
    throw _fail;
 }
@@ -1091,8 +1104,8 @@ void h2unit_case::_enter_check_(const char* file, int line)
 void h2unit_case::_check_equal_(bool result)
 {
    if (!result) {
-      _message_(&_expected_, "bold,red", "true");
-      _message_(&_actually_, "bold,red", "false");
+      _vmsg_(&_expected_, "bold,red", "true");
+      _vmsg_(&_actually_, "bold,red", "false");
 
       throw _fail;
    }
@@ -1101,8 +1114,8 @@ void h2unit_case::_check_equal_(bool result)
 void h2unit_case::_check_equal_(int expected, int actually)
 {
    if (expected != actually) {
-      _message_(&_expected_, "bold,red", "%d 0x%x", expected, expected);
-      _message_(&_actually_, "bold,red", "%d 0x%x", actually, actually);
+      _vmsg_(&_expected_, "bold,red", "%d 0x%x", expected, expected);
+      _vmsg_(&_actually_, "bold,red", "%d 0x%x", actually, actually);
 
       throw _fail;
    }
@@ -1111,8 +1124,8 @@ void h2unit_case::_check_equal_(int expected, int actually)
 void h2unit_case::_check_equal_(unsigned long expected, unsigned long actually)
 {
    if (expected != actually) {
-      _message_(&_expected_, "bold,red", "%ld 0x%lx", (long)expected, expected);
-      _message_(&_actually_, "bold,red", "%ld 0x%lx", (long)actually, actually);
+      _vmsg_(&_expected_, "bold,red", "%ld 0x%lx", (long)expected, expected);
+      _vmsg_(&_actually_, "bold,red", "%ld 0x%lx", (long)actually, actually);
 
       throw _fail;
    }
@@ -1122,11 +1135,11 @@ void h2unit_case::_check_equal_(unsigned long long expected, unsigned long long 
 {
    if (expected != actually) {
 #ifdef _WIN32
-      _message_(&_expected_, "bold,red", "%I64d 0x%I64x", (long long)expected, expected);
-      _message_(&_actually_, "bold,red", "%I64d 0x%I64x", (long long)actually, actually);
+      _vmsg_(&_expected_, "bold,red", "%I64d 0x%I64x", (long long)expected, expected);
+      _vmsg_(&_actually_, "bold,red", "%I64d 0x%I64x", (long long)actually, actually);
 #else
-      _message_(&_expected_, "bold,red", "%lld 0x%llx", (long long)expected, expected);
-      _message_(&_actually_, "bold,red", "%lld 0x%llx", (long long)actually, actually);
+      _vmsg_(&_expected_, "bold,red", "%lld 0x%llx", (long long)expected, expected);
+      _vmsg_(&_actually_, "bold,red", "%lld 0x%llx", (long long)actually, actually);
 #endif
 
       throw _fail;
@@ -1138,8 +1151,8 @@ void h2unit_case::_check_equal_(double expected, double actually, double thresho
    double delta = expected - actually;
    if (delta < 0) delta = -delta;
    if (delta > threshold) {
-      _message_(&_expected_, "bold,red", "%f", expected);
-      _message_(&_actually_, "bold,red", "%f", actually);
+      _vmsg_(&_expected_, "bold,red", "%f", expected);
+      _vmsg_(&_actually_, "bold,red", "%f", actually);
 
       throw _fail;
    }
@@ -1152,10 +1165,10 @@ void h2unit_case::_check_equal_(char* expected, char* actually)
       int expected_length = strlen(expected);
 
       for (int i = 0; i < expected_length; i++) {
-         _message_(&_expected_, i <= actually_length && expected[i] == actually[i] ? "bold,green" : "bold,red", "%c", expected[i]);
+         _vmsg_(&_expected_, i <= actually_length && expected[i] == actually[i] ? "bold,green" : "bold,red", "%c", expected[i]);
       }
       for (int j = 0; j < actually_length; j++) {
-         _message_(&_actually_, j <= expected_length && actually[j] == expected[j] ? "bold,green" : "bold,red", "%c", actually[j]);
+         _vmsg_(&_actually_, j <= expected_length && actually[j] == expected[j] ? "bold,green" : "bold,red", "%c", actually[j]);
       }
 
       throw _fail;
@@ -1169,10 +1182,10 @@ void h2unit_case::_check_equal_strcmp_nocase_(char* expected, char* actually)
       int expected_length = strlen(expected);
 
       for (int i = 0; i < expected_length; i++) {
-         _message_(&_expected_, i <= actually_length && tolower((int) expected[i]) == tolower((int) actually[i]) ? "bold,green" : "bold,red", "%c", expected[i]);
+         _vmsg_(&_expected_, i <= actually_length && tolower((int) expected[i]) == tolower((int) actually[i]) ? "bold,green" : "bold,red", "%c", expected[i]);
       }
       for (int j = 0; j < actually_length; j++) {
-         _message_(&_actually_, j <= expected_length && tolower((int) actually[j]) == tolower((int) expected[j]) ? "bold,green" : "bold,red", "%c", actually[j]);
+         _vmsg_(&_actually_, j <= expected_length && tolower((int) actually[j]) == tolower((int) expected[j]) ? "bold,green" : "bold,red", "%c", actually[j]);
       }
 
       throw _fail;
@@ -1182,8 +1195,8 @@ void h2unit_case::_check_equal_strcmp_nocase_(char* expected, char* actually)
 void h2unit_case::_check_regex_(char* express, char* actually)
 {
    if (__pattern_cmp(express, actually) != 0) {
-      _message_(&_expected_, "bold,red", "%s", express);
-      _message_(&_actually_, "bold,red", "%s", actually);
+      _vmsg_(&_expected_, "bold,red", "%s", express);
+      _vmsg_(&_actually_, "bold,red", "%s", actually);
 
       throw _fail;
    }
@@ -1193,8 +1206,8 @@ void h2unit_case::_check_equal_(unsigned char* expected, unsigned char* actually
 {
    if (memcmp(expected, actually, length) != 0) {
       for (int i = 0; i < length; i++) {
-         _message_(&_expected_, expected[i] == actually[i] ? "bold,green" : "bold,red", i % 16 < 8 ? "%02X " : " %02X", expected[i]);
-         _message_(&_actually_, actually[i] == expected[i] ? "bold,green" : "bold,red", i % 16 < 8 ? "%02X " : " %02X", actually[i]);
+         _vmsg_(&_expected_, expected[i] == actually[i] ? "bold,green" : "bold,red", i % 16 < 8 ? "%02X " : " %02X", expected[i]);
+         _vmsg_(&_actually_, actually[i] == expected[i] ? "bold,green" : "bold,red", i % 16 < 8 ? "%02X " : " %02X", actually[i]);
       }
 
       throw _fail;
@@ -1204,8 +1217,8 @@ void h2unit_case::_check_equal_(unsigned char* expected, unsigned char* actually
 void h2unit_case::_check_catch_(const char* expected, const char* actually, const char* exceptype)
 {
    if (expected != actually) {
-      _message_(&_expected_, "bold,red", "%s %s", expected, exceptype);
-      _message_(&_actually_, "bold,red", "%s %s", actually, exceptype);
+      _vmsg_(&_expected_, "bold,red", "%s %s", expected, exceptype);
+      _vmsg_(&_actually_, "bold,red", "%s %s", actually, exceptype);
 
       throw _fail;
    }
@@ -1290,7 +1303,8 @@ int main(int argc, char** argv)
       if (strstr(argv[1], "v")) cfg._verbose = true;
       if (strstr(argv[1], "b")) cfg._colored = false;
       if (strstr(argv[1], "r")) cfg._random = true;
-      if (strstr(argv[1], "u")) cfg._filter = argv[2];
+      if (strstr(argv[1], "i")) cfg._include = argv[2];
+      if (strstr(argv[1], "x")) cfg._exclude = argv[2];
    }
    h2unit_task::O()->run();
    return 0;

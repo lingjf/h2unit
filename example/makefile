@@ -12,6 +12,8 @@ all : h2unit.o product_1.o product_2.o test_product_1.o test_product_2.o
 # -v : full output
 # -r : random execute sequence
 # -b : black-white color output	
+# -i : include-filter, testcases which unit name or case name match will be executed.
+# -x : exclude-filter, testcases which unit name or case name match will be ignored.
 
 	
 h2unit.o : ../h2unit.cpp ../h2unit.h

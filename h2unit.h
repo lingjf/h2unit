@@ -20,7 +20,7 @@ public:
    static const int _PASSED_ = 1;
    static const int _FAILED_ = 2;
    static const int _IGNORE_ = 3;
-   static const int _FILTER_ = 4;
+   static const int _FILTED_ = 4;
 
    int _status_;
    const char* _unitname_;
@@ -43,7 +43,7 @@ public:
    h2unit_string* _expected_;
    h2unit_string* _actually_;
    h2unit_string** _addition_;
-   void _message_(h2unit_string** typed, const char *style, const char* format, ...);
+   void _vmsg_(h2unit_string** typed, const char *style, const char* format, ...);
 public:
    h2unit_case();
    virtual ~h2unit_case();
@@ -118,10 +118,10 @@ public:
       h2unit_case::_current_->_check_equal_(condition);                                                  \
    } while(0)
 
-#define H2EQUAL_INTEGER(expected, actually)                                                              \
+#define H2EQUAL_INT(expected, actually)                                                                  \
    do {                                                                                                  \
       h2unit_case::_current_->_enter_check_(__FILE__, __LINE__);                                         \
-      h2unit_case::_current_->_check_equal_((int)(expected), (int)(actually));                           \
+      h2unit_case::_current_->_check_equal_((unsigned long)(expected), (unsigned long)(actually));       \
    } while(0)
 
 #define H2EQUAL_DOUBLE(expected, actually, threshold)                                                    \
@@ -142,12 +142,6 @@ public:
       h2unit_case::_current_->_check_equal_strcmp_nocase_((char*)(expected), (char*)(actually));         \
    } while(0)
 
-#define H2EQUAL_MEMCMP(expected, actually, length)                                                       \
-   do {                                                                                                  \
-      h2unit_case::_current_->_enter_check_(__FILE__, __LINE__);                                         \
-      h2unit_case::_current_->_check_equal_((unsigned char*)(expected), (unsigned char*)(actually), (int)(length));  \
-   } while(0)
-
 #define H2EQUAL_WILDCARD(expected, actually)                                                             \
    do {                                                                                                  \
       h2unit_case::_current_->_enter_check_(__FILE__, __LINE__);                                         \
@@ -155,6 +149,12 @@ public:
    } while(0)
 
 #define H2EQUAL_REGEX H2EQUAL_WILDCARD
+
+#define H2EQUAL_MEMCMP(expected, actually, length)                                                       \
+   do {                                                                                                  \
+      h2unit_case::_current_->_enter_check_(__FILE__, __LINE__);                                         \
+      h2unit_case::_current_->_check_equal_((unsigned char*)(expected), (unsigned char*)(actually), (int)(length));  \
+   } while(0)
 
 #define H2CATCH_NONE(expressions)                                                                        \
    do {                                                                                                  \
@@ -207,7 +207,6 @@ public:
 #else
 #include <stdio.h>
 #include <stdlib.h>
-#include <malloc.h>
 #include <string.h>
 #endif
 

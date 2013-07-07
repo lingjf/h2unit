@@ -45,12 +45,16 @@ H2CASE(getEven,"test for h2unit varible and setup")
 
 H2CASE(getEven,"test for global varible and H2EQUAL[_TRUE]")
 {
+#if defined(__GNUC__) || (defined(_MSC_VER) && _MSC_VER >= 1400)
    H2EQUAL(4 == gv);
+#else
+   H2EQUAL_TRUE(4 == gv);
+#endif
 }
 
-H2CASE(getEven,"test for H2EQUAL_INTEGER")
+H2CASE(getEven,"test for H2EQUAL_INT")
 {
-   H2EQUAL_INTEGER(4, getEven(7));
+   H2EQUAL_INT(4, getEven(7));
 }
 
 H2CASE(getEven,"test for general H2EQUAL[_INTEGER]")
@@ -58,44 +62,44 @@ H2CASE(getEven,"test for general H2EQUAL[_INTEGER]")
    H2EQUAL(6, getEven(6));
 }
 
-H2CASE(getEven,"test for H2EQUAL_INTEGER/H2EQUAL with byte")
+H2CASE(getEven,"test for H2EQUAL_INT/H2EQUAL with byte")
 {
    unsigned char e1 = 2;
    unsigned char a1 = 2;
-   H2EQUAL_INTEGER(e1, a1);
+   H2EQUAL_INT(e1, a1);
 
    char e2 = 2;
    char a2 = 2;
    H2EQUAL(e2, a2);
 }
 
-H2CASE(getEven,"test for H2EQUAL_INTEGER/H2EQUAL with short")
+H2CASE(getEven,"test for H2EQUAL_INT/H2EQUAL with short")
 {
    short e1 = 2;
    short a1 = 2;
-   H2EQUAL_INTEGER(e1, a1);
+   H2EQUAL_INT(e1, a1);
 
    unsigned short e2 = 2;
    unsigned short a2 = 2;
    H2EQUAL(e2, a2);
 }
 
-H2CASE(getEven,"test for H2EQUAL_INTEGER/H2EQUAL with long")
+H2CASE(getEven,"test for H2EQUAL_INT/H2EQUAL with long")
 {
    long e1 = 2;
    long a1 = 2;
-   H2EQUAL_INTEGER(e1, a1);
+   H2EQUAL_INT(e1, a1);
 
    unsigned long e2 = 2;
    unsigned long a2 = 2;
    H2EQUAL(e2, a2);
 }
 
-H2CASE(getEven,"test for H2EQUAL_INTEGER/H2EQUAL with long long")
+H2CASE(getEven,"test for H2EQUAL_INT/H2EQUAL with long long")
 {
    long long e1 = 2;
    long long a1 = 2;
-   H2EQUAL_INTEGER(e1, a1);
+   H2EQUAL_INT(e1, a1);
 
    unsigned long long e2 = 0x12345678900L;
    unsigned long long a2 = 12345678900L;
