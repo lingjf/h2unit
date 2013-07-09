@@ -1146,11 +1146,11 @@ void h2unit_case::_check_equal_(unsigned long long expected, unsigned long long 
    }
 }
 
-void h2unit_case::_check_equal_(double expected, double actually, double threshold)
+void h2unit_case::_check_equal_(double expected, double actually)
 {
    double delta = expected - actually;
    if (delta < 0) delta = -delta;
-   if (delta > threshold) {
+   if (delta > 0.00001) { /* 0.00001 is epsilon value */
       _vmsg_(&_expected_, "bold,red", "%f", expected);
       _vmsg_(&_actually_, "bold,red", "%f", actually);
 

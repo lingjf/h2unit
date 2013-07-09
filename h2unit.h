@@ -58,9 +58,10 @@ public:
    void _check_equal_(int expected, int actually);
    void _check_equal_(unsigned long expected, unsigned long actually);
    void _check_equal_(unsigned long long expected, unsigned long long actually);
-   void _check_equal_(double expected, double actually, double threshold = 0.000001);
+   void _check_equal_(double expected, double actually);
    void _check_equal_(char* expected, char* actually);
    void _check_equal_(unsigned char* expected, unsigned char* actually, int length);
+   void _check_range_(double from, double to, double actually);
    void _check_equal_strcmp_nocase_(char* expected, char* actually);
    void _check_regex_(char* express, char* actually);
    void _check_catch_(const char* expected, const char* actually, const char* exceptype);
@@ -127,10 +128,10 @@ public:
       h2unit_case::_current_->_check_equal_((unsigned long)(expected), (unsigned long)(actually));       \
    } while(0)
 
-#define H2EQUAL_FLOAT(expected, actually, threshold)                                                     \
+#define H2EQUAL_FLOAT(expected, actually)                                                                \
    do {                                                                                                  \
       h2unit_case::_current_->_enter_check_(__FILE__, __LINE__);                                         \
-      h2unit_case::_current_->_check_equal_((double)(expected), (double)(actually), (double)(threshold));\
+      h2unit_case::_current_->_check_equal_((double)(expected), (double)(actually));                     \
    } while(0)
 
 #define H2EQUAL_STRCMP(expected, actually)                                                               \

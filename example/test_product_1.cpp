@@ -116,13 +116,13 @@ H2UNIT(getCeil)
 
 H2CASE(getCeil, "test for general H2EQUAL")
 {
-   H2EQUAL_FLOAT(6.0, getCeil(6.2), 0.000001);
+   H2EQUAL_FLOAT(6.0, getCeil(6.2));
    H2EQUAL(6.0, getCeil(6.4));
 }
 
 H2CASE(getCeil, "test for H2EQUAL_FLOAT")
 {
-   H2EQUAL_FLOAT(6.8, getCeil(6.8), 0.000001);
+   H2EQUAL_FLOAT(6.8, getCeil(6.8));
 }
 
 /*
