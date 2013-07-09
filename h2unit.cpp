@@ -1175,6 +1175,16 @@ void h2unit_case::_check_equal_(char* expected, char* actually)
    }
 }
 
+void h2unit_case::_check_range_(double from, double to, double actually)
+{
+   if (actually < from - 0.00001 || actually > to + 0.00001) {
+      _vmsg_(&_expected_, "bold,red", "[%f, %f]", from, to);
+      _vmsg_(&_actually_, "bold,red", "%f", actually);
+
+      throw _fail;
+   }
+}
+
 void h2unit_case::_check_equal_strcmp_nocase_(char* expected, char* actually)
 {
    if (strcasecmp(expected, actually) != 0) {

@@ -134,6 +134,12 @@ public:
       h2unit_case::_current_->_check_equal_((double)(expected), (double)(actually));                     \
    } while(0)
 
+#define H2EQUAL_RANGE(from, to, actually)                                                                \
+   do {                                                                                                  \
+      h2unit_case::_current_->_enter_check_(__FILE__, __LINE__);                                         \
+      h2unit_case::_current_->_check_range_((double)(from), (double)(to), (double)(actually));           \
+   } while(0)
+
 #define H2EQUAL_STRCMP(expected, actually)                                                               \
    do {                                                                                                  \
       h2unit_case::_current_->_enter_check_(__FILE__, __LINE__);                                         \
