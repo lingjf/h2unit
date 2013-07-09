@@ -13,6 +13,18 @@ typedef struct h2unit_string
    struct h2unit_string* next;
 } h2unit_string;
 
+typedef struct h2unit_list {
+   struct h2unit_list *next;
+   struct h2unit_list *prev;
+} h2unit_list;
+
+class h2unit_auto {
+public :
+   bool done;
+   h2unit_auto(const char* file, int line);
+   ~h2unit_auto();
+};
+
 class h2unit_case
 {
 public:
@@ -45,11 +57,18 @@ public:
    h2unit_string** _addition_;
    void _vmsg_(h2unit_string** typed, const char *style, const char* format, ...);
 public:
+   h2unit_list _leak_stack_;
+   void _leak_push_(const char* file, int line);
+   bool _leak_pop_();
+   void _blob_add_(h2unit_list* blob);
+   void _blob_del_(h2unit_list* blob);
+   void _limit_(unsigned long bytes);
+
+public:
    h2unit_case();
    virtual ~h2unit_case();
    void _init_(const char* unitname, const char* casename, bool ignored, const char* file, int line);
    static h2unit_case* _current_;
-   void _limit_(unsigned long bytes);
    void* _addr_(const char* native, const char* native_name, const char* fake_name);
    void _stub_(void* native, void* fake, const char* native_name, const char* fake_name);
 
@@ -214,6 +233,13 @@ public:
 
 
 #define H2_FAULTY_INJECT_MEMORY(bytes)  h2unit_case::_current_->_limit_(bytes)
+
+#define ____H2UNIT_LEAK(line) h2unit_auto_##line##_inst
+#define ___H2UNIT_LEAK(line) ____H2UNIT_LEAK(line)
+#define __H2UNIT_LEAK() ___H2UNIT_LEAK(__LINE__)
+
+#define H2LEAK_BLOCK() \
+   for (h2unit_auto __H2UNIT_LEAK()(__FILE__, __LINE__); !__H2UNIT_LEAK().done; __H2UNIT_LEAK().done = true)
 
 #endif
 

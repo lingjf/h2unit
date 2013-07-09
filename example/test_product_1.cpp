@@ -137,6 +137,7 @@ H2CASE(getCeil, "test for H2EQUAL_RANGE")
       1.0, 2.0, 3.0
    };
    H2EQUAL_INSET(t, 3, getCeil(2.8));
+   H2EQUAL_INSET(t, 3, getCeil(6.8));
 }
 
 
@@ -213,7 +214,7 @@ H2CASE(dynamic_stub, "test dynamic stub libc function")
 }
 
 
-H2UNIT(dynamic_stub_act_mock)
+H2UNIT(mock_with_dynamic_stub)
 {
    void setup() { }
    void teardown() { }
@@ -226,7 +227,7 @@ int stub_foo_mock1(int a)
 }
 
 
-H2CASE(dynamic_stub_act_mock, "act mock")
+H2CASE(mock_with_dynamic_stub, "act mock")
 {
    H2STUB(orig_foo, stub_foo_mock1);
    H2EQUAL(7, getSum(1));
@@ -252,7 +253,7 @@ int stub_foo_mock2(int a)
    return 0;
 }
 
-H2CASE(dynamic_stub_act_mock, "act mock n call")
+H2CASE(mock_with_dynamic_stub, "act mock n call")
 {
    H2STUB(orig_foo, stub_foo_mock2);
    H2EQUAL(3, getSum(1));

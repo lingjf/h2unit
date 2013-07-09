@@ -104,9 +104,31 @@ H2UNIT(memory_leak)
    void teardown() { }
 };
 
+/*
+ * Memory leak detection on Test Case Level
+ */
 H2CASE(memory_leak, "test memory leak")
 {
    allocation();
+}
+
+
+/*
+ * Memory leak detection on User-Defined Block Level
+ */
+H2CASE(memory_leak, "test memory leak block")
+{
+   void * c1;
+   void * c2;
+
+   c1 = malloc(5);
+
+   H2LEAK_BLOCK() {
+      c2 = malloc(7);
+   }
+
+   free(c2);
+   free(c1);
 }
 
 /*

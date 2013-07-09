@@ -15,6 +15,60 @@
 
 using namespace std;
 
+static inline void h2unit_list_null(h2unit_list* node) {
+   node->next = node->prev = (h2unit_list*)0;
+}
+
+static inline void h2unit_list_init(h2unit_list* node) {
+   node->next = node->prev = node;
+}
+
+static inline void __h2unit_list_add(h2unit_list *newl, h2unit_list *prev, h2unit_list *next)
+{
+   next->prev = newl;
+   newl->next = next;
+   newl->prev = prev;
+   prev->next = newl;
+}
+
+static inline void h2unit_list_add_head(h2unit_list *newl, h2unit_list *head)
+{
+   __h2unit_list_add(newl, head, head->next);
+}
+
+static inline void h2unit_list_add_tail(h2unit_list *newl, h2unit_list *head)
+{
+   __h2unit_list_add(newl, head->prev, head);
+}
+
+static inline void h2unit_list_del(h2unit_list *node)
+{
+   node->next->prev = node->prev;
+   node->prev->next = node->next;
+   node->next = node->prev = node;
+}
+
+static inline bool h2unit_list_empty(h2unit_list *head)
+{
+   return head->next == head;
+}
+
+static inline h2unit_list* h2unit_list_get_head(h2unit_list *head)
+{
+   return (h2unit_list_empty(head)?((h2unit_list*)0):(head)->next);
+}
+
+static inline h2unit_list* h2unit_list_get_tail(h2unit_list *head)
+{
+   return (h2unit_list_empty(head)?((h2unit_list*)0):(head)->prev);
+}
+
+#define h2unit_list_entry(ptr, type, field)  \
+   ((type *)((char *)(ptr)-(unsigned long)(&((type *)0)->field)))
+
+#define h2unit_list_for_each(iter, head)  \
+   for( (iter) = (head)->next; (iter) != (head); (iter) = (iter)->next )
+
 static int __pattern_cmp(char* pattern, char* source)
 {
    int negate, found;
@@ -105,16 +159,102 @@ static long __milliseconds()
 }
 #endif
 
+
+class h2unit_fail
+{
+public:
+   h2unit_fail() throw ()
+   {
+   }
+   ~h2unit_fail() throw ()
+   {
+   }
+} _fail;
+
 typedef struct h2unit_blob
 {
-   struct h2unit_blob* next;
+   h2unit_list queue;
+   h2unit_list stack;
+
    void* ptr;
    unsigned char* data;
    size_t size;
    const char* file;
    int line;
-   h2unit_case* owner;
 } h2unit_blob;
+
+static const int BLOB_GUARD_SIZE = 8;
+static const unsigned BLOB_MAGIC_CODE = 0xbeafcafe;
+
+h2unit_blob* h2unit_blob_new(size_t size, size_t alignment, unsigned char c, const char* file, int line)
+{
+   void* data = malloc(size + BLOB_GUARD_SIZE * sizeof(unsigned) * 2 + alignment);
+   if (!data) return NULL;
+   h2unit_blob* new_blob = (h2unit_blob*) malloc(sizeof(h2unit_blob));
+   if (!new_blob) {
+      free(data);
+      return NULL;
+   }
+   new_blob->data = (unsigned char*)data;
+   new_blob->ptr = new_blob->data + BLOB_GUARD_SIZE * sizeof(unsigned);
+   new_blob->ptr = (void*)(((unsigned long)(new_blob->ptr)+((alignment)-1))&(~((alignment)-1)));
+   new_blob->size = size;
+   new_blob->file = file;
+   new_blob->line = line;
+
+   h2unit_list_init(&new_blob->queue);
+   h2unit_list_init(&new_blob->stack);
+
+   for (int l = 0; l < (int)size; l++) {
+      ((unsigned char*)new_blob->ptr)[l] = c;
+   }
+
+   unsigned* p = (unsigned*)(new_blob->ptr) - 1;
+   unsigned* q = (unsigned*)((unsigned char*)(new_blob->ptr) + new_blob->size);
+   for (int i = 0; i < BLOB_GUARD_SIZE; i++) {
+      p[-i] = BLOB_MAGIC_CODE;
+      q[i] = BLOB_MAGIC_CODE;
+   }
+
+   return new_blob;
+}
+
+void h2unit_blob_del(h2unit_blob* blob)
+{
+   h2unit_list_init(&blob->queue);
+   h2unit_list_init(&blob->stack);
+
+   /* overflow and under-flow checking */
+   bool overed = false;
+   unsigned* p = (unsigned*)(blob->ptr) - 1;
+   unsigned* q = (unsigned*)((unsigned char*)(blob->ptr) + blob->size);
+   for (int i = 0; i < BLOB_GUARD_SIZE; i++) {
+      if (p[-i] != BLOB_MAGIC_CODE || q[i] != BLOB_MAGIC_CODE) {
+         if (h2unit_case::_current_) {
+            h2unit_case::_current_->_vmsg_(&h2unit_case::_current_->_errormsg_, "bold,red", q[i] == BLOB_MAGIC_CODE ? "Memory OverFlow" : "Memory UnderFlow");
+            h2unit_case::_current_->_vmsg_(&h2unit_case::_current_->_errormsg_, "", " at %s:%d", blob->file, blob->line);
+            overed = true;
+            break;
+         }
+      }
+   }
+
+   free(blob->data);
+   free(blob);
+
+   if (overed) {
+      throw _fail;
+   }
+}
+
+typedef struct h2unit_leak
+{
+   h2unit_list stack;
+   h2unit_list blobs;
+
+   const char* file;
+   int line;
+} h2unit_leak;
 
 typedef struct h2unit_symb
 {
@@ -573,16 +713,6 @@ public:
    }
 };
 
-class h2unit_fail
-{
-public:
-   h2unit_fail() throw ()
-   {
-   }
-   ~h2unit_fail() throw ()
-   {
-   }
-} _fail;
 
 class h2unit_task
 {
@@ -590,13 +720,11 @@ public:
    int unit_count, case_count, case_excuted_count, check_count;
    int case_failed, case_passed, case_ignore, case_filter;
    h2unit_symb* symb_list;
-   h2unit_blob* blob_list;
+   h2unit_list blob_list;
    h2unit_stub* stub_list;
    h2unit_unit* unit_list;
    h2unit_case* case_chain;
    unsigned limited;
-   static const int BLOB_GUARD_SIZE = 8;
-   static const unsigned BLOB_MAGIC_CODE = 0xbeafcafe;
 
    h2unit_listen_text text_listener;
    h2unit_listen_console console_listener;
@@ -613,7 +741,7 @@ public:
       unit_list = NULL;
       symb_list = NULL;
       stub_list = NULL;
-      blob_list = NULL;
+      h2unit_list_init(&blob_list);
       limited = 0x7fffffff;
 
       listener.attach(&console_listener);
@@ -780,8 +908,9 @@ public:
 
    h2unit_blob* get_blob(void* ptr)
    {
-      h2unit_blob* b;
-      for (b = blob_list; b; b = b->next) {
+      h2unit_list* p;
+      h2unit_list_for_each(p, &blob_list) {
+         h2unit_blob* b = h2unit_list_entry(p, h2unit_blob, queue);
          if (b->ptr == ptr) return b;
       }
       return NULL;
@@ -794,70 +923,29 @@ public:
 
       if (size > limited + old_size) return NULL;
 
-      void* data = malloc(size + BLOB_GUARD_SIZE * sizeof(unsigned) * 2 + alignment);
-      if (!data) return NULL;
-      h2unit_blob* new_blob = (h2unit_blob*) malloc(sizeof(h2unit_blob));
-      if (!new_blob) {
-         free(data);
-         return NULL;
-      }
-      new_blob->data = (unsigned char*)data;
-      new_blob->ptr = new_blob->data + BLOB_GUARD_SIZE * sizeof(unsigned);
-      new_blob->ptr = (void*)(((unsigned long)(new_blob->ptr)+((alignment)-1))&(~((alignment)-1)));
-      new_blob->size = size;
-      new_blob->file = file;
-      new_blob->line = line;
-      new_blob->owner = h2unit_case::_current_;
-      new_blob->next = blob_list;
-      blob_list = new_blob;
-      limited -= size;
+      h2unit_blob* new_blob = h2unit_blob_new(size, alignment, c, file, line);
 
-      for (int l = 0; l < (int)size; l++) {
-         ((unsigned char*)new_blob->ptr)[l] = c;
-      }
+      h2unit_list_add_head(&new_blob->queue, &blob_list);
 
-      unsigned* p = (unsigned*)(new_blob->ptr) - 1;
-      unsigned* q = (unsigned*)((unsigned char*)(new_blob->ptr) + new_blob->size);
-      for (int i = 0; i < BLOB_GUARD_SIZE; i++) {
-         p[-i] = BLOB_MAGIC_CODE;
-         q[i] = BLOB_MAGIC_CODE;
+      if (h2unit_case::_current_) {
+         h2unit_case::_current_->_blob_add_(&new_blob->stack);
       }
-
 
       if (old_blob) {
          memcpy(new_blob->ptr, old_blob->ptr, old_size);
          del_blob(old_blob);
       }
+      limited -= size;
+
       return new_blob;
    }
 
    void del_blob(h2unit_blob* blob)
    {
-      h2unit_blob** ip;
-      for (ip = &blob_list; *ip; ip = &((*ip)->next)) {
-         if (*ip == blob) {
-            *ip = (*ip)->next;
-            limited += blob->size;
-            /* overflow and under-flow checking */
-
-            unsigned* p = (unsigned*)(blob->ptr) - 1;
-            unsigned* q = (unsigned*)((unsigned char*)(blob->ptr) + blob->size);
-            for (int i = 0; i < BLOB_GUARD_SIZE; i++) {
-               if (p[-i] != BLOB_MAGIC_CODE || q[i] != BLOB_MAGIC_CODE) {
-                  if (h2unit_case::_current_) {
-                     h2unit_case::_current_->_vmsg_(&h2unit_case::_current_->_errormsg_, "bold,red", q[i] == BLOB_MAGIC_CODE ? "Memory OverFlow" : "Memory UnderFlow");
-                     h2unit_case::_current_->_vmsg_(&h2unit_case::_current_->_errormsg_, "", " at %s:%d", blob->file, blob->line);
-
-                     throw _fail;
-                  }
-               }
-            }
-
-            free(blob->data);
-            free(blob);
-            return;
-         }
-      }
+      limited += blob->size;
+      h2unit_list_del(&blob->stack);
+      h2unit_list_del(&blob->queue);
+      h2unit_blob_del(blob);
    }
 
    h2unit_stub* add_stub(void* orig)
@@ -892,6 +980,19 @@ public:
    }
 };
 
+h2unit_auto::h2unit_auto(const char* file, int line)
+{
+   done = false;
+   h2unit_case::_current_->_leak_push_(file, line);
+}
+
+h2unit_auto::~h2unit_auto()
+{
+   if (!h2unit_case::_current_->_leak_pop_()) {
+      throw _fail;
+   }
+}
+
 h2unit_case* h2unit_case::_current_ = NULL;
 
 h2unit_case::h2unit_case()
@@ -919,6 +1020,8 @@ void h2unit_case::_init_(const char* unitname, const char* casename, bool ignore
    _actually_ = NULL;
    _addition_ = NULL;
 
+   h2unit_list_init(&_leak_stack_);
+
    if (ignored) _status_ = _IGNORE_;
 
    h2unit_task::O()->install_testcase(this);
@@ -926,6 +1029,7 @@ void h2unit_case::_init_(const char* unitname, const char* casename, bool ignore
 
 void h2unit_case::_prev_setup_()
 {
+   _leak_push_(NULL, 0);
 }
 
 void h2unit_case::_post_teardown_()
@@ -935,32 +1039,7 @@ void h2unit_case::_post_teardown_()
    h2unit_task::O()->del_stubs();
 
    /* memory leak detection */
-   int leaked = 0, count = 0, i = 0;
-   h2unit_blob* b;
-   for (b = h2unit_task::O()->blob_list; b; b = b->next) {
-      if (b->owner == this) {
-         count++;
-         leaked += b->size;
-      }
-   }
-
-   if (leaked > 0) {
-      _status_ = _FAILED_;
-
-      _vmsg_(&_errormsg_, "bold,red", "Memory Leaked %d bytes totally", leaked);
-
-      count++;
-      _addition_ = (h2unit_string**) malloc(count * sizeof(h2unit_string*));
-      memset(_addition_, 0, count * sizeof(h2unit_string*));
-
-      for (b = h2unit_task::O()->blob_list; b; b = b->next) {
-         if (b->owner == this) {
-            _vmsg_(&_addition_[i], "bold,red", "Leaked %d bytes", b->size);
-            _vmsg_(&_addition_[i], "", " at %s:%d", b->file, b->line);
-            ++i;
-         }
-      }
-   }
+   _leak_pop_();
 }
 
 void h2unit_case::setup()
@@ -1002,6 +1081,74 @@ void h2unit_case::_execute_()
 void h2unit_case::_limit_(unsigned long bytes)
 {
    h2unit_task::O()->limited = bytes;
+}
+
+void h2unit_case::_leak_push_(const char* file, int line)
+{
+   h2unit_leak* leak = (h2unit_leak*) malloc(sizeof(h2unit_leak));
+   memset(leak, 0, sizeof(h2unit_leak));
+   leak->file = file;
+   leak->line = line;
+   h2unit_list_init(&leak->stack);
+   h2unit_list_init(&leak->blobs);
+   h2unit_list_add_head(&leak->stack, &_leak_stack_);
+}
+
+void h2unit_case::_blob_add_(h2unit_list* blob)
+{
+   h2unit_list* head = h2unit_list_get_head(&_leak_stack_);
+   h2unit_leak* leak = h2unit_list_entry(head, h2unit_leak, stack);
+   h2unit_list_add_head(blob, &leak->blobs);
+}
+
+void h2unit_case::_blob_del_(h2unit_list* blob)
+{
+   h2unit_list_del(blob);
+}
+
+bool h2unit_case::_leak_pop_()
+{
+   h2unit_list* head = h2unit_list_get_head(&_leak_stack_);
+   h2unit_list_del(head);
+
+   h2unit_leak* leak = h2unit_list_entry(head, h2unit_leak, stack);
+   if (h2unit_list_empty(&leak->blobs)) {
+      free(leak);
+      return true;
+   }
+
+   if (_status_ == _FAILED_) { /* other failure already happen, ignore memory leak failure */
+      return true;
+   }
+
+   _status_ = _FAILED_;
+
+   int count = 0;
+   h2unit_list* p;
+   h2unit_list_for_each(p, &leak->blobs) {
+      count++;
+   }
+
+   _addition_ = (h2unit_string**) malloc((count + 1) * sizeof(h2unit_string*));
+   memset(_addition_, 0, (count + 1) * sizeof(h2unit_string*));
+
+   int i = 0, leaked = 0;
+   h2unit_list_for_each(p, &leak->blobs) {
+      h2unit_blob* b = h2unit_list_entry(p, h2unit_blob, stack);
+      _vmsg_(&_addition_[i], "bold,red", "Leaked %d bytes", b->size);
+      _vmsg_(&_addition_[i], "", " at %s:%d", b->file, b->line);
+      i++;
+      leaked += b->size;
+   }
+
+   if (leak->file == NULL) {
+      _vmsg_(&_errormsg_, "bold,red", "Memory Leaked %d bytes in case totally", leaked);
+   } else {
+      _vmsg_(&_errormsg_, "bold,red", "Memory Leaked %d bytes in block", leaked);
+      _vmsg_(&_errormsg_, "", " at %s:%d", leak->file, leak->line);
+   }
+
+   return false;
 }
 
 void h2unit_case::_vmsg_(h2unit_string** typed, const char *style, const char* format, ...)
