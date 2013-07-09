@@ -62,6 +62,7 @@ public:
    void _check_equal_(char* expected, char* actually);
    void _check_equal_(unsigned char* expected, unsigned char* actually, int length);
    void _check_range_(double from, double to, double actually);
+   void _check_inset_(double *inset, int count, double actually);
    void _check_equal_strcmp_nocase_(char* expected, char* actually);
    void _check_regex_(char* express, char* actually);
    void _check_catch_(const char* expected, const char* actually, const char* exceptype);
@@ -138,6 +139,12 @@ public:
    do {                                                                                                  \
       h2unit_case::_current_->_enter_check_(__FILE__, __LINE__);                                         \
       h2unit_case::_current_->_check_range_((double)(from), (double)(to), (double)(actually));           \
+   } while(0)
+
+#define H2EQUAL_INSET(inset, count, actually)                                                            \
+   do {                                                                                                  \
+      h2unit_case::_current_->_enter_check_(__FILE__, __LINE__);                                         \
+      h2unit_case::_current_->_check_inset_((double*)(inset), (int)(count), (double)(actually));         \
    } while(0)
 
 #define H2EQUAL_STRCMP(expected, actually)                                                               \

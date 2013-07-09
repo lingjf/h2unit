@@ -131,6 +131,15 @@ H2CASE(getCeil, "test for H2EQUAL_RANGE")
    H2EQUAL_RANGE(7, 8, getCeil(6.8));
 }
 
+H2CASE(getCeil, "test for H2EQUAL_RANGE")
+{
+   double t[] = {
+      1.0, 2.0, 3.0
+   };
+   H2EQUAL_INSET(t, 3, getCeil(2.8));
+}
+
+
 /*
  * h2unit can replace function at runtime dynamically.
  * Which this feature, it is helpful to stub functions.

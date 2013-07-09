@@ -1185,6 +1185,26 @@ void h2unit_case::_check_range_(double from, double to, double actually)
    }
 }
 
+void h2unit_case::_check_inset_(double *inset, int count, double actually)
+{
+   for (int i = 0; i < count; i++) {
+      double delta = inset[i] - actually;
+      if (delta < 0) delta = -delta;
+      if (delta < 0.00001) {
+         return;
+      }
+
+   }
+   if (count > 0) {
+      _vmsg_(&_expected_, "bold,red", "{%f, ...}", inset[0]);
+   } else {
+      _vmsg_(&_expected_, "bold,red", "{}");
+   }
+   _vmsg_(&_actually_, "bold,red", "%f", actually);
+
+   throw _fail;
+}
+
 void h2unit_case::_check_equal_strcmp_nocase_(char* expected, char* actually)
 {
    if (strcasecmp(expected, actually) != 0) {
