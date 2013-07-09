@@ -118,16 +118,24 @@ H2CASE(memory_leak, "test memory leak")
  */
 H2CASE(memory_leak, "test memory leak block")
 {
-   void * c1;
-   void * c2;
+   void * c1, * c2, * c3, * c4;
 
-   c1 = malloc(5);
+   c1 = malloc(1);
 
    H2LEAK_BLOCK() {
-      c2 = malloc(7);
+      c2 = malloc(3);
+      free(c2);
    }
 
-   free(c2);
+   H2LEAK_BLOCK() {
+      c3 = malloc(5);
+      free(c3);
+      H2LEAK_BLOCK() {
+         c4 = malloc(7);
+      }
+   }
+
+   free(c4);
    free(c1);
 }
 

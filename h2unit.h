@@ -234,12 +234,8 @@ public:
 
 #define H2_FAULTY_INJECT_MEMORY(bytes)  h2unit_case::_current_->_limit_(bytes)
 
-#define ____H2UNIT_LEAK(line) h2unit_auto_##line##_inst
-#define ___H2UNIT_LEAK(line) ____H2UNIT_LEAK(line)
-#define __H2UNIT_LEAK() ___H2UNIT_LEAK(__LINE__)
-
 #define H2LEAK_BLOCK() \
-   for (h2unit_auto __H2UNIT_LEAK()(__FILE__, __LINE__); !__H2UNIT_LEAK().done; __H2UNIT_LEAK().done = true)
+   for (class h2unit_auto _h2unit_auto_(__FILE__, __LINE__); !_h2unit_auto_.done; _h2unit_auto_.done = true)
 
 #endif
 
