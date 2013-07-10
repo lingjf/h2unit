@@ -1,9 +1,7 @@
-#ifndef PRODUCT1_H
-#define PRODUCT1_H
+#ifndef _DEMO_DYNAMIC_STUB_C_H_
+#define _DEMO_DYNAMIC_STUB_C_H_
 
-int getEven(int var);
 
-double getCeil(double var);
 
 int orig_foo(int a);
 

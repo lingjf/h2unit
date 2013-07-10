@@ -1,18 +1,9 @@
-#include "product_1.h"
+#include "demo_dynamic_stub.h"
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-int getEven(int var)
-{
-   return var & (~1);
-}
-
-double getCeil(double var)
-{
-   return (double) ((int) var);
-}
 
 int orig_foo(int a)
 {

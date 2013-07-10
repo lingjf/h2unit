@@ -35,6 +35,10 @@ public:
    h2unit_case* _next_;
 
    void _prev_setup_();
+   virtual void setup();
+   void _post_setup_();
+   void _prev_teardown_();
+   virtual void teardown();
    void _post_teardown_();
    void _execute_();
 
@@ -53,7 +57,6 @@ public:
    void _leak_push_(const char* file, int line);
    bool _leak_pop_();
    void _blob_add_(h2unit_list* blob);
-   void _blob_del_(h2unit_list* blob);
    void _limit_(unsigned long bytes);
 public:
    h2unit_list _stub_list_;
@@ -80,8 +83,6 @@ public:
    void _check_regex_(char* express, char* actually);
    void _check_catch_(const char* expected, const char* actually, const char* exceptype);
 
-   virtual void setup();
-   virtual void teardown();
    virtual void _testcase_() = 0;
 };
 
@@ -105,7 +106,7 @@ public:
    } __H2UNIT_CASE_INST(_unit_);                                                                         \
    void __H2UNIT_CASE_NAME(_unit_)::_testcase_()
 
-#define H2CASE_IGNORE(_unit_, _case_)                                                                    \
+#define H2TODO(_unit_, _case_)                                                                           \
    class __H2UNIT_CASE_NAME(_unit_): public __H2UNIT_UNIT_NAME(_unit_)                                   \
    {  public:                                                                                            \
       __H2UNIT_CASE_NAME(_unit_)() { _init_(#_unit_, _case_, true, __FILE__, __LINE__); }                \

@@ -849,7 +849,7 @@ public:
        * http://support.microsoft.com/kb/177429
        * http://sourceware.org/binutils/docs-2.23.1/bfd/index.html
        */
-      sprintf(buf, "nm %s > %s", path, symb_file);
+      sprintf(buf, "nm %s | c++filt > %s", path, symb_file);
       system(buf);
 
       FILE* filp = fopen(symb_file, "r");
@@ -1076,6 +1076,14 @@ void h2unit_case::_prev_setup_()
    _leak_push_(NULL, 0);
 }
 
+void h2unit_case::_post_setup_()
+{
+}
+
+void h2unit_case::_prev_teardown_()
+{
+}
+
 void h2unit_case::_post_teardown_()
 {
    /* balance test environment automatically */
@@ -1116,11 +1124,13 @@ void h2unit_case::_execute_()
       _status_ = _PASSED_;
       _prev_setup_();
       setup();
+      _post_setup_();
       try {
          _testcase_();
       } catch (class h2unit_fail) {
          _status_ = _FAILED_;
       }
+      _prev_teardown_();
       teardown();
       _post_teardown_();
    }
@@ -1149,11 +1159,6 @@ void h2unit_case::_blob_add_(h2unit_list* blob)
    h2unit_list* head = h2unit_list_get_head(&_leak_stack_);
    h2unit_leak* leak = h2unit_list_entry(head, h2unit_leak, stack);
    h2unit_list_add_head(blob, &leak->blobs);
-}
-
-void h2unit_case::_blob_del_(h2unit_list* blob)
-{
-   h2unit_list_del(blob);
 }
 
 bool h2unit_case::_leak_pop_()
