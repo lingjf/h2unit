@@ -333,6 +333,13 @@ void h2unit_stub_del(h2unit_stub* stub)
    free(stub);
 }
 
+typedef struct h2unit_string
+{
+   const char* style;
+   char* data;
+   h2unit_list link;
+} h2unit_string;
+
 typedef struct h2unit_unit
 {
    const char* name;
@@ -431,10 +438,12 @@ class h2unit_listen_text: public h2unit_listen
 {
 private:
    FILE *filp;
-   void print_string(h2unit_string* s)
+   void print_string(h2unit_list* s)
    {
-      for (h2unit_string* p = s; p; p = p->next) {
-         fprintf(filp, "%s", p->data);
+      h2unit_list* p;
+      h2unit_list_for_each(p, s) {
+         h2unit_string* r = h2unit_list_entry(p, h2unit_string, link);
+         fprintf(filp, "%s", r->data);
       }
    }
 public:
@@ -473,25 +482,25 @@ public:
          break;
       case h2unit_case::_FAILED_:
          fprintf(filp, "H2CASE(%s, %s): Failed at %s:%d\n", p->_unitname_, p->_casename_, p->_checkfile_, p->_checkline_);
-         if (p->_errormsg_) {
+         if (!h2unit_list_empty(&p->_errormsg_)) {
             fprintf(filp, "  ");
-            print_string(h2unit_case::_current_->_errormsg_);
+            print_string(&h2unit_case::_current_->_errormsg_);
             fprintf(filp, "\n");
          }
-         if (p->_expected_) {
+         if (!h2unit_list_empty(&p->_expected_)) {
             fprintf(filp, "  expected<");
-            print_string(h2unit_case::_current_->_expected_);
+            print_string(&h2unit_case::_current_->_expected_);
             fprintf(filp, ">\n");
          }
-         if (p->_actually_) {
+         if (!h2unit_list_empty(&p->_actually_)) {
             fprintf(filp, "  actually<");
-            print_string(h2unit_case::_current_->_actually_);
+            print_string(&h2unit_case::_current_->_actually_);
             fprintf(filp, ">\n");
          }
          if (p->_addition_) {
-            for (int i = 0; h2unit_case::_current_->_addition_[i]; i++) {
+            for (int i = 0; !h2unit_list_empty(&p->_addition_[i]); i++) {
                fprintf(filp, "   ");
-               print_string(h2unit_case::_current_->_addition_[i]);
+               print_string(&p->_addition_[i]);
                fprintf(filp, "\n");
             }
          }
@@ -545,11 +554,13 @@ private:
       return (const char*) buffer;
    }
 
-   void print_string(h2unit_string* s)
+   void print_string(h2unit_list* s)
    {
-      for (h2unit_string* p = s; p; p = p->next) {
-         printf("%s", color(p->style));
-         printf("%s", p->data);
+      h2unit_list* p;
+      h2unit_list_for_each(p, s) {
+         h2unit_string* r = h2unit_list_entry(p, h2unit_string, link);
+         printf("%s", color(r->style));
+         printf("%s", r->data);
          printf("%s", color("reset"));
       }
    }
@@ -596,25 +607,25 @@ public:
          printf("%s", color("bold,purple"));
          printf("\rH2CASE(%s, %s): Failed at %s:%d\n", p->_unitname_, p->_casename_, p->_checkfile_, p->_checkline_);
          printf("%s", color("reset"));
-         if (p->_errormsg_) {
+         if (!h2unit_list_empty(&p->_errormsg_)) {
             printf("  ");
-            print_string(h2unit_case::_current_->_errormsg_);
+            print_string(&p->_errormsg_);
             printf("\n");
          }
-         if (p->_expected_) {
+         if (!h2unit_list_empty(&p->_expected_)) {
             printf("  expected<");
-            print_string(h2unit_case::_current_->_expected_);
+            print_string(&p->_expected_);
             printf(">\n");
          }
-         if (p->_actually_) {
+         if (!h2unit_list_empty(&p->_actually_)) {
             printf("  actually<");
-            print_string(h2unit_case::_current_->_actually_);
+            print_string(&p->_actually_);
             printf(">\n");
          }
          if (p->_addition_) {
-            for (int i = 0; h2unit_case::_current_->_addition_[i]; i++) {
+            for (int i = 0; !h2unit_list_empty(&p->_addition_[i]); i++) {
                printf("   ");
-               print_string(h2unit_case::_current_->_addition_[i]);
+               print_string(&p->_addition_[i]);
                printf("\n");
             }
          }
@@ -699,10 +710,12 @@ class h2unit_listen_xml: public h2unit_listen
 private:
    FILE *filp;
 
-   void print_string(h2unit_string* s)
+   void print_string(h2unit_list* s)
    {
-      for (h2unit_string* p = s; p; p = p->next) {
-         fprintf(filp, "%s", p->data);
+      h2unit_list* p;
+      h2unit_list_for_each(p, s) {
+         h2unit_string* r = h2unit_list_entry(p, h2unit_string, link);
+         fprintf(filp, "%s", r->data);
       }
    }
 public:
@@ -743,26 +756,26 @@ public:
             if (c->_status_ == h2unit_case::_FAILED_) {
                fprintf(filp, "      <failure message=\"Failed at %s:%d\"></failure>\n", c->_checkfile_, c->_checkline_);
             }
-            if (c->_errormsg_) {
+            if (!h2unit_list_empty(&c->_errormsg_)) {
                fprintf(filp, "      <failure message=\"");
-               print_string(c->_errormsg_);
+               print_string(&c->_errormsg_);
                fprintf(filp, "\"></failure>\n");
             }
-            if (c->_expected_) {
+            if (!h2unit_list_empty(&c->_expected_)) {
                fprintf(filp, "      <failure message=\"expected<");
-               print_string(c->_expected_);
+               print_string(&c->_expected_);
                printf("n");
                fprintf(filp, ">\"></failure>\n");
             }
-            if (c->_actually_) {
+            if (!h2unit_list_empty(&c->_actually_)) {
                fprintf(filp, "      <failure message=\"actually<");
-               print_string(c->_actually_);
+               print_string(&c->_actually_);
                fprintf(filp, ">\"></failure>\n");
             }
             if (c->_addition_) {
-               for (int i = 0; c->_addition_[i]; i++) {
+               for (int i = 0; !h2unit_list_empty(&c->_addition_[i]); i++) {
                   fprintf(filp, "      <failure message=\"");
-                  print_string(c->_addition_[i]);
+                  print_string(&c->_addition_[i]);
                   fprintf(filp, "\"></failure>\n");
                }
             }
@@ -1045,9 +1058,9 @@ void h2unit_case::_init_(const char* unitname, const char* casename, bool ignore
    _checkline_ = line;
    _checkcount_ = 0;
 
-   _errormsg_ = NULL;
-   _expected_ = NULL;
-   _actually_ = NULL;
+   h2unit_list_init(&_errormsg_);
+   h2unit_list_init(&_expected_);
+   h2unit_list_init(&_actually_);
    _addition_ = NULL;
 
    h2unit_list_init(&_leak_stack_);
@@ -1166,15 +1179,17 @@ bool h2unit_case::_leak_pop_()
       count++;
    }
 
-   _addition_ = (h2unit_string**) malloc((count + 1) * sizeof(h2unit_string*));
-   memset(_addition_, 0, (count + 1) * sizeof(h2unit_string*));
+   _addition_ = (h2unit_list*) malloc((count + 1) * sizeof(h2unit_list));
 
-   int i = 0, leaked = 0;
+   for (int i = 0; i < count + 1; i++) {
+      h2unit_list_init(&_addition_[i]);
+   }
+   int j = 0, leaked = 0;
    h2unit_list_for_each(p, &leak->blobs) {
       h2unit_blob* b = h2unit_list_entry(p, h2unit_blob, stack);
-      _vmsg_(&_addition_[i], "bold,red", "Leaked %d bytes", b->size);
-      _vmsg_(&_addition_[i], "", " at %s:%d", b->file, b->line);
-      i++;
+      _vmsg_(&_addition_[j], "bold,red", "Leaked %d bytes", b->size);
+      _vmsg_(&_addition_[j], "", " at %s:%d", b->file, b->line);
+      j++;
       leaked += b->size;
    }
 
@@ -1188,11 +1203,12 @@ bool h2unit_case::_leak_pop_()
    return false;
 }
 
-void h2unit_case::_vmsg_(h2unit_string** typed, const char *style, const char* format, ...)
+void h2unit_case::_vmsg_(h2unit_list* typed, const char *style, const char* format, ...)
 {
    h2unit_string* p = (h2unit_string*) malloc(sizeof(h2unit_string));
-   while (*typed) typed = &(*typed)->next;
-   *typed = p;
+   memset(p, 0, sizeof(h2unit_string));
+   h2unit_list_init(&p->link);
+   h2unit_list_add_tail(&p->link, typed);
 
    va_list args;
    va_start(args, format);
@@ -1200,7 +1216,6 @@ void h2unit_case::_vmsg_(h2unit_string** typed, const char *style, const char* f
    int sz = vsprintf(t, format, args);
    va_end(args);
 
-   p->next = NULL;
    p->style = style;
    p->data = (char*) malloc(sz + 1);
 

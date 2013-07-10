@@ -5,14 +5,6 @@
 
 #if defined(__cplusplus)
 
-
-typedef struct h2unit_string
-{
-   const char* style;
-   char* data;
-   struct h2unit_string* next;
-} h2unit_string;
-
 typedef struct h2unit_list {
    struct h2unit_list *next;
    struct h2unit_list *prev;
@@ -51,11 +43,11 @@ public:
    const char* _checkfile_;
    int _checkline_;
    int _checkcount_;
-   h2unit_string* _errormsg_;
-   h2unit_string* _expected_;
-   h2unit_string* _actually_;
-   h2unit_string** _addition_;
-   void _vmsg_(h2unit_string** typed, const char *style, const char* format, ...);
+   h2unit_list _errormsg_;
+   h2unit_list _expected_;
+   h2unit_list _actually_;
+   h2unit_list* _addition_;
+   void _vmsg_(h2unit_list* typed, const char *style, const char* format, ...);
 public:
    h2unit_list _leak_stack_;
    void _leak_push_(const char* file, int line);
@@ -69,10 +61,10 @@ public:
    void _stub_(void* native, void* fake, const char* native_name, const char* fake_name);
 
 public:
+   static h2unit_case* _current_;
    h2unit_case();
    virtual ~h2unit_case();
    void _init_(const char* unitname, const char* casename, bool ignored, const char* file, int line);
-   static h2unit_case* _current_;
 
    void _enter_check_(const char* file, int line);
    void _check_equal_(bool result);
