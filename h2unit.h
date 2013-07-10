@@ -63,14 +63,16 @@ public:
    void _blob_add_(h2unit_list* blob);
    void _blob_del_(h2unit_list* blob);
    void _limit_(unsigned long bytes);
+public:
+   h2unit_list _stub_list_;
+   void* _addr_(const char* native, const char* native_name, const char* fake_name);
+   void _stub_(void* native, void* fake, const char* native_name, const char* fake_name);
 
 public:
    h2unit_case();
    virtual ~h2unit_case();
    void _init_(const char* unitname, const char* casename, bool ignored, const char* file, int line);
    static h2unit_case* _current_;
-   void* _addr_(const char* native, const char* native_name, const char* fake_name);
-   void _stub_(void* native, void* fake, const char* native_name, const char* fake_name);
 
    void _enter_check_(const char* file, int line);
    void _check_equal_(bool result);

@@ -69,6 +69,9 @@ static inline h2unit_list* h2unit_list_get_tail(h2unit_list *head)
 #define h2unit_list_for_each(iter, head)  \
    for( (iter) = (head)->next; (iter) != (head); (iter) = (iter)->next )
 
+#define h2unit_list_for_each_safe(iter, temp, head)  \
+   for( (iter) = (head)->next, (temp) = (iter)->next; (iter) != (head); (iter) = (temp), (temp) = (iter)->next )
+
 static int __pattern_cmp(char* pattern, char* source)
 {
    int negate, found;
@@ -265,10 +268,70 @@ typedef struct h2unit_symb
 
 typedef struct h2unit_stub
 {
-   struct h2unit_stub* next;
-   void* orig;
-   unsigned char code[sizeof(void*) + 4];
+   h2unit_list link;
+   void* native;
+   unsigned char saved_code[sizeof(void*) + 4];
 } h2unit_stub;
+
+h2unit_stub* h2unit_stub_new()
+{
+   h2unit_stub* stub = (h2unit_stub*) malloc(sizeof(h2unit_stub));
+   if (stub) {
+      memset(stub, 0, sizeof(h2unit_stub));
+      h2unit_list_init(&stub->link);
+   }
+   return stub;
+}
+
+char* h2unit_stub_save(h2unit_stub* stub, void* native)
+{
+   static char reason[128];
+#ifdef _WIN32
+   DWORD saved;
+   if (!VirtualProtect(native, sizeof(void*) + 4, PAGE_WRITECOPY, &saved)) { //PAGE_EXECUTE_WRITECOPY
+      sprintf(reason, "VirtualProtect:%d", GetLastError());
+      return reason;
+   }
+#else
+   int pagesize = sysconf(_SC_PAGE_SIZE);
+   if (mprotect((void*) ((unsigned long) native & (~(pagesize - 1))), pagesize, PROT_READ | PROT_WRITE | PROT_EXEC) != 0) {
+      sprintf(reason, "mprotect:%s", strerror(errno));
+      return reason;
+   }
+#endif
+
+   stub->native = native;
+   memcpy(stub->saved_code, native, sizeof(stub->saved_code));
+   return NULL;
+}
+
+void h2unit_stub_set(h2unit_stub* stub, void* fake)
+{
+  unsigned char *I = (unsigned char*) stub->native;
+
+  //x86 __asm("jmp $fake") : 0xE9 {fake-native-5}
+  //x86 __asm("movl $fake, %eax; jmpl %eax") : 0xB8 {fake} 0xFF 0xE0
+  //x86_64 __asm("movq $fake, %rax; jmpq %rax") : 0x48 0xB8 {fake} 0xFF 0xE0
+#ifdef __x86_64__
+  *I++ = 0x48;
+  *I++ = 0xB8;
+  memcpy(I, &fake, sizeof(void*));
+  I += sizeof(void*);
+  *I++ = 0xFF;
+  *I++ = 0xE0;
+#else
+  *I++ = 0xE9;
+  fake = (void*) ((unsigned long) fake - (unsigned long) stub->native - (sizeof(void*) + 1));
+  memcpy(I, &fake, sizeof(void*));
+#endif
+
+}
+
+void h2unit_stub_del(h2unit_stub* stub)
+{
+   memcpy(stub->native, stub->saved_code, sizeof(stub->saved_code)); /* restore saved */
+   free(stub);
+}
 
 typedef struct h2unit_unit
 {
@@ -719,9 +782,8 @@ class h2unit_task
 public:
    int unit_count, case_count, case_excuted_count, check_count;
    int case_failed, case_passed, case_ignore, case_filter;
-   h2unit_symb* symb_list;
    h2unit_list blob_list;
-   h2unit_stub* stub_list;
+   h2unit_symb* symb_list;
    h2unit_unit* unit_list;
    h2unit_case* case_chain;
    unsigned limited;
@@ -740,7 +802,6 @@ public:
 
       unit_list = NULL;
       symb_list = NULL;
-      stub_list = NULL;
       h2unit_list_init(&blob_list);
       limited = 0x7fffffff;
 
@@ -947,37 +1008,6 @@ public:
       h2unit_list_del(&blob->queue);
       h2unit_blob_del(blob);
    }
-
-   h2unit_stub* add_stub(void* orig)
-   {
-      h2unit_stub* stub = (h2unit_stub*) malloc(sizeof(h2unit_stub));
-      if (stub) {
-         stub->orig = orig;
-         stub->next = stub_list;
-         stub_list = stub;
-         memcpy(stub->code, orig, sizeof(stub->code));
-      }
-      return stub;
-   }
-
-   h2unit_stub* get_stub(void* orig)
-   {
-      h2unit_stub* stub;
-      for (stub = stub_list; stub; stub = stub->next) {
-         if (stub->orig == orig) return stub;
-      }
-      return NULL;
-   }
-
-   void del_stubs()
-   {
-      while (stub_list) {
-         h2unit_stub* stub = stub_list;
-         stub_list = stub->next;
-         memcpy(stub->orig, stub->code, sizeof(stub->code));
-         free(stub);
-      }
-   }
 };
 
 h2unit_auto::h2unit_auto(const char* file, int line)
@@ -1021,6 +1051,7 @@ void h2unit_case::_init_(const char* unitname, const char* casename, bool ignore
    _addition_ = NULL;
 
    h2unit_list_init(&_leak_stack_);
+   h2unit_list_init(&_stub_list_);
 
    if (ignored) _status_ = _IGNORE_;
 
@@ -1036,7 +1067,13 @@ void h2unit_case::_post_teardown_()
 {
    /* balance test environment automatically */
    _limit_(0x7fffffff);
-   h2unit_task::O()->del_stubs();
+
+   h2unit_list* p, *t;
+   h2unit_list_for_each_safe(p, t, &_stub_list_) {
+      h2unit_list_del(p);
+      h2unit_stub* stub = h2unit_list_entry(p, h2unit_stub, link);
+      h2unit_stub_del(stub);
+   }
 
    /* memory leak detection */
    _leak_pop_();
@@ -1190,55 +1227,31 @@ void* h2unit_case::_addr_(const char* native, const char* native_name, const cha
 
 void h2unit_case::_stub_(void* native, void* fake, const char* native_name, const char* fake_name)
 {
-   char reason[128];
-   unsigned char *I = (unsigned char*) native;
-#ifdef _WIN32
-   DWORD saved;
-   if (!VirtualProtect(native, sizeof(void*) + 4, PAGE_WRITECOPY, &saved)) { //PAGE_EXECUTE_WRITECOPY
-      sprintf(reason, "VirtualProtect:%d", GetLastError());
-      goto failure;
-   }
-#else
-   int pagesize = sysconf(_SC_PAGE_SIZE);
-   if (mprotect((void*) ((unsigned long) native & (~(pagesize - 1))), pagesize, PROT_READ | PROT_WRITE | PROT_EXEC) != 0) {
-      sprintf(reason, "mprotect:%s", strerror(errno));
-      goto failure;
-   }
-#endif
-   if (!h2unit_task::O()->get_stub(native)) {
-      if (!h2unit_task::O()->add_stub(native)) {
-         sprintf(reason, "out of memory");
-         goto failure;
+   h2unit_stub* stub = NULL;
+   h2unit_list* p;
+   h2unit_list_for_each(p, &_stub_list_) {
+      h2unit_stub* s = h2unit_list_entry(p, h2unit_stub, link);
+      if (s->native == native) {
+         stub = s;
+         break;
       }
    }
-   //x86 __asm("jmp $fake") : 0xE9 {fake-orig-5}
-   //x86 __asm("movl $fake, %eax; jmpl %eax") : 0xB8 {fake} 0xFF 0xE0
-   //x86_64 __asm("movq $fake, %rax; jmpq %rax") : 0x48 0xB8 {fake} 0xFF 0xE0
-#ifdef __x86_64__
-   *I++ = 0x48;
-   *I++ = 0xB8;
-   memcpy(I, &fake, sizeof(void*));
-   I += sizeof(void*);
-   *I++ = 0xFF;
-   *I++ = 0xE0;
-#else
-   *I++ = 0xE9;
-   fake = (void*) ((unsigned long) fake - (unsigned long) native - (sizeof(void*) + 1));
-   memcpy(I, &fake, sizeof(void*));
-#endif
+   if (!stub) {
+      stub = h2unit_stub_new();
+      h2unit_list_add_head(&stub->link, &_stub_list_);
+      char* reason = h2unit_stub_save(stub, native);
+      if (reason != NULL) {
+         _vmsg_(&_errormsg_, "", "H2STUB(");
+         _vmsg_(&_errormsg_, "bold,red", "%s", native_name);
+         _vmsg_(&_errormsg_, "", " <-- ");
+         _vmsg_(&_errormsg_, "bold,red", "%s", fake_name);
+         _vmsg_(&_errormsg_, "", ")");
+         _vmsg_(&_errormsg_, "bold,red", " %s", reason);
 
-   return;
-
-   failure:
-
-   _vmsg_(&_errormsg_, "", "H2STUB(");
-   _vmsg_(&_errormsg_, "bold,red", "%s", native_name);
-   _vmsg_(&_errormsg_, "", " <-- ");
-   _vmsg_(&_errormsg_, "bold,red", "%s", fake_name);
-   _vmsg_(&_errormsg_, "", ")");
-   _vmsg_(&_errormsg_, "bold,red", " %s", reason);
-
-   throw _fail;
+         throw _fail;
+      }
+   }
+   h2unit_stub_set(stub, fake);
 }
 
 void h2unit_case::_enter_check_(const char* file, int line)
