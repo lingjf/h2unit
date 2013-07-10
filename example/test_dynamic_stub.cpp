@@ -15,7 +15,7 @@ extern "C" {
  *
  * H2STUB("function_name_string", new_function)
  *
- * The 2nd is not support on Windows currently.
+ * The 2nd is not support on Windows/MacOS currently.
  *
  */
 
@@ -92,7 +92,6 @@ int stub_foo_mock1(int a)
    return 5; /* return wanted return value */
 }
 
-
 H2CASE(mock_with_dynamic_stub, "act mock")
 {
    H2STUB(orig_foo, stub_foo_mock1);
@@ -137,14 +136,23 @@ H2UNIT(dynamic_stub_in_cpp)
    void teardown() { }
 };
 
-int stub_Rect_getCode1()
+int stub_dog(int a, double b)
 {
-   return 1;
+   return a + 1 + (int) b;
 }
 
-int stub_Rect_getCode2(Rect * thus)
+int stub_cat(int a, double b)
 {
-   return 2;
+   return 0;
+}
+
+H2CASE(dynamic_stub_in_cpp, "stub normal extern function")
+{
+   H2EQUAL(2, orig_dog(1, 1.2));
+   H2STUB(orig_dog, stub_dog);
+   H2EQUAL(3, orig_dog(1, 1.2));
+   H2STUB("orig_dog(int, double)", stub_cat);
+   H2EQUAL(0, orig_dog(1, 1.2));
 }
 
 int stub_Rect_getPage(Rect * thus, int v)
@@ -156,25 +164,17 @@ H2CASE(dynamic_stub_in_cpp, "stub normal class member function")
 {
    Rect rect(1,2,3,4);
 
-   H2EQUAL(0, rect.getCode());
-   H2STUB("Rect::getCode()", stub_Rect_getCode1);
-   H2EQUAL(1, rect.getCode());
-
-   H2STUB("Rect::getCode()", stub_Rect_getCode2);
-   H2EQUAL(2, rect.getCode());
-
-
    H2EQUAL(1, rect.getPage(1));
    H2STUB("Rect::getPage(int)", stub_Rect_getPage);
    H2EQUAL(2, rect.getPage(1));
 }
 
-int stub_Rect_getEdge(Rect * thus)
+int stub_Rect_getEdge(Circle * thus)
 {
    return 999;
 }
 
-int stub_Triangle_getEdge(Rect * thus)
+int stub_Circle_getEdge(Circle * thus)
 {
    return 888;
 }
@@ -186,8 +186,24 @@ H2CASE(dynamic_stub_in_cpp, "stub virtual class member function")
    H2STUB("Rect::getEdge()", stub_Rect_getEdge);
    H2EQUAL(999, rect.getEdge());
 
-   Triangle tr;
-   H2EQUAL(3, tr.getEdge());
-   H2STUB("Triangle::getEdge()", stub_Triangle_getEdge);
-   H2EQUAL(888, tr.getEdge());
+   Circle cc(3);
+   H2EQUAL(1, cc.getEdge());
+   H2STUB("Circle::getEdge()", stub_Circle_getEdge);
+   H2EQUAL(888, cc.getEdge());
+}
+
+void stub_Circle_enlarge(Circle * thus, int d)
+{
+   thus->m_r += d / 2;
+}
+
+H2CASE(dynamic_stub_in_cpp, "stub modify class object")
+{
+   Circle cc(1);
+   H2EQUAL_STRCMP("Circle(1)", cc.tuString());
+   cc.enlarge(1);
+   H2EQUAL_STRCMP("Circle(2)", cc.tuString());
+   H2STUB("Circle::enlarge(int)", stub_Circle_enlarge);
+   cc.enlarge(2);
+   H2EQUAL_STRCMP("Circle(3)", cc.tuString());
 }

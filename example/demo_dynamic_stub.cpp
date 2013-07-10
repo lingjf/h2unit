@@ -1,5 +1,10 @@
+
 #include "demo_dynamic_stub.hpp"
 
+int orig_dog(int a, double b)
+{
+   return a + (int) b;
+}
 
 Shape::Shape()
 {
@@ -27,11 +32,6 @@ Rect::~Rect()
 {
 }
 
-int Rect::getCode()
-{
-   return 0;
-}
-
 int Rect::getPage(int v)
 {
    return v;
@@ -42,23 +42,28 @@ int Rect::getEdge()
    return 4;
 }
 
-char* Rect::tuString()
+Circle::Circle(int r)
+{
+   m_r = r;
+}
+
+Circle::~Circle()
+{
+}
+
+int Circle::getEdge()
+{
+   return 1;
+}
+
+void Circle::enlarge(int d)
+{
+   m_r += d;
+}
+
+char* Circle::tuString()
 {
    static char buffer[1024];
-   sprintf(buffer, "1");
+   sprintf(buffer, "Circle(%d)", m_r);
    return buffer;
-}
-
-
-Triangle::Triangle()
-{
-}
-
-Triangle::~Triangle()
-{
-}
-
-int Triangle::getEdge()
-{
-   return 3;
 }

@@ -1,5 +1,8 @@
+
 #ifndef _DEMO_DYNAMIC_STUB_HPP_
 #define _DEMO_DYNAMIC_STUB_HPP_
+
+int orig_dog(int a, double b);
 
 class Shape {
 public:
@@ -9,22 +12,25 @@ public:
 };
 
 class Rect : public Shape {
-   int m_a, m_b, m_x, my;
+private:
+   int m_a, m_b, m_x, m_y;
 public:
    Rect();
    Rect(int a, int b, int x, int y);
    ~Rect();
-   int getCode();
    int getPage(int v);
-   int getEdge();
-   char* tuString();
+   virtual int getEdge();
 };
 
-class Triangle : public Shape {
+class Circle : public Shape {
+private:
+   int m_r;
 public:
-   Triangle();
-   ~Triangle();
-   int getEdge();
+   Circle(int r);
+   ~Circle();
+   virtual int getEdge();
+   void enlarge(int d);
+   char* tuString();
 };
 
 

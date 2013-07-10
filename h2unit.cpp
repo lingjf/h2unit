@@ -261,10 +261,51 @@ typedef struct h2unit_leak
 
 typedef struct h2unit_symb
 {
+   char* raw;
+   char* join;
    char* name;
+   int args;
    void* addr;
-   struct h2unit_symb* next;
+   h2unit_list link;
 } h2unit_symb;
+
+void h2unit_symb_parse(h2unit_symb* symb, char* raw)
+{
+   int i;
+   symb->raw = strdup(raw);
+   for (i = strlen(symb->raw); i > 0 && isspace(symb->raw[i - 1]); i--) {
+      symb->raw[i - 1] = '\0';
+   }
+   symb->join = strdup(symb->raw);
+   int len = strlen(symb->join);
+   for (char* p = symb->join; *p; p++, len--) {
+      while (isspace(*p)) memmove(p, p + 1, len--);
+   }
+   char* t = strdup(symb->raw);
+   symb->name = strdup(strtok(t, "("));
+   char* r = strtok(NULL, "(");
+   if (r) {
+
+   }
+   free(t);
+}
+
+double h2unit_symb_compare(h2unit_symb* a, h2unit_symb* b)
+{
+   if (!strcmp(a->raw, b->raw)) return 1.0;
+   if (!strcmp(a->join, b->join)) return 1.0;
+   if (!strcmp(a->name, b->name)) return 1.0;
+
+#if 0
+   /* some compiler prefix _ to all symbols */
+   if (a->name[0] == '_') {
+      if (!strcmp(a->name + 1, b->name)) {
+         return 1.0;
+      }
+   }
+#endif
+   return 0.0;
+}
 
 typedef struct h2unit_stub
 {
@@ -793,10 +834,10 @@ public:
 class h2unit_task
 {
 public:
-   int unit_count, case_count, case_excuted_count, check_count;
+   int unit_count, case_count, case_executed_count, check_count;
    int case_failed, case_passed, case_ignore, case_filter;
    h2unit_list blob_list;
-   h2unit_symb* symb_list;
+   h2unit_list symb_list;
    h2unit_unit* unit_list;
    h2unit_case* case_chain;
    unsigned limited;
@@ -810,12 +851,12 @@ public:
    h2unit_task()
    {
       case_failed = case_passed = case_ignore = case_filter = 0;
-      unit_count = case_count = case_excuted_count = check_count = 0;
+      unit_count = case_count = case_executed_count = check_count = 0;
       case_chain = NULL;
 
       unit_list = NULL;
-      symb_list = NULL;
       h2unit_list_init(&blob_list);
+      h2unit_list_init(&symb_list);
       limited = 0x7fffffff;
 
       listener.attach(&console_listener);
@@ -858,22 +899,18 @@ public:
       }
 
       while ((n = getline(&line, &len, filp)) != -1) {
-         char *t;
-         t = strtok(line, " ");
+         char* t = strtok(line, " ");
          if (t && t[0] == '0' && strlen(t) > 4) {
             long a = strtol(t, NULL, 16);
             t = strtok(NULL, " ");
             if (t && tolower((int)t[0]) == 't' && strlen(t) == 1) {
-               t = strtok(NULL, " ");
+               t = strtok(NULL, "\0");
                h2unit_symb* s = (h2unit_symb*) malloc(sizeof(h2unit_symb));
-               s->name = strdup(t);
-               for (int l = strlen(s->name); l > 0 && isspace (s->name[l - 1]); l--) {
-                  s->name[l - 1] = '\0';
-               }
+               memset(s, 0, sizeof(h2unit_symb));
+               h2unit_list_init(&s->link);
+               h2unit_symb_parse(s, t);
                s->addr = (void*)a;
-               s->next = symb_list;
-               symb_list = s;
-
+               h2unit_list_add_tail(&s->link, &symb_list);
             }
          }
       }
@@ -886,16 +923,27 @@ public:
 
    void* get_symbol_address(const char* symb)
    {
-      for (h2unit_symb* p = symb_list; p != NULL; p = p->next) {
-         if (!strcmp(p->name, symb)) {
-            return p->addr;
+      h2unit_symb s;
+      h2unit_symb_parse(&s, (char*)symb);
+
+      h2unit_symb* u = NULL;
+      double v = 0.0;
+
+      h2unit_list* p;
+      h2unit_list_for_each(p, &symb_list) {
+         h2unit_symb* b = h2unit_list_entry(p, h2unit_symb, link);
+         double c = h2unit_symb_compare(b, &s);
+         if (c >= 1.0) {
+            return b->addr;
          }
-         /* some compiler prefix _ to all symbols */
-         if (p->name[0] == '_') {
-            if (!strcmp(p->name + 1, symb)) {
-               return p->addr;
-            }
+
+         if (c > v) {
+            v = c;
+            u = b;
          }
+      }
+      if (v > 0.5) {
+         return u;
       }
       return NULL;
    }
@@ -957,10 +1005,10 @@ public:
       for (h2unit_case* p = case_chain; (h2unit_case::_current_ = p); p = p->_chain_) {
          listener.on_case_start();
          p->_execute_();
-         case_excuted_count += 1;
+         case_executed_count += 1;
          check_count += p->_checkcount_;
 
-         listener.on_case_endup(100.0 * case_excuted_count / case_count);
+         listener.on_case_endup(100.0 * case_executed_count / case_count);
 
          switch (p->_status_) {
          case h2unit_case::_IGNORE_:
@@ -1344,6 +1392,9 @@ void h2unit_case::_check_equal_(char* expected, char* actually)
       int actually_length = strlen(actually);
       int expected_length = strlen(expected);
 
+      _vmsg_(&_expected_, "", "");
+      _vmsg_(&_actually_, "", "");
+
       for (int i = 0; i < expected_length; i++) {
          _vmsg_(&_expected_, i <= actually_length && expected[i] == actually[i] ? "bold,green" : "bold,red", "%c", expected[i]);
       }
@@ -1390,6 +1441,9 @@ void h2unit_case::_check_equal_strcmp_nocase_(char* expected, char* actually)
    if (strcasecmp(expected, actually) != 0) {
       int actually_length = strlen(actually);
       int expected_length = strlen(expected);
+
+      _vmsg_(&_expected_, "", "");
+      _vmsg_(&_actually_, "", "");
 
       for (int i = 0; i < expected_length; i++) {
          _vmsg_(&_expected_, i <= actually_length && tolower((int) expected[i]) == tolower((int) actually[i]) ? "bold,green" : "bold,red", "%c", expected[i]);

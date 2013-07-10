@@ -292,6 +292,9 @@ extern char* h2unit_strndup(const char*, size_t, const char*, int);
 #endif
 
 #if defined(__cplusplus)
+#define private public
+#define protected public
+
 #include <new>
 void* operator new(size_t, const char*, int);
 void* operator new[](size_t, const char*, int);
