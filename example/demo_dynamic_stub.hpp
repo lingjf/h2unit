@@ -7,7 +7,7 @@ int orig_dog(int a, double b);
 class Shape {
 public:
    Shape();
-   ~Shape();
+   virtual ~Shape();
    virtual int getEdge();
 };
 
@@ -17,7 +17,7 @@ private:
 public:
    Rect();
    Rect(int a, int b, int x, int y);
-   ~Rect();
+   virtual ~Rect();
    int getPage(int v);
    virtual int getEdge();
 };
@@ -27,7 +27,7 @@ private:
    int m_r;
 public:
    Circle(int r);
-   ~Circle();
+   virtual ~Circle();
    virtual int getEdge();
    void enlarge(int d);
    char* tuString();

@@ -3,6 +3,8 @@
 #include "h2unit.h"
 #include <cctype>
 #include <ctime>
+#include <setjmp.h>
+#include <stdarg.h>
 
 #undef malloc
 #undef calloc
@@ -12,12 +14,9 @@
 #undef strndup
 #undef new
 #undef delete
+#undef inline
 
 using namespace std;
-
-static inline void h2unit_list_null(h2unit_list* node) {
-   node->next = node->prev = (h2unit_list*)0;
-}
 
 static inline void h2unit_list_init(h2unit_list* node) {
    node->next = node->prev = node;
@@ -152,7 +151,6 @@ static long __milliseconds()
 #include <sys/mman.h>
 #include <unistd.h>
 #include <errno.h>
-#include <stdarg.h>
 static long __milliseconds()
 {
    struct timeval tv;
@@ -162,17 +160,7 @@ static long __milliseconds()
 }
 #endif
 
-
-class h2unit_fail
-{
-public:
-   h2unit_fail() throw ()
-   {
-   }
-   ~h2unit_fail() throw ()
-   {
-   }
-} _fail;
+static jmp_buf __h2unit_jmp_buf;
 
 typedef struct h2unit_blob
 {
@@ -246,7 +234,7 @@ void h2unit_blob_del(h2unit_blob* blob)
    free(blob);
 
    if (overed) {
-      throw _fail;
+      longjmp(__h2unit_jmp_buf, 1);
    }
 }
 
@@ -264,47 +252,97 @@ typedef struct h2unit_symb
    char* raw;
    char* join;
    char* name;
-   int args;
+   int argc;
+   char* argv[32];
+
    void* addr;
    h2unit_list link;
 } h2unit_symb;
 
-void h2unit_symb_parse(h2unit_symb* symb, char* raw)
+static void __trim_total_whitespace(char* s)
 {
-   int i;
-   symb->raw = strdup(raw);
-   for (i = strlen(symb->raw); i > 0 && isspace(symb->raw[i - 1]); i--) {
-      symb->raw[i - 1] = '\0';
-   }
-   symb->join = strdup(symb->raw);
-   int len = strlen(symb->join);
-   for (char* p = symb->join; *p; p++, len--) {
+   int len = strlen(s);
+   for (char* p = s; *p; p++, len--) {
       while (isspace(*p)) memmove(p, p + 1, len--);
    }
+}
+
+static void __trim_sides_whitespace(char* s)
+{
+   char* p;
+   for (p = s; isspace(*p); p++);
+
+   for (char* q = p + strlen(p) - 1; isspace(*q); q--) {
+      *q = '\0';
+   }
+
+   if (s != p) {
+      memmove(s, p, strlen(p) + 1);
+   }
+}
+
+void h2unit_symb_parse(h2unit_symb* symb, char* raw)
+{
+#if defined(__APPLE__) || defined(macintosh)
+   symb->raw = strdup(raw + 1);  /* prefix _ to all symbols in MAC OS */
+#else
+   symb->raw = strdup(raw);
+#endif
+   __trim_sides_whitespace(symb->raw);
+   symb->join = strdup(symb->raw);
+   __trim_total_whitespace(symb->join);
    char* t = strdup(symb->raw);
    symb->name = strdup(strtok(t, "("));
-   char* r = strtok(NULL, "(");
+   __trim_sides_whitespace(symb->name);
+   symb->argc = -1;
+   char* r = strtok(NULL, ")");
    if (r) {
-
+      symb->argc = 0;
+      char* p = strtok(r, ",");
+      for (unsigned i = 0; p && i < sizeof(symb->argv)/sizeof(symb->argv[0]); p = strtok(NULL, ",")) {
+         __trim_total_whitespace((symb->argv[symb->argc++] = strdup(p)));
+      }
    }
    free(t);
 }
 
+void h2unit_symb_release(h2unit_symb* symb)
+{
+   if (symb->raw) free(symb->raw);
+   if (symb->join) free(symb->join);
+   if (symb->name) free(symb->name);
+
+   for (int i = 0; i < symb->argc; i++) {
+      if (symb->argv[i]) free(symb->argv[i]);
+   }
+}
+
 double h2unit_symb_compare(h2unit_symb* a, h2unit_symb* b)
 {
-   if (!strcmp(a->raw, b->raw)) return 1.0;
-   if (!strcmp(a->join, b->join)) return 1.0;
-   if (!strcmp(a->name, b->name)) return 1.0;
-
-#if 0
-   /* some compiler prefix _ to all symbols */
-   if (a->name[0] == '_') {
-      if (!strcmp(a->name + 1, b->name)) {
-         return 1.0;
+   double similarity = 0.0;
+   if (!strcmp(a->raw, b->raw)) {
+      return 1.0;
+   }
+   if (!strcmp(a->join, b->join)) {
+      return 1.0;
+   }
+   if (strcmp(a->name, b->name)) {
+      return 0.0; /* function name is unmatch, absolutely not same */
+   } else {
+      similarity += 0.6;
+   }
+   if (a->argc != b->argc) {
+      return similarity;
+   }
+   similarity += 0.2;
+   double ds = 0.2 / a->argc;
+   for (int i = 0; i < a->argc; i++) {
+      if (!strcmp(a->argv[i], b->argv[i])) {
+         similarity += ds;
       }
    }
-#endif
-   return 0.0;
+
+   return similarity;
 }
 
 typedef struct h2unit_stub
@@ -353,19 +391,22 @@ void h2unit_stub_set(h2unit_stub* stub, void* fake)
   //x86 __asm("jmp $fake") : 0xE9 {fake-native-5}
   //x86 __asm("movl $fake, %eax; jmpl %eax") : 0xB8 {fake} 0xFF 0xE0
   //x86_64 __asm("movq $fake, %rax; jmpq %rax") : 0x48 0xB8 {fake} 0xFF 0xE0
-#ifdef __x86_64__
+#if defined(__x86_64__) || defined(_M_X64)
   *I++ = 0x48;
   *I++ = 0xB8;
   memcpy(I, &fake, sizeof(void*));
   I += sizeof(void*);
   *I++ = 0xFF;
   *I++ = 0xE0;
-#else
+
+#elif defined(__i386__) || defined(_M_IX86)
   *I++ = 0xE9;
   fake = (void*) ((unsigned long) fake - (unsigned long) stub->native - (sizeof(void*) + 1));
   memcpy(I, &fake, sizeof(void*));
-#endif
 
+#elif defined(__powerpc__)
+#else
+#endif
 }
 
 void h2unit_stub_del(h2unit_stub* stub)
@@ -934,6 +975,7 @@ public:
          h2unit_symb* b = h2unit_list_entry(p, h2unit_symb, link);
          double c = h2unit_symb_compare(b, &s);
          if (c >= 1.0) {
+            h2unit_symb_release(&s);
             return b->addr;
          }
 
@@ -942,8 +984,9 @@ public:
             u = b;
          }
       }
+      h2unit_symb_release(&s);
       if (v > 0.5) {
-         return u;
+         return u->addr;
       }
       return NULL;
    }
@@ -1080,7 +1123,7 @@ h2unit_auto::h2unit_auto(const char* file, int line)
 h2unit_auto::~h2unit_auto()
 {
    if (!h2unit_case::_current_->_leak_pop_()) {
-      throw _fail;
+      longjmp(__h2unit_jmp_buf, 1);
    }
 }
 
@@ -1173,9 +1216,9 @@ void h2unit_case::_execute_()
       _prev_setup_();
       setup();
       _post_setup_();
-      try {
+      if (!setjmp(__h2unit_jmp_buf)) {
          _testcase_();
-      } catch (class h2unit_fail) {
+      } else {
          _status_ = _FAILED_;
       }
       _prev_teardown_();
@@ -1206,7 +1249,7 @@ void h2unit_case::_blob_add_(h2unit_list* blob)
 {
    h2unit_list* head = h2unit_list_get_head(&_leak_stack_);
    h2unit_leak* leak = h2unit_list_entry(head, h2unit_leak, stack);
-   h2unit_list_add_head(blob, &leak->blobs);
+   h2unit_list_add_tail(blob, &leak->blobs);
 }
 
 bool h2unit_case::_leak_pop_()
@@ -1288,7 +1331,7 @@ void* h2unit_case::_addr_(const char* native, const char* native_name, const cha
       _vmsg_(&_errormsg_, "", ")");
       _vmsg_(&_errormsg_, "bold,purple", " %s not found", native_name);
 
-      throw _fail;
+      longjmp(__h2unit_jmp_buf, 1);
    }
    return address;
 }
@@ -1316,7 +1359,7 @@ void h2unit_case::_stub_(void* native, void* fake, const char* native_name, cons
          _vmsg_(&_errormsg_, "", ")");
          _vmsg_(&_errormsg_, "bold,red", " %s", reason);
 
-         throw _fail;
+         longjmp(__h2unit_jmp_buf, 1);
       }
    }
    h2unit_stub_set(stub, fake);
@@ -1335,7 +1378,7 @@ void h2unit_case::_check_equal_(bool result)
       _vmsg_(&_expected_, "bold,red", "true");
       _vmsg_(&_actually_, "bold,red", "false");
 
-      throw _fail;
+      longjmp(__h2unit_jmp_buf, 1);
    }
 }
 
@@ -1345,7 +1388,7 @@ void h2unit_case::_check_equal_(int expected, int actually)
       _vmsg_(&_expected_, "bold,red", "%d 0x%x", expected, expected);
       _vmsg_(&_actually_, "bold,red", "%d 0x%x", actually, actually);
 
-      throw _fail;
+      longjmp(__h2unit_jmp_buf, 1);
    }
 }
 
@@ -1355,7 +1398,7 @@ void h2unit_case::_check_equal_(unsigned long expected, unsigned long actually)
       _vmsg_(&_expected_, "bold,red", "%ld 0x%lx", (long)expected, expected);
       _vmsg_(&_actually_, "bold,red", "%ld 0x%lx", (long)actually, actually);
 
-      throw _fail;
+      longjmp(__h2unit_jmp_buf, 1);
    }
 }
 
@@ -1370,7 +1413,7 @@ void h2unit_case::_check_equal_(unsigned long long expected, unsigned long long 
       _vmsg_(&_actually_, "bold,red", "%lld 0x%llx", (long long)actually, actually);
 #endif
 
-      throw _fail;
+      longjmp(__h2unit_jmp_buf, 1);
    }
 }
 
@@ -1382,7 +1425,7 @@ void h2unit_case::_check_equal_(double expected, double actually)
       _vmsg_(&_expected_, "bold,red", "%f", expected);
       _vmsg_(&_actually_, "bold,red", "%f", actually);
 
-      throw _fail;
+      longjmp(__h2unit_jmp_buf, 1);
    }
 }
 
@@ -1402,7 +1445,7 @@ void h2unit_case::_check_equal_(char* expected, char* actually)
          _vmsg_(&_actually_, j <= expected_length && actually[j] == expected[j] ? "bold,green" : "bold,red", "%c", actually[j]);
       }
 
-      throw _fail;
+      longjmp(__h2unit_jmp_buf, 1);
    }
 }
 
@@ -1412,7 +1455,7 @@ void h2unit_case::_check_range_(double from, double to, double actually)
       _vmsg_(&_expected_, "bold,red", "[%f, %f]", from, to);
       _vmsg_(&_actually_, "bold,red", "%f", actually);
 
-      throw _fail;
+      longjmp(__h2unit_jmp_buf, 1);
    }
 }
 
@@ -1433,7 +1476,7 @@ void h2unit_case::_check_inset_(double *inset, int count, double actually)
    }
    _vmsg_(&_actually_, "bold,red", "%f", actually);
 
-   throw _fail;
+   longjmp(__h2unit_jmp_buf, 1);
 }
 
 void h2unit_case::_check_equal_strcmp_nocase_(char* expected, char* actually)
@@ -1452,7 +1495,7 @@ void h2unit_case::_check_equal_strcmp_nocase_(char* expected, char* actually)
          _vmsg_(&_actually_, j <= expected_length && tolower((int) actually[j]) == tolower((int) expected[j]) ? "bold,green" : "bold,red", "%c", actually[j]);
       }
 
-      throw _fail;
+      longjmp(__h2unit_jmp_buf, 1);
    }
 }
 
@@ -1462,7 +1505,7 @@ void h2unit_case::_check_regex_(char* express, char* actually)
       _vmsg_(&_expected_, "bold,red", "%s", express);
       _vmsg_(&_actually_, "bold,red", "%s", actually);
 
-      throw _fail;
+      longjmp(__h2unit_jmp_buf, 1);
    }
 }
 
@@ -1474,7 +1517,7 @@ void h2unit_case::_check_equal_(unsigned char* expected, unsigned char* actually
          _vmsg_(&_actually_, actually[i] == expected[i] ? "bold,green" : "bold,red", i % 16 < 8 ? "%02X " : " %02X", actually[i]);
       }
 
-      throw _fail;
+      longjmp(__h2unit_jmp_buf, 1);
    }
 }
 
@@ -1484,7 +1527,7 @@ void h2unit_case::_check_catch_(const char* expected, const char* actually, cons
       _vmsg_(&_expected_, "bold,red", "%s %s", expected, exceptype);
       _vmsg_(&_actually_, "bold,red", "%s %s", actually, exceptype);
 
-      throw _fail;
+      longjmp(__h2unit_jmp_buf, 1);
    }
 }
 

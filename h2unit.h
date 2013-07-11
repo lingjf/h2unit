@@ -303,6 +303,9 @@ void operator delete[](void*);
 #define new new(__FILE__, __LINE__)
 #endif
 
+#define inline
+#define _inline_
+#define __inline__
 
 #endif
 

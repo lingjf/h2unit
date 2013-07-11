@@ -100,8 +100,8 @@ H2CASE(getEven,"test for H2EQUAL_INT/H2EQUAL with long long")
    long long a1 = 2;
    H2EQUAL_INT(e1, a1);
 
-   unsigned long long e2 = 0x12345678900L;
-   unsigned long long a2 = 12345678900L;
+   unsigned long long e2 = 0x12345678900ULL;
+   unsigned long long a2 = 12345678900ULL;
    H2EQUAL(e2, a2);
 }
 
