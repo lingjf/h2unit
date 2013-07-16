@@ -1,3 +1,4 @@
+/* https://github.com/lingjf/h2unit */
 /* Jeff Ling , lingjf@gmail.com */
 
 #ifndef ___H2UNIT_H___
@@ -23,7 +24,7 @@ public:
    static const int _INITED_ = 0;
    static const int _PASSED_ = 1;
    static const int _FAILED_ = 2;
-   static const int _IGNORE_ = 3;
+   static const int _TODOED_ = 3;
    static const int _FILTED_ = 4;
 
    int _status_;
@@ -49,9 +50,10 @@ public:
    int _checkcount_;
    h2unit_list _errormsg_;
    h2unit_list _expected_;
+   h2unit_list _unexpect_;
    h2unit_list _actually_;
    h2unit_list* _addition_;
-   void _vmsg_(h2unit_list* typed, const char *style, const char* format, ...);
+   void _vmsg_(h2unit_list* typed, const char* style, const char* format, ...);
 public:
    h2unit_list _leak_stack_;
    void _leak_push_(const char* file, int line);
@@ -70,17 +72,21 @@ public:
    void _init_(const char* unitname, const char* casename, bool ignored, const char* file, int line);
 
    void _enter_check_(const char* file, int line);
-   void _check_equal_(bool result);
-   void _check_equal_(int expected, int actually);
-   void _check_equal_(unsigned long expected, unsigned long actually);
-   void _check_equal_(unsigned long long expected, unsigned long long actually);
-   void _check_equal_(double expected, double actually);
-   void _check_equal_(char* expected, char* actually);
-   void _check_equal_(unsigned char* expected, unsigned char* actually, int length);
-   void _check_range_(double from, double to, double actually);
-   void _check_inset_(double *inset, int count, double actually);
+   void _check_equal_boolean_(bool result);
+   void _check_equal_integer_(unsigned long long expected, unsigned long long actually);
+   void _check_unequal_integer_(unsigned long long unexpect, unsigned long long actually);
+   void _check_equal_double_(double expected, double actually);
+   void _check_unequal_double_(double unexpect, double actually);
+   void _check_equal_range_(double from, double to, double actually);
+   void _check_unequal_range_(double from, double to, double actually);
+   void _check_equal_inset_(double *inset, int count, double actually);
+   void _check_unequal_inset_(double *inset, int count, double actually);
+   void _check_equal_strcmp_(char* expected, char* actually);
+   void _check_unequal_strcmp_(char* unexpect, char* actually);
+   void _check_equal_memcmp_(unsigned char* expected, unsigned char* actually, int length);
    void _check_equal_strcmp_nocase_(char* expected, char* actually);
-   void _check_regex_(char* express, char* actually);
+   void _check_equal_regex_(char* express, char* actually);
+   void _check_unequal_regex_(char* express, char* actually);
    void _check_catch_(const char* expected, const char* actually, const char* exceptype);
 
    virtual void _testcase_() = 0;
@@ -115,76 +121,94 @@ public:
    void __H2UNIT_CASE_NAME(_unit_)::_testcase_()
 
 
-/** Visual C++ 8.0 2005 (_MSC_VER = 1400) and later version support 'variadic macros' */
 
-#if defined(__GNUC__) || (defined(_MSC_VER) && _MSC_VER >= 1400)
-#define H2EQUAL(...)                                                                                     \
+#define H2EQ_TRUE(condition)                                                                             \
    do {                                                                                                  \
       h2unit_case::_current_->_enter_check_(__FILE__, __LINE__);                                         \
-      h2unit_case::_current_->_check_equal_(__VA_ARGS__);                                                \
-   } while(0)
-#else
-#define H2EQUAL(expected, actually)                                                                      \
-   do {                                                                                                  \
-      h2unit_case::_current_->_enter_check_(__FILE__, __LINE__);                                         \
-      h2unit_case::_current_->_check_equal_(expected, actually);                                         \
-   } while(0)
-#endif
-
-#define H2EQUAL_TRUE(condition)                                                                          \
-   do {                                                                                                  \
-      h2unit_case::_current_->_enter_check_(__FILE__, __LINE__);                                         \
-      h2unit_case::_current_->_check_equal_(condition);                                                  \
+      h2unit_case::_current_->_check_equal_boolean_(condition);                                          \
    } while(0)
 
-#define H2EQUAL_INT(expected, actually)                                                                  \
+#define H2EQ_MATH(expected, actually)                                                                    \
    do {                                                                                                  \
       h2unit_case::_current_->_enter_check_(__FILE__, __LINE__);                                         \
-      h2unit_case::_current_->_check_equal_((unsigned long)(expected), (unsigned long)(actually));       \
+      if (typeid(expected) == typeid(float) || typeid(expected) == typeid(double)) {                     \
+         h2unit_case::_current_->_check_equal_double_((double)(expected), (double)(actually));           \
+      } else {                                                                                           \
+         h2unit_case::_current_->_check_equal_integer_((unsigned long long)(expected), (unsigned long long)(actually)); \
+      }                                                                                                  \
    } while(0)
 
-#define H2EQUAL_FLOAT(expected, actually)                                                                \
+#define H2NE_MATH(unexpect, actually)                                                                    \
    do {                                                                                                  \
       h2unit_case::_current_->_enter_check_(__FILE__, __LINE__);                                         \
-      h2unit_case::_current_->_check_equal_((double)(expected), (double)(actually));                     \
+      if (typeid(unexpect) == typeid(float) || typeid(unexpect) == typeid(double)) {                     \
+         h2unit_case::_current_->_check_unequal_double_((double)(unexpect), (double)(actually));         \
+      } else {                                                                                           \
+         h2unit_case::_current_->_check_unequal_integer_((unsigned long long)(unexpect), (unsigned long long)(actually)); \
+      }                                                                                                  \
    } while(0)
 
-#define H2EQUAL_RANGE(from, to, actually)                                                                \
+#define H2EQ_RANGE(from, to, actually)                                                                   \
    do {                                                                                                  \
       h2unit_case::_current_->_enter_check_(__FILE__, __LINE__);                                         \
-      h2unit_case::_current_->_check_range_((double)(from), (double)(to), (double)(actually));           \
+      h2unit_case::_current_->_check_equal_range_((double)(from), (double)(to), (double)(actually));     \
    } while(0)
 
-#define H2EQUAL_INSET(inset, count, actually)                                                            \
+#define H2NE_RANGE(from, to, actually)                                                                   \
    do {                                                                                                  \
       h2unit_case::_current_->_enter_check_(__FILE__, __LINE__);                                         \
-      h2unit_case::_current_->_check_inset_((double*)(inset), (int)(count), (double)(actually));         \
+      h2unit_case::_current_->_check_unequal_range_((double)(from), (double)(to), (double)(actually));   \
    } while(0)
 
-#define H2EQUAL_STRCMP(expected, actually)                                                               \
+#define H2EQ_INSET(inset, count, actually)                                                               \
    do {                                                                                                  \
       h2unit_case::_current_->_enter_check_(__FILE__, __LINE__);                                         \
-      h2unit_case::_current_->_check_equal_((char*)(expected), (char*)(actually));                       \
+      h2unit_case::_current_->_check_equal_inset_((double*)(inset), (int)(count), (double)(actually));   \
    } while(0)
 
-#define H2EQUAL_STRCMP_NOCASE(expected, actually)                                                        \
+#define H2NE_INSET(inset, count, actually)                                                               \
+   do {                                                                                                  \
+      h2unit_case::_current_->_enter_check_(__FILE__, __LINE__);                                         \
+      h2unit_case::_current_->_check_unequal_inset_((double*)(inset), (int)(count), (double)(actually)); \
+   } while(0)
+
+#define H2EQ_STRCMP(expected, actually)                                                                  \
+   do {                                                                                                  \
+      h2unit_case::_current_->_enter_check_(__FILE__, __LINE__);                                         \
+      h2unit_case::_current_->_check_equal_strcmp_((char*)(expected), (char*)(actually));                \
+   } while(0)
+
+#define H2NE_STRCMP(unexpect, actually)                                                                  \
+   do {                                                                                                  \
+      h2unit_case::_current_->_enter_check_(__FILE__, __LINE__);                                         \
+      h2unit_case::_current_->_check_unequal_strcmp_((char*)(unexpect), (char*)(actually));              \
+   } while(0)
+
+#define H2EQ_STRCMP_NOCASE(expected, actually)                                                           \
    do {                                                                                                  \
       h2unit_case::_current_->_enter_check_(__FILE__, __LINE__);                                         \
       h2unit_case::_current_->_check_equal_strcmp_nocase_((char*)(expected), (char*)(actually));         \
    } while(0)
 
-#define H2EQUAL_WILDCARD(expected, actually)                                                             \
+#define H2EQ_WILDCARD(expected, actually)                                                                \
    do {                                                                                                  \
       h2unit_case::_current_->_enter_check_(__FILE__, __LINE__);                                         \
-      h2unit_case::_current_->_check_regex_((char*)(expected), (char*)(actually));                       \
+      h2unit_case::_current_->_check_equal_regex_((char*)(expected), (char*)(actually));                 \
    } while(0)
 
-#define H2EQUAL_REGEX H2EQUAL_WILDCARD
-
-#define H2EQUAL_MEMCMP(expected, actually, length)                                                       \
+#define H2NE_WILDCARD(unexpect, actually)                                                                \
    do {                                                                                                  \
       h2unit_case::_current_->_enter_check_(__FILE__, __LINE__);                                         \
-      h2unit_case::_current_->_check_equal_((unsigned char*)(expected), (unsigned char*)(actually), (int)(length));  \
+      h2unit_case::_current_->_check_unequal_regex_((char*)(unexpect), (char*)(actually));               \
+   } while(0)
+
+#define H2EQ_REGEX H2EQ_WILDCARD
+#define H2NE_REGEX H2NE_WILDCARD
+
+#define H2EQ_MEMCMP(expected, actually, length)                                                          \
+   do {                                                                                                  \
+      h2unit_case::_current_->_enter_check_(__FILE__, __LINE__);                                         \
+      h2unit_case::_current_->_check_equal_memcmp_((unsigned char*)(expected), (unsigned char*)(actually), (int)(length)); \
    } while(0)
 
 #define H2CATCH_NONE(expressions)                                                                        \

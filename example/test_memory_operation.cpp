@@ -72,7 +72,7 @@ H2CASE(memory_leak, "test memory leak block")
 H2CASE(memory_leak, "test memory faulty injection")
 {
    H2_FAULTY_INJECT_MEMORY(10);
-   H2EQUAL_TRUE(NULL == malloc(11));
+   H2EQ_TRUE(NULL == malloc(11));
 }
 
 

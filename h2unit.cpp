@@ -1,3 +1,4 @@
+/* https://github.com/lingjf/h2unit */
 /* Jeff Ling , lingjf@gmail.com */
 
 #include "h2unit.h"
@@ -428,7 +429,7 @@ typedef struct h2unit_unit
    int case_count;
    int case_passed;
    int case_failed;
-   int case_ignored;
+   int case_todo;
    int case_filtered;
    h2unit_case* cases;
    struct h2unit_unit* next;
@@ -449,14 +450,14 @@ public:
    virtual void on_task_start()
    {
    }
-   virtual void on_task_endup(int failed, int passed, int ignored, int filtered, int cases, int checks, long duration, h2unit_unit* unit_list)
+   virtual void on_task_endup(int failed, int passed, int todo, int filtered, int cases, int checks, long duration, h2unit_unit* unit_list)
    {
       for (h2unit_unit* p = unit_list; p; p = p->next) {
          for (h2unit_case* c = p->cases; c; c = c->_next_) {
             p->case_count++;
             switch (c->_status_) {
-            case h2unit_case::_IGNORE_:
-               p->case_ignored++;
+            case h2unit_case::_TODOED_:
+               p->case_todo++;
                break;
             case h2unit_case::_FILTED_:
                p->case_filtered++;
@@ -496,10 +497,10 @@ public:
          p->on_task_start();
       }
    }
-   void on_task_endup(int failed, int passed, int ignored, int filtered, int cases, int checks, long duration, h2unit_unit* unit_list)
+   void on_task_endup(int failed, int passed, int todo, int filtered, int cases, int checks, long duration, h2unit_unit* unit_list)
    {
       for (class h2unit_listen *p = next; p; p = p->next) {
-         p->on_task_endup(failed, passed, ignored, filtered, cases, checks, duration, unit_list);
+         p->on_task_endup(failed, passed, todo, filtered, cases, checks, duration, unit_list);
       }
    }
    void on_case_start()
@@ -539,12 +540,12 @@ public:
    {
       filp = fopen("h2unit_text.log", "w");
    }
-   void on_task_endup(int failed, int passed, int ignored, int filtered, int cases, int checks, long duration, h2unit_unit* unit_list)
+   void on_task_endup(int failed, int passed, int todo, int filtered, int cases, int checks, long duration, h2unit_unit* unit_list)
    {
       if (failed > 0) {
-         fprintf(filp, "\nFailed <%d failed, %d passed, %d ignored, %d filtered, %d checks, %ld ms>\n", failed, passed, ignored, filtered, checks, duration);
+         fprintf(filp, "\nFailed <%d failed, %d passed, %d todo, %d filtered, %d checks, %ld ms>\n", failed, passed, todo, filtered, checks, duration);
       } else {
-         fprintf(filp, "\nPassed <%d passed, %d ignored, %d filtered, %d cases, %d checks, %ld ms>\n", passed, ignored, filtered, cases, checks, duration);
+         fprintf(filp, "\nPassed <%d passed, %d todo, %d filtered, %d cases, %d checks, %ld ms>\n", passed, todo, filtered, cases, checks, duration);
       }
       fclose(filp);
    }
@@ -552,8 +553,8 @@ public:
    {
       h2unit_case* p = h2unit_case::_current_;
       switch (p->_status_) {
-      case h2unit_case::_IGNORE_:
-         fprintf(filp, "H2CASE(%s, %s): Ignored at %s:%d\n", p->_unitname_, p->_casename_, p->_casefile_, p->_caseline_);
+      case h2unit_case::_TODOED_:
+         fprintf(filp, "H2CASE(%s, %s): TODO at %s:%d\n", p->_unitname_, p->_casename_, p->_casefile_, p->_caseline_);
          break;
       case h2unit_case::_FILTED_:
          break;
@@ -572,6 +573,11 @@ public:
          if (!h2unit_list_empty(&p->_expected_)) {
             fprintf(filp, "  expected<");
             print_string(&h2unit_case::_current_->_expected_);
+            fprintf(filp, ">\n");
+         }
+         if (!h2unit_list_empty(&p->_unexpect_)) {
+            fprintf(filp, "  unexpect<");
+            print_string(&h2unit_case::_current_->_unexpect_);
             fprintf(filp, ">\n");
          }
          if (!h2unit_list_empty(&p->_actually_)) {
@@ -657,15 +663,15 @@ public:
    void on_task_start()
    {
    }
-   void on_task_endup(int failed, int passed, int ignored, int filtered, int cases, int checks, long duration, h2unit_unit* unit_list)
+   void on_task_endup(int failed, int passed, int todo, int filtered, int cases, int checks, long duration, h2unit_unit* unit_list)
    {
       printf("\r                                                    \n");
       if (failed > 0) {
          printf("%s", color("bold,red"));
-         printf("Failed <%d failed, %d passed, %d ignored, %d filtered, %d checks, %ld ms>\n", failed, passed, ignored, filtered, checks, duration);
+         printf("Failed <%d failed, %d passed, %d todo, %d filtered, %d checks, %ld ms>\n", failed, passed, todo, filtered, checks, duration);
       } else {
          printf("%s", color("bold,green"));
-         printf("Passed <%d passed, %d ignored, %d filtered, %d cases, %d checks, %ld ms>\n", passed, ignored, filtered, cases, checks, duration);
+         printf("Passed <%d passed, %d todo, %d filtered, %d cases, %d checks, %ld ms>\n", passed, todo, filtered, cases, checks, duration);
       }
       printf("%s\n", color("reset"));
    }
@@ -673,8 +679,8 @@ public:
    {
       h2unit_case* p = h2unit_case::_current_;
       switch (p->_status_) {
-      case h2unit_case::_IGNORE_:
-         printf("\rH2CASE(%s, %s): Ignored at %s:%d\n", p->_unitname_, p->_casename_, p->_casefile_, p->_caseline_);
+      case h2unit_case::_TODOED_:
+         printf("\rH2CASE(%s, %s): TODO at %s:%d\n", p->_unitname_, p->_casename_, p->_casefile_, p->_caseline_);
          break;
       case h2unit_case::_FILTED_:
          break;
@@ -697,6 +703,11 @@ public:
          if (!h2unit_list_empty(&p->_expected_)) {
             printf("  expected<");
             print_string(&p->_expected_);
+            printf(">\n");
+         }
+         if (!h2unit_list_empty(&p->_unexpect_)) {
+            printf("  unexpect<");
+            print_string(&p->_unexpect_);
             printf(">\n");
          }
          if (!h2unit_list_empty(&p->_actually_)) {
@@ -743,7 +754,7 @@ public:
       fprintf(filp, "<table>");
 
    }
-   void on_task_endup(int failed, int passed, int ignored, int filtered, int cases, int checks, long duration, h2unit_unit* unit_list)
+   void on_task_endup(int failed, int passed, int todo, int filtered, int cases, int checks, long duration, h2unit_unit* unit_list)
    {
       for (h2unit_unit* p = unit_list; p; p = p->next) {
          fprintf(filp, "<tr>");
@@ -753,8 +764,8 @@ public:
             fprintf(filp, "<tr>");
             const char* status;
             switch (c->_status_) {
-            case h2unit_case::_IGNORE_:
-               status = "Ignored";
+            case h2unit_case::_TODOED_:
+               status = "TODO";
                break;
             case h2unit_case::_FILTED_:
                status = "Filtered";
@@ -776,9 +787,9 @@ public:
       fprintf(filp, "</table>");
 
       if (failed > 0) {
-         fprintf(filp, "Failed <%d failed, %d passed, %d ignored, %d filtered, %d checks, %ld ms>\n", failed, passed, ignored, filtered, checks, duration);
+         fprintf(filp, "Failed <%d failed, %d passed, %d todo, %d filtered, %d checks, %ld ms>\n", failed, passed, todo, filtered, checks, duration);
       } else {
-         fprintf(filp, "Passed <%d passed, %d ignored, %d filtered, %d cases, %d checks, %ld ms>\n", passed, ignored, filtered, cases, checks, duration);
+         fprintf(filp, "Passed <%d passed, %d todo, %d filtered, %d cases, %d checks, %ld ms>\n", passed, todo, filtered, cases, checks, duration);
       }
 
       fprintf(filp, "</body>");
@@ -810,19 +821,19 @@ public:
    void on_task_start()
    {
    }
-   void on_task_endup(int failed, int passed, int ignored, int filtered, int cases, int checks, long duration, h2unit_unit* unit_list)
+   void on_task_endup(int failed, int passed, int todo, int filtered, int cases, int checks, long duration, h2unit_unit* unit_list)
    {
-      h2unit_listen::on_task_endup(failed, passed, ignored, filtered, cases, checks, duration, unit_list);
+      h2unit_listen::on_task_endup(failed, passed, todo, filtered, cases, checks, duration, unit_list);
       filp = fopen("h2unit_junit.xml", "w");
       fprintf(filp, "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n");
       fprintf(filp, "<testsuites>\n");
       for (h2unit_unit* p = unit_list; p; p = p->next) {
-         fprintf(filp, "  <testsuite errors=\"0\" failures=\"%d\" hostname=\"localhost\" name=\"%s\" skipped=\"%d\" tests=\"%d\" time=\"%d\" timestamp=\"%s\">\n", p->case_failed, p->name, p->case_ignored + p->case_filtered, p->case_count, 0, "");
+         fprintf(filp, "  <testsuite errors=\"0\" failures=\"%d\" hostname=\"localhost\" name=\"%s\" skipped=\"%d\" tests=\"%d\" time=\"%d\" timestamp=\"%s\">\n", p->case_failed, p->name, p->case_todo + p->case_filtered, p->case_count, 0, "");
          for (h2unit_case* c = p->cases; c; c = c->_next_) {
             const char* status;
             switch (c->_status_) {
-            case h2unit_case::_IGNORE_:
-               status = "Ignored";
+            case h2unit_case::_TODOED_:
+               status = "TODO";
                break;
             case h2unit_case::_FILTED_:
                status = "Filtered";
@@ -846,6 +857,12 @@ public:
             if (!h2unit_list_empty(&c->_expected_)) {
                fprintf(filp, "      <failure message=\"expected<");
                print_string(&c->_expected_);
+               printf("n");
+               fprintf(filp, ">\"></failure>\n");
+            }
+            if (!h2unit_list_empty(&c->_unexpect_)) {
+               fprintf(filp, "      <failure message=\"unexpect<");
+               print_string(&c->_unexpect_);
                printf("n");
                fprintf(filp, ">\"></failure>\n");
             }
@@ -875,8 +892,9 @@ public:
 class h2unit_task
 {
 public:
-   int unit_count, case_count, case_executed_count, check_count;
-   int case_failed, case_passed, case_ignore, case_filter;
+   int unit_count, case_count;
+   int case_executed_count, checkpoint_count;
+   int case_failed, case_passed, case_todo, case_filtered;
    h2unit_list blob_list;
    h2unit_list symb_list;
    h2unit_unit* unit_list;
@@ -891,8 +909,8 @@ public:
 
    h2unit_task()
    {
-      case_failed = case_passed = case_ignore = case_filter = 0;
-      unit_count = case_count = case_executed_count = check_count = 0;
+      case_failed = case_passed = case_todo = case_filtered = 0;
+      unit_count = case_count = case_executed_count = checkpoint_count = 0;
       case_chain = NULL;
 
       unit_list = NULL;
@@ -1049,16 +1067,16 @@ public:
          listener.on_case_start();
          p->_execute_();
          case_executed_count += 1;
-         check_count += p->_checkcount_;
+         checkpoint_count += p->_checkcount_;
 
          listener.on_case_endup(100.0 * case_executed_count / case_count);
 
          switch (p->_status_) {
-         case h2unit_case::_IGNORE_:
-            case_ignore++;
+         case h2unit_case::_TODOED_:
+            case_todo++;
             break;
          case h2unit_case::_FILTED_:
-            case_filter++;
+            case_filtered++;
             break;
          case h2unit_case::_PASSED_:
             case_passed++;
@@ -1068,7 +1086,7 @@ public:
             break;
          }
       }
-      listener.on_task_endup(case_failed, case_passed, case_ignore, case_filter, case_count, check_count, __milliseconds() - start, unit_list);
+      listener.on_task_endup(case_failed, case_passed, case_todo, case_filtered, case_count, checkpoint_count, __milliseconds() - start, unit_list);
    }
 
    h2unit_blob* get_blob(void* ptr)
@@ -1151,13 +1169,14 @@ void h2unit_case::_init_(const char* unitname, const char* casename, bool ignore
 
    h2unit_list_init(&_errormsg_);
    h2unit_list_init(&_expected_);
+   h2unit_list_init(&_unexpect_);
    h2unit_list_init(&_actually_);
    _addition_ = NULL;
 
    h2unit_list_init(&_leak_stack_);
    h2unit_list_init(&_stub_list_);
 
-   if (ignored) _status_ = _IGNORE_;
+   if (ignored) _status_ = _TODOED_;
 
    h2unit_task::O()->install_testcase(this);
 }
@@ -1211,7 +1230,7 @@ void h2unit_case::_execute_()
       return;
    }
 
-   if (_status_ != _IGNORE_) {
+   if (_status_ != _TODOED_) {
       _status_ = _PASSED_;
       _prev_setup_();
       setup();
@@ -1372,7 +1391,7 @@ void h2unit_case::_enter_check_(const char* file, int line)
    _checkcount_++;
 }
 
-void h2unit_case::_check_equal_(bool result)
+void h2unit_case::_check_equal_boolean_(bool result)
 {
    if (!result) {
       _vmsg_(&_expected_, "bold,red", "true");
@@ -1382,27 +1401,7 @@ void h2unit_case::_check_equal_(bool result)
    }
 }
 
-void h2unit_case::_check_equal_(int expected, int actually)
-{
-   if (expected != actually) {
-      _vmsg_(&_expected_, "bold,red", "%d 0x%x", expected, expected);
-      _vmsg_(&_actually_, "bold,red", "%d 0x%x", actually, actually);
-
-      longjmp(__h2unit_jmp_buf, 1);
-   }
-}
-
-void h2unit_case::_check_equal_(unsigned long expected, unsigned long actually)
-{
-   if (expected != actually) {
-      _vmsg_(&_expected_, "bold,red", "%ld 0x%lx", (long)expected, expected);
-      _vmsg_(&_actually_, "bold,red", "%ld 0x%lx", (long)actually, actually);
-
-      longjmp(__h2unit_jmp_buf, 1);
-   }
-}
-
-void h2unit_case::_check_equal_(unsigned long long expected, unsigned long long actually)
+void h2unit_case::_check_equal_integer_(unsigned long long expected, unsigned long long actually)
 {
    if (expected != actually) {
 #ifdef _WIN32
@@ -1417,7 +1416,22 @@ void h2unit_case::_check_equal_(unsigned long long expected, unsigned long long 
    }
 }
 
-void h2unit_case::_check_equal_(double expected, double actually)
+void h2unit_case::_check_unequal_integer_(unsigned long long unexpect, unsigned long long actually)
+{
+   if (unexpect == actually) {
+#ifdef _WIN32
+      _vmsg_(&_unexpect_, "bold,red", "%I64d 0x%I64x", (long long)unexpect, unexpect);
+      _vmsg_(&_actually_, "bold,red", "%I64d 0x%I64x", (long long)actually, actually);
+#else
+      _vmsg_(&_unexpect_, "bold,red", "%lld 0x%llx", (long long)unexpect, unexpect);
+      _vmsg_(&_actually_, "bold,red", "%lld 0x%llx", (long long)actually, actually);
+#endif
+
+      longjmp(__h2unit_jmp_buf, 1);
+   }
+}
+
+void h2unit_case::_check_equal_double_(double expected, double actually)
 {
    double delta = expected - actually;
    if (delta < 0) delta = -delta;
@@ -1429,7 +1443,77 @@ void h2unit_case::_check_equal_(double expected, double actually)
    }
 }
 
-void h2unit_case::_check_equal_(char* expected, char* actually)
+void h2unit_case::_check_unequal_double_(double unexpect, double actually)
+{
+   double delta = unexpect - actually;
+   if (delta < 0) delta = -delta;
+   if (delta < 0.00001) {
+      _vmsg_(&_unexpect_, "bold,red", "%f", unexpect);
+      _vmsg_(&_actually_, "bold,red", "%f", actually);
+
+      longjmp(__h2unit_jmp_buf, 1);
+   }
+}
+
+void h2unit_case::_check_equal_range_(double from, double to, double actually)
+{
+   if (actually < from - 0.00001 || to + 0.00001 < actually) {
+      _vmsg_(&_expected_, "bold,red", "[%f ~ %f]", from, to);
+      _vmsg_(&_actually_, "bold,red", "%f", actually);
+
+      longjmp(__h2unit_jmp_buf, 1);
+   }
+}
+
+void h2unit_case::_check_unequal_range_(double from, double to, double actually)
+{
+   if (from - 0.00001 <=  actually && actually <= to + 0.00001) {
+      _vmsg_(&_unexpect_, "bold,red", "[%f ~ %f]", from, to);
+      _vmsg_(&_actually_, "bold,red", "%f", actually);
+
+      longjmp(__h2unit_jmp_buf, 1);
+   }
+}
+
+void h2unit_case::_check_equal_inset_(double *inset, int count, double actually)
+{
+   for (int i = 0; i < count; i++) {
+      double delta = inset[i] - actually;
+      if (delta < 0) delta = -delta;
+      if (delta < 0.00001) {
+         return;
+      }
+
+   }
+   if (count > 0) {
+      _vmsg_(&_expected_, "bold,red", "{%f, ...}", inset[0]);
+   } else {
+      _vmsg_(&_expected_, "bold,red", "{}");
+   }
+   _vmsg_(&_actually_, "bold,red", "%f", actually);
+
+   longjmp(__h2unit_jmp_buf, 1);
+}
+
+void h2unit_case::_check_unequal_inset_(double *inset, int count, double actually)
+{
+   for (int i = 0; i < count; i++) {
+      double delta = inset[i] - actually;
+      if (delta < 0) delta = -delta;
+      if (delta < 0.00001) {
+         if (count > 0) {
+            _vmsg_(&_unexpect_, "bold,red", "NOT {%f, ...}", inset[0]);
+         } else {
+            _vmsg_(&_unexpect_, "bold,red", "NOT {}");
+         }
+         _vmsg_(&_actually_, "bold,red", "%f", actually);
+
+         longjmp(__h2unit_jmp_buf, 1);
+      }
+   }
+}
+
+void h2unit_case::_check_equal_strcmp_(char* expected, char* actually)
 {
    if (strcmp(expected, actually) != 0) {
       int actually_length = strlen(actually);
@@ -1449,34 +1533,14 @@ void h2unit_case::_check_equal_(char* expected, char* actually)
    }
 }
 
-void h2unit_case::_check_range_(double from, double to, double actually)
+void h2unit_case::_check_unequal_strcmp_(char* unexpect, char* actually)
 {
-   if (actually < from - 0.00001 || actually > to + 0.00001) {
-      _vmsg_(&_expected_, "bold,red", "[%f, %f]", from, to);
-      _vmsg_(&_actually_, "bold,red", "%f", actually);
+   if (strcmp(unexpect, actually) == 0) {
+      _vmsg_(&_unexpect_, "bold,red", "%s", unexpect);
+      _vmsg_(&_actually_, "bold,red", "%s", actually);
 
       longjmp(__h2unit_jmp_buf, 1);
    }
-}
-
-void h2unit_case::_check_inset_(double *inset, int count, double actually)
-{
-   for (int i = 0; i < count; i++) {
-      double delta = inset[i] - actually;
-      if (delta < 0) delta = -delta;
-      if (delta < 0.00001) {
-         return;
-      }
-
-   }
-   if (count > 0) {
-      _vmsg_(&_expected_, "bold,red", "{%f, ...}", inset[0]);
-   } else {
-      _vmsg_(&_expected_, "bold,red", "{}");
-   }
-   _vmsg_(&_actually_, "bold,red", "%f", actually);
-
-   longjmp(__h2unit_jmp_buf, 1);
 }
 
 void h2unit_case::_check_equal_strcmp_nocase_(char* expected, char* actually)
@@ -1499,7 +1563,7 @@ void h2unit_case::_check_equal_strcmp_nocase_(char* expected, char* actually)
    }
 }
 
-void h2unit_case::_check_regex_(char* express, char* actually)
+void h2unit_case::_check_equal_regex_(char* express, char* actually)
 {
    if (__pattern_cmp(express, actually) != 0) {
       _vmsg_(&_expected_, "bold,red", "%s", express);
@@ -1509,7 +1573,17 @@ void h2unit_case::_check_regex_(char* express, char* actually)
    }
 }
 
-void h2unit_case::_check_equal_(unsigned char* expected, unsigned char* actually, int length)
+void h2unit_case::_check_unequal_regex_(char* express, char* actually)
+{
+   if (__pattern_cmp(express, actually) == 0) {
+      _vmsg_(&_unexpect_, "bold,red", "%s", express);
+      _vmsg_(&_actually_, "bold,red", "%s", actually);
+
+      longjmp(__h2unit_jmp_buf, 1);
+   }
+}
+
+void h2unit_case::_check_equal_memcmp_(unsigned char* expected, unsigned char* actually, int length)
 {
    if (memcmp(expected, actually, length) != 0) {
       for (int i = 0; i < length; i++) {
