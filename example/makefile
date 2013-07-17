@@ -6,8 +6,8 @@ H2FLAGS +=  -I ..  -include h2unit.h
 
 # h2unit.cpp contains main() which execute test cases
 all : h2unit.o demo_basic.o test_basic.o demo_dynamic_stub.o demo_dynamic_stub_cpp.o test_dynamic_stub.o demo_memory_operation.o test_memory_operation.o 
-	g++ -Wall -o h2unit.out h2unit.o demo_basic.o test_basic.o demo_dynamic_stub.o demo_dynamic_stub_cpp.o test_dynamic_stub.o demo_memory_operation.o test_memory_operation.o 
-	./h2unit.out -v
+	g++ -Wall -o a.out h2unit.o demo_basic.o test_basic.o demo_dynamic_stub.o demo_dynamic_stub_cpp.o test_dynamic_stub.o demo_memory_operation.o test_memory_operation.o 
+	./a.out -v
 	
 # -v : full output
 # -r : random execute sequence
@@ -38,4 +38,4 @@ test_memory_operation.o : test_memory_operation.cpp ../h2unit.h
 	g++ -Wall -g $(H2FLAGS) -c -o test_memory_operation.o test_memory_operation.cpp
 	
 clean:
-	rm -rf h2unit.out *.o *.log *.xml *.html Debug *.ncb *.sln *.suo
+	rm -rf a.out *.o *.log *.xml *.html Debug *.ncb *.sln *.suo

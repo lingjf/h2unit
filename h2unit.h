@@ -85,6 +85,8 @@ public:
    void _check_unequal_strcmp_(char* unexpect, char* actually);
    void _check_equal_memcmp_(unsigned char* expected, unsigned char* actually, int length);
    void _check_equal_strcmp_nocase_(char* expected, char* actually);
+   void _check_equal_wildcard_(char* express, char* actually);
+   void _check_unequal_wildcard_(char* express, char* actually);
    void _check_equal_regex_(char* express, char* actually);
    void _check_unequal_regex_(char* express, char* actually);
    void _check_catch_(const char* expected, const char* actually, const char* exceptype);
@@ -193,17 +195,26 @@ public:
 #define H2EQ_WILDCARD(expected, actually)                                                                \
    do {                                                                                                  \
       h2unit_case::_current_->_enter_check_(__FILE__, __LINE__);                                         \
-      h2unit_case::_current_->_check_equal_regex_((char*)(expected), (char*)(actually));                 \
+      h2unit_case::_current_->_check_equal_wildcard_((char*)(expected), (char*)(actually));              \
    } while(0)
 
 #define H2NE_WILDCARD(unexpect, actually)                                                                \
    do {                                                                                                  \
       h2unit_case::_current_->_enter_check_(__FILE__, __LINE__);                                         \
-      h2unit_case::_current_->_check_unequal_regex_((char*)(unexpect), (char*)(actually));               \
+      h2unit_case::_current_->_check_unequal_wildcard_((char*)(unexpect), (char*)(actually));            \
    } while(0)
 
-#define H2EQ_REGEX H2EQ_WILDCARD
-#define H2NE_REGEX H2NE_WILDCARD
+#define H2EQ_REGEX(expected, actually)                                                                   \
+   do {                                                                                                  \
+      h2unit_case::_current_->_enter_check_(__FILE__, __LINE__);                                         \
+      h2unit_case::_current_->_check_equal_regex_((char*)(expected), (char*)(actually));                 \
+   } while(0)
+
+#define H2NE_REGEX(unexpect, actually)                                                                   \
+   do {                                                                                                  \
+      h2unit_case::_current_->_enter_check_(__FILE__, __LINE__);                                         \
+      h2unit_case::_current_->_check_unequal_regex_((char*)(unexpect), (char*)(actually));               \
+   } while(0)
 
 #define H2EQ_MEMCMP(expected, actually, length)                                                          \
    do {                                                                                                  \

@@ -72,51 +72,89 @@ static inline h2unit_list* h2unit_list_get_tail(h2unit_list *head)
 #define h2unit_list_for_each_safe(iter, temp, head)  \
    for( (iter) = (head)->next, (temp) = (iter)->next; (iter) != (head); (iter) = (temp), (temp) = (iter)->next )
 
-static int __pattern_cmp(char* pattern, char* source)
+
+static int __wildcard_match(char* pattern, char* text)
 {
    int negate, found;
    for (;;) {
       switch (*pattern) {
       case '\0':
-         return *source ? 1 : 0;
+         return *text ? 0 : 1;
       case '?':
-         if (!*source++) return 1;
+         if (!*text++) return 0;
          pattern++;
          break;
       case '*':
          while (*++pattern == '*') {
          }
-         if (!*pattern) return 0;
-         for (; *source; source++) {
-            if (!__pattern_cmp(pattern, source)) return 0;
+         if (!*pattern) return 1;
+         for (; *text; text++) {
+            if (__wildcard_match(pattern, text)) return 1;
          }
-         return 1;
+         return 0;
       case '[':
-         if (!*source) return 1;
+         if (!*text) return 0;
          pattern++;
          negate = *pattern == '!' || *pattern == '^';
          if (negate) pattern++;
          for (found = 0; *pattern != ']'; pattern++) {
-            if (!*pattern) return 1;
+            if (!*pattern) return 0;
             if (*pattern == '-') {
                char a = *(pattern - 1);
                char z = *(pattern + 1);
                if (a == '[' || a == '!' || a == '^' || a == '-') a = 0x00;
                if (z == ']' || z == '!' || z == '^' || z == '-') z = 0x7f;
-               if (a <= *source && *source <= z) found = 1;
+               if (a <= *text && *text <= z) found = 1;
             } else {
-               if (*pattern == *source) found = 1;
+               if (*pattern == *text) found = 1;
             }
          }
-         if ((negate && found) || (!negate && !found)) return 1;
-         pattern++, source++;
+         if ((negate && found) || (!negate && !found)) return 0;
+         pattern++, text++;
          break;
       default:
-         if (*pattern++ != *source++) return 1;
+         if (*pattern++ != *text++) return 0;
          break;
       }
    }
-   return 1;
+   return 0;
+}
+
+static int matchhere(char *, char *);
+static int matchstar(int c, char *regexp, char *text)
+{
+   char *t;
+   for (t = text; *t != '\0' && (*t == c || c == '.'); t++) ;
+   do {
+      if (matchhere(regexp, t)) return 1;
+   } while (t-- > text);
+   return 0;
+}
+static int matchhere(char *regexp, char *text)
+{
+   if (regexp[0] == '\0') {
+      return 1;
+   }
+   if (regexp[1] == '*') {
+      return matchstar(regexp[0], regexp + 2, text);
+   }
+   if (regexp[0] == '$' && regexp[1] == '\0') {
+      return *text == '\0';
+   }
+   if ((text[0] != '\0') && (regexp[0] == '.' || regexp[0] == text[0])) {
+      return matchhere(regexp + 1, text + 1);
+   }
+   return 0;
+}
+static int __regex_match(char *regexp, char *text)
+{
+   if (regexp[0] == '^') return matchhere(regexp + 1, text);
+   do {
+      if (matchhere(regexp, text)) {
+         return 1;
+      }
+   } while (*text++ != '\0');
+   return 0;
 }
 
 class h2unit_config
@@ -1221,11 +1259,11 @@ void h2unit_case::teardown()
 void h2unit_case::_execute_()
 {
    _start_ = __milliseconds();
-   if (cfg._include != NULL && (__pattern_cmp(cfg._include, (char*) _unitname_) != 0 && __pattern_cmp(cfg._include, (char*) _casename_) != 0)) {
+   if (cfg._include != NULL && (!__wildcard_match(cfg._include, (char*) _unitname_) && !__wildcard_match(cfg._include, (char*) _casename_))) {
       _status_ = _FILTED_;
       return;
    }
-   if (cfg._exclude != NULL && (__pattern_cmp(cfg._exclude, (char*) _unitname_) == 0 || __pattern_cmp(cfg._exclude, (char*) _casename_) == 0)) {
+   if (cfg._exclude != NULL && (__wildcard_match(cfg._exclude, (char*) _unitname_) || __wildcard_match(cfg._exclude, (char*) _casename_))) {
       _status_ = _FILTED_;
       return;
    }
@@ -1348,7 +1386,13 @@ void* h2unit_case::_addr_(const char* native, const char* native_name, const cha
       _vmsg_(&_errormsg_, "", " <-- ");
       _vmsg_(&_errormsg_, "bold,red", "%s", fake_name);
       _vmsg_(&_errormsg_, "", ")");
-      _vmsg_(&_errormsg_, "bold,purple", " %s not found", native_name);
+
+      char b[256], *p, *q;
+      sprintf(b, "%s", native_name);
+      for (p = b; *p == '\"'; p++);
+      for (q = p + strlen(p) - 1; *q == '\"'; q--) *q = '\0';
+
+      _vmsg_(&_errormsg_, "bold,purple", " %s not found, try H2STUB(&%s, %s);", native_name, p, fake_name);
 
       longjmp(__h2unit_jmp_buf, 1);
    }
@@ -1563,9 +1607,29 @@ void h2unit_case::_check_equal_strcmp_nocase_(char* expected, char* actually)
    }
 }
 
+void h2unit_case::_check_equal_wildcard_(char* express, char* actually)
+{
+   if (!__wildcard_match(express, actually)) {
+      _vmsg_(&_expected_, "bold,red", "%s", express);
+      _vmsg_(&_actually_, "bold,red", "%s", actually);
+
+      longjmp(__h2unit_jmp_buf, 1);
+   }
+}
+
+void h2unit_case::_check_unequal_wildcard_(char* express, char* actually)
+{
+   if (__wildcard_match(express, actually)) {
+      _vmsg_(&_unexpect_, "bold,red", "%s", express);
+      _vmsg_(&_actually_, "bold,red", "%s", actually);
+
+      longjmp(__h2unit_jmp_buf, 1);
+   }
+}
+
 void h2unit_case::_check_equal_regex_(char* express, char* actually)
 {
-   if (__pattern_cmp(express, actually) != 0) {
+   if (!__regex_match(express, actually)) {
       _vmsg_(&_expected_, "bold,red", "%s", express);
       _vmsg_(&_actually_, "bold,red", "%s", actually);
 
@@ -1575,7 +1639,7 @@ void h2unit_case::_check_equal_regex_(char* express, char* actually)
 
 void h2unit_case::_check_unequal_regex_(char* express, char* actually)
 {
-   if (__pattern_cmp(express, actually) == 0) {
+   if (__regex_match(express, actually)) {
       _vmsg_(&_unexpect_, "bold,red", "%s", express);
       _vmsg_(&_actually_, "bold,red", "%s", actually);
 

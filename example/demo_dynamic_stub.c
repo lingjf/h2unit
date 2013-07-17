@@ -7,7 +7,7 @@
 
 int orig_foo(int a)
 {
-   return a + 1;
+   return a;
 }
 
 static int orig_bar(int b)

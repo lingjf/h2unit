@@ -23,7 +23,7 @@ H2UNIT(getEven)
       gv = 3;
    }
    /*
-    * teardown() will be executed after every test case belong to this suite
+    * teardown() will be executed after every test case belong to this suite.
     * whatever test case passed or failed.
     * Typically it is used to release resource.
     */
@@ -37,7 +37,7 @@ H2UNIT(getEven)
 /*
  * H2CASE is a unit test case
  */
-H2CASE(getEven,"test for varible and setup")
+H2CASE(getEven,"test for variable and setup")
 {
    H2EQ_TRUE(2 == uv);
    H2EQ_TRUE(4 == gv);
@@ -89,8 +89,8 @@ H2CASE(getEven,"test for long type integer")
 
 H2CASE(getEven,"test for long long type integer")
 {
-   long long e1 = 2;
-   long long a1 = 2;
+   long long e1 = 1234567890LL;
+   long long a1 = 1234567890LL;
    H2EQ_MATH(e1, a1);
 
    unsigned long long e2 = 0x12345678900ULL;
@@ -106,7 +106,7 @@ H2TODO(getEven, "todo feature")
 H2UNIT(getCeil)
 {
   /*
-   * setup() and teardown() can be omitted.
+   * setup() and teardown() can be omitted. The default is doing nothing
    */
 };
 
@@ -173,19 +173,47 @@ H2CASE(Point, "string not equal")
 }
 
 /*
- * h2unit H2EQ_REGEX can be used to verify WildCard String.
- * Regular Express is not supported yet ,
- * due to import complex PCRE will break the h2unit design principle :
- *       Light-Weight just like hydrogen !
+ * h2unit H2EQ_WILDCARD can be used to verify string by WildCard. support:
+ *  -- ? any one char
+ *  -- * any char(s)
+ *  -- [] specified char(s)
+ *     -- [abc] a or b or c
+ *     -- [a-z] a or b or ... or z
+ *     -- [!abc] any char except a and b and c
+ *     -- [^abc] any char except a and b and c
  */
-H2CASE(Point, "wildcard equal")
+H2CASE(Point, "wildcard string")
 {
    Point p1;
-   H2EQ_WILDCARD("Point([0-9], *)", p1.tuString());
+   H2EQ_WILDCARD("Point(0, ?)", p1.tuString());
    Point p2(1,2);
-   H2EQ_WILDCARD("Point([0-9], ?)", p2.tuString());
+   H2EQ_WILDCARD("Point(*)", p2.tuString());
    Point p3(3,4);
-   H2EQ_WILDCARD("Point(*, 5)", p3.tuString());
+   H2EQ_WILDCARD("Point([123], [0-9])", p3.tuString());
+   Point p4(6,12);
+   H2EQ_WILDCARD("Point([!a-zA-Z], [^a-z][^a-z])", p4.tuString());
+   Point p5(8,10);
+   H2EQ_WILDCARD("Point(8, 10?)", p5.tuString());
+}
+
+/*
+ * h2unit H2EQ_REGEX can be used to verify string by Regular express. support:
+ *  -- c any specified char
+ *  -- . any char
+ *  -- * any times appear of previous char
+ *  -- ^ begin of
+ *  -- $ end of
+ */
+H2CASE(Point, "regex string")
+{
+   Point p1;
+   H2EQ_REGEX("Point(0, 0)", p1.tuString());
+   Point p2(1,2);
+   H2EQ_REGEX("Point(.", p2.tuString());
+   Point p3(3,4);
+   H2EQ_REGEX("Point(.*)", p3.tuString());
+   Point p4(5,6);
+   H2EQ_REGEX("^Point(.*)$", p4.tuString());
 }
 
 /*
@@ -207,8 +235,8 @@ H2CASE(Point, "caseless string equal")
 H2CASE(Point, "memory equal")
 {
    Point p1;
-   H2EQ_MEMCMP("Point(0, 0)", p1.tuString(), 12);
-   H2EQ_MEMCMP("Point(1, 0)", p1.tuString(), 12);
+   H2EQ_MEMCMP("Point(0, 0)", p1.tuString(), sizeof("Point(0, 0)"));
+   H2EQ_MEMCMP("Point(1, 0)", p1.tuString(), sizeof("Point(1, 0)"));
 }
 
 
