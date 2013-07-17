@@ -200,7 +200,13 @@ H2CASE(Point, "wildcard string")
  * h2unit H2EQ_REGEX can be used to verify string by Regular express. support:
  *  -- c any specified char
  *  -- . any char
+ *  -- [] specified char(s)
+ *     -- [abc] a or b or c
+ *     -- [a-z] a or b or ... or z
+ *     -- [!abc] any char except a and b and c
+ *     -- [^abc] any char except a and b and c
  *  -- * any times appear of previous char
+ *  -- + 1 and more times appear of previous char
  *  -- ^ begin of
  *  -- $ end of
  */
@@ -214,6 +220,12 @@ H2CASE(Point, "regex string")
    H2EQ_REGEX("Point(.*)", p3.tuString());
    Point p4(5,6);
    H2EQ_REGEX("^Point(.*)$", p4.tuString());
+   Point p5(7,8);
+   H2EQ_REGEX("Point([789], [0-9])", p5.tuString());
+   Point p6(11,88);
+   H2EQ_REGEX("Point([0-9]*, [!0-5]*)", p6.tuString());
+   Point p7(11,88);
+   H2EQ_REGEX("Point([0-9]+, [0-9]+)", p7.tuString());
 }
 
 /*

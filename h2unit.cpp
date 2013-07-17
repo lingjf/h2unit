@@ -120,37 +120,72 @@ static int __wildcard_match(char* pattern, char* text)
    return 0;
 }
 
-static int matchhere(char *, char *);
-static int matchstar(int c, char *regexp, char *text)
+static int ____matchhere(char *, char *);
+static int ____matchchar(char *pattern, char textc)
+{
+   if (pattern[0] == '.') {
+      return 1;
+   } else if (pattern[0] == '[') {
+      int negate = 0, found = 0;
+      char *p = pattern + 1;
+      if (*p == '!' || *p == '^') {
+         negate = 1;
+         p++;
+      }
+      for (found = 0; *p != ']'; p++) {
+         if (!*p) return 0;
+         if (*p == '-') {
+            char a = *(p - 1);
+            char z = *(p + 1);
+            if (a == '[' || a == '!' || a == '^' || a == '-') a = 0x00;
+            if (z == ']' || z == '!' || z == '^' || z == '-') z = 0x7f;
+            if (a <= textc && textc <= z) found = 1;
+         } else {
+            if (*p == textc) found = 1;
+         }
+      }
+      return ((negate && !found) || (!negate && found));
+   } else {
+      return pattern[0] == textc;
+   }
+}
+static int ____matchloop(char *pattern, char *regexp, int min, char *text)
 {
    char *t;
-   for (t = text; *t != '\0' && (*t == c || c == '.'); t++) ;
+   for (t = text; *t != '\0' && ____matchchar(pattern, *t); t++);
    do {
-      if (matchhere(regexp, t)) return 1;
-   } while (t-- > text);
+      if (____matchhere(regexp, t)) return 1;
+   } while (t-- > text + min);
    return 0;
 }
-static int matchhere(char *regexp, char *text)
+static int ____matchhere(char *regexp, char *text)
 {
+   char *pattern = regexp;
    if (regexp[0] == '\0') {
       return 1;
    }
+   if (regexp[0] == '[') {
+      while (*regexp != ']') regexp++;
+   }
    if (regexp[1] == '*') {
-      return matchstar(regexp[0], regexp + 2, text);
+      return ____matchloop(pattern, regexp + 2, 0, text);
+   }
+   if (regexp[1] == '+') {
+      return ____matchloop(pattern, regexp + 2, 1, text);
    }
    if (regexp[0] == '$' && regexp[1] == '\0') {
       return *text == '\0';
    }
-   if ((text[0] != '\0') && (regexp[0] == '.' || regexp[0] == text[0])) {
-      return matchhere(regexp + 1, text + 1);
+   if ((text[0] != '\0') && (____matchchar(pattern, text[0]))) {
+      return ____matchhere(regexp + 1, text + 1);
    }
    return 0;
 }
 static int __regex_match(char *regexp, char *text)
 {
-   if (regexp[0] == '^') return matchhere(regexp + 1, text);
+   if (regexp[0] == '^') return ____matchhere(regexp + 1, text);
    do {
-      if (matchhere(regexp, text)) {
+      if (____matchhere(regexp, text)) {
          return 1;
       }
    } while (*text++ != '\0');
@@ -1546,9 +1581,9 @@ void h2unit_case::_check_unequal_inset_(double *inset, int count, double actuall
       if (delta < 0) delta = -delta;
       if (delta < 0.00001) {
          if (count > 0) {
-            _vmsg_(&_unexpect_, "bold,red", "NOT {%f, ...}", inset[0]);
+            _vmsg_(&_unexpect_, "bold,red", "{%f, ...}", inset[0]);
          } else {
-            _vmsg_(&_unexpect_, "bold,red", "NOT {}");
+            _vmsg_(&_unexpect_, "bold,red", "{}");
          }
          _vmsg_(&_actually_, "bold,red", "%f", actually);
 
