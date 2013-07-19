@@ -1515,8 +1515,8 @@ void h2unit_case::_check_equal_double_(double expected, double actually)
    double delta = expected - actually;
    if (delta < 0) delta = -delta;
    if (delta > 0.00001) { /* 0.00001 is epsilon value */
-      _vmsg_(&_expected_, "bold,red", "%f", expected);
-      _vmsg_(&_actually_, "bold,red", "%f", actually);
+      _vmsg_(&_expected_, "bold,red", "%g", expected);
+      _vmsg_(&_actually_, "bold,red", "%g", actually);
 
       longjmp(__h2unit_jmp_buf, 1);
    }
@@ -1527,8 +1527,8 @@ void h2unit_case::_check_unequal_double_(double unexpect, double actually)
    double delta = unexpect - actually;
    if (delta < 0) delta = -delta;
    if (delta < 0.00001) {
-      _vmsg_(&_unexpect_, "bold,red", "%f", unexpect);
-      _vmsg_(&_actually_, "bold,red", "%f", actually);
+      _vmsg_(&_unexpect_, "bold,red", "%g", unexpect);
+      _vmsg_(&_actually_, "bold,red", "%g", actually);
 
       longjmp(__h2unit_jmp_buf, 1);
    }
@@ -1537,8 +1537,8 @@ void h2unit_case::_check_unequal_double_(double unexpect, double actually)
 void h2unit_case::_check_equal_range_(double from, double to, double actually)
 {
    if (actually < from - 0.00001 || to + 0.00001 < actually) {
-      _vmsg_(&_expected_, "bold,red", "[%f ~ %f]", from, to);
-      _vmsg_(&_actually_, "bold,red", "%f", actually);
+      _vmsg_(&_expected_, "bold,red", "[%g ~ %g]", from, to);
+      _vmsg_(&_actually_, "bold,red", "%g", actually);
 
       longjmp(__h2unit_jmp_buf, 1);
    }
@@ -1547,8 +1547,8 @@ void h2unit_case::_check_equal_range_(double from, double to, double actually)
 void h2unit_case::_check_unequal_range_(double from, double to, double actually)
 {
    if (from - 0.00001 <=  actually && actually <= to + 0.00001) {
-      _vmsg_(&_unexpect_, "bold,red", "[%f ~ %f]", from, to);
-      _vmsg_(&_actually_, "bold,red", "%f", actually);
+      _vmsg_(&_unexpect_, "bold,red", "[%g ~ %g]", from, to);
+      _vmsg_(&_actually_, "bold,red", "%g", actually);
 
       longjmp(__h2unit_jmp_buf, 1);
    }
@@ -1565,11 +1565,11 @@ void h2unit_case::_check_equal_inset_(double *inset, int count, double actually)
 
    }
    if (count > 0) {
-      _vmsg_(&_expected_, "bold,red", "{%f, ...}", inset[0]);
+      _vmsg_(&_expected_, "bold,red", "{%g, ...}", inset[0]);
    } else {
       _vmsg_(&_expected_, "bold,red", "{}");
    }
-   _vmsg_(&_actually_, "bold,red", "%f", actually);
+   _vmsg_(&_actually_, "bold,red", "%g", actually);
 
    longjmp(__h2unit_jmp_buf, 1);
 }
@@ -1581,11 +1581,11 @@ void h2unit_case::_check_unequal_inset_(double *inset, int count, double actuall
       if (delta < 0) delta = -delta;
       if (delta < 0.00001) {
          if (count > 0) {
-            _vmsg_(&_unexpect_, "bold,red", "{%f, ...}", inset[0]);
+            _vmsg_(&_unexpect_, "bold,red", "{%g, ...}", inset[0]);
          } else {
             _vmsg_(&_unexpect_, "bold,red", "{}");
          }
-         _vmsg_(&_actually_, "bold,red", "%f", actually);
+         _vmsg_(&_actually_, "bold,red", "%g", actually);
 
          longjmp(__h2unit_jmp_buf, 1);
       }

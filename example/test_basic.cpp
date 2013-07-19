@@ -114,7 +114,7 @@ H2CASE(getCeil, "test for float type number")
 {
    H2EQ_MATH(6.0, getCeil(6.2));
    H2EQ_MATH(6.0, getCeil(6.4));
-   H2EQ_MATH(6.8, getCeil(6.8));
+   H2EQ_MATH(3.14159, getCeil(3.14159));
 }
 
 H2CASE(getCeil, "test for number in range")
