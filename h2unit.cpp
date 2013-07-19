@@ -123,7 +123,9 @@ static int __wildcard_match(char* pattern, char* text)
 static int ____matchhere(char *, char *);
 static int ____matchchar(char *pattern, char textc)
 {
-   if (pattern[0] == '.') {
+   if (pattern[0] == '\\') {
+      return pattern[1] == textc;
+   } else if (pattern[0] == '.') {
       return 1;
    } else if (pattern[0] == '[') {
       int negate = 0, found = 0;
@@ -149,10 +151,10 @@ static int ____matchchar(char *pattern, char textc)
       return pattern[0] == textc;
    }
 }
-static int ____matchloop(char *pattern, char *regexp, int min, char *text)
+static int ____matchloop(char *pattern, char *regexp, int min, int max, char *text)
 {
    char *t;
-   for (t = text; *t != '\0' && ____matchchar(pattern, *t); t++);
+   for (t = text; *t != '\0' && max > 0 && ____matchchar(pattern, *t); t++, max--);
    do {
       if (____matchhere(regexp, t)) return 1;
    } while (t-- > text + min);
@@ -160,22 +162,44 @@ static int ____matchloop(char *pattern, char *regexp, int min, char *text)
 }
 static int ____matchhere(char *regexp, char *text)
 {
-   char *pattern = regexp;
    if (regexp[0] == '\0') {
       return 1;
-   }
-   if (regexp[0] == '[') {
-      while (*regexp != ']') regexp++;
-   }
-   if (regexp[1] == '*') {
-      return ____matchloop(pattern, regexp + 2, 0, text);
-   }
-   if (regexp[1] == '+') {
-      return ____matchloop(pattern, regexp + 2, 1, text);
    }
    if (regexp[0] == '$' && regexp[1] == '\0') {
       return *text == '\0';
    }
+
+   char *pattern = regexp;
+   if (pattern[0] == '\\') {
+      regexp++;
+   }
+   if (pattern[0] == '[') {
+      for (regexp++; *regexp != ']' || *(regexp - 1) == '\\'; regexp++);
+   }
+   char *appears = regexp + 1;
+   if (appears[0] == '*') {
+      return ____matchloop(pattern, regexp + 2, 0, 0xfffffff, text);
+   }
+   if (appears[0] == '+') {
+      return ____matchloop(pattern, regexp + 2, 1, 0xfffffff, text);
+   }
+   if (appears[0] == '{') {
+      int _min = 0, _max = 0;
+      for (regexp = appears + 1; *regexp != ',' && *regexp != '}'; regexp++) {
+         _min = _min * 10 + (*regexp - '0');
+         _max = _max * 10 + (*regexp - '0');
+      }
+      if (*regexp == ',') {
+         _max = 0;
+         for (++regexp; *regexp != '}'; regexp++) {
+            _max = _max * 10 + (*regexp - '0');
+         }
+      }
+      _max = _max == 0 ? 0xfffffff : _max;
+      if (_min > _max) return 0;
+      return ____matchloop(pattern, regexp + 1, _min, _max, text);
+   }
+
    if ((text[0] != '\0') && (____matchchar(pattern, text[0]))) {
       return ____matchhere(regexp + 1, text + 1);
    }

@@ -203,6 +203,11 @@ H2CASE(Point, "wildcard string")
  *     -- [^abc] any char except a and b and c
  *  -- * any times appear of previous char
  *  -- + 1 and more times appear of previous char
+ *  -- {} specified appear times of previous char
+ *     -- {2} appear absolutely only 2 times
+ *     -- {1,3} appear at least 1 times and at most 3 times
+ *     -- {2,} appear at least 2 times
+ *     -- {,3} appear at most 3 times
  *  -- ^ begin of
  *  -- $ end of
  */
@@ -222,6 +227,8 @@ H2CASE(Point, "regex string")
    H2EQ_REGEX("Point([0-9]*, [!0-5]*)", p6.tuString());
    Point p7(11,88);
    H2EQ_REGEX("Point([0-9]+, [0-9]+)", p7.tuString());
+   Point p8(11,56);
+   H2EQ_REGEX("P{1,}oint(1{2},{,2} [0-9]{1,3})", p8.tuString());
 }
 
 /*
