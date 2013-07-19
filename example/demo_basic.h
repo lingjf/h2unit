@@ -21,4 +21,6 @@ public:
    int fromInt(const char* str);
 };
 
+char* getTail(char* str);
+
 #endif

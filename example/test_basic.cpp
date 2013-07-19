@@ -98,10 +98,6 @@ H2CASE(getEven,"test for long long type integer")
    H2EQ_MATH(e2, a2);
 }
 
-H2TODO(getEven, "todo feature")
-{
-}
-
 
 H2UNIT(getCeil)
 {
@@ -273,4 +269,18 @@ H2CASE(Parser, "test catch something")
    H2CATCH_THROW(p.fromInt("-8"), int);
    H2CATCH_THROW(p.fromInt("-8"), float);
 }
+
+/*
+ * h2unit can take over assert(expr).
+ */
+
+H2UNIT(take_over_assert)
+{
+};
+
+H2TODO(take_over_assert, "h2unit assert")
+{
+   getTail(NULL);
+}
+
 

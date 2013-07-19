@@ -123,6 +123,8 @@ public:
    void __H2UNIT_CASE_NAME(_unit_)::_testcase_()
 
 
+#include <typeinfo>
+
 
 #define H2EQ_TRUE(condition)                                                                             \
    do {                                                                                                  \
@@ -247,8 +249,6 @@ public:
    } while(0)
 
 
-#include <typeinfo>
-
 #define H2STUB(native, fake)                                                                             \
    do {                                                                                                  \
       h2unit_case::_current_->_enter_check_(__FILE__, __LINE__);                                         \
@@ -273,15 +273,20 @@ public:
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <cassert>
 #else
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <assert.h>
 #endif
+
 
 #if defined(__cplusplus)
 extern "C" {
 #endif
+
+extern void h2unit_assert(int condition, const char* file, int line);
 
 extern void* h2unit_alloc(void* ptr, size_t size, size_t alignment, unsigned char c, const char* file, int line);
 extern void h2unit_free(void*, const char*, int);
@@ -292,6 +297,9 @@ extern char* h2unit_strndup(const char*, size_t, const char*, int);
 #if defined(__cplusplus)
 }
 #endif
+
+#undef assert
+#define assert(expr) h2unit_assert(expr, __FILE__, __LINE__)
 
 #define malloc(size) h2unit_alloc(NULL, size, 1, 0xED, __FILE__, __LINE__)
 #define calloc(nmemb, size) h2unit_alloc(NULL, (nmemb) * (size), 1, 0x00, __FILE__, __LINE__)
@@ -341,6 +349,8 @@ void operator delete[](void*);
 #define inline
 #define _inline_
 #define __inline__
+
+extern int h2unit_main(int argc, char** argv);
 
 #endif
 

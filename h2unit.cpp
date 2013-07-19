@@ -4,8 +4,8 @@
 #include "h2unit.h"
 #include <cctype>
 #include <ctime>
-#include <setjmp.h>
-#include <stdarg.h>
+#include <csetjmp>
+#include <cstdarg>
 
 #undef malloc
 #undef calloc
@@ -200,6 +200,7 @@ public:
    bool _random;
    char* _include;
    char* _exclude;
+   char* _path;
 
    h2unit_config()
    {
@@ -1003,7 +1004,7 @@ public:
       return &_instance;
    }
 
-   void build_symbols(char* path)
+   void build_symbols()
    {
 #ifndef _WIN32
       char buf[512];
@@ -1022,7 +1023,7 @@ public:
        * http://support.microsoft.com/kb/177429
        * http://sourceware.org/binutils/docs-2.23.1/bfd/index.html
        */
-      sprintf(buf, "nm %s | c++filt > %s", path, symb_file);
+      sprintf(buf, "nm %s | c++filt > %s", cfg._path, symb_file);
       system(buf);
 
       FILE* filp = fopen(symb_file, "r");
@@ -1055,6 +1056,9 @@ public:
 
    void* get_symbol_address(const char* symb)
    {
+      if (h2unit_list_empty(&symb_list)) {
+         build_symbols();
+      }
       h2unit_symb s;
       h2unit_symb_parse(&s, (char*)symb);
 
@@ -1704,6 +1708,14 @@ void h2unit_case::_check_catch_(const char* expected, const char* actually, cons
    }
 }
 
+void h2unit_assert(int condition, const char* file, int line)
+{
+   if (h2unit_case::_current_) {
+      h2unit_case::_current_->_enter_check_(file, line);
+      h2unit_case::_current_->_check_equal_boolean_((bool)condition);
+   }
+}
+
 void* h2unit_alloc(void* ptr, size_t size, size_t alignment, unsigned char c, const char* file, int line)
 {
    if (size == 0) {
@@ -1776,9 +1788,9 @@ void operator delete[](void* object)
    h2unit_free(object, "", 0);
 }
 
-int main(int argc, char** argv)
+int h2unit_main(int argc, char** argv)
 {
-   h2unit_task::O()->build_symbols(argv[0]);
+   cfg._path = argv[0];
    if (argc > 1) {
       if (strstr(argv[1], "v")) cfg._verbose = true;
       if (strstr(argv[1], "b")) cfg._colored = false;
@@ -1788,5 +1800,10 @@ int main(int argc, char** argv)
    }
    h2unit_task::O()->run();
    return 0;
+}
+
+int main(int argc, char** argv)
+{
+   return h2unit_main(argc, argv);
 }
 

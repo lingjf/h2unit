@@ -1,7 +1,8 @@
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <cassert>
 
 #include "demo_basic.h"
 
@@ -58,4 +59,10 @@ int Parser::fromInt(const char* str)
    return s;
 }
 
+char* getTail(char* str)
+{
+   assert(str != NULL);
+
+   return str + strlen(str);
+}
 
