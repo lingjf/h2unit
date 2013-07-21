@@ -188,8 +188,8 @@ H2CASE(Point, "wildcard string")
    H2EQ_WILDCARD("Point([123], [0-9])", p3.tuString());
    Point p4(6,12);
    H2EQ_WILDCARD("Point([!a-zA-Z], [^a-z][^a-z])", p4.tuString());
-   Point p5(8,10);
-   H2EQ_WILDCARD("Point(8, 10?)", p5.tuString());
+
+   H2EQ_WILDCARD("Point\\*Point\\?\\[1,2\\]", "Point*Point?[1,2]");
 }
 
 /*

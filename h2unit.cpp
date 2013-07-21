@@ -55,16 +55,16 @@ static inline bool h2unit_list_empty(h2unit_list *head)
 
 static inline h2unit_list* h2unit_list_get_head(h2unit_list *head)
 {
-   return (h2unit_list_empty(head)?((h2unit_list*)0):(head)->next);
+   return h2unit_list_empty(head) ? ((h2unit_list*)0) : head->next;
 }
 
 static inline h2unit_list* h2unit_list_get_tail(h2unit_list *head)
 {
-   return (h2unit_list_empty(head)?((h2unit_list*)0):(head)->prev);
+   return h2unit_list_empty(head) ? ((h2unit_list*)0) : head->prev;
 }
 
 #define h2unit_list_entry(ptr, type, field)  \
-   ((type *)((char *)(ptr)-(unsigned long)(&((type *)0)->field)))
+   ( (type *)((char *)(ptr)-(unsigned long)(&((type *)0)->field)) )
 
 #define h2unit_list_for_each(iter, head)  \
    for( (iter) = (head)->next; (iter) != (head); (iter) = (iter)->next )
@@ -75,7 +75,6 @@ static inline h2unit_list* h2unit_list_get_tail(h2unit_list *head)
 
 static int __wildcard_match(char* pattern, char* text)
 {
-   int negate, found;
    for (;;) {
       switch (*pattern) {
       case '\0':
@@ -84,34 +83,47 @@ static int __wildcard_match(char* pattern, char* text)
          if (!*text++) return 0;
          pattern++;
          break;
-      case '*':
-         while (*++pattern == '*') {
-         }
-         if (!*pattern) return 1;
-         for (; *text; text++) {
-            if (__wildcard_match(pattern, text)) return 1;
-         }
+      case '*': {
+         char *t = text;
+         while (*t != '\0') t++;
+         do {
+            if (__wildcard_match(pattern + 1, t)) return 1;
+         } while (t-- > text);
          return 0;
-      case '[':
-         if (!*text) return 0;
+      }
+      case '[': {
+         int negate = 0, found = 0;
          pattern++;
-         negate = *pattern == '!' || *pattern == '^';
-         if (negate) pattern++;
-         for (found = 0; *pattern != ']'; pattern++) {
-            if (!*pattern) return 0;
-            if (*pattern == '-') {
+         if (*pattern == '!' || *pattern == '^') {
+            negate = 1;
+            pattern++;
+         }
+         for (; *pattern != ']'; pattern++) {
+            switch (*pattern) {
+            case '\0':
+               return 0;
+            case '-': {
                char a = *(pattern - 1);
                char z = *(pattern + 1);
                if (a == '[' || a == '!' || a == '^' || a == '-') a = 0x00;
                if (z == ']' || z == '!' || z == '^' || z == '-') z = 0x7f;
                if (a <= *text && *text <= z) found = 1;
-            } else {
+               break;
+            }
+            case '\\':
+               pattern++;
+            default:
                if (*pattern == *text) found = 1;
+               break;
             }
          }
          if ((negate && found) || (!negate && !found)) return 0;
-         pattern++, text++;
+         pattern++;
+         text++;
          break;
+      }
+      case '\\':
+         pattern++;
       default:
          if (*pattern++ != *text++) return 0;
          break;
@@ -123,38 +135,47 @@ static int __wildcard_match(char* pattern, char* text)
 static int ____matchhere(char *, char *);
 static int ____matchchar(char *pattern, char textc)
 {
-   if (pattern[0] == '\\') {
+   switch (pattern[0]) {
+   case '\\':
       return pattern[1] == textc;
-   } else if (pattern[0] == '.') {
+   case '.':
       return 1;
-   } else if (pattern[0] == '[') {
+   case '[': {
       int negate = 0, found = 0;
-      char *p = pattern + 1;
-      if (*p == '!' || *p == '^') {
+      pattern++;
+      if (*pattern == '!' || *pattern == '^') {
          negate = 1;
-         p++;
+         pattern++;
       }
-      for (found = 0; *p != ']'; p++) {
-         if (!*p) return 0;
-         if (*p == '-') {
-            char a = *(p - 1);
-            char z = *(p + 1);
+      for (; *pattern != ']'; pattern++) {
+         switch (*pattern) {
+         case '\0':
+            return 0;
+         case '-': {
+            char a = *(pattern - 1);
+            char z = *(pattern + 1);
             if (a == '[' || a == '!' || a == '^' || a == '-') a = 0x00;
             if (z == ']' || z == '!' || z == '^' || z == '-') z = 0x7f;
             if (a <= textc && textc <= z) found = 1;
-         } else {
-            if (*p == textc) found = 1;
+            break;
+         }
+         case '\\':
+            pattern++;
+         default:
+            if (*pattern == textc) found = 1;
+            break;
          }
       }
       return ((negate && !found) || (!negate && found));
-   } else {
+   }
+   default:
       return pattern[0] == textc;
    }
 }
 static int ____matchloop(char *pattern, char *regexp, int min, int max, char *text)
 {
-   char *t;
-   for (t = text; *t != '\0' && max > 0 && ____matchchar(pattern, *t); t++, max--);
+   char *t = text;
+   while (*t != '\0' && max > 0 && ____matchchar(pattern, *t)) t++, max--;
    do {
       if (____matchhere(regexp, t)) return 1;
    } while (t-- > text + min);
@@ -162,56 +183,56 @@ static int ____matchloop(char *pattern, char *regexp, int min, int max, char *te
 }
 static int ____matchhere(char *regexp, char *text)
 {
-   if (regexp[0] == '\0') {
-      return 1;
-   }
-   if (regexp[0] == '$' && regexp[1] == '\0') {
-      return *text == '\0';
-   }
-
-   char *pattern = regexp;
-   if (pattern[0] == '\\') {
-      regexp++;
-   }
-   if (pattern[0] == '[') {
-      for (regexp++; *regexp != ']' || *(regexp - 1) == '\\'; regexp++);
-   }
-   char *appears = regexp + 1;
-   if (appears[0] == '*') {
-      return ____matchloop(pattern, regexp + 2, 0, 0xfffffff, text);
-   }
-   if (appears[0] == '+') {
-      return ____matchloop(pattern, regexp + 2, 1, 0xfffffff, text);
-   }
-   if (appears[0] == '{') {
-      int _min = 0, _max = 0;
-      for (regexp = appears + 1; *regexp != ',' && *regexp != '}'; regexp++) {
-         _min = _min * 10 + (*regexp - '0');
-         _max = _max * 10 + (*regexp - '0');
+   while (regexp[0] != '\0') {
+      if (regexp[0] == '$' && regexp[1] == '\0') {
+         return *text == '\0';
       }
-      if (*regexp == ',') {
-         _max = 0;
-         for (++regexp; *regexp != '}'; regexp++) {
+
+      char *pattern = regexp;
+      if (pattern[0] == '\\') {
+         regexp++;
+      }
+      if (pattern[0] == '[') {
+         for (regexp++; *regexp != ']' || *(regexp - 1) == '\\'; regexp++);
+      }
+      char *appears = regexp + 1;
+      if (appears[0] == '*') {
+         return ____matchloop(pattern, regexp + 2, 0, 0xfffffff, text);
+      }
+      if (appears[0] == '+') {
+         return ____matchloop(pattern, regexp + 2, 1, 0xfffffff, text);
+      }
+      if (appears[0] == '{') {
+         int _min = 0, _max = 0;
+         for (regexp = appears + 1; *regexp != ',' && *regexp != '}'; regexp++) {
+            if (isspace(*regexp)) continue;
+            _min = _min * 10 + (*regexp - '0');
             _max = _max * 10 + (*regexp - '0');
          }
+         if (*regexp == ',') {
+            _max = 0;
+            for (++regexp; *regexp != '}'; regexp++) {
+               _max = _max * 10 + (*regexp - '0');
+            }
+         }
+         _max = _max == 0 ? 0xfffffff : _max;
+         if (_min > _max) return 0;
+         return ____matchloop(pattern, regexp + 1, _min, _max, text);
       }
-      _max = _max == 0 ? 0xfffffff : _max;
-      if (_min > _max) return 0;
-      return ____matchloop(pattern, regexp + 1, _min, _max, text);
-   }
 
-   if ((text[0] != '\0') && (____matchchar(pattern, text[0]))) {
-      return ____matchhere(regexp + 1, text + 1);
+      if (text[0] == '\0') return 0;
+      if (!____matchchar(pattern, text[0])) return 0;
+
+      regexp++;
+      text++;
    }
-   return 0;
+   return 1;
 }
 static int __regex_match(char *regexp, char *text)
 {
    if (regexp[0] == '^') return ____matchhere(regexp + 1, text);
    do {
-      if (____matchhere(regexp, text)) {
-         return 1;
-      }
+      if (____matchhere(regexp, text)) return 1;
    } while (*text++ != '\0');
    return 0;
 }
@@ -234,7 +255,7 @@ public:
       _include = NULL;
       _exclude = NULL;
    }
-} cfg;
+} __cfg;
 
 #ifdef _WIN32
 #include <windows.h>
@@ -657,7 +678,7 @@ public:
       case h2unit_case::_FILTED_:
          break;
       case h2unit_case::_PASSED_:
-         if (cfg._verbose) {
+         if (__cfg._verbose) {
             fprintf(filp, "H2CASE(%s, %s): Passed - %ld ms     \n", p->_unitname_, p->_casename_, p->_endup_ - p->_start_);
          }
          break;
@@ -702,7 +723,7 @@ private:
 
    const char* color(const char *style)
    {
-      if (!cfg._colored) return "";
+      if (!__cfg._colored) return "";
 
       struct st
       {
@@ -783,7 +804,7 @@ public:
       case h2unit_case::_FILTED_:
          break;
       case h2unit_case::_PASSED_:
-         if (cfg._verbose) {
+         if (__cfg._verbose) {
             printf("%s", color("blue"));
             printf("\rH2CASE(%s, %s): Passed - %ld ms     \n", p->_unitname_, p->_casename_, p->_endup_ - p->_start_);
             printf("%s", color("reset"));
@@ -1047,7 +1068,7 @@ public:
        * http://support.microsoft.com/kb/177429
        * http://sourceware.org/binutils/docs-2.23.1/bfd/index.html
        */
-      sprintf(buf, "nm %s | c++filt > %s", cfg._path, symb_file);
+      sprintf(buf, "nm %s | c++filt > %s", __cfg._path, symb_file);
       system(buf);
 
       FILE* filp = fopen(symb_file, "r");
@@ -1162,7 +1183,7 @@ public:
    void run()
    {
       long start = __milliseconds();
-      if (cfg._random) random_sequence();
+      if (__cfg._random) random_sequence();
       listener.on_task_start();
       for (h2unit_case* p = case_chain; (h2unit_case::_current_ = p); p = p->_chain_) {
          listener.on_case_start();
@@ -1322,11 +1343,11 @@ void h2unit_case::teardown()
 void h2unit_case::_execute_()
 {
    _start_ = __milliseconds();
-   if (cfg._include != NULL && (!__wildcard_match(cfg._include, (char*) _unitname_) && !__wildcard_match(cfg._include, (char*) _casename_))) {
+   if (__cfg._include != NULL && (!__wildcard_match(__cfg._include, (char*) _unitname_) && !__wildcard_match(__cfg._include, (char*) _casename_))) {
       _status_ = _FILTED_;
       return;
    }
-   if (cfg._exclude != NULL && (__wildcard_match(cfg._exclude, (char*) _unitname_) || __wildcard_match(cfg._exclude, (char*) _casename_))) {
+   if (__cfg._exclude != NULL && (__wildcard_match(__cfg._exclude, (char*) _unitname_) || __wildcard_match(__cfg._exclude, (char*) _casename_))) {
       _status_ = _FILTED_;
       return;
    }
@@ -1814,13 +1835,13 @@ void operator delete[](void* object)
 
 int h2unit_main(int argc, char** argv)
 {
-   cfg._path = argv[0];
+   __cfg._path = argv[0];
    if (argc > 1) {
-      if (strstr(argv[1], "v")) cfg._verbose = true;
-      if (strstr(argv[1], "b")) cfg._colored = false;
-      if (strstr(argv[1], "r")) cfg._random = true;
-      if (strstr(argv[1], "i")) cfg._include = argv[2];
-      if (strstr(argv[1], "x")) cfg._exclude = argv[2];
+      if (strstr(argv[1], "v")) __cfg._verbose = true;
+      if (strstr(argv[1], "b")) __cfg._colored = false;
+      if (strstr(argv[1], "r")) __cfg._random = true;
+      if (strstr(argv[1], "i")) __cfg._include = argv[2];
+      if (strstr(argv[1], "x")) __cfg._exclude = argv[2];
    }
    h2unit_task::O()->run();
    return 0;

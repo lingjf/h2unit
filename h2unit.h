@@ -289,10 +289,10 @@ extern "C" {
 extern void h2unit_assert(int condition, const char* file, int line);
 
 extern void* h2unit_alloc(void* ptr, size_t size, size_t alignment, unsigned char c, const char* file, int line);
-extern void h2unit_free(void*, const char*, int);
-extern int h2unit_posix_memalign(void**, size_t, size_t, const char*, int);
-extern char* h2unit_strdup(const char*, const char*, int);
-extern char* h2unit_strndup(const char*, size_t, const char*, int);
+extern void h2unit_free(void* ptr, const char* file, int line);
+extern int h2unit_posix_memalign(void** ptr, size_t alignment, size_t size, const char* file, int line);
+extern char* h2unit_strdup(const char* s, const char* file, int line);
+extern char* h2unit_strndup(const char* s, size_t n, const char* file, int line);
 
 #if defined(__cplusplus)
 }
