@@ -122,6 +122,22 @@ public:
    } __H2UNIT_CASE_INST(_unit_);                                                                         \
    void __H2UNIT_CASE_NAME(_unit_)::_testcase_()
 
+#define H2UNIT_CASE(_case_)                                                                              \
+   class __H2UNIT_CASE_NAME(____): public h2unit_case                                                    \
+   {  public:                                                                                            \
+      __H2UNIT_CASE_NAME(____)() { _init_("", _case_, false, __FILE__, __LINE__); }                      \
+      void _testcase_();                                                                                 \
+   } __H2UNIT_CASE_INST(____);                                                                           \
+   void __H2UNIT_CASE_NAME(____)::_testcase_()
+
+#define H2UNIT_TODO(_case_)                                                                              \
+   class __H2UNIT_CASE_NAME(____): public h2unit_case                                                    \
+   {  public:                                                                                            \
+      __H2UNIT_CASE_NAME(____)() { _init_("", _case_, true, __FILE__, __LINE__); }                       \
+      void _testcase_();                                                                                 \
+   } __H2UNIT_CASE_INST(____);                                                                           \
+   void __H2UNIT_CASE_NAME(____)::_testcase_()
+
 
 #include <typeinfo>
 

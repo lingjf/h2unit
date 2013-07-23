@@ -673,17 +673,29 @@ public:
       h2unit_case* p = h2unit_case::_current_;
       switch (p->_status_) {
       case h2unit_case::_TODOED_:
-         fprintf(filp, "H2CASE(%s, %s): TODO at %s:%d\n", p->_unitname_, p->_casename_, p->_casefile_, p->_caseline_);
+         if (!strlen(p->_unitname_)) {
+            fprintf(filp, "H2UNIT_CASE(%s): TODO at %s:%d\n", p->_casename_, p->_casefile_, p->_caseline_);
+         } else {
+            fprintf(filp, "H2CASE(%s, %s): TODO at %s:%d\n", p->_unitname_, p->_casename_, p->_casefile_, p->_caseline_);
+         }
          break;
       case h2unit_case::_FILTED_:
          break;
       case h2unit_case::_PASSED_:
          if (__cfg._verbose) {
-            fprintf(filp, "H2CASE(%s, %s): Passed - %ld ms     \n", p->_unitname_, p->_casename_, p->_endup_ - p->_start_);
+            if (!strlen(p->_unitname_)) {
+               fprintf(filp, "H2UNIT_CASE(%s): Passed - %ld ms     \n", p->_casename_, p->_endup_ - p->_start_);
+            } else {
+               fprintf(filp, "H2CASE(%s, %s): Passed - %ld ms     \n", p->_unitname_, p->_casename_, p->_endup_ - p->_start_);
+            }
          }
          break;
       case h2unit_case::_FAILED_:
-         fprintf(filp, "H2CASE(%s, %s): Failed at %s:%d\n", p->_unitname_, p->_casename_, p->_checkfile_, p->_checkline_);
+         if (!strlen(p->_unitname_)) {
+            fprintf(filp, "H2UNIT_CASE(%s): Failed at %s:%d\n", p->_casename_, p->_checkfile_, p->_checkline_);
+         } else {
+            fprintf(filp, "H2CASE(%s, %s): Failed at %s:%d\n", p->_unitname_, p->_casename_, p->_checkfile_, p->_checkline_);
+         }
          if (!h2unit_list_empty(&p->_errormsg_)) {
             fprintf(filp, "  ");
             print_string(&h2unit_case::_current_->_errormsg_);
@@ -799,20 +811,32 @@ public:
       h2unit_case* p = h2unit_case::_current_;
       switch (p->_status_) {
       case h2unit_case::_TODOED_:
-         printf("\rH2CASE(%s, %s): TODO at %s:%d\n", p->_unitname_, p->_casename_, p->_casefile_, p->_caseline_);
+         if (!strlen(p->_unitname_)) {
+            printf("\rH2UNIT_CASE(%s): TODO at %s:%d\n", p->_casename_, p->_casefile_, p->_caseline_);
+         } else {
+            printf("\rH2CASE(%s, %s): TODO at %s:%d\n", p->_unitname_, p->_casename_, p->_casefile_, p->_caseline_);
+         }
          break;
       case h2unit_case::_FILTED_:
          break;
       case h2unit_case::_PASSED_:
          if (__cfg._verbose) {
             printf("%s", color("blue"));
-            printf("\rH2CASE(%s, %s): Passed - %ld ms     \n", p->_unitname_, p->_casename_, p->_endup_ - p->_start_);
+            if (!strlen(p->_unitname_)) {
+               printf("\rH2UNIT_CASE(%s): Passed - %ld ms     \n", p->_casename_, p->_endup_ - p->_start_);
+            } else {
+               printf("\rH2CASE(%s, %s): Passed - %ld ms     \n", p->_unitname_, p->_casename_, p->_endup_ - p->_start_);
+            }
             printf("%s", color("reset"));
          }
          break;
       case h2unit_case::_FAILED_:
          printf("%s", color("bold,purple"));
-         printf("\rH2CASE(%s, %s): Failed at %s:%d\n", p->_unitname_, p->_casename_, p->_checkfile_, p->_checkline_);
+         if (!strlen(p->_unitname_)) {
+            printf("\rH2UNIT_CASE(%s): Failed at %s:%d\n", p->_casename_, p->_checkfile_, p->_checkline_);
+         } else {
+            printf("\rH2CASE(%s, %s): Failed at %s:%d\n", p->_unitname_, p->_casename_, p->_checkfile_, p->_checkline_);
+         }
          printf("%s", color("reset"));
          if (!h2unit_list_empty(&p->_errormsg_)) {
             printf("  ");

@@ -15,12 +15,6 @@ public:
    char* tuString();
 };
 
-class Parser {
-public:
-   Parser();
-   int fromInt(const char* str);
-};
-
 char* getTail(char* str);
 
 #endif

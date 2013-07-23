@@ -54,7 +54,7 @@ H2CASE(getEven,"getEven with even value")
    H2NE_MATH(6, getEven(6));
 }
 
-H2CASE(getEven,"test for byte type integer")
+H2CASE(getEven,"different type integer")
 {
    unsigned char e1 = 2;
    unsigned char a1 = 2;
@@ -63,39 +63,30 @@ H2CASE(getEven,"test for byte type integer")
    char e2 = 2;
    char a2 = 2;
    H2EQ_MATH(e2, a2);
-}
 
-H2CASE(getEven,"test for short type integer")
-{
-   short e1 = 2;
-   short a1 = 2;
-   H2EQ_MATH(e1, a1);
+   short e3 = 2;
+   short a3 = 2;
+   H2EQ_MATH(e3, a3);
 
-   unsigned short e2 = 2;
-   unsigned short a2 = 2;
-   H2EQ_MATH(e2, a2);
-}
+   unsigned short e4 = 2;
+   unsigned short a4 = 2;
+   H2EQ_MATH(e4, a4);
 
-H2CASE(getEven,"test for long type integer")
-{
-   long e1 = 2;
-   long a1 = 2;
-   H2EQ_MATH(e1, a1);
+   long e5 = 2;
+   long a5 = 2;
+   H2EQ_MATH(e5, a5);
 
-   unsigned long e2 = 2;
-   unsigned long a2 = 2;
-   H2EQ_MATH(e2, a2);
-}
+   unsigned long e6 = 2;
+   unsigned long a6 = 2;
+   H2EQ_MATH(e6, a6);
 
-H2CASE(getEven,"test for long long type integer")
-{
-   long long e1 = 1234567890LL;
-   long long a1 = 1234567890LL;
-   H2EQ_MATH(e1, a1);
+   long long e7 = 1234567890LL;
+   long long a7 = 1234567890LL;
+   H2EQ_MATH(e7, a7);
 
-   unsigned long long e2 = 0x12345678900ULL;
-   unsigned long long a2 = 12345678900ULL;
-   H2EQ_MATH(e2, a2);
+   unsigned long long e8 = 0x12345678900ULL;
+   unsigned long long a8 = 12345678900ULL;
+   H2EQ_MATH(e8, a8);
 }
 
 
@@ -244,37 +235,17 @@ H2CASE(Point, "caseless string equal")
 }
 
 /*
+ * If no setup() and teardown(), H2UNIT can be omitted.
+ * H2UNIT_CASE act H2UNIT plus H2CASE.
+ *
  * h2unit H2EQ_MEMCMP can be used to verify memory block.
  */
 
-H2CASE(Point, "memory equal")
+H2UNIT_CASE("memory equal")
 {
    Point p1;
    H2EQ_MEMCMP("Point(0, 0)", p1.tuString(), sizeof("Point(0, 0)"));
    H2EQ_MEMCMP("Point(1, 0)", p1.tuString(), sizeof("Point(1, 0)"));
-}
-
-
-/*
- * h2unit can check the C++ exception throw out.
- */
-
-H2UNIT(Parser)
-{
-};
-
-H2CASE(Parser, "test catch none")
-{
-   Parser p;
-   H2CATCH_NONE(p.fromInt("8"));
-   H2CATCH_NONE(p.fromInt("-8"));
-}
-
-H2CASE(Parser, "test catch something")
-{
-   Parser p;
-   H2CATCH_THROW(p.fromInt("-8"), int);
-   H2CATCH_THROW(p.fromInt("-8"), float);
 }
 
 /*
@@ -285,9 +256,18 @@ H2UNIT(take_over_assert)
 {
 };
 
+/*
+ * H2TODO/H2UNIT_TODO is a case which will NOT be executed.
+ * It can be used in TDD phase-1
+ */
 H2TODO(take_over_assert, "h2unit assert")
 {
    getTail(NULL);
+}
+
+H2UNIT_TODO("h2unit assert")
+{
+   getTail((char*) "");
 }
 
 
