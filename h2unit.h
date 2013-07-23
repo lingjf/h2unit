@@ -106,36 +106,44 @@ public:
 #define H2UNIT(_unit_)  \
    struct __H2UNIT_UNIT_NAME(_unit_): public h2unit_case
 
-#define H2CASE(_unit_, _case_)                                                                           \
-   class __H2UNIT_CASE_NAME(_unit_): public __H2UNIT_UNIT_NAME(_unit_)                                   \
-   {  public:                                                                                            \
-      __H2UNIT_CASE_NAME(_unit_)() { _init_(#_unit_, _case_, false, __FILE__, __LINE__); }               \
-      void _testcase_();                                                                                 \
-   } __H2UNIT_CASE_INST(_unit_);                                                                         \
+#define H2CASE(_unit_, _case_)                                                                  \
+   namespace {                                                                                  \
+      class __H2UNIT_CASE_NAME(_unit_): public __H2UNIT_UNIT_NAME(_unit_)                       \
+      {  public:                                                                                \
+         __H2UNIT_CASE_NAME(_unit_)() { _init_(#_unit_, _case_, false, __FILE__, __LINE__); }   \
+         void _testcase_();                                                                     \
+      } __H2UNIT_CASE_INST(_unit_);                                                             \
+   }                                                                                            \
    void __H2UNIT_CASE_NAME(_unit_)::_testcase_()
 
-#define H2TODO(_unit_, _case_)                                                                           \
-   class __H2UNIT_CASE_NAME(_unit_): public __H2UNIT_UNIT_NAME(_unit_)                                   \
-   {  public:                                                                                            \
-      __H2UNIT_CASE_NAME(_unit_)() { _init_(#_unit_, _case_, true, __FILE__, __LINE__); }                \
-      void _testcase_();                                                                                 \
-   } __H2UNIT_CASE_INST(_unit_);                                                                         \
+#define H2TODO(_unit_, _case_)                                                                  \
+   namespace {                                                                                  \
+      class __H2UNIT_CASE_NAME(_unit_): public __H2UNIT_UNIT_NAME(_unit_)                       \
+      {  public:                                                                                \
+         __H2UNIT_CASE_NAME(_unit_)() { _init_(#_unit_, _case_, true, __FILE__, __LINE__); }    \
+         void _testcase_();                                                                     \
+      } __H2UNIT_CASE_INST(_unit_);                                                             \
+   }                                                                                            \
    void __H2UNIT_CASE_NAME(_unit_)::_testcase_()
 
-#define H2UNIT_CASE(_case_)                                                                              \
-   class __H2UNIT_CASE_NAME(____): public h2unit_case                                                    \
-   {  public:                                                                                            \
-      __H2UNIT_CASE_NAME(____)() { _init_("", _case_, false, __FILE__, __LINE__); }                      \
-      void _testcase_();                                                                                 \
-   } __H2UNIT_CASE_INST(____);                                                                           \
+#define H2UNIT_CASE(_case_)                                                                     \
+   namespace {                                                                                  \
+      class __H2UNIT_CASE_NAME(____): public h2unit_case                                        \
+      {  public:                                                                                \
+         __H2UNIT_CASE_NAME(____)() { _init_("", _case_, false, __FILE__, __LINE__); }          \
+         void _testcase_();                                                                     \
+      } __H2UNIT_CASE_INST(____);                                                               \
+   }                                                                                            \
    void __H2UNIT_CASE_NAME(____)::_testcase_()
 
-#define H2UNIT_TODO(_case_)                                                                              \
-   class __H2UNIT_CASE_NAME(____): public h2unit_case                                                    \
-   {  public:                                                                                            \
-      __H2UNIT_CASE_NAME(____)() { _init_("", _case_, true, __FILE__, __LINE__); }                       \
-      void _testcase_();                                                                                 \
-   } __H2UNIT_CASE_INST(____);                                                                           \
+#define H2UNIT_TODO(_case_)                                                                     \
+   namespace {                                                                                  \
+      class __H2UNIT_CASE_NAME(____): public h2unit_case                                        \
+      {  public:                                                                                \
+         __H2UNIT_CASE_NAME(____)() { _init_("", _case_, true, __FILE__, __LINE__); }           \
+         void _testcase_();                                                                     \
+      } __H2UNIT_CASE_INST(____);                                                               \
+   }                                                                                            \
    void __H2UNIT_CASE_NAME(____)::_testcase_()
 
 
