@@ -2,10 +2,10 @@
 #include <stdlib.h>
 
 extern "C" {
-#include "demo_dynamic_stub.h"
+#include "demo_clanguage.h"
 }
 
-#include "demo_dynamic_stub.hpp"
+#include "demo_cplusplus.h"
 
 /*
  * h2unit can replace function at runtime dynamically.
@@ -20,7 +20,7 @@ extern "C" {
  */
 
 
-H2UNIT(dynamic_stub)
+H2UNIT(dynamic_stub_in_c)
 {
    void setup() { }
 
@@ -40,7 +40,7 @@ int stub_foo3(int a)
 {
    return a + 3;
 }
-H2CASE(dynamic_stub, "stub local extern function 3 times")
+H2CASE(dynamic_stub_in_c, "stub local extern function 3 times")
 {
    H2EQ_MATH(1, getSum(0));
    H2STUB(orig_foo, stub_foo1);
@@ -55,7 +55,7 @@ int stub_bar(int b)
 {
    return b + 2;
 }
-H2CASE(dynamic_stub, "stub local static function")
+H2CASE(dynamic_stub_in_c, "stub local static function")
 {
    H2EQ_MATH(2, getSum(0));
    H2STUB("orig_bar", stub_bar);
@@ -66,7 +66,7 @@ int stub_atoi(const char* s)
 {
    return 1;
 }
-H2CASE(dynamic_stub, "stub dynamic libc function")
+H2CASE(dynamic_stub_in_c, "stub dynamic libc function")
 {
    H2EQ_MATH(0, isLegal("0"));
    H2STUB(atoi, stub_atoi);
@@ -199,10 +199,10 @@ void stub_Circle_enlarge(Circle * thus, int d)
 H2CASE(dynamic_stub_in_cpp, "stub modify class object")
 {
    Circle cc(1);
-   H2EQ_STRCMP("Circle(1)", cc.tuString());
+   H2EQ_STRCMP("Circle(1)", cc.toString());
    cc.enlarge(1);
-   H2EQ_STRCMP("Circle(2)", cc.tuString());
+   H2EQ_STRCMP("Circle(2)", cc.toString());
    H2STUB("Circle::enlarge(int)", stub_Circle_enlarge);
    cc.enlarge(2);
-   H2EQ_STRCMP("Circle(3)", cc.tuString());
+   H2EQ_STRCMP("Circle(3)", cc.toString());
 }

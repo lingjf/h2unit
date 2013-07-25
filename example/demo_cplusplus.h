@@ -1,6 +1,7 @@
+#ifndef _DEMO_CPLUSPLUS_H_
+#define _DEMO_CPLUSPLUS_H_
 
-#ifndef _DEMO_DYNAMIC_STUB_HPP_
-#define _DEMO_DYNAMIC_STUB_HPP_
+////////////////// Dynamic Stub
 
 int orig_dog(int a, double b);
 
@@ -30,8 +31,21 @@ public:
    virtual ~Circle();
    virtual int getEdge();
    void enlarge(int d);
-   char* tuString();
+   char* toString();
 };
+
+////////////////// Exception
+
+class Parser {
+public:
+   Parser();
+   int fromInt(const char* str);
+};
+
+
+////////////////// Memory
+
+void allocate_lots_of_thing();
 
 
 

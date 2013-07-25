@@ -487,7 +487,7 @@ char* h2unit_stub_save(h2unit_stub* stub, void* native)
    static char reason[128];
 #ifdef _WIN32
    DWORD saved;
-   if (!VirtualProtect(native, sizeof(void*) + 4, PAGE_WRITECOPY, &saved)) { //PAGE_EXECUTE_WRITECOPY
+   if (!VirtualProtect(native, sizeof(void*) + 4, PAGE_EXECUTE_READWRITE, &saved)) { // PAGE_EXECUTE_WRITECOPY OR PAGE_WRITECOPY
       sprintf(reason, "VirtualProtect:%d", GetLastError());
       return reason;
    }

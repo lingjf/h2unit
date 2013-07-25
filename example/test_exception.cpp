@@ -1,7 +1,7 @@
 #include "h2unit.h"
 #include <stdlib.h>
 
-#include "demo_exception.h"
+#include "demo_cplusplus.h"
 
 
 /*

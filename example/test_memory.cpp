@@ -2,7 +2,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-void allocation();
+#include "demo_cplusplus.h"
+
 
 
 /*
@@ -35,7 +36,7 @@ H2UNIT(memory_leak)
  */
 H2CASE(memory_leak, "test memory leak")
 {
-   allocation();
+   allocate_lots_of_thing();
 }
 
 
