@@ -253,7 +253,7 @@ public:
       h2unit_case::_current_->_enter_check_(__FILE__, __LINE__);                                         \
       try {                                                                                              \
          expressions;                                                                                    \
-      } catch(...) {                                                                                     \
+      } catch (...) {                                                                                    \
          h2unit_case::_current_->_check_catch_("throw none", "throw some", "" );                         \
       }                                                                                                  \
    } while(0)
@@ -264,7 +264,7 @@ public:
       h2unit_case::_current_->_enter_check_(__FILE__, __LINE__);                                         \
       try {                                                                                              \
          expressions;                                                                                    \
-      } catch(exceptype) {                                                                               \
+      } catch (exceptype) {                                                                              \
          catched = true;                                                                                 \
       } catch (...) {  }                                                                                 \
       if (!catched) {                                                                                    \

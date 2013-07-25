@@ -1,6 +1,8 @@
 
 #include "demo_dynamic_stub.hpp"
 
+#include <stdio.h>
+
 int orig_dog(int a, double b)
 {
    return a + (int) b;

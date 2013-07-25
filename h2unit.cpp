@@ -733,24 +733,108 @@ class h2unit_listen_console: public h2unit_listen
 {
 private:
 
-   const char* color(const char *style)
+   struct st
    {
-      if (!__cfg._colored) return "";
+      const char *name;
+      const int value;
+   };
 
-      struct st
-      {
-         const char *name;
-         const int value;
-      };
+#if defined(_WIN32)
+
+   void color(const char *style)
+   {
+      static HANDLE console_handle = NULL;
+      static WORD default_attribute;
+
+      if (console_handle == NULL) {
+         console_handle = GetStdHandle(STD_OUTPUT_HANDLE);
+         CONSOLE_SCREEN_BUFFER_INFO csbi;
+         GetConsoleScreenBufferInfo(console_handle, &csbi);
+         default_attribute = csbi.wAttributes;
+      }
+      if (!__cfg._colored) return;
 
       static struct st t[] = {
-      // normal style
-            { "reset", 0 }, { "bold", 1 }, { "italics", 3 }, { "underline", 4 }, { "inverse", 7 }, { "strikethrough", 9 },
+            // normal style
+            { "reset", default_attribute },
+            { "bold", FOREGROUND_INTENSITY },
+            // { "italics", 3 },
+            { "underline", COMMON_LVB_UNDERSCORE },
+            { "inverse", COMMON_LVB_REVERSE_VIDEO },
+            // { "strikethrough", 9 },
             // foreground color
-            { "black", 30 }, { "red", 31 }, { "green", 32 }, { "yellow", 33 }, { "blue", 34 }, { "purple", 35 }, { "cyan", 36 }, { "white", 37 }, { "default", 39 },
+            // { "black", 30 },
+            { "red", FOREGROUND_RED },
+            { "green", FOREGROUND_GREEN },
+            { "yellow", FOREGROUND_RED | FOREGROUND_GREEN },
+            { "blue", FOREGROUND_BLUE },
+            { "purple", FOREGROUND_RED | FOREGROUND_BLUE },
+            { "cyan", FOREGROUND_BLUE | FOREGROUND_GREEN },
+            { "white", FOREGROUND_GREEN | FOREGROUND_RED | FOREGROUND_BLUE },
+            { "default", 39 },
             // background color
-            { "bg_black", 40 }, { "bg_red", 41 }, { "bg_green", 42 }, { "bg_yellow", 43 }, { "bg_blue", 44 }, { "bg_purple", 45 }, { "bg_cyan", 46 }, { "bg_white", 47 }, { "bg_default", 49 }
+            // { "bg_black", 40 },
+            { "bg_red", BACKGROUND_RED },
+            { "bg_green", BACKGROUND_GREEN },
+            { "bg_yellow", BACKGROUND_RED | BACKGROUND_GREEN },
+            { "bg_blue", BACKGROUND_BLUE },
+            { "bg_purple", BACKGROUND_RED | BACKGROUND_BLUE },
+            { "bg_cyan", BACKGROUND_BLUE | BACKGROUND_GREEN},
+            { "bg_white", BACKGROUND_RED | BACKGROUND_GREEN | BACKGROUND_BLUE },
+            // { "bg_default", 49 }
+      };
 
+      static char copied[512];
+      strncpy(copied, style, sizeof(copied));
+
+      WORD a = 0;
+
+      for (char* opt = strtok(copied, ","); opt; opt = strtok(NULL, ",")) {
+         for (unsigned i = 0; i < sizeof(t) / sizeof(t[0]); i++) {
+            if (strcmp(t[i].name, opt) == 0) {
+               a |= t[i].value;
+               break;
+            }
+         }
+      }
+
+      SetConsoleTextAttribute(console_handle, a);
+   }
+
+#else
+
+   void color(const char *style)
+   {
+      if (!__cfg._colored) return;
+
+      static struct st t[] = {
+            // normal style
+            { "reset", 0 },
+            { "bold", 1 },
+            { "italics", 3 },
+            { "underline", 4 },
+            { "inverse", 7 },
+            { "strikethrough", 9 },
+            // foreground color
+            { "black", 30 },
+            { "red", 31 },
+            { "green", 32 },
+            { "yellow", 33 },
+            { "blue", 34 },
+            { "purple", 35 },
+            { "cyan", 36 },
+            { "white", 37 },
+            { "default", 39 },
+            // background color
+            { "bg_black", 40 },
+            { "bg_red", 41 },
+            { "bg_green", 42 },
+            { "bg_yellow", 43 },
+            { "bg_blue", 44 },
+            { "bg_purple", 45 },
+            { "bg_cyan", 46 },
+            { "bg_white", 47 },
+            { "bg_default", 49 }
       };
 
       static char copied[512];
@@ -770,17 +854,19 @@ private:
       }
 
       *(p - 1) = 'm';
-      return (const char*) buffer;
+      printf("%s", buffer);
    }
+
+#endif
 
    void print_string(h2unit_list* s)
    {
       h2unit_list* p;
       h2unit_list_for_each(p, s) {
          h2unit_string* r = h2unit_list_entry(p, h2unit_string, link);
-         printf("%s", color(r->style));
+         color(r->style);
          printf("%s", r->data);
-         printf("%s", color("reset"));
+         color("reset");
       }
    }
 
@@ -798,13 +884,13 @@ public:
    {
       printf("\r                                                    \n");
       if (failed > 0) {
-         printf("%s", color("bold,red"));
+         color("bold,red");
          printf("Failed <%d failed, %d passed, %d todo, %d filtered, %d checks, %ld ms>\n", failed, passed, todo, filtered, checks, duration);
       } else {
-         printf("%s", color("bold,green"));
+         color("bold,green");
          printf("Passed <%d passed, %d todo, %d filtered, %d cases, %d checks, %ld ms>\n", passed, todo, filtered, cases, checks, duration);
       }
-      printf("%s\n", color("reset"));
+      color("reset");
    }
    void on_case_endup(double percentage)
    {
@@ -821,23 +907,23 @@ public:
          break;
       case h2unit_case::_PASSED_:
          if (__cfg._verbose) {
-            printf("%s", color("blue"));
+            color("blue");
             if (!strlen(p->_unitname_)) {
                printf("\rH2UNIT_CASE(%s): Passed - %ld ms     \n", p->_casename_, p->_endup_ - p->_start_);
             } else {
                printf("\rH2CASE(%s, %s): Passed - %ld ms     \n", p->_unitname_, p->_casename_, p->_endup_ - p->_start_);
             }
-            printf("%s", color("reset"));
+            color("reset");
          }
          break;
       case h2unit_case::_FAILED_:
-         printf("%s", color("bold,purple"));
+         color("bold,purple");
          if (!strlen(p->_unitname_)) {
             printf("\rH2UNIT_CASE(%s): Failed at %s:%d\n", p->_casename_, p->_checkfile_, p->_checkline_);
          } else {
             printf("\rH2CASE(%s, %s): Failed at %s:%d\n", p->_unitname_, p->_casename_, p->_checkfile_, p->_checkline_);
          }
-         printf("%s", color("reset"));
+         color("reset");
          if (!h2unit_list_empty(&p->_errormsg_)) {
             printf("  ");
             print_string(&p->_errormsg_);
@@ -868,9 +954,9 @@ public:
          break;
       }
 
-      printf("%s", color("bold,blue"));
+      color("bold,blue");
       printf("\rH2UNIT running ... %d%% completed.", (int) (percentage));
-      printf("%s", color("reset"));
+      color("reset");
    }
 };
 

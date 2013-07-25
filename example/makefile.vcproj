@@ -118,22 +118,55 @@
 			Name="example"
 			Filter="">
 			<File
-				RelativePath=".\product_1.c">
+				RelativePath=".\demo_basic.cpp">
 			</File>
 			<File
-				RelativePath=".\product_1.h">
+				RelativePath=".\demo_basic.h">
 			</File>
 			<File
-				RelativePath=".\product_2.cpp">
+				RelativePath=".\demo_dynamic_stub.c">
 			</File>
 			<File
-				RelativePath=".\product_2.h">
+				RelativePath=".\demo_dynamic_stub.cpp">
+				<FileConfiguration
+					Name="Debug|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						ObjectFile="$(IntDir)/$(InputName)1.obj"/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						ObjectFile="$(IntDir)/$(InputName)1.obj"/>
+				</FileConfiguration>
 			</File>
 			<File
-				RelativePath=".\test_product_1.cpp">
+				RelativePath=".\demo_dynamic_stub.h">
 			</File>
 			<File
-				RelativePath=".\test_product_2.cpp">
+				RelativePath=".\demo_dynamic_stub.hpp">
+			</File>
+			<File
+				RelativePath=".\demo_exception.cpp">
+			</File>
+			<File
+				RelativePath=".\demo_exception.h">
+			</File>
+			<File
+				RelativePath=".\demo_memory.cpp">
+			</File>
+			<File
+				RelativePath=".\test_basic.cpp">
+			</File>
+			<File
+				RelativePath=".\test_dynamic_stub.cpp">
+			</File>
+			<File
+				RelativePath=".\test_exception.cpp">
+			</File>
+			<File
+				RelativePath=".\test_memory.cpp">
 			</File>
 		</Filter>
 		<File
