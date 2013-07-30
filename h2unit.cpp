@@ -1238,6 +1238,12 @@ public:
       if (v > 0.5) {
          return u->addr;
       }
+#if 0
+      // dlsym() can get the dynamic library function address
+      // it should include <dlfcn.h>, and link libdl.lib
+      void* r = dlsym(RTLD_DEFAULT, symb); // RTLD_NEXT
+      return r;
+#endif
       return NULL;
    }
 
