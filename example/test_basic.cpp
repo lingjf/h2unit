@@ -1,6 +1,9 @@
 #include "h2unit.h"
 #include <stdlib.h>
 
+/*
+ * All header file for c language MUST be include : in extern "C" { }
+ */
 extern "C" {
 #include "demo_clanguage.h"
 }

@@ -594,7 +594,7 @@ public:
    virtual void on_case_start()
    {
    }
-   virtual void on_case_endup(double percentage)
+   virtual void on_case_endup()
    {
    }
 };
@@ -628,10 +628,10 @@ public:
          p->on_case_start();
       }
    }
-   void on_case_endup(double percentage)
+   void on_case_endup()
    {
       for (class h2unit_listen *p = next; p; p = p->next) {
-         p->on_case_endup(percentage);
+         p->on_case_endup();
       }
    }
 };
@@ -668,7 +668,7 @@ public:
       }
       fclose(filp);
    }
-   void on_case_endup(double percentage)
+   void on_case_endup()
    {
       h2unit_case* p = h2unit_case::_current_;
       switch (p->_status_) {
@@ -882,25 +882,24 @@ public:
    }
    void on_task_endup(int failed, int passed, int todo, int filtered, int cases, int checks, long duration, h2unit_unit* unit_list)
    {
-      printf("\r                                                    \n");
       if (failed > 0) {
          color("bold,red");
-         printf("Failed <%d failed, %d passed, %d todo, %d filtered, %d checks, %ld ms>\n", failed, passed, todo, filtered, checks, duration);
+         printf("\nFailed <%d failed, %d passed, %d todo, %d filtered, %d checks, %ld ms>\n", failed, passed, todo, filtered, checks, duration);
       } else {
          color("bold,green");
-         printf("Passed <%d passed, %d todo, %d filtered, %d cases, %d checks, %ld ms>\n", passed, todo, filtered, cases, checks, duration);
+         printf("\nPassed <%d passed, %d todo, %d filtered, %d cases, %d checks, %ld ms>\n", passed, todo, filtered, cases, checks, duration);
       }
       color("reset");
    }
-   void on_case_endup(double percentage)
+   void on_case_endup()
    {
       h2unit_case* p = h2unit_case::_current_;
       switch (p->_status_) {
       case h2unit_case::_TODOED_:
          if (!strlen(p->_unitname_)) {
-            printf("\rH2UNIT_CASE(%s): TODO at %s:%d\n", p->_casename_, p->_casefile_, p->_caseline_);
+            printf("H2UNIT_CASE(%s): TODO at %s:%d\n", p->_casename_, p->_casefile_, p->_caseline_);
          } else {
-            printf("\rH2CASE(%s, %s): TODO at %s:%d\n", p->_unitname_, p->_casename_, p->_casefile_, p->_caseline_);
+            printf("H2CASE(%s, %s): TODO at %s:%d\n", p->_unitname_, p->_casename_, p->_casefile_, p->_caseline_);
          }
          break;
       case h2unit_case::_FILTED_:
@@ -909,9 +908,9 @@ public:
          if (__cfg._verbose) {
             color("blue");
             if (!strlen(p->_unitname_)) {
-               printf("\rH2UNIT_CASE(%s): Passed - %ld ms     \n", p->_casename_, p->_endup_ - p->_start_);
+               printf("H2UNIT_CASE(%s): Passed - %ld ms\n", p->_casename_, p->_endup_ - p->_start_);
             } else {
-               printf("\rH2CASE(%s, %s): Passed - %ld ms     \n", p->_unitname_, p->_casename_, p->_endup_ - p->_start_);
+               printf("H2CASE(%s, %s): Passed - %ld ms\n", p->_unitname_, p->_casename_, p->_endup_ - p->_start_);
             }
             color("reset");
          }
@@ -919,9 +918,9 @@ public:
       case h2unit_case::_FAILED_:
          color("bold,purple");
          if (!strlen(p->_unitname_)) {
-            printf("\rH2UNIT_CASE(%s): Failed at %s:%d\n", p->_casename_, p->_checkfile_, p->_checkline_);
+            printf("H2UNIT_CASE(%s): Failed at %s:%d\n", p->_casename_, p->_checkfile_, p->_checkline_);
          } else {
-            printf("\rH2CASE(%s, %s): Failed at %s:%d\n", p->_unitname_, p->_casename_, p->_checkfile_, p->_checkline_);
+            printf("H2CASE(%s, %s): Failed at %s:%d\n", p->_unitname_, p->_casename_, p->_checkfile_, p->_checkline_);
          }
          color("reset");
          if (!h2unit_list_empty(&p->_errormsg_)) {
@@ -954,8 +953,6 @@ public:
          break;
       }
 
-      color("bold,blue");
-      printf("\rH2UNIT running ... %d%% completed.", (int) (percentage));
       color("reset");
    }
 };
@@ -1086,13 +1083,11 @@ public:
             if (!h2unit_list_empty(&c->_expected_)) {
                fprintf(filp, "      <failure message=\"expected<");
                print_string(&c->_expected_);
-               printf("n");
                fprintf(filp, ">\"></failure>\n");
             }
             if (!h2unit_list_empty(&c->_unexpect_)) {
                fprintf(filp, "      <failure message=\"unexpect<");
                print_string(&c->_unexpect_);
-               printf("n");
                fprintf(filp, ">\"></failure>\n");
             }
             if (!h2unit_list_empty(&c->_actually_)) {
@@ -1307,7 +1302,7 @@ public:
          case_executed_count += 1;
          checkpoint_count += p->_checkcount_;
 
-         listener.on_case_endup(100.0 * case_executed_count / case_count);
+         listener.on_case_endup();
 
          switch (p->_status_) {
          case h2unit_case::_TODOED_:
