@@ -10,12 +10,12 @@ The special feature is **Dynamic STUB**.
 # Example
 Example is the BEST manual document.
 
-All the code of following features can be found in the example folder, and it is executable, the result is visable.
+All the code of following features can be found in the [example folder](https://github.com/lingjf/h2unit/tree/master/example), and it is executable, the result is visable.
 
 
 # Features
-### 1. Simple Test Case
-`H2UNIT_CASE` macro is used to define a independent test case.
+### 1. Standalone Test Case
+`H2UNIT_CASE` macro is used to define a standalone test case.
 ```
 H2UNIT_CASE("case name")
 {
@@ -24,19 +24,19 @@ H2UNIT_CASE("case name")
 ```
 ### 2. Test Suite and Test Case
 `H2UNIT` is used to define a Test Suite. `H2CASE` is used to define a Test Case belong to specified Test Suite. 
-setup() is executed before every test case in this test suite. teardown() is executed after every test case whatever success or fail. setup/teardown can be omitted to use default which do nothing.
+setup() is executed before every test case in this test suite. teardown() is executed after every test case whatever success or fail. setup/teardown can be omitted to use default.
 ```
-H2UNIT(hello_unit)
+H2UNIT(hello_h2unit)
 {
     void setup() {   
     }
     void teardown() {   
     }
 }
-H2CASE(hello_unit, "case name 1")
+H2CASE(hello_h2unit, "case name 1")
 {
 }
-H2CASE(hello_unit, "case name 2")
+H2CASE(hello_h2unit, "case name 2")
 {
 }
 ```
@@ -76,15 +76,18 @@ void do_something()
    z = foobar(x, y);
    ......
 }
+```
+
+```
 // unit test code
-int foobar_stub(int a, int b)
+int foobar_fake(int a, int b)
 {
    ......
    return 1;
 }
 void this_is_a_test_case()
 {
-   foobar = foobar_stub;
+   foobar = foobar_fake;
    do_something();
    foobar = foobar_impl;
 }
@@ -106,15 +109,18 @@ void do_something()
    z = foobar(x, y);
    ......
 }
+```
+
+```
 // unit test code
-int foobar_stub(int a, int b)
+int foobar_fake(int a, int b)
 {
    ......
    return 1;
 }
 H2UNIT_CASE("demo dynamic stub")
 {
-   H2STUB(foobar, foobar_stub);
+   H2STUB(foobar, foobar_fake);
    do_something();
 }
 ```
@@ -134,21 +140,37 @@ void do_something()
    z = foobar(x, y);
    ......
 }
+```
+
+```
 // unit test code
-int foobar_stub(int a, int b)
+int foobar_fake(int a, int b)
 {
    ......
    return 1;
 }
 H2UNIT_CASE("demo dynamic stub")
 {
-   H2STUB("foobar", foobar_stub);
+   H2STUB("foobar", foobar_fake);
    do_something();
 }
 ```
 
 C++ class method can also be Dynamic STUBed, please read the example to find the demo code.
-  
+
+The principle of Dynamic STUB is :
+
+Replacing the first several binary code of original function with "JMP" instruction, 
+the result is once calling into original function, it will jump to fake function immediately,
+parameters of original function in stack will be treated as parameters of fake function,
+fake function return to the caller of original function directly.
+
+`H2STUB()` is used to replace original with fake. All replaced binary code will be restored in default teardown phase.
+
+In order to replace binary code, it should get the original function address firstly. `H2STUB()` support two way to get address:
+* function pointer by compiler  `H2STUB(foobar, foobar_fake);`
+* query symbol talbe by symbol name  `H2STUB("foobar", foobar_fake);`
+
 ### 6. Memory Leak Detection 
 In order to detect memory leak, It should include h2unit.h in every source code files.
 
@@ -189,6 +211,19 @@ H2CASE(memory_leak, "test memory faulty injection")
 ```
 ### 9. Expect C++ exception
 `H2CATCH_THROW(expressions, exceptype)` can be used to expect there is a exception will be thrown out while execute `expressions`.
+```
+H2CASE(Parser, "test catch something")
+{
+   Parser p;
+   H2CATCH_NONE(p.fromInt("8"));
+   H2CATCH_THROW(p.fromInt("-8"), int);
+   H2CATCH_THROW( {
+       p.fromInt("-8"); 
+       p.fromInt("a");
+   } , float);
+}
+
+```
 
 ### 10. Color high-lighted console output
 
