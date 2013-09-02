@@ -5,7 +5,7 @@
 
 
 
-int orig_dog(int a, double b)
+int getResult(int a, double b)
 {
    return a + (int) b;
 }
@@ -18,7 +18,7 @@ Shape::~Shape()
 {
 }
 
-int Shape::getEdge()
+double Shape::getArea()
 {
    return 0;
 }
@@ -26,49 +26,54 @@ int Shape::getEdge()
 
 Rect::Rect()
 {
+   m_width = 0;
+   m_height = 0;
 }
 
-Rect::Rect(int a, int b, int x, int y)
+Rect::Rect(int width, int height)
 {
+   m_width = width;
+   m_height = height;
 }
 
 Rect::~Rect()
 {
 }
 
-int Rect::getPage(int v)
-{
-   return v;
-}
-
 int Rect::getEdge()
 {
-   return 4;
+   return 0;
 }
 
-Circle::Circle(int r)
+double Rect::getArea()
 {
-   m_r = r;
+   return m_width * m_height;
+}
+
+Circle::Circle(int radius)
+{
+   m_radius = radius;
 }
 
 Circle::~Circle()
 {
 }
 
-int Circle::getEdge()
+double Circle::getArea()
 {
-   return 1;
+   /* not implemented yet */
+   return -1;
 }
 
-void Circle::enlarge(int d)
+void Circle::enLarge(int d)
 {
-   m_r += d;
+   m_radius += d;
 }
 
 char* Circle::toString()
 {
    static char buffer[1024];
-   sprintf(buffer, "Circle(%d)", m_r);
+   sprintf(buffer, "Circle(%d)", m_radius);
    return buffer;
 }
 

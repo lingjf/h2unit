@@ -3,34 +3,34 @@
 
 ////////////////// Dynamic Stub
 
-int orig_dog(int a, double b);
+int getResult(int a, double b);
 
 class Shape {
 public:
    Shape();
    virtual ~Shape();
-   virtual int getEdge();
+   virtual double getArea();
 };
 
 class Rect : public Shape {
 private:
-   int m_a, m_b, m_x, m_y;
+   int m_width, m_height;
 public:
    Rect();
-   Rect(int a, int b, int x, int y);
+   Rect(int width, int height);
    virtual ~Rect();
-   int getPage(int v);
-   virtual int getEdge();
+   int getEdge();
+   virtual double getArea();
 };
 
 class Circle : public Shape {
 private:
-   int m_r;
+   int m_radius;
 public:
-   Circle(int r);
+   Circle(int radius);
    virtual ~Circle();
-   virtual int getEdge();
-   void enlarge(int d);
+   virtual double getArea();
+   void enLarge(int d);
    char* toString();
 };
 

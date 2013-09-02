@@ -40,13 +40,16 @@ int stub_foo3(int a)
 {
    return a + 3;
 }
+
 H2CASE(dynamic_stub_in_c, "stub local extern function 3 times")
 {
    H2EQ_MATH(1, getSum(0));
    H2STUB(orig_foo, stub_foo1);
    H2EQ_MATH(2, getSum(0));
+
    H2STUB(&orig_foo, stub_foo2);
    H2EQ_MATH(3, getSum(0));
+
    H2STUB("orig_foo", stub_foo3);
    H2EQ_MATH(4, getSum(0));
 }
@@ -135,74 +138,76 @@ H2UNIT(dynamic_stub_in_cpp)
    void teardown() { }
 };
 
-int stub_dog(int a, double b)
+int stub_getResult_1st(int a, double b)
 {
    return a + 1 + (int) b;
 }
 
-int stub_cat(int a, double b)
+int stub_getResult_2nd(int a, double b)
 {
    return 0;
 }
 
 H2CASE(dynamic_stub_in_cpp, "stub normal extern function")
 {
-   H2EQ_MATH(2, orig_dog(1, 1.2));
-   H2STUB(orig_dog, stub_dog);
-   H2EQ_MATH(3, orig_dog(1, 1.2));
-   H2STUB("orig_dog(int, double)", stub_cat);
-   H2EQ_MATH(0, orig_dog(1, 1.2));
+   H2EQ_MATH(2, getResult(1, 1.2));
+   H2STUB(getResult, stub_getResult_1st);
+   H2EQ_MATH(3, getResult(1, 1.2));
+
+   H2STUB("getResult(int, double)", stub_getResult_2nd);
+   H2EQ_MATH(0, getResult(1, 1.2));
 }
 
-int stub_Rect_getPage(Rect * thus, int v)
+int stub_Rect_getEdge(Rect * thus)
 {
-   return v + 1;
+   return 4;
 }
 
 H2CASE(dynamic_stub_in_cpp, "stub normal class member function")
 {
-   Rect rect(1,2,3,4);
+   Rect rect(1, 3);
 
-   H2EQ_MATH(1, rect.getPage(1));
-   H2STUB("Rect::getPage(int)", stub_Rect_getPage);
-   H2EQ_MATH(2, rect.getPage(1));
+   H2EQ_MATH(0, rect.getEdge());
+   H2STUB("Rect::getEdge(int)", stub_Rect_getEdge);
+   H2EQ_MATH(4, rect.getEdge());
 }
 
-int stub_Rect_getEdge(Circle * thus)
+double stub_Rect_getArea(Circle * thus)
 {
-   return 999;
+   return 999.0;
 }
 
-int stub_Circle_getEdge(Circle * thus)
+double stub_Circle_getArea(Circle * thus)
 {
-   return 888;
+   return 2 * 3.14 * thus->m_radius * thus->m_radius;
 }
 
 H2CASE(dynamic_stub_in_cpp, "stub virtual class member function")
 {
-   Rect rect(1,2,3,4);
-   H2EQ_MATH(4, rect.getEdge());
-   H2STUB("Rect::getEdge()", stub_Rect_getEdge);
-   H2EQ_MATH(999, rect.getEdge());
+   Rect rect(2, 3);
+   H2EQ_MATH(6, rect.getArea());
+   H2STUB("Rect::getArea()", stub_Rect_getArea);
+   H2EQ_MATH(999.0, rect.getArea());
 
    Circle cc(3);
-   H2EQ_MATH(1, cc.getEdge());
-   H2STUB("Circle::getEdge()", stub_Circle_getEdge);
-   H2EQ_MATH(888, cc.getEdge());
+   H2EQ_MATH(-1, cc.getArea());
+   H2STUB("Circle::getArea()", stub_Circle_getArea);
+   H2EQ_MATH(56.52, cc.getArea());
 }
 
-void stub_Circle_enlarge(Circle * thus, int d)
+void stub_Circle_enLarge(Circle * thus, int d)
 {
-   thus->m_r += d / 2;
+   thus->m_radius += d / 2;
 }
 
 H2CASE(dynamic_stub_in_cpp, "stub modify class object")
 {
    Circle cc(1);
    H2EQ_STRCMP("Circle(1)", cc.toString());
-   cc.enlarge(1);
+   cc.enLarge(1);
    H2EQ_STRCMP("Circle(2)", cc.toString());
-   H2STUB("Circle::enlarge(int)", stub_Circle_enlarge);
-   cc.enlarge(2);
+
+   H2STUB("Circle::enLarge(int)", stub_Circle_enLarge);
+   cc.enLarge(2);
    H2EQ_STRCMP("Circle(3)", cc.toString());
 }
