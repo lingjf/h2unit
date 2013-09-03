@@ -21,41 +21,74 @@ H2CASE(getEven,"getEven with even value")
    H2NE_MATH(6, getEven(6));
 }
 
-H2CASE(getEven,"different type integer")
+H2UNIT_CASE("different type math")
 {
-   unsigned char e1 = 2;
-   unsigned char a1 = 2;
-   H2EQ_MATH(e1, a1);
+   unsigned char e_unsigned_char = 2;
+   unsigned char a_unsigned_char = 2;
+   H2EQ_MATH(e_unsigned_char, a_unsigned_char);
 
-   char e2 = 2;
-   char a2 = 2;
-   H2EQ_MATH(e2, a2);
+   char e_char = 2;
+   char a_char = 2;
+   H2EQ_MATH(e_char, a_char);
 
-   short e3 = 2;
-   short a3 = 2;
-   H2EQ_MATH(e3, a3);
+   short e_short = 2;
+   short a_short = 2;
+   H2EQ_MATH(e_short, a_short);
 
-   unsigned short e4 = 2;
-   unsigned short a4 = 2;
-   H2EQ_MATH(e4, a4);
+   unsigned short e_unsigned_short = 2;
+   unsigned short a_unsigned_short = 2;
+   H2EQ_MATH(e_unsigned_short, a_unsigned_short);
 
-   long e5 = 2;
-   long a5 = 2;
-   H2EQ_MATH(e5, a5);
+   long e_int = 2;
+   long a_int = 2;
+   H2EQ_MATH(e_int, a_int);
 
-   unsigned long e6 = 2;
-   unsigned long a6 = 2;
-   H2EQ_MATH(e6, a6);
+   unsigned long e_unsigned_int = 2;
+   unsigned long a_unsigned_int = 2;
+   H2EQ_MATH(e_unsigned_int, a_unsigned_int);
 
-   long long e7 = 1234567890LL;
-   long long a7 = 1234567890LL;
-   H2EQ_MATH(e7, a7);
+   long e_long = 2;
+   long a_long = 2;
+   H2EQ_MATH(e_long, a_long);
 
-   unsigned long long e8 = 0x12345678900ULL;
-   unsigned long long a8 = 12345678900ULL;
-   H2EQ_MATH(e8, a8);
+   unsigned long e_unsigned_long = 2;
+   unsigned long a_unsigned_long = 2;
+   H2EQ_MATH(e_unsigned_long, a_unsigned_long);
+
+   unsigned long long e_unsigned_long_long = 0x12345678900ULL;
+   unsigned long long a_unsigned_long_long = 0x12345678900ULL;
+   H2EQ_MATH(e_unsigned_long_long, a_unsigned_long_long);
+
+   long long e_long_long = 0x1234567890LL;
+   long long a_long_long = 0x1234567890LL;
+   H2EQ_MATH(e_long_long, a_long_long);
+
+   char * e_char_pointer = (char*) 0;
+   char * a_char_pointer = (char*) 0;
+   H2EQ_MATH(e_char_pointer, a_char_pointer);
+   
+   int * e_int_pointer = (int*) 0;
+   int * a_int_pointer = (int*) 0;
+   H2EQ_MATH(e_int_pointer, a_int_pointer);
+
+   double * e_double_pointer = (double*) 0;
+   double * a_double_pointer = (double*) 0;
+   H2EQ_MATH(e_double_pointer, a_double_pointer);
+
+   void * e_void_pointer = (void*) 0x12345678;
+   void * a_void_pointer = (void*) 0x12345678;
+   H2EQ_MATH(e_void_pointer, a_void_pointer);
+
+   enum {
+      EE_A1 = 1,
+      EE_B2,
+      EE_C3,
+      EE_D4
+   };
+
+   H2EQ_MATH(2, EE_B2);
+   H2EQ_MATH(EE_D4, 4);
 }
-
 
 H2UNIT(getCeil)
 {
@@ -68,7 +101,7 @@ H2CASE(getCeil, "test for float type number")
 {
    H2EQ_MATH(6.0, getCeil(6.2));
    H2EQ_MATH(6.0, getCeil(6.4));
-   H2EQ_MATH(3.14159, getCeil(3.14159));
+   H2EQ_MATH(3.14159, 2.34159);
 }
 
 H2CASE(getCeil, "test for number in range")

@@ -1640,55 +1640,70 @@ void h2unit_case::_check_equal_boolean_(bool result)
    }
 }
 
-void h2unit_case::_check_equal_integer_(unsigned long long expected, unsigned long long actually)
+void h2unit_case::_check_equal_math_(long double expected, long double actually)
 {
-   if (expected != actually) {
-#ifdef _WIN32
-      _vmsg_(&_expected_, "bold,red", "%I64d 0x%I64x", (long long)expected, expected);
-      _vmsg_(&_actually_, "bold,red", "%I64d 0x%I64x", (long long)actually, actually);
-#else
-      _vmsg_(&_expected_, "bold,red", "%lld 0x%llx", (long long)expected, expected);
-      _vmsg_(&_actually_, "bold,red", "%lld 0x%llx", (long long)actually, actually);
-#endif
-
-      longjmp(__h2unit_jmp_buf, 1);
-   }
-}
-
-void h2unit_case::_check_unequal_integer_(unsigned long long unexpect, unsigned long long actually)
-{
-   if (unexpect == actually) {
-#ifdef _WIN32
-      _vmsg_(&_unexpect_, "bold,red", "%I64d 0x%I64x", (long long)unexpect, unexpect);
-      _vmsg_(&_actually_, "bold,red", "%I64d 0x%I64x", (long long)actually, actually);
-#else
-      _vmsg_(&_unexpect_, "bold,red", "%lld 0x%llx", (long long)unexpect, unexpect);
-      _vmsg_(&_actually_, "bold,red", "%lld 0x%llx", (long long)actually, actually);
-#endif
-
-      longjmp(__h2unit_jmp_buf, 1);
-   }
-}
-
-void h2unit_case::_check_equal_double_(double expected, double actually)
-{
-   double delta = expected - actually;
+   long double delta = expected - actually;
    if (delta < 0) delta = -delta;
    if (delta > 0.00001) { /* 0.00001 is epsilon value */
-      _vmsg_(&_expected_, "bold,red", "%g", expected);
-      _vmsg_(&_actually_, "bold,red", "%g", actually);
+
+      long double fraction = expected - static_cast<unsigned long long int>(expected);
+      if (fraction == .0) {
+#ifdef _WIN32
+         _vmsg_(&_expected_, "bold,red", "%Lg 0x%I64x", expected, static_cast<unsigned long long int>(expected));
+         _vmsg_(&_actually_, "bold,red", "%Lg 0x%I64x", actually, static_cast<unsigned long long int>(actually));
+#else
+         _vmsg_(&_expected_, "bold,red", "%Lg 0x%llx", expected, static_cast<unsigned long long int>(expected));
+         _vmsg_(&_actually_, "bold,red", "%Lg 0x%llx", actually, static_cast<unsigned long long int>(actually));
+#endif
+      } else {
+         _vmsg_(&_expected_, "bold,red", "%Lg", expected);
+         _vmsg_(&_actually_, "bold,red", "%Lg", actually);
+      }
 
       longjmp(__h2unit_jmp_buf, 1);
    }
 }
 
-void h2unit_case::_check_unequal_double_(double unexpect, double actually)
+void h2unit_case::_check_equal_math_(void* expected, void* actually)
 {
-   double delta = unexpect - actually;
+   if (expected != actually) {
+      _vmsg_(&_expected_, "bold,red", "%p", expected);
+      _vmsg_(&_actually_, "bold,red", "%p", actually);
+
+      longjmp(__h2unit_jmp_buf, 1);
+   }
+}
+
+void h2unit_case::_check_unequal_math_(long double unexpect, long double actually)
+{
+   long double delta = unexpect - actually;
    if (delta < 0) delta = -delta;
    if (delta < 0.00001) {
-      _vmsg_(&_unexpect_, "bold,red", "%g", unexpect);
-      _vmsg_(&_actually_, "bold,red", "%g", actually);
+
+      long double fraction = unexpect - static_cast<unsigned long long int>(unexpect);
+      if (fraction == .0) {
+#ifdef _WIN32
+         _vmsg_(&_unexpect_, "bold,red", "%Lg 0x%I64x", unexpect, static_cast<unsigned long long int>(unexpect));
+         _vmsg_(&_actually_, "bold,red", "%Lg 0x%I64x", actually, static_cast<unsigned long long int>(actually));
+#else
+         _vmsg_(&_unexpect_, "bold,red", "%Lg 0x%llx", unexpect, static_cast<unsigned long long int>(unexpect));
+         _vmsg_(&_actually_, "bold,red", "%Lg 0x%llx", actually, static_cast<unsigned long long int>(actually));
+#endif
+      } else {
+         _vmsg_(&_unexpect_, "bold,red", "%Lg", unexpect);
+         _vmsg_(&_actually_, "bold,red", "%Lg", actually);
+      }
+
+      longjmp(__h2unit_jmp_buf, 1);
+   }
+}
+
+void h2unit_case::_check_unequal_math_(void* unexpect, void* actually)
+{
+   if (unexpect == actually) {
+
+      _vmsg_(&_unexpect_, "bold,red", "%p", unexpect);
+      _vmsg_(&_actually_, "bold,red", "%p", actually);
 
       longjmp(__h2unit_jmp_buf, 1);
    }

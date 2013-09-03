@@ -73,10 +73,10 @@ public:
 
    void _enter_check_(const char* file, int line);
    void _check_equal_boolean_(bool result);
-   void _check_equal_integer_(unsigned long long expected, unsigned long long actually);
-   void _check_unequal_integer_(unsigned long long unexpect, unsigned long long actually);
-   void _check_equal_double_(double expected, double actually);
-   void _check_unequal_double_(double unexpect, double actually);
+   void _check_equal_math_(long double expected, long double actually);
+   void _check_equal_math_(void* expected, void* actually);
+   void _check_unequal_math_(long double unexpect, long double actually);
+   void _check_unequal_math_(void* unexpect, void* actually);
    void _check_equal_range_(double from, double to, double actually);
    void _check_unequal_range_(double from, double to, double actually);
    void _check_equal_inset_(double *inset, int count, double actually);
@@ -159,21 +159,13 @@ public:
 #define H2EQ_MATH(expected, actually)                                                                    \
    do {                                                                                                  \
       h2unit_case::_current_->_enter_check_(__FILE__, __LINE__);                                         \
-      if (typeid(expected) == typeid(float) || typeid(expected) == typeid(double)) {                     \
-         h2unit_case::_current_->_check_equal_double_((double)(expected), (double)(actually));           \
-      } else {                                                                                           \
-         h2unit_case::_current_->_check_equal_integer_((unsigned long long)(expected), (unsigned long long)(actually)); \
-      }                                                                                                  \
+      h2unit_case::_current_->_check_equal_math_((expected), (actually));                                \
    } while(0)
 
 #define H2NE_MATH(unexpect, actually)                                                                    \
    do {                                                                                                  \
       h2unit_case::_current_->_enter_check_(__FILE__, __LINE__);                                         \
-      if (typeid(unexpect) == typeid(float) || typeid(unexpect) == typeid(double)) {                     \
-         h2unit_case::_current_->_check_unequal_double_((double)(unexpect), (double)(actually));         \
-      } else {                                                                                           \
-         h2unit_case::_current_->_check_unequal_integer_((unsigned long long)(unexpect), (unsigned long long)(actually)); \
-      }                                                                                                  \
+      h2unit_case::_current_->_check_unequal_math_((unexpect), (actually));                              \
    } while(0)
 
 #define H2EQ_RANGE(from, to, actually)                                                                   \
