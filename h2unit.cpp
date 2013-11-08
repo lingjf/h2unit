@@ -469,7 +469,13 @@ typedef struct h2unit_stub
 {
    h2unit_list link;
    void* native;
+#if defined(__x86_64__) || defined(_M_X64)
    unsigned char saved_code[sizeof(void*) + 4];
+#elif defined(__i386__) || defined(_M_IX86)
+   unsigned char saved_code[sizeof(void*) + 1];
+#else
+   unsigned char saved_code[1];
+#endif
 } h2unit_stub;
 
 h2unit_stub* h2unit_stub_new()
@@ -508,7 +514,7 @@ void h2unit_stub_set(h2unit_stub* stub, void* fake)
 {
   unsigned char *I = (unsigned char*) stub->native;
 
-  //x86 __asm("jmp $fake") : 0xE9 {fake-native-5}
+  //x86 __asm("jmp $fake") : 0xE9 {offset=fake-native-5}
   //x86 __asm("movl $fake, %eax; jmpl %eax") : 0xB8 {fake} 0xFF 0xE0
   //x86_64 __asm("movq $fake, %rax; jmpq %rax") : 0x48 0xB8 {fake} 0xFF 0xE0
 #if defined(__x86_64__) || defined(_M_X64)
@@ -521,8 +527,9 @@ void h2unit_stub_set(h2unit_stub* stub, void* fake)
 
 #elif defined(__i386__) || defined(_M_IX86)
   *I++ = 0xE9;
-  fake = (void*) ((unsigned long) fake - (unsigned long) stub->native - (sizeof(void*) + 1));
-  memcpy(I, &fake, sizeof(void*));
+  unsigned long delta = (unsigned long) fake - (unsigned long) stub->native;
+  delta -= sizeof(void*) + 1;
+  memcpy(I, (void*)&delta, sizeof(void*));
 
 #elif defined(__powerpc__)
 #else
