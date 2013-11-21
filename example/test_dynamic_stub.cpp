@@ -69,6 +69,7 @@ int stub_atoi(const char* s)
 {
    return 1;
 }
+
 H2CASE(dynamic_stub_in_c, "stub dynamic libc function")
 {
    H2EQ_MATH(0, isLegal("0"));
@@ -79,6 +80,18 @@ H2CASE(dynamic_stub_in_c, "stub dynamic libc function")
     */
    H2STUB("atoi", stub_atoi);
    H2EQ_MATH(1, isLegal("0"));
+}
+
+char* stub_varg(const char* format, ...)
+{
+   return (char*)"h2unit hello";
+}
+
+H2CASE(dynamic_stub_in_c, "stub variable arguments function")
+{
+   H2EQ_STRCMP((char*)"hello h2unit", orig_varg("hello %s", "h2unit"));
+   H2STUB("orig_varg", stub_varg);
+   H2EQ_STRCMP((char*)"h2unit hello", orig_varg("hello %s", "h2unit"));
 }
 
 

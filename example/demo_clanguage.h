@@ -15,6 +15,8 @@ char* Point_toString(Point* point);
 
 int orig_foo(int a);
 
+char* orig_varg(const char* format, ...);
+
 int getSum(int x);
 
 int isLegal(const char* str);

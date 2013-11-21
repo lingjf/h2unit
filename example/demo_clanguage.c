@@ -1,6 +1,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdarg.h>
 #include <string.h>
 
 #include "demo_clanguage.h"
@@ -31,6 +32,16 @@ int orig_foo(int a)
 static int orig_bar(int b)
 {
    return b + 1;
+}
+
+char* orig_varg(const char* format, ...)
+{
+   va_list args;
+   va_start(args, format);
+   static char t[1024 * 8];
+   vsprintf(t, format, args);
+   va_end(args);
+   return t;
 }
 
 int getSum(int x)
