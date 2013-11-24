@@ -512,24 +512,28 @@ char* h2unit_stub_save(h2unit_stub* stub, void* native)
 
 void h2unit_stub_set(h2unit_stub* stub, void* fake)
 {
-  unsigned char *I = (unsigned char*) stub->native;
+   unsigned char *I = (unsigned char*) stub->native;
 
-  //x86 __asm("jmp $fake") : 0xE9 {offset=fake-native-5}
-  //x86 __asm("movl $fake, %eax; jmpl %eax") : 0xB8 {fake} 0xFF 0xE0
-  //x86_64 __asm("movq $fake, %rax; jmpq %rax") : 0x48 0xB8 {fake} 0xFF 0xE0
-#if defined(__x86_64__) || defined(_M_X64)
-  *I++ = 0x48;
-  *I++ = 0xB8;
-  memcpy(I, &fake, sizeof(void*));
-  I += sizeof(void*);
-  *I++ = 0xFF;
-  *I++ = 0xE0;
+   //x86 __asm("jmp $fake") : 0xE9 {offset=fake-native-5}
+   //x86 __asm("movl $fake, %eax; jmpl %eax") : 0xB8 {fake} 0xFF 0xE0
+   //x86_64 __asm("movq $fake, %rax; jmpq %rax") : 0x48 0xB8 {fake} 0xFF 0xE0
+#if defined(__i386__) || defined(_M_IX86) || defined(__x86_64__) || defined(_M_X64)
+   long delta = (long) fake - (long) stub->native;
+# if defined(__x86_64__) || defined(_M_X64)
+   if (delta < (int) (-2147483647-1) || (int) 2147483647 < delta) {
+      *I++ = 0x48;
+      *I++ = 0xB8;
+      memcpy(I, &fake, sizeof(void*));
+      I += sizeof(void*);
+      *I++ = 0xFF;
+      *I++ = 0xE0;
+      return;
+   }
+# endif
 
-#elif defined(__i386__) || defined(_M_IX86)
-  *I++ = 0xE9;
-  unsigned long delta = (unsigned long) fake - (unsigned long) stub->native;
-  delta -= sizeof(void*) + 1;
-  memcpy(I, (void*)&delta, sizeof(void*));
+   int offset = delta - 5;
+   *I++ = 0xE9;
+   memcpy(I, (void*)&offset, sizeof(offset));
 
 #elif defined(__powerpc__)
 #else

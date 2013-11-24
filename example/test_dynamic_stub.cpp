@@ -90,7 +90,7 @@ char* stub_varg(const char* format, ...)
 H2CASE(dynamic_stub_in_c, "stub variable arguments function")
 {
    H2EQ_STRCMP((char*)"hello h2unit", orig_varg("hello %s", "h2unit"));
-   H2STUB("orig_varg", stub_varg);
+   H2STUB(orig_varg, stub_varg);
    H2EQ_STRCMP((char*)"h2unit hello", orig_varg("hello %s", "h2unit"));
 }
 
@@ -224,3 +224,4 @@ H2CASE(dynamic_stub_in_cpp, "stub modify class object")
    cc.enLarge(2);
    H2EQ_STRCMP("Circle(3)", cc.toString());
 }
+
