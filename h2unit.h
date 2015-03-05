@@ -11,7 +11,8 @@ typedef struct h2unit_list {
    struct h2unit_list *prev;
 } h2unit_list;
 
-class h2unit_auto {
+class h2unit_auto
+{
 public :
    bool done;
    h2unit_auto(const char* file, int line);
@@ -85,6 +86,8 @@ public:
    void _check_unequal_strcmp_(char* unexpect, char* actually);
    void _check_equal_memcmp_(unsigned char* expected, unsigned char* actually, int length);
    void _check_equal_strcmp_nocase_(char* expected, char* actually);
+   void _check_equal_json_(char* expected, char* actually);
+   void _check_unequal_json_(char* unexpect, char* actually);
    void _check_equal_wildcard_(char* express, char* actually);
    void _check_unequal_wildcard_(char* express, char* actually);
    void _check_equal_regex_(char* express, char* actually);
@@ -210,6 +213,18 @@ public:
       h2unit_case::_current_->_check_equal_strcmp_nocase_((char*)(expected), (char*)(actually));         \
    } while(0)
 
+#define H2EQ_JSON(expected, actually)                                                                    \
+   do {                                                                                                  \
+      h2unit_case::_current_->_enter_check_(__FILE__, __LINE__);                                         \
+      h2unit_case::_current_->_check_equal_json_((char*)(expected), (char*)(actually));                  \
+   } while(0)
+
+#define H2NE_JSON(unexpect, actually)                                                                    \
+   do {                                                                                                  \
+      h2unit_case::_current_->_enter_check_(__FILE__, __LINE__);                                         \
+      h2unit_case::_current_->_check_unequal_json_((char*)(unexpect), (char*)(actually));                \
+   } while(0)
+
 #define H2EQ_WILDCARD(expected, actually)                                                                \
    do {                                                                                                  \
       h2unit_case::_current_->_enter_check_(__FILE__, __LINE__);                                         \
@@ -328,6 +343,8 @@ extern char* h2unit_strndup(const char* s, size_t n, const char* file, int line)
 
 #if defined(_WIN32)
 /* Windows specific allocator */
+#include <winsock2.h>
+#include <ws2def.h>
 #include <windows.h>
 #define _aligned_malloc(size, alignment) h2unit_alloc(NULL, size, alignment, 0xED, __FILE__, __LINE__)
 #define _aligned_free(memblock) h2unit_free(memblock, __FILE__, __LINE__)
@@ -355,11 +372,11 @@ extern char* h2unit_strndup(const char* s, size_t n, const char* file, int line)
 #define protected public
 
 #include <new>
-void* operator new(size_t, const char*, int);
-void* operator new[](size_t, const char*, int);
-void operator delete(void*);
-void operator delete[](void*);
-#define new new(__FILE__, __LINE__)
+//void* operator new(size_t, const char*, int);
+//void* operator new[](size_t, const char*, int);
+//void operator delete(void*);
+//void operator delete[](void*);
+//#define new new(__FILE__, __LINE__)
 #endif
 
 #define inline

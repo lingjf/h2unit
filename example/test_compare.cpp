@@ -10,12 +10,12 @@ H2UNIT(getEven)
 {
 };
 
-H2CASE(getEven,"getEvent with odd value")
+H2CASE(getEven, "getEvent with odd value")
 {
    H2EQ_MATH(4, getEven(7));
 }
 
-H2CASE(getEven,"getEven with even value")
+H2CASE(getEven, "getEven with even value")
 {
    H2EQ_MATH(6, getEven(6));
    H2NE_MATH(6, getEven(6));
@@ -66,7 +66,7 @@ H2UNIT_CASE("different type math")
    char * e_char_pointer = (char*) 0;
    char * a_char_pointer = (char*) 0;
    H2EQ_MATH(e_char_pointer, a_char_pointer);
-   
+
    int * e_int_pointer = (int*) 0;
    int * a_int_pointer = (int*) 0;
    H2EQ_MATH(e_int_pointer, a_int_pointer);
@@ -92,9 +92,9 @@ H2UNIT_CASE("different type math")
 
 H2UNIT(getCeil)
 {
-  /*
-   * setup() and teardown() can be omitted. The default is doing nothing
-   */
+   /*
+    * setup() and teardown() can be omitted. The default is doing nothing
+    */
 };
 
 H2CASE(getCeil, "test for float type number")
@@ -220,6 +220,15 @@ H2CASE(Point, "regex string")
    H2EQ_REGEX("Point([0-9]+, [0-9]+)", Point_toString(&p7));
    Point p8 = {11, 56};
    H2EQ_REGEX("P{1,}oint(1{2},{,2} [0-9]{1,3})", Point_toString(&p8));
+}
+
+H2CASE(Point, "json")
+{
+   Point p1 = {0, 0};
+   H2EQ_JSON("{'x': 0, 'y': 0}", Point_tojson(&p1));
+
+   Point p2 = {0, 1};
+   H2EQ_JSON("{'x': 0, 'y': [{}]}", Point_tojson(&p2));
 }
 
 /*

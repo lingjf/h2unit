@@ -23,6 +23,13 @@ char* Point_toString(Point* point)
    return buffer;
 }
 
+char* Point_tojson(Point* point)
+{
+   static char buffer[1024];
+   sprintf(buffer, "{\"x\": %d, \"y\": %d}", point->x, point->y);
+   return buffer;
+}
+
 
 int orig_foo(int a)
 {

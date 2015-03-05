@@ -12,6 +12,8 @@ typedef struct Point {
 
 char* Point_toString(Point* point);
 
+char* Point_tojson(Point* point);
+
 
 int orig_foo(int a);
 
