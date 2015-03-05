@@ -50,6 +50,244 @@ static long __milliseconds()
 }
 #endif
 
+
+/////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////
+////////////////////////////// list.c////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////
+
+static inline void h2unit_list_init(h2unit_list* node)
+{
+	node->next = node->prev = node;
+}
+
+static inline void __h2unit_list_add(h2unit_list *newl, h2unit_list *prev, h2unit_list *next)
+{
+	next->prev = newl;
+	newl->next = next;
+	newl->prev = prev;
+	prev->next = newl;
+}
+
+static inline void h2unit_list_add_head(h2unit_list *newl, h2unit_list *head)
+{
+	__h2unit_list_add(newl, head, head->next);
+}
+
+static inline void h2unit_list_add_tail(h2unit_list *newl, h2unit_list *head)
+{
+	__h2unit_list_add(newl, head->prev, head);
+}
+
+static inline void h2unit_list_del(h2unit_list *node)
+{
+	node->next->prev = node->prev;
+	node->prev->next = node->next;
+	node->next = node->prev = node;
+}
+
+static inline bool h2unit_list_empty(h2unit_list *head)
+{
+	return head->next == head;
+}
+
+static inline h2unit_list* h2unit_list_get_head(h2unit_list *head)
+{
+	return h2unit_list_empty(head) ? ((h2unit_list*)0) : head->next;
+}
+
+static inline h2unit_list* h2unit_list_get_tail(h2unit_list *head)
+{
+	return h2unit_list_empty(head) ? ((h2unit_list*)0) : head->prev;
+}
+
+#define h2unit_list_entry(ptr, type, field)  \
+   ( (type *)((char *)(ptr)-(unsigned long)(&((type *)0)->field)) )
+
+#define h2unit_list_for_each(iter, head)  \
+   for( (iter) = (head)->next; (iter) != (head); (iter) = (iter)->next )
+
+#define h2unit_list_for_each_safe(iter, temp, head)  \
+   for( (iter) = (head)->next, (temp) = (iter)->next; (iter) != (head); (iter) = (temp), (temp) = (iter)->next )
+
+
+/////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////
+////////////////////////////// wildcard.c ///////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////
+
+static int __wildcard_match(char* pattern, char* text)
+{
+	for (;;) {
+		switch (*pattern) {
+		case '\0':
+			return *text ? 0 : 1;
+		case '?':
+			if (!*text++) return 0;
+			pattern++;
+			break;
+		case '*': {
+			char *t = text;
+			while (*t != '\0') t++;
+			do {
+				if (__wildcard_match(pattern + 1, t)) return 1;
+			} while (t-- > text);
+			return 0;
+		}
+		case '[': {
+			int negate = 0, found = 0;
+			pattern++;
+			if (*pattern == '!' || *pattern == '^') {
+				negate = 1;
+				pattern++;
+			}
+			for (; *pattern != ']'; pattern++) {
+				switch (*pattern) {
+				case '\0':
+					return 0;
+				case '-': {
+					char a = *(pattern - 1);
+					char z = *(pattern + 1);
+					if (a == '[' || a == '!' || a == '^' || a == '-') a = 0x00;
+					if (z == ']' || z == '!' || z == '^' || z == '-') z = 0x7f;
+					if (a <= *text && *text <= z) found = 1;
+					break;
+				}
+				case '\\':
+					pattern++;
+				default:
+					if (*pattern == *text) found = 1;
+					break;
+				}
+			}
+			if ((negate && found) || (!negate && !found)) return 0;
+			pattern++;
+			text++;
+			break;
+		}
+		case '\\':
+			pattern++;
+		default:
+			if (*pattern++ != *text++) return 0;
+			break;
+		}
+	}
+	return 0;
+}
+
+/////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////
+////////////////////////////// regex.c //////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////
+
+static int ____matchhere(char *, char *);
+static int ____matchchar(char *pattern, char textc)
+{
+	switch (pattern[0]) {
+	case '\\':
+		return pattern[1] == textc;
+	case '.':
+		return 1;
+	case '[': {
+		int negate = 0, found = 0;
+		pattern++;
+		if (*pattern == '!' || *pattern == '^') {
+			negate = 1;
+			pattern++;
+		}
+		for (; *pattern != ']'; pattern++) {
+			switch (*pattern) {
+			case '\0':
+				return 0;
+			case '-': {
+				char a = *(pattern - 1);
+				char z = *(pattern + 1);
+				if (a == '[' || a == '!' || a == '^' || a == '-') a = 0x00;
+				if (z == ']' || z == '!' || z == '^' || z == '-') z = 0x7f;
+				if (a <= textc && textc <= z) found = 1;
+				break;
+			}
+			case '\\':
+				pattern++;
+			default:
+				if (*pattern == textc) found = 1;
+				break;
+			}
+		}
+		return ((negate && !found) || (!negate && found));
+	}
+	default:
+		return pattern[0] == textc;
+	}
+}
+static int ____matchloop(char *pattern, char *regexp, int min, int max, char *text)
+{
+	char *t = text;
+	while (*t != '\0' && max > 0 && ____matchchar(pattern, *t)) t++, max--;
+	do {
+		if (____matchhere(regexp, t)) return 1;
+	} while (t-- > text + min);
+	return 0;
+}
+static int ____matchhere(char *regexp, char *text)
+{
+	while (regexp[0] != '\0') {
+		if (regexp[0] == '$' && regexp[1] == '\0') {
+			return *text == '\0';
+		}
+
+		char *pattern = regexp;
+		if (pattern[0] == '\\') {
+			regexp++;
+		}
+		if (pattern[0] == '[') {
+			for (regexp++; *regexp != ']' || *(regexp - 1) == '\\'; regexp++);
+		}
+		char *appears = regexp + 1;
+		if (appears[0] == '*') {
+			return ____matchloop(pattern, regexp + 2, 0, 0xfffffff, text);
+		}
+		if (appears[0] == '+') {
+			return ____matchloop(pattern, regexp + 2, 1, 0xfffffff, text);
+		}
+		if (appears[0] == '{') {
+			int _min = 0, _max = 0;
+			for (regexp = appears + 1; *regexp != ',' && *regexp != '}'; regexp++) {
+				if (isspace(*regexp)) continue;
+				_min = _min * 10 + (*regexp - '0');
+				_max = _max * 10 + (*regexp - '0');
+			}
+			if (*regexp == ',') {
+				_max = 0;
+				for (++regexp; *regexp != '}'; regexp++) {
+					_max = _max * 10 + (*regexp - '0');
+				}
+			}
+			_max = _max == 0 ? 0xfffffff : _max;
+			if (_min > _max) return 0;
+			return ____matchloop(pattern, regexp + 1, _min, _max, text);
+		}
+
+		if (text[0] == '\0') return 0;
+		if (!____matchchar(pattern, text[0])) return 0;
+
+		regexp++;
+		text++;
+	}
+	return 1;
+}
+static int __regex_match(char *regexp, char *text)
+{
+	if (regexp[0] == '^') return ____matchhere(regexp + 1, text);
+	do {
+		if (____matchhere(regexp, text)) return 1;
+	} while (*text++ != '\0');
+	return 0;
+}
+
 /////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////
 /////////////////////////////cJSON.c/////////////////////////////////////////
@@ -65,9 +303,9 @@ namespace cJSON
 #define cJSON_Null 2
 #define cJSON_Number 3
 #define cJSON_String 4
-#define cJSON_Array 5
-#define cJSON_Object 6
-#define cJSON_Regexp 7
+#define cJSON_Regexp 5
+#define cJSON_Array 6
+#define cJSON_Object 7
 
 #define cJSON_IsReference 256
 
@@ -83,6 +321,7 @@ typedef struct cJSON {
 	double valuedouble;         /* The item's number, if type==cJSON_Number */
 
 	char *keystring;            /* The item's name string, if this item is the child of, or is in the list of subitems of an object. */
+
 	bool diff;
 } cJSON;
 
@@ -165,19 +404,19 @@ static unsigned parse_hex4(const char *str)
 }
 
 /* Parse the input text into an unescaped cstring, and populate item. */
-static const unsigned char firstByteMark[7] = { 0x00, 0x00, 0xC0, 0xE0, 0xF0, 0xF8, 0xFC };
-static const char *parse_string(cJSON *item, const char *str)
+static const char *parse_string_ptr(cJSON *item, const char *str, const char bound)
 {
+	static const unsigned char firstByteMark[7] = { 0x00, 0x00, 0xC0, 0xE0, 0xF0, 0xF8, 0xFC };
 	const char *ptr = str + 1; char *ptr2; char *out; int len = 0; unsigned uc, uc2;
-	if (*str != '\"') {ep = str; return 0;}	/* not a string! */
+	if (*str != bound) {ep = str; return 0;}	/* not a string! */
 
-	while (*ptr != '\"' && *ptr && ++len) if (*ptr++ == '\\') ptr++;	/* Skip escaped quotes. */
+	while (*ptr != bound && *ptr && ++len) if (*ptr++ == '\\') ptr++;	/* Skip escaped quotes. */
 
 	out = (char*)malloc(len + 1);	/* This is how long we need for the string, roughly. */
 	if (!out) return 0;
 
 	ptr = str + 1; ptr2 = out;
-	while (*ptr != '\"' && *ptr) {
+	while (*ptr != bound && *ptr) {
 		if (*ptr != '\\') *ptr2++ = *ptr++;
 		else {
 			ptr++;
@@ -215,14 +454,17 @@ static const char *parse_string(cJSON *item, const char *str)
 		}
 	}
 	*ptr2 = 0;
-	if (*ptr == '\"') ptr++;
+	if (*ptr == bound) ptr++;
 	item->valuestring = out;
-	item->type = cJSON_String;
 	return ptr;
 }
 
+static const char *parse_string(cJSON *item, const char *str) {const char *ptr = parse_string_ptr(item, str, '\"'); item->type = cJSON_String; return ptr;}
+static const char *parse_regexp(cJSON *item, const char *str) {const char *ptr = parse_string_ptr(item, str, '/'); item->type = cJSON_Regexp; return ptr;}
+
+
 /* Render the cstring provided to an escaped version that can be printed. */
-static char *print_string_ptr(const char *str)
+static char *print_string_ptr(const char *str, const char bound)
 {
 	const char *ptr; char *ptr2, *out; int len = 0; unsigned char token;
 
@@ -233,9 +475,9 @@ static char *print_string_ptr(const char *str)
 	if (!out) return 0;
 
 	ptr2 = out; ptr = str;
-	*ptr2++ = '\"';
+	*ptr2++ = bound;
 	while (*ptr) {
-		if ((unsigned char)*ptr > 31 && *ptr != '\"' && *ptr != '\\') *ptr2++ = *ptr++;
+		if ((unsigned char)*ptr > 31 && *ptr != bound && *ptr != '\\') *ptr2++ = *ptr++;
 		else {
 			*ptr2++ = '\\';
 			switch (token = *ptr++) {
@@ -250,11 +492,12 @@ static char *print_string_ptr(const char *str)
 			}
 		}
 	}
-	*ptr2++ = '\"'; *ptr2++ = 0;
+	*ptr2++ = bound; *ptr2++ = 0;
 	return out;
 }
 /* Invote print_string_ptr (which is useful) on an item. */
-static char *print_string(cJSON *item)	{return print_string_ptr(item->valuestring);}
+static char *print_string(cJSON *item) {return print_string_ptr(item->valuestring, '\"');}
+static char *print_regexp(cJSON *item) {return print_string_ptr(item->valuestring, '/');}
 
 /* Predeclare these prototypes. */
 static const char *parse_value(cJSON *item, const char *value);
@@ -292,14 +535,15 @@ static char *cJSON_Print(cJSON *item) {return print_value(item, 0, 1);}
 /* Parser core - when encountering text, process appropriately. */
 static const char *parse_value(cJSON *item, const char *value)
 {
-	if (!value)						return 0;	/* Fail on null. */
-	if (!strncmp(value, "null", 4))	{ item->type = cJSON_Null;  return value + 4; }
-	if (!strncmp(value, "false", 5))	{ item->type = cJSON_False; return value + 5; }
-	if (!strncmp(value, "true", 4))	{ item->type = cJSON_True; item->valuelong = 1;	return value + 4; }
-	if (*value == '\"')				{ return parse_string(item, value); }
-	if (*value == '-' || (*value >= '0' && *value <= '9'))	{ return parse_number(item, value); }
-	if (*value == '[')				{ return parse_array(item, value); }
-	if (*value == '{')				{ return parse_object(item, value); }
+	if (!value) return 0;	/* Fail on null. */
+	if (!strncmp(value, "null", 4)) { item->type = cJSON_Null;  return value + 4; }
+	if (!strncmp(value, "false", 5)) { item->type = cJSON_False; return value + 5; }
+	if (!strncmp(value, "true", 4)) { item->type = cJSON_True; item->valuelong = 1;	return value + 4; }
+	if (*value == '-' || (*value >= '0' && *value <= '9')) { return parse_number(item, value); }
+	if (*value == '\"') { return parse_string(item, value); }
+	if (*value == '/') { return parse_regexp(item, value); }
+	if (*value == '[') { return parse_array(item, value); }
+	if (*value == '{') { return parse_object(item, value); }
 
 	ep = value; return 0;	/* failure. */
 }
@@ -315,6 +559,7 @@ static char *print_value(cJSON *item, int depth, int fmt)
 	case cJSON_True:	out = strdup("true"); break;
 	case cJSON_Number:	out = print_number(item); break;
 	case cJSON_String:	out = print_string(item); break;
+	case cJSON_Regexp:	out = print_regexp(item); break;
 	case cJSON_Array:	out = print_array(item, depth, fmt); break;
 	case cJSON_Object:	out = print_object(item, depth, fmt); break;
 	}
@@ -474,7 +719,7 @@ static char *print_object(cJSON *item, int depth, int fmt)
 	/* Collect all the results into our arrays: */
 	child = item->child; depth++; if (fmt) len += depth;
 	while (child) {
-		names[i] = str = print_string_ptr(child->keystring);
+		names[i] = str = print_string_ptr(child->keystring, '\"');
 		entries[i++] = ret = print_value(child, depth, fmt);
 		if (str && ret) len += strlen(ret) + strlen(str) + 2 + (fmt ? 2 + depth : 0); else fail = 1;
 		child = child->next;
@@ -508,6 +753,7 @@ static char *print_object(cJSON *item, int depth, int fmt)
 	*ptr++ = '}'; *ptr++ = 0;
 	return out;
 }
+
 
 /* Get Array size/item */
 static int    cJSON_GetArraySize(cJSON *array)							{cJSON *c = array->child; int i = 0; while (c)i++, c = c->next; return i;}
@@ -635,6 +881,11 @@ static int __cJSON_Compare(cJSON *cexp, cJSON *cact, int *diffed)
 		else cmp = strcmp(cexp->valuestring, cact->valuestring);
 		break;
 
+	case cJSON_Regexp:
+		if (cact->type != cJSON_String) cmp = 1;
+		else cmp = __wildcard_match(cexp->valuestring, cact->valuestring) || __regex_match(cexp->valuestring, cact->valuestring) ? 0 : 1;
+		break;
+
 	case cJSON_Array:
 		if (cact->type != cJSON_Array) cmp = 1;
 		else cmp = __cJSON_CompareArray(cexp, cact, diffed);
@@ -707,231 +958,13 @@ static int cJSON_Compare(char *sexp, char *sact, char *fexp, char *fact)
 
 } //namespace cJSON
 
+
 /////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////
-/////////////////////////////end of cJSON////////////////////////////////////
+///////////////////////////////// H2UNIT ////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////
 
-
-static inline void h2unit_list_init(h2unit_list* node)
-{
-	node->next = node->prev = node;
-}
-
-static inline void __h2unit_list_add(h2unit_list *newl, h2unit_list *prev, h2unit_list *next)
-{
-	next->prev = newl;
-	newl->next = next;
-	newl->prev = prev;
-	prev->next = newl;
-}
-
-static inline void h2unit_list_add_head(h2unit_list *newl, h2unit_list *head)
-{
-	__h2unit_list_add(newl, head, head->next);
-}
-
-static inline void h2unit_list_add_tail(h2unit_list *newl, h2unit_list *head)
-{
-	__h2unit_list_add(newl, head->prev, head);
-}
-
-static inline void h2unit_list_del(h2unit_list *node)
-{
-	node->next->prev = node->prev;
-	node->prev->next = node->next;
-	node->next = node->prev = node;
-}
-
-static inline bool h2unit_list_empty(h2unit_list *head)
-{
-	return head->next == head;
-}
-
-static inline h2unit_list* h2unit_list_get_head(h2unit_list *head)
-{
-	return h2unit_list_empty(head) ? ((h2unit_list*)0) : head->next;
-}
-
-static inline h2unit_list* h2unit_list_get_tail(h2unit_list *head)
-{
-	return h2unit_list_empty(head) ? ((h2unit_list*)0) : head->prev;
-}
-
-#define h2unit_list_entry(ptr, type, field)  \
-   ( (type *)((char *)(ptr)-(unsigned long)(&((type *)0)->field)) )
-
-#define h2unit_list_for_each(iter, head)  \
-   for( (iter) = (head)->next; (iter) != (head); (iter) = (iter)->next )
-
-#define h2unit_list_for_each_safe(iter, temp, head)  \
-   for( (iter) = (head)->next, (temp) = (iter)->next; (iter) != (head); (iter) = (temp), (temp) = (iter)->next )
-
-
-static int __wildcard_match(char* pattern, char* text)
-{
-	for (;;) {
-		switch (*pattern) {
-		case '\0':
-			return *text ? 0 : 1;
-		case '?':
-			if (!*text++) return 0;
-			pattern++;
-			break;
-		case '*': {
-			char *t = text;
-			while (*t != '\0') t++;
-			do {
-				if (__wildcard_match(pattern + 1, t)) return 1;
-			} while (t-- > text);
-			return 0;
-		}
-		case '[': {
-			int negate = 0, found = 0;
-			pattern++;
-			if (*pattern == '!' || *pattern == '^') {
-				negate = 1;
-				pattern++;
-			}
-			for (; *pattern != ']'; pattern++) {
-				switch (*pattern) {
-				case '\0':
-					return 0;
-				case '-': {
-					char a = *(pattern - 1);
-					char z = *(pattern + 1);
-					if (a == '[' || a == '!' || a == '^' || a == '-') a = 0x00;
-					if (z == ']' || z == '!' || z == '^' || z == '-') z = 0x7f;
-					if (a <= *text && *text <= z) found = 1;
-					break;
-				}
-				case '\\':
-					pattern++;
-				default:
-					if (*pattern == *text) found = 1;
-					break;
-				}
-			}
-			if ((negate && found) || (!negate && !found)) return 0;
-			pattern++;
-			text++;
-			break;
-		}
-		case '\\':
-			pattern++;
-		default:
-			if (*pattern++ != *text++) return 0;
-			break;
-		}
-	}
-	return 0;
-}
-
-static int ____matchhere(char *, char *);
-static int ____matchchar(char *pattern, char textc)
-{
-	switch (pattern[0]) {
-	case '\\':
-		return pattern[1] == textc;
-	case '.':
-		return 1;
-	case '[': {
-		int negate = 0, found = 0;
-		pattern++;
-		if (*pattern == '!' || *pattern == '^') {
-			negate = 1;
-			pattern++;
-		}
-		for (; *pattern != ']'; pattern++) {
-			switch (*pattern) {
-			case '\0':
-				return 0;
-			case '-': {
-				char a = *(pattern - 1);
-				char z = *(pattern + 1);
-				if (a == '[' || a == '!' || a == '^' || a == '-') a = 0x00;
-				if (z == ']' || z == '!' || z == '^' || z == '-') z = 0x7f;
-				if (a <= textc && textc <= z) found = 1;
-				break;
-			}
-			case '\\':
-				pattern++;
-			default:
-				if (*pattern == textc) found = 1;
-				break;
-			}
-		}
-		return ((negate && !found) || (!negate && found));
-	}
-	default:
-		return pattern[0] == textc;
-	}
-}
-static int ____matchloop(char *pattern, char *regexp, int min, int max, char *text)
-{
-	char *t = text;
-	while (*t != '\0' && max > 0 && ____matchchar(pattern, *t)) t++, max--;
-	do {
-		if (____matchhere(regexp, t)) return 1;
-	} while (t-- > text + min);
-	return 0;
-}
-static int ____matchhere(char *regexp, char *text)
-{
-	while (regexp[0] != '\0') {
-		if (regexp[0] == '$' && regexp[1] == '\0') {
-			return *text == '\0';
-		}
-
-		char *pattern = regexp;
-		if (pattern[0] == '\\') {
-			regexp++;
-		}
-		if (pattern[0] == '[') {
-			for (regexp++; *regexp != ']' || *(regexp - 1) == '\\'; regexp++);
-		}
-		char *appears = regexp + 1;
-		if (appears[0] == '*') {
-			return ____matchloop(pattern, regexp + 2, 0, 0xfffffff, text);
-		}
-		if (appears[0] == '+') {
-			return ____matchloop(pattern, regexp + 2, 1, 0xfffffff, text);
-		}
-		if (appears[0] == '{') {
-			int _min = 0, _max = 0;
-			for (regexp = appears + 1; *regexp != ',' && *regexp != '}'; regexp++) {
-				if (isspace(*regexp)) continue;
-				_min = _min * 10 + (*regexp - '0');
-				_max = _max * 10 + (*regexp - '0');
-			}
-			if (*regexp == ',') {
-				_max = 0;
-				for (++regexp; *regexp != '}'; regexp++) {
-					_max = _max * 10 + (*regexp - '0');
-				}
-			}
-			_max = _max == 0 ? 0xfffffff : _max;
-			if (_min > _max) return 0;
-			return ____matchloop(pattern, regexp + 1, _min, _max, text);
-		}
-
-		if (text[0] == '\0') return 0;
-		if (!____matchchar(pattern, text[0])) return 0;
-
-		regexp++;
-		text++;
-	}
-	return 1;
-}
-static int __regex_match(char *regexp, char *text)
-{
-	if (regexp[0] == '^') return ____matchhere(regexp + 1, text);
-	do {
-		if (____matchhere(regexp, text)) return 1;
-	} while (*text++ != '\0');
-	return 0;
-}
 
 class h2unit_config
 {

@@ -231,6 +231,12 @@ H2CASE(Point, "json")
    H2EQ_JSON("{'x': 0, 'y': [{}]}", Point_tojson(&p2));
 }
 
+H2CASE(Point, "json 2")
+{
+   H2EQ_JSON("{'x': 0, 'y': /he*/}", "{'x': 0, 'y': 'he110'}");
+   H2EQ_JSON("{'x': 0, 'y': /he[0-9]+/}", "{'x': 0, 'y': 'he110'}");
+}
+
 /*
  * Case-Less strcmp
  */
