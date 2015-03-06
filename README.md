@@ -45,8 +45,9 @@ H2CASE(hello_h2unit, "case name 2")
 *    H2EQ_MATH(expected, actually) : check the actually value is same as expected value, value type can be (unsigned)char/(unsigned)short/(unsigned)int/(unsigned)long/(unsigned) long long/float/double.
 *    H2EQ_STRCMP(expected, actually) : check the actually string is same as expected string with strcmp.
 *    H2EQ_WILDCARD(express, acutally) : check the actually string is wildcard match expected express.
-*    H2EQ_REGEX(express, acutally) : check the actually string is regular express match expected express.
-*    H2NE_MATH/H2NE_STRCMP/H2NE_WILDCARD/H2NE_REGEX : check the actually result is not same as expected result.
+*    H2EQ_REGEX(express, acutally) : check the actually string is regular express match expected express. [slre](https://github.com/cesanta/slre)
+*    H2EQ_JSON(expected, acutally) : check the actually json is subset of expected json with math, strcmp and regular express.
+*    H2NE_MATH/H2NE_STRCMP/H2NE_WILDCARD/H2NE_REGEX/H2NE_JSON : check the actually result is not same as expected result.
 *    H2EQ_RANGE(from, to, actually) : check the actually value is between from and to.
 *    H2EQ_INSET(inset, count, actually) : check the actually value is in set.
 *    H2NE_RANGE/H2NE_INSET : check the actually value is out of range or set.

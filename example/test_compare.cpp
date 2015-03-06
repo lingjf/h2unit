@@ -185,41 +185,46 @@ H2CASE(Point, "wildcard string")
 
 /*
  * h2unit H2EQ_REGEX can be used to verify string by Regular express. support:
- *  -- c any specified char
- *  -- . any char
- *  -- [] specified char(s)
- *     -- [abc] a or b or c
- *     -- [a-z] a or b or ... or z
- *     -- [!abc] any char except a and b and c
- *     -- [^abc] any char except a and b and c
- *  -- * any times appear of previous char
- *  -- + 1 and more times appear of previous char
- *  -- {} specified appear times of previous char
- *     -- {2} appear absolutely only 2 times
- *     -- {1,3} appear at least 1 times and at most 3 times
- *     -- {2,} appear at least 2 times
- *     -- {,3} appear at most 3 times
- *  -- ^ begin of
- *  -- $ end of
+ *    (?i)    Must be at the beginning of the regex. Makes match case-insensitive
+ *    ^       Match beginning of a buffer
+ *    $       Match end of a buffer
+ *    ()      Grouping and substring capturing
+ *    \s      Match whitespace
+ *    \S      Match non-whitespace
+ *    \d      Match decimal digit
+ *    \n      Match new line character
+ *    \r      Match line feed character
+ *    \f      Match form feed character
+ *    \v      Match vertical tab character
+ *    \t      Match horizontal tab character
+ *    \b      Match backspace character
+ *    +       Match one or more times (greedy)
+ *    +?      Match one or more times (non-greedy)
+ *    *       Match zero or more times (greedy)
+ *    *?      Match zero or more times (non-greedy)
+ *    ?       Match zero or once (non-greedy)
+ *    x|y     Match x or y (alternation operator)
+ *    \meta   Match one of the meta character: ^$().[]*+?|\
+ *    \xHH    Match byte with hex value 0xHH, e.g. \x4a
+ *    [...]   Match any character from set. Ranges like [a-z] are supported
+ *    [^...]  Match any character but ones from set
  */
 H2CASE(Point, "regex string")
 {
    Point p1 = {0, 0};
-   H2EQ_REGEX("Point(0, 0)", Point_toString(&p1));
+   H2EQ_REGEX("Point\\(0, 0\\)", Point_toString(&p1));
    Point p2 = {1, 2};
-   H2EQ_REGEX("Point(.", Point_toString(&p2));
+   H2EQ_REGEX("Point\\(.", Point_toString(&p2));
    Point p3 = {3, 4};
-   H2EQ_REGEX("Point(.*)", Point_toString(&p3));
+   H2EQ_REGEX("Point\\(.*\\)", Point_toString(&p3));
    Point p4 = {5, 6};
-   H2EQ_REGEX("^Point(.*)$", Point_toString(&p4));
+   H2EQ_REGEX("^Point\\(.*\\)$", Point_toString(&p4));
    Point p5 = {7, 8};
-   H2EQ_REGEX("Point([789], [0-9])", Point_toString(&p5));
+   H2EQ_REGEX("Point\\([789], [0-9]\\)", Point_toString(&p5));
    Point p6 = {11, 88};
-   H2EQ_REGEX("Point([0-9]*, [!0-5]*)", Point_toString(&p6));
+   H2EQ_REGEX("Point\\([0-9]*, [^0-5]*\\)", Point_toString(&p6));
    Point p7 = {11, 88};
-   H2EQ_REGEX("Point([0-9]+, [0-9]+)", Point_toString(&p7));
-   Point p8 = {11, 56};
-   H2EQ_REGEX("P{1,}oint(1{2},{,2} [0-9]{1,3})", Point_toString(&p8));
+   H2EQ_REGEX("Point\\([0-9]+, [0-9]+\\)", Point_toString(&p7));
 }
 
 H2CASE(Point, "json")

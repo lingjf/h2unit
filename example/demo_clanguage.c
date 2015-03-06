@@ -43,9 +43,10 @@ static int orig_bar(int b)
 
 char* orig_varg(const char* format, ...)
 {
+   static char t[1024 * 8];
    va_list args;
    va_start(args, format);
-   static char t[1024 * 8];
+
    vsprintf(t, format, args);
    va_end(args);
    return t;
