@@ -647,7 +647,7 @@ typedef struct cJSON {
 
   char *keystring;            /* The item's name string, if this item is the child of, or is in the list of subitems of an object. */
 
-  bool diff;
+  int diff;
 } cJSON;
 
 
@@ -784,7 +784,7 @@ static const char *parse_string_ptr(cJSON *item, const char *str, const char bou
   return ptr;
 }
 
-static const char *parse_string(cJSON *item, const char *str) {const char *ptr = parse_string_ptr(item, str, '\"'); item->type = cJSON_String; return ptr;}
+static const char *parse_string(cJSON *item, const char *str) {const char *ptr = parse_string_ptr(item, str, str[0]); item->type = cJSON_String; return ptr;}
 static const char *parse_regexp(cJSON *item, const char *str) {const char *ptr = parse_string_ptr(item, str, '/'); item->type = cJSON_Regexp; return ptr;}
 
 
@@ -855,17 +855,17 @@ static cJSON *cJSON_Parse(const char *value)
 }
 
 /* Render a cJSON item/entity/structure to text. */
-static char *cJSON_Print(cJSON *item) {return print_value(item, 0, 1);}
+static char *cJSON_Print(cJSON *item, char *out) {char *ptr = print_value(item, 0, 1); if (out) {strcpy(out, ptr); free(ptr); return out;} else return ptr;}
 
 /* Parser core - when encountering text, process appropriately. */
 static const char *parse_value(cJSON *item, const char *value)
 {
   if (!value) return 0; /* Fail on null. */
-  if (!strncmp(value, "null", 4)) { item->type = cJSON_Null;  return value + 4; }
+  if (!strncmp(value, "null", 4)) { item->type = cJSON_Null; return value + 4; }
   if (!strncmp(value, "false", 5)) { item->type = cJSON_False; return value + 5; }
   if (!strncmp(value, "true", 4)) { item->type = cJSON_True; item->valuelong = 1; return value + 4; }
   if (*value == '-' || (*value >= '0' && *value <= '9')) { return parse_number(item, value); }
-  if (*value == '\"') { return parse_string(item, value); }
+  if (*value == '\"' || *value == '\'') { return parse_string(item, value); }
   if (*value == '/') { return parse_regexp(item, value); }
   if (*value == '[') { return parse_array(item, value); }
   if (*value == '{') { return parse_object(item, value); }
@@ -879,19 +879,19 @@ static char *print_value(cJSON *item, int depth, int fmt)
   char *out = 0;
   if (!item) return 0;
   switch ((item->type) & 255) {
-  case cJSON_Null:  out = strdup("null"); break;
-  case cJSON_False: out = strdup("false"); break;
-  case cJSON_True:  out = strdup("true"); break;
-  case cJSON_Number:  out = print_number(item); break;
-  case cJSON_String:  out = print_string(item); break;
-  case cJSON_Regexp:  out = print_regexp(item); break;
-  case cJSON_Array: out = print_array(item, depth, fmt); break;
-  case cJSON_Object:  out = print_object(item, depth, fmt); break;
+  case cJSON_Null:   out = strdup("null"); break;
+  case cJSON_False:  out = strdup("false"); break;
+  case cJSON_True:   out = strdup("true"); break;
+  case cJSON_Number: out = print_number(item); break;
+  case cJSON_String: out = print_string(item); break;
+  case cJSON_Regexp: out = print_regexp(item); break;
+  case cJSON_Array:  out = print_array(item, depth, fmt); break;
+  case cJSON_Object: out = print_object(item, depth, fmt); break;
   }
   if (item->diff) {
     char *t = (char *)malloc(strlen(out) + 16);
     if (t) {
-      sprintf(t, "@diff@ %s", out);
+      sprintf(t, "%s %s", item->diff == 1 ? ">>>>>>>" : "<<<<<<<", out);
       free(out);
       out = t;
     }
@@ -1081,13 +1081,13 @@ static char *print_object(cJSON *item, int depth, int fmt)
 
 
 /* Get Array size/item */
-static int    cJSON_GetArraySize(cJSON *array)              {cJSON *c = array->child; int i = 0; while (c)i++, c = c->next; return i;}
-static cJSON *cJSON_GetArrayItem(cJSON *array, int index)       {cJSON *c = array->child; while (c && index > 0) index--, c = c->next; return c;}
+static int    cJSON_GetArraySize(cJSON *array) {cJSON *c = array->child; int i = 0; while (c)i++, c = c->next; return i;}
+static cJSON *cJSON_GetArrayItem(cJSON *array, int index) {cJSON *c = array->child; while (c && index > 0) index--, c = c->next; return c;}
 
 /* Get Object size/item */
-static int    cJSON_GetObjectSize(cJSON *object)            {cJSON *c = object->child; int i = 0; while (c)i++, c = c->next; return i;}
-static cJSON *cJSON_GetObjectItem(cJSON *object, int index)       {cJSON *c = object->child; while (c && index > 0) index--, c = c->next; return c;}
-static cJSON *cJSON_GetObjectItem(cJSON *object, const char *key)   {cJSON *c = object->child; while (c && (!c->keystring || strcasecmp(c->keystring, key))) c = c->next; return c;}
+static int    cJSON_GetObjectSize(cJSON *object) {cJSON *c = object->child; int i = 0; while (c)i++, c = c->next; return i;}
+static cJSON *cJSON_GetObjectItem(cJSON *object, int index) {cJSON *c = object->child; while (c && index > 0) index--, c = c->next; return c;}
+static cJSON *cJSON_GetObjectItem(cJSON *object, const char *key) {cJSON *c = object->child; while (c && (!c->keystring || strcasecmp(c->keystring, key))) c = c->next; return c;}
 
 
 
@@ -1106,18 +1106,14 @@ static int __cJSON_CompareObject(cJSON *, cJSON *, int *);
 
 static int __cJSON_CompareArray(cJSON *cexp, cJSON *cact, int *diffed)
 {
-  if (cexp == NULL || cact == NULL) {
-    if (!*diffed) {
-      *diffed = true;
-      if (cexp) cexp->diff = true;
-      if (cact) cact->diff = true;
-    }
+  if (!cexp || !cact) {
+    if (!*diffed) {*diffed = 1; cexp && (cexp->diff = 1); cact && (cact->diff = 2);}
     return -1;
   }
   int exp_size = cJSON_GetArraySize(cexp);
   int act_size = cJSON_GetArraySize(cact);
   if (exp_size != act_size) {
-    if (!*diffed) *diffed = cexp->diff = cact->diff = true;
+    if (!*diffed) {*diffed = 1; cexp->diff = 1; cact->diff = 2;}
     return 1;
   }
   for (int i = 0; i < exp_size; i++) {
@@ -1139,18 +1135,14 @@ static int __cJSON_CompareArray(cJSON *cexp, cJSON *cact, int *diffed)
 
 static int __cJSON_CompareObject(cJSON *cexp, cJSON *cact, int *diffed)
 {
-  if (cexp == NULL || cact == NULL) {
-    if (!*diffed) {
-      *diffed = true;
-      if (cexp) cexp->diff = true;
-      if (cact) cact->diff = true;
-    }
+  if (!cexp || !cact) {
+    if (!*diffed) {*diffed = 1; cexp && (cexp->diff = 1); cact && (cact->diff = 2);}
     return -1;
   }
   int exp_size = cJSON_GetObjectSize(cexp);
   int act_size = cJSON_GetObjectSize(cact);
   if (exp_size > act_size) {
-    if (!*diffed) *diffed = cexp->diff = cact->diff = true;
+    if (!*diffed) {*diffed = 1; cexp->diff = 1; cact->diff = 2;}
     return 1;
   }
 
@@ -1175,12 +1167,8 @@ static int __cJSON_CompareObject(cJSON *cexp, cJSON *cact, int *diffed)
 
 static int __cJSON_Compare(cJSON *cexp, cJSON *cact, int *diffed)
 {
-  if (cexp == NULL || cact == NULL) {
-    if (!*diffed) {
-      *diffed = true;
-      if (cexp) cexp->diff = true;
-      if (cact) cact->diff = true;
-    }
+  if (!cexp || !cact) {
+    if (!*diffed) {*diffed = 1; cexp && (cexp->diff = 1); cact && (cact->diff = 2);}
     return -1;
   }
 
@@ -1226,62 +1214,23 @@ static int __cJSON_Compare(cJSON *cexp, cJSON *cact, int *diffed)
   }
 
   if (cmp != 0) {
-    if (!*diffed) {
-      *diffed = cexp->diff = cact->diff = true;
-    }
+    if (!*diffed) {*diffed = 1; cexp->diff = 1; cact->diff = 2;}
   }
   return cmp;
 }
 
 static int cJSON_Compare(char *sexp, char *sact, char *fexp, char *fact)
 {
-  sexp = strdup(sexp);
-  sact = strdup(sact);
-
-  for (size_t i = 0; i < strlen(sexp); i++) {
-    if (sexp[i] == '\'') {
-      if (i >= 1 && sexp[i - 1] == '\\') {
-        continue;
-      }
-      sexp[i] = '\"';
-    }
-  }
-  for (size_t i = 0; i < strlen(sact); i++) {
-    if (sact[i] == '\'') {
-      if (i >= 1 && sact[i - 1] == '\\') {
-        continue;
-      }
-      sact[i] = '\"';
-    }
-  }
-
-  int cmp = -1;
   cJSON *cexp = cJSON_Parse(sexp);
   cJSON *cact = cJSON_Parse(sact);
-  if (cexp && cact) {
-    int diffed = 0;
-    cmp = __cJSON_Compare(cexp, cact, &diffed);
-  }
-
-  if (cexp) {
-    char *t = cJSON_Print(cexp);
-    strcpy(fexp, t);
-    free(t);
-    cJSON_Delete(cexp);
-  }
-  if (cact) {
-    char *t = cJSON_Print(cact);
-    strcpy(fact, t);
-    free(t);
-    cJSON_Delete(cact);
-  }
-  free(sexp);
-  free(sact);
-
+  int diffed = 0;
+  int cmp = __cJSON_Compare(cexp, cact, &diffed);
+  if (cexp) {cJSON_Print(cexp, fexp); cJSON_Delete(cexp);}
+  if (cact) {cJSON_Print(cact, fact); cJSON_Delete(cact);}
   return cmp;
 }
 
-} //namespace cJSON
+}
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -2807,17 +2756,17 @@ void h2unit_case::_check_unequal_inset_(double *inset, int count, double actuall
 void h2unit_case::_check_equal_strcmp_(char* expected, char* actually)
 {
   if (strcmp(expected, actually) != 0) {
-    size_t actually_length = strlen(actually);
-    size_t expected_length = strlen(expected);
+    int actually_length = (int)strlen(actually);
+    int expected_length = (int)strlen(expected);
 
     _vmsg_(&_expected_, "", "");
     _vmsg_(&_actually_, "", "");
 
-    for (size_t i = 0; i < expected_length; i++) {
-      _vmsg_(&_expected_, i <= actually_length && expected[i] == actually[i] ? "bold,green" : "bold,red", "%c", expected[i]);
+    for (int i = 0; i < expected_length; i++) {
+      _vmsg_(&_expected_, i <= actually_length && expected[i] == actually[i] ? "green" : "bold,red", "%c", expected[i]);
     }
-    for (size_t j = 0; j < actually_length; j++) {
-      _vmsg_(&_actually_, j <= expected_length && actually[j] == expected[j] ? "bold,green" : "bold,red", "%c", actually[j]);
+    for (int j = 0; j < actually_length; j++) {
+      _vmsg_(&_actually_, j <= expected_length && actually[j] == expected[j] ? "green" : "bold,red", "%c", actually[j]);
     }
 
     longjmp(__h2unit_jmp_buf, 1);
@@ -2837,17 +2786,17 @@ void h2unit_case::_check_unequal_strcmp_(char* unexpect, char* actually)
 void h2unit_case::_check_equal_strcmp_nocase_(char* expected, char* actually)
 {
   if (strcasecmp(expected, actually) != 0) {
-    size_t actually_length = strlen(actually);
-    size_t expected_length = strlen(expected);
+    int actually_length = (int)strlen(actually);
+    int expected_length = (int)strlen(expected);
 
     _vmsg_(&_expected_, "", "");
     _vmsg_(&_actually_, "", "");
 
-    for (size_t i = 0; i < expected_length; i++) {
-      _vmsg_(&_expected_, i <= actually_length && tolower((int) expected[i]) == tolower((int) actually[i]) ? "bold,green" : "bold,red", "%c", expected[i]);
+    for (int i = 0; i < expected_length; i++) {
+      _vmsg_(&_expected_, i <= actually_length && tolower((int) expected[i]) == tolower((int) actually[i]) ? "green" : "bold,red", "%c", expected[i]);
     }
-    for (size_t j = 0; j < actually_length; j++) {
-      _vmsg_(&_actually_, j <= expected_length && tolower((int) actually[j]) == tolower((int) expected[j]) ? "bold,green" : "bold,red", "%c", actually[j]);
+    for (int j = 0; j < actually_length; j++) {
+      _vmsg_(&_actually_, j <= expected_length && tolower((int) actually[j]) == tolower((int) expected[j]) ? "green" : "bold,red", "%c", actually[j]);
     }
 
     longjmp(__h2unit_jmp_buf, 1);
@@ -2856,26 +2805,40 @@ void h2unit_case::_check_equal_strcmp_nocase_(char* expected, char* actually)
 
 void h2unit_case::_check_equal_json_(char* expected, char* actually)
 {
-  char l[1024 * 4] = {'\0'}, r[1024 * 4] = {'\0'};
-  if (cJSON::cJSON_Compare(expected, actually, l, r) != 0) {
-    if (strlen(l)) {
-      expected = l;
+  char fexp[1024 * 4] = {'\0'}, fact[1024 * 4] = {'\0'};
+  if (cJSON::cJSON_Compare(expected, actually, fexp, fact) != 0) {
+    if (strlen(fexp)) {
+      expected = fexp;
     }
-    if (strlen(r)) {
-      actually = r;
+    if (strlen(fact)) {
+      actually = fact;
     }
-    size_t actually_length = strlen(actually);
-    size_t expected_length = strlen(expected);
+    int actually_length = (int)strlen(actually);
+    int expected_length = (int)strlen(expected);
 
     _vmsg_(&_expected_, "", "");
     _vmsg_(&_actually_, "", "");
 
-    for (size_t i = 0; i < expected_length; i++) {
-      _vmsg_(&_expected_, i <= actually_length && tolower((int) expected[i]) == tolower((int) actually[i]) ? "bold,green" : "bold,red", "%c", expected[i]);
+    for (int i = 0; i < expected_length; i++) {
+      bool c = false;
+      if (expected[i] == '>') {
+        int n = 1;
+        for (int l = i - 1; l >= 0; l--) {if (expected[l] == '>') n++; else break;}
+        for (int r = i + 1; r < expected_length; r++) {if (expected[r] == '>') n++; else break;}
+        c = n == 7;
+      }
+      _vmsg_(&_expected_, c ? "bold,red" : "green", "%c", expected[i]);
     }
-    for (size_t j = 0; j < actually_length; j++) {
-      _vmsg_(&_actually_, j <= expected_length && tolower((int) actually[j]) == tolower((int) expected[j]) ? "bold,green" : "bold,red", "%c", actually[j]);
-    }
+    for (int j = 0; j < actually_length; j++) {
+      bool c = false;
+      if (actually[j] == '<') {
+        int n = 1;
+        for (int l = j - 1; l >= 0; l--) {if (actually[l] == '<') n++; else break;}
+        for (int r = j + 1; r < actually_length; r++) {if (actually[r] == '<') n++; else break;}
+        c = n == 7;
+      }
+      _vmsg_(&_actually_, c ? "bold,red" : "green", "%c", actually[j]);
+    }    
 
     longjmp(__h2unit_jmp_buf, 1);
   }
@@ -2883,13 +2846,13 @@ void h2unit_case::_check_equal_json_(char* expected, char* actually)
 
 void h2unit_case::_check_unequal_json_(char* unexpect, char* actually)
 {
-  char l[1024 * 4] = {'\0'}, r[1024 * 4] = {'\0'};
-  if (cJSON::cJSON_Compare(unexpect, actually, l, r) == 0) {
-    if (strlen(l)) {
-      unexpect = l;
+  char fexp[1024 * 4] = {'\0'}, fact[1024 * 4] = {'\0'};
+  if (cJSON::cJSON_Compare(unexpect, actually, fexp, fact) == 0) {
+    if (strlen(fexp)) {
+      unexpect = fexp;
     }
-    if (strlen(r)) {
-      actually = r;
+    if (strlen(fact)) {
+      actually = fact;
     }
     _vmsg_(&_unexpect_, "bold,red", "%s", unexpect);
     _vmsg_(&_actually_, "bold,red", "%s", actually);
@@ -2942,8 +2905,8 @@ void h2unit_case::_check_equal_memcmp_(unsigned char* expected, unsigned char* a
 {
   if (memcmp(expected, actually, length) != 0) {
     for (int i = 0; i < length; i++) {
-      _vmsg_(&_expected_, expected[i] == actually[i] ? "bold,green" : "bold,red", i % 16 < 8 ? "%02X " : " %02X", expected[i]);
-      _vmsg_(&_actually_, actually[i] == expected[i] ? "bold,green" : "bold,red", i % 16 < 8 ? "%02X " : " %02X", actually[i]);
+      _vmsg_(&_expected_, expected[i] == actually[i] ? "green" : "bold,red", i % 16 < 8 ? "%02X " : " %02X", expected[i]);
+      _vmsg_(&_actually_, actually[i] == expected[i] ? "green" : "bold,red", i % 16 < 8 ? "%02X " : " %02X", actually[i]);
     }
 
     longjmp(__h2unit_jmp_buf, 1);
