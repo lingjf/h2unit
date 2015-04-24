@@ -855,7 +855,7 @@ static cJSON *cJSON_Parse(const char *value)
 }
 
 /* Render a cJSON item/entity/structure to text. */
-static char *cJSON_Print(cJSON *item, char *out) {char *ptr = print_value(item, 0, 1); if (out) {strcpy(out, ptr); free(ptr); return out;} else return ptr;}
+static char *cJSON_Print(cJSON *item) {return print_value(item, 0, 1);}
 
 /* Parser core - when encountering text, process appropriately. */
 static const char *parse_value(cJSON *item, const char *value)
@@ -1219,14 +1219,28 @@ static int __cJSON_Compare(cJSON *cexp, cJSON *cact, int *diffed)
   return cmp;
 }
 
-static int cJSON_Compare(char *sexp, char *sact, char *fexp, char *fact)
+static int cJSON_Compare(char *sexp, char *sact, char **fexp, char **fact)
 {
+  int cmp = -1;
   cJSON *cexp = cJSON_Parse(sexp);
   cJSON *cact = cJSON_Parse(sact);
-  int diffed = 0;
-  int cmp = __cJSON_Compare(cexp, cact, &diffed);
-  if (cexp) {cJSON_Print(cexp, fexp); cJSON_Delete(cexp);}
-  if (cact) {cJSON_Print(cact, fact); cJSON_Delete(cact);}
+  if (cexp && cact) {
+    int diffed = 0;
+    cmp = __cJSON_Compare(cexp, cact, &diffed);
+  }
+
+  if (cexp) {
+    char *t = cJSON_Print(cexp);
+    *fexp = t;
+    cJSON_Delete(cexp);
+  }
+  if (cact) {
+    char *t = cJSON_Print(cact);
+    *fact = t;
+    cJSON_Delete(cact);
+  }
+
+
   return cmp;
 }
 
@@ -2805,13 +2819,13 @@ void h2unit_case::_check_equal_strcmp_nocase_(char* expected, char* actually)
 
 void h2unit_case::_check_equal_json_(char* expected, char* actually)
 {
-  char fexp[1024 * 4] = {'\0'}, fact[1024 * 4] = {'\0'};
-  if (cJSON::cJSON_Compare(expected, actually, fexp, fact) != 0) {
-    if (strlen(fexp)) {
-      expected = fexp;
+  char *l = NULL, *r = NULL;
+  if (cJSON::cJSON_Compare(expected, actually, &l, &r) != 0) {
+    if (l && strlen(l)) {
+      expected = l;
     }
-    if (strlen(fact)) {
-      actually = fact;
+    if (r && strlen(r)) {
+      actually = r;
     }
     int actually_length = (int)strlen(actually);
     int expected_length = (int)strlen(expected);
@@ -2839,6 +2853,8 @@ void h2unit_case::_check_equal_json_(char* expected, char* actually)
       }
       _vmsg_(&_actually_, c ? "bold,red" : "green", "%c", actually[j]);
     }    
+    if (l) free(l);
+    if (r) free(r);
 
     longjmp(__h2unit_jmp_buf, 1);
   }
@@ -2846,16 +2862,19 @@ void h2unit_case::_check_equal_json_(char* expected, char* actually)
 
 void h2unit_case::_check_unequal_json_(char* unexpect, char* actually)
 {
-  char fexp[1024 * 4] = {'\0'}, fact[1024 * 4] = {'\0'};
-  if (cJSON::cJSON_Compare(unexpect, actually, fexp, fact) == 0) {
-    if (strlen(fexp)) {
-      unexpect = fexp;
+  char *l = NULL, *r = NULL;
+  if (cJSON::cJSON_Compare(unexpect, actually, &l, &r) == 0) {
+    if (l && strlen(l)) {
+      unexpect = l;
     }
-    if (strlen(fact)) {
-      actually = fact;
+    if (r && strlen(r)) {
+      actually = r;
     }
     _vmsg_(&_unexpect_, "bold,red", "%s", unexpect);
     _vmsg_(&_actually_, "bold,red", "%s", actually);
+
+    if (l) free(l);
+    if (r) free(r);
 
     longjmp(__h2unit_jmp_buf, 1);
   }
