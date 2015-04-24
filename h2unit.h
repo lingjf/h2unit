@@ -284,7 +284,8 @@ public:
    do {                                                                                                  \
       h2unit_case::_current_->_enter_check_(__FILE__, __LINE__);                                         \
       const char* ti = typeid(native).name();    /* ISO/IEC 14882 C++ Standard Section 5.2.8 */          \
-      if (ti[0] == 'F' || (ti[0] == 'P' && ti[1] == 'F') || strstr(ti, "__cdecl")) {                     \
+      if (ti[0] == 'F' || (ti[0] == 'P' && ti[1] == 'F') ||                                              \
+          strstr(ti, "__cdecl") || strstr(ti, "__stdcall")) {                                            \
          h2unit_case::_current_->_stub_((void*)native, (void*)fake, #native, #fake);                     \
       } else {                                                                                           \
          void* addr = h2unit_case::_current_->_addr_((const char*)native, #native, #fake);               \
