@@ -1502,6 +1502,10 @@ char* h2unit_stub_save(h2unit_stub* stub, void* native)
     sprintf(reason, "mprotect:%s", strerror(errno));
     return reason;
   }
+  if (mprotect((void*) ((unsigned long) (native + sizeof(stub->saved_code)) & (~(pagesize - 1))), pagesize, PROT_READ | PROT_WRITE | PROT_EXEC) != 0) {
+    sprintf(reason, "mprotect:%s", strerror(errno));
+    return reason;
+  }
 #endif
 
   stub->native = native;
