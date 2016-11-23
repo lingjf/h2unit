@@ -1571,12 +1571,12 @@ char *h2unit_stub_save(h2unit_stub *stub, void *native)
         return reason;
     }
 #else
-    int pagesize = sysconf(_SC_PAGE_SIZE);
-    if (mprotect((void *)((unsigned long) native & (~(pagesize - 1))), pagesize, PROT_READ | PROT_WRITE | PROT_EXEC) != 0) {
+    long long pagesize = (long long)sysconf(_SC_PAGE_SIZE);
+    if (mprotect((void *)((unsigned long long) native & (~(pagesize - 1))), pagesize, PROT_READ | PROT_WRITE | PROT_EXEC) != 0) {
         sprintf(reason, "mprotect:%s", strerror(errno));
         return reason;
     }
-    if (mprotect((void *)((unsigned long)(native + sizeof(stub->saved_code)) & (~(pagesize - 1))), pagesize, PROT_READ | PROT_WRITE | PROT_EXEC) != 0) {
+    if (mprotect((void *)(((unsigned long long) native + sizeof(stub->saved_code)) & (~(pagesize - 1))), pagesize, PROT_READ | PROT_WRITE | PROT_EXEC) != 0) {
         sprintf(reason, "mprotect:%s", strerror(errno));
         return reason;
     }
