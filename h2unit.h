@@ -255,30 +255,6 @@ public:
       h2unit_case::_current_->_check_equal_memcmp_((unsigned char*)(expected), (unsigned char*)(actually), (int)(length)); \
    } while(0)
 
-#define H2CATCH_NONE(expressions)                                                                        \
-   do {                                                                                                  \
-      h2unit_case::_current_->_enter_check_(__FILE__, __LINE__);                                         \
-      try {                                                                                              \
-         expressions;                                                                                    \
-      } catch (...) {                                                                                    \
-         h2unit_case::_current_->_check_catch_("throw none", "throw some", "" );                         \
-      }                                                                                                  \
-   } while(0)
-
-#define H2CATCH_THROW(expressions, exceptype)                                                            \
-   do {                                                                                                  \
-      bool catched = false;                                                                              \
-      h2unit_case::_current_->_enter_check_(__FILE__, __LINE__);                                         \
-      try {                                                                                              \
-         expressions;                                                                                    \
-      } catch (exceptype) {                                                                              \
-         catched = true;                                                                                 \
-      } catch (...) {  }                                                                                 \
-      if (!catched) {                                                                                    \
-         h2unit_case::_current_->_check_catch_("throw", "lost", #exceptype);                             \
-      }                                                                                                  \
-   } while(0)
-
 
 #define H2STUB(native, fake)                                                                             \
    do {                                                                                                  \
@@ -367,22 +343,6 @@ extern char* h2unit_strndup(const char* s, size_t n, const char* file, int line)
 #define LocalReAlloc(flag, ptr, size) h2unit_alloc(ptr, size, 1, 0x00, __FILE__, __LINE__)
 #define LocalFree(flag, ptr) h2unit_free(ptr, __FILE__, __LINE__)
 #endif
-
-#if defined(__cplusplus)
-#define private public
-#define protected public
-
-#include <new>
-//void* operator new(size_t, const char*, int);
-//void* operator new[](size_t, const char*, int);
-//void operator delete(void*);
-//void operator delete[](void*);
-//#define new new(__FILE__, __LINE__)
-#endif
-
-#define inline
-#define _inline_
-#define __inline__
 
 extern int h2unit_main(int argc, char** argv);
 

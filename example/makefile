@@ -8,13 +8,11 @@ H2FLAGS +=  -I.. -include h2unit.h
 all :  
 	g++ -Wall -g $(H2FLAGS) -c -o h2unit.o ../h2unit.cpp	
 	gcc -Wall -g $(H2FLAGS) -c -o demo_clanguage.o demo_clanguage.c
-	g++ -Wall -g $(H2FLAGS) -c -o demo_cplusplus.o demo_cplusplus.cpp  
 	g++ -Wall -g $(H2FLAGS) -c -o test_basic.o test_basic.cpp
 	g++ -Wall -g $(H2FLAGS) -c -o test_compare.o test_compare.cpp
 	g++ -Wall -g $(H2FLAGS) -c -o test_dynamic_stub.o test_dynamic_stub.cpp
 	g++ -Wall -g $(H2FLAGS) -c -o test_memory.o test_memory.cpp
-	g++ -Wall -g $(H2FLAGS) -c -o test_exception.o test_exception.cpp
-	g++ -Wall -o a.out h2unit.o demo_clanguage.o demo_cplusplus.o test_basic.o test_compare.o test_dynamic_stub.o test_exception.o test_memory.o 
+	g++ -Wall -o a.out h2unit.o demo_clanguage.o test_basic.o test_compare.o test_dynamic_stub.o test_memory.o 
 	./a.out -v
 	
 # -v : full output

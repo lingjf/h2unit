@@ -1,5 +1,5 @@
 # Introduce
-H2UNIT is a unit test framework for C/C++. [https://github.com/lingjf/h2unit](https://github.com/lingjf/h2unit)
+H2UNIT is a unit test framework for C only. [https://github.com/lingjf/h2unit](https://github.com/lingjf/h2unit)
 
 It should only involve two source files: **h2unit.h** and **h2unit.cpp**.
 
@@ -157,8 +157,6 @@ H2UNIT_CASE("demo dynamic stub")
 }
 ```
 
-C++ class method can also be Dynamic STUBed, please read the example to find the demo code.
-
 The principle of Dynamic STUB is :
 
 Replacing the first several binary code of original function with "JMP" instruction, 
@@ -210,23 +208,8 @@ H2CASE(memory_leak, "test memory faulty injection")
    H2EQ_TRUE(NULL == malloc(11));
 }
 ```
-### 9. Expect C++ exception
-`H2CATCH_THROW(expressions, exceptype)` can be used to expect there is a exception will be thrown out while execute `expressions`.
-```
-H2CASE(Parser, "test catch something")
-{
-   Parser p;
-   H2CATCH_NONE(p.fromInt("8"));
-   H2CATCH_THROW(p.fromInt("-8"), int);
-   H2CATCH_THROW( {
-       p.fromInt("-8"); 
-       p.fromInt("a");
-   } , float);
-}
 
-```
-
-### 10. Color high-lighted console output
+### 9. Color high-lighted console output
 
 
 

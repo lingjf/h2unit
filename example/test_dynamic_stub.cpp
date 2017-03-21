@@ -5,7 +5,6 @@ extern "C" {
 #include "demo_clanguage.h"
 }
 
-#include "demo_cplusplus.h"
 
 /*
  * h2unit can replace function at runtime dynamically.
@@ -143,85 +142,3 @@ H2CASE(mock_with_dynamic_stub, "act mock n call")
       H2EQ_MATH(i + 1 + 3, getSum(i));
    }
 }
-
-H2UNIT(dynamic_stub_in_cpp)
-{
-   void setup() { }
-
-   void teardown() { }
-};
-
-int stub_getResult_1st(int a, double b)
-{
-   return a + 1 + (int) b;
-}
-
-int stub_getResult_2nd(int a, double b)
-{
-   return 0;
-}
-
-H2CASE(dynamic_stub_in_cpp, "stub normal extern function")
-{
-   H2EQ_MATH(2, getResult(1, 1.2));
-   H2STUB(getResult, stub_getResult_1st);
-   H2EQ_MATH(3, getResult(1, 1.2));
-
-   H2STUB("getResult(int, double)", stub_getResult_2nd);
-   H2EQ_MATH(0, getResult(1, 1.2));
-}
-
-int stub_Rect_getEdge(Rect * thus)
-{
-   return 4;
-}
-
-H2CASE(dynamic_stub_in_cpp, "stub normal class member function")
-{
-   Rect rect(1, 3);
-
-   H2EQ_MATH(0, rect.getEdge());
-   H2STUB("Rect::getEdge(int)", stub_Rect_getEdge);
-   H2EQ_MATH(4, rect.getEdge());
-}
-
-double stub_Rect_getArea(Circle * thus)
-{
-   return 999.0;
-}
-
-double stub_Circle_getArea(Circle * thus)
-{
-   return 2 * 3.14 * thus->m_radius * thus->m_radius;
-}
-
-H2CASE(dynamic_stub_in_cpp, "stub virtual class member function")
-{
-   Rect rect(2, 3);
-   H2EQ_MATH(6, rect.getArea());
-   H2STUB("Rect::getArea()", stub_Rect_getArea);
-   H2EQ_MATH(999.0, rect.getArea());
-
-   Circle cc(3);
-   H2EQ_MATH(-1, cc.getArea());
-   H2STUB("Circle::getArea()", stub_Circle_getArea);
-   H2EQ_MATH(56.52, cc.getArea());
-}
-
-void stub_Circle_enLarge(Circle * thus, int d)
-{
-   thus->m_radius += d / 2;
-}
-
-H2CASE(dynamic_stub_in_cpp, "stub modify class object")
-{
-   Circle cc(1);
-   H2EQ_STRCMP("Circle(1)", cc.toString());
-   cc.enLarge(1);
-   H2EQ_STRCMP("Circle(2)", cc.toString());
-
-   H2STUB("Circle::enLarge(int)", stub_Circle_enLarge);
-   cc.enLarge(2);
-   H2EQ_STRCMP("Circle(3)", cc.toString());
-}
-
