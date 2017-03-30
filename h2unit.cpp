@@ -3088,25 +3088,6 @@ char *h2unit_strndup(const char *s, size_t n, const char *file, int line)
     return (char *)(b ? b->ptr : NULL);
 }
 
-void *operator new(size_t size, const char *file, int line)
-{
-    return h2unit_alloc(NULL, size, 4, 0x0, file, line);
-}
-
-void *operator new[](size_t size, const char *file, int line)
-{
-    return h2unit_alloc(NULL, size, 4, 0x0, file, line);
-}
-
-void operator delete(void *object)
-{
-    h2unit_free(object, "", 0);
-}
-
-void operator delete[](void *object)
-{
-    h2unit_free(object, "", 0);
-}
 
 
 int h2unit_main(int argc, char **argv)
