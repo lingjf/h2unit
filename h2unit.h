@@ -1,5 +1,6 @@
 /* https://github.com/lingjf/h2unit */
 /* Jeff Ling , lingjf@gmail.com */
+/* v2.0 */
 
 #ifndef ___H2UNIT_H___
 #define ___H2UNIT_H___
