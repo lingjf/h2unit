@@ -5,7 +5,7 @@
  * All header file for c language MUST be include : in extern "C" { }
  */
 extern "C" {
-#include "demo_clanguage.h"
+#include "product_c.h"
 }
 
 int gv;
@@ -13,8 +13,7 @@ int gv;
 /*
  * H2UNIT is a unit test Suite, which contains several test cases.
  */
-H2UNIT(hello_unit)
-{
+H2UNIT (Basic) {
    /*
     * This variable is accessible in the test cases belong this unit.
     */
@@ -51,39 +50,36 @@ H2UNIT(hello_unit)
 /*
  * H2CASE is a unit test case
  */
-H2CASE(hello_unit, "hello case")
+H2CASE(Basic, hello case)
 {
-   H2EQ_TRUE(2 == uv);
+   H2EQ(2, uv);
 }
 
-H2CASE(hello_unit, "a failure case")
+H2CASE(Basic, a failure case)
 {
-   H2EQ_TRUE(1 == gv);
+   H2EQ(1, gv);
 }
 
-H2CASE(hello_unit, "a success case")
+H2CASE(Basic, a success case)
 {
-   H2EQ_TRUE(3 == plusOne());
+   H2EQ(3 == plusOne());
 }
 
-
-
-H2UNIT(the_2nd_unit)
-{
-  /*
+H2UNIT (Second) {
+   /*
    * setup() and teardown() can be omitted. The default is doing nothing
    */
 };
 
-H2CASE(the_2nd_unit, "0 is equal with -0")
+H2CASE(Second, 0 is equal with - 0)
 {
    bool result = 0 != -0;
-   H2EQ_TRUE(!result);
+   H2EQ(result);
 }
 
-H2TODO(the_2nd_unit, "alive for ever")
+H2TODO(Second, alive for ever)
 {
-   H2EQ_TRUE(false);
+   H2EQ(false);
 }
 
 /*
@@ -91,13 +87,13 @@ H2TODO(the_2nd_unit, "alive for ever")
  * H2UNIT_CASE act H2UNIT plus H2CASE.
  */
 
-H2UNIT_CASE("0 is equal with -0")
+H2UNIT_CASE(0 is equal with - 0)
 {
    bool result = 0 != -0;
-   H2EQ_TRUE(!result);
+   H2EQ(!result);
 }
 
-H2UNIT_TODO("alive for ever")
+H2UNIT_TODO(alive for ever)
 {
-   H2EQ_TRUE(false);
+   H2EQ(false);
 }

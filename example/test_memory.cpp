@@ -2,8 +2,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-
-
 /*
  * h2unit can detect memory leak which is allocated by:
  *
@@ -14,47 +12,61 @@
  * -- strndup
  * -- memalign
  * -- posix_memalign
+ * -- aligned_alloc
  * -- CoTaskMemAlloc/CoTaskMemRealloc
  * -- GlobalAlloc
  * -- HeapAlloc/HeapReAlloc
  * -- LocalAlloc/LocalReAlloc
- * ?? brk/sbrk not support
- * ?? mmap/mnumap not support
- * ?? VirtualAlloc not support
  */
 
-H2UNIT(memory_leak)
-{
-   void setup() { }
-   void teardown() { }
+extern "C" {
+#include "product_c.h"
+}
+
+H2UNIT (memory_leak) {
+   void setup() {}
+   void teardown() {}
 };
 
 /*
  * Memory leak detection on Test Case Level
  */
-H2CASE(memory_leak, "test memory leak")
+H2CASE(memory_leak, test memory leak ok)
 {
+   free(malloc(8));
 }
 
+H2CASE(memory_leak, test memory leak)
+{
+   char* s = (char*)malloc(8);
+   strcpy(s, "1234567");
+
+   for (int i = 0; i < 3; i++) {
+      create_point(1, i);
+   }
+}
 
 /*
  * Memory leak detection on User-Defined Block Level
  */
-H2CASE(memory_leak, "test memory leak block")
+H2CASE(memory_leak, test memory leak block)
 {
-   void * c1, * c2, * c3, * c4;
+   void *c1, *c2, *c3, *c4;
 
    c1 = malloc(1);
 
-   H2LEAK_BLOCK() {
+   H2BLOCK()
+   {
       c2 = malloc(3);
       free(c2);
    }
 
-   H2LEAK_BLOCK() {
+   H2BLOCK()
+   {
       c3 = malloc(5);
       free(c3);
-      H2LEAK_BLOCK() {
+      H2BLOCK()
+      {
          c4 = malloc(7);
       }
    }
@@ -67,13 +79,27 @@ H2CASE(memory_leak, "test memory leak block")
  * h2unit can modify the total memory resource to make malloc() failed.
  */
 
-H2CASE(memory_leak, "test memory faulty injection")
+H2CASE(memory_leak, malloc faulty injection)
 {
-   H2_FAULTY_INJECT_MEMORY(10);
-   H2EQ_TRUE(NULL == malloc(11));
+   H2BLOCK(10 /* in the block , available memory only 10 bytes */)
+   {
+      H2EQ(NULL == malloc(11)); /* no enough available memory */
+   }
 }
 
+/*
+ * h2unit can modify fill of malloc.
+ */
 
+H2CASE(memory_leak, filled malloc)
+{
+   H2BLOCK(10000000, "ABC" /* in the block , malloc allocated space filled with ABC */)
+   {
+      char* p = (char*)malloc(9); /* no enough available memory */
+      H2EQ(Me("ABCABCABC"), p);
+      free(p);
+   }
+}
 
 /*
  * h2unit can detect out-of-bound access.
@@ -84,23 +110,14 @@ H2CASE(memory_leak, "test memory faulty injection")
  *
  */
 
-H2UNIT(memory_out_of_bound)
-{
-   void setup() { }
-   void teardown() { }
+H2UNIT (memory_out_of_bound) {
+   void setup() {}
+   void teardown() {}
 };
 
-H2CASE(memory_out_of_bound, "test memory overflow")
+H2CASE(memory_out_of_bound, test memory overflow)
 {
-   char * c1 = (char *) malloc(6);
+   char* c1 = (char*)malloc(6);
    memcpy(c1, "1234567", 7);
    free(c1);
 }
-
-H2CASE(memory_out_of_bound, "test memory underflow")
-{
-   char * c2 = (char *) malloc(6);
-   memcpy(c2 - 2, "123456", 6);
-   free(c2);
-}
-

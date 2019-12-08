@@ -1,0 +1,209 @@
+#ifndef ___H2_TOOL__H___
+#define ___H2_TOOL__H___
+
+/*
+ *  https://github.com/lingjf/variadic/blob/master/macro.h
+ */
+
+/* This was inspired by BOOST's PP_CAT macro. Using such a thing avoids
+   to define multiple levels of expansion for each macro. */
+
+#define H2_PP_X0()
+#define H2_PP_X1(_1) _1
+
+#define H2_PP_CAT2(_1, _2) _H2_PP_CAT2(_1, _2)
+#define _H2_PP_CAT2(_1, _2) _1##_2
+
+#define H2_PP_STRINGIZE(...) _H2_PP_STRINGIZE(__VA_ARGS__)
+#define _H2_PP_STRINGIZE(...) #__VA_ARGS__
+
+#define H2_PP_REMOVE_PARENTHESES(...) _H2_PP_REMOVE_PARENTHESES __VA_ARGS__
+#define _H2_PP_REMOVE_PARENTHESES(...) __VA_ARGS__
+
+#define H2_PP_IF(_Cond, _Then, _Else) H2_PP_CAT2(_H2_PP_IF_, _Cond) \
+(_Then, _Else)
+#define _H2_PP_IF_1(_Then, _Else) _Then
+#define _H2_PP_IF_0(_Then, _Else) _Else
+
+#define _H2_PP_NARGS(...) _H2_PP_INTERNAL_16TH(__VA_ARGS__, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1)
+#define _H2_PP_HAS_COMMA(...) _H2_PP_INTERNAL_16TH(__VA_ARGS__, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0)
+#define _H2_PP_INTERNAL_16TH(_1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, ...) _16
+#define _H2_PP_COMMA(...) ,
+
+#define H2_PP_0ARGS(...) _H2_PP_0ARGS(_H2_PP_HAS_COMMA(__VA_ARGS__),              \
+                                      _H2_PP_HAS_COMMA(_H2_PP_COMMA __VA_ARGS__), \
+                                      _H2_PP_HAS_COMMA(__VA_ARGS__()),            \
+                                      _H2_PP_HAS_COMMA(_H2_PP_COMMA __VA_ARGS__()))
+
+#define _H2_PP_INTERNAL_CAT5(_1, _2, _3, _4, _5) _1##_2##_3##_4##_5
+#define _H2_PP_0ARGS(_1, _2, _3, _4) _H2_PP_HAS_COMMA(_H2_PP_INTERNAL_CAT5(_H2_PP_0ARGS_CASE_, _1, _2, _3, _4))
+
+#define _H2_PP_0ARGS_CASE_0000 _H2_PP_0ARGS_CASE_0000
+#define _H2_PP_0ARGS_CASE_0001 ,
+#define _H2_PP_0ARGS_CASE_0010 _H2_PP_0ARGS_CASE_0010
+#define _H2_PP_0ARGS_CASE_0011 _H2_PP_0ARGS_CASE_0011
+#define _H2_PP_0ARGS_CASE_0100 _H2_PP_0ARGS_CASE_0100
+#define _H2_PP_0ARGS_CASE_0101 _H2_PP_0ARGS_CASE_0101
+#define _H2_PP_0ARGS_CASE_0110 _H2_PP_0ARGS_CASE_0110
+#define _H2_PP_0ARGS_CASE_0111 _H2_PP_0ARGS_CASE_0111
+#define _H2_PP_0ARGS_CASE_1000 _H2_PP_0ARGS_CASE_1000
+#define _H2_PP_0ARGS_CASE_1001 _H2_PP_0ARGS_CASE_1001
+#define _H2_PP_0ARGS_CASE_1010 _H2_PP_0ARGS_CASE_1010
+#define _H2_PP_0ARGS_CASE_1011 _H2_PP_0ARGS_CASE_1011
+#define _H2_PP_0ARGS_CASE_1100 _H2_PP_0ARGS_CASE_1100
+#define _H2_PP_0ARGS_CASE_1101 _H2_PP_0ARGS_CASE_1101
+#define _H2_PP_0ARGS_CASE_1110 _H2_PP_0ARGS_CASE_1110
+#define _H2_PP_0ARGS_CASE_1111 _H2_PP_0ARGS_CASE_1111
+
+#define H2_PP_NARGS(...) H2_PP_IF(H2_PP_0ARGS(__VA_ARGS__), 0, _H2_PP_NARGS(__VA_ARGS__))
+
+#define H2_PP_VARIADIC_CALL(_Macro, ...) H2_PP_X1(H2_PP_CAT2(_Macro, H2_PP_NARGS(__VA_ARGS__))(__VA_ARGS__))
+
+#define H2_PP_CAT(...) H2_PP_VARIADIC_CALL(_H2_PP_CAT_, __VA_ARGS__)
+#define _H2_PP_CAT_2(_1, _2) H2_PP_CAT2(_1, _2)
+#define _H2_PP_CAT_3(_1, _2, _3) H2_PP_CAT2(_H2_PP_CAT_2(_1, _2), _3)
+#define _H2_PP_CAT_4(_1, _2, _3, _4) H2_PP_CAT2(_H2_PP_CAT_3(_1, _2, _3), _4)
+#define _H2_PP_CAT_5(_1, _2, _3, _4, _5) H2_PP_CAT2(_H2_PP_CAT_4(_1, _2, _3, _4), _5)
+#define _H2_PP_CAT_6(_1, _2, _3, _4, _5, _6) H2_PP_CAT2(_H2_PP_CAT_5(_1, _2, _3, _4, _5), _6)
+#define _H2_PP_CAT_7(_1, _2, _3, _4, _5, _6, _7) H2_PP_CAT2(_H2_PP_CAT_6(_1, _2, _3, _4, _5, _6), _7)
+#define _H2_PP_CAT_8(_1, _2, _3, _4, _5, _6, _7, _8) H2_PP_CAT2(_H2_PP_CAT_7(_1, _2, _3, _4, _5, _6, _7), _8)
+#define _H2_PP_CAT_9(_1, _2, _3, _4, _5, _6, _7, _8, _9) H2_PP_CAT2(_H2_PP_CAT_8(_1, _2, _3, _4, _5, _6, _7, _8), _9)
+
+// H2_ALIGN_UP(15, 8) == 16
+#define H2_ALIGN_UP(n, s) (((n) + (s)-1) / (s) * (s))
+// H2_DIV_ROUND_UP(15, 8) == 2
+#define H2_DIV_ROUND_UP(n, s) (((n) + (s)-1) / (s))
+#define H2_ARRAY_COUNTOF(a) ((int)(sizeof(a) / sizeof((a)[0])))
+
+static inline bool h2_wildcard_match(const char* pattern, const char* subject)
+{
+   const char *scur = subject, *pcur = pattern;
+   const char *sstar = nullptr, *pstar = nullptr;
+   while (*scur) {
+      if (*scur == *pcur || *pcur == '?') {
+         ++scur;
+         ++pcur;
+      }
+      else if (*pcur == '*') {
+         pstar = pcur++;
+         sstar = scur;
+      }
+      else if (pstar) {
+         pcur = pstar + 1;
+         scur = ++sstar;
+      }
+      else
+         return false;
+   }
+   while (*pcur == '*') ++pcur;
+   return !*pcur;
+}
+
+#ifdef _WIN32
+#   include <windows.h>
+static inline long h2_milliseconds()
+{
+   return timeGetTime() / 1000;
+}
+
+#   pragma warning(disable : 4267)
+#   pragma warning(disable : 4311)
+#   pragma warning(disable : 4800)
+
+#else
+static inline long h2_milliseconds()
+{
+   struct timeval tv;
+   gettimeofday(&tv, NULL);
+   return tv.tv_sec * 1000 + tv.tv_usec / 1000;
+}
+#endif
+
+static inline const char* h2_style(const char* style_str, char* style_abi)
+{
+   static struct
+   {
+      const char* name;
+      const char* value;
+   } K[] = {
+     // normal style
+     {"reset", "0;"},
+     {"bold", "1;"},
+     {"italics", "3;"},
+     {"underline", "4;"},
+     {"inverse", "7;"},
+     {"strikethrough", "9;"},
+     // foreground color
+     {"black", "30;"},
+     {"red", "31;"},
+     {"green", "32;"},
+     {"yellow", "33;"},
+     {"blue", "34;"},
+     {"purple", "35;"},
+     {"cyan", "36;"},
+     {"gray", "37;"},
+     {"default", "39;"},
+     {"dark gray", "90;"},
+     {"light red", "91;"},
+     {"light green", "92;"},
+     {"light yellow", "93;"},
+     {"light blue", "94;"},
+     {"light purple", "95;"},
+     {"light cyan", "96;"},
+     {"white", "97;"},
+     // background color
+     {"bg_black", "40;"},
+     {"bg_red", "41;"},
+     {"bg_green", "42;"},
+     {"bg_yellow", "43;"},
+     {"bg_blue", "44;"},
+     {"bg_purple", "45;"},
+     {"bg_cyan", "46;"},
+     {"bg_white", "47;"},
+     {"bg_default", "49;"}};
+
+   char __style_str[1024];
+   strcpy(__style_str, style_str);
+
+   strcpy(style_abi, "\033[");
+
+   for (char* opt = strtok(__style_str, ","); opt; opt = strtok(NULL, ",")) {
+      for (int i = 0; i < H2_ARRAY_COUNTOF(K); i++) {
+         if (strcmp(K[i].name, opt) == 0) {
+            strcat(style_abi, K[i].value);
+            break;
+         }
+      }
+   }
+
+   style_abi[strlen(style_abi) - 1] = 'm';
+
+   return style_abi;
+}
+
+static inline const char* h2_acronym_string(const char* full, int atmost = 10)
+{
+   static char buffer[32];
+   strncpy(buffer, full, atmost);
+   strcpy(buffer + atmost, "...");
+   return buffer;
+}
+
+static inline const char* h2_center_string(const char* str, int width, char* t)
+{
+   int slen = strlen(str);
+   char* p = t;
+   for (int i = 0; i < (width - slen) / 2; i++) {
+      *p++ = ' ';
+   }
+   strcpy(p, str);
+   p += slen;
+
+   for (; p < t + width; p++) {
+      *p = ' ';
+   }
+   *p = '\0';
+   return t;
+}
+
+#endif

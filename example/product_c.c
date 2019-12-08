@@ -4,7 +4,7 @@
 #include <stdarg.h>
 #include <string.h>
 
-#include "demo_clanguage.h"
+#include "product_c.h"
 
 int getEven(int var)
 {
@@ -13,30 +13,37 @@ int getEven(int var)
 
 double getCeil(double var)
 {
-   return (double) ((int) var);
+   return (double)((int)var);
 }
 
-char* Point_toString(Point* point)
+Point* create_point(int x, int y)
+{
+   Point* p = (Point*)malloc(sizeof(Point));
+   p->x = x;
+   p->y = y;
+   return p;
+}
+
+const char* Point_toString(Point* point)
 {
    static char buffer[1024];
    sprintf(buffer, "Point(%d, %d)", point->x, point->y);
    return buffer;
 }
 
-char* Point_tojson(Point* point)
+const char* Point_tojson(Point* point)
 {
    static char buffer[1024];
    sprintf(buffer, "{\"x\": %d, \"y\": %d}", point->x, point->y);
    return buffer;
 }
 
-
 int orig_foo(int a)
 {
    return a;
 }
 
-static int orig_bar(int b)
+int orig_bar(int b)
 {
    return b + 1;
 }
