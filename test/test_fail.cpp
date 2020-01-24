@@ -1,11 +1,3 @@
 #include "../source/h2_unit.h"
 
-H2UNIT (h2_fail) {
-   void setup()
-   {
-   }
-
-   void teardown()
-   {
-   }
-};
+CASE(fail) {}  // stay in line 3 to check TEST macro is works

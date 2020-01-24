@@ -3,68 +3,60 @@
 #include <stdlib.h>
 #include <stdarg.h>
 #include <string.h>
+#include <math.h>
 
 #include "product_c.h"
 
-int getEven(int var)
+
+rectangle_t* rectangle_create(int width, int height)
 {
-   return var & (~1);
+   rectangle_t* rectangle = (rectangle_t*)malloc(sizeof(rectangle_t));
+   if (rectangle == NULL) return NULL;
+
+   rectangle->width = width;
+   rectangle->height = height;
+   return rectangle;
 }
 
-double getCeil(double var)
+void rectangle_destroy(rectangle_t* rectangle)
 {
-   return (double)((int)var);
+   if (rectangle != NULL) free(rectangle);
 }
 
-Point* create_point(int x, int y)
+int rectangle_area(rectangle_t* rectangle)
 {
-   Point* p = (Point*)malloc(sizeof(Point));
-   p->x = x;
-   p->y = y;
-   return p;
+   return rectangle->width * rectangle->height;
 }
 
-const char* Point_toString(Point* point)
+double rectangle_diag(rectangle_t* rectangle)
+{
+   return sqrt(rectangle->width * rectangle->width + rectangle->height * rectangle->height);
+}
+
+const char* rectangle_tostring(rectangle_t* rectangle)
 {
    static char buffer[1024];
-   sprintf(buffer, "Point(%d, %d)", point->x, point->y);
+   sprintf(buffer, "Rect(%d, %d)", rectangle->width, rectangle->height);
    return buffer;
 }
 
-const char* Point_tojson(Point* point)
+const char* rectangle_tojson(rectangle_t* rectangle)
 {
    static char buffer[1024];
-   sprintf(buffer, "{\"x\": %d, \"y\": %d}", point->x, point->y);
+   sprintf(buffer, "{\"width\": %d, \"height\": %d}", rectangle->width, rectangle->height);
    return buffer;
 }
 
-int orig_foo(int a)
+int sum_rectangle_area(int count, ...)
 {
-   return a;
-}
+   int s = 0;
+   va_list a;
+   va_start(a, count);
+   for (int i = 0; i < count; ++i) {
+      rectangle_t* p = va_arg(a, rectangle_t*);
+      s += rectangle_area(p);
+   }
+   va_end(a);
 
-int orig_bar(int b)
-{
-   return b + 1;
-}
-
-char* orig_varg(const char* format, ...)
-{
-   static char t[1024 * 8];
-   va_list args;
-   va_start(args, format);
-
-   vsprintf(t, format, args);
-   va_end(args);
-   return t;
-}
-
-int getSum(int x)
-{
-   return orig_foo(x) + orig_bar(x);
-}
-
-int isLegal(const char* str)
-{
-   return atoi(str);
+   return s;
 }

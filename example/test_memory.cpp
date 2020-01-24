@@ -23,82 +23,99 @@ extern "C" {
 #include "product_c.h"
 }
 
-H2UNIT (memory_leak) {
-   void setup() {}
-   void teardown() {}
-};
+#include "product_cpp.h"
 
-/*
- * Memory leak detection on Test Case Level
- */
-H2CASE(memory_leak, test memory leak ok)
+SUITE(Memory Leak)
 {
-   free(malloc(8));
-}
+   Setup(){};
+   Teardown(){};
 
-H2CASE(memory_leak, test memory leak)
-{
-   char* s = (char*)malloc(8);
-   strcpy(s, "1234567");
-
-   for (int i = 0; i < 3; i++) {
-      create_point(1, i);
-   }
-}
-
-/*
- * Memory leak detection on User-Defined Block Level
- */
-H2CASE(memory_leak, test memory leak block)
-{
-   void *c1, *c2, *c3, *c4;
-
-   c1 = malloc(1);
-
-   H2BLOCK()
+   /*
+    * Memory leak detection on Test Case Level
+    */
+   Case(test memory leak ok-- successful)
    {
-      c2 = malloc(3);
-      free(c2);
-   }
+      free(malloc(8));
+   };
 
-   H2BLOCK()
+   Case(test memory leak-- failure)
    {
-      c3 = malloc(5);
-      free(c3);
-      H2BLOCK()
-      {
-         c4 = malloc(7);
+      char* s = (char*)malloc(8);
+      strcpy(s, "1234567");
+
+      rectangle_t* rectangle;
+      for (int i = 0; i < 3; i++) {
+         rectangle = rectangle_create(1, i);
       }
-   }
+      rectangle_destroy(rectangle);
+   };
 
-   free(c4);
-   free(c1);
-}
-
-/*
- * h2unit can modify the total memory resource to make malloc() failed.
- */
-
-H2CASE(memory_leak, malloc faulty injection)
-{
-   H2BLOCK(10 /* in the block , available memory only 10 bytes */)
+   Case(C++ new delete --failure)
    {
-      H2EQ(NULL == malloc(11)); /* no enough available memory */
-   }
-}
+      Dog* dog = new Dog(3);
+      delete dog;
 
-/*
- * h2unit can modify fill of malloc.
- */
+      Bird* bird = new Bird;
+      bird->say();
+   };
 
-H2CASE(memory_leak, filled malloc)
-{
-   H2BLOCK(10000000, "ABC" /* in the block , malloc allocated space filled with ABC */)
+   /*
+    * Memory leak detection on User-Defined Block Level
+    */
+   Case(test memory leak block-- failure)
    {
-      char* p = (char*)malloc(9); /* no enough available memory */
-      H2EQ(Me("ABCABCABC"), p);
-      free(p);
-   }
+      void *c1, *c2, *c3, *c4;
+
+      c1 = malloc(1);
+
+      BLOCK()
+      {
+         c2 = malloc(3);
+         free(c2);
+      }
+
+      BLOCK()
+      {
+         c3 = malloc(5);
+         free(c3);
+         BLOCK()
+         {
+            c4 = malloc(7);
+         }
+      }
+
+      free(c4);
+      free(c1);
+   };
+   /* clang-format off */
+
+   /*
+    * h2unit can modify the total memory resource to make malloc() failed.
+    */
+
+   Case(malloc faulty injection -- successful)
+   {
+      BLOCK(10/* in the block , available memory only 10 bytes */) 
+      {
+        OK(Null(), malloc(11)); /* no enough available memory */
+      }
+   };
+
+   /*
+   * h2unit can modify fill of malloc.
+   */
+
+   Case(filled malloc -- successful)
+   {
+      BLOCK(10000000, "ABC" /* in the block , malloc allocated space filled with ABC */)
+      {
+         char* p = (char*)malloc(8);
+         OK(Me("ABCABCAB"), p);
+         free(p);
+      }
+   };
+
+/* clang-format on */
 }
 
 /*
@@ -110,14 +127,23 @@ H2CASE(memory_leak, filled malloc)
  *
  */
 
-H2UNIT (memory_out_of_bound) {
-   void setup() {}
-   void teardown() {}
-};
-
-H2CASE(memory_out_of_bound, test memory overflow)
+CASE(test memory underflow-- failure)
 {
    char* c1 = (char*)malloc(6);
-   memcpy(c1, "1234567", 7);
+   memcpy(c1 - 5, "123", 3);
    free(c1);
+}
+
+CASE(test memory overflow-- failure)
+{
+   char* c1 = (char*)malloc(6);
+   memcpy(c1, "12345678901234567890123456789012345678901234567890", 50);
+   free(c1);
+}
+
+CASE(test double free-- failure)
+{
+   rectangle_t* p = rectangle_create(1, 2);
+   rectangle_destroy(p);
+   rectangle_destroy(p);
 }

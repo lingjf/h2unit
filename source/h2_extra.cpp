@@ -1,24 +1,13 @@
 
-#ifndef ___H2_EXTRA__H___
-#define ___H2_EXTRA__H___
-
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netdb.h>
-#include <arpa/inet.h>
-
-struct h2extra
-{
-   static struct sockaddr* get_sockaddrs()
-   {
-      static struct sockaddr sockaddrs[100] = {{0}};
+struct h2_extra {
+   static struct sockaddr_storage* get_sockaddrs() {
+      static struct sockaddr_storage sockaddrs[100] = {{0}};
       return sockaddrs;
    }
 
-   static int getaddrinfo(const char* hostname, const char* servname, const struct addrinfo* hints, struct addrinfo** res)
-   {
+   static int getaddrinfo(const char* hostname, const char* servname, const struct addrinfo* hints, struct addrinfo** res) {
       static struct addrinfo addrinfos[100];
-      struct sockaddr* sockaddrs = get_sockaddrs();
+      struct sockaddr_storage* sockaddrs = get_sockaddrs();
 
       struct addrinfo** pp = res;
 
@@ -29,7 +18,7 @@ struct h2extra
          }
 
          struct addrinfo* a = &addrinfos[i];
-         a->ai_addr = &sockaddrs[i];
+         a->ai_addr = (struct sockaddr*)&sockaddrs[i];
          a->ai_addrlen = sizeof(struct sockaddr_in);
          a->ai_family = AF_INET;
          a->ai_socktype = SOCK_STREAM;
@@ -48,37 +37,49 @@ struct h2extra
       return 0;
    }
 
-   static void freeaddrinfo(struct addrinfo* ai)
-   {
-   }
+   static void freeaddrinfo(struct addrinfo* ai) {}
 
-   static struct hostent* gethostbyname(const char* name)
-   {
-      static char* h_aliases[1] = {NULL};
+   static struct hostent* gethostbyname(const char* name) {
+      static char* h_aliases[1] = {0};
       static char* h_addr_list[100];
       static struct hostent h;
       h.h_name = (char*)name;
       h.h_addrtype = AF_INET;
       h.h_aliases = h_aliases;
       h.h_addr_list = h_addr_list;
-      // h.h_length
 
-      struct sockaddr* sockaddrs = get_sockaddrs();
+      struct sockaddr_storage* sockaddrs = get_sockaddrs();
       for (int i = 0; i < 100; ++i) {
          struct sockaddr_in* b = (struct sockaddr_in*)&sockaddrs[i];
-         if (0 == b->sin_addr.s_addr) {
-            break;
-         }
-         // h_addr_list[i] = (char *)b->sin_addr.s_addr;
+         if (0 == b->sin_addr.s_addr) break;
+         h_addr_list[i] = (char*)&b->sin_addr.s_addr;
       }
 
       return &h;
    }
+
+   /* clang-format off */
+   static h2_extra& I() { static h2_extra I; return I; }
+   /* clang-format on */
+
+   h2_extra() : getaddrinfo_stub((void*)::getaddrinfo), freeaddrinfo_stub((void*)::freeaddrinfo) {}
+
+   h2_stub getaddrinfo_stub;
+   h2_stub freeaddrinfo_stub;
+
+   void dohook() {
+      getaddrinfo_stub.replace((void*)h2_extra::getaddrinfo);
+      freeaddrinfo_stub.replace((void*)h2_extra::freeaddrinfo);
+   }
+
+   void unhook() {
+      getaddrinfo_stub.restore();
+      freeaddrinfo_stub.restore();
+   }
 };
 
-static inline void h2_set_addrinfo(int count, ...)
-{
-   struct sockaddr* sockaddrs = h2extra::get_sockaddrs();
+static inline void addrinfos(int count, ...) {
+   struct sockaddr_storage* sockaddrs = h2_extra::get_sockaddrs();
 
    int i = 0;
    va_list a;
@@ -86,7 +87,7 @@ static inline void h2_set_addrinfo(int count, ...)
    for (; i < count; ++i) {
       const char* p = va_arg(a, const char*);
       struct sockaddr_in* b = (struct sockaddr_in*)&sockaddrs[i];
-      //b->sin_len = sizeof(struct sockaddr_in);
+      memset(b, 0, sizeof(struct sockaddr_in));
       b->sin_family = AF_INET;
       b->sin_addr.s_addr = inet_addr(p);
    }
@@ -95,6 +96,4 @@ static inline void h2_set_addrinfo(int count, ...)
    memset(&sockaddrs[i], 0, sizeof(struct sockaddr));
 }
 
-#define H2DNS(...) h2_set_addrinfo(H2_PP_NARGS(__VA_ARGS__), __VA_ARGS__)
-
-#endif
+#define H2DNS(...) h2::addrinfos(H2PP_NARGS(__VA_ARGS__), __VA_ARGS__)

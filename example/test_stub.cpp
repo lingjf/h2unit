@@ -1,5 +1,6 @@
 #include "h2unit.h"
 #include <stdlib.h>
+#include <math.h>
 
 extern "C" {
 #include "product_c.h"
@@ -11,185 +12,117 @@ extern "C" {
  * h2unit can replace function at runtime dynamically.
  * Which this feature, it is helpful to stub functions.
  *
- * H2STUB(function_pointer, new_function)
+ * STUB(function_pointer, new_function)
  *
  */
 
-H2UNIT (stub_in_c) {
-   void setup() {}
-
-   void teardown() {}
-};
-
-int stub_foo1(int a)
+static int rectangle_area_fake(rectangle_t* rectangle)
 {
-   return a + 1;
-}
-int stub_foo2(int a)
-{
-   return a + 2;
-}
-int stub_foo3(int a)
-{
-   return a + 3;
+   return 100;
 }
 
-H2CASE(stub_in_c, stub local extern function)
+static int sum_rectangle_area_fake(int count, ...)
 {
-   H2EQ(1, getSum(0));
-   H2STUB(orig_foo, stub_foo1);
-   H2EQ(2, getSum(0));
+   return 300;
 }
 
-int stub_bar(int b)
+SUITE(Stub function by fake function)
 {
-   return b + 2;
-}
-H2CASE(stub_in_c, stub local static function)
-{
-   H2EQ(1, getSum(0));
-   H2STUB(orig_bar, stub_bar);
-   H2EQ(2, getSum(0));
-}
-
-int stub_atoi(const char* s)
-{
-   return 1;
-}
-
-H2CASE(stub_in_c, stub dynamic libc function)
-{
-   H2EQ(0, isLegal("0"));
-   H2STUB(atoi, stub_atoi);
-   H2EQ(1, isLegal("0"));
-}
-
-char* stub_varg(const char* format, ...)
-{
-   return (char*)"h2unit hello";
-}
-
-H2CASE(stub_in_c, stub variable arguments function)
-{
-   H2EQ((char*)"hello h2unit", orig_varg("hello %s", "h2unit"));
-   H2STUB(orig_varg, stub_varg);
-   H2EQ((char*)"h2unit hello", orig_varg("hello %s", "h2unit"));
-}
-
-H2UNIT (check_with_stub) {
-   void setup() {}
-   void teardown() {}
-};
-
-int stub_foo_mock1(int a)
-{
-   H2EQ(1, a); /* check the input parameter */
-   return 5;   /* return wanted return value */
-}
-
-H2CASE(check_with_stub, act mock)
-{
-   H2STUB(orig_foo, stub_foo_mock1);
-   H2EQ(7, getSum(1));
-   H2EQ(8, getSum(2));
-}
-
-int stub_foo_mock2(int a)
-{
-   static int call_seq = 0;
-   call_seq++;
-
-   if (call_seq == 1) {
-      H2EQ(1, a); /* check the input parameter */
-      return 1;   /* return wanted return value */
-   }
-   else if (call_seq == 2) {
-      H2EQ(2, a); /* check the input parameter */
-      return 2;   /* return wanted return value */
-   }
-   else {
-      H2EQ(call_seq, a); /* check the input parameter */
-      return 3;          /* return wanted return value */
-   }
-
-   return 0;
-}
-
-H2CASE(check_with_stub, act mock n call)
-{
-   H2STUB(orig_foo, stub_foo_mock2);
-   H2EQ(3, getSum(1));
-   H2EQ(5, getSum(2));
-
-   for (int i = 3; i < 10; i++) {
-      H2EQ(i + 1 + 3, getSum(i));
-   }
-}
-
-H2UNIT (Stub_Member) {
-   void setup()
+   Case(stub local extern function-- successful)
    {
-   }
-
-   void teardown()
-   {
-   }
-};
-
-H2CASE(Stub_Member, normal member function)
-{
-   H2STUB(int, Dog, go, (int x, int y))
-   {
-      H2EQ(1, x);
-      H2EQ(2, y);
-      return 11;
-   };
-   H2STUB(void, Dog, run, ())
-   {
-      H2EQ(1, that->age);
-   };
-   Dog dog(1);
-   H2EQ(11, dog.go(1, 2));
-   dog.run();
-}
-
-H2CASE(Stub_Member, virtual member function)
-{
-   H2STUB(const char*, Cat, say, ())
-   {
-      return "mmm...";
-   };
-   Cat cat(nullptr, nullptr);
-   H2EQ("mmm...", cat.say());
-}
-
-H2CASE(Stub_Member, virtual member function failed)
-{
-   H2STUB(const char*, Centipede, say, ()) /* Failed here */
-   {
-      return "...";
-   };
-   Centipede centipede(1, 2, 3, 4, 5, 6, 7, 8, 9);
-   H2EQ("...", centipede.say());
-}
-
-H2CASE(Stub_Member, virtual member function ok)
-{
-   H2STUB(const char*, Centipede, say, (), Centipede(1, 2, 3, 4, 5, 6, 7, 8, 9))
-   {
-      return "...";
-   };
-   Centipede centipede(1, 2, 3, 4, 5, 6, 7, 8, 9);
-   H2EQ("...", centipede.say());
-}
-
-H2CASE(Stub_Member, abstract class failed)
-{
-   H2STUB(int, Ovipara, cry, ()) /* Failed here */
-   {
-      return 6;
+      rectangle_t p1 = {2, 3};
+      OK(6, rectangle_area(&p1));
+      STUB(rectangle_area, rectangle_area_fake);
+      OK(100, rectangle_area(&p1));
    };
 
-   Bird bird;
-   H2EQ(6, bird.cry());
+   Todo(stub local static function-- successful){
+     /* include impl source file, then static function is accessible from here */
+   };
+
+   Case(stub variable arguments function-- successful)
+   {
+      rectangle_t p1 = {1, 2};
+      rectangle_t p2 = {2, 3};
+      rectangle_t p3 = {3, 4};
+
+      OK(1 * 2 + 2 * 3 + 3 * 4, sum_rectangle_area(3, &p1, &p2, &p3));
+      STUB(sum_rectangle_area, sum_rectangle_area_fake);
+      OK(300, sum_rectangle_area(3, &p1, &p2, &p3));
+   };
+}
+
+SUITE(Stub function by lambda)
+{
+   Case(stub local extern function-- successful)
+   {
+      rectangle_t p1 = {2, 3};
+      OK(6, rectangle_area(&p1));
+      STUB(int, rectangle_area, (rectangle_t * rectangle))
+      {
+         return 111;
+      };
+      OK(111, rectangle_area(&p1));
+   };
+}
+
+SUITE(Stub Member method)
+{
+   Case(normal member function-- successful)
+   {
+      STUB(int, Dog, go, (int x, int y))
+      {
+         OK(1, x);
+         OK(2, y);
+         return 11;
+      };
+      STUB(void, Dog, run, ())
+      {
+         OK(1, that->age);
+      };
+      Dog dog(1);
+      OK(11, dog.go(1, 2));
+      dog.run();
+   };
+
+   Case(virtual member function-- successful)
+   {
+      STUB(const char*, Cat, say, ())
+      {
+         return "mmm...";
+      };
+      Cat cat(nullptr, nullptr);
+      OK("mmm...", cat.say());
+   };
+
+   Case(virtual member function-- failure)
+   {
+      STUB(const char*, Centipede, say, ())  //failure
+      {
+         return "...";
+      };
+      Centipede centipede(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11);
+      OK("...", centipede.say());
+   };
+
+   Case(virtual member function-- successful)
+   {
+      STUB(const char*, Centipede, say, (), Centipede(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11))
+      {
+         return "...";
+      };
+      Centipede centipede(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11);
+      OK("...", centipede.say());
+   };
+
+   Case(abstract class --failure)
+   {
+      STUB(int, Ovipara, cry, ())  //failure
+      {
+         return 6;
+      };
+
+      Bird bird;
+      OK(6, bird.cry());
+   };
 }

@@ -4,49 +4,49 @@ extern "C" {
 #include "product_c.h"
 }
 
-H2UNIT (Logic) {
-};
-
-H2CASE(Logic, Not)
+SUITE(Logic)
 {
-   H2EQ(Not(5), getEven(7));
-   H2EQ(Not(6), getEven(7));
-}
+   Case(Not-- successful)
+   {
+      rectangle_t p1 = {2, 3};
+      OK(Not(5), rectangle_diag(&p1));  //successful
+   };
 
-H2CASE(Logic, Not string equal)
-{
-   H2EQ(Not("a7af3452a5eee24a149f8993e48ce81b77b200b212b23c2402c221ddc4260a608cf328a2133386477eb7a65958893726741cb9223419a7a0224fe7af2866944197ee4ab18e25913cae8507bb306a284f"),
-        "a7af3452a5eee24a149f8993e48ce81b77b200b212b23c2402c221ddc4260a608cf328a2133386477eb7a65958893726741cb9223419a7a0224fe7af2866944197ee4ab18e25913cae8507bb306a284f");
-}
+   Case(Not string equal-- failure)
+   {
+      const char* p = "a7af3452a5eee24a149f8993e48ce81b77b200b212b23c2402c221ddc4260a608cf328a2133386477eb7a65958893726741cb9223419a7a0224fe7af2866944197ee4ab18e25913cae8507bb306a284f";
+      OK(Not(p), p);
+   };
 
-H2CASE(Logic, Not Not)
-{
-   H2EQ(Not(Not(5)), getEven(7));
-}
+   Case(Not Not-- failure)
+   {
+      OK(Not(Not(5)), 6);
+   };
 
-H2CASE(Logic, AllOf)
-{
-   Point p1 = {0, 0};
-   H2EQ(AllOf("Point(0, 0)", StartsWith("Point")), Point_toString(&p1));
+   Case(AllOf-- failure)
+   {
+      rectangle_t p1 = {0, 0};
+      OK(AllOf("Rect(0, 0)", StartsWith("Rect")), rectangle_tostring(&p1));  //successful
 
-   Point p2 = {1, 2};
-   H2EQ(AllOf("Point(0, 0)", EndsWith("P(1, 2)")), Point_toString(&p2));
-}
+      rectangle_t p2 = {1, 2};
+      OK(AllOf("Rect(0, 0)", EndsWith("R(1, 2)")), rectangle_tostring(&p2));  //failure
+   };
 
-H2CASE(Logic, AnyOf)
-{
-   Point p1 = {0, 0};
-   H2EQ(AnyOf("Point(0, 0)", StartsWith("Point")), Point_toString(&p1));
-   H2EQ(AnyOf("Point(0, 1)", StartsWith("Point")), Point_toString(&p1));
+   Case(AnyOf-- failure)
+   {
+      rectangle_t p1 = {0, 0};
+      OK(AnyOf("Rect(0, 0)", StartsWith("Rect")), rectangle_tostring(&p1));  //successful
+      OK(AnyOf("Rect(0, 1)", StartsWith("Rect")), rectangle_tostring(&p1));  //successful
 
-   Point p2 = {1, 2};
-   H2EQ(AnyOf("Point(0, 0)", EndsWith("P(1, 2)")), Point_toString(&p2));
-}
+      rectangle_t p2 = {1, 2};
+      OK(AnyOf("Rect(0, 0)", EndsWith("R(1, 2)")), rectangle_tostring(&p2));  //failure
+   };
 
-H2CASE(Logic, NoneOf)
-{
-   Point p1 = {0, 0};
-   H2EQ(NoneOf("Point(0, 1)", EndsWith("P(1, 2)")), Point_toString(&p1));
+   Case(NoneOf-- failure)
+   {
+      rectangle_t p1 = {0, 0};
+      OK(NoneOf("Rect(0, 1)", EndsWith("R(1, 2)")), rectangle_tostring(&p1));  //successful
 
-   H2EQ(NoneOf("Point(0, 1)", StartsWith("Point")), Point_toString(&p1));
+      OK(NoneOf("Rect(0, 1)", StartsWith("Rect")), rectangle_tostring(&p1));  //failure
+   };
 }

@@ -1,29 +1,28 @@
 #ifndef _PRODUCT_C_H_
 #define _PRODUCT_C_H_
 
-int getEven(int var);
-
-double getCeil(double var);
-
-typedef struct Point
+typedef struct rectangle_t
 {
-   int x;
-   int y;
-} Point;
+   int width;
+   int height;
+} rectangle_t;
 
-Point* create_point(int x, int y);
+/* 创建一个矩形 */
+rectangle_t* rectangle_create(int width, int height);
 
-const char* Point_toString(Point* point);
+/* 销毁一个矩形 */
+void rectangle_destroy(rectangle_t* rectangle);
 
-const char* Point_tojson(Point* point);
+/* 求矩形的面积 */
+int rectangle_area(rectangle_t* rectangle);
 
-int orig_foo(int a);
-int orig_bar(int b);
+/* 求矩形的对角线长度 */
+double rectangle_diag(rectangle_t* rectangle);
 
-char* orig_varg(const char* format, ...);
+const char* rectangle_tostring(rectangle_t* rectangle);
+const char* rectangle_tojson(rectangle_t* rectangle);
 
-int getSum(int x);
-
-int isLegal(const char* str);
+/* 各个矩形的面积之和 */
+int sum_rectangle_area(int count, ...);
 
 #endif

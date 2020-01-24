@@ -1,6 +1,7 @@
 #include "../source/h2_unit.h"
+using namespace h2;
 
-static int __node_tojson(h2json::node* node, char* b)
+static int __node_tojson(h2_json::node* node, char* b)
 {
    int l = 0;
 
@@ -24,9 +25,9 @@ static int __node_tojson(h2json::node* node, char* b)
    }
    if (node->is_array()) {
       l += sprintf(b + l, "[");
-      for (size_t i = 0; i < node->child_array_or_object.size(); i++) {
+      for (size_t i = 0; i < node->children.size(); i++) {
          if (i) l += sprintf(b + l, ",");
-         l += __node_tojson(node->child_array_or_object[i], b + l);
+         l += __node_tojson(node->children[i], b + l);
       }
       l += sprintf(b + l, "]");
    }
@@ -34,7 +35,7 @@ static int __node_tojson(h2json::node* node, char* b)
       l += sprintf(b + l, "{");
       for (int i = 0; i < node->size(); i++) {
          if (i) l += sprintf(b + l, ",");
-         l += __node_tojson(node->child_array_or_object[i], b + l);
+         l += __node_tojson(node->children[i], b + l);
       }
       l += sprintf(b + l, "}");
    }
@@ -42,170 +43,164 @@ static int __node_tojson(h2json::node* node, char* b)
    return l;
 }
 
-char* node_tojson(h2json::node* node, char* b)
+char* node_tojson(h2_json::node* node, char* b)
 {
    __node_tojson(node, b);
    return b;
 }
 
-H2UNIT (h2_json_node) {
-   bool res;
-   char t2[1024 * 8];
+SUITE(json parser)
+{
+   char t2[1024 * 32];
+   Setup(){};
 
-   void setup()
+   Teardown(){};
+
+   Case(number)
    {
-   }
+      const char* n1 = "-123.456";
+      h2_json::node* c1 = h2_json::parse(n1);
+      OK(c1->is_number());
+      OK(-123.456, c1->value_double);
+      h2_json::frees(c1);
 
-   void teardown()
+      const char* n2 = "0";
+      h2_json::node* c2 = h2_json::parse(n2);
+      OK(c2->is_number());
+      OK(0, c2->value_double);
+      h2_json::frees(c2);
+
+      const char* n3 = "-1";
+      h2_json::node* c3 = h2_json::parse(n3);
+      OK(c3->is_number());
+      OK(-1, c3->value_double);
+      h2_json::frees(c3);
+
+      const char* n4 = "12345678";
+      h2_json::node* c4 = h2_json::parse(n4, 4);
+      OK(c4->is_number());
+      OK(1234, c4->value_double);
+      h2_json::frees(c4);
+
+      const char* n5 = "3+2*(4-sqrt(4))";
+      h2_json::node* c5 = h2_json::parse(n5);
+      OK(c5->is_number());
+      OK(7, c5->value_double);
+      h2_json::frees(c5);
+   };
+
+   Case(number error)
    {
-   }
-};
+      const char* n1 = "";
+      h2_json::node* c1 = h2_json::parse(n1);
+      OK(NULL == c1);
 
-H2CASE(h2_json_node, number)
-{
-   const char* n1 = "-123.456";
-   h2json::node* c1 = h2json::parse(n1);
-   H2EQ(c1->is_number());
-   H2EQ(-123.456, c1->value_double);
-   h2json::frees(c1);
+      const char* n2 = "-";
+      h2_json::node* c2 = h2_json::parse(n2);
+      OK(NULL == c2);
+   };
 
-   const char* n2 = "0";
-   h2json::node* c2 = h2json::parse(n2);
-   H2EQ(c2->is_number());
-   H2EQ(0, c2->value_double);
-   h2json::frees(c2);
+   Case(string)
+   {
+      const char* n1 = "\"\"";
+      h2_json::node* c1 = h2_json::parse(n1);
+      OK(c1->is_string());
+      OK("", c1->value_string);
+      h2_json::frees(c1);
 
-   const char* n3 = "-1";
-   h2json::node* c3 = h2json::parse(n3);
-   H2EQ(c3->is_number());
-   H2EQ(-1, c3->value_double);
-   h2json::frees(c3);
+      const char* n2 = "\"12345678\"";
+      h2_json::node* c2 = h2_json::parse(n2);
+      OK(c2->is_string());
+      OK("12345678", c2->value_string);
+      h2_json::frees(c2);
 
-   const char* n4 = "12345678";
-   h2json::node* c4 = h2json::parse(n4, 4);
-   H2EQ(c4->is_number());
-   H2EQ(1234, c4->value_double);
-   h2json::frees(c4);
+      const char* n3 = "'12345678'";
+      h2_json::node* c3 = h2_json::parse(n3);
+      OK(c2->is_string());
+      OK("12345678", c3->value_string);
+      h2_json::frees(c3);
+   };
 
-   const char* n5 = "3+2*(4-sqrt(4))";
-   h2json::node* c5 = h2json::parse(n5);
-   H2EQ(c5->is_number());
-   H2EQ(7, c5->value_double);
-   h2json::frees(c5);
-}
+   Case(string error)
+   {
+      const char* n3 = "\"12345678\"";
+      h2_json::node* c3 = h2_json::parse(n3, 4);
+      OK(NULL == c3);
+   };
 
-H2CASE(h2_json_node, number error)
-{
-   const char* n1 = "";
-   h2json::node* c1 = h2json::parse(n1);
-   H2EQ(NULL == c1);
+   Case(regexp)
+   {
+      const char* n3 = "/123*567/";
+      h2_json::node* c3 = h2_json::parse(n3);
+      OK(c3->is_regexp());
+      OK("123*567", c3->value_string);
+      h2_json::frees(c3);
+   };
 
-   const char* n2 = "-";
-   h2json::node* c2 = h2json::parse(n2);
-   H2EQ(NULL == c2);
-}
+   Case(empty array)
+   {
+      const char* n1 = " []";
+      h2_json::node* c1 = h2_json::parse(n1);
+      OK(c1->is_array());
+      OK(0, c1->size());
+      h2_json::frees(c1);
+   };
 
-H2CASE(h2_json_node, string)
-{
-   const char* n1 = "\"\"";
-   h2json::node* c1 = h2json::parse(n1);
-   H2EQ(c1->is_string());
-   H2EQ("", c1->value_string);
-   h2json::frees(c1);
+   Case(normal array)
+   {
+      const char* week = "[\"Sunday\", 'Monday', \"Tuesday\", \"Wednesday\", \"Thursday\", \"Friday\", \"Saturday\"]";
 
-   const char* n2 = "\"12345678\"";
-   h2json::node* c2 = h2json::parse(n2);
-   H2EQ(c2->is_string());
-   H2EQ("12345678", c2->value_string);
-   h2json::frees(c2);
+      h2_json::node* c = h2_json::parse(week);
 
-   const char* n3 = "'12345678'";
-   h2json::node* c3 = h2json::parse(n3);
-   H2EQ(c2->is_string());
-   H2EQ("12345678", c3->value_string);
-   h2json::frees(c3);
-}
+      OK(c->is_array());
+      OK(0, c->key_string.size());
+      OK(7, c->size());
 
-H2CASE(h2_json_node, string error)
-{
-   const char* n3 = "\"12345678\"";
-   h2json::node* c3 = h2json::parse(n3, 4);
-   H2EQ(NULL == c3);
-}
+      h2_json::node* d[7];
+      d[0] = c->get(0);
+      OK("Sunday", d[0]->value_string);
 
-H2CASE(h2_json_node, regexp)
-{
-   const char* n3 = "/123*567/";
-   h2json::node* c3 = h2json::parse(n3);
-   H2EQ(c3->is_regexp());
-   H2EQ("123*567", c3->value_string);
-   h2json::frees(c3);
-}
+      d[1] = c->get(1);
+      OK("Monday", d[1]->value_string);
 
-H2CASE(h2_json_node, empty array)
-{
-   const char* n1 = " []";
-   h2json::node* c1 = h2json::parse(n1);
-   H2EQ(c1->is_array());
-   H2EQ(0, c1->size());
-   h2json::frees(c1);
-}
+      d[2] = c->get(2);
+      OK("Tuesday", d[2]->value_string);
 
-H2CASE(h2_json_node, normal array)
-{
-   const char* week = "[\"Sunday\", 'Monday', \"Tuesday\", \"Wednesday\", \"Thursday\", \"Friday\", \"Saturday\"]";
+      d[3] = c->get(3);
+      OK("Wednesday", d[3]->value_string);
 
-   h2json::node* c = h2json::parse(week);
+      d[4] = c->get(4);
+      OK("Thursday", d[4]->value_string);
 
-   H2EQ(c->is_array());
-   H2EQ(0, c->key_string.size());
-   H2EQ(7, c->size());
+      d[5] = c->get(5);
+      OK("Friday", d[5]->value_string);
 
-   h2json::node* d[7];
-   d[0] = c->get(0);
-   H2EQ("Sunday", d[0]->value_string);
+      d[6] = c->get(6);
+      OK("Saturday", d[6]->value_string);
 
-   d[1] = c->get(1);
-   H2EQ("Monday", d[1]->value_string);
+      JE(week, node_tojson(c, t2));
 
-   d[2] = c->get(2);
-   H2EQ("Tuesday", d[2]->value_string);
+      OK(NULL == c->get("ling"));
 
-   d[3] = c->get(3);
-   H2EQ("Wednesday", d[3]->value_string);
+      for (int i = 0; i < c->size(); i++) {
+         OK(d[i]->value_string, c->children[i]->value_string);
+      }
 
-   d[4] = c->get(4);
-   H2EQ("Thursday", d[4]->value_string);
+      h2_json::frees(c);
+   };
 
-   d[5] = c->get(5);
-   H2EQ("Friday", d[5]->value_string);
+   Case(empty object)
+   {
+      const char* n1 = " {  }";
+      h2_json::node* c1 = h2_json::parse(n1);
+      OK(c1->is_object());
+      OK(0, c1->size());
+      h2_json::frees(c1);
+   };
 
-   d[6] = c->get(6);
-   H2EQ("Saturday", d[6]->value_string);
-
-   H2JE(week, node_tojson(c, t2));
-
-   H2EQ(NULL == c->get("ling"));
-
-   for (int i = 0; i < c->size(); i++) {
-      H2EQ(d[i]->value_string, c->child_array_or_object[i]->value_string);
-   }
-
-   h2json::frees(c);
-}
-
-H2CASE(h2_json_node, empty object)
-{
-   const char* n1 = " {  }";
-   h2json::node* c1 = h2json::parse(n1);
-   H2EQ(c1->is_object());
-   H2EQ(0, c1->size());
-   h2json::frees(c1);
-}
-
-H2CASE(h2_json_node, normal object)
-{
-   const char* obj = "{                                                 \
+   Case(normal object)
+   {
+      const char* obj = "{                                                 \
         \"data\": 'Click Here',                                         \
         'size': 36,                                                     \
         \"alignment\": true,                                            \
@@ -214,49 +209,49 @@ H2CASE(h2_json_node, normal object)
         \"onMouseUp\": \"sun1.opacity = (sun1.opacity / 100) * 90;\"    \
     }";
 
-   h2json::node* c = h2json::parse(obj);
+      h2_json::node* c = h2_json::parse(obj);
 
-   H2EQ(c->is_object());
-   H2EQ(6, c->size());
+      OK(c->is_object());
+      OK(6, c->size());
 
-   h2json::node* c0 = c->get(0);
-   H2EQ(c0->is_string());
-   H2EQ("data", c0->key_string);
-   H2EQ("Click Here", c0->value_string);
+      h2_json::node* c0 = c->get(0);
+      OK(c0->is_string());
+      OK("data", c0->key_string);
+      OK("Click Here", c0->value_string);
 
-   h2json::node* c1 = c->get(1);
-   H2EQ(c1->is_number());
-   H2EQ("size", c1->key_string);
-   H2EQ(36, c1->value_double);
+      h2_json::node* c1 = c->get(1);
+      OK(c1->is_number());
+      OK("size", c1->key_string);
+      OK(36, c1->value_double);
 
-   h2json::node* c2 = c->get(2);
-   H2EQ(c2->is_bool());
-   H2EQ("alignment", c2->key_string);
-   H2EQ(c2->value_boolean);
+      h2_json::node* c2 = c->get(2);
+      OK(c2->is_bool());
+      OK("alignment", c2->key_string);
+      OK(c2->value_boolean);
 
-   h2json::node* c3 = c->get(3);
-   H2EQ(c3->is_bool());
-   H2EQ("bold", c3->key_string);
-   H2EQ(!c3->value_boolean);
+      h2_json::node* c3 = c->get(3);
+      OK(c3->is_bool());
+      OK("bold", c3->key_string);
+      OK(!c3->value_boolean);
 
-   h2json::node* c4 = c->get(4);
-   H2EQ(c4->is_null());
-   H2EQ("token", c4->key_string);
+      h2_json::node* c4 = c->get(4);
+      OK(c4->is_null());
+      OK("token", c4->key_string);
 
-   h2json::node* c5 = c->get(5);
-   H2EQ(c5->is_string());
-   H2EQ("onMouseUp", c5->key_string);
-   H2EQ("sun1.opacity = (sun1.opacity / 100) * 90;", c5->value_string);
+      h2_json::node* c5 = c->get(5);
+      OK(c5->is_string());
+      OK("onMouseUp", c5->key_string);
+      OK("sun1.opacity = (sun1.opacity / 100) * 90;", c5->value_string);
 
-   H2JE(obj, node_tojson(c, t2));
+      JE(obj, node_tojson(c, t2));
 
-   h2json::frees(c);
-}
+      h2_json::frees(c);
+   };
 
-H2CASE(h2_json_node, "http://www.json.org/example.html")
-{
-   const char* j1 =
-     "{                                                                                                             \
+   Case("http://www.json.org/example.html")
+   {
+      const char* j1 =
+        "{                                                                                                             \
     \"glossary\": {                                                                                                 \
         \"title\": \"example glossary\",                                                                            \
 		\"GlossDiv\": {                                                                                             \
@@ -279,12 +274,13 @@ H2CASE(h2_json_node, "http://www.json.org/example.html")
     }                                                                                                               \
 }";
 
-   h2json::node* c1 = h2json::parse(j1);
-   H2JE(j1, node_tojson(c1, t2));
-   h2json::frees(c1);
+      h2_json::node* c1 = h2_json::parse(j1);
+      OK(c1 != nullptr);
+      JE(j1, node_tojson(c1, t2));
+      h2_json::frees(c1);
 
-   const char* j2 =
-     "{\"menu\": {                                                  \
+      const char* j2 =
+        "{\"menu\": {                                                  \
   \"id\": \"file\",                                                 \
   \"value\": \"File\",                                              \
   \"popup\": {                                                      \
@@ -296,12 +292,12 @@ H2CASE(h2_json_node, "http://www.json.org/example.html")
   }                                                                 \
 }}";
 
-   h2json::node* c2 = h2json::parse(j2);
-   H2JE(j2, node_tojson(c2, t2));
-   h2json::frees(c2);
+      h2_json::node* c2 = h2_json::parse(j2);
+      JE(j2, node_tojson(c2, t2));
+      h2_json::frees(c2);
 
-   const char* j3 =
-     "{\"widget\": {                                                        \
+      const char* j3 =
+        "{\"widget\": {                                                        \
     \"debug\": \"on\",                                                      \
     \"window\": {                                                           \
         \"title\": \"Sample Konfabulator Widget\",                          \
@@ -328,12 +324,12 @@ H2CASE(h2_json_node, "http://www.json.org/example.html")
     }                                                                       \
 }}";
 
-   h2json::node* c3 = h2json::parse(j3);
-   H2JE(j3, node_tojson(c3, t2));
-   h2json::frees(c3);
+      h2_json::node* c3 = h2_json::parse(j3);
+      JE(j3, node_tojson(c3, t2));
+      h2_json::frees(c3);
 
-   const char* j4 =
-     "{\"web-app\": {                                                                       \
+      const char* j4 =
+        "{\"web-app\": {                                                                       \
   \"servlet\": [                                                                            \
     {                                                                                       \
       \"servlet-name\": \"cofaxCDS\",                                                       \
@@ -422,12 +418,12 @@ H2CASE(h2_json_node, "http://www.json.org/example.html")
     \"taglib-uri\": \"cofax.tld\",                                                          \
     \"taglib-location\": \"/WEB-INF/tlds/cofax.tld\"}}}";
 
-   h2json::node* c4 = h2json::parse(j4);
-   H2JE(j4, node_tojson(c4, t2));
-   h2json::frees(c4);
+      h2_json::node* c4 = h2_json::parse(j4);
+      JE(j4, node_tojson(c4, t2));
+      h2_json::frees(c4);
 
-   const char* j5 =
-     "{\"menu\": {                                                          \
+      const char* j5 =
+        "{\"menu\": {                                                          \
     \"header\": \"SVG Viewer\",                                             \
     \"items\": [                                                            \
         {\"id\": \"Open\"},                                                 \
@@ -455,15 +451,15 @@ H2CASE(h2_json_node, "http://www.json.org/example.html")
     ]                                                                       \
 }}";
 
-   h2json::node* c5 = h2json::parse(j5);
-   H2JE(j5, node_tojson(c5, t2));
-   h2json::frees(c5);
-}
+      h2_json::node* c5 = h2_json::parse(j5);
+      JE(j5, node_tojson(c5, t2));
+      h2_json::frees(c5);
+   };
 
-H2CASE(h2_json_node, more 1)
-{
-   const char* j1 =
-     "[                                             \
+   Case(more 1)
+   {
+      const char* j1 =
+        "[                                             \
 	 {                                              \
 	 \"precision\": \"zip\",                        \
 	 \"Latitude\":  37.7668,                        \
@@ -486,31 +482,31 @@ H2CASE(h2_json_node, more 1)
 	 }                                              \
 	 ]";
 
-   h2json::node* c1 = h2json::parse(j1);
-   auto s1 = node_tojson(c1, t2);
-   H2JE(j1, s1);
-   h2json::frees(c1);
-}
+      h2_json::node* c1 = h2_json::parse(j1);
+      char* s1 = node_tojson(c1, t2);
+      JE(j1, s1);
+      h2_json::frees(c1);
+   };
 
-H2CASE(h2_json_node, more 2)
-{
-   const char* j2 =
-     "    [             \
+   Case(more 2)
+   {
+      const char* j2 =
+        "    [             \
     [0, -1, 0],         \
     [1, 0, 0],          \
     [0, 0, 1]           \
 	]                   \
 ";
 
-   h2json::node* c2 = h2json::parse(j2);
-   H2JE(j2, node_tojson(c2, t2));
-   h2json::frees(c2);
-}
+      h2_json::node* c2 = h2_json::parse(j2);
+      JE(j2, node_tojson(c2, t2));
+      h2_json::frees(c2);
+   };
 
-H2CASE(h2_json_node, more 3)
-{
-   const char* j3 =
-     "{                                             \
+   Case(more 3)
+   {
+      const char* j3 =
+        "{                                             \
 \"name\": \"Jack (\\\"Bee\\\") Nimble\",            \
 \"format\": {\"type\":       \"rect\",              \
 \"width\":      1920,                               \
@@ -519,75 +515,57 @@ H2CASE(h2_json_node, more 3)
 }                                                   \
 }";
 
-   h2json::node* c3 = h2json::parse(j3);
-   H2EQ("Jack (\"Bee\") Nimble", c3->get("name")->value_string);
-   h2json::frees(c3);
+      h2_json::node* c3 = h2_json::parse(j3);
+      OK("Jack (\"Bee\") Nimble", c3->get("name")->value_string);
+      h2_json::frees(c3);
+   };
 }
 
-H2UNIT (h2_json_match) {
-   bool res;
-   char t2[1024 * 8];
+SUITE(json match)
+{
+   Setup(){};
 
-   void setup()
+   Teardown(){};
+
+   Case(match null)
    {
-   }
+      OK(h2_json::match("null", " null "));
+   };
 
-   void teardown()
+   Case(match bool)
    {
-   }
-};
+      OK(h2_json::match("true", " true "));
+      OK(h2_json::match("false", " false "));
+      OK(!h2_json::match("true", " false "));
+   };
 
-H2CASE(h2_json_match, match null)
-{
-   H2EQ(h2json::match("null", " null "));
-}
-
-H2CASE(h2_json_match, match bool)
-{
-   H2EQ(h2json::match("true", " true "));
-   H2EQ(h2json::match("false", " false "));
-   H2EQ(!h2json::match("true", " false "));
-}
-
-H2CASE(h2_json_match, match number)
-{
-   H2EQ(h2json::match("0", "1 - 1 * 1 / sqrt(1)"));
-   H2EQ(h2json::match("-123.456", "-123 - 0.456"));
-}
-
-H2CASE(h2_json_match, match string)
-{
-   H2EQ(h2json::match("\"hello world\"", " 'hello world' "));
-}
-
-H2CASE(h2_json_match, match regexp)
-{
-   H2EQ(h2json::match("/.*/", " 'hello world' "));
-}
-
-H2CASE(h2_json_match, match array)
-{
-   H2EQ(h2json::match("[]", " [] "));
-   H2EQ(h2json::match("[1]", " [1-0] "));
-   H2EQ(h2json::match("[1, null, 'hello']", " [1, null, \"hello\"] "));
-}
-
-H2CASE(h2_json_match, match object)
-{
-   H2EQ(h2json::match("{}", " {} "));
-   H2EQ(h2json::match("{'a': 1}", " {\"a\": 1} "));
-   H2EQ(h2json::match("{'a': 1}", " {\"a\": 1, \"b\": false} "));
-}
-
-H2UNIT (h2_json_diff) {
-   bool res;
-   char t2[1024 * 8];
-
-   void setup()
+   Case(match number)
    {
-   }
+      OK(h2_json::match("0", "1 - 1 * 1 / sqrt(1)"));
+      OK(h2_json::match("-123.456", "-123 - 0.456"));
+   };
 
-   void teardown()
+   Case(match string)
    {
-   }
-};
+      OK(h2_json::match("\"hello world\"", " 'hello world' "));
+   };
+
+   Case(match regexp)
+   {
+      OK(h2_json::match("/.*/", " 'hello world' "));
+   };
+
+   Case(match array)
+   {
+      OK(h2_json::match("[]", " [] "));
+      OK(h2_json::match("[1]", " [1-0] "));
+      OK(h2_json::match("[1, null, 'hello']", " [1, null, \"hello\"] "));
+   };
+
+   Case(match object)
+   {
+      OK(h2_json::match("{}", " {} "));
+      OK(h2_json::match("{'a': 1}", " {\"a\": 1} "));
+      OK(h2_json::match("{'a': 1}", " {\"a\": 1, \"b\": false} "));
+   };
+}

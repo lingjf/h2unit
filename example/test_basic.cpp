@@ -11,89 +11,82 @@ extern "C" {
 int gv;
 
 /*
- * H2UNIT is a unit test Suite, which contains several test cases.
+ * SUITE is a unit test Suite, which contains several test cases.
  */
-H2UNIT (Basic) {
+SUITE(Basic Cases)
+{
    /*
     * This variable is accessible in the test cases belong this unit.
     */
    int uv;
 
    /*
-    * setup() will be executed before every test case belong to this suite.
+    * Setup() will be executed before every test case belong to this suite.
     * Typically it is used to prepare preconditions.
     */
-   void setup()
+   Setup()
    {
       uv = 2;
-   }
+   };
    /*
-    * teardown() will be executed after every test case belong to this suite.
+    * Teardown() will be executed after every test case belong to this suite.
     * whatever test case passed or failed.
     * Typically it is used to release resource.
     */
-   void teardown()
+   Teardown()
    {
       gv = 0;
-   }
+   };
 
    /*
-    * This function is also accessible in the test cases belong this unit.
+    * Case is a unit test case
+    */
+   Case(hello world-- successful)
+   {
+      OK(2, sqrt(4));
+   };
+
+   Case(a failure case --failure)
+   {
+      OK(1, gv);
+   };
+
+   Case(a success case --successful)
+   {
+      OK(3 == uv + 1);
+   };
+}
+
+SUITE(Second Demo)
+{
+   /*
+    * Setup() and Teardown() can be omitted. The default is doing nothing
     */
 
-   int plusOne()
+   Case(0 is equal with - 0 --successful)
    {
-      return uv + 1;
-   }
-};
+      bool result = 0 != -0;
+      OK(result);
+   };
 
-/*
- * H2CASE is a unit test case
- */
-H2CASE(Basic, hello case)
-{
-   H2EQ(2, uv);
-}
-
-H2CASE(Basic, a failure case)
-{
-   H2EQ(1, gv);
-}
-
-H2CASE(Basic, a success case)
-{
-   H2EQ(3 == plusOne());
-}
-
-H2UNIT (Second) {
-   /*
-   * setup() and teardown() can be omitted. The default is doing nothing
-   */
-};
-
-H2CASE(Second, 0 is equal with - 0)
-{
-   bool result = 0 != -0;
-   H2EQ(result);
-}
-
-H2TODO(Second, alive for ever)
-{
-   H2EQ(false);
+   Todo(alive for ever)
+   {
+      OK(false);
+   };
 }
 
 /*
- * If no setup() and teardown(), H2UNIT can be omitted.
- * H2UNIT_CASE act H2UNIT plus H2CASE.
+ * If no setup() and teardown(), SUITE can be omitted.
+ * TEST act SUITE plus CASE.
  */
 
-H2UNIT_CASE(0 is equal with - 0)
+CASE(standalone case --failure)
 {
-   bool result = 0 != -0;
-   H2EQ(!result);
+   bool result = true;
+   OK(!result);
 }
 
-H2UNIT_TODO(alive for ever)
+TODO(alive for ever)
 {
-   H2EQ(false);
+   OK(false);
 }

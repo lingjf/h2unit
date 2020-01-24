@@ -1,33 +1,13 @@
 #include "../source/h2_unit.h"
+using namespace h2;
 
-H2UNIT (expr) {
-   bool res;
-   char t2[1024 * 8];
-
-   void setup()
+SUITE(expr)
+{
+   struct
    {
-   }
-
-   void teardown()
-   {
-   }
-};
-
-typedef struct
-{
-   const char* expr;
-   double answer;
-} test_case;
-
-typedef struct
-{
-   const char* expr1;
-   const char* expr2;
-} test_equ;
-
-H2CASE(expr, number)
-{
-   test_case cases[] = {
+      const char* expr;
+      double answer;
+   } samples [] = {
      {"1", 1},
      {"1 ", 1},
      {"(1)", 1},
@@ -117,13 +97,16 @@ H2CASE(expr, number)
      {"pow(2,2)", 4},
    };
 
-   for (size_t i = 0; i < sizeof(cases) / sizeof(test_case); ++i) {
-      const char* expr = cases[i].expr;
-      const double answer = cases[i].answer;
+   Case(number)
+   {
+      for (size_t i = 0; i < sizeof(samples) / sizeof(samples[0]); ++i) {
+         const char* expr = samples[i].expr;
+         const double answer = samples[i].answer;
 
-      int err;
-      const double ev = h2_tinyexpr::te_interp(expr, &err);
-      H2EQ(0, err);
-      H2EQ(answer, ev);
-   }
+         int err;
+         const double ev = tinyexpr::te_interp(expr, &err);
+         OK(0, err);
+         OK(answer, ev);
+      }
+   };
 }

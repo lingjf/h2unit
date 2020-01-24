@@ -1,80 +1,72 @@
 #include "../source/h2_unit.h"
 
-H2UNIT (h2_tool) {
+using namespace h2;
+
+SUITE(h2_tool)
+{
    char t1[1024];
-   void setup()
+   Setup(){};
+
+   Teardown(){};
+
+   Case(H2PP_0ARGS)
    {
-   }
+      int n0 = H2PP_0ARGS();
+      int n1 = H2PP_0ARGS(a);
+      int n2 = H2PP_0ARGS(a, b);
+      int n3 = H2PP_0ARGS(a, b, c);
 
-   void teardown()
+      OK(1, n0);
+      OK(0, n1);
+      OK(0, n2);
+      OK(0, n3);
+   };
+
+   Case(H2PP_NARGS)
    {
-   }
-};
+      int n0 = H2PP_NARGS();
+      int n1 = H2PP_NARGS(a);
+      int n2 = H2PP_NARGS(a, b);
+      int n3 = H2PP_NARGS(a, b, c);
 
-H2CASE(h2_tool, H2_PP_0ARGS)
-{
-   int n0 = H2_PP_0ARGS();
-   int n1 = H2_PP_0ARGS(a);
-   int n2 = H2_PP_0ARGS(a, b);
-   int n3 = H2_PP_0ARGS(a, b, c);
+      OK(0, n0);
+      OK(1, n1);
+      OK(2, n2);
+      OK(3, n3);
+   };
 
-   H2EQ(1, n0);
-   H2EQ(0, n1);
-   H2EQ(0, n2);
-   H2EQ(0, n3);
-}
+   Case(h2_style)
+   {
+      OK("\033[31m", h2_style("red", t1));
+      OK("\033[31;1m", h2_style("red,bold", t1));
+   };
 
-H2CASE(h2_tool, PP_NARGS)
-{
-   int n0 = H2_PP_NARGS();
-   int n1 = H2_PP_NARGS(a);
-   int n2 = H2_PP_NARGS(a, b);
-   int n3 = H2_PP_NARGS(a, b, c);
+   Case(wildcard)
+   {
+      OK(!h2_wildcard_match("hello?world*", "welcome"));
+      OK(h2_wildcard_match("hello?world*", "hello world"));
+      OK(h2_wildcard_match("hello?world*", "hello world h2unit"));
+      OK(!h2_wildcard_match("hello?world*", "one world"));
+      OK(!h2_wildcard_match("hello?world*", ""));
+   };
 
-   H2EQ(0, n0);
-   H2EQ(1, n1);
-   H2EQ(2, n2);
-   H2EQ(3, n3);
-}
+   Case(acronym)
+   {
+      OK("01234", h2_acronym_string("01234"));
+      OK("0123456789...", h2_acronym_string("0123456789ABCDEF"));
+   };
 
-H2CASE(h2_tool, PP_CAT)
-{
-   int H2_PP_CAT(a, b, c, d) = 4;
+   Case(center)
+   {
+      OK("ab", h2_center_string("ab", 2, t1));
+      OK("ab ", h2_center_string("ab", 3, t1));
+      OK(" ab ", h2_center_string("ab", 4, t1));
+      OK(" ab  ", h2_center_string("ab", 5, t1));
+      OK("  ab  ", h2_center_string("ab", 6, t1));
 
-   H2EQ(4, abcd);
-}
-
-H2CASE(h2_tool, h2_style)
-{
-   H2EQ("\033[31m", h2_style("red", t1));
-   H2EQ("\033[31;1m", h2_style("red,bold", t1));
-}
-
-H2CASE(h2_tool, wildcard)
-{
-   H2EQ(!h2_wildcard_match("hello?world*", "welcome"));
-   H2EQ(h2_wildcard_match("hello?world*", "hello world"));
-   H2EQ(h2_wildcard_match("hello?world*", "hello world h2unit"));
-   H2EQ(!h2_wildcard_match("hello?world*", "one world"));
-   H2EQ(!h2_wildcard_match("hello?world*", ""));
-}
-
-H2CASE(h2_tool, acronym)
-{
-   H2EQ("01234", h2_acronym_string("01234"));
-   H2EQ("0123456789...", h2_acronym_string("0123456789ABCDEF"));
-}
-
-H2CASE(h2_tool, center)
-{
-   H2EQ("ab", h2_center_string("ab", 2, t1));
-   H2EQ("ab ", h2_center_string("ab", 3, t1));
-   H2EQ(" ab ", h2_center_string("ab", 4, t1));
-   H2EQ(" ab  ", h2_center_string("ab", 5, t1));
-   H2EQ("  ab  ", h2_center_string("ab", 6, t1));
-
-   H2EQ("abc", h2_center_string("abc", 3, t1));
-   H2EQ("abc ", h2_center_string("abc", 4, t1));
-   H2EQ(" abc ", h2_center_string("abc", 5, t1));
-   H2EQ(" abc  ", h2_center_string("abc", 6, t1));
+      OK("abc", h2_center_string("abc", 3, t1));
+      OK("abc ", h2_center_string("abc", 4, t1));
+      OK(" abc ", h2_center_string("abc", 5, t1));
+      OK(" abc  ", h2_center_string("abc", 6, t1));
+   };
 }

@@ -1,7 +1,7 @@
 #ifndef _PRODUCT_CPP_H_
 #define _PRODUCT_CPP_H_
 
-class Animal
+class Animal /* 动物 */
 {
  private:
    int x, y;
@@ -9,6 +9,7 @@ class Animal
  public:
    Animal()
      : x(0), y(0) {}
+   virtual ~Animal() {}
 
    static int born(int a)
    {
@@ -28,7 +29,7 @@ class Animal
    virtual int cry() = 0;
 };
 
-class Vivipara : public Animal
+class Vivipara /* 胎生动物 */ : public Animal
 {
  public:
    const char* say()
@@ -42,7 +43,7 @@ class Vivipara : public Animal
    }
 };
 
-class Ovipara : public Animal
+class Ovipara /* 卵生动物 */ : public Animal
 {
  public:
    int cry()
@@ -51,7 +52,7 @@ class Ovipara : public Animal
    }
 };
 
-class Dog : public Vivipara
+class Dog /* 狗 */ : public Vivipara
 {
  public:
    int age;
@@ -66,7 +67,7 @@ class Dog : public Vivipara
    void run() {}
 };
 
-class Cat : public Vivipara
+class Cat /* 猫 */ : public Vivipara
 {
  public:
    Cat(Animal* mother, Animal* father) {}
@@ -77,7 +78,7 @@ class Cat : public Vivipara
    }
 };
 
-class Bird : public Ovipara
+class Bird /* 鸟 */ : public Ovipara
 {
  public:
    const char* say()
@@ -86,7 +87,7 @@ class Bird : public Ovipara
    }
 };
 
-class Centipede : public Ovipara
+class Centipede /* 蜈蚣 */ : public Ovipara
 {
  public:
    Centipede(int feet1,
@@ -97,7 +98,9 @@ class Centipede : public Ovipara
              int feet6,
              int feet7,
              int feet8,
-             int feet9) {}
+             int feet9,
+             int feet10,
+             int feet11) {}
 
    const char* say()
    {

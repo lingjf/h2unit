@@ -3,33 +3,39 @@
 
 
 import sys
+import time
 
-
-h2unit = open('../h2unit.h', 'w')
-with open('../source/h2_unit.h', 'r') as h2_unit:
-    for line in h2_unit:
-        if line.startswith('#include "h2_'):
-            with open('../source/'+line[10:line.rindex('"')], 'r') as h2_f:
-                for line in h2_f:
-                    h2unit.write(line)
+def copy_line(line, f):
+    l0 = line.strip()
+    if len(l0) and not l0.startswith('//') and not (l0.startswith('/*') and l0.endswith('*/')):
+        l1 = line.rstrip('\r\n')
+        if l1.endswith('\\'):
+            f.write(l1[0:-2])
         else:
-            h2unit.write(line)
+            f.write(l1 + '\n')
 
-h2unit.write("#ifndef ___H2UNIT_H_3_0__BACK_COMPATIBLE__\n")
-h2unit.write("#define ___H2UNIT_H_3_0__BACK_COMPATIBLE__\n")
+h2unit_h = '../h2unit.h'
+if len(sys.argv) > 1:
+    h2unit_h = sys.argv[1]
 
-h2unit.write("#define H2EQ_TRUE H2EQ \n")
-h2unit.write("#define H2EQ_MATH H2EQ \n")
-h2unit.write("#define H2EQ_STRCMP H2EQ \n")
-h2unit.write("#define H2EQ_STRCMP_NOCASE(e,a) H2EQ(CaseLess(e),a) \n")
-h2unit.write("#define H2EQ_JSON(e,a) H2EQ(Je(e),a) \n")
-h2unit.write("#define H2EQ_WILDCARD(e,a) H2EQ(We(e),a) \n")
-h2unit.write("#define H2EQ_REGEX(e,a) H2EQ(Re(e),a) \n")
-h2unit.write("#define H2EQ_MEMCMP(e,a,l) H2EQ(Me(e,l),a) \n")
+version_datetime = '/* v{0}  {1} */'.format('4.0', time.strftime('%Y-%m-%d %H:%M:%S', time.localtime()))
+project_github_url = '/* https://github.com/lingjf/h2unit */'
+software_copyright = '/* Apache Licence 2.0 */'
 
-h2unit.write("#define H2LEAK_BLOCK H2BLOCK \n")
+f_h2unit = open(h2unit_h, 'w')
+f_h2unit.write(version_datetime + '\n')
+f_h2unit.write(project_github_url + '\n')
+f_h2unit.write(software_copyright + '\n')
 
-h2unit.write("#endif\n")
+with open('../source/h2_unit.h', 'r') as f_h2_unit:
+    for line in f_h2_unit:
+        if line.startswith('#include "h2_'):
+            with open('../source/'+line[10:line.rindex('"')], 'r') as f_h2_cpp:
+                for line in f_h2_cpp:
+                    if not line.startswith('#include "h2_'):
+                        copy_line(line, f_h2unit)
+        else:
+            copy_line(line, f_h2unit)
 
-h2unit.close()
+f_h2unit.close()
 

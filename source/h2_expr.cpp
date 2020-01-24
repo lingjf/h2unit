@@ -1,26 +1,8 @@
-/*
- * TINYEXPR - Tiny recursive descent parser and evaluation engine in C
- *
- * Copyright (c) 2015-2018 Lewis Van Winkle
- *
- * http://CodePlea.com
- *
- * This software is provided 'as-is', without any express or implied
- * warranty. In no event will the authors be held liable for any damages
- * arising from the use of this software.
- *
- * Permission is granted to anyone to use this software for any purpose,
- * including commercial applications, and to alter it and redistribute it
- * freely, subject to the following restrictions:
- *
- * 1. The origin of this software must not be misrepresented; you must not
- * claim that you wrote the original software. If you use this software
- * in a product, an acknowledgement in the product documentation would be
- * appreciated but is not required.
- * 2. Altered source versions must be plainly marked as such, and must not be
- * misrepresented as being the original software.
- * 3. This notice may not be removed or altered from any source distribution.
- */
+// TINYEXPR - Tiny recursive descent parser and evaluation engine in C
+//
+// Copyright (c) 2015-2018 Lewis Van Winkle
+//
+// http://CodePlea.com
 
 #ifndef __TINYEXPR_H__
 #define __TINYEXPR_H__
@@ -45,7 +27,7 @@
 #define ARITY(TYPE) ( ((TYPE) & (TE_FUNCTION0 | TE_CLOSURE0)) ? ((TYPE) & 0x00000007) : 0 )
 
 
-class h2_tinyexpr
+class tinyexpr
 {
 public:    
     /* Parses the input expression, evaluates it, and frees it. */
@@ -90,17 +72,11 @@ private:
         void *context;
     };
 
-
     typedef double (*te_fun2)(double, double);
 
-    enum {
-        TOK_NULL = TE_CLOSURE7+1, TOK_ERROR, TOK_END, TOK_SEP,
-        TOK_OPEN, TOK_CLOSE, TOK_NUMBER, TOK_VARIABLE, TOK_INFIX
-    };
-
+    enum { TOK_NULL = TE_CLOSURE7+1, TOK_ERROR, TOK_END, TOK_SEP, TOK_OPEN, TOK_CLOSE, TOK_NUMBER, TOK_VARIABLE, TOK_INFIX };
 
     enum {TE_CONSTANT = 1};
-
 
     struct state {
         const char *start;
@@ -117,7 +93,7 @@ private:
         const int arity = ARITY(type);
         const int psize = sizeof(void*) * arity;
         const int size = (sizeof(te_expr) - sizeof(void*)) + psize + (IS_CLOSURE(type) ? sizeof(void*) : 0);
-        te_expr *ret = (te_expr *)h2_alloc::I().malloc(size);
+        te_expr *ret = (te_expr *)h2_raw::malloc(size);
         memset(ret, 0, size);
         if (arity && parameters) {
             memcpy(ret->parameters, parameters, psize);
@@ -143,7 +119,7 @@ private:
     static void te_free(te_expr *n) {
         if (!n) return;
         te_free_parameters(n);
-        h2_alloc::I().free((void *)n);
+        h2_raw::free((void *)n);
     }
 
     static double _fabs(double x) {return fabs(x);}
@@ -166,15 +142,12 @@ private:
     static double pi(void) {return 3.14159265358979323846;}
     static double e(void) {return 2.71828182845904523536;}
     static double fac(double a) {/* simplest version of fac */
-        if (a < 0.0)
-            return NAN;
-        if (a > UINT_MAX)
-            return INFINITY;
+        if (a < 0.0) return NAN;
+        if (a > UINT_MAX) return INFINITY;
         unsigned int ua = (unsigned int)(a);
         unsigned long int result = 1, i;
         for (i = 1; i <= ua; i++) {
-            if (i > ULONG_MAX / result)
-                return INFINITY;
+            if (i > ULONG_MAX / result) return INFINITY;
             result *= i;
         }
         return (double)result;
@@ -186,8 +159,7 @@ private:
         unsigned long int result = 1;
         if (ur > un / 2) ur = un - ur;
         for (i = 1; i <= ur; i++) {
-            if (result > ULONG_MAX / (un - ur + i))
-                return INFINITY;
+            if (result > ULONG_MAX / (un - ur + i)) return INFINITY;
             result *= un - ur + i;
             result /= i;
         }
@@ -269,7 +241,6 @@ private:
     static double divide(double a, double b) {return a / b;}
     static double negate(double a) {return -a;}
     static double comma(double a, double b) {(void)a; return b;}
-
 
     static void next_token(state *s) {
         s->type = TOK_NULL;
@@ -610,37 +581,6 @@ private:
             if (error) *error = 0;
             return root;
         }
-    }
-
-
-    static void pn (const te_expr *n, int depth) {
-        int i, arity;
-        printf("%*s", depth, "");
-
-        switch(TYPE_MASK(n->type)) {
-        case TE_CONSTANT: printf("%f\n", n->value); break;
-        case TE_VARIABLE: printf("bound %p\n", n->bound); break;
-
-        case TE_FUNCTION0: case TE_FUNCTION1: case TE_FUNCTION2: case TE_FUNCTION3:
-        case TE_FUNCTION4: case TE_FUNCTION5: case TE_FUNCTION6: case TE_FUNCTION7:
-        case TE_CLOSURE0: case TE_CLOSURE1: case TE_CLOSURE2: case TE_CLOSURE3:
-        case TE_CLOSURE4: case TE_CLOSURE5: case TE_CLOSURE6: case TE_CLOSURE7:
-            arity = ARITY(n->type);
-            printf("f%d", arity);
-            for(i = 0; i < arity; i++) {
-                printf(" %p", n->parameters[i]);
-            }
-            printf("\n");
-            for(i = 0; i < arity; i++) {
-                pn((const te_expr*)n->parameters[i], depth + 1);
-            }
-            break;
-        }
-    }
-
-
-    static void te_print(const te_expr *n) {
-        pn(n, 0);
     }
 };
 

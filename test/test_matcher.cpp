@@ -1,207 +1,271 @@
 #include "../source/h2_unit.h"
+using namespace h2;
 
-H2UNIT (h2_matcher_Eq) {
-   void setup()
+SUITE(eq_matches)
+{
+   Case(Integer) {
+      h2_eq_matches<int> a1(123);
+      OK(nullptr == a1.matches(123));
+      h2_eq_matches<const int> a2(123);
+      OK(nullptr == a2.matches(123));
+      h2_eq_matches<unsigned long long> a3(123);
+      OK(nullptr == a3.matches(123));
+
+      OK(Eq(123), 123);
+      short b1 = 123;
+      OK(Eq(b1), 123);
+      const long int b2 = 123;
+      OK(Eq(b2), 123);
+   };
+
+   Case(Boolean) {
+      h2_eq_matches<bool> a1(false);
+      OK(nullptr == a1.matches(false));
+      h2_eq_matches<const bool> a2(false);
+      OK(nullptr == a2.matches(false));
+
+      const bool b2 = true;
+      OK(Eq(b2), true);
+   };
+
+   Case(Float) {
+      h2_eq_matches<float> a1(65.000000001);
+      OK(nullptr == a1.matches(65));
+      h2_eq_matches<double> a2(65.000000001);
+      OK(nullptr == a2.matches(65));
+
+      const float b1 = 65.000000001;
+      OK(Eq(b1), 65);
+      const double b2 = 65.000000001;
+      OK(Eq(b2), 65);
+      const long double b3 = 65.000000001;
+      OK(Eq(b3), 65);
+   };
+
+   Case(String) {
+      h2_eq_matches<char*> a1("abc");
+      OK(nullptr == a1.matches("abc"));
+      h2_eq_matches<h2_string> a2("abc");
+      OK(nullptr == a2.matches("abc"));
+      h2_eq_matches<std::string> a3("abc");
+      OK(nullptr == a3.matches("abc"));
+
+      OK(Eq("abc"), "abc");
+      const char* b1 = "abc";
+      OK(Eq(b1), "abc");
+      const h2_string b2 = "abc";
+      OK(Eq(b2), "abc");
+      const std::string b3 = "abc";
+      OK(Eq(b3), "abc");
+   };
+}
+
+SUITE(CaseLess)
+{
+   Case(direct)
    {
-   }
-
-   void teardown()
+      OK(CaseLess("AbCd"), "ABcd");
+   };
+   Case("Eq")
    {
-   }
-};
-
-H2CASE(h2_matcher_Eq, Eq number)
-{
-   // 65 is A
-   H2EQ(nullptr == h2_matcher<int>(Eq(65)).matches(65));
-   H2EQ(nullptr == h2_matcher<double>(Eq(65)).matches(65.0));
-   H2EQ(nullptr == h2_matcher<float>(65.000000001).matches(65));
-   H2EQ(nullptr == h2_matcher<double>(65.000000001).matches(65));
-   H2EQ(nullptr == h2_matcher<char>(Eq(65)).matches('A'));
-   H2EQ(nullptr == h2_matcher<unsigned long long>(Eq(65)).matches(65ULL));
-
-   H2EQ(nullptr != h2_matcher<int>(Eq(65)).matches(66));
+      OK(CaseLess(Eq("AbCd")), "ABcd");
+   };
 }
 
-H2CASE(h2_matcher_Eq, Eq bool)
+SUITE(matcher_Eq)
 {
-   H2EQ(nullptr == h2_matcher<bool>(Eq(true)).matches(true));
-   H2EQ(nullptr == h2_matcher<bool>(Eq(true)).matches(2));
+   Setup(){};
 
-   H2EQ(nullptr != h2_matcher<bool>(Eq(true)).matches(false));
-}
+   Teardown(){};
 
-H2CASE(h2_matcher_Eq, Eq string)
-{
-   char a[1024];
-   sprintf(a, "A");
-   H2EQ(nullptr == h2_matcher<std::string>(Eq("A")).matches("A"));
-   H2EQ(nullptr == h2_matcher<const char*>(Eq("A")).matches(a));
-   H2EQ(nullptr != h2_matcher<const char*>(Eq("A")).matches("B"));
-}
-
-H2UNIT (h2_matcher_Me) {
-   void setup()
+   Case(Eq number)
    {
-   }
+      // 65 is A
+      OK(nullptr == h2_matcher<int>(Eq(65)).matches(65));
+      OK(nullptr == h2_matcher<double>(Eq(65)).matches(65.0));
+      OK(nullptr == h2_matcher<float>(65.000000001).matches(65));
+      OK(nullptr == h2_matcher<double>(65.000000001).matches(65));
+      OK(nullptr == h2_matcher<char>(Eq(65)).matches('A'));
+      OK(nullptr == h2_matcher<unsigned long long>(Eq(65)).matches(65ULL));
 
-   void teardown()
+      OK(nullptr != h2_matcher<int>(Eq(65)).matches(66));
+   };
+
+   Case(Eq bool)
    {
-   }
-};
+      OK(nullptr == h2_matcher<bool>(Eq(true)).matches(true));
+      OK(nullptr == h2_matcher<bool>(Eq(true)).matches(2));
 
-H2CASE(h2_matcher_Me, Me Memory buffer)
-{
-   unsigned char t1[] = {1, 2, 3, 4, 5, 6, 7, 8};
-   unsigned char t2[] = {1, 2, 3, 4, 5, 6, 7, 8};
+      OK(nullptr != h2_matcher<bool>(Eq(true)).matches(false));
+   };
 
-   H2EQ(nullptr == h2_matcher<unsigned char*>(Me(t1, 8)).matches(t2));
-}
-
-H2UNIT (h2_matcher_Pe_Pointee) {
-   void setup()
+   Case(Eq string)
    {
-   }
+      char a[1024];
+      sprintf(a, "A");
+      OK(nullptr == h2_matcher<std::string>(Eq("A")).matches("A"));
+      OK(nullptr == h2_matcher<const char*>(Eq("A")).matches(a));
+      OK(nullptr != h2_matcher<const char*>(Eq("A")).matches("B"));
+   };
+}
 
-   void teardown()
+SUITE(matcher_Me)
+{
+   Setup(){};
+
+   Teardown(){};
+
+   Case(Me Memory buffer)
    {
-   }
-};
+      unsigned char t1[] = {1, 2, 3, 4, 5, 6, 7, 8};
+      unsigned char t2[] = {1, 2, 3, 4, 5, 6, 7, 8};
 
-H2CASE(h2_matcher_Pe_Pointee, success)
-{
-   // 65 is A
-   int a65 = 65;
-   int a66 = 66;
-
-   H2EQ(nullptr == h2_matcher<int*>(Pe(65)).matches(&a65));
-   H2EQ(nullptr == h2_matcher<int*>(Pe(Gt(65))).matches(&a66));
-
-   H2EQ(nullptr != h2_matcher<int*>(Pe(65)).matches(&a66));
+      OK(nullptr == h2_matcher<unsigned char*>(Me(t1, 8)).matches(t2));
+   };
 }
 
-H2UNIT (h2_matcher_Logic) {
-   void setup()
+SUITE(matcher_Pe_Pointee)
+{
+   Setup(){};
+
+   Teardown(){};
+
+   Case(success)
    {
-   }
+      // 65 is A
+      int a65 = 65;
+      int a66 = 66;
 
-   void teardown()
+      OK(nullptr == h2_matcher<int*>(Pe(65)).matches(&a65));
+      OK(nullptr == h2_matcher<int*>(Pe(Gt(65))).matches(&a66));
+
+      OK(nullptr != h2_matcher<int*>(Pe(65)).matches(&a66));
+   };
+}
+
+SUITE(matcher_Logic)
+{
+   Setup(){};
+
+   Teardown(){};
+
+   Case(Not)
    {
-   }
-};
+      // 65 is A
+      OK(nullptr == h2_matcher<int>(Not(65)).matches(11));
+      OK(nullptr == h2_matcher<int>(Not(Gt(65))).matches(11));
+      OK(nullptr == h2_matcher<const char*>(Not(Lt("A"))).matches("B"));
 
-H2CASE(h2_matcher_Logic, Not success)
-{
-   // 65 is A
-   H2EQ(nullptr == h2_matcher<int>(Not(65)).matches(11));
-   H2EQ(nullptr == h2_matcher<int>(Not(Gt(65))).matches(11));
-   H2EQ(nullptr == h2_matcher<const char*>(Not(Lt("A"))).matches("B"));
+      OK(nullptr != h2_matcher<int>(Not(65)).matches(65));
 
-   H2EQ(nullptr != h2_matcher<int>(Not(65)).matches(65));
-}
+      OK(Not(65), 11);
+      OK(Not("abc"), "xyz");
+      const std::string b3 = "abc";
+      OK(Not(b3), "xyz");
+   };
 
-H2CASE(h2_matcher_Logic, AllOf)
-{
-   // (65, 75)
-   H2EQ(nullptr == h2_matcher<int>(AllOf(Gt(65), Lt(75))).matches(66));
-
-   H2EQ(nullptr != h2_matcher<int>(AllOf(Gt(65), Lt(75))).matches(11));
-}
-
-H2CASE(h2_matcher_Logic, AnyOf)
-{
-   // (65, 75)
-   H2EQ(nullptr == h2_matcher<int>(AnyOf(Gt(65), Lt(75))).matches(66));
-   H2EQ(nullptr == h2_matcher<int>(AnyOf(Gt(65), Lt(55))).matches(66));
-
-   H2EQ(nullptr != h2_matcher<int>(AnyOf(Gt(65), Lt(55))).matches(60));
-}
-
-H2CASE(h2_matcher_Logic, NoneOf)
-{
-   // <65, 75<
-   H2EQ(nullptr == h2_matcher<int>(NoneOf(Lt(65), Gt(75))).matches(70));
-
-   H2EQ(nullptr != h2_matcher<int>(NoneOf(Lt(65), Gt(75))).matches(60));
-}
-
-H2CASE(h2_matcher_Logic, ListOf)
-{
-   int a[] = {1, 3, 5};
-   H2EQ(nullptr == h2_matcher<int*>(ListOf(1, 3, 5)).matches(a));
-
-   std::vector<int> b = {1, 3, 5};
-   H2EQ(nullptr == h2_matcher<std::vector<int>>(ListOf(1, 3, 5)).matches(b));
-}
-
-H2UNIT (h2_matcher_String) {
-   void setup()
+   Case(AllOf)
    {
-   }
+      // (65, 75)
+      OK(nullptr == h2_matcher<int>(AllOf(Gt(65), Lt(75))).matches(66));
 
-   void teardown()
+      OK(nullptr != h2_matcher<int>(AllOf(Gt(65), Lt(75))).matches(11));
+   };
+
+   Case(AnyOf)
    {
-   }
-};
+      // (65, 75)
+      OK(nullptr == h2_matcher<int>(AnyOf(Gt(65), Lt(75))).matches(66));
+      OK(nullptr == h2_matcher<int>(AnyOf(Gt(65), Lt(55))).matches(66));
 
-H2CASE(h2_matcher_String, Eq)
-{
-   H2EQ(nullptr == h2_matcher<const char*>("abcd").matches("abcd"));
-   H2EQ(nullptr == h2_matcher<const char*>(CaseLess("AbCd")).matches("ABcd"));
+      OK(nullptr != h2_matcher<int>(AnyOf(Gt(65), Lt(55))).matches(60));
+   };
 
-   H2EQ(nullptr != h2_matcher<const char*>("abcd").matches("abcD"));
-   H2EQ(nullptr != h2_matcher<const char*>(CaseLess("AbCd")).matches("ABcX"));
-}
-
-H2CASE(h2_matcher_String, CaseLess)
-{
-   H2EQ(nullptr == h2_matcher<const char*>(CaseLess("AbCd")).matches("ABcd"));
-}
-
-H2CASE(h2_matcher_String, Regex)
-{
-   H2EQ(nullptr == h2_matcher<const char*>(Re("abc.*")).matches("abcdef"));
-   H2EQ(nullptr != h2_matcher<const char*>(Re("A.*")).matches("abcdef"));
-}
-
-H2CASE(h2_matcher_String, Wildcard)
-{
-   H2EQ(nullptr == h2_matcher<const char*>(We("abc*")).matches("abcdef"));
-   H2EQ(nullptr != h2_matcher<const char*>(We("abc?yz")).matches("abcdef"));
-}
-
-H2CASE(h2_matcher_String, HasSubstr)
-{
-   H2EQ(nullptr == h2_matcher<const char*>(HasSubstr("cd")).matches("abcdef"));
-   H2EQ(nullptr == h2_matcher<const char*>(CaseLess(HasSubstr("cd"))).matches("ABCDEF"));
-}
-
-H2CASE(h2_matcher_String, StartsWith)
-{
-   H2EQ(nullptr == h2_matcher<const char*>(StartsWith("abc")).matches("abcdef"));
-   H2EQ(nullptr == h2_matcher<const char*>(CaseLess(StartsWith("abc"))).matches("ABCDEF"));
-}
-
-H2CASE(h2_matcher_String, EndsWith)
-{
-   H2EQ(nullptr == h2_matcher<const char*>(EndsWith("def")).matches("abcdef"));
-   H2EQ(nullptr == h2_matcher<const char*>(CaseLess(EndsWith("def"))).matches("ABCDEF"));
-}
-
-H2UNIT (h2_matcher_lambda) {
-   void setup()
+   Case(NoneOf)
    {
-   }
+      // <65, 75<
+      OK(nullptr == h2_matcher<int>(NoneOf(Lt(65), Gt(75))).matches(70));
 
-   void teardown()
+      OK(nullptr != h2_matcher<int>(NoneOf(Lt(65), Gt(75))).matches(60));
+   };
+
+   Case(ListOf)
    {
-   }
-};
+      int a[] = {1, 3, 5};
+      OK(nullptr == h2_matcher<int*>(ListOf(1, 3, 5)).matches(a));
 
-H2CASE(h2_matcher_lambda, Eq)
+      std::vector<int> b = {1, 3, 5};
+      OK(nullptr == h2_matcher<std::vector<int>>(ListOf(1, 3, 5)).matches(b));
+   };
+}
+
+SUITE(matcher_String)
 {
-   H2EQ(nullptr == h2_matcher<const char*>([](const char* a) -> bool {
-                      return strcmp("abcdef", a) == 0;
-                   })
-                     .matches("abcdef"));
+   Setup(){};
+
+   Teardown(){};
+
+   Case(Eq)
+   {
+      OK(nullptr == h2_matcher<const char*>("abcd").matches("abcd"));
+      OK(nullptr == h2_matcher<const char*>(CaseLess("AbCd")).matches("ABcd"));
+      std::string abcd = "abcd";
+      OK(nullptr == h2_matcher<std::string>(abcd).matches("abcd"));
+
+      OK(nullptr != h2_matcher<const char*>("abcd").matches("abcD"));
+      OK(nullptr != h2_matcher<const char*>(CaseLess("AbCd")).matches("ABcX"));
+   };
+
+   Case(CaseLess)
+   {
+      OK(nullptr == h2_matcher<const char*>(CaseLess("AbCd")).matches("ABcd"));
+      std::string AbCd = "AbCd";
+      OK(nullptr == h2_matcher<const char*>(CaseLess(AbCd)).matches("ABcd"));
+      OK(nullptr == h2_matcher<std::string>(CaseLess("ABcd")).matches(AbCd));
+   };
+
+   Case(Regex)
+   {
+      OK(nullptr == h2_matcher<const char*>(Re("abc.*")).matches("abcdef"));
+      OK(nullptr != h2_matcher<const char*>(Re("A.*")).matches("abcdef"));
+   };
+
+   Case(Wildcard)
+   {
+      OK(nullptr == h2_matcher<const char*>(We("abc*")).matches("abcdef"));
+      OK(nullptr != h2_matcher<const char*>(We("abc?yz")).matches("abcdef"));
+   };
+
+   Case(Contains)
+   {
+      OK(nullptr == h2_matcher<const char*>(Contains("cd")).matches("abcdef"));
+      OK(nullptr != h2_matcher<const char*>(Contains("cc")).matches("abcdef"));
+      std::string cd = "cd";
+      OK(nullptr == h2_matcher<const char*>(Contains(cd)).matches("abcdef"));
+      OK(nullptr == h2_matcher<const char*>(CaseLess(Contains("cd"))).matches("ABCDEF"));
+   };
+
+   Case(StartsWith)
+   {
+      OK(nullptr == h2_matcher<const char*>(StartsWith("abc")).matches("abcdef"));
+      std::string abc = "abc";
+      OK(nullptr == h2_matcher<const char*>(StartsWith(abc)).matches("abcdef"));
+      OK(nullptr == h2_matcher<const char*>(CaseLess(StartsWith("abc"))).matches("ABCDEF"));
+   };
+
+   Case(EndsWith)
+   {
+      OK(nullptr == h2_matcher<const char*>(EndsWith("def")).matches("abcdef"));
+      OK(nullptr == h2_matcher<const char*>(CaseLess(EndsWith("def"))).matches("ABCDEF"));
+   };
+}
+
+SUITE(std string)
+{
+   Case(Eq)
+   {
+      std::string a = "123";
+      OK("123", a);
+      OK(a, "123");
+   };
 }
