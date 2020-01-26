@@ -1,5 +1,4 @@
 #include "../source/h2_unit.h"
-using namespace h2;
 
 time_t STUB_time(time_t* x)
 {

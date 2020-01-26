@@ -1,5 +1,4 @@
 #include "../source/h2_unit.h"
-using namespace h2;
 
 SUITE(mfp)
 {

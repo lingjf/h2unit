@@ -1,7 +1,7 @@
 
 struct h2_raw {
    static void* malloc(size_t sz) {
-      if (!cfg().memory_check) return ::malloc(sz);
+      if (!h2_cfg().memory_check) return ::malloc(sz);
       void* ptr = mmap(nullptr, sz, PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0);
       if (ptr == MAP_FAILED) return nullptr;
 
@@ -11,13 +11,14 @@ struct h2_raw {
    }
 
    static void free(void* ptr) {
-      if (!cfg().memory_check) return ::free(ptr);
+      if (!h2_cfg().memory_check) return ::free(ptr);
       if (!ptr) return;
       uintptr_t* p = ((uintptr_t*)ptr) - 1;
       munmap((void*)p, (size_t)*p);
    }
 };
 
+/* clang-format off */
 template <typename T>
 class h2_allocator {
  public:
@@ -43,24 +44,19 @@ class h2_allocator {
 
    size_type max_size() const { return size_t(-1); }
 
-   template <typename U>
-   struct rebind { typedef h2_allocator<U> other; };
+   template <typename U> struct rebind { typedef h2_allocator<U> other; };
 
-   template <typename U>
-   h2_allocator(const h2_allocator<U>&) {}
+   template <typename U> h2_allocator(const h2_allocator<U>&) {}
 
-   template <typename U>
-   h2_allocator& operator=(const h2_allocator<U>&) { return *this; }
+   template <typename U> h2_allocator& operator=(const h2_allocator<U>&) { return *this; }
 };
 
-template <typename T>
-inline bool operator==(const h2_allocator<T>&, const h2_allocator<T>&) { return true; }
+template <typename T> inline bool operator==(const h2_allocator<T>&, const h2_allocator<T>&) { return true; }
+template <typename T> inline bool operator!=(const h2_allocator<T>&, const h2_allocator<T>&) { return false; }
 
-template <typename T>
-inline bool operator!=(const h2_allocator<T>&, const h2_allocator<T>&) { return false; }
-
-typedef std::basic_ostringstream<char, std::char_traits<char>, h2_allocator<char>> h2_ostringstream;
 template <typename T> using h2_vector = std::vector<T, h2_allocator<T>>;
+typedef std::basic_ostringstream<char, std::char_traits<char>, h2_allocator<char>> h2_ostringstream;
+/* clang-format on */
 
 template <typename T>
 class h2_shared_ptr {
@@ -120,6 +116,28 @@ class h2_string : public std::basic_string<char, std::char_traits<char>, h2_allo
    h2_string& operator+=(const char* __s) { return this->append(__s), *this; }
    h2_string& operator+=(const std::string& __str) { return this->append(__str.c_str()), *this; }
    h2_string& operator+=(char __c) { return this->push_back(__c), *this; }
+
+   h2_string& printf(const char* format, ...) {
+      va_list a;
+
+      va_start(a, format);
+#if defined(_WIN32)
+      int length = _vscprintf(format, a);
+#else
+      int length = vsnprintf(NULL, 0, format, a);
+#endif
+      va_end(a);
+
+      char* t = (char*)alloca(length + 1);
+
+      va_start(a, format);
+      vsprintf(t, format, a);
+      va_end(a);
+
+      append(t);
+
+      return *this;
+   }
 
    bool equals(h2_string __str, bool caseless = false) const {
       h2_string a2(this->c_str()), e2(__str);

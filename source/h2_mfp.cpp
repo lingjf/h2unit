@@ -152,7 +152,7 @@ struct h2_mfp<Class, Return(Args...)> {
 
       Class* o = h2_constructible<Class>::O(alloca(sizeof(Class)));
       if (0 == (intptr_t)o || 1 == (intptr_t)o || 2 == (intptr_t)o)
-         h2_fail_g(new h2_fail_instantiate(file, line, action_type, return_type, class_type, method_name, return_args, (int)(intptr_t)o));
+         h2_fail_g(new h2_fail_instantiate(action_type, return_type, class_type, method_name, return_args, (int)(intptr_t)o, file, line));
       return get_vmfp(u, o);
    }
 

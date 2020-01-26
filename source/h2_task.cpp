@@ -17,18 +17,18 @@ struct h2_task {
    static h2_task& I() { static h2_task I; return I; }
    /* clang-format on */
 
-   void prepare(int argc, char** argv) {
-      cfg().opt(argc, argv);
+   void prepare(int argc, const char** argv) {
+      h2_cfg().opt(argc, argv);
 
-      if (cfg().listing) {
+      if (h2_cfg().listing) {
          h2_order::print_list();
          exit(0);
       }
 
       logs.add(&console_log);
-      if (strlen(cfg().junit)) {
-         if (!xml_log.set_file(cfg().junit)) {
-            printf("Can't open file %s\n", cfg().junit);
+      if (strlen(h2_cfg().junit)) {
+         if (!xml_log.set_file(h2_cfg().junit)) {
+            printf("Can't open file %s\n", h2_cfg().junit);
             exit(1);
          }
          logs.add(&xml_log);
@@ -66,7 +66,7 @@ struct h2_task {
 
          logs.on_case_start(current_case);
 
-         if (cfg().filter(current_suite->name, current_case->name, current_case->file)) current_case->status = h2_case::FILTED;
+         if (h2_cfg().filter(current_suite->name, current_case->name, current_case->file)) current_case->status = h2_case::FILTED;
 
          if (h2_case::INITED == current_case->status) current_suite->p(current_suite, current_case);
 
@@ -75,7 +75,7 @@ struct h2_task {
          status[current_case->status] += 1;
          current_suite->status[current_case->status] += 1;
 
-         if (0 < cfg().breakable && cfg().breakable <= status[h2_case::FAILED]) break;
+         if (0 < h2_cfg().breakable && h2_cfg().breakable <= status[h2_case::FAILED]) break;
       }
 
       logs.on_task_endup(status, case_list.size(), h2_milliseconds() - t_start);

@@ -2,8 +2,8 @@
 
 all :  
 	python ../build/singlify.py h2unit.h
-	gcc -Wall -g -std=c99 -c -o product_c.o product_c.c
-	g++ -Wall -g -std=c++11 -c -o product_cpp.o product_cpp.cpp
+	gcc -Wall -g -c -o product_c.o product_c.c
+	g++ -Wall -g -c -o product_cpp.o product_cpp.cpp
 	g++ -Wall -g -std=c++11 -c -o test_basic.o test_basic.cpp
 	g++ -Wall -g -std=c++11 -c -o test_compare.o test_compare.cpp
 	g++ -Wall -g -std=c++11 -c -o test_json.o test_json.cpp

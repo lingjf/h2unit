@@ -15,7 +15,9 @@ struct h2_callx {
    h2_fail* check() {
       if (is_satisfied() || is_saturated()) return nullptr;
       h2_fail_unexpect* fail = new h2_fail_unexpect();
-      fail->hamet("", actual(), "called but expect", expect(), "");
+      fail->aprintf("%s", actual());
+      fail->mprintf("called but expect");
+      fail->eprintf("%s", expect());
       return fail;
    }
 

@@ -596,7 +596,7 @@ struct h2_json {
          auto word = *i;
          if (word[0] == '#') {
             if (index * columns <= s && s < (index + 1) * columns) {
-               const char* style = cfg().style(word.c_str() + 1);
+               const char* style = h2_cfg().style(word.c_str() + 1);
                wrap.append(style);
                current_style = style;
             }
@@ -630,10 +630,10 @@ struct h2_json {
             auto e_wrap = line_wrap(e_line, j, side_columns - 2, e_current_style);
             auto a_wrap = line_wrap(a_line, j, side_columns - 2, a_current_style);
             ::printf("%s%s %s%s%s│%s %s%s %s%s%s%s\n",
-                     e_last_style.c_str(), e_wrap.c_str(), cfg().style("reset"),
-                     cfg().style("dark gray"), j == K - 1 ? " " : "\\", cfg().style("reset"),
-                     a_last_style.c_str(), a_wrap.c_str(), cfg().style("reset"),
-                     cfg().style("dark gray"), j == K - 1 ? " " : "\\", cfg().style("reset"));
+                     e_last_style.c_str(), e_wrap.c_str(), h2_cfg().style("reset"),
+                     h2_cfg().style("dark gray"), j == K - 1 ? " " : "\\", h2_cfg().style("reset"),
+                     a_last_style.c_str(), a_wrap.c_str(), h2_cfg().style("reset"),
+                     h2_cfg().style("dark gray"), j == K - 1 ? " " : "\\", h2_cfg().style("reset"));
 
             e_last_style = e_current_style;
             a_last_style = a_current_style;
@@ -666,13 +666,13 @@ struct h2_json {
 
       char t1[256], t2[256];
       ::printf("%s%s%s%s│%s%s%s%s\n",
-               cfg().style("dark gray"),
+               h2_cfg().style("dark gray"),
                h2_center_string("expect", side_columns, t1),
-               cfg().style("reset"),
-               cfg().style("dark gray"), cfg().style("reset"),
-               cfg().style("dark gray"),
+               h2_cfg().style("reset"),
+               h2_cfg().style("dark gray"), h2_cfg().style("reset"),
+               h2_cfg().style("dark gray"),
                h2_center_string("actual", side_columns, t2),
-               cfg().style("reset"));
+               h2_cfg().style("reset"));
 
       print(e_lines, a_lines, side_columns);
    }

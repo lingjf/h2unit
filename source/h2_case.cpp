@@ -4,30 +4,18 @@ static inline void h2_suite_case_g(h2_suite*, void*);
 static inline void h2_suite_setup_g(h2_suite*);
 static inline void h2_suite_teardown_g(h2_suite*);
 
-class h2_case {
- public:
-   static constexpr int INITED = 0;
-   static constexpr int PASSED = 1;
-   static constexpr int FAILED = 2;
-   static constexpr int TODOED = 3;
-   static constexpr int FILTED = 4;
+static constexpr const char* h2_cs[] = {"init", "TODO", "Filtered", "Passed", "Failed"};
 
-   const char* get_status() {
-      switch (status) {
-      case TODOED: return "TODO";
-      case FILTED: return "Filtered";
-      case PASSED: return "Passed";
-      case FAILED: return "Failed";
-      }
-      return "";
-   }
+struct h2_case {
+   /* clang-format off */
+   enum S { INITED = 0, PASSED, FAILED, TODOED, FILTED };
+   /* clang-format on */
 
-   h2_suite* suite;
    const char* name;
-   int status;
+   h2_suite* suite;
+   S status;
    const char* file;
    int line;
-   int id;
    long long t_start, t_end;
 
    void prev_setup() {
@@ -48,12 +36,10 @@ class h2_case {
       h2_append_x_fail(fail, h2_stack::G().pop());
 
       if (fail) {
-         if (status != FAILED) {
-            status = FAILED;
-            fails.push_back(fail);
-         } else {
+         if (status != FAILED)
+            status = FAILED, fails.push_back(fail);
+         else
             delete fail;
-         }
       }
 
       t_end = h2_milliseconds();
@@ -101,7 +87,6 @@ class h2_case {
 
    bool do_mock(h2_mock* mock) {
       h2_list_for_each_entry(p, &mocks, h2_mock, x) if (p == mock) return true;
-
       do_stub(mock->befp, mock->tofp, mock->befn, "", mock->file, mock->line);
       mocks.push(&mock->x);
       return true;
@@ -121,8 +106,7 @@ class h2_case {
    jmp_buf jb;
    h2_vector<h2_fail*> fails;
    void do_fail(h2_fail* fail) {
-      status = FAILED;
-      fails.push_back(fail);
+      status = FAILED, fails.push_back(fail);
       if (0 < jc--) ::longjmp(jb, 1);
    }
 
@@ -144,10 +128,8 @@ class h2_case {
       operator bool() { return 0 == count++; }
    };
 
-   h2_case(h2_suite* suite_, const char* name_, int status_, const char* file_, int line_)
-     : suite(suite_), name(name_), status(status_), file(file_), line(line_), jc(0), ul_code() {
-      static int g_case_id = 0;
-      id = g_case_id++;
+   h2_case(const char* name_, h2_suite* suite_, S status_, const char* file_, int line_)
+     : name(name_), suite(suite_), status(status_), file(file_), line(line_), jc(0), ul_code() {
       h2_suite_case_g(suite, this);
    }
 

@@ -1,5 +1,4 @@
 #include "../source/h2_unit.h"
-using namespace h2;
 
 static int __node_tojson(h2_json::node* node, char* b)
 {

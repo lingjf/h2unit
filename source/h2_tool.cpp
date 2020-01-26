@@ -48,8 +48,9 @@
 
 struct h2_file {
    FILE* fp;
-   h2_file(FILE* fp_) : fp(fp_) {}
-   ~h2_file() { fp&& fclose(fp); }
+   int (*_close)(FILE*);
+   h2_file(FILE* fp_, int (*close_)(FILE*) = ::fclose) : fp(fp_), _close(close_) {}
+   ~h2_file() { fp&& _close(fp); }
 };
 
 static inline bool h2_wildcard_match(const char* pattern, const char* subject) {
@@ -121,14 +122,10 @@ static inline const char* h2_style(const char* style_str, char* style_abi) {
 
    strcpy(style_abi, "\033[");
 
-   for (char* opt = strtok(__style_str, ","); opt; opt = strtok(NULL, ",")) {
-      for (size_t i = 0; i < sizeof(K) / sizeof(K[0]); i++) {
-         if (strcmp(K[i].name, opt) == 0) {
-            strcat(style_abi, K[i].value);
-            break;
-         }
-      }
-   }
+   for (char* p = strtok(__style_str, ","); p; p = strtok(NULL, ","))
+      for (size_t i = 0; i < sizeof(K) / sizeof(K[0]); i++)
+         if (strcmp(K[i].name, p) == 0)
+            strcat(style_abi, K[i].value), i = sizeof(K);
 
    style_abi[strlen(style_abi) - 1] = 'm';
 
@@ -153,7 +150,13 @@ static inline const char* h2_center_string(const char* str, int width, char* t) 
    return t;
 }
 
-static inline bool h2_endswith_string(char* haystack, char* needle) {
+static inline bool h2_endswith_string(const char* haystack, const char* needle) {
    int haystack_length = strlen(haystack), needle_length = strlen(needle);
    return haystack_length < needle_length ? false : strncmp(haystack + haystack_length - needle_length, needle, needle_length) == 0;
 }
+
+#if defined(_WIN32)
+#   define h2_selectany __declspec(selectany)
+#else
+#   define h2_selectany __attribute__((weak))
+#endif

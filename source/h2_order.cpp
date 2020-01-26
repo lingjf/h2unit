@@ -9,7 +9,6 @@ struct h2_order {
       for (auto i = h2_suite::G().begin(); i != h2_suite::G().end(); i++)
          for (auto j = (*i)->cases().begin(); j != (*i)->cases().end(); j++)
             case1_list.push_back(*j);
-      std::sort(case1_list.begin(), case1_list.end(), [](h2_case* a, h2_case* b) { return a->id < b->id; });
 
       //read_last_order
       char suite_case_name[1024];
@@ -32,7 +31,7 @@ struct h2_order {
          return case2_list;
       }
 
-      if (cfg().randomize) {
+      if (h2_cfg().randomize) {
          std::random_device rd;
          std::mt19937 g(rd());
          shuffle(case1_list.begin(), case1_list.end(), g);
@@ -43,6 +42,7 @@ struct h2_order {
             for (auto it = case1_list.begin(); it != case1_list.end(); it++)
                fprintf(sfp.fp, "%s[:]%s\n", (*it)->suite->name, (*it)->name);
       }
+
       return case1_list;
    }
 

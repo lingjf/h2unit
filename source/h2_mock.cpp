@@ -1,17 +1,16 @@
 
 struct h2_mock {
    h2_list x;
-   void* befp;
+   void *befp, *tofp;
    const char* befn;
-   void* tofp;
    const char* file;
    int line;
 
    h2_vector<h2_callx> c_array;
    int c_index;
 
-   h2_mock(void* befp_, const char* befn_, void* tofp_, const char* file_, int line_)
-     : befp(befp_), befn(befn_), tofp(tofp_), file(file_), line(line_), c_index(0) {}
+   h2_mock(void* befp_, void* tofp_, const char* befn_, const char* file_, int line_)
+     : befp(befp_), tofp(tofp_), befn(befn_), file(file_), line(line_), c_index(0) {}
 
    virtual void reset() = 0;
 
@@ -68,7 +67,7 @@ template <int Counter, int Lineno, typename Class, typename Return, typename... 
 class h2_mocker<Counter, Lineno, Class, Return(Args...)> : h2_mock {
  private:
    h2_mocker(void* befp, const char* befn, const char* file, int line)
-     : h2_mock(befp, befn, std::is_same<std::false_type, Class>::value ? (void*)normal_function_stub : (void*)member_function_stub, file, line) {}
+     : h2_mock(befp, std::is_same<std::false_type, Class>::value ? (void*)normal_function_stub : (void*)member_function_stub, befn, file, line) {}
 
 /* clang-format off */
 #define __H2_MATCHER_TYPE_LIST                \
@@ -135,12 +134,9 @@ class h2_mocker<Counter, Lineno, Class, Return(Args...)> : h2_mock {
             break;
          }
       }
-      if (-1 == c_offset) {
-         h2_fail_normal* fail = new h2_fail_normal();
-         fail->kprintf("unexpect call");
-         fail->locate(file, line, befn);
-         h2_fail_g(fail);
-      }
+      if (-1 == c_offset)
+         h2_fail_g(new h2_fail_normal(file, line, befn, "unexpect call"));
+
       return c_offset;
    }
 
