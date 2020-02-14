@@ -1,9 +1,9 @@
 // https://www.codeproject.com/Articles/25198/Generic-Thunk-with-5-combinations-of-Calling-Conve
 
 struct h2_thunk {
-#if defined(__x86_64__)
+#if defined __x86_64__
    unsigned char saved_code[sizeof(void*) + 4];
-#elif defined(__i386__)
+#elif defined __i386__
    unsigned char saved_code[sizeof(void*) + 1];
 #endif
 
@@ -29,7 +29,7 @@ struct h2_thunk {
       //x86_64 __asm("movq $tofp, %rax; jmpq %rax") : 0x48 0xB8 {tofp} 0xFF 0xE0
 #if defined(__i386__) || defined(__x86_64__)
       ptrdiff_t delta = (unsigned char*)tofp - (unsigned char*)befp;
-#   if defined(__x86_64__)
+#   if defined __x86_64__
       if (delta < INT_MIN || INT_MAX < delta) {
          *I++ = 0x48;
          *I++ = 0xB8;

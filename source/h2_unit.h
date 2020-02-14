@@ -43,37 +43,21 @@
 #include <netdb.h>
 #include <arpa/inet.h>
 
-#if defined(__GLIBC__)
+#if defined __GLIBC__
 #   include <malloc.h>
-#elif defined(__APPLE__)
+#elif defined __APPLE__
 #   include <AvailabilityMacros.h>
 #   include <malloc/malloc.h>
-#else
 #endif
 
-static inline void h2_fail_g(void* fail);
-
-#include "h2_tool.cpp"
-#include "h2_list.cpp"
-#include "h2_configure.cpp"
-#include "h2_allocate.cpp"
-#include "h2_expr.cpp"
-#include "h2_json.cpp"
-#include "h2_backtrace.cpp"
-#include "h2_failure.cpp"
-#include "h2_stub.cpp"
-#include "h2_heap.cpp"
-#include "h2_mfp.cpp"
-#include "h2_matcher.cpp"
-#include "h2_callx.cpp"
-#include "h2_routine.cpp"
-#include "h2_mock.cpp"
-#include "h2_case.cpp"
-#include "h2_suite.cpp"
-#include "h2_log.cpp"
-#include "h2_extra.cpp"
-#include "h2_order.cpp"
-#include "h2_task.cpp"
+#if defined __clang__
+#   pragma clang diagnostic ignored "-Wsign-compare"
+#   pragma clang diagnostic ignored "-Wwritable-strings"
+#elif defined __GNUC__
+#   pragma GCC diagnostic ignored "-Wsign-compare"
+#   pragma GCC diagnostic ignored "-Wwrite-strings"
+#   pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+#endif
 
 #define __H2OK4(condition, _1, _2, f)                         \
    do {                                                       \
@@ -159,15 +143,15 @@ static inline void h2_fail_g(void* fail);
 #   define Todo H2Todo
 #endif
 
-#define __H2CASE(Casename, Status, a, C, t)                                           \
-   static h2_suite a("", h2_suite::execute, __FILE__, __LINE__, true);                \
-   namespace {                                                                        \
-      struct C : private h2_case {                                                    \
-         C(h2_suite* suite) : h2_case(Casename, suite, Status, __FILE__, __LINE__) {} \
-         void uf_code() override;                                                     \
-      };                                                                              \
-      static C t(&a);                                                                 \
-   }                                                                                  \
+#define __H2CASE(Casename, Status, a, C, t)                                        \
+   static h2_suite a("", h2_suite::execute, __FILE__, __LINE__, true);             \
+   namespace {                                                                     \
+   struct C : private h2_case {                                                    \
+      C(h2_suite* suite) : h2_case(Casename, suite, Status, __FILE__, __LINE__) {} \
+      void uf_code() override;                                                     \
+   };                                                                              \
+   static C t(&a);                                                                 \
+   }                                                                               \
    void C::uf_code()
 
 #define H2CASE(...) __H2CASE(#__VA_ARGS__, h2_case::INITED, H2Q(a), H2Q(h2_case), H2Q(t))
@@ -263,6 +247,30 @@ static inline void h2_fail_g(void* fail);
 #ifndef BLOCK
 #   define BLOCK H2BLOCK
 #endif
+
+static inline void h2_fail_g(void* fail);
+
+#include "h2_tool.cpp"
+#include "h2_list.cpp"
+#include "h2_configure.cpp"
+#include "h2_allocate.cpp"
+#include "h2_expr.cpp"
+#include "h2_json.cpp"
+#include "h2_backtrace.cpp"
+#include "h2_failure.cpp"
+#include "h2_stub.cpp"
+#include "h2_heap.cpp"
+#include "h2_mfp.cpp"
+#include "h2_matcher.cpp"
+#include "h2_callx.cpp"
+#include "h2_routine.cpp"
+#include "h2_mock.cpp"
+#include "h2_case.cpp"
+#include "h2_suite.cpp"
+#include "h2_log.cpp"
+#include "h2_extra.cpp"
+#include "h2_order.cpp"
+#include "h2_task.cpp"
 
 h2_selectany int main(int argc, const char** argv) {
    h2_task::I().prepare(argc, argv);

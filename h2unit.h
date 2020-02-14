@@ -1,4 +1,4 @@
-/* v4.0  2020-01-26 21:11:51 */
+/* v4.0  2020-02-14 23:25:00 */
 /* https://github.com/lingjf/h2unit */
 /* Apache Licence 2.0 */
 #ifndef ___H2UNIT_H___
@@ -43,12 +43,93 @@
 #include <sys/socket.h>
 #include <netdb.h>
 #include <arpa/inet.h>
-#if defined(__GLIBC__)
+#if defined __GLIBC__
 #   include <malloc.h>
-#elif defined(__APPLE__)
+#elif defined __APPLE__
 #   include <AvailabilityMacros.h>
 #   include <malloc/malloc.h>
+#endif
+#if defined __clang__
+#   pragma clang diagnostic ignored "-Wsign-compare"
+#   pragma clang diagnostic ignored "-Wwritable-strings"
+#elif defined __GNUC__
+#   pragma GCC diagnostic ignored "-Wsign-compare"
+#   pragma GCC diagnostic ignored "-Wwrite-strings"
+#   pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+#endif
+#define __H2OK4(condition, _1, _2, f)                           do {                                                            if (!(condition)) {                                             h2_fail* f = new h2_fail_normal(__FILE__, __LINE__);         f->kprintf("%s is false", #condition);                       h2_fail_g(f);                                             }                                                         } while (0)
+#define __H2OK5(expect, actual, a, e, f)                               do {                                                                   auto a = actual;                                                    h2_matcher<typename std::conditional<                                 std::is_enum<typename std::decay<decltype(a)>::type>::value,        int, /* translate enum type to int type */                          typename std::decay<decltype(a)>::type>::type>                      e(expect);                                                        h2_fail* f = e.matches(a);                                          if (f) {                                                               f->locate(__FILE__, __LINE__);                                      h2_fail_g(f);                                                    }                                                                } while (0)
+#define H2OK(...) H2PP_VARIADIC_CALL(__H2OK, __VA_ARGS__, H2Q(a), H2Q(e), H2Q(f))
+#define H2JE(expect, actual) __H2OK5(Je(expect), actual, H2Q(a), H2Q(e), H2Q(f))
+#ifndef OK
+#   define OK H2OK
+#endif
+#ifndef JE
+#   define JE H2JE
+#endif
+#define __H2SUITE(Suitename, s, a)                                static void s(h2_suite*, h2_case*);                            static h2_suite a(Suitename, &s, __FILE__, __LINE__, false);   static void s(h2_suite* ___suite, h2_case* case___)
+#define H2SUITE(...) __H2SUITE(H2PP_STRINGIZE(__VA_ARGS__), H2Q(suite), H2Q(a))
+#ifndef SUITE
+#   define SUITE H2SUITE
+#endif
+#define __H2Setup(t)   for (int t = 1; t--; case___ ? void() : h2_suite_setup_g(___suite)) ___suite->setup = [&]()
+#define __H2Teardown(t)   for (int t = 1; t--; case___ ? void() : h2_suite_teardown_g(___suite)) ___suite->teardown = [&]()
+#define H2Setup() __H2Setup(H2Q(t))
+#define H2Teardown() __H2Teardown(H2Q(t))
+#ifndef Setup
+#   define Setup H2Setup
+#endif
+#ifndef Teardown
+#   define Teardown H2Teardown
+#endif
+#define __H2Case1(Casename, Status, c, t)                              static h2_case c(Casename, ___suite, Status, __FILE__, __LINE__);   if (&c == case___)                                                     for (bool t = true; t; c.execute(), t = false) c.ul_code = [&]()
+#define __H2Case2(Casename, Status, c, t)                              static h2_case c(Casename, ___suite, Status, __FILE__, __LINE__);   if (&c == case___)                                                     for (h2_case::T t(&c); t && ::setjmp(c.jb) == 0;)
+#ifdef H2C
+#   define H2Case(...) __H2Case1(H2PP_STRINGIZE(__VA_ARGS__), h2_case::INITED, H2Q(c), H2Q(t))
+#   define H2Todo(...) __H2Case1(H2PP_STRINGIZE(__VA_ARGS__), h2_case::TODOED, H2Q(c), H2Q(t))
 #else
+#   define H2Case(...) __H2Case2(H2PP_STRINGIZE(__VA_ARGS__), h2_case::INITED, H2Q(c), H2Q(t))
+#   define H2Todo(...) __H2Case2(H2PP_STRINGIZE(__VA_ARGS__), h2_case::TODOED, H2Q(c), H2Q(t))
+#endif
+#ifndef Case
+#   define Case H2Case
+#endif
+#ifndef Todo
+#   define Todo H2Todo
+#endif
+#define __H2CASE(Casename, Status, a, C, t)                                          static h2_suite a("", h2_suite::execute, __FILE__, __LINE__, true);               namespace {                                                                       struct C : private h2_case {                                                         C(h2_suite* suite) : h2_case(Casename, suite, Status, __FILE__, __LINE__) {}      void uf_code() override;                                                       };                                                                                static C t(&a);                                                                   }                                                                                 void C::uf_code()
+#define H2CASE(...) __H2CASE(#__VA_ARGS__, h2_case::INITED, H2Q(a), H2Q(h2_case), H2Q(t))
+#define H2TODO(...) __H2CASE(#__VA_ARGS__, h2_case::TODOED, H2Q(a), H2Q(h2_case), H2Q(t))
+#ifndef CASE
+#   define CASE H2CASE
+#endif
+#ifndef TODO
+#   define TODO H2TODO
+#endif
+#define __H2MOCK2(BeFunc, Signature)   h2_mocker<__COUNTER__, __LINE__, std::false_type, Signature>::I((void*)BeFunc, #BeFunc, __FILE__, __LINE__)
+#define __H2MOCK3(Class, Method, Signature)   h2_mocker<__COUNTER__, __LINE__, Class, Signature>::I(h2_mfp<Class, Signature>::A(&Class::Method, "MOCK", "", #Class, #Method, #Signature, __FILE__, __LINE__), #Class "::" #Method, __FILE__, __LINE__)
+#define __H2MOCK4(Class, Method, Signature, Instance)   h2_mocker<__COUNTER__, __LINE__, Class, Signature>::I(h2_mfp<Class, Signature>::A(&Class::Method, Instance), #Class "::" #Method, __FILE__, __LINE__)
+#define H2MOCK(...) H2PP_VARIADIC_CALL(__H2MOCK, __VA_ARGS__)
+#ifndef MOCK
+#   define MOCK H2MOCK
+#endif
+#define __H2STUB3(BeFunc, ToFunc, Q)                                                   do {                                                                                   h2_stub_g((void*)BeFunc, (void*)ToFunc, #BeFunc, #ToFunc, __FILE__, __LINE__);   } while (0)
+#define __H2STUB4(Return, BeFunc, Args, Q)                                        struct {                                                                          void operator=(Return(*toF) Args) {                                               Return(*beF) Args = BeFunc;                                                    h2_stub_g((void*)beF, (void*)(toF), #BeFunc, "~", __FILE__, __LINE__);      }                                                                           } Q;                                                                           Q = [] Args -> Return
+#define __H2STUB50(Return, Class, Method, Args, Q)                                                                                                                                            struct {                                                                                                                                                                                      void operator=(Return (*toF)(Class * that)) {                                                                                                                                                 h2_stub_g(h2_mfp<Class, Return Args>::A(&Class::Method, "STUB", #Return, #Class, #Method, #Args, __FILE__, __LINE__), (void*)(toF), #Class "::" #Method, "~", __FILE__, __LINE__);      }                                                                                                                                                                                       } Q;                                                                                                                                                                                       Q = [](Class * that) -> Return
+#define __H2STUB51(Return, Class, Method, Args, Q)                                                                                                                                            struct {                                                                                                                                                                                      void operator=(Return (*toF)(Class * that, H2PP_REMOVE_PARENTHESES(Args))) {                                                                                                                  h2_stub_g(h2_mfp<Class, Return Args>::A(&Class::Method, "STUB", #Return, #Class, #Method, #Args, __FILE__, __LINE__), (void*)(toF), #Class "::" #Method, "~", __FILE__, __LINE__);      }                                                                                                                                                                                       } Q;                                                                                                                                                                                       Q = [](Class * that, H2PP_REMOVE_PARENTHESES(Args)) -> Return
+#define __H2STUB5(Return, Class, Method, Args, Q)   H2PP_IF(H2PP_0ARGS Args, __H2STUB50(Return, Class, Method, Args, Q), __H2STUB51(Return, Class, Method, Args, Q))
+#define __H2STUB60(Return, Class, Method, Args, Instance, Q)                                                                               struct {                                                                                                                                   void operator=(Return (*toF)(Class * that)) {                                                                                              h2_stub_g(h2_mfp<Class, Return Args>::A(&Class::Method, Instance), (void*)(toF), #Class "::" #Method, "~", __FILE__, __LINE__);      }                                                                                                                                    } Q;                                                                                                                                    Q = [](Class * that) -> Return
+#define __H2STUB61(Return, Class, Method, Args, Instance, Q)                                                                               struct {                                                                                                                                   void operator=(Return (*toF)(Class * that, H2PP_REMOVE_PARENTHESES(Args))) {                                                               h2_stub_g(h2_mfp<Class, Return Args>::A(&Class::Method, Instance), (void*)(toF), #Class "::" #Method, "~", __FILE__, __LINE__);      }                                                                                                                                    } Q;                                                                                                                                    Q = [](Class * that, H2PP_REMOVE_PARENTHESES(Args)) -> Return
+#define __H2STUB6(Return, Class, Method, Args, Instance, Q)   H2PP_IF(H2PP_0ARGS Args, __H2STUB60(Return, Class, Method, Args, Instance, Q), __H2STUB61(Return, Class, Method, Args, Instance, Q))
+#define H2STUB(...) H2PP_VARIADIC_CALL(__H2STUB, __VA_ARGS__, H2Q(t))
+#ifndef STUB
+#   define STUB H2STUB
+#endif
+#define __H2BLOCK0(t) for (h2_stack::T t(__FILE__, __LINE__); t;)
+#define __H2BLOCK1(t, ...) for (h2_stack::T t(__FILE__, __LINE__, __VA_ARGS__); t;)
+#define H2BLOCK(...) H2PP_IF(H2PP_0ARGS(__VA_ARGS__), __H2BLOCK0(H2Q(t)), __H2BLOCK1(H2Q(t), __VA_ARGS__))
+#ifndef BLOCK
+#   define BLOCK H2BLOCK
 #endif
 static inline void h2_fail_g(void* fail);
 #define H2PP_CAT2(_1, _2) _H2PP_CAT2(_1, _2)
@@ -75,11 +156,11 @@ static inline void h2_fail_g(void* fail);
 #define H2_ALIGN_UP(n, s) (((n) + (s)-1) / (s) * (s))
 #define H2_ALIGN_DOWN(n, s) ((n) / (s) * (s))
 #define H2_DIV_ROUND_UP(n, s) (((n) + (s)-1) / (s))
-struct h2_file {
-   FILE* fp;
-   int (*_close)(FILE*);
-   h2_file(FILE* fp_, int (*close_)(FILE*) = ::fclose) : fp(fp_), _close(close_) {}
-   ~h2_file() { fp&& _close(fp); }
+struct h2_with {
+   FILE* f;
+   int (*c)(FILE*);
+   h2_with(FILE* file, int (*close)(FILE*) = ::fclose) : f(file), c(close) {}
+   ~h2_with() { f&& c&& c(f); }
 };
 static inline bool h2_wildcard_match(const char* pattern, const char* subject) {
    const char *scur = subject, *pcur = pattern;
@@ -153,26 +234,23 @@ static inline const char* h2_style(const char* style_str, char* style_abi) {
    return style_abi;
 }
 static inline const char* h2_acronym_string(const char* full, int atmost = 10) {
-   static char buffer[32];
-   strncpy(buffer, full, atmost);
-   strcpy(buffer + atmost, "...");
-   return buffer;
+   static char st[32];
+   strncpy(st, full, atmost);
+   strcpy(st + atmost, "...");
+   return st;
 }
-static inline const char* h2_center_string(const char* str, int width, char* t) {
-   int slen = strlen(str);
-   char* p = t;
-   for (int i = 0; i < (width - slen) / 2; i++) *p++ = ' ';
-   strcpy(p, str);
-   p += slen;
-   for (; p < t + width; p++) *p = ' ';
-   *p = '\0';
-   return t;
+static inline const char* h2_center_string(const char* str, int width, char* out) {
+   int z = strlen(str), l = (width - z) / 2, r = width - l - z;
+   char f[32];
+   sprintf(f, "%%%ds%%s%%%ds", l, r);
+   sprintf(out, f, "", str, "");
+   return out;
 }
 static inline bool h2_endswith_string(const char* haystack, const char* needle) {
    int haystack_length = strlen(haystack), needle_length = strlen(needle);
    return haystack_length < needle_length ? false : strncmp(haystack + haystack_length - needle_length, needle, needle_length) == 0;
 }
-#if defined(_WIN32)
+#if defined _WIN32
 #   define h2_selectany __declspec(selectany)
 #else
 #   define h2_selectany __attribute__((weak))
@@ -223,9 +301,9 @@ struct h2_configure {
    const char *include_patterns[9], *exclude_patterns[9];
    h2_configure()
      : path(nullptr),
-#if defined(__linux__)
+#if defined __linux__
        platform("Linux"),
-#elif defined(__APPLE__)
+#elif defined __APPLE__
        platform("MAC"),
 #endif
        listing(false),
@@ -423,7 +501,7 @@ class h2_string : public std::basic_string<char, std::char_traits<char>, h2_allo
    h2_string& printf(const char* format, ...) {
       va_list a;
       va_start(a, format);
-#if defined(_WIN32)
+#if defined _WIN32
       int length = _vscprintf(format, a);
 #else
       int length = vsnprintf(NULL, 0, format, a);
@@ -1514,12 +1592,11 @@ struct h2_nm {
    h2_nm() {
       char buf[256], addr[32], type[32], name[1024];
       snprintf(buf, sizeof(buf), "nm %s", h2_cfg().path);
-      h2_file pfp(::popen(buf, "r"), ::pclose);
-      if (pfp.fp)
-         while (::fgets(buf, sizeof(buf) - 1, pfp.fp))
-            if (3 == sscanf(buf, "%s%s%s", addr, type, name))
-               if (::tolower((int)type[0]) == 't' || ::tolower((int)type[0]) == 'w')
-                  symbols.insert(std::make_pair(name + (!strcmp(h2_cfg().platform, "MAC") ? 1 : 0), strtol(addr, nullptr, 16)));
+      h2_with f(::popen(buf, "r"), ::pclose);
+      while (f.f && ::fgets(buf, sizeof(buf) - 1, f.f))
+         if (3 == sscanf(buf, "%s%s%s", addr, type, name))
+            if (::tolower((int)type[0]) == 't' || ::tolower((int)type[0]) == 'w')
+               symbols.insert(std::make_pair(name + (!strcmp(h2_cfg().platform, "MAC") ? 1 : 0), strtol(addr, nullptr, 16)));
       main_ptr = get("main");
    }
    std::map<std::string, unsigned long> symbols;
@@ -1552,48 +1629,41 @@ struct h2_backtrace {
    }
    bool has(void* func, int size) {
       for (int i = 0; i < count; ++i)
-         if (func <= array[i] && (unsigned char*)array[i] < ((unsigned char*)func) + size) return true;
+         if (func <= array[i] && (unsigned char*)array[i] < ((unsigned char*)func) + size)
+            return true;
       return false;
    }
    void print() const {
-      h2_file tfp(::tmpfile(), ::fclose);
-      if (tfp.fp) {
-         backtrace_symbols_fd(array, count, fileno(tfp.fp));
-         ::fseek(tfp.fp, 0, SEEK_SET);
-         h2_unhook_g();
-         char backtrace_symbol_line[512], module[256], mangled[256], demangled[256], addr2lined[512];
-         for (int i = 0; i < count && ::fgets(backtrace_symbol_line, 512, tfp.fp); ++i) {
-            if (i < offset) continue;
-            for (int j = strlen(backtrace_symbol_line) - 1; 0 <= j && isspace(backtrace_symbol_line[j]); --j) backtrace_symbol_line[j] = '\0';
-            char* p = backtrace_symbol_line;
-            unsigned long addr = 0, delta = 0;
-            if (extract(backtrace_symbol_line, module, mangled, &delta)) {
-               if (strlen(mangled)) p = mangled;
-               if (demangle(mangled, demangled, sizeof(demangled)))
-                  if (strlen(demangled)) p = demangled;
-               addr = strlen(mangled) ? h2_nm::I().get(mangled) : 0;
-               if (addr != ULONG_MAX && h2_endswith_string(h2_cfg().path, module))
-                  if (addr2line(addr + delta, h2_cfg().path, addr2lined, sizeof(addr2lined)))
-                     p = addr2lined;
-            }
-            ::printf("   %d. %s\n", i - offset, p);
-            if (!strcmp("main", mangled) || !strcmp("main", demangled) || h2_nm::I().in_main(addr + delta)) break;
+      h2_unhook_g();
+      char** backtraces = backtrace_symbols(array, count);
+      for (int i = offset; i < count; ++i) {
+         char *p = backtraces[i], module[256], mangled[256], demangled[256], addr2lined[512];
+         unsigned long addr = 0, delta = 0;
+         if (extract(backtraces[i], module, mangled, &delta)) {
+            if (strlen(mangled)) p = mangled;
+            if (demangle(mangled, demangled, sizeof(demangled)) && strlen(demangled)) p = demangled;
+            addr = strlen(mangled) ? h2_nm::I().get(mangled) : 0;
+            if (addr != ULONG_MAX && h2_endswith_string(h2_cfg().path, module))
+               if (addr2line(addr + delta, addr2lined, sizeof(addr2lined)))
+                  p = addr2lined;
          }
-         h2_dohook_g();
+         ::printf("   %d. %s\n", i - offset, p);
+         if (!strcmp("main", mangled) || !strcmp("main", demangled) || h2_nm::I().in_main(addr + delta)) break;
       }
+      free(backtraces);
+      h2_dohook_g();
    }
-   bool addr2line(unsigned long addr, const char* path, char* output, size_t len) const {
+   bool addr2line(unsigned long addr, char* output, size_t len) const {
       char buf[256];
-#if defined(__APPLE__)
-      snprintf(buf, sizeof(buf), "atos -o %s 0x%lx", path, addr);
+#if defined __APPLE__
+      snprintf(buf, sizeof(buf), "atos -o %s 0x%lx", h2_cfg().path, addr);
 #else
-      snprintf(buf, sizeof(buf), "addr2line -C -a -s -p -f -e %s -i %lx", path, addr);
+      snprintf(buf, sizeof(buf), "addr2line -C -a -s -p -f -e %s -i %lx", h2_cfg().path, addr);
 #endif
-      h2_file pfp(::popen(buf, "r"), ::pclose);
-      if (pfp.fp)
-         if (::fgets(output, len, pfp.fp))
-            for (int i = strlen(output) - 1; 0 <= i && isspace(output[i]); --i) output[i] = '\0';
-      return !!pfp.fp;
+      h2_with f(::popen(buf, "r"), ::pclose);
+      if (!f.f || !::fgets(output, len, f.f)) return false;
+      for (int i = strlen(output) - 1; 0 <= i && isspace(output[i]); --i) output[i] = '\0';
+      return 0 < strlen(output);
    }
    bool extract(const char* backtrace_symbol_line, char* module, char* mangled, unsigned long* offset) const {
       if (3 == ::sscanf(backtrace_symbol_line, "%*s%s%*s%s + %lu", module, mangled, offset))
@@ -1876,9 +1946,9 @@ struct h2_fail_instantiate : public h2_fail {
    }
 };
 struct h2_thunk {
-#if defined(__x86_64__)
+#if defined __x86_64__
    unsigned char saved_code[sizeof(void*) + 4];
-#elif defined(__i386__)
+#elif defined __i386__
    unsigned char saved_code[sizeof(void*) + 1];
 #endif
    bool save(void* befp) {
@@ -1896,7 +1966,7 @@ struct h2_thunk {
       unsigned char* I = reinterpret_cast<unsigned char*>(befp);
 #if defined(__i386__) || defined(__x86_64__)
       ptrdiff_t delta = (unsigned char*)tofp - (unsigned char*)befp;
-#   if defined(__x86_64__)
+#   if defined __x86_64__
       if (delta < INT_MIN || INT_MAX < delta) {
          *I++ = 0x48;
          *I++ = 0xB8;
@@ -2002,7 +2072,7 @@ struct h2_block {
    h2_piece* newm(int size, int alignment, const char* fill_, h2_backtrace& bt) {
       if (limited < size) return nullptr;
       h2_piece* m = h2_piece::allocate(size, alignment, bt);
-      if (fill_ ? fill_ : fill_ = fill)
+      if (fill_ ? fill_ : (fill_ = fill))
          for (int i = 0, j = 0, l = strlen(fill_); i < size; ++i, ++j)
             ((char*)m->ptr)[i] = fill_[j % (l ? l : 1)];
       using_list.push(&m->x);
@@ -2133,7 +2203,7 @@ struct h2_hook {
    void* (*old__malloc_hook)(size_t, const void*);
    void* (*old__realloc_hook)(void*, size_t, const void*);
    void* (*old__memalign_hook)(size_t, size_t, const void*);
-#elif defined(__APPLE__)
+#elif defined __APPLE__
    static size_t mz_size(malloc_zone_t* zone, const void* ptr) {
       h2_piece* m = h2_stack::G().getm(ptr);
       return m ? m->size : 0;
@@ -2171,8 +2241,8 @@ struct h2_hook {
    stub posix_memalign_stub;
 #endif
    h2_hook()
-#ifdef __GLIBC__
-#elif defined(__APPLE__)
+#if defined __GLIBC__
+#elif defined __APPLE__
 #else
      : free_stub((void*)::free),
        malloc_stub((void*)::malloc),
@@ -2181,15 +2251,12 @@ struct h2_hook {
        posix_memalign_stub((void*)::posix_memalign)
 #endif
    {
-#ifdef __GLIBC__
-#   pragma GCC diagnostic push
-#   pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+#if defined __GLIBC__
       old__free_hook = __free_hook;
       old__malloc_hook = __malloc_hook;
       old__realloc_hook = __realloc_hook;
       old__memalign_hook = __memalign_hook;
-#   pragma GCC diagnostic pop
-#elif defined(__APPLE__)
+#elif defined __APPLE__
       memset(&mi, 0, sizeof(mi));
       mi.enumerator = &mi_enumerator;
       mi.good_size = &mi_good_size;
@@ -2223,15 +2290,12 @@ struct h2_hook {
    }
    static h2_hook& I() { static h2_hook I; return I; }
    void dohook() {
-#ifdef __GLIBC__
-#   pragma GCC diagnostic push
-#   pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+#if defined __GLIBC__
       __free_hook = free_hook;
       __malloc_hook = malloc_hook;
       __realloc_hook = realloc_hook;
       __memalign_hook = memalign_hook;
-#   pragma GCC diagnostic pop
-#elif defined(__APPLE__)
+#elif defined __APPLE__
       malloc_zone_register(&mz);
       malloc_zone_t* default_zone = get_default_zone();
       malloc_zone_unregister(default_zone);
@@ -2245,15 +2309,12 @@ struct h2_hook {
 #endif
    }
    void unhook() {
-#ifdef __GLIBC__
-#   pragma GCC diagnostic push
-#   pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+#if defined __GLIBC__
       __free_hook = old__free_hook;
       __malloc_hook = old__malloc_hook;
       __realloc_hook = old__realloc_hook;
       __memalign_hook = old__memalign_hook;
-#   pragma GCC diagnostic pop
-#elif defined(__APPLE__)
+#elif defined __APPLE__
       malloc_zone_unregister(&mz);
 #else
       free_stub.restore();
@@ -2534,14 +2595,7 @@ struct h2_eq_matches {
    explicit h2_eq_matches(const E& _e) : e(_e) {}
    template <typename A>
    h2_fail* matches(const A& a, bool caseless = false, bool dont = false) const {
-#ifdef __GLIBC__
-#   pragma GCC diagnostic push
-#   pragma GCC diagnostic ignored "-Wsign-compare"
-#endif
       if ((a == e) == !dont) return nullptr;
-#ifdef __GLIBC__
-#   pragma GCC diagnostic pop
-#endif
       return h2_desc(a, e, dont, "equal to");
    }
 };
@@ -3532,17 +3586,25 @@ static inline void addrinfos(int count, ...) {
 #define H2DNS(...) h2::addrinfos(H2PP_NARGS(__VA_ARGS__), __VA_ARGS__)
 struct h2_order {
    static constexpr const char* last_order_file_path = ".last_order";
+   static void drop_last_order() { ::remove(last_order_file_path); }
+   static void read_last_order(std::vector<std::string>& list) {
+      char suite_case_name[1024];
+      h2_with f(fopen(last_order_file_path, "r"));
+      while (f.f && 1 == fscanf(f.f, "%[^\n]\n", suite_case_name))
+         list.push_back(suite_case_name);
+   }
+   static void save_last_order(std::vector<h2_case*>& list) {
+      h2_with f(fopen(last_order_file_path, "w"));
+      for (auto it = list.begin(); it != list.end(); it++)
+         f.f&& fprintf(f.f, "%s[:]%s\n", (*it)->suite->name, (*it)->name);
+   }
    static std::vector<h2_case*> case_list() {
       std::vector<h2_case*> case1_list, case2_list;
       std::vector<std::string> last_list;
       for (auto i = h2_suite::G().begin(); i != h2_suite::G().end(); i++)
          for (auto j = (*i)->cases().begin(); j != (*i)->cases().end(); j++)
             case1_list.push_back(*j);
-      char suite_case_name[1024];
-      h2_file rfp(fopen(last_order_file_path, "r"));
-      if (rfp.fp)
-         while (1 == fscanf(rfp.fp, "%[^\n]\n", suite_case_name))
-            last_list.push_back(suite_case_name);
+      read_last_order(last_list);
       if (0 < last_list.size()) {
          for (auto i = last_list.begin(); i != last_list.end(); i++)
             for (auto j = case1_list.begin(); j != case1_list.end(); j++)
@@ -3558,14 +3620,10 @@ struct h2_order {
          std::random_device rd;
          std::mt19937 g(rd());
          shuffle(case1_list.begin(), case1_list.end(), g);
-         h2_file sfp(fopen(last_order_file_path, "w"));
-         if (sfp.fp)
-            for (auto it = case1_list.begin(); it != case1_list.end(); it++)
-               fprintf(sfp.fp, "%s[:]%s\n", (*it)->suite->name, (*it)->name);
+         save_last_order(case1_list);
       }
       return case1_list;
    }
-   static void drop_last_order() { remove(last_order_file_path); }
    static void print_list() {
       int ts = 0, ss = 0;
       for (auto i = h2_suite::G().begin(); i != h2_suite::G().end(); i++) {
@@ -3638,80 +3696,6 @@ static inline bool h2_mock_g(h2_mock* mock) {
 static inline void h2_fail_g(void* fail) {
    if (h2_task::I().current_case && fail) h2_task::I().current_case->do_fail((h2_fail*)fail);
 }
-#define __H2OK4(condition, _1, _2, f)                           do {                                                            if (!(condition)) {                                             h2_fail* f = new h2_fail_normal(__FILE__, __LINE__);         f->kprintf("%s is false", #condition);                       h2_fail_g(f);                                             }                                                         } while (0)
-#define __H2OK5(expect, actual, a, e, f)                               do {                                                                   auto a = actual;                                                    h2_matcher<typename std::conditional<                                 std::is_enum<typename std::decay<decltype(a)>::type>::value,        int, /* translate enum type to int type */                          typename std::decay<decltype(a)>::type>::type>                      e(expect);                                                        h2_fail* f = e.matches(a);                                          if (f) {                                                               f->locate(__FILE__, __LINE__);                                      h2_fail_g(f);                                                    }                                                                } while (0)
-#define H2OK(...) H2PP_VARIADIC_CALL(__H2OK, __VA_ARGS__, H2Q(a), H2Q(e), H2Q(f))
-#define H2JE(expect, actual) __H2OK5(Je(expect), actual, H2Q(a), H2Q(e), H2Q(f))
-#ifndef OK
-#   define OK H2OK
-#endif
-#ifndef JE
-#   define JE H2JE
-#endif
-#define __H2SUITE(Suitename, s, a)                                static void s(h2_suite*, h2_case*);                            static h2_suite a(Suitename, &s, __FILE__, __LINE__, false);   static void s(h2_suite* ___suite, h2_case* case___)
-#define H2SUITE(...) __H2SUITE(H2PP_STRINGIZE(__VA_ARGS__), H2Q(suite), H2Q(a))
-#ifndef SUITE
-#   define SUITE H2SUITE
-#endif
-#define __H2Setup(t)   for (int t = 1; t--; case___ ? void() : h2_suite_setup_g(___suite)) ___suite->setup = [&]()
-#define __H2Teardown(t)   for (int t = 1; t--; case___ ? void() : h2_suite_teardown_g(___suite)) ___suite->teardown = [&]()
-#define H2Setup() __H2Setup(H2Q(t))
-#define H2Teardown() __H2Teardown(H2Q(t))
-#ifndef Setup
-#   define Setup H2Setup
-#endif
-#ifndef Teardown
-#   define Teardown H2Teardown
-#endif
-#define __H2Case1(Casename, Status, c, t)                              static h2_case c(Casename, ___suite, Status, __FILE__, __LINE__);   if (&c == case___)                                                     for (bool t = true; t; c.execute(), t = false) c.ul_code = [&]()
-#define __H2Case2(Casename, Status, c, t)                              static h2_case c(Casename, ___suite, Status, __FILE__, __LINE__);   if (&c == case___)                                                     for (h2_case::T t(&c); t && ::setjmp(c.jb) == 0;)
-#ifdef H2C
-#   define H2Case(...) __H2Case1(H2PP_STRINGIZE(__VA_ARGS__), h2_case::INITED, H2Q(c), H2Q(t))
-#   define H2Todo(...) __H2Case1(H2PP_STRINGIZE(__VA_ARGS__), h2_case::TODOED, H2Q(c), H2Q(t))
-#else
-#   define H2Case(...) __H2Case2(H2PP_STRINGIZE(__VA_ARGS__), h2_case::INITED, H2Q(c), H2Q(t))
-#   define H2Todo(...) __H2Case2(H2PP_STRINGIZE(__VA_ARGS__), h2_case::TODOED, H2Q(c), H2Q(t))
-#endif
-#ifndef Case
-#   define Case H2Case
-#endif
-#ifndef Todo
-#   define Todo H2Todo
-#endif
-#define __H2CASE(Casename, Status, a, C, t)                                             static h2_suite a("", h2_suite::execute, __FILE__, __LINE__, true);                  namespace {                                                                             struct C : private h2_case {                                                            C(h2_suite* suite) : h2_case(Casename, suite, Status, __FILE__, __LINE__) {}         void uf_code() override;                                                          };                                                                                   static C t(&a);                                                                   }                                                                                    void C::uf_code()
-#define H2CASE(...) __H2CASE(#__VA_ARGS__, h2_case::INITED, H2Q(a), H2Q(h2_case), H2Q(t))
-#define H2TODO(...) __H2CASE(#__VA_ARGS__, h2_case::TODOED, H2Q(a), H2Q(h2_case), H2Q(t))
-#ifndef CASE
-#   define CASE H2CASE
-#endif
-#ifndef TODO
-#   define TODO H2TODO
-#endif
-#define __H2MOCK2(BeFunc, Signature)   h2_mocker<__COUNTER__, __LINE__, std::false_type, Signature>::I((void*)BeFunc, #BeFunc, __FILE__, __LINE__)
-#define __H2MOCK3(Class, Method, Signature)   h2_mocker<__COUNTER__, __LINE__, Class, Signature>::I(h2_mfp<Class, Signature>::A(&Class::Method, "MOCK", "", #Class, #Method, #Signature, __FILE__, __LINE__), #Class "::" #Method, __FILE__, __LINE__)
-#define __H2MOCK4(Class, Method, Signature, Instance)   h2_mocker<__COUNTER__, __LINE__, Class, Signature>::I(h2_mfp<Class, Signature>::A(&Class::Method, Instance), #Class "::" #Method, __FILE__, __LINE__)
-#define H2MOCK(...) H2PP_VARIADIC_CALL(__H2MOCK, __VA_ARGS__)
-#ifndef MOCK
-#   define MOCK H2MOCK
-#endif
-#define __H2STUB3(BeFunc, ToFunc, Q)                                                   do {                                                                                   h2_stub_g((void*)BeFunc, (void*)ToFunc, #BeFunc, #ToFunc, __FILE__, __LINE__);   } while (0)
-#define __H2STUB4(Return, BeFunc, Args, Q)                                        struct {                                                                          void operator=(Return(*toF) Args) {                                               Return(*beF) Args = BeFunc;                                                    h2_stub_g((void*)beF, (void*)(toF), #BeFunc, "~", __FILE__, __LINE__);      }                                                                           } Q;                                                                           Q = [] Args -> Return
-#define __H2STUB50(Return, Class, Method, Args, Q)                                                                                                                                            struct {                                                                                                                                                                                      void operator=(Return (*toF)(Class * that)) {                                                                                                                                                 h2_stub_g(h2_mfp<Class, Return Args>::A(&Class::Method, "STUB", #Return, #Class, #Method, #Args, __FILE__, __LINE__), (void*)(toF), #Class "::" #Method, "~", __FILE__, __LINE__);      }                                                                                                                                                                                       } Q;                                                                                                                                                                                       Q = [](Class * that) -> Return
-#define __H2STUB51(Return, Class, Method, Args, Q)                                                                                                                                            struct {                                                                                                                                                                                      void operator=(Return (*toF)(Class * that, H2PP_REMOVE_PARENTHESES(Args))) {                                                                                                                  h2_stub_g(h2_mfp<Class, Return Args>::A(&Class::Method, "STUB", #Return, #Class, #Method, #Args, __FILE__, __LINE__), (void*)(toF), #Class "::" #Method, "~", __FILE__, __LINE__);      }                                                                                                                                                                                       } Q;                                                                                                                                                                                       Q = [](Class * that, H2PP_REMOVE_PARENTHESES(Args)) -> Return
-#define __H2STUB5(Return, Class, Method, Args, Q)   H2PP_IF(H2PP_0ARGS Args, __H2STUB50(Return, Class, Method, Args, Q), __H2STUB51(Return, Class, Method, Args, Q))
-#define __H2STUB60(Return, Class, Method, Args, Instance, Q)                                                                               struct {                                                                                                                                   void operator=(Return (*toF)(Class * that)) {                                                                                              h2_stub_g(h2_mfp<Class, Return Args>::A(&Class::Method, Instance), (void*)(toF), #Class "::" #Method, "~", __FILE__, __LINE__);      }                                                                                                                                    } Q;                                                                                                                                    Q = [](Class * that) -> Return
-#define __H2STUB61(Return, Class, Method, Args, Instance, Q)                                                                               struct {                                                                                                                                   void operator=(Return (*toF)(Class * that, H2PP_REMOVE_PARENTHESES(Args))) {                                                               h2_stub_g(h2_mfp<Class, Return Args>::A(&Class::Method, Instance), (void*)(toF), #Class "::" #Method, "~", __FILE__, __LINE__);      }                                                                                                                                    } Q;                                                                                                                                    Q = [](Class * that, H2PP_REMOVE_PARENTHESES(Args)) -> Return
-#define __H2STUB6(Return, Class, Method, Args, Instance, Q)   H2PP_IF(H2PP_0ARGS Args, __H2STUB60(Return, Class, Method, Args, Instance, Q), __H2STUB61(Return, Class, Method, Args, Instance, Q))
-#define H2STUB(...) H2PP_VARIADIC_CALL(__H2STUB, __VA_ARGS__, H2Q(t))
-#ifndef STUB
-#   define STUB H2STUB
-#endif
-#define __H2BLOCK0(t) for (h2_stack::T t(__FILE__, __LINE__); t;)
-#define __H2BLOCK1(t, ...) for (h2_stack::T t(__FILE__, __LINE__, __VA_ARGS__); t;)
-#define H2BLOCK(...) H2PP_IF(H2PP_0ARGS(__VA_ARGS__), __H2BLOCK0(H2Q(t)), __H2BLOCK1(H2Q(t), __VA_ARGS__))
-#ifndef BLOCK
-#   define BLOCK H2BLOCK
-#endif
 h2_selectany int main(int argc, const char** argv) {
    h2_task::I().prepare(argc, argv);
    h2_task::I().execute();

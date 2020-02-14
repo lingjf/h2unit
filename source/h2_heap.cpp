@@ -100,7 +100,7 @@ struct h2_block {
 
       h2_piece* m = h2_piece::allocate(size, alignment, bt);
 
-      if (fill_ ? fill_ : fill_ = fill)
+      if (fill_ ? fill_ : (fill_ = fill))
          for (int i = 0, j = 0, l = strlen(fill_); i < size; ++i, ++j)
             ((char*)m->ptr)[i] = fill_[j % (l ? l : 1)];
 
@@ -267,7 +267,7 @@ struct h2_hook {
    void* (*old__realloc_hook)(void*, size_t, const void*);
    void* (*old__memalign_hook)(size_t, size_t, const void*);
 
-#elif defined(__APPLE__)
+#elif defined __APPLE__
    static size_t mz_size(malloc_zone_t* zone, const void* ptr) {
       h2_piece* m = h2_stack::G().getm(ptr);
       return m ? m->size : 0;
@@ -289,12 +289,6 @@ struct h2_hook {
    static void mi_log(malloc_zone_t* zone, void* address) {}
    static void mi_force_lock(malloc_zone_t* zone) {}
    static void mi_force_unlock(malloc_zone_t* zone) {}
-   // static void mi_statistics(malloc_zone_t* zone, malloc_statistics_t* stats) {
-   //    stats->blocks_in_use = 0;
-   //    stats->size_in_use = 0;
-   //    stats->max_size_in_use = 0;
-   //    stats->size_allocated = 0;
-   // }
 
    static boolean_t mi_zone_locked(malloc_zone_t* zone) { return false; }  // Hopefully unneeded by us!
 
@@ -322,8 +316,8 @@ struct h2_hook {
 #endif
 
    h2_hook()
-#ifdef __GLIBC__
-#elif defined(__APPLE__)
+#if defined __GLIBC__
+#elif defined __APPLE__
 #else
      : free_stub((void*)::free),
        malloc_stub((void*)::malloc),
@@ -332,17 +326,13 @@ struct h2_hook {
        posix_memalign_stub((void*)::posix_memalign)
 #endif
    {
-#ifdef __GLIBC__
-#   pragma GCC diagnostic push
-#   pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+#if defined __GLIBC__
       old__free_hook = __free_hook;
       old__malloc_hook = __malloc_hook;
       old__realloc_hook = __realloc_hook;
       old__memalign_hook = __memalign_hook;
 
-#   pragma GCC diagnostic pop
-
-#elif defined(__APPLE__)
+#elif defined __APPLE__
 
       memset(&mi, 0, sizeof(mi));
       mi.enumerator = &mi_enumerator;
@@ -386,16 +376,13 @@ struct h2_hook {
    /* clang-format on */
 
    void dohook() {
-#ifdef __GLIBC__
-#   pragma GCC diagnostic push
-#   pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+#if defined __GLIBC__
       __free_hook = free_hook;
       __malloc_hook = malloc_hook;
       __realloc_hook = realloc_hook;
       __memalign_hook = memalign_hook;
-#   pragma GCC diagnostic pop
 
-#elif defined(__APPLE__)
+#elif defined __APPLE__
 
       malloc_zone_register(&mz);
 
@@ -413,16 +400,13 @@ struct h2_hook {
    }
 
    void unhook() {
-#ifdef __GLIBC__
-#   pragma GCC diagnostic push
-#   pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+#if defined __GLIBC__
       __free_hook = old__free_hook;
       __malloc_hook = old__malloc_hook;
       __realloc_hook = old__realloc_hook;
       __memalign_hook = old__memalign_hook;
-#   pragma GCC diagnostic pop
 
-#elif defined(__APPLE__)
+#elif defined __APPLE__
 
       malloc_zone_unregister(&mz);
 

@@ -2,6 +2,21 @@
 struct h2_order {
    static constexpr const char* last_order_file_path = ".last_order";
 
+   static void drop_last_order() { ::remove(last_order_file_path); }
+
+   static void read_last_order(std::vector<std::string>& list) {
+      char suite_case_name[1024];
+      h2_with f(fopen(last_order_file_path, "r"));
+      while (f.f && 1 == fscanf(f.f, "%[^\n]\n", suite_case_name))
+         list.push_back(suite_case_name);
+   }
+
+   static void save_last_order(std::vector<h2_case*>& list) {
+      h2_with f(fopen(last_order_file_path, "w"));
+      for (auto it = list.begin(); it != list.end(); it++)
+         f.f&& fprintf(f.f, "%s[:]%s\n", (*it)->suite->name, (*it)->name);
+   }
+
    static std::vector<h2_case*> case_list() {
       std::vector<h2_case*> case1_list, case2_list;
       std::vector<std::string> last_list;
@@ -10,12 +25,7 @@ struct h2_order {
          for (auto j = (*i)->cases().begin(); j != (*i)->cases().end(); j++)
             case1_list.push_back(*j);
 
-      //read_last_order
-      char suite_case_name[1024];
-      h2_file rfp(fopen(last_order_file_path, "r"));
-      if (rfp.fp)
-         while (1 == fscanf(rfp.fp, "%[^\n]\n", suite_case_name))
-            last_list.push_back(suite_case_name);
+      read_last_order(last_list);
 
       if (0 < last_list.size()) {
          for (auto i = last_list.begin(); i != last_list.end(); i++)
@@ -36,17 +46,11 @@ struct h2_order {
          std::mt19937 g(rd());
          shuffle(case1_list.begin(), case1_list.end(), g);
 
-         //save_last_order
-         h2_file sfp(fopen(last_order_file_path, "w"));
-         if (sfp.fp)
-            for (auto it = case1_list.begin(); it != case1_list.end(); it++)
-               fprintf(sfp.fp, "%s[:]%s\n", (*it)->suite->name, (*it)->name);
+         save_last_order(case1_list);
       }
 
       return case1_list;
    }
-
-   static void drop_last_order() { remove(last_order_file_path); }
 
    static void print_list() {
       int ts = 0, ss = 0;

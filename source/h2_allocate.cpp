@@ -121,7 +121,7 @@ class h2_string : public std::basic_string<char, std::char_traits<char>, h2_allo
       va_list a;
 
       va_start(a, format);
-#if defined(_WIN32)
+#if defined _WIN32
       int length = _vscprintf(format, a);
 #else
       int length = vsnprintf(NULL, 0, format, a);

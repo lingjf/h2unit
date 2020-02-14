@@ -14,14 +14,14 @@ All the code of following features can be found in the [example folder](example/
 ### 1. Header-only Single-file 
 Only need to include *1* *ONE* *一* *いち* source file: [**h2unit.h**](h2unit.h) 
 
-**h2unit.h** contains [`main()`](source/h2_unit.h#L267) function, and `main()` will execute test cases.
+**h2unit.h** contains [`main()`](source/h2_unit.h#L275) function, and `main()` will execute test cases.
 h2unit user no need to write main() anymore.
 
 ### 2. Test Suite and Test Case
-[`SUITE`](source/h2_unit.h#L120) is used to define a Test Suite. [`Case`](source/h2_unit.h#L156) is used to define a Test Case inside of Test Suite. <br>
+[`SUITE`](source/h2_unit.h#L104) is used to define a Test Suite. [`Case`](source/h2_unit.h#L140) is used to define a Test Case inside of Test Suite. <br>
 Variables defined in Suite scope are shared by CASEs which can see them. <br>
-[Setup()](source/h2_unit.h#L131) is executed before every test case in this test suite. <br>
-[Teardown()](source/h2_unit.h#L134) is executed after every test case whatever success or fail. <br>
+[Setup()](source/h2_unit.h#L115) is executed before every test case in this test suite. <br>
+[Teardown()](source/h2_unit.h#L118) is executed after every test case whatever success or fail. <br>
 Setup/Teardown can be omitted. <br>
 Each case is executed separately and begin from first of suite scope, 
    shared variables are initialized, shared code is executed until case section, then Setup() is invoked,
@@ -49,7 +49,7 @@ SUITE(Suite Name)
    };
 }
 ```
-[`CASE`](source/h2_unit.h#L176) macro is used to define a standalone test case.
+[`CASE`](source/h2_unit.h#L160) macro is used to define a standalone test case.
 ```C++
 CASE(Case Name)
 {
@@ -67,8 +67,8 @@ All the test cases are registered to a global list automatically (C++ global obj
 It means user should not write extra code to register test cases.
 
 ### 3. Compare
-*    [`OK`](source/h2_unit.h#L107)(expr) : check the result of `expr` is true.
-*    [`OK`](source/h2_unit.h#L107)(expect, actual) : check the actual value matches with expect value.
+*    [`OK`](source/h2_unit.h#L91)(expr) : check the result of `expr` is true.
+*    [`OK`](source/h2_unit.h#L91)(expect, actual) : check the actual value matches with expect value.
 
 ### 4. Matcher
 *    `_` / `Any()` : matches any value .
@@ -134,7 +134,7 @@ void this_is_the_test_case()
 ```
 The most disadvantage of function pointer replacement is changing of product source code. <br>
 Objective of Dynamic STUB is same as function pointer replacement, but it is unnecessary to change product source code. <br> 
-[STUB](source/h2_unit.h#L252) is easier to use.
+[STUB](source/h2_unit.h#L236) is easier to use.
 
 ```C++
 /* product code */ 
@@ -165,7 +165,7 @@ CASE(demo dynamic stub with fake function)
 }
 ```
 
-With help of C++ lambda, separate fake function can sit together with [STUB](source/h2_unit.h#L252), it makes test code more tidy and fitness.
+With help of C++ lambda, separate fake function can sit together with [STUB](source/h2_unit.h#L236), it makes test code more tidy and fitness.
 
 ```C++
 CASE(demo dynamic stub with lambda)
@@ -270,7 +270,7 @@ CASE(demo dynamic mock)
 ```
 Expect foobar called with *a* equals *1*, *b* equals *"A"* *1 time* in this case, and make it returns *11*.
 
--   [`MOCK`](source/h2_unit.h#L194)
+-   [`MOCK`](source/h2_unit.h#L178)
     -    `MOCK`(Function Name, Return Type(Parameter List)) 
           Mock normal function (class static method is considered as normal function)
     -    `MOCK`(Class Name, Method Name, Return Type(Parameter List)) 
@@ -349,7 +349,7 @@ MOCK(foobar, int(int a, char * b)).once(1, Je("{
                                               }");
 ```
 
-[`JE`](source/h2_unit.h#L110) is abbreviated for OK(Je(expect json), actual json)
+[`JE`](source/h2_unit.h#L94) is abbreviated for OK(Je(expect json), actual json)
 
 #### 7.3. math expression is support in JSON, it is evaluated to number when parsing 
 ```C++
@@ -384,7 +384,7 @@ In order to detect memory leak, h2unit hook malloc,free,new,delete,calloc,reallo
 Every test case (wrote by SUITE/CASE and TEST) should balance the memory usage. In other word,
 After a test case finished, the memory usage should be same as before the test case execute, otherwise memory leak detected.
 
-[`BLOCK`](source/h2_unit.h#L264) can be used to detect memory leak in a code block. p2 is reported as leak in the following:
+[`BLOCK`](source/h2_unit.h#L248) can be used to detect memory leak in a code block. p2 is reported as leak in the following:
 ```C++
 CASE(memory leak in block)
 {
@@ -401,7 +401,7 @@ CASE(memory leak in block)
 ```
 
 #### 8.2. Memory Faulty Injection
-[`BLOCK`](source/h2_unit.h#L264) can used to control the remain memory resource, it can makes malloc() fail with "out of memory" error. The following case will fail due to malloc() fail.
+[`BLOCK`](source/h2_unit.h#L248) can used to control the remain memory resource, it can makes malloc() fail with "out of memory" error. The following case will fail due to malloc() fail.
 ```C++
 CASE(test out of memory)
 {
@@ -410,7 +410,7 @@ CASE(test out of memory)
    }
 }
 ```
-[`BLOCK`](source/h2_unit.h#L264) can used to initialize allocated memory. In following case, p is filled with *ABCABCAB*.
+[`BLOCK`](source/h2_unit.h#L248) can used to initialize allocated memory. In following case, p is filled with *ABCABCAB*.
 ```C++
 CASE(test memory initialize)
 {

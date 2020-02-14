@@ -46,11 +46,11 @@
 // H2_DIV_ROUND_UP(15, 8) == 2
 #define H2_DIV_ROUND_UP(n, s) (((n) + (s)-1) / (s))
 
-struct h2_file {
-   FILE* fp;
-   int (*_close)(FILE*);
-   h2_file(FILE* fp_, int (*close_)(FILE*) = ::fclose) : fp(fp_), _close(close_) {}
-   ~h2_file() { fp&& _close(fp); }
+struct h2_with {
+   FILE* f;
+   int (*c)(FILE*);
+   h2_with(FILE* file, int (*close)(FILE*) = ::fclose) : f(file), c(close) {}
+   ~h2_with() { f&& c&& c(f); }
 };
 
 static inline bool h2_wildcard_match(const char* pattern, const char* subject) {
@@ -133,21 +133,18 @@ static inline const char* h2_style(const char* style_str, char* style_abi) {
 }
 
 static inline const char* h2_acronym_string(const char* full, int atmost = 10) {
-   static char buffer[32];
-   strncpy(buffer, full, atmost);
-   strcpy(buffer + atmost, "...");
-   return buffer;
+   static char st[32];
+   strncpy(st, full, atmost);
+   strcpy(st + atmost, "...");
+   return st;
 }
 
-static inline const char* h2_center_string(const char* str, int width, char* t) {
-   int slen = strlen(str);
-   char* p = t;
-   for (int i = 0; i < (width - slen) / 2; i++) *p++ = ' ';
-   strcpy(p, str);
-   p += slen;
-   for (; p < t + width; p++) *p = ' ';
-   *p = '\0';
-   return t;
+static inline const char* h2_center_string(const char* str, int width, char* out) {
+   int z = strlen(str), l = (width - z) / 2, r = width - l - z;
+   char f[32];
+   sprintf(f, "%%%ds%%s%%%ds", l, r);
+   sprintf(out, f, "", str, "");
+   return out;
 }
 
 static inline bool h2_endswith_string(const char* haystack, const char* needle) {
@@ -155,7 +152,7 @@ static inline bool h2_endswith_string(const char* haystack, const char* needle) 
    return haystack_length < needle_length ? false : strncmp(haystack + haystack_length - needle_length, needle, needle_length) == 0;
 }
 
-#if defined(_WIN32)
+#if defined _WIN32
 #   define h2_selectany __declspec(selectany)
 #else
 #   define h2_selectany __attribute__((weak))

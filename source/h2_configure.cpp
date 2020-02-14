@@ -14,9 +14,9 @@ struct h2_configure {
 
    h2_configure()
      : path(nullptr),
-#if defined(__linux__)
+#if defined __linux__
        platform("Linux"),
-#elif defined(__APPLE__)
+#elif defined __APPLE__
        platform("MAC"),
 #endif
        listing(false),

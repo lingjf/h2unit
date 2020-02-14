@@ -17,12 +17,11 @@ struct h2_nm {
    h2_nm() {
       char buf[256], addr[32], type[32], name[1024];
       snprintf(buf, sizeof(buf), "nm %s", h2_cfg().path);
-      h2_file pfp(::popen(buf, "r"), ::pclose);
-      if (pfp.fp)
-         while (::fgets(buf, sizeof(buf) - 1, pfp.fp))
-            if (3 == sscanf(buf, "%s%s%s", addr, type, name))
-               if (::tolower((int)type[0]) == 't' || ::tolower((int)type[0]) == 'w')
-                  symbols.insert(std::make_pair(name + (!strcmp(h2_cfg().platform, "MAC") ? 1 : 0), strtol(addr, nullptr, 16)));
+      h2_with f(::popen(buf, "r"), ::pclose);
+      while (f.f && ::fgets(buf, sizeof(buf) - 1, f.f))
+         if (3 == sscanf(buf, "%s%s%s", addr, type, name))
+            if (::tolower((int)type[0]) == 't' || ::tolower((int)type[0]) == 'w')
+               symbols.insert(std::make_pair(name + (!strcmp(h2_cfg().platform, "MAC") ? 1 : 0), strtol(addr, nullptr, 16)));
 
       main_ptr = get("main");
    }
@@ -64,72 +63,44 @@ struct h2_backtrace {
 
    bool has(void* func, int size) {
       for (int i = 0; i < count; ++i)
-         if (func <= array[i] && (unsigned char*)array[i] < ((unsigned char*)func) + size) return true;
+         if (func <= array[i] && (unsigned char*)array[i] < ((unsigned char*)func) + size)
+            return true;
       return false;
    }
 
    void print() const {
-      h2_file tfp(::tmpfile(), ::fclose);
-      if (tfp.fp) {
-         backtrace_symbols_fd(array, count, fileno(tfp.fp));
-         ::fseek(tfp.fp, 0, SEEK_SET);
-         h2_unhook_g();
-         char backtrace_symbol_line[512], module[256], mangled[256], demangled[256], addr2lined[512];
-         for (int i = 0; i < count && ::fgets(backtrace_symbol_line, 512, tfp.fp); ++i) {
-            if (i < offset) continue;
-            for (int j = strlen(backtrace_symbol_line) - 1; 0 <= j && isspace(backtrace_symbol_line[j]); --j) backtrace_symbol_line[j] = '\0';
-            char* p = backtrace_symbol_line;
-            unsigned long addr = 0, delta = 0;
-            if (extract(backtrace_symbol_line, module, mangled, &delta)) {
-               if (strlen(mangled)) p = mangled;
-               if (demangle(mangled, demangled, sizeof(demangled)))
-                  if (strlen(demangled)) p = demangled;
-               addr = strlen(mangled) ? h2_nm::I().get(mangled) : 0;
-               if (addr != ULONG_MAX && h2_endswith_string(h2_cfg().path, module))
-                  if (addr2line(addr + delta, h2_cfg().path, addr2lined, sizeof(addr2lined)))
-                     p = addr2lined;
-            }
-            ::printf("   %d. %s\n", i - offset, p);
-            if (!strcmp("main", mangled) || !strcmp("main", demangled) || h2_nm::I().in_main(addr + delta)) break;
+      h2_unhook_g();
+      char** backtraces = backtrace_symbols(array, count);
+      for (int i = offset; i < count; ++i) {
+         char *p = backtraces[i], module[256], mangled[256], demangled[256], addr2lined[512];
+         unsigned long addr = 0, delta = 0;
+         if (extract(backtraces[i], module, mangled, &delta)) {
+            if (strlen(mangled)) p = mangled;
+            if (demangle(mangled, demangled, sizeof(demangled)) && strlen(demangled)) p = demangled;
+            addr = strlen(mangled) ? h2_nm::I().get(mangled) : 0;
+            if (addr != ULONG_MAX && h2_endswith_string(h2_cfg().path, module))
+               if (addr2line(addr + delta, addr2lined, sizeof(addr2lined)))
+                  p = addr2lined;
          }
-         h2_dohook_g();
+         ::printf("   %d. %s\n", i - offset, p);
+
+         if (!strcmp("main", mangled) || !strcmp("main", demangled) || h2_nm::I().in_main(addr + delta)) break;
       }
+      free(backtraces);
+      h2_dohook_g();
    }
 
-   // void print() const {
-   //    h2_unhook_g();
-   //    char** backtraces = backtrace_symbols(array, count);
-   //    for (int i = offset; i < count; ++i) {
-   //       char *p = backtraces[i], module[256], mangled[256], demangled[256], addr2lined[512];
-   //       unsigned long addr = 0, delta = 0;
-   //       if (extract(backtraces[i], module, mangled, &delta)) {
-   //          if (strlen(mangled)) p = mangled;
-   //          if (demangle(mangled, demangled, sizeof(demangled)))
-   //             if (strlen(demangled)) p = demangled;
-   //          addr = strlen(mangled) ? h2_nm::I().get(mangled) : 0;
-   //          if (addr != ULONG_MAX && h2_endswith_string(h2_cfg().path, module))
-   //             if (addr2line(addr + delta, h2_cfg().path, addr2lined, sizeof(addr2lined)))
-   //                p = addr2lined;
-   //       }
-   //       ::printf("   %d. %s\n", i - offset, p);
-   //       if (!strcmp("main", mangled) || !strcmp("main", demangled) || h2_nm::I().in_main(addr + delta)) break;
-   //    }
-   //    free(backtraces);
-   //    h2_dohook_g();
-   // }
-
-   bool addr2line(unsigned long addr, const char* path, char* output, size_t len) const {
+   bool addr2line(unsigned long addr, char* output, size_t len) const {
       char buf[256];
-#if defined(__APPLE__)
-      snprintf(buf, sizeof(buf), "atos -o %s 0x%lx", path, addr);
+#if defined __APPLE__
+      snprintf(buf, sizeof(buf), "atos -o %s 0x%lx", h2_cfg().path, addr);
 #else
-      snprintf(buf, sizeof(buf), "addr2line -C -a -s -p -f -e %s -i %lx", path, addr);
+      snprintf(buf, sizeof(buf), "addr2line -C -a -s -p -f -e %s -i %lx", h2_cfg().path, addr);
 #endif
-      h2_file pfp(::popen(buf, "r"), ::pclose);
-      if (pfp.fp)
-         if (::fgets(output, len, pfp.fp))
-            for (int i = strlen(output) - 1; 0 <= i && isspace(output[i]); --i) output[i] = '\0';
-      return !!pfp.fp;
+      h2_with f(::popen(buf, "r"), ::pclose);
+      if (!f.f || !::fgets(output, len, f.f)) return false;
+      for (int i = strlen(output) - 1; 0 <= i && isspace(output[i]); --i) output[i] = '\0';
+      return 0 < strlen(output);
    }
 
    bool extract(const char* backtrace_symbol_line, char* module, char* mangled, unsigned long* offset) const {

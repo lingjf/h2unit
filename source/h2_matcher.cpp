@@ -127,14 +127,7 @@ struct h2_eq_matches {
 
    template <typename A>
    h2_fail* matches(const A& a, bool caseless = false, bool dont = false) const {
-#ifdef __GLIBC__
-#   pragma GCC diagnostic push
-#   pragma GCC diagnostic ignored "-Wsign-compare"
-#endif
       if ((a == e) == !dont) return nullptr;
-#ifdef __GLIBC__
-#   pragma GCC diagnostic pop
-#endif
       return h2_desc(a, e, dont, "equal to");
    }
 };
