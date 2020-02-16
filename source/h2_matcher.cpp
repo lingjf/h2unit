@@ -468,8 +468,8 @@ struct h2_allof_matches {
       auto v_matchers = t2v<A, 0>();
 
       h2_fail* fail = nullptr;
-      for (auto it = v_matchers.begin(); it != v_matchers.end(); it++)
-         h2_append_y_fail(fail, (*it).matches(a, caseless, false));
+      for (auto& m : v_matchers)
+         h2_append_y_fail(fail, m.matches(a, caseless, false));
 
       if (!fail == !dont) return nullptr;
 
@@ -493,8 +493,8 @@ struct h2_anyof_matches {
       auto v_matchers = t2v<A, 0>();
 
       int s = 0;
-      for (auto it = v_matchers.begin(); it != v_matchers.end(); it++) {
-         h2_fail* fail = (*it).matches(a, caseless, false);
+      for (auto& m : v_matchers) {
+         h2_fail* fail = m.matches(a, caseless, false);
          if (!fail) s++;
          if (fail) delete fail;
       }
@@ -526,8 +526,8 @@ struct h2_noneof_matches {
       auto v_matchers = t2v<A, 0>();
 
       h2_fail* fail = nullptr;
-      for (auto it = v_matchers.begin(); it != v_matchers.end(); it++)
-         h2_append_y_fail(fail, (*it).matches(a, caseless, true));
+      for (auto& m : v_matchers)
+         h2_append_y_fail(fail, m.matches(a, caseless, true));
 
       if (!fail == !dont) return nullptr;
 

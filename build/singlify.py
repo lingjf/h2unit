@@ -5,7 +5,7 @@
 import sys
 import time
 
-def copy_line(line, f):
+def copy_line1(line, f):
     l0 = line.strip()
     if len(l0) and not l0.startswith('//') and not (l0.startswith('/*') and l0.endswith('*/')):
         l1 = line.rstrip('\r\n')
@@ -14,11 +14,14 @@ def copy_line(line, f):
         else:
             f.write(l1 + '\n')
 
+def copy_line2(line, f):
+    f.write(line)
+
 h2unit_h = '../h2unit.h'
 if len(sys.argv) > 1:
     h2unit_h = sys.argv[1]
 
-version_datetime = '/* v{0}  {1} */'.format('4.0', time.strftime('%Y-%m-%d %H:%M:%S', time.localtime()))
+version_datetime = '/* v{0}  {1} */'.format('4.1', time.strftime('%Y-%m-%d %H:%M:%S', time.localtime()))
 project_github_url = '/* https://github.com/lingjf/h2unit */'
 software_copyright = '/* Apache Licence 2.0 */'
 
@@ -33,9 +36,9 @@ with open('../source/h2_unit.h', 'r') as f_h2_unit:
             with open('../source/'+line[10:line.rindex('"')], 'r') as f_h2_cpp:
                 for line in f_h2_cpp:
                     if not line.startswith('#include "h2_'):
-                        copy_line(line, f_h2unit)
+                        copy_line2(line, f_h2unit)
         else:
-            copy_line(line, f_h2unit)
+            copy_line2(line, f_h2unit)
 
 f_h2unit.close()
 

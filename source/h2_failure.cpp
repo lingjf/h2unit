@@ -26,7 +26,8 @@ struct h2_fail {
 
    static constexpr const char* A9 = "1st\0002nd\0003rd\0004th\0005th\0006th\0007th\0008th\0009th";
 
-   h2_fail(const char* file_, int line_, const char* func_ = nullptr, int argi_ = -1) : x_next(nullptr), y_next(nullptr), file(file_), line(line_), func(func_), argi(argi_) {}
+   h2_fail(const char* file_, int line_, const char* func_ = nullptr, int argi_ = -1)
+     : x_next(nullptr), y_next(nullptr), file(file_), line(line_), func(func_), argi(argi_) {}
 
    virtual ~h2_fail() {
       if (y_next) delete y_next;
@@ -96,9 +97,9 @@ struct h2_fail_unexpect : public h2_fail {
       h2_fail::print(); /* nothing */
       printf(" %s%s%s%s %s %s%s%s%s",
              _h.c_str(),
-             h2_cfg().style("bold,red"), _a.c_str(), h2_cfg().style("reset"),
+             h2cfg().style("bold,red"), _a.c_str(), h2cfg().style("reset"),
              _m.c_str(),
-             h2_cfg().style("green"), _e.c_str(), h2_cfg().style("reset"),
+             h2cfg().style("green"), _e.c_str(), h2cfg().style("reset"),
              _t.c_str());
       print_locate();
    }
@@ -119,20 +120,20 @@ struct h2_fail_strcmp : public h2_fail {
    void print() {
       h2_fail::print(), print_locate();
 
-      int columns = h2_cfg().get_term_columns() - 12;
-      int rows = H2_DIV_ROUND_UP((int)std::max(e.length(), a.length()), columns);
+      int columns = h2cfg().get_term_columns() - 12;
+      int rows = H2_DIV_ROUND_UP(std::max(e.length(), a.length()), columns);
 
       for (int i = 0; i < rows; ++i) {
          char eline[1024], aline[1024], *ep = eline, *ap = aline;
-         ep += sprintf(ep, "%sexpect%s>%s ", h2_cfg().style("dark gray"), h2_cfg().style("green"), h2_cfg().style("reset"));
-         ap += sprintf(ap, "%sactual%s> ", h2_cfg().style("dark gray"), h2_cfg().style("reset"));
+         ep += sprintf(ep, "%sexpect%s>%s ", h2cfg().style("dark gray"), h2cfg().style("green"), h2cfg().style("reset"));
+         ap += sprintf(ap, "%sactual%s> ", h2cfg().style("dark gray"), h2cfg().style("reset"));
          for (int j = 0; j < columns; ++j) {
             char _e = i * columns + j < (int)e.length() ? e[i * columns + j] : ' ';
             char _a = i * columns + j < (int)a.length() ? a[i * columns + j] : ' ';
 
             bool eq = caseless ? ::tolower(_e) == ::tolower(_a) : _e == _a;
-            ep += sprintf(ep, "%s%c%s", eq ? "" : h2_cfg().style("green"), _e, eq ? "" : h2_cfg().style("reset"));
-            ap += sprintf(ap, "%s%c%s", eq ? "" : h2_cfg().style("red,bold"), _a, eq ? "" : h2_cfg().style("reset"));
+            ep += sprintf(ep, "%s%c%s", eq ? "" : h2cfg().style("green"), _e, eq ? "" : h2cfg().style("reset"));
+            ap += sprintf(ap, "%s%c%s", eq ? "" : h2cfg().style("red,bold"), _a, eq ? "" : h2cfg().style("reset"));
          }
          printf("%s\n%s\n", eline, aline);
       }
@@ -152,9 +153,9 @@ struct h2_fail_memcmp : public h2_fail {
       h2_fail::print(), print_locate();
 
       printf("                     %sexpect%s                       %s│%s                       %sactual%s \n",
-             h2_cfg().style("dark gray"), h2_cfg().style("reset"), h2_cfg().style("dark gray"), h2_cfg().style("reset"), h2_cfg().style("dark gray"), h2_cfg().style("reset"));
+             h2cfg().style("dark gray"), h2cfg().style("reset"), h2cfg().style("dark gray"), h2cfg().style("reset"), h2cfg().style("dark gray"), h2cfg().style("reset"));
 
-      int size = (int)e.size();
+      int size = e.size();
       int rows = H2_DIV_ROUND_UP(size, 16);
 
       for (int i = 0; i < rows; ++i) {
@@ -163,19 +164,19 @@ struct h2_fail_memcmp : public h2_fail {
                printf("   ");
                continue;
             }
-            if (e[i * 16 + j] != a[i * 16 + j]) printf("%s", h2_cfg().style("green"));
+            if (e[i * 16 + j] != a[i * 16 + j]) printf("%s", h2cfg().style("green"));
             printf(j < 8 ? "%02X " : " %02X", e[i * 16 + j]);
-            printf("%s", h2_cfg().style("reset"));
+            printf("%s", h2cfg().style("reset"));
          }
-         printf("  %s│%s  ", h2_cfg().style("dark gray"), h2_cfg().style("reset"));
+         printf("  %s│%s  ", h2cfg().style("dark gray"), h2cfg().style("reset"));
          for (int j = 0; j < 16; ++j) {
             if (size <= i * 16 + j) {
                printf("   ");
                continue;
             }
-            if (e[i * 16 + j] != a[i * 16 + j]) printf("%s", h2_cfg().style("bold,red"));
+            if (e[i * 16 + j] != a[i * 16 + j]) printf("%s", h2cfg().style("bold,red"));
             printf(j < 8 ? "%02X " : " %02X", a[i * 16 + j]);
-            printf("%s", h2_cfg().style("reset"));
+            printf("%s", h2cfg().style("reset"));
          }
          printf("\n");
       }
@@ -189,7 +190,7 @@ struct h2_fail_memoverflow : public h2_fail {
    const h2_vector<unsigned char> spot;
    const h2_backtrace bt0, bt1;
 
-   h2_fail_memoverflow(void* ptr_, int offset_, const unsigned char* magic_, int size, h2_backtrace* bt0_, h2_backtrace* bt1_, const char* file_ = nullptr, int line_ = 0)
+   h2_fail_memoverflow(void* ptr_, int offset_, const unsigned char* magic_, int size, h2_backtrace bt0_, h2_backtrace bt1_, const char* file_ = nullptr, int line_ = 0)
      : h2_fail(file_, line_), ptr((unsigned char*)ptr_), offset(offset_), magic(magic_), spot(((unsigned char*)ptr_) + offset_, ((unsigned char*)ptr_) + offset_ + size), bt0(bt0_), bt1(bt1_) {
       kprintf(" Memory overflow malloc %p %+d (%p) ", ptr, offset, ptr + offset);
    }
@@ -198,7 +199,7 @@ struct h2_fail_memoverflow : public h2_fail {
       h2_fail::print();
 
       for (size_t i = 0; i < spot.size(); ++i)
-         printf("%s%02X %s", magic[i] == spot[i] ? h2_cfg().style("green") : h2_cfg().style("bold,red"), spot[i], h2_cfg().style("reset"));
+         printf("%s%02X %s", magic[i] == spot[i] ? h2cfg().style("green") : h2cfg().style("bold,red"), spot[i], h2cfg().style("reset"));
 
       print_locate();
       if (0 < bt1.count) printf("  %p trampled at backtrace:\n", ptr + offset), bt1.print();
@@ -209,51 +210,47 @@ struct h2_fail_memoverflow : public h2_fail {
 struct h2_fail_memleak : public h2_fail {
    const char* where;
    struct A {
-      void* ptr;
-      int size, bytes, times;
+      void *ptr, *ptr2;
+      int size, size2, bytes, times;
       h2_backtrace bt;
-      A(void* ptr_, int size_, h2_backtrace& bt_) : ptr(ptr_), size(size_), bytes(size_), times(1), bt(bt_) {}
+      A(void* ptr_, int size_, h2_backtrace& bt_) : ptr(ptr_), ptr2(nullptr), size(size_), size2(0), bytes(size_), times(1), bt(bt_) {}
    };
    h2_vector<A> leaks;
-   long long bytes;
-   int places;
+   long long bytes, times, places;
 
-   h2_fail_memleak(const char* file_ = nullptr, int line_ = 0, const char* where_ = "") : h2_fail(file_, line_), where(where_), bytes(0), places(0) {}
+   h2_fail_memleak(const char* file_ = nullptr, int line_ = 0, const char* where_ = "")
+     : h2_fail(file_, line_), where(where_), bytes(0), times(0), places(0) {}
 
    void add(void* ptr, int size, h2_backtrace& bt) {
       bytes += size;
-      places += 1;
-      for (auto i = leaks.begin(); i != leaks.end(); i++)
-         if ((*i).bt == bt) {
-            (*i).bytes += size;
-            (*i).times += 1;
+      times += 1;
+      for (auto c : leaks)
+         if (c.bt == bt) {
+            c.ptr2 = ptr;
+            c.size2 = size;
+            c.bytes += size;
+            c.times += 1;
             return;
          }
-
+      places += 1;
       leaks.push_back(A(ptr, size, bt));
    }
 
    void print() {
-      kprintf("Memory Leaked %s%lld bytes in %s totally", str_places(places), bytes, where);
-      h2_fail::print(), print_locate();
-      for (auto i = leaks.begin(); i != leaks.end(); i++) {
-         auto a = *i;
-         printf("  %p", a.ptr);
-         a.times <= 1 ? printf(" ") : printf("... ");
-         printf("Leaked ");
-         if (a.times > 1) printf("%d times ", a.times);
-         printf("%d", a.bytes);
-         a.times <= 1 ? printf(" ") : printf("(%d+...)", a.size);
-         printf("bytes, at backtrace\n");
-         a.bt.print();
-      }
-   }
+      char t1[64] = "", t2[64] = "";
+      if (1 < places) sprintf(t1, "%lld places ", places);
+      if (1 < times) sprintf(t2, "%lld times ", times);
 
-   const char* str_places(int n) {
-      if (n <= 1) return "";
-      static char t[32];
-      sprintf(t, "%d places ", n);
-      return t;
+      kprintf("Memory Leaked %s%s%lld bytes in %s totally", t1, t2, bytes, where);
+      h2_fail::print(), print_locate();
+      for (auto c : leaks) {
+         char t3[64] = " ", t4[64] = "", t5[64] = "";
+         if (1 < c.times) sprintf(t3, ", %p ... ", c.ptr2);
+         if (1 < c.times) sprintf(t4, "%d times ", c.times);
+         if (1 < c.times) sprintf(t5, " (%d, %d ...)", c.size, c.size2);
+         printf("  %p%sLeaked %s%d bytes%s, at backtrace\n", c.ptr, t3, t4, c.bytes, t5);
+         c.bt.print();
+      }
    }
 };
 
@@ -279,7 +276,7 @@ struct h2_fail_json : public h2_fail {
    void print() {
       h2_fail::print(), print_locate();
 
-      int terminal_columns = h2_cfg().get_term_columns();
+      int terminal_columns = h2cfg().get_term_columns();
       if (terminal_columns < 10) terminal_columns = 80;
       h2_json::diff_print(e.c_str(), a.c_str(), terminal_columns);
    }
@@ -307,9 +304,9 @@ struct h2_fail_instantiate : public h2_fail {
                 strlen(return_type) ? return_type : "",
                 strlen(return_type) ? ", " : "",
                 class_type, method_name, return_args,
-                h2_cfg().style("bold,yellow"),
+                h2cfg().style("bold,yellow"),
                 class_type,
-                h2_cfg().style("reset"));
+                h2cfg().style("reset"));
       } else if (why == 2) {
          printf("1. Define default constructor in class %s, or \n", class_type);
          printf("2. Add parameterized construction in %s(%s%s%s, %s, %s%s, %s(...)%s) \n",
@@ -317,9 +314,9 @@ struct h2_fail_instantiate : public h2_fail {
                 strlen(return_type) ? return_type : "",
                 strlen(return_type) ? ", " : "",
                 class_type, method_name, return_args,
-                h2_cfg().style("bold,yellow"),
+                h2cfg().style("bold,yellow"),
                 class_type,
-                h2_cfg().style("reset"));
+                h2cfg().style("reset"));
       }
    }
 };

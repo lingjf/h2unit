@@ -6,7 +6,7 @@ struct h2_mock {
    const char* file;
    int line;
 
-   h2_vector<h2_callx> c_array;
+   h2_vector<h2_callexp> c_array;
    int c_index;
 
    h2_mock(void* befp_, void* tofp_, const char* befn_, const char* file_, int line_)
@@ -16,7 +16,7 @@ struct h2_mock {
 
    h2_fail* times_check() {
       h2_fail* fail = nullptr;
-      for (auto it = c_array.begin(); it != c_array.end(); it++) h2_append_y_fail(fail, (*it).check());
+      for (auto& c : c_array) h2_append_y_fail(fail, c.check());
       if (fail) fail->locate(file, line, befn);
       return fail;
    }
@@ -123,11 +123,11 @@ class h2_mocker<Counter, Lineno, Class, Return(Args...)> : h2_mock {
    int matches(Args... args) {
       argument_tuple a_tuple = std::make_tuple(args..., 0);
       int c_offset = -1;
-      for (int i = c_index; i < (int)c_array.size(); ++i) {
+      for (int i = c_index; i < c_array.size(); ++i) {
          h2_fail* fail = matches(m_array[i], a_tuple);
          if (fail) {
             if (c_array[i].is_shortage()) h2_fail_g(fail);
-            if (c_array[i].is_satisfied()) delete fail; /* continue; try next h2_callx */
+            if (c_array[i].is_satisfied()) delete fail; /* continue; try next h2_callexp */
          } else {
             ++c_array[c_offset = i];
             if (c_array[i].is_saturated()) c_index += 1;
@@ -155,49 +155,49 @@ class h2_mocker<Counter, Lineno, Class, Return(Args...)> : h2_mock {
    }
 
    h2_mocker& once(__H2_MATCHER_PARAMETER_DEFAULT_LIST) {
-      c_array.push_back(h2_callx(1, 1));
+      c_array.push_back(h2_callexp(1, 1));
       m_array.push_back(std::forward_as_tuple(__H2_MATCHER_ARGUMENT_LIST));
       r_array.push_back(h2_routine<Class, Return(Args...)>());
       return register_and_return_reference();
    }
 
    h2_mocker& twice(__H2_MATCHER_PARAMETER_DEFAULT_LIST) {
-      c_array.push_back(h2_callx(2, 2));
+      c_array.push_back(h2_callexp(2, 2));
       m_array.push_back(std::forward_as_tuple(__H2_MATCHER_ARGUMENT_LIST));
       r_array.push_back(h2_routine<Class, Return(Args...)>());
       return register_and_return_reference();
    }
 
    h2_mocker& times(int count) {
-      c_array.push_back(h2_callx(count, count));
+      c_array.push_back(h2_callexp(count, count));
       m_array.push_back(matcher_tuple());
       r_array.push_back(h2_routine<Class, Return(Args...)>());
       return register_and_return_reference();
    }
 
    h2_mocker& any(__H2_MATCHER_PARAMETER_DEFAULT_LIST) {
-      c_array.push_back(h2_callx(0, INT_MAX));
+      c_array.push_back(h2_callexp(0, INT_MAX));
       m_array.push_back(std::forward_as_tuple(__H2_MATCHER_ARGUMENT_LIST));
       r_array.push_back(h2_routine<Class, Return(Args...)>());
       return register_and_return_reference();
    }
 
    h2_mocker& atleast(int count) {
-      c_array.push_back(h2_callx(count, INT_MAX));
+      c_array.push_back(h2_callexp(count, INT_MAX));
       m_array.push_back(matcher_tuple());
       r_array.push_back(h2_routine<Class, Return(Args...)>());
       return register_and_return_reference();
    }
 
    h2_mocker& atmost(int count) {
-      c_array.push_back(h2_callx(0, count));
+      c_array.push_back(h2_callexp(0, count));
       m_array.push_back(matcher_tuple());
       r_array.push_back(h2_routine<Class, Return(Args...)>());
       return register_and_return_reference();
    }
 
    h2_mocker& between(int left, int right) {
-      c_array.push_back(h2_callx(left, right));
+      c_array.push_back(h2_callexp(left, right));
       m_array.push_back(matcher_tuple());
       r_array.push_back(h2_routine<Class, Return(Args...)>());
       return register_and_return_reference();

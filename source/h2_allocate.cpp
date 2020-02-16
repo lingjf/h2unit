@@ -1,7 +1,9 @@
 
 struct h2_raw {
    static void* malloc(size_t sz) {
-      if (!h2_cfg().memory_check) return ::malloc(sz);
+      if (!h2cfg().memory_check) {
+         return ::malloc(sz);
+      }
       void* ptr = mmap(nullptr, sz, PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0);
       if (ptr == MAP_FAILED) return nullptr;
 
@@ -11,7 +13,10 @@ struct h2_raw {
    }
 
    static void free(void* ptr) {
-      if (!h2_cfg().memory_check) return ::free(ptr);
+      if (!h2cfg().memory_check) {
+         ::free(ptr);
+         return;
+      }
       if (!ptr) return;
       uintptr_t* p = ((uintptr_t*)ptr) - 1;
       munmap((void*)p, (size_t)*p);
@@ -124,7 +129,7 @@ class h2_string : public std::basic_string<char, std::char_traits<char>, h2_allo
 #if defined _WIN32
       int length = _vscprintf(format, a);
 #else
-      int length = vsnprintf(NULL, 0, format, a);
+      int length = vsnprintf(nullptr, 0, format, a);
 #endif
       va_end(a);
 

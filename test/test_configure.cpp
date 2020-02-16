@@ -8,23 +8,39 @@ SUITE(h2_configure)
    Case(verbose) 
    {
       OK(!c.verbose);
-      const char* argv[] = {"./h2_unit", "-v"};
+      const char* argv[] = {"./a.out", "-v"};
       c.opt(2, argv);
       OK(c.verbose);
    };
 
    Case(listing) 
    {
-      OK(!c.listing);
-      const char* argv[] = {"./h2_unit", "-l"};
+      OK(0, c.listing);
+      const char* argv[] = {"./a.out", "-l"};
       c.opt(2, argv);
-      OK(c.listing);
+      OK('A', c.listing);
    };
 
-   Case(colorable) 
+   Case(listing suite) 
+   {
+      OK(0, c.listing);
+      const char* argv[] = {"./a.out", "-l", "suite"};
+      c.opt(3, argv);
+      OK('s', c.listing);
+   };
+
+   Case(listing case) 
+   {
+      OK(0, c.listing);
+      const char* argv[] = {"./a.out", "-l", "case"};
+      c.opt(3, argv);
+      OK('c', c.listing);
+   };
+
+   Case(colorable)
    {
       OK(c.colorable);
-      const char* argv[] = {"./h2_unit", "-c"};
+      const char* argv[] = {"./a.out", "-c"};
       c.opt(2, argv);
       OK(!c.colorable);
    };
@@ -34,7 +50,7 @@ SUITE(h2_configure)
       OK(!c.randomize);
       OK(c.memory_check);
       OK(0, c.breakable);
-      const char* argv[] = {"./h2_unit", "-rmb"};
+      const char* argv[] = {"./a.out", "-rmb"};
       c.opt(2, argv);
       OK(c.randomize);
       OK(!c.memory_check);
@@ -44,21 +60,21 @@ SUITE(h2_configure)
    Case(breakable) 
    {
       OK(0, c.breakable);
-      const char* argv[] = {"./h2_unit", "-b", "2"};
+      const char* argv[] = {"./a.out", "-b", "2"};
       c.opt(3, argv);
       OK(2, c.breakable);
    };
 
    Case(junit) 
    {
-      const char* argv[] = {"./h2_unit", "-j", "jenkins.xml"};
+      const char* argv[] = {"./a.out", "-j", "jenkins.xml"};
       c.opt(3, argv);
       OK("jenkins.xml", c.junit);
    };
 
    Case(include substr) 
    {
-      const char* argv[] = {"./h2_unit", "-i", "http"};
+      const char* argv[] = {"./a.out", "-i", "http"};
       c.opt(3, argv);
       OK(!c.filter("server", "connection", "httpd_connection.cpp"));
       OK(!c.filter("server", "my_http_connection", "tcp_connection.cpp"));
@@ -67,7 +83,7 @@ SUITE(h2_configure)
 
    Case(include substr 2) 
    {
-      const char* argv[] = {"./h2_unit", "-i", "http", "tcp*"};
+      const char* argv[] = {"./a.out", "-i", "http", "tcp*"};
       c.opt(4, argv);
       OK(!c.filter("server", "connection", "httpd_connection.cpp"));
       OK(!c.filter("server", "connection", "tcp_connection.cpp"));
@@ -76,7 +92,7 @@ SUITE(h2_configure)
 
    Case(include exclude) 
    {
-      const char* argv[] = {"./h2_unit", "-x", "http", "-x", "tcp"};
+      const char* argv[] = {"./a.out", "-x", "http", "-x", "tcp"};
       c.opt(5, argv);
       OK(c.filter("server", "connection", "httpd_connection.cpp"));
       OK(c.filter("server", "connection", "tcp_connection.cpp"));

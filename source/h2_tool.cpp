@@ -81,8 +81,7 @@ static inline long long h2_milliseconds() {
 
 static inline const char* h2_style(const char* style_str, char* style_abi) {
    static struct {
-      const char* name;
-      const char* value;
+      const char *name, *value;
    } K[] = {
      {"reset", "0;"},
      {"bold", "1;"},
@@ -117,15 +116,17 @@ static inline const char* h2_style(const char* style_str, char* style_abi) {
      {"bg_white", "47;"},
      {"bg_default", "49;"}};
 
-   char __style_str[1024];
-   strcpy(__style_str, style_str);
+   char t[1024];
+   strcpy(t, style_str);
 
    strcpy(style_abi, "\033[");
 
-   for (char* p = strtok(__style_str, ","); p; p = strtok(NULL, ","))
+   for (char* p = strtok(t, ","); p; p = strtok(NULL, ","))
       for (size_t i = 0; i < sizeof(K) / sizeof(K[0]); i++)
-         if (strcmp(K[i].name, p) == 0)
-            strcat(style_abi, K[i].value), i = sizeof(K);
+         if (!strcmp(K[i].name, p)) {
+            strcat(style_abi, K[i].value);
+            break;
+         }
 
    style_abi[strlen(style_abi) - 1] = 'm';
 
@@ -141,9 +142,9 @@ static inline const char* h2_acronym_string(const char* full, int atmost = 10) {
 
 static inline const char* h2_center_string(const char* str, int width, char* out) {
    int z = strlen(str), l = (width - z) / 2, r = width - l - z;
-   char f[32];
-   sprintf(f, "%%%ds%%s%%%ds", l, r);
-   sprintf(out, f, "", str, "");
+   char t[32];
+   sprintf(t, "%%%ds%%s%%%ds", l, r);
+   sprintf(out, t, "", str, "");
    return out;
 }
 

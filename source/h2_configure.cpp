@@ -1,13 +1,14 @@
 
 struct h2_configure {
    const char* path;
-   const char* platform;
-   bool listing;
+   long platform;
+
+   char listing;
+   long breakable;
    bool verbose;
    bool colorable;
    bool randomize;
    bool memory_check;
-   long breakable;
    char junit[256];
 
    const char *include_patterns[9], *exclude_patterns[9];
@@ -15,34 +16,40 @@ struct h2_configure {
    h2_configure()
      : path(nullptr),
 #if defined __linux__
-       platform("Linux"),
+       platform(1),
 #elif defined __APPLE__
-       platform("MAC"),
+       platform(2),
+#elif defined _WIN32
+       platform(3),
 #endif
-       listing(false),
+       listing('\0'),
+       breakable(0),
        verbose(false),
        colorable(true),
        randomize(false),
        memory_check(true),
-       breakable(0),
        junit{0},
        include_patterns{0},
        exclude_patterns{0} {
    }
 
+   int isLinux() const { return 1 == platform; }
+   int isMAC() const { return 2 == platform; }
+   int isWindows() const { return 3 == platform; }
+
    /* clang-format off */
-   static h2_configure& I() { static h2_configure I; return I; }
+   static h2_configure& I() { static h2_configure __; return __; }
    /* clang-format on */
 
    void usage() {
-      printf("Usage: \n"
+      printf("Usage:\n"
              "-v                  Make the operation more talkative\n"
-             "-l                  List out all suites and cases\n"
+             "-l [sc]             List out all suites and cases\n"
              "-b [n]              Breaking test once n (default is 1) failures occurred\n"
              "-c                  Output in black-white color mode\n"
              "-r                  Run cases in random order\n"
              "-m                  Run cases without memory check\n"
-             "-j [path]           Generate junit report, default is .xml \n"
+             "-j [path]           Generate junit report, default is .xml\n"
              "-i {patterns}       Run cases which case name, suite name or file name matches\n"
              "-x {patterns}       Run cases which case name, suite name and file name not matches\n");
    }
@@ -63,17 +70,20 @@ struct h2_configure {
          for (const char* p = argv[i] + 1; *p; p++) {
             switch (*p) {
             case 'v': verbose = true; break;
-            case 'l': listing = true; break;
+            case 'l':
+               listing = 'A';
+               if (i + 1 < argc && argv[i + 1][0] != '-') listing = argv[++i][0];
+               break;
             case 'b':
                breakable = 1;
-               if (i + 1 < argc && argv[i + 1][0] != '-') breakable = atoi(argv[i++ + 1]);
+               if (i + 1 < argc && argv[i + 1][0] != '-') breakable = atoi(argv[++i]);
                break;
             case 'c': colorable = !colorable; break;
             case 'r': randomize = true; break;
             case 'm': memory_check = !memory_check; break;
             case 'j':
                sprintf(junit, "%s.xml", path);
-               if (i + 1 < argc && argv[i + 1][0] != '-') strcpy(junit, argv[i++ + 1]);
+               if (i + 1 < argc && argv[i + 1][0] != '-') strcpy(junit, argv[++i]);
                break;
             case 'i':
                for (int j = i + 1; j < argc && argv[j][0] != '-'; ++j, ++i) insert(include_patterns, argv[j]);
@@ -118,7 +128,7 @@ struct h2_configure {
       static char shift_buffer[8][128];
       static long shift_index = 0;
 
-      return h2_style(style_str, shift_buffer[shift_index++ % 8]);
+      return h2_style(style_str, shift_buffer[++shift_index % 8]);
    }
 
    int get_term_columns() {
@@ -128,4 +138,4 @@ struct h2_configure {
    }
 };
 
-static inline h2_configure& h2_cfg() { return h2_configure::I(); }
+static inline h2_configure& h2cfg() { return h2_configure::I(); }

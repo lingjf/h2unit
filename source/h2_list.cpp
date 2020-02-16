@@ -21,8 +21,6 @@ struct h2_list {
       prev->next = new_;
    }
 
-   // void init() { next = prev = this; }
-
    h2_list() : next(this), prev(this) {}
 
    void add_head(h2_list* entry) { __add_between(entry, this, this->next); }

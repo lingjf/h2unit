@@ -13,9 +13,8 @@ struct h2_extra {
 
       for (int i = 0; i < 100; ++i) {
          struct sockaddr_in* b = (struct sockaddr_in*)&sockaddrs[i];
-         if (0 == b->sin_addr.s_addr) {
+         if (0 == b->sin_addr.s_addr) 
             break;
-         }
 
          struct addrinfo* a = &addrinfos[i];
          a->ai_addr = (struct sockaddr*)&sockaddrs[i];
@@ -59,7 +58,7 @@ struct h2_extra {
    }
 
    /* clang-format off */
-   static h2_extra& I() { static h2_extra I; return I; }
+   static h2_extra& I() { static h2_extra __; return __; }
    /* clang-format on */
 
    h2_extra() : getaddrinfo_stub((void*)::getaddrinfo), freeaddrinfo_stub((void*)::freeaddrinfo) {}
@@ -78,7 +77,7 @@ struct h2_extra {
    }
 };
 
-static inline void addrinfos(int count, ...) {
+static inline void h2_setaddrinfo(int count, ...) {
    struct sockaddr_storage* sockaddrs = h2_extra::get_sockaddrs();
 
    int i = 0;
@@ -96,4 +95,4 @@ static inline void addrinfos(int count, ...) {
    memset(&sockaddrs[i], 0, sizeof(struct sockaddr));
 }
 
-#define H2DNS(...) h2::addrinfos(H2PP_NARGS(__VA_ARGS__), __VA_ARGS__)
+#define H2DNS(...) h2_setaddrinfo(H2PP_NARGS(__VA_ARGS__), __VA_ARGS__)

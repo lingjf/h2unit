@@ -35,12 +35,13 @@ struct h2_case {
       stub_restore();
       h2_append_x_fail(fail, h2_stack::G().pop());
 
-      if (fail) {
-         if (status != FAILED)
-            status = FAILED, fails.push_back(fail);
-         else
+      if (fail)
+         if (status == FAILED)
             delete fail;
-      }
+         else {
+            status = FAILED;
+            h2_append_x_fail(fails, fail);
+         }
 
       t_end = h2_milliseconds();
    }
@@ -53,9 +54,8 @@ struct h2_case {
       if (::setjmp(jb) == 0) {
          uf_code();
          if (ul_code) ul_code();
-      } else {
+      } else
          status = FAILED;
-      }
 
       prev_teardown();
       h2_suite_teardown_g(suite);
@@ -66,10 +66,7 @@ struct h2_case {
 
    void do_stub(void* befp, void* tofp, const char* befn, const char* tofn, const char* file, int line) {
       h2_stub* stub = nullptr;
-      h2_list_for_each_entry(p, &stubs, h2_stub, x) if (p->befp == befp) {
-         stub = p;
-         break;
-      }
+      h2_list_for_each_entry(p, &stubs, h2_stub, x) if (p->befp == befp && (stub = p)) break;
       if (!stub) {
          stub = new h2_stub(befp, file, line);
          stubs.push(&stub->x);
@@ -104,9 +101,11 @@ struct h2_case {
 
    int jc;
    jmp_buf jb;
-   h2_vector<h2_fail*> fails;
+   h2_fail* fails;
+
    void do_fail(h2_fail* fail) {
-      status = FAILED, fails.push_back(fail);
+      status = FAILED;
+      h2_append_x_fail(fails, fail);
       if (0 < jc--) ::longjmp(jb, 1);
    }
 
@@ -129,7 +128,7 @@ struct h2_case {
    };
 
    h2_case(const char* name_, h2_suite* suite_, S status_, const char* file_, int line_)
-     : name(name_), suite(suite_), status(status_), file(file_), line(line_), jc(0), ul_code() {
+     : name(name_), suite(suite_), status(status_), file(file_), line(line_), jc(0), fails(nullptr), ul_code() {
       h2_suite_case_g(suite, this);
    }
 

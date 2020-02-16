@@ -13,11 +13,12 @@ struct h2_piece {
    unsigned escape : 1, freed : 1;
    h2_backtrace bt;
 
-   h2_piece(void* ptr_, void* page_, int size_, int pagesize_, int pagecount_, h2_backtrace& bt_) : ptr(ptr_), page(page_), size(size_), pagesize(pagesize_), pagecount(pagecount_), escape(0), freed(0), bt(bt_) {}
+   h2_piece(void* ptr_, void* page_, int size_, int pagesize_, int pagecount_, h2_backtrace& bt_)
+     : ptr(ptr_), page(page_), size(size_), pagesize(pagesize_), pagecount(pagecount_), escape(0), freed(0), bt(bt_) {}
 
    bool in_range(const void* p) {
-      unsigned char* p0 = (unsigned char*)page;
-      unsigned char* p2 = (unsigned char*)p0 + pagesize * (pagecount + 1);
+      const unsigned char* p0 = (const unsigned char*)page;
+      const unsigned char* p2 = p0 + pagesize * (pagecount + 1);
       return p0 <= (const unsigned char*)p && (const unsigned char*)p < p2;
    }
 
@@ -46,15 +47,15 @@ struct h2_piece {
    }
 
    static h2_fail* prefree(h2_piece* m) {
-      if (m->freed++) return new h2_fail_doublefree(m->ptr, m->bt, h2_backtrace(!strcmp(h2_cfg().platform, "MAC") ? 5 : 4));
+      if (m->freed++) return new h2_fail_doublefree(m->ptr, m->bt, h2_backtrace(h2cfg().isMAC() ? 5 : 4));
 
       h2_fail* fail = nullptr;
 
       if (memcmp((unsigned char*)m->ptr + m->size, forbidden_zone, sizeof(forbidden_zone)))
-         h2_append_x_fail(fail, new h2_fail_memoverflow(m->ptr, m->size, forbidden_zone, sizeof(forbidden_zone), &m->bt, nullptr));
+         h2_append_x_fail(fail, new h2_fail_memoverflow(m->ptr, m->size, forbidden_zone, sizeof(forbidden_zone), m->bt, h2_backtrace()));
 
       if (memcmp((unsigned char*)m->ptr - sizeof(forbidden_zone), forbidden_zone, sizeof(forbidden_zone)))
-         h2_append_x_fail(fail, new h2_fail_memoverflow(m->ptr, -(int)sizeof(forbidden_zone), forbidden_zone, sizeof(forbidden_zone), &m->bt, nullptr));
+         h2_append_x_fail(fail, new h2_fail_memoverflow(m->ptr, -(int)sizeof(forbidden_zone), forbidden_zone, sizeof(forbidden_zone), m->bt, h2_backtrace()));
 
       if (mprotect(m->page, m->pagesize * (m->pagecount + 1), PROT_READ) != 0)
          printf("mprotect failed %s\n", strerror(errno));
@@ -145,7 +146,8 @@ class h2_stack {
         {(unsigned char*)localtime, 300}};
 
       for (size_t i = 0; i < sizeof(exclude_functions) / sizeof(exclude_functions[0]); ++i)
-         if (bt.has(exclude_functions[i].base, exclude_functions[i].size)) return true;
+         if (bt.has(exclude_functions[i].base, exclude_functions[i].size))
+            return true;
 
       return false;
    }
@@ -165,7 +167,7 @@ class h2_stack {
    }
 
    h2_piece* newm(size_t size, size_t alignment, const char* fill) {
-      h2_backtrace bt(!strcmp(h2_cfg().platform, "MAC") ? 6 : 2);
+      h2_backtrace bt(h2cfg().isMAC() ? 6 : 2);
       h2_block* b = escape(bt) ? h2_list_bottom_entry(&blocks, h2_block, x) : h2_list_top_entry(&blocks, h2_block, x);
       return b ? b->newm(size, alignment, fill, bt) : nullptr;
    }
@@ -197,15 +199,14 @@ class h2_stack {
    }
 
    /* clang-format off */
-   static h2_stack& G() { static h2_stack G; return G; }
+   static h2_stack& G() { static h2_stack __; return __; }
    /* clang-format on */
 
    struct T {
       int count;
 
-      T(const char* file, int line, long long limited = 0x7fffffffffffLL, const char* fill = nullptr) : count(0) {
-         h2_stack::G().push(file, line, "block", limited, fill);
-      }
+      T(const char* file, int line, long long limited = 0x7fffffffffffLL, const char* fill = nullptr)
+        : count(0) { h2_stack::G().push(file, line, "block", limited, fill); }
       ~T() { h2_fail_g(h2_stack::G().pop()); }
 
       operator bool() { return 0 == count++; }
@@ -262,10 +263,10 @@ struct h2_hook {
    static void* realloc_hook(void* __ptr, size_t __size, const void* caller) { return realloc(__ptr, __size); }
    static void* memalign_hook(size_t __alignment, size_t __size, const void* caller) { return aligned_alloc(__alignment, __size); }
 
-   void (*old__free_hook)(void*, const void*);
-   void* (*old__malloc_hook)(size_t, const void*);
-   void* (*old__realloc_hook)(void*, size_t, const void*);
-   void* (*old__memalign_hook)(size_t, size_t, const void*);
+   void (*sys__free_hook)(void*, const void*);
+   void* (*sys__malloc_hook)(size_t, const void*);
+   void* (*sys__realloc_hook)(void*, size_t, const void*);
+   void* (*sys__memalign_hook)(size_t, size_t, const void*);
 
 #elif defined __APPLE__
    static size_t mz_size(malloc_zone_t* zone, const void* ptr) {
@@ -297,9 +298,7 @@ struct h2_hook {
       unsigned int num_zones = 0;
 
       if (KERN_SUCCESS != malloc_get_all_zones(0, nullptr, (vm_address_t**)&zones, &num_zones)) num_zones = 0;
-
       if (num_zones) return zones[0];
-
       return malloc_default_zone();
    }
 
@@ -307,30 +306,22 @@ struct h2_hook {
    malloc_zone_t mz;
 
 #else
-   stub free_stub;
-   stub malloc_stub;
-   stub calloc_stub;
-   stub realloc_stub;
-   stub posix_memalign_stub;
 
 #endif
+
+   h2_stub free_stub;
+   h2_stub malloc_stub;
+   h2_stub calloc_stub;
+   h2_stub realloc_stub;
+   h2_stub posix_memalign_stub;
 
    h2_hook()
+     : free_stub((void*)::free), malloc_stub((void*)::malloc), calloc_stub((void*)::calloc), realloc_stub((void*)::realloc), posix_memalign_stub((void*)::posix_memalign) {
 #if defined __GLIBC__
-#elif defined __APPLE__
-#else
-     : free_stub((void*)::free),
-       malloc_stub((void*)::malloc),
-       calloc_stub((void*)::calloc),
-       realloc_stub((void*)::realloc),
-       posix_memalign_stub((void*)::posix_memalign)
-#endif
-   {
-#if defined __GLIBC__
-      old__free_hook = __free_hook;
-      old__malloc_hook = __malloc_hook;
-      old__realloc_hook = __realloc_hook;
-      old__memalign_hook = __memalign_hook;
+      sys__free_hook = __free_hook;
+      sys__malloc_hook = __malloc_hook;
+      sys__realloc_hook = __realloc_hook;
+      sys__memalign_hook = __memalign_hook;
 
 #elif defined __APPLE__
 
@@ -372,7 +363,7 @@ struct h2_hook {
    }
 
    /* clang-format off */
-   static h2_hook& I() { static h2_hook I; return I; }
+   static h2_hook& I() { static h2_hook __; return __; }
    /* clang-format on */
 
    void dohook() {
@@ -401,10 +392,10 @@ struct h2_hook {
 
    void unhook() {
 #if defined __GLIBC__
-      __free_hook = old__free_hook;
-      __malloc_hook = old__malloc_hook;
-      __realloc_hook = old__realloc_hook;
-      __memalign_hook = old__memalign_hook;
+      __free_hook = sys__free_hook;
+      __malloc_hook = sys__malloc_hook;
+      __realloc_hook = sys__realloc_hook;
+      __memalign_hook = sys__memalign_hook;
 
 #elif defined __APPLE__
 
@@ -421,37 +412,29 @@ struct h2_hook {
 
    static void overflow_handler(int sig, siginfo_t* si, void* unused) {
       h2_piece* m = h2_stack::G().whom(si->si_addr);
-      if (m) {
-         h2_backtrace bt(!strcmp(h2_cfg().platform, "MAC") ? 5 : 4);
-         h2_fail_g(new h2_fail_memoverflow(m->ptr, (intptr_t)si->si_addr - (intptr_t)m->ptr, nullptr, 0, &m->bt, &bt));
-      }
+      if (m) h2_fail_g(new h2_fail_memoverflow(m->ptr, (intptr_t)si->si_addr - (intptr_t)m->ptr, nullptr, 0, m->bt, h2_backtrace(h2cfg().isMAC() ? 5 : 4)));
       h2_debug();
       exit(1);
    }
 };
 
 static inline void h2_sihook_g() {
-   if (h2_cfg().memory_check) {
-      struct sigaction act;
-      act.sa_sigaction = h2_hook::overflow_handler;
-      sigemptyset(&act.sa_mask);
-      act.sa_flags = SA_SIGINFO;
-      if (sigaction(SIGSEGV, &act, nullptr) == -1) {
-         perror("Register SIGSEGV handler failed");
-         exit(1);
-      }
-      if (sigaction(SIGBUS, &act, nullptr) == -1) {
-         perror("Register SIGBUS handler failed");
-         exit(1);
-      }
-   }
+   if (!h2cfg().memory_check) return;
+   struct sigaction act;
+   act.sa_sigaction = h2_hook::overflow_handler;
+   sigemptyset(&act.sa_mask);
+   act.sa_flags = SA_SIGINFO;
+   if (sigaction(SIGSEGV, &act, nullptr) == -1)
+      perror("Register SIGSEGV handler failed");
+   if (sigaction(SIGBUS, &act, nullptr) == -1)
+      perror("Register SIGBUS handler failed");
 }
 
 static inline void h2_dohook_g() {
-   if (h2_cfg().memory_check) h2_hook::I().dohook();
+   if (h2cfg().memory_check) h2_hook::I().dohook();
 }
 static inline void h2_unhook_g() {
-   if (h2_cfg().memory_check) h2_hook::I().unhook();
+   if (h2cfg().memory_check) h2_hook::I().unhook();
 }
 
 // https://www.gnu.org/savannah-checkouts/gnu/libc/manual/html_node/Hooks-for-Malloc.html

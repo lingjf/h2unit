@@ -9,56 +9,65 @@
 #include <cstdarg>
 #include <cstring>
 #include <cassert>
-#include <cctype>
-#include <climits>
-#include <csetjmp>
+#include <cctype>  /* tolower */
+#include <climits> /* INT_MAX */
+#include <csetjmp> /* setjmp, longjmp */
 #include <cmath>
 #include <iostream>
-#include <string>
 #include <sstream>
+#include <string>
 #include <vector>
 #include <map>
 #include <regex>
 #include <tuple>
-#include <algorithm>
+#include <random>    /* shuffle */
+#include <algorithm> /* shuffle */
 #include <functional>
-#include <utility>
-#include <random>
-#include <memory>
+#include <utility> /* forward_as_tuple */
+#include <memory>  /* allocator */
 #include <type_traits>
-#include <typeinfo>
-#include <inttypes.h>
+#include <typeinfo> /* typeid */
 #include <errno.h>
-#include <unistd.h>
+#include <unistd.h>    /* sysconf */
 #include <signal.h>    /* sigaction */
 #include <alloca.h>    /* alloca */
 #include <execinfo.h>  /* backtrace */
 #include <cxxabi.h>    /* demangle */
-#include <sys/mman.h>  /* mprotect mmap */
+#include <sys/mman.h>  /* mprotect, mmap */
 #include <sys/ioctl.h> /* ioctl */
-#include <sys/time.h>
-#include <time.h>
+#include <sys/time.h>  /* gettimeofday */
 #include <sys/types.h>
 #include <sys/socket.h>
-#include <netdb.h>
-#include <arpa/inet.h>
+#include <netdb.h>     /* getaddrinfo, gethostbyname */
+#include <arpa/inet.h> /* inet_addr */
 
 #if defined __GLIBC__
-#   include <malloc.h>
+#   include <malloc.h> /* __malloc_hook */
 #elif defined __APPLE__
 #   include <AvailabilityMacros.h>
-#   include <malloc/malloc.h>
+#   include <malloc/malloc.h> /* malloc_zone_t */
+#elif defined _WIN32
+#   include <windows.h>
 #endif
 
-#if defined __clang__
-#   pragma clang diagnostic ignored "-Wsign-compare"
-#   pragma clang diagnostic ignored "-Wwritable-strings"
-#elif defined __GNUC__
+#if defined __GNUC__
 #   pragma GCC diagnostic ignored "-Wsign-compare"
 #   pragma GCC diagnostic ignored "-Wwrite-strings"
+#   pragma GCC diagnostic ignored "-Wdangling-else"
 #   pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+#elif defined __clang__
+#   pragma clang diagnostic ignored "-Wsign-compare"
+#   pragma clang diagnostic ignored "-Wwritable-strings"
+#   pragma clang diagnostic ignored "-Wdangling-else"
 #endif
 
+//
+//
+//
+//
+//
+//
+// Pin me at LINE 70, otherwise relocate README.md #L
 #define __H2OK4(condition, _1, _2, f)                         \
    do {                                                       \
       if (!(condition)) {                                     \
@@ -94,9 +103,9 @@
 #   define JE H2JE
 #endif
 
-#define __H2SUITE(Suitename, s, a)                              \
-   static void s(h2_suite*, h2_case*);                          \
-   static h2_suite a(Suitename, &s, __FILE__, __LINE__, false); \
+#define __H2SUITE(Suitename, s, a)                          \
+   static void s(h2_suite*, h2_case*);                      \
+   static h2_suite a(Suitename, &s, __FILE__, __LINE__, 0); \
    static void s(h2_suite* ___suite, h2_case* case___)
 
 #define H2SUITE(...) __H2SUITE(H2PP_STRINGIZE(__VA_ARGS__), H2Q(suite), H2Q(a))
@@ -144,7 +153,7 @@
 #endif
 
 #define __H2CASE(Casename, Status, a, C, t)                                        \
-   static h2_suite a("", h2_suite::execute, __FILE__, __LINE__, true);             \
+   static h2_suite a("", h2_suite::execute, __FILE__, __LINE__, 1);                \
    namespace {                                                                     \
    struct C : private h2_case {                                                    \
       C(h2_suite* suite) : h2_case(Casename, suite, Status, __FILE__, __LINE__) {} \
@@ -178,7 +187,7 @@
 #   define MOCK H2MOCK
 #endif
 
-#define __H2STUB3(BeFunc, ToFunc, Q)                                                 \
+#define __H2STUB3(BeFunc, ToFunc, _1)                                                \
    do {                                                                              \
       h2_stub_g((void*)BeFunc, (void*)ToFunc, #BeFunc, #ToFunc, __FILE__, __LINE__); \
    } while (0)
@@ -262,7 +271,7 @@ static inline void h2_fail_g(void* fail);
 #include "h2_heap.cpp"
 #include "h2_mfp.cpp"
 #include "h2_matcher.cpp"
-#include "h2_callx.cpp"
+#include "h2_callexp.cpp"
 #include "h2_routine.cpp"
 #include "h2_mock.cpp"
 #include "h2_case.cpp"

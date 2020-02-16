@@ -23,31 +23,24 @@ struct h2_thunk {
 
    void set(void* befp, void* tofp) {
       unsigned char* I = reinterpret_cast<unsigned char*>(befp);
+      ptrdiff_t delta = (unsigned char*)tofp - (unsigned char*)befp;
 
+#if defined(__i386__) || defined(__x86_64__)
       //x86 __asm("jmp $tofp") : 0xE9 {offset=tofp-befp-5}
       //x86 __asm("movl $tofp, %eax; jmpl %eax") : 0xB8 {tofp} 0xFF 0xE0
       //x86_64 __asm("movq $tofp, %rax; jmpq %rax") : 0x48 0xB8 {tofp} 0xFF 0xE0
-#if defined(__i386__) || defined(__x86_64__)
-      ptrdiff_t delta = (unsigned char*)tofp - (unsigned char*)befp;
-#   if defined __x86_64__
       if (delta < INT_MIN || INT_MAX < delta) {
-         *I++ = 0x48;
-         *I++ = 0xB8;
-         memcpy(I, &tofp, sizeof(void*));
-         I += sizeof(void*);
-         *I++ = 0xFF;
-         *I++ = 0xE0;
-         return;
+         unsigned char C[] = {0x48, 0xB8, 0, 0, 0, 0, 0, 0, 0, 0, 0xFF, 0xE0};
+         memcpy(C + 2, &tofp, sizeof(void*));
+         memcpy(I, C, sizeof(C));
+      } else {
+         *I++ = 0xE9;
+         *(int32_t*)I = delta - 5;
       }
-#   endif
-
-      int32_t offset = delta - 5;
-      *I++ = 0xE9;
-      memcpy(I, (void*)&offset, sizeof(offset));
 #endif
    }
 
-   void reset(void* befp) { memcpy(befp, saved_code, sizeof(saved_code)); }
+   void* reset(void* befp) { return memcpy(befp, saved_code, sizeof(saved_code)); }
 };
 
 struct h2_stub : protected h2_thunk {
@@ -62,9 +55,7 @@ struct h2_stub : protected h2_thunk {
 
    void replace(void* tofp) { set(befp, tofp); }
 
-   void restore() {
-      if (befp) reset(befp);
-   }
+   void restore() { befp&& reset(befp); }
 
    static void* operator new(std::size_t sz) { return h2_raw::malloc(sz); }
    static void operator delete(void* ptr) { h2_raw::free(ptr); }
