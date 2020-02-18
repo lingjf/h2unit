@@ -24,8 +24,6 @@ struct h2_fail {
 
    h2_string _k;
 
-   static constexpr const char* A9 = "1st\0002nd\0003rd\0004th\0005th\0006th\0007th\0008th\0009th";
-
    h2_fail(const char* file_, int line_, const char* func_ = nullptr, int argi_ = -1)
      : x_next(nullptr), y_next(nullptr), file(file_), line(line_), func(func_), argi(argi_) {}
 
@@ -44,7 +42,8 @@ struct h2_fail {
    virtual void print() { _k.size() && printf(" %s", _k.c_str()); }
 
    void print_locate() {
-      if (func && strlen(func)) printf(", in %s(%s)", func, 0 <= argi && argi < 9 ? A9 + argi * 4 : "?");
+      static constexpr const char* a9 = "1st\0002nd\0003rd\0004th\0005th\0006th\0007th\0008th\0009th";
+      if (func && strlen(func)) printf(", in %s(%s)", func, 0 <= argi && argi < 9 ? a9 + argi * 4 : "?");
       if (file && strlen(file) && 0 < line) printf(", at %s:%d", file, line);
       printf("\n");
    }
@@ -155,12 +154,11 @@ struct h2_fail_memcmp : public h2_fail {
       printf("                     %sexpect%s                       %s│%s                       %sactual%s \n",
              S("dark gray"), S("reset"), S("dark gray"), S("reset"), S("dark gray"), S("reset"));
 
-      int size = e.size();
-      int rows = H2_DIV_ROUND_UP(size, 16);
+      int rows = H2_DIV_ROUND_UP(e.size(), 16);
 
       for (int i = 0; i < rows; ++i) {
          for (int j = 0; j < 16; ++j) {
-            if (size <= i * 16 + j) {
+            if (e.size() <= i * 16 + j) {
                printf("   ");
                continue;
             }
@@ -170,7 +168,7 @@ struct h2_fail_memcmp : public h2_fail {
          }
          printf("  %s│%s  ", S("dark gray"), S("reset"));
          for (int j = 0; j < 16; ++j) {
-            if (size <= i * 16 + j) {
+            if (e.size() <= i * 16 + j) {
                printf("   ");
                continue;
             }
@@ -269,10 +267,7 @@ struct h2_fail_json : public h2_fail {
 
    void print() {
       h2_fail::print(), print_locate();
-
-      int terminal_columns = h2_winsz();
-      if (terminal_columns < 10) terminal_columns = 80;
-      h2_json::diff_print(e.c_str(), a.c_str(), terminal_columns);
+      h2_json::diff_print(e.c_str(), a.c_str(), h2_winsz());
    }
 };
 

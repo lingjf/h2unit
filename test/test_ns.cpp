@@ -24,7 +24,7 @@ static int dns_use_getaddrinfo(const char* hostname, char* ips, char* cnames) {
    }
 
    return err;
-};
+}
 
 static void* dns_use_gethostbyname(const char* hostname, char* ips, char* cnames) {
    strcpy(ips, "");
@@ -43,7 +43,7 @@ static void* dns_use_gethostbyname(const char* hostname, char* ips, char* cnames
       sprintf(ips + strlen(ips), "%s;", inet_ntoa(*(struct in_addr*)host->h_addr_list[i]));
    }
    return host;
-};
+}
 
 SUITE(getaddrinfo) 
 {
@@ -100,7 +100,7 @@ SUITE(gethostbyname)
    //       OK(Contains("8.8.8.8;"), t1);
    //    };
 
-   Case(DNS 1) 
+   Case(DNS 1)
    {
       DNS("", "192.168.1.123");
       ret = dns_use_gethostbyname("dns.google.com", t1, t2);
@@ -108,14 +108,14 @@ SUITE(gethostbyname)
       OK("192.168.1.123;", t1);
    };
 
-   Case(DNS 1 failure) 
+   Case(DNS 1 failure)
    {
       DNS("www.h2unit.com", "192.168.1.123");
       ret = dns_use_gethostbyname("dns.google.com", t1, t2);
       OK(!ret);
    };
 
-   Case(DNS 2) 
+   Case(DNS 2)
    {
       DNS("dns.google.com", "192.168.1.123", "1.2.3.4");
       ret = dns_use_gethostbyname("dns.google.com", t1, t2);
@@ -123,7 +123,7 @@ SUITE(gethostbyname)
       OK("192.168.1.123;1.2.3.4;", t1);
    };
 
-   Case(DNS cname) 
+   Case(DNS cname)
    {
       DNS("dns.google.com", "1.dns.google.com", "1.2.3.4");
       ret = dns_use_gethostbyname("dns.google.com", t1, t2);

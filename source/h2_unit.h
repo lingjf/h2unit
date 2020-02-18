@@ -50,7 +50,7 @@
 #   include <windows.h>
 #endif
 
-/* =====> Interface <====== */
+/* ======> Interface <====== */
 
 #define SUITE(...) H2SUITE(__VA_ARGS__)
 #define CASE(...) H2CASE(__VA_ARGS__)
@@ -110,7 +110,7 @@
    static h2::h2_suite a(Suitename, &s, __FILE__, __LINE__, 0); \
    static void s(h2::h2_suite* ___suite, h2::h2_case* case___)
 
-#define H2SUITE(...) __H2SUITE(H2PP_STRINGIZE(__VA_ARGS__), H2Q(suite), H2Q(a))
+#define H2SUITE(...) __H2SUITE(H2PP_STRINGIZE(__VA_ARGS__), H2Q(h2_suite), H2Q(a))
 
 #define __H2Setup(t) \
    for (int t = 1; t--; case___ ? void() : h2::h2_suite_setup_g(___suite)) ___suite->setup = [&]()
@@ -245,40 +245,40 @@
 
 #define H2STUB(...) H2PP_VARIADIC_CALL(__H2STUB, __VA_ARGS__, H2Q(t))
 
-#define __H2BLOCK0(t) for (h2::h2_stack::T t(__FILE__, __LINE__); t;)
+#define __H2BLOCK0(a) for (h2::h2_stack::A a(__FILE__, __LINE__); a;)
 
-#define __H2BLOCK1(t, ...) for (h2::h2_stack::T t(__FILE__, __LINE__, __VA_ARGS__); t;)
+#define __H2BLOCK1(a, ...) for (h2::h2_stack::A a(__FILE__, __LINE__, __VA_ARGS__); a;)
 
-#define H2BLOCK(...) H2PP_IF(H2PP_0ARGS(__VA_ARGS__), __H2BLOCK0(H2Q(t)), __H2BLOCK1(H2Q(t), __VA_ARGS__))
-// #define H2BLOCK(...) for (h2::h2_stack::T t(__FILE__, __LINE__, ##__VA_ARGS__); t;)
-// #define H2BLOCK(...) for (h2::h2_stack::T t(__FILE__, __LINE__, __VA_OPT__(,) __VA_ARGS__); t;)
+#define H2BLOCK(...) H2PP_IF(H2PP_0ARGS(__VA_ARGS__), __H2BLOCK0(H2Q(a)), __H2BLOCK1(H2Q(a), __VA_ARGS__))
+// #define H2BLOCK(...) for (h2::h2_stack::A a(__FILE__, __LINE__, ##__VA_ARGS__); a;)
+// #define H2BLOCK(...) for (h2::h2_stack::A a(__FILE__, __LINE__, __VA_OPT__(,) __VA_ARGS__); a;)
 
 #define H2DNS(hostname, ...) h2::h2_ns::setaddrinfo(hostname, H2PP_NARGS(__VA_ARGS__), __VA_ARGS__)
 
 namespace h2 {
 
-#include "h2_tool.cpp"
-#include "h2_list.cpp"
-#include "h2_option.cpp"
-#include "h2_allocate.cpp"
-#include "h2_expr.cpp"
-#include "h2_json.cpp"
-#include "h2_backtrace.cpp"
-#include "h2_failure.cpp"
-#include "h2_stub.cpp"
-#include "h2_heap.cpp"
-#include "h2_mfp.cpp"
-#include "h2_matcher.cpp"
-#include "h2_callexp.cpp"
-#include "h2_routine.cpp"
-#include "h2_mock.cpp"
-#include "h2_ns.cpp"
-#include "h2_case.cpp"
-#include "h2_suite.cpp"
-#include "h2_log.cpp"
-#include "h2_extra.cpp"
-#include "h2_directory.cpp"
-#include "h2_task.cpp"
+#include "h2_tool.hpp"
+#include "h2_list.hpp"
+#include "h2_option.hpp"
+#include "h2_allocate.hpp"
+#include "h2_expr.hpp"
+#include "h2_json.hpp"
+#include "h2_backtrace.hpp"
+#include "h2_failure.hpp"
+#include "h2_stub.hpp"
+#include "h2_heap.hpp"
+#include "h2_mfp.hpp"
+#include "h2_matcher.hpp"
+#include "h2_callexp.hpp"
+#include "h2_routine.hpp"
+#include "h2_mock.hpp"
+#include "h2_ns.hpp"
+#include "h2_case.hpp"
+#include "h2_suite.hpp"
+#include "h2_log.hpp"
+#include "h2_extra.hpp"
+#include "h2_directory.hpp"
+#include "h2_task.hpp"
 }  // namespace h2
 
 h2_selectany int main(int argc, const char** argv) {

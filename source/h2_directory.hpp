@@ -5,11 +5,11 @@ struct h2_directory {
    static void drop_last_order() { ::remove(last_order_file_path); }
 
    static void read_last_order(std::vector<std::string>& list) {
-      char suite_case_name[1024];
+      char suite_case[1024];
       h2_with f(fopen(last_order_file_path, "r"));
       if (f.f)
-         while (1 == fscanf(f.f, "%[^\n]\n", suite_case_name))
-            list.push_back(suite_case_name);
+         while (1 == fscanf(f.f, "%[^\n]\n", suite_case))
+            list.push_back(suite_case);
    }
 
    static void save_last_order(std::vector<h2_case*>& list) {

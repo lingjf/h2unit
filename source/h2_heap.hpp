@@ -25,7 +25,7 @@ struct h2_piece {
    }
 
    static h2_piece* allocate(int size, int alignment, h2_backtrace& bt) {
-      auto pagesize = sysconf(_SC_PAGE_SIZE);
+      static int pagesize = sysconf(_SC_PAGE_SIZE);
       int pagecount = H2_DIV_ROUND_UP(size + (alignment ? alignment : 8) + sizeof(forbidden_zone), pagesize);
       unsigned char* p = (unsigned char*)mmap(nullptr, pagesize * (pagecount + 1), PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0);
       if (p == MAP_FAILED) return nullptr;
@@ -90,10 +90,10 @@ struct h2_block {
 
       if (!using_list.empty()) {
          fail = new h2_fail_memleak(file, line, where);
-         h2_list_for_each_entry(m, &using_list, h2_piece, x) fail->add(m->ptr, m->size, m->bt);
+         h2_list_for_each_entry(p, &using_list, h2_piece, x) fail->add(p->ptr, p->size, p->bt);
       }
 
-      h2_list_for_each_entry(m, &freed_list, h2_piece, x) m->x.out(), h2_piece::release(m);
+      h2_list_for_each_entry(p, &freed_list, h2_piece, x) p->x.out(), h2_piece::release(p);
 
       return fail;
    }
@@ -112,8 +112,8 @@ struct h2_block {
    }
 
    h2_piece* getm(const void* ptr) {
-      h2_list_for_each_entry(m, &using_list, h2_piece, x) if (m->ptr == ptr) return m;
-      h2_list_for_each_entry(m, &freed_list, h2_piece, x) if (m->ptr == ptr) return m;
+      h2_list_for_each_entry(p, &using_list, h2_piece, x) if (p->ptr == ptr) return p;
+      h2_list_for_each_entry(p, &freed_list, h2_piece, x) if (p->ptr == ptr) return p;
       return nullptr;
    }
 
@@ -126,14 +126,13 @@ struct h2_block {
    }
 
    h2_piece* whom(const void* addr) {
-      h2_list_for_each_entry(m, &using_list, h2_piece, x) if (m->in_range(addr)) return m;
-      h2_list_for_each_entry(m, &freed_list, h2_piece, x) if (m->in_range(addr)) return m;
+      h2_list_for_each_entry(p, &using_list, h2_piece, x) if (p->in_range(addr)) return p;
+      h2_list_for_each_entry(p, &freed_list, h2_piece, x) if (p->in_range(addr)) return p;
       return nullptr;
    }
 };
 
-class h2_stack {
- private:
+struct h2_stack {
    h2_list blocks;
 
    bool escape(h2_backtrace& bt) {
@@ -154,7 +153,6 @@ class h2_stack {
       return false;
    }
 
- public:
    bool push(const char* file, int line, const char* where, long long limited = 0x7fffffffffffLL, const char* fill = nullptr) {
       h2_block* b = new (h2_raw::malloc(sizeof(h2_block))) h2_block(file, line, where, limited, fill);
       blocks.push(&b->x);
@@ -175,17 +173,17 @@ class h2_stack {
    }
 
    h2_piece* getm(const void* ptr) {
-      h2_list_for_each_entry(b, &blocks, h2_block, x) {
-         h2_piece* m = b->getm(ptr);
+      h2_list_for_each_entry(p, &blocks, h2_block, x) {
+         h2_piece* m = p->getm(ptr);
          if (m) return m;
       }
       return nullptr;
    }
 
    h2_fail* relm(void* ptr) {
-      h2_list_for_each_entry(b, &blocks, h2_block, x) {
-         h2_piece* m = b->getm(ptr);
-         if (m) return b->relm(m);
+      h2_list_for_each_entry(p, &blocks, h2_block, x) {
+         h2_piece* m = p->getm(ptr);
+         if (m) return p->relm(m);
       }
 
       h2_debug("Warning: free not found!");
@@ -193,8 +191,8 @@ class h2_stack {
    }
 
    h2_piece* whom(const void* addr) {
-      h2_list_for_each_entry(b, &blocks, h2_block, x) {
-         h2_piece* m = b->whom(addr);
+      h2_list_for_each_entry(p, &blocks, h2_block, x) {
+         h2_piece* m = p->whom(addr);
          if (m) return m;
       }
       return nullptr;
@@ -204,12 +202,12 @@ class h2_stack {
    static h2_stack& G() { static h2_stack __; return __; }
    /* clang-format on */
 
-   struct T {
+   struct A {
       int count;
 
-      T(const char* file, int line, long long limited = 0x7fffffffffffLL, const char* fill = nullptr)
+      A(const char* file, int line, long long limited = 0x7fffffffffffLL, const char* fill = nullptr)
         : count(0) { h2_stack::G().push(file, line, "block", limited, fill); }
-      ~T() { h2_fail_g(h2_stack::G().pop()); }
+      ~A() { h2_fail_g(h2_stack::G().pop()); }
 
       operator bool() { return 0 == count++; }
    };

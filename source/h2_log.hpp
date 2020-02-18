@@ -34,8 +34,7 @@ struct h2_log_console : public h2_log {
       case h2_case::TODOED:
          printf("CASE(%s, %s): TODO at %s:%d\n", c->suite->name, c->name, c->file, c->line);
          break;
-      case h2_case::FILTED:
-         break;
+      case h2_case::FILTED: break;
       case h2_case::PASSED:
          if (O().verbose) {
             printf("%s", S("light blue"));
@@ -70,7 +69,7 @@ struct h2_log_xml : public h2_log {
 
          for (auto& c : s->cases()) {
             fprintf(f.f, "    <testcase classname=\"%s\" name=\"%s\" status=\"%s\" time=\"%.3f\">\n",
-                    c->suite->name, c->name, h2_cs[c->status], (c->t_end - c->t_start) / 1000.0);
+                    c->suite->name, c->name, case_status[c->status], (c->t_end - c->t_start) / 1000.0);
 
             if (c->status == h2_case::FAILED) {
                fprintf(f.f, "      <failure message=\"%s:%d:", c->file, c->line);

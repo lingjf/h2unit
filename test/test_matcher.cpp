@@ -4,7 +4,8 @@ using namespace h2;
 
 SUITE(eq_matches)
 {
-   Case(Integer) {
+   Case(Integer) 
+   {
       h2_eq_matches<int> a1(123);
       OK(nullptr == a1.matches(123));
       h2_eq_matches<const int> a2(123);
@@ -19,7 +20,8 @@ SUITE(eq_matches)
       OK(Eq(b2), 123);
    };
 
-   Case(Boolean) {
+   Case(Boolean) 
+   {
       h2_eq_matches<bool> a1(false);
       OK(nullptr == a1.matches(false));
       h2_eq_matches<const bool> a2(false);
@@ -29,7 +31,8 @@ SUITE(eq_matches)
       OK(Eq(b2), true);
    };
 
-   Case(Float) {
+   Case(Float) 
+   {
       h2_eq_matches<float> a1(65.000000001);
       OK(nullptr == a1.matches(65));
       h2_eq_matches<double> a2(65.000000001);
@@ -43,7 +46,8 @@ SUITE(eq_matches)
       OK(Eq(b3), 65);
    };
 
-   Case(String) {
+   Case(String) 
+   {
       h2_eq_matches<char*> a1("abc");
       OK(nullptr == a1.matches("abc"));
       h2_eq_matches<h2_string> a2("abc");

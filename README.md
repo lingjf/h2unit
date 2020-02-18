@@ -424,7 +424,7 @@ CASE(test memory initialize)
 Writing out of allocated memory area[start, start+size], memory overflow/underflow will be detected. 
 
 ### 9. Help Utilities
-*    [`H2DNS`](source/h2_unit.h#53)("ip1", "ip2", ...): Set DNS resolve results (getaddrinfo)
+*    [`DNS`](source/h2_unit.h#53)("hostname", "ip1", "ip2", "alias1", "alias2", ...): Set DNS resolve results (getaddrinfo, gethostbyname)
 
 ### 10. Human friendly console output
 

@@ -225,9 +225,9 @@ struct h2_json {
    };
 
    static Node* parse(const char* json_string, int length = 0) {
+      if (!json_string) return nullptr;
       if (length == 0) length = strlen(json_string);
-
-      if (!json_string || length == 0) return nullptr;
+      if (length == 0) return nullptr;
 
       P x;
 
@@ -266,42 +266,23 @@ struct h2_json {
 
    static bool match(Node* e, Node* a) {
       if (!e || !a) return false;
-
       switch (e->type) {
       case t_null:
-         if (a->is_null()) return true;
-         break;
+         return a->is_null();
       case t_boolean:
-         if (a->is_bool() && e->value_boolean == a->value_boolean) return true;
-         break;
+         return a->is_bool() && e->value_boolean == a->value_boolean;
       case t_number:
-         if (a->is_number() && ::fabs(e->value_double - a->value_double) < 0.00001) return true;
-         break;
+         return a->is_number() && ::fabs(e->value_double - a->value_double) < 0.00001;
       case t_string:
-         if (a->is_string() && e->value_string == a->value_string) return true;
-         break;
+         return a->is_string() && e->value_string == a->value_string;
       case t_regexp:
-         if (a->is_string()) {
-            bool result;
-            try {
-               std::regex re(e->value_string.c_str());
-               result = std::regex_match(a->value_string.c_str(), re);
-            }
-            catch (const std::regex_error& e) {
-               result = false;
-            }
-            return result;
-         }
-         break;
+         return a->is_string() && h2_regex_match(e->value_string.c_str(), a->value_string.c_str());
       case t_array:
-         if (a->is_array() && match_array(e, a)) return true;
-         break;
+         return a->is_array() && match_array(e, a);
       case t_object:
-         if (a->is_object() && match_object(e, a)) return true;
-         break;
+         return a->is_object() && match_object(e, a);
+      default: return false;
       };
-
-      return false;
    }
 
    static bool match(const char* expect, const char* actual) {
@@ -337,7 +318,6 @@ struct h2_json {
    static void node2dual(Node* node, int& type, h2_string& key, h2_string& value) {
       if (!node) return;
 
-      char t[128];
       type = t_string;
 
       if (node->key_string.size()) key = "\"" + node->key_string + "\"";
@@ -353,8 +333,7 @@ struct h2_json {
          break;
       case t_number:
          type = t_string;
-         sprintf(t, "%1.15g", node->value_double);
-         value = t;
+         value.printf("%1.15g", node->value_double);
          break;
       case t_string:
          type = t_string;

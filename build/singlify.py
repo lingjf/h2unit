@@ -36,9 +36,9 @@ with open('../source/h2_unit.h', 'r') as f_h2_unit:
             with open('../source/'+line[10:line.rindex('"')], 'r') as f_h2_cpp:
                 for line in f_h2_cpp:
                     if not line.startswith('#include "h2_'):
-                        copy_line1(line, f_h2unit)
+                        copy_line2(line, f_h2unit)
         else:
-            copy_line1(line, f_h2unit)
+            copy_line2(line, f_h2unit)
 
 f_h2unit.close()
 

@@ -4,7 +4,7 @@ static inline void h2_suite_case_g(h2_suite*, void*);
 static inline void h2_suite_setup_g(h2_suite*);
 static inline void h2_suite_teardown_g(h2_suite*);
 
-static constexpr const char* h2_cs[] = {"init", "TODO", "Filtered", "Passed", "Failed"};
+static constexpr const char* case_status[] = {"init", "TODO", "Filtered", "Passed", "Failed"};
 
 struct h2_case {
    /* clang-format off */
@@ -20,7 +20,6 @@ struct h2_case {
 
    void prev_setup() {
       t_start = h2_now();
-
       status = PASSED;
       h2_stack::G().push(file, line, "case");
    }

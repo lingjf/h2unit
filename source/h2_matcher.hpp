@@ -319,15 +319,7 @@ struct h2_regex_matches {
    explicit h2_regex_matches(const h2_string& _e) : e(_e) {}
 
    h2_fail* matches(const h2_string& a, bool caseless = false, bool dont = false) const {
-      bool result;
-      try {
-         std::regex re(e);
-         result = std::regex_match(a, re);
-      }
-      catch (const std::regex_error&) {
-         result = false;
-      }
-      if (result == !dont) return nullptr;
+      if (h2_regex_match(e.c_str(), a.c_str()) == !dont) return nullptr;
       h2_fail_unexpect* fail = new h2_fail_unexpect();
       fail->eprintf("/%s/", e.c_str());
       fail->aprintf("\"%s\"", a.c_str());

@@ -37,7 +37,7 @@
 #define H2PP_VARIADIC_CALL(_Macro, ...) H2PP_CAT2(_Macro, H2PP_NARGS(__VA_ARGS__)) (__VA_ARGS__)
 /* clang-format on */
 
-#define H2Q(Prefix) H2PP_CAT5(Prefix, __, __COUNTER__, __, __LINE__)
+#define H2Q(_Prefix) H2PP_CAT5(_Prefix, __, __COUNTER__, __, __LINE__)
 
 // H2_ALIGN_UP(15, 8) == 16
 #define H2_ALIGN_UP(n, s) (((n) + (s)-1) / (s) * (s))
@@ -52,6 +52,18 @@ struct h2_with {
    h2_with(FILE* file, int (*close)(FILE*) = ::fclose) : f(file), c(close) {}
    ~h2_with() { f&& c&& c(f); }
 };
+
+static inline bool h2_regex_match(const char* pattern, const char* subject) {
+   bool result = false;
+   try {
+      std::regex re(pattern);
+      result = std::regex_match(subject, re);
+   }
+   catch (const std::regex_error& e) {
+      result = false;
+   }
+   return result;
+}
 
 static inline bool h2_wildcard_match(const char* pattern, const char* subject) {
    const char *scur = subject, *pcur = pattern;
@@ -120,7 +132,7 @@ static inline const char* h2_style(const char* style_str, char* style_abi) {
    strcpy(t, style_str);
    strcpy(style_abi, "\033[");
 
-   for (char* p = strtok(t, ","); p; p = strtok(NULL, ","))
+   for (char* p = strtok(t, ","); p; p = strtok(nullptr, ","))
       for (size_t i = 0; i < sizeof(K) / sizeof(K[0]); i++)
          if (!strcmp(K[i].name, p)) {
             strcat(style_abi, K[i].value);
