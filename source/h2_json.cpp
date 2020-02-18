@@ -51,11 +51,10 @@ struct h2_json {
       Node* get(int index) { return 0 <= index && index < children.size() ? children[index] : nullptr; }
 
       Node* get(const char* name) {
-         if (!name) return nullptr;
-
-         for (auto node : children)
-            if (!node->key_string.compare(name))
-               return node;
+         if (name)
+            for (auto node : children)
+               if (!node->key_string.compare(name))
+                  return node;
 
          return nullptr;
       }
@@ -276,7 +275,7 @@ struct h2_json {
          if (a->is_bool() && e->value_boolean == a->value_boolean) return true;
          break;
       case t_number:
-         if (a->is_number() && fabs(e->value_double - a->value_double) < 0.00001) return true;
+         if (a->is_number() && ::fabs(e->value_double - a->value_double) < 0.00001) return true;
          break;
       case t_string:
          if (a->is_string() && e->value_string == a->value_string) return true;
@@ -591,7 +590,7 @@ struct h2_json {
       for (auto& word : line)
          if (word[0] == '#') {
             if (index * columns <= s && s < (index + 1) * columns) {
-               const char* style = h2cfg().style(word.c_str() + 1);
+               const char* style = S(word.c_str() + 1);
                wrap.append(style);
                current_style = style;
             }
@@ -624,10 +623,10 @@ struct h2_json {
             auto e_wrap = line_wrap(e_line, j, side_columns - 2, e_current_style);
             auto a_wrap = line_wrap(a_line, j, side_columns - 2, a_current_style);
             ::printf("%s%s %s%s%s│%s %s%s %s%s%s%s\n",
-                     e_last_style.c_str(), e_wrap.c_str(), h2cfg().style("reset"),
-                     h2cfg().style("dark gray"), j == K - 1 ? " " : "\\", h2cfg().style("reset"),
-                     a_last_style.c_str(), a_wrap.c_str(), h2cfg().style("reset"),
-                     h2cfg().style("dark gray"), j == K - 1 ? " " : "\\", h2cfg().style("reset"));
+                     e_last_style.c_str(), e_wrap.c_str(), S("reset"),
+                     S("dark gray"), j == K - 1 ? " " : "\\", S("reset"),
+                     a_last_style.c_str(), a_wrap.c_str(), S("reset"),
+                     S("dark gray"), j == K - 1 ? " " : "\\", S("reset"));
 
             e_last_style = e_current_style;
             a_last_style = a_current_style;
@@ -659,13 +658,13 @@ struct h2_json {
 
       char t1[256], t2[256];
       ::printf("%s%s%s%s│%s%s%s%s\n",
-               h2cfg().style("dark gray"),
+               S("dark gray"),
                h2_center_string("expect", side_columns, t1),
-               h2cfg().style("reset"),
-               h2cfg().style("dark gray"), h2cfg().style("reset"),
-               h2cfg().style("dark gray"),
+               S("reset"),
+               S("dark gray"), S("reset"),
+               S("dark gray"),
                h2_center_string("actual", side_columns, t2),
-               h2cfg().style("reset"));
+               S("reset"));
 
       print(e_lines, a_lines, side_columns);
    }

@@ -7,18 +7,18 @@ struct h2_thunk {
    unsigned char saved_code[sizeof(void*) + 1];
 #endif
 
-   bool save(void* befp) {
+   void* save(void* befp) {
       static uintptr_t pagesize = (uintptr_t)sysconf(_SC_PAGE_SIZE);
       uintptr_t start = reinterpret_cast<uintptr_t>(befp);
       uintptr_t pagestart = start & (~(pagesize - 1));
 
       if (mprotect(reinterpret_cast<void*>(pagestart), H2_ALIGN_UP(start + sizeof(saved_code) - pagestart, pagesize), PROT_READ | PROT_WRITE | PROT_EXEC) != 0) {
          printf("STUB failed %s\n", strerror(errno));
-         return false;
+         return nullptr;
       }
 
       memcpy(saved_code, befp, sizeof(saved_code));
-      return true;
+      return befp;
    }
 
    void set(void* befp, void* tofp) {
@@ -49,12 +49,9 @@ struct h2_stub : protected h2_thunk {
    const char* file;
    int line;
 
-   h2_stub(void* befp_, const char* file_ = nullptr, int line_ = 0) : befp(befp_), file(file_), line(line_) {
-      if (!save(befp_)) befp = nullptr;
-   }
+   h2_stub(void* befp_, const char* file_ = nullptr, int line_ = 0) : file(file_), line(line_) { befp = save(befp_); }
 
    void replace(void* tofp) { set(befp, tofp); }
-
    void restore() { befp&& reset(befp); }
 
    static void* operator new(std::size_t sz) { return h2_raw::malloc(sz); }

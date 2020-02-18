@@ -560,82 +560,79 @@ struct h2_listof_matches {
    H2_MATCHER_T2V(t_matchers)
 };
 
-const h2_polymorphic_matcher<h2_any_matches> _{h2_any_matches()};
+const h2_polymorphic_matcher<h2_any_matches> Any__{h2_any_matches()};
 
-inline h2_polymorphic_matcher<h2_any_matches> Any() {
-   return h2_polymorphic_matcher<h2_any_matches>(h2_any_matches());
-}
-inline h2_polymorphic_matcher<h2_null_matches> Null() {
+inline h2_polymorphic_matcher<h2_null_matches> Null__() {
    return h2_polymorphic_matcher<h2_null_matches>(h2_null_matches());
 }
 template <typename E>
-inline h2_polymorphic_matcher<h2_eq_matches<E>> Eq(const E expect) {
+inline h2_polymorphic_matcher<h2_eq_matches<E>> Eq__(const E expect) {
    return h2_polymorphic_matcher<h2_eq_matches<E>>(h2_eq_matches<E>(expect));
 }
 template <typename E>
-inline h2_polymorphic_matcher<h2_ge_matches<E>> Ge(const E expect) {
+inline h2_polymorphic_matcher<h2_ge_matches<E>> Ge__(const E expect) {
    return h2_polymorphic_matcher<h2_ge_matches<E>>(h2_ge_matches<E>(expect));
 }
 template <typename E>
-inline h2_polymorphic_matcher<h2_gt_matches<E>> Gt(const E expect) {
+inline h2_polymorphic_matcher<h2_gt_matches<E>> Gt__(const E expect) {
    return h2_polymorphic_matcher<h2_gt_matches<E>>(h2_gt_matches<E>(expect));
 }
 template <typename E>
-inline h2_polymorphic_matcher<h2_le_matches<E>> Le(const E expect) {
+inline h2_polymorphic_matcher<h2_le_matches<E>> Le__(const E expect) {
    return h2_polymorphic_matcher<h2_le_matches<E>>(h2_le_matches<E>(expect));
 }
 template <typename E>
-inline h2_polymorphic_matcher<h2_lt_matches<E>> Lt(const E expect) {
+inline h2_polymorphic_matcher<h2_lt_matches<E>> Lt__(const E expect) {
    return h2_polymorphic_matcher<h2_lt_matches<E>>(h2_lt_matches<E>(expect));
 }
-inline h2_polymorphic_matcher<h2_me_matches> Me(const void* buf, const int size = 0) {
+inline h2_polymorphic_matcher<h2_me_matches> Me__(const void* buf, const int size = 0) {
    return h2_polymorphic_matcher<h2_me_matches>(h2_me_matches(buf, size));
 }
 template <typename Matcher>
-inline h2_polymorphic_matcher<h2_pe_matches<Matcher>> Pe(Matcher expect) {
+inline h2_polymorphic_matcher<h2_pe_matches<Matcher>> Pe__(Matcher expect) {
    return h2_polymorphic_matcher<h2_pe_matches<Matcher>>(h2_pe_matches<Matcher>(expect));
 }
-inline h2_polymorphic_matcher<h2_regex_matches> Re(const h2_string& regex_pattern) {
+inline h2_polymorphic_matcher<h2_regex_matches> Re__(const h2_string& regex_pattern) {
    return h2_polymorphic_matcher<h2_regex_matches>(h2_regex_matches(regex_pattern));
 }
-inline h2_polymorphic_matcher<h2_wildcard_matches> We(const h2_string& wildcard_pattern) {
+inline h2_polymorphic_matcher<h2_wildcard_matches> We__(const h2_string& wildcard_pattern) {
    return h2_polymorphic_matcher<h2_wildcard_matches>(h2_wildcard_matches(wildcard_pattern));
 }
-inline h2_polymorphic_matcher<h2_contains_matches> Contains(const h2_string& substring) {
+inline h2_polymorphic_matcher<h2_contains_matches> Contains__(const h2_string& substring) {
    return h2_polymorphic_matcher<h2_contains_matches>(h2_contains_matches(substring));
 }
-inline h2_polymorphic_matcher<h2_startswith_matches> StartsWith(const h2_string& prefix_string) {
+inline h2_polymorphic_matcher<h2_startswith_matches> StartsWith__(const h2_string& prefix_string) {
    return h2_polymorphic_matcher<h2_startswith_matches>(h2_startswith_matches(prefix_string));
 }
-inline h2_polymorphic_matcher<h2_endswith_matches> EndsWith(const h2_string& suffix_string) {
+inline h2_polymorphic_matcher<h2_endswith_matches> EndsWith__(const h2_string& suffix_string) {
    return h2_polymorphic_matcher<h2_endswith_matches>(h2_endswith_matches(suffix_string));
 }
-inline h2_polymorphic_matcher<h2_caseless_matches> CaseLess(h2_matcher<h2_string> expect) {
+inline h2_polymorphic_matcher<h2_caseless_matches> CaseLess__(h2_matcher<h2_string> expect) {
    return h2_polymorphic_matcher<h2_caseless_matches>(h2_caseless_matches(expect));
 }
-inline h2_polymorphic_matcher<h2_caseless_matches> CaseLess(h2_string expect) {
+inline h2_polymorphic_matcher<h2_caseless_matches> CaseLess__(h2_string expect) {
    return h2_polymorphic_matcher<h2_caseless_matches>(h2_caseless_matches(expect));
 }
-inline h2_polymorphic_matcher<h2_je_matches> Je(const h2_string& expect) {
+inline h2_polymorphic_matcher<h2_je_matches> Je__(const h2_string& expect) {
    return h2_polymorphic_matcher<h2_je_matches>(h2_je_matches(expect));
 }
 template <typename Matcher>
-inline h2_polymorphic_matcher<h2_not_matches<Matcher>> Not(Matcher expect) {
+inline h2_polymorphic_matcher<h2_not_matches<Matcher>> Not__(Matcher expect) {
    return h2_polymorphic_matcher<h2_not_matches<Matcher>>(h2_not_matches<Matcher>(expect));
 }
 template <typename... Matchers>
-inline h2_polymorphic_matcher<h2_allof_matches<typename std::decay<const Matchers&>::type...>> AllOf(const Matchers&... matchers) {
+inline h2_polymorphic_matcher<h2_allof_matches<typename std::decay<const Matchers&>::type...>> AllOf__(const Matchers&... matchers) {
    return h2_polymorphic_matcher<h2_allof_matches<typename std::decay<const Matchers&>::type...>>(h2_allof_matches<typename std::decay<const Matchers&>::type...>(matchers...));
 }
 template <typename... Matchers>
-inline h2_polymorphic_matcher<h2_anyof_matches<typename std::decay<const Matchers&>::type...>> AnyOf(const Matchers&... matchers) {
+inline h2_polymorphic_matcher<h2_anyof_matches<typename std::decay<const Matchers&>::type...>> AnyOf__(const Matchers&... matchers) {
    return h2_polymorphic_matcher<h2_anyof_matches<typename std::decay<const Matchers&>::type...>>(h2_anyof_matches<typename std::decay<const Matchers&>::type...>(matchers...));
 }
 template <typename... Matchers>
-inline h2_polymorphic_matcher<h2_noneof_matches<typename std::decay<const Matchers&>::type...>> NoneOf(const Matchers&... matchers) {
+inline h2_polymorphic_matcher<h2_noneof_matches<typename std::decay<const Matchers&>::type...>> NoneOf__(const Matchers&... matchers) {
    return h2_polymorphic_matcher<h2_noneof_matches<typename std::decay<const Matchers&>::type...>>(h2_noneof_matches<typename std::decay<const Matchers&>::type...>(matchers...));
 }
 template <typename... Matchers>
-inline h2_polymorphic_matcher<h2_listof_matches<typename std::decay<const Matchers&>::type...>> ListOf(const Matchers&... matchers) {
+inline h2_polymorphic_matcher<h2_listof_matches<typename std::decay<const Matchers&>::type...>> ListOf__(const Matchers&... matchers) {
    return h2_polymorphic_matcher<h2_listof_matches<typename std::decay<const Matchers&>::type...>>(h2_listof_matches<typename std::decay<const Matchers&>::type...>(matchers...));
 }

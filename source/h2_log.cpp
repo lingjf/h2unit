@@ -10,23 +10,23 @@ struct h2_log {
 struct h2_logs : public h2_log {
    std::vector<h2_log*> logs;
    void add(h2_log* log) { logs.push_back(log); }
-   void on_task_start() { for (auto& log : logs) log->on_task_start(); }
-   void on_task_endup(int status[8], int cases, long long duration) { for (auto& log : logs) log->on_task_endup(status, cases, duration); }
-   void on_case_start(h2_case* c) { for (auto& log : logs) log->on_case_start(c); }
-   void on_case_endup(h2_case* c) { for (auto& log : logs) log->on_case_endup(c); }
+   void on_task_start() { for (auto log : logs) log->on_task_start(); }
+   void on_task_endup(int status[8], int cases, long long duration) { for (auto log : logs) log->on_task_endup(status, cases, duration); }
+   void on_case_start(h2_case* c) { for (auto log : logs) log->on_case_start(c); }
+   void on_case_endup(h2_case* c) { for (auto log : logs) log->on_case_endup(c); }
 };
 /* clang-format on */
 
 struct h2_log_console : public h2_log {
    void on_task_endup(int status[8], int cases, long long duration) {
       if (0 < status[h2_case::FAILED]) {
-         printf("%s", h2cfg().style("bold,red"));
+         printf("%s", S("bold,red"));
          printf("\nFailed <%d failed, %d passed, %d todo, %d filtered, %lld ms>\n", status[h2_case::FAILED], status[h2_case::PASSED], status[h2_case::TODOED], status[h2_case::FILTED], duration);
       } else {
-         printf("%s", h2cfg().style("bold,green"));
+         printf("%s", S("bold,green"));
          printf("\nPassed <%d passed, %d todo, %d filtered, %d cases, %lld ms>\n", status[h2_case::PASSED], status[h2_case::TODOED], status[h2_case::FILTED], cases, duration);
       }
-      printf("%s", h2cfg().style("reset"));
+      printf("%s", S("reset"));
    }
    void on_case_endup(h2_case* c) {
       switch (c->status) {
@@ -37,28 +37,28 @@ struct h2_log_console : public h2_log {
       case h2_case::FILTED:
          break;
       case h2_case::PASSED:
-         if (h2cfg().verbose) {
-            printf("%s", h2cfg().style("light blue"));
+         if (O().verbose) {
+            printf("%s", S("light blue"));
             printf("CASE(%s, %s): Passed - %lld ms\n", c->suite->name, c->name, c->t_end - c->t_start);
-            printf("%s", h2cfg().style("reset"));
+            printf("%s", S("reset"));
          }
          break;
       case h2_case::FAILED:
-         printf("%s", h2cfg().style("bold,purple"));
+         printf("%s", S("bold,purple"));
          printf("CASE(%s, %s): Failed at %s:%d\n", c->suite->name, c->name, c->file, c->line);
-         printf("%s", h2cfg().style("reset"));
+         printf("%s", S("reset"));
          H2_FAIL_FOREACH(fail, c->fails) { fail->print(); }
          ::printf("\n");
          break;
       }
 
-      printf("%s", h2cfg().style("reset"));
+      printf("%s", S("reset"));
    }
 };
 
 struct h2_log_xml : public h2_log {
    void on_task_endup(int status[8], int cases, long long duration) {
-      h2_with f(fopen(h2cfg().junit, "w"));
+      h2_with f(fopen(O().junit, "w"));
       if (!f.f) return;
 
       fprintf(f.f, "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n");

@@ -5,7 +5,7 @@
 import sys
 import time
 
-def copy_line1(line, f):
+def copy_line1(line, f): #compat h2unit.h
     l0 = line.strip()
     if len(l0) and not l0.startswith('//') and not (l0.startswith('/*') and l0.endswith('*/')):
         l1 = line.rstrip('\r\n')
@@ -36,9 +36,9 @@ with open('../source/h2_unit.h', 'r') as f_h2_unit:
             with open('../source/'+line[10:line.rindex('"')], 'r') as f_h2_cpp:
                 for line in f_h2_cpp:
                     if not line.startswith('#include "h2_'):
-                        copy_line2(line, f_h2unit)
+                        copy_line1(line, f_h2unit)
         else:
-            copy_line2(line, f_h2unit)
+            copy_line1(line, f_h2unit)
 
 f_h2unit.close()
 

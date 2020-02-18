@@ -1,5 +1,7 @@
 #include "../source/h2_unit.h"
 
+using namespace h2;
+
 int bar1(int a, const char* b)
 {
    return 0;

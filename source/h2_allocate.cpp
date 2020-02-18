@@ -1,7 +1,7 @@
 
 struct h2_raw {
    static void* malloc(size_t sz) {
-      if (!h2cfg().memory_check) {
+      if (!O().memory_check) {
          return ::malloc(sz);
       }
       void* ptr = mmap(nullptr, sz, PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0);
@@ -13,7 +13,7 @@ struct h2_raw {
    }
 
    static void free(void* ptr) {
-      if (!h2cfg().memory_check) {
+      if (!O().memory_check) {
          ::free(ptr);
          return;
       }

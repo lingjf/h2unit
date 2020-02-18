@@ -97,9 +97,9 @@ struct h2_fail_unexpect : public h2_fail {
       h2_fail::print(); /* nothing */
       printf(" %s%s%s%s %s %s%s%s%s",
              _h.c_str(),
-             h2cfg().style("bold,red"), _a.c_str(), h2cfg().style("reset"),
+             S("bold,red"), _a.c_str(), S("reset"),
              _m.c_str(),
-             h2cfg().style("green"), _e.c_str(), h2cfg().style("reset"),
+             S("green"), _e.c_str(), S("reset"),
              _t.c_str());
       print_locate();
    }
@@ -120,20 +120,20 @@ struct h2_fail_strcmp : public h2_fail {
    void print() {
       h2_fail::print(), print_locate();
 
-      int columns = h2cfg().get_term_columns() - 12;
+      int columns = h2_winsz() - 12;
       int rows = H2_DIV_ROUND_UP(std::max(e.length(), a.length()), columns);
 
       for (int i = 0; i < rows; ++i) {
          char eline[1024], aline[1024], *ep = eline, *ap = aline;
-         ep += sprintf(ep, "%sexpect%s>%s ", h2cfg().style("dark gray"), h2cfg().style("green"), h2cfg().style("reset"));
-         ap += sprintf(ap, "%sactual%s> ", h2cfg().style("dark gray"), h2cfg().style("reset"));
+         ep += sprintf(ep, "%sexpect%s>%s ", S("dark gray"), S("green"), S("reset"));
+         ap += sprintf(ap, "%sactual%s> ", S("dark gray"), S("reset"));
          for (int j = 0; j < columns; ++j) {
             char _e = i * columns + j < (int)e.length() ? e[i * columns + j] : ' ';
             char _a = i * columns + j < (int)a.length() ? a[i * columns + j] : ' ';
 
             bool eq = caseless ? ::tolower(_e) == ::tolower(_a) : _e == _a;
-            ep += sprintf(ep, "%s%c%s", eq ? "" : h2cfg().style("green"), _e, eq ? "" : h2cfg().style("reset"));
-            ap += sprintf(ap, "%s%c%s", eq ? "" : h2cfg().style("red,bold"), _a, eq ? "" : h2cfg().style("reset"));
+            ep += sprintf(ep, "%s%c%s", eq ? "" : S("green"), _e, eq ? "" : S("reset"));
+            ap += sprintf(ap, "%s%c%s", eq ? "" : S("red,bold"), _a, eq ? "" : S("reset"));
          }
          printf("%s\n%s\n", eline, aline);
       }
@@ -153,7 +153,7 @@ struct h2_fail_memcmp : public h2_fail {
       h2_fail::print(), print_locate();
 
       printf("                     %sexpect%s                       %s│%s                       %sactual%s \n",
-             h2cfg().style("dark gray"), h2cfg().style("reset"), h2cfg().style("dark gray"), h2cfg().style("reset"), h2cfg().style("dark gray"), h2cfg().style("reset"));
+             S("dark gray"), S("reset"), S("dark gray"), S("reset"), S("dark gray"), S("reset"));
 
       int size = e.size();
       int rows = H2_DIV_ROUND_UP(size, 16);
@@ -164,19 +164,19 @@ struct h2_fail_memcmp : public h2_fail {
                printf("   ");
                continue;
             }
-            if (e[i * 16 + j] != a[i * 16 + j]) printf("%s", h2cfg().style("green"));
+            if (e[i * 16 + j] != a[i * 16 + j]) printf("%s", S("green"));
             printf(j < 8 ? "%02X " : " %02X", e[i * 16 + j]);
-            printf("%s", h2cfg().style("reset"));
+            printf("%s", S("reset"));
          }
-         printf("  %s│%s  ", h2cfg().style("dark gray"), h2cfg().style("reset"));
+         printf("  %s│%s  ", S("dark gray"), S("reset"));
          for (int j = 0; j < 16; ++j) {
             if (size <= i * 16 + j) {
                printf("   ");
                continue;
             }
-            if (e[i * 16 + j] != a[i * 16 + j]) printf("%s", h2cfg().style("bold,red"));
+            if (e[i * 16 + j] != a[i * 16 + j]) printf("%s", S("bold,red"));
             printf(j < 8 ? "%02X " : " %02X", a[i * 16 + j]);
-            printf("%s", h2cfg().style("reset"));
+            printf("%s", S("reset"));
          }
          printf("\n");
       }
@@ -199,7 +199,7 @@ struct h2_fail_memoverflow : public h2_fail {
       h2_fail::print();
 
       for (size_t i = 0; i < spot.size(); ++i)
-         printf("%s%02X %s", magic[i] == spot[i] ? h2cfg().style("green") : h2cfg().style("bold,red"), spot[i], h2cfg().style("reset"));
+         printf("%s%02X %s", magic[i] == spot[i] ? S("green") : S("bold,red"), spot[i], S("reset"));
 
       print_locate();
       if (0 < bt1.count) printf("  %p trampled at backtrace:\n", ptr + offset), bt1.print();
@@ -226,10 +226,7 @@ struct h2_fail_memleak : public h2_fail {
       times += 1;
       for (auto c : leaks)
          if (c.bt == bt) {
-            c.ptr2 = ptr;
-            c.size2 = size;
-            c.bytes += size;
-            c.times += 1;
+            c.ptr2 = ptr, c.size2 = size, c.bytes += size, c.times += 1;
             return;
          }
       places += 1;
@@ -244,11 +241,8 @@ struct h2_fail_memleak : public h2_fail {
       kprintf("Memory Leaked %s%s%lld bytes in %s totally", t1, t2, bytes, where);
       h2_fail::print(), print_locate();
       for (auto c : leaks) {
-         char t3[64] = " ", t4[64] = "", t5[64] = "";
-         if (1 < c.times) sprintf(t3, ", %p ... ", c.ptr2);
-         if (1 < c.times) sprintf(t4, "%d times ", c.times);
-         if (1 < c.times) sprintf(t5, " (%d, %d ...)", c.size, c.size2);
-         printf("  %p%sLeaked %s%d bytes%s, at backtrace\n", c.ptr, t3, t4, c.bytes, t5);
+         c.times <= 1 ? printf("  %p Leaked %d bytes, at backtrace\n", c.ptr, c.bytes) :
+                        printf("  %p, %p ... Leaked %d times %d bytes (%d, %d ...), at backtrace\n", c.ptr, c.ptr2, c.times, c.bytes, c.size, c.size2);
          c.bt.print();
       }
    }
@@ -276,7 +270,7 @@ struct h2_fail_json : public h2_fail {
    void print() {
       h2_fail::print(), print_locate();
 
-      int terminal_columns = h2cfg().get_term_columns();
+      int terminal_columns = h2_winsz();
       if (terminal_columns < 10) terminal_columns = 80;
       h2_json::diff_print(e.c_str(), a.c_str(), terminal_columns);
    }
@@ -304,9 +298,9 @@ struct h2_fail_instantiate : public h2_fail {
                 strlen(return_type) ? return_type : "",
                 strlen(return_type) ? ", " : "",
                 class_type, method_name, return_args,
-                h2cfg().style("bold,yellow"),
+                S("bold,yellow"),
                 class_type,
-                h2cfg().style("reset"));
+                S("reset"));
       } else if (why == 2) {
          printf("1. Define default constructor in class %s, or \n", class_type);
          printf("2. Add parameterized construction in %s(%s%s%s, %s, %s%s, %s(...)%s) \n",
@@ -314,9 +308,9 @@ struct h2_fail_instantiate : public h2_fail {
                 strlen(return_type) ? return_type : "",
                 strlen(return_type) ? ", " : "",
                 class_type, method_name, return_args,
-                h2cfg().style("bold,yellow"),
+                S("bold,yellow"),
                 class_type,
-                h2cfg().style("reset"));
+                S("reset"));
       }
    }
 };

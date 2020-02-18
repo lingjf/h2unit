@@ -94,7 +94,7 @@ SUITE(stubs)
 
    Case(internal stub libc)
    {
-      h2_stub s((void*)time);
+      h2::h2_stub s((void*)time);
 
       s.replace((void*)STUB_time);
 
@@ -105,7 +105,7 @@ SUITE(stubs)
 
    Case(internal stub local)
    {
-      h2_stub s((void*)my_time);
+      h2::h2_stub s((void*)my_time);
 
       s.replace((void*)STUB_time);
 

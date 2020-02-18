@@ -69,38 +69,31 @@ class h2_mocker<Counter, Lineno, Class, Return(Args...)> : h2_mock {
    h2_mocker(void* befp, const char* befn, const char* file, int line)
      : h2_mock(befp, std::is_same<std::false_type, Class>::value ? (void*)normal_function_stub : (void*)member_function_stub, befn, file, line) {}
 
-/* clang-format off */
-#define __H2_MATCHER_TYPE_LIST                \
-   h2_matcher<h2_nth_type_decay<0, Args...>>, \
-   h2_matcher<h2_nth_type_decay<1, Args...>>, \
-   h2_matcher<h2_nth_type_decay<2, Args...>>, \
-   h2_matcher<h2_nth_type_decay<3, Args...>>, \
-   h2_matcher<h2_nth_type_decay<4, Args...>>, \
-   h2_matcher<h2_nth_type_decay<5, Args...>>, \
-   h2_matcher<h2_nth_type_decay<6, Args...>>, \
-   h2_matcher<h2_nth_type_decay<7, Args...>>, \
-   h2_matcher<h2_nth_type_decay<8, Args...>>, \
-   h2_matcher<h2_nth_type_decay<9, Args...>>
-
-#define __H2_MATCHER_PARAMETER_DEFAULT_LIST           \
-   h2_matcher<h2_nth_type_decay<0, Args...>> a_0 = _, \
-   h2_matcher<h2_nth_type_decay<1, Args...>> a_1 = _, \
-   h2_matcher<h2_nth_type_decay<2, Args...>> a_2 = _, \
-   h2_matcher<h2_nth_type_decay<3, Args...>> a_3 = _, \
-   h2_matcher<h2_nth_type_decay<4, Args...>> a_4 = _, \
-   h2_matcher<h2_nth_type_decay<5, Args...>> a_5 = _, \
-   h2_matcher<h2_nth_type_decay<6, Args...>> a_6 = _, \
-   h2_matcher<h2_nth_type_decay<7, Args...>> a_7 = _, \
-   h2_matcher<h2_nth_type_decay<8, Args...>> a_8 = _, \
-   h2_matcher<h2_nth_type_decay<9, Args...>> a_9 = _
-
-#define __H2_MATCHER_ARGUMENT_LIST \
-   a_0, a_1, a_2, a_3, a_4, a_5, a_6, a_7, a_8, a_9
-
+   /* clang-format off */
+#define MATCHER_PARAMETER_0_1_2_3_4_5_6_7_8_9            \
+   h2_matcher<h2_nth_type_decay<0, Args...>> _0 = Any__, \
+   h2_matcher<h2_nth_type_decay<1, Args...>> _1 = Any__, \
+   h2_matcher<h2_nth_type_decay<2, Args...>> _2 = Any__, \
+   h2_matcher<h2_nth_type_decay<3, Args...>> _3 = Any__, \
+   h2_matcher<h2_nth_type_decay<4, Args...>> _4 = Any__, \
+   h2_matcher<h2_nth_type_decay<5, Args...>> _5 = Any__, \
+   h2_matcher<h2_nth_type_decay<6, Args...>> _6 = Any__, \
+   h2_matcher<h2_nth_type_decay<7, Args...>> _7 = Any__, \
+   h2_matcher<h2_nth_type_decay<8, Args...>> _8 = Any__, \
+   h2_matcher<h2_nth_type_decay<9, Args...>> _9 = Any__
    /* clang-format on */
 
-   typedef std::tuple<Args..., int> argument_tuple;
-   typedef std::tuple<__H2_MATCHER_TYPE_LIST> matcher_tuple;
+   using argument_tuple = std::tuple<Args..., int>;
+   using matcher_tuple = std::tuple<h2_matcher<h2_nth_type_decay<0, Args...>>,
+                                    h2_matcher<h2_nth_type_decay<1, Args...>>,
+                                    h2_matcher<h2_nth_type_decay<2, Args...>>,
+                                    h2_matcher<h2_nth_type_decay<3, Args...>>,
+                                    h2_matcher<h2_nth_type_decay<4, Args...>>,
+                                    h2_matcher<h2_nth_type_decay<5, Args...>>,
+                                    h2_matcher<h2_nth_type_decay<6, Args...>>,
+                                    h2_matcher<h2_nth_type_decay<7, Args...>>,
+                                    h2_matcher<h2_nth_type_decay<8, Args...>>,
+                                    h2_matcher<h2_nth_type_decay<9, Args...>>>;
 
    h2_vector<matcher_tuple> m_array;
    h2_vector<h2_routine<Class, Return(Args...)>> r_array;
@@ -154,16 +147,16 @@ class h2_mocker<Counter, Lineno, Class, Return(Args...)> : h2_mock {
       return I->register_and_return_reference();
    }
 
-   h2_mocker& once(__H2_MATCHER_PARAMETER_DEFAULT_LIST) {
+   h2_mocker& once(MATCHER_PARAMETER_0_1_2_3_4_5_6_7_8_9) {
       c_array.push_back(h2_callexp(1, 1));
-      m_array.push_back(std::forward_as_tuple(__H2_MATCHER_ARGUMENT_LIST));
+      m_array.push_back(std::forward_as_tuple(_0, _1, _2, _3, _4, _5, _6, _7, _8, _9));
       r_array.push_back(h2_routine<Class, Return(Args...)>());
       return register_and_return_reference();
    }
 
-   h2_mocker& twice(__H2_MATCHER_PARAMETER_DEFAULT_LIST) {
+   h2_mocker& twice(MATCHER_PARAMETER_0_1_2_3_4_5_6_7_8_9) {
       c_array.push_back(h2_callexp(2, 2));
-      m_array.push_back(std::forward_as_tuple(__H2_MATCHER_ARGUMENT_LIST));
+      m_array.push_back(std::forward_as_tuple(_0, _1, _2, _3, _4, _5, _6, _7, _8, _9));
       r_array.push_back(h2_routine<Class, Return(Args...)>());
       return register_and_return_reference();
    }
@@ -175,9 +168,9 @@ class h2_mocker<Counter, Lineno, Class, Return(Args...)> : h2_mock {
       return register_and_return_reference();
    }
 
-   h2_mocker& any(__H2_MATCHER_PARAMETER_DEFAULT_LIST) {
+   h2_mocker& any(MATCHER_PARAMETER_0_1_2_3_4_5_6_7_8_9) {
       c_array.push_back(h2_callexp(0, INT_MAX));
-      m_array.push_back(std::forward_as_tuple(__H2_MATCHER_ARGUMENT_LIST));
+      m_array.push_back(std::forward_as_tuple(_0, _1, _2, _3, _4, _5, _6, _7, _8, _9));
       r_array.push_back(h2_routine<Class, Return(Args...)>());
       return register_and_return_reference();
    }
@@ -203,21 +196,21 @@ class h2_mocker<Counter, Lineno, Class, Return(Args...)> : h2_mock {
       return register_and_return_reference();
    }
 
-   h2_mocker& with(__H2_MATCHER_PARAMETER_DEFAULT_LIST) {
-      if (!m_array.empty()) m_array.back() = std::forward_as_tuple(__H2_MATCHER_ARGUMENT_LIST);
+   h2_mocker& with(MATCHER_PARAMETER_0_1_2_3_4_5_6_7_8_9) {
+      if (!m_array.empty()) m_array.back() = std::forward_as_tuple(_0, _1, _2, _3, _4, _5, _6, _7, _8, _9);
       return register_and_return_reference();
    }
 
    /* clang-format off */
-   h2_mocker& th1(h2_matcher<h2_nth_type_decay<0, Args...>> a_=_) { if (!m_array.empty()) std::get<0>(m_array.back()) = a_; return register_and_return_reference(); }
-   h2_mocker& th2(h2_matcher<h2_nth_type_decay<1, Args...>> a_=_) { if (!m_array.empty()) std::get<1>(m_array.back()) = a_; return register_and_return_reference(); }
-   h2_mocker& th3(h2_matcher<h2_nth_type_decay<2, Args...>> a_=_) { if (!m_array.empty()) std::get<2>(m_array.back()) = a_; return register_and_return_reference(); }
-   h2_mocker& th4(h2_matcher<h2_nth_type_decay<3, Args...>> a_=_) { if (!m_array.empty()) std::get<3>(m_array.back()) = a_; return register_and_return_reference(); }
-   h2_mocker& th5(h2_matcher<h2_nth_type_decay<4, Args...>> a_=_) { if (!m_array.empty()) std::get<4>(m_array.back()) = a_; return register_and_return_reference(); }
-   h2_mocker& th6(h2_matcher<h2_nth_type_decay<5, Args...>> a_=_) { if (!m_array.empty()) std::get<5>(m_array.back()) = a_; return register_and_return_reference(); }
-   h2_mocker& th7(h2_matcher<h2_nth_type_decay<6, Args...>> a_=_) { if (!m_array.empty()) std::get<6>(m_array.back()) = a_; return register_and_return_reference(); }
-   h2_mocker& th8(h2_matcher<h2_nth_type_decay<7, Args...>> a_=_) { if (!m_array.empty()) std::get<7>(m_array.back()) = a_; return register_and_return_reference(); }
-   h2_mocker& th9(h2_matcher<h2_nth_type_decay<8, Args...>> a_=_) { if (!m_array.empty()) std::get<8>(m_array.back()) = a_; return register_and_return_reference(); }
+   h2_mocker& th1(h2_matcher<h2_nth_type_decay<0, Args...>> e = Any__) { if (!m_array.empty()) std::get<0>(m_array.back()) = e; return register_and_return_reference(); }
+   h2_mocker& th2(h2_matcher<h2_nth_type_decay<1, Args...>> e = Any__) { if (!m_array.empty()) std::get<1>(m_array.back()) = e; return register_and_return_reference(); }
+   h2_mocker& th3(h2_matcher<h2_nth_type_decay<2, Args...>> e = Any__) { if (!m_array.empty()) std::get<2>(m_array.back()) = e; return register_and_return_reference(); }
+   h2_mocker& th4(h2_matcher<h2_nth_type_decay<3, Args...>> e = Any__) { if (!m_array.empty()) std::get<3>(m_array.back()) = e; return register_and_return_reference(); }
+   h2_mocker& th5(h2_matcher<h2_nth_type_decay<4, Args...>> e = Any__) { if (!m_array.empty()) std::get<4>(m_array.back()) = e; return register_and_return_reference(); }
+   h2_mocker& th6(h2_matcher<h2_nth_type_decay<5, Args...>> e = Any__) { if (!m_array.empty()) std::get<5>(m_array.back()) = e; return register_and_return_reference(); }
+   h2_mocker& th7(h2_matcher<h2_nth_type_decay<6, Args...>> e = Any__) { if (!m_array.empty()) std::get<6>(m_array.back()) = e; return register_and_return_reference(); }
+   h2_mocker& th8(h2_matcher<h2_nth_type_decay<7, Args...>> e = Any__) { if (!m_array.empty()) std::get<7>(m_array.back()) = e; return register_and_return_reference(); }
+   h2_mocker& th9(h2_matcher<h2_nth_type_decay<8, Args...>> e = Any__) { if (!m_array.empty()) std::get<8>(m_array.back()) = e; return register_and_return_reference(); }
    /* clang-format on */
 
    h2_mocker& returns(h2_routine<Class, Return(Args...)> r) {

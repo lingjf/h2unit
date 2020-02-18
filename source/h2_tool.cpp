@@ -37,7 +37,7 @@
 #define H2PP_VARIADIC_CALL(_Macro, ...) H2PP_CAT2(_Macro, H2PP_NARGS(__VA_ARGS__)) (__VA_ARGS__)
 /* clang-format on */
 
-#define H2Q(Prefix) H2PP_CAT5(Prefix, _, __COUNTER__, _, __LINE__)
+#define H2Q(Prefix) H2PP_CAT5(Prefix, __, __COUNTER__, __, __LINE__)
 
 // H2_ALIGN_UP(15, 8) == 16
 #define H2_ALIGN_UP(n, s) (((n) + (s)-1) / (s) * (s))
@@ -73,7 +73,7 @@ static inline bool h2_wildcard_match(const char* pattern, const char* subject) {
    return !*pcur;
 }
 
-static inline long long h2_milliseconds() {
+static inline long long h2_now() {
    struct timeval tv;
    gettimeofday(&tv, NULL);
    return tv.tv_sec * 1000LL + tv.tv_usec / 1000;
@@ -118,7 +118,6 @@ static inline const char* h2_style(const char* style_str, char* style_abi) {
 
    char t[1024];
    strcpy(t, style_str);
-
    strcpy(style_abi, "\033[");
 
    for (char* p = strtok(t, ","); p; p = strtok(NULL, ","))
@@ -133,6 +132,12 @@ static inline const char* h2_style(const char* style_str, char* style_abi) {
    return style_abi;
 }
 
+static inline int h2_winsz() {
+   struct winsize w;
+   if (-1 == ioctl(STDOUT_FILENO, TIOCGWINSZ, &w)) return 80;
+   return w.ws_col;
+}
+
 static inline const char* h2_acronym_string(const char* full, int atmost = 10) {
    static char st[32];
    strncpy(st, full, atmost);
@@ -141,16 +146,11 @@ static inline const char* h2_acronym_string(const char* full, int atmost = 10) {
 }
 
 static inline const char* h2_center_string(const char* str, int width, char* out) {
-   int z = strlen(str), l = (width - z) / 2, r = width - l - z;
+   int l = strlen(str), left = (width - l) / 2, right = width - left - l;
    char t[32];
-   sprintf(t, "%%%ds%%s%%%ds", l, r);
+   sprintf(t, "%%%ds%%s%%%ds", left, right);
    sprintf(out, t, "", str, "");
    return out;
-}
-
-static inline bool h2_endswith_string(const char* haystack, const char* needle) {
-   int haystack_length = strlen(haystack), needle_length = strlen(needle);
-   return haystack_length < needle_length ? false : strncmp(haystack + haystack_length - needle_length, needle, needle_length) == 0;
 }
 
 #if defined _WIN32

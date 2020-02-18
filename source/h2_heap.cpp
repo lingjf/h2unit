@@ -4,7 +4,9 @@ extern malloc_zone_t* malloc_default_purgeable_zone(void) WEAK_IMPORT_ATTRIBUTE;
 }
 #endif
 
-static unsigned char forbidden_zone[] = {0xbe, 0xaf, 0xca, 0xfe, 0xc0, 0xde, 0xfa, 0xce};
+static inline void h2_fail_g(void* fail);
+
+static const unsigned char forbidden_zone[] = {0xbe, 0xaf, 0xca, 0xfe, 0xc0, 0xde, 0xfa, 0xce};
 
 struct h2_piece {
    void *ptr, *page;
@@ -47,7 +49,7 @@ struct h2_piece {
    }
 
    static h2_fail* prefree(h2_piece* m) {
-      if (m->freed++) return new h2_fail_doublefree(m->ptr, m->bt, h2_backtrace(h2cfg().isMAC() ? 5 : 4));
+      if (m->freed++) return new h2_fail_doublefree(m->ptr, m->bt, h2_backtrace(O().isMAC() ? 5 : 4));
 
       h2_fail* fail = nullptr;
 
@@ -167,7 +169,7 @@ class h2_stack {
    }
 
    h2_piece* newm(size_t size, size_t alignment, const char* fill) {
-      h2_backtrace bt(h2cfg().isMAC() ? 6 : 2);
+      h2_backtrace bt(O().isMAC() ? 6 : 2);
       h2_block* b = escape(bt) ? h2_list_bottom_entry(&blocks, h2_block, x) : h2_list_top_entry(&blocks, h2_block, x);
       return b ? b->newm(size, alignment, fill, bt) : nullptr;
    }
@@ -412,14 +414,14 @@ struct h2_hook {
 
    static void overflow_handler(int sig, siginfo_t* si, void* unused) {
       h2_piece* m = h2_stack::G().whom(si->si_addr);
-      if (m) h2_fail_g(new h2_fail_memoverflow(m->ptr, (intptr_t)si->si_addr - (intptr_t)m->ptr, nullptr, 0, m->bt, h2_backtrace(h2cfg().isMAC() ? 5 : 4)));
+      if (m) h2_fail_g(new h2_fail_memoverflow(m->ptr, (intptr_t)si->si_addr - (intptr_t)m->ptr, nullptr, 0, m->bt, h2_backtrace(O().isMAC() ? 5 : 4)));
       h2_debug();
       exit(1);
    }
 };
 
 static inline void h2_sihook_g() {
-   if (!h2cfg().memory_check) return;
+   if (!O().memory_check) return;
    struct sigaction act;
    act.sa_sigaction = h2_hook::overflow_handler;
    sigemptyset(&act.sa_mask);
@@ -431,10 +433,10 @@ static inline void h2_sihook_g() {
 }
 
 static inline void h2_dohook_g() {
-   if (h2cfg().memory_check) h2_hook::I().dohook();
+   if (O().memory_check) h2_hook::I().dohook();
 }
 static inline void h2_unhook_g() {
-   if (h2cfg().memory_check) h2_hook::I().unhook();
+   if (O().memory_check) h2_hook::I().unhook();
 }
 
 // https://www.gnu.org/savannah-checkouts/gnu/libc/manual/html_node/Hooks-for-Malloc.html

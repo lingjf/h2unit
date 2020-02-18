@@ -1,5 +1,7 @@
 #include "../source/h2_unit.h"
 
+using namespace h2;
+
 SUITE(backtrace)
 {
    Case(constructor 0)
@@ -42,6 +44,41 @@ SUITE(backtrace)
       OK(b2 == bt);
    };
 
+#ifdef __APPLE__
+   Case(demangle namespace class member function)
+   {
+      char mangled[] = "_ZN2h24task7executeEv";
+      char demangled[1024] = "1";
+
+      size_t len = sizeof(demangled);
+      int status = 0;
+      abi::__cxa_demangle(mangled, demangled, &len, &status);
+
+      OK(0, status);
+      OK("h2::task::execute()", demangled);
+   };
+
+   Case(demangle namespace class member function one parameter)
+   {
+      char mangled[] = "_ZN2h24hook6mallocEm";
+      char demangled[1024] = "2";
+
+      h2_backtrace bt;
+      bool ret = bt.demangle(mangled, demangled, sizeof(demangled));
+      OK(ret);
+      OK("h2::hook::malloc(unsigned long)", demangled);
+   };
+#endif
+
+   Case(demangle c-function)
+   {
+      char mangled[] = "malloc";
+      char demangled[1024] = "3";
+
+      h2_backtrace bt;
+      bool ret = bt.demangle(mangled, demangled, sizeof(demangled));
+      OK(!ret);
+   };
 }
 
 SUITE(backtrace extract)
