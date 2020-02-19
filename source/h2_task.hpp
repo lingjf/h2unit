@@ -1,26 +1,22 @@
 
 struct h2_task {
    h2_logs logs;
-   h2_log_console console_log;
-   h2_log_xml xml_log;
 
-   int status[8];
+   int status_stats[8];
    h2_case* current_case;
    std::vector<h2_case*> cases;
 
-   h2_task() : status{0}, current_case(nullptr) {}
+   h2_task() : status_stats{0}, current_case(nullptr) {}
 
    /* clang-format off */
    static h2_task& I() { static h2_task __; return __; }
    /* clang-format on */
 
    void prepare() {
-      h2_sihook_g();
+      h2_signal_g();
       if (O().listing) h2_directory::list_then_exit();
 
-      logs.add(&console_log);
-      if (strlen(O().junit)) logs.add(&xml_log);
-
+      logs.init();
       cases = h2_directory::cases();
 
       if (O().dns) h2_ns::I().init();
@@ -31,23 +27,23 @@ struct h2_task {
    void cleanup() {
       h2_unhook_g();
       if (O().dns) h2_ns::I().exit();
-      if (status[h2_case::FAILED] == 0) h2_directory::drop_last_order();
+      if (status_stats[h2_case::FAILED] == 0) h2_directory::drop_last_order();
    }
 
    void execute() {
       long long t_start = h2_now();
-      logs.on_task_start();
+      logs.on_task_start(cases.size());
       for (auto c : cases) {
          current_case = c;
          logs.on_case_start(c);
          if (O().filter(c->suite->name, c->name, c->file)) c->status = h2_case::FILTED;
          if (h2_case::INITED == c->status) c->suite->p(c->suite, c);
          logs.on_case_endup(c);
-         status[c->status] += 1;
-         c->suite->status[c->status] += 1;
-         if (0 < O().breakable && O().breakable <= status[h2_case::FAILED]) break;
+         status_stats[c->status] += 1;
+         c->suite->status_stats[c->status] += 1;
+         if (0 < O().breakable && O().breakable <= status_stats[h2_case::FAILED]) break;
       }
-      logs.on_task_endup(status, cases.size(), h2_now() - t_start);
+      logs.on_task_endup(status_stats, h2_now() - t_start);
    }
 };
 

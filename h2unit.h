@@ -1,4 +1,4 @@
-/* v4.1  2020-02-18 16:34:55 */
+/* v4.1  2020-02-19 08:30:28 */
 /* https://github.com/lingjf/h2unit */
 /* Apache Licence 2.0 */
 
@@ -353,7 +353,7 @@ static inline long long h2_now() {
    return tv.tv_sec * 1000LL + tv.tv_usec / 1000;
 }
 
-static inline const char* h2_style(const char* style_str, char* style_abi) {
+static inline const char* h2_style(const char* style_str, char* ascii_code) {
    static struct {
       const char *name, *value;
    } K[] = {
@@ -390,20 +390,14 @@ static inline const char* h2_style(const char* style_str, char* style_abi) {
      {"bg_white", "47;"},
      {"bg_default", "49;"}};
 
-   char t[1024];
-   strcpy(t, style_str);
-   strcpy(style_abi, "\033[");
-
-   for (char* p = strtok(t, ","); p; p = strtok(nullptr, ","))
-      for (size_t i = 0; i < sizeof(K) / sizeof(K[0]); i++)
+   char t[1024], *s = strcpy(t, style_str), *d = ascii_code + sprintf(ascii_code, "\033["), *q = d;
+   for (char* p = strtok(s, ","); p; p = strtok(nullptr, ","))
+      for (size_t i = 0; i < sizeof(K) / sizeof(K[0]); ++i)
          if (!strcmp(K[i].name, p)) {
-            strcat(style_abi, K[i].value);
+            q += sprintf(q, "%s", K[i].value);
             break;
          }
-
-   style_abi[strlen(style_abi) - 1] = 'm';
-
-   return style_abi;
+   return d == q ? strcpy(ascii_code, "") : (*(q - 1) = 'm', ascii_code);
 }
 
 static inline int h2_winsz() {
@@ -491,10 +485,11 @@ struct h2_option {
    int listing, breakable;
    bool verbose, colorable, randomize, memory_check, dns;
    char junit[256];
-   const char *path, *include_patterns[9], *exclude_patterns[9];
+   const char* path;
+   std::vector<const char*> include_patterns, exclude_patterns;
 
    h2_option(int argc, const char** argv)
-     : listing(0), breakable(0), verbose(false), colorable(true), randomize(false), memory_check(true), dns(true), junit{0}, include_patterns{0}, exclude_patterns{0} {
+     : listing(0), breakable(0), verbose(false), colorable(true), randomize(false), memory_check(true), dns(true), junit{0} {
       path = argv[0];
       for (int i = 1; i < argc; ++i) {
          if (argv[i][0] != '-') continue;
@@ -518,10 +513,10 @@ struct h2_option {
                if (i + 1 < argc && argv[i + 1][0] != '-') strcpy(junit, argv[++i]);
                break;
             case 'i':
-               for (int j = i + 1; j < argc && argv[j][0] != '-'; ++j, ++i) insert(include_patterns, argv[j]);
+               for (int j = i + 1; j < argc && argv[j][0] != '-'; ++j, ++i) include_patterns.push_back(argv[j]);
                break;
             case 'x':
-               for (int j = i + 1; j < argc && argv[j][0] != '-'; ++j, ++i) insert(exclude_patterns, argv[j]);
+               for (int j = i + 1; j < argc && argv[j][0] != '-'; ++j, ++i) exclude_patterns.push_back(argv[j]);
                break;
             case '-': break;
             case 'h':
@@ -558,29 +553,25 @@ struct h2_option {
              "-x {patterns}       Run cases which case name, suite name and file name not matches\n");
    }
 
-   void insert(const char* patterns[9], const char* pattern) {
-      for (int i = 0; i < 9; ++i)
-         if (!patterns[i]) {
-            patterns[i] = pattern;
-            break;
-         }
-   }
-
-   int filter(const char* patterns[9], const char* subject) {
-      for (int i = 0; i < 9 && patterns[i]; ++i)
-         if (strchr(patterns[i], '?') || strchr(patterns[i], '*')) {
-            if (h2_wildcard_match(patterns[i], subject)) return 1;
+   bool match(std::vector<const char*>& patterns, const char* subject) {
+      for (auto pattern : patterns)
+         if (strcspn(pattern, "?*+^$\\.[]") < strlen(pattern)) {
+            if (h2_regex_match(pattern, subject)) return true;
+            if (strcspn(pattern, "+^$\\.[]") == strlen(pattern))
+               if (h2_wildcard_match(pattern, subject)) return true;
          } else {
-            if (strstr(subject, patterns[i])) return 1;
+            if (strstr(subject, pattern)) return true;
          }
-      return patterns[0] ? 0 : -1;
+      return false;
    }
 
    bool filter(const char* suitename, const char* casename, const char* filename) {
-      if (0 == filter(include_patterns, suitename) && 0 == filter(include_patterns, casename) && 0 == filter(include_patterns, filename))
-         return true;
-      if (1 == filter(exclude_patterns, suitename) || 1 == filter(exclude_patterns, casename) || 1 == filter(exclude_patterns, filename))
-         return true;
+      if (include_patterns.size())
+         if (!match(include_patterns, suitename) && !match(include_patterns, casename) && !match(include_patterns, filename))
+            return true;
+      if (exclude_patterns.size())
+         if (match(exclude_patterns, suitename) || match(exclude_patterns, casename) || match(exclude_patterns, filename))
+            return true;
       return false;
    }
 };
@@ -590,10 +581,10 @@ static inline h2_option& O() { return h2_option::I(0, nullptr); }
 static inline const char* S(const char* style_str) {
    if (!O().colorable) return "";
 
-   static char shift_buffer[8][128];
+   static char shift_buffer[32][128];
    static long shift_index = 0;
 
-   return h2_style(style_str, shift_buffer[++shift_index % 8]);
+   return h2_style(style_str, shift_buffer[++shift_index % 32]);
 }
 
 struct h2_raw {
@@ -2181,11 +2172,11 @@ struct h2_backtrace {
       bt.print();                                                                  \
    } while (0)
 
-#define H2_FAIL_FOREACH(f, First)                                 \
+#define H2_FOREACH_FAIL(f, First)                                 \
    for (h2_fail* x_fail = First; x_fail; x_fail = x_fail->x_next) \
       for (h2_fail* f = x_fail; f; f = f->y_next)
 
-#define H2_XPRINTF(format, value)            \
+#define _H2_XPRINTF(value, format)           \
    do {                                      \
       char t[1024 * 8];                      \
       va_list args;                          \
@@ -2219,7 +2210,7 @@ struct h2_fail {
       if (y_next) y_next->locate(file_, line_, func_, argi_);
    }
 
-   void kprintf(const char* format, ...) { H2_XPRINTF(format, _k); }
+   void kprintf(const char* format, ...) { _H2_XPRINTF(_k, format); }
 
    virtual void print() { _k.size() && printf(" %s", _k.c_str()); }
 
@@ -2258,7 +2249,7 @@ static inline void h2_append_y_fail(h2_fail*& fail, h2_fail* n) {
 
 struct h2_fail_normal : public h2_fail {
    h2_fail_normal(const char* file_ = nullptr, int line_ = 0, const char* func_ = nullptr, const char* format = "", ...)
-     : h2_fail(file_, line_, func_) { H2_XPRINTF(format, _k); }
+     : h2_fail(file_, line_, func_) { _H2_XPRINTF(_k, format); }
 
    void print() { h2_fail::print(), print_locate(); }
 };
@@ -2268,11 +2259,11 @@ struct h2_fail_unexpect : public h2_fail {
 
    h2_fail_unexpect(const char* file_ = nullptr, int line_ = 0) : h2_fail(file_, line_) {}
 
-   void hprintf(const char* format, ...) { H2_XPRINTF(format, _h); }
-   void eprintf(const char* format, ...) { H2_XPRINTF(format, _e); }
-   void mprintf(const char* format, ...) { H2_XPRINTF(format, _m); }
-   void aprintf(const char* format, ...) { H2_XPRINTF(format, _a); }
-   void tprintf(const char* format, ...) { H2_XPRINTF(format, _t); }
+   void hprintf(const char* format, ...) { _H2_XPRINTF(_h, format); }
+   void eprintf(const char* format, ...) { _H2_XPRINTF(_e, format); }
+   void mprintf(const char* format, ...) { _H2_XPRINTF(_m, format); }
+   void aprintf(const char* format, ...) { _H2_XPRINTF(_a, format); }
+   void tprintf(const char* format, ...) { _H2_XPRINTF(_t, format); }
 
    void print() {
       h2_fail::print(); /* nothing */
@@ -2323,11 +2314,10 @@ struct h2_fail_strcmp : public h2_fail {
 
 struct h2_fail_memcmp : public h2_fail {
    h2_vector<unsigned char> e, a;
-   const void* p;
 
    h2_fail_memcmp(const void* expect, const void* actual, int len, const char* file_ = nullptr, int line_ = 0)
-     : h2_fail(file_, line_), e((unsigned char*)expect, ((unsigned char*)expect) + len), a((unsigned char*)actual, ((unsigned char*)actual) + len), p(actual) {
-      kprintf("Memory %p binary %d bytes not equal", p, len);
+     : h2_fail(file_, line_), e((unsigned char*)expect, ((unsigned char*)expect) + len), a((unsigned char*)actual, ((unsigned char*)actual) + len) {
+      kprintf("Memory %p binary %d bytes not equal", actual, len);
    }
 
    void print() {
@@ -2389,40 +2379,38 @@ struct h2_fail_memoverflow : public h2_fail {
 
 struct h2_fail_memleak : public h2_fail {
    const char* where;
-   struct A {
+   struct P {
       void *ptr, *ptr2;
-      int size, size2, bytes, times;
+      long long size, size2, bytes, times;
       h2_backtrace bt;
-      A(void* ptr_, int size_, h2_backtrace& bt_) : ptr(ptr_), ptr2(nullptr), size(size_), size2(0), bytes(size_), times(1), bt(bt_) {}
+      P(void* ptr_, int size_, h2_backtrace& bt_) : ptr(ptr_), ptr2(nullptr), size(size_), size2(0), bytes(size_), times(1), bt(bt_) {}
    };
-   h2_vector<A> leaks;
-   long long bytes, times, places;
+   h2_vector<P> places;
+   long long bytes, times;
 
    h2_fail_memleak(const char* file_ = nullptr, int line_ = 0, const char* where_ = "")
-     : h2_fail(file_, line_), where(where_), bytes(0), times(0), places(0) {}
+     : h2_fail(file_, line_), where(where_), bytes(0), times(0) {}
 
    void add(void* ptr, int size, h2_backtrace& bt) {
-      bytes += size;
-      times += 1;
-      for (auto c : leaks)
+      bytes += size, times += 1;
+      for (auto c : places)
          if (c.bt == bt) {
             c.ptr2 = ptr, c.size2 = size, c.bytes += size, c.times += 1;
             return;
          }
-      places += 1;
-      leaks.push_back(A(ptr, size, bt));
+      places.push_back(P(ptr, size, bt));
    }
 
    void print() {
       char t1[64] = "", t2[64] = "";
-      if (1 < places) sprintf(t1, "%lld places ", places);
+      if (1 < places.size()) sprintf(t1, "%d places ", (int)places.size());
       if (1 < times) sprintf(t2, "%lld times ", times);
 
       kprintf("Memory Leaked %s%s%lld bytes in %s totally", t1, t2, bytes, where);
       h2_fail::print(), print_locate();
-      for (auto c : leaks) {
-         c.times <= 1 ? printf("  %p Leaked %d bytes, at backtrace\n", c.ptr, c.bytes) :
-                        printf("  %p, %p ... Leaked %d times %d bytes (%d, %d ...), at backtrace\n", c.ptr, c.ptr2, c.times, c.bytes, c.size, c.size2);
+      for (auto c : places) {
+         c.times <= 1 ? printf("  %p Leaked %lld bytes, at backtrace\n", c.ptr, c.bytes) :
+                        printf("  %p, %p ... Leaked %lld times %lld bytes (%lld, %lld ...), at backtrace\n", c.ptr, c.ptr2, c.times, c.bytes, c.size, c.size2);
          c.bt.print();
       }
    }
@@ -2970,7 +2958,7 @@ struct h2_hook {
    }
 };
 
-static inline void h2_sihook_g() {
+static inline void h2_signal_g() {
    if (!O().memory_check) return;
    struct sigaction act;
    act.sa_sigaction = h2_hook::overflow_handler;
@@ -4243,7 +4231,7 @@ static inline void h2_suite_case_g(h2_suite*, void*);
 static inline void h2_suite_setup_g(h2_suite*);
 static inline void h2_suite_teardown_g(h2_suite*);
 
-static constexpr const char* case_status[] = {"init", "TODO", "Filtered", "Passed", "Failed"};
+static constexpr const char* status2string[] = {"init", "TODO", "Filtered", "Passed", "Failed"};
 
 struct h2_case {
    /* clang-format off */
@@ -4394,7 +4382,7 @@ struct h2_suite {
    const char* name;
    P p;
    std::function<void()> setup, teardown;
-   int status[8];
+   int status_stats[8];
    const char* file;
    int line;
 
@@ -4402,7 +4390,7 @@ struct h2_suite {
    std::vector<h2_case*> case_list;
 
    h2_suite(const char* name_, P p_, const char* file_, const int line_, int enumerates_)
-     : name(name_), p(p_), setup(), teardown(), status{0}, file(file_), line(line_), enumerates(enumerates_) {
+     : name(name_), p(p_), setup(), teardown(), status_stats{0}, file(file_), line(line_), enumerates(enumerates_) {
       suites().push_back(this);
    }
 
@@ -4433,63 +4421,60 @@ static inline void h2_suite_teardown_g(h2_suite* suite) {
 }
 
 struct h2_log {
-   virtual void on_task_start(){};
-   virtual void on_task_endup(int status[8], int cases, long long duration){};
+   int total_cases, done_cases, percentage;
+   h2_log() : total_cases(0), done_cases(0), percentage(0) {}
+   virtual void on_task_start(int cases) { total_cases = cases; };
+   virtual void on_task_endup(int status_stats[8], long long duration){};
    virtual void on_case_start(h2_case* c){};
-   virtual void on_case_endup(h2_case* c){};
+   virtual void on_case_endup(h2_case* c) { percentage = ++done_cases * 100 / total_cases; };
 };
-
-/* clang-format off */
-struct h2_logs : public h2_log {
-   std::vector<h2_log*> logs;
-   void add(h2_log* log) { logs.push_back(log); }
-   void on_task_start() { for (auto log : logs) log->on_task_start(); }
-   void on_task_endup(int status[8], int cases, long long duration) { for (auto log : logs) log->on_task_endup(status, cases, duration); }
-   void on_case_start(h2_case* c) { for (auto log : logs) log->on_case_start(c); }
-   void on_case_endup(h2_case* c) { for (auto log : logs) log->on_case_endup(c); }
-};
-/* clang-format on */
 
 struct h2_log_console : public h2_log {
-   void on_task_endup(int status[8], int cases, long long duration) {
-      if (0 < status[h2_case::FAILED]) {
+   void on_task_endup(int status_stats[8], long long duration) {
+      h2_log::on_task_endup(status_stats, duration);
+      printf("\n[%3d%%] ", percentage);
+      if (0 < status_stats[h2_case::FAILED]) {
          printf("%s", S("bold,red"));
-         printf("\nFailed <%d failed, %d passed, %d todo, %d filtered, %lld ms>\n", status[h2_case::FAILED], status[h2_case::PASSED], status[h2_case::TODOED], status[h2_case::FILTED], duration);
+         printf("Failed <%d failed, %d passed, %d todo, %d filtered, %lld ms>\n", status_stats[h2_case::FAILED], status_stats[h2_case::PASSED], status_stats[h2_case::TODOED], status_stats[h2_case::FILTED], duration);
       } else {
          printf("%s", S("bold,green"));
-         printf("\nPassed <%d passed, %d todo, %d filtered, %d cases, %lld ms>\n", status[h2_case::PASSED], status[h2_case::TODOED], status[h2_case::FILTED], cases, duration);
+         printf("Passed <%d passed, %d todo, %d filtered, %d cases, %lld ms>\n", status_stats[h2_case::PASSED], status_stats[h2_case::TODOED], status_stats[h2_case::FILTED], total_cases, duration);
       }
       printf("%s", S("reset"));
    }
    void on_case_endup(h2_case* c) {
+      h2_log::on_case_endup(c);
       switch (c->status) {
-      case h2_case::INITED: break;
+      case h2_case::INITED:
       case h2_case::TODOED:
-         printf("CASE(%s, %s): TODO at %s:%d\n", c->suite->name, c->name, c->file, c->line);
+      case h2_case::FILTED:
+         if (O().verbose)
+            printf("[%3d%%] CASE(%s // %s): %s at %s:%d\n", percentage, c->suite->name, c->name, status2string[c->status], c->file, c->line);
          break;
-      case h2_case::FILTED: break;
       case h2_case::PASSED:
          if (O().verbose) {
+            printf("[%3d%%] ", percentage);
             printf("%s", S("light blue"));
-            printf("CASE(%s, %s): Passed - %lld ms\n", c->suite->name, c->name, c->t_end - c->t_start);
+            printf("CASE(%s // %s): Passed - %lld ms\n", c->suite->name, c->name, c->t_end - c->t_start);
             printf("%s", S("reset"));
-         }
+         } else
+            printf("\r[%3d%%] (%d/%d)\r", percentage, done_cases, total_cases);
          break;
       case h2_case::FAILED:
+         printf("[%3d%%] ", percentage);
          printf("%s", S("bold,purple"));
-         printf("CASE(%s, %s): Failed at %s:%d\n", c->suite->name, c->name, c->file, c->line);
+         printf("CASE(%s // %s): Failed at %s:%d\n", c->suite->name, c->name, c->file, c->line);
          printf("%s", S("reset"));
-         H2_FAIL_FOREACH(fail, c->fails) { fail->print(); }
-         ::printf("\n");
+         H2_FOREACH_FAIL(fail, c->fails) { fail->print(); }
+         printf("\n");
          break;
       }
-
-      printf("%s", S("reset"));
    }
 };
 
 struct h2_log_xml : public h2_log {
-   void on_task_endup(int status[8], int cases, long long duration) {
+   void on_task_endup(int status_stats[8], long long duration) {
+      h2_log::on_task_endup(status_stats, duration);
       h2_with f(fopen(O().junit, "w"));
       if (!f.f) return;
 
@@ -4498,15 +4483,15 @@ struct h2_log_xml : public h2_log {
 
       for (auto& s : h2_suite::suites()) {
          fprintf(f.f, "  <testsuite errors=\"0\" failures=\"%d\" hostname=\"localhost\" name=\"%s\" skipped=\"%d\" tests=\"%d\" time=\"%d\" timestamp=\"%s\">\n",
-                 s->status[h2_case::FAILED], s->name, s->status[h2_case::TODOED] + s->status[h2_case::FILTED], (int)s->cases().size(), 0, "");
+                 s->status_stats[h2_case::FAILED], s->name, s->status_stats[h2_case::TODOED] + s->status_stats[h2_case::FILTED], (int)s->cases().size(), 0, "");
 
          for (auto& c : s->cases()) {
             fprintf(f.f, "    <testcase classname=\"%s\" name=\"%s\" status=\"%s\" time=\"%.3f\">\n",
-                    c->suite->name, c->name, case_status[c->status], (c->t_end - c->t_start) / 1000.0);
+                    c->suite->name, c->name, status2string[c->status], (c->t_end - c->t_start) / 1000.0);
 
             if (c->status == h2_case::FAILED) {
                fprintf(f.f, "      <failure message=\"%s:%d:", c->file, c->line);
-               H2_FAIL_FOREACH(fail, c->fails) {
+               H2_FOREACH_FAIL(fail, c->fails) {
                   fprintf(f.f, "{newline}");
                   fail->print(f.f);
                }
@@ -4519,6 +4504,22 @@ struct h2_log_xml : public h2_log {
       }
       fprintf(f.f, "</testsuites>\n");
    }
+};
+
+struct h2_logs {
+   h2_log_console console_log;
+   h2_log_xml xml_log;
+   std::vector<h2_log*> logs;
+   void init() {
+      logs.push_back(&console_log);
+      if (strlen(O().junit)) logs.push_back(&xml_log);
+   }
+   /* clang-format off */
+   void on_task_start(int cases) { for (auto log : logs) log->on_task_start(cases); }
+   void on_task_endup(int status_stats[8], long long duration) { for (auto log : logs) log->on_task_endup(status_stats, duration); }
+   void on_case_start(h2_case* c) { for (auto log : logs) log->on_case_start(c); }
+   void on_case_endup(h2_case* c) { for (auto log : logs) log->on_case_endup(c); }
+   /* clang-format on */
 };
 
 
@@ -4599,26 +4600,22 @@ struct h2_directory {
 
 struct h2_task {
    h2_logs logs;
-   h2_log_console console_log;
-   h2_log_xml xml_log;
 
-   int status[8];
+   int status_stats[8];
    h2_case* current_case;
    std::vector<h2_case*> cases;
 
-   h2_task() : status{0}, current_case(nullptr) {}
+   h2_task() : status_stats{0}, current_case(nullptr) {}
 
    /* clang-format off */
    static h2_task& I() { static h2_task __; return __; }
    /* clang-format on */
 
    void prepare() {
-      h2_sihook_g();
+      h2_signal_g();
       if (O().listing) h2_directory::list_then_exit();
 
-      logs.add(&console_log);
-      if (strlen(O().junit)) logs.add(&xml_log);
-
+      logs.init();
       cases = h2_directory::cases();
 
       if (O().dns) h2_ns::I().init();
@@ -4629,23 +4626,23 @@ struct h2_task {
    void cleanup() {
       h2_unhook_g();
       if (O().dns) h2_ns::I().exit();
-      if (status[h2_case::FAILED] == 0) h2_directory::drop_last_order();
+      if (status_stats[h2_case::FAILED] == 0) h2_directory::drop_last_order();
    }
 
    void execute() {
       long long t_start = h2_now();
-      logs.on_task_start();
+      logs.on_task_start(cases.size());
       for (auto c : cases) {
          current_case = c;
          logs.on_case_start(c);
          if (O().filter(c->suite->name, c->name, c->file)) c->status = h2_case::FILTED;
          if (h2_case::INITED == c->status) c->suite->p(c->suite, c);
          logs.on_case_endup(c);
-         status[c->status] += 1;
-         c->suite->status[c->status] += 1;
-         if (0 < O().breakable && O().breakable <= status[h2_case::FAILED]) break;
+         status_stats[c->status] += 1;
+         c->suite->status_stats[c->status] += 1;
+         if (0 < O().breakable && O().breakable <= status_stats[h2_case::FAILED]) break;
       }
-      logs.on_task_endup(status, cases.size(), h2_now() - t_start);
+      logs.on_task_endup(status_stats, h2_now() - t_start);
    }
 };
 

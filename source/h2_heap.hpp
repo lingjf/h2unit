@@ -418,7 +418,7 @@ struct h2_hook {
    }
 };
 
-static inline void h2_sihook_g() {
+static inline void h2_signal_g() {
    if (!O().memory_check) return;
    struct sigaction act;
    act.sa_sigaction = h2_hook::overflow_handler;

@@ -1,9 +1,9 @@
 
-#define H2_FAIL_FOREACH(f, First)                                 \
+#define H2_FOREACH_FAIL(f, First)                                 \
    for (h2_fail* x_fail = First; x_fail; x_fail = x_fail->x_next) \
       for (h2_fail* f = x_fail; f; f = f->y_next)
 
-#define H2_XPRINTF(format, value)            \
+#define _H2_XPRINTF(value, format)           \
    do {                                      \
       char t[1024 * 8];                      \
       va_list args;                          \
@@ -37,7 +37,7 @@ struct h2_fail {
       if (y_next) y_next->locate(file_, line_, func_, argi_);
    }
 
-   void kprintf(const char* format, ...) { H2_XPRINTF(format, _k); }
+   void kprintf(const char* format, ...) { _H2_XPRINTF(_k, format); }
 
    virtual void print() { _k.size() && printf(" %s", _k.c_str()); }
 
@@ -76,7 +76,7 @@ static inline void h2_append_y_fail(h2_fail*& fail, h2_fail* n) {
 
 struct h2_fail_normal : public h2_fail {
    h2_fail_normal(const char* file_ = nullptr, int line_ = 0, const char* func_ = nullptr, const char* format = "", ...)
-     : h2_fail(file_, line_, func_) { H2_XPRINTF(format, _k); }
+     : h2_fail(file_, line_, func_) { _H2_XPRINTF(_k, format); }
 
    void print() { h2_fail::print(), print_locate(); }
 };
@@ -86,11 +86,11 @@ struct h2_fail_unexpect : public h2_fail {
 
    h2_fail_unexpect(const char* file_ = nullptr, int line_ = 0) : h2_fail(file_, line_) {}
 
-   void hprintf(const char* format, ...) { H2_XPRINTF(format, _h); }
-   void eprintf(const char* format, ...) { H2_XPRINTF(format, _e); }
-   void mprintf(const char* format, ...) { H2_XPRINTF(format, _m); }
-   void aprintf(const char* format, ...) { H2_XPRINTF(format, _a); }
-   void tprintf(const char* format, ...) { H2_XPRINTF(format, _t); }
+   void hprintf(const char* format, ...) { _H2_XPRINTF(_h, format); }
+   void eprintf(const char* format, ...) { _H2_XPRINTF(_e, format); }
+   void mprintf(const char* format, ...) { _H2_XPRINTF(_m, format); }
+   void aprintf(const char* format, ...) { _H2_XPRINTF(_a, format); }
+   void tprintf(const char* format, ...) { _H2_XPRINTF(_t, format); }
 
    void print() {
       h2_fail::print(); /* nothing */
@@ -141,11 +141,10 @@ struct h2_fail_strcmp : public h2_fail {
 
 struct h2_fail_memcmp : public h2_fail {
    h2_vector<unsigned char> e, a;
-   const void* p;
 
    h2_fail_memcmp(const void* expect, const void* actual, int len, const char* file_ = nullptr, int line_ = 0)
-     : h2_fail(file_, line_), e((unsigned char*)expect, ((unsigned char*)expect) + len), a((unsigned char*)actual, ((unsigned char*)actual) + len), p(actual) {
-      kprintf("Memory %p binary %d bytes not equal", p, len);
+     : h2_fail(file_, line_), e((unsigned char*)expect, ((unsigned char*)expect) + len), a((unsigned char*)actual, ((unsigned char*)actual) + len) {
+      kprintf("Memory %p binary %d bytes not equal", actual, len);
    }
 
    void print() {
@@ -207,40 +206,38 @@ struct h2_fail_memoverflow : public h2_fail {
 
 struct h2_fail_memleak : public h2_fail {
    const char* where;
-   struct A {
+   struct P {
       void *ptr, *ptr2;
-      int size, size2, bytes, times;
+      long long size, size2, bytes, times;
       h2_backtrace bt;
-      A(void* ptr_, int size_, h2_backtrace& bt_) : ptr(ptr_), ptr2(nullptr), size(size_), size2(0), bytes(size_), times(1), bt(bt_) {}
+      P(void* ptr_, int size_, h2_backtrace& bt_) : ptr(ptr_), ptr2(nullptr), size(size_), size2(0), bytes(size_), times(1), bt(bt_) {}
    };
-   h2_vector<A> leaks;
-   long long bytes, times, places;
+   h2_vector<P> places;
+   long long bytes, times;
 
    h2_fail_memleak(const char* file_ = nullptr, int line_ = 0, const char* where_ = "")
-     : h2_fail(file_, line_), where(where_), bytes(0), times(0), places(0) {}
+     : h2_fail(file_, line_), where(where_), bytes(0), times(0) {}
 
    void add(void* ptr, int size, h2_backtrace& bt) {
-      bytes += size;
-      times += 1;
-      for (auto c : leaks)
+      bytes += size, times += 1;
+      for (auto c : places)
          if (c.bt == bt) {
             c.ptr2 = ptr, c.size2 = size, c.bytes += size, c.times += 1;
             return;
          }
-      places += 1;
-      leaks.push_back(A(ptr, size, bt));
+      places.push_back(P(ptr, size, bt));
    }
 
    void print() {
       char t1[64] = "", t2[64] = "";
-      if (1 < places) sprintf(t1, "%lld places ", places);
+      if (1 < places.size()) sprintf(t1, "%d places ", (int)places.size());
       if (1 < times) sprintf(t2, "%lld times ", times);
 
       kprintf("Memory Leaked %s%s%lld bytes in %s totally", t1, t2, bytes, where);
       h2_fail::print(), print_locate();
-      for (auto c : leaks) {
-         c.times <= 1 ? printf("  %p Leaked %d bytes, at backtrace\n", c.ptr, c.bytes) :
-                        printf("  %p, %p ... Leaked %d times %d bytes (%d, %d ...), at backtrace\n", c.ptr, c.ptr2, c.times, c.bytes, c.size, c.size2);
+      for (auto c : places) {
+         c.times <= 1 ? printf("  %p Leaked %lld bytes, at backtrace\n", c.ptr, c.bytes) :
+                        printf("  %p, %p ... Leaked %lld times %lld bytes (%lld, %lld ...), at backtrace\n", c.ptr, c.ptr2, c.times, c.bytes, c.size, c.size2);
          c.bt.print();
       }
    }

@@ -5,7 +5,7 @@ struct h2_suite {
    const char* name;
    P p;
    std::function<void()> setup, teardown;
-   int status[8];
+   int status_stats[8];
    const char* file;
    int line;
 
@@ -13,7 +13,7 @@ struct h2_suite {
    std::vector<h2_case*> case_list;
 
    h2_suite(const char* name_, P p_, const char* file_, const int line_, int enumerates_)
-     : name(name_), p(p_), setup(), teardown(), status{0}, file(file_), line(line_), enumerates(enumerates_) {
+     : name(name_), p(p_), setup(), teardown(), status_stats{0}, file(file_), line(line_), enumerates(enumerates_) {
       suites().push_back(this);
    }
 

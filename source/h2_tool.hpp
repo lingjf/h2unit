@@ -91,7 +91,7 @@ static inline long long h2_now() {
    return tv.tv_sec * 1000LL + tv.tv_usec / 1000;
 }
 
-static inline const char* h2_style(const char* style_str, char* style_abi) {
+static inline const char* h2_style(const char* style_str, char* ascii_code) {
    static struct {
       const char *name, *value;
    } K[] = {
@@ -128,20 +128,14 @@ static inline const char* h2_style(const char* style_str, char* style_abi) {
      {"bg_white", "47;"},
      {"bg_default", "49;"}};
 
-   char t[1024];
-   strcpy(t, style_str);
-   strcpy(style_abi, "\033[");
-
-   for (char* p = strtok(t, ","); p; p = strtok(nullptr, ","))
-      for (size_t i = 0; i < sizeof(K) / sizeof(K[0]); i++)
+   char t[1024], *s = strcpy(t, style_str), *d = ascii_code + sprintf(ascii_code, "\033["), *q = d;
+   for (char* p = strtok(s, ","); p; p = strtok(nullptr, ","))
+      for (size_t i = 0; i < sizeof(K) / sizeof(K[0]); ++i)
          if (!strcmp(K[i].name, p)) {
-            strcat(style_abi, K[i].value);
+            q += sprintf(q, "%s", K[i].value);
             break;
          }
-
-   style_abi[strlen(style_abi) - 1] = 'm';
-
-   return style_abi;
+   return d == q ? strcpy(ascii_code, "") : (*(q - 1) = 'm', ascii_code);
 }
 
 static inline int h2_winsz() {

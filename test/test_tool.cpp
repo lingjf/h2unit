@@ -37,6 +37,7 @@ SUITE(h2_tool)
 
    Case(h2_style)
    {
+      OK("", h2_style("", t1));
       OK("\033[31m", h2_style("red", t1));
       OK("\033[31;1m", h2_style("red,bold", t1));
    };
