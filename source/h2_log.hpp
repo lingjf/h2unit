@@ -28,7 +28,7 @@ struct h2_log_console : public h2_log {
       case h2_case::TODOED:
       case h2_case::FILTED:
          if (O().verbose)
-            printf("[%3d%%] CASE(%s // %s): %s at %s:%d\n", percentage, c->suite->name, c->name, status2string[c->status], c->file, c->line);
+            printf("[%3d%%] CASE(%s // %s): %s at %s:%d\n", percentage, c->suite->name, c->name, status2string[c->status], basename((char*)c->file), c->line);
          break;
       case h2_case::PASSED:
          if (O().verbose) {
@@ -42,7 +42,7 @@ struct h2_log_console : public h2_log {
       case h2_case::FAILED:
          printf("[%3d%%] ", percentage);
          printf("%s", S("bold,purple"));
-         printf("CASE(%s // %s): Failed at %s:%d\n", c->suite->name, c->name, c->file, c->line);
+         printf("CASE(%s // %s): Failed at %s:%d\n", c->suite->name, c->name, basename((char*)c->file), c->line);
          printf("%s", S("reset"));
          H2_FOREACH_FAIL(fail, c->fails) { fail->print(); }
          printf("\n");

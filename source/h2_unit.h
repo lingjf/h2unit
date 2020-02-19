@@ -1,4 +1,4 @@
-
+// Case Setup remove, run suite share code as setup
 #ifndef ___H2UNIT_H___
 #define ___H2UNIT_H___
 
@@ -29,6 +29,7 @@
 #include <typeinfo> /* typeid */
 #include <errno.h>
 #include <unistd.h>    /* sysconf */
+#include <libgen.h>    /* basename */
 #include <signal.h>    /* sigaction */
 #include <alloca.h>    /* alloca */
 #include <execinfo.h>  /* backtrace */
@@ -52,6 +53,9 @@
 
 /* ======> Interface <====== */
 
+#define GlobalSetup() H2GlobalSetup()
+#define GlobalTeardown() H2GlobalTeardown()
+
 #define SUITE(...) H2SUITE(__VA_ARGS__)
 #define CASE(...) H2CASE(__VA_ARGS__)
 #define TODO(...) H2TODO(__VA_ARGS__)
@@ -68,6 +72,7 @@
 #define STUB(...) H2STUB(__VA_ARGS__)
 #define BLOCK(...) H2BLOCK(__VA_ARGS__)
 #define DNS(...) H2DNS(__VA_ARGS__)
+#define COUT(...) H2COUT(__VA_ARGS__)
 
 #define _ h2::Any__
 #define Any() h2::Any__
@@ -105,12 +110,33 @@
 #   pragma clang diagnostic ignored "-Wdangling-else"
 #endif
 
+#define __H2GlobalSetup(Q)                              \
+   namespace {                                          \
+   static struct Q {                                    \
+      Q() { h2::h2_task::I().setups.push_back(setup); } \
+      static void setup();                              \
+   } H2Q(setup);                                        \
+   }                                                    \
+   void Q::setup()
+
+#define __H2GlobalTeardown(Q)                                 \
+   namespace {                                                \
+   static struct Q {                                          \
+      Q() { h2::h2_task::I().teardowns.push_back(teardown); } \
+      static void teardown();                                 \
+   } H2Q(teardown);                                           \
+   }                                                          \
+   void Q::teardown()
+
+#define H2GlobalSetup() __H2GlobalSetup(H2Q(_Setup))
+#define H2GlobalTeardown() __H2GlobalTeardown(H2Q(_Teardown))
+
 #define __H2SUITE(Suitename, s, a)                              \
    static void s(h2::h2_suite*, h2::h2_case*);                  \
    static h2::h2_suite a(Suitename, &s, __FILE__, __LINE__, 0); \
    static void s(h2::h2_suite* ___suite, h2::h2_case* case___)
 
-#define H2SUITE(...) __H2SUITE(H2PP_STRINGIZE(__VA_ARGS__), H2Q(h2_suite), H2Q(a))
+#define H2SUITE(...) __H2SUITE(H2PP_STRINGIZE(__VA_ARGS__), H2Q(h2_suite), H2Q(suite))
 
 #define __H2Setup(t) \
    for (int t = 1; t--; case___ ? void() : h2::h2_suite_setup_g(___suite)) ___suite->setup = [&]()
@@ -131,21 +157,20 @@
       for (h2::h2_case::H h(&c); h && ::setjmp(c.jb) == 0;)
 
 #ifdef H2CaseLambda
-#   define H2Case(...) __H2CaseLambda(H2PP_STRINGIZE(__VA_ARGS__), h2::h2_case::INITED, H2Q(c), H2Q(t))
-#   define H2Todo(...) __H2CaseLambda(H2PP_STRINGIZE(__VA_ARGS__), h2::h2_case::TODOED, H2Q(c), H2Q(t))
+#   define H2Case(...) __H2CaseLambda(H2PP_STRINGIZE(__VA_ARGS__), h2::h2_case::INITED, H2Q(case), H2Q(t))
+#   define H2Todo(...) __H2CaseLambda(H2PP_STRINGIZE(__VA_ARGS__), h2::h2_case::TODOED, H2Q(case), H2Q(t))
 #else
-#   define H2Case(...) __H2CaseSnippet(H2PP_STRINGIZE(__VA_ARGS__), h2::h2_case::INITED, H2Q(c), H2Q(h))
-#   define H2Todo(...) __H2CaseSnippet(H2PP_STRINGIZE(__VA_ARGS__), h2::h2_case::TODOED, H2Q(c), H2Q(h))
+#   define H2Case(...) __H2CaseSnippet(H2PP_STRINGIZE(__VA_ARGS__), h2::h2_case::INITED, H2Q(case), H2Q(h))
+#   define H2Todo(...) __H2CaseSnippet(H2PP_STRINGIZE(__VA_ARGS__), h2::h2_case::TODOED, H2Q(case), H2Q(h))
 #endif
 
 #define __H2CASE(Casename, Status, a, C, t)                                                \
-   static h2::h2_suite a("", h2::h2_suite::execute, __FILE__, __LINE__, 1);                \
+   static h2::h2_suite a("Anonymous", h2::h2_suite::execute, __FILE__, __LINE__, 1);       \
    namespace {                                                                             \
-   struct C : private h2::h2_case {                                                        \
+   static struct C : private h2::h2_case {                                                 \
       C(h2::h2_suite* suite) : h2::h2_case(Casename, suite, Status, __FILE__, __LINE__) {} \
       void derive_code() override;                                                         \
-   };                                                                                      \
-   static C t(&a);                                                                         \
+   } t(&a);                                                                                \
    }                                                                                       \
    void C::derive_code()
 
@@ -253,7 +278,9 @@
 // #define H2BLOCK(...) for (h2::h2_stack::A a(__FILE__, __LINE__, ##__VA_ARGS__); a;)
 // #define H2BLOCK(...) for (h2::h2_stack::A a(__FILE__, __LINE__, __VA_OPT__(,) __VA_ARGS__); a;)
 
-#define H2DNS(hostname, ...) h2::h2_ns::setaddrinfo(hostname, H2PP_NARGS(__VA_ARGS__), __VA_ARGS__)
+#define H2DNS(hostname, ...) h2::h2_dns::setaddrinfo(hostname, H2PP_NARGS(__VA_ARGS__), __VA_ARGS__)
+
+#define H2COUT(...) h2::h2_stdio::capture_cout(__VA_ARGS__)
 
 namespace h2 {
 
@@ -261,6 +288,7 @@ namespace h2 {
 #include "h2_list.hpp"
 #include "h2_option.hpp"
 #include "h2_allocate.hpp"
+#include "h2_shared_ptr.hpp"
 #include "h2_expr.hpp"
 #include "h2_json.hpp"
 #include "h2_backtrace.hpp"
@@ -272,7 +300,8 @@ namespace h2 {
 #include "h2_callexp.hpp"
 #include "h2_routine.hpp"
 #include "h2_mock.hpp"
-#include "h2_ns.hpp"
+#include "h2_stdio.hpp"
+#include "h2_dns.hpp"
 #include "h2_case.hpp"
 #include "h2_suite.hpp"
 #include "h2_log.hpp"

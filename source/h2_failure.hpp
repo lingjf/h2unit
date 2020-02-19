@@ -43,7 +43,7 @@ struct h2_fail {
 
    void print_locate() {
       static constexpr const char* a9 = "1st\0002nd\0003rd\0004th\0005th\0006th\0007th\0008th\0009th";
-      if (func && strlen(func)) printf(", in %s(%s)", func, 0 <= argi && argi < 9 ? a9 + argi * 4 : "?");
+      if (func && strlen(func)) printf(", in %s(%s)", func, 0 <= argi && argi < 9 ? a9 + argi * 4 : "");
       if (file && strlen(file) && 0 < line) printf(", at %s:%d", file, line);
       printf("\n");
    }
@@ -270,21 +270,19 @@ struct h2_fail_json : public h2_fail {
 
 struct h2_fail_instantiate : public h2_fail {
    const char *action_type, *return_type, *class_type, *method_name, *return_args;
-   const int why;
+   const bool why_abstract;
 
-   h2_fail_instantiate(const char* action_type_, const char* return_type_, const char* class_type_, const char* method_name_, const char* return_args_, int why_, const char* file_, int line_)
-     : h2_fail(file_, line_), action_type(action_type_), return_type(return_type_), class_type(class_type_), method_name(method_name_), return_args(return_args_), why(why_) {
-      if (why == 1)
-         kprintf("Instantiate 'class %s' is a abstract class", class_type);
-      else if (why == 2)
-         kprintf("Instantiate 'class %s' don't know initialize arguments", class_type);
+   h2_fail_instantiate(const char* action_type_, const char* return_type_, const char* class_type_, const char* method_name_, const char* return_args_, int why_abstract_, const char* file_, int line_)
+     : h2_fail(file_, line_), action_type(action_type_), return_type(return_type_), class_type(class_type_), method_name(method_name_), return_args(return_args_), why_abstract(why_abstract_) {
+      why_abstract ? kprintf("Instantiate 'class %s' is a abstract class", class_type) :
+                     kprintf("Instantiate 'class %s' don't know initialize arguments", class_type);
    }
 
    void print() {
       h2_fail::print(), print_locate();
 
       printf("You may take following solutions to fix it: \n");
-      if (why == 1) {
+      if (why_abstract)
          printf("1. Add non-abstract Derived Class instance in %s(%s%s%s, %s, %s%s, Derived_%s(...)%s) \n",
                 action_type,
                 strlen(return_type) ? return_type : "",
@@ -293,7 +291,7 @@ struct h2_fail_instantiate : public h2_fail {
                 S("bold,yellow"),
                 class_type,
                 S("reset"));
-      } else if (why == 2) {
+      else {
          printf("1. Define default constructor in class %s, or \n", class_type);
          printf("2. Add parameterized construction in %s(%s%s%s, %s, %s%s, %s(...)%s) \n",
                 action_type,

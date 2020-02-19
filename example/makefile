@@ -22,4 +22,4 @@ all :
 		test_memory.o
 	
 clean:
-	rm -rf a.out *.o *.xml h2unit.h
+	rm -rf a.out *.o *.xml h2unit.h .last_order

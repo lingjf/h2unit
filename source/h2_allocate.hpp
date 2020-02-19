@@ -46,13 +46,9 @@ class h2_allocator {
    h2_allocator<T>& operator=(const h2_allocator&) { return *this; }
    void construct(pointer p, const T& val) { new ((T*)p) T(val); }
    void destroy(pointer p) { p->~T(); }
-
    size_type max_size() const { return size_t(-1); }
-
    template <typename U> struct rebind { typedef h2_allocator<U> other; };
-
    template <typename U> h2_allocator(const h2_allocator<U>&) {}
-
    template <typename U> h2_allocator& operator=(const h2_allocator<U>&) { return *this; }
 };
 
@@ -62,47 +58,6 @@ template <typename T> inline bool operator!=(const h2_allocator<T>&, const h2_al
 template <typename T> using h2_vector = std::vector<T, h2_allocator<T>>;
 typedef std::basic_ostringstream<char, std::char_traits<char>, h2_allocator<char>> h2_ostringstream;
 /* clang-format on */
-
-template <typename T>
-class h2_shared_ptr {
- public:
-   h2_shared_ptr() : px(nullptr), pn(nullptr) {}
-   explicit h2_shared_ptr(T* p) { acquire(p, nullptr); }
-   h2_shared_ptr(const h2_shared_ptr& that) { acquire(that.px, that.pn); }
-   ~h2_shared_ptr() { release(); }
-   h2_shared_ptr& operator=(h2_shared_ptr that) {
-      std::swap(px, that.px);
-      std::swap(pn, that.pn);
-      return *this;
-   }
-   operator bool() const { return pn && 0 < *pn; }
-   T& operator*() const { return *px; }
-   T* operator->() const { return px; }
-
- private:
-   void acquire(T* p, long* n) {
-      pn = n;
-      if (p) {
-         if (!pn)
-            pn = new (h2_raw::malloc(sizeof(long))) long(1);
-         else
-            ++(*pn);
-      }
-      px = p;
-   }
-   void release() {
-      if (pn && !--(*pn)) {
-         delete px;
-         h2_raw::free(pn);
-      }
-   }
-
-   T* px;
-   long* pn;
-
-   static void* operator new(std::size_t sz) { return h2_raw::malloc(sz); }
-   static void operator delete(void* ptr) { h2_raw::free(ptr); }
-};
 
 class h2_string : public std::basic_string<char, std::char_traits<char>, h2_allocator<char>> {
  public:

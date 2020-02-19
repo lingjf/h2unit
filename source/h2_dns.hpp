@@ -1,11 +1,11 @@
 
-struct h2_dns {
+struct h2_addr {
    h2_list x, y;
    const char* hostname;
    int count;
    struct sockaddr_storage array[32];
 
-   h2_dns(const char* hostname_, int count_, va_list& args) : hostname(hostname_), count(0) {
+   h2_addr(const char* hostname_, int count_, va_list& args) : hostname(hostname_), count(0) {
       for (int i = 0, s1, s2, s3, s4; i < count_ && i < 32; ++i) {
          struct sockaddr_in* b = (struct sockaddr_in*)&array[count++];
          memset(b, 0, sizeof(struct sockaddr_storage));
@@ -22,26 +22,26 @@ struct h2_dns {
    static void operator delete(void* ptr) { h2_raw::free(ptr); }
 };
 
-static inline void h2_dns_g(h2_dns* dns);
+static inline void h2_addr_g(h2_addr* addr);
 
-struct h2_ns {
-   h2_list dnss;
+struct h2_dns {
+   h2_list addrs;
 
-   h2_dns* find(const char* hostname) {
-      h2_list_for_each_entry(p, &dnss, h2_dns, y) if (strlen(p->hostname) == 0 || strcmp(hostname, p->hostname) == 0) return p;
+   h2_addr* find(const char* hostname) {
+      h2_list_for_each_entry(p, &addrs, h2_addr, y) if (strlen(p->hostname) == 0 || strcmp(hostname, p->hostname) == 0) return p;
       return nullptr;
    }
 
    static int getaddrinfo(const char* hostname, const char* servname, const struct addrinfo* hints, struct addrinfo** res) {
-      h2_dns* dns = I().find(hostname);
-      if (!dns) return -1;
+      h2_addr* addr = I().find(hostname);
+      if (!addr) return -1;
 
       static struct addrinfo addrinfos[32];
       memset(addrinfos, 0, sizeof(addrinfos));
 
       struct addrinfo** pp = res;
-      for (int i = 0; i < dns->count; ++i) {
-         struct sockaddr_in* b = (struct sockaddr_in*)&dns->array[i];
+      for (int i = 0; i < addr->count; ++i) {
+         struct sockaddr_in* b = (struct sockaddr_in*)&addr->array[i];
          struct addrinfo* a = &addrinfos[i];
          if (b->sin_family == AF_INET) {
             a->ai_addr = (struct sockaddr*)b;
@@ -67,8 +67,8 @@ struct h2_ns {
    static void freeaddrinfo(struct addrinfo* ai) {}
 
    static struct hostent* gethostbyname(char* name) {
-      h2_dns* dns = I().find(name);
-      if (!dns) return nullptr;
+      h2_addr* addr = I().find(name);
+      if (!addr) return nullptr;
 
       static char* h_aliases[32];
       static char* h_addr_list[32];
@@ -82,8 +82,8 @@ struct h2_ns {
       memset(h_aliases, 0, sizeof(h_aliases));
       memset(h_addr_list, 0, sizeof(h_addr_list));
 
-      for (int i = 0, a = 0, c = 0; i < dns->count; ++i) {
-         struct sockaddr_in* b = (struct sockaddr_in*)&dns->array[i];
+      for (int i = 0, a = 0, c = 0; i < addr->count; ++i) {
+         struct sockaddr_in* b = (struct sockaddr_in*)&addr->array[i];
          if (b->sin_family == AF_INET)
             h_addr_list[a++] = (char*)&b->sin_addr;
          else
@@ -93,14 +93,14 @@ struct h2_ns {
    }
 
    /* clang-format off */
-   static h2_ns& I() { static h2_ns __; return __; }
+   static h2_dns& I() { static h2_dns __; return __; }
    /* clang-format on */
 
    h2_stub getaddrinfo_stub;
    h2_stub freeaddrinfo_stub;
    h2_stub gethostbyname_stub;
 
-   h2_ns() : getaddrinfo_stub((void*)::getaddrinfo), freeaddrinfo_stub((void*)::freeaddrinfo), gethostbyname_stub((void*)::gethostbyname) {}
+   h2_dns() : getaddrinfo_stub((void*)::getaddrinfo), freeaddrinfo_stub((void*)::freeaddrinfo), gethostbyname_stub((void*)::gethostbyname) {}
 
    void init() {
       getaddrinfo_stub.replace((void*)getaddrinfo);
@@ -117,9 +117,9 @@ struct h2_ns {
    static void setaddrinfo(const char* hostname, int count, ...) {
       va_list a;
       va_start(a, count);
-      h2_dns* dns = new h2_dns(hostname, count, a);
-      I().dnss.push(&dns->y);
-      h2_dns_g(dns);
+      h2_addr* addr = new h2_addr(hostname, count, a);
+      I().addrs.push(&addr->y);
+      h2_addr_g(addr);
       va_end(a);
    }
 };

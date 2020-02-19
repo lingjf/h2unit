@@ -1,7 +1,5 @@
 #include "../source/h2_unit.h"
 
-CASE(option) {}  // stay in line 3 to check TEST macro is works
-
 SUITE(h2_option) 
 {
    Case(default) 

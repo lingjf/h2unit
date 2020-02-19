@@ -4,7 +4,7 @@ static inline void h2_suite_case_g(h2_suite*, void*);
 static inline void h2_suite_setup_g(h2_suite*);
 static inline void h2_suite_teardown_g(h2_suite*);
 
-static constexpr const char* status2string[] = {"init", "TODO", "Filtered", "Passed", "Failed"};
+static constexpr const char* status2string[] = {"init", "Passed", "Failed", "TODO", "Filtered"};
 
 struct h2_case {
    /* clang-format off */
@@ -21,7 +21,7 @@ struct h2_case {
    void prev_setup() {
       t_start = h2_now();
       status = PASSED;
-      h2_stack::G().push(file, line, "case");
+      h2_stack::I().push(file, line, "case");
    }
 
    void post_setup() { jc = 1; }
@@ -30,10 +30,10 @@ struct h2_case {
 
    void post_teardown() {
       lambda_code = nullptr;
-      undo_dns();
+      undo_addr();
       undo_stub();
       h2_fail* fail = undo_mock();
-      h2_append_x_fail(fail, h2_stack::G().pop());
+      h2_append_x_fail(fail, h2_stack::I().pop());
 
       if (fail)
          if (status == FAILED)
@@ -62,7 +62,7 @@ struct h2_case {
       post_teardown();
    }
 
-   h2_list stubs, mocks, dnss;
+   h2_list stubs, mocks, addrs;
 
    void do_stub(void* befp, void* tofp, const char* befn, const char* tofn, const char* file, int line) {
       h2_stub* stub = nullptr;
@@ -102,10 +102,10 @@ struct h2_case {
       return fail;
    }
 
-   void do_dns(h2_dns* dns) { dnss.push(&dns->x); }
+   void do_addr(h2_addr* addr) { addrs.push(&addr->x); }
 
-   void undo_dns() {
-      h2_list_for_each_entry(p, &dnss, h2_dns, x) {
+   void undo_addr() {
+      h2_list_for_each_entry(p, &addrs, h2_addr, x) {
          p->x.out();
          p->y.out();
          delete p;

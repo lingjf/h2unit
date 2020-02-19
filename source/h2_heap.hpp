@@ -199,15 +199,15 @@ struct h2_stack {
    }
 
    /* clang-format off */
-   static h2_stack& G() { static h2_stack __; return __; }
+   static h2_stack& I() { static h2_stack __; return __; }
    /* clang-format on */
 
    struct A {
       int count;
 
       A(const char* file, int line, long long limited = 0x7fffffffffffLL, const char* fill = nullptr)
-        : count(0) { h2_stack::G().push(file, line, "block", limited, fill); }
-      ~A() { h2_fail_g(h2_stack::G().pop()); }
+        : count(0) { h2_stack::I().push(file, line, "block", limited, fill); }
+      ~A() { h2_fail_g(h2_stack::I().pop()); }
 
       operator bool() { return 0 == count++; }
    };
@@ -215,44 +215,44 @@ struct h2_stack {
 
 struct h2_hook {
    static void free(void* ptr) {
-      if (ptr) h2_fail_g(h2_stack::G().relm(ptr)); /* overflow or double free */
+      if (ptr) h2_fail_g(h2_stack::I().relm(ptr)); /* overflow or double free */
    }
 
    static void* malloc(size_t size) {
-      h2_piece* m = h2_stack::G().newm(size, 0, nullptr);
+      h2_piece* m = h2_stack::I().newm(size, 0, nullptr);
       return m ? m->ptr : nullptr;
    }
 
    static void* calloc(size_t count, size_t size) {
-      h2_piece* m = h2_stack::G().newm(size * count, 0, "\0");
+      h2_piece* m = h2_stack::I().newm(size * count, 0, "\0");
       return m ? m->ptr : nullptr;
    }
 
    static void* realloc(void* ptr, size_t size) {
       if (size == 0) {
-         if (ptr) h2_fail_g(h2_stack::G().relm(ptr));
+         if (ptr) h2_fail_g(h2_stack::I().relm(ptr));
          return nullptr;
       }
 
-      h2_piece* old_m = h2_stack::G().getm(ptr);
+      h2_piece* old_m = h2_stack::I().getm(ptr);
       if (!old_m) return nullptr;
 
-      h2_piece* new_m = h2_stack::G().newm(size, 0, nullptr);
+      h2_piece* new_m = h2_stack::I().newm(size, 0, nullptr);
       if (!new_m) return nullptr;
 
       memcpy(new_m->ptr, old_m->ptr, old_m->size);
-      h2_fail_g(h2_stack::G().relm(ptr));
+      h2_fail_g(h2_stack::I().relm(ptr));
 
       return new_m->ptr;
    }
 
    static int posix_memalign(void** memptr, size_t alignment, size_t size) {
-      h2_piece* m = h2_stack::G().newm(size, alignment, nullptr);
+      h2_piece* m = h2_stack::I().newm(size, alignment, nullptr);
       return m ? (*memptr = m->ptr, 0) : ENOMEM;
    }
 
    static void* aligned_alloc(size_t alignment, size_t size) {
-      h2_piece* m = h2_stack::G().newm(size, alignment, nullptr);
+      h2_piece* m = h2_stack::I().newm(size, alignment, nullptr);
       return m ? m->ptr : nullptr;
    }
 
@@ -270,7 +270,7 @@ struct h2_hook {
 
 #elif defined __APPLE__
    static size_t mz_size(malloc_zone_t* zone, const void* ptr) {
-      h2_piece* m = h2_stack::G().getm(ptr);
+      h2_piece* m = h2_stack::I().getm(ptr);
       return m ? m->size : 0;
    }
 
@@ -411,7 +411,7 @@ struct h2_hook {
    }
 
    static void overflow_handler(int sig, siginfo_t* si, void* unused) {
-      h2_piece* m = h2_stack::G().whom(si->si_addr);
+      h2_piece* m = h2_stack::I().whom(si->si_addr);
       if (m) h2_fail_g(new h2_fail_memoverflow(m->ptr, (intptr_t)si->si_addr - (intptr_t)m->ptr, nullptr, 0, m->bt, h2_backtrace(O().isMAC() ? 5 : 4)));
       h2_debug();
       exit(1);

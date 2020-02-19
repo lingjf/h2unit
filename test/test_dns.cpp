@@ -45,16 +45,23 @@ static void* dns_use_gethostbyname(const char* hostname, char* ips, char* cnames
    return host;
 }
 
+GlobalSetup() {
+   DNS("", "127.0.0.1");
+};
+
+GlobalTeardown() {
+};
+
 SUITE(getaddrinfo) 
 {
    int ret;
    char t1[1024] = "", t2[1024] = "";
 
-   //    Case(system) {
-   //       ret = dns_use_getaddrinfo("dns.google.com", t1, t2);
-   //       OK(0, ret);
-   //       OK(Contains("8.8.8.8;"), t1);
-   //    };
+   Case(global) {
+      ret = dns_use_getaddrinfo("dns.google.com", t1, t2);
+      OK(0, ret);
+      OK("127.0.0.1;", t1);
+   };
 
    Case(DNS 1) 
    {
@@ -62,13 +69,6 @@ SUITE(getaddrinfo)
       ret = dns_use_getaddrinfo("dns.google.com", t1, t2);
       OK(0, ret);
       OK("192.168.1.123;", t1);
-   };
-
-   Case(DNS 1 failure) 
-   {
-      DNS("www.h2unit.com", "192.168.1.123");
-      ret = dns_use_getaddrinfo("dns.google.com", t1, t2);
-      OK(-1, ret);
    };
 
    Case(DNS 2) 
@@ -106,13 +106,6 @@ SUITE(gethostbyname)
       ret = dns_use_gethostbyname("dns.google.com", t1, t2);
       OK(ret);
       OK("192.168.1.123;", t1);
-   };
-
-   Case(DNS 1 failure)
-   {
-      DNS("www.h2unit.com", "192.168.1.123");
-      ret = dns_use_gethostbyname("dns.google.com", t1, t2);
-      OK(!ret);
    };
 
    Case(DNS 2)

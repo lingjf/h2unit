@@ -57,17 +57,17 @@ struct h2_directory {
       bool sb = t == 'a' || t == 'A' || t == 's' || t == 'S', cb = t == 'a' || t == 'A' || t == 'c' || t == 'C';
 
       for (auto s : h2_suite::suites()) {
-         const char* sn = strlen(s->name) ? s->name : "(Anonymous)";
          if (t = 0, sb) {
-            if (!O().filter(sn, "", "")) t++;
+            if (!O().filter(s->name, "", "")) t++;
             for (auto c : s->cases())
-               if (!O().filter(sn, cb ? c->name : "", "")) t++;
-            if (t) printf("S%d. %s \n", ++ss, sn);
+               if (!O().filter(s->name, cb ? c->name : "", "")) t++;
+            if (t) printf("S%d. %s \\\\ %s:%d\n", ++ss, s->name, basename((char*)s->file), s->line);
          }
          if (t = 0, cb)
             for (auto c : s->cases())
-               if (!O().filter(sn, c->name, ""))
-                  sb ? printf("C%d/S%d/%d. %s // %s \n", ++cs, ss, ++t, sn, c->name) : printf("C%d. %s // %s \n", ++cs, sn, c->name);
+               if (!O().filter(s->name, c->name, ""))
+                  sb ? printf("C%d/S%d-%d. %s // %s \\\\ %s:%d\n", ++cs, ss, ++t, s->name, c->name, basename((char*)c->file), c->line) :
+                       printf("C%d. %s // %s \\\\ %s:%d\n", ++cs, s->name, c->name, basename((char*)c->file), c->line);
       }
    }
 
