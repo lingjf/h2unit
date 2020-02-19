@@ -1,7 +1,6 @@
-/* v4.1  2020-02-19 08:30:28 */
+/* v4.2  2020-02-19 23:48:01 */
 /* https://github.com/lingjf/h2unit */
 /* Apache Licence 2.0 */
-
 #ifndef ___H2UNIT_H___
 #define ___H2UNIT_H___
 
@@ -32,6 +31,7 @@
 #include <typeinfo> /* typeid */
 #include <errno.h>
 #include <unistd.h>    /* sysconf */
+#include <libgen.h>    /* basename */
 #include <signal.h>    /* sigaction */
 #include <alloca.h>    /* alloca */
 #include <execinfo.h>  /* backtrace */
@@ -55,6 +55,9 @@
 
 /* ======> Interface <====== */
 
+#define GlobalSetup() H2GlobalSetup()
+#define GlobalTeardown() H2GlobalTeardown()
+
 #define SUITE(...) H2SUITE(__VA_ARGS__)
 #define CASE(...) H2CASE(__VA_ARGS__)
 #define TODO(...) H2TODO(__VA_ARGS__)
@@ -71,6 +74,7 @@
 #define STUB(...) H2STUB(__VA_ARGS__)
 #define BLOCK(...) H2BLOCK(__VA_ARGS__)
 #define DNS(...) H2DNS(__VA_ARGS__)
+#define COUT(...) H2COUT(__VA_ARGS__)
 
 #define _ h2::Any__
 #define Any() h2::Any__
@@ -108,12 +112,33 @@
 #   pragma clang diagnostic ignored "-Wdangling-else"
 #endif
 
+#define __H2GlobalSetup(Q)                              \
+   namespace {                                          \
+   static struct Q {                                    \
+      Q() { h2::h2_task::I().setups.push_back(setup); } \
+      static void setup();                              \
+   } H2Q(setup);                                        \
+   }                                                    \
+   void Q::setup()
+
+#define __H2GlobalTeardown(Q)                                 \
+   namespace {                                                \
+   static struct Q {                                          \
+      Q() { h2::h2_task::I().teardowns.push_back(teardown); } \
+      static void teardown();                                 \
+   } H2Q(teardown);                                           \
+   }                                                          \
+   void Q::teardown()
+
+#define H2GlobalSetup() __H2GlobalSetup(H2Q(_Setup))
+#define H2GlobalTeardown() __H2GlobalTeardown(H2Q(_Teardown))
+
 #define __H2SUITE(Suitename, s, a)                              \
    static void s(h2::h2_suite*, h2::h2_case*);                  \
    static h2::h2_suite a(Suitename, &s, __FILE__, __LINE__, 0); \
    static void s(h2::h2_suite* ___suite, h2::h2_case* case___)
 
-#define H2SUITE(...) __H2SUITE(H2PP_STRINGIZE(__VA_ARGS__), H2Q(h2_suite), H2Q(a))
+#define H2SUITE(...) __H2SUITE(H2PP_STRINGIZE(__VA_ARGS__), H2Q(h2_suite), H2Q(suite))
 
 #define __H2Setup(t) \
    for (int t = 1; t--; case___ ? void() : h2::h2_suite_setup_g(___suite)) ___suite->setup = [&]()
@@ -134,21 +159,20 @@
       for (h2::h2_case::H h(&c); h && ::setjmp(c.jb) == 0;)
 
 #ifdef H2CaseLambda
-#   define H2Case(...) __H2CaseLambda(H2PP_STRINGIZE(__VA_ARGS__), h2::h2_case::INITED, H2Q(c), H2Q(t))
-#   define H2Todo(...) __H2CaseLambda(H2PP_STRINGIZE(__VA_ARGS__), h2::h2_case::TODOED, H2Q(c), H2Q(t))
+#   define H2Case(...) __H2CaseLambda(H2PP_STRINGIZE(__VA_ARGS__), h2::h2_case::INITED, H2Q(case), H2Q(t))
+#   define H2Todo(...) __H2CaseLambda(H2PP_STRINGIZE(__VA_ARGS__), h2::h2_case::TODOED, H2Q(case), H2Q(t))
 #else
-#   define H2Case(...) __H2CaseSnippet(H2PP_STRINGIZE(__VA_ARGS__), h2::h2_case::INITED, H2Q(c), H2Q(h))
-#   define H2Todo(...) __H2CaseSnippet(H2PP_STRINGIZE(__VA_ARGS__), h2::h2_case::TODOED, H2Q(c), H2Q(h))
+#   define H2Case(...) __H2CaseSnippet(H2PP_STRINGIZE(__VA_ARGS__), h2::h2_case::INITED, H2Q(case), H2Q(h))
+#   define H2Todo(...) __H2CaseSnippet(H2PP_STRINGIZE(__VA_ARGS__), h2::h2_case::TODOED, H2Q(case), H2Q(h))
 #endif
 
 #define __H2CASE(Casename, Status, a, C, t)                                                \
-   static h2::h2_suite a("", h2::h2_suite::execute, __FILE__, __LINE__, 1);                \
+   static h2::h2_suite a("Anonymous", h2::h2_suite::execute, __FILE__, __LINE__, 1);       \
    namespace {                                                                             \
-   struct C : private h2::h2_case {                                                        \
+   static struct C : private h2::h2_case {                                                 \
       C(h2::h2_suite* suite) : h2::h2_case(Casename, suite, Status, __FILE__, __LINE__) {} \
       void derive_code() override;                                                         \
-   };                                                                                      \
-   static C t(&a);                                                                         \
+   } t(&a);                                                                                \
    }                                                                                       \
    void C::derive_code()
 
@@ -256,7 +280,9 @@
 // #define H2BLOCK(...) for (h2::h2_stack::A a(__FILE__, __LINE__, ##__VA_ARGS__); a;)
 // #define H2BLOCK(...) for (h2::h2_stack::A a(__FILE__, __LINE__, __VA_OPT__(,) __VA_ARGS__); a;)
 
-#define H2DNS(hostname, ...) h2::h2_ns::setaddrinfo(hostname, H2PP_NARGS(__VA_ARGS__), __VA_ARGS__)
+#define H2DNS(hostname, ...) h2::h2_dns::setaddrinfo(hostname, H2PP_NARGS(__VA_ARGS__), __VA_ARGS__)
+
+#define H2COUT(...) h2::h2_stdio::capture_cout(__VA_ARGS__)
 
 namespace h2 {
 
@@ -634,13 +660,9 @@ class h2_allocator {
    h2_allocator<T>& operator=(const h2_allocator&) { return *this; }
    void construct(pointer p, const T& val) { new ((T*)p) T(val); }
    void destroy(pointer p) { p->~T(); }
-
    size_type max_size() const { return size_t(-1); }
-
    template <typename U> struct rebind { typedef h2_allocator<U> other; };
-
    template <typename U> h2_allocator(const h2_allocator<U>&) {}
-
    template <typename U> h2_allocator& operator=(const h2_allocator<U>&) { return *this; }
 };
 
@@ -650,47 +672,6 @@ template <typename T> inline bool operator!=(const h2_allocator<T>&, const h2_al
 template <typename T> using h2_vector = std::vector<T, h2_allocator<T>>;
 typedef std::basic_ostringstream<char, std::char_traits<char>, h2_allocator<char>> h2_ostringstream;
 /* clang-format on */
-
-template <typename T>
-class h2_shared_ptr {
- public:
-   h2_shared_ptr() : px(nullptr), pn(nullptr) {}
-   explicit h2_shared_ptr(T* p) { acquire(p, nullptr); }
-   h2_shared_ptr(const h2_shared_ptr& that) { acquire(that.px, that.pn); }
-   ~h2_shared_ptr() { release(); }
-   h2_shared_ptr& operator=(h2_shared_ptr that) {
-      std::swap(px, that.px);
-      std::swap(pn, that.pn);
-      return *this;
-   }
-   operator bool() const { return pn && 0 < *pn; }
-   T& operator*() const { return *px; }
-   T* operator->() const { return px; }
-
- private:
-   void acquire(T* p, long* n) {
-      pn = n;
-      if (p) {
-         if (!pn)
-            pn = new (h2_raw::malloc(sizeof(long))) long(1);
-         else
-            ++(*pn);
-      }
-      px = p;
-   }
-   void release() {
-      if (pn && !--(*pn)) {
-         delete px;
-         h2_raw::free(pn);
-      }
-   }
-
-   T* px;
-   long* pn;
-
-   static void* operator new(std::size_t sz) { return h2_raw::malloc(sz); }
-   static void operator delete(void* ptr) { h2_raw::free(ptr); }
-};
 
 class h2_string : public std::basic_string<char, std::char_traits<char>, h2_allocator<char>> {
  public:
@@ -778,6 +759,47 @@ inline h2_string operator+(const std::string& lhs, const h2_string& rhs) { h2_st
 inline h2_string operator+(const h2_string& lhs, const char rhs) { h2_string s(lhs); s.push_back(rhs); return s; }
 inline h2_string operator+(const char lhs, const h2_string& rhs) { h2_string s(1, lhs); s.append(rhs); return s; }
 /* clang-format on */
+
+template <typename T>
+class h2_shared_ptr {
+ public:
+   h2_shared_ptr() : px(nullptr), pn(nullptr) {}
+   explicit h2_shared_ptr(T* p) { acquire(p, nullptr); }
+   h2_shared_ptr(const h2_shared_ptr& that) { acquire(that.px, that.pn); }
+   ~h2_shared_ptr() { release(); }
+   h2_shared_ptr& operator=(h2_shared_ptr that) {
+      std::swap(px, that.px);
+      std::swap(pn, that.pn);
+      return *this;
+   }
+   operator bool() const { return pn && 0 < *pn; }
+   T& operator*() const { return *px; }
+   T* operator->() const { return px; }
+
+ private:
+   void acquire(T* p, long* n) {
+      pn = n;
+      if (p) {
+         if (!pn)
+            pn = new (h2_raw::malloc(sizeof(long))) long(1);
+         else
+            ++(*pn);
+      }
+      px = p;
+   }
+   void release() {
+      if (pn && !--(*pn)) {
+         delete px;
+         h2_raw::free(pn);
+      }
+   }
+
+   T* px;
+   long* pn;
+
+   static void* operator new(std::size_t sz) { return h2_raw::malloc(sz); }
+   static void operator delete(void* ptr) { h2_raw::free(ptr); }
+};
 // TINYEXPR - Tiny recursive descent parser and evaluation engine in C
 //
 // Copyright (c) 2015-2018 Lewis Van Winkle
@@ -2216,7 +2238,7 @@ struct h2_fail {
 
    void print_locate() {
       static constexpr const char* a9 = "1st\0002nd\0003rd\0004th\0005th\0006th\0007th\0008th\0009th";
-      if (func && strlen(func)) printf(", in %s(%s)", func, 0 <= argi && argi < 9 ? a9 + argi * 4 : "?");
+      if (func && strlen(func)) printf(", in %s(%s)", func, 0 <= argi && argi < 9 ? a9 + argi * 4 : "");
       if (file && strlen(file) && 0 < line) printf(", at %s:%d", file, line);
       printf("\n");
    }
@@ -2443,21 +2465,19 @@ struct h2_fail_json : public h2_fail {
 
 struct h2_fail_instantiate : public h2_fail {
    const char *action_type, *return_type, *class_type, *method_name, *return_args;
-   const int why;
+   const bool why_abstract;
 
-   h2_fail_instantiate(const char* action_type_, const char* return_type_, const char* class_type_, const char* method_name_, const char* return_args_, int why_, const char* file_, int line_)
-     : h2_fail(file_, line_), action_type(action_type_), return_type(return_type_), class_type(class_type_), method_name(method_name_), return_args(return_args_), why(why_) {
-      if (why == 1)
-         kprintf("Instantiate 'class %s' is a abstract class", class_type);
-      else if (why == 2)
-         kprintf("Instantiate 'class %s' don't know initialize arguments", class_type);
+   h2_fail_instantiate(const char* action_type_, const char* return_type_, const char* class_type_, const char* method_name_, const char* return_args_, int why_abstract_, const char* file_, int line_)
+     : h2_fail(file_, line_), action_type(action_type_), return_type(return_type_), class_type(class_type_), method_name(method_name_), return_args(return_args_), why_abstract(why_abstract_) {
+      why_abstract ? kprintf("Instantiate 'class %s' is a abstract class", class_type) :
+                     kprintf("Instantiate 'class %s' don't know initialize arguments", class_type);
    }
 
    void print() {
       h2_fail::print(), print_locate();
 
       printf("You may take following solutions to fix it: \n");
-      if (why == 1) {
+      if (why_abstract)
          printf("1. Add non-abstract Derived Class instance in %s(%s%s%s, %s, %s%s, Derived_%s(...)%s) \n",
                 action_type,
                 strlen(return_type) ? return_type : "",
@@ -2466,7 +2486,7 @@ struct h2_fail_instantiate : public h2_fail {
                 S("bold,yellow"),
                 class_type,
                 S("reset"));
-      } else if (why == 2) {
+      else {
          printf("1. Define default constructor in class %s, or \n", class_type);
          printf("2. Add parameterized construction in %s(%s%s%s, %s, %s%s, %s(...)%s) \n",
                 action_type,
@@ -2739,15 +2759,15 @@ struct h2_stack {
    }
 
    /* clang-format off */
-   static h2_stack& G() { static h2_stack __; return __; }
+   static h2_stack& I() { static h2_stack __; return __; }
    /* clang-format on */
 
    struct A {
       int count;
 
       A(const char* file, int line, long long limited = 0x7fffffffffffLL, const char* fill = nullptr)
-        : count(0) { h2_stack::G().push(file, line, "block", limited, fill); }
-      ~A() { h2_fail_g(h2_stack::G().pop()); }
+        : count(0) { h2_stack::I().push(file, line, "block", limited, fill); }
+      ~A() { h2_fail_g(h2_stack::I().pop()); }
 
       operator bool() { return 0 == count++; }
    };
@@ -2755,44 +2775,44 @@ struct h2_stack {
 
 struct h2_hook {
    static void free(void* ptr) {
-      if (ptr) h2_fail_g(h2_stack::G().relm(ptr)); /* overflow or double free */
+      if (ptr) h2_fail_g(h2_stack::I().relm(ptr)); /* overflow or double free */
    }
 
    static void* malloc(size_t size) {
-      h2_piece* m = h2_stack::G().newm(size, 0, nullptr);
+      h2_piece* m = h2_stack::I().newm(size, 0, nullptr);
       return m ? m->ptr : nullptr;
    }
 
    static void* calloc(size_t count, size_t size) {
-      h2_piece* m = h2_stack::G().newm(size * count, 0, "\0");
+      h2_piece* m = h2_stack::I().newm(size * count, 0, "\0");
       return m ? m->ptr : nullptr;
    }
 
    static void* realloc(void* ptr, size_t size) {
       if (size == 0) {
-         if (ptr) h2_fail_g(h2_stack::G().relm(ptr));
+         if (ptr) h2_fail_g(h2_stack::I().relm(ptr));
          return nullptr;
       }
 
-      h2_piece* old_m = h2_stack::G().getm(ptr);
+      h2_piece* old_m = h2_stack::I().getm(ptr);
       if (!old_m) return nullptr;
 
-      h2_piece* new_m = h2_stack::G().newm(size, 0, nullptr);
+      h2_piece* new_m = h2_stack::I().newm(size, 0, nullptr);
       if (!new_m) return nullptr;
 
       memcpy(new_m->ptr, old_m->ptr, old_m->size);
-      h2_fail_g(h2_stack::G().relm(ptr));
+      h2_fail_g(h2_stack::I().relm(ptr));
 
       return new_m->ptr;
    }
 
    static int posix_memalign(void** memptr, size_t alignment, size_t size) {
-      h2_piece* m = h2_stack::G().newm(size, alignment, nullptr);
+      h2_piece* m = h2_stack::I().newm(size, alignment, nullptr);
       return m ? (*memptr = m->ptr, 0) : ENOMEM;
    }
 
    static void* aligned_alloc(size_t alignment, size_t size) {
-      h2_piece* m = h2_stack::G().newm(size, alignment, nullptr);
+      h2_piece* m = h2_stack::I().newm(size, alignment, nullptr);
       return m ? m->ptr : nullptr;
    }
 
@@ -2810,7 +2830,7 @@ struct h2_hook {
 
 #elif defined __APPLE__
    static size_t mz_size(malloc_zone_t* zone, const void* ptr) {
-      h2_piece* m = h2_stack::G().getm(ptr);
+      h2_piece* m = h2_stack::I().getm(ptr);
       return m ? m->size : 0;
    }
 
@@ -2951,7 +2971,7 @@ struct h2_hook {
    }
 
    static void overflow_handler(int sig, siginfo_t* si, void* unused) {
-      h2_piece* m = h2_stack::G().whom(si->si_addr);
+      h2_piece* m = h2_stack::I().whom(si->si_addr);
       if (m) h2_fail_g(new h2_fail_memoverflow(m->ptr, (intptr_t)si->si_addr - (intptr_t)m->ptr, nullptr, 0, m->bt, h2_backtrace(O().isMAC() ? 5 : 4)));
       h2_debug();
       exit(1);
@@ -3132,8 +3152,8 @@ struct h2_mfp<Class, Return(Args...)> {
       if (!is_virtual(u)) return u.p;
 
       Class* o = h2_constructible<Class>::O(alloca(sizeof(Class)));
-      if (0 == (intptr_t)o || 1 == (intptr_t)o || 2 == (intptr_t)o)
-         h2_fail_g(new h2_fail_instantiate(action_type, return_type, class_type, method_name, return_args, (int)(intptr_t)o, file, line));
+      if (1 == (intptr_t)o || 2 == (intptr_t)o)
+         h2_fail_g(new h2_fail_instantiate(action_type, return_type, class_type, method_name, return_args, 1 == (intptr_t)o, file, line));
       return get_vmfp(u, o);
    }
 
@@ -4101,13 +4121,137 @@ class h2_mocker<Counter, Lineno, Class, Return(Args...)> : h2_mock {
    h2_mocker& operator=(std::function<Return(Class*, Args...)> f) { return does(f); }
 };
 
-struct h2_dns {
+static inline void h2_stub_g(void* befp, void* tofp, const char* befn, const char* tofn, const char* file, int line);
+
+struct h2_stdio {
+   static int sys_write(FILE* stream, const void* buf, size_t nbyte) {
+      return write(fileno(stream), buf, nbyte);
+   }
+
+   char buffer[1024 * 1024];
+   long offset;
+   static int STUB_vprintf(const char* format, va_list ap) {
+      int ret = vsnprintf(I().buffer + I().offset, sizeof(buffer) - I().offset, format, ap);
+      I().offset += ret;
+      return ret;
+   }
+
+   static int STUB_printf(const char* format, ...) {
+      va_list a;
+      va_start(a, format);
+      int ret = STUB_vprintf(format, a);
+      va_end(a);
+      return ret;
+   }
+
+   static int STUB_putchar(int c) {
+      I().buffer[I().offset++] = c;
+      I().buffer[I().offset] = '\0';
+      return c;
+   }
+
+   static int STUB_puts(const char* s) {
+      int len = strlen(s);
+      strcpy(I().buffer + I().offset, s);
+      I().offset += len;
+      return 1;
+   }
+
+   static int STUB_fprintf(FILE* stream, const char* format, ...) {
+      if (stream != stdout && stream != stderr) {
+         va_list a, b;
+         va_start(a, format);
+         int len = vsnprintf(nullptr, 0, format, a);
+         va_end(a);
+         char* t = (char*)alloca(len + 1);
+         va_start(b, format);
+         len = vsnprintf(t, len + 1, format, b);
+         va_end(b);
+         return sys_write(stream, t, len);
+      }
+
+      va_list a;
+      va_start(a, format);
+      int ret = STUB_vprintf(format, a);
+      va_end(a);
+      return ret;
+   }
+
+   static int STUB_vfprintf(FILE* stream, const char* format, va_list ap) {
+      if (stream != stdout && stream != stderr) {
+         va_list a, b;
+         va_copy(a, ap);
+         va_copy(b, ap);
+
+         int len = vsnprintf(nullptr, 0, format, a);
+         char* t = (char*)alloca(len + 1);
+         len = vsnprintf(t, len + 1, format, b);
+         return sys_write(stream, t, len);
+      }
+
+      return STUB_vprintf(format, ap);
+   }
+
+   static int STUB_fputc(int c, FILE* stream) {
+      if (stream != stdout && stream != stderr) {
+         unsigned char t = c;
+         return 1 == sys_write(stream, &t, 1) ? c : EOF;
+      }
+
+      return STUB_putchar(c);
+   }
+
+   static int STUB_fputs(const char* s, FILE* stream) {
+      if (stream != stdout && stream != stderr) {
+         return sys_write(stream, s, strlen(s));
+      }
+
+      return STUB_puts(s);
+   }
+
+   static size_t STUB_fwrite(const void* ptr, size_t size, size_t nitems, FILE* stream) {
+      if (stream != stdout && stream != stderr) {
+         return sys_write(stream, ptr, size * nitems);
+      }
+
+      memcpy(I().buffer + I().offset, ptr, size * nitems);
+      I().offset += size * nitems;
+      I().buffer[I().offset] = '\0';
+      return size * nitems;
+   }
+
+   /* clang-format off */
+   static h2_stdio& I() { static h2_stdio __; return __; }
+   /* clang-format on */
+
+   static const char* capture_cout() {
+      h2_stub_g((void*)::printf, (void*)STUB_printf, "", "", "", 0);
+      h2_stub_g((void*)::putchar, (void*)STUB_putchar, "", "", "", 0);
+      h2_stub_g((void*)::puts, (void*)STUB_puts, "", "", "", 0);
+      h2_stub_g((void*)::vprintf, (void*)STUB_vprintf, "", "", "", 0);
+
+      h2_stub_g((void*)::fprintf, (void*)STUB_fprintf, "", "", "", 0);
+#ifdef __APPLE__
+      h2_stub_g((void*)::vfprintf, (void*)STUB_vfprintf, "", "", "", 0);
+#endif
+      h2_stub_g((void*)::fputc, (void*)STUB_fputc, "", "", "", 0);
+      h2_stub_g((void*)::putc, (void*)STUB_fputc, "", "", "", 0);
+      h2_stub_g((void*)::fputs, (void*)STUB_fputs, "", "", "", 0);
+      h2_stub_g((void*)::fwrite, (void*)STUB_fwrite, "", "", "", 0);
+
+      I().offset = 0;
+      I().buffer[0] = '\0';
+      return I().buffer;
+   }
+};
+
+struct h2_addr {
    h2_list x, y;
    const char* hostname;
    int count;
    struct sockaddr_storage array[32];
 
-   h2_dns(const char* hostname_, int count_, va_list& args) : hostname(hostname_), count(0) {
+   h2_addr(const char* hostname_, int count_, va_list& args) : hostname(hostname_), count(0) {
       for (int i = 0, s1, s2, s3, s4; i < count_ && i < 32; ++i) {
          struct sockaddr_in* b = (struct sockaddr_in*)&array[count++];
          memset(b, 0, sizeof(struct sockaddr_storage));
@@ -4124,26 +4268,26 @@ struct h2_dns {
    static void operator delete(void* ptr) { h2_raw::free(ptr); }
 };
 
-static inline void h2_dns_g(h2_dns* dns);
+static inline void h2_addr_g(h2_addr* addr);
 
-struct h2_ns {
-   h2_list dnss;
+struct h2_dns {
+   h2_list addrs;
 
-   h2_dns* find(const char* hostname) {
-      h2_list_for_each_entry(p, &dnss, h2_dns, y) if (strlen(p->hostname) == 0 || strcmp(hostname, p->hostname) == 0) return p;
+   h2_addr* find(const char* hostname) {
+      h2_list_for_each_entry(p, &addrs, h2_addr, y) if (strlen(p->hostname) == 0 || strcmp(hostname, p->hostname) == 0) return p;
       return nullptr;
    }
 
    static int getaddrinfo(const char* hostname, const char* servname, const struct addrinfo* hints, struct addrinfo** res) {
-      h2_dns* dns = I().find(hostname);
-      if (!dns) return -1;
+      h2_addr* addr = I().find(hostname);
+      if (!addr) return -1;
 
       static struct addrinfo addrinfos[32];
       memset(addrinfos, 0, sizeof(addrinfos));
 
       struct addrinfo** pp = res;
-      for (int i = 0; i < dns->count; ++i) {
-         struct sockaddr_in* b = (struct sockaddr_in*)&dns->array[i];
+      for (int i = 0; i < addr->count; ++i) {
+         struct sockaddr_in* b = (struct sockaddr_in*)&addr->array[i];
          struct addrinfo* a = &addrinfos[i];
          if (b->sin_family == AF_INET) {
             a->ai_addr = (struct sockaddr*)b;
@@ -4169,8 +4313,8 @@ struct h2_ns {
    static void freeaddrinfo(struct addrinfo* ai) {}
 
    static struct hostent* gethostbyname(char* name) {
-      h2_dns* dns = I().find(name);
-      if (!dns) return nullptr;
+      h2_addr* addr = I().find(name);
+      if (!addr) return nullptr;
 
       static char* h_aliases[32];
       static char* h_addr_list[32];
@@ -4184,8 +4328,8 @@ struct h2_ns {
       memset(h_aliases, 0, sizeof(h_aliases));
       memset(h_addr_list, 0, sizeof(h_addr_list));
 
-      for (int i = 0, a = 0, c = 0; i < dns->count; ++i) {
-         struct sockaddr_in* b = (struct sockaddr_in*)&dns->array[i];
+      for (int i = 0, a = 0, c = 0; i < addr->count; ++i) {
+         struct sockaddr_in* b = (struct sockaddr_in*)&addr->array[i];
          if (b->sin_family == AF_INET)
             h_addr_list[a++] = (char*)&b->sin_addr;
          else
@@ -4195,14 +4339,14 @@ struct h2_ns {
    }
 
    /* clang-format off */
-   static h2_ns& I() { static h2_ns __; return __; }
+   static h2_dns& I() { static h2_dns __; return __; }
    /* clang-format on */
 
    h2_stub getaddrinfo_stub;
    h2_stub freeaddrinfo_stub;
    h2_stub gethostbyname_stub;
 
-   h2_ns() : getaddrinfo_stub((void*)::getaddrinfo), freeaddrinfo_stub((void*)::freeaddrinfo), gethostbyname_stub((void*)::gethostbyname) {}
+   h2_dns() : getaddrinfo_stub((void*)::getaddrinfo), freeaddrinfo_stub((void*)::freeaddrinfo), gethostbyname_stub((void*)::gethostbyname) {}
 
    void init() {
       getaddrinfo_stub.replace((void*)getaddrinfo);
@@ -4219,9 +4363,9 @@ struct h2_ns {
    static void setaddrinfo(const char* hostname, int count, ...) {
       va_list a;
       va_start(a, count);
-      h2_dns* dns = new h2_dns(hostname, count, a);
-      I().dnss.push(&dns->y);
-      h2_dns_g(dns);
+      h2_addr* addr = new h2_addr(hostname, count, a);
+      I().addrs.push(&addr->y);
+      h2_addr_g(addr);
       va_end(a);
    }
 };
@@ -4231,7 +4375,7 @@ static inline void h2_suite_case_g(h2_suite*, void*);
 static inline void h2_suite_setup_g(h2_suite*);
 static inline void h2_suite_teardown_g(h2_suite*);
 
-static constexpr const char* status2string[] = {"init", "TODO", "Filtered", "Passed", "Failed"};
+static constexpr const char* status2string[] = {"init", "Passed", "Failed", "TODO", "Filtered"};
 
 struct h2_case {
    /* clang-format off */
@@ -4248,7 +4392,7 @@ struct h2_case {
    void prev_setup() {
       t_start = h2_now();
       status = PASSED;
-      h2_stack::G().push(file, line, "case");
+      h2_stack::I().push(file, line, "case");
    }
 
    void post_setup() { jc = 1; }
@@ -4257,10 +4401,10 @@ struct h2_case {
 
    void post_teardown() {
       lambda_code = nullptr;
-      undo_dns();
+      undo_addr();
       undo_stub();
       h2_fail* fail = undo_mock();
-      h2_append_x_fail(fail, h2_stack::G().pop());
+      h2_append_x_fail(fail, h2_stack::I().pop());
 
       if (fail)
          if (status == FAILED)
@@ -4289,7 +4433,7 @@ struct h2_case {
       post_teardown();
    }
 
-   h2_list stubs, mocks, dnss;
+   h2_list stubs, mocks, addrs;
 
    void do_stub(void* befp, void* tofp, const char* befn, const char* tofn, const char* file, int line) {
       h2_stub* stub = nullptr;
@@ -4329,10 +4473,10 @@ struct h2_case {
       return fail;
    }
 
-   void do_dns(h2_dns* dns) { dnss.push(&dns->x); }
+   void do_addr(h2_addr* addr) { addrs.push(&addr->x); }
 
-   void undo_dns() {
-      h2_list_for_each_entry(p, &dnss, h2_dns, x) {
+   void undo_addr() {
+      h2_list_for_each_entry(p, &addrs, h2_addr, x) {
          p->x.out();
          p->y.out();
          delete p;
@@ -4449,7 +4593,7 @@ struct h2_log_console : public h2_log {
       case h2_case::TODOED:
       case h2_case::FILTED:
          if (O().verbose)
-            printf("[%3d%%] CASE(%s // %s): %s at %s:%d\n", percentage, c->suite->name, c->name, status2string[c->status], c->file, c->line);
+            printf("[%3d%%] CASE(%s // %s): %s at %s:%d\n", percentage, c->suite->name, c->name, status2string[c->status], basename((char*)c->file), c->line);
          break;
       case h2_case::PASSED:
          if (O().verbose) {
@@ -4463,7 +4607,7 @@ struct h2_log_console : public h2_log {
       case h2_case::FAILED:
          printf("[%3d%%] ", percentage);
          printf("%s", S("bold,purple"));
-         printf("CASE(%s // %s): Failed at %s:%d\n", c->suite->name, c->name, c->file, c->line);
+         printf("CASE(%s // %s): Failed at %s:%d\n", c->suite->name, c->name, basename((char*)c->file), c->line);
          printf("%s", S("reset"));
          H2_FOREACH_FAIL(fail, c->fails) { fail->print(); }
          printf("\n");
@@ -4581,17 +4725,17 @@ struct h2_directory {
       bool sb = t == 'a' || t == 'A' || t == 's' || t == 'S', cb = t == 'a' || t == 'A' || t == 'c' || t == 'C';
 
       for (auto s : h2_suite::suites()) {
-         const char* sn = strlen(s->name) ? s->name : "(Anonymous)";
          if (t = 0, sb) {
-            if (!O().filter(sn, "", "")) t++;
+            if (!O().filter(s->name, "", "")) t++;
             for (auto c : s->cases())
-               if (!O().filter(sn, cb ? c->name : "", "")) t++;
-            if (t) printf("S%d. %s \n", ++ss, sn);
+               if (!O().filter(s->name, cb ? c->name : "", "")) t++;
+            if (t) printf("S%d. %s \\\\ %s:%d\n", ++ss, s->name, basename((char*)s->file), s->line);
          }
          if (t = 0, cb)
             for (auto c : s->cases())
-               if (!O().filter(sn, c->name, ""))
-                  sb ? printf("C%d/S%d/%d. %s // %s \n", ++cs, ss, ++t, sn, c->name) : printf("C%d. %s // %s \n", ++cs, sn, c->name);
+               if (!O().filter(s->name, c->name, ""))
+                  sb ? printf("C%d/S%d-%d. %s // %s \\\\ %s:%d\n", ++cs, ss, ++t, s->name, c->name, basename((char*)c->file), c->line) :
+                       printf("C%d. %s // %s \\\\ %s:%d\n", ++cs, s->name, c->name, basename((char*)c->file), c->line);
       }
    }
 
@@ -4603,7 +4747,8 @@ struct h2_task {
 
    int status_stats[8];
    h2_case* current_case;
-   std::vector<h2_case*> cases;
+   std::vector<h2_case*> case_list;
+   std::vector<std::function<void()>> setups, teardowns;
 
    h2_task() : status_stats{0}, current_case(nullptr) {}
 
@@ -4616,23 +4761,24 @@ struct h2_task {
       if (O().listing) h2_directory::list_then_exit();
 
       logs.init();
-      cases = h2_directory::cases();
+      case_list = h2_directory::cases();
 
-      if (O().dns) h2_ns::I().init();
-      h2_stack::G().push(__FILE__, __LINE__, "root");
+      if (O().dns) h2_dns::I().init();
+      h2_stack::I().push(__FILE__, __LINE__, "root");
       h2_dohook_g();
    }
 
    void cleanup() {
       h2_unhook_g();
-      if (O().dns) h2_ns::I().exit();
+      if (O().dns) h2_dns::I().exit();
       if (status_stats[h2_case::FAILED] == 0) h2_directory::drop_last_order();
    }
 
    void execute() {
       long long t_start = h2_now();
-      logs.on_task_start(cases.size());
-      for (auto c : cases) {
+      logs.on_task_start(case_list.size());
+      for (auto& setup : setups) setup();
+      for (auto c : case_list) {
          current_case = c;
          logs.on_case_start(c);
          if (O().filter(c->suite->name, c->name, c->file)) c->status = h2_case::FILTED;
@@ -4642,6 +4788,8 @@ struct h2_task {
          c->suite->status_stats[c->status] += 1;
          if (0 < O().breakable && O().breakable <= status_stats[h2_case::FAILED]) break;
       }
+      for (auto& teardown : teardowns) teardown();
+
       logs.on_task_endup(status_stats, h2_now() - t_start);
    }
 };
@@ -4654,8 +4802,8 @@ static inline bool h2_mock_g(h2_mock* mock) {
    return h2_task::I().current_case ? h2_task::I().current_case->do_mock(mock) : false;
 }
 
-static inline void h2_dns_g(h2_dns* dns) {
-   if (h2_task::I().current_case) h2_task::I().current_case->do_dns(dns);
+static inline void h2_addr_g(h2_addr* addr) {
+   if (h2_task::I().current_case) h2_task::I().current_case->do_addr(addr);
 }
 
 static inline void h2_fail_g(void* fail) {

@@ -275,7 +275,7 @@ Expect foobar called with *a* equals *1*, *b* equals *"A"* *1 time* in this case
           Mock normal function (class static method is considered as normal function)
     -    `MOCK`(Class Name, Method Name, Return Type(Parameter List)) 
           Mock class member function
--   [Expectation of call times](source/h2_mock.cpp#L157)
+-   [Expectation of call times](source/h2_mock.hpp#L157)
     -    `once`() : Expect called 1 time
     -    `twice`() : Expect called 2 times
     -    `times`(n) : Expect called n times
@@ -283,10 +283,10 @@ Expect foobar called with *a* equals *1*, *b* equals *"A"* *1 time* in this case
     -    `atleast`(n) : Expect called atleast n times(>=n)
     -    `atmost`(n) : Expect called atmost n times(<=n)
     -    `between`(n,m) : Expect called >=n and <=m times
--   [Arguments check](source/h2_mock.cpp#L206)
+-   [Arguments check](source/h2_mock.hpp#L206)
     -    `with`(matcher...) : Expect arguments matches matchers
     -    `th1~9`(matcher) : Expect 1st~9th argument matches matcher
--   [Actions](source/h2_mock.cpp#L223), only the lastest action works, previous is overwrite.
+-   [Actions](source/h2_mock.hpp#L223), only the lastest action works, previous is overwrite.
     -    `returns`(value) : Inject return value
     -    `does`(lambda) : Check arguments, inject return value, and other actions
     -    `=`(lambda) : Same as *does* without *()*
@@ -425,6 +425,7 @@ Writing out of allocated memory area[start, start+size], memory overflow/underfl
 
 ### 9. Help Utilities
 *    [`DNS`](source/h2_unit.h#53)("hostname", "ip1", "ip2", "alias1", "alias2", ...): Set DNS resolve results (getaddrinfo, gethostbyname)
+*    [`COUT`](source/h2_unit.h#53)(): Capture STDOUT and STDERR output (printf(), std::cout<<, ...).
 
 ### 10. Human friendly console output
 

@@ -1,4 +1,3 @@
-// Case Setup remove, run suite share code as setup
 #ifndef ___H2UNIT_H___
 #define ___H2UNIT_H___
 

@@ -8,6 +8,7 @@ struct h2_stdio {
 
    char buffer[1024 * 1024];
    long offset;
+
    static int STUB_vprintf(const char* format, va_list ap) {
       int ret = vsnprintf(I().buffer + I().offset, sizeof(buffer) - I().offset, format, ap);
       I().offset += ret;

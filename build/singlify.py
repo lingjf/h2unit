@@ -21,7 +21,7 @@ h2unit_h = '../h2unit.h'
 if len(sys.argv) > 1:
     h2unit_h = sys.argv[1]
 
-version_datetime = '/* v{0}  {1} */'.format('4.1', time.strftime('%Y-%m-%d %H:%M:%S', time.localtime()))
+version_datetime = '/* v{0}  {1} */'.format('4.2', time.strftime('%Y-%m-%d %H:%M:%S', time.localtime()))
 project_github_url = '/* https://github.com/lingjf/h2unit */'
 software_copyright = '/* Apache Licence 2.0 */'
 
