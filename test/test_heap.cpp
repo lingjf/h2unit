@@ -1,5 +1,5 @@
-#include "../source/h2_unit.h"
-using namespace h2;
+#include "../source/h2_unit.hpp"
+#include "../source/h2_unit.cpp"
 
 class C7
 {
@@ -11,19 +11,11 @@ class C7
    C7(){};
 };
 
-CASE(malloc / free)
-{
-   char* p = (char*)h2_raw::malloc(100);
-   OK(p != NULL);
-   strcpy(p, "Hello World brk mmap");
-   h2_raw::free(p);
-}
-
 CASE(piece malloc / free)
 {
-   h2_backtrace bt;
-   h2_piece* m = h2_piece::allocate(100, 0, bt);
-   h2_piece::release(m);
+   h2::h2_backtrace bt;
+   h2::h2_piece* m = new h2::h2_piece(100, 0, bt);
+   delete m;
 }
 
 CASE(monitered malloc / free)
@@ -45,30 +37,49 @@ CASE(C++ new and delete)
    delete c;
 }
 
-CASE(test memory leak block)
+SUITE(BLOCK)
 {
    void *c1, *c2, *c3, *c4;
 
-   c1 = malloc(1);
-
-   BLOCK()
+   Case(block)
    {
-      c2 = malloc(3);
-      free(c2);
-   }
-
-   BLOCK()
-   {
-      c3 = malloc(5);
+      c1 = malloc(1);
       BLOCK()
       {
-         c4 = malloc(7);
-         free(c4);
+         c2 = malloc(3);
+         free(c2);
       }
-      free(c3);
+      free(c1);
    }
 
-   free(c1);
+   Case(nested)
+   {
+      BLOCK()
+      {
+         c3 = malloc(5);
+         BLOCK()
+         {
+            c4 = malloc(7);
+            free(c4);
+         }
+         free(c3);
+      }
+   }
+
+   Case(limited)
+   {
+      BLOCK(10)
+      {
+         c2 = malloc(8);
+         OK(NotNull, c2);
+         c3 = malloc(8);
+         OK(IsNull, c3);
+         free(c2);
+         c4 = malloc(8);
+         OK(NotNull, c4);
+         free(c4);
+      }
+   }
 }
 
 CASE(sys calls)
@@ -99,19 +110,16 @@ CASE(sys calls)
 
 SUITE(leak)
 {
-   void* p = NULL;
+   void* p = malloc(32 * 864);
 
-   Setup()
-   {
-      p = malloc(32 * 864);
-   };
-
-   Teardown()
+   Cleanup()
    {
       free(p);
-   };
+   }
 
-   Case(malloc free in setup and teardown)
+   Case(malloc in setup and free in teardown)
    {
+      strcpy((char*)p, "hello world");
+      OK("hello world", (char*)p);
    };
 }

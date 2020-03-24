@@ -11,7 +11,7 @@ template <typename, typename> struct h2_constructible0_impl : std::false_type {}
 template <typename T>
 struct h2_constructible0_impl<h2_void_t<decltype(T())>, T> : std::true_type {
    static T* O(void* m) { return new (m) T(); }
-}; /* placement new */
+};
 
 template <typename, typename> struct h2_constructible1_impl : std::false_type {};
 template <typename T>
@@ -129,37 +129,34 @@ struct h2_mfp;
 
 template <typename Class, typename Return, typename... Args>
 struct h2_mfp<Class, Return(Args...)> {
-   typedef Return (Class::*mfp_type)(Args...);
+   typedef Return (Class::*F)(Args...);
    typedef union {
-      mfp_type f;
+      F f;
       void* p;
       intptr_t v;
-   } cast_type;
+   } U;
 
-   static inline bool is_virtual(cast_type& u) {
+   static inline bool is_virtual(U& u) {
       return (u.v & 1) && (u.v - 1) % sizeof(void*) == 0 && (u.v - 1) / sizeof(void*) < 1000;
    }
 
-   static inline void* get_vmfp(cast_type& u, Class* obj) {
+   static inline void* get_vmfp(U& u, Class* obj) {
       void** vtable = *(void***)obj;
       return vtable[(u.v - 1) / sizeof(void*)];
    }
 
-   static void* A(mfp_type f, const char* action_type, const char* return_type, const char* class_type, const char* method_name, const char* return_args, const char* file, int line) {
-      cast_type u{f};
-
+   static void* A(F f, const char* action_type, const char* return_type, const char* class_type, const char* method_name, const char* return_args, const char* file, int line) {
+      U u{f};
       if (!is_virtual(u)) return u.p;
-
       Class* o = h2_constructible<Class>::O(alloca(sizeof(Class)));
-      if (0 == (intptr_t)o || 1 == (intptr_t)o || 2 == (intptr_t)o)
-         h2_fail_g(new h2_fail_instantiate(file, line, action_type, return_type, class_type, method_name, return_args, (int)(intptr_t)o));
+      if (1 == (intptr_t)o || 2 == (intptr_t)o)
+         h2_fail_g(new h2_fail_instantiate(action_type, return_type, class_type, method_name, return_args, 1 == (intptr_t)o, file, line));
       return get_vmfp(u, o);
    }
 
    template <typename Derived>
-   static void* A(mfp_type f, Derived obj) {
-      cast_type u{f};
-
+   static void* A(F f, Derived obj) {
+      U u{f};
       if (!is_virtual(u)) return u.p;
       return get_vmfp(u, dynamic_cast<Class*>(&obj));
    }

@@ -49,11 +49,12 @@ const char* rectangle_tojson(rectangle_t* rectangle)
 
 int sum_rectangle_area(int count, ...)
 {
-   int s = 0;
+   int i, s = 0;
+   rectangle_t* p;
    va_list a;
    va_start(a, count);
-   for (int i = 0; i < count; ++i) {
-      rectangle_t* p = va_arg(a, rectangle_t*);
+   for (i = 0; i < count; ++i) {
+      p = va_arg(a, rectangle_t*);
       s += rectangle_area(p);
    }
    va_end(a);

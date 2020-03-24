@@ -1,4 +1,3 @@
-#include "h2unit.h"
 #include <stdlib.h>
 #include <string.h>
 
@@ -27,18 +26,15 @@ extern "C" {
 
 SUITE(Memory Leak)
 {
-   Setup(){};
-   Teardown(){};
-
    /*
     * Memory leak detection on Test Case Level
     */
-   Case(test memory leak ok-- successful)
+   Case(test memory leak ok successful)
    {
       free(malloc(8));
-   };
+   }
 
-   Case(test memory leak-- failure)
+   Case(test memory leak failure)
    {
       char* s = (char*)malloc(8);
       strcpy(s, "1234567");
@@ -48,21 +44,21 @@ SUITE(Memory Leak)
          rectangle = rectangle_create(1, i);
       }
       rectangle_destroy(rectangle);
-   };
+   }
 
-   Case(C++ new delete --failure)
+   Case(C++ new delete failure)
    {
       Dog* dog = new Dog(3);
       delete dog;
 
       Bird* bird = new Bird;
       bird->say();
-   };
+   }
 
    /*
     * Memory leak detection on User-Defined Block Level
     */
-   Case(test memory leak block-- failure)
+   Case(test memory leak block failure)
    {
       void *c1, *c2, *c3, *c4;
 
@@ -86,26 +82,25 @@ SUITE(Memory Leak)
 
       free(c4);
       free(c1);
-   };
-   /* clang-format off */
+   }
 
    /*
     * h2unit can modify the total memory resource to make malloc() failed.
     */
 
-   Case(malloc faulty injection -- successful)
+   Case(malloc faulty injection successful)
    {
       BLOCK(10/* in the block , available memory only 10 bytes */) 
       {
-        OK(Null(), malloc(11)); /* no enough available memory */
+        OK(IsNull, malloc(11)); /* no enough available memory */
       }
-   };
+   }
 
    /*
    * h2unit can modify fill of malloc.
    */
 
-   Case(filled malloc -- successful)
+   Case(filled malloc successful)
    {
       BLOCK(10000000, "ABC" /* in the block , malloc allocated space filled with ABC */)
       {
@@ -113,9 +108,7 @@ SUITE(Memory Leak)
          OK(Me("ABCABCAB"), p);
          free(p);
       }
-   };
-
-/* clang-format on */
+   }
 }
 
 /*
@@ -127,23 +120,39 @@ SUITE(Memory Leak)
  *
  */
 
-CASE(test memory underflow-- failure)
+CASE(test memory underflow failure)
 {
    char* c1 = (char*)malloc(6);
    memcpy(c1 - 5, "123", 3);
    free(c1);
 }
 
-CASE(test memory overflow-- failure)
+CASE(test memory overflow failure)
 {
    char* c1 = (char*)malloc(6);
    memcpy(c1, "12345678901234567890123456789012345678901234567890", 50);
    free(c1);
 }
 
-CASE(test double free-- failure)
+CASE(test double free failure)
 {
    rectangle_t* p = rectangle_create(1, 2);
    rectangle_destroy(p);
    rectangle_destroy(p);
 }
+
+// CASE(test read after free failure)
+// {
+//    rectangle_t* p = rectangle_create(1, 2);
+//    rectangle_destroy(p);
+   
+//    int width = p->width;
+// }
+
+// CASE(test write after free failure)
+// {
+//    rectangle_t* p = rectangle_create(1, 2);
+//    rectangle_destroy(p);
+   
+//    p->width = 100;
+// }

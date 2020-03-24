@@ -1,156 +1,102 @@
 
-struct h2_suite;
-static inline void h2_suite_case_g(h2_suite*, void*);
-static inline void h2_suite_setup_g(h2_suite*);
-static inline void h2_suite_teardown_g(h2_suite*);
+h2_inline h2_case::h2_case(const char* name_, int todo, const char* file_, int line_)
+  : name(name_), file(file_), line(line_), status(todo ? TODOED : INITED), sock(nullptr), fails(nullptr) {}
 
-class h2_case {
- public:
-   static constexpr int INITED = 0;
-   static constexpr int PASSED = 1;
-   static constexpr int FAILED = 2;
-   static constexpr int TODOED = 3;
-   static constexpr int FILTED = 4;
+h2_inline void h2_case::prev_setup() {
+   status = PASSED;
+   h2_heap::stack::push(file, line);
+}
 
-   const char* get_status() {
-      switch (status) {
-      case TODOED: return "TODO";
-      case FILTED: return "Filtered";
-      case PASSED: return "Passed";
-      case FAILED: return "Failed";
-      }
-      return "";
-   }
+h2_inline void h2_case::post_setup() {}
 
-   h2_suite* suite;
-   const char* name;
-   int status;
-   const char* file;
-   int line;
-   int id;
-   long long t_start, t_end;
+h2_inline void h2_case::prev_cleanup() {}
 
-   void prev_setup() {
-      t_start = h2_milliseconds();
+h2_inline void h2_case::post_cleanup() {
+   undo_dns();
+   undo_sock();
+   undo_stub();
+   h2_fail* fail = undo_mock();
+   h2_append_x_fail(fail, h2_heap::stack::pop());
 
-      status = PASSED;
-      h2_stack::G().push(file, line, "case");
-   }
-
-   void post_setup() { jc = 1; }
-
-   void prev_teardown() { jc = 0; }
-
-   void post_teardown() {
-      ul_code = nullptr;
-      h2_fail* fail = mock_double_check();
-      stub_restore();
-      h2_append_x_fail(fail, h2_stack::G().pop());
-
-      if (fail) {
-         if (status != FAILED) {
-            status = FAILED;
-            fails.push_back(fail);
-         } else {
-            delete fail;
-         }
-      }
-
-      t_end = h2_milliseconds();
-   }
-
-   void execute() {
-      prev_setup();
-      h2_suite_setup_g(suite);
-      post_setup();
-
-      if (::setjmp(jb) == 0) {
-         uf_code();
-         if (ul_code) ul_code();
-      } else {
+   if (fail) {
+      if (status != FAILED) {
+         h2_append_x_fail(fails, fail);
          status = FAILED;
-      }
+      } else
+         delete fail;
+   }
+}
 
-      prev_teardown();
-      h2_suite_teardown_g(suite);
-      post_teardown();
+h2_inline void h2_case::do_stub(void* befp, void* tofp, const char* befn, const char* tofn, const char* file, int line) {
+   h2_stub* stub = nullptr;
+   h2_list_for_each_entry(p, &stubs, h2_stub, x) if (p->befp == befp) {
+      stub = p;
+      break;
    }
 
-   h2_list stubs, mocks;
-
-   void do_stub(void* befp, void* tofp, const char* befn, const char* tofn, const char* file, int line) {
-      h2_stub* stub = nullptr;
-      h2_list_for_each_entry(p, &stubs, h2_stub, x) if (p->befp == befp) {
-         stub = p;
-         break;
+   if (!tofp) { /* unstub */
+      if (stub) {
+         stub->restore();
+         stub->x.out();
+         h2_libc::free(stub);
       }
-      if (!stub) {
-         stub = new h2_stub(befp, file, line);
-         stubs.push(&stub->x);
-      }
-      stub->replace(tofp);
+      return;
    }
 
-   void stub_restore() {
-      h2_list_for_each_entry(p, &stubs, h2_stub, x) {
-         p->restore();
-         p->x.out();
-         delete p;
-      }
+   if (!stub) {
+      stub = new h2_stub(befp, file, line);
+      stubs.push(&stub->x);
    }
+   stub->replace(tofp);
+}
 
-   bool do_mock(h2_mock* mock) {
-      h2_list_for_each_entry(p, &mocks, h2_mock, x) if (p == mock) return true;
-
-      do_stub(mock->befp, mock->tofp, mock->befn, "", mock->file, mock->line);
-      mocks.push(&mock->x);
-      return true;
+h2_inline void h2_case::undo_stub() {
+   h2_list_for_each_entry(p, &stubs, h2_stub, x) {
+      p->restore();
+      p->x.out();
+      delete p;
    }
+}
 
-   h2_fail* mock_double_check() {
-      h2_fail* fail = nullptr;
-      h2_list_for_each_entry(p, &mocks, h2_mock, x) {
-         h2_append_x_fail(fail, p->times_check());
-         p->reset();
-         p->x.out();
-      }
-      return fail;
+h2_inline bool h2_case::do_mock(h2_mock* mock) {
+   h2_list_for_each_entry(p, &mocks, h2_mock, x) if (p == mock) return true;
+   do_stub(mock->befp, mock->tofp, mock->befn, "", mock->file, mock->line);
+   mocks.push(&mock->x);
+   return true;
+}
+
+h2_inline h2_fail* h2_case::undo_mock() {
+   h2_fail* fail = nullptr;
+   h2_list_for_each_entry(p, &mocks, h2_mock, x) {
+      h2_append_x_fail(fail, p->times_check());
+      p->reset();
+      p->x.out();
    }
+   return fail;
+}
 
-   int jc;
-   jmp_buf jb;
-   h2_vector<h2_fail*> fails;
-   void do_fail(h2_fail* fail) {
-      status = FAILED;
-      fails.push_back(fail);
-      if (0 < jc--) ::longjmp(jb, 1);
+h2_inline void h2_case::do_dns(h2_dns* dns) { dnss.push(&dns->x); }
+
+h2_inline void h2_case::undo_dns() {
+   h2_list_for_each_entry(p, &dnss, h2_dns, x) {
+      p->x.out();
+      p->y.out();
+      delete p;
    }
+}
 
-   struct T {
-      h2_case* _case;
-      int count;
+h2_inline h2_sock* h2_case::do_sock(h2_sock* sock) {
+   if (sock) this->sock = sock;
+   return this->sock;
+}
 
-      T(h2_case* case_) : _case(case_), count(0) {
-         _case->prev_setup();
-         h2_suite_setup_g(_case->suite);
-         _case->post_setup();
-      }
-      ~T() {
-         _case->prev_teardown();
-         h2_suite_teardown_g(_case->suite);
-         _case->post_teardown();
-      }
+h2_inline void h2_case::undo_sock() {
+   if (sock) delete sock;
+   sock = nullptr;
+}
 
-      operator bool() { return 0 == count++; }
-   };
-
-   h2_case(h2_suite* suite_, const char* name_, int status_, const char* file_, int line_)
-     : suite(suite_), name(name_), status(status_), file(file_), line(line_), jc(0), ul_code() {
-      static int g_case_id = 0;
-      id = g_case_id++;
-      h2_suite_case_g(suite, this);
-   }
-
-   virtual void uf_code() {}
-   std::function<void()> ul_code;
-};
+h2_inline void h2_case::do_fail(h2_fail* fail) {
+   status = FAILED;
+   h2_append_x_fail(fails, fail);
+   ::longjmp(jump, 1);
+}

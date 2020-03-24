@@ -1,4 +1,3 @@
-#include "h2unit.h"
 #include <stdlib.h>
 #include <math.h>
 
@@ -8,13 +7,7 @@ extern "C" {
 
 #include "product_cpp.h"
 
-/*
- * h2unit can replace function at runtime dynamically.
- * Which this feature, it is helpful to stub functions.
- *
- * STUB(function_pointer, new_function)
- *
- */
+#if defined(__GNUC__) && __GNUC__ >= 5
 
 static int rectangle_area_fake(rectangle_t* rectangle)
 {
@@ -28,19 +21,20 @@ static int sum_rectangle_area_fake(int count, ...)
 
 SUITE(Stub function by fake function)
 {
-   Case(stub local extern function-- successful)
+   Case(stub local extern function successful)
    {
       rectangle_t p1 = {2, 3};
       OK(6, rectangle_area(&p1));
       STUB(rectangle_area, rectangle_area_fake);
       OK(100, rectangle_area(&p1));
-   };
+   }
 
-   Todo(stub local static function-- successful){
+   Todo(stub local static function successful)
+   {
      /* include impl source file, then static function is accessible from here */
-   };
+   }
 
-   Case(stub variable arguments function-- successful)
+   Case(stub variable arguments function successful)
    {
       rectangle_t p1 = {1, 2};
       rectangle_t p2 = {2, 3};
@@ -49,12 +43,12 @@ SUITE(Stub function by fake function)
       OK(1 * 2 + 2 * 3 + 3 * 4, sum_rectangle_area(3, &p1, &p2, &p3));
       STUB(sum_rectangle_area, sum_rectangle_area_fake);
       OK(300, sum_rectangle_area(3, &p1, &p2, &p3));
-   };
+   }
 }
 
 SUITE(Stub function by lambda)
 {
-   Case(stub local extern function-- successful)
+   Case(stub local extern function successful)
    {
       rectangle_t p1 = {2, 3};
       OK(6, rectangle_area(&p1));
@@ -63,12 +57,12 @@ SUITE(Stub function by lambda)
          return 111;
       };
       OK(111, rectangle_area(&p1));
-   };
+   }
 }
 
 SUITE(Stub Member method)
 {
-   Case(normal member function-- successful)
+   Case(normal member function successful)
    {
       STUB(int, Dog, go, (int x, int y))
       {
@@ -83,9 +77,9 @@ SUITE(Stub Member method)
       Dog dog(1);
       OK(11, dog.go(1, 2));
       dog.run();
-   };
+   }
 
-   Case(virtual member function-- successful)
+   Case(virtual member function successful)
    {
       STUB(const char*, Cat, say, ())
       {
@@ -93,9 +87,9 @@ SUITE(Stub Member method)
       };
       Cat cat(nullptr, nullptr);
       OK("mmm...", cat.say());
-   };
+   }
 
-   Case(virtual member function-- failure)
+   Case(virtual member function failure)
    {
       STUB(const char*, Centipede, say, ())  //failure
       {
@@ -103,9 +97,9 @@ SUITE(Stub Member method)
       };
       Centipede centipede(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11);
       OK("...", centipede.say());
-   };
+   }
 
-   Case(virtual member function-- successful)
+   Case(virtual member function successful)
    {
       STUB(const char*, Centipede, say, (), Centipede(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11))
       {
@@ -113,9 +107,9 @@ SUITE(Stub Member method)
       };
       Centipede centipede(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11);
       OK("...", centipede.say());
-   };
+   }
 
-   Case(abstract class --failure)
+   Case(abstract class failure)
    {
       STUB(int, Ovipara, cry, ())  //failure
       {
@@ -124,5 +118,7 @@ SUITE(Stub Member method)
 
       Bird bird;
       OK(6, bird.cry());
-   };
+   }
 }
+
+#endif

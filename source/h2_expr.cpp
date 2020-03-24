@@ -4,11 +4,7 @@
 //
 // http://CodePlea.com
 
-#ifndef __TINYEXPR_H__
-#define __TINYEXPR_H__
-
 /* clang-format off */
-
 
 #ifndef NAN
 #define NAN (0.0/0.0)
@@ -18,7 +14,6 @@
 #define INFINITY (1.0/0.0)
 #endif
 
-
 #define TYPE_MASK(TYPE) ((TYPE)&0x0000001F)
 
 #define IS_PURE(TYPE) (((TYPE) & TE_FLAG_PURE) != 0)
@@ -26,10 +21,8 @@
 #define IS_CLOSURE(TYPE) (((TYPE) & TE_CLOSURE0) != 0)
 #define ARITY(TYPE) ( ((TYPE) & (TE_FUNCTION0 | TE_CLOSURE0)) ? ((TYPE) & 0x00000007) : 0 )
 
-
-class tinyexpr
+struct te
 {
-public:    
     /* Parses the input expression, evaluates it, and frees it. */
     /* Returns NaN on error. */
     static double te_interp(const char *expression, int *error) {
@@ -43,8 +36,6 @@ public:
         }
         return ret;
     }
-
-private:
 
     struct te_expr {
         int type;
@@ -93,7 +84,7 @@ private:
         const int arity = ARITY(type);
         const int psize = sizeof(void*) * arity;
         const int size = (sizeof(te_expr) - sizeof(void*)) + psize + (IS_CLOSURE(type) ? sizeof(void*) : 0);
-        te_expr *ret = (te_expr *)h2_raw::malloc(size);
+        te_expr *ret = (te_expr *)h2_libc::malloc(size);
         memset(ret, 0, size);
         if (arity && parameters) {
             memcpy(ret->parameters, parameters, psize);
@@ -119,7 +110,7 @@ private:
     static void te_free(te_expr *n) {
         if (!n) return;
         te_free_parameters(n);
-        h2_raw::free((void *)n);
+        h2_libc::free((void *)n);
     }
 
     static double _fabs(double x) {return fabs(x);}
@@ -584,8 +575,8 @@ private:
     }
 };
 
-
 /* clang-format on */
 
-
-#endif /*__TINYEXPR_H__*/
+h2_inline double tinyexpr::eval(const char* expression, int* error) {
+   return te::te_interp(expression, error);
+}

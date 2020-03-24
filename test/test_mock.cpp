@@ -1,4 +1,7 @@
-#include "../source/h2_unit.h"
+#include "../source/h2_unit.hpp"
+#include "../source/h2_unit.cpp"
+
+#if defined(__GNUC__) && __GNUC__ >= 5
 
 int bar1(int a, const char* b)
 {
@@ -13,10 +16,6 @@ void bar3()
 
 SUITE(mock c - function)
 {
-   Setup(){};
-
-   Teardown(){};
-
    Case(once)
    {
       MOCK(bar1, int(int, const char*)).once(1, "A").returns(11);
@@ -128,9 +127,9 @@ SUITE(mock c - function)
       bar3();
    };
 
-   Case(Null Matcher)
+   Case(IsNull Matcher)
    {
-      MOCK(bar1, int(int, const char*)).once(1, Null()).returns(11);
+      MOCK(bar1, int(int, const char*)).once(1, IsNull).returns(11);
       OK(11, bar1(1, NULL));
    };
 
@@ -175,10 +174,6 @@ SUITE(mock c - function)
 
 SUITE(mock does)
 {
-   Setup(){};
-
-   Teardown(){};
-
    Case(lambda_does)
    {
       MOCK(bar1, int(int, const char*)).once() = [](int a, const char* b) -> int { return a + 1; };
@@ -212,10 +207,6 @@ SUITE(mock does)
 
 SUITE(mock C++ Class member)
 {
-   Setup(){};
-
-   Teardown(){};
-
    class Shape
    {
     private:
@@ -311,34 +302,10 @@ SUITE(mock C++ Class member)
    };
 }
 
-SUITE(Mock in setup)
-{
-   Setup()
-   {
-      MOCK(bar1, int(int, const char*)).once(1, "A").returns(11);
-   };
-
-   Teardown(){};
-
-   Case(a)
-   {
-      OK(11, bar1(1, "A"));
-   };
-
-   Case(b)
-   {
-      OK(11, bar1(1, "A"));
-   };
-}
-
 SUITE(Mock in shared_code)
 {
    MOCK(bar1, int(int, const char*)).once(1, "A").returns(11);
 
-   Setup(){};
-
-   Teardown(){};
-
    Case(a)
    {
       OK(11, bar1(1, "A"));
@@ -349,3 +316,5 @@ SUITE(Mock in shared_code)
       OK(11, bar1(1, "A"));
    };
 }
+
+#endif

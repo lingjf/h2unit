@@ -1,5 +1,6 @@
-#include "../source/h2_unit.h"
-using namespace h2;
+#include "../source/h2_unit.hpp"
+#include "../source/h2_unit.cpp"
+
 
 time_t STUB_time(time_t* x)
 {
@@ -53,6 +54,31 @@ static int foobar(int, int)
    return 1;
 }
 
+SUITE(libc)
+{
+   Case(stub time())
+   {
+      h2::h2_stub s((void*)time);
+      s.replace((void*)STUB_time);
+      OK(1024, time(NULL));
+      s.restore();
+   };
+
+   Case(temporary_restore time())
+   {
+      h2::h2_stub s((void*)time);
+      s.replace((void*)STUB_time);
+      {
+         h2::h2_stub::temporary_restore t(&s);
+         OK(Nq(1024), time(NULL));
+      }
+      OK(1024, time(NULL));
+      s.restore();
+   };
+}
+
+#ifdef __linux__
+
 SUITE(stubs)
 {
    class Shape
@@ -93,20 +119,9 @@ SUITE(stubs)
       }
    };
 
-   Case(internal stub libc)
-   {
-      h2_stub s((void*)time);
-
-      s.replace((void*)STUB_time);
-
-      OK(1024, time(NULL));
-
-      s.restore();
-   };
-
    Case(internal stub local)
    {
-      h2_stub s((void*)my_time);
+      h2::h2_stub s((void*)my_time);
 
       s.replace((void*)STUB_time);
 
@@ -208,32 +223,6 @@ SUITE(stubs)
    };
 }
 
-SUITE(Stub in setup)
-{
-   Setup()
-   {
-      STUB(time, STUB_time);
-      STUB(int, foobar, (int a, int b))
-      {
-         return a + b;
-      };
-   };
-
-   Teardown(){};
-
-   Case(a)
-   {
-      OK(1024, time(NULL));
-      OK(222, foobar(111, 111));
-   };
-
-   Case(b)
-   {
-      OK(1024, time(NULL));
-      OK(222, foobar(111, 111));
-   };
-}
-
 SUITE(Stub in shared_code)
 {
    STUB(time, STUB_time);
@@ -242,10 +231,6 @@ SUITE(Stub in shared_code)
       return a + b;
    };
 
-   Setup(){};
-
-   Teardown(){};
-
    Case(a)
    {
       OK(1024, time(NULL));
@@ -258,3 +243,5 @@ SUITE(Stub in shared_code)
       OK(222, foobar(111, 111));
    };
 }
+
+#endif

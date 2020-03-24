@@ -1,5 +1,5 @@
-#include "h2unit.h"
 #include <stdlib.h>
+#include <math.h>
 
 /*
  * All header file for c language MUST be include : in extern "C" { }
@@ -8,7 +8,7 @@ extern "C" {
 #include "product_c.h"
 }
 
-int gv;
+int pv;
 
 /*
  * SUITE is a unit test Suite, which contains several test cases.
@@ -18,69 +18,57 @@ SUITE(Basic Cases)
    /*
     * This variable is accessible in the test cases belong this unit.
     */
-   int uv;
+   int uv = 2;
 
    /*
-    * Setup() will be executed before every test case belong to this suite.
-    * Typically it is used to prepare preconditions.
-    */
-   Setup()
-   {
-      uv = 2;
-   };
-   /*
-    * Teardown() will be executed after every test case belong to this suite.
+    * Cleanup() will be executed after every test case belong to this suite.
     * whatever test case passed or failed.
     * Typically it is used to release resource.
     */
-   Teardown()
+   Cleanup()
    {
-      gv = 0;
-   };
+      pv = 0;
+      uv = 0;
+   }
 
    /*
     * Case is a unit test case
     */
-   Case(hello world-- successful)
+   Case(hello world successful)
    {
       OK(2, sqrt(4));
-   };
+   }
 
-   Case(a failure case --failure)
+   Case(a failure case failure)
    {
-      OK(1, gv);
-   };
+      OK(1, pv);
+   }
 
-   Case(a success case --successful)
+   Case(a success case successful)
    {
       OK(3 == uv + 1);
-   };
+   }
 }
 
 SUITE(Second Demo)
 {
-   /*
-    * Setup() and Teardown() can be omitted. The default is doing nothing
-    */
-
-   Case(0 is equal with - 0 --successful)
+   Case(0 is equal with - 0 failure)
    {
       bool result = 0 != -0;
-      OK(result);
-   };
+      OK(result) << "0 != -0";
+   }
 
    Todo(alive for ever)
    {
       OK(false);
-   };
+   }
 }
 
 /*
- * If no setup() and teardown(), SUITE can be omitted.
- * TEST act SUITE plus CASE.
+ * CASE act SUITE plus Case, without setup and cleanup.
  */
 
-CASE(standalone case --failure)
+CASE(standalone case failure)
 {
    bool result = true;
    OK(!result);

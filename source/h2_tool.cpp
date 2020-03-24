@@ -1,56 +1,17 @@
-/* https://www.boost.org/doc/libs/1_65_0/libs/preprocessor/doc/index.html */
 
-#define H2PP_CAT2(_1, _2) _H2PP_CAT2(_1, _2)
-#define _H2PP_CAT2(_1, _2) _1##_2
-#define H2PP_CAT5(_1, _2, _3, _4, _5) _H2PP_CAT5(_1, _2, _3, _4, _5)
-#define _H2PP_CAT5(_1, _2, _3, _4, _5) _1##_2##_3##_4##_5
+static inline bool streq(const char* s1, const char* s2) { return !strcmp(s1, s2); }
 
-#define H2PP_STRINGIZE(...) _H2PP_STRINGIZE(__VA_ARGS__)
-#define _H2PP_STRINGIZE(...) #__VA_ARGS__
-
-#define H2PP_REMOVE_PARENTHESES(...) _H2PP_REMOVE_PARENTHESES __VA_ARGS__
-#define _H2PP_REMOVE_PARENTHESES(...) __VA_ARGS__
-
-/* clang-format off */
-#define H2PP_IF(_Cond, _Then, _Else) H2PP_CAT2(_H2PP_IF_, _Cond) (_Then, _Else)
-#define _H2PP_IF_1(_Then, _Else) _Then
-#define _H2PP_IF_0(_Then, _Else) _Else
-/* clang-format on */
-
-#define _H2PP_NARGS(...) _H2PP_16TH(__VA_ARGS__, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1)
-#define _H2PP_HAS_COMMA(...) _H2PP_16TH(__VA_ARGS__, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0)
-#define _H2PP_16TH(_1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, ...) _16
-#define _H2PP_COMMA(...) ,
-
-#define H2PP_0ARGS(...) _H2PP_0ARGS(_H2PP_HAS_COMMA(__VA_ARGS__),             \
-                                    _H2PP_HAS_COMMA(_H2PP_COMMA __VA_ARGS__), \
-                                    _H2PP_HAS_COMMA(__VA_ARGS__()),           \
-                                    _H2PP_HAS_COMMA(_H2PP_COMMA __VA_ARGS__()))
-
-#define _H2PP_0ARGS(_1, _2, _3, _4) _H2PP_HAS_COMMA(_H2PP_CAT5(_H2PP_0ARGS_CASE_, _1, _2, _3, _4))
-
-#define _H2PP_0ARGS_CASE_0001 ,
-
-#define H2PP_NARGS(...) H2PP_IF(H2PP_0ARGS(__VA_ARGS__), 0, _H2PP_NARGS(__VA_ARGS__))
-
-/* clang-format off */
-#define H2PP_VARIADIC_CALL(_Macro, ...) H2PP_CAT2(_Macro, H2PP_NARGS(__VA_ARGS__)) (__VA_ARGS__)
-/* clang-format on */
-
-#define H2Q(Prefix) H2PP_CAT5(Prefix, _, __COUNTER__, _, __LINE__)
-
-// H2_ALIGN_UP(15, 8) == 16
-#define H2_ALIGN_UP(n, s) (((n) + (s)-1) / (s) * (s))
-// H2_ALIGN_DOWN(15, 8) == 8
-#define H2_ALIGN_DOWN(n, s) ((n) / (s) * (s))
-// H2_DIV_ROUND_UP(15, 8) == 2
-#define H2_DIV_ROUND_UP(n, s) (((n) + (s)-1) / (s))
-
-struct h2_file {
-   FILE* fp;
-   h2_file(FILE* fp_) : fp(fp_) {}
-   ~h2_file() { fp&& fclose(fp); }
-};
+static inline bool h2_regex_match(const char* pattern, const char* subject) {
+   bool result = false;
+   try {
+      std::regex re(pattern);
+      result = std::regex_match(subject, re);
+   }
+   catch (const std::regex_error& e) {
+      result = false;
+   }
+   return result;
+}
 
 static inline bool h2_wildcard_match(const char* pattern, const char* subject) {
    const char *scur = subject, *pcur = pattern;
@@ -72,16 +33,25 @@ static inline bool h2_wildcard_match(const char* pattern, const char* subject) {
    return !*pcur;
 }
 
-static inline long long h2_milliseconds() {
+static inline long long h2_now() {
    struct timeval tv;
    gettimeofday(&tv, NULL);
    return tv.tv_sec * 1000LL + tv.tv_usec / 1000;
 }
 
-static inline const char* h2_style(const char* style_str, char* style_abi) {
+static inline void h2_sleep(long long milliseconds) {
+   ::usleep(milliseconds * 1000);
+}
+
+static inline int h2_winsz() {
+   struct winsize w;
+   if (-1 == ioctl(STDOUT_FILENO, TIOCGWINSZ, &w)) return 80;
+   return w.ws_col;
+}
+
+static inline const char* h2_style(const char* style, char* ascii_code) {
    static struct {
-      const char* name;
-      const char* value;
+      const char *name, *value;
    } K[] = {
      {"reset", "0;"},
      {"bold", "1;"},
@@ -116,44 +86,12 @@ static inline const char* h2_style(const char* style_str, char* style_abi) {
      {"bg_white", "47;"},
      {"bg_default", "49;"}};
 
-   char __style_str[1024];
-   strcpy(__style_str, style_str);
-
-   strcpy(style_abi, "\033[");
-
-   for (char* opt = strtok(__style_str, ","); opt; opt = strtok(NULL, ",")) {
-      for (size_t i = 0; i < sizeof(K) / sizeof(K[0]); i++) {
-         if (strcmp(K[i].name, opt) == 0) {
-            strcat(style_abi, K[i].value);
+   char t[1024], *s = strcpy(t, style), *d = ascii_code + sprintf(ascii_code, "\033["), *q = d;
+   for (char* p = strtok(s, ","); p; p = strtok(nullptr, ","))
+      for (auto& k : K)
+         if (streq(k.name, p)) {
+            q += sprintf(q, "%s", k.value);
             break;
          }
-      }
-   }
-
-   style_abi[strlen(style_abi) - 1] = 'm';
-
-   return style_abi;
-}
-
-static inline const char* h2_acronym_string(const char* full, int atmost = 10) {
-   static char buffer[32];
-   strncpy(buffer, full, atmost);
-   strcpy(buffer + atmost, "...");
-   return buffer;
-}
-
-static inline const char* h2_center_string(const char* str, int width, char* t) {
-   int slen = strlen(str);
-   char* p = t;
-   for (int i = 0; i < (width - slen) / 2; i++) *p++ = ' ';
-   strcpy(p, str);
-   p += slen;
-   for (; p < t + width; p++) *p = ' ';
-   *p = '\0';
-   return t;
-}
-
-static inline bool h2_endswith_string(char* haystack, char* needle) {
-   int haystack_length = strlen(haystack), needle_length = strlen(needle);
-   return haystack_length < needle_length ? false : strncmp(haystack + haystack_length - needle_length, needle, needle_length) == 0;
+   return d == q ? strcpy(ascii_code, "") : (*(q - 1) = 'm', ascii_code);
 }

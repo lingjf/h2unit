@@ -1,5 +1,5 @@
-#include "../source/h2_unit.h"
-using namespace h2;
+#include "../source/h2_unit.hpp"
+#include "../source/h2_unit.cpp"
 
 SUITE(expr)
 {
@@ -104,7 +104,7 @@ SUITE(expr)
          const double answer = samples[i].answer;
 
          int err;
-         const double ev = tinyexpr::te_interp(expr, &err);
+         const double ev = h2::te::te_interp(expr, &err);
          OK(0, err);
          OK(answer, ev);
       }

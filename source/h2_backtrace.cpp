@@ -1,177 +1,133 @@
 
-static inline void h2_dohook_g();
-static inline void h2_unhook_g();
-
 struct h2_nm {
-   /* clang-format off */
-   static h2_nm& I() { static h2_nm I; return I; }
-   /* clang-format on */
+   h2_singleton(h2_nm);
 
-   unsigned long get(const char* name) const {
+   std::map<std::string, unsigned long long> symbols;
+   unsigned long long main_addr;
+
+   unsigned long long get(const char* name) const {
+      if (strlen(name) == 0) return 0;
       auto it = symbols.find(name);
-      return it != symbols.end() ? it->second : ULONG_MAX;
+      return it != symbols.end() ? it->second : ULLONG_MAX;
    }
 
-   bool in_main(unsigned long ptr) const { return main_ptr == ULONG_MAX ? false : main_ptr < ptr && ptr < main_ptr + 64; }
+   bool in_main(unsigned long long addr) const { return main_addr == ULLONG_MAX ? false : main_addr < addr && addr < main_addr + 256; }
 
    h2_nm() {
-      char buf[256], addr[32], type[32], name[1024];
-      snprintf(buf, sizeof(buf), "nm %s", cfg().path);
-      FILE* fp = ::popen(buf, "r");
-      if (!fp) return;
-      while (::fgets(buf, sizeof(buf) - 1, fp))
-         if (3 == sscanf(buf, "%s%s%s", addr, type, name))
-            if (::tolower((int)type[0]) == 't' || ::tolower((int)type[0]) == 'w')
-               symbols.insert(std::make_pair(name + (!strcmp(cfg().platform, "MAC") ? 1 : 0), strtol(addr, nullptr, 16)));
-      ::pclose(fp);
-
-      main_ptr = get("main");
+      nm_parse();
+      main_addr = get("main");
    }
 
-   std::map<std::string, unsigned long> symbols;
-   unsigned long main_ptr;
+   void nm_parse() {
+      char nm[256], line[1024], addr[128], type[32], name[1024];
+      sprintf(nm, "nm %s", O.path);
+      h2_with f(::popen(nm, "r"), ::pclose);
+      if (f.f)
+         while (::fgets(line, sizeof(line) - 1, f.f))
+            if (3 == sscanf(line, "%s%s%s", addr, type, name))
+               if (type[0] == 't' || type[0] == 'T' || type[0] == 'w' || type[0] == 'W')
+                  symbols.insert(std::make_pair(name + O.isMAC(), (unsigned long long)strtoull(addr, nullptr, 16)));
+   }
 };
 
-struct h2_backtrace {
-   int count;
-   int offset;
-   void* array[100];
+static inline bool demangle(const char* mangled, char* demangled, size_t len) {
+   int status = 0;
+   abi::__cxa_demangle(mangled, demangled, &len, &status);
+   return status == 0;
+}
 
-   h2_backtrace() : count(0), offset(0) {}
-
-   h2_backtrace(int offset) {
-      h2_unhook_g();
-      count = ::backtrace(array, sizeof(array) / sizeof(array[0]));
-      this->offset = offset;
-      h2_dohook_g();
-   }
-
-   h2_backtrace& operator=(h2_backtrace& bt) {
-      offset = bt.offset;
-      count = bt.count;
-      memcpy(array, bt.array, bt.count * sizeof(void*));
-      return *this;
-   }
-
-   bool operator==(h2_backtrace& bt) {
-      if (count != bt.count) return false;
-      for (int i = 0; i < count; ++i)
-         if (array[i] != bt.array[i]) return false;
-      return true;
-   }
-
-   bool has(void* func, int size) {
-      for (int i = 0; i < count; ++i)
-         if (func <= array[i] && (unsigned char*)array[i] < ((unsigned char*)func) + size) return true;
-      return false;
-   }
-
-   // void print() {
-   //    h2_unhook_g();
-   //    FILE* fp = ::tmpfile();
-   //    if (fp) {
-   //       backtrace_symbols_fd(array, count, fileno(fp));
-   //       ::fseek(fp, 0, SEEK_SET);
-   //       char backtrace_symbol_line[512], module[256], mangled[256], demangled[256], addr2lined[512];
-   //       for (int i = 0; i < count && ::fgets(backtrace_symbol_line, 512, fp); ++i) {
-   //          if (i < offset) continue;
-   //          for (int j = strlen(backtrace_symbol_line) - 1; 0 <= j && isspace(backtrace_symbol_line[j]); --j) backtrace_symbol_line[j] = '\0';
-   //          char* p = backtrace_symbol_line;
-   //          unsigned long addr = 0, delta = 0;
-   //          if (extract(backtrace_symbol_line, module, mangled, &delta)) {
-   //             if (strlen(mangled)) p = mangled;
-   //             if (demangle(mangled, demangled, sizeof(demangled)))
-   //                if (strlen(demangled)) p = demangled;
-   //             addr = strlen(mangled) ? h2_nm::I().get(mangled) : 0;
-   //             if (addr != ULONG_MAX && h2_endswith_string(cfg().path, module))
-   //                if (addr2line(addr + delta, cfg().path, addr2lined, sizeof(addr2lined)))
-   //                   p = addr2lined;
-   //          }
-   //          ::printf("   %d. %s\n", i - offset, p);
-
-   //          if (!strcmp("main", mangled) || !strcmp("main", demangled) || h2_nm::I().in_main(addr + delta)) break;
-   //       }
-   //       ::fclose(fp);
-   //    }
-   //    h2_dohook_g();
-   // }
-
-   void print() {
-      h2_unhook_g();
-      char** backtraces = backtrace_symbols(array, count);
-      for (int i = offset; i < count; ++i) {
-         char *p = backtraces[i], module[256], mangled[256], demangled[256], addr2lined[512];
-         unsigned long addr = 0, delta = 0;
-         if (extract(backtraces[i], module, mangled, &delta)) {
-            if (strlen(mangled)) p = mangled;
-            if (demangle(mangled, demangled, sizeof(demangled)))
-               if (strlen(demangled)) p = demangled;
-            addr = strlen(mangled) ? h2_nm::I().get(mangled) : 0;
-            if (addr != ULONG_MAX && h2_endswith_string(cfg().path, module))
-               if (addr2line(addr + delta, cfg().path, addr2lined, sizeof(addr2lined)))
-                  p = addr2lined;
-         }
-         ::printf("   %d. %s\n", i - offset, p);
-
-         if (!strcmp("main", mangled) || !strcmp("main", demangled) || h2_nm::I().in_main(addr + delta)) break;
-      }
-      free(backtraces);
-      h2_dohook_g();
-   }
-
-   bool
-   addr2line(unsigned long addr, const char* path, char* output, size_t len) {
-      char buf[256];
-#if defined(__APPLE__)
-      snprintf(buf, sizeof(buf), "atos -o %s 0x%lx", path, addr);
+static inline bool addr2line(unsigned long long addr, char* output, size_t len) {
+   char t[256];
+#if defined __APPLE__
+   sprintf(t, "atos -o %s 0x%llx", O.path, addr);
 #else
-      snprintf(buf, sizeof(buf), "addr2line -C -a -s -p -f -e %s -i %lx", path, addr);
+   sprintf(t, "addr2line -C -a -s -p -f -e %s -i %llx", O.path, addr);
 #endif
-      FILE* fp = ::popen(buf, "r");
-      if (fp) {
-         ::fgets(output, len, fp);
-         ::pclose(fp);
-         for (int i = strlen(output) - 1; 0 <= i && isspace(output[i]); --i) output[i] = '\0';
+   h2_with f(::popen(t, "r"), ::pclose);
+   if (!f.f || !::fgets(output, len, f.f)) return false;
+   for (int i = strlen(output) - 1; 0 <= i && ::isspace(output[i]); --i) output[i] = '\0';  //strip tail
+   return true;
+}
+
+static inline bool backtrace_extract(const char* backtrace_symbol_line, char* module, char* mangled, unsigned long long* offset) {
+   //MAC: `3   a.out  0x000000010e777f3d _ZN2h24hook6mallocEm + 45
+   if (3 == ::sscanf(backtrace_symbol_line, "%*s%s%*s%s + %llu", module, mangled, offset))
+      return true;
+
+   //Linux: with '-rdynamic' linker option
+   //Linux: module_name(mangled_function_name+relative_offset_to_function)[absolute_address]
+   //Linux: `./a.out(_ZN2h24task7executeEv+0x131)[0x55aa6bb840ef]
+   if (3 == ::sscanf(backtrace_symbol_line, "%[^(]%*[^_a-zA-Z]%127[^)+]+0x%llx", module, mangled, offset))
+      return true;
+
+   mangled[0] = '\0';
+
+   //Linux: Ubuntu without '-rdynamic' linker option
+   //Linux: module_name(+relative_offset_to_function)[absolute_address]
+   //Linux: `./a.out(+0xb1887)[0x560c5ed06887]
+   if (2 == ::sscanf(backtrace_symbol_line, "%[^(]%*[^+]+0x%llx", module, offset))
+      return true;
+
+   //Linux: Redhat/CentOS without '-rdynamic' linker option
+   //Linux: module_name()[relative_offset_to_module]
+   //Linux: `./a.out() [0x40b960]
+   if (2 == ::sscanf(backtrace_symbol_line, "%[^(]%*[^[][0x%llx", module, offset))
+      return true;
+
+   //Where?
+   //Linux: module_name[relative_offset_to_module]
+   //Linux: `./a.out[0x4060e7]
+   if (2 == ::sscanf(backtrace_symbol_line, "%[^[][0x%llx", module, offset))
+      return true;
+
+   return false;
+}
+
+h2_inline h2_backtrace::h2_backtrace(int shift_) : shift(shift_) {
+   h2_heap::unhook();
+   count = ::backtrace(array, sizeof(array) / sizeof(array[0]));
+   h2_heap::dohook();
+}
+
+h2_inline bool h2_backtrace::operator==(h2_backtrace& bt) {
+   if (count != bt.count) return false;
+   for (int i = 0; i < count; ++i)
+      if (array[i] != bt.array[i])
+         return false;
+   return true;
+}
+
+h2_inline bool h2_backtrace::has(void* func, int size) const {
+   for (int i = 0; i < count; ++i)
+      if (func <= array[i] && (unsigned char*)array[i] < ((unsigned char*)func) + size)
          return true;
+   return false;
+}
+
+h2_inline void h2_backtrace::print() const {
+   h2_heap::unhook();
+   char** backtraces = backtrace_symbols(array, count);
+   for (int i = shift; i < count; ++i) {
+      char *p = backtraces[i], module[256] = "", mangled[256] = "", demangled[256] = "", addr2lined[512] = "";
+      unsigned long long address = 0, offset = 0;
+      if (backtrace_extract(backtraces[i], module, mangled, &offset)) {
+         if (strlen(mangled)) {
+            p = mangled;
+            if (demangle(mangled, demangled, sizeof(demangled)))
+               if (strlen(demangled))
+                  p = demangled;
+         }
+         address = h2_nm::I().get(mangled);
+         if (address != ULLONG_MAX)
+            if (addr2line(address + offset, addr2lined, sizeof(addr2lined)))
+               if (strlen(addr2lined))
+                  p = addr2lined;
       }
-      return false;
+      ::printf("   %d. %s\n", i - shift, p);
+
+      if (streq("main", mangled) || streq("main", demangled) || h2_nm::I().in_main(address + offset))
+         break;
    }
-
-   bool extract(const char* backtrace_symbol_line, char* module, char* mangled, unsigned long* offset) {
-      //MAC: `3   a.out  0x000000010e777f3d _ZN2h24hook6mallocEm + 45
-      if (3 == ::sscanf(backtrace_symbol_line, "%*s%s%*s%s + %lu", module, mangled, offset))
-         return true;
-
-      //Linux: `./a.out(_ZN2h24task7executeEv+0x131)[0x55aa6bb840ef]
-      if (3 == ::sscanf(backtrace_symbol_line, "%[^(]%*[^_a-zA-Z]%127[^)+]+0x%lx", module, mangled, offset))
-         return true;
-
-      //Linux: `./a.out(+0xb1887)[0x560c5ed06887]
-      if (2 == ::sscanf(backtrace_symbol_line, "%[^(]%*[^+]+0x%lx", module, offset)) {
-         mangled[0] = '\0';
-         return true;
-      }
-
-      //Linux: `./a.out[0x4060e7]
-      if (2 == ::sscanf(backtrace_symbol_line, "%[^[][0x%lx", module, offset)) {
-         mangled[0] = '\0';
-         return true;
-      }
-
-      return false;
-   }
-
-   bool demangle(const char* mangled, char* demangled, size_t len) {
-      int status = 0;
-      strcpy(demangled, mangled);
-      abi::__cxa_demangle(mangled, demangled, &len, &status);
-      return status == 0;
-   }
-};
-
-#define h2_debug(...)                                                              \
-   do {                                                                            \
-      printf("%s %s : %d = %s\n", #__VA_ARGS__, __FILE__, __LINE__, __FUNCTION__); \
-      h2::h2_backtrace bt(0);                                                      \
-      bt.print();                                                                  \
-   } while (0)
+   free(backtraces);
+   h2_heap::dohook();
+}
