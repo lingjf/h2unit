@@ -47,3 +47,36 @@ struct h2_thunk {
 h2_inline h2_stub::h2_stub(void* befp_, const char* file_, int line_) : file(file_), line(line_) { befp = ((h2_thunk*)thunk)->save(befp_); }
 h2_inline void h2_stub::replace(void* tofp_) { tofp = tofp_, ((h2_thunk*)thunk)->set(befp, tofp); }
 h2_inline void h2_stub::restore() { befp && ((h2_thunk*)thunk)->reset(befp); }
+
+
+h2_inline bool h2_stubs::add(void* befp, void* tofp, const char* befn, const char* tofn, const char* file, int line) {
+   h2_stub* stub = nullptr;
+   h2_list_for_each_entry(p, &stubs, h2_stub, x) if (p->befp == befp) {
+      stub = p;
+      break;
+   }
+
+   if (!tofp) { /* unstub */
+      if (stub) {
+         stub->restore();
+         stub->x.out();
+         h2_libc::free(stub);
+      }
+      return true;
+   }
+
+   if (!stub) {
+      stub = new h2_stub(befp, file, line);
+      stubs.push(&stub->x);
+   }
+   stub->replace(tofp);
+   return true;
+}
+
+h2_inline void h2_stubs::clear() {
+   h2_list_for_each_entry(p, &stubs, h2_stub, x) {
+      p->restore();
+      p->x.out();
+      delete p;
+   }
+}

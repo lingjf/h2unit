@@ -1,4 +1,4 @@
-/* v5.0  2020-03-25 00:21:06 */
+/* v5.0  2020-03-25 23:18:11 */
 /* https://github.com/lingjf/h2unit */
 /* Apache Licence 2.0 */
 #ifndef H2_1FILE
@@ -192,8 +192,8 @@ struct h2_with {
 
 #define h2_singleton(_Class) \
    static _Class& I() {      \
-      static _Class __;      \
-      return __;             \
+      static _Class i;       \
+      return i;              \
    }
 
 #define h2_list_entry(ptr, type, link) ((type*)((char*)(ptr) - (char*)(&(((type*)(1))->link)) + 1))
@@ -583,6 +583,11 @@ struct h2_stub : h2_nohook {
    };
 };
 
+struct h2_stubs {
+   h2_list stubs;
+   bool add(void* befp, void* tofp, const char* befn, const char* tofn, const char* file, int line);
+   void clear();
+};
 static inline void h2_fail_g(void* fail);
 
 struct h2_heap {
@@ -1495,7 +1500,7 @@ struct h2_mock : h2_nohook {
    }
 };
 
-static inline bool h2_mock_g(h2_mock*);
+static inline void h2_mock_g(h2_mock*);
 
 template <size_t I, typename T, typename... Args>
 struct __nth_type_impl {
@@ -1608,101 +1613,106 @@ class h2_mocker<Counter, Lineno, Class, Return(Args...)> : h2_mock {
 
    void reset() override { c_array.clear(), m_array.clear(), r_array.clear(), c_index = 0; }
 
-   h2_mocker& register_and_return_reference() {
-      if (!h2_mock_g(this)) reset();
-      return *this;
-   }
-
  public:
    static h2_mocker& I(void* befp = nullptr, const char* befn = nullptr, const char* file = nullptr, int line = 0) {
-      static h2_mocker* I = nullptr;
-      if (!I) I = new h2_mocker(befp, befn, file, line);
-      return I->register_and_return_reference();
+      static h2_mocker* i = nullptr;
+      if (!i) i = new h2_mocker(befp, befn, file, line);
+      if (befp && file) {
+         i->reset();
+         h2_mock_g(i);
+      }
+      return *i;
    }
 
    h2_mocker& once(MATCHER_Any_0_1_2_3_4_5_6_7_8_9) {
       c_array.push_back(h2_callexp(1, 1));
       m_array.push_back(std::forward_as_tuple(_0, _1, _2, _3, _4, _5, _6, _7, _8, _9));
       r_array.push_back(h2_routine<Class, Return(Args...)>());
-      return register_and_return_reference();
+      return *this;
    }
 
    h2_mocker& twice(MATCHER_Any_0_1_2_3_4_5_6_7_8_9) {
       c_array.push_back(h2_callexp(2, 2));
       m_array.push_back(std::forward_as_tuple(_0, _1, _2, _3, _4, _5, _6, _7, _8, _9));
       r_array.push_back(h2_routine<Class, Return(Args...)>());
-      return register_and_return_reference();
+      return *this;
    }
 
    h2_mocker& times(int count) {
       c_array.push_back(h2_callexp(count, count));
       m_array.push_back(matcher_tuple());
       r_array.push_back(h2_routine<Class, Return(Args...)>());
-      return register_and_return_reference();
+      return *this;
    }
 
    h2_mocker& any(MATCHER_Any_0_1_2_3_4_5_6_7_8_9) {
       c_array.push_back(h2_callexp(0, INT_MAX));
       m_array.push_back(std::forward_as_tuple(_0, _1, _2, _3, _4, _5, _6, _7, _8, _9));
       r_array.push_back(h2_routine<Class, Return(Args...)>());
-      return register_and_return_reference();
+      return *this;
    }
 
    h2_mocker& atleast(int count) {
       c_array.push_back(h2_callexp(count, INT_MAX));
       m_array.push_back(matcher_tuple());
       r_array.push_back(h2_routine<Class, Return(Args...)>());
-      return register_and_return_reference();
+      return *this;
    }
 
    h2_mocker& atmost(int count) {
       c_array.push_back(h2_callexp(0, count));
       m_array.push_back(matcher_tuple());
       r_array.push_back(h2_routine<Class, Return(Args...)>());
-      return register_and_return_reference();
+      return *this;
    }
 
    h2_mocker& between(int left, int right) {
       c_array.push_back(h2_callexp(left, right));
       m_array.push_back(matcher_tuple());
       r_array.push_back(h2_routine<Class, Return(Args...)>());
-      return register_and_return_reference();
+      return *this;
    }
 
    h2_mocker& with(MATCHER_Any_0_1_2_3_4_5_6_7_8_9) {
       if (!m_array.empty()) m_array.back() = std::forward_as_tuple(_0, _1, _2, _3, _4, _5, _6, _7, _8, _9);
-      return register_and_return_reference();
+      return *this;
    }
 
    /* clang-format off */
-   h2_mocker& th1(h2_matcher<h2_nth_decay<0, Args...>> e = Any) { if (!m_array.empty()) std::get<0>(m_array.back()) = e; return register_and_return_reference(); }
-   h2_mocker& th2(h2_matcher<h2_nth_decay<1, Args...>> e = Any) { if (!m_array.empty()) std::get<1>(m_array.back()) = e; return register_and_return_reference(); }
-   h2_mocker& th3(h2_matcher<h2_nth_decay<2, Args...>> e = Any) { if (!m_array.empty()) std::get<2>(m_array.back()) = e; return register_and_return_reference(); }
-   h2_mocker& th4(h2_matcher<h2_nth_decay<3, Args...>> e = Any) { if (!m_array.empty()) std::get<3>(m_array.back()) = e; return register_and_return_reference(); }
-   h2_mocker& th5(h2_matcher<h2_nth_decay<4, Args...>> e = Any) { if (!m_array.empty()) std::get<4>(m_array.back()) = e; return register_and_return_reference(); }
-   h2_mocker& th6(h2_matcher<h2_nth_decay<5, Args...>> e = Any) { if (!m_array.empty()) std::get<5>(m_array.back()) = e; return register_and_return_reference(); }
-   h2_mocker& th7(h2_matcher<h2_nth_decay<6, Args...>> e = Any) { if (!m_array.empty()) std::get<6>(m_array.back()) = e; return register_and_return_reference(); }
-   h2_mocker& th8(h2_matcher<h2_nth_decay<7, Args...>> e = Any) { if (!m_array.empty()) std::get<7>(m_array.back()) = e; return register_and_return_reference(); }
-   h2_mocker& th9(h2_matcher<h2_nth_decay<8, Args...>> e = Any) { if (!m_array.empty()) std::get<8>(m_array.back()) = e; return register_and_return_reference(); }
+   h2_mocker& th1(h2_matcher<h2_nth_decay<0, Args...>> e = Any) { if (!m_array.empty()) std::get<0>(m_array.back()) = e; return *this; }
+   h2_mocker& th2(h2_matcher<h2_nth_decay<1, Args...>> e = Any) { if (!m_array.empty()) std::get<1>(m_array.back()) = e; return *this; }
+   h2_mocker& th3(h2_matcher<h2_nth_decay<2, Args...>> e = Any) { if (!m_array.empty()) std::get<2>(m_array.back()) = e; return *this; }
+   h2_mocker& th4(h2_matcher<h2_nth_decay<3, Args...>> e = Any) { if (!m_array.empty()) std::get<3>(m_array.back()) = e; return *this; }
+   h2_mocker& th5(h2_matcher<h2_nth_decay<4, Args...>> e = Any) { if (!m_array.empty()) std::get<4>(m_array.back()) = e; return *this; }
+   h2_mocker& th6(h2_matcher<h2_nth_decay<5, Args...>> e = Any) { if (!m_array.empty()) std::get<5>(m_array.back()) = e; return *this; }
+   h2_mocker& th7(h2_matcher<h2_nth_decay<6, Args...>> e = Any) { if (!m_array.empty()) std::get<6>(m_array.back()) = e; return *this; }
+   h2_mocker& th8(h2_matcher<h2_nth_decay<7, Args...>> e = Any) { if (!m_array.empty()) std::get<7>(m_array.back()) = e; return *this; }
+   h2_mocker& th9(h2_matcher<h2_nth_decay<8, Args...>> e = Any) { if (!m_array.empty()) std::get<8>(m_array.back()) = e; return *this; }
    /* clang-format on */
 
    h2_mocker& returns(h2_routine<Class, Return(Args...)> r) {
       if (!r_array.empty()) r_array.back() = r;
-      return register_and_return_reference();
+      return *this;
    }
 
    h2_mocker& does(std::function<Return(Args...)> f) {
       if (!r_array.empty()) r_array.back() = h2_routine<Class, Return(Args...)>(f);
-      return register_and_return_reference();
+      return *this;
    }
 
    h2_mocker& does(std::function<Return(Class*, Args...)> f) {
       if (!r_array.empty()) r_array.back() = h2_routine<Class, Return(Args...)>(f);
-      return register_and_return_reference();
+      return *this;
    }
 
    h2_mocker& operator=(std::function<Return(Args...)> f) { return does(f); }
    h2_mocker& operator=(std::function<Return(Class*, Args...)> f) { return does(f); }
+};
+
+struct h2_mocks {
+   h2_list s;
+   bool add(h2_mock* mock);
+   h2_fail* clear();
 };
 
 struct h2_stdio_exporter {
@@ -1717,6 +1727,12 @@ struct h2_dns : h2_nohook {
    char array[32][128];
 
    h2_dns(const char* hostname_) : hostname(hostname_) {}
+};
+
+struct h2_dnses {
+   h2_list s;
+   void add(h2_dns* dns);
+   void clear();
 };
 
 struct h2_packet : h2_nohook {
@@ -1803,29 +1819,19 @@ struct h2_case {
    int line;
    long long seq;
    int status;
-   h2_list stubs, mocks, dnss;
-   h2_sock* sock;
    jmp_buf jump;
    h2_fail* fails;
+   h2_stubs stubs;
+   h2_mocks mocks;
+   h2_dnses dnses;
+   h2_sock* sock;
 
    h2_case(const char* name_, int todo, const char* file_, int line_);
 
    void prev_setup();
-   void post_setup();
-   void prev_cleanup();
+   void post_setup() {}
+   void prev_cleanup() {}
    void post_cleanup();
-
-   void do_stub(void* befp, void* tofp, const char* befn, const char* tofn, const char* file, int line);
-   void undo_stub();
-
-   bool do_mock(h2_mock* mock);
-   h2_fail* undo_mock();
-
-   void do_dns(h2_dns* dns);
-   void undo_dns();
-
-   h2_sock* do_sock(h2_sock* sock);
-   void undo_sock();
 
    void do_fail(h2_fail* fail);
 
@@ -1841,6 +1847,8 @@ struct h2_suite {
    const char* file;
    int line;
    long long seq;
+   h2_stubs stubs;
+   h2_mocks mocks;
    int status_stats[8];
    jmp_buf jump;
    bool jumpable;
@@ -1852,6 +1860,9 @@ struct h2_suite {
 
    std::vector<h2_case*>& cases();
    void execute(h2_case* c);
+
+   void setup() {}
+   void cleanup();
 
    struct installer {
       installer(h2_suite* s, h2_case* c) {
@@ -2239,13 +2250,16 @@ struct h2_task {
    h2_singleton(h2_task);
 
    h2_logs logs;
-   int status_stats[8];
+   h2_stubs stubs;
+   h2_mocks mocks;
+   int state, status_stats[8];
+   h2_suite* current_suite;
    h2_case* current_case;
    std::vector<void (*)()> global_setups, global_teardowns;
    std::vector<void (*)()> global_suite_setups, global_suite_teardowns;
    std::vector<void (*)()> global_case_setups, global_case_teardowns;
 
-   h2_task() : status_stats{0}, current_case(nullptr) {}
+   h2_task();
 
    void prepare();
    void postpare();
@@ -2253,25 +2267,31 @@ struct h2_task {
 };
 
 static inline void h2_stub_g(void* befp, void* tofp, const char* befn, const char* tofn, const char* file, int line) {
-   if (h2_task::I().current_case) h2_task::I().current_case->do_stub(befp, tofp, befn, tofn, file, line);
+   if (200 <= h2_task::I().state) {
+      if (h2_task::I().current_case)
+         h2_task::I().current_case->stubs.add(befp, tofp, befn, tofn, file, line);
+      else if (h2_task::I().current_suite)
+         h2_task::I().current_suite->stubs.add(befp, tofp, befn, tofn, file, line);
+      else
+         h2_task::I().stubs.add(befp, tofp, befn, tofn, file, line);
+   }
 }
 
-static inline bool h2_mock_g(h2_mock* mock) {
-   return h2_task::I().current_case ? h2_task::I().current_case->do_mock(mock) : false;
-}
-
-static inline void h2_dns_g(h2_dns* dns) {
-   if (h2_task::I().current_case) h2_task::I().current_case->do_dns(dns);
-}
-
-static inline h2_sock* h2_sock_g(h2_sock* sock) {
-   if (h2_task::I().current_case) return h2_task::I().current_case->do_sock(sock);
-   return nullptr;
+static inline void h2_mock_g(h2_mock* mock) {
+   if (200 <= h2_task::I().state) {
+      if (h2_task::I().current_case)
+         h2_task::I().current_case->mocks.add(mock) && h2_task::I().current_case->stubs.add(mock->befp, mock->tofp, mock->befn, "", mock->file, mock->line);
+      else if (h2_task::I().current_suite)
+         h2_task::I().current_suite->mocks.add(mock) && h2_task::I().current_suite->stubs.add(mock->befp, mock->tofp, mock->befn, "", mock->file, mock->line);
+      else
+         h2_task::I().mocks.add(mock) && h2_task::I().stubs.add(mock->befp, mock->tofp, mock->befn, "", mock->file, mock->line);
+   }
 }
 
 static inline void h2_fail_g(void* fail) {
-   if (fail && O.debug) h2_debugger::trap();
-   if (h2_task::I().current_case && fail) h2_task::I().current_case->do_fail((h2_fail*)fail);
+   if (!fail) return;
+   if (O.debug) h2_debugger::trap();
+   if (h2_task::I().current_case) h2_task::I().current_case->do_fail((h2_fail*)fail);
 }
 }  // namespace h2
 
@@ -2543,11 +2563,11 @@ namespace h2 {
 
 static inline bool streq(const char* s1, const char* s2) { return !strcmp(s1, s2); }
 
-static inline bool h2_regex_match(const char* pattern, const char* subject) {
+static inline bool h2_regex_match(const char* pattern, const char* subject, bool caseless = false) {
    bool result = false;
    try {
       std::regex re(pattern);
-      result = std::regex_match(subject, re);
+      result = std::regex_match(subject, caseless ? std::regex(pattern, std::regex::icase) : std::regex(pattern));
    }
    catch (const std::regex_error& e) {
       result = false;
@@ -2810,99 +2830,26 @@ h2_inline const char* h2_callexp::expect() {
 }
 
 h2_inline h2_case::h2_case(const char* name_, int todo, const char* file_, int line_)
-  : name(name_), file(file_), line(line_), status(todo ? TODOED : INITED), sock(nullptr), fails(nullptr) {}
+  : name(name_), file(file_), line(line_), status(todo ? TODOED : INITED), fails(nullptr), sock(nullptr) {}
 
 h2_inline void h2_case::prev_setup() {
    status = PASSED;
    h2_heap::stack::push(file, line);
 }
 
-h2_inline void h2_case::post_setup() {}
-
-h2_inline void h2_case::prev_cleanup() {}
-
 h2_inline void h2_case::post_cleanup() {
-   undo_dns();
-   undo_sock();
-   undo_stub();
-   h2_fail* fail = undo_mock();
+   if (sock) delete sock;
+   dnses.clear();
+   stubs.clear();
+   h2_fail* fail = mocks.clear();
    h2_append_x_fail(fail, h2_heap::stack::pop());
 
-   if (fail) {
-      if (status != FAILED) {
-         h2_append_x_fail(fails, fail);
-         status = FAILED;
-      } else
-         delete fail;
-   }
-}
-
-h2_inline void h2_case::do_stub(void* befp, void* tofp, const char* befn, const char* tofn, const char* file, int line) {
-   h2_stub* stub = nullptr;
-   h2_list_for_each_entry(p, &stubs, h2_stub, x) if (p->befp == befp) {
-      stub = p;
-      break;
-   }
-
-   if (!tofp) { /* unstub */
-      if (stub) {
-         stub->restore();
-         stub->x.out();
-         h2_libc::free(stub);
-      }
-      return;
-   }
-
-   if (!stub) {
-      stub = new h2_stub(befp, file, line);
-      stubs.push(&stub->x);
-   }
-   stub->replace(tofp);
-}
-
-h2_inline void h2_case::undo_stub() {
-   h2_list_for_each_entry(p, &stubs, h2_stub, x) {
-      p->restore();
-      p->x.out();
-      delete p;
-   }
-}
-
-h2_inline bool h2_case::do_mock(h2_mock* mock) {
-   h2_list_for_each_entry(p, &mocks, h2_mock, x) if (p == mock) return true;
-   do_stub(mock->befp, mock->tofp, mock->befn, "", mock->file, mock->line);
-   mocks.push(&mock->x);
-   return true;
-}
-
-h2_inline h2_fail* h2_case::undo_mock() {
-   h2_fail* fail = nullptr;
-   h2_list_for_each_entry(p, &mocks, h2_mock, x) {
-      h2_append_x_fail(fail, p->times_check());
-      p->reset();
-      p->x.out();
-   }
-   return fail;
-}
-
-h2_inline void h2_case::do_dns(h2_dns* dns) { dnss.push(&dns->x); }
-
-h2_inline void h2_case::undo_dns() {
-   h2_list_for_each_entry(p, &dnss, h2_dns, x) {
-      p->x.out();
-      p->y.out();
-      delete p;
-   }
-}
-
-h2_inline h2_sock* h2_case::do_sock(h2_sock* sock) {
-   if (sock) this->sock = sock;
-   return this->sock;
-}
-
-h2_inline void h2_case::undo_sock() {
-   if (sock) delete sock;
-   sock = nullptr;
+   if (!fail) return;
+   if (status != FAILED)
+      h2_append_x_fail(fails, fail);
+   else
+      delete fail;
+   status = FAILED;
 }
 
 h2_inline void h2_case::do_fail(h2_fail* fail) {
@@ -5256,7 +5203,7 @@ static inline bool is_ipv4(const char* str) {
 struct h2_network {
    h2_singleton(h2_network);
 
-   h2_list dnss, socks;
+   h2_list dnses, socks;
 
    static bool inet_addr(const char* str, struct sockaddr_in* addr) {
       int s1, s2, s3, s4;
@@ -5312,7 +5259,7 @@ struct h2_network {
    }
 
    h2_dns* find(const char* hostname) {
-      h2_list_for_each_entry(p, &dnss, h2_dns, y) if (streq("*", p->hostname) || streq(hostname, p->hostname)) return p;
+      h2_list_for_each_entry(p, &dnses, h2_dns, y) if (streq("*", p->hostname) || streq(hostname, p->hostname)) return p;
       return nullptr;
    }
 
@@ -5592,6 +5539,15 @@ h2_inline void h2_sock::put_incoming_tcp(const char* from, const char* to, const
    }
 }
 
+h2_inline void h2_dnses::add(h2_dns* dns) { s.push(&dns->x); }
+h2_inline void h2_dnses::clear() {
+   h2_list_for_each_entry(p, &s, h2_dns, x) {
+      p->x.out();
+      p->y.out();
+      delete p;
+   }
+}
+
 h2_inline void h2_network_exporter::setaddrinfo(int n, ...) {
    if (n == 0) return;
 
@@ -5615,14 +5571,16 @@ h2_inline void h2_network_exporter::setaddrinfo(int n, ...) {
       if (!streq(hostname, array[i]))
          strcpy(dns->array[dns->count++], array[i]);
 
-   h2_network::I().dnss.push(&dns->y);
-   h2_dns_g(dns);
+   h2_network::I().dnses.push(&dns->y);
+   if (h2_task::I().current_case) h2_task::I().current_case->dnses.add(dns);
 }
 
 h2_inline h2_packet* h2_network_exporter::sock_start_and_fetch() {
-   h2_sock* sock = h2_sock_g(nullptr);
+   if (!h2_task::I().current_case) return nullptr;
+
+   h2_sock* sock = h2_task::I().current_case->sock;
    if (!sock) {
-      sock = h2_sock_g(new h2_sock());
+      sock = h2_task::I().current_case->sock = new h2_sock();
       h2_network::I().socks.push(&sock->y);
    }
 
@@ -5777,8 +5735,7 @@ h2_inline const char* h2_option::style(const char* s) const {
 struct h2_stdio {
    h2_singleton(h2_stdio);
 
-   char buffer[1024 * 1024];
-   char* p;
+   char buffer[1024 * 1024], *p;
    int offset, size;
 
    // write, pwrite, writev
@@ -5983,16 +5940,7 @@ h2_inline bool h2_string::wildcard_match(h2_string __pattern, bool caseless) con
 }
 
 h2_inline bool h2_string::regex_match(h2_string __pattern, bool caseless) const {
-   bool result = false;
-   try {
-      std::regex re1(__pattern.c_str());
-      std::regex re2(__pattern.c_str(), std::regex::icase);
-      result = std::regex_match(c_str(), caseless ? re2 : re1);
-   }
-   catch (const std::regex_error& e) {
-      result = false;
-   }
-   return result;
+   return h2_regex_match(__pattern.c_str(), c_str(), caseless);
 }
 
 h2_inline h2_string& h2_string::tolower() {
@@ -6080,13 +6028,68 @@ h2_inline h2_stub::h2_stub(void* befp_, const char* file_, int line_) : file(fil
 h2_inline void h2_stub::replace(void* tofp_) { tofp = tofp_, ((h2_thunk*)thunk)->set(befp, tofp); }
 h2_inline void h2_stub::restore() { befp && ((h2_thunk*)thunk)->reset(befp); }
 
+
+h2_inline bool h2_stubs::add(void* befp, void* tofp, const char* befn, const char* tofn, const char* file, int line) {
+   h2_stub* stub = nullptr;
+   h2_list_for_each_entry(p, &stubs, h2_stub, x) if (p->befp == befp) {
+      stub = p;
+      break;
+   }
+
+   if (!tofp) { /* unstub */
+      if (stub) {
+         stub->restore();
+         stub->x.out();
+         h2_libc::free(stub);
+      }
+      return true;
+   }
+
+   if (!stub) {
+      stub = new h2_stub(befp, file, line);
+      stubs.push(&stub->x);
+   }
+   stub->replace(tofp);
+   return true;
+}
+
+h2_inline void h2_stubs::clear() {
+   h2_list_for_each_entry(p, &stubs, h2_stub, x) {
+      p->restore();
+      p->x.out();
+      delete p;
+   }
+}
+
+h2_inline bool h2_mocks::add(h2_mock* mock) {
+   h2_list_for_each_entry(p, &s, h2_mock, x) if (p == mock) return false;
+   s.push(&mock->x);
+   return true;
+}
+
+h2_inline h2_fail* h2_mocks::clear() {
+   h2_fail* fail = nullptr;
+   h2_list_for_each_entry(p, &s, h2_mock, x) {
+      h2_append_x_fail(fail, p->times_check());
+      p->reset();
+      p->x.out();
+   }
+   return fail;
+}
+
 h2_inline h2_suite::h2_suite(const char* name_, void (*p)(h2_suite*, h2_case*), const char* file_, int line_)
   : name(name_), file(file_), line(line_), seq(0), status_stats{0}, jumpable(false), test_code_plus(p) {
    h2_directory::I().suites.push_back(this);
 }
 
+h2_inline void h2_suite::cleanup() {
+   stubs.clear();
+   mocks.clear();
+}
+
 h2_inline std::vector<h2_case*>& h2_suite::cases() {
-   if (enumerate) test_code_plus(this, nullptr); /* enumerate case by static local h2_case variable inside of h2_suite_test_code_plus() */
+   if (enumerate)
+      test_code_plus(this, nullptr); /* enumerate case by static local h2_case variable inside of h2_suite_test_code_plus() */
    return case_list;
 }
 
@@ -6096,7 +6099,12 @@ h2_inline void h2_suite::execute(h2_case* c) {
    c->post_cleanup();
 }
 
+inline h2_task::h2_task() : state(0), status_stats{0}, current_suite(nullptr), current_case(nullptr) {
+   
+}
+
 inline void h2_task::prepare() {
+   state = 100;
    h2_heap::dosegv();
    if (O.listing) h2_directory::list_then_exit();
 
@@ -6105,19 +6113,26 @@ inline void h2_task::prepare() {
 
    h2_heap::stack::root();
    h2_heap::dohook();
+   state = 199;
 }
 
 inline void h2_task::postpare() {
+   state = 300;
    h2_heap::unhook();
+   stubs.clear();
    if (status_stats[h2_case::FAILED] == 0) h2_directory::drop_last_order();
+   state = 399;
 }
 
 inline void h2_task::execute() {
+   state = 200;
    logs.on_task_start(h2_directory::count());
    for (auto& setup : global_setups) setup();
    for (auto& s : h2_directory::I().suites) {
+      current_suite = s;
       logs.on_suite_start(s);
       for (auto& setup : global_suite_setups) setup();
+      s->setup();
       for (auto& c : s->cases()) {
          if (0 < O.breakable && O.breakable <= status_stats[h2_case::FAILED]) break;
          current_case = c;
@@ -6130,11 +6145,13 @@ inline void h2_task::execute() {
          status_stats[c->status] += 1;
          s->status_stats[c->status] += 1;
       }
+      s->cleanup();
       for (auto& teardown : global_suite_teardowns) teardown();
       logs.on_suite_endup(s);
    }
    for (auto& teardown : global_teardowns) teardown();
    logs.on_task_endup(status_stats);
+   state = 299;
 }
 }  // namespace h2
 

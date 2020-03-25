@@ -8,6 +8,12 @@ struct h2_dns : h2_nohook {
    h2_dns(const char* hostname_) : hostname(hostname_) {}
 };
 
+struct h2_dnses {
+   h2_list s;
+   void add(h2_dns* dns);
+   void clear();
+};
+
 struct h2_packet : h2_nohook {
    h2_list x;
    h2_string from, to, data;

@@ -1,7 +1,7 @@
 #include "../source/h2_unit.hpp"
 #include "../source/h2_unit.cpp"
 
-SUITE(h2_tool)
+SUITE(tool)
 {
    char t1[1024];
 
@@ -20,4 +20,11 @@ SUITE(h2_tool)
       OK(!h2::h2_wildcard_match("hello?world*", "one world"));
       OK(!h2::h2_wildcard_match("hello?world*", ""));
    };
+
+   Case(regex)
+   {
+      const char* subject = "abcdef";
+      OK(h2::h2_regex_match("a.*", subject));
+      OK(h2::h2_regex_match("A.*", subject, true));
+   }
 }

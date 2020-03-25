@@ -17,3 +17,9 @@ struct h2_stub : h2_nohook {
       ~temporary_restore() { thus->replace(thus->tofp); }
    };
 };
+
+struct h2_stubs {
+   h2_list stubs;
+   bool add(void* befp, void* tofp, const char* befn, const char* tofn, const char* file, int line);
+   void clear();
+};

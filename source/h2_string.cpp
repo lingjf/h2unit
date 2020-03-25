@@ -26,16 +26,7 @@ h2_inline bool h2_string::wildcard_match(h2_string __pattern, bool caseless) con
 }
 
 h2_inline bool h2_string::regex_match(h2_string __pattern, bool caseless) const {
-   bool result = false;
-   try {
-      std::regex re1(__pattern.c_str());
-      std::regex re2(__pattern.c_str(), std::regex::icase);
-      result = std::regex_match(c_str(), caseless ? re2 : re1);
-   }
-   catch (const std::regex_error& e) {
-      result = false;
-   }
-   return result;
+   return h2_regex_match(__pattern.c_str(), c_str(), caseless);
 }
 
 h2_inline h2_string& h2_string::tolower() {

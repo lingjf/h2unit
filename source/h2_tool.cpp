@@ -1,11 +1,11 @@
 
 static inline bool streq(const char* s1, const char* s2) { return !strcmp(s1, s2); }
 
-static inline bool h2_regex_match(const char* pattern, const char* subject) {
+static inline bool h2_regex_match(const char* pattern, const char* subject, bool caseless = false) {
    bool result = false;
    try {
       std::regex re(pattern);
-      result = std::regex_match(subject, re);
+      result = std::regex_match(subject, caseless ? std::regex(pattern, std::regex::icase) : std::regex(pattern));
    }
    catch (const std::regex_error& e) {
       result = false;

@@ -4,6 +4,8 @@ struct h2_suite {
    const char* file;
    int line;
    long long seq;
+   h2_stubs stubs;
+   h2_mocks mocks;
    int status_stats[8];
    jmp_buf jump;
    bool jumpable;
@@ -15,6 +17,9 @@ struct h2_suite {
 
    std::vector<h2_case*>& cases();
    void execute(h2_case* c);
+
+   void setup() {}
+   void cleanup();
 
    struct installer {
       installer(h2_suite* s, h2_case* c) {

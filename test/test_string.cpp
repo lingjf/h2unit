@@ -161,10 +161,10 @@ SUITE(string)
 
    Case(regex)
    {
-      // gcc 4.8 not support regex caseless match ! it fails
-      h2::h2_string pattern("A.*");
       h2::h2_string subject("abcdef");
-      OK(subject.regex_match(pattern, true));
+      OK(subject.regex_match("a.*", false));
+      // gcc 4.8 not support regex caseless match ! it fails
+      OK(subject.regex_match("A.*", true));
    }
 
    Case(wildcard)

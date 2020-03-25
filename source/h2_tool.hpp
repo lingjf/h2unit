@@ -34,6 +34,6 @@ struct h2_with {
 
 #define h2_singleton(_Class) \
    static _Class& I() {      \
-      static _Class __;      \
-      return __;             \
+      static _Class i;       \
+      return i;              \
    }

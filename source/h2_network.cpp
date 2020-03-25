@@ -7,7 +7,7 @@ static inline bool is_ipv4(const char* str) {
 struct h2_network {
    h2_singleton(h2_network);
 
-   h2_list dnss, socks;
+   h2_list dnses, socks;
 
    static bool inet_addr(const char* str, struct sockaddr_in* addr) {
       int s1, s2, s3, s4;
@@ -63,7 +63,7 @@ struct h2_network {
    }
 
    h2_dns* find(const char* hostname) {
-      h2_list_for_each_entry(p, &dnss, h2_dns, y) if (streq("*", p->hostname) || streq(hostname, p->hostname)) return p;
+      h2_list_for_each_entry(p, &dnses, h2_dns, y) if (streq("*", p->hostname) || streq(hostname, p->hostname)) return p;
       return nullptr;
    }
 
@@ -343,6 +343,15 @@ h2_inline void h2_sock::put_incoming_tcp(const char* from, const char* to, const
    }
 }
 
+h2_inline void h2_dnses::add(h2_dns* dns) { s.push(&dns->x); }
+h2_inline void h2_dnses::clear() {
+   h2_list_for_each_entry(p, &s, h2_dns, x) {
+      p->x.out();
+      p->y.out();
+      delete p;
+   }
+}
+
 h2_inline void h2_network_exporter::setaddrinfo(int n, ...) {
    if (n == 0) return;
 
@@ -366,14 +375,16 @@ h2_inline void h2_network_exporter::setaddrinfo(int n, ...) {
       if (!streq(hostname, array[i]))
          strcpy(dns->array[dns->count++], array[i]);
 
-   h2_network::I().dnss.push(&dns->y);
-   h2_dns_g(dns);
+   h2_network::I().dnses.push(&dns->y);
+   if (h2_task::I().current_case) h2_task::I().current_case->dnses.add(dns);
 }
 
 h2_inline h2_packet* h2_network_exporter::sock_start_and_fetch() {
-   h2_sock* sock = h2_sock_g(nullptr);
+   if (!h2_task::I().current_case) return nullptr;
+
+   h2_sock* sock = h2_task::I().current_case->sock;
    if (!sock) {
-      sock = h2_sock_g(new h2_sock());
+      sock = h2_task::I().current_case->sock = new h2_sock();
       h2_network::I().socks.push(&sock->y);
    }
 

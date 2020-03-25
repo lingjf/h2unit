@@ -206,6 +206,20 @@ CASE(demo dynamic stub with fake function)
 }
 ```
 
+STUB template function or overload function
+
+```C++
+double sin_fake(double x)
+{
+   return 3.14;
+}
+CASE(demo dynamic stub with fake function)
+{
+   STUB((double(*)(double))sin, sin_fake);
+   do_something_with_call_sin();
+}
+```
+
 With help of C++ lambda, separate fake function can sit together with [STUB](source/h2_unit.h#L96), it makes test code more tidy and fitness.
 
 ```C++

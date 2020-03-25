@@ -4,8 +4,14 @@ h2_inline h2_suite::h2_suite(const char* name_, void (*p)(h2_suite*, h2_case*), 
    h2_directory::I().suites.push_back(this);
 }
 
+h2_inline void h2_suite::cleanup() {
+   stubs.clear();
+   mocks.clear();
+}
+
 h2_inline std::vector<h2_case*>& h2_suite::cases() {
-   if (enumerate) test_code_plus(this, nullptr); /* enumerate case by static local h2_case variable inside of h2_suite_test_code_plus() */
+   if (enumerate)
+      test_code_plus(this, nullptr); /* enumerate case by static local h2_case variable inside of h2_suite_test_code_plus() */
    return case_list;
 }
 
