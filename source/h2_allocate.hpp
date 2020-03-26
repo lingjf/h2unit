@@ -32,9 +32,3 @@ template <typename T> inline bool operator!=(const h2_allocator<T>&, const h2_al
 
 template <typename T> using h2_vector = std::vector<T, h2_allocator<T>>;
 typedef std::basic_ostringstream<char, std::char_traits<char>, h2_allocator<char>> h2_ostringstream;
-
-
-struct h2_nohook { /* new derived class/struct with libc malloc/free */
-   static void* operator new(std::size_t sz) { return h2_libc::malloc(sz); }
-   static void operator delete(void* ptr) { h2_libc::free(ptr); }
-};

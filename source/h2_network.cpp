@@ -7,7 +7,7 @@ static inline bool is_ipv4(const char* str) {
 struct h2_network {
    h2_singleton(h2_network);
 
-   h2_list dnss, socks;
+   h2_list dnses, socks;
 
    static bool inet_addr(const char* str, struct sockaddr_in* addr) {
       int s1, s2, s3, s4;
@@ -63,7 +63,7 @@ struct h2_network {
    }
 
    h2_dns* find(const char* hostname) {
-      h2_list_for_each_entry(p, &dnss, h2_dns, y) if (streq("*", p->hostname) || streq(hostname, p->hostname)) return p;
+      h2_list_for_each_entry(p, &dnses, h2_dns, y) if (streq("*", p->hostname) || streq(hostname, p->hostname)) return p;
       return nullptr;
    }
 
@@ -135,15 +135,12 @@ struct h2_network {
       bool block = isblock(sockfd);
       const char* local = getsockname(sockfd, (char*)alloca(64));
       do {
-         h2_list_for_each_entry(p, &list, h2_packet, x) {
-            // return h2_wildcard_match(to.c_str(), local_iport);
-            // printf("shit local=%s, packet_to=%s \n", local, p->to.c_str());
-            if (p->can_recv(local) && (!sync || p->data.length() == 0)) {
-               p->x.out();
-               packet = p;
-               return;
-            }
+         h2_list_for_each_entry(p, &list, h2_packet, x) if (p->can_recv(local) && (!sync || p->data.length() == 0)) {
+            p->x.out();
+            packet = p;
+            return;
          }
+
          if (block) h2_sleep(100);
       } while (block);
    }
@@ -228,118 +225,80 @@ struct h2_network {
       return recvfrom(socket, message->msg_iov[0].iov_base, message->msg_iov[0].iov_len, 0, (struct sockaddr*)message->msg_name, &message->msg_namelen);
    }
 
-   h2_stub getaddrinfo_stub;
-   h2_stub freeaddrinfo_stub;
-   h2_stub gethostbyname_stub;
-
-   h2_network() : getaddrinfo_stub((void*)::getaddrinfo),
-                  freeaddrinfo_stub((void*)::freeaddrinfo),
-                  gethostbyname_stub((void*)::gethostbyname) {
-      getaddrinfo_stub.replace((void*)getaddrinfo);
-      freeaddrinfo_stub.replace((void*)freeaddrinfo);
-      gethostbyname_stub.replace((void*)gethostbyname);
+   h2_stubs stubs;
+   h2_network() {
+      stubs.add((void*)::getaddrinfo, (void*)getaddrinfo, "", "", __FILE__, __LINE__);
+      stubs.add((void*)::freeaddrinfo, (void*)freeaddrinfo, "", "", __FILE__, __LINE__);
+      stubs.add((void*)::gethostbyname, (void*)gethostbyname, "", "", __FILE__, __LINE__);
    }
-
-   ~h2_network() {
-      // getaddrinfo_stub.restore();
-      // freeaddrinfo_stub.restore();
-      // gethostbyname_stub.restore();
-   }
+   ~h2_network() { stubs.clear(); }
 };
 
-h2_inline bool h2_packet::match(const char* from_pattern, const char* to_pattern) {
-   return h2_wildcard_match(from_pattern, from.c_str()) &&
-          h2_wildcard_match(to_pattern, to.c_str());
-}
-h2_inline bool h2_packet::can_recv(const char* local_iport) {
-   return h2_wildcard_match(to.c_str(), local_iport);
-}
+h2_inline bool h2_packet::can_recv(const char* local_iport) { return h2_wildcard_match(to.c_str(), local_iport); }
 
-h2_inline h2_sock::h2_sock() : sendto_stub((void*)::sendto),
-                               recvfrom_stub((void*)::recvfrom),
-                               sendmsg_stub((void*)::sendmsg),
-                               recvmsg_stub((void*)::recvmsg),
-                               send_stub((void*)::send),
-                               recv_stub((void*)::recv),
-                               accept_stub((void*)::accept),
-                               connect_stub((void*)::connect) {
-   sendto_stub.replace((void*)h2_network::sendto);
-   recvfrom_stub.replace((void*)h2_network::recvfrom);
-   sendmsg_stub.replace((void*)h2_network::sendmsg);
-   recvmsg_stub.replace((void*)h2_network::recvmsg);
-   send_stub.replace((void*)h2_network::send);
-   recv_stub.replace((void*)h2_network::recv);
-   accept_stub.replace((void*)h2_network::accept);
-   connect_stub.replace((void*)h2_network::connect);
+h2_inline h2_sock::h2_sock() {
+   stubs.add((void*)::sendto, (void*)h2_network::sendto, "", "", __FILE__, __LINE__);
+   stubs.add((void*)::recvfrom, (void*)h2_network::recvfrom, "", "", __FILE__, __LINE__);
+   stubs.add((void*)::sendmsg, (void*)h2_network::sendmsg, "", "", __FILE__, __LINE__);
+   stubs.add((void*)::recvmsg, (void*)h2_network::recvmsg, "", "", __FILE__, __LINE__);
+   stubs.add((void*)::send, (void*)h2_network::send, "", "", __FILE__, __LINE__);
+   stubs.add((void*)::recv, (void*)h2_network::recv, "", "", __FILE__, __LINE__);
+   stubs.add((void*)::accept, (void*)h2_network::accept, "", "", __FILE__, __LINE__);
+   stubs.add((void*)::connect, (void*)h2_network::connect, "", "", __FILE__, __LINE__);
    strcpy(last_to, "0.0.0.0:0");
 }
 
 h2_inline h2_sock::~h2_sock() {
    x.out();
    y.out();
-   sendto_stub.restore();
-   recvfrom_stub.restore();
-   sendmsg_stub.restore();
-   recvmsg_stub.restore();
-   send_stub.restore();
-   recv_stub.restore();
-   accept_stub.restore();
-   connect_stub.restore();
+   stubs.clear();
 }
 
 h2_inline void h2_sock::put_outgoing_udp(const char* from, const char* to, const char* data, size_t size) {
    strcpy(last_to, to);
-   h2_packet* udp = new h2_packet(from, to, data, size);
-   outgoing_udps.push_back(&udp->x);
+   outgoing_udps.push_back(&(new h2_packet(from, to, data, size))->x);
 }
 
 h2_inline void h2_sock::put_incoming_udp(const char* from, const char* to, const char* data, size_t size) {
-   h2_packet* udp = new h2_packet(from ? from : last_to, to, data, size);
-   incoming_udps.push_back(&udp->x);
+   incoming_udps.push_back(&(new h2_packet(from ? from : last_to, to, data, size))->x);
 }
 
 h2_inline void h2_sock::put_outgoing_tcp(int fd, const char* data, size_t size) {
    char from[128], to[128];
 
-   for (auto& t : sockets) {
+   for (auto& t : sockets)
       if (t.fd == fd) {
          strcpy(from, t.from.c_str());
          strcpy(to, t.to.c_str());
          break;
       }
-   }
 
    strcpy(last_to, to);
 
    h2_packet* tcp = nullptr;
-   h2_list_for_each_entry(p, &outgoing_tcps, h2_packet, x) {
-      if (p->from == from && p->to == to) {
-         tcp = p;
-         break;
-      }
-   }
-   if (tcp) {
+   h2_list_for_each_entry(p, &outgoing_tcps, h2_packet, x) h2_if_find_break(p->from == from && p->to == to, p, tcp);
+   if (tcp)
       tcp->data.append(data, size);
-   } else {
-      tcp = new h2_packet(from, to, data, size);
-      outgoing_tcps.push_back(&tcp->x);
-   }
+   else
+      outgoing_tcps.push_back(&(new h2_packet(from, to, data, size))->x);
 }
 
 h2_inline void h2_sock::put_incoming_tcp(const char* from, const char* to, const char* data, size_t size) {
    from = from ? from : last_to;
    h2_packet* tcp = nullptr;
-   h2_list_for_each_entry(p, &incoming_tcps, h2_packet, x) {
-      if (p->from == from && p->to == to) {
-         tcp = p;
-         break;
-      }
-   }
-   if (tcp) {
+   h2_list_for_each_entry(p, &incoming_tcps, h2_packet, x) h2_if_find_break(p->from == from && p->to == to, p, tcp);
+   if (tcp)
       tcp->data.append(data, size);
-   } else {
-      tcp = new h2_packet(from, to, data, size);
-      incoming_tcps.push_back(&tcp->x);
+   else
+      incoming_tcps.push_back(&(new h2_packet(from, to, data, size))->x);
+}
+
+h2_inline void h2_dnses::add(h2_dns* dns) { s.push(&dns->x); }
+h2_inline void h2_dnses::clear() {
+   h2_list_for_each_entry(p, &s, h2_dns, x) {
+      p->x.out();
+      p->y.out();
+      delete p;
    }
 }
 
@@ -366,14 +325,16 @@ h2_inline void h2_network_exporter::setaddrinfo(int n, ...) {
       if (!streq(hostname, array[i]))
          strcpy(dns->array[dns->count++], array[i]);
 
-   h2_network::I().dnss.push(&dns->y);
-   h2_dns_g(dns);
+   h2_network::I().dnses.push(&dns->y);
+   if (h2_task::I().current_case) h2_task::I().current_case->dnses.add(dns);
 }
 
 h2_inline h2_packet* h2_network_exporter::sock_start_and_fetch() {
-   h2_sock* sock = h2_sock_g(nullptr);
+   if (!h2_task::I().current_case) return nullptr;
+
+   h2_sock* sock = h2_task::I().current_case->sock;
    if (!sock) {
-      sock = h2_sock_g(new h2_sock());
+      sock = h2_task::I().current_case->sock = new h2_sock();
       h2_network::I().socks.push(&sock->y);
    }
 

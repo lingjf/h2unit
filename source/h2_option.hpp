@@ -30,6 +30,5 @@ struct h2_option {
    const char* style(const char* s) const;
 };
 
-static const h2_option& O = h2_option::I();
-
-static inline const char* S(const char* style) { return h2_option::I().style(style); }
+static const h2_option& O = h2_option::I(); // for pretty
+static inline const char* S(const char* style) { return h2_option::I().style(style); } // for pretty

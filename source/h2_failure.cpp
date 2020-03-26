@@ -9,6 +9,26 @@
       value = value + t;                     \
    } while (0)
 
+h2_inline void h2_fail::append_x(h2_fail*& fail, h2_fail* n) {
+   if (!fail)
+      fail = n;
+   else {
+      h2_fail** pp = &fail->x_next;
+      while (*pp) pp = &(*pp)->x_next;
+      *pp = n;
+   }
+}
+
+h2_inline void h2_fail::append_y(h2_fail*& fail, h2_fail* n) {
+   if (!fail)
+      fail = n;
+   else {
+      h2_fail** pp = &fail->y_next;
+      while (*pp) pp = &(*pp)->y_next;
+      *pp = n;
+   }
+}
+
 h2_inline h2_fail::h2_fail(const char* file_, int line_, const char* func_, int argi_)
   : x_next(nullptr), y_next(nullptr), file(file_), line(line_), func(func_), argi(argi_), w_type(0) {}
 

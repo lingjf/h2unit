@@ -53,6 +53,7 @@ namespace h2 {
 #include "h2_stdio.cpp"
 #include "h2_string.cpp"
 #include "h2_stub.cpp"
+#include "h2_mock.cpp"
 #include "h2_suite.cpp"
 #include "h2_task.cpp"
 }  // namespace h2

@@ -1,32 +1,28 @@
 
-struct h2_dns : h2_nohook {
+struct h2_dns : h2_libc {
    h2_list x, y;
    const char* hostname;
    int count;
    char array[32][128];
-
    h2_dns(const char* hostname_) : hostname(hostname_) {}
 };
 
-struct h2_packet : h2_nohook {
+struct h2_dnses {
+   h2_list s;
+   void add(h2_dns* dns);
+   void clear();
+};
+
+struct h2_packet : h2_libc {
    h2_list x;
    h2_string from, to, data;
    h2_packet(const char* from_, const char* to_, const char* data_, size_t size_) : from(from_), to(to_), data(data_, size_){};
-   bool match(const char* from_pattern, const char* to_pattern);
    bool can_recv(const char* local_iport);
 };
 
-struct h2_sock : h2_nohook {
+struct h2_sock : h2_libc {
    h2_list x, y;
-
-   h2_stub sendto_stub;
-   h2_stub recvfrom_stub;
-   h2_stub sendmsg_stub;
-   h2_stub recvmsg_stub;
-   h2_stub send_stub;
-   h2_stub recv_stub;
-   h2_stub accept_stub;
-   h2_stub connect_stub;
+   h2_stubs stubs;
 
    struct socket {
       int fd;
@@ -62,10 +58,10 @@ struct h2_packet_matches {
 
    h2_fail* matches(h2_packet* a, bool caseless = false, bool dont = false) const {
       h2_fail* fails = nullptr;
-      h2_append_y_fail(fails, h2_matcher_cast<const char*>(from).matches(a->from.c_str(), caseless, dont));
-      h2_append_y_fail(fails, h2_matcher_cast<const char*>(to).matches(a->to.c_str(), caseless, dont));
-      h2_append_y_fail(fails, h2_matcher_cast<const unsigned char*>(data).matches((unsigned char*)a->data.data(), caseless, dont));
-      h2_append_y_fail(fails, h2_matcher_cast<const int>(size).matches(a->data.length(), caseless, dont));
+      h2_fail::append_y(fails, h2_matcher_cast<const char*>(from).matches(a->from.c_str(), caseless, dont));
+      h2_fail::append_y(fails, h2_matcher_cast<const char*>(to).matches(a->to.c_str(), caseless, dont));
+      h2_fail::append_y(fails, h2_matcher_cast<const unsigned char*>(data).matches((unsigned char*)a->data.data(), caseless, dont));
+      h2_fail::append_y(fails, h2_matcher_cast<const int>(size).matches(a->data.length(), caseless, dont));
       return fails;
    }
 };

@@ -1,7 +1,7 @@
 
 static const unsigned char snowfield[] = {0xbe, 0xaf, 0xca, 0xfe, 0xc0, 0xde, 0xfa, 0xce};
 
-struct h2_piece : h2_nohook {
+struct h2_piece : h2_libc {
    unsigned char *ptr, *page;
    h2_list x;
    int size, pagesize, pagecount, freed;
@@ -39,9 +39,9 @@ struct h2_piece : h2_nohook {
    h2_fail* check_snowfield() {
       h2_fail* fail = nullptr;
       if (memcmp(ptr + size, snowfield, sizeof(snowfield)))
-         h2_append_x_fail(fail, new h2_fail_memoverflow(ptr, size, snowfield, sizeof(snowfield), bt, h2_backtrace()));
+         h2_fail::append_x(fail, new h2_fail_memoverflow(ptr, size, snowfield, sizeof(snowfield), bt, h2_backtrace()));
       if (memcmp(ptr - sizeof(snowfield), snowfield, sizeof(snowfield)))
-         h2_append_x_fail(fail, new h2_fail_memoverflow(ptr, -(int)sizeof(snowfield), snowfield, sizeof(snowfield), bt, h2_backtrace()));
+         h2_fail::append_x(fail, new h2_fail_memoverflow(ptr, -(int)sizeof(snowfield), snowfield, sizeof(snowfield), bt, h2_backtrace()));
 
       if (::mprotect(page, pagesize * (pagecount + 1), PROT_NONE) != 0)
          ::printf("mprotect PROT_NONE failed %s\n", strerror(errno));
@@ -60,7 +60,7 @@ struct h2_piece : h2_nohook {
    }
 };
 
-struct h2_block : h2_nohook {
+struct h2_block : h2_libc {
    h2_list x;
    h2_list using_list, freed_list;
 
@@ -79,10 +79,7 @@ struct h2_block : h2_nohook {
          fail = new h2_fail_memleak(file, line, where);
          h2_list_for_each_entry(p, &using_list, h2_piece, x) fail->add(p->ptr, p->size, p->bt);
       }
-      h2_list_for_each_entry(p, &freed_list, h2_piece, x) {
-         p->x.out();
-         delete p;
-      }
+      h2_list_for_each_entry(p, &freed_list, h2_piece, x) h2_out_delete(p);
       return fail;
    }
 
@@ -163,28 +160,18 @@ struct h2_stack {
    }
 
    h2_piece* get_piece(const void* ptr) {
-      h2_list_for_each_entry(b, &blocks, h2_block, x) {
-         h2_piece* p = b->get_piece(ptr);
-         if (p) return p;
-      }
+      h2_list_for_each_entry(p, &blocks, h2_block, x) h2_if_return(p->get_piece(ptr), );
       return nullptr;
    }
 
    h2_fail* rel_piece(void* ptr) {
-      h2_list_for_each_entry(b, &blocks, h2_block, x) {
-         h2_piece* p = b->get_piece(ptr);
-         if (p) return b->rel_piece(p);
-      }
-
+      h2_list_for_each_entry(p, &blocks, h2_block, x) h2_if_return(p->get_piece(ptr), p->rel_piece);
       h2_debug("Warning: free not found!");
       return nullptr;
    }
 
    h2_piece* host_piece(const void* addr) {
-      h2_list_for_each_entry(b, &blocks, h2_block, x) {
-         h2_piece* p = b->host_piece(addr);
-         if (p) return p;
-      }
+      h2_list_for_each_entry(p, &blocks, h2_block, x) h2_if_return(p->host_piece(addr), );
       return nullptr;
    }
 };
@@ -217,7 +204,7 @@ struct h2_hook {
 
    static void* realloc(void* ptr, size_t size) {
       if (size == 0) {
-         if (ptr) h2_fail_g(h2_stack::I().rel_piece(ptr));
+         free(ptr);
          return nullptr;
       }
 
@@ -296,14 +283,9 @@ struct h2_hook {
 
 #endif
 
-   h2_stub free_stub;
-   h2_stub malloc_stub;
-   h2_stub calloc_stub;
-   h2_stub realloc_stub;
-   h2_stub posix_memalign_stub;
+   h2_stubs stubs;
 
-   h2_hook()
-     : free_stub((void*)::free), malloc_stub((void*)::malloc), calloc_stub((void*)::calloc), realloc_stub((void*)::realloc), posix_memalign_stub((void*)::posix_memalign) {
+   h2_hook() {
 #if defined __GLIBC__
       sys__free_hook = __free_hook;
       sys__malloc_hook = __malloc_hook;
@@ -361,11 +343,10 @@ struct h2_hook {
       malloc_zone_unregister(default_zone);
       malloc_zone_register(default_zone);
 #else
-      free_stub.replace((void*)hook::free);
-      malloc_stub.replace((void*)hook::malloc);
-      calloc_stub.replace((void*)hook::calloc);
-      realloc_stub.replace((void*)hook::realloc);
-      posix_memalign_stub.replace((void*)hook::posix_memalign);
+      stubs.add((void*)::free, (void*)hook::free, "", "", __FILE__, __LINE__);
+      stubs.add((void*)::malloc, (void*)hook::malloc, "", "", __FILE__, __LINE__);
+      stubs.add((void*)::realloc, (void*)hook::realloc, "", "", __FILE__, __LINE__);
+      stubs.add((void*)::posix_memalign, (void*)hook::posix_memalign, "", "", __FILE__, __LINE__);
 #endif
    }
 
@@ -378,11 +359,7 @@ struct h2_hook {
 #elif defined __APPLE__
       malloc_zone_unregister(&mz);
 #else
-      free_stub.restore();
-      malloc_stub.restore();
-      calloc_stub.restore();
-      realloc_stub.restore();
-      posix_memalign_stub.restore();
+      stubs.clear();
 #endif
    }
 

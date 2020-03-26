@@ -1,6 +1,6 @@
+
 #include "../source/h2_unit.hpp"
 #include "../source/h2_unit.cpp"
-
 
 time_t STUB_time(time_t* x)
 {
@@ -49,6 +49,11 @@ time_t STUB2_time(time_t* x)
    return 222;
 }
 
+double STUB_sqrt(double x)
+{
+   return 3.14;
+}
+
 static int foobar(int, int)
 {
    return 1;
@@ -59,21 +64,27 @@ SUITE(libc)
    Case(stub time())
    {
       h2::h2_stub s((void*)time);
-      s.replace((void*)STUB_time);
+      s.set((void*)STUB_time);
       OK(1024, time(NULL));
-      s.restore();
+      s.reset();
    };
+
+   Todo(stub sqrt)
+   {
+      STUB((double(*)(double))sqrt, STUB_sqrt);
+      OK(3.14, sqrt((double)1.0));
+   }
 
    Case(temporary_restore time())
    {
       h2::h2_stub s((void*)time);
-      s.replace((void*)STUB_time);
+      s.set((void*)STUB_time);
       {
          h2::h2_stub::temporary_restore t(&s);
          OK(Nq(1024), time(NULL));
       }
       OK(1024, time(NULL));
-      s.restore();
+      s.reset();
    };
 }
 
@@ -123,11 +134,11 @@ SUITE(stubs)
    {
       h2::h2_stub s((void*)my_time);
 
-      s.replace((void*)STUB_time);
+      s.set((void*)STUB_time);
 
       OK(1024, my_time(NULL));
 
-      s.restore();
+      s.reset();
    };
 
    Case(local function)

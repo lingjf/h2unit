@@ -1,6 +1,6 @@
 
 template <typename T>
-class h2_shared_ptr : h2_nohook {
+class h2_shared_ptr : h2_libc {
  public:
    h2_shared_ptr() : px(nullptr), pn(nullptr) {}
    explicit h2_shared_ptr(T* p) { acquire(p, nullptr); }

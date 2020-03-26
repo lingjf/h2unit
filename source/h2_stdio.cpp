@@ -2,8 +2,7 @@
 struct h2_stdio {
    h2_singleton(h2_stdio);
 
-   char buffer[1024 * 1024];
-   char* p;
+   char buffer[1024 * 1024], *p;
    int offset, size;
 
    // write, pwrite, writev

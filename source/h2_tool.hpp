@@ -32,8 +32,9 @@ struct h2_with {
    ~h2_with() { (f && c) && c(f); }
 };
 
-#define h2_singleton(_Class) \
-   static _Class& I() {      \
-      static _Class __;      \
-      return __;             \
-   }
+/* clang-format off */
+
+#define h2_singleton(_Class) static _Class& I() { static _Class i; return i; }
+#define h2_if_return(x, y) do { auto t__ = x; if (t__) return y(t__); } while (0)
+#define h2_if_find_break(_Cond, p, found) if (_Cond) { found = p; break; }
+#define h2_out_delete(p) do { p->x.out(); delete p; } while (0)
