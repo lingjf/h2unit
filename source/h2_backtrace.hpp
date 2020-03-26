@@ -9,7 +9,7 @@ struct h2_backtrace {
    h2_backtrace(const h2_backtrace&) = default;
    h2_backtrace& operator=(const h2_backtrace&) = default;
 
-   bool operator==(h2_backtrace& bt);
+   bool operator==(h2_backtrace&);
 
    bool has(void* func, int size) const;
    void print() const;

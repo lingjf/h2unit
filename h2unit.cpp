@@ -1,4 +1,4 @@
-/* v5.0  2020-03-25 23:18:11 */
+/* v5.0  2020-03-27 01:20:14 */
 /* https://github.com/lingjf/h2unit */
 /* Apache Licence 2.0 */
 #include "h2unit.hpp"
@@ -47,8 +47,7 @@ static inline bool h2_regex_match(const char* pattern, const char* subject, bool
    try {
       std::regex re(pattern);
       result = std::regex_match(subject, caseless ? std::regex(pattern, std::regex::icase) : std::regex(pattern));
-   }
-   catch (const std::regex_error& e) {
+   } catch (const std::regex_error& e) {
       result = false;
    }
    return result;
@@ -321,11 +320,11 @@ h2_inline void h2_case::post_cleanup() {
    dnses.clear();
    stubs.clear();
    h2_fail* fail = mocks.clear();
-   h2_append_x_fail(fail, h2_heap::stack::pop());
+   h2_fail::append_x(fail, h2_heap::stack::pop());
 
    if (!fail) return;
    if (status != FAILED)
-      h2_append_x_fail(fails, fail);
+      h2_fail::append_x(fails, fail);
    else
       delete fail;
    status = FAILED;
@@ -333,7 +332,7 @@ h2_inline void h2_case::post_cleanup() {
 
 h2_inline void h2_case::do_fail(h2_fail* fail) {
    status = FAILED;
-   h2_append_x_fail(fails, fail);
+   h2_fail::append_x(fails, fail);
    ::longjmp(jump, 1);
 }
 
@@ -1082,6 +1081,26 @@ h2_inline double tinyexpr::eval(const char* expression, int* error) {
       value = value + t;                     \
    } while (0)
 
+h2_inline void h2_fail::append_x(h2_fail*& fail, h2_fail* n) {
+   if (!fail)
+      fail = n;
+   else {
+      h2_fail** pp = &fail->x_next;
+      while (*pp) pp = &(*pp)->x_next;
+      *pp = n;
+   }
+}
+
+h2_inline void h2_fail::append_y(h2_fail*& fail, h2_fail* n) {
+   if (!fail)
+      fail = n;
+   else {
+      h2_fail** pp = &fail->y_next;
+      while (*pp) pp = &(*pp)->y_next;
+      *pp = n;
+   }
+}
+
 h2_inline h2_fail::h2_fail(const char* file_, int line_, const char* func_, int argi_)
   : x_next(nullptr), y_next(nullptr), file(file_), line(line_), func(func_), argi(argi_), w_type(0) {}
 
@@ -1340,7 +1359,7 @@ h2_inline void h2_fail_instantiate::print() {
 }
 static const unsigned char snowfield[] = {0xbe, 0xaf, 0xca, 0xfe, 0xc0, 0xde, 0xfa, 0xce};
 
-struct h2_piece : h2_nohook {
+struct h2_piece : h2_libc {
    unsigned char *ptr, *page;
    h2_list x;
    int size, pagesize, pagecount, freed;
@@ -1378,9 +1397,9 @@ struct h2_piece : h2_nohook {
    h2_fail* check_snowfield() {
       h2_fail* fail = nullptr;
       if (memcmp(ptr + size, snowfield, sizeof(snowfield)))
-         h2_append_x_fail(fail, new h2_fail_memoverflow(ptr, size, snowfield, sizeof(snowfield), bt, h2_backtrace()));
+         h2_fail::append_x(fail, new h2_fail_memoverflow(ptr, size, snowfield, sizeof(snowfield), bt, h2_backtrace()));
       if (memcmp(ptr - sizeof(snowfield), snowfield, sizeof(snowfield)))
-         h2_append_x_fail(fail, new h2_fail_memoverflow(ptr, -(int)sizeof(snowfield), snowfield, sizeof(snowfield), bt, h2_backtrace()));
+         h2_fail::append_x(fail, new h2_fail_memoverflow(ptr, -(int)sizeof(snowfield), snowfield, sizeof(snowfield), bt, h2_backtrace()));
 
       if (::mprotect(page, pagesize * (pagecount + 1), PROT_NONE) != 0)
          ::printf("mprotect PROT_NONE failed %s\n", strerror(errno));
@@ -1399,7 +1418,7 @@ struct h2_piece : h2_nohook {
    }
 };
 
-struct h2_block : h2_nohook {
+struct h2_block : h2_libc {
    h2_list x;
    h2_list using_list, freed_list;
 
@@ -1418,10 +1437,7 @@ struct h2_block : h2_nohook {
          fail = new h2_fail_memleak(file, line, where);
          h2_list_for_each_entry(p, &using_list, h2_piece, x) fail->add(p->ptr, p->size, p->bt);
       }
-      h2_list_for_each_entry(p, &freed_list, h2_piece, x) {
-         p->x.out();
-         delete p;
-      }
+      h2_list_for_each_entry(p, &freed_list, h2_piece, x) h2_out_delete(p);
       return fail;
    }
 
@@ -1502,28 +1518,18 @@ struct h2_stack {
    }
 
    h2_piece* get_piece(const void* ptr) {
-      h2_list_for_each_entry(b, &blocks, h2_block, x) {
-         h2_piece* p = b->get_piece(ptr);
-         if (p) return p;
-      }
+      h2_list_for_each_entry(p, &blocks, h2_block, x) h2_if_return(p->get_piece(ptr), );
       return nullptr;
    }
 
    h2_fail* rel_piece(void* ptr) {
-      h2_list_for_each_entry(b, &blocks, h2_block, x) {
-         h2_piece* p = b->get_piece(ptr);
-         if (p) return b->rel_piece(p);
-      }
-
+      h2_list_for_each_entry(p, &blocks, h2_block, x) h2_if_return(p->get_piece(ptr), p->rel_piece);
       h2_debug("Warning: free not found!");
       return nullptr;
    }
 
    h2_piece* host_piece(const void* addr) {
-      h2_list_for_each_entry(b, &blocks, h2_block, x) {
-         h2_piece* p = b->host_piece(addr);
-         if (p) return p;
-      }
+      h2_list_for_each_entry(p, &blocks, h2_block, x) h2_if_return(p->host_piece(addr), );
       return nullptr;
    }
 };
@@ -1556,7 +1562,7 @@ struct h2_hook {
 
    static void* realloc(void* ptr, size_t size) {
       if (size == 0) {
-         if (ptr) h2_fail_g(h2_stack::I().rel_piece(ptr));
+         free(ptr);
          return nullptr;
       }
 
@@ -1635,14 +1641,9 @@ struct h2_hook {
 
 #endif
 
-   h2_stub free_stub;
-   h2_stub malloc_stub;
-   h2_stub calloc_stub;
-   h2_stub realloc_stub;
-   h2_stub posix_memalign_stub;
+   h2_stubs stubs;
 
-   h2_hook()
-     : free_stub((void*)::free), malloc_stub((void*)::malloc), calloc_stub((void*)::calloc), realloc_stub((void*)::realloc), posix_memalign_stub((void*)::posix_memalign) {
+   h2_hook() {
 #if defined __GLIBC__
       sys__free_hook = __free_hook;
       sys__malloc_hook = __malloc_hook;
@@ -1700,11 +1701,10 @@ struct h2_hook {
       malloc_zone_unregister(default_zone);
       malloc_zone_register(default_zone);
 #else
-      free_stub.replace((void*)hook::free);
-      malloc_stub.replace((void*)hook::malloc);
-      calloc_stub.replace((void*)hook::calloc);
-      realloc_stub.replace((void*)hook::realloc);
-      posix_memalign_stub.replace((void*)hook::posix_memalign);
+      stubs.add((void*)::free, (void*)hook::free, "", "", __FILE__, __LINE__);
+      stubs.add((void*)::malloc, (void*)hook::malloc, "", "", __FILE__, __LINE__);
+      stubs.add((void*)::realloc, (void*)hook::realloc, "", "", __FILE__, __LINE__);
+      stubs.add((void*)::posix_memalign, (void*)hook::posix_memalign, "", "", __FILE__, __LINE__);
 #endif
    }
 
@@ -1717,11 +1717,7 @@ struct h2_hook {
 #elif defined __APPLE__
       malloc_zone_unregister(&mz);
 #else
-      free_stub.restore();
-      malloc_stub.restore();
-      calloc_stub.restore();
-      realloc_stub.restore();
-      posix_memalign_stub.restore();
+      stubs.clear();
 #endif
    }
 
@@ -1793,7 +1789,7 @@ struct h2_json {
       }
    };
 
-   struct Node : h2_nohook {
+   struct Node : h2_libc {
       int type;
 
       h2_string key_string;
@@ -2042,7 +2038,7 @@ struct h2_json {
       };
    }
 
-   struct Dual : h2_nohook {
+   struct Dual : h2_libc {
       int depth;
       int e_type, a_type;
       h2_string e_key, a_key;
@@ -2810,15 +2806,12 @@ struct h2_network {
       bool block = isblock(sockfd);
       const char* local = getsockname(sockfd, (char*)alloca(64));
       do {
-         h2_list_for_each_entry(p, &list, h2_packet, x) {
-            // return h2_wildcard_match(to.c_str(), local_iport);
-            // printf("shit local=%s, packet_to=%s \n", local, p->to.c_str());
-            if (p->can_recv(local) && (!sync || p->data.length() == 0)) {
-               p->x.out();
-               packet = p;
-               return;
-            }
+         h2_list_for_each_entry(p, &list, h2_packet, x) if (p->can_recv(local) && (!sync || p->data.length() == 0)) {
+            p->x.out();
+            packet = p;
+            return;
          }
+
          if (block) h2_sleep(100);
       } while (block);
    }
@@ -2903,118 +2896,80 @@ struct h2_network {
       return recvfrom(socket, message->msg_iov[0].iov_base, message->msg_iov[0].iov_len, 0, (struct sockaddr*)message->msg_name, &message->msg_namelen);
    }
 
-   h2_stub getaddrinfo_stub;
-   h2_stub freeaddrinfo_stub;
-   h2_stub gethostbyname_stub;
-
-   h2_network() : getaddrinfo_stub((void*)::getaddrinfo),
-                  freeaddrinfo_stub((void*)::freeaddrinfo),
-                  gethostbyname_stub((void*)::gethostbyname) {
-      getaddrinfo_stub.replace((void*)getaddrinfo);
-      freeaddrinfo_stub.replace((void*)freeaddrinfo);
-      gethostbyname_stub.replace((void*)gethostbyname);
+   h2_stubs stubs;
+   h2_network() {
+      stubs.add((void*)::getaddrinfo, (void*)getaddrinfo, "", "", __FILE__, __LINE__);
+      stubs.add((void*)::freeaddrinfo, (void*)freeaddrinfo, "", "", __FILE__, __LINE__);
+      stubs.add((void*)::gethostbyname, (void*)gethostbyname, "", "", __FILE__, __LINE__);
    }
-
-   ~h2_network() {
-      // getaddrinfo_stub.restore();
-      // freeaddrinfo_stub.restore();
-      // gethostbyname_stub.restore();
-   }
+   ~h2_network() { stubs.clear(); }
 };
 
-h2_inline bool h2_packet::match(const char* from_pattern, const char* to_pattern) {
-   return h2_wildcard_match(from_pattern, from.c_str()) &&
-          h2_wildcard_match(to_pattern, to.c_str());
-}
-h2_inline bool h2_packet::can_recv(const char* local_iport) {
-   return h2_wildcard_match(to.c_str(), local_iport);
-}
+h2_inline bool h2_packet::can_recv(const char* local_iport) { return h2_wildcard_match(to.c_str(), local_iport); }
 
-h2_inline h2_sock::h2_sock() : sendto_stub((void*)::sendto),
-                               recvfrom_stub((void*)::recvfrom),
-                               sendmsg_stub((void*)::sendmsg),
-                               recvmsg_stub((void*)::recvmsg),
-                               send_stub((void*)::send),
-                               recv_stub((void*)::recv),
-                               accept_stub((void*)::accept),
-                               connect_stub((void*)::connect) {
-   sendto_stub.replace((void*)h2_network::sendto);
-   recvfrom_stub.replace((void*)h2_network::recvfrom);
-   sendmsg_stub.replace((void*)h2_network::sendmsg);
-   recvmsg_stub.replace((void*)h2_network::recvmsg);
-   send_stub.replace((void*)h2_network::send);
-   recv_stub.replace((void*)h2_network::recv);
-   accept_stub.replace((void*)h2_network::accept);
-   connect_stub.replace((void*)h2_network::connect);
+h2_inline h2_sock::h2_sock() {
+   stubs.add((void*)::sendto, (void*)h2_network::sendto, "", "", __FILE__, __LINE__);
+   stubs.add((void*)::recvfrom, (void*)h2_network::recvfrom, "", "", __FILE__, __LINE__);
+   stubs.add((void*)::sendmsg, (void*)h2_network::sendmsg, "", "", __FILE__, __LINE__);
+   stubs.add((void*)::recvmsg, (void*)h2_network::recvmsg, "", "", __FILE__, __LINE__);
+   stubs.add((void*)::send, (void*)h2_network::send, "", "", __FILE__, __LINE__);
+   stubs.add((void*)::recv, (void*)h2_network::recv, "", "", __FILE__, __LINE__);
+   stubs.add((void*)::accept, (void*)h2_network::accept, "", "", __FILE__, __LINE__);
+   stubs.add((void*)::connect, (void*)h2_network::connect, "", "", __FILE__, __LINE__);
    strcpy(last_to, "0.0.0.0:0");
 }
 
 h2_inline h2_sock::~h2_sock() {
    x.out();
    y.out();
-   sendto_stub.restore();
-   recvfrom_stub.restore();
-   sendmsg_stub.restore();
-   recvmsg_stub.restore();
-   send_stub.restore();
-   recv_stub.restore();
-   accept_stub.restore();
-   connect_stub.restore();
+   stubs.clear();
 }
 
 h2_inline void h2_sock::put_outgoing_udp(const char* from, const char* to, const char* data, size_t size) {
    strcpy(last_to, to);
-   h2_packet* udp = new h2_packet(from, to, data, size);
-   outgoing_udps.push_back(&udp->x);
+   outgoing_udps.push_back(&(new h2_packet(from, to, data, size))->x);
 }
 
 h2_inline void h2_sock::put_incoming_udp(const char* from, const char* to, const char* data, size_t size) {
-   h2_packet* udp = new h2_packet(from ? from : last_to, to, data, size);
-   incoming_udps.push_back(&udp->x);
+   incoming_udps.push_back(&(new h2_packet(from ? from : last_to, to, data, size))->x);
 }
 
 h2_inline void h2_sock::put_outgoing_tcp(int fd, const char* data, size_t size) {
    char from[128], to[128];
 
-   for (auto& t : sockets) {
+   for (auto& t : sockets)
       if (t.fd == fd) {
          strcpy(from, t.from.c_str());
          strcpy(to, t.to.c_str());
          break;
       }
-   }
 
    strcpy(last_to, to);
 
    h2_packet* tcp = nullptr;
-   h2_list_for_each_entry(p, &outgoing_tcps, h2_packet, x) {
-      if (p->from == from && p->to == to) {
-         tcp = p;
-         break;
-      }
-   }
-   if (tcp) {
+   h2_list_for_each_entry(p, &outgoing_tcps, h2_packet, x) h2_if_find_break(p->from == from && p->to == to, p, tcp);
+   if (tcp)
       tcp->data.append(data, size);
-   } else {
-      tcp = new h2_packet(from, to, data, size);
-      outgoing_tcps.push_back(&tcp->x);
-   }
+   else
+      outgoing_tcps.push_back(&(new h2_packet(from, to, data, size))->x);
 }
 
 h2_inline void h2_sock::put_incoming_tcp(const char* from, const char* to, const char* data, size_t size) {
    from = from ? from : last_to;
    h2_packet* tcp = nullptr;
-   h2_list_for_each_entry(p, &incoming_tcps, h2_packet, x) {
-      if (p->from == from && p->to == to) {
-         tcp = p;
-         break;
-      }
-   }
-   if (tcp) {
+   h2_list_for_each_entry(p, &incoming_tcps, h2_packet, x) h2_if_find_break(p->from == from && p->to == to, p, tcp);
+   if (tcp)
       tcp->data.append(data, size);
-   } else {
-      tcp = new h2_packet(from, to, data, size);
-      incoming_tcps.push_back(&tcp->x);
+   else
+      incoming_tcps.push_back(&(new h2_packet(from, to, data, size))->x);
+}
+
+h2_inline void h2_dnses::add(h2_dns* dns) { s.push(&dns->x); }
+h2_inline void h2_dnses::clear() {
+   h2_list_for_each_entry(p, &s, h2_dns, x) {
+      p->x.out();
+      p->y.out();
+      delete p;
    }
 }
 
@@ -3503,38 +3458,76 @@ struct h2_thunk {
    void* reset(void* befp) { return memcpy(befp, saved_code, sizeof(saved_code)); }
 };
 
-h2_inline h2_stub::h2_stub(void* befp_, const char* file_, int line_) : file(file_), line(line_) { befp = ((h2_thunk*)thunk)->save(befp_); }
-h2_inline void h2_stub::replace(void* tofp_) { tofp = tofp_, ((h2_thunk*)thunk)->set(befp, tofp); }
-h2_inline void h2_stub::restore() { befp && ((h2_thunk*)thunk)->reset(befp); }
+struct h2_native : h2_thunk {
+   h2_list x;
+   void* befp;
+   int refcount;
+   h2_native(void* befp_) : befp(befp_), refcount(0) { save(befp); }
+   void restore() { reset(befp); }
+};
 
+struct h2_natives {
+   h2_singleton(h2_natives);
+
+   h2_list s;
+   h2_native* get(void* befp) {
+      h2_list_for_each_entry(p, &s, h2_native, x) if (p->befp == befp) return p;
+      return nullptr;
+   }
+   void dec(void* befp) {
+      h2_native* p = get(befp);
+      if (!p) return;
+      if (--p->refcount == 0) {
+         p->x.out();
+         h2_libc::free(p);
+      }
+   }
+   void inc(void* befp) {
+      h2_native* p = get(befp);
+      if (!p) {
+         p = new (h2_libc::malloc(sizeof(h2_native))) h2_native(befp);
+         s.push(&p->x);
+      }
+      p->refcount++;
+   }
+};
+
+h2_inline h2_stub::h2_stub(void* befp_, const char* file_, int line_) : file(file_), line(line_) {
+   h2_natives::I().inc(befp_);
+   befp = ((h2_thunk*)thunk)->save(befp_);
+}
+h2_inline h2_stub::~h2_stub() {
+   h2_natives::I().dec(befp);
+}
+
+h2_inline void h2_stub::set(void* tofp_) { ((h2_thunk*)thunk)->set(befp, tofp = tofp_); }
+h2_inline void h2_stub::reset() { befp && ((h2_thunk*)thunk)->reset(befp); }
+h2_inline void h2_stub::restore() { h2_natives::I().get(befp)->restore(); }
 
 h2_inline bool h2_stubs::add(void* befp, void* tofp, const char* befn, const char* tofn, const char* file, int line) {
    h2_stub* stub = nullptr;
-   h2_list_for_each_entry(p, &stubs, h2_stub, x) if (p->befp == befp) {
-      stub = p;
-      break;
-   }
+   h2_list_for_each_entry(p, &s, h2_stub, x) h2_if_find_break(p->befp == befp, p, stub);
 
    if (!tofp) { /* unstub */
       if (stub) {
-         stub->restore();
+         stub->reset();
          stub->x.out();
-         h2_libc::free(stub);
+         delete stub;
       }
       return true;
    }
 
    if (!stub) {
       stub = new h2_stub(befp, file, line);
-      stubs.push(&stub->x);
+      s.push(&stub->x);
    }
-   stub->replace(tofp);
+   stub->set(tofp);
    return true;
 }
 
 h2_inline void h2_stubs::clear() {
-   h2_list_for_each_entry(p, &stubs, h2_stub, x) {
-      p->restore();
+   h2_list_for_each_entry(p, &s, h2_stub, x) {
+      p->reset();
       p->x.out();
       delete p;
    }
@@ -3549,7 +3542,7 @@ h2_inline bool h2_mocks::add(h2_mock* mock) {
 h2_inline h2_fail* h2_mocks::clear() {
    h2_fail* fail = nullptr;
    h2_list_for_each_entry(p, &s, h2_mock, x) {
-      h2_append_x_fail(fail, p->times_check());
+      h2_fail::append_x(fail, p->times_check());
       p->reset();
       p->x.out();
    }

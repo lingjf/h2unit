@@ -1,5 +1,5 @@
 
-struct h2_mock : h2_nohook {
+struct h2_mock : h2_libc {
    h2_list x;
    void *befp, *tofp;
    const char* befn;
@@ -16,7 +16,7 @@ struct h2_mock : h2_nohook {
 
    h2_fail* times_check() {
       h2_fail* fail = nullptr;
-      for (auto& c : c_array) h2_append_y_fail(fail, c.check());
+      for (auto& c : c_array) h2_fail::append_y(fail, c.check());
       if (fail) fail->locate(file, line, befn);
       return fail;
    }
@@ -47,7 +47,7 @@ struct h2_tuple_match {
       h2_fail* fail = h2_tuple_match<N - 1>::matches(matchers, args, file, line, func);
       h2_fail* f = std::get<N - 1>(matchers).matches(std::get<N - 1>(args));
       if (f) f->locate(file, line, func, N - 1);
-      h2_append_x_fail(fail, f);
+      h2_fail::append_x(fail, f);
       return fail;
    }
 };

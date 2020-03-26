@@ -12,11 +12,11 @@ h2_inline void h2_case::post_cleanup() {
    dnses.clear();
    stubs.clear();
    h2_fail* fail = mocks.clear();
-   h2_append_x_fail(fail, h2_heap::stack::pop());
+   h2_fail::append_x(fail, h2_heap::stack::pop());
 
    if (!fail) return;
    if (status != FAILED)
-      h2_append_x_fail(fails, fail);
+      h2_fail::append_x(fails, fail);
    else
       delete fail;
    status = FAILED;
@@ -24,6 +24,6 @@ h2_inline void h2_case::post_cleanup() {
 
 h2_inline void h2_case::do_fail(h2_fail* fail) {
    status = FAILED;
-   h2_append_x_fail(fails, fail);
+   h2_fail::append_x(fails, fail);
    ::longjmp(jump, 1);
 }

@@ -1,5 +1,5 @@
 
-struct h2_fail : h2_nohook {
+struct h2_fail : h2_libc {
    h2_fail *x_next, *y_next;
 
    const char* file;
@@ -31,27 +31,10 @@ struct h2_fail : h2_nohook {
    void print_locate();
    virtual void print();
    virtual void print(FILE* fp);
+
+   static void append_x(h2_fail*& fail, h2_fail* n);
+   static void append_y(h2_fail*& fail, h2_fail* n);
 };
-
-static inline void h2_append_x_fail(h2_fail*& fail, h2_fail* n) {
-   if (!fail) {
-      fail = n;
-   } else {
-      h2_fail** pp = &fail->x_next;
-      while (*pp) pp = &(*pp)->x_next;
-      *pp = n;
-   }
-}
-
-static inline void h2_append_y_fail(h2_fail*& fail, h2_fail* n) {
-   if (!fail) {
-      fail = n;
-   } else {
-      h2_fail** pp = &fail->y_next;
-      while (*pp) pp = &(*pp)->y_next;
-      *pp = n;
-   }
-}
 
 struct h2_fail_normal : h2_fail {
    h2_fail_normal(const char* file_ = nullptr, int line_ = 0, const char* func_ = nullptr, const char* format = "", ...);

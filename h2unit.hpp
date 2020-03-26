@@ -1,4 +1,4 @@
-/* v5.0  2020-03-25 23:18:11 */
+/* v5.0  2020-03-27 01:20:14 */
 /* https://github.com/lingjf/h2unit */
 /* Apache Licence 2.0 */
 #ifndef H2_2FILES
@@ -190,11 +190,12 @@ struct h2_with {
    ~h2_with() { (f && c) && c(f); }
 };
 
-#define h2_singleton(_Class) \
-   static _Class& I() {      \
-      static _Class i;       \
-      return i;              \
-   }
+/* clang-format off */
+
+#define h2_singleton(_Class) static _Class& I() { static _Class i; return i; }
+#define h2_if_return(x, y) do { auto t__ = x; if (t__) return y(t__); } while (0)
+#define h2_if_find_break(_Cond, p, found) if (_Cond) { found = p; break; }
+#define h2_out_delete(p) do { p->x.out(); delete p; } while (0)
 
 #define h2_list_entry(ptr, type, link) ((type*)((char*)(ptr) - (char*)(&(((type*)(1))->link)) + 1))
 #define h2_list_for_each_entry(p, head, type, link) for (type* p = h2_list_entry((head)->next, type, link), *t = h2_list_entry(p->link.next, type, link); &p->link != (head); p = t, t = h2_list_entry(t->link.next, type, link))
@@ -269,14 +270,16 @@ struct h2_option {
    const char* style(const char* s) const;
 };
 
-static const h2_option& O = h2_option::I();
-
-static inline const char* S(const char* style) { return h2_option::I().style(style); }
+static const h2_option& O = h2_option::I(); // for pretty
+static inline const char* S(const char* style) { return h2_option::I().style(style); } // for pretty
 
 struct h2_libc {
    static void* malloc(size_t sz);
    static void free(void* ptr);
    static int write(FILE* stream, const void* buf, size_t nbyte);
+
+   static void* operator new(std::size_t sz) { return malloc(sz); }
+   static void operator delete(void* ptr) { free(ptr); }
 };
 
 template <typename T>
@@ -313,11 +316,6 @@ template <typename T> inline bool operator!=(const h2_allocator<T>&, const h2_al
 template <typename T> using h2_vector = std::vector<T, h2_allocator<T>>;
 typedef std::basic_ostringstream<char, std::char_traits<char>, h2_allocator<char>> h2_ostringstream;
 
-
-struct h2_nohook { /* new derived class/struct with libc malloc/free */
-   static void* operator new(std::size_t sz) { return h2_libc::malloc(sz); }
-   static void operator delete(void* ptr) { h2_libc::free(ptr); }
-};
 struct h2_string : public std::basic_string<char, std::char_traits<char>, h2_allocator<char>> {
    h2_string() : basic_string() {}
    h2_string(const h2_string& __str) : basic_string(__str.c_str()) {}
@@ -360,7 +358,7 @@ inline h2_string operator+(const h2_string& lhs, const char rhs) { h2_string s(l
 inline h2_string operator+(const char lhs, const h2_string& rhs) { h2_string s(1, lhs); s.append(rhs); return s; }
 
 template <typename T>
-class h2_shared_ptr : h2_nohook {
+class h2_shared_ptr : h2_libc {
  public:
    h2_shared_ptr() : px(nullptr), pn(nullptr) {}
    explicit h2_shared_ptr(T* p) { acquire(p, nullptr); }
@@ -429,13 +427,13 @@ struct h2_backtrace {
    h2_backtrace(const h2_backtrace&) = default;
    h2_backtrace& operator=(const h2_backtrace&) = default;
 
-   bool operator==(h2_backtrace& bt);
+   bool operator==(h2_backtrace&);
 
    bool has(void* func, int size) const;
    void print() const;
 };
 
-struct h2_fail : h2_nohook {
+struct h2_fail : h2_libc {
    h2_fail *x_next, *y_next;
 
    const char* file;
@@ -467,27 +465,10 @@ struct h2_fail : h2_nohook {
    void print_locate();
    virtual void print();
    virtual void print(FILE* fp);
+
+   static void append_x(h2_fail*& fail, h2_fail* n);
+   static void append_y(h2_fail*& fail, h2_fail* n);
 };
-
-static inline void h2_append_x_fail(h2_fail*& fail, h2_fail* n) {
-   if (!fail) {
-      fail = n;
-   } else {
-      h2_fail** pp = &fail->x_next;
-      while (*pp) pp = &(*pp)->x_next;
-      *pp = n;
-   }
-}
-
-static inline void h2_append_y_fail(h2_fail*& fail, h2_fail* n) {
-   if (!fail) {
-      fail = n;
-   } else {
-      h2_fail** pp = &fail->y_next;
-      while (*pp) pp = &(*pp)->y_next;
-      *pp = n;
-   }
-}
 
 struct h2_fail_normal : h2_fail {
    h2_fail_normal(const char* file_ = nullptr, int line_ = 0, const char* func_ = nullptr, const char* format = "", ...);
@@ -564,7 +545,7 @@ struct h2_fail_instantiate : h2_fail {
    void print();
 };
 
-struct h2_stub : h2_nohook {
+struct h2_stub : h2_libc {
    h2_list x;
    unsigned char thunk[64];
    void *befp, *tofp;
@@ -572,22 +553,24 @@ struct h2_stub : h2_nohook {
    int line;
 
    h2_stub(void* befp_, const char* file_ = nullptr, int line_ = 0);
-
-   void replace(void* tofp_);
+   ~h2_stub();
+   void set(void* tofp_);
+   void reset();
    void restore();
 
    struct temporary_restore : h2_once {
       h2_stub* thus;
       temporary_restore(h2_stub* stub) : thus(stub) { thus->restore(); }
-      ~temporary_restore() { thus->replace(thus->tofp); }
+      ~temporary_restore() { thus->set(thus->tofp); }
    };
 };
 
 struct h2_stubs {
-   h2_list stubs;
+   h2_list s;
    bool add(void* befp, void* tofp, const char* befn, const char* tofn, const char* file, int line);
    void clear();
 };
+
 static inline void h2_fail_g(void* fail);
 
 struct h2_heap {
@@ -831,7 +814,7 @@ struct h2_polymorphic_matcher {
    operator h2_matcher<T>() const { return h2_matcher<T>(new internal_impl<const T&>(m), 0); }
 
    template <typename T>
-   struct internal_impl : h2_matcher_impl<T>, h2_nohook {
+   struct internal_impl : h2_matcher_impl<T>, h2_libc {
       const Matches m;
       explicit internal_impl(const Matches& matches_) : m(matches_) {}
       h2_fail* matches(T a, bool caseless = false, bool dont = false) const override { return m.matches(a, caseless, dont); }
@@ -949,7 +932,7 @@ template <typename T, typename U>
 struct h2_matcher_cast_impl<T, h2_matcher<U>> {
    static h2_matcher<T> cast(const h2_matcher<U>& from) { return h2_matcher<T>(new internal_impl(from)); }
 
-   struct internal_impl : h2_matcher_impl<T>, h2_nohook {
+   struct internal_impl : h2_matcher_impl<T>, h2_libc {
       explicit internal_impl(const h2_matcher<U>& from_) : from(from_) {}
 
       // Delegate the matching logic to the source h2_matcher.
@@ -994,8 +977,8 @@ struct h2_and_matches {
    template <typename A>
    h2_fail* matches(const A& a, bool caseless = false, bool dont = false) const {
       h2_fail* fail = nullptr;
-      h2_append_y_fail(fail, h2_matcher_cast<A>(m1).matches(a, caseless, false));
-      h2_append_y_fail(fail, h2_matcher_cast<A>(m2).matches(a, caseless, false));
+      h2_fail::append_y(fail, h2_matcher_cast<A>(m1).matches(a, caseless, false));
+      h2_fail::append_y(fail, h2_matcher_cast<A>(m2).matches(a, caseless, false));
       if (!fail == !dont) return nullptr;
       if (dont) {
          fail = new h2_fail_unexpect();
@@ -1212,7 +1195,7 @@ struct h2_allof_matches {
       for (int i = 0; i < v_matchers.size(); ++i) {
          h2_fail* f = v_matchers[i].matches(a, caseless, false);
          if (f) f->kprintf(" %d. ", i);
-         h2_append_y_fail(fails, f);
+         h2_fail::append_y(fails, f);
       }
 
       if (!fails == !dont) return nullptr;
@@ -1222,7 +1205,7 @@ struct h2_allof_matches {
          fail->mprintf("should not matches all of matchers");
       else {
          fail->mprintf("should matches all of matchers");
-         h2_append_x_fail(fail, fails);
+         h2_fail::append_x(fail, fails);
       }
       return fail;
    }
@@ -1246,7 +1229,7 @@ struct h2_anyof_matches {
          h2_fail* f = v_matchers[i].matches(a, caseless, false);
          if (!f) s++;
          if (f) f->kprintf(" %d. ", i);
-         h2_append_y_fail(fails, f);
+         h2_fail::append_y(fails, f);
       }
 
       if ((0 < s) == !dont) return nullptr;
@@ -1256,7 +1239,7 @@ struct h2_anyof_matches {
          fail->mprintf("should not matches any of matchers");
       else {
          fail->mprintf("not matches any of matchers");
-         h2_append_x_fail(fail, fails);
+         h2_fail::append_x(fail, fails);
       }
       return fail;
    }
@@ -1305,7 +1288,7 @@ struct h2_listof_matches {
 
       h2_fail* fail = nullptr;
       for (int i = 0; i < v_matchers.size(); ++i)
-         h2_append_y_fail(fail, v_matchers[i].matches(a[i], caseless, dont));
+         h2_fail::append_y(fail, v_matchers[i].matches(a[i], caseless, dont));
 
       return fail;
    }
@@ -1477,7 +1460,7 @@ struct h2_routine<Class, void(Args...)> {
    }
 };
 
-struct h2_mock : h2_nohook {
+struct h2_mock : h2_libc {
    h2_list x;
    void *befp, *tofp;
    const char* befn;
@@ -1494,7 +1477,7 @@ struct h2_mock : h2_nohook {
 
    h2_fail* times_check() {
       h2_fail* fail = nullptr;
-      for (auto& c : c_array) h2_append_y_fail(fail, c.check());
+      for (auto& c : c_array) h2_fail::append_y(fail, c.check());
       if (fail) fail->locate(file, line, befn);
       return fail;
    }
@@ -1525,7 +1508,7 @@ struct h2_tuple_match {
       h2_fail* fail = h2_tuple_match<N - 1>::matches(matchers, args, file, line, func);
       h2_fail* f = std::get<N - 1>(matchers).matches(std::get<N - 1>(args));
       if (f) f->locate(file, line, func, N - 1);
-      h2_append_x_fail(fail, f);
+      h2_fail::append_x(fail, f);
       return fail;
    }
 };
@@ -1720,12 +1703,11 @@ struct h2_stdio_exporter {
    static const char* capture_cout();
 };
 
-struct h2_dns : h2_nohook {
+struct h2_dns : h2_libc {
    h2_list x, y;
    const char* hostname;
    int count;
    char array[32][128];
-
    h2_dns(const char* hostname_) : hostname(hostname_) {}
 };
 
@@ -1735,25 +1717,16 @@ struct h2_dnses {
    void clear();
 };
 
-struct h2_packet : h2_nohook {
+struct h2_packet : h2_libc {
    h2_list x;
    h2_string from, to, data;
    h2_packet(const char* from_, const char* to_, const char* data_, size_t size_) : from(from_), to(to_), data(data_, size_){};
-   bool match(const char* from_pattern, const char* to_pattern);
    bool can_recv(const char* local_iport);
 };
 
-struct h2_sock : h2_nohook {
+struct h2_sock : h2_libc {
    h2_list x, y;
-
-   h2_stub sendto_stub;
-   h2_stub recvfrom_stub;
-   h2_stub sendmsg_stub;
-   h2_stub recvmsg_stub;
-   h2_stub send_stub;
-   h2_stub recv_stub;
-   h2_stub accept_stub;
-   h2_stub connect_stub;
+   h2_stubs stubs;
 
    struct socket {
       int fd;
@@ -1789,10 +1762,10 @@ struct h2_packet_matches {
 
    h2_fail* matches(h2_packet* a, bool caseless = false, bool dont = false) const {
       h2_fail* fails = nullptr;
-      h2_append_y_fail(fails, h2_matcher_cast<const char*>(from).matches(a->from.c_str(), caseless, dont));
-      h2_append_y_fail(fails, h2_matcher_cast<const char*>(to).matches(a->to.c_str(), caseless, dont));
-      h2_append_y_fail(fails, h2_matcher_cast<const unsigned char*>(data).matches((unsigned char*)a->data.data(), caseless, dont));
-      h2_append_y_fail(fails, h2_matcher_cast<const int>(size).matches(a->data.length(), caseless, dont));
+      h2_fail::append_y(fails, h2_matcher_cast<const char*>(from).matches(a->from.c_str(), caseless, dont));
+      h2_fail::append_y(fails, h2_matcher_cast<const char*>(to).matches(a->to.c_str(), caseless, dont));
+      h2_fail::append_y(fails, h2_matcher_cast<const unsigned char*>(data).matches((unsigned char*)a->data.data(), caseless, dont));
+      h2_fail::append_y(fails, h2_matcher_cast<const int>(size).matches(a->data.length(), caseless, dont));
       return fails;
    }
 };

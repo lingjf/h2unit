@@ -35,7 +35,7 @@ struct h2_json {
       }
    };
 
-   struct Node : h2_nohook {
+   struct Node : h2_libc {
       int type;
 
       h2_string key_string;
@@ -284,7 +284,7 @@ struct h2_json {
       };
    }
 
-   struct Dual : h2_nohook {
+   struct Dual : h2_libc {
       int depth;
       int e_type, a_type;
       h2_string e_key, a_key;

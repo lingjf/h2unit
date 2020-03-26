@@ -6,8 +6,7 @@ static inline bool h2_regex_match(const char* pattern, const char* subject, bool
    try {
       std::regex re(pattern);
       result = std::regex_match(subject, caseless ? std::regex(pattern, std::regex::icase) : std::regex(pattern));
-   }
-   catch (const std::regex_error& e) {
+   } catch (const std::regex_error& e) {
       result = false;
    }
    return result;

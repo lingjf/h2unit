@@ -64,9 +64,9 @@ SUITE(libc)
    Case(stub time())
    {
       h2::h2_stub s((void*)time);
-      s.replace((void*)STUB_time);
+      s.set((void*)STUB_time);
       OK(1024, time(NULL));
-      s.restore();
+      s.reset();
    };
 
    Todo(stub sqrt)
@@ -78,13 +78,13 @@ SUITE(libc)
    Case(temporary_restore time())
    {
       h2::h2_stub s((void*)time);
-      s.replace((void*)STUB_time);
+      s.set((void*)STUB_time);
       {
          h2::h2_stub::temporary_restore t(&s);
          OK(Nq(1024), time(NULL));
       }
       OK(1024, time(NULL));
-      s.restore();
+      s.reset();
    };
 }
 
@@ -134,11 +134,11 @@ SUITE(stubs)
    {
       h2::h2_stub s((void*)my_time);
 
-      s.replace((void*)STUB_time);
+      s.set((void*)STUB_time);
 
       OK(1024, my_time(NULL));
 
-      s.restore();
+      s.reset();
    };
 
    Case(local function)

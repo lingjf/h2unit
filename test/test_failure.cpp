@@ -27,9 +27,9 @@ SUITE(failure)
    {
       h2::h2_fail* fails = nullptr;
 
-      h2::h2_append_x_fail(fails, fa);
-      h2::h2_append_x_fail(fails, fb);
-      h2::h2_append_x_fail(fails, fc);
+      h2::h2_fail::append_x(fails, fa);
+      h2::h2_fail::append_x(fails, fb);
+      h2::h2_fail::append_x(fails, fc);
 
       // X->  fa -> fb -> fc
       const char* e[] = {"a", "b", "c"};
@@ -42,9 +42,9 @@ SUITE(failure)
    {
       h2::h2_fail* fails = nullptr;
 
-      h2::h2_append_y_fail(fails, fa);
-      h2::h2_append_y_fail(fails, fb);
-      h2::h2_append_y_fail(fails, fc);
+      h2::h2_fail::append_y(fails, fa);
+      h2::h2_fail::append_y(fails, fb);
+      h2::h2_fail::append_y(fails, fc);
 
       //  Y
       //  |
@@ -66,21 +66,21 @@ SUITE(failure)
    {
       h2::h2_fail* fails = nullptr;
 
-      h2::h2_append_x_fail(fails, fa);
-      h2::h2_append_x_fail(fails, fb);
-      h2::h2_append_x_fail(fails, fc);
+      h2::h2_fail::append_x(fails, fa);
+      h2::h2_fail::append_x(fails, fb);
+      h2::h2_fail::append_x(fails, fc);
 
-      h2::h2_append_y_fail(fa, f1);
-      h2::h2_append_y_fail(fa, f2);
-      h2::h2_append_y_fail(fa, f3);
+      h2::h2_fail::append_y(fa, f1);
+      h2::h2_fail::append_y(fa, f2);
+      h2::h2_fail::append_y(fa, f3);
 
-      h2::h2_append_y_fail(fb, f4);
-      h2::h2_append_y_fail(fb, f5);
-      h2::h2_append_y_fail(fb, f6);
+      h2::h2_fail::append_y(fb, f4);
+      h2::h2_fail::append_y(fb, f5);
+      h2::h2_fail::append_y(fb, f6);
 
-      h2::h2_append_y_fail(fc, f7);
-      h2::h2_append_y_fail(fc, f8);
-      h2::h2_append_y_fail(fc, f9);
+      h2::h2_fail::append_y(fc, f7);
+      h2::h2_fail::append_y(fc, f8);
+      h2::h2_fail::append_y(fc, f9);
 
       // X->
       // Y   fa -> fb -> fc
@@ -118,21 +118,21 @@ SUITE(failure)
    {
       h2::h2_fail* fails = nullptr;
 
-      h2::h2_append_x_fail(fails, fa);
-      h2::h2_append_x_fail(fails, fb);
-      h2::h2_append_x_fail(fails, fc);
+      h2::h2_fail::append_x(fails, fa);
+      h2::h2_fail::append_x(fails, fb);
+      h2::h2_fail::append_x(fails, fc);
 
-      h2::h2_append_y_fail(fa, f1);
-      h2::h2_append_y_fail(fa, f2);
-      h2::h2_append_y_fail(fa, f3);
+      h2::h2_fail::append_y(fa, f1);
+      h2::h2_fail::append_y(fa, f2);
+      h2::h2_fail::append_y(fa, f3);
 
-      h2::h2_append_y_fail(fb, f4);
-      h2::h2_append_y_fail(fb, f5);
-      h2::h2_append_y_fail(fb, f6);
+      h2::h2_fail::append_y(fb, f4);
+      h2::h2_fail::append_y(fb, f5);
+      h2::h2_fail::append_y(fb, f6);
 
-      h2::h2_append_y_fail(fc, f7);
-      h2::h2_append_y_fail(fc, f8);
-      h2::h2_append_y_fail(fc, f9);
+      h2::h2_fail::append_y(fc, f7);
+      h2::h2_fail::append_y(fc, f8);
+      h2::h2_fail::append_y(fc, f9);
 
       COUT(NULL);
       fa->print_locate();
