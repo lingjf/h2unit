@@ -21,7 +21,7 @@ template <typename T>
 struct h2_matcher : h2_matcher_base<T> {
    h2_matcher() {}
    explicit h2_matcher(const h2_matcher_impl<const T&>* impl, const int placeholder) : h2_matcher_base<T>(impl, placeholder) {}
-   h2_matcher(T value);
+   h2_matcher(T value); // Converting constructor 转换构造函数
 };
 
 template <>

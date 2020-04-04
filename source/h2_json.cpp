@@ -556,8 +556,8 @@ struct h2_json {
       for (auto& word : line)
          if (word[0] == '#') {
             if (index * columns <= s && s < (index + 1) * columns) {
-               const char* style = S(word.c_str() + 1);
-               wrap.append(style);
+               const char* style = word.c_str() + 1;
+               wrap.append(O.style(style));
                current_style = style;
             }
          } else {
@@ -588,11 +588,11 @@ struct h2_json {
             h2_string e_current_style, a_current_style;
             auto e_wrap = line_wrap(e_line, j, side_width - 2, e_current_style);
             auto a_wrap = line_wrap(a_line, j, side_width - 2, a_current_style);
-            str.sprintf("%s%s %s%s%s│%s %s%s %s%s%s%s\n",
-                        e_last_style.c_str(), e_wrap.c_str(), S("reset"),
-                        S("dark gray"), j == K - 1 ? " " : "\\", S("reset"),
-                        a_last_style.c_str(), a_wrap.c_str(), S("reset"),
-                        S("dark gray"), j == K - 1 ? " " : "\\", S("reset"));
+            str.sprintf("%s %s %s %s\n",
+                        SF(e_last_style.c_str(), "%s", e_wrap.c_str()),
+                        SF("dark gray", j == K - 1 ? " │" : "\\│"),
+                        SF(a_last_style.c_str(), "%s", a_wrap.c_str()),
+                        SF("dark gray", j == K - 1 ? " " : "\\"));
 
             e_last_style = e_current_style;
             a_last_style = a_current_style;

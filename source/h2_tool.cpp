@@ -94,3 +94,26 @@ static inline const char* h2_style(const char* style, char* ascii_code) {
          }
    return d == q ? strcpy(ascii_code, "") : (*(q - 1) = 'm', ascii_code);
 }
+
+static inline const char *PAD(int n) {
+   static char st[1024];
+   memset(st, ' ', n);
+   st[n] = '\0';
+   return st;
+}
+
+static inline char* SF(const char* style, const char* fmt, ...) {
+   static char sb[1024 * 256], *sp;
+   if (sp < sb || sb + sizeof(sb) / 2 < sp) sp = sb;
+   char *s = sp, *p = s;
+
+   p += sprintf(p, "%s", h2_option::I().style(style));
+   va_list a;
+   va_start(a, fmt);
+   p += vsprintf(p, fmt, a);
+   va_end(a);
+   p += sprintf(p, "%s", h2_option::I().style("reset"));
+
+   sp = p + 1;
+   return s;
+}

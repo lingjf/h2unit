@@ -17,14 +17,10 @@ struct h2_log_console : h2_log {
    void on_task_endup(int status_stats[8]) override {
       h2_log::on_task_endup(status_stats);
       printf("\n[%3d%%] ", percentage);
-      if (0 < status_stats[h2_case::FAILED]) {
-         printf("%s", S("bold,red"));
-         printf("Failed <%d failed, %d passed, %d todo, %d filtered, %lld ms>\n", status_stats[h2_case::FAILED], status_stats[h2_case::PASSED], status_stats[h2_case::TODOED], status_stats[h2_case::FILTED], tt);
-      } else {
-         printf("%s", S("bold,green"));
-         printf("Passed <%d passed, %d todo, %d filtered, %d cases, %lld ms>\n", status_stats[h2_case::PASSED], status_stats[h2_case::TODOED], status_stats[h2_case::FILTED], total_cases, tt);
-      }
-      printf("%s", S("reset"));
+      if (0 < status_stats[h2_case::FAILED])
+         printf("%s", SF("bold,red", "Failed <%d failed, %d passed, %d todo, %d filtered, %lld ms>\n", status_stats[h2_case::FAILED], status_stats[h2_case::PASSED], status_stats[h2_case::TODOED], status_stats[h2_case::FILTED], tt));
+      else
+         printf("%s", SF("bold,green", "Passed <%d passed, %d todo, %d filtered, %d cases, %lld ms>\n", status_stats[h2_case::PASSED], status_stats[h2_case::TODOED], status_stats[h2_case::FILTED], total_cases, tt));
    }
    void on_case_endup(h2_suite* s, h2_case* c) override {
       h2_log::on_case_endup(s, c);
@@ -38,17 +34,13 @@ struct h2_log_console : h2_log {
       case h2_case::PASSED:
          if (O.verbose) {
             printf("[%3d%%] ", percentage);
-            printf("%s", S("light blue"));
-            printf("(%s // %s): Passed - %lld ms\n", s->name, c->name, tc);
-            printf("%s", S("reset"));
+            printf("%s", SF("light blue", "(%s // %s): Passed - %lld ms\n", s->name, c->name, tc));
          } else if (!O.debug)
             printf("\r[%3d%%] (%d/%d)\r", percentage, done_cases, total_cases);
          break;
       case h2_case::FAILED:
          printf("[%3d%%] ", percentage);
-         printf("%s", S("bold,purple"));
-         printf("(%s // %s): Failed at %s:%d\n", s->name, c->name, basename((char*)c->file), c->line);
-         printf("%s", S("reset"));
+         printf("%s", SF("bold,purple", "(%s // %s): Failed at %s:%d\n", s->name, c->name, basename((char*)c->file), c->line));
          for (h2_fail* x_fail = c->fails; x_fail; x_fail = x_fail->x_next)
             for (h2_fail* fail = x_fail; fail; fail = fail->y_next)
                fail->print();

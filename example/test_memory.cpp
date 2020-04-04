@@ -36,7 +36,7 @@ SUITE(Memory Leak)
 
    Case(test memory leak failure)
    {
-      char* s = (char*)malloc(8);
+      char* s = (char*)malloc(10);
       strcpy(s, "1234567");
 
       rectangle_t* rectangle;

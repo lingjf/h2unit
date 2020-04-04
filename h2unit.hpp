@@ -1,4 +1,4 @@
-/* v5.0  2020-03-27 01:07:00 */
+/* v5.0  2020-04-04 15:45:42 */
 /* https://github.com/lingjf/h2unit */
 /* Apache Licence 2.0 */
 #ifndef H2_2FILES
@@ -251,27 +251,24 @@ struct h2_option {
 #endif
 
    const char* path;
-   char args[256];
    int verbose, listing, breakable, randomize;
    bool colorable, memory_check;
-   char *debug, junit[256];
-   std::vector<const char*> include_patterns, exclude_patterns;
+   char *debug, junit[256], args[256];
+   std::vector<const char*> includes, excludes;
 
    h2_option() : verbose(0), listing(0), breakable(0), randomize(0), colorable(true), memory_check(true), debug(nullptr), junit{0} {}
 
-   void parse(int argc_, const char** argv_);
+   void parse(int argc, const char** argv);
 
    int isLinux() const { return 1 == os; }
    int isMAC() const { return 2 == os; }
    int isWindows() const { return 3 == os; }
 
-   void usage();
    bool filter(const char* suitename, const char* casename, const char* filename) const;
    const char* style(const char* s) const;
 };
 
 static const h2_option& O = h2_option::I(); // for pretty
-static inline const char* S(const char* style) { return h2_option::I().style(style); } // for pretty
 
 struct h2_libc {
    static void* malloc(size_t sz);
@@ -323,11 +320,13 @@ struct h2_string : public std::basic_string<char, std::char_traits<char>, h2_all
    h2_string(const std::string& __s) : basic_string(__s.c_str()) {}
    h2_string(size_t __n, char __c) : basic_string(__n, __c) {}
    h2_string(const char* __s, size_t __n) : basic_string(__s, __n) {}
+   h2_string(const unsigned char* __s) : basic_string((const char*)__s) {}
 
    h2_string& operator=(const h2_string& __str) { return assign(__str.c_str()), *this; }
    h2_string& operator=(const char* __s) { return assign(__s), *this; }
    h2_string& operator=(const std::string& __str) { return assign(__str.c_str()), *this; }
    h2_string& operator=(char __c) { return assign(1, __c), *this; }
+   h2_string& operator=(const unsigned char* __s) { return assign((const char*)__s), *this; }
 
    h2_string& operator+=(const h2_string& __str) { return append(__str.c_str()), *this; }
    h2_string& operator+=(const char* __s) { return append(__s), *this; }
@@ -430,7 +429,7 @@ struct h2_backtrace {
    bool operator==(h2_backtrace&);
 
    bool has(void* func, int size) const;
-   void print() const;
+   void print(int pad = 3) const;
 };
 
 struct h2_fail : h2_libc {
@@ -443,9 +442,9 @@ struct h2_fail : h2_libc {
    int argi;
 
    h2_string _k, _h, _m, _u;
+   int pad, w_type;  // 0 is MOCK; 1 is OK(condition); 2 is OK(expect, actual); 3 is JE
    h2_string e_expr, _e, a_expr, _a;
-   int w_type;  // 0 is MOCK; 1 is OK(condition); 2 is OK(expect, actual); 3 is JE
-
+   
    h2_fail(const char* file_, int line_, const char* func_ = nullptr, int argi_ = -1);
    virtual ~h2_fail();
 
@@ -489,7 +488,7 @@ struct h2_fail_strcmp : h2_fail_unexpect {
    const bool caseless;
    h2_fail_strcmp(const h2_string& expect_, const h2_string& actual_, bool caseless_, const char* file_ = nullptr, int line_ = 0);
    void print();
-   char* fmt_char(char c, bool eq);
+   char* fmt_char(char c, bool eq, const char* style, char* p);
 };
 
 struct h2_fail_json : h2_fail_unexpect {
@@ -778,7 +777,7 @@ template <typename T>
 struct h2_matcher : h2_matcher_base<T> {
    h2_matcher() {}
    explicit h2_matcher(const h2_matcher_impl<const T&>* impl, const int placeholder) : h2_matcher_base<T>(impl, placeholder) {}
-   h2_matcher(T value);
+   h2_matcher(T value); // Converting constructor 转换构造函数
 };
 
 template <>
@@ -1708,7 +1707,7 @@ struct h2_dns : h2_libc {
    const char* hostname;
    int count;
    char array[32][128];
-   h2_dns(const char* hostname_) : hostname(hostname_) {}
+   h2_dns(const char* hostname_) : hostname(hostname_), count(0) {}
 };
 
 struct h2_dnses {

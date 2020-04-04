@@ -1,4 +1,18 @@
 
+static inline void usage() {
+   ::printf("Usage:\n"
+            "-v                  Make the operation more talkative\n"
+            "-l [sca]            List out suites and cases\n"
+            "-b [n]              Breaking test once n (default is 1) failures occurred\n"
+            "-c                  Output in black-white color mode\n"
+            "-r [sca]            Run cases in random order\n"
+            "-m                  Run cases without memory check\n"
+            "-d/D                Debug mode, -D for gdb attach but sudo requires password\n"
+            "-j [path]           Generate junit report, default is .xml\n"
+            "-i {patterns}       Run cases which case name, suite name or file name matches\n"
+            "-x {patterns}       Run cases which case name, suite name and file name not matches\n");
+}
+
 struct getopt {
    int argc;
    const char* argv[100];
@@ -28,16 +42,15 @@ struct getopt {
       for (value = 0; ::isdigit(*p); p++) value = value * 10 + (*p - '0');
       return p - 1;
    }
-
    void args(char* s) {
       for (int i = 0; i < argc; ++i)
          s += sprintf(s, " %s", argv[i]);
    }
 };
 
-h2_inline void h2_option::parse(int argc_, const char** argv_) {
-   path = argv_[0];
-   getopt get(argc_ - 1, argv_ + 1);
+h2_inline void h2_option::parse(int argc, const char** argv) {
+   path = argv[0];
+   getopt get(argc - 1, argv + 1);
    get.args(args);
 
    for (const char* p; p = get.next();) {
@@ -69,10 +82,10 @@ h2_inline void h2_option::parse(int argc_, const char** argv_) {
             if ((t = get.extract())) strcpy(junit, t);
             break;
          case 'i':
-            while ((t = get.extract())) include_patterns.push_back(t);
+            while ((t = get.extract())) includes.push_back(t);
             break;
          case 'x':
-            while ((t = get.extract())) exclude_patterns.push_back(t);
+            while ((t = get.extract())) excludes.push_back(t);
             break;
          case '-': break;
          case 'h':
@@ -85,20 +98,6 @@ h2_inline void h2_option::parse(int argc_, const char** argv_) {
          }
       }
    }
-}
-
-h2_inline void h2_option::usage() {
-   printf("Usage:\n"
-          "-v                  Make the operation more talkative\n"
-          "-l [sca]            List out suites and cases\n"
-          "-b [n]              Breaking test once n (default is 1) failures occurred\n"
-          "-c                  Output in black-white color mode\n"
-          "-r [sca]            Run cases in random order\n"
-          "-m                  Run cases without memory check\n"
-          "-d/D                Debug mode, -D for gdb attach but sudo requires password\n"
-          "-j [path]           Generate junit report, default is .xml\n"
-          "-i {patterns}       Run cases which case name, suite name or file name matches\n"
-          "-x {patterns}       Run cases which case name, suite name and file name not matches\n");
 }
 
 static inline bool match3(const std::vector<const char*>& patterns, const char* subject) {
@@ -114,11 +113,11 @@ static inline bool match3(const std::vector<const char*>& patterns, const char* 
 }
 
 h2_inline bool h2_option::filter(const char* suitename, const char* casename, const char* filename) const {
-   if (include_patterns.size())
-      if (!match3(include_patterns, suitename) && !match3(include_patterns, casename) && !match3(include_patterns, filename))
+   if (includes.size())
+      if (!match3(includes, suitename) && !match3(includes, casename) && !match3(includes, filename))
          return true;
-   if (exclude_patterns.size())
-      if (match3(exclude_patterns, suitename) || match3(exclude_patterns, casename) || match3(exclude_patterns, filename))
+   if (excludes.size())
+      if (match3(excludes, suitename) || match3(excludes, casename) || match3(excludes, filename))
          return true;
    return false;
 }

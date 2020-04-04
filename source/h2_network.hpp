@@ -4,7 +4,7 @@ struct h2_dns : h2_libc {
    const char* hostname;
    int count;
    char array[32][128];
-   h2_dns(const char* hostname_) : hostname(hostname_) {}
+   h2_dns(const char* hostname_) : hostname(hostname_), count(0) {}
 };
 
 struct h2_dnses {
