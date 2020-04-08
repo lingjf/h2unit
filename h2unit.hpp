@@ -1,10 +1,9 @@
-/* v5.0  2020-04-04 15:45:42 */
+/* v5.0  2020-04-09 01:03:35 */
 /* https://github.com/lingjf/h2unit */
 /* Apache Licence 2.0 */
-#ifndef H2_2FILES
-#define H2_2FILES
-#ifndef ___H2UNIT_H___
-#define ___H2UNIT_H___
+#ifndef ___H2UNIT_HPP___
+#define ___H2UNIT_HPP___
+#define H2UNIT_VERSION "5.0"
 
 #include <cstdio>      /* printf */
 #include <cstdlib>     /* malloc */
@@ -38,9 +37,7 @@
 #   pragma clang diagnostic ignored "-Wwritable-strings"
 #endif
 
-#if defined H2_1FILE
-#   define h2_inline inline
-#elif defined H2_2FILES
+#if defined ___H2UNIT_HPP___
 #   define h2_inline
 #else
 #   define h2_inline inline
@@ -411,7 +408,7 @@ struct tinyexpr {
    static double eval(const char* expression, int* error);
 };
 
-struct h2_json_exporter {
+struct h2_json {
    static bool match(const h2_string expect, const h2_string actual);
    static int diff(const h2_string expect, const h2_string actual, int terminal_width, h2_string& str);
 };
@@ -1697,7 +1694,7 @@ struct h2_mocks {
    h2_fail* clear();
 };
 
-struct h2_stdio_exporter {
+struct h2_stdio {
    static void capture_cout(char* buffer, int size = 1024 * 1024);
    static const char* capture_cout();
 };
@@ -1716,11 +1713,14 @@ struct h2_dnses {
    void clear();
 };
 
+struct h2_ns {
+   static void setaddrinfo(int count, ...);
+};
+
 struct h2_packet : h2_libc {
    h2_list x;
    h2_string from, to, data;
    h2_packet(const char* from_, const char* to_, const char* data_, size_t size_) : from(from_), to(to_), data(data_, size_){};
-   bool can_recv(const char* local_iport);
 };
 
 struct h2_sock : h2_libc {
@@ -1738,17 +1738,12 @@ struct h2_sock : h2_libc {
    h2_sock();
    ~h2_sock();
 
-   void put_outgoing_udp(const char* from, const char* to, const char* data, size_t size);
-   void put_incoming_udp(const char* from, const char* to, const char* data, size_t size);
-   void put_outgoing_tcp(int fd, const char* data, size_t size);
-   void put_incoming_tcp(const char* from, const char* to, const char* data, size_t size);
+   void put_outgoing(const char* from, const char* to, const char* data, size_t size);
+   void put_outgoing(int fd, const char* data, size_t size);
+   void put_incoming(const char* from, const char* to, const char* data, size_t size);
 
    char last_to[128];
-   h2_list incoming_udps;
-   h2_list outgoing_udps;
-
-   h2_list incoming_tcps;
-   h2_list outgoing_tcps;
+   h2_list incoming, outgoing;
 };
 
 template <typename M1, typename M2, typename M3, typename M4>
@@ -1774,11 +1769,9 @@ inline h2_polymorphic_matcher<h2_packet_matches<M1, M2, M3, M4>> PktEq(M1 from, 
    return h2_polymorphic_matcher<h2_packet_matches<M1, M2, M3, M4>>(h2_packet_matches<M1, M2, M3, M4>(from, to, data, size));
 }
 
-struct h2_network_exporter {
-   static void setaddrinfo(int count, ...);
-   static h2_packet* sock_start_and_fetch();
-   static void udp_inject_received(const unsigned char* packet, size_t size, const char* from, const char* to);
-   static void tcp_inject_received(const unsigned char* packet, size_t size, const char* from, const char* to);
+struct h2_inet {
+   static h2_packet* start_and_fetch();
+   static void inject_received(const void* packet, size_t size, const char* from, const char* to);
 };
 
 static constexpr const char* CSS[] = {"init", "Passed", "Failed", "TODO", "Filtered"};
@@ -2232,7 +2225,6 @@ struct h2_task {
    std::vector<void (*)()> global_case_setups, global_case_teardowns;
 
    h2_task();
-
    void prepare();
    void postpare();
    void execute();
@@ -2294,8 +2286,6 @@ static inline void h2_fail_g(void* fail) {
 #define BLOCK(...) H2BLOCK(__VA_ARGS__)
 #define DNS(...) H2DNS(__VA_ARGS__)
 #define SOCK(...) H2SOCK(__VA_ARGS__)
-#define UDP(...) H2UDP(__VA_ARGS__)
-#define TCP(...) H2TCP(__VA_ARGS__)
 #define COUT(...) H2COUT(__VA_ARGS__)
 
 #define MATCHER(...) H2MATCHER(__VA_ARGS__)
@@ -2470,30 +2460,21 @@ using h2::ListOf;
 // #define H2BLOCK(...) for (h2::h2_heap::stack::block Qb(__FILE__, __LINE__, ##__VA_ARGS__); Qb;)
 // #define H2BLOCK(...) for (h2::h2_heap::stack::block Qb(__FILE__, __LINE__, __VA_OPT__(,) __VA_ARGS__); Qb;)
 
-#define H2DNS(...) h2::h2_network_exporter::setaddrinfo(H2PP_NARG(__VA_ARGS__), __VA_ARGS__)
+#define H2DNS(...) h2::h2_ns::setaddrinfo(H2PP_NARG(__VA_ARGS__), __VA_ARGS__)
 
-#define H2SOCK() h2::h2_network_exporter::sock_start_and_fetch()
+#define __H2SOCK0() h2::h2_inet::start_and_fetch()
+#define __H2SOCK2(packet, size) h2::h2_inet::inject_received(packet, size, nullptr, "*");
+#define __H2SOCK3(packet, size, from) h2::h2_inet::inject_received(packet, size, from, "*");
+#define __H2SOCK4(packet, size, from, to) h2::h2_inet::inject_received(packet, size, from, to);
+#define H2SOCK(...) H2PP_VARIADIC_CALL(__H2SOCK, __VA_ARGS__)
 
-#define __H2UDP2(packet, size) h2::h2_network_exporter::udp_inject_received(packet, size, nullptr, "*");
-#define __H2UDP3(packet, size, from) h2::h2_network_exporter::udp_inject_received(packet, size, from, "*");
-#define __H2UDP4(packet, size, from, to) h2::h2_network_exporter::udp_inject_received(packet, size, from, to);
-#define H2UDP(...) H2PP_VARIADIC_CALL(__H2UDP, __VA_ARGS__)
-
-#define __H2TCP2(packet, size) h2::h2_network_exporter::tcp_inject_received(packet, size, nullptr, "*");
-#define __H2TCP3(packet, size, from) h2::h2_network_exporter::tcp_inject_received(packet, size, from, "*");
-#define __H2TCP4(packet, size, from, to) h2::h2_network_exporter::tcp_inject_received(packet, size, from, to);
-#define H2TCP(...) H2PP_VARIADIC_CALL(__H2TCP, __VA_ARGS__)
-
-#define H2COUT(...) h2::h2_stdio_exporter::capture_cout(__VA_ARGS__)
+#define H2COUT(...) h2::h2_stdio::capture_cout(__VA_ARGS__)
 
 #define h2_main(argc, argv)                 \
    do {                                     \
       h2::h2_option::I().parse(argc, argv); \
       h2::h2_task::I().prepare();           \
-      DNS("127.0.0.1");                     \
       h2::h2_task::I().execute();           \
       h2::h2_task::I().postpare();          \
    } while (0)
-
-#endif
 #endif

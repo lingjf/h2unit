@@ -1,23 +1,8 @@
 
-struct h2_dns : h2_libc {
-   h2_list x, y;
-   const char* hostname;
-   int count;
-   char array[32][128];
-   h2_dns(const char* hostname_) : hostname(hostname_), count(0) {}
-};
-
-struct h2_dnses {
-   h2_list s;
-   void add(h2_dns* dns);
-   void clear();
-};
-
 struct h2_packet : h2_libc {
    h2_list x;
    h2_string from, to, data;
    h2_packet(const char* from_, const char* to_, const char* data_, size_t size_) : from(from_), to(to_), data(data_, size_){};
-   bool can_recv(const char* local_iport);
 };
 
 struct h2_sock : h2_libc {
@@ -35,17 +20,12 @@ struct h2_sock : h2_libc {
    h2_sock();
    ~h2_sock();
 
-   void put_outgoing_udp(const char* from, const char* to, const char* data, size_t size);
-   void put_incoming_udp(const char* from, const char* to, const char* data, size_t size);
-   void put_outgoing_tcp(int fd, const char* data, size_t size);
-   void put_incoming_tcp(const char* from, const char* to, const char* data, size_t size);
+   void put_outgoing(const char* from, const char* to, const char* data, size_t size);
+   void put_outgoing(int fd, const char* data, size_t size);
+   void put_incoming(const char* from, const char* to, const char* data, size_t size);
 
    char last_to[128];
-   h2_list incoming_udps;
-   h2_list outgoing_udps;
-
-   h2_list incoming_tcps;
-   h2_list outgoing_tcps;
+   h2_list incoming, outgoing;
 };
 
 template <typename M1, typename M2, typename M3, typename M4>
@@ -71,9 +51,7 @@ inline h2_polymorphic_matcher<h2_packet_matches<M1, M2, M3, M4>> PktEq(M1 from, 
    return h2_polymorphic_matcher<h2_packet_matches<M1, M2, M3, M4>>(h2_packet_matches<M1, M2, M3, M4>(from, to, data, size));
 }
 
-struct h2_network_exporter {
-   static void setaddrinfo(int count, ...);
-   static h2_packet* sock_start_and_fetch();
-   static void udp_inject_received(const unsigned char* packet, size_t size, const char* from, const char* to);
-   static void tcp_inject_received(const unsigned char* packet, size_t size, const char* from, const char* to);
+struct h2_inet {
+   static h2_packet* start_and_fetch();
+   static void inject_received(const void* packet, size_t size, const char* from, const char* to);
 };

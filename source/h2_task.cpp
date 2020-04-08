@@ -1,18 +1,15 @@
 
-inline h2_task::h2_task() : state(0), status_stats{0}, current_suite(nullptr), current_case(nullptr) {
-   
-}
+inline h2_task::h2_task() : state(0), status_stats{0}, current_suite(nullptr), current_case(nullptr) {}
 
 inline void h2_task::prepare() {
    state = 100;
    h2_heap::dosegv();
    if (O.listing) h2_directory::list_then_exit();
-
    logs.init();
    h2_directory::sort();
-
    h2_heap::stack::root();
    h2_heap::dohook();
+   h2_ns::setaddrinfo(1, "127.0.0.1");
    state = 199;
 }
 

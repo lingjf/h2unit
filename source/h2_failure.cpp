@@ -135,8 +135,8 @@ h2_inline void h2_fail_strcmp::print() {
    int rows = ::ceil(std::max(expect.length(), actual.length()) / (double)columns);
    for (int i = 0; i < rows; ++i) {
       char eline[1024], aline[1024], *ep = eline, *ap = aline;
-      ep += sprintf(ep, "%s%s ", SF("dark gray", "expect"), SF("green", ">"));
-      ap += sprintf(ap, "%s%s ", SF("dark gray", "actual"), SF("red", ">"));
+      if (i * columns < expect.length()) ep += sprintf(ep, "%s%s ", SF("dark gray", "expect"), SF("green", ">"));
+      if (i * columns < actual.length()) ap += sprintf(ap, "%s%s ", SF("dark gray", "actual"), SF("red", ">"));
       for (int j = 0; j < columns; ++j) {
          char ec = i * columns + j <= expect.length() ? expect[i * columns + j] : ' ';
          char ac = i * columns + j <= actual.length() ? actual[i * columns + j] : ' ';
@@ -145,7 +145,8 @@ h2_inline void h2_fail_strcmp::print() {
          ep = fmt_char(ec, eq, "green", ep);
          ap = fmt_char(ac, eq, "red,bold", ap);
       }
-      ::printf("%s\n%s\n", eline, aline);
+      if (i * columns < expect.length()) ::printf("%s\n", eline);
+      if (i * columns < actual.length()) ::printf("%s\n", aline);
    }
 }
 
@@ -165,7 +166,7 @@ h2_inline h2_fail_json::h2_fail_json(const h2_string& expect_, const h2_string& 
 h2_inline void h2_fail_json::print() {
    h2_fail_unexpect::print();
    h2_string str;
-   int side_width = h2_json_exporter::diff(expect, actual, h2_winsz(), str);
+   int side_width = h2_json::diff(expect, actual, h2_winsz(), str);
 
    ::printf("%s\n", SF("dark gray", "%s│%s", h2_string("expect").center(side_width).c_str(), h2_string("actual").center(side_width).c_str()));
    ::printf("%s", str.c_str());

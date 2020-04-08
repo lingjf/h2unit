@@ -1,6 +1,6 @@
 
-struct h2_stdio {
-   h2_singleton(h2_stdio);
+struct h2__stdio {
+   h2_singleton(h2__stdio);
 
    char buffer[1024 * 1024], *p;
    int offset, size;
@@ -172,10 +172,10 @@ struct h2_stdio {
    }
 };
 
-h2_inline void h2_stdio_exporter::capture_cout(char* buffer, int size) {
-   h2_stdio::I().start_capture(buffer, size);
+h2_inline void h2_stdio::capture_cout(char* buffer, int size) {
+   h2__stdio::I().start_capture(buffer, size);
 }
 
-h2_inline const char* h2_stdio_exporter::capture_cout() {
-   return h2_stdio::I().stop_capture();
+h2_inline const char* h2_stdio::capture_cout() {
+   return h2__stdio::I().stop_capture();
 }

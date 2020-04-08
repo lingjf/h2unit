@@ -121,7 +121,7 @@ h2_inline h2_fail* h2_endswith_matches::matches(const h2_string& a, bool caseles
 }
 
 h2_inline h2_fail* h2_json_matches::matches(const h2_string& a, bool caseless, bool dont) const {
-   if ((h2_json_exporter::match(e, a)) == !dont) return nullptr;
+   if ((h2_json::match(e, a)) == !dont) return nullptr;
    h2_fail_json* fail = new h2_fail_json(e, a);
    if (dont)
       fail->mprintf("should not equals");

@@ -1,8 +1,8 @@
-/* v5.0  2020-04-04 15:45:42 */
+/* v5.0  2020-04-09 01:03:35 */
 /* https://github.com/lingjf/h2unit */
 /* Apache Licence 2.0 */
 #include "h2unit.hpp"
-#ifdef H2_2FILES
+#ifdef ___H2UNIT_HPP___
 
 #include <algorithm>    /* shuffle */
 #include <arpa/inet.h>  /* inet_addr */
@@ -1230,8 +1230,8 @@ h2_inline void h2_fail_strcmp::print() {
    int rows = ::ceil(std::max(expect.length(), actual.length()) / (double)columns);
    for (int i = 0; i < rows; ++i) {
       char eline[1024], aline[1024], *ep = eline, *ap = aline;
-      ep += sprintf(ep, "%s%s ", SF("dark gray", "expect"), SF("green", ">"));
-      ap += sprintf(ap, "%s%s ", SF("dark gray", "actual"), SF("red", ">"));
+      if (i * columns < expect.length()) ep += sprintf(ep, "%s%s ", SF("dark gray", "expect"), SF("green", ">"));
+      if (i * columns < actual.length()) ap += sprintf(ap, "%s%s ", SF("dark gray", "actual"), SF("red", ">"));
       for (int j = 0; j < columns; ++j) {
          char ec = i * columns + j <= expect.length() ? expect[i * columns + j] : ' ';
          char ac = i * columns + j <= actual.length() ? actual[i * columns + j] : ' ';
@@ -1240,7 +1240,8 @@ h2_inline void h2_fail_strcmp::print() {
          ep = fmt_char(ec, eq, "green", ep);
          ap = fmt_char(ac, eq, "red,bold", ap);
       }
-      ::printf("%s\n%s\n", eline, aline);
+      if (i * columns < expect.length()) ::printf("%s\n", eline);
+      if (i * columns < actual.length()) ::printf("%s\n", aline);
    }
 }
 
@@ -1260,7 +1261,7 @@ h2_inline h2_fail_json::h2_fail_json(const h2_string& expect_, const h2_string& 
 h2_inline void h2_fail_json::print() {
    h2_fail_unexpect::print();
    h2_string str;
-   int side_width = h2_json_exporter::diff(expect, actual, h2_winsz(), str);
+   int side_width = h2_json::diff(expect, actual, h2_winsz(), str);
 
    ::printf("%s\n", SF("dark gray", "%s│%s", h2_string("expect").center(side_width).c_str(), h2_string("actual").center(side_width).c_str()));
    ::printf("%s", str.c_str());
@@ -1507,6 +1508,7 @@ struct h2_stack {
         {(void*)printf, 300},
         {(void*)sprintf, 300},
         {(void*)vsnprintf, 300},
+        {(void*)fprintf, 300},
         {(void*)sscanf, 300},
         {(void*)localtime, 300}};
 
@@ -1771,7 +1773,7 @@ h2_inline void h2_heap::stack_push_block(const char* file, int line, const char*
 h2_inline h2_fail* h2_heap::stack_pop_block() {
    return h2_stack::I().pop();
 }
-struct h2_json {
+struct h2__json {
    static const int t_absent = 0;
 
    static const int t_null = 1;
@@ -2373,39 +2375,39 @@ struct h2_json {
    }
 };
 
-h2_inline bool h2_json_exporter::match(const h2_string expect, const h2_string actual) {
-   h2_json::Node *e = h2_json::parse(expect.c_str()), *a = h2_json::parse(actual.c_str());
+h2_inline bool h2_json::match(const h2_string expect, const h2_string actual) {
+   h2__json::Node *e = h2__json::parse(expect.c_str()), *a = h2__json::parse(actual.c_str());
 
-   bool result = h2_json::match(e, a);
+   bool result = h2__json::match(e, a);
 
-   h2_json::frees(e);
-   h2_json::frees(a);
+   h2__json::frees(e);
+   h2__json::frees(a);
 
    return result;
 }
 
-h2_inline int h2_json_exporter::diff(const h2_string expect, const h2_string actual, int terminal_width, h2_string& str) {
-   h2_json::Node *e_node = h2_json::parse(expect.c_str()), *a_node = h2_json::parse(actual.c_str());
+h2_inline int h2_json::diff(const h2_string expect, const h2_string actual, int terminal_width, h2_string& str) {
+   h2__json::Node *e_node = h2__json::parse(expect.c_str()), *a_node = h2__json::parse(actual.c_str());
 
-   h2_json::Dual* d = new h2_json::Dual(0, nullptr);
-   h2_json::dual(e_node, a_node, d);
+   h2__json::Dual* d = new h2__json::Dual(0, nullptr);
+   h2__json::dual(e_node, a_node, d);
 
-   h2_json::frees(e_node);
-   h2_json::frees(a_node);
+   h2__json::frees(e_node);
+   h2__json::frees(a_node);
 
    h2_vector<h2_string> e_list, a_list;
-   h2_json::diff(d, e_list, a_list);
-   h2_json::frees(d);
+   h2__json::diff(d, e_list, a_list);
+   h2__json::frees(d);
 
-   h2_json::Lines e_lines, a_lines;
-   h2_json::merge_line(e_list, e_lines);
-   h2_json::merge_line(a_list, a_lines);
+   h2__json::Lines e_lines, a_lines;
+   h2__json::merge_line(e_list, e_lines);
+   h2__json::merge_line(a_list, a_lines);
 
-   int e_most = h2_json::lines_most(e_lines), a_most = h2_json::lines_most(a_lines);
+   int e_most = h2__json::lines_most(e_lines), a_most = h2__json::lines_most(a_lines);
    int fav_width = std::max(std::max(e_most, a_most) + 3, 30);
    int side_width = std::min(terminal_width / 2 - 4, fav_width);
 
-   h2_json::print(e_lines, a_lines, side_width, str);
+   h2__json::print(e_lines, a_lines, side_width, str);
    return side_width;
 }
 
@@ -2670,7 +2672,7 @@ h2_inline h2_fail* h2_endswith_matches::matches(const h2_string& a, bool caseles
 }
 
 h2_inline h2_fail* h2_json_matches::matches(const h2_string& a, bool caseless, bool dont) const {
-   if ((h2_json_exporter::match(e, a)) == !dont) return nullptr;
+   if ((h2_json::match(e, a)) == !dont) return nullptr;
    h2_fail_json* fail = new h2_fail_json(e, a);
    if (dont)
       fail->mprintf("should not equals");
@@ -2680,67 +2682,18 @@ h2_inline h2_fail* h2_json_matches::matches(const h2_string& a, bool caseless, b
    return fail;
 }
 
-static inline bool is_ipv4(const char* str) {
-   int s1, s2, s3, s4;
-   return 4 == ::sscanf(str, "%d.%d.%d.%d", &s1, &s2, &s3, &s4);
-}
-
-struct h2_network {
-   h2_singleton(h2_network);
-
-   h2_list dnses, socks;
+struct h2__ns {
+   h2_singleton(h2__ns);
+   h2_list dnses;
 
    static bool inet_addr(const char* str, struct sockaddr_in* addr) {
       int s1, s2, s3, s4;
-      if (4 == ::sscanf(str, "%d.%d.%d.%d", &s1, &s2, &s3, &s4)) {
+      bool is_ipv4 = 4 == ::sscanf(str, "%d.%d.%d.%d", &s1, &s2, &s3, &s4);
+      if (is_ipv4 && addr) {
          addr->sin_family = AF_INET;
          addr->sin_addr.s_addr = ::inet_addr(str);
-         return true;
       }
-      return false;
-   }
-
-   static bool iport_parse(const char* str, struct sockaddr_in* addr) {  // todo for simplify
-      char* colon = NULL;
-      char temp[1024];
-      strcpy(temp, str);
-
-      addr->sin_family = AF_INET;
-      addr->sin_port = 0;
-      colon = strchr(temp, ':');
-      if (colon) {
-         *colon = '\0';
-         addr->sin_port = htons(atoi(colon + 1));
-      }
-      addr->sin_addr.s_addr = ::inet_addr(temp);
-      return true;
-   }
-
-   static const char* iport_tostring(struct sockaddr_in* addr, char* str) {
-      sprintf(str, "%s:%d", inet_ntoa(addr->sin_addr), ntohs(addr->sin_port));
-      return str;
-   }
-
-   static bool isblock(int sockfd) {
-      return !(fcntl(sockfd, F_GETFL) & O_NONBLOCK);
-   }
-
-   struct temporary_noblock : h2_once {
-      int sockfd;
-      int flags;
-      temporary_noblock(int sockfd_) : sockfd(sockfd_) {
-         flags = fcntl(sockfd, F_GETFL);
-         fcntl(sockfd, F_SETFL, flags | O_NONBLOCK);
-      }
-      ~temporary_noblock() { fcntl(sockfd, F_SETFL, flags); }
-   };
-
-   static const char* getsockname(int sockfd, char* s, struct sockaddr_in* a = nullptr) {
-      struct sockaddr_in b;
-      if (!a) a = &b;
-      socklen_t l = sizeof(struct sockaddr_in);
-      ::getsockname(sockfd, (struct sockaddr*)a, &l);
-      return iport_tostring(a, s);
+      return is_ipv4;
    }
 
    h2_dns* find(const char* hostname) {
@@ -2812,24 +2765,105 @@ struct h2_network {
       return &h;
    }
 
-   static void read_incoming(int sockfd, h2_list& list, bool sync, h2_packet*& packet) {
-      bool block = isblock(sockfd);
-      const char* local = getsockname(sockfd, (char*)alloca(64));
-      do {
-         h2_list_for_each_entry(p, &list, h2_packet, x) if (p->can_recv(local) && (!sync || p->data.length() == 0)) {
-            p->x.out();
-            packet = p;
-            return;
-         }
+   h2_stubs stubs;
+   h2__ns() {
+      stubs.add((void*)::getaddrinfo, (void*)getaddrinfo, "", "", __FILE__, __LINE__);
+      stubs.add((void*)::freeaddrinfo, (void*)freeaddrinfo, "", "", __FILE__, __LINE__);
+      stubs.add((void*)::gethostbyname, (void*)gethostbyname, "", "", __FILE__, __LINE__);
+   }
+   ~h2__ns() { stubs.clear(); }
+};
 
+h2_inline void h2_dnses::add(h2_dns* dns) { s.push(&dns->x); }
+h2_inline void h2_dnses::clear() {
+   h2_list_for_each_entry(p, &s, h2_dns, x) {
+      p->x.out(), p->y.out();
+      delete p;
+   }
+}
+
+h2_inline void h2_ns::setaddrinfo(int n, ...) {
+   if (n == 0) return;
+   const char* array[32];
+   int count = 0;
+   va_list a;
+   va_start(a, n);
+   for (int i = 0; i < n && i < 32; ++i)
+      array[count++] = va_arg(a, const char*);
+   va_end(a);
+
+   const char* hostname = "*";
+   for (int i = 0; i < count; ++i)
+      if (!h2__ns::inet_addr(array[i], nullptr))
+         if (strlen(hostname) < 2 || strlen(array[i]) < strlen(hostname))
+            hostname = array[i];
+
+   h2_dns* dns = new h2_dns(hostname);
+   for (int i = 0; i < count; ++i)
+      if (!streq(hostname, array[i]))
+         strcpy(dns->array[dns->count++], array[i]);
+
+   h2__ns::I().dnses.push(&dns->y);
+   if (h2_task::I().current_case) h2_task::I().current_case->dnses.add(dns);
+}
+
+struct h2__inet {
+   h2_singleton(h2__inet);
+   h2_list socks;
+
+   static void iport_parse(const char* str, struct sockaddr_in* addr) {
+      char temp[1024];
+      strcpy(temp, str);
+
+      addr->sin_family = AF_INET;
+      addr->sin_port = 0;
+      char* colon = strchr(temp, ':');
+      if (colon) {
+         *colon = '\0';
+         addr->sin_port = htons(atoi(colon + 1));
+      }
+      addr->sin_addr.s_addr = ::inet_addr(temp);
+   }
+
+   static const char* iport_tostring(struct sockaddr_in* addr, char* str) {
+      sprintf(str, "%s:%d", inet_ntoa(addr->sin_addr), ntohs(addr->sin_port));
+      return str;
+   }
+
+   struct temporary_noblock : h2_once {
+      int sockfd, flags;
+      temporary_noblock(int sockfd_) : sockfd(sockfd_) {
+         flags = fcntl(sockfd, F_GETFL);
+         fcntl(sockfd, F_SETFL, flags | O_NONBLOCK);
+      }
+      ~temporary_noblock() { fcntl(sockfd, F_SETFL, flags); }
+   };
+
+   static const char* getsockname(int sockfd, char* s, struct sockaddr_in* a = nullptr) {
+      struct sockaddr_in b;
+      if (!a) a = &b;
+      socklen_t l = sizeof(struct sockaddr_in);
+      ::getsockname(sockfd, (struct sockaddr*)a, &l);
+      return iport_tostring(a, s);
+   }
+
+   static h2_packet* read_incoming(int sockfd) {
+      bool block = !(fcntl(sockfd, F_GETFL) & O_NONBLOCK);
+      const char* local = getsockname(sockfd, (char*)alloca(64));
+      h2_sock* sock = h2_list_top_entry(&I().socks, h2_sock, y);
+
+      do {
+         h2_list_for_each_entry(p, &sock->incoming, h2_packet, x) if (h2_wildcard_match(p->to.c_str(), local)) {
+            p->x.out();
+            return p;
+         }
          if (block) h2_sleep(100);
       } while (block);
+      return nullptr;
    }
 
    static int accept(int socket, struct sockaddr* address, socklen_t* address_len) {
-      h2_sock* sock = h2_list_top_entry(&h2_network::I().socks, h2_sock, y);
-      h2_packet* tcp = nullptr;
-      read_incoming(socket, sock->incoming_tcps, true, tcp);
+      h2_packet* tcp = read_incoming(socket);
       if (!tcp) {
          errno = EWOULDBLOCK;
          return -1;
@@ -2841,46 +2875,47 @@ struct h2_network {
       struct sockaddr_in a;
       const char* c = getsockname(socket, (char*)alloca(64), &a);
       ::bind(fd, (struct sockaddr*)&a, sizeof(a));
+      h2_sock* sock = h2_list_top_entry(&I().socks, h2_sock, y);
       sock->sockets.push_back({fd, c, tcp->from.c_str()});
-      delete tcp;
+      if (tcp->data.length())
+         sock->incoming.push(&tcp->x);
+      else
+         delete tcp;
 
       return fd;
    }
 
    static int connect(int socket, const struct sockaddr* address, socklen_t address_len) {
-      h2_sock* sock = h2_list_top_entry(&h2_network::I().socks, h2_sock, y);
+      h2_sock* sock = h2_list_top_entry(&I().socks, h2_sock, y);
       sock->sockets.push_back({socket, getsockname(socket, (char*)alloca(64)), iport_tostring((struct sockaddr_in*)address, (char*)alloca(64))});
-      h2_packet* tcp = nullptr;
-      read_incoming(socket, sock->incoming_tcps, true, tcp);
-
+      h2_packet* tcp = read_incoming(socket);
       if (!tcp) {
          errno = EWOULDBLOCK;
          return -1;
       }
-      delete tcp;
+      if (tcp->data.length())
+         sock->incoming.push(&tcp->x);
+      else
+         delete tcp;
       return 0;
    }
 
    static ssize_t send(int socket, const void* buffer, size_t length, int flags) {
-      h2_sock* sock = h2_list_top_entry(&h2_network::I().socks, h2_sock, y);
-      if (sock) sock->put_outgoing_tcp(socket, (const char*)buffer, length);
+      h2_sock* sock = h2_list_top_entry(&I().socks, h2_sock, y);
+      if (sock) sock->put_outgoing(socket, (const char*)buffer, length);
       return length;
    }
    static ssize_t sendmsg(int socket, const struct msghdr* message, int flags) {
       return sendto(socket, message->msg_iov[0].iov_base, message->msg_iov[0].iov_len, 0, (struct sockaddr*)message->msg_name, message->msg_namelen);
    }
    static ssize_t sendto(int socket, const void* buffer, size_t length, int flags, const struct sockaddr* dest_addr, socklen_t dest_len) {
-      h2_sock* sock = h2_list_top_entry(&h2_network::I().socks, h2_sock, y);
-      if (sock) sock->put_outgoing_udp(getsockname(socket, (char*)alloca(64)), iport_tostring((struct sockaddr_in*)dest_addr, (char*)alloca(64)), (const char*)buffer, length);
+      h2_sock* sock = h2_list_top_entry(&I().socks, h2_sock, y);
+      if (sock) sock->put_outgoing(getsockname(socket, (char*)alloca(64)), iport_tostring((struct sockaddr_in*)dest_addr, (char*)alloca(64)), (const char*)buffer, length);
       return length;
    }
    static ssize_t recv(int socket, void* buffer, size_t length, int flags) {
       ssize_t ret = 0;
-      h2_sock* sock = h2_list_top_entry(&h2_network::I().socks, h2_sock, y);
-
-      h2_packet* tcp = nullptr;
-      read_incoming(socket, sock->incoming_tcps, false, tcp);
-
+      h2_packet* tcp = read_incoming(socket);
       if (tcp) {
          ret = tcp->data.copy((char*)buffer, tcp->data.length(), 0);
          delete tcp;
@@ -2889,11 +2924,7 @@ struct h2_network {
    }
    static ssize_t recvfrom(int socket, void* buffer, size_t length, int flags, struct sockaddr* address, socklen_t* address_len) {
       ssize_t ret = 0;
-      h2_sock* sock = h2_list_top_entry(&h2_network::I().socks, h2_sock, y);
-
-      h2_packet* udp = nullptr;
-      read_incoming(socket, sock->incoming_udps, false, udp);
-
+      h2_packet* udp = read_incoming(socket);
       if (udp) {
          ret = udp->data.copy((char*)buffer, udp->data.length(), 0);
          iport_parse(udp->from.c_str(), (struct sockaddr_in*)address);
@@ -2905,149 +2936,83 @@ struct h2_network {
    static ssize_t recvmsg(int socket, struct msghdr* message, int flags) {
       return recvfrom(socket, message->msg_iov[0].iov_base, message->msg_iov[0].iov_len, 0, (struct sockaddr*)message->msg_name, &message->msg_namelen);
    }
-
-   h2_stubs stubs;
-   h2_network() {
-      stubs.add((void*)::getaddrinfo, (void*)getaddrinfo, "", "", __FILE__, __LINE__);
-      stubs.add((void*)::freeaddrinfo, (void*)freeaddrinfo, "", "", __FILE__, __LINE__);
-      stubs.add((void*)::gethostbyname, (void*)gethostbyname, "", "", __FILE__, __LINE__);
-   }
-   ~h2_network() { stubs.clear(); }
 };
 
-h2_inline bool h2_packet::can_recv(const char* local_iport) { return h2_wildcard_match(to.c_str(), local_iport); }
-
 h2_inline h2_sock::h2_sock() {
-   stubs.add((void*)::sendto, (void*)h2_network::sendto, "", "", __FILE__, __LINE__);
-   stubs.add((void*)::recvfrom, (void*)h2_network::recvfrom, "", "", __FILE__, __LINE__);
-   stubs.add((void*)::sendmsg, (void*)h2_network::sendmsg, "", "", __FILE__, __LINE__);
-   stubs.add((void*)::recvmsg, (void*)h2_network::recvmsg, "", "", __FILE__, __LINE__);
-   stubs.add((void*)::send, (void*)h2_network::send, "", "", __FILE__, __LINE__);
-   stubs.add((void*)::recv, (void*)h2_network::recv, "", "", __FILE__, __LINE__);
-   stubs.add((void*)::accept, (void*)h2_network::accept, "", "", __FILE__, __LINE__);
-   stubs.add((void*)::connect, (void*)h2_network::connect, "", "", __FILE__, __LINE__);
+   stubs.add((void*)::sendto, (void*)h2__inet::sendto, "", "", __FILE__, __LINE__);
+   stubs.add((void*)::recvfrom, (void*)h2__inet::recvfrom, "", "", __FILE__, __LINE__);
+   stubs.add((void*)::sendmsg, (void*)h2__inet::sendmsg, "", "", __FILE__, __LINE__);
+   stubs.add((void*)::recvmsg, (void*)h2__inet::recvmsg, "", "", __FILE__, __LINE__);
+   stubs.add((void*)::send, (void*)h2__inet::send, "", "", __FILE__, __LINE__);
+   stubs.add((void*)::recv, (void*)h2__inet::recv, "", "", __FILE__, __LINE__);
+   stubs.add((void*)::accept, (void*)h2__inet::accept, "", "", __FILE__, __LINE__);
+   stubs.add((void*)::connect, (void*)h2__inet::connect, "", "", __FILE__, __LINE__);
    strcpy(last_to, "0.0.0.0:0");
 }
 
 h2_inline h2_sock::~h2_sock() {
-   x.out();
-   y.out();
+   x.out(), y.out();
    stubs.clear();
 }
 
-h2_inline void h2_sock::put_outgoing_udp(const char* from, const char* to, const char* data, size_t size) {
+h2_inline void h2_sock::put_outgoing(const char* from, const char* to, const char* data, size_t size) {
    strcpy(last_to, to);
-   outgoing_udps.push_back(&(new h2_packet(from, to, data, size))->x);
+   outgoing.push_back(&(new h2_packet(from, to, data, size))->x);
 }
 
-h2_inline void h2_sock::put_incoming_udp(const char* from, const char* to, const char* data, size_t size) {
-   incoming_udps.push_back(&(new h2_packet(from ? from : last_to, to, data, size))->x);
-}
-
-h2_inline void h2_sock::put_outgoing_tcp(int fd, const char* data, size_t size) {
-   char from[128], to[128];
-
+h2_inline void h2_sock::put_outgoing(int fd, const char* data, size_t size) {
+   char from[128] = "", to[128] = "";
    for (auto& t : sockets)
       if (t.fd == fd) {
          strcpy(from, t.from.c_str());
          strcpy(to, t.to.c_str());
          break;
       }
-
-   strcpy(last_to, to);
-
-   h2_packet* tcp = nullptr;
-   h2_list_for_each_entry(p, &outgoing_tcps, h2_packet, x) h2_if_find_break(p->from == from && p->to == to, p, tcp);
-   if (tcp)
-      tcp->data.append(data, size);
-   else
-      outgoing_tcps.push_back(&(new h2_packet(from, to, data, size))->x);
+   put_outgoing(from, to, data, size);
 }
 
-h2_inline void h2_sock::put_incoming_tcp(const char* from, const char* to, const char* data, size_t size) {
-   from = from ? from : last_to;
-   h2_packet* tcp = nullptr;
-   h2_list_for_each_entry(p, &incoming_tcps, h2_packet, x) h2_if_find_break(p->from == from && p->to == to, p, tcp);
-   if (tcp)
-      tcp->data.append(data, size);
-   else
-      incoming_tcps.push_back(&(new h2_packet(from, to, data, size))->x);
+h2_inline void h2_sock::put_incoming(const char* from, const char* to, const char* data, size_t size) {
+   incoming.push_back(&(new h2_packet(from ? from : last_to, to, data, size))->x);
 }
 
-h2_inline void h2_dnses::add(h2_dns* dns) { s.push(&dns->x); }
-h2_inline void h2_dnses::clear() {
-   h2_list_for_each_entry(p, &s, h2_dns, x) {
-      p->x.out();
-      p->y.out();
-      delete p;
-   }
-}
-
-h2_inline void h2_network_exporter::setaddrinfo(int n, ...) {
-   if (n == 0) return;
-
-   const char* array[32];
-   int count = 0;
-   va_list a;
-   va_start(a, n);
-   for (int i = 0; i < n && i < 32; ++i)
-      array[count++] = va_arg(a, const char*);
-   va_end(a);
-
-   const char* hostname = "*";
-   for (int i = 0; i < count; ++i)
-      if (!is_ipv4(array[i]))
-         if (strlen(hostname) < 2 || strlen(array[i]) < strlen(hostname))
-            hostname = array[i];
-
-   h2_dns* dns = new h2_dns(hostname);
-
-   for (int i = 0; i < count; ++i)
-      if (!streq(hostname, array[i]))
-         strcpy(dns->array[dns->count++], array[i]);
-
-   h2_network::I().dnses.push(&dns->y);
-   if (h2_task::I().current_case) h2_task::I().current_case->dnses.add(dns);
-}
-
-h2_inline h2_packet* h2_network_exporter::sock_start_and_fetch() {
+h2_inline h2_packet* h2_inet::start_and_fetch() {
    if (!h2_task::I().current_case) return nullptr;
 
    h2_sock* sock = h2_task::I().current_case->sock;
    if (!sock) {
       sock = h2_task::I().current_case->sock = new h2_sock();
-      h2_network::I().socks.push(&sock->y);
+      h2__inet::I().socks.push(&sock->y);
    }
 
-   h2_packet* ret = nullptr;
-   ret = h2_list_pop_entry(&sock->outgoing_udps, h2_packet, x);
-   if (!ret)
-      ret = h2_list_pop_entry(&sock->outgoing_tcps, h2_packet, x);
-   return ret;
+   return h2_list_pop_entry(&sock->outgoing, h2_packet, x);
 }
 
-h2_inline void h2_network_exporter::udp_inject_received(const unsigned char* packet, size_t size, const char* from, const char* to) {
-   h2_sock* sock = h2_list_top_entry(&h2_network::I().socks, h2_sock, y);
-   if (sock) sock->put_incoming_udp(from, to, (const char*)packet, size);
-}
-
-h2_inline void h2_network_exporter::tcp_inject_received(const unsigned char* packet, size_t size, const char* from, const char* to) {
-   h2_sock* sock = h2_list_top_entry(&h2_network::I().socks, h2_sock, y);
-   if (sock) sock->put_incoming_tcp(from, to, (const char*)packet, size);
+h2_inline void h2_inet::inject_received(const void* packet, size_t size, const char* from, const char* to) {
+   h2_sock* sock = h2_list_top_entry(&h2__inet::I().socks, h2_sock, y);
+   if (sock) sock->put_incoming(from, to, (const char*)packet, size);
 }
 
 static inline void usage() {
-   ::printf("Usage:\n"
-            "-v                  Make the operation more talkative\n"
-            "-l [sca]            List out suites and cases\n"
-            "-b [n]              Breaking test once n (default is 1) failures occurred\n"
-            "-c                  Output in black-white color mode\n"
-            "-r [sca]            Run cases in random order\n"
-            "-m                  Run cases without memory check\n"
-            "-d/D                Debug mode, -D for gdb attach but sudo requires password\n"
-            "-j [path]           Generate junit report, default is .xml\n"
-            "-i {patterns}       Run cases which case name, suite name or file name matches\n"
-            "-x {patterns}       Run cases which case name, suite name and file name not matches\n");
+   const char* h = "\
+   \033[33m╭────────────────────────────────────────────────────────────────╮\033[0m\n\
+   \033[33m│\033[0m                                                                \033[33m│\033[0m\n\
+   \033[33m│\033[0m                   Current version \033[32mh2unit \033[31m%-9s             \033[33m│\033[0m\n\
+   \033[33m│\033[0m     Manual: \033[34;4mhttps://github.com/lingjf/h2unit.git \033[0;36mREADME.md     \033[33m│\033[0m\n\
+   \033[33m│\033[0m                                                                \033[33m│\033[0m\n\
+   \033[33m╰────────────────────────────────────────────────────────────────╯\033[0m\n\
+";
+   ::printf(h, H2UNIT_VERSION);
+   ::printf("   Usage:\n%s",
+            "     -v                  Make the operation more talkative\n"
+            "     -l [sca]            List out suites and cases\n"
+            "     -b [n]              Breaking test once n (default is 1) failures occurred\n"
+            "     -c                  Output in black-white color mode\n"
+            "     -r [sca]            Run cases in random order\n"
+            "     -m                  Run cases without memory check\n"
+            "     -d/D                Debug mode, -D for gdb attach but sudo requires password\n"
+            "     -j [path]           Generate junit report, default is .xml\n"
+            "     -i {patterns}       Run cases which case name, suite name or file name matches\n"
+            "     -x {patterns}       Run cases which case name, suite name and file name not matches\n");
 }
 
 struct getopt {
@@ -3166,8 +3131,8 @@ h2_inline const char* h2_option::style(const char* s) const {
    return h2_style(s, shift_buffer[++shift_index % 32]);
 }
 
-struct h2_stdio {
-   h2_singleton(h2_stdio);
+struct h2__stdio {
+   h2_singleton(h2__stdio);
 
    char buffer[1024 * 1024], *p;
    int offset, size;
@@ -3339,12 +3304,12 @@ struct h2_stdio {
    }
 };
 
-h2_inline void h2_stdio_exporter::capture_cout(char* buffer, int size) {
-   h2_stdio::I().start_capture(buffer, size);
+h2_inline void h2_stdio::capture_cout(char* buffer, int size) {
+   h2__stdio::I().start_capture(buffer, size);
 }
 
-h2_inline const char* h2_stdio_exporter::capture_cout() {
-   return h2_stdio::I().stop_capture();
+h2_inline const char* h2_stdio::capture_cout() {
+   return h2__stdio::I().stop_capture();
 }
 
 h2_inline bool h2_string::equals(h2_string __str, bool caseless) const {
@@ -3571,20 +3536,17 @@ h2_inline void h2_suite::execute(h2_case* c) {
    c->post_cleanup();
 }
 
-inline h2_task::h2_task() : state(0), status_stats{0}, current_suite(nullptr), current_case(nullptr) {
-   
-}
+inline h2_task::h2_task() : state(0), status_stats{0}, current_suite(nullptr), current_case(nullptr) {}
 
 inline void h2_task::prepare() {
    state = 100;
    h2_heap::dosegv();
    if (O.listing) h2_directory::list_then_exit();
-
    logs.init();
    h2_directory::sort();
-
    h2_heap::stack::root();
    h2_heap::dohook();
+   h2_ns::setaddrinfo(1, "127.0.0.1");
    state = 199;
 }
 
