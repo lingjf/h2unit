@@ -1,4 +1,4 @@
-/* v5.0  2020-04-09 01:03:35 */
+/* v5.0  2020-04-09 23:58:14 */
 /* https://github.com/lingjf/h2unit */
 /* Apache Licence 2.0 */
 #ifndef ___H2UNIT_HPP___
@@ -31,6 +31,7 @@
 #   pragma GCC diagnostic ignored "-Wsign-compare"
 #   pragma GCC diagnostic ignored "-Wwrite-strings"
 #elif defined __clang__
+#   pragma clang diagnostic ignored "-Wdeprecated-declarations"
 #   pragma clang diagnostic ignored "-Wint-to-pointer-cast"
 #   pragma clang diagnostic ignored "-Wparentheses"
 #   pragma clang diagnostic ignored "-Wsign-compare"
@@ -270,8 +271,7 @@ static const h2_option& O = h2_option::I(); // for pretty
 struct h2_libc {
    static void* malloc(size_t sz);
    static void free(void* ptr);
-   static int write(FILE* stream, const void* buf, size_t nbyte);
-
+   static ssize_t write(int fd, const void* buf, size_t count);
    static void* operator new(std::size_t sz) { return malloc(sz); }
    static void operator delete(void* ptr) { free(ptr); }
 };
@@ -1695,26 +1695,23 @@ struct h2_mocks {
 };
 
 struct h2_stdio {
-   static void capture_cout(char* buffer, int size = 1024 * 1024);
-   static const char* capture_cout();
+   static void init();
+   static const char* capture_cout(char* type = nullptr);
 };
 
 struct h2_dns : h2_libc {
    h2_list x, y;
-   const char* hostname;
+   const char* name;
    int count;
    char array[32][128];
-   h2_dns(const char* hostname_) : hostname(hostname_), count(0) {}
+   h2_dns(const char* name_) : name(name_), count(0) {}
+   static void setaddrinfo(int count, ...);
 };
 
 struct h2_dnses {
    h2_list s;
    void add(h2_dns* dns);
    void clear();
-};
-
-struct h2_ns {
-   static void setaddrinfo(int count, ...);
 };
 
 struct h2_packet : h2_libc {
@@ -1769,7 +1766,7 @@ inline h2_polymorphic_matcher<h2_packet_matches<M1, M2, M3, M4>> PktEq(M1 from, 
    return h2_polymorphic_matcher<h2_packet_matches<M1, M2, M3, M4>>(h2_packet_matches<M1, M2, M3, M4>(from, to, data, size));
 }
 
-struct h2_inet {
+struct h2_socket {
    static h2_packet* start_and_fetch();
    static void inject_received(const void* packet, size_t size, const char* from, const char* to);
 };
@@ -2460,12 +2457,12 @@ using h2::ListOf;
 // #define H2BLOCK(...) for (h2::h2_heap::stack::block Qb(__FILE__, __LINE__, ##__VA_ARGS__); Qb;)
 // #define H2BLOCK(...) for (h2::h2_heap::stack::block Qb(__FILE__, __LINE__, __VA_OPT__(,) __VA_ARGS__); Qb;)
 
-#define H2DNS(...) h2::h2_ns::setaddrinfo(H2PP_NARG(__VA_ARGS__), __VA_ARGS__)
+#define H2DNS(...) h2::h2_dns::setaddrinfo(H2PP_NARG(__VA_ARGS__), __VA_ARGS__)
 
-#define __H2SOCK0() h2::h2_inet::start_and_fetch()
-#define __H2SOCK2(packet, size) h2::h2_inet::inject_received(packet, size, nullptr, "*");
-#define __H2SOCK3(packet, size, from) h2::h2_inet::inject_received(packet, size, from, "*");
-#define __H2SOCK4(packet, size, from, to) h2::h2_inet::inject_received(packet, size, from, to);
+#define __H2SOCK0() h2::h2_socket::start_and_fetch()
+#define __H2SOCK2(packet, size) h2::h2_socket::inject_received(packet, size, nullptr, "*");
+#define __H2SOCK3(packet, size, from) h2::h2_socket::inject_received(packet, size, from, "*");
+#define __H2SOCK4(packet, size, from, to) h2::h2_socket::inject_received(packet, size, from, to);
 #define H2SOCK(...) H2PP_VARIADIC_CALL(__H2SOCK, __VA_ARGS__)
 
 #define H2COUT(...) h2::h2_stdio::capture_cout(__VA_ARGS__)

@@ -51,7 +51,7 @@ inline h2_polymorphic_matcher<h2_packet_matches<M1, M2, M3, M4>> PktEq(M1 from, 
    return h2_polymorphic_matcher<h2_packet_matches<M1, M2, M3, M4>>(h2_packet_matches<M1, M2, M3, M4>(from, to, data, size));
 }
 
-struct h2_inet {
+struct h2_socket {
    static h2_packet* start_and_fetch();
    static void inject_received(const void* packet, size_t size, const char* from, const char* to);
 };

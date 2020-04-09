@@ -1,35 +1,36 @@
-/* v5.0  2020-04-09 01:03:35 */
+/* v5.0  2020-04-09 23:58:14 */
 /* https://github.com/lingjf/h2unit */
 /* Apache Licence 2.0 */
 #include "h2unit.hpp"
 #ifdef ___H2UNIT_HPP___
 
-#include <algorithm>    /* shuffle */
-#include <arpa/inet.h>  /* inet_addr */
-#include <cassert>      /* assert */
-#include <cctype>       /* tolower, isspace */
-#include <cmath>        /* fabs */
-#include <cstdarg>      /* va_list */
-#include <cstdint>      /* int32_t */
-#include <cxxabi.h>     /* demangle */
-#include <errno.h>      /* strerror */
-#include <execinfo.h>   /* backtrace */
-#include <fcntl.h>      /* fcntl */
-#include <iostream>     /* cout */
-#include <libgen.h>     /* basename */
-#include <map>          /* std::map */
-#include <memory>       /* allocator */
-#include <netdb.h>      /* getaddrinfo, gethostbyname */
-#include <random>       /* shuffle */
-#include <regex>        /* std::regex */
-#include <signal.h>     /* sigaction */
-#include <sys/ioctl.h>  /* ioctl */
-#include <sys/mman.h>   /* mprotect, mmap */
-#include <sys/socket.h> /* sockaddr */
-#include <sys/time.h>   /* gettimeofday */
-#include <sys/types.h>  /* size_t */
-#include <typeinfo>     /* typeid */
-#include <unistd.h>     /* sysconf */
+#include <algorithm>     /* shuffle */
+#include <arpa/inet.h>   /* inet_addr */
+#include <cassert>       /* assert */
+#include <cctype>        /* tolower, isspace */
+#include <cmath>         /* fabs */
+#include <cstdarg>       /* va_list */
+#include <cstdint>       /* int32_t */
+#include <cxxabi.h>      /* demangle */
+#include <errno.h>       /* strerror */
+#include <execinfo.h>    /* backtrace */
+#include <fcntl.h>       /* fcntl */
+#include <iostream>      /* cout */
+#include <libgen.h>      /* basename */
+#include <map>           /* std::map */
+#include <memory>        /* allocator */
+#include <netdb.h>       /* getaddrinfo, gethostbyname */
+#include <random>        /* shuffle */
+#include <regex>         /* std::regex */
+#include <signal.h>      /* sigaction */
+#include <sys/ioctl.h>   /* ioctl */
+#include <sys/mman.h>    /* mprotect, mmap */
+#include <sys/socket.h>  /* sockaddr */
+#include <sys/syscall.h> /* syscall */
+#include <sys/time.h>    /* gettimeofday */
+#include <sys/types.h>   /* size_t */
+#include <typeinfo>      /* typeid */
+#include <unistd.h>      /* sysconf */
 
 #if defined __GLIBC__
 #   include <malloc.h> /* __malloc_hook */
@@ -1230,8 +1231,8 @@ h2_inline void h2_fail_strcmp::print() {
    int rows = ::ceil(std::max(expect.length(), actual.length()) / (double)columns);
    for (int i = 0; i < rows; ++i) {
       char eline[1024], aline[1024], *ep = eline, *ap = aline;
-      if (i * columns < expect.length()) ep += sprintf(ep, "%s%s ", SF("dark gray", "expect"), SF("green", ">"));
-      if (i * columns < actual.length()) ap += sprintf(ap, "%s%s ", SF("dark gray", "actual"), SF("red", ">"));
+      if (i * columns <= expect.length()) ep += sprintf(ep, "%s%s ", SF("dark gray", "expect"), SF("green", ">"));
+      if (i * columns <= actual.length()) ap += sprintf(ap, "%s%s ", SF("dark gray", "actual"), SF("red", ">"));
       for (int j = 0; j < columns; ++j) {
          char ec = i * columns + j <= expect.length() ? expect[i * columns + j] : ' ';
          char ac = i * columns + j <= actual.length() ? actual[i * columns + j] : ' ';
@@ -1240,8 +1241,8 @@ h2_inline void h2_fail_strcmp::print() {
          ep = fmt_char(ec, eq, "green", ep);
          ap = fmt_char(ac, eq, "red,bold", ap);
       }
-      if (i * columns < expect.length()) ::printf("%s\n", eline);
-      if (i * columns < actual.length()) ::printf("%s\n", aline);
+      if (i * columns <= expect.length()) ::printf("%s\n", eline);
+      if (i * columns <= actual.length()) ::printf("%s\n", aline);
    }
 }
 
@@ -2433,8 +2434,8 @@ h2_inline void h2_libc::free(void* ptr) {
    munmap((void*)p, (size_t)*p);
 }
 
-h2_inline int h2_libc::write(FILE* stream, const void* buf, size_t nbyte) {
-   return ::write(fileno(stream), buf, nbyte);
+h2_inline ssize_t h2_libc::write(int fd, const void* buf, size_t count) {
+   return syscall(SYS_write, fd, buf, count);
 }
 
 h2_inline h2_log::h2_log() : total_cases(0), done_cases(0), percentage(0), tt(0), ts(0), tc(0) {}
@@ -2465,20 +2466,17 @@ struct h2_log_console : h2_log {
       switch (c->status) {
       case h2_case::INITED: break;
       case h2_case::TODOED:
-         if (O.verbose)
-            printf("[%3d%%] (%s // %s): %s at %s:%d\n", percentage, s->name, c->name, CSS[c->status], basename((char*)c->file), c->line);
+         if (O.verbose) printf("[%3d%%] (%s // %s): %s at %s:%d\n", percentage, s->name, c->name, CSS[c->status], basename((char*)c->file), c->line);
          break;
       case h2_case::FILTED: break;
       case h2_case::PASSED:
-         if (O.verbose) {
-            printf("[%3d%%] ", percentage);
-            printf("%s", SF("light blue", "(%s // %s): Passed - %lld ms\n", s->name, c->name, tc));
-         } else if (!O.debug)
+         if (O.verbose)
+            printf("[%3d%%] %s", percentage, SF("light blue", "(%s // %s): Passed - %lld ms\n", s->name, c->name, tc));
+         else if (!O.debug)
             printf("\r[%3d%%] (%d/%d)\r", percentage, done_cases, total_cases);
          break;
       case h2_case::FAILED:
-         printf("[%3d%%] ", percentage);
-         printf("%s", SF("bold,purple", "(%s // %s): Failed at %s:%d\n", s->name, c->name, basename((char*)c->file), c->line));
+         printf("[%3d%%] %s", percentage, SF("bold,purple", "(%s // %s): Failed at %s:%d\n", s->name, c->name, basename((char*)c->file), c->line));
          for (h2_fail* x_fail = c->fails; x_fail; x_fail = x_fail->x_next)
             for (h2_fail* fail = x_fail; fail; fail = fail->y_next)
                fail->print();
@@ -2490,7 +2488,6 @@ struct h2_log_console : h2_log {
 
 struct h2_log_xml : h2_log {
    FILE* f;
-
    void on_task_start(int cases) override {
       h2_log::on_task_start(cases);
       f = fopen(O.junit, "w");
@@ -2498,22 +2495,19 @@ struct h2_log_xml : h2_log {
       fprintf(f, "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n");
       fprintf(f, "<testsuites>\n");
    };
-
    void on_suite_start(h2_suite* s) override {
       h2_log::on_suite_start(s);
       if (!f) return;
-      fprintf(f, "  <testsuite errors=\"0\" failures=\"%d\" hostname=\"localhost\" name=\"%s\" skipped=\"%d\" tests=\"%d\" time=\"%d\" timestamp=\"%s\">\n",
-              s->status_stats[h2_case::FAILED], s->name, s->status_stats[h2_case::TODOED] + s->status_stats[h2_case::FILTED], (int)s->cases().size(), 0, "");
+      fprintf(f, "<testsuite errors=\"0\" failures=\"%d\" hostname=\"localhost\" name=\"%s\" skipped=\"%d\" tests=\"%d\" time=\"%d\" timestamp=\"%s\">\n", s->status_stats[h2_case::FAILED], s->name, s->status_stats[h2_case::TODOED] + s->status_stats[h2_case::FILTED], (int)s->cases().size(), 0, "");
    }
 
    void on_case_endup(h2_suite* s, h2_case* c) override {
       h2_log::on_case_endup(s, c);
       if (!f) return;
-      fprintf(f, "    <testcase classname=\"%s\" name=\"%s\" status=\"%s\" time=\"%.3f\">\n",
-              s->name, c->name, CSS[c->status], tc / 1000.0);
+      fprintf(f, "<testcase classname=\"%s\" name=\"%s\" status=\"%s\" time=\"%.3f\">\n", s->name, c->name, CSS[c->status], tc / 1000.0);
 
       if (c->status == h2_case::FAILED) {
-         fprintf(f, "      <failure message=\"%s:%d:", c->file, c->line);
+         fprintf(f, "<failure message=\"%s:%d:", c->file, c->line);
          for (h2_fail* x_fail = c->fails; x_fail; x_fail = x_fail->x_next)
             for (h2_fail* fail = x_fail; fail; fail = fail->y_next) {
                fprintf(f, "{newline}");
@@ -2521,15 +2515,14 @@ struct h2_log_xml : h2_log {
             }
          fprintf(f, "\" type=\"AssertionFailedError\"></failure>\n");
       }
-      fprintf(f, "      <system-out></system-out><system-err></system-err>\n");
-      fprintf(f, "    </testcase>\n");
+      fprintf(f, "<system-out></system-out><system-err></system-err>\n");
+      fprintf(f, "</testcase>\n");
    }
    void on_suite_endup(h2_suite* s) override {
       h2_log::on_suite_endup(s);
       if (!f) return;
-      fprintf(f, "  </testsuite>\n");
+      fprintf(f, "</testsuite>\n");
    }
-
    void on_task_endup(int status_stats[8]) override {
       h2_log::on_task_endup(status_stats);
       if (!f) return;
@@ -2682,8 +2675,8 @@ h2_inline h2_fail* h2_json_matches::matches(const h2_string& a, bool caseless, b
    return fail;
 }
 
-struct h2__ns {
-   h2_singleton(h2__ns);
+struct h2_resolver {
+   h2_singleton(h2_resolver);
    h2_list dnses;
 
    static bool inet_addr(const char* str, struct sockaddr_in* addr) {
@@ -2697,7 +2690,7 @@ struct h2__ns {
    }
 
    h2_dns* find(const char* hostname) {
-      h2_list_for_each_entry(p, &dnses, h2_dns, y) if (streq("*", p->hostname) || streq(hostname, p->hostname)) return p;
+      h2_list_for_each_entry(p, &dnses, h2_dns, y) if (streq("*", p->name) || streq(hostname, p->name)) return p;
       return nullptr;
    }
 
@@ -2766,12 +2759,12 @@ struct h2__ns {
    }
 
    h2_stubs stubs;
-   h2__ns() {
+   h2_resolver() {
       stubs.add((void*)::getaddrinfo, (void*)getaddrinfo, "", "", __FILE__, __LINE__);
       stubs.add((void*)::freeaddrinfo, (void*)freeaddrinfo, "", "", __FILE__, __LINE__);
       stubs.add((void*)::gethostbyname, (void*)gethostbyname, "", "", __FILE__, __LINE__);
    }
-   ~h2__ns() { stubs.clear(); }
+   ~h2_resolver() { stubs.clear(); }
 };
 
 h2_inline void h2_dnses::add(h2_dns* dns) { s.push(&dns->x); }
@@ -2782,7 +2775,7 @@ h2_inline void h2_dnses::clear() {
    }
 }
 
-h2_inline void h2_ns::setaddrinfo(int n, ...) {
+h2_inline void h2_dns::setaddrinfo(int n, ...) {
    if (n == 0) return;
    const char* array[32];
    int count = 0;
@@ -2794,7 +2787,7 @@ h2_inline void h2_ns::setaddrinfo(int n, ...) {
 
    const char* hostname = "*";
    for (int i = 0; i < count; ++i)
-      if (!h2__ns::inet_addr(array[i], nullptr))
+      if (!h2_resolver::inet_addr(array[i], nullptr))
          if (strlen(hostname) < 2 || strlen(array[i]) < strlen(hostname))
             hostname = array[i];
 
@@ -2803,12 +2796,12 @@ h2_inline void h2_ns::setaddrinfo(int n, ...) {
       if (!streq(hostname, array[i]))
          strcpy(dns->array[dns->count++], array[i]);
 
-   h2__ns::I().dnses.push(&dns->y);
+   h2_resolver::I().dnses.push(&dns->y);
    if (h2_task::I().current_case) h2_task::I().current_case->dnses.add(dns);
 }
 
-struct h2__inet {
-   h2_singleton(h2__inet);
+struct h2__socket {
+   h2_singleton(h2__socket);
    h2_list socks;
 
    static void iport_parse(const char* str, struct sockaddr_in* addr) {
@@ -2939,14 +2932,14 @@ struct h2__inet {
 };
 
 h2_inline h2_sock::h2_sock() {
-   stubs.add((void*)::sendto, (void*)h2__inet::sendto, "", "", __FILE__, __LINE__);
-   stubs.add((void*)::recvfrom, (void*)h2__inet::recvfrom, "", "", __FILE__, __LINE__);
-   stubs.add((void*)::sendmsg, (void*)h2__inet::sendmsg, "", "", __FILE__, __LINE__);
-   stubs.add((void*)::recvmsg, (void*)h2__inet::recvmsg, "", "", __FILE__, __LINE__);
-   stubs.add((void*)::send, (void*)h2__inet::send, "", "", __FILE__, __LINE__);
-   stubs.add((void*)::recv, (void*)h2__inet::recv, "", "", __FILE__, __LINE__);
-   stubs.add((void*)::accept, (void*)h2__inet::accept, "", "", __FILE__, __LINE__);
-   stubs.add((void*)::connect, (void*)h2__inet::connect, "", "", __FILE__, __LINE__);
+   stubs.add((void*)::sendto, (void*)h2__socket::sendto, "", "", __FILE__, __LINE__);
+   stubs.add((void*)::recvfrom, (void*)h2__socket::recvfrom, "", "", __FILE__, __LINE__);
+   stubs.add((void*)::sendmsg, (void*)h2__socket::sendmsg, "", "", __FILE__, __LINE__);
+   stubs.add((void*)::recvmsg, (void*)h2__socket::recvmsg, "", "", __FILE__, __LINE__);
+   stubs.add((void*)::send, (void*)h2__socket::send, "", "", __FILE__, __LINE__);
+   stubs.add((void*)::recv, (void*)h2__socket::recv, "", "", __FILE__, __LINE__);
+   stubs.add((void*)::accept, (void*)h2__socket::accept, "", "", __FILE__, __LINE__);
+   stubs.add((void*)::connect, (void*)h2__socket::connect, "", "", __FILE__, __LINE__);
    strcpy(last_to, "0.0.0.0:0");
 }
 
@@ -2975,20 +2968,20 @@ h2_inline void h2_sock::put_incoming(const char* from, const char* to, const cha
    incoming.push_back(&(new h2_packet(from ? from : last_to, to, data, size))->x);
 }
 
-h2_inline h2_packet* h2_inet::start_and_fetch() {
+h2_inline h2_packet* h2_socket::start_and_fetch() {
    if (!h2_task::I().current_case) return nullptr;
 
    h2_sock* sock = h2_task::I().current_case->sock;
    if (!sock) {
       sock = h2_task::I().current_case->sock = new h2_sock();
-      h2__inet::I().socks.push(&sock->y);
+      h2__socket::I().socks.push(&sock->y);
    }
 
    return h2_list_pop_entry(&sock->outgoing, h2_packet, x);
 }
 
-h2_inline void h2_inet::inject_received(const void* packet, size_t size, const char* from, const char* to) {
-   h2_sock* sock = h2_list_top_entry(&h2__inet::I().socks, h2_sock, y);
+h2_inline void h2_socket::inject_received(const void* packet, size_t size, const char* from, const char* to) {
+   h2_sock* sock = h2_list_top_entry(&h2__socket::I().socks, h2_sock, y);
    if (sock) sock->put_incoming(from, to, (const char*)packet, size);
 }
 
@@ -3133,183 +3126,107 @@ h2_inline const char* h2_option::style(const char* s) const {
 
 struct h2__stdio {
    h2_singleton(h2__stdio);
+   h2_string buffer;
+   bool stdout_capturable, stderr_capturable;
 
-   char buffer[1024 * 1024], *p;
-   int offset, size;
-
-   // write, pwrite, writev
    static ssize_t write(int fd, const void* buf, size_t count) {
-      if (I().p && I().offset + count < I().size) {
-         memcpy(I().p + I().offset, buf, count);
-         I().offset += count;
-         I().p[I().offset] = '\0';
-      }
+      if (!((I().stdout_capturable && fd == fileno(stdout)) || (I().stderr_capturable && fd == fileno(stderr))))
+         return h2_libc::write(fd, buf, count);
+      I().buffer.append((char*)buf, count);
       return count;
    }
 
-   static int vprintf(const char* format, va_list ap) {
-      int ret = 0;
-      if (I().p) {
-         ret = vsnprintf(I().p + I().offset, I().size - I().offset, format, ap);
-         I().offset += ret;
-      }
+   static int vfprintf(FILE* stream, const char* format, va_list ap) {
+      va_list bp;
+      va_copy(bp, ap);
+      int len = vsnprintf(nullptr, 0, format, bp);
+      char* tmp = (char*)alloca(len + 1);
+      len = vsnprintf(tmp, len + 1, format, ap);
+      return write(fileno(stream), tmp, len);
+   }
+
+   static int fprintf(FILE* stream, const char* format, ...) {
+      va_list a;
+      va_start(a, format);
+      int ret = vfprintf(stream, format, a);
+      va_end(a);
       return ret;
+   }
+
+   static int fputc(int c, FILE* stream) {
+      unsigned char t = c;
+      int ret = write(fileno(stream), &t, 1);
+      return ret == 1 ? c : EOF;
+   }
+
+   static int fputs(const char* s, FILE* stream) {
+      return write(fileno(stream), s, strlen(s));
+   }
+
+   static size_t fwrite(const void* ptr, size_t size, size_t nitems, FILE* stream) {
+      return write(fileno(stream), ptr, size * nitems);
    }
 
    static int printf(const char* format, ...) {
       va_list a;
       va_start(a, format);
-      int ret = vprintf(format, a);
+      int ret = vfprintf(stdout, format, a);
       va_end(a);
       return ret;
    }
 
+   static int vprintf(const char* format, va_list ap) {
+      return vfprintf(stdout, format, ap);
+   }
+
    static int putchar(int c) {
-      if (I().p && I().offset + 1 < I().size) {
-         I().p[I().offset++] = c;
-         I().p[I().offset] = '\0';
-      }
+      unsigned char t = c;
+      write(fileno(stdout), &t, 1);
       return c;
    }
 
    static int puts(const char* s) {
-      int len = strlen(s);
-      if (I().p && I().offset + len < I().size) {
-         strcpy(I().p + I().offset, s);
-         I().offset += len;
-      }
+      write(fileno(stdout), s, strlen(s));
+      write(fileno(stdout), "\n", 1);
       return 1;
    }
 
-   static int fprintf(FILE* stream, const char* format, ...) {
-      if (stream != stdout && stream != stderr) {
-         va_list a, b;
-         va_start(a, format);
-         int len = vsnprintf(nullptr, 0, format, a);
-         va_end(a);
-         char* t = (char*)alloca(len + 1);
-         va_start(b, format);
-         len = vsnprintf(t, len + 1, format, b);
-         va_end(b);
-         return h2_libc::write(stream, t, len);
-      }
-
-      va_list a;
-      va_start(a, format);
-      int ret = vprintf(format, a);
-      va_end(a);
-      return ret;
-   }
-
-   static int vfprintf(FILE* stream, const char* format, va_list ap) {
-      if (stream != stdout && stream != stderr) {
-         va_list a, b;
-         va_copy(a, ap);
-         va_copy(b, ap);
-
-         int len = vsnprintf(nullptr, 0, format, a);
-         char* t = (char*)alloca(len + 1);
-         len = vsnprintf(t, len + 1, format, b);
-         return h2_libc::write(stream, t, len);
-      }
-
-      return vprintf(format, ap);
-   }
-
-   static int fputc(int c, FILE* stream) {
-      if (stream != stdout && stream != stderr) {
-         unsigned char t = c;
-         return 1 == h2_libc::write(stream, &t, 1) ? c : EOF;
-      }
-
-      return putchar(c);
-   }
-
-   static int fputs(const char* s, FILE* stream) {
-      if (stream != stdout && stream != stderr) {
-         return h2_libc::write(stream, s, strlen(s));
-      }
-
-      return puts(s);
-   }
-
-   static size_t fwrite(const void* ptr, size_t size, size_t nitems, FILE* stream) {
-      if (stream != stdout && stream != stderr) {
-         return h2_libc::write(stream, ptr, size * nitems);
-      }
-
-      size_t len = size * nitems;
-      if (I().p && I().offset + len < I().size) {
-         memcpy(I().p + I().offset, ptr, len);
-         I().offset += len;
-         I().p[I().offset] = '\0';
-      }
-      return len;
-   }
-
-   static const void start_capture(char* buffer, int size) {
+   static const char* start_capture(bool out, bool err) {
+      h2_stub_g((void*)::write, (void*)write, "", "", "", 0);
+#if defined __APPLE__
       h2_stub_g((void*)::printf, (void*)printf, "", "", "", 0);
+      h2_stub_g((void*)::vprintf, (void*)vprintf, "", "", "", 0);
       h2_stub_g((void*)::putchar, (void*)putchar, "", "", "", 0);
       h2_stub_g((void*)::puts, (void*)puts, "", "", "", 0);
-      h2_stub_g((void*)::vprintf, (void*)vprintf, "", "", "", 0);
-
       h2_stub_g((void*)::fprintf, (void*)fprintf, "", "", "", 0);
+      h2_stub_g((void*)::vfprintf, (void*)vfprintf, "", "", "", 0);
       h2_stub_g((void*)::fputc, (void*)fputc, "", "", "", 0);
       h2_stub_g((void*)::putc, (void*)fputc, "", "", "", 0);
       h2_stub_g((void*)::fputs, (void*)fputs, "", "", "", 0);
       h2_stub_g((void*)::fwrite, (void*)fwrite, "", "", "", 0);
-
-#if defined __APPLE__
-      h2_stub_g((void*)::vfprintf, (void*)vfprintf, "", "", "", 0);
 #endif
 
-      if (buffer) {
-         I().size = size;
-         I().p = buffer;
-      } else {
-         I().size = sizeof(I().buffer);
-         I().p = I().buffer;
-      }
-
-      I().offset = 0;
-      I().p[0] = '\0';
+      I().stdout_capturable = out;
+      I().stderr_capturable = err;
+      I().buffer.clear();
+      return I().buffer.c_str();
    }
 
    static const char* stop_capture() {
-      fflush(stdout);
-      fflush(stderr);
-      std::cout << std::flush;
+      I().stdout_capturable = false;
+      I().stderr_capturable = false;
 
-      char* buffer = I().p;
-      I().offset = 0;
-      I().size = 0;
-      I().p = nullptr;
-
-      h2_stub_g((void*)::printf, (void*)0, "", "", "", 0);
-      h2_stub_g((void*)::putchar, (void*)0, "", "", "", 0);
-      h2_stub_g((void*)::puts, (void*)0, "", "", "", 0);
-      h2_stub_g((void*)::vprintf, (void*)0, "", "", "", 0);
-
-      h2_stub_g((void*)::fprintf, (void*)0, "", "", "", 0);
-      h2_stub_g((void*)::fputc, (void*)0, "", "", "", 0);
-      h2_stub_g((void*)::putc, (void*)0, "", "", "", 0);
-      h2_stub_g((void*)::fputs, (void*)0, "", "", "", 0);
-      h2_stub_g((void*)::fwrite, (void*)0, "", "", "", 0);
-
-#if defined __APPLE__
-      h2_stub_g((void*)::vfprintf, (void*)0, "", "", "", 0);
-#endif
-
-      return buffer;
+      I().buffer.push_back('\0');
+      return I().buffer.c_str();
    }
 };
 
-h2_inline void h2_stdio::capture_cout(char* buffer, int size) {
-   h2__stdio::I().start_capture(buffer, size);
+h2_inline void h2_stdio::init() {
+   setbuf(stdout, 0);  // unbuffered. stderr is unbuffered default, stdout is line-buffered default
 }
-
-h2_inline const char* h2_stdio::capture_cout() {
-   return h2__stdio::I().stop_capture();
+h2_inline const char* h2_stdio::capture_cout(char* type) {
+   if (!type) return h2__stdio::I().stop_capture();
+   return h2__stdio::I().start_capture(!strlen(type) || strcasestr(type, "out"), !strlen(type) || strcasestr(type, "err"));
 }
 
 h2_inline bool h2_string::equals(h2_string __str, bool caseless) const {
@@ -3472,16 +3389,6 @@ h2_inline void h2_stub::restore() { h2_natives::I().get(befp)->restore(); }
 h2_inline bool h2_stubs::add(void* befp, void* tofp, const char* befn, const char* tofn, const char* file, int line) {
    h2_stub* stub = nullptr;
    h2_list_for_each_entry(p, &s, h2_stub, x) h2_if_find_break(p->befp == befp, p, stub);
-
-   if (!tofp) { /* unstub */
-      if (stub) {
-         stub->reset();
-         stub->x.out();
-         delete stub;
-      }
-      return true;
-   }
-
    if (!stub) {
       stub = new h2_stub(befp, file, line);
       s.push(&stub->x);
@@ -3540,13 +3447,14 @@ inline h2_task::h2_task() : state(0), status_stats{0}, current_suite(nullptr), c
 
 inline void h2_task::prepare() {
    state = 100;
+   h2_stdio::init();
    h2_heap::dosegv();
    if (O.listing) h2_directory::list_then_exit();
    logs.init();
    h2_directory::sort();
    h2_heap::stack::root();
    h2_heap::dohook();
-   h2_ns::setaddrinfo(1, "127.0.0.1");
+   h2_dns::setaddrinfo(1, "127.0.0.1");
    state = 199;
 }
 

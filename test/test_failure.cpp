@@ -109,7 +109,7 @@ SUITE(failure)
       fa->kprintf("!");
       OK("hello 42!", fa->_k);
 
-      COUT(NULL);
+      COUT("");
       fa->print();
       OK(" hello 42!", COUT());
    };
@@ -134,25 +134,25 @@ SUITE(failure)
       h2::h2_fail::append_y(fc, f8);
       h2::h2_fail::append_y(fc, f9);
 
-      COUT(NULL);
+      COUT("");
       fa->print_locate();
       OK(", in ff(3rd), at a:11\n", COUT());
 
       fb->locate("world", 178, "china", 8);
-      COUT(NULL);
+      COUT("");
       fb->print_locate();
       OK(", in china(9th), at world:178\n", COUT());
-      COUT(NULL);
+      COUT("");
       f4->print_locate();
       OK(", in china(9th), at world:178\n", COUT());
-      COUT(NULL);
+      COUT("");
       f5->print_locate();
       OK(", in china(9th), at world:178\n", COUT());
-      COUT(NULL);
+      COUT("");
       f6->print_locate();
       OK(", in china(9th), at world:178\n", COUT());
 
-      COUT(NULL);
+      COUT("");
       fc->print_locate();
       OK(", in fx(), at c:13\n", COUT());
    };

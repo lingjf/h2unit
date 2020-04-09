@@ -21,6 +21,6 @@ h2_inline void h2_libc::free(void* ptr) {
    munmap((void*)p, (size_t)*p);
 }
 
-h2_inline int h2_libc::write(FILE* stream, const void* buf, size_t nbyte) {
-   return ::write(fileno(stream), buf, nbyte);
+h2_inline ssize_t h2_libc::write(int fd, const void* buf, size_t count) {
+   return syscall(SYS_write, fd, buf, count);
 }

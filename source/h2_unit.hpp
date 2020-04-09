@@ -25,6 +25,7 @@
 #   pragma GCC diagnostic ignored "-Wsign-compare"
 #   pragma GCC diagnostic ignored "-Wwrite-strings"
 #elif defined __clang__
+#   pragma clang diagnostic ignored "-Wdeprecated-declarations"
 #   pragma clang diagnostic ignored "-Wint-to-pointer-cast"
 #   pragma clang diagnostic ignored "-Wparentheses"
 #   pragma clang diagnostic ignored "-Wsign-compare"
@@ -39,7 +40,7 @@
 
 namespace h2 {
 #include "h2_pp.hpp"
-#include "h2_tool.hpp"
+#include "h2_kit.hpp"
 #include "h2_list.hpp"
 #include "h2_option.hpp"
 #include "h2_libc.hpp"
@@ -59,8 +60,8 @@ namespace h2 {
 #include "h2_routine.hpp"
 #include "h2_mock.hpp"
 #include "h2_stdio.hpp"
-#include "h2_ns.hpp"
-#include "h2_inet.hpp"
+#include "h2_dns.hpp"
+#include "h2_socket.hpp"
 #include "h2_case.hpp"
 #include "h2_suite.hpp"
 #include "h2_log.hpp"
@@ -272,12 +273,12 @@ using h2::ListOf;
 // #define H2BLOCK(...) for (h2::h2_heap::stack::block Qb(__FILE__, __LINE__, ##__VA_ARGS__); Qb;)
 // #define H2BLOCK(...) for (h2::h2_heap::stack::block Qb(__FILE__, __LINE__, __VA_OPT__(,) __VA_ARGS__); Qb;)
 
-#define H2DNS(...) h2::h2_ns::setaddrinfo(H2PP_NARG(__VA_ARGS__), __VA_ARGS__)
+#define H2DNS(...) h2::h2_dns::setaddrinfo(H2PP_NARG(__VA_ARGS__), __VA_ARGS__)
 
-#define __H2SOCK0() h2::h2_inet::start_and_fetch()
-#define __H2SOCK2(packet, size) h2::h2_inet::inject_received(packet, size, nullptr, "*");
-#define __H2SOCK3(packet, size, from) h2::h2_inet::inject_received(packet, size, from, "*");
-#define __H2SOCK4(packet, size, from, to) h2::h2_inet::inject_received(packet, size, from, to);
+#define __H2SOCK0() h2::h2_socket::start_and_fetch()
+#define __H2SOCK2(packet, size) h2::h2_socket::inject_received(packet, size, nullptr, "*");
+#define __H2SOCK3(packet, size, from) h2::h2_socket::inject_received(packet, size, from, "*");
+#define __H2SOCK4(packet, size, from, to) h2::h2_socket::inject_received(packet, size, from, to);
 #define H2SOCK(...) H2PP_VARIADIC_CALL(__H2SOCK, __VA_ARGS__)
 
 #define H2COUT(...) h2::h2_stdio::capture_cout(__VA_ARGS__)

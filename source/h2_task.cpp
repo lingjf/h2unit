@@ -3,13 +3,14 @@ inline h2_task::h2_task() : state(0), status_stats{0}, current_suite(nullptr), c
 
 inline void h2_task::prepare() {
    state = 100;
+   h2_stdio::init();
    h2_heap::dosegv();
    if (O.listing) h2_directory::list_then_exit();
    logs.init();
    h2_directory::sort();
    h2_heap::stack::root();
    h2_heap::dohook();
-   h2_ns::setaddrinfo(1, "127.0.0.1");
+   h2_dns::setaddrinfo(1, "127.0.0.1");
    state = 199;
 }
 

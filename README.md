@@ -533,17 +533,19 @@ CASE(test net)
 
 ### 11. Capture STDOUT/STDERR
 [`COUT`](source/h2_unit.h#L96)(): Capture STDOUT and STDERR output (printf(), std::cout<<, ...).
-*    `COUT`(NULL): Start Capture with built-in buffer.
-*    `COUT`(buffer): Start Capture with user buffer.
+*    `COUT`(""): Start Capture STDOUT and STDERR.
+*    `COUT`("stdout stderr"): Start Capture STDOUT and STDERR.
+*    `COUT`("STDOUT"): Start Capture STDOUT only.
+*    `COUT`("STDerr"): Start Capture STDERR only.
 *    `COUT`(): Stop Capture, and return buffer captured.
 
 ```C++
 CASE(test printf)
 {
-   COUT(NULL); // Start Capture
+   COUT(""); // Start Capture
    printf("...");
    std::cout << ...;
-   OK("...", COUT()); // Stop Capture and return captured text
+   OK("...", COUT()); // Stop Capture and return captured string
 }
 ```
 

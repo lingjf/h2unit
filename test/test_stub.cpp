@@ -12,7 +12,7 @@ time_t my_time(time_t* x)
    return time(NULL);
 }
 
-static int STUB_sum(int count, ...)
+int STUB_sum(int count, ...)
 {
    int s = 0;
    int i = 0;
@@ -26,7 +26,7 @@ static int STUB_sum(int count, ...)
    return -s;
 }
 
-static int my_sum(int count, ...)
+int my_sum(int count, ...)
 {
    int s = 0;
    int i = 0;
@@ -54,7 +54,7 @@ double STUB_sqrt(double x)
    return 3.14;
 }
 
-static int foobar(int, int)
+int foobar(int, int)
 {
    return 1;
 }

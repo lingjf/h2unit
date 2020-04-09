@@ -27,20 +27,17 @@ struct h2_log_console : h2_log {
       switch (c->status) {
       case h2_case::INITED: break;
       case h2_case::TODOED:
-         if (O.verbose)
-            printf("[%3d%%] (%s // %s): %s at %s:%d\n", percentage, s->name, c->name, CSS[c->status], basename((char*)c->file), c->line);
+         if (O.verbose) printf("[%3d%%] (%s // %s): %s at %s:%d\n", percentage, s->name, c->name, CSS[c->status], basename((char*)c->file), c->line);
          break;
       case h2_case::FILTED: break;
       case h2_case::PASSED:
-         if (O.verbose) {
-            printf("[%3d%%] ", percentage);
-            printf("%s", SF("light blue", "(%s // %s): Passed - %lld ms\n", s->name, c->name, tc));
-         } else if (!O.debug)
+         if (O.verbose)
+            printf("[%3d%%] %s", percentage, SF("light blue", "(%s // %s): Passed - %lld ms\n", s->name, c->name, tc));
+         else if (!O.debug)
             printf("\r[%3d%%] (%d/%d)\r", percentage, done_cases, total_cases);
          break;
       case h2_case::FAILED:
-         printf("[%3d%%] ", percentage);
-         printf("%s", SF("bold,purple", "(%s // %s): Failed at %s:%d\n", s->name, c->name, basename((char*)c->file), c->line));
+         printf("[%3d%%] %s", percentage, SF("bold,purple", "(%s // %s): Failed at %s:%d\n", s->name, c->name, basename((char*)c->file), c->line));
          for (h2_fail* x_fail = c->fails; x_fail; x_fail = x_fail->x_next)
             for (h2_fail* fail = x_fail; fail; fail = fail->y_next)
                fail->print();
@@ -52,7 +49,6 @@ struct h2_log_console : h2_log {
 
 struct h2_log_xml : h2_log {
    FILE* f;
-
    void on_task_start(int cases) override {
       h2_log::on_task_start(cases);
       f = fopen(O.junit, "w");
@@ -60,22 +56,19 @@ struct h2_log_xml : h2_log {
       fprintf(f, "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n");
       fprintf(f, "<testsuites>\n");
    };
-
    void on_suite_start(h2_suite* s) override {
       h2_log::on_suite_start(s);
       if (!f) return;
-      fprintf(f, "  <testsuite errors=\"0\" failures=\"%d\" hostname=\"localhost\" name=\"%s\" skipped=\"%d\" tests=\"%d\" time=\"%d\" timestamp=\"%s\">\n",
-              s->status_stats[h2_case::FAILED], s->name, s->status_stats[h2_case::TODOED] + s->status_stats[h2_case::FILTED], (int)s->cases().size(), 0, "");
+      fprintf(f, "<testsuite errors=\"0\" failures=\"%d\" hostname=\"localhost\" name=\"%s\" skipped=\"%d\" tests=\"%d\" time=\"%d\" timestamp=\"%s\">\n", s->status_stats[h2_case::FAILED], s->name, s->status_stats[h2_case::TODOED] + s->status_stats[h2_case::FILTED], (int)s->cases().size(), 0, "");
    }
 
    void on_case_endup(h2_suite* s, h2_case* c) override {
       h2_log::on_case_endup(s, c);
       if (!f) return;
-      fprintf(f, "    <testcase classname=\"%s\" name=\"%s\" status=\"%s\" time=\"%.3f\">\n",
-              s->name, c->name, CSS[c->status], tc / 1000.0);
+      fprintf(f, "<testcase classname=\"%s\" name=\"%s\" status=\"%s\" time=\"%.3f\">\n", s->name, c->name, CSS[c->status], tc / 1000.0);
 
       if (c->status == h2_case::FAILED) {
-         fprintf(f, "      <failure message=\"%s:%d:", c->file, c->line);
+         fprintf(f, "<failure message=\"%s:%d:", c->file, c->line);
          for (h2_fail* x_fail = c->fails; x_fail; x_fail = x_fail->x_next)
             for (h2_fail* fail = x_fail; fail; fail = fail->y_next) {
                fprintf(f, "{newline}");
@@ -83,15 +76,14 @@ struct h2_log_xml : h2_log {
             }
          fprintf(f, "\" type=\"AssertionFailedError\"></failure>\n");
       }
-      fprintf(f, "      <system-out></system-out><system-err></system-err>\n");
-      fprintf(f, "    </testcase>\n");
+      fprintf(f, "<system-out></system-out><system-err></system-err>\n");
+      fprintf(f, "</testcase>\n");
    }
    void on_suite_endup(h2_suite* s) override {
       h2_log::on_suite_endup(s);
       if (!f) return;
-      fprintf(f, "  </testsuite>\n");
+      fprintf(f, "</testsuite>\n");
    }
-
    void on_task_endup(int status_stats[8]) override {
       h2_log::on_task_endup(status_stats);
       if (!f) return;
