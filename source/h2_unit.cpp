@@ -10,6 +10,7 @@
 #include <errno.h>       /* strerror */
 #include <execinfo.h>    /* backtrace */
 #include <fcntl.h>       /* fcntl */
+#include <fnmatch.h>     /* fnmatch */
 #include <iostream>      /* cout */
 #include <libgen.h>      /* basename */
 #include <map>           /* std::map */

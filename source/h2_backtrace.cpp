@@ -125,7 +125,7 @@ h2_inline void h2_backtrace::print(int pad) const {
       }
       ::printf("%s%d. %s\n", PAD(pad), i - shift, p);
 
-      if (streq("main", mangled) || streq("main", demangled) || h2_nm::I().in_main(address + offset))
+      if (!strcmp("main", mangled) || !strcmp("main", demangled) || h2_nm::I().in_main(address + offset))
          break;
    }
    free(backtraces);

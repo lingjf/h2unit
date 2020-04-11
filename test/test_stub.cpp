@@ -1,7 +1,4 @@
 
-#include "../source/h2_unit.hpp"
-#include "../source/h2_unit.cpp"
-
 time_t STUB_time(time_t* x)
 {
    return 1024;
@@ -67,7 +64,7 @@ SUITE(libc)
       s.set((void*)STUB_time);
       OK(1024, time(NULL));
       s.reset();
-   };
+   }
 
    Todo(stub sqrt)
    {
@@ -85,7 +82,7 @@ SUITE(libc)
       }
       OK(1024, time(NULL));
       s.reset();
-   };
+   }
 }
 
 #ifdef __linux__
@@ -139,21 +136,21 @@ SUITE(stubs)
       OK(1024, my_time(NULL));
 
       s.reset();
-   };
+   }
 
    Case(local function)
    {
       STUB(my_time, STUB_time);
 
       OK(1024, my_time(NULL));
-   };
+   }
 
    Case(stub libc function)
    {
       STUB(time, STUB_time);
 
       OK(1024, time(NULL));
-   };
+   }
 
    Case(variadic parameters function)
    {
@@ -163,7 +160,7 @@ SUITE(stubs)
       STUB(my_sum, STUB_sum);
 
       OK(-6, my_sum(3, 1, 2, 3));
-   };
+   }
 
    Case(stub - chain)
    {
@@ -171,7 +168,7 @@ SUITE(stubs)
       STUB(time, STUB2_time);
 
       OK(222, time(NULL));
-   };
+   }
 
    Case(stub, overwrite)
    {
@@ -179,7 +176,7 @@ SUITE(stubs)
       STUB(STUB1_time, STUB2_time);
 
       OK(222, time(NULL));
-   };
+   }
 
    Case(lambdas normal function)
    {
@@ -189,7 +186,7 @@ SUITE(stubs)
       };
 
       OK(222, foobar(111, 111));
-   };
+   }
 
    //  Case( lambdas variadic parameters function)
    // {
@@ -210,7 +207,7 @@ SUITE(stubs)
 
       Shape shape;
       OK(222, shape.go(111, 111));
-   };
+   }
 
    Case(lambdas virtual member function)
    {
@@ -221,7 +218,7 @@ SUITE(stubs)
 
       Shape shape;
       OK(222, shape.work(111, 111));
-   };
+   }
 
    Case(lambdas static member function)
    {
@@ -231,7 +228,7 @@ SUITE(stubs)
       };
 
       OK(222, Shape::fly(111, 111));
-   };
+   }
 }
 
 SUITE(Stub in shared_code)
@@ -246,13 +243,13 @@ SUITE(Stub in shared_code)
    {
       OK(1024, time(NULL));
       OK(222, foobar(111, 111));
-   };
+   }
 
    Case(b)
    {
       OK(1024, time(NULL));
       OK(222, foobar(111, 111));
-   };
+   }
 }
 
 #endif

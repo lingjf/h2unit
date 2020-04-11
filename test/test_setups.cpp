@@ -1,73 +1,75 @@
-#include <math.h>
+#include <time.h>
 
-#include "../source/h2_unit.hpp"
-#include "../source/h2_unit.cpp"
-
-double STUB_sin(double x)
+static char*
+my_asctime_r(const struct tm* tm, char* buf)
 {
-   return 3.14;
+  return "2020-04-09";
 }
-
-double STUB_cos(double x)
-{
-   return 3.14;
-}
-
-double STUB_tan(double x)
-{
-   return 3.14;
-}
-
-int STUB_rand(void)
-{
-   return 1024;
-}
-
 
 GlobalSetup()
 {
-   STUB((double(*)(double))sin, STUB_sin);
-   MOCK((double(*)(double))asin, double(double)).any().returns(3.14);
+  STUB(asctime_r, my_asctime_r);
+  MOCK(asctime, char*(const struct tm*)).any().returns("2020-04-10");
 }
 
-GlobalSuiteSetup() {
-   STUB((double(*)(double))cos, STUB_cos);
-   MOCK((double(*)(double))acos, double(double)).any().returns(3.14);
-}
-
-GlobalCaseSetup() {
-   STUB((double(*)(double))tan, STUB_tan);
-   MOCK((double(*)(double))atan, double(double)).any().returns(3.14);
-}
-
-SUITE(Stub/Mock in Setups)
+static char*
+my_ctime_r(const time_t* timep, char* buf)
 {
-   STUB(rand, STUB_rand);
-   MOCK(time, time_t(time_t*)).any().returns(1024);
+  return "2020-04-09";
+}
 
-   Case(a)
-   {
-      OK(3.14, sin(1));
-      OK(3.14, cos(1));
-      OK(3.14, tan(1));
-      OK(1024, rand());
+GlobalSuiteSetup()
+{
+  STUB(ctime_r, my_ctime_r);
+  MOCK(ctime, char*(const time_t*)).any().returns("2020-04-10");
+}
 
-      OK(3.14, asin(1));
-      OK(3.14, acos(1));
-      OK(3.14, atan(1));
-      OK(1024, time(NULL));
-   }
+struct tm*
+my_gmtime_r(const time_t* timep, struct tm* result)
+{
+  return (struct tm*)1024;
+}
 
-   Case(b)
-   {
-      OK(3.14, sin(1));
-      OK(3.14, cos(1));
-      OK(3.14, tan(1));
-      OK(1024, rand());
+GlobalCaseSetup()
+{
+  STUB(gmtime_r, my_gmtime_r);
+  MOCK(gmtime, struct tm * (const time_t*)).any().returns((struct tm*)1024);
+}
 
-      OK(3.14, asin(1));
-      OK(3.14, acos(1));
-      OK(3.14, atan(1));
-      OK(1024, time(NULL));
-   }
+static time_t
+my_mktime(struct tm* tm)
+{
+  return 1024;
+}
+
+SUITE(Stub / Mock in Setups)
+{
+  STUB(mktime, my_mktime);
+  MOCK(time, time_t(time_t*)).any().returns(1024);
+
+  Case(a)
+  {
+    OK("2020-04-09", asctime_r(NULL, NULL));
+    OK("2020-04-09", ctime_r(NULL, NULL));
+    OK((struct tm*)1024, gmtime_r(NULL, NULL));
+    OK(1024, mktime(NULL));
+
+    OK("2020-04-10", asctime(NULL));
+    OK("2020-04-10", ctime(NULL));
+    OK((struct tm*)1024, gmtime(NULL));
+    OK(1024, time(NULL));
+  }
+
+  Case(b)
+  {
+    OK("2020-04-09", asctime_r(NULL, NULL));
+    OK("2020-04-09", ctime_r(NULL, NULL));
+    OK((struct tm*)1024, gmtime_r(NULL, NULL));
+    OK(1024, mktime(NULL));
+
+    OK("2020-04-10", asctime(NULL));
+    OK("2020-04-10", ctime(NULL));
+    OK((struct tm*)1024, gmtime(NULL));
+    OK(1024, time(NULL));
+  }
 }

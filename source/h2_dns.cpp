@@ -14,7 +14,7 @@ struct h2_resolver {
    }
 
    h2_dns* find(const char* hostname) {
-      h2_list_for_each_entry(p, &dnses, h2_dns, y) if (streq("*", p->name) || streq(hostname, p->name)) return p;
+      h2_list_for_each_entry(p, &dnses, h2_dns, y) if (!strcmp("*", p->name) || !strcmp(hostname, p->name)) return p;
       return nullptr;
    }
 
@@ -117,7 +117,7 @@ h2_inline void h2_dns::setaddrinfo(int n, ...) {
 
    h2_dns* dns = new h2_dns(hostname);
    for (int i = 0; i < count; ++i)
-      if (!streq(hostname, array[i]))
+      if (strcmp(hostname, array[i]))
          strcpy(dns->array[dns->count++], array[i]);
 
    h2_resolver::I().dnses.push(&dns->y);

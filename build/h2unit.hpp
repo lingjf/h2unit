@@ -1,9 +1,9 @@
-/* v5.0  2020-04-09 23:58:14 */
+/* v5.1  2020-04-11 23:31:06 */
 /* https://github.com/lingjf/h2unit */
 /* Apache Licence 2.0 */
 #ifndef ___H2UNIT_HPP___
 #define ___H2UNIT_HPP___
-#define H2UNIT_VERSION "5.0"
+#define H2UNIT_VERSION "5.1"
 
 #include <cstdio>      /* printf */
 #include <cstdlib>     /* malloc */
@@ -45,7 +45,6 @@
 #endif
 
 namespace h2 {
-/* https://www.boost.org/doc/libs/1_65_0/libs/preprocessor/doc/index.html */
 
 #define H2PP__CAT2(_1, _2) _1##_2
 #define H2PP_CAT2(_1, _2) H2PP__CAT2(_1, _2)
@@ -334,8 +333,6 @@ struct h2_string : public std::basic_string<char, std::char_traits<char>, h2_all
    bool contains(h2_string __substr, bool caseless = false) const;
    bool startswith(h2_string __prefix, bool caseless = false) const;
    bool endswith(h2_string __suffix, bool caseless = false) const;
-   bool wildcard_match(h2_string __pattern, bool caseless = false) const;
-   bool regex_match(h2_string __pattern, bool caseless = false) const;
 
    h2_string& tolower();
    static h2_string tolower(h2_string from) { return from.tolower(); }

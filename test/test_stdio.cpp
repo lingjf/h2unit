@@ -1,5 +1,3 @@
-#include "../source/h2_unit.hpp"
-#include "../source/h2_unit.cpp"
 
 static int my_printf(const char* fmt, ...) 
 {
@@ -35,7 +33,7 @@ SUITE(stdio)
       ret = printf("printf! %d", 42);
       OK(strlen(e), ret);
       OK(e, COUT());
-   };
+   }
 
    Case(putchar)
    {
@@ -43,7 +41,7 @@ SUITE(stdio)
       ret = putchar('C');
       OK('C', ret);
       OK("C", COUT());
-   };
+   }
 
    Case(puts)
    {
@@ -51,7 +49,7 @@ SUITE(stdio)
       ret = puts("puts! 42");
       OK(Gt(0), ret);
       OK("puts! 42\n", COUT());
-   };
+   }
 
    Case(vprintf)
    {
@@ -60,7 +58,7 @@ SUITE(stdio)
       ret = my_printf("vprintf! %d", 42);
       OK(strlen(e), ret);
       OK(e, COUT());
-   };
+   }
 
    Case(std::cout) /* internal fwrite() called */
    {
@@ -68,7 +66,7 @@ SUITE(stdio)
       const char* e = "std::cout! 42";
       std::cout << "std::cout! " << 42;
       OK(e, COUT());
-   };
+   }
 
    Case(fprintf)
    {
@@ -83,7 +81,7 @@ SUITE(stdio)
       ret = fprintf(stderr, "fprintf stderr! %d", 42);
       OK(strlen(e2), ret);
       OK(e2, COUT());
-   };
+   }
 
    Case(vfprintf)
    {
@@ -98,7 +96,7 @@ SUITE(stdio)
       ret = my_fprintf(stderr, "vfprintf stderr! %d", 42);
       OK(strlen(e2), ret);
       OK(e2, COUT());
-   };
+   }
 
    Case(fputc)
    {
@@ -111,7 +109,7 @@ SUITE(stdio)
       ret = fputc('D', stderr);
       OK('D', ret);
       OK("D", COUT());
-   };
+   }
 
    Case(putc)
    {
@@ -124,7 +122,7 @@ SUITE(stdio)
       ret = putc('D', stderr);
       OK('D', ret);
       OK("D", COUT());
-   };
+   }
 
    Case(fputs)
    {
@@ -137,7 +135,7 @@ SUITE(stdio)
       ret = fputs("fputs stderr! 42", stderr);
       OK(Gt(0), ret);
       OK("fputs stderr! 42", COUT());
-   };
+   }
 
    Case(fwrite)
    {
@@ -152,7 +150,7 @@ SUITE(stdio)
       ret = fwrite(e2, 1, strlen(e2), stderr);
       OK(strlen(e2), ret);
       OK(e2, COUT());
-   };
+   }
 
    Case(normal file write)
    {
@@ -200,12 +198,5 @@ SUITE(stdio)
       fclose(fp2);
 
       OK("", COUT());
-   }
-
-   Case(write)
-   {
-      COUT("");
-
-      write(1, "1", 1);
    }
 }

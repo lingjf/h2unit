@@ -1,25 +1,39 @@
 
 static inline void usage() {
-   const char* h = "\
-   \033[33m╭────────────────────────────────────────────────────────────────╮\033[0m\n\
-   \033[33m│\033[0m                                                                \033[33m│\033[0m\n\
-   \033[33m│\033[0m                   Current version \033[32mh2unit \033[31m%-9s             \033[33m│\033[0m\n\
-   \033[33m│\033[0m     Manual: \033[34;4mhttps://github.com/lingjf/h2unit.git \033[0;36mREADME.md     \033[33m│\033[0m\n\
-   \033[33m│\033[0m                                                                \033[33m│\033[0m\n\
-   \033[33m╰────────────────────────────────────────────────────────────────╯\033[0m\n\
-";
-   ::printf(h, H2UNIT_VERSION);
-   ::printf("   Usage:\n%s",
-            "     -v                  Make the operation more talkative\n"
-            "     -l [sca]            List out suites and cases\n"
-            "     -b [n]              Breaking test once n (default is 1) failures occurred\n"
-            "     -c                  Output in black-white color mode\n"
-            "     -r [sca]            Run cases in random order\n"
-            "     -m                  Run cases without memory check\n"
-            "     -d/D                Debug mode, -D for gdb attach but sudo requires password\n"
-            "     -j [path]           Generate junit report, default is .xml\n"
-            "     -i {patterns}       Run cases which case name, suite name or file name matches\n"
-            "     -x {patterns}       Run cases which case name, suite name and file name not matches\n");
+   ::printf("  \033[33m╭─────────────────────────────────────────────────────────────────────────╮\033[0m\n");
+   ::printf("  \033[33m│\033[0m                                                                         \033[33m│\033[0m\n");
+   ::printf("  \033[33m│\033[0m                       Current version \033[32mh2unit \033[31m%-9s                  \033[33m│\033[0m\n", H2UNIT_VERSION);
+   ::printf("  \033[33m│\033[0m         Manual: \033[34;4mhttps://github.com/lingjf/h2unit.git \033[0;36mREADME.md          \033[33m│\033[0m\n");
+   ::printf("  \033[33m│\033[0m                                                                         \033[33m│\033[0m\n");
+   ::printf("  \033[33m╰─────────────────────────────────────────────────────────────────────────╯\033[0m\n");
+
+   ::printf("\
+  ┌────────┬───────────┬────────────────────────────────────────────────────┐\n\
+  │ Option │ Parameter │ Description                                        │\n\
+  ├────────┼───────────┼────────────────────────────────────────────────────┤\n\
+  │ -v     │           │ Verbose output                                     │\n\
+  ├────────┼───────────┼────────────────────────────────────────────────────┤\n\
+  │ -l     │   [asc]   │ List out suites and cases                          │\n\
+  ├────────┼───────────┼────────────────────┬───────────────────────────────┤\n\
+  │        │    [s]    │ Random suite order │ Run cases in random order,    │\n\
+  │ -r     ├───────────┼────────────────────┤ default both suite and case   │\n\
+  │        │    [c]    │ Random case order  │ random order                  │\n\
+  ├────────┼───────────┼────────────────────┴───────────────────────────────┤\n\
+  │ -b[n]  │    [n]    │ Breaking test once n (default 1) failures occurred │\n\
+  ├────────┼───────────┼────────────────────────────────────────────────────┤\n\
+  │ -c     │           │ Output in black-white color style                  │\n\
+  ├────────┼───────────┼────────────────────────────────────────────────────┤\n\
+  │ -m     │           │ Run cases without memory check                     │\n\
+  ├────────┼───────────┼────────────────────────────────────────────────────┤\n\
+  │ -d     │           │ Debug with gdb once failure occurred               │\n\
+  ├────────┼───────────┼────────────────────────────────────────────────────┤\n\
+  │ -j     │  [path]   │ Generate junit report, default path is junit.xml   │\n\
+  ├────────┼───────────┼────────────────┬───────────────────────────────────┤\n\
+  │ -i     │ patterns  │ include filter │ case, suite or file name          │\n\
+  ├────────┤ separated ├────────────────┤ case-insensitive matches patterns │\n\
+  │ -x     │ by space  │ exclude filter │ default include all, exclude none │\n\
+  └────────┴───────────┴────────────────┴───────────────────────────────────┘\n\
+\n");
 }
 
 struct getopt {
@@ -112,11 +126,11 @@ h2_inline void h2_option::parse(int argc, const char** argv) {
 static inline bool match3(const std::vector<const char*>& patterns, const char* subject) {
    for (auto pattern : patterns)
       if (strcspn(pattern, "?*+^$\\.[]") < strlen(pattern)) {
-         if (h2_regex_match(pattern, subject)) return true;
+         if (h2_regex_match(pattern, subject, true)) return true;
          if (strcspn(pattern, "+^$\\.[]") == strlen(pattern))
-            if (h2_wildcard_match(pattern, subject)) return true;
+            if (h2_wildcard_match(pattern, subject, true)) return true;
       } else {
-         if (strstr(subject, pattern)) return true;
+         if (strcasestr(subject, pattern)) return true;
       }
    return false;
 }

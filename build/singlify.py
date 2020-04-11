@@ -4,7 +4,7 @@
 import sys
 import time
 
-version = "5.0"
+version = "5.1"
 
 version_datetime = '/* v{0}  {1} */'.format(version, time.strftime('%Y-%m-%d %H:%M:%S', time.localtime()))
 project_github_url = '/* https://github.com/lingjf/h2unit */'
@@ -31,12 +31,8 @@ def merge_files(inf, outf):
             copy_line2(line, outf)
 
 h2unit_h = '../h2unit.h'
-h2unit_hpp = '../h2unit.hpp'
-h2unit_cpp = '../h2unit.cpp'
-if len(sys.argv) > 1:
-    h2unit_h = sys.argv[1] + '/h2unit.h'
-    h2unit_hpp = sys.argv[1] + '/h2unit.hpp'
-    h2unit_cpp = sys.argv[1] + '/h2unit.cpp'
+h2unit_hpp = './h2unit.hpp'
+h2unit_cpp = './h2unit.cpp'
 
 f_h2unit_h = open(h2unit_h, 'w')
 f_h2unit_h.write(version_datetime + '\n')

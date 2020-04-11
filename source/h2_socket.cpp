@@ -6,7 +6,6 @@ struct h2__socket {
    static void iport_parse(const char* str, struct sockaddr_in* addr) {
       char temp[1024];
       strcpy(temp, str);
-
       addr->sin_family = AF_INET;
       addr->sin_port = 0;
       char* colon = strchr(temp, ':');

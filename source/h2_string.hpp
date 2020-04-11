@@ -23,8 +23,6 @@ struct h2_string : public std::basic_string<char, std::char_traits<char>, h2_all
    bool contains(h2_string __substr, bool caseless = false) const;
    bool startswith(h2_string __prefix, bool caseless = false) const;
    bool endswith(h2_string __suffix, bool caseless = false) const;
-   bool wildcard_match(h2_string __pattern, bool caseless = false) const;
-   bool regex_match(h2_string __pattern, bool caseless = false) const;
 
    h2_string& tolower();
    static h2_string tolower(h2_string from) { return from.tolower(); }

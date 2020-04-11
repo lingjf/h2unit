@@ -1,4 +1,4 @@
-/* v5.0  2020-04-09 23:58:14 */
+/* v5.1  2020-04-11 23:31:06 */
 /* https://github.com/lingjf/h2unit */
 /* Apache Licence 2.0 */
 #include "h2unit.hpp"
@@ -15,6 +15,7 @@
 #include <errno.h>       /* strerror */
 #include <execinfo.h>    /* backtrace */
 #include <fcntl.h>       /* fcntl */
+#include <fnmatch.h>     /* fnmatch */
 #include <iostream>      /* cout */
 #include <libgen.h>      /* basename */
 #include <map>           /* std::map */
@@ -41,12 +42,9 @@
 
 namespace h2 {
 
-static inline bool streq(const char* s1, const char* s2) { return !strcmp(s1, s2); }
-
 static inline bool h2_regex_match(const char* pattern, const char* subject, bool caseless = false) {
    bool result = false;
-   try {
-      std::regex re(pattern);
+   try {  //C++11 support regex; gcc 4.8 start support regex, gcc 5.5 icase works.
       result = std::regex_match(subject, caseless ? std::regex(pattern, std::regex::icase) : std::regex(pattern));
    } catch (const std::regex_error& e) {
       result = false;
@@ -54,24 +52,8 @@ static inline bool h2_regex_match(const char* pattern, const char* subject, bool
    return result;
 }
 
-static inline bool h2_wildcard_match(const char* pattern, const char* subject) {
-   const char *scur = subject, *pcur = pattern;
-   const char *sstar = nullptr, *pstar = nullptr;
-   while (*scur) {
-      if (*scur == *pcur || *pcur == '?') {
-         ++scur;
-         ++pcur;
-      } else if (*pcur == '*') {
-         pstar = pcur++;
-         sstar = scur;
-      } else if (pstar) {
-         pcur = pstar + 1;
-         scur = ++sstar;
-      } else
-         return false;
-   }
-   while (*pcur == '*') ++pcur;
-   return !*pcur;
+static inline bool h2_wildcard_match(const char* pattern, const char* subject, bool caseless = false) {
+   return !fnmatch(pattern, subject, caseless ? FNM_CASEFOLD : 0);  // PathMatchSpec() for windows
 }
 
 static inline long long h2_now() {
@@ -130,14 +112,14 @@ static inline const char* h2_style(const char* style, char* ascii_code) {
    char t[1024], *s = strcpy(t, style), *d = ascii_code + sprintf(ascii_code, "\033["), *q = d;
    for (char* p = strtok(s, ","); p; p = strtok(nullptr, ","))
       for (auto& k : K)
-         if (streq(k.name, p)) {
+         if (!strcmp(k.name, p)) {
             q += sprintf(q, "%s", k.value);
             break;
          }
    return d == q ? strcpy(ascii_code, "") : (*(q - 1) = 'm', ascii_code);
 }
 
-static inline const char *PAD(int n) {
+static inline const char* PAD(int n) {
    static char st[1024];
    memset(st, ' ', n);
    st[n] = '\0';
@@ -287,7 +269,7 @@ h2_inline void h2_backtrace::print(int pad) const {
       }
       ::printf("%s%d. %s\n", PAD(pad), i - shift, p);
 
-      if (streq("main", mangled) || streq("main", demangled) || h2_nm::I().in_main(address + offset))
+      if (!strcmp("main", mangled) || !strcmp("main", demangled) || h2_nm::I().in_main(address + offset))
          break;
    }
    free(backtraces);
@@ -418,7 +400,7 @@ h2_inline void h2_debugger::trap() {
    if (!under_debug(pid, O.path)) {
       static h2_once only_one_time;
       if (only_one_time) {
-         if (streq("gdb attach", O.debug)) {
+         if (!strcmp("gdb attach", O.debug)) {
             if (fork() == 0) {
                system(get_gdb2((char*)alloca(256), pid));
                exit(0);
@@ -2546,8 +2528,8 @@ h2_inline void h2_logs::init() {
 h2_inline h2_fail* h2_string_equal_matches::matches(const h2_string& a, bool caseless, bool dont) const {
    if (r) dont = !dont;
    if (a.equals(e, caseless) == !dont) return nullptr;
-   if (a.wildcard_match(e, caseless) == !dont) return nullptr;
-   if (a.regex_match(e, caseless) == !dont) return nullptr;
+   if (h2_wildcard_match(e.c_str(), a.c_str(), caseless) == !dont) return nullptr;
+   if (h2_regex_match(e.c_str(), a.c_str(), caseless) == !dont) return nullptr;
 
    h2_fail* fail;
    if (dont) {
@@ -2585,7 +2567,7 @@ h2_inline h2_fail* h2_memcmp_matches::matches(const void* a, bool caseless, bool
 }
 
 h2_inline h2_fail* h2_regex_matches::matches(const h2_string& a, bool caseless, bool dont) const {
-   if (a.regex_match(e, caseless) == !dont) return nullptr;
+   if (h2_regex_match(e.c_str(), a.c_str(), caseless) == !dont) return nullptr;
    h2_fail_unexpect* fail = new h2_fail_unexpect();
    fail->eprintf("/%s/", e.c_str());
    fail->aprintf("\"%s\"", a.c_str());
@@ -2598,7 +2580,7 @@ h2_inline h2_fail* h2_regex_matches::matches(const h2_string& a, bool caseless, 
 }
 
 h2_inline h2_fail* h2_wildcard_matches::matches(const h2_string& a, bool caseless, bool dont) const {
-   if (a.wildcard_match(e, caseless) == !dont) return nullptr;
+   if (h2_wildcard_match(e.c_str(), a.c_str(), caseless) == !dont) return nullptr;
    h2_fail_unexpect* fail = new h2_fail_unexpect();
    fail->eprintf("/%s/", e.c_str());
    fail->aprintf("\"%s\"", a.c_str());
@@ -2690,7 +2672,7 @@ struct h2_resolver {
    }
 
    h2_dns* find(const char* hostname) {
-      h2_list_for_each_entry(p, &dnses, h2_dns, y) if (streq("*", p->name) || streq(hostname, p->name)) return p;
+      h2_list_for_each_entry(p, &dnses, h2_dns, y) if (!strcmp("*", p->name) || !strcmp(hostname, p->name)) return p;
       return nullptr;
    }
 
@@ -2793,7 +2775,7 @@ h2_inline void h2_dns::setaddrinfo(int n, ...) {
 
    h2_dns* dns = new h2_dns(hostname);
    for (int i = 0; i < count; ++i)
-      if (!streq(hostname, array[i]))
+      if (strcmp(hostname, array[i]))
          strcpy(dns->array[dns->count++], array[i]);
 
    h2_resolver::I().dnses.push(&dns->y);
@@ -2807,7 +2789,6 @@ struct h2__socket {
    static void iport_parse(const char* str, struct sockaddr_in* addr) {
       char temp[1024];
       strcpy(temp, str);
-
       addr->sin_family = AF_INET;
       addr->sin_port = 0;
       char* colon = strchr(temp, ':');
@@ -2986,26 +2967,40 @@ h2_inline void h2_socket::inject_received(const void* packet, size_t size, const
 }
 
 static inline void usage() {
-   const char* h = "\
-   \033[33m╭────────────────────────────────────────────────────────────────╮\033[0m\n\
-   \033[33m│\033[0m                                                                \033[33m│\033[0m\n\
-   \033[33m│\033[0m                   Current version \033[32mh2unit \033[31m%-9s             \033[33m│\033[0m\n\
-   \033[33m│\033[0m     Manual: \033[34;4mhttps://github.com/lingjf/h2unit.git \033[0;36mREADME.md     \033[33m│\033[0m\n\
-   \033[33m│\033[0m                                                                \033[33m│\033[0m\n\
-   \033[33m╰────────────────────────────────────────────────────────────────╯\033[0m\n\
-";
-   ::printf(h, H2UNIT_VERSION);
-   ::printf("   Usage:\n%s",
-            "     -v                  Make the operation more talkative\n"
-            "     -l [sca]            List out suites and cases\n"
-            "     -b [n]              Breaking test once n (default is 1) failures occurred\n"
-            "     -c                  Output in black-white color mode\n"
-            "     -r [sca]            Run cases in random order\n"
-            "     -m                  Run cases without memory check\n"
-            "     -d/D                Debug mode, -D for gdb attach but sudo requires password\n"
-            "     -j [path]           Generate junit report, default is .xml\n"
-            "     -i {patterns}       Run cases which case name, suite name or file name matches\n"
-            "     -x {patterns}       Run cases which case name, suite name and file name not matches\n");
+   ::printf("  \033[33m╭─────────────────────────────────────────────────────────────────────────╮\033[0m\n");
+   ::printf("  \033[33m│\033[0m                                                                         \033[33m│\033[0m\n");
+   ::printf("  \033[33m│\033[0m                       Current version \033[32mh2unit \033[31m%-9s                  \033[33m│\033[0m\n", H2UNIT_VERSION);
+   ::printf("  \033[33m│\033[0m         Manual: \033[34;4mhttps://github.com/lingjf/h2unit.git \033[0;36mREADME.md          \033[33m│\033[0m\n");
+   ::printf("  \033[33m│\033[0m                                                                         \033[33m│\033[0m\n");
+   ::printf("  \033[33m╰─────────────────────────────────────────────────────────────────────────╯\033[0m\n");
+
+   ::printf("\
+  ┌────────┬───────────┬────────────────────────────────────────────────────┐\n\
+  │ Option │ Parameter │ Description                                        │\n\
+  ├────────┼───────────┼────────────────────────────────────────────────────┤\n\
+  │ -v     │           │ Verbose output                                     │\n\
+  ├────────┼───────────┼────────────────────────────────────────────────────┤\n\
+  │ -l     │   [asc]   │ List out suites and cases                          │\n\
+  ├────────┼───────────┼────────────────────┬───────────────────────────────┤\n\
+  │        │    [s]    │ Random suite order │ Run cases in random order,    │\n\
+  │ -r     ├───────────┼────────────────────┤ default both suite and case   │\n\
+  │        │    [c]    │ Random case order  │ random order                  │\n\
+  ├────────┼───────────┼────────────────────┴───────────────────────────────┤\n\
+  │ -b[n]  │    [n]    │ Breaking test once n (default 1) failures occurred │\n\
+  ├────────┼───────────┼────────────────────────────────────────────────────┤\n\
+  │ -c     │           │ Output in black-white color style                  │\n\
+  ├────────┼───────────┼────────────────────────────────────────────────────┤\n\
+  │ -m     │           │ Run cases without memory check                     │\n\
+  ├────────┼───────────┼────────────────────────────────────────────────────┤\n\
+  │ -d     │           │ Debug with gdb once failure occurred               │\n\
+  ├────────┼───────────┼────────────────────────────────────────────────────┤\n\
+  │ -j     │  [path]   │ Generate junit report, default path is junit.xml   │\n\
+  ├────────┼───────────┼────────────────┬───────────────────────────────────┤\n\
+  │ -i     │ patterns  │ include filter │ case, suite or file name          │\n\
+  ├────────┤ separated ├────────────────┤ case-insensitive matches patterns │\n\
+  │ -x     │ by space  │ exclude filter │ default include all, exclude none │\n\
+  └────────┴───────────┴────────────────┴───────────────────────────────────┘\n\
+\n");
 }
 
 struct getopt {
@@ -3098,11 +3093,11 @@ h2_inline void h2_option::parse(int argc, const char** argv) {
 static inline bool match3(const std::vector<const char*>& patterns, const char* subject) {
    for (auto pattern : patterns)
       if (strcspn(pattern, "?*+^$\\.[]") < strlen(pattern)) {
-         if (h2_regex_match(pattern, subject)) return true;
+         if (h2_regex_match(pattern, subject, true)) return true;
          if (strcspn(pattern, "+^$\\.[]") == strlen(pattern))
-            if (h2_wildcard_match(pattern, subject)) return true;
+            if (h2_wildcard_match(pattern, subject, true)) return true;
       } else {
-         if (strstr(subject, pattern)) return true;
+         if (strcasestr(subject, pattern)) return true;
       }
    return false;
 }
@@ -3247,16 +3242,6 @@ h2_inline bool h2_string::startswith(h2_string __prefix, bool caseless) const {
 h2_inline bool h2_string::endswith(h2_string __suffix, bool caseless) const {
    if (!caseless) return rfind(__suffix) == length() - __suffix.length();
    return tolower(c_str()).rfind(tolower(__suffix)) == length() - __suffix.length();
-}
-
-h2_inline bool h2_string::wildcard_match(h2_string __pattern, bool caseless) const {
-   h2_wildcard_match(__pattern.c_str(), c_str());
-   if (!caseless) return h2_wildcard_match(__pattern.c_str(), c_str());
-   return h2_wildcard_match(tolower(__pattern).c_str(), tolower(c_str()).c_str());
-}
-
-h2_inline bool h2_string::regex_match(h2_string __pattern, bool caseless) const {
-   return h2_regex_match(__pattern.c_str(), c_str(), caseless);
 }
 
 h2_inline h2_string& h2_string::tolower() {

@@ -57,7 +57,7 @@ h2_inline void h2_debugger::trap() {
    if (!under_debug(pid, O.path)) {
       static h2_once only_one_time;
       if (only_one_time) {
-         if (streq("gdb attach", O.debug)) {
+         if (!strcmp("gdb attach", O.debug)) {
             if (fork() == 0) {
                system(get_gdb2((char*)alloca(256), pid));
                exit(0);
