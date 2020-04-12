@@ -1,30 +1,32 @@
 
-#include <algorithm>    /* shuffle */
-#include <arpa/inet.h>  /* inet_addr */
-#include <cassert>      /* assert */
-#include <cctype>       /* tolower, isspace */
-#include <cmath>        /* fabs */
-#include <cstdarg>      /* va_list */
-#include <cstdint>      /* int32_t */
-#include <cxxabi.h>     /* demangle */
-#include <errno.h>      /* strerror */
-#include <execinfo.h>   /* backtrace */
-#include <fcntl.h>      /* fcntl */
-#include <iostream>     /* cout */
-#include <libgen.h>     /* basename */
-#include <map>          /* std::map */
-#include <memory>       /* allocator */
-#include <netdb.h>      /* getaddrinfo, gethostbyname */
-#include <random>       /* shuffle */
-#include <regex>        /* std::regex */
-#include <signal.h>     /* sigaction */
-#include <sys/ioctl.h>  /* ioctl */
-#include <sys/mman.h>   /* mprotect, mmap */
-#include <sys/socket.h> /* sockaddr */
-#include <sys/time.h>   /* gettimeofday */
-#include <sys/types.h>  /* size_t */
-#include <typeinfo>     /* typeid */
-#include <unistd.h>     /* sysconf */
+#include <algorithm>     /* shuffle */
+#include <arpa/inet.h>   /* inet_addr */
+#include <cassert>       /* assert */
+#include <cctype>        /* tolower, isspace */
+#include <cmath>         /* fabs */
+#include <cstdarg>       /* va_list */
+#include <cstdint>       /* int32_t */
+#include <cxxabi.h>      /* demangle */
+#include <errno.h>       /* strerror */
+#include <execinfo.h>    /* backtrace */
+#include <fcntl.h>       /* fcntl */
+#include <fnmatch.h>     /* fnmatch */
+#include <iostream>      /* cout */
+#include <libgen.h>      /* basename */
+#include <map>           /* std::map */
+#include <memory>        /* allocator */
+#include <netdb.h>       /* getaddrinfo, gethostbyname */
+#include <random>        /* shuffle */
+#include <regex>         /* std::regex */
+#include <signal.h>      /* sigaction */
+#include <sys/ioctl.h>   /* ioctl */
+#include <sys/mman.h>    /* mprotect, mmap */
+#include <sys/socket.h>  /* sockaddr */
+#include <sys/syscall.h> /* syscall */
+#include <sys/time.h>    /* gettimeofday */
+#include <sys/types.h>   /* size_t */
+#include <typeinfo>      /* typeid */
+#include <unistd.h>      /* sysconf */
 
 #if defined __GLIBC__
 #   include <malloc.h> /* __malloc_hook */
@@ -34,7 +36,7 @@
 #endif
 
 namespace h2 {
-#include "h2_tool.cpp"  //unsort
+#include "h2_kit.cpp"  //unsort
 
 #include "h2_backtrace.cpp"
 #include "h2_callexp.cpp"
@@ -48,7 +50,8 @@ namespace h2 {
 #include "h2_libc.cpp"
 #include "h2_log.cpp"
 #include "h2_matcher.cpp"
-#include "h2_network.cpp"
+#include "h2_dns.cpp"
+#include "h2_socket.cpp"
 #include "h2_option.cpp"
 #include "h2_stdio.cpp"
 #include "h2_string.cpp"

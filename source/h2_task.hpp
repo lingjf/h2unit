@@ -13,7 +13,6 @@ struct h2_task {
    std::vector<void (*)()> global_case_setups, global_case_teardowns;
 
    h2_task();
-
    void prepare();
    void postpare();
    void execute();

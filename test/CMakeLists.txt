@@ -1,13 +1,14 @@
 CMAKE_MINIMUM_REQUIRED(VERSION 2.8)
 
-	
 PROJECT(h2_unit)
 
 INCLUDE_DIRECTORIES(..)
 
 SET(CMAKE_CXX_COMPILER "g++")
 
-SET(CMAKE_CXX_FLAGS " ${CMAKE_CXX_FLAGS} -std=c++11 -fpermissive -g -O0 -Wall ")
+SET(CMAKE_CXX_FLAGS " ${CMAKE_CXX_FLAGS} -std=c++11 -fpermissive -g -O0 -Wall -include ../source/h2_unit.hpp -include ../source/h2_unit.cpp")
+
+ADD_DEFINITIONS(-DH2UNIT_VERSION="dev")
 
 AUX_SOURCE_DIRECTORY (. SRC_TEST)
 

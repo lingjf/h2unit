@@ -2,8 +2,8 @@
 h2_inline h2_fail* h2_string_equal_matches::matches(const h2_string& a, bool caseless, bool dont) const {
    if (r) dont = !dont;
    if (a.equals(e, caseless) == !dont) return nullptr;
-   if (a.wildcard_match(e, caseless) == !dont) return nullptr;
-   if (a.regex_match(e, caseless) == !dont) return nullptr;
+   if (h2_wildcard_match(e.c_str(), a.c_str(), caseless) == !dont) return nullptr;
+   if (h2_regex_match(e.c_str(), a.c_str(), caseless) == !dont) return nullptr;
 
    h2_fail* fail;
    if (dont) {
@@ -41,7 +41,7 @@ h2_inline h2_fail* h2_memcmp_matches::matches(const void* a, bool caseless, bool
 }
 
 h2_inline h2_fail* h2_regex_matches::matches(const h2_string& a, bool caseless, bool dont) const {
-   if (a.regex_match(e, caseless) == !dont) return nullptr;
+   if (h2_regex_match(e.c_str(), a.c_str(), caseless) == !dont) return nullptr;
    h2_fail_unexpect* fail = new h2_fail_unexpect();
    fail->eprintf("/%s/", e.c_str());
    fail->aprintf("\"%s\"", a.c_str());
@@ -54,7 +54,7 @@ h2_inline h2_fail* h2_regex_matches::matches(const h2_string& a, bool caseless, 
 }
 
 h2_inline h2_fail* h2_wildcard_matches::matches(const h2_string& a, bool caseless, bool dont) const {
-   if (a.wildcard_match(e, caseless) == !dont) return nullptr;
+   if (h2_wildcard_match(e.c_str(), a.c_str(), caseless) == !dont) return nullptr;
    h2_fail_unexpect* fail = new h2_fail_unexpect();
    fail->eprintf("/%s/", e.c_str());
    fail->aprintf("\"%s\"", a.c_str());
@@ -121,7 +121,7 @@ h2_inline h2_fail* h2_endswith_matches::matches(const h2_string& a, bool caseles
 }
 
 h2_inline h2_fail* h2_json_matches::matches(const h2_string& a, bool caseless, bool dont) const {
-   if ((h2_json_exporter::match(e, a)) == !dont) return nullptr;
+   if ((h2_json::match(e, a)) == !dont) return nullptr;
    h2_fail_json* fail = new h2_fail_json(e, a);
    if (dont)
       fail->mprintf("should not equals");

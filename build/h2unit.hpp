@@ -1,10 +1,9 @@
-/* v5.0  2020-03-27 01:20:14 */
+/* v5.1  2020-04-12 10:52:00 */
 /* https://github.com/lingjf/h2unit */
 /* Apache Licence 2.0 */
-#ifndef H2_2FILES
-#define H2_2FILES
-#ifndef ___H2UNIT_H___
-#define ___H2UNIT_H___
+#ifndef ___H2UNIT_HPP___
+#define ___H2UNIT_HPP___
+#define H2UNIT_VERSION "5.1"
 
 #include <cstdio>      /* printf */
 #include <cstdlib>     /* malloc */
@@ -32,22 +31,20 @@
 #   pragma GCC diagnostic ignored "-Wsign-compare"
 #   pragma GCC diagnostic ignored "-Wwrite-strings"
 #elif defined __clang__
+#   pragma clang diagnostic ignored "-Wdeprecated-declarations"
 #   pragma clang diagnostic ignored "-Wint-to-pointer-cast"
 #   pragma clang diagnostic ignored "-Wparentheses"
 #   pragma clang diagnostic ignored "-Wsign-compare"
 #   pragma clang diagnostic ignored "-Wwritable-strings"
 #endif
 
-#if defined H2_1FILE
-#   define h2_inline inline
-#elif defined H2_2FILES
+#if defined ___H2UNIT_HPP___
 #   define h2_inline
 #else
 #   define h2_inline inline
 #endif
 
 namespace h2 {
-/* https://www.boost.org/doc/libs/1_65_0/libs/preprocessor/doc/index.html */
 
 #define H2PP__CAT2(_1, _2) _1##_2
 #define H2PP_CAT2(_1, _2) H2PP__CAT2(_1, _2)
@@ -251,33 +248,29 @@ struct h2_option {
 #endif
 
    const char* path;
-   char args[256];
    int verbose, listing, breakable, randomize;
    bool colorable, memory_check;
-   char *debug, junit[256];
-   std::vector<const char*> include_patterns, exclude_patterns;
+   char *debug, junit[256], args[256];
+   std::vector<const char*> includes, excludes;
 
    h2_option() : verbose(0), listing(0), breakable(0), randomize(0), colorable(true), memory_check(true), debug(nullptr), junit{0} {}
 
-   void parse(int argc_, const char** argv_);
+   void parse(int argc, const char** argv);
 
    int isLinux() const { return 1 == os; }
    int isMAC() const { return 2 == os; }
    int isWindows() const { return 3 == os; }
 
-   void usage();
    bool filter(const char* suitename, const char* casename, const char* filename) const;
    const char* style(const char* s) const;
 };
 
 static const h2_option& O = h2_option::I(); // for pretty
-static inline const char* S(const char* style) { return h2_option::I().style(style); } // for pretty
 
 struct h2_libc {
    static void* malloc(size_t sz);
    static void free(void* ptr);
-   static int write(FILE* stream, const void* buf, size_t nbyte);
-
+   static ssize_t write(int fd, const void* buf, size_t count);
    static void* operator new(std::size_t sz) { return malloc(sz); }
    static void operator delete(void* ptr) { free(ptr); }
 };
@@ -323,11 +316,13 @@ struct h2_string : public std::basic_string<char, std::char_traits<char>, h2_all
    h2_string(const std::string& __s) : basic_string(__s.c_str()) {}
    h2_string(size_t __n, char __c) : basic_string(__n, __c) {}
    h2_string(const char* __s, size_t __n) : basic_string(__s, __n) {}
+   h2_string(const unsigned char* __s) : basic_string((const char*)__s) {}
 
    h2_string& operator=(const h2_string& __str) { return assign(__str.c_str()), *this; }
    h2_string& operator=(const char* __s) { return assign(__s), *this; }
    h2_string& operator=(const std::string& __str) { return assign(__str.c_str()), *this; }
    h2_string& operator=(char __c) { return assign(1, __c), *this; }
+   h2_string& operator=(const unsigned char* __s) { return assign((const char*)__s), *this; }
 
    h2_string& operator+=(const h2_string& __str) { return append(__str.c_str()), *this; }
    h2_string& operator+=(const char* __s) { return append(__s), *this; }
@@ -338,8 +333,6 @@ struct h2_string : public std::basic_string<char, std::char_traits<char>, h2_all
    bool contains(h2_string __substr, bool caseless = false) const;
    bool startswith(h2_string __prefix, bool caseless = false) const;
    bool endswith(h2_string __suffix, bool caseless = false) const;
-   bool wildcard_match(h2_string __pattern, bool caseless = false) const;
-   bool regex_match(h2_string __pattern, bool caseless = false) const;
 
    h2_string& tolower();
    static h2_string tolower(h2_string from) { return from.tolower(); }
@@ -412,7 +405,7 @@ struct tinyexpr {
    static double eval(const char* expression, int* error);
 };
 
-struct h2_json_exporter {
+struct h2_json {
    static bool match(const h2_string expect, const h2_string actual);
    static int diff(const h2_string expect, const h2_string actual, int terminal_width, h2_string& str);
 };
@@ -430,7 +423,7 @@ struct h2_backtrace {
    bool operator==(h2_backtrace&);
 
    bool has(void* func, int size) const;
-   void print() const;
+   void print(int pad = 3) const;
 };
 
 struct h2_fail : h2_libc {
@@ -443,9 +436,9 @@ struct h2_fail : h2_libc {
    int argi;
 
    h2_string _k, _h, _m, _u;
+   int pad, w_type;  // 0 is MOCK; 1 is OK(condition); 2 is OK(expect, actual); 3 is JE
    h2_string e_expr, _e, a_expr, _a;
-   int w_type;  // 0 is MOCK; 1 is OK(condition); 2 is OK(expect, actual); 3 is JE
-
+   
    h2_fail(const char* file_, int line_, const char* func_ = nullptr, int argi_ = -1);
    virtual ~h2_fail();
 
@@ -489,7 +482,7 @@ struct h2_fail_strcmp : h2_fail_unexpect {
    const bool caseless;
    h2_fail_strcmp(const h2_string& expect_, const h2_string& actual_, bool caseless_, const char* file_ = nullptr, int line_ = 0);
    void print();
-   char* fmt_char(char c, bool eq);
+   char* fmt_char(char c, bool eq, const char* style, char* p);
 };
 
 struct h2_fail_json : h2_fail_unexpect {
@@ -778,7 +771,7 @@ template <typename T>
 struct h2_matcher : h2_matcher_base<T> {
    h2_matcher() {}
    explicit h2_matcher(const h2_matcher_impl<const T&>* impl, const int placeholder) : h2_matcher_base<T>(impl, placeholder) {}
-   h2_matcher(T value);
+   h2_matcher(T value); // Converting constructor 转换构造函数
 };
 
 template <>
@@ -1698,17 +1691,18 @@ struct h2_mocks {
    h2_fail* clear();
 };
 
-struct h2_stdio_exporter {
-   static void capture_cout(char* buffer, int size = 1024 * 1024);
-   static const char* capture_cout();
+struct h2_stdio {
+   static void init();
+   static const char* capture_cout(char* type = nullptr);
 };
 
 struct h2_dns : h2_libc {
    h2_list x, y;
-   const char* hostname;
+   const char* name;
    int count;
    char array[32][128];
-   h2_dns(const char* hostname_) : hostname(hostname_) {}
+   h2_dns(const char* name_) : name(name_), count(0) {}
+   static void setaddrinfo(int count, ...);
 };
 
 struct h2_dnses {
@@ -1721,7 +1715,6 @@ struct h2_packet : h2_libc {
    h2_list x;
    h2_string from, to, data;
    h2_packet(const char* from_, const char* to_, const char* data_, size_t size_) : from(from_), to(to_), data(data_, size_){};
-   bool can_recv(const char* local_iport);
 };
 
 struct h2_sock : h2_libc {
@@ -1739,17 +1732,12 @@ struct h2_sock : h2_libc {
    h2_sock();
    ~h2_sock();
 
-   void put_outgoing_udp(const char* from, const char* to, const char* data, size_t size);
-   void put_incoming_udp(const char* from, const char* to, const char* data, size_t size);
-   void put_outgoing_tcp(int fd, const char* data, size_t size);
-   void put_incoming_tcp(const char* from, const char* to, const char* data, size_t size);
+   void put_outgoing(const char* from, const char* to, const char* data, size_t size);
+   void put_outgoing(int fd, const char* data, size_t size);
+   void put_incoming(const char* from, const char* to, const char* data, size_t size);
 
    char last_to[128];
-   h2_list incoming_udps;
-   h2_list outgoing_udps;
-
-   h2_list incoming_tcps;
-   h2_list outgoing_tcps;
+   h2_list incoming, outgoing;
 };
 
 template <typename M1, typename M2, typename M3, typename M4>
@@ -1775,11 +1763,9 @@ inline h2_polymorphic_matcher<h2_packet_matches<M1, M2, M3, M4>> PktEq(M1 from, 
    return h2_polymorphic_matcher<h2_packet_matches<M1, M2, M3, M4>>(h2_packet_matches<M1, M2, M3, M4>(from, to, data, size));
 }
 
-struct h2_network_exporter {
-   static void setaddrinfo(int count, ...);
-   static h2_packet* sock_start_and_fetch();
-   static void udp_inject_received(const unsigned char* packet, size_t size, const char* from, const char* to);
-   static void tcp_inject_received(const unsigned char* packet, size_t size, const char* from, const char* to);
+struct h2_socket {
+   static h2_packet* start_and_fetch();
+   static void inject_received(const void* packet, size_t size, const char* from, const char* to);
 };
 
 static constexpr const char* CSS[] = {"init", "Passed", "Failed", "TODO", "Filtered"};
@@ -2233,7 +2219,6 @@ struct h2_task {
    std::vector<void (*)()> global_case_setups, global_case_teardowns;
 
    h2_task();
-
    void prepare();
    void postpare();
    void execute();
@@ -2295,8 +2280,6 @@ static inline void h2_fail_g(void* fail) {
 #define BLOCK(...) H2BLOCK(__VA_ARGS__)
 #define DNS(...) H2DNS(__VA_ARGS__)
 #define SOCK(...) H2SOCK(__VA_ARGS__)
-#define UDP(...) H2UDP(__VA_ARGS__)
-#define TCP(...) H2TCP(__VA_ARGS__)
 #define COUT(...) H2COUT(__VA_ARGS__)
 
 #define MATCHER(...) H2MATCHER(__VA_ARGS__)
@@ -2471,30 +2454,21 @@ using h2::ListOf;
 // #define H2BLOCK(...) for (h2::h2_heap::stack::block Qb(__FILE__, __LINE__, ##__VA_ARGS__); Qb;)
 // #define H2BLOCK(...) for (h2::h2_heap::stack::block Qb(__FILE__, __LINE__, __VA_OPT__(,) __VA_ARGS__); Qb;)
 
-#define H2DNS(...) h2::h2_network_exporter::setaddrinfo(H2PP_NARG(__VA_ARGS__), __VA_ARGS__)
+#define H2DNS(...) h2::h2_dns::setaddrinfo(H2PP_NARG(__VA_ARGS__), __VA_ARGS__)
 
-#define H2SOCK() h2::h2_network_exporter::sock_start_and_fetch()
+#define __H2SOCK0() h2::h2_socket::start_and_fetch()
+#define __H2SOCK2(packet, size) h2::h2_socket::inject_received(packet, size, nullptr, "*");
+#define __H2SOCK3(packet, size, from) h2::h2_socket::inject_received(packet, size, from, "*");
+#define __H2SOCK4(packet, size, from, to) h2::h2_socket::inject_received(packet, size, from, to);
+#define H2SOCK(...) H2PP_VARIADIC_CALL(__H2SOCK, __VA_ARGS__)
 
-#define __H2UDP2(packet, size) h2::h2_network_exporter::udp_inject_received(packet, size, nullptr, "*");
-#define __H2UDP3(packet, size, from) h2::h2_network_exporter::udp_inject_received(packet, size, from, "*");
-#define __H2UDP4(packet, size, from, to) h2::h2_network_exporter::udp_inject_received(packet, size, from, to);
-#define H2UDP(...) H2PP_VARIADIC_CALL(__H2UDP, __VA_ARGS__)
-
-#define __H2TCP2(packet, size) h2::h2_network_exporter::tcp_inject_received(packet, size, nullptr, "*");
-#define __H2TCP3(packet, size, from) h2::h2_network_exporter::tcp_inject_received(packet, size, from, "*");
-#define __H2TCP4(packet, size, from, to) h2::h2_network_exporter::tcp_inject_received(packet, size, from, to);
-#define H2TCP(...) H2PP_VARIADIC_CALL(__H2TCP, __VA_ARGS__)
-
-#define H2COUT(...) h2::h2_stdio_exporter::capture_cout(__VA_ARGS__)
+#define H2COUT(...) h2::h2_stdio::capture_cout(__VA_ARGS__)
 
 #define h2_main(argc, argv)                 \
    do {                                     \
       h2::h2_option::I().parse(argc, argv); \
       h2::h2_task::I().prepare();           \
-      DNS("127.0.0.1");                     \
       h2::h2_task::I().execute();           \
       h2::h2_task::I().postpare();          \
    } while (0)
-
-#endif
 #endif

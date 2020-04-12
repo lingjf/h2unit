@@ -93,16 +93,6 @@ h2_inline void h2_stub::restore() { h2_natives::I().get(befp)->restore(); }
 h2_inline bool h2_stubs::add(void* befp, void* tofp, const char* befn, const char* tofn, const char* file, int line) {
    h2_stub* stub = nullptr;
    h2_list_for_each_entry(p, &s, h2_stub, x) h2_if_find_break(p->befp == befp, p, stub);
-
-   if (!tofp) { /* unstub */
-      if (stub) {
-         stub->reset();
-         stub->x.out();
-         delete stub;
-      }
-      return true;
-   }
-
    if (!stub) {
       stub = new h2_stub(befp, file, line);
       s.push(&stub->x);

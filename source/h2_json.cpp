@@ -1,5 +1,5 @@
 
-struct h2_json {
+struct h2__json {
    static const int t_absent = 0;
 
    static const int t_null = 1;
@@ -556,8 +556,8 @@ struct h2_json {
       for (auto& word : line)
          if (word[0] == '#') {
             if (index * columns <= s && s < (index + 1) * columns) {
-               const char* style = S(word.c_str() + 1);
-               wrap.append(style);
+               const char* style = word.c_str() + 1;
+               wrap.append(O.style(style));
                current_style = style;
             }
          } else {
@@ -588,11 +588,11 @@ struct h2_json {
             h2_string e_current_style, a_current_style;
             auto e_wrap = line_wrap(e_line, j, side_width - 2, e_current_style);
             auto a_wrap = line_wrap(a_line, j, side_width - 2, a_current_style);
-            str.sprintf("%s%s %s%s%s│%s %s%s %s%s%s%s\n",
-                        e_last_style.c_str(), e_wrap.c_str(), S("reset"),
-                        S("dark gray"), j == K - 1 ? " " : "\\", S("reset"),
-                        a_last_style.c_str(), a_wrap.c_str(), S("reset"),
-                        S("dark gray"), j == K - 1 ? " " : "\\", S("reset"));
+            str.sprintf("%s %s %s %s\n",
+                        SF(e_last_style.c_str(), "%s", e_wrap.c_str()),
+                        SF("dark gray", j == K - 1 ? " │" : "\\│"),
+                        SF(a_last_style.c_str(), "%s", a_wrap.c_str()),
+                        SF("dark gray", j == K - 1 ? " " : "\\"));
 
             e_last_style = e_current_style;
             a_last_style = a_current_style;
@@ -601,38 +601,38 @@ struct h2_json {
    }
 };
 
-h2_inline bool h2_json_exporter::match(const h2_string expect, const h2_string actual) {
-   h2_json::Node *e = h2_json::parse(expect.c_str()), *a = h2_json::parse(actual.c_str());
+h2_inline bool h2_json::match(const h2_string expect, const h2_string actual) {
+   h2__json::Node *e = h2__json::parse(expect.c_str()), *a = h2__json::parse(actual.c_str());
 
-   bool result = h2_json::match(e, a);
+   bool result = h2__json::match(e, a);
 
-   h2_json::frees(e);
-   h2_json::frees(a);
+   h2__json::frees(e);
+   h2__json::frees(a);
 
    return result;
 }
 
-h2_inline int h2_json_exporter::diff(const h2_string expect, const h2_string actual, int terminal_width, h2_string& str) {
-   h2_json::Node *e_node = h2_json::parse(expect.c_str()), *a_node = h2_json::parse(actual.c_str());
+h2_inline int h2_json::diff(const h2_string expect, const h2_string actual, int terminal_width, h2_string& str) {
+   h2__json::Node *e_node = h2__json::parse(expect.c_str()), *a_node = h2__json::parse(actual.c_str());
 
-   h2_json::Dual* d = new h2_json::Dual(0, nullptr);
-   h2_json::dual(e_node, a_node, d);
+   h2__json::Dual* d = new h2__json::Dual(0, nullptr);
+   h2__json::dual(e_node, a_node, d);
 
-   h2_json::frees(e_node);
-   h2_json::frees(a_node);
+   h2__json::frees(e_node);
+   h2__json::frees(a_node);
 
    h2_vector<h2_string> e_list, a_list;
-   h2_json::diff(d, e_list, a_list);
-   h2_json::frees(d);
+   h2__json::diff(d, e_list, a_list);
+   h2__json::frees(d);
 
-   h2_json::Lines e_lines, a_lines;
-   h2_json::merge_line(e_list, e_lines);
-   h2_json::merge_line(a_list, a_lines);
+   h2__json::Lines e_lines, a_lines;
+   h2__json::merge_line(e_list, e_lines);
+   h2__json::merge_line(a_list, a_lines);
 
-   int e_most = h2_json::lines_most(e_lines), a_most = h2_json::lines_most(a_lines);
+   int e_most = h2__json::lines_most(e_lines), a_most = h2__json::lines_most(a_lines);
    int fav_width = std::max(std::max(e_most, a_most) + 3, 30);
    int side_width = std::min(terminal_width / 2 - 4, fav_width);
 
-   h2_json::print(e_lines, a_lines, side_width, str);
+   h2__json::print(e_lines, a_lines, side_width, str);
    return side_width;
 }

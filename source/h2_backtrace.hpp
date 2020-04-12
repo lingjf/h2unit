@@ -12,5 +12,5 @@ struct h2_backtrace {
    bool operator==(h2_backtrace&);
 
    bool has(void* func, int size) const;
-   void print() const;
+   void print(int pad = 3) const;
 };

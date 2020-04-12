@@ -131,6 +131,7 @@ struct h2_stack {
         {(void*)printf, 300},
         {(void*)sprintf, 300},
         {(void*)vsnprintf, 300},
+        {(void*)fprintf, 300},
         {(void*)sscanf, 300},
         {(void*)localtime, 300}};
 
