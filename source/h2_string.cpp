@@ -19,25 +19,6 @@ h2_inline bool h2_string::endswith(h2_string __suffix, bool caseless) const {
    return tolower(c_str()).rfind(tolower(__suffix)) == length() - __suffix.length();
 }
 
-h2_inline bool h2_string::wildcard_match(h2_string __pattern, bool caseless) const {
-   h2_wildcard_match(__pattern.c_str(), c_str());
-   if (!caseless) return h2_wildcard_match(__pattern.c_str(), c_str());
-   return h2_wildcard_match(tolower(__pattern).c_str(), tolower(c_str()).c_str());
-}
-
-h2_inline bool h2_string::regex_match(h2_string __pattern, bool caseless) const {
-   bool result = false;
-   try {
-      std::regex re1(__pattern.c_str());
-      std::regex re2(__pattern.c_str(), std::regex::icase);
-      result = std::regex_match(c_str(), caseless ? re2 : re1);
-   }
-   catch (const std::regex_error& e) {
-      result = false;
-   }
-   return result;
-}
-
 h2_inline h2_string& h2_string::tolower() {
    for (auto& c : *this) c = ::tolower(c);
    return *this;

@@ -1,6 +1,3 @@
-#include "../source/h2_unit.hpp"
-#include "../source/h2_unit.cpp"
-
 
 time_t STUB_time(time_t* x)
 {
@@ -12,7 +9,7 @@ time_t my_time(time_t* x)
    return time(NULL);
 }
 
-static int STUB_sum(int count, ...)
+int STUB_sum(int count, ...)
 {
    int s = 0;
    int i = 0;
@@ -26,7 +23,7 @@ static int STUB_sum(int count, ...)
    return -s;
 }
 
-static int my_sum(int count, ...)
+int my_sum(int count, ...)
 {
    int s = 0;
    int i = 0;
@@ -49,7 +46,12 @@ time_t STUB2_time(time_t* x)
    return 222;
 }
 
-static int foobar(int, int)
+double STUB_sqrt(double x)
+{
+   return 3.14;
+}
+
+int foobar(int, int)
 {
    return 1;
 }
@@ -59,22 +61,28 @@ SUITE(libc)
    Case(stub time())
    {
       h2::h2_stub s((void*)time);
-      s.replace((void*)STUB_time);
+      s.set((void*)STUB_time);
       OK(1024, time(NULL));
-      s.restore();
-   };
+      s.reset();
+   }
+
+   Todo(stub sqrt)
+   {
+      STUB((double(*)(double))sqrt, STUB_sqrt);
+      OK(3.14, sqrt((double)1.0));
+   }
 
    Case(temporary_restore time())
    {
       h2::h2_stub s((void*)time);
-      s.replace((void*)STUB_time);
+      s.set((void*)STUB_time);
       {
          h2::h2_stub::temporary_restore t(&s);
          OK(Nq(1024), time(NULL));
       }
       OK(1024, time(NULL));
-      s.restore();
-   };
+      s.reset();
+   }
 }
 
 #ifdef __linux__
@@ -123,26 +131,26 @@ SUITE(stubs)
    {
       h2::h2_stub s((void*)my_time);
 
-      s.replace((void*)STUB_time);
+      s.set((void*)STUB_time);
 
       OK(1024, my_time(NULL));
 
-      s.restore();
-   };
+      s.reset();
+   }
 
    Case(local function)
    {
       STUB(my_time, STUB_time);
 
       OK(1024, my_time(NULL));
-   };
+   }
 
    Case(stub libc function)
    {
       STUB(time, STUB_time);
 
       OK(1024, time(NULL));
-   };
+   }
 
    Case(variadic parameters function)
    {
@@ -152,7 +160,7 @@ SUITE(stubs)
       STUB(my_sum, STUB_sum);
 
       OK(-6, my_sum(3, 1, 2, 3));
-   };
+   }
 
    Case(stub - chain)
    {
@@ -160,7 +168,7 @@ SUITE(stubs)
       STUB(time, STUB2_time);
 
       OK(222, time(NULL));
-   };
+   }
 
    Case(stub, overwrite)
    {
@@ -168,7 +176,7 @@ SUITE(stubs)
       STUB(STUB1_time, STUB2_time);
 
       OK(222, time(NULL));
-   };
+   }
 
    Case(lambdas normal function)
    {
@@ -178,7 +186,7 @@ SUITE(stubs)
       };
 
       OK(222, foobar(111, 111));
-   };
+   }
 
    //  Case( lambdas variadic parameters function)
    // {
@@ -199,7 +207,7 @@ SUITE(stubs)
 
       Shape shape;
       OK(222, shape.go(111, 111));
-   };
+   }
 
    Case(lambdas virtual member function)
    {
@@ -210,7 +218,7 @@ SUITE(stubs)
 
       Shape shape;
       OK(222, shape.work(111, 111));
-   };
+   }
 
    Case(lambdas static member function)
    {
@@ -220,7 +228,7 @@ SUITE(stubs)
       };
 
       OK(222, Shape::fly(111, 111));
-   };
+   }
 }
 
 SUITE(Stub in shared_code)
@@ -235,13 +243,13 @@ SUITE(Stub in shared_code)
    {
       OK(1024, time(NULL));
       OK(222, foobar(111, 111));
-   };
+   }
 
    Case(b)
    {
       OK(1024, time(NULL));
       OK(222, foobar(111, 111));
-   };
+   }
 }
 
 #endif

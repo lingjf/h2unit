@@ -1,7 +1,3 @@
-#include "../source/h2_unit.hpp"
-#include "../source/h2_unit.cpp"
-
-/* clang-format off */
 
 CASE() {}
 
@@ -22,38 +18,38 @@ SUITE(syntax D101)
     Cleanup() {
 
     }
-    Case(D101) {};
+    Case(D101) {}
     Case(2) {
         int e = 1, a = 1;
         OK(e, a) << e << " not equals " << a;
-    };
+    }
 
-    Todo(1) {};
-    Todo(2) {};
+    Todo(1) {}
+    Todo(2) {}
 }
 
 GlobalSetup() 
 {
     
-};
+}
 
 GlobalTeardown() {
-};
+}
 
 GlobalSuiteSetup() {
 
-};
+}
 
 GlobalSuiteTeardown() {
 
-};
+}
 
 GlobalCaseSetup() {
 
-};
+}
 
 GlobalCaseTeardown() {
 
-};
+}
 
 TODO(syntax) {}

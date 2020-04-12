@@ -206,6 +206,20 @@ CASE(demo dynamic stub with fake function)
 }
 ```
 
+STUB template function or overload function
+
+```C++
+double sin_fake(double x)
+{
+   return 3.14;
+}
+CASE(demo dynamic stub with fake function)
+{
+   STUB((double(*)(double))sin, sin_fake);
+   do_something_with_call_sin();
+}
+```
+
 With help of C++ lambda, separate fake function can sit together with [STUB](source/h2_unit.h#L96), it makes test code more tidy and fitness.
 
 ```C++
@@ -486,27 +500,52 @@ Global Setup/Teardown can define multiple times, all of them will be invoked.
 [`DNS`](source/h2_unit.h#L96)("hostname", "ip1", "ip2", "alias1", "alias2", ...): Set DNS resolve results (getaddrinfo, gethostbyname)
 
 DNS resolve is default controlled, and result is empty.
+```C++
+CASE(test dns)
+{
+   DNS("192.168.1.23"); // Resolve all domains to 192.168.1.23
+   DNS("h2unit.com", "192.168.1.23", "1.2.3.4"); // Resolve h2unit.com to 192.168.1.23 1.2.3.4
+   DNS("h2unit.com", "d1.h2unit.com", "d2.h2unit.com"); // Resolve h2unit.com to cname d1.h2unit.com d2.h2unit.com
+   getaddrinfo(...);
+}
+```
 
-### 10. TCP/UDP utility
-*    [`SOCK`](source/h2_unit.h#L96)(): Start monitor TCP/UDP send/recv, and return sent packets.
-*    [`UDP`](source/h2_unit.h#L96)(packet, size, from, to): Inject UDP packet as received packet.
-*    [`TCP`](source/h2_unit.h#L96)(packet, size, from, to): Inject TCP data as received data, zero data is connected.
+### 10. Socket Hijack
+*    [`SOCK`](source/h2_unit.h#L96)(): Monitor TCP/UDP send/recv, and return sent packets.
+*    [`SOCK`](source/h2_unit.h#L96)(packet, size, [from, [to]]): Inject UDP/TCP packet as received packet.
+If not specified `to`, any of socket can receive the packet.
 
-DNS resolve is default controlled, and result is empty.
+If not specified `from`, the packet is received from where last send(to).
+```C++
+CASE(test net)
+{
+   H2SOCK(); // Start Hook Socket API
 
-### 11. Capture STDOUT
+   sendto(sock, ...);
+   OK(..., H2SOCK()); // Fetch outgoing packet
+
+   H2SOCK(buffer1, 100, "4.3.2.1:8888", "*:4444"); // Inject as received packet from 4.3.2.1:8888 to local port 4444 socket
+   H2SOCK(buffer2, 100, "4.3.2.1:8888"); // Inject as received packet from 4.3.2.1:8888 to any local socket
+   H2SOCK(buffer3, 100); // Inject as received packet from last sendto peer to any local socket
+   recvfrom(sock, ...);
+}
+```
+
+### 11. Capture STDOUT/STDERR
 [`COUT`](source/h2_unit.h#L96)(): Capture STDOUT and STDERR output (printf(), std::cout<<, ...).
-*    `COUT`(NULL): Start Capture with built-in buffer.
-*    `COUT`(buffer): Start Capture with user buffer.
+*    `COUT`(""): Start Capture STDOUT and STDERR.
+*    `COUT`("stdout stderr"): Start Capture STDOUT and STDERR.
+*    `COUT`("STDOUT"): Start Capture STDOUT only.
+*    `COUT`("STDerr"): Start Capture STDERR only.
 *    `COUT`(): Stop Capture, and return buffer captured.
 
 ```C++
 CASE(test printf)
 {
-   COUT(NULL); // Start Capture
+   COUT(""); // Start Capture
    printf("...");
    std::cout << ...;
-   OK("...", COUT()); // Stop Capture and return captured text
+   OK("...", COUT()); // Stop Capture and return captured string
 }
 ```
 

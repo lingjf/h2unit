@@ -1,4 +1,3 @@
-/* https://www.boost.org/doc/libs/1_65_0/libs/preprocessor/doc/index.html */
 
 #define H2PP__CAT2(_1, _2) _1##_2
 #define H2PP_CAT2(_1, _2) H2PP__CAT2(_1, _2)

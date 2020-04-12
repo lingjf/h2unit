@@ -1,10 +1,9 @@
-/* v5.0  2020-03-25 00:21:06 */
+/* v5.1  2020-04-11 23:31:06 */
 /* https://github.com/lingjf/h2unit */
 /* Apache Licence 2.0 */
-#ifndef H2_2FILES
-#define H2_2FILES
-#ifndef ___H2UNIT_H___
-#define ___H2UNIT_H___
+#ifndef ___H2UNIT_HPP___
+#define ___H2UNIT_HPP___
+#define H2UNIT_VERSION "5.1"
 
 #include <cstdio>      /* printf */
 #include <cstdlib>     /* malloc */
@@ -32,22 +31,20 @@
 #   pragma GCC diagnostic ignored "-Wsign-compare"
 #   pragma GCC diagnostic ignored "-Wwrite-strings"
 #elif defined __clang__
+#   pragma clang diagnostic ignored "-Wdeprecated-declarations"
 #   pragma clang diagnostic ignored "-Wint-to-pointer-cast"
 #   pragma clang diagnostic ignored "-Wparentheses"
 #   pragma clang diagnostic ignored "-Wsign-compare"
 #   pragma clang diagnostic ignored "-Wwritable-strings"
 #endif
 
-#if defined H2_1FILE
-#   define h2_inline inline
-#elif defined H2_2FILES
+#if defined ___H2UNIT_HPP___
 #   define h2_inline
 #else
 #   define h2_inline inline
 #endif
 
 namespace h2 {
-/* https://www.boost.org/doc/libs/1_65_0/libs/preprocessor/doc/index.html */
 
 #define H2PP__CAT2(_1, _2) _1##_2
 #define H2PP_CAT2(_1, _2) H2PP__CAT2(_1, _2)
@@ -190,11 +187,12 @@ struct h2_with {
    ~h2_with() { (f && c) && c(f); }
 };
 
-#define h2_singleton(_Class) \
-   static _Class& I() {      \
-      static _Class __;      \
-      return __;             \
-   }
+/* clang-format off */
+
+#define h2_singleton(_Class) static _Class& I() { static _Class i; return i; }
+#define h2_if_return(x, y) do { auto t__ = x; if (t__) return y(t__); } while (0)
+#define h2_if_find_break(_Cond, p, found) if (_Cond) { found = p; break; }
+#define h2_out_delete(p) do { p->x.out(); delete p; } while (0)
 
 #define h2_list_entry(ptr, type, link) ((type*)((char*)(ptr) - (char*)(&(((type*)(1))->link)) + 1))
 #define h2_list_for_each_entry(p, head, type, link) for (type* p = h2_list_entry((head)->next, type, link), *t = h2_list_entry(p->link.next, type, link); &p->link != (head); p = t, t = h2_list_entry(t->link.next, type, link))
@@ -250,33 +248,31 @@ struct h2_option {
 #endif
 
    const char* path;
-   char args[256];
    int verbose, listing, breakable, randomize;
    bool colorable, memory_check;
-   char *debug, junit[256];
-   std::vector<const char*> include_patterns, exclude_patterns;
+   char *debug, junit[256], args[256];
+   std::vector<const char*> includes, excludes;
 
    h2_option() : verbose(0), listing(0), breakable(0), randomize(0), colorable(true), memory_check(true), debug(nullptr), junit{0} {}
 
-   void parse(int argc_, const char** argv_);
+   void parse(int argc, const char** argv);
 
    int isLinux() const { return 1 == os; }
    int isMAC() const { return 2 == os; }
    int isWindows() const { return 3 == os; }
 
-   void usage();
    bool filter(const char* suitename, const char* casename, const char* filename) const;
    const char* style(const char* s) const;
 };
 
-static const h2_option& O = h2_option::I();
-
-static inline const char* S(const char* style) { return h2_option::I().style(style); }
+static const h2_option& O = h2_option::I(); // for pretty
 
 struct h2_libc {
    static void* malloc(size_t sz);
    static void free(void* ptr);
-   static int write(FILE* stream, const void* buf, size_t nbyte);
+   static ssize_t write(int fd, const void* buf, size_t count);
+   static void* operator new(std::size_t sz) { return malloc(sz); }
+   static void operator delete(void* ptr) { free(ptr); }
 };
 
 template <typename T>
@@ -313,11 +309,6 @@ template <typename T> inline bool operator!=(const h2_allocator<T>&, const h2_al
 template <typename T> using h2_vector = std::vector<T, h2_allocator<T>>;
 typedef std::basic_ostringstream<char, std::char_traits<char>, h2_allocator<char>> h2_ostringstream;
 
-
-struct h2_nohook { /* new derived class/struct with libc malloc/free */
-   static void* operator new(std::size_t sz) { return h2_libc::malloc(sz); }
-   static void operator delete(void* ptr) { h2_libc::free(ptr); }
-};
 struct h2_string : public std::basic_string<char, std::char_traits<char>, h2_allocator<char>> {
    h2_string() : basic_string() {}
    h2_string(const h2_string& __str) : basic_string(__str.c_str()) {}
@@ -325,11 +316,13 @@ struct h2_string : public std::basic_string<char, std::char_traits<char>, h2_all
    h2_string(const std::string& __s) : basic_string(__s.c_str()) {}
    h2_string(size_t __n, char __c) : basic_string(__n, __c) {}
    h2_string(const char* __s, size_t __n) : basic_string(__s, __n) {}
+   h2_string(const unsigned char* __s) : basic_string((const char*)__s) {}
 
    h2_string& operator=(const h2_string& __str) { return assign(__str.c_str()), *this; }
    h2_string& operator=(const char* __s) { return assign(__s), *this; }
    h2_string& operator=(const std::string& __str) { return assign(__str.c_str()), *this; }
    h2_string& operator=(char __c) { return assign(1, __c), *this; }
+   h2_string& operator=(const unsigned char* __s) { return assign((const char*)__s), *this; }
 
    h2_string& operator+=(const h2_string& __str) { return append(__str.c_str()), *this; }
    h2_string& operator+=(const char* __s) { return append(__s), *this; }
@@ -340,8 +333,6 @@ struct h2_string : public std::basic_string<char, std::char_traits<char>, h2_all
    bool contains(h2_string __substr, bool caseless = false) const;
    bool startswith(h2_string __prefix, bool caseless = false) const;
    bool endswith(h2_string __suffix, bool caseless = false) const;
-   bool wildcard_match(h2_string __pattern, bool caseless = false) const;
-   bool regex_match(h2_string __pattern, bool caseless = false) const;
 
    h2_string& tolower();
    static h2_string tolower(h2_string from) { return from.tolower(); }
@@ -360,7 +351,7 @@ inline h2_string operator+(const h2_string& lhs, const char rhs) { h2_string s(l
 inline h2_string operator+(const char lhs, const h2_string& rhs) { h2_string s(1, lhs); s.append(rhs); return s; }
 
 template <typename T>
-class h2_shared_ptr : h2_nohook {
+class h2_shared_ptr : h2_libc {
  public:
    h2_shared_ptr() : px(nullptr), pn(nullptr) {}
    explicit h2_shared_ptr(T* p) { acquire(p, nullptr); }
@@ -414,7 +405,7 @@ struct tinyexpr {
    static double eval(const char* expression, int* error);
 };
 
-struct h2_json_exporter {
+struct h2_json {
    static bool match(const h2_string expect, const h2_string actual);
    static int diff(const h2_string expect, const h2_string actual, int terminal_width, h2_string& str);
 };
@@ -429,13 +420,13 @@ struct h2_backtrace {
    h2_backtrace(const h2_backtrace&) = default;
    h2_backtrace& operator=(const h2_backtrace&) = default;
 
-   bool operator==(h2_backtrace& bt);
+   bool operator==(h2_backtrace&);
 
    bool has(void* func, int size) const;
-   void print() const;
+   void print(int pad = 3) const;
 };
 
-struct h2_fail : h2_nohook {
+struct h2_fail : h2_libc {
    h2_fail *x_next, *y_next;
 
    const char* file;
@@ -445,9 +436,9 @@ struct h2_fail : h2_nohook {
    int argi;
 
    h2_string _k, _h, _m, _u;
+   int pad, w_type;  // 0 is MOCK; 1 is OK(condition); 2 is OK(expect, actual); 3 is JE
    h2_string e_expr, _e, a_expr, _a;
-   int w_type;  // 0 is MOCK; 1 is OK(condition); 2 is OK(expect, actual); 3 is JE
-
+   
    h2_fail(const char* file_, int line_, const char* func_ = nullptr, int argi_ = -1);
    virtual ~h2_fail();
 
@@ -467,27 +458,10 @@ struct h2_fail : h2_nohook {
    void print_locate();
    virtual void print();
    virtual void print(FILE* fp);
+
+   static void append_x(h2_fail*& fail, h2_fail* n);
+   static void append_y(h2_fail*& fail, h2_fail* n);
 };
-
-static inline void h2_append_x_fail(h2_fail*& fail, h2_fail* n) {
-   if (!fail) {
-      fail = n;
-   } else {
-      h2_fail** pp = &fail->x_next;
-      while (*pp) pp = &(*pp)->x_next;
-      *pp = n;
-   }
-}
-
-static inline void h2_append_y_fail(h2_fail*& fail, h2_fail* n) {
-   if (!fail) {
-      fail = n;
-   } else {
-      h2_fail** pp = &fail->y_next;
-      while (*pp) pp = &(*pp)->y_next;
-      *pp = n;
-   }
-}
 
 struct h2_fail_normal : h2_fail {
    h2_fail_normal(const char* file_ = nullptr, int line_ = 0, const char* func_ = nullptr, const char* format = "", ...);
@@ -508,7 +482,7 @@ struct h2_fail_strcmp : h2_fail_unexpect {
    const bool caseless;
    h2_fail_strcmp(const h2_string& expect_, const h2_string& actual_, bool caseless_, const char* file_ = nullptr, int line_ = 0);
    void print();
-   char* fmt_char(char c, bool eq);
+   char* fmt_char(char c, bool eq, const char* style, char* p);
 };
 
 struct h2_fail_json : h2_fail_unexpect {
@@ -564,7 +538,7 @@ struct h2_fail_instantiate : h2_fail {
    void print();
 };
 
-struct h2_stub : h2_nohook {
+struct h2_stub : h2_libc {
    h2_list x;
    unsigned char thunk[64];
    void *befp, *tofp;
@@ -572,15 +546,22 @@ struct h2_stub : h2_nohook {
    int line;
 
    h2_stub(void* befp_, const char* file_ = nullptr, int line_ = 0);
-
-   void replace(void* tofp_);
+   ~h2_stub();
+   void set(void* tofp_);
+   void reset();
    void restore();
 
    struct temporary_restore : h2_once {
       h2_stub* thus;
       temporary_restore(h2_stub* stub) : thus(stub) { thus->restore(); }
-      ~temporary_restore() { thus->replace(thus->tofp); }
+      ~temporary_restore() { thus->set(thus->tofp); }
    };
+};
+
+struct h2_stubs {
+   h2_list s;
+   bool add(void* befp, void* tofp, const char* befn, const char* tofn, const char* file, int line);
+   void clear();
 };
 
 static inline void h2_fail_g(void* fail);
@@ -790,7 +771,7 @@ template <typename T>
 struct h2_matcher : h2_matcher_base<T> {
    h2_matcher() {}
    explicit h2_matcher(const h2_matcher_impl<const T&>* impl, const int placeholder) : h2_matcher_base<T>(impl, placeholder) {}
-   h2_matcher(T value);
+   h2_matcher(T value); // Converting constructor 转换构造函数
 };
 
 template <>
@@ -826,7 +807,7 @@ struct h2_polymorphic_matcher {
    operator h2_matcher<T>() const { return h2_matcher<T>(new internal_impl<const T&>(m), 0); }
 
    template <typename T>
-   struct internal_impl : h2_matcher_impl<T>, h2_nohook {
+   struct internal_impl : h2_matcher_impl<T>, h2_libc {
       const Matches m;
       explicit internal_impl(const Matches& matches_) : m(matches_) {}
       h2_fail* matches(T a, bool caseless = false, bool dont = false) const override { return m.matches(a, caseless, dont); }
@@ -944,7 +925,7 @@ template <typename T, typename U>
 struct h2_matcher_cast_impl<T, h2_matcher<U>> {
    static h2_matcher<T> cast(const h2_matcher<U>& from) { return h2_matcher<T>(new internal_impl(from)); }
 
-   struct internal_impl : h2_matcher_impl<T>, h2_nohook {
+   struct internal_impl : h2_matcher_impl<T>, h2_libc {
       explicit internal_impl(const h2_matcher<U>& from_) : from(from_) {}
 
       // Delegate the matching logic to the source h2_matcher.
@@ -989,8 +970,8 @@ struct h2_and_matches {
    template <typename A>
    h2_fail* matches(const A& a, bool caseless = false, bool dont = false) const {
       h2_fail* fail = nullptr;
-      h2_append_y_fail(fail, h2_matcher_cast<A>(m1).matches(a, caseless, false));
-      h2_append_y_fail(fail, h2_matcher_cast<A>(m2).matches(a, caseless, false));
+      h2_fail::append_y(fail, h2_matcher_cast<A>(m1).matches(a, caseless, false));
+      h2_fail::append_y(fail, h2_matcher_cast<A>(m2).matches(a, caseless, false));
       if (!fail == !dont) return nullptr;
       if (dont) {
          fail = new h2_fail_unexpect();
@@ -1207,7 +1188,7 @@ struct h2_allof_matches {
       for (int i = 0; i < v_matchers.size(); ++i) {
          h2_fail* f = v_matchers[i].matches(a, caseless, false);
          if (f) f->kprintf(" %d. ", i);
-         h2_append_y_fail(fails, f);
+         h2_fail::append_y(fails, f);
       }
 
       if (!fails == !dont) return nullptr;
@@ -1217,7 +1198,7 @@ struct h2_allof_matches {
          fail->mprintf("should not matches all of matchers");
       else {
          fail->mprintf("should matches all of matchers");
-         h2_append_x_fail(fail, fails);
+         h2_fail::append_x(fail, fails);
       }
       return fail;
    }
@@ -1241,7 +1222,7 @@ struct h2_anyof_matches {
          h2_fail* f = v_matchers[i].matches(a, caseless, false);
          if (!f) s++;
          if (f) f->kprintf(" %d. ", i);
-         h2_append_y_fail(fails, f);
+         h2_fail::append_y(fails, f);
       }
 
       if ((0 < s) == !dont) return nullptr;
@@ -1251,7 +1232,7 @@ struct h2_anyof_matches {
          fail->mprintf("should not matches any of matchers");
       else {
          fail->mprintf("not matches any of matchers");
-         h2_append_x_fail(fail, fails);
+         h2_fail::append_x(fail, fails);
       }
       return fail;
    }
@@ -1300,7 +1281,7 @@ struct h2_listof_matches {
 
       h2_fail* fail = nullptr;
       for (int i = 0; i < v_matchers.size(); ++i)
-         h2_append_y_fail(fail, v_matchers[i].matches(a[i], caseless, dont));
+         h2_fail::append_y(fail, v_matchers[i].matches(a[i], caseless, dont));
 
       return fail;
    }
@@ -1472,7 +1453,7 @@ struct h2_routine<Class, void(Args...)> {
    }
 };
 
-struct h2_mock : h2_nohook {
+struct h2_mock : h2_libc {
    h2_list x;
    void *befp, *tofp;
    const char* befn;
@@ -1489,13 +1470,13 @@ struct h2_mock : h2_nohook {
 
    h2_fail* times_check() {
       h2_fail* fail = nullptr;
-      for (auto& c : c_array) h2_append_y_fail(fail, c.check());
+      for (auto& c : c_array) h2_fail::append_y(fail, c.check());
       if (fail) fail->locate(file, line, befn);
       return fail;
    }
 };
 
-static inline bool h2_mock_g(h2_mock*);
+static inline void h2_mock_g(h2_mock*);
 
 template <size_t I, typename T, typename... Args>
 struct __nth_type_impl {
@@ -1520,7 +1501,7 @@ struct h2_tuple_match {
       h2_fail* fail = h2_tuple_match<N - 1>::matches(matchers, args, file, line, func);
       h2_fail* f = std::get<N - 1>(matchers).matches(std::get<N - 1>(args));
       if (f) f->locate(file, line, func, N - 1);
-      h2_append_x_fail(fail, f);
+      h2_fail::append_x(fail, f);
       return fail;
    }
 };
@@ -1608,136 +1589,137 @@ class h2_mocker<Counter, Lineno, Class, Return(Args...)> : h2_mock {
 
    void reset() override { c_array.clear(), m_array.clear(), r_array.clear(), c_index = 0; }
 
-   h2_mocker& register_and_return_reference() {
-      if (!h2_mock_g(this)) reset();
-      return *this;
-   }
-
  public:
    static h2_mocker& I(void* befp = nullptr, const char* befn = nullptr, const char* file = nullptr, int line = 0) {
-      static h2_mocker* I = nullptr;
-      if (!I) I = new h2_mocker(befp, befn, file, line);
-      return I->register_and_return_reference();
+      static h2_mocker* i = nullptr;
+      if (!i) i = new h2_mocker(befp, befn, file, line);
+      if (befp && file) {
+         i->reset();
+         h2_mock_g(i);
+      }
+      return *i;
    }
 
    h2_mocker& once(MATCHER_Any_0_1_2_3_4_5_6_7_8_9) {
       c_array.push_back(h2_callexp(1, 1));
       m_array.push_back(std::forward_as_tuple(_0, _1, _2, _3, _4, _5, _6, _7, _8, _9));
       r_array.push_back(h2_routine<Class, Return(Args...)>());
-      return register_and_return_reference();
+      return *this;
    }
 
    h2_mocker& twice(MATCHER_Any_0_1_2_3_4_5_6_7_8_9) {
       c_array.push_back(h2_callexp(2, 2));
       m_array.push_back(std::forward_as_tuple(_0, _1, _2, _3, _4, _5, _6, _7, _8, _9));
       r_array.push_back(h2_routine<Class, Return(Args...)>());
-      return register_and_return_reference();
+      return *this;
    }
 
    h2_mocker& times(int count) {
       c_array.push_back(h2_callexp(count, count));
       m_array.push_back(matcher_tuple());
       r_array.push_back(h2_routine<Class, Return(Args...)>());
-      return register_and_return_reference();
+      return *this;
    }
 
    h2_mocker& any(MATCHER_Any_0_1_2_3_4_5_6_7_8_9) {
       c_array.push_back(h2_callexp(0, INT_MAX));
       m_array.push_back(std::forward_as_tuple(_0, _1, _2, _3, _4, _5, _6, _7, _8, _9));
       r_array.push_back(h2_routine<Class, Return(Args...)>());
-      return register_and_return_reference();
+      return *this;
    }
 
    h2_mocker& atleast(int count) {
       c_array.push_back(h2_callexp(count, INT_MAX));
       m_array.push_back(matcher_tuple());
       r_array.push_back(h2_routine<Class, Return(Args...)>());
-      return register_and_return_reference();
+      return *this;
    }
 
    h2_mocker& atmost(int count) {
       c_array.push_back(h2_callexp(0, count));
       m_array.push_back(matcher_tuple());
       r_array.push_back(h2_routine<Class, Return(Args...)>());
-      return register_and_return_reference();
+      return *this;
    }
 
    h2_mocker& between(int left, int right) {
       c_array.push_back(h2_callexp(left, right));
       m_array.push_back(matcher_tuple());
       r_array.push_back(h2_routine<Class, Return(Args...)>());
-      return register_and_return_reference();
+      return *this;
    }
 
    h2_mocker& with(MATCHER_Any_0_1_2_3_4_5_6_7_8_9) {
       if (!m_array.empty()) m_array.back() = std::forward_as_tuple(_0, _1, _2, _3, _4, _5, _6, _7, _8, _9);
-      return register_and_return_reference();
+      return *this;
    }
 
    /* clang-format off */
-   h2_mocker& th1(h2_matcher<h2_nth_decay<0, Args...>> e = Any) { if (!m_array.empty()) std::get<0>(m_array.back()) = e; return register_and_return_reference(); }
-   h2_mocker& th2(h2_matcher<h2_nth_decay<1, Args...>> e = Any) { if (!m_array.empty()) std::get<1>(m_array.back()) = e; return register_and_return_reference(); }
-   h2_mocker& th3(h2_matcher<h2_nth_decay<2, Args...>> e = Any) { if (!m_array.empty()) std::get<2>(m_array.back()) = e; return register_and_return_reference(); }
-   h2_mocker& th4(h2_matcher<h2_nth_decay<3, Args...>> e = Any) { if (!m_array.empty()) std::get<3>(m_array.back()) = e; return register_and_return_reference(); }
-   h2_mocker& th5(h2_matcher<h2_nth_decay<4, Args...>> e = Any) { if (!m_array.empty()) std::get<4>(m_array.back()) = e; return register_and_return_reference(); }
-   h2_mocker& th6(h2_matcher<h2_nth_decay<5, Args...>> e = Any) { if (!m_array.empty()) std::get<5>(m_array.back()) = e; return register_and_return_reference(); }
-   h2_mocker& th7(h2_matcher<h2_nth_decay<6, Args...>> e = Any) { if (!m_array.empty()) std::get<6>(m_array.back()) = e; return register_and_return_reference(); }
-   h2_mocker& th8(h2_matcher<h2_nth_decay<7, Args...>> e = Any) { if (!m_array.empty()) std::get<7>(m_array.back()) = e; return register_and_return_reference(); }
-   h2_mocker& th9(h2_matcher<h2_nth_decay<8, Args...>> e = Any) { if (!m_array.empty()) std::get<8>(m_array.back()) = e; return register_and_return_reference(); }
+   h2_mocker& th1(h2_matcher<h2_nth_decay<0, Args...>> e = Any) { if (!m_array.empty()) std::get<0>(m_array.back()) = e; return *this; }
+   h2_mocker& th2(h2_matcher<h2_nth_decay<1, Args...>> e = Any) { if (!m_array.empty()) std::get<1>(m_array.back()) = e; return *this; }
+   h2_mocker& th3(h2_matcher<h2_nth_decay<2, Args...>> e = Any) { if (!m_array.empty()) std::get<2>(m_array.back()) = e; return *this; }
+   h2_mocker& th4(h2_matcher<h2_nth_decay<3, Args...>> e = Any) { if (!m_array.empty()) std::get<3>(m_array.back()) = e; return *this; }
+   h2_mocker& th5(h2_matcher<h2_nth_decay<4, Args...>> e = Any) { if (!m_array.empty()) std::get<4>(m_array.back()) = e; return *this; }
+   h2_mocker& th6(h2_matcher<h2_nth_decay<5, Args...>> e = Any) { if (!m_array.empty()) std::get<5>(m_array.back()) = e; return *this; }
+   h2_mocker& th7(h2_matcher<h2_nth_decay<6, Args...>> e = Any) { if (!m_array.empty()) std::get<6>(m_array.back()) = e; return *this; }
+   h2_mocker& th8(h2_matcher<h2_nth_decay<7, Args...>> e = Any) { if (!m_array.empty()) std::get<7>(m_array.back()) = e; return *this; }
+   h2_mocker& th9(h2_matcher<h2_nth_decay<8, Args...>> e = Any) { if (!m_array.empty()) std::get<8>(m_array.back()) = e; return *this; }
    /* clang-format on */
 
    h2_mocker& returns(h2_routine<Class, Return(Args...)> r) {
       if (!r_array.empty()) r_array.back() = r;
-      return register_and_return_reference();
+      return *this;
    }
 
    h2_mocker& does(std::function<Return(Args...)> f) {
       if (!r_array.empty()) r_array.back() = h2_routine<Class, Return(Args...)>(f);
-      return register_and_return_reference();
+      return *this;
    }
 
    h2_mocker& does(std::function<Return(Class*, Args...)> f) {
       if (!r_array.empty()) r_array.back() = h2_routine<Class, Return(Args...)>(f);
-      return register_and_return_reference();
+      return *this;
    }
 
    h2_mocker& operator=(std::function<Return(Args...)> f) { return does(f); }
    h2_mocker& operator=(std::function<Return(Class*, Args...)> f) { return does(f); }
 };
 
-struct h2_stdio_exporter {
-   static void capture_cout(char* buffer, int size = 1024 * 1024);
-   static const char* capture_cout();
+struct h2_mocks {
+   h2_list s;
+   bool add(h2_mock* mock);
+   h2_fail* clear();
 };
 
-struct h2_dns : h2_nohook {
+struct h2_stdio {
+   static void init();
+   static const char* capture_cout(char* type = nullptr);
+};
+
+struct h2_dns : h2_libc {
    h2_list x, y;
-   const char* hostname;
+   const char* name;
    int count;
    char array[32][128];
-
-   h2_dns(const char* hostname_) : hostname(hostname_) {}
+   h2_dns(const char* name_) : name(name_), count(0) {}
+   static void setaddrinfo(int count, ...);
 };
 
-struct h2_packet : h2_nohook {
+struct h2_dnses {
+   h2_list s;
+   void add(h2_dns* dns);
+   void clear();
+};
+
+struct h2_packet : h2_libc {
    h2_list x;
    h2_string from, to, data;
    h2_packet(const char* from_, const char* to_, const char* data_, size_t size_) : from(from_), to(to_), data(data_, size_){};
-   bool match(const char* from_pattern, const char* to_pattern);
-   bool can_recv(const char* local_iport);
 };
 
-struct h2_sock : h2_nohook {
+struct h2_sock : h2_libc {
    h2_list x, y;
-
-   h2_stub sendto_stub;
-   h2_stub recvfrom_stub;
-   h2_stub sendmsg_stub;
-   h2_stub recvmsg_stub;
-   h2_stub send_stub;
-   h2_stub recv_stub;
-   h2_stub accept_stub;
-   h2_stub connect_stub;
+   h2_stubs stubs;
 
    struct socket {
       int fd;
@@ -1750,17 +1732,12 @@ struct h2_sock : h2_nohook {
    h2_sock();
    ~h2_sock();
 
-   void put_outgoing_udp(const char* from, const char* to, const char* data, size_t size);
-   void put_incoming_udp(const char* from, const char* to, const char* data, size_t size);
-   void put_outgoing_tcp(int fd, const char* data, size_t size);
-   void put_incoming_tcp(const char* from, const char* to, const char* data, size_t size);
+   void put_outgoing(const char* from, const char* to, const char* data, size_t size);
+   void put_outgoing(int fd, const char* data, size_t size);
+   void put_incoming(const char* from, const char* to, const char* data, size_t size);
 
    char last_to[128];
-   h2_list incoming_udps;
-   h2_list outgoing_udps;
-
-   h2_list incoming_tcps;
-   h2_list outgoing_tcps;
+   h2_list incoming, outgoing;
 };
 
 template <typename M1, typename M2, typename M3, typename M4>
@@ -1773,10 +1750,10 @@ struct h2_packet_matches {
 
    h2_fail* matches(h2_packet* a, bool caseless = false, bool dont = false) const {
       h2_fail* fails = nullptr;
-      h2_append_y_fail(fails, h2_matcher_cast<const char*>(from).matches(a->from.c_str(), caseless, dont));
-      h2_append_y_fail(fails, h2_matcher_cast<const char*>(to).matches(a->to.c_str(), caseless, dont));
-      h2_append_y_fail(fails, h2_matcher_cast<const unsigned char*>(data).matches((unsigned char*)a->data.data(), caseless, dont));
-      h2_append_y_fail(fails, h2_matcher_cast<const int>(size).matches(a->data.length(), caseless, dont));
+      h2_fail::append_y(fails, h2_matcher_cast<const char*>(from).matches(a->from.c_str(), caseless, dont));
+      h2_fail::append_y(fails, h2_matcher_cast<const char*>(to).matches(a->to.c_str(), caseless, dont));
+      h2_fail::append_y(fails, h2_matcher_cast<const unsigned char*>(data).matches((unsigned char*)a->data.data(), caseless, dont));
+      h2_fail::append_y(fails, h2_matcher_cast<const int>(size).matches(a->data.length(), caseless, dont));
       return fails;
    }
 };
@@ -1786,11 +1763,9 @@ inline h2_polymorphic_matcher<h2_packet_matches<M1, M2, M3, M4>> PktEq(M1 from, 
    return h2_polymorphic_matcher<h2_packet_matches<M1, M2, M3, M4>>(h2_packet_matches<M1, M2, M3, M4>(from, to, data, size));
 }
 
-struct h2_network_exporter {
-   static void setaddrinfo(int count, ...);
-   static h2_packet* sock_start_and_fetch();
-   static void udp_inject_received(const unsigned char* packet, size_t size, const char* from, const char* to);
-   static void tcp_inject_received(const unsigned char* packet, size_t size, const char* from, const char* to);
+struct h2_socket {
+   static h2_packet* start_and_fetch();
+   static void inject_received(const void* packet, size_t size, const char* from, const char* to);
 };
 
 static constexpr const char* CSS[] = {"init", "Passed", "Failed", "TODO", "Filtered"};
@@ -1803,29 +1778,19 @@ struct h2_case {
    int line;
    long long seq;
    int status;
-   h2_list stubs, mocks, dnss;
-   h2_sock* sock;
    jmp_buf jump;
    h2_fail* fails;
+   h2_stubs stubs;
+   h2_mocks mocks;
+   h2_dnses dnses;
+   h2_sock* sock;
 
    h2_case(const char* name_, int todo, const char* file_, int line_);
 
    void prev_setup();
-   void post_setup();
-   void prev_cleanup();
+   void post_setup() {}
+   void prev_cleanup() {}
    void post_cleanup();
-
-   void do_stub(void* befp, void* tofp, const char* befn, const char* tofn, const char* file, int line);
-   void undo_stub();
-
-   bool do_mock(h2_mock* mock);
-   h2_fail* undo_mock();
-
-   void do_dns(h2_dns* dns);
-   void undo_dns();
-
-   h2_sock* do_sock(h2_sock* sock);
-   void undo_sock();
 
    void do_fail(h2_fail* fail);
 
@@ -1841,6 +1806,8 @@ struct h2_suite {
    const char* file;
    int line;
    long long seq;
+   h2_stubs stubs;
+   h2_mocks mocks;
    int status_stats[8];
    jmp_buf jump;
    bool jumpable;
@@ -1852,6 +1819,9 @@ struct h2_suite {
 
    std::vector<h2_case*>& cases();
    void execute(h2_case* c);
+
+   void setup() {}
+   void cleanup();
 
    struct installer {
       installer(h2_suite* s, h2_case* c) {
@@ -2239,39 +2209,47 @@ struct h2_task {
    h2_singleton(h2_task);
 
    h2_logs logs;
-   int status_stats[8];
+   h2_stubs stubs;
+   h2_mocks mocks;
+   int state, status_stats[8];
+   h2_suite* current_suite;
    h2_case* current_case;
    std::vector<void (*)()> global_setups, global_teardowns;
    std::vector<void (*)()> global_suite_setups, global_suite_teardowns;
    std::vector<void (*)()> global_case_setups, global_case_teardowns;
 
-   h2_task() : status_stats{0}, current_case(nullptr) {}
-
+   h2_task();
    void prepare();
    void postpare();
    void execute();
 };
 
 static inline void h2_stub_g(void* befp, void* tofp, const char* befn, const char* tofn, const char* file, int line) {
-   if (h2_task::I().current_case) h2_task::I().current_case->do_stub(befp, tofp, befn, tofn, file, line);
+   if (200 <= h2_task::I().state) {
+      if (h2_task::I().current_case)
+         h2_task::I().current_case->stubs.add(befp, tofp, befn, tofn, file, line);
+      else if (h2_task::I().current_suite)
+         h2_task::I().current_suite->stubs.add(befp, tofp, befn, tofn, file, line);
+      else
+         h2_task::I().stubs.add(befp, tofp, befn, tofn, file, line);
+   }
 }
 
-static inline bool h2_mock_g(h2_mock* mock) {
-   return h2_task::I().current_case ? h2_task::I().current_case->do_mock(mock) : false;
-}
-
-static inline void h2_dns_g(h2_dns* dns) {
-   if (h2_task::I().current_case) h2_task::I().current_case->do_dns(dns);
-}
-
-static inline h2_sock* h2_sock_g(h2_sock* sock) {
-   if (h2_task::I().current_case) return h2_task::I().current_case->do_sock(sock);
-   return nullptr;
+static inline void h2_mock_g(h2_mock* mock) {
+   if (200 <= h2_task::I().state) {
+      if (h2_task::I().current_case)
+         h2_task::I().current_case->mocks.add(mock) && h2_task::I().current_case->stubs.add(mock->befp, mock->tofp, mock->befn, "", mock->file, mock->line);
+      else if (h2_task::I().current_suite)
+         h2_task::I().current_suite->mocks.add(mock) && h2_task::I().current_suite->stubs.add(mock->befp, mock->tofp, mock->befn, "", mock->file, mock->line);
+      else
+         h2_task::I().mocks.add(mock) && h2_task::I().stubs.add(mock->befp, mock->tofp, mock->befn, "", mock->file, mock->line);
+   }
 }
 
 static inline void h2_fail_g(void* fail) {
-   if (fail && O.debug) h2_debugger::trap();
-   if (h2_task::I().current_case && fail) h2_task::I().current_case->do_fail((h2_fail*)fail);
+   if (!fail) return;
+   if (O.debug) h2_debugger::trap();
+   if (h2_task::I().current_case) h2_task::I().current_case->do_fail((h2_fail*)fail);
 }
 }  // namespace h2
 
@@ -2302,8 +2280,6 @@ static inline void h2_fail_g(void* fail) {
 #define BLOCK(...) H2BLOCK(__VA_ARGS__)
 #define DNS(...) H2DNS(__VA_ARGS__)
 #define SOCK(...) H2SOCK(__VA_ARGS__)
-#define UDP(...) H2UDP(__VA_ARGS__)
-#define TCP(...) H2TCP(__VA_ARGS__)
 #define COUT(...) H2COUT(__VA_ARGS__)
 
 #define MATCHER(...) H2MATCHER(__VA_ARGS__)
@@ -2478,30 +2454,21 @@ using h2::ListOf;
 // #define H2BLOCK(...) for (h2::h2_heap::stack::block Qb(__FILE__, __LINE__, ##__VA_ARGS__); Qb;)
 // #define H2BLOCK(...) for (h2::h2_heap::stack::block Qb(__FILE__, __LINE__, __VA_OPT__(,) __VA_ARGS__); Qb;)
 
-#define H2DNS(...) h2::h2_network_exporter::setaddrinfo(H2PP_NARG(__VA_ARGS__), __VA_ARGS__)
+#define H2DNS(...) h2::h2_dns::setaddrinfo(H2PP_NARG(__VA_ARGS__), __VA_ARGS__)
 
-#define H2SOCK() h2::h2_network_exporter::sock_start_and_fetch()
+#define __H2SOCK0() h2::h2_socket::start_and_fetch()
+#define __H2SOCK2(packet, size) h2::h2_socket::inject_received(packet, size, nullptr, "*");
+#define __H2SOCK3(packet, size, from) h2::h2_socket::inject_received(packet, size, from, "*");
+#define __H2SOCK4(packet, size, from, to) h2::h2_socket::inject_received(packet, size, from, to);
+#define H2SOCK(...) H2PP_VARIADIC_CALL(__H2SOCK, __VA_ARGS__)
 
-#define __H2UDP2(packet, size) h2::h2_network_exporter::udp_inject_received(packet, size, nullptr, "*");
-#define __H2UDP3(packet, size, from) h2::h2_network_exporter::udp_inject_received(packet, size, from, "*");
-#define __H2UDP4(packet, size, from, to) h2::h2_network_exporter::udp_inject_received(packet, size, from, to);
-#define H2UDP(...) H2PP_VARIADIC_CALL(__H2UDP, __VA_ARGS__)
-
-#define __H2TCP2(packet, size) h2::h2_network_exporter::tcp_inject_received(packet, size, nullptr, "*");
-#define __H2TCP3(packet, size, from) h2::h2_network_exporter::tcp_inject_received(packet, size, from, "*");
-#define __H2TCP4(packet, size, from, to) h2::h2_network_exporter::tcp_inject_received(packet, size, from, to);
-#define H2TCP(...) H2PP_VARIADIC_CALL(__H2TCP, __VA_ARGS__)
-
-#define H2COUT(...) h2::h2_stdio_exporter::capture_cout(__VA_ARGS__)
+#define H2COUT(...) h2::h2_stdio::capture_cout(__VA_ARGS__)
 
 #define h2_main(argc, argv)                 \
    do {                                     \
       h2::h2_option::I().parse(argc, argv); \
       h2::h2_task::I().prepare();           \
-      DNS("127.0.0.1");                     \
       h2::h2_task::I().execute();           \
       h2::h2_task::I().postpare();          \
    } while (0)
-
-#endif
 #endif

@@ -1,35 +1,37 @@
-/* v5.0  2020-03-25 00:21:06 */
+/* v5.1  2020-04-11 23:31:06 */
 /* https://github.com/lingjf/h2unit */
 /* Apache Licence 2.0 */
 #include "h2unit.hpp"
-#ifdef H2_2FILES
+#ifdef ___H2UNIT_HPP___
 
-#include <algorithm>    /* shuffle */
-#include <arpa/inet.h>  /* inet_addr */
-#include <cassert>      /* assert */
-#include <cctype>       /* tolower, isspace */
-#include <cmath>        /* fabs */
-#include <cstdarg>      /* va_list */
-#include <cstdint>      /* int32_t */
-#include <cxxabi.h>     /* demangle */
-#include <errno.h>      /* strerror */
-#include <execinfo.h>   /* backtrace */
-#include <fcntl.h>      /* fcntl */
-#include <iostream>     /* cout */
-#include <libgen.h>     /* basename */
-#include <map>          /* std::map */
-#include <memory>       /* allocator */
-#include <netdb.h>      /* getaddrinfo, gethostbyname */
-#include <random>       /* shuffle */
-#include <regex>        /* std::regex */
-#include <signal.h>     /* sigaction */
-#include <sys/ioctl.h>  /* ioctl */
-#include <sys/mman.h>   /* mprotect, mmap */
-#include <sys/socket.h> /* sockaddr */
-#include <sys/time.h>   /* gettimeofday */
-#include <sys/types.h>  /* size_t */
-#include <typeinfo>     /* typeid */
-#include <unistd.h>     /* sysconf */
+#include <algorithm>     /* shuffle */
+#include <arpa/inet.h>   /* inet_addr */
+#include <cassert>       /* assert */
+#include <cctype>        /* tolower, isspace */
+#include <cmath>         /* fabs */
+#include <cstdarg>       /* va_list */
+#include <cstdint>       /* int32_t */
+#include <cxxabi.h>      /* demangle */
+#include <errno.h>       /* strerror */
+#include <execinfo.h>    /* backtrace */
+#include <fcntl.h>       /* fcntl */
+#include <fnmatch.h>     /* fnmatch */
+#include <iostream>      /* cout */
+#include <libgen.h>      /* basename */
+#include <map>           /* std::map */
+#include <memory>        /* allocator */
+#include <netdb.h>       /* getaddrinfo, gethostbyname */
+#include <random>        /* shuffle */
+#include <regex>         /* std::regex */
+#include <signal.h>      /* sigaction */
+#include <sys/ioctl.h>   /* ioctl */
+#include <sys/mman.h>    /* mprotect, mmap */
+#include <sys/socket.h>  /* sockaddr */
+#include <sys/syscall.h> /* syscall */
+#include <sys/time.h>    /* gettimeofday */
+#include <sys/types.h>   /* size_t */
+#include <typeinfo>      /* typeid */
+#include <unistd.h>      /* sysconf */
 
 #if defined __GLIBC__
 #   include <malloc.h> /* __malloc_hook */
@@ -40,38 +42,18 @@
 
 namespace h2 {
 
-static inline bool streq(const char* s1, const char* s2) { return !strcmp(s1, s2); }
-
-static inline bool h2_regex_match(const char* pattern, const char* subject) {
+static inline bool h2_regex_match(const char* pattern, const char* subject, bool caseless = false) {
    bool result = false;
-   try {
-      std::regex re(pattern);
-      result = std::regex_match(subject, re);
-   }
-   catch (const std::regex_error& e) {
+   try {  //C++11 support regex; gcc 4.8 start support regex, gcc 5.5 icase works.
+      result = std::regex_match(subject, caseless ? std::regex(pattern, std::regex::icase) : std::regex(pattern));
+   } catch (const std::regex_error& e) {
       result = false;
    }
    return result;
 }
 
-static inline bool h2_wildcard_match(const char* pattern, const char* subject) {
-   const char *scur = subject, *pcur = pattern;
-   const char *sstar = nullptr, *pstar = nullptr;
-   while (*scur) {
-      if (*scur == *pcur || *pcur == '?') {
-         ++scur;
-         ++pcur;
-      } else if (*pcur == '*') {
-         pstar = pcur++;
-         sstar = scur;
-      } else if (pstar) {
-         pcur = pstar + 1;
-         scur = ++sstar;
-      } else
-         return false;
-   }
-   while (*pcur == '*') ++pcur;
-   return !*pcur;
+static inline bool h2_wildcard_match(const char* pattern, const char* subject, bool caseless = false) {
+   return !fnmatch(pattern, subject, caseless ? FNM_CASEFOLD : 0);  // PathMatchSpec() for windows
 }
 
 static inline long long h2_now() {
@@ -130,11 +112,34 @@ static inline const char* h2_style(const char* style, char* ascii_code) {
    char t[1024], *s = strcpy(t, style), *d = ascii_code + sprintf(ascii_code, "\033["), *q = d;
    for (char* p = strtok(s, ","); p; p = strtok(nullptr, ","))
       for (auto& k : K)
-         if (streq(k.name, p)) {
+         if (!strcmp(k.name, p)) {
             q += sprintf(q, "%s", k.value);
             break;
          }
    return d == q ? strcpy(ascii_code, "") : (*(q - 1) = 'm', ascii_code);
+}
+
+static inline const char* PAD(int n) {
+   static char st[1024];
+   memset(st, ' ', n);
+   st[n] = '\0';
+   return st;
+}
+
+static inline char* SF(const char* style, const char* fmt, ...) {
+   static char sb[1024 * 256], *sp;
+   if (sp < sb || sb + sizeof(sb) / 2 < sp) sp = sb;
+   char *s = sp, *p = s;
+
+   p += sprintf(p, "%s", h2_option::I().style(style));
+   va_list a;
+   va_start(a, fmt);
+   p += vsprintf(p, fmt, a);
+   va_end(a);
+   p += sprintf(p, "%s", h2_option::I().style("reset"));
+
+   sp = p + 1;
+   return s;
 }
 
 
@@ -243,7 +248,7 @@ h2_inline bool h2_backtrace::has(void* func, int size) const {
    return false;
 }
 
-h2_inline void h2_backtrace::print() const {
+h2_inline void h2_backtrace::print(int pad) const {
    h2_heap::unhook();
    char** backtraces = backtrace_symbols(array, count);
    for (int i = shift; i < count; ++i) {
@@ -262,9 +267,9 @@ h2_inline void h2_backtrace::print() const {
                if (strlen(addr2lined))
                   p = addr2lined;
       }
-      ::printf("   %d. %s\n", i - shift, p);
+      ::printf("%s%d. %s\n", PAD(pad), i - shift, p);
 
-      if (streq("main", mangled) || streq("main", demangled) || h2_nm::I().in_main(address + offset))
+      if (!strcmp("main", mangled) || !strcmp("main", demangled) || h2_nm::I().in_main(address + offset))
          break;
    }
    free(backtraces);
@@ -309,104 +314,31 @@ h2_inline const char* h2_callexp::expect() {
 }
 
 h2_inline h2_case::h2_case(const char* name_, int todo, const char* file_, int line_)
-  : name(name_), file(file_), line(line_), status(todo ? TODOED : INITED), sock(nullptr), fails(nullptr) {}
+  : name(name_), file(file_), line(line_), status(todo ? TODOED : INITED), fails(nullptr), sock(nullptr) {}
 
 h2_inline void h2_case::prev_setup() {
    status = PASSED;
    h2_heap::stack::push(file, line);
 }
 
-h2_inline void h2_case::post_setup() {}
-
-h2_inline void h2_case::prev_cleanup() {}
-
 h2_inline void h2_case::post_cleanup() {
-   undo_dns();
-   undo_sock();
-   undo_stub();
-   h2_fail* fail = undo_mock();
-   h2_append_x_fail(fail, h2_heap::stack::pop());
-
-   if (fail) {
-      if (status != FAILED) {
-         h2_append_x_fail(fails, fail);
-         status = FAILED;
-      } else
-         delete fail;
-   }
-}
-
-h2_inline void h2_case::do_stub(void* befp, void* tofp, const char* befn, const char* tofn, const char* file, int line) {
-   h2_stub* stub = nullptr;
-   h2_list_for_each_entry(p, &stubs, h2_stub, x) if (p->befp == befp) {
-      stub = p;
-      break;
-   }
-
-   if (!tofp) { /* unstub */
-      if (stub) {
-         stub->restore();
-         stub->x.out();
-         h2_libc::free(stub);
-      }
-      return;
-   }
-
-   if (!stub) {
-      stub = new h2_stub(befp, file, line);
-      stubs.push(&stub->x);
-   }
-   stub->replace(tofp);
-}
-
-h2_inline void h2_case::undo_stub() {
-   h2_list_for_each_entry(p, &stubs, h2_stub, x) {
-      p->restore();
-      p->x.out();
-      delete p;
-   }
-}
-
-h2_inline bool h2_case::do_mock(h2_mock* mock) {
-   h2_list_for_each_entry(p, &mocks, h2_mock, x) if (p == mock) return true;
-   do_stub(mock->befp, mock->tofp, mock->befn, "", mock->file, mock->line);
-   mocks.push(&mock->x);
-   return true;
-}
-
-h2_inline h2_fail* h2_case::undo_mock() {
-   h2_fail* fail = nullptr;
-   h2_list_for_each_entry(p, &mocks, h2_mock, x) {
-      h2_append_x_fail(fail, p->times_check());
-      p->reset();
-      p->x.out();
-   }
-   return fail;
-}
-
-h2_inline void h2_case::do_dns(h2_dns* dns) { dnss.push(&dns->x); }
-
-h2_inline void h2_case::undo_dns() {
-   h2_list_for_each_entry(p, &dnss, h2_dns, x) {
-      p->x.out();
-      p->y.out();
-      delete p;
-   }
-}
-
-h2_inline h2_sock* h2_case::do_sock(h2_sock* sock) {
-   if (sock) this->sock = sock;
-   return this->sock;
-}
-
-h2_inline void h2_case::undo_sock() {
    if (sock) delete sock;
-   sock = nullptr;
+   dnses.clear();
+   stubs.clear();
+   h2_fail* fail = mocks.clear();
+   h2_fail::append_x(fail, h2_heap::stack::pop());
+
+   if (!fail) return;
+   if (status != FAILED)
+      h2_fail::append_x(fails, fail);
+   else
+      delete fail;
+   status = FAILED;
 }
 
 h2_inline void h2_case::do_fail(h2_fail* fail) {
    status = FAILED;
-   h2_append_x_fail(fails, fail);
+   h2_fail::append_x(fails, fail);
    ::longjmp(jump, 1);
 }
 
@@ -468,7 +400,7 @@ h2_inline void h2_debugger::trap() {
    if (!under_debug(pid, O.path)) {
       static h2_once only_one_time;
       if (only_one_time) {
-         if (streq("gdb attach", O.debug)) {
+         if (!strcmp("gdb attach", O.debug)) {
             if (fork() == 0) {
                system(get_gdb2((char*)alloca(256), pid));
                exit(0);
@@ -1155,8 +1087,28 @@ h2_inline double tinyexpr::eval(const char* expression, int* error) {
       value = value + t;                     \
    } while (0)
 
+h2_inline void h2_fail::append_x(h2_fail*& fail, h2_fail* n) {
+   if (!fail)
+      fail = n;
+   else {
+      h2_fail** pp = &fail->x_next;
+      while (*pp) pp = &(*pp)->x_next;
+      *pp = n;
+   }
+}
+
+h2_inline void h2_fail::append_y(h2_fail*& fail, h2_fail* n) {
+   if (!fail)
+      fail = n;
+   else {
+      h2_fail** pp = &fail->y_next;
+      while (*pp) pp = &(*pp)->y_next;
+      *pp = n;
+   }
+}
+
 h2_inline h2_fail::h2_fail(const char* file_, int line_, const char* func_, int argi_)
-  : x_next(nullptr), y_next(nullptr), file(file_), line(line_), func(func_), argi(argi_), w_type(0) {}
+  : x_next(nullptr), y_next(nullptr), file(file_), line(line_), func(func_), argi(argi_), pad(0), w_type(0) {}
 
 h2_inline h2_fail::~h2_fail() {
    if (y_next) delete y_next;
@@ -1197,7 +1149,7 @@ h2_inline void h2_fail::print_locate() {
    ::printf("\n");
 }
 
-h2_inline void h2_fail::print() { _k.size() && ::printf(" %s", _k.c_str()); }
+h2_inline void h2_fail::print() { _k.size() && ::printf("%s%s", PAD(++pad), _k.c_str()); }
 h2_inline void h2_fail::print(FILE* fp) { fprintf(fp, "%s", _k.c_str()); }
 
 h2_inline h2_fail_normal::h2_fail_normal(const char* file_, int line_, const char* func_, const char* format, ...)
@@ -1208,22 +1160,22 @@ h2_inline void h2_fail_normal::print() { h2_fail::print(), print_locate(); }
 h2_inline h2_fail_unexpect::h2_fail_unexpect(const char* file_, int line_) : h2_fail(file_, line_) {}
 
 h2_inline void h2_fail_unexpect::print_OK1() {
-   ::printf(" OK(%s) is %sfalse%s", a_expr.c_str(), S("bold,red"), S("reset"));
+   ::printf(" OK(%s) is %s", a_expr.c_str(), SF("bold,red", "false"));
 }
 
 h2_inline void h2_fail_unexpect::print_OK2() {
    char t1[256] = {0}, t2[256] = {0};
    if (e_expr == _e) /* OK(1, ret) */
-      sprintf(t1, "%s%s%s", S("green"), _e.acronym().c_str(), S("reset"));
+      strcpy(t1, SF("green", "%s", _e.acronym().c_str()));
    else { /* OK(Eq(1), ret) */
-      sprintf(t1, "%s", e_expr.acronym().c_str());
-      if (_e.length()) sprintf(t1 + strlen(t1), "%s==>%s%s%s%s", S("dark gray"), S("reset"), S("green"), _e.acronym().c_str(), S("reset"));
+      strcpy(t1, e_expr.acronym().c_str());
+      if (_e.length()) sprintf(t1 + strlen(t1), "%s%s", SF("dark gray", "==>"), SF("green", "%s", _e.acronym().c_str()));
    }
    if (a_expr == _a)
-      sprintf(t2, "%s%s%s", S("bold,red"), _a.acronym().c_str(), S("reset"));
+      strcpy(t2, SF("bold,red", "%s", _a.acronym().c_str()));
    else {
-      if (_a.length()) sprintf(t2, "%s%s%s%s<==%s", S("bold,red"), _a.acronym().c_str(), S("reset"), S("dark gray"), S("reset"));
-      sprintf(t2 + strlen(t2), "%s", a_expr.acronym().c_str());
+      if (_a.length()) sprintf(t2, "%s%s", SF("bold,red", "%s", _a.acronym().c_str()), SF("dark gray", "<=="));
+      strcpy(t2 + strlen(t2), a_expr.acronym().c_str());
    }
 
    ::printf(" OK(%s, %s)", t1, t2);
@@ -1236,9 +1188,9 @@ h2_inline void h2_fail_unexpect::print_OK3() {
 }
 
 h2_inline void h2_fail_unexpect::print_MOCK() {
-   ::printf(" actual %s%s%s", S("green"), _a.acronym().c_str(), S("reset"));
+   ::printf(" actual %s", SF("green", "%s", _a.acronym().c_str()));
    if (_m.length()) ::printf(" %s", _m.c_str());
-   if (_e.length()) ::printf(" %s%s%s", S("bold,red"), _e.acronym().c_str(), S("reset"));
+   if (_e.length()) ::printf(" %s", SF("bold,red", "%s", _e.acronym().c_str()));
 }
 
 h2_inline void h2_fail_unexpect::print() {
@@ -1261,29 +1213,29 @@ h2_inline void h2_fail_strcmp::print() {
    int rows = ::ceil(std::max(expect.length(), actual.length()) / (double)columns);
    for (int i = 0; i < rows; ++i) {
       char eline[1024], aline[1024], *ep = eline, *ap = aline;
-      ep += sprintf(ep, "%sexpect%s>%s ", S("dark gray"), S("green"), S("reset"));
-      ap += sprintf(ap, "%sactual%s>%s ", S("dark gray"), S("red"), S("reset"));
+      if (i * columns <= expect.length()) ep += sprintf(ep, "%s%s ", SF("dark gray", "expect"), SF("green", ">"));
+      if (i * columns <= actual.length()) ap += sprintf(ap, "%s%s ", SF("dark gray", "actual"), SF("red", ">"));
       for (int j = 0; j < columns; ++j) {
          char ec = i * columns + j <= expect.length() ? expect[i * columns + j] : ' ';
          char ac = i * columns + j <= actual.length() ? actual[i * columns + j] : ' ';
 
          bool eq = caseless ? ::tolower(ec) == ::tolower(ac) : ec == ac;
-         ep += sprintf(ep, "%s%s%s", eq ? "" : S("green"), fmt_char(ec, eq), S("reset"));
-         ap += sprintf(ap, "%s%s%s", eq ? "" : S("red,bold"), fmt_char(ac, eq), S("reset"));
+         ep = fmt_char(ec, eq, "green", ep);
+         ap = fmt_char(ac, eq, "red,bold", ap);
       }
-      ::printf("%s\n%s\n", eline, aline);
+      if (i * columns <= expect.length()) ::printf("%s\n", eline);
+      if (i * columns <= actual.length()) ::printf("%s\n", aline);
    }
 }
-h2_inline char* h2_fail_strcmp::fmt_char(char c, bool eq) {
-   static char st[32];
-   sprintf(st, "%c", c);
 
-   if (c == '\n') sprintf(st, "%sn", S("inverse"));
-   if (c == '\r') sprintf(st, "%sr", S("inverse"));
-   if (c == '\t') sprintf(st, "%st", S("inverse"));
-   if (c == '\0') sprintf(st, "%s ", eq ? "" : S("inverse"));
-
-   return st;
+h2_inline char* h2_fail_strcmp::fmt_char(char c, bool eq, const char* style, char* p) {
+   char st[64] = "", cc = c;
+   if (!eq) strcpy(st, style);
+   if (c == '\n') cc = 'n', strcat(st, ",inverse");
+   if (c == '\r') cc = 'r', strcat(st, ",inverse");
+   if (c == '\t') cc = 't', strcat(st, ",inverse");
+   if (c == '\0') cc = ' ', eq || strcat(st, ",inverse");
+   return p += sprintf(p, "%s", SF(st, "%c", cc));
 }
 
 h2_inline h2_fail_json::h2_fail_json(const h2_string& expect_, const h2_string& actual_, const char* file_, int line_)
@@ -1292,9 +1244,9 @@ h2_inline h2_fail_json::h2_fail_json(const h2_string& expect_, const h2_string& 
 h2_inline void h2_fail_json::print() {
    h2_fail_unexpect::print();
    h2_string str;
-   int side_width = h2_json_exporter::diff(expect, actual, h2_winsz(), str);
+   int side_width = h2_json::diff(expect, actual, h2_winsz(), str);
 
-   ::printf("%s%s│%s%s\n", S("dark gray"), h2_string("expect").center(side_width).c_str(), h2_string("actual").center(side_width).c_str(), S("reset"));
+   ::printf("%s\n", SF("dark gray", "%s│%s", h2_string("expect").center(side_width).c_str(), h2_string("actual").center(side_width).c_str()));
    ::printf("%s", str.c_str());
 }
 
@@ -1306,7 +1258,7 @@ h2_inline h2_fail_memcmp::h2_fail_memcmp(const unsigned char* expect_, const uns
 
 h2_inline void h2_fail_memcmp::print() {
    h2_fail_unexpect::print();
-   ::printf("%s%s  │  %s%s \n", S("dark gray"), h2_string("expect").center(16 * 3).c_str(), h2_string("actual").center(16 * 3).c_str(), S("reset"));
+   ::printf("%s \n", SF("dark gray", "%s  │  %s", h2_string("expect").center(16 * 3).c_str(), h2_string("actual").center(16 * 3).c_str()));
    int bytes = expect.size(), rows = ::ceil(bytes / 16.0);
    for (int i = 0; i < rows; ++i) {
       char eline[256], aline[256], *ep = eline, *ap = aline;
@@ -1317,15 +1269,12 @@ h2_inline void h2_fail_memcmp::print() {
             ep = fmt_byte(expect[i * 16 + j], actual[i * 16 + j], j, "green", ep),
             ap = fmt_byte(actual[i * 16 + j], expect[i * 16 + j], j, "bold,red", ap);
 
-      ::printf("%s  %s│%s  %s \n", eline, S("dark gray"), S("reset"), aline);
+      ::printf("%s  %s  %s \n", eline, SF("dark gray", "│"), aline);
    }
 }
 
 h2_inline char* h2_fail_memcmp::fmt_byte(unsigned char c, unsigned char t, int j, const char* style, char* p) {
-   if (c != t) p += sprintf(p, "%s", S(style));
-   p += sprintf(p, j < 8 ? "%02X " : " %02X", c);
-   if (c != t) p += sprintf(p, "%s", S("reset"));
-   return p;
+   return p += sprintf(p, "%s", SF(c != t ? style : "", j < 8 ? "%02X " : " %02X", c));
 }
 
 h2_inline h2_fail_memoverflow::h2_fail_memoverflow(void* ptr_, int offset_, const unsigned char* magic_, int size, h2_backtrace bt0_, h2_backtrace bt1_, const char* file_, int line_)
@@ -1337,11 +1286,11 @@ h2_inline void h2_fail_memoverflow::print() {
    h2_fail::print();
 
    for (int i = 0; i < spot.size(); ++i)
-      ::printf("%s%02X %s", magic[i] == spot[i] ? S("green") : S("bold,red"), spot[i], S("reset"));
+      ::printf("%s ", SF(magic[i] == spot[i] ? "green" : "bold,red", "%02X", spot[i]));
 
    print_locate();
-   if (0 < bt1.count) ::printf("  %p trampled at backtrace:\n", ptr + offset), bt1.print();
-   if (0 < bt0.count) ::printf("  which allocated at backtrace:\n"), bt0.print();
+   if (0 < bt1.count) ::printf("%s%p trampled at backtrace:\n", PAD(++pad), ptr + offset), bt1.print(pad + 1);
+   if (0 < bt0.count) ::printf("%swhich allocated at backtrace:\n", PAD(++pad)), bt0.print(pad + 1);
 }
 
 h2_inline h2_fail_memleak::h2_fail_memleak(const char* file_, int line_, const char* where_)
@@ -1349,7 +1298,7 @@ h2_inline h2_fail_memleak::h2_fail_memleak(const char* file_, int line_, const c
 
 h2_inline void h2_fail_memleak::add(void* ptr, int size, h2_backtrace& bt) {
    bytes += size, times += 1;
-   for (auto c : places)
+   for (auto& c : places)
       if (c.bt == bt) {
          c.ptr2 = ptr, c.size2 = size, c.bytes += size, c.times += 1;
          return;
@@ -1358,16 +1307,18 @@ h2_inline void h2_fail_memleak::add(void* ptr, int size, h2_backtrace& bt) {
 }
 
 h2_inline void h2_fail_memleak::print() {
-   char t1[64] = "", t2[64] = "";
-   if (1 < places.size()) sprintf(t1, "%d places ", (int)places.size());
-   if (1 < times) sprintf(t2, "%lld times ", times);
+   char t_places[64] = "", t_times[64] = "", t_bytes[64] = "";
+   if (1 < places.size()) sprintf(t_places, "%s places ", SF("bold,red", "%d", (int)places.size()));
+   if (1 < times) sprintf(t_times, "%s times ", SF("bold,red", "%lld", times));
+   if (0 < bytes) sprintf(t_bytes, "%s bytes", SF("bold,red", "%lld", bytes));
 
-   kprintf("Memory Leaked %s%s%lld bytes in %s totally", t1, t2, bytes, where);
+   kprintf("Memory Leaked %s%s%s in %s totally", t_places, t_times, t_bytes, where);
    h2_fail::print(), print_locate();
-   for (auto c : places) {
-      c.times <= 1 ? ::printf("  %p Leaked %lld bytes, at backtrace\n", c.ptr, c.bytes) :
-                     ::printf("  %p, %p ... Leaked %lld times %lld bytes (%lld, %lld ...), at backtrace\n", c.ptr, c.ptr2, c.times, c.bytes, c.size, c.size2);
-      c.bt.print();
+   ++pad;
+   for (auto& c : places) {
+      c.times <= 1 ? ::printf("%s%p Leaked %s bytes, at backtrace\n", PAD(pad), c.ptr, SF("bold,red", "%lld", c.bytes)) :
+                     ::printf("%s%p, %p ... Leaked %s times %s bytes (%s, %s ...), at backtrace\n", PAD(pad), c.ptr, c.ptr2, SF("bold,red", "%lld", c.times), SF("bold,red", "%lld", c.bytes), SF("bold,red", "%lld", c.size), SF("bold,red", "%lld", c.size2));
+      c.bt.print(pad + 1);
    }
 }
 
@@ -1376,8 +1327,8 @@ h2_inline h2_fail_doublefree::h2_fail_doublefree(void* ptr_, h2_backtrace& bt0_,
 
 h2_inline void h2_fail_doublefree::print() {
    h2_fail::print(), ::printf(" at backtrace:\n");
-   bt1.print();
-   if (0 < bt0.count) ::printf("  which allocated at backtrace:\n"), bt0.print();
+   bt1.print(pad + 1);
+   if (0 < bt0.count) ::printf("%swhich allocated at backtrace:\n", PAD(++pad)), bt0.print(pad + 1);
 }
 
 h2_inline h2_fail_instantiate::h2_fail_instantiate(const char* action_type_, const char* return_type_, const char* class_type_, const char* method_name_, const char* return_args_, int why_abstract_, const char* file_, int line_)
@@ -1391,29 +1342,26 @@ h2_inline void h2_fail_instantiate::print() {
 
    ::printf("You may take following solutions to fix it: \n");
    if (why_abstract)
-      ::printf("1. Add non-abstract Derived Class instance in %s(%s%s%s, %s, %s%s, Derived_%s(...)%s) \n",
+      ::printf("1. Add non-abstract Derived Class instance in %s(%s%s%s, %s, %s, %s) \n",
                action_type,
                strlen(return_type) ? return_type : "",
                strlen(return_type) ? ", " : "",
                class_type, method_name, return_args,
-               S("bold,yellow"),
-               class_type,
-               S("reset"));
+               SF("bold,yellow", "Derived_%s(...)", class_type));
    else {
       ::printf("1. Define default constructor in class %s, or \n", class_type);
-      ::printf("2. Add parameterized construction in %s(%s%s%s, %s, %s%s, %s(...)%s) \n",
+      ::printf("2. Add parameterized construction in %s(%s%s%s, %s, %s, %s) \n",
                action_type,
                strlen(return_type) ? return_type : "",
                strlen(return_type) ? ", " : "",
                class_type, method_name, return_args,
-               S("bold,yellow"),
-               class_type,
-               S("reset"));
+               SF("bold,yellow", "%s(...)", class_type));
    }
 }
+
 static const unsigned char snowfield[] = {0xbe, 0xaf, 0xca, 0xfe, 0xc0, 0xde, 0xfa, 0xce};
 
-struct h2_piece : h2_nohook {
+struct h2_piece : h2_libc {
    unsigned char *ptr, *page;
    h2_list x;
    int size, pagesize, pagecount, freed;
@@ -1451,9 +1399,9 @@ struct h2_piece : h2_nohook {
    h2_fail* check_snowfield() {
       h2_fail* fail = nullptr;
       if (memcmp(ptr + size, snowfield, sizeof(snowfield)))
-         h2_append_x_fail(fail, new h2_fail_memoverflow(ptr, size, snowfield, sizeof(snowfield), bt, h2_backtrace()));
+         h2_fail::append_x(fail, new h2_fail_memoverflow(ptr, size, snowfield, sizeof(snowfield), bt, h2_backtrace()));
       if (memcmp(ptr - sizeof(snowfield), snowfield, sizeof(snowfield)))
-         h2_append_x_fail(fail, new h2_fail_memoverflow(ptr, -(int)sizeof(snowfield), snowfield, sizeof(snowfield), bt, h2_backtrace()));
+         h2_fail::append_x(fail, new h2_fail_memoverflow(ptr, -(int)sizeof(snowfield), snowfield, sizeof(snowfield), bt, h2_backtrace()));
 
       if (::mprotect(page, pagesize * (pagecount + 1), PROT_NONE) != 0)
          ::printf("mprotect PROT_NONE failed %s\n", strerror(errno));
@@ -1472,7 +1420,7 @@ struct h2_piece : h2_nohook {
    }
 };
 
-struct h2_block : h2_nohook {
+struct h2_block : h2_libc {
    h2_list x;
    h2_list using_list, freed_list;
 
@@ -1491,10 +1439,7 @@ struct h2_block : h2_nohook {
          fail = new h2_fail_memleak(file, line, where);
          h2_list_for_each_entry(p, &using_list, h2_piece, x) fail->add(p->ptr, p->size, p->bt);
       }
-      h2_list_for_each_entry(p, &freed_list, h2_piece, x) {
-         p->x.out();
-         delete p;
-      }
+      h2_list_for_each_entry(p, &freed_list, h2_piece, x) h2_out_delete(p);
       return fail;
    }
 
@@ -1546,6 +1491,7 @@ struct h2_stack {
         {(void*)printf, 300},
         {(void*)sprintf, 300},
         {(void*)vsnprintf, 300},
+        {(void*)fprintf, 300},
         {(void*)sscanf, 300},
         {(void*)localtime, 300}};
 
@@ -1575,28 +1521,18 @@ struct h2_stack {
    }
 
    h2_piece* get_piece(const void* ptr) {
-      h2_list_for_each_entry(b, &blocks, h2_block, x) {
-         h2_piece* p = b->get_piece(ptr);
-         if (p) return p;
-      }
+      h2_list_for_each_entry(p, &blocks, h2_block, x) h2_if_return(p->get_piece(ptr), );
       return nullptr;
    }
 
    h2_fail* rel_piece(void* ptr) {
-      h2_list_for_each_entry(b, &blocks, h2_block, x) {
-         h2_piece* p = b->get_piece(ptr);
-         if (p) return b->rel_piece(p);
-      }
-
+      h2_list_for_each_entry(p, &blocks, h2_block, x) h2_if_return(p->get_piece(ptr), p->rel_piece);
       h2_debug("Warning: free not found!");
       return nullptr;
    }
 
    h2_piece* host_piece(const void* addr) {
-      h2_list_for_each_entry(b, &blocks, h2_block, x) {
-         h2_piece* p = b->host_piece(addr);
-         if (p) return p;
-      }
+      h2_list_for_each_entry(p, &blocks, h2_block, x) h2_if_return(p->host_piece(addr), );
       return nullptr;
    }
 };
@@ -1629,7 +1565,7 @@ struct h2_hook {
 
    static void* realloc(void* ptr, size_t size) {
       if (size == 0) {
-         if (ptr) h2_fail_g(h2_stack::I().rel_piece(ptr));
+         free(ptr);
          return nullptr;
       }
 
@@ -1708,14 +1644,9 @@ struct h2_hook {
 
 #endif
 
-   h2_stub free_stub;
-   h2_stub malloc_stub;
-   h2_stub calloc_stub;
-   h2_stub realloc_stub;
-   h2_stub posix_memalign_stub;
+   h2_stubs stubs;
 
-   h2_hook()
-     : free_stub((void*)::free), malloc_stub((void*)::malloc), calloc_stub((void*)::calloc), realloc_stub((void*)::realloc), posix_memalign_stub((void*)::posix_memalign) {
+   h2_hook() {
 #if defined __GLIBC__
       sys__free_hook = __free_hook;
       sys__malloc_hook = __malloc_hook;
@@ -1773,11 +1704,10 @@ struct h2_hook {
       malloc_zone_unregister(default_zone);
       malloc_zone_register(default_zone);
 #else
-      free_stub.replace((void*)hook::free);
-      malloc_stub.replace((void*)hook::malloc);
-      calloc_stub.replace((void*)hook::calloc);
-      realloc_stub.replace((void*)hook::realloc);
-      posix_memalign_stub.replace((void*)hook::posix_memalign);
+      stubs.add((void*)::free, (void*)hook::free, "", "", __FILE__, __LINE__);
+      stubs.add((void*)::malloc, (void*)hook::malloc, "", "", __FILE__, __LINE__);
+      stubs.add((void*)::realloc, (void*)hook::realloc, "", "", __FILE__, __LINE__);
+      stubs.add((void*)::posix_memalign, (void*)hook::posix_memalign, "", "", __FILE__, __LINE__);
 #endif
    }
 
@@ -1790,11 +1720,7 @@ struct h2_hook {
 #elif defined __APPLE__
       malloc_zone_unregister(&mz);
 #else
-      free_stub.restore();
-      malloc_stub.restore();
-      calloc_stub.restore();
-      realloc_stub.restore();
-      posix_memalign_stub.restore();
+      stubs.clear();
 #endif
    }
 
@@ -1830,7 +1756,7 @@ h2_inline void h2_heap::stack_push_block(const char* file, int line, const char*
 h2_inline h2_fail* h2_heap::stack_pop_block() {
    return h2_stack::I().pop();
 }
-struct h2_json {
+struct h2__json {
    static const int t_absent = 0;
 
    static const int t_null = 1;
@@ -1866,7 +1792,7 @@ struct h2_json {
       }
    };
 
-   struct Node : h2_nohook {
+   struct Node : h2_libc {
       int type;
 
       h2_string key_string;
@@ -2115,7 +2041,7 @@ struct h2_json {
       };
    }
 
-   struct Dual : h2_nohook {
+   struct Dual : h2_libc {
       int depth;
       int e_type, a_type;
       h2_string e_key, a_key;
@@ -2387,8 +2313,8 @@ struct h2_json {
       for (auto& word : line)
          if (word[0] == '#') {
             if (index * columns <= s && s < (index + 1) * columns) {
-               const char* style = S(word.c_str() + 1);
-               wrap.append(style);
+               const char* style = word.c_str() + 1;
+               wrap.append(O.style(style));
                current_style = style;
             }
          } else {
@@ -2419,11 +2345,11 @@ struct h2_json {
             h2_string e_current_style, a_current_style;
             auto e_wrap = line_wrap(e_line, j, side_width - 2, e_current_style);
             auto a_wrap = line_wrap(a_line, j, side_width - 2, a_current_style);
-            str.sprintf("%s%s %s%s%s│%s %s%s %s%s%s%s\n",
-                        e_last_style.c_str(), e_wrap.c_str(), S("reset"),
-                        S("dark gray"), j == K - 1 ? " " : "\\", S("reset"),
-                        a_last_style.c_str(), a_wrap.c_str(), S("reset"),
-                        S("dark gray"), j == K - 1 ? " " : "\\", S("reset"));
+            str.sprintf("%s %s %s %s\n",
+                        SF(e_last_style.c_str(), "%s", e_wrap.c_str()),
+                        SF("dark gray", j == K - 1 ? " │" : "\\│"),
+                        SF(a_last_style.c_str(), "%s", a_wrap.c_str()),
+                        SF("dark gray", j == K - 1 ? " " : "\\"));
 
             e_last_style = e_current_style;
             a_last_style = a_current_style;
@@ -2432,39 +2358,39 @@ struct h2_json {
    }
 };
 
-h2_inline bool h2_json_exporter::match(const h2_string expect, const h2_string actual) {
-   h2_json::Node *e = h2_json::parse(expect.c_str()), *a = h2_json::parse(actual.c_str());
+h2_inline bool h2_json::match(const h2_string expect, const h2_string actual) {
+   h2__json::Node *e = h2__json::parse(expect.c_str()), *a = h2__json::parse(actual.c_str());
 
-   bool result = h2_json::match(e, a);
+   bool result = h2__json::match(e, a);
 
-   h2_json::frees(e);
-   h2_json::frees(a);
+   h2__json::frees(e);
+   h2__json::frees(a);
 
    return result;
 }
 
-h2_inline int h2_json_exporter::diff(const h2_string expect, const h2_string actual, int terminal_width, h2_string& str) {
-   h2_json::Node *e_node = h2_json::parse(expect.c_str()), *a_node = h2_json::parse(actual.c_str());
+h2_inline int h2_json::diff(const h2_string expect, const h2_string actual, int terminal_width, h2_string& str) {
+   h2__json::Node *e_node = h2__json::parse(expect.c_str()), *a_node = h2__json::parse(actual.c_str());
 
-   h2_json::Dual* d = new h2_json::Dual(0, nullptr);
-   h2_json::dual(e_node, a_node, d);
+   h2__json::Dual* d = new h2__json::Dual(0, nullptr);
+   h2__json::dual(e_node, a_node, d);
 
-   h2_json::frees(e_node);
-   h2_json::frees(a_node);
+   h2__json::frees(e_node);
+   h2__json::frees(a_node);
 
    h2_vector<h2_string> e_list, a_list;
-   h2_json::diff(d, e_list, a_list);
-   h2_json::frees(d);
+   h2__json::diff(d, e_list, a_list);
+   h2__json::frees(d);
 
-   h2_json::Lines e_lines, a_lines;
-   h2_json::merge_line(e_list, e_lines);
-   h2_json::merge_line(a_list, a_lines);
+   h2__json::Lines e_lines, a_lines;
+   h2__json::merge_line(e_list, e_lines);
+   h2__json::merge_line(a_list, a_lines);
 
-   int e_most = h2_json::lines_most(e_lines), a_most = h2_json::lines_most(a_lines);
+   int e_most = h2__json::lines_most(e_lines), a_most = h2__json::lines_most(a_lines);
    int fav_width = std::max(std::max(e_most, a_most) + 3, 30);
    int side_width = std::min(terminal_width / 2 - 4, fav_width);
 
-   h2_json::print(e_lines, a_lines, side_width, str);
+   h2__json::print(e_lines, a_lines, side_width, str);
    return side_width;
 }
 
@@ -2490,8 +2416,8 @@ h2_inline void h2_libc::free(void* ptr) {
    munmap((void*)p, (size_t)*p);
 }
 
-h2_inline int h2_libc::write(FILE* stream, const void* buf, size_t nbyte) {
-   return ::write(fileno(stream), buf, nbyte);
+h2_inline ssize_t h2_libc::write(int fd, const void* buf, size_t count) {
+   return syscall(SYS_write, fd, buf, count);
 }
 
 h2_inline h2_log::h2_log() : total_cases(0), done_cases(0), percentage(0), tt(0), ts(0), tc(0) {}
@@ -2512,38 +2438,27 @@ struct h2_log_console : h2_log {
    void on_task_endup(int status_stats[8]) override {
       h2_log::on_task_endup(status_stats);
       printf("\n[%3d%%] ", percentage);
-      if (0 < status_stats[h2_case::FAILED]) {
-         printf("%s", S("bold,red"));
-         printf("Failed <%d failed, %d passed, %d todo, %d filtered, %lld ms>\n", status_stats[h2_case::FAILED], status_stats[h2_case::PASSED], status_stats[h2_case::TODOED], status_stats[h2_case::FILTED], tt);
-      } else {
-         printf("%s", S("bold,green"));
-         printf("Passed <%d passed, %d todo, %d filtered, %d cases, %lld ms>\n", status_stats[h2_case::PASSED], status_stats[h2_case::TODOED], status_stats[h2_case::FILTED], total_cases, tt);
-      }
-      printf("%s", S("reset"));
+      if (0 < status_stats[h2_case::FAILED])
+         printf("%s", SF("bold,red", "Failed <%d failed, %d passed, %d todo, %d filtered, %lld ms>\n", status_stats[h2_case::FAILED], status_stats[h2_case::PASSED], status_stats[h2_case::TODOED], status_stats[h2_case::FILTED], tt));
+      else
+         printf("%s", SF("bold,green", "Passed <%d passed, %d todo, %d filtered, %d cases, %lld ms>\n", status_stats[h2_case::PASSED], status_stats[h2_case::TODOED], status_stats[h2_case::FILTED], total_cases, tt));
    }
    void on_case_endup(h2_suite* s, h2_case* c) override {
       h2_log::on_case_endup(s, c);
       switch (c->status) {
       case h2_case::INITED: break;
       case h2_case::TODOED:
-         if (O.verbose)
-            printf("[%3d%%] (%s // %s): %s at %s:%d\n", percentage, s->name, c->name, CSS[c->status], basename((char*)c->file), c->line);
+         if (O.verbose) printf("[%3d%%] (%s // %s): %s at %s:%d\n", percentage, s->name, c->name, CSS[c->status], basename((char*)c->file), c->line);
          break;
       case h2_case::FILTED: break;
       case h2_case::PASSED:
-         if (O.verbose) {
-            printf("[%3d%%] ", percentage);
-            printf("%s", S("light blue"));
-            printf("(%s // %s): Passed - %lld ms\n", s->name, c->name, tc);
-            printf("%s", S("reset"));
-         } else if (!O.debug)
+         if (O.verbose)
+            printf("[%3d%%] %s", percentage, SF("light blue", "(%s // %s): Passed - %lld ms\n", s->name, c->name, tc));
+         else if (!O.debug)
             printf("\r[%3d%%] (%d/%d)\r", percentage, done_cases, total_cases);
          break;
       case h2_case::FAILED:
-         printf("[%3d%%] ", percentage);
-         printf("%s", S("bold,purple"));
-         printf("(%s // %s): Failed at %s:%d\n", s->name, c->name, basename((char*)c->file), c->line);
-         printf("%s", S("reset"));
+         printf("[%3d%%] %s", percentage, SF("bold,purple", "(%s // %s): Failed at %s:%d\n", s->name, c->name, basename((char*)c->file), c->line));
          for (h2_fail* x_fail = c->fails; x_fail; x_fail = x_fail->x_next)
             for (h2_fail* fail = x_fail; fail; fail = fail->y_next)
                fail->print();
@@ -2555,7 +2470,6 @@ struct h2_log_console : h2_log {
 
 struct h2_log_xml : h2_log {
    FILE* f;
-
    void on_task_start(int cases) override {
       h2_log::on_task_start(cases);
       f = fopen(O.junit, "w");
@@ -2563,22 +2477,19 @@ struct h2_log_xml : h2_log {
       fprintf(f, "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n");
       fprintf(f, "<testsuites>\n");
    };
-
    void on_suite_start(h2_suite* s) override {
       h2_log::on_suite_start(s);
       if (!f) return;
-      fprintf(f, "  <testsuite errors=\"0\" failures=\"%d\" hostname=\"localhost\" name=\"%s\" skipped=\"%d\" tests=\"%d\" time=\"%d\" timestamp=\"%s\">\n",
-              s->status_stats[h2_case::FAILED], s->name, s->status_stats[h2_case::TODOED] + s->status_stats[h2_case::FILTED], (int)s->cases().size(), 0, "");
+      fprintf(f, "<testsuite errors=\"0\" failures=\"%d\" hostname=\"localhost\" name=\"%s\" skipped=\"%d\" tests=\"%d\" time=\"%d\" timestamp=\"%s\">\n", s->status_stats[h2_case::FAILED], s->name, s->status_stats[h2_case::TODOED] + s->status_stats[h2_case::FILTED], (int)s->cases().size(), 0, "");
    }
 
    void on_case_endup(h2_suite* s, h2_case* c) override {
       h2_log::on_case_endup(s, c);
       if (!f) return;
-      fprintf(f, "    <testcase classname=\"%s\" name=\"%s\" status=\"%s\" time=\"%.3f\">\n",
-              s->name, c->name, CSS[c->status], tc / 1000.0);
+      fprintf(f, "<testcase classname=\"%s\" name=\"%s\" status=\"%s\" time=\"%.3f\">\n", s->name, c->name, CSS[c->status], tc / 1000.0);
 
       if (c->status == h2_case::FAILED) {
-         fprintf(f, "      <failure message=\"%s:%d:", c->file, c->line);
+         fprintf(f, "<failure message=\"%s:%d:", c->file, c->line);
          for (h2_fail* x_fail = c->fails; x_fail; x_fail = x_fail->x_next)
             for (h2_fail* fail = x_fail; fail; fail = fail->y_next) {
                fprintf(f, "{newline}");
@@ -2586,15 +2497,14 @@ struct h2_log_xml : h2_log {
             }
          fprintf(f, "\" type=\"AssertionFailedError\"></failure>\n");
       }
-      fprintf(f, "      <system-out></system-out><system-err></system-err>\n");
-      fprintf(f, "    </testcase>\n");
+      fprintf(f, "<system-out></system-out><system-err></system-err>\n");
+      fprintf(f, "</testcase>\n");
    }
    void on_suite_endup(h2_suite* s) override {
       h2_log::on_suite_endup(s);
       if (!f) return;
-      fprintf(f, "  </testsuite>\n");
+      fprintf(f, "</testsuite>\n");
    }
-
    void on_task_endup(int status_stats[8]) override {
       h2_log::on_task_endup(status_stats);
       if (!f) return;
@@ -2618,8 +2528,8 @@ h2_inline void h2_logs::init() {
 h2_inline h2_fail* h2_string_equal_matches::matches(const h2_string& a, bool caseless, bool dont) const {
    if (r) dont = !dont;
    if (a.equals(e, caseless) == !dont) return nullptr;
-   if (a.wildcard_match(e, caseless) == !dont) return nullptr;
-   if (a.regex_match(e, caseless) == !dont) return nullptr;
+   if (h2_wildcard_match(e.c_str(), a.c_str(), caseless) == !dont) return nullptr;
+   if (h2_regex_match(e.c_str(), a.c_str(), caseless) == !dont) return nullptr;
 
    h2_fail* fail;
    if (dont) {
@@ -2657,7 +2567,7 @@ h2_inline h2_fail* h2_memcmp_matches::matches(const void* a, bool caseless, bool
 }
 
 h2_inline h2_fail* h2_regex_matches::matches(const h2_string& a, bool caseless, bool dont) const {
-   if (a.regex_match(e, caseless) == !dont) return nullptr;
+   if (h2_regex_match(e.c_str(), a.c_str(), caseless) == !dont) return nullptr;
    h2_fail_unexpect* fail = new h2_fail_unexpect();
    fail->eprintf("/%s/", e.c_str());
    fail->aprintf("\"%s\"", a.c_str());
@@ -2670,7 +2580,7 @@ h2_inline h2_fail* h2_regex_matches::matches(const h2_string& a, bool caseless, 
 }
 
 h2_inline h2_fail* h2_wildcard_matches::matches(const h2_string& a, bool caseless, bool dont) const {
-   if (a.wildcard_match(e, caseless) == !dont) return nullptr;
+   if (h2_wildcard_match(e.c_str(), a.c_str(), caseless) == !dont) return nullptr;
    h2_fail_unexpect* fail = new h2_fail_unexpect();
    fail->eprintf("/%s/", e.c_str());
    fail->aprintf("\"%s\"", a.c_str());
@@ -2737,7 +2647,7 @@ h2_inline h2_fail* h2_endswith_matches::matches(const h2_string& a, bool caseles
 }
 
 h2_inline h2_fail* h2_json_matches::matches(const h2_string& a, bool caseless, bool dont) const {
-   if ((h2_json_exporter::match(e, a)) == !dont) return nullptr;
+   if ((h2_json::match(e, a)) == !dont) return nullptr;
    h2_fail_json* fail = new h2_fail_json(e, a);
    if (dont)
       fail->mprintf("should not equals");
@@ -2747,71 +2657,22 @@ h2_inline h2_fail* h2_json_matches::matches(const h2_string& a, bool caseless, b
    return fail;
 }
 
-static inline bool is_ipv4(const char* str) {
-   int s1, s2, s3, s4;
-   return 4 == ::sscanf(str, "%d.%d.%d.%d", &s1, &s2, &s3, &s4);
-}
-
-struct h2_network {
-   h2_singleton(h2_network);
-
-   h2_list dnss, socks;
+struct h2_resolver {
+   h2_singleton(h2_resolver);
+   h2_list dnses;
 
    static bool inet_addr(const char* str, struct sockaddr_in* addr) {
       int s1, s2, s3, s4;
-      if (4 == ::sscanf(str, "%d.%d.%d.%d", &s1, &s2, &s3, &s4)) {
+      bool is_ipv4 = 4 == ::sscanf(str, "%d.%d.%d.%d", &s1, &s2, &s3, &s4);
+      if (is_ipv4 && addr) {
          addr->sin_family = AF_INET;
          addr->sin_addr.s_addr = ::inet_addr(str);
-         return true;
       }
-      return false;
-   }
-
-   static bool iport_parse(const char* str, struct sockaddr_in* addr) {  // todo for simplify
-      char* colon = NULL;
-      char temp[1024];
-      strcpy(temp, str);
-
-      addr->sin_family = AF_INET;
-      addr->sin_port = 0;
-      colon = strchr(temp, ':');
-      if (colon) {
-         *colon = '\0';
-         addr->sin_port = htons(atoi(colon + 1));
-      }
-      addr->sin_addr.s_addr = ::inet_addr(temp);
-      return true;
-   }
-
-   static const char* iport_tostring(struct sockaddr_in* addr, char* str) {
-      sprintf(str, "%s:%d", inet_ntoa(addr->sin_addr), ntohs(addr->sin_port));
-      return str;
-   }
-
-   static bool isblock(int sockfd) {
-      return !(fcntl(sockfd, F_GETFL) & O_NONBLOCK);
-   }
-
-   struct temporary_noblock : h2_once {
-      int sockfd;
-      int flags;
-      temporary_noblock(int sockfd_) : sockfd(sockfd_) {
-         flags = fcntl(sockfd, F_GETFL);
-         fcntl(sockfd, F_SETFL, flags | O_NONBLOCK);
-      }
-      ~temporary_noblock() { fcntl(sockfd, F_SETFL, flags); }
-   };
-
-   static const char* getsockname(int sockfd, char* s, struct sockaddr_in* a = nullptr) {
-      struct sockaddr_in b;
-      if (!a) a = &b;
-      socklen_t l = sizeof(struct sockaddr_in);
-      ::getsockname(sockfd, (struct sockaddr*)a, &l);
-      return iport_tostring(a, s);
+      return is_ipv4;
    }
 
    h2_dns* find(const char* hostname) {
-      h2_list_for_each_entry(p, &dnss, h2_dns, y) if (streq("*", p->hostname) || streq(hostname, p->hostname)) return p;
+      h2_list_for_each_entry(p, &dnses, h2_dns, y) if (!strcmp("*", p->name) || !strcmp(hostname, p->name)) return p;
       return nullptr;
    }
 
@@ -2879,27 +2740,104 @@ struct h2_network {
       return &h;
    }
 
-   static void read_incoming(int sockfd, h2_list& list, bool sync, h2_packet*& packet) {
-      bool block = isblock(sockfd);
+   h2_stubs stubs;
+   h2_resolver() {
+      stubs.add((void*)::getaddrinfo, (void*)getaddrinfo, "", "", __FILE__, __LINE__);
+      stubs.add((void*)::freeaddrinfo, (void*)freeaddrinfo, "", "", __FILE__, __LINE__);
+      stubs.add((void*)::gethostbyname, (void*)gethostbyname, "", "", __FILE__, __LINE__);
+   }
+   ~h2_resolver() { stubs.clear(); }
+};
+
+h2_inline void h2_dnses::add(h2_dns* dns) { s.push(&dns->x); }
+h2_inline void h2_dnses::clear() {
+   h2_list_for_each_entry(p, &s, h2_dns, x) {
+      p->x.out(), p->y.out();
+      delete p;
+   }
+}
+
+h2_inline void h2_dns::setaddrinfo(int n, ...) {
+   if (n == 0) return;
+   const char* array[32];
+   int count = 0;
+   va_list a;
+   va_start(a, n);
+   for (int i = 0; i < n && i < 32; ++i)
+      array[count++] = va_arg(a, const char*);
+   va_end(a);
+
+   const char* hostname = "*";
+   for (int i = 0; i < count; ++i)
+      if (!h2_resolver::inet_addr(array[i], nullptr))
+         if (strlen(hostname) < 2 || strlen(array[i]) < strlen(hostname))
+            hostname = array[i];
+
+   h2_dns* dns = new h2_dns(hostname);
+   for (int i = 0; i < count; ++i)
+      if (strcmp(hostname, array[i]))
+         strcpy(dns->array[dns->count++], array[i]);
+
+   h2_resolver::I().dnses.push(&dns->y);
+   if (h2_task::I().current_case) h2_task::I().current_case->dnses.add(dns);
+}
+
+struct h2__socket {
+   h2_singleton(h2__socket);
+   h2_list socks;
+
+   static void iport_parse(const char* str, struct sockaddr_in* addr) {
+      char temp[1024];
+      strcpy(temp, str);
+      addr->sin_family = AF_INET;
+      addr->sin_port = 0;
+      char* colon = strchr(temp, ':');
+      if (colon) {
+         *colon = '\0';
+         addr->sin_port = htons(atoi(colon + 1));
+      }
+      addr->sin_addr.s_addr = ::inet_addr(temp);
+   }
+
+   static const char* iport_tostring(struct sockaddr_in* addr, char* str) {
+      sprintf(str, "%s:%d", inet_ntoa(addr->sin_addr), ntohs(addr->sin_port));
+      return str;
+   }
+
+   struct temporary_noblock : h2_once {
+      int sockfd, flags;
+      temporary_noblock(int sockfd_) : sockfd(sockfd_) {
+         flags = fcntl(sockfd, F_GETFL);
+         fcntl(sockfd, F_SETFL, flags | O_NONBLOCK);
+      }
+      ~temporary_noblock() { fcntl(sockfd, F_SETFL, flags); }
+   };
+
+   static const char* getsockname(int sockfd, char* s, struct sockaddr_in* a = nullptr) {
+      struct sockaddr_in b;
+      if (!a) a = &b;
+      socklen_t l = sizeof(struct sockaddr_in);
+      ::getsockname(sockfd, (struct sockaddr*)a, &l);
+      return iport_tostring(a, s);
+   }
+
+   static h2_packet* read_incoming(int sockfd) {
+      bool block = !(fcntl(sockfd, F_GETFL) & O_NONBLOCK);
       const char* local = getsockname(sockfd, (char*)alloca(64));
+      h2_sock* sock = h2_list_top_entry(&I().socks, h2_sock, y);
+
       do {
-         h2_list_for_each_entry(p, &list, h2_packet, x) {
-            // return h2_wildcard_match(to.c_str(), local_iport);
-            // printf("shit local=%s, packet_to=%s \n", local, p->to.c_str());
-            if (p->can_recv(local) && (!sync || p->data.length() == 0)) {
-               p->x.out();
-               packet = p;
-               return;
-            }
+         h2_list_for_each_entry(p, &sock->incoming, h2_packet, x) if (h2_wildcard_match(p->to.c_str(), local)) {
+            p->x.out();
+            return p;
          }
          if (block) h2_sleep(100);
       } while (block);
+      return nullptr;
    }
 
    static int accept(int socket, struct sockaddr* address, socklen_t* address_len) {
-      h2_sock* sock = h2_list_top_entry(&h2_network::I().socks, h2_sock, y);
-      h2_packet* tcp = nullptr;
-      read_incoming(socket, sock->incoming_tcps, true, tcp);
+      h2_packet* tcp = read_incoming(socket);
       if (!tcp) {
          errno = EWOULDBLOCK;
          return -1;
@@ -2911,46 +2849,47 @@ struct h2_network {
       struct sockaddr_in a;
       const char* c = getsockname(socket, (char*)alloca(64), &a);
       ::bind(fd, (struct sockaddr*)&a, sizeof(a));
+      h2_sock* sock = h2_list_top_entry(&I().socks, h2_sock, y);
       sock->sockets.push_back({fd, c, tcp->from.c_str()});
-      delete tcp;
+      if (tcp->data.length())
+         sock->incoming.push(&tcp->x);
+      else
+         delete tcp;
 
       return fd;
    }
 
    static int connect(int socket, const struct sockaddr* address, socklen_t address_len) {
-      h2_sock* sock = h2_list_top_entry(&h2_network::I().socks, h2_sock, y);
+      h2_sock* sock = h2_list_top_entry(&I().socks, h2_sock, y);
       sock->sockets.push_back({socket, getsockname(socket, (char*)alloca(64)), iport_tostring((struct sockaddr_in*)address, (char*)alloca(64))});
-      h2_packet* tcp = nullptr;
-      read_incoming(socket, sock->incoming_tcps, true, tcp);
-
+      h2_packet* tcp = read_incoming(socket);
       if (!tcp) {
          errno = EWOULDBLOCK;
          return -1;
       }
-      delete tcp;
+      if (tcp->data.length())
+         sock->incoming.push(&tcp->x);
+      else
+         delete tcp;
       return 0;
    }
 
    static ssize_t send(int socket, const void* buffer, size_t length, int flags) {
-      h2_sock* sock = h2_list_top_entry(&h2_network::I().socks, h2_sock, y);
-      if (sock) sock->put_outgoing_tcp(socket, (const char*)buffer, length);
+      h2_sock* sock = h2_list_top_entry(&I().socks, h2_sock, y);
+      if (sock) sock->put_outgoing(socket, (const char*)buffer, length);
       return length;
    }
    static ssize_t sendmsg(int socket, const struct msghdr* message, int flags) {
       return sendto(socket, message->msg_iov[0].iov_base, message->msg_iov[0].iov_len, 0, (struct sockaddr*)message->msg_name, message->msg_namelen);
    }
    static ssize_t sendto(int socket, const void* buffer, size_t length, int flags, const struct sockaddr* dest_addr, socklen_t dest_len) {
-      h2_sock* sock = h2_list_top_entry(&h2_network::I().socks, h2_sock, y);
-      if (sock) sock->put_outgoing_udp(getsockname(socket, (char*)alloca(64)), iport_tostring((struct sockaddr_in*)dest_addr, (char*)alloca(64)), (const char*)buffer, length);
+      h2_sock* sock = h2_list_top_entry(&I().socks, h2_sock, y);
+      if (sock) sock->put_outgoing(getsockname(socket, (char*)alloca(64)), iport_tostring((struct sockaddr_in*)dest_addr, (char*)alloca(64)), (const char*)buffer, length);
       return length;
    }
    static ssize_t recv(int socket, void* buffer, size_t length, int flags) {
       ssize_t ret = 0;
-      h2_sock* sock = h2_list_top_entry(&h2_network::I().socks, h2_sock, y);
-
-      h2_packet* tcp = nullptr;
-      read_incoming(socket, sock->incoming_tcps, false, tcp);
-
+      h2_packet* tcp = read_incoming(socket);
       if (tcp) {
          ret = tcp->data.copy((char*)buffer, tcp->data.length(), 0);
          delete tcp;
@@ -2959,11 +2898,7 @@ struct h2_network {
    }
    static ssize_t recvfrom(int socket, void* buffer, size_t length, int flags, struct sockaddr* address, socklen_t* address_len) {
       ssize_t ret = 0;
-      h2_sock* sock = h2_list_top_entry(&h2_network::I().socks, h2_sock, y);
-
-      h2_packet* udp = nullptr;
-      read_incoming(socket, sock->incoming_udps, false, udp);
-
+      h2_packet* udp = read_incoming(socket);
       if (udp) {
          ret = udp->data.copy((char*)buffer, udp->data.length(), 0);
          iport_parse(udp->from.c_str(), (struct sockaddr_in*)address);
@@ -2975,171 +2910,97 @@ struct h2_network {
    static ssize_t recvmsg(int socket, struct msghdr* message, int flags) {
       return recvfrom(socket, message->msg_iov[0].iov_base, message->msg_iov[0].iov_len, 0, (struct sockaddr*)message->msg_name, &message->msg_namelen);
    }
-
-   h2_stub getaddrinfo_stub;
-   h2_stub freeaddrinfo_stub;
-   h2_stub gethostbyname_stub;
-
-   h2_network() : getaddrinfo_stub((void*)::getaddrinfo),
-                  freeaddrinfo_stub((void*)::freeaddrinfo),
-                  gethostbyname_stub((void*)::gethostbyname) {
-      getaddrinfo_stub.replace((void*)getaddrinfo);
-      freeaddrinfo_stub.replace((void*)freeaddrinfo);
-      gethostbyname_stub.replace((void*)gethostbyname);
-   }
-
-   ~h2_network() {
-      // getaddrinfo_stub.restore();
-      // freeaddrinfo_stub.restore();
-      // gethostbyname_stub.restore();
-   }
 };
 
-h2_inline bool h2_packet::match(const char* from_pattern, const char* to_pattern) {
-   return h2_wildcard_match(from_pattern, from.c_str()) &&
-          h2_wildcard_match(to_pattern, to.c_str());
-}
-h2_inline bool h2_packet::can_recv(const char* local_iport) {
-   return h2_wildcard_match(to.c_str(), local_iport);
-}
-
-h2_inline h2_sock::h2_sock() : sendto_stub((void*)::sendto),
-                               recvfrom_stub((void*)::recvfrom),
-                               sendmsg_stub((void*)::sendmsg),
-                               recvmsg_stub((void*)::recvmsg),
-                               send_stub((void*)::send),
-                               recv_stub((void*)::recv),
-                               accept_stub((void*)::accept),
-                               connect_stub((void*)::connect) {
-   sendto_stub.replace((void*)h2_network::sendto);
-   recvfrom_stub.replace((void*)h2_network::recvfrom);
-   sendmsg_stub.replace((void*)h2_network::sendmsg);
-   recvmsg_stub.replace((void*)h2_network::recvmsg);
-   send_stub.replace((void*)h2_network::send);
-   recv_stub.replace((void*)h2_network::recv);
-   accept_stub.replace((void*)h2_network::accept);
-   connect_stub.replace((void*)h2_network::connect);
+h2_inline h2_sock::h2_sock() {
+   stubs.add((void*)::sendto, (void*)h2__socket::sendto, "", "", __FILE__, __LINE__);
+   stubs.add((void*)::recvfrom, (void*)h2__socket::recvfrom, "", "", __FILE__, __LINE__);
+   stubs.add((void*)::sendmsg, (void*)h2__socket::sendmsg, "", "", __FILE__, __LINE__);
+   stubs.add((void*)::recvmsg, (void*)h2__socket::recvmsg, "", "", __FILE__, __LINE__);
+   stubs.add((void*)::send, (void*)h2__socket::send, "", "", __FILE__, __LINE__);
+   stubs.add((void*)::recv, (void*)h2__socket::recv, "", "", __FILE__, __LINE__);
+   stubs.add((void*)::accept, (void*)h2__socket::accept, "", "", __FILE__, __LINE__);
+   stubs.add((void*)::connect, (void*)h2__socket::connect, "", "", __FILE__, __LINE__);
    strcpy(last_to, "0.0.0.0:0");
 }
 
 h2_inline h2_sock::~h2_sock() {
-   x.out();
-   y.out();
-   sendto_stub.restore();
-   recvfrom_stub.restore();
-   sendmsg_stub.restore();
-   recvmsg_stub.restore();
-   send_stub.restore();
-   recv_stub.restore();
-   accept_stub.restore();
-   connect_stub.restore();
+   x.out(), y.out();
+   stubs.clear();
 }
 
-h2_inline void h2_sock::put_outgoing_udp(const char* from, const char* to, const char* data, size_t size) {
+h2_inline void h2_sock::put_outgoing(const char* from, const char* to, const char* data, size_t size) {
    strcpy(last_to, to);
-   h2_packet* udp = new h2_packet(from, to, data, size);
-   outgoing_udps.push_back(&udp->x);
+   outgoing.push_back(&(new h2_packet(from, to, data, size))->x);
 }
 
-h2_inline void h2_sock::put_incoming_udp(const char* from, const char* to, const char* data, size_t size) {
-   h2_packet* udp = new h2_packet(from ? from : last_to, to, data, size);
-   incoming_udps.push_back(&udp->x);
-}
-
-h2_inline void h2_sock::put_outgoing_tcp(int fd, const char* data, size_t size) {
-   char from[128], to[128];
-
-   for (auto& t : sockets) {
+h2_inline void h2_sock::put_outgoing(int fd, const char* data, size_t size) {
+   char from[128] = "", to[128] = "";
+   for (auto& t : sockets)
       if (t.fd == fd) {
          strcpy(from, t.from.c_str());
          strcpy(to, t.to.c_str());
          break;
       }
-   }
-
-   strcpy(last_to, to);
-
-   h2_packet* tcp = nullptr;
-   h2_list_for_each_entry(p, &outgoing_tcps, h2_packet, x) {
-      if (p->from == from && p->to == to) {
-         tcp = p;
-         break;
-      }
-   }
-   if (tcp) {
-      tcp->data.append(data, size);
-   } else {
-      tcp = new h2_packet(from, to, data, size);
-      outgoing_tcps.push_back(&tcp->x);
-   }
+   put_outgoing(from, to, data, size);
 }
 
-h2_inline void h2_sock::put_incoming_tcp(const char* from, const char* to, const char* data, size_t size) {
-   from = from ? from : last_to;
-   h2_packet* tcp = nullptr;
-   h2_list_for_each_entry(p, &incoming_tcps, h2_packet, x) {
-      if (p->from == from && p->to == to) {
-         tcp = p;
-         break;
-      }
-   }
-   if (tcp) {
-      tcp->data.append(data, size);
-   } else {
-      tcp = new h2_packet(from, to, data, size);
-      incoming_tcps.push_back(&tcp->x);
-   }
+h2_inline void h2_sock::put_incoming(const char* from, const char* to, const char* data, size_t size) {
+   incoming.push_back(&(new h2_packet(from ? from : last_to, to, data, size))->x);
 }
 
-h2_inline void h2_network_exporter::setaddrinfo(int n, ...) {
-   if (n == 0) return;
+h2_inline h2_packet* h2_socket::start_and_fetch() {
+   if (!h2_task::I().current_case) return nullptr;
 
-   const char* array[32];
-   int count = 0;
-   va_list a;
-   va_start(a, n);
-   for (int i = 0; i < n && i < 32; ++i)
-      array[count++] = va_arg(a, const char*);
-   va_end(a);
-
-   const char* hostname = "*";
-   for (int i = 0; i < count; ++i)
-      if (!is_ipv4(array[i]))
-         if (strlen(hostname) < 2 || strlen(array[i]) < strlen(hostname))
-            hostname = array[i];
-
-   h2_dns* dns = new h2_dns(hostname);
-
-   for (int i = 0; i < count; ++i)
-      if (!streq(hostname, array[i]))
-         strcpy(dns->array[dns->count++], array[i]);
-
-   h2_network::I().dnss.push(&dns->y);
-   h2_dns_g(dns);
-}
-
-h2_inline h2_packet* h2_network_exporter::sock_start_and_fetch() {
-   h2_sock* sock = h2_sock_g(nullptr);
+   h2_sock* sock = h2_task::I().current_case->sock;
    if (!sock) {
-      sock = h2_sock_g(new h2_sock());
-      h2_network::I().socks.push(&sock->y);
+      sock = h2_task::I().current_case->sock = new h2_sock();
+      h2__socket::I().socks.push(&sock->y);
    }
 
-   h2_packet* ret = nullptr;
-   ret = h2_list_pop_entry(&sock->outgoing_udps, h2_packet, x);
-   if (!ret)
-      ret = h2_list_pop_entry(&sock->outgoing_tcps, h2_packet, x);
-   return ret;
+   return h2_list_pop_entry(&sock->outgoing, h2_packet, x);
 }
 
-h2_inline void h2_network_exporter::udp_inject_received(const unsigned char* packet, size_t size, const char* from, const char* to) {
-   h2_sock* sock = h2_list_top_entry(&h2_network::I().socks, h2_sock, y);
-   if (sock) sock->put_incoming_udp(from, to, (const char*)packet, size);
+h2_inline void h2_socket::inject_received(const void* packet, size_t size, const char* from, const char* to) {
+   h2_sock* sock = h2_list_top_entry(&h2__socket::I().socks, h2_sock, y);
+   if (sock) sock->put_incoming(from, to, (const char*)packet, size);
 }
 
-h2_inline void h2_network_exporter::tcp_inject_received(const unsigned char* packet, size_t size, const char* from, const char* to) {
-   h2_sock* sock = h2_list_top_entry(&h2_network::I().socks, h2_sock, y);
-   if (sock) sock->put_incoming_tcp(from, to, (const char*)packet, size);
+static inline void usage() {
+   ::printf("  \033[33m╭─────────────────────────────────────────────────────────────────────────╮\033[0m\n");
+   ::printf("  \033[33m│\033[0m                                                                         \033[33m│\033[0m\n");
+   ::printf("  \033[33m│\033[0m                       Current version \033[32mh2unit \033[31m%-9s                  \033[33m│\033[0m\n", H2UNIT_VERSION);
+   ::printf("  \033[33m│\033[0m         Manual: \033[34;4mhttps://github.com/lingjf/h2unit.git \033[0;36mREADME.md          \033[33m│\033[0m\n");
+   ::printf("  \033[33m│\033[0m                                                                         \033[33m│\033[0m\n");
+   ::printf("  \033[33m╰─────────────────────────────────────────────────────────────────────────╯\033[0m\n");
+
+   ::printf("\
+  ┌────────┬───────────┬────────────────────────────────────────────────────┐\n\
+  │ Option │ Parameter │ Description                                        │\n\
+  ├────────┼───────────┼────────────────────────────────────────────────────┤\n\
+  │ -v     │           │ Verbose output                                     │\n\
+  ├────────┼───────────┼────────────────────────────────────────────────────┤\n\
+  │ -l     │   [asc]   │ List out suites and cases                          │\n\
+  ├────────┼───────────┼────────────────────┬───────────────────────────────┤\n\
+  │        │    [s]    │ Random suite order │ Run cases in random order,    │\n\
+  │ -r     ├───────────┼────────────────────┤ default both suite and case   │\n\
+  │        │    [c]    │ Random case order  │ random order                  │\n\
+  ├────────┼───────────┼────────────────────┴───────────────────────────────┤\n\
+  │ -b[n]  │    [n]    │ Breaking test once n (default 1) failures occurred │\n\
+  ├────────┼───────────┼────────────────────────────────────────────────────┤\n\
+  │ -c     │           │ Output in black-white color style                  │\n\
+  ├────────┼───────────┼────────────────────────────────────────────────────┤\n\
+  │ -m     │           │ Run cases without memory check                     │\n\
+  ├────────┼───────────┼────────────────────────────────────────────────────┤\n\
+  │ -d     │           │ Debug with gdb once failure occurred               │\n\
+  ├────────┼───────────┼────────────────────────────────────────────────────┤\n\
+  │ -j     │  [path]   │ Generate junit report, default path is junit.xml   │\n\
+  ├────────┼───────────┼────────────────┬───────────────────────────────────┤\n\
+  │ -i     │ patterns  │ include filter │ case, suite or file name          │\n\
+  ├────────┤ separated ├────────────────┤ case-insensitive matches patterns │\n\
+  │ -x     │ by space  │ exclude filter │ default include all, exclude none │\n\
+  └────────┴───────────┴────────────────┴───────────────────────────────────┘\n\
+\n");
 }
 
 struct getopt {
@@ -3171,16 +3032,15 @@ struct getopt {
       for (value = 0; ::isdigit(*p); p++) value = value * 10 + (*p - '0');
       return p - 1;
    }
-
    void args(char* s) {
       for (int i = 0; i < argc; ++i)
          s += sprintf(s, " %s", argv[i]);
    }
 };
 
-h2_inline void h2_option::parse(int argc_, const char** argv_) {
-   path = argv_[0];
-   getopt get(argc_ - 1, argv_ + 1);
+h2_inline void h2_option::parse(int argc, const char** argv) {
+   path = argv[0];
+   getopt get(argc - 1, argv + 1);
    get.args(args);
 
    for (const char* p; p = get.next();) {
@@ -3212,10 +3072,10 @@ h2_inline void h2_option::parse(int argc_, const char** argv_) {
             if ((t = get.extract())) strcpy(junit, t);
             break;
          case 'i':
-            while ((t = get.extract())) include_patterns.push_back(t);
+            while ((t = get.extract())) includes.push_back(t);
             break;
          case 'x':
-            while ((t = get.extract())) exclude_patterns.push_back(t);
+            while ((t = get.extract())) excludes.push_back(t);
             break;
          case '-': break;
          case 'h':
@@ -3230,38 +3090,24 @@ h2_inline void h2_option::parse(int argc_, const char** argv_) {
    }
 }
 
-h2_inline void h2_option::usage() {
-   printf("Usage:\n"
-          "-v                  Make the operation more talkative\n"
-          "-l [sca]            List out suites and cases\n"
-          "-b [n]              Breaking test once n (default is 1) failures occurred\n"
-          "-c                  Output in black-white color mode\n"
-          "-r [sca]            Run cases in random order\n"
-          "-m                  Run cases without memory check\n"
-          "-d/D                Debug mode, -D for gdb attach but sudo requires password\n"
-          "-j [path]           Generate junit report, default is .xml\n"
-          "-i {patterns}       Run cases which case name, suite name or file name matches\n"
-          "-x {patterns}       Run cases which case name, suite name and file name not matches\n");
-}
-
 static inline bool match3(const std::vector<const char*>& patterns, const char* subject) {
    for (auto pattern : patterns)
       if (strcspn(pattern, "?*+^$\\.[]") < strlen(pattern)) {
-         if (h2_regex_match(pattern, subject)) return true;
+         if (h2_regex_match(pattern, subject, true)) return true;
          if (strcspn(pattern, "+^$\\.[]") == strlen(pattern))
-            if (h2_wildcard_match(pattern, subject)) return true;
+            if (h2_wildcard_match(pattern, subject, true)) return true;
       } else {
-         if (strstr(subject, pattern)) return true;
+         if (strcasestr(subject, pattern)) return true;
       }
    return false;
 }
 
 h2_inline bool h2_option::filter(const char* suitename, const char* casename, const char* filename) const {
-   if (include_patterns.size())
-      if (!match3(include_patterns, suitename) && !match3(include_patterns, casename) && !match3(include_patterns, filename))
+   if (includes.size())
+      if (!match3(includes, suitename) && !match3(includes, casename) && !match3(includes, filename))
          return true;
-   if (exclude_patterns.size())
-      if (match3(exclude_patterns, suitename) || match3(exclude_patterns, casename) || match3(exclude_patterns, filename))
+   if (excludes.size())
+      if (match3(excludes, suitename) || match3(excludes, casename) || match3(excludes, filename))
          return true;
    return false;
 }
@@ -3273,186 +3119,109 @@ h2_inline const char* h2_option::style(const char* s) const {
    return h2_style(s, shift_buffer[++shift_index % 32]);
 }
 
-struct h2_stdio {
-   h2_singleton(h2_stdio);
+struct h2__stdio {
+   h2_singleton(h2__stdio);
+   h2_string buffer;
+   bool stdout_capturable, stderr_capturable;
 
-   char buffer[1024 * 1024];
-   char* p;
-   int offset, size;
-
-   // write, pwrite, writev
    static ssize_t write(int fd, const void* buf, size_t count) {
-      if (I().p && I().offset + count < I().size) {
-         memcpy(I().p + I().offset, buf, count);
-         I().offset += count;
-         I().p[I().offset] = '\0';
-      }
+      if (!((I().stdout_capturable && fd == fileno(stdout)) || (I().stderr_capturable && fd == fileno(stderr))))
+         return h2_libc::write(fd, buf, count);
+      I().buffer.append((char*)buf, count);
       return count;
    }
 
-   static int vprintf(const char* format, va_list ap) {
-      int ret = 0;
-      if (I().p) {
-         ret = vsnprintf(I().p + I().offset, I().size - I().offset, format, ap);
-         I().offset += ret;
-      }
+   static int vfprintf(FILE* stream, const char* format, va_list ap) {
+      va_list bp;
+      va_copy(bp, ap);
+      int len = vsnprintf(nullptr, 0, format, bp);
+      char* tmp = (char*)alloca(len + 1);
+      len = vsnprintf(tmp, len + 1, format, ap);
+      return write(fileno(stream), tmp, len);
+   }
+
+   static int fprintf(FILE* stream, const char* format, ...) {
+      va_list a;
+      va_start(a, format);
+      int ret = vfprintf(stream, format, a);
+      va_end(a);
       return ret;
+   }
+
+   static int fputc(int c, FILE* stream) {
+      unsigned char t = c;
+      int ret = write(fileno(stream), &t, 1);
+      return ret == 1 ? c : EOF;
+   }
+
+   static int fputs(const char* s, FILE* stream) {
+      return write(fileno(stream), s, strlen(s));
+   }
+
+   static size_t fwrite(const void* ptr, size_t size, size_t nitems, FILE* stream) {
+      return write(fileno(stream), ptr, size * nitems);
    }
 
    static int printf(const char* format, ...) {
       va_list a;
       va_start(a, format);
-      int ret = vprintf(format, a);
+      int ret = vfprintf(stdout, format, a);
       va_end(a);
       return ret;
    }
 
+   static int vprintf(const char* format, va_list ap) {
+      return vfprintf(stdout, format, ap);
+   }
+
    static int putchar(int c) {
-      if (I().p && I().offset + 1 < I().size) {
-         I().p[I().offset++] = c;
-         I().p[I().offset] = '\0';
-      }
+      unsigned char t = c;
+      write(fileno(stdout), &t, 1);
       return c;
    }
 
    static int puts(const char* s) {
-      int len = strlen(s);
-      if (I().p && I().offset + len < I().size) {
-         strcpy(I().p + I().offset, s);
-         I().offset += len;
-      }
+      write(fileno(stdout), s, strlen(s));
+      write(fileno(stdout), "\n", 1);
       return 1;
    }
 
-   static int fprintf(FILE* stream, const char* format, ...) {
-      if (stream != stdout && stream != stderr) {
-         va_list a, b;
-         va_start(a, format);
-         int len = vsnprintf(nullptr, 0, format, a);
-         va_end(a);
-         char* t = (char*)alloca(len + 1);
-         va_start(b, format);
-         len = vsnprintf(t, len + 1, format, b);
-         va_end(b);
-         return h2_libc::write(stream, t, len);
-      }
-
-      va_list a;
-      va_start(a, format);
-      int ret = vprintf(format, a);
-      va_end(a);
-      return ret;
-   }
-
-   static int vfprintf(FILE* stream, const char* format, va_list ap) {
-      if (stream != stdout && stream != stderr) {
-         va_list a, b;
-         va_copy(a, ap);
-         va_copy(b, ap);
-
-         int len = vsnprintf(nullptr, 0, format, a);
-         char* t = (char*)alloca(len + 1);
-         len = vsnprintf(t, len + 1, format, b);
-         return h2_libc::write(stream, t, len);
-      }
-
-      return vprintf(format, ap);
-   }
-
-   static int fputc(int c, FILE* stream) {
-      if (stream != stdout && stream != stderr) {
-         unsigned char t = c;
-         return 1 == h2_libc::write(stream, &t, 1) ? c : EOF;
-      }
-
-      return putchar(c);
-   }
-
-   static int fputs(const char* s, FILE* stream) {
-      if (stream != stdout && stream != stderr) {
-         return h2_libc::write(stream, s, strlen(s));
-      }
-
-      return puts(s);
-   }
-
-   static size_t fwrite(const void* ptr, size_t size, size_t nitems, FILE* stream) {
-      if (stream != stdout && stream != stderr) {
-         return h2_libc::write(stream, ptr, size * nitems);
-      }
-
-      size_t len = size * nitems;
-      if (I().p && I().offset + len < I().size) {
-         memcpy(I().p + I().offset, ptr, len);
-         I().offset += len;
-         I().p[I().offset] = '\0';
-      }
-      return len;
-   }
-
-   static const void start_capture(char* buffer, int size) {
+   static const char* start_capture(bool out, bool err) {
+      h2_stub_g((void*)::write, (void*)write, "", "", "", 0);
+#if defined __APPLE__
       h2_stub_g((void*)::printf, (void*)printf, "", "", "", 0);
+      h2_stub_g((void*)::vprintf, (void*)vprintf, "", "", "", 0);
       h2_stub_g((void*)::putchar, (void*)putchar, "", "", "", 0);
       h2_stub_g((void*)::puts, (void*)puts, "", "", "", 0);
-      h2_stub_g((void*)::vprintf, (void*)vprintf, "", "", "", 0);
-
       h2_stub_g((void*)::fprintf, (void*)fprintf, "", "", "", 0);
+      h2_stub_g((void*)::vfprintf, (void*)vfprintf, "", "", "", 0);
       h2_stub_g((void*)::fputc, (void*)fputc, "", "", "", 0);
       h2_stub_g((void*)::putc, (void*)fputc, "", "", "", 0);
       h2_stub_g((void*)::fputs, (void*)fputs, "", "", "", 0);
       h2_stub_g((void*)::fwrite, (void*)fwrite, "", "", "", 0);
-
-#if defined __APPLE__
-      h2_stub_g((void*)::vfprintf, (void*)vfprintf, "", "", "", 0);
 #endif
 
-      if (buffer) {
-         I().size = size;
-         I().p = buffer;
-      } else {
-         I().size = sizeof(I().buffer);
-         I().p = I().buffer;
-      }
-
-      I().offset = 0;
-      I().p[0] = '\0';
+      I().stdout_capturable = out;
+      I().stderr_capturable = err;
+      I().buffer.clear();
+      return I().buffer.c_str();
    }
 
    static const char* stop_capture() {
-      fflush(stdout);
-      fflush(stderr);
-      std::cout << std::flush;
+      I().stdout_capturable = false;
+      I().stderr_capturable = false;
 
-      char* buffer = I().p;
-      I().offset = 0;
-      I().size = 0;
-      I().p = nullptr;
-
-      h2_stub_g((void*)::printf, (void*)0, "", "", "", 0);
-      h2_stub_g((void*)::putchar, (void*)0, "", "", "", 0);
-      h2_stub_g((void*)::puts, (void*)0, "", "", "", 0);
-      h2_stub_g((void*)::vprintf, (void*)0, "", "", "", 0);
-
-      h2_stub_g((void*)::fprintf, (void*)0, "", "", "", 0);
-      h2_stub_g((void*)::fputc, (void*)0, "", "", "", 0);
-      h2_stub_g((void*)::putc, (void*)0, "", "", "", 0);
-      h2_stub_g((void*)::fputs, (void*)0, "", "", "", 0);
-      h2_stub_g((void*)::fwrite, (void*)0, "", "", "", 0);
-
-#if defined __APPLE__
-      h2_stub_g((void*)::vfprintf, (void*)0, "", "", "", 0);
-#endif
-
-      return buffer;
+      I().buffer.push_back('\0');
+      return I().buffer.c_str();
    }
 };
 
-h2_inline void h2_stdio_exporter::capture_cout(char* buffer, int size) {
-   h2_stdio::I().start_capture(buffer, size);
+h2_inline void h2_stdio::init() {
+   setbuf(stdout, 0);  // unbuffered. stderr is unbuffered default, stdout is line-buffered default
 }
-
-h2_inline const char* h2_stdio_exporter::capture_cout() {
-   return h2_stdio::I().stop_capture();
+h2_inline const char* h2_stdio::capture_cout(char* type) {
+   if (!type) return h2__stdio::I().stop_capture();
+   return h2__stdio::I().start_capture(!strlen(type) || strcasestr(type, "out"), !strlen(type) || strcasestr(type, "err"));
 }
 
 h2_inline bool h2_string::equals(h2_string __str, bool caseless) const {
@@ -3473,25 +3242,6 @@ h2_inline bool h2_string::startswith(h2_string __prefix, bool caseless) const {
 h2_inline bool h2_string::endswith(h2_string __suffix, bool caseless) const {
    if (!caseless) return rfind(__suffix) == length() - __suffix.length();
    return tolower(c_str()).rfind(tolower(__suffix)) == length() - __suffix.length();
-}
-
-h2_inline bool h2_string::wildcard_match(h2_string __pattern, bool caseless) const {
-   h2_wildcard_match(__pattern.c_str(), c_str());
-   if (!caseless) return h2_wildcard_match(__pattern.c_str(), c_str());
-   return h2_wildcard_match(tolower(__pattern).c_str(), tolower(c_str()).c_str());
-}
-
-h2_inline bool h2_string::regex_match(h2_string __pattern, bool caseless) const {
-   bool result = false;
-   try {
-      std::regex re1(__pattern.c_str());
-      std::regex re2(__pattern.c_str(), std::regex::icase);
-      result = std::regex_match(c_str(), caseless ? re2 : re1);
-   }
-   catch (const std::regex_error& e) {
-      result = false;
-   }
-   return result;
 }
 
 h2_inline h2_string& h2_string::tolower() {
@@ -3575,17 +3325,100 @@ struct h2_thunk {
    void* reset(void* befp) { return memcpy(befp, saved_code, sizeof(saved_code)); }
 };
 
-h2_inline h2_stub::h2_stub(void* befp_, const char* file_, int line_) : file(file_), line(line_) { befp = ((h2_thunk*)thunk)->save(befp_); }
-h2_inline void h2_stub::replace(void* tofp_) { tofp = tofp_, ((h2_thunk*)thunk)->set(befp, tofp); }
-h2_inline void h2_stub::restore() { befp && ((h2_thunk*)thunk)->reset(befp); }
+struct h2_native : h2_thunk {
+   h2_list x;
+   void* befp;
+   int refcount;
+   h2_native(void* befp_) : befp(befp_), refcount(0) { save(befp); }
+   void restore() { reset(befp); }
+};
+
+struct h2_natives {
+   h2_singleton(h2_natives);
+
+   h2_list s;
+   h2_native* get(void* befp) {
+      h2_list_for_each_entry(p, &s, h2_native, x) if (p->befp == befp) return p;
+      return nullptr;
+   }
+   void dec(void* befp) {
+      h2_native* p = get(befp);
+      if (!p) return;
+      if (--p->refcount == 0) {
+         p->x.out();
+         h2_libc::free(p);
+      }
+   }
+   void inc(void* befp) {
+      h2_native* p = get(befp);
+      if (!p) {
+         p = new (h2_libc::malloc(sizeof(h2_native))) h2_native(befp);
+         s.push(&p->x);
+      }
+      p->refcount++;
+   }
+};
+
+h2_inline h2_stub::h2_stub(void* befp_, const char* file_, int line_) : file(file_), line(line_) {
+   h2_natives::I().inc(befp_);
+   befp = ((h2_thunk*)thunk)->save(befp_);
+}
+h2_inline h2_stub::~h2_stub() {
+   h2_natives::I().dec(befp);
+}
+
+h2_inline void h2_stub::set(void* tofp_) { ((h2_thunk*)thunk)->set(befp, tofp = tofp_); }
+h2_inline void h2_stub::reset() { befp && ((h2_thunk*)thunk)->reset(befp); }
+h2_inline void h2_stub::restore() { h2_natives::I().get(befp)->restore(); }
+
+h2_inline bool h2_stubs::add(void* befp, void* tofp, const char* befn, const char* tofn, const char* file, int line) {
+   h2_stub* stub = nullptr;
+   h2_list_for_each_entry(p, &s, h2_stub, x) h2_if_find_break(p->befp == befp, p, stub);
+   if (!stub) {
+      stub = new h2_stub(befp, file, line);
+      s.push(&stub->x);
+   }
+   stub->set(tofp);
+   return true;
+}
+
+h2_inline void h2_stubs::clear() {
+   h2_list_for_each_entry(p, &s, h2_stub, x) {
+      p->reset();
+      p->x.out();
+      delete p;
+   }
+}
+
+h2_inline bool h2_mocks::add(h2_mock* mock) {
+   h2_list_for_each_entry(p, &s, h2_mock, x) if (p == mock) return false;
+   s.push(&mock->x);
+   return true;
+}
+
+h2_inline h2_fail* h2_mocks::clear() {
+   h2_fail* fail = nullptr;
+   h2_list_for_each_entry(p, &s, h2_mock, x) {
+      h2_fail::append_x(fail, p->times_check());
+      p->reset();
+      p->x.out();
+   }
+   return fail;
+}
 
 h2_inline h2_suite::h2_suite(const char* name_, void (*p)(h2_suite*, h2_case*), const char* file_, int line_)
   : name(name_), file(file_), line(line_), seq(0), status_stats{0}, jumpable(false), test_code_plus(p) {
    h2_directory::I().suites.push_back(this);
 }
 
+h2_inline void h2_suite::cleanup() {
+   stubs.clear();
+   mocks.clear();
+}
+
 h2_inline std::vector<h2_case*>& h2_suite::cases() {
-   if (enumerate) test_code_plus(this, nullptr); /* enumerate case by static local h2_case variable inside of h2_suite_test_code_plus() */
+   if (enumerate)
+      test_code_plus(this, nullptr); /* enumerate case by static local h2_case variable inside of h2_suite_test_code_plus() */
    return case_list;
 }
 
@@ -3595,28 +3428,38 @@ h2_inline void h2_suite::execute(h2_case* c) {
    c->post_cleanup();
 }
 
+inline h2_task::h2_task() : state(0), status_stats{0}, current_suite(nullptr), current_case(nullptr) {}
+
 inline void h2_task::prepare() {
+   state = 100;
+   h2_stdio::init();
    h2_heap::dosegv();
    if (O.listing) h2_directory::list_then_exit();
-
    logs.init();
    h2_directory::sort();
-
    h2_heap::stack::root();
    h2_heap::dohook();
+   h2_dns::setaddrinfo(1, "127.0.0.1");
+   state = 199;
 }
 
 inline void h2_task::postpare() {
+   state = 300;
    h2_heap::unhook();
+   stubs.clear();
    if (status_stats[h2_case::FAILED] == 0) h2_directory::drop_last_order();
+   state = 399;
 }
 
 inline void h2_task::execute() {
+   state = 200;
    logs.on_task_start(h2_directory::count());
    for (auto& setup : global_setups) setup();
    for (auto& s : h2_directory::I().suites) {
+      current_suite = s;
       logs.on_suite_start(s);
       for (auto& setup : global_suite_setups) setup();
+      s->setup();
       for (auto& c : s->cases()) {
          if (0 < O.breakable && O.breakable <= status_stats[h2_case::FAILED]) break;
          current_case = c;
@@ -3629,11 +3472,13 @@ inline void h2_task::execute() {
          status_stats[c->status] += 1;
          s->status_stats[c->status] += 1;
       }
+      s->cleanup();
       for (auto& teardown : global_suite_teardowns) teardown();
       logs.on_suite_endup(s);
    }
    for (auto& teardown : global_teardowns) teardown();
    logs.on_task_endup(status_stats);
+   state = 299;
 }
 }  // namespace h2
 

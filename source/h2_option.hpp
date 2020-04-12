@@ -11,25 +11,21 @@ struct h2_option {
 #endif
 
    const char* path;
-   char args[256];
    int verbose, listing, breakable, randomize;
    bool colorable, memory_check;
-   char *debug, junit[256];
-   std::vector<const char*> include_patterns, exclude_patterns;
+   char *debug, junit[256], args[256];
+   std::vector<const char*> includes, excludes;
 
    h2_option() : verbose(0), listing(0), breakable(0), randomize(0), colorable(true), memory_check(true), debug(nullptr), junit{0} {}
 
-   void parse(int argc_, const char** argv_);
+   void parse(int argc, const char** argv);
 
    int isLinux() const { return 1 == os; }
    int isMAC() const { return 2 == os; }
    int isWindows() const { return 3 == os; }
 
-   void usage();
    bool filter(const char* suitename, const char* casename, const char* filename) const;
    const char* style(const char* s) const;
 };
 
-static const h2_option& O = h2_option::I();
-
-static inline const char* S(const char* style) { return h2_option::I().style(style); }
+static const h2_option& O = h2_option::I(); // for pretty

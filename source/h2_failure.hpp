@@ -1,5 +1,5 @@
 
-struct h2_fail : h2_nohook {
+struct h2_fail : h2_libc {
    h2_fail *x_next, *y_next;
 
    const char* file;
@@ -9,9 +9,9 @@ struct h2_fail : h2_nohook {
    int argi;
 
    h2_string _k, _h, _m, _u;
+   int pad, w_type;  // 0 is MOCK; 1 is OK(condition); 2 is OK(expect, actual); 3 is JE
    h2_string e_expr, _e, a_expr, _a;
-   int w_type;  // 0 is MOCK; 1 is OK(condition); 2 is OK(expect, actual); 3 is JE
-
+   
    h2_fail(const char* file_, int line_, const char* func_ = nullptr, int argi_ = -1);
    virtual ~h2_fail();
 
@@ -31,27 +31,10 @@ struct h2_fail : h2_nohook {
    void print_locate();
    virtual void print();
    virtual void print(FILE* fp);
+
+   static void append_x(h2_fail*& fail, h2_fail* n);
+   static void append_y(h2_fail*& fail, h2_fail* n);
 };
-
-static inline void h2_append_x_fail(h2_fail*& fail, h2_fail* n) {
-   if (!fail) {
-      fail = n;
-   } else {
-      h2_fail** pp = &fail->x_next;
-      while (*pp) pp = &(*pp)->x_next;
-      *pp = n;
-   }
-}
-
-static inline void h2_append_y_fail(h2_fail*& fail, h2_fail* n) {
-   if (!fail) {
-      fail = n;
-   } else {
-      h2_fail** pp = &fail->y_next;
-      while (*pp) pp = &(*pp)->y_next;
-      *pp = n;
-   }
-}
 
 struct h2_fail_normal : h2_fail {
    h2_fail_normal(const char* file_ = nullptr, int line_ = 0, const char* func_ = nullptr, const char* format = "", ...);
@@ -72,7 +55,7 @@ struct h2_fail_strcmp : h2_fail_unexpect {
    const bool caseless;
    h2_fail_strcmp(const h2_string& expect_, const h2_string& actual_, bool caseless_, const char* file_ = nullptr, int line_ = 0);
    void print();
-   char* fmt_char(char c, bool eq);
+   char* fmt_char(char c, bool eq, const char* style, char* p);
 };
 
 struct h2_fail_json : h2_fail_unexpect {

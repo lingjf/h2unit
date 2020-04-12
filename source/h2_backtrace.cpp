@@ -104,7 +104,7 @@ h2_inline bool h2_backtrace::has(void* func, int size) const {
    return false;
 }
 
-h2_inline void h2_backtrace::print() const {
+h2_inline void h2_backtrace::print(int pad) const {
    h2_heap::unhook();
    char** backtraces = backtrace_symbols(array, count);
    for (int i = shift; i < count; ++i) {
@@ -123,9 +123,9 @@ h2_inline void h2_backtrace::print() const {
                if (strlen(addr2lined))
                   p = addr2lined;
       }
-      ::printf("   %d. %s\n", i - shift, p);
+      ::printf("%s%d. %s\n", PAD(pad), i - shift, p);
 
-      if (streq("main", mangled) || streq("main", demangled) || h2_nm::I().in_main(address + offset))
+      if (!strcmp("main", mangled) || !strcmp("main", demangled) || h2_nm::I().in_main(address + offset))
          break;
    }
    free(backtraces);

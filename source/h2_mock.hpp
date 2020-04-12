@@ -1,5 +1,5 @@
 
-struct h2_mock : h2_nohook {
+struct h2_mock : h2_libc {
    h2_list x;
    void *befp, *tofp;
    const char* befn;
@@ -16,13 +16,13 @@ struct h2_mock : h2_nohook {
 
    h2_fail* times_check() {
       h2_fail* fail = nullptr;
-      for (auto& c : c_array) h2_append_y_fail(fail, c.check());
+      for (auto& c : c_array) h2_fail::append_y(fail, c.check());
       if (fail) fail->locate(file, line, befn);
       return fail;
    }
 };
 
-static inline bool h2_mock_g(h2_mock*);
+static inline void h2_mock_g(h2_mock*);
 
 template <size_t I, typename T, typename... Args>
 struct __nth_type_impl {
@@ -47,7 +47,7 @@ struct h2_tuple_match {
       h2_fail* fail = h2_tuple_match<N - 1>::matches(matchers, args, file, line, func);
       h2_fail* f = std::get<N - 1>(matchers).matches(std::get<N - 1>(args));
       if (f) f->locate(file, line, func, N - 1);
-      h2_append_x_fail(fail, f);
+      h2_fail::append_x(fail, f);
       return fail;
    }
 };
@@ -135,99 +135,104 @@ class h2_mocker<Counter, Lineno, Class, Return(Args...)> : h2_mock {
 
    void reset() override { c_array.clear(), m_array.clear(), r_array.clear(), c_index = 0; }
 
-   h2_mocker& register_and_return_reference() {
-      if (!h2_mock_g(this)) reset();
-      return *this;
-   }
-
  public:
    static h2_mocker& I(void* befp = nullptr, const char* befn = nullptr, const char* file = nullptr, int line = 0) {
-      static h2_mocker* I = nullptr;
-      if (!I) I = new h2_mocker(befp, befn, file, line);
-      return I->register_and_return_reference();
+      static h2_mocker* i = nullptr;
+      if (!i) i = new h2_mocker(befp, befn, file, line);
+      if (befp && file) {
+         i->reset();
+         h2_mock_g(i);
+      }
+      return *i;
    }
 
    h2_mocker& once(MATCHER_Any_0_1_2_3_4_5_6_7_8_9) {
       c_array.push_back(h2_callexp(1, 1));
       m_array.push_back(std::forward_as_tuple(_0, _1, _2, _3, _4, _5, _6, _7, _8, _9));
       r_array.push_back(h2_routine<Class, Return(Args...)>());
-      return register_and_return_reference();
+      return *this;
    }
 
    h2_mocker& twice(MATCHER_Any_0_1_2_3_4_5_6_7_8_9) {
       c_array.push_back(h2_callexp(2, 2));
       m_array.push_back(std::forward_as_tuple(_0, _1, _2, _3, _4, _5, _6, _7, _8, _9));
       r_array.push_back(h2_routine<Class, Return(Args...)>());
-      return register_and_return_reference();
+      return *this;
    }
 
    h2_mocker& times(int count) {
       c_array.push_back(h2_callexp(count, count));
       m_array.push_back(matcher_tuple());
       r_array.push_back(h2_routine<Class, Return(Args...)>());
-      return register_and_return_reference();
+      return *this;
    }
 
    h2_mocker& any(MATCHER_Any_0_1_2_3_4_5_6_7_8_9) {
       c_array.push_back(h2_callexp(0, INT_MAX));
       m_array.push_back(std::forward_as_tuple(_0, _1, _2, _3, _4, _5, _6, _7, _8, _9));
       r_array.push_back(h2_routine<Class, Return(Args...)>());
-      return register_and_return_reference();
+      return *this;
    }
 
    h2_mocker& atleast(int count) {
       c_array.push_back(h2_callexp(count, INT_MAX));
       m_array.push_back(matcher_tuple());
       r_array.push_back(h2_routine<Class, Return(Args...)>());
-      return register_and_return_reference();
+      return *this;
    }
 
    h2_mocker& atmost(int count) {
       c_array.push_back(h2_callexp(0, count));
       m_array.push_back(matcher_tuple());
       r_array.push_back(h2_routine<Class, Return(Args...)>());
-      return register_and_return_reference();
+      return *this;
    }
 
    h2_mocker& between(int left, int right) {
       c_array.push_back(h2_callexp(left, right));
       m_array.push_back(matcher_tuple());
       r_array.push_back(h2_routine<Class, Return(Args...)>());
-      return register_and_return_reference();
+      return *this;
    }
 
    h2_mocker& with(MATCHER_Any_0_1_2_3_4_5_6_7_8_9) {
       if (!m_array.empty()) m_array.back() = std::forward_as_tuple(_0, _1, _2, _3, _4, _5, _6, _7, _8, _9);
-      return register_and_return_reference();
+      return *this;
    }
 
    /* clang-format off */
-   h2_mocker& th1(h2_matcher<h2_nth_decay<0, Args...>> e = Any) { if (!m_array.empty()) std::get<0>(m_array.back()) = e; return register_and_return_reference(); }
-   h2_mocker& th2(h2_matcher<h2_nth_decay<1, Args...>> e = Any) { if (!m_array.empty()) std::get<1>(m_array.back()) = e; return register_and_return_reference(); }
-   h2_mocker& th3(h2_matcher<h2_nth_decay<2, Args...>> e = Any) { if (!m_array.empty()) std::get<2>(m_array.back()) = e; return register_and_return_reference(); }
-   h2_mocker& th4(h2_matcher<h2_nth_decay<3, Args...>> e = Any) { if (!m_array.empty()) std::get<3>(m_array.back()) = e; return register_and_return_reference(); }
-   h2_mocker& th5(h2_matcher<h2_nth_decay<4, Args...>> e = Any) { if (!m_array.empty()) std::get<4>(m_array.back()) = e; return register_and_return_reference(); }
-   h2_mocker& th6(h2_matcher<h2_nth_decay<5, Args...>> e = Any) { if (!m_array.empty()) std::get<5>(m_array.back()) = e; return register_and_return_reference(); }
-   h2_mocker& th7(h2_matcher<h2_nth_decay<6, Args...>> e = Any) { if (!m_array.empty()) std::get<6>(m_array.back()) = e; return register_and_return_reference(); }
-   h2_mocker& th8(h2_matcher<h2_nth_decay<7, Args...>> e = Any) { if (!m_array.empty()) std::get<7>(m_array.back()) = e; return register_and_return_reference(); }
-   h2_mocker& th9(h2_matcher<h2_nth_decay<8, Args...>> e = Any) { if (!m_array.empty()) std::get<8>(m_array.back()) = e; return register_and_return_reference(); }
+   h2_mocker& th1(h2_matcher<h2_nth_decay<0, Args...>> e = Any) { if (!m_array.empty()) std::get<0>(m_array.back()) = e; return *this; }
+   h2_mocker& th2(h2_matcher<h2_nth_decay<1, Args...>> e = Any) { if (!m_array.empty()) std::get<1>(m_array.back()) = e; return *this; }
+   h2_mocker& th3(h2_matcher<h2_nth_decay<2, Args...>> e = Any) { if (!m_array.empty()) std::get<2>(m_array.back()) = e; return *this; }
+   h2_mocker& th4(h2_matcher<h2_nth_decay<3, Args...>> e = Any) { if (!m_array.empty()) std::get<3>(m_array.back()) = e; return *this; }
+   h2_mocker& th5(h2_matcher<h2_nth_decay<4, Args...>> e = Any) { if (!m_array.empty()) std::get<4>(m_array.back()) = e; return *this; }
+   h2_mocker& th6(h2_matcher<h2_nth_decay<5, Args...>> e = Any) { if (!m_array.empty()) std::get<5>(m_array.back()) = e; return *this; }
+   h2_mocker& th7(h2_matcher<h2_nth_decay<6, Args...>> e = Any) { if (!m_array.empty()) std::get<6>(m_array.back()) = e; return *this; }
+   h2_mocker& th8(h2_matcher<h2_nth_decay<7, Args...>> e = Any) { if (!m_array.empty()) std::get<7>(m_array.back()) = e; return *this; }
+   h2_mocker& th9(h2_matcher<h2_nth_decay<8, Args...>> e = Any) { if (!m_array.empty()) std::get<8>(m_array.back()) = e; return *this; }
    /* clang-format on */
 
    h2_mocker& returns(h2_routine<Class, Return(Args...)> r) {
       if (!r_array.empty()) r_array.back() = r;
-      return register_and_return_reference();
+      return *this;
    }
 
    h2_mocker& does(std::function<Return(Args...)> f) {
       if (!r_array.empty()) r_array.back() = h2_routine<Class, Return(Args...)>(f);
-      return register_and_return_reference();
+      return *this;
    }
 
    h2_mocker& does(std::function<Return(Class*, Args...)> f) {
       if (!r_array.empty()) r_array.back() = h2_routine<Class, Return(Args...)>(f);
-      return register_and_return_reference();
+      return *this;
    }
 
    h2_mocker& operator=(std::function<Return(Args...)> f) { return does(f); }
    h2_mocker& operator=(std::function<Return(Class*, Args...)> f) { return does(f); }
+};
+
+struct h2_mocks {
+   h2_list s;
+   bool add(h2_mock* mock);
+   h2_fail* clear();
 };

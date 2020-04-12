@@ -1,5 +1,3 @@
-#ifndef ___H2UNIT_H___
-#define ___H2UNIT_H___
 
 #include <cstdio>      /* printf */
 #include <cstdlib>     /* malloc */
@@ -27,15 +25,14 @@
 #   pragma GCC diagnostic ignored "-Wsign-compare"
 #   pragma GCC diagnostic ignored "-Wwrite-strings"
 #elif defined __clang__
+#   pragma clang diagnostic ignored "-Wdeprecated-declarations"
 #   pragma clang diagnostic ignored "-Wint-to-pointer-cast"
 #   pragma clang diagnostic ignored "-Wparentheses"
 #   pragma clang diagnostic ignored "-Wsign-compare"
 #   pragma clang diagnostic ignored "-Wwritable-strings"
 #endif
 
-#if defined H2_1FILE
-#   define h2_inline inline
-#elif defined H2_2FILES
+#if defined ___H2UNIT_HPP___
 #   define h2_inline
 #else
 #   define h2_inline inline
@@ -43,7 +40,7 @@
 
 namespace h2 {
 #include "h2_pp.hpp"
-#include "h2_tool.hpp"
+#include "h2_kit.hpp"
 #include "h2_list.hpp"
 #include "h2_option.hpp"
 #include "h2_libc.hpp"
@@ -63,7 +60,8 @@ namespace h2 {
 #include "h2_routine.hpp"
 #include "h2_mock.hpp"
 #include "h2_stdio.hpp"
-#include "h2_network.hpp"
+#include "h2_dns.hpp"
+#include "h2_socket.hpp"
 #include "h2_case.hpp"
 #include "h2_suite.hpp"
 #include "h2_log.hpp"
@@ -101,8 +99,6 @@ namespace h2 {
 #define BLOCK(...) H2BLOCK(__VA_ARGS__)
 #define DNS(...) H2DNS(__VA_ARGS__)
 #define SOCK(...) H2SOCK(__VA_ARGS__)
-#define UDP(...) H2UDP(__VA_ARGS__)
-#define TCP(...) H2TCP(__VA_ARGS__)
 #define COUT(...) H2COUT(__VA_ARGS__)
 
 #define MATCHER(...) H2MATCHER(__VA_ARGS__)
@@ -277,29 +273,20 @@ using h2::ListOf;
 // #define H2BLOCK(...) for (h2::h2_heap::stack::block Qb(__FILE__, __LINE__, ##__VA_ARGS__); Qb;)
 // #define H2BLOCK(...) for (h2::h2_heap::stack::block Qb(__FILE__, __LINE__, __VA_OPT__(,) __VA_ARGS__); Qb;)
 
-#define H2DNS(...) h2::h2_network_exporter::setaddrinfo(H2PP_NARG(__VA_ARGS__), __VA_ARGS__)
+#define H2DNS(...) h2::h2_dns::setaddrinfo(H2PP_NARG(__VA_ARGS__), __VA_ARGS__)
 
-#define H2SOCK() h2::h2_network_exporter::sock_start_and_fetch()
+#define __H2SOCK0() h2::h2_socket::start_and_fetch()
+#define __H2SOCK2(packet, size) h2::h2_socket::inject_received(packet, size, nullptr, "*");
+#define __H2SOCK3(packet, size, from) h2::h2_socket::inject_received(packet, size, from, "*");
+#define __H2SOCK4(packet, size, from, to) h2::h2_socket::inject_received(packet, size, from, to);
+#define H2SOCK(...) H2PP_VARIADIC_CALL(__H2SOCK, __VA_ARGS__)
 
-#define __H2UDP2(packet, size) h2::h2_network_exporter::udp_inject_received(packet, size, nullptr, "*");
-#define __H2UDP3(packet, size, from) h2::h2_network_exporter::udp_inject_received(packet, size, from, "*");
-#define __H2UDP4(packet, size, from, to) h2::h2_network_exporter::udp_inject_received(packet, size, from, to);
-#define H2UDP(...) H2PP_VARIADIC_CALL(__H2UDP, __VA_ARGS__)
-
-#define __H2TCP2(packet, size) h2::h2_network_exporter::tcp_inject_received(packet, size, nullptr, "*");
-#define __H2TCP3(packet, size, from) h2::h2_network_exporter::tcp_inject_received(packet, size, from, "*");
-#define __H2TCP4(packet, size, from, to) h2::h2_network_exporter::tcp_inject_received(packet, size, from, to);
-#define H2TCP(...) H2PP_VARIADIC_CALL(__H2TCP, __VA_ARGS__)
-
-#define H2COUT(...) h2::h2_stdio_exporter::capture_cout(__VA_ARGS__)
+#define H2COUT(...) h2::h2_stdio::capture_cout(__VA_ARGS__)
 
 #define h2_main(argc, argv)                 \
    do {                                     \
       h2::h2_option::I().parse(argc, argv); \
       h2::h2_task::I().prepare();           \
-      DNS("127.0.0.1");                     \
       h2::h2_task::I().execute();           \
       h2::h2_task::I().postpare();          \
    } while (0)
-
-#endif

@@ -9,29 +9,19 @@ struct h2_case {
    int line;
    long long seq;
    int status;
-   h2_list stubs, mocks, dnss;
-   h2_sock* sock;
    jmp_buf jump;
    h2_fail* fails;
+   h2_stubs stubs;
+   h2_mocks mocks;
+   h2_dnses dnses;
+   h2_sock* sock;
 
    h2_case(const char* name_, int todo, const char* file_, int line_);
 
    void prev_setup();
-   void post_setup();
-   void prev_cleanup();
+   void post_setup() {}
+   void prev_cleanup() {}
    void post_cleanup();
-
-   void do_stub(void* befp, void* tofp, const char* befn, const char* tofn, const char* file, int line);
-   void undo_stub();
-
-   bool do_mock(h2_mock* mock);
-   h2_fail* undo_mock();
-
-   void do_dns(h2_dns* dns);
-   void undo_dns();
-
-   h2_sock* do_sock(h2_sock* sock);
-   void undo_sock();
 
    void do_fail(h2_fail* fail);
 

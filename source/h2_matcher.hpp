@@ -21,7 +21,7 @@ template <typename T>
 struct h2_matcher : h2_matcher_base<T> {
    h2_matcher() {}
    explicit h2_matcher(const h2_matcher_impl<const T&>* impl, const int placeholder) : h2_matcher_base<T>(impl, placeholder) {}
-   h2_matcher(T value);
+   h2_matcher(T value); // Converting constructor 转换构造函数
 };
 
 template <>
@@ -57,7 +57,7 @@ struct h2_polymorphic_matcher {
    operator h2_matcher<T>() const { return h2_matcher<T>(new internal_impl<const T&>(m), 0); }
 
    template <typename T>
-   struct internal_impl : h2_matcher_impl<T>, h2_nohook {
+   struct internal_impl : h2_matcher_impl<T>, h2_libc {
       const Matches m;
       explicit internal_impl(const Matches& matches_) : m(matches_) {}
       h2_fail* matches(T a, bool caseless = false, bool dont = false) const override { return m.matches(a, caseless, dont); }
@@ -175,7 +175,7 @@ template <typename T, typename U>
 struct h2_matcher_cast_impl<T, h2_matcher<U>> {
    static h2_matcher<T> cast(const h2_matcher<U>& from) { return h2_matcher<T>(new internal_impl(from)); }
 
-   struct internal_impl : h2_matcher_impl<T>, h2_nohook {
+   struct internal_impl : h2_matcher_impl<T>, h2_libc {
       explicit internal_impl(const h2_matcher<U>& from_) : from(from_) {}
 
       // Delegate the matching logic to the source h2_matcher.
@@ -220,8 +220,8 @@ struct h2_and_matches {
    template <typename A>
    h2_fail* matches(const A& a, bool caseless = false, bool dont = false) const {
       h2_fail* fail = nullptr;
-      h2_append_y_fail(fail, h2_matcher_cast<A>(m1).matches(a, caseless, false));
-      h2_append_y_fail(fail, h2_matcher_cast<A>(m2).matches(a, caseless, false));
+      h2_fail::append_y(fail, h2_matcher_cast<A>(m1).matches(a, caseless, false));
+      h2_fail::append_y(fail, h2_matcher_cast<A>(m2).matches(a, caseless, false));
       if (!fail == !dont) return nullptr;
       if (dont) {
          fail = new h2_fail_unexpect();
@@ -438,7 +438,7 @@ struct h2_allof_matches {
       for (int i = 0; i < v_matchers.size(); ++i) {
          h2_fail* f = v_matchers[i].matches(a, caseless, false);
          if (f) f->kprintf(" %d. ", i);
-         h2_append_y_fail(fails, f);
+         h2_fail::append_y(fails, f);
       }
 
       if (!fails == !dont) return nullptr;
@@ -448,7 +448,7 @@ struct h2_allof_matches {
          fail->mprintf("should not matches all of matchers");
       else {
          fail->mprintf("should matches all of matchers");
-         h2_append_x_fail(fail, fails);
+         h2_fail::append_x(fail, fails);
       }
       return fail;
    }
@@ -472,7 +472,7 @@ struct h2_anyof_matches {
          h2_fail* f = v_matchers[i].matches(a, caseless, false);
          if (!f) s++;
          if (f) f->kprintf(" %d. ", i);
-         h2_append_y_fail(fails, f);
+         h2_fail::append_y(fails, f);
       }
 
       if ((0 < s) == !dont) return nullptr;
@@ -482,7 +482,7 @@ struct h2_anyof_matches {
          fail->mprintf("should not matches any of matchers");
       else {
          fail->mprintf("not matches any of matchers");
-         h2_append_x_fail(fail, fails);
+         h2_fail::append_x(fail, fails);
       }
       return fail;
    }
@@ -531,7 +531,7 @@ struct h2_listof_matches {
 
       h2_fail* fail = nullptr;
       for (int i = 0; i < v_matchers.size(); ++i)
-         h2_append_y_fail(fail, v_matchers[i].matches(a[i], caseless, dont));
+         h2_fail::append_y(fail, v_matchers[i].matches(a[i], caseless, dont));
 
       return fail;
    }
