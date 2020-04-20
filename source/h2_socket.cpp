@@ -1,12 +1,11 @@
 
-struct h2__inet {
-   h2_singleton(h2__inet);
+struct h2__socket {
+   h2_singleton(h2__socket);
    h2_list socks;
 
    static void iport_parse(const char* str, struct sockaddr_in* addr) {
       char temp[1024];
       strcpy(temp, str);
-
       addr->sin_family = AF_INET;
       addr->sin_port = 0;
       char* colon = strchr(temp, ':');
@@ -131,14 +130,14 @@ struct h2__inet {
 };
 
 h2_inline h2_sock::h2_sock() {
-   stubs.add((void*)::sendto, (void*)h2__inet::sendto, "", "", __FILE__, __LINE__);
-   stubs.add((void*)::recvfrom, (void*)h2__inet::recvfrom, "", "", __FILE__, __LINE__);
-   stubs.add((void*)::sendmsg, (void*)h2__inet::sendmsg, "", "", __FILE__, __LINE__);
-   stubs.add((void*)::recvmsg, (void*)h2__inet::recvmsg, "", "", __FILE__, __LINE__);
-   stubs.add((void*)::send, (void*)h2__inet::send, "", "", __FILE__, __LINE__);
-   stubs.add((void*)::recv, (void*)h2__inet::recv, "", "", __FILE__, __LINE__);
-   stubs.add((void*)::accept, (void*)h2__inet::accept, "", "", __FILE__, __LINE__);
-   stubs.add((void*)::connect, (void*)h2__inet::connect, "", "", __FILE__, __LINE__);
+   stubs.add((void*)::sendto, (void*)h2__socket::sendto);
+   stubs.add((void*)::recvfrom, (void*)h2__socket::recvfrom);
+   stubs.add((void*)::sendmsg, (void*)h2__socket::sendmsg);
+   stubs.add((void*)::recvmsg, (void*)h2__socket::recvmsg);
+   stubs.add((void*)::send, (void*)h2__socket::send);
+   stubs.add((void*)::recv, (void*)h2__socket::recv);
+   stubs.add((void*)::accept, (void*)h2__socket::accept);
+   stubs.add((void*)::connect, (void*)h2__socket::connect);
    strcpy(last_to, "0.0.0.0:0");
 }
 
@@ -167,19 +166,19 @@ h2_inline void h2_sock::put_incoming(const char* from, const char* to, const cha
    incoming.push_back(&(new h2_packet(from ? from : last_to, to, data, size))->x);
 }
 
-h2_inline h2_packet* h2_inet::start_and_fetch() {
+h2_inline h2_packet* h2_socket::start_and_fetch() {
    if (!h2_task::I().current_case) return nullptr;
 
    h2_sock* sock = h2_task::I().current_case->sock;
    if (!sock) {
       sock = h2_task::I().current_case->sock = new h2_sock();
-      h2__inet::I().socks.push(&sock->y);
+      h2__socket::I().socks.push(&sock->y);
    }
 
    return h2_list_pop_entry(&sock->outgoing, h2_packet, x);
 }
 
-h2_inline void h2_inet::inject_received(const void* packet, size_t size, const char* from, const char* to) {
-   h2_sock* sock = h2_list_top_entry(&h2__inet::I().socks, h2_sock, y);
+h2_inline void h2_socket::inject_received(const void* packet, size_t size, const char* from, const char* to) {
+   h2_sock* sock = h2_list_top_entry(&h2__socket::I().socks, h2_sock, y);
    if (sock) sock->put_incoming(from, to, (const char*)packet, size);
 }

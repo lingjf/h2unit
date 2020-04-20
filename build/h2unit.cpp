@@ -1,8 +1,7 @@
 /* v5.2  2020-04-21 00:10:45 */
 /* https://github.com/lingjf/h2unit */
 /* Apache Licence 2.0 */
-#ifndef __H2UNIT_H__
-#define __H2UNIT_H__
+#define __H2UNIT_HPP__
 #define H2UNIT_VERSION "5.2"
 #ifndef ___H2UNIT_H___
 #define ___H2UNIT_H___
@@ -6028,4 +6027,3 @@ h2_weak_attribute int main(int argc, const char** argv) {
    h2::h2_task::I().execute();
    return h2::h2_task::I().finalize();
 }
-#endif

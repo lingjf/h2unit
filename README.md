@@ -8,8 +8,7 @@ The special features is :
 Only need to include *1* *ONE* *一* *いち* source file: [**h2unit.h**](h2unit.h) 
 
 **h2unit.h** contains [`main()`](source/h2_unit.h#L283) function, and `main()` will execute test cases.
-
-user no need to write main() anymore, with the help of weak attribute, user can write own main(), then call `h2_main`(argc, argc) in user main().
+user no need to write main() anymore.
 
 ### 2. Dynamic STUB/MOCK
 
@@ -311,6 +310,9 @@ STUB formula:
    }
 ```
 
+clang >= version 11, default make code section (__TEXT) max protect (maxprot) `rx`, mprotect() in STUB fails.
+To fix it, add `-Wl,-segprot,__TEXT,rwx,rwx` in link(ld) option to make maxprot `rwx`. 
+
 ### 5. Dynamic MOCK
 Compare to Dynamic STUB, Dynamic Mock provide a easy way to check call times, input arguments and inject return value.
 
@@ -531,19 +533,21 @@ CASE(test net)
 }
 ```
 
-### 11. Capture STDOUT/STDERR
-[`COUT`](source/h2_unit.h#L96)(): Capture STDOUT and STDERR output (printf(), std::cout<<, ...).
-*    `COUT`(NULL): Start Capture with built-in buffer.
-*    `COUT`(buffer): Start Capture with user buffer.
+### 11. Capture STDOUT/STDERR/syslog
+[`COUT`](source/h2_unit.h#L96)(): Capture STDOUT STDERR and syslog output (printf(), std::cout<<, ...).
+*    `COUT`(""): Start Capture STDOUT and STDERR.
+*    `COUT`("stdout stderr syslog"): Start Capture STDOUT STDERR and syslog.
+*    `COUT`("STDOUT"): Start Capture STDOUT only.
+*    `COUT`("STDerr"): Start Capture STDERR only.
 *    `COUT`(): Stop Capture, and return buffer captured.
 
 ```C++
 CASE(test printf)
 {
-   COUT(NULL); // Start Capture
+   COUT(""); // Start Capture
    printf("...");
    std::cout << ...;
-   OK("...", COUT()); // Stop Capture and return captured text
+   OK("...", COUT()); // Stop Capture and return captured string
 }
 ```
 
@@ -614,6 +618,6 @@ SUITE(suite)
 
 # Limitations
 *    C++11 is required
-*    GCC 5.0+
-*    STUB/MOCK not works with xcode 11.13 toolchain.
-*    Variadic parameter function can't MOCK, use STUB with separate fake function instead
+*    GCC 5.5+ (regex support, SFINAE support)
+*    Variadic parameter function can't MOCK, use STUB with separate fake function instead.
+*    sqrt() in math.h can be STUB/MOCK, because compiler insert sqrtsd ASM instruction directly instead of function call.

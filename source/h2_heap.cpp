@@ -79,7 +79,10 @@ struct h2_block : h2_libc {
          fail = new h2_fail_memleak(file, line, where);
          h2_list_for_each_entry(p, &using_list, h2_piece, x) fail->add(p->ptr, p->size, p->bt);
       }
-      h2_list_for_each_entry(p, &freed_list, h2_piece, x) h2_out_delete(p);
+      h2_list_for_each_entry(p, &freed_list, h2_piece, x) {
+         p->x.out();
+         delete p;
+      }
       return fail;
    }
 
@@ -127,15 +130,13 @@ struct h2_stack {
       static struct {
          void* base;
          int size;
-      } exclude_functions[] = {
-        {(void*)printf, 300},
-        {(void*)sprintf, 300},
-        {(void*)vsnprintf, 300},
-        {(void*)fprintf, 300},
-        {(void*)sscanf, 300},
-        {(void*)localtime, 300}};
+      } escape_functions[] = {
+        {(void*)sprintf, 300},  // {(void*)vsnprintf, 300}, {(void*)sscanf, 300},
+        {(void*)localtime, 300},
+        {(void*)tzset, 300},
+      };
 
-      for (auto& x : exclude_functions)
+      for (auto& x : escape_functions)
          if (bt.has(x.base, x.size))
             return true;
 
@@ -161,18 +162,27 @@ struct h2_stack {
    }
 
    h2_piece* get_piece(const void* ptr) {
-      h2_list_for_each_entry(p, &blocks, h2_block, x) h2_if_return(p->get_piece(ptr), );
+      h2_list_for_each_entry(p, &blocks, h2_block, x) {
+         h2_piece* piece = p->get_piece(ptr);
+         if (piece) return piece;
+      }
       return nullptr;
    }
 
    h2_fail* rel_piece(void* ptr) {
-      h2_list_for_each_entry(p, &blocks, h2_block, x) h2_if_return(p->get_piece(ptr), p->rel_piece);
+      h2_list_for_each_entry(p, &blocks, h2_block, x) {
+         h2_piece* piece = p->get_piece(ptr);
+         if (piece) return p->rel_piece(piece);
+      }
       h2_debug("Warning: free not found!");
       return nullptr;
    }
 
    h2_piece* host_piece(const void* addr) {
-      h2_list_for_each_entry(p, &blocks, h2_block, x) h2_if_return(p->host_piece(addr), );
+      h2_list_for_each_entry(p, &blocks, h2_block, x) {
+         h2_piece* piece = p->host_piece(addr);
+         if (piece) return piece;
+      }
       return nullptr;
    }
 };
@@ -344,10 +354,10 @@ struct h2_hook {
       malloc_zone_unregister(default_zone);
       malloc_zone_register(default_zone);
 #else
-      stubs.add((void*)::free, (void*)hook::free, "", "", __FILE__, __LINE__);
-      stubs.add((void*)::malloc, (void*)hook::malloc, "", "", __FILE__, __LINE__);
-      stubs.add((void*)::realloc, (void*)hook::realloc, "", "", __FILE__, __LINE__);
-      stubs.add((void*)::posix_memalign, (void*)hook::posix_memalign, "", "", __FILE__, __LINE__);
+      stubs.add((void*)::free, (void*)hook::free);
+      stubs.add((void*)::malloc, (void*)hook::malloc);
+      stubs.add((void*)::realloc, (void*)hook::realloc);
+      stubs.add((void*)::posix_memalign, (void*)hook::posix_memalign);
 #endif
    }
 
@@ -371,7 +381,7 @@ struct h2_hook {
       exit(1);
    }
 
-   void dosegv() {
+   void install_segment_fault_handler() {
       struct sigaction act;
       act.sa_sigaction = segment_fault_handler;
       act.sa_flags = SA_SIGINFO;
@@ -381,8 +391,9 @@ struct h2_hook {
    }
 };
 
-h2_inline void h2_heap::dosegv() {
-   if (O.memory_check && !O.debug) h2_hook::I().dosegv();
+h2_inline void h2_heap::initialize() {
+   if (O.memory_check && !O.debug) h2_hook::I().install_segment_fault_handler();
+   stack::root();
 }
 h2_inline void h2_heap::dohook() {
    if (O.memory_check) h2_hook::I().dohook();

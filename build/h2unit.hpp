@@ -1,9 +1,11 @@
-/* v5.0  2020-04-09 01:03:35 */
+/* v5.2  2020-04-21 00:10:45 */
 /* https://github.com/lingjf/h2unit */
 /* Apache Licence 2.0 */
-#ifndef ___H2UNIT_HPP___
-#define ___H2UNIT_HPP___
-#define H2UNIT_VERSION "5.0"
+#ifndef __H2UNIT_HPP__
+#define __H2UNIT_HPP__
+#define H2UNIT_VERSION "5.2"
+#ifndef ___H2UNIT_H___
+#define ___H2UNIT_H___
 
 #include <cstdio>      /* printf */
 #include <cstdlib>     /* malloc */
@@ -29,22 +31,24 @@
 #   pragma GCC diagnostic ignored "-Wint-to-pointer-cast"
 #   pragma GCC diagnostic ignored "-Wparentheses"
 #   pragma GCC diagnostic ignored "-Wsign-compare"
+#   pragma GCC diagnostic ignored "-Wunused-function"
 #   pragma GCC diagnostic ignored "-Wwrite-strings"
 #elif defined __clang__
+#   pragma clang diagnostic ignored "-Wdeprecated-declarations"
 #   pragma clang diagnostic ignored "-Wint-to-pointer-cast"
 #   pragma clang diagnostic ignored "-Wparentheses"
 #   pragma clang diagnostic ignored "-Wsign-compare"
+#   pragma clang diagnostic ignored "-Wunused-function"
 #   pragma clang diagnostic ignored "-Wwritable-strings"
 #endif
 
-#if defined ___H2UNIT_HPP___
+#if defined __H2UNIT_HPP__
 #   define h2_inline
 #else
 #   define h2_inline inline
 #endif
 
 namespace h2 {
-/* https://www.boost.org/doc/libs/1_65_0/libs/preprocessor/doc/index.html */
 
 #define H2PP__CAT2(_1, _2) _1##_2
 #define H2PP_CAT2(_1, _2) H2PP__CAT2(_1, _2)
@@ -152,9 +156,7 @@ namespace h2 {
 #define _H2PP_LAST__1(...) __VA_ARGS__ // only 1 argument
 #define _H2PP_LAST_I() _H2PP_LAST_
 
-/* clang-format on */
-
-#define H2Q(_Prefix) H2PP_CAT5(_Prefix, _L, __LINE__, C, __COUNTER__)
+#define H2Q(_Prefix) H2PP_CAT5(_Prefix, _C, __COUNTER__, L, __LINE__)
 
 template <typename U, typename = void>
 struct h2_decay_impl {
@@ -188,11 +190,7 @@ struct h2_with {
 };
 
 /* clang-format off */
-
 #define h2_singleton(_Class) static _Class& I() { static _Class i; return i; }
-#define h2_if_return(x, y) do { auto t__ = x; if (t__) return y(t__); } while (0)
-#define h2_if_find_break(_Cond, p, found) if (_Cond) { found = p; break; }
-#define h2_out_delete(p) do { p->x.out(); delete p; } while (0)
 
 #define h2_list_entry(ptr, type, link) ((type*)((char*)(ptr) - (char*)(&(((type*)(1))->link)) + 1))
 #define h2_list_for_each_entry(p, head, type, link) for (type* p = h2_list_entry((head)->next, type, link), *t = h2_list_entry(p->link.next, type, link); &p->link != (head); p = t, t = h2_list_entry(t->link.next, type, link))
@@ -270,8 +268,7 @@ static const h2_option& O = h2_option::I(); // for pretty
 struct h2_libc {
    static void* malloc(size_t sz);
    static void free(void* ptr);
-   static int write(FILE* stream, const void* buf, size_t nbyte);
-
+   static ssize_t write(int fd, const void* buf, size_t count);
    static void* operator new(std::size_t sz) { return malloc(sz); }
    static void operator delete(void* ptr) { free(ptr); }
 };
@@ -312,30 +309,28 @@ typedef std::basic_ostringstream<char, std::char_traits<char>, h2_allocator<char
 
 struct h2_string : public std::basic_string<char, std::char_traits<char>, h2_allocator<char>> {
    h2_string() : basic_string() {}
-   h2_string(const h2_string& __str) : basic_string(__str.c_str()) {}
-   h2_string(const char* __s) : basic_string(__s) {}
-   h2_string(const std::string& __s) : basic_string(__s.c_str()) {}
-   h2_string(size_t __n, char __c) : basic_string(__n, __c) {}
-   h2_string(const char* __s, size_t __n) : basic_string(__s, __n) {}
-   h2_string(const unsigned char* __s) : basic_string((const char*)__s) {}
+   h2_string(const h2_string& str) : basic_string(str.c_str()) {}
+   h2_string(const std::string& str) : basic_string(str.c_str()) {}
+   h2_string(const char* s) : basic_string(s) {}
+   h2_string(const char* s, size_t n) : basic_string(s, n) {}
+   h2_string(size_t n, char c) : basic_string(n, c) {}
+   h2_string(const unsigned char* b) : basic_string((const char*)b) {}
 
-   h2_string& operator=(const h2_string& __str) { return assign(__str.c_str()), *this; }
-   h2_string& operator=(const char* __s) { return assign(__s), *this; }
-   h2_string& operator=(const std::string& __str) { return assign(__str.c_str()), *this; }
-   h2_string& operator=(char __c) { return assign(1, __c), *this; }
-   h2_string& operator=(const unsigned char* __s) { return assign((const char*)__s), *this; }
+   h2_string& operator=(const h2_string& str) { return assign(str.c_str()), *this; }
+   h2_string& operator=(const std::string& str) { return assign(str.c_str()), *this; }
+   h2_string& operator=(const char* s) { return assign(s), *this; }
+   h2_string& operator=(char c) { return assign(1, c), *this; }
+   h2_string& operator=(const unsigned char* b) { return assign((const char*)b), *this; }
 
-   h2_string& operator+=(const h2_string& __str) { return append(__str.c_str()), *this; }
-   h2_string& operator+=(const char* __s) { return append(__s), *this; }
-   h2_string& operator+=(const std::string& __str) { return append(__str.c_str()), *this; }
-   h2_string& operator+=(char __c) { return push_back(__c), *this; }
+   h2_string& operator+=(const h2_string& str) { return append(str.c_str()), *this; }
+   h2_string& operator+=(const std::string& str) { return append(str.c_str()), *this; }
+   h2_string& operator+=(const char* s) { return append(s), *this; }
+   h2_string& operator+=(char c) { return push_back(c), *this; }
 
-   bool equals(h2_string __str, bool caseless = false) const;
-   bool contains(h2_string __substr, bool caseless = false) const;
-   bool startswith(h2_string __prefix, bool caseless = false) const;
-   bool endswith(h2_string __suffix, bool caseless = false) const;
-   bool wildcard_match(h2_string __pattern, bool caseless = false) const;
-   bool regex_match(h2_string __pattern, bool caseless = false) const;
+   bool equals(h2_string str, bool caseless = false) const;
+   bool contains(h2_string substr, bool caseless = false) const;
+   bool startswith(h2_string prefix, bool caseless = false) const;
+   bool endswith(h2_string suffix, bool caseless = false) const;
 
    h2_string& tolower();
    static h2_string tolower(h2_string from) { return from.tolower(); }
@@ -541,36 +536,23 @@ struct h2_fail_instantiate : h2_fail {
    void print();
 };
 
-struct h2_stub : h2_libc {
-   h2_list x;
-   unsigned char thunk[64];
-   void *befp, *tofp;
-   const char* file;
-   int line;
-
-   h2_stub(void* befp_, const char* file_ = nullptr, int line_ = 0);
-   ~h2_stub();
-   void set(void* tofp_);
-   void reset();
-   void restore();
-
-   struct temporary_restore : h2_once {
-      h2_stub* thus;
-      temporary_restore(h2_stub* stub) : thus(stub) { thus->restore(); }
-      ~temporary_restore() { thus->set(thus->tofp); }
-   };
-};
-
 struct h2_stubs {
-   h2_list s;
-   bool add(void* befp, void* tofp, const char* befn, const char* tofn, const char* file, int line);
+   h2_list stubs;
+   bool add(void* befp, void* tofp, const char* befn = "", const char* tofn = "", const char* file = nullptr, int line = 0);
    void clear();
 };
 
-static inline void h2_fail_g(void* fail);
+struct h2_stub_temporary_restore : h2_once {
+   void* befp;
+   char current[64];
+   h2_stub_temporary_restore(void* befp_);
+   ~h2_stub_temporary_restore();
+};
+
+static inline void h2_fail_g(h2_fail* fail);
 
 struct h2_heap {
-   static void dosegv();
+   static void initialize();
    static void dohook();
    static void unhook();
 
@@ -1689,32 +1671,30 @@ class h2_mocker<Counter, Lineno, Class, Return(Args...)> : h2_mock {
 };
 
 struct h2_mocks {
-   h2_list s;
+   h2_list mocks;
    bool add(h2_mock* mock);
    h2_fail* clear();
 };
 
 struct h2_stdio {
-   static void capture_cout(char* buffer, int size = 1024 * 1024);
-   static const char* capture_cout();
+   static void initialize();
+   static const char* capture_cout(char* type = nullptr);
 };
 
 struct h2_dns : h2_libc {
    h2_list x, y;
-   const char* hostname;
+   const char* name;
    int count;
    char array[32][128];
-   h2_dns(const char* hostname_) : hostname(hostname_), count(0) {}
+   h2_dns(const char* name_) : name(name_), count(0) {}
+   static void setaddrinfo(int count, ...);
+   static void initialize();
 };
 
 struct h2_dnses {
-   h2_list s;
+   h2_list dnses;
    void add(h2_dns* dns);
    void clear();
-};
-
-struct h2_ns {
-   static void setaddrinfo(int count, ...);
 };
 
 struct h2_packet : h2_libc {
@@ -1765,11 +1745,11 @@ struct h2_packet_matches {
 };
 
 template <typename M1, typename M2, typename M3, typename M4>
-inline h2_polymorphic_matcher<h2_packet_matches<M1, M2, M3, M4>> PktEq(M1 from, M2 to, M3 data, M4 size) {
+inline h2_polymorphic_matcher<h2_packet_matches<M1, M2, M3, M4>> PktEq(M1 from = Any, M2 to = Any, M3 data = Any, M4 size = Any) {
    return h2_polymorphic_matcher<h2_packet_matches<M1, M2, M3, M4>>(h2_packet_matches<M1, M2, M3, M4>(from, to, data, size));
 }
 
-struct h2_inet {
+struct h2_socket {
    static h2_packet* start_and_fetch();
    static void inject_received(const void* packet, size_t size, const char* from, const char* to);
 };
@@ -1846,10 +1826,10 @@ struct h2_suite {
    };
 };
 
-struct h2_log {
+struct h2_report {
    int total_cases, done_cases, percentage;
    long long tt, ts, tc;
-   h2_log();
+   h2_report();
    virtual void on_task_start(int cases);
    virtual void on_task_endup(int status_stats[8]);
    virtual void on_suite_start(h2_suite* s);
@@ -1858,27 +1838,15 @@ struct h2_log {
    virtual void on_case_endup(h2_suite* s, h2_case* c);
 };
 
-struct h2_logs {
-   std::vector<h2_log*> logs;
-   void init();
-   void on_task_start(int cases) {
-      for (auto log : logs) log->on_task_start(cases);
-   }
-   void on_task_endup(int status_stats[8]) {
-      for (auto log : logs) log->on_task_endup(status_stats);
-   }
-   void on_suite_start(h2_suite* s) {
-      for (auto log : logs) log->on_suite_start(s);
-   }
-   void on_suite_endup(h2_suite* s) {
-      for (auto log : logs) log->on_suite_endup(s);
-   }
-   void on_case_start(h2_suite* s, h2_case* c) {
-      for (auto log : logs) log->on_case_start(s, c);
-   }
-   void on_case_endup(h2_suite* s, h2_case* c) {
-      for (auto log : logs) log->on_case_endup(s, c);
-   }
+struct h2_reports {
+   std::vector<h2_report*> reports;
+   void initialize();
+   void on_task_start(int cases);
+   void on_task_endup(int status_stats[8]);
+   void on_suite_start(h2_suite* s);
+   void on_suite_endup(h2_suite* s);
+   void on_case_start(h2_suite* s, h2_case* c);
+   void on_case_endup(h2_suite* s, h2_case* c);
 };
 
 #define __Matches_Common(message)                                                     \
@@ -2211,10 +2179,14 @@ static inline h2_ostringstream& h2_JE(h2_string e, h2_string a, h2_defer_fail* d
       for (auto y = Qy; Qb; Qb = false)
 #define H2Casess(name, ...) _Fullmesh_Case_Impl(name, H2Q(j), H2Q(b), H2Q(l), H2Q(x), H2Q(y), __VA_ARGS__)
 
+struct h2_patch {
+   static void initialize();
+};
+
 struct h2_task {
    h2_singleton(h2_task);
 
-   h2_logs logs;
+   h2_reports reports;
    h2_stubs stubs;
    h2_mocks mocks;
    int state, status_stats[8];
@@ -2226,12 +2198,12 @@ struct h2_task {
 
    h2_task();
    void prepare();
-   void postpare();
+   int finalize();
    void execute();
 };
 
 static inline void h2_stub_g(void* befp, void* tofp, const char* befn, const char* tofn, const char* file, int line) {
-   if (200 <= h2_task::I().state) {
+   if (20 <= h2_task::I().state) {
       if (h2_task::I().current_case)
          h2_task::I().current_case->stubs.add(befp, tofp, befn, tofn, file, line);
       else if (h2_task::I().current_suite)
@@ -2242,7 +2214,7 @@ static inline void h2_stub_g(void* befp, void* tofp, const char* befn, const cha
 }
 
 static inline void h2_mock_g(h2_mock* mock) {
-   if (200 <= h2_task::I().state) {
+   if (20 <= h2_task::I().state) {
       if (h2_task::I().current_case)
          h2_task::I().current_case->mocks.add(mock) && h2_task::I().current_case->stubs.add(mock->befp, mock->tofp, mock->befn, "", mock->file, mock->line);
       else if (h2_task::I().current_suite)
@@ -2252,10 +2224,10 @@ static inline void h2_mock_g(h2_mock* mock) {
    }
 }
 
-static inline void h2_fail_g(void* fail) {
+static inline void h2_fail_g(h2_fail* fail) {
    if (!fail) return;
    if (O.debug) h2_debugger::trap();
-   if (h2_task::I().current_case) h2_task::I().current_case->do_fail((h2_fail*)fail);
+   if (h2_task::I().current_case) h2_task::I().current_case->do_fail(fail);
 }
 }  // namespace h2
 
@@ -2347,38 +2319,39 @@ using h2::ListOf;
 #define __H2SUITE(name, QP)                                       \
    static void QP(h2::h2_suite*, h2::h2_case*);                   \
    static h2::h2_suite H2Q(suite)(name, &QP, __FILE__, __LINE__); \
-   static void QP(h2::h2_suite* ___suite, h2::h2_case* ___case)
+   static void QP(h2::h2_suite* ________suite, h2::h2_case* _________case)
 
 #define H2SUITE(name) __H2SUITE(name, H2Q(h2_suite_test_code_plus))
 
-#define __H2Cleanup()                 \
-   if (::setjmp(___suite->jump) == 0) \
-      ___suite->jumpable = true;      \
-   if (!___case)
+#define __H2Cleanup()                      \
+   if (::setjmp(________suite->jump) == 0) \
+      ________suite->jumpable = true;      \
+   if (!_________case)
 
 #define H2Cleanup() __H2Cleanup()
 
-#define __H2Case(name, todo, Qc, Q1, Q2)                              \
-   static h2::h2_case Qc(name, todo, __FILE__, __LINE__);             \
-   static h2::h2_suite::installer H2Q(installer)(___suite, &Qc);      \
-   if (&Qc == ___case)                                                \
-      for (h2::h2_suite::cleaner Q1(___suite); Q1; ___case = nullptr) \
-         for (h2::h2_case::cleaner Q2(&Qc); Q2;)                      \
+#define __H2Case(name, todo, Qc, Q1, Q2)                                         \
+   static h2::h2_case Qc(name, todo, __FILE__, __LINE__);                        \
+   static h2::h2_suite::installer H2Q(installer)(________suite, &Qc);            \
+   if (&Qc == _________case)                                                     \
+      for (h2::h2_suite::cleaner Q1(________suite); Q1; _________case = nullptr) \
+         for (h2::h2_case::cleaner Q2(&Qc); Q2;)                                 \
             if (::setjmp(Qc.jump) == 0)
 
 #define H2Case(name) __H2Case(name, 0, H2Q(t_case), H2Q(_1), H2Q(_2))
 #define H2Todo(name) __H2Case(name, 1, H2Q(t_case), H2Q(_1), H2Q(_2))
 
-#define __H2CASE(name, todo, QR, QP)                                     \
-   static void QR();                                                     \
-   static void QP(h2::h2_suite* ___suite, h2::h2_case* ___case) {        \
-      static h2::h2_case c(name, todo, __FILE__, __LINE__);              \
-      static h2::h2_suite::installer i(___suite, &c);                    \
-      if (&c == ___case)                                                 \
-         for (h2::h2_case::cleaner a(&c); a;)                            \
-            if (::setjmp(c.jump) == 0) QR();                             \
-   }                                                                     \
-   static h2::h2_suite H2Q(suite)("Anonymous", &QP, __FILE__, __LINE__); \
+#define __H2CASE(name, todo, QR, QP)                                         \
+   static void QR();                                                         \
+   static void QP(h2::h2_suite* ________suite, h2::h2_case* _________case) { \
+      static h2::h2_case c(name, todo, __FILE__, __LINE__);                  \
+      static h2::h2_suite::installer i(________suite, &c);                   \
+      if (&c == _________case)                                               \
+         for (h2::h2_case::cleaner a(&c); a;)                                \
+            if (::setjmp(c.jump) == 0)                                       \
+               QR();                                                         \
+   }                                                                         \
+   static h2::h2_suite H2Q(suite)("Anonymous", &QP, __FILE__, __LINE__);     \
    static void QR()
 
 #define H2CASE(name) __H2CASE(name, 0, H2Q(h2_case_test_code), H2Q(h2_suite_test_code_plus))
@@ -2457,24 +2430,16 @@ using h2::ListOf;
 #define __H2BLOCK0(Qb) for (h2::h2_heap::stack::block Qb(__FILE__, __LINE__); Qb;)
 #define __H2BLOCK1(Qb, ...) for (h2::h2_heap::stack::block Qb(__FILE__, __LINE__, __VA_ARGS__); Qb;)
 #define H2BLOCK(...) H2PP_IF_ELSE(H2PP_0ARG(__VA_ARGS__), __H2BLOCK0(H2Q(t_block)), __H2BLOCK1(H2Q(t_block), __VA_ARGS__))
-// #define H2BLOCK(...) for (h2::h2_heap::stack::block Qb(__FILE__, __LINE__, ##__VA_ARGS__); Qb;)
-// #define H2BLOCK(...) for (h2::h2_heap::stack::block Qb(__FILE__, __LINE__, __VA_OPT__(,) __VA_ARGS__); Qb;)
 
-#define H2DNS(...) h2::h2_ns::setaddrinfo(H2PP_NARG(__VA_ARGS__), __VA_ARGS__)
+#define H2DNS(...) h2::h2_dns::setaddrinfo(H2PP_NARG(__VA_ARGS__), __VA_ARGS__)
 
-#define __H2SOCK0() h2::h2_inet::start_and_fetch()
-#define __H2SOCK2(packet, size) h2::h2_inet::inject_received(packet, size, nullptr, "*");
-#define __H2SOCK3(packet, size, from) h2::h2_inet::inject_received(packet, size, from, "*");
-#define __H2SOCK4(packet, size, from, to) h2::h2_inet::inject_received(packet, size, from, to);
+#define __H2SOCK0() h2::h2_socket::start_and_fetch()
+#define __H2SOCK2(packet, size) h2::h2_socket::inject_received(packet, size, nullptr, "*")
+#define __H2SOCK3(packet, size, from) h2::h2_socket::inject_received(packet, size, from, "*")
+#define __H2SOCK4(packet, size, from, to) h2::h2_socket::inject_received(packet, size, from, to)
 #define H2SOCK(...) H2PP_VARIADIC_CALL(__H2SOCK, __VA_ARGS__)
 
 #define H2COUT(...) h2::h2_stdio::capture_cout(__VA_ARGS__)
 
-#define h2_main(argc, argv)                 \
-   do {                                     \
-      h2::h2_option::I().parse(argc, argv); \
-      h2::h2_task::I().prepare();           \
-      h2::h2_task::I().execute();           \
-      h2::h2_task::I().postpare();          \
-   } while (0)
+#endif
 #endif

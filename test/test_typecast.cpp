@@ -1,7 +1,6 @@
-#if 0
-
-#include "../source/h2_unit.hpp"
 #include "../source/h2_unit.cpp"
+
+#ifdef __clang__
 
 char char0 = 0;
 const char const_char0 = 0;
@@ -429,15 +428,15 @@ SUITE(pointer) {
 #undef TheCheck
    }
 
-   Todo(OK Pe) {
-      OK(Pe(1), int_ptr);
-      OK(Pe(1), const_int_ptr);
-      OK(Pe('C'), char_ptr);
-      OK(Pe('C'), const_char_ptr);
-      OK(Pe(1), char_ptr);
-      OK(Pe(1), const_char_ptr);
-      OK(Pe(""), stdstring_ptr);
-      OK(Pe(""), const_stdstring_ptr);
+   Todo(OK Pointee) {
+      OK(Pointee(1), int_ptr);
+      OK(Pointee(1), const_int_ptr);
+      OK(Pointee('C'), char_ptr);
+      OK(Pointee('C'), const_char_ptr);
+      OK(Pointee(1), char_ptr);
+      OK(Pointee(1), const_char_ptr);
+      OK(Pointee(""), stdstring_ptr);
+      OK(Pointee(""), const_stdstring_ptr);
    }
 
    Case(MOCK) {

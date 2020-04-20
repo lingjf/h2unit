@@ -1,3 +1,5 @@
+#ifndef ___H2UNIT_H___
+#define ___H2UNIT_H___
 
 #include <cstdio>      /* printf */
 #include <cstdlib>     /* malloc */
@@ -23,15 +25,18 @@
 #   pragma GCC diagnostic ignored "-Wint-to-pointer-cast"
 #   pragma GCC diagnostic ignored "-Wparentheses"
 #   pragma GCC diagnostic ignored "-Wsign-compare"
+#   pragma GCC diagnostic ignored "-Wunused-function"
 #   pragma GCC diagnostic ignored "-Wwrite-strings"
 #elif defined __clang__
+#   pragma clang diagnostic ignored "-Wdeprecated-declarations"
 #   pragma clang diagnostic ignored "-Wint-to-pointer-cast"
 #   pragma clang diagnostic ignored "-Wparentheses"
 #   pragma clang diagnostic ignored "-Wsign-compare"
+#   pragma clang diagnostic ignored "-Wunused-function"
 #   pragma clang diagnostic ignored "-Wwritable-strings"
 #endif
 
-#if defined ___H2UNIT_HPP___
+#if defined __H2UNIT_HPP__
 #   define h2_inline
 #else
 #   define h2_inline inline
@@ -39,7 +44,7 @@
 
 namespace h2 {
 #include "h2_pp.hpp"
-#include "h2_tool.hpp"
+#include "h2_kit.hpp"
 #include "h2_list.hpp"
 #include "h2_option.hpp"
 #include "h2_libc.hpp"
@@ -59,15 +64,16 @@ namespace h2 {
 #include "h2_routine.hpp"
 #include "h2_mock.hpp"
 #include "h2_stdio.hpp"
-#include "h2_ns.hpp"
-#include "h2_inet.hpp"
+#include "h2_dns.hpp"
+#include "h2_socket.hpp"
 #include "h2_case.hpp"
 #include "h2_suite.hpp"
-#include "h2_log.hpp"
+#include "h2_report.hpp"
 #include "h2_extra.hpp"
 #include "h2_directory.hpp"
 #include "h2_check.hpp"
 #include "h2_generator.hpp"
+#include "h2_patch.hpp"
 #include "h2_task.hpp"
 }  // namespace h2
 
@@ -159,38 +165,39 @@ using h2::ListOf;
 #define __H2SUITE(name, QP)                                       \
    static void QP(h2::h2_suite*, h2::h2_case*);                   \
    static h2::h2_suite H2Q(suite)(name, &QP, __FILE__, __LINE__); \
-   static void QP(h2::h2_suite* ___suite, h2::h2_case* ___case)
+   static void QP(h2::h2_suite* ________suite, h2::h2_case* _________case)
 
 #define H2SUITE(name) __H2SUITE(name, H2Q(h2_suite_test_code_plus))
 
-#define __H2Cleanup()                 \
-   if (::setjmp(___suite->jump) == 0) \
-      ___suite->jumpable = true;      \
-   if (!___case)
+#define __H2Cleanup()                      \
+   if (::setjmp(________suite->jump) == 0) \
+      ________suite->jumpable = true;      \
+   if (!_________case)
 
 #define H2Cleanup() __H2Cleanup()
 
-#define __H2Case(name, todo, Qc, Q1, Q2)                              \
-   static h2::h2_case Qc(name, todo, __FILE__, __LINE__);             \
-   static h2::h2_suite::installer H2Q(installer)(___suite, &Qc);      \
-   if (&Qc == ___case)                                                \
-      for (h2::h2_suite::cleaner Q1(___suite); Q1; ___case = nullptr) \
-         for (h2::h2_case::cleaner Q2(&Qc); Q2;)                      \
+#define __H2Case(name, todo, Qc, Q1, Q2)                                         \
+   static h2::h2_case Qc(name, todo, __FILE__, __LINE__);                        \
+   static h2::h2_suite::installer H2Q(installer)(________suite, &Qc);            \
+   if (&Qc == _________case)                                                     \
+      for (h2::h2_suite::cleaner Q1(________suite); Q1; _________case = nullptr) \
+         for (h2::h2_case::cleaner Q2(&Qc); Q2;)                                 \
             if (::setjmp(Qc.jump) == 0)
 
 #define H2Case(name) __H2Case(name, 0, H2Q(t_case), H2Q(_1), H2Q(_2))
 #define H2Todo(name) __H2Case(name, 1, H2Q(t_case), H2Q(_1), H2Q(_2))
 
-#define __H2CASE(name, todo, QR, QP)                                     \
-   static void QR();                                                     \
-   static void QP(h2::h2_suite* ___suite, h2::h2_case* ___case) {        \
-      static h2::h2_case c(name, todo, __FILE__, __LINE__);              \
-      static h2::h2_suite::installer i(___suite, &c);                    \
-      if (&c == ___case)                                                 \
-         for (h2::h2_case::cleaner a(&c); a;)                            \
-            if (::setjmp(c.jump) == 0) QR();                             \
-   }                                                                     \
-   static h2::h2_suite H2Q(suite)("Anonymous", &QP, __FILE__, __LINE__); \
+#define __H2CASE(name, todo, QR, QP)                                         \
+   static void QR();                                                         \
+   static void QP(h2::h2_suite* ________suite, h2::h2_case* _________case) { \
+      static h2::h2_case c(name, todo, __FILE__, __LINE__);                  \
+      static h2::h2_suite::installer i(________suite, &c);                   \
+      if (&c == _________case)                                               \
+         for (h2::h2_case::cleaner a(&c); a;)                                \
+            if (::setjmp(c.jump) == 0)                                       \
+               QR();                                                         \
+   }                                                                         \
+   static h2::h2_suite H2Q(suite)("Anonymous", &QP, __FILE__, __LINE__);     \
    static void QR()
 
 #define H2CASE(name) __H2CASE(name, 0, H2Q(h2_case_test_code), H2Q(h2_suite_test_code_plus))
@@ -269,23 +276,15 @@ using h2::ListOf;
 #define __H2BLOCK0(Qb) for (h2::h2_heap::stack::block Qb(__FILE__, __LINE__); Qb;)
 #define __H2BLOCK1(Qb, ...) for (h2::h2_heap::stack::block Qb(__FILE__, __LINE__, __VA_ARGS__); Qb;)
 #define H2BLOCK(...) H2PP_IF_ELSE(H2PP_0ARG(__VA_ARGS__), __H2BLOCK0(H2Q(t_block)), __H2BLOCK1(H2Q(t_block), __VA_ARGS__))
-// #define H2BLOCK(...) for (h2::h2_heap::stack::block Qb(__FILE__, __LINE__, ##__VA_ARGS__); Qb;)
-// #define H2BLOCK(...) for (h2::h2_heap::stack::block Qb(__FILE__, __LINE__, __VA_OPT__(,) __VA_ARGS__); Qb;)
 
-#define H2DNS(...) h2::h2_ns::setaddrinfo(H2PP_NARG(__VA_ARGS__), __VA_ARGS__)
+#define H2DNS(...) h2::h2_dns::setaddrinfo(H2PP_NARG(__VA_ARGS__), __VA_ARGS__)
 
-#define __H2SOCK0() h2::h2_inet::start_and_fetch()
-#define __H2SOCK2(packet, size) h2::h2_inet::inject_received(packet, size, nullptr, "*");
-#define __H2SOCK3(packet, size, from) h2::h2_inet::inject_received(packet, size, from, "*");
-#define __H2SOCK4(packet, size, from, to) h2::h2_inet::inject_received(packet, size, from, to);
+#define __H2SOCK0() h2::h2_socket::start_and_fetch()
+#define __H2SOCK2(packet, size) h2::h2_socket::inject_received(packet, size, nullptr, "*")
+#define __H2SOCK3(packet, size, from) h2::h2_socket::inject_received(packet, size, from, "*")
+#define __H2SOCK4(packet, size, from, to) h2::h2_socket::inject_received(packet, size, from, to)
 #define H2SOCK(...) H2PP_VARIADIC_CALL(__H2SOCK, __VA_ARGS__)
 
 #define H2COUT(...) h2::h2_stdio::capture_cout(__VA_ARGS__)
 
-#define h2_main(argc, argv)                 \
-   do {                                     \
-      h2::h2_option::I().parse(argc, argv); \
-      h2::h2_task::I().prepare();           \
-      h2::h2_task::I().execute();           \
-      h2::h2_task::I().postpare();          \
-   } while (0)
+#endif

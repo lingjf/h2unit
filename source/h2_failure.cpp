@@ -135,8 +135,8 @@ h2_inline void h2_fail_strcmp::print() {
    int rows = ::ceil(std::max(expect.length(), actual.length()) / (double)columns);
    for (int i = 0; i < rows; ++i) {
       char eline[1024], aline[1024], *ep = eline, *ap = aline;
-      if (i * columns < expect.length()) ep += sprintf(ep, "%s%s ", SF("dark gray", "expect"), SF("green", ">"));
-      if (i * columns < actual.length()) ap += sprintf(ap, "%s%s ", SF("dark gray", "actual"), SF("red", ">"));
+      if (i * columns <= expect.length()) ep += sprintf(ep, "%s%s ", SF("dark gray", "expect"), SF("green", ">"));
+      if (i * columns <= actual.length()) ap += sprintf(ap, "%s%s ", SF("dark gray", "actual"), SF("red", ">"));
       for (int j = 0; j < columns; ++j) {
          char ec = i * columns + j <= expect.length() ? expect[i * columns + j] : ' ';
          char ac = i * columns + j <= actual.length() ? actual[i * columns + j] : ' ';
@@ -145,8 +145,8 @@ h2_inline void h2_fail_strcmp::print() {
          ep = fmt_char(ec, eq, "green", ep);
          ap = fmt_char(ac, eq, "red,bold", ap);
       }
-      if (i * columns < expect.length()) ::printf("%s\n", eline);
-      if (i * columns < actual.length()) ::printf("%s\n", aline);
+      if (i * columns <= expect.length()) ::printf("%s\n", eline);
+      if (i * columns <= actual.length()) ::printf("%s\n", aline);
    }
 }
 
