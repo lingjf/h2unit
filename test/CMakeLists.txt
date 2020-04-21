@@ -6,7 +6,11 @@ INCLUDE_DIRECTORIES(..)
 
 SET(CMAKE_CXX_COMPILER "g++")
 
-SET(CMAKE_CXX_FLAGS " ${CMAKE_CXX_FLAGS} -std=c++11 -fpermissive -g -O0 -Wall -include ../source/h2_unit.hpp -include ../source/h2_unit.cpp")
+SET(CMAKE_CXX_FLAGS " ${CMAKE_CXX_FLAGS} -std=c++11 -fpermissive -g -O0 -Wall")
+
+IF(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
+    SET(CMAKE_EXE_LINKER_FLAGS " ${CMAKE_EXE_LINKER_FLAGS} -Wl,-segprot,__TEXT,rwx,rwx")
+ENDIF()
 
 ADD_DEFINITIONS(-DH2UNIT_VERSION="dev")
 

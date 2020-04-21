@@ -8,8 +8,6 @@ extern "C"
 
 #include "product_cpp.h"
 
-#if defined(__GNUC__) && __GNUC__ >= 5
-
 static int
 rectangle_area_fake(rectangle_t* rectangle)
 {
@@ -59,6 +57,8 @@ SUITE(Stub function by lambda)
     OK(111, rectangle_area(&p1));
   }
 }
+
+#if (defined(__GNUC__) && __GNUC__ >= 5) || defined __clang__
 
 SUITE(Stub Member method)
 {

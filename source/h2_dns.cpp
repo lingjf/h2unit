@@ -84,16 +84,16 @@ struct h2_resolver {
 
    h2_stubs stubs;
    h2_resolver() {
-      stubs.add((void*)::getaddrinfo, (void*)getaddrinfo, "", "", __FILE__, __LINE__);
-      stubs.add((void*)::freeaddrinfo, (void*)freeaddrinfo, "", "", __FILE__, __LINE__);
-      stubs.add((void*)::gethostbyname, (void*)gethostbyname, "", "", __FILE__, __LINE__);
+      stubs.add((void*)::getaddrinfo, (void*)getaddrinfo);
+      stubs.add((void*)::freeaddrinfo, (void*)freeaddrinfo);
+      stubs.add((void*)::gethostbyname, (void*)gethostbyname);
    }
    ~h2_resolver() { stubs.clear(); }
 };
 
-h2_inline void h2_dnses::add(h2_dns* dns) { s.push(&dns->x); }
+h2_inline void h2_dnses::add(h2_dns* dns) { dnses.push(&dns->x); }
 h2_inline void h2_dnses::clear() {
-   h2_list_for_each_entry(p, &s, h2_dns, x) {
+   h2_list_for_each_entry(p, &dnses, h2_dns, x) {
       p->x.out(), p->y.out();
       delete p;
    }
@@ -122,4 +122,8 @@ h2_inline void h2_dns::setaddrinfo(int n, ...) {
 
    h2_resolver::I().dnses.push(&dns->y);
    if (h2_task::I().current_case) h2_task::I().current_case->dnses.add(dns);
+}
+
+h2_inline void h2_dns::initialize() {
+   setaddrinfo(1, "127.0.0.1");
 }

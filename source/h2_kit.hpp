@@ -1,5 +1,5 @@
 
-#define H2Q(_Prefix) H2PP_CAT5(_Prefix, _L, __LINE__, C, __COUNTER__)
+#define H2Q(_Prefix) H2PP_CAT5(_Prefix, _C, __COUNTER__, L, __LINE__)
 
 template <typename U, typename = void>
 struct h2_decay_impl {
@@ -33,8 +33,4 @@ struct h2_with {
 };
 
 /* clang-format off */
-
 #define h2_singleton(_Class) static _Class& I() { static _Class i; return i; }
-#define h2_if_return(x, y) do { auto t__ = x; if (t__) return y(t__); } while (0)
-#define h2_if_find_break(_Cond, p, found) if (_Cond) { found = p; break; }
-#define h2_out_delete(p) do { p->x.out(); delete p; } while (0)

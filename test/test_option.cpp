@@ -1,3 +1,4 @@
+#include "../source/h2_unit.cpp"
 
 #if defined __GLIBC__
 #include <gnu/libc-version.h>

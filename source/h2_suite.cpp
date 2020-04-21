@@ -10,8 +10,8 @@ h2_inline void h2_suite::cleanup() {
 }
 
 h2_inline std::vector<h2_case*>& h2_suite::cases() {
-   if (enumerate)
-      test_code_plus(this, nullptr); /* enumerate case by static local h2_case variable inside of h2_suite_test_code_plus() */
+   if (enumerate) /* enumerate case by static local h2_case variable inside of h2_suite_test_code_plus() */
+      test_code_plus(this, nullptr);
    return case_list;
 }
 

@@ -1,3 +1,4 @@
+#include "../source/h2_unit.cpp"
 
 class C7
 {
@@ -91,12 +92,23 @@ CASE(sys calls)
   struct timeval tv;
   struct timezone tz;
   gettimeofday(&tv, &tz);
-  time(NULL);
-  // localtime(&t3);
+  time_t t3 = time(NULL);
+  struct tm *t4 = gmtime(&t3);
+  struct tm t5;
+  gmtime_r(&t3, &t5);
+  ctime(&t3);
+  ctime_r(&t3, t);
+  asctime(t4);
+  asctime_r(t4, t);
+  mktime(&t5);
+  localtime(&t3);
+  localtime_r(&t3, &t5);
 
   strerror(ENOMEM);
-  double t4 = sqrt(42.0);
-  sprintf(t, "%g", t4);
+  double t9 = sqrt(42.0);
+  sprintf(t, "%g", t9);
+
+  syslog(LOG_DEBUG, "This is test %d", 42);
 
   struct addrinfo hints, *res;
   memset(&hints, 0, sizeof(hints));
@@ -116,5 +128,5 @@ SUITE(leak)
   {
     strcpy((char*)p, "hello world");
     OK("hello world", (char*)p);
-  };
+  }
 }

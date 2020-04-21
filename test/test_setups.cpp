@@ -1,3 +1,5 @@
+#include "../source/h2_unit.cpp"
+
 #include <time.h>
 
 static char*

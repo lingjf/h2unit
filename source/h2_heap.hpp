@@ -1,8 +1,8 @@
 
-static inline void h2_fail_g(void* fail);
+static inline void h2_fail_g(h2_fail* fail);
 
 struct h2_heap {
-   static void dosegv();
+   static void initialize();
    static void dohook();
    static void unhook();
 

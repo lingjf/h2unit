@@ -1,28 +1,28 @@
 
 struct h2_string : public std::basic_string<char, std::char_traits<char>, h2_allocator<char>> {
    h2_string() : basic_string() {}
-   h2_string(const h2_string& __str) : basic_string(__str.c_str()) {}
-   h2_string(const char* __s) : basic_string(__s) {}
-   h2_string(const std::string& __s) : basic_string(__s.c_str()) {}
-   h2_string(size_t __n, char __c) : basic_string(__n, __c) {}
-   h2_string(const char* __s, size_t __n) : basic_string(__s, __n) {}
-   h2_string(const unsigned char* __s) : basic_string((const char*)__s) {}
+   h2_string(const h2_string& str) : basic_string(str.c_str()) {}
+   h2_string(const std::string& str) : basic_string(str.c_str()) {}
+   h2_string(const char* s) : basic_string(s) {}
+   h2_string(const char* s, size_t n) : basic_string(s, n) {}
+   h2_string(size_t n, char c) : basic_string(n, c) {}
+   h2_string(const unsigned char* b) : basic_string((const char*)b) {}
 
-   h2_string& operator=(const h2_string& __str) { return assign(__str.c_str()), *this; }
-   h2_string& operator=(const char* __s) { return assign(__s), *this; }
-   h2_string& operator=(const std::string& __str) { return assign(__str.c_str()), *this; }
-   h2_string& operator=(char __c) { return assign(1, __c), *this; }
-   h2_string& operator=(const unsigned char* __s) { return assign((const char*)__s), *this; }
+   h2_string& operator=(const h2_string& str) { return assign(str.c_str()), *this; }
+   h2_string& operator=(const std::string& str) { return assign(str.c_str()), *this; }
+   h2_string& operator=(const char* s) { return assign(s), *this; }
+   h2_string& operator=(char c) { return assign(1, c), *this; }
+   h2_string& operator=(const unsigned char* b) { return assign((const char*)b), *this; }
 
-   h2_string& operator+=(const h2_string& __str) { return append(__str.c_str()), *this; }
-   h2_string& operator+=(const char* __s) { return append(__s), *this; }
-   h2_string& operator+=(const std::string& __str) { return append(__str.c_str()), *this; }
-   h2_string& operator+=(char __c) { return push_back(__c), *this; }
+   h2_string& operator+=(const h2_string& str) { return append(str.c_str()), *this; }
+   h2_string& operator+=(const std::string& str) { return append(str.c_str()), *this; }
+   h2_string& operator+=(const char* s) { return append(s), *this; }
+   h2_string& operator+=(char c) { return push_back(c), *this; }
 
-   bool equals(h2_string __str, bool caseless = false) const;
-   bool contains(h2_string __substr, bool caseless = false) const;
-   bool startswith(h2_string __prefix, bool caseless = false) const;
-   bool endswith(h2_string __suffix, bool caseless = false) const;
+   bool equals(h2_string str, bool caseless = false) const;
+   bool contains(h2_string substr, bool caseless = false) const;
+   bool startswith(h2_string prefix, bool caseless = false) const;
+   bool endswith(h2_string suffix, bool caseless = false) const;
 
    h2_string& tolower();
    static h2_string tolower(h2_string from) { return from.tolower(); }

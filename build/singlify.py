@@ -4,7 +4,7 @@
 import sys
 import time
 
-version = "5.1"
+version = "5.2"
 
 version_datetime = '/* v{0}  {1} */'.format(version, time.strftime('%Y-%m-%d %H:%M:%S', time.localtime()))
 project_github_url = '/* https://github.com/lingjf/h2unit */'
@@ -38,11 +38,9 @@ f_h2unit_h = open(h2unit_h, 'w')
 f_h2unit_h.write(version_datetime + '\n')
 f_h2unit_h.write(project_github_url + '\n')
 f_h2unit_h.write(software_copyright + '\n')
-f_h2unit_h.write('#ifndef ___H2UNIT_H___' + '\n')
-f_h2unit_h.write('#define ___H2UNIT_H___' + '\n')
+f_h2unit_h.write('#ifndef __H2UNIT_H__' + '\n')
+f_h2unit_h.write('#define __H2UNIT_H__' + '\n')
 f_h2unit_h.write('#define H2UNIT_VERSION \"' + version + '\"\n')
-with open('../source/h2_unit.hpp', 'r') as f_h2_unit_hpp:
-    merge_files(f_h2_unit_hpp, f_h2unit_h)
 with open('../source/h2_unit.cpp', 'r') as f_h2_unit_cpp:
     merge_files(f_h2_unit_cpp, f_h2unit_h)
 f_h2unit_h.write('#endif' + '\n')
@@ -53,8 +51,8 @@ f_h2unit_hpp = open(h2unit_hpp, 'w')
 f_h2unit_hpp.write(version_datetime + '\n')
 f_h2unit_hpp.write(project_github_url + '\n')
 f_h2unit_hpp.write(software_copyright + '\n')
-f_h2unit_hpp.write('#ifndef ___H2UNIT_HPP___' + '\n')
-f_h2unit_hpp.write('#define ___H2UNIT_HPP___' + '\n')
+f_h2unit_hpp.write('#ifndef __H2UNIT_HPP__' + '\n')
+f_h2unit_hpp.write('#define __H2UNIT_HPP__' + '\n')
 f_h2unit_hpp.write('#define H2UNIT_VERSION \"' + version + '\"\n')
 with open('../source/h2_unit.hpp', 'r') as f_h2_unit_hpp:
     merge_files(f_h2_unit_hpp, f_h2unit_hpp)
@@ -65,9 +63,8 @@ f_h2unit_cpp = open(h2unit_cpp, 'w')
 f_h2unit_cpp.write(version_datetime + '\n')
 f_h2unit_cpp.write(project_github_url + '\n')
 f_h2unit_cpp.write(software_copyright + '\n')
-f_h2unit_cpp.write('#include "h2unit.hpp"' + '\n')
-f_h2unit_cpp.write('#ifdef ___H2UNIT_HPP___' + '\n')
+f_h2unit_cpp.write('#define __H2UNIT_HPP__' + '\n')
+f_h2unit_cpp.write('#define H2UNIT_VERSION \"' + version + '\"\n')
 with open('../source/h2_unit.cpp', 'r') as f_h2_unit_cpp:
     merge_files(f_h2_unit_cpp, f_h2unit_cpp)
-f_h2unit_cpp.write('#endif' + '\n')
 f_h2unit_cpp.close()

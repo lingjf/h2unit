@@ -130,14 +130,14 @@ struct h2__socket {
 };
 
 h2_inline h2_sock::h2_sock() {
-   stubs.add((void*)::sendto, (void*)h2__socket::sendto, "", "", __FILE__, __LINE__);
-   stubs.add((void*)::recvfrom, (void*)h2__socket::recvfrom, "", "", __FILE__, __LINE__);
-   stubs.add((void*)::sendmsg, (void*)h2__socket::sendmsg, "", "", __FILE__, __LINE__);
-   stubs.add((void*)::recvmsg, (void*)h2__socket::recvmsg, "", "", __FILE__, __LINE__);
-   stubs.add((void*)::send, (void*)h2__socket::send, "", "", __FILE__, __LINE__);
-   stubs.add((void*)::recv, (void*)h2__socket::recv, "", "", __FILE__, __LINE__);
-   stubs.add((void*)::accept, (void*)h2__socket::accept, "", "", __FILE__, __LINE__);
-   stubs.add((void*)::connect, (void*)h2__socket::connect, "", "", __FILE__, __LINE__);
+   stubs.add((void*)::sendto, (void*)h2__socket::sendto);
+   stubs.add((void*)::recvfrom, (void*)h2__socket::recvfrom);
+   stubs.add((void*)::sendmsg, (void*)h2__socket::sendmsg);
+   stubs.add((void*)::recvmsg, (void*)h2__socket::recvmsg);
+   stubs.add((void*)::send, (void*)h2__socket::send);
+   stubs.add((void*)::recv, (void*)h2__socket::recv);
+   stubs.add((void*)::accept, (void*)h2__socket::accept);
+   stubs.add((void*)::connect, (void*)h2__socket::connect);
    strcpy(last_to, "0.0.0.0:0");
 }
 

@@ -1,5 +1,6 @@
+#include "../source/h2_unit.cpp"
 
-#if defined(__GNUC__) && __GNUC__ >= 5
+#if (defined(__GNUC__) && __GNUC__ >= 5) || defined __clang__
 
 int
 bar1(int a, const char* b)

@@ -1,3 +1,4 @@
+#include "../source/h2_unit.cpp"
 
 static int
 __node_tojson(h2::h2__json::Node* node, char* b)
@@ -86,7 +87,7 @@ SUITE(json parser)
     OK(c5->is_number());
     OK(7, c5->value_double);
     h2::h2__json::frees(c5);
-  };
+  }
 
   Case(number error)
   {
@@ -97,7 +98,7 @@ SUITE(json parser)
     const char* n2 = "-";
     h2::h2__json::Node* c2 = h2::h2__json::parse(n2);
     OK(NULL == c2);
-  };
+  }
 
   Case(string)
   {
@@ -118,14 +119,14 @@ SUITE(json parser)
     OK(c2->is_string());
     OK("12345678", c3->value_string);
     h2::h2__json::frees(c3);
-  };
+  }
 
   Case(string error)
   {
     const char* n3 = "\"12345678\"";
     h2::h2__json::Node* c3 = h2::h2__json::parse(n3, 4);
     OK(NULL == c3);
-  };
+  }
 
   Case(regexp)
   {
@@ -134,7 +135,7 @@ SUITE(json parser)
     OK(c3->is_regexp());
     OK("123*567", c3->value_string);
     h2::h2__json::frees(c3);
-  };
+  }
 
   Case(empty array)
   {
@@ -143,7 +144,7 @@ SUITE(json parser)
     OK(c1->is_array());
     OK(0, c1->size());
     h2::h2__json::frees(c1);
-  };
+  }
 
   Case(normal array)
   {
@@ -187,7 +188,7 @@ SUITE(json parser)
     }
 
     h2::h2__json::frees(c);
-  };
+  }
 
   Case(empty object)
   {
@@ -196,7 +197,7 @@ SUITE(json parser)
     OK(c1->is_object());
     OK(0, c1->size());
     h2::h2__json::frees(c1);
-  };
+  }
 
   Case(normal object)
   {
@@ -246,7 +247,7 @@ SUITE(json parser)
     JE(obj, node_tojson(c, t2));
 
     h2::h2__json::frees(c);
-  };
+  }
 
   Case("http://www.json.org/example.html")
   {
@@ -454,7 +455,7 @@ SUITE(json parser)
     h2::h2__json::Node* c5 = h2::h2__json::parse(j5);
     JE(j5, node_tojson(c5, t2));
     h2::h2__json::frees(c5);
-  };
+  }
 
   Case(more 1)
   {
@@ -485,7 +486,7 @@ SUITE(json parser)
     char* s1 = node_tojson(c1, t2);
     JE(j1, s1);
     h2::h2__json::frees(c1);
-  };
+  }
 
   Case(more 2)
   {
@@ -499,7 +500,7 @@ SUITE(json parser)
     h2::h2__json::Node* c2 = h2::h2__json::parse(j2);
     JE(j2, node_tojson(c2, t2));
     h2::h2__json::frees(c2);
-  };
+  }
 
   Case(more 3)
   {
@@ -515,7 +516,7 @@ SUITE(json parser)
     h2::h2__json::Node* c3 = h2::h2__json::parse(j3);
     OK("Jack (\"Bee\") Nimble", c3->get("name")->value_string);
     h2::h2__json::frees(c3);
-  };
+  }
 }
 
 SUITE(json match)
@@ -527,18 +528,18 @@ SUITE(json match)
     OK(h2::h2_json::match("true", " true "));
     OK(h2::h2_json::match("false", " false "));
     OK(!h2::h2_json::match("true", " false "));
-  };
+  }
 
   Case(match number)
   {
     OK(h2::h2_json::match("0", "1 - 1 * 1 / sqrt(1)"));
     OK(h2::h2_json::match("-123.456", "-123 - 0.456"));
-  };
+  }
 
   Case(match string)
   {
     OK(h2::h2_json::match("\"hello world\"", " 'hello world' "));
-  };
+  }
 
   Case(match regexp) { OK(h2::h2_json::match("/.*/", " 'hello world' ")); };
 
@@ -547,12 +548,12 @@ SUITE(json match)
     OK(h2::h2_json::match("[]", " [] "));
     OK(h2::h2_json::match("[1]", " [1-0] "));
     OK(h2::h2_json::match("[1, null, 'hello']", " [1, null, \"hello\"] "));
-  };
+  }
 
   Case(match object)
   {
     OK(h2::h2_json::match("{}", " {} "));
     OK(h2::h2_json::match("{'a': 1}", " {\"a\": 1} "));
     OK(h2::h2_json::match("{'a': 1}", " {\"a\": 1, \"b\": false} "));
-  };
+  }
 }

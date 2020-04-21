@@ -2,7 +2,7 @@
 struct h2_task {
    h2_singleton(h2_task);
 
-   h2_logs logs;
+   h2_reports reports;
    h2_stubs stubs;
    h2_mocks mocks;
    int state, status_stats[8];
@@ -14,12 +14,12 @@ struct h2_task {
 
    h2_task();
    void prepare();
-   void postpare();
+   int finalize();
    void execute();
 };
 
 static inline void h2_stub_g(void* befp, void* tofp, const char* befn, const char* tofn, const char* file, int line) {
-   if (200 <= h2_task::I().state) {
+   if (20 <= h2_task::I().state) {
       if (h2_task::I().current_case)
          h2_task::I().current_case->stubs.add(befp, tofp, befn, tofn, file, line);
       else if (h2_task::I().current_suite)
@@ -30,7 +30,7 @@ static inline void h2_stub_g(void* befp, void* tofp, const char* befn, const cha
 }
 
 static inline void h2_mock_g(h2_mock* mock) {
-   if (200 <= h2_task::I().state) {
+   if (20 <= h2_task::I().state) {
       if (h2_task::I().current_case)
          h2_task::I().current_case->mocks.add(mock) && h2_task::I().current_case->stubs.add(mock->befp, mock->tofp, mock->befn, "", mock->file, mock->line);
       else if (h2_task::I().current_suite)
@@ -40,8 +40,8 @@ static inline void h2_mock_g(h2_mock* mock) {
    }
 }
 
-static inline void h2_fail_g(void* fail) {
+static inline void h2_fail_g(h2_fail* fail) {
    if (!fail) return;
    if (O.debug) h2_debugger::trap();
-   if (h2_task::I().current_case) h2_task::I().current_case->do_fail((h2_fail*)fail);
+   if (h2_task::I().current_case) h2_task::I().current_case->do_fail(fail);
 }

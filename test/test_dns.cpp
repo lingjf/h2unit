@@ -1,3 +1,4 @@
+#include "../source/h2_unit.cpp"
 
 static int
 dns_use_getaddrinfo(const char* hostname, char* ips, char* cnames)
@@ -55,9 +56,9 @@ dns_use_gethostbyname(const char* hostname, char* ips, char* cnames)
 GlobalSetup()
 {
   DNS("127.0.0.1");
-};
+}
 
-GlobalTeardown(){};
+GlobalTeardown(){}
 
 SUITE(getaddrinfo)
 {

@@ -1,3 +1,4 @@
+#include "../source/h2_unit.cpp"
 
 H2MATCHER(IPeq, expect, ("not equal"))
 {

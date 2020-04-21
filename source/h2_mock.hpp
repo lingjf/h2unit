@@ -232,7 +232,7 @@ class h2_mocker<Counter, Lineno, Class, Return(Args...)> : h2_mock {
 };
 
 struct h2_mocks {
-   h2_list s;
+   h2_list mocks;
    bool add(h2_mock* mock);
    h2_fail* clear();
 };

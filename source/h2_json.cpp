@@ -156,17 +156,17 @@ struct h2__json {
             x.offset += 4;
             return true;
          }
-         /* t_string */
+         /* string */
          if (x.startswith('\"') || x.startswith('\'')) return parse_string(x);
-         /* t_regexp */
+         /* regexp */
          if (x.startswith('/')) return parse_regexp(x);
 
-         /* t_array */
+         /* array */
          if (x.startswith('[')) return parse_array(x);
-         /* t_object */
+         /* object */
          if (x.startswith('{')) return parse_object(x);
 
-         /* t_number */
+         /* number */
          if (1 /* x.startswith('-') || x.startswith('0', '9') */) return parse_number(x);
 
          return false;

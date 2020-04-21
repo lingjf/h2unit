@@ -1,21 +1,21 @@
 
-h2_inline h2_log::h2_log() : total_cases(0), done_cases(0), percentage(0), tt(0), ts(0), tc(0) {}
-h2_inline void h2_log::on_task_start(int cases) {
+h2_inline h2_report::h2_report() : total_cases(0), done_cases(0), percentage(0), tt(0), ts(0), tc(0) {}
+h2_inline void h2_report::on_task_start(int cases) {
    total_cases = cases;
    tt = h2_now();
 };
-h2_inline void h2_log::on_task_endup(int status_stats[8]) { tt = h2_now() - tt; };
-h2_inline void h2_log::on_suite_start(h2_suite* s) { ts = h2_now(); }
-h2_inline void h2_log::on_suite_endup(h2_suite* s) { ts = h2_now() - ts; }
-h2_inline void h2_log::on_case_start(h2_suite* s, h2_case* c) { tc = h2_now(); };
-h2_inline void h2_log::on_case_endup(h2_suite* s, h2_case* c) {
+h2_inline void h2_report::on_task_endup(int status_stats[8]) { tt = h2_now() - tt; };
+h2_inline void h2_report::on_suite_start(h2_suite* s) { ts = h2_now(); }
+h2_inline void h2_report::on_suite_endup(h2_suite* s) { ts = h2_now() - ts; }
+h2_inline void h2_report::on_case_start(h2_suite* s, h2_case* c) { tc = h2_now(); };
+h2_inline void h2_report::on_case_endup(h2_suite* s, h2_case* c) {
    percentage = ++done_cases * 100 / total_cases;
    tc = h2_now() - tc;
 };
 
-struct h2_log_console : h2_log {
+struct h2_report_console : h2_report {
    void on_task_endup(int status_stats[8]) override {
-      h2_log::on_task_endup(status_stats);
+      h2_report::on_task_endup(status_stats);
       printf("\n[%3d%%] ", percentage);
       if (0 < status_stats[h2_case::FAILED])
          printf("%s", SF("bold,red", "Failed <%d failed, %d passed, %d todo, %d filtered, %lld ms>\n", status_stats[h2_case::FAILED], status_stats[h2_case::PASSED], status_stats[h2_case::TODOED], status_stats[h2_case::FILTED], tt));
@@ -23,7 +23,7 @@ struct h2_log_console : h2_log {
          printf("%s", SF("bold,green", "Passed <%d passed, %d todo, %d filtered, %d cases, %lld ms>\n", status_stats[h2_case::PASSED], status_stats[h2_case::TODOED], status_stats[h2_case::FILTED], total_cases, tt));
    }
    void on_case_endup(h2_suite* s, h2_case* c) override {
-      h2_log::on_case_endup(s, c);
+      h2_report::on_case_endup(s, c);
       switch (c->status) {
       case h2_case::INITED: break;
       case h2_case::TODOED:
@@ -47,23 +47,23 @@ struct h2_log_console : h2_log {
    }
 };
 
-struct h2_log_xml : h2_log {
+struct h2_report_junit : h2_report {
    FILE* f;
    void on_task_start(int cases) override {
-      h2_log::on_task_start(cases);
+      h2_report::on_task_start(cases);
       f = fopen(O.junit, "w");
       if (!f) return;
       fprintf(f, "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n");
       fprintf(f, "<testsuites>\n");
    };
    void on_suite_start(h2_suite* s) override {
-      h2_log::on_suite_start(s);
+      h2_report::on_suite_start(s);
       if (!f) return;
       fprintf(f, "<testsuite errors=\"0\" failures=\"%d\" hostname=\"localhost\" name=\"%s\" skipped=\"%d\" tests=\"%d\" time=\"%d\" timestamp=\"%s\">\n", s->status_stats[h2_case::FAILED], s->name, s->status_stats[h2_case::TODOED] + s->status_stats[h2_case::FILTED], (int)s->cases().size(), 0, "");
    }
 
    void on_case_endup(h2_suite* s, h2_case* c) override {
-      h2_log::on_case_endup(s, c);
+      h2_report::on_case_endup(s, c);
       if (!f) return;
       fprintf(f, "<testcase classname=\"%s\" name=\"%s\" status=\"%s\" time=\"%.3f\">\n", s->name, c->name, CSS[c->status], tc / 1000.0);
 
@@ -80,26 +80,45 @@ struct h2_log_xml : h2_log {
       fprintf(f, "</testcase>\n");
    }
    void on_suite_endup(h2_suite* s) override {
-      h2_log::on_suite_endup(s);
+      h2_report::on_suite_endup(s);
       if (!f) return;
       fprintf(f, "</testsuite>\n");
    }
    void on_task_endup(int status_stats[8]) override {
-      h2_log::on_task_endup(status_stats);
+      h2_report::on_task_endup(status_stats);
       if (!f) return;
       fprintf(f, "</testsuites>\n");
       fclose(f);
    }
 };
 
-struct h2_log_tap : h2_log {
+struct h2_report_tap : h2_report {
    /* */
 };
 
-h2_inline void h2_logs::init() {
-   static h2_log_console console_log;
-   static h2_log_xml xml_log;
-   static h2_log_tap tap_log;
-   logs.push_back(&console_log);
-   if (strlen(O.junit)) logs.push_back(&xml_log);
+h2_inline void h2_reports::initialize() {
+   static h2_report_console console_report;
+   static h2_report_junit junit_report;
+   static h2_report_tap tap_report;
+   reports.push_back(&console_report);
+   if (strlen(O.junit)) reports.push_back(&junit_report);
+}
+
+inline void h2_reports::on_task_start(int cases) {
+   for (auto report : reports) report->on_task_start(cases);
+}
+inline void h2_reports::on_task_endup(int status_stats[8]) {
+   for (auto report : reports) report->on_task_endup(status_stats);
+}
+inline void h2_reports::on_suite_start(h2_suite* s) {
+   for (auto report : reports) report->on_suite_start(s);
+}
+inline void h2_reports::on_suite_endup(h2_suite* s) {
+   for (auto report : reports) report->on_suite_endup(s);
+}
+inline void h2_reports::on_case_start(h2_suite* s, h2_case* c) {
+   for (auto report : reports) report->on_case_start(s, c);
+}
+inline void h2_reports::on_case_endup(h2_suite* s, h2_case* c) {
+   for (auto report : reports) report->on_case_endup(s, c);
 }

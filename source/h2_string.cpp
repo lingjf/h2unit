@@ -1,22 +1,22 @@
 
-h2_inline bool h2_string::equals(h2_string __str, bool caseless) const {
-   if (!caseless) return *this == __str;
-   return tolower(c_str()) == tolower(__str);
+h2_inline bool h2_string::equals(h2_string str, bool caseless) const {
+   if (!caseless) return *this == str;
+   return tolower(c_str()) == tolower(str);
 }
 
-h2_inline bool h2_string::contains(h2_string __substr, bool caseless) const {
-   if (!caseless) return find(__substr) != h2_string::npos;
-   return tolower(c_str()).find(tolower(__substr)) != h2_string::npos;
+h2_inline bool h2_string::contains(h2_string substr, bool caseless) const {
+   if (!caseless) return find(substr) != h2_string::npos;
+   return tolower(c_str()).find(tolower(substr)) != h2_string::npos;
 }
 
-h2_inline bool h2_string::startswith(h2_string __prefix, bool caseless) const {
-   if (!caseless) return find(__prefix) == 0;
-   return tolower(c_str()).find(tolower(__prefix)) == 0;
+h2_inline bool h2_string::startswith(h2_string prefix, bool caseless) const {
+   if (!caseless) return find(prefix) == 0;
+   return tolower(c_str()).find(tolower(prefix)) == 0;
 }
 
-h2_inline bool h2_string::endswith(h2_string __suffix, bool caseless) const {
-   if (!caseless) return rfind(__suffix) == length() - __suffix.length();
-   return tolower(c_str()).rfind(tolower(__suffix)) == length() - __suffix.length();
+h2_inline bool h2_string::endswith(h2_string suffix, bool caseless) const {
+   if (!caseless) return rfind(suffix) == length() - suffix.length();
+   return tolower(c_str()).rfind(tolower(suffix)) == length() - suffix.length();
 }
 
 h2_inline h2_string& h2_string::tolower() {

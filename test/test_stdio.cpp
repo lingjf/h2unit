@@ -1,3 +1,4 @@
+#include "../source/h2_unit.cpp"
 
 static int my_printf(const char* fmt, ...) 
 {
@@ -137,6 +138,16 @@ SUITE(stdio)
       OK("fputs stderr! 42", COUT());
    }
 
+   Case(fputs only stderr)
+   {
+      COUT("stderr");
+      ret = fputs("fputs stdout! 42", stdout);
+      OK(Gt(0), ret);
+      ret = fputs("fputs stderr! 42", stderr);
+      OK(Gt(0), ret);
+      OK("fputs stderr! 42", COUT());
+   }
+
    Case(fwrite)
    {
       COUT("");
@@ -150,6 +161,14 @@ SUITE(stdio)
       ret = fwrite(e2, 1, strlen(e2), stderr);
       OK(strlen(e2), ret);
       OK(e2, COUT());
+   }
+
+   Case(syslog)
+   {
+      COUT("");
+      const char* e1 = "syslog! 42";
+      syslog(LOG_DEBUG, "syslog! %d", 42);
+      OK(e1, COUT());
    }
 
    Case(normal file write)

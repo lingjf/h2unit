@@ -1,3 +1,4 @@
+#include "../source/h2_unit.cpp"
 
 #define H2_H2_FOREACH_FAIL(f, First)                                           \
   for (h2::h2_fail* x_fail = First; x_fail; x_fail = x_fail->x_next)           \

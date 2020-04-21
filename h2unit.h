@@ -1,9 +1,11 @@
-/* v5.1  2020-04-11 23:31:06 */
+/* v5.2  2020-04-21 22:33:31 */
 /* https://github.com/lingjf/h2unit */
 /* Apache Licence 2.0 */
+#ifndef __H2UNIT_H__
+#define __H2UNIT_H__
+#define H2UNIT_VERSION "5.2"
 #ifndef ___H2UNIT_H___
 #define ___H2UNIT_H___
-#define H2UNIT_VERSION "5.1"
 
 #include <cstdio>      /* printf */
 #include <cstdlib>     /* malloc */
@@ -29,16 +31,18 @@
 #   pragma GCC diagnostic ignored "-Wint-to-pointer-cast"
 #   pragma GCC diagnostic ignored "-Wparentheses"
 #   pragma GCC diagnostic ignored "-Wsign-compare"
+#   pragma GCC diagnostic ignored "-Wunused-function"
 #   pragma GCC diagnostic ignored "-Wwrite-strings"
 #elif defined __clang__
 #   pragma clang diagnostic ignored "-Wdeprecated-declarations"
 #   pragma clang diagnostic ignored "-Wint-to-pointer-cast"
 #   pragma clang diagnostic ignored "-Wparentheses"
 #   pragma clang diagnostic ignored "-Wsign-compare"
+#   pragma clang diagnostic ignored "-Wunused-function"
 #   pragma clang diagnostic ignored "-Wwritable-strings"
 #endif
 
-#if defined ___H2UNIT_HPP___
+#if defined __H2UNIT_HPP__
 #   define h2_inline
 #else
 #   define h2_inline inline
@@ -152,9 +156,7 @@ namespace h2 {
 #define _H2PP_LAST__1(...) __VA_ARGS__ // only 1 argument
 #define _H2PP_LAST_I() _H2PP_LAST_
 
-/* clang-format on */
-
-#define H2Q(_Prefix) H2PP_CAT5(_Prefix, _L, __LINE__, C, __COUNTER__)
+#define H2Q(_Prefix) H2PP_CAT5(_Prefix, _C, __COUNTER__, L, __LINE__)
 
 template <typename U, typename = void>
 struct h2_decay_impl {
@@ -188,11 +190,7 @@ struct h2_with {
 };
 
 /* clang-format off */
-
 #define h2_singleton(_Class) static _Class& I() { static _Class i; return i; }
-#define h2_if_return(x, y) do { auto t__ = x; if (t__) return y(t__); } while (0)
-#define h2_if_find_break(_Cond, p, found) if (_Cond) { found = p; break; }
-#define h2_out_delete(p) do { p->x.out(); delete p; } while (0)
 
 #define h2_list_entry(ptr, type, link) ((type*)((char*)(ptr) - (char*)(&(((type*)(1))->link)) + 1))
 #define h2_list_for_each_entry(p, head, type, link) for (type* p = h2_list_entry((head)->next, type, link), *t = h2_list_entry(p->link.next, type, link); &p->link != (head); p = t, t = h2_list_entry(t->link.next, type, link))
@@ -311,28 +309,28 @@ typedef std::basic_ostringstream<char, std::char_traits<char>, h2_allocator<char
 
 struct h2_string : public std::basic_string<char, std::char_traits<char>, h2_allocator<char>> {
    h2_string() : basic_string() {}
-   h2_string(const h2_string& __str) : basic_string(__str.c_str()) {}
-   h2_string(const char* __s) : basic_string(__s) {}
-   h2_string(const std::string& __s) : basic_string(__s.c_str()) {}
-   h2_string(size_t __n, char __c) : basic_string(__n, __c) {}
-   h2_string(const char* __s, size_t __n) : basic_string(__s, __n) {}
-   h2_string(const unsigned char* __s) : basic_string((const char*)__s) {}
+   h2_string(const h2_string& str) : basic_string(str.c_str()) {}
+   h2_string(const std::string& str) : basic_string(str.c_str()) {}
+   h2_string(const char* s) : basic_string(s) {}
+   h2_string(const char* s, size_t n) : basic_string(s, n) {}
+   h2_string(size_t n, char c) : basic_string(n, c) {}
+   h2_string(const unsigned char* b) : basic_string((const char*)b) {}
 
-   h2_string& operator=(const h2_string& __str) { return assign(__str.c_str()), *this; }
-   h2_string& operator=(const char* __s) { return assign(__s), *this; }
-   h2_string& operator=(const std::string& __str) { return assign(__str.c_str()), *this; }
-   h2_string& operator=(char __c) { return assign(1, __c), *this; }
-   h2_string& operator=(const unsigned char* __s) { return assign((const char*)__s), *this; }
+   h2_string& operator=(const h2_string& str) { return assign(str.c_str()), *this; }
+   h2_string& operator=(const std::string& str) { return assign(str.c_str()), *this; }
+   h2_string& operator=(const char* s) { return assign(s), *this; }
+   h2_string& operator=(char c) { return assign(1, c), *this; }
+   h2_string& operator=(const unsigned char* b) { return assign((const char*)b), *this; }
 
-   h2_string& operator+=(const h2_string& __str) { return append(__str.c_str()), *this; }
-   h2_string& operator+=(const char* __s) { return append(__s), *this; }
-   h2_string& operator+=(const std::string& __str) { return append(__str.c_str()), *this; }
-   h2_string& operator+=(char __c) { return push_back(__c), *this; }
+   h2_string& operator+=(const h2_string& str) { return append(str.c_str()), *this; }
+   h2_string& operator+=(const std::string& str) { return append(str.c_str()), *this; }
+   h2_string& operator+=(const char* s) { return append(s), *this; }
+   h2_string& operator+=(char c) { return push_back(c), *this; }
 
-   bool equals(h2_string __str, bool caseless = false) const;
-   bool contains(h2_string __substr, bool caseless = false) const;
-   bool startswith(h2_string __prefix, bool caseless = false) const;
-   bool endswith(h2_string __suffix, bool caseless = false) const;
+   bool equals(h2_string str, bool caseless = false) const;
+   bool contains(h2_string substr, bool caseless = false) const;
+   bool startswith(h2_string prefix, bool caseless = false) const;
+   bool endswith(h2_string suffix, bool caseless = false) const;
 
    h2_string& tolower();
    static h2_string tolower(h2_string from) { return from.tolower(); }
@@ -538,36 +536,23 @@ struct h2_fail_instantiate : h2_fail {
    void print();
 };
 
-struct h2_stub : h2_libc {
-   h2_list x;
-   unsigned char thunk[64];
-   void *befp, *tofp;
-   const char* file;
-   int line;
-
-   h2_stub(void* befp_, const char* file_ = nullptr, int line_ = 0);
-   ~h2_stub();
-   void set(void* tofp_);
-   void reset();
-   void restore();
-
-   struct temporary_restore : h2_once {
-      h2_stub* thus;
-      temporary_restore(h2_stub* stub) : thus(stub) { thus->restore(); }
-      ~temporary_restore() { thus->set(thus->tofp); }
-   };
-};
-
 struct h2_stubs {
-   h2_list s;
-   bool add(void* befp, void* tofp, const char* befn, const char* tofn, const char* file, int line);
+   h2_list stubs;
+   bool add(void* befp, void* tofp, const char* befn = "", const char* tofn = "", const char* file = nullptr, int line = 0);
    void clear();
 };
 
-static inline void h2_fail_g(void* fail);
+struct h2_stub_temporary_restore : h2_once {
+   void* befp;
+   char current[64];
+   h2_stub_temporary_restore(void* befp_);
+   ~h2_stub_temporary_restore();
+};
+
+static inline void h2_fail_g(h2_fail* fail);
 
 struct h2_heap {
-   static void dosegv();
+   static void initialize();
    static void dohook();
    static void unhook();
 
@@ -1686,13 +1671,13 @@ class h2_mocker<Counter, Lineno, Class, Return(Args...)> : h2_mock {
 };
 
 struct h2_mocks {
-   h2_list s;
+   h2_list mocks;
    bool add(h2_mock* mock);
    h2_fail* clear();
 };
 
 struct h2_stdio {
-   static void init();
+   static void initialize();
    static const char* capture_cout(char* type = nullptr);
 };
 
@@ -1703,10 +1688,11 @@ struct h2_dns : h2_libc {
    char array[32][128];
    h2_dns(const char* name_) : name(name_), count(0) {}
    static void setaddrinfo(int count, ...);
+   static void initialize();
 };
 
 struct h2_dnses {
-   h2_list s;
+   h2_list dnses;
    void add(h2_dns* dns);
    void clear();
 };
@@ -1759,7 +1745,7 @@ struct h2_packet_matches {
 };
 
 template <typename M1, typename M2, typename M3, typename M4>
-inline h2_polymorphic_matcher<h2_packet_matches<M1, M2, M3, M4>> PktEq(M1 from, M2 to, M3 data, M4 size) {
+inline h2_polymorphic_matcher<h2_packet_matches<M1, M2, M3, M4>> PktEq(M1 from = Any, M2 to = Any, M3 data = Any, M4 size = Any) {
    return h2_polymorphic_matcher<h2_packet_matches<M1, M2, M3, M4>>(h2_packet_matches<M1, M2, M3, M4>(from, to, data, size));
 }
 
@@ -1840,10 +1826,10 @@ struct h2_suite {
    };
 };
 
-struct h2_log {
+struct h2_report {
    int total_cases, done_cases, percentage;
    long long tt, ts, tc;
-   h2_log();
+   h2_report();
    virtual void on_task_start(int cases);
    virtual void on_task_endup(int status_stats[8]);
    virtual void on_suite_start(h2_suite* s);
@@ -1852,27 +1838,15 @@ struct h2_log {
    virtual void on_case_endup(h2_suite* s, h2_case* c);
 };
 
-struct h2_logs {
-   std::vector<h2_log*> logs;
-   void init();
-   void on_task_start(int cases) {
-      for (auto log : logs) log->on_task_start(cases);
-   }
-   void on_task_endup(int status_stats[8]) {
-      for (auto log : logs) log->on_task_endup(status_stats);
-   }
-   void on_suite_start(h2_suite* s) {
-      for (auto log : logs) log->on_suite_start(s);
-   }
-   void on_suite_endup(h2_suite* s) {
-      for (auto log : logs) log->on_suite_endup(s);
-   }
-   void on_case_start(h2_suite* s, h2_case* c) {
-      for (auto log : logs) log->on_case_start(s, c);
-   }
-   void on_case_endup(h2_suite* s, h2_case* c) {
-      for (auto log : logs) log->on_case_endup(s, c);
-   }
+struct h2_reports {
+   std::vector<h2_report*> reports;
+   void initialize();
+   void on_task_start(int cases);
+   void on_task_endup(int status_stats[8]);
+   void on_suite_start(h2_suite* s);
+   void on_suite_endup(h2_suite* s);
+   void on_case_start(h2_suite* s, h2_case* c);
+   void on_case_endup(h2_suite* s, h2_case* c);
 };
 
 #define __Matches_Common(message)                                                     \
@@ -2205,10 +2179,14 @@ static inline h2_ostringstream& h2_JE(h2_string e, h2_string a, h2_defer_fail* d
       for (auto y = Qy; Qb; Qb = false)
 #define H2Casess(name, ...) _Fullmesh_Case_Impl(name, H2Q(j), H2Q(b), H2Q(l), H2Q(x), H2Q(y), __VA_ARGS__)
 
+struct h2_patch {
+   static void initialize();
+};
+
 struct h2_task {
    h2_singleton(h2_task);
 
-   h2_logs logs;
+   h2_reports reports;
    h2_stubs stubs;
    h2_mocks mocks;
    int state, status_stats[8];
@@ -2220,12 +2198,12 @@ struct h2_task {
 
    h2_task();
    void prepare();
-   void postpare();
+   int finalize();
    void execute();
 };
 
 static inline void h2_stub_g(void* befp, void* tofp, const char* befn, const char* tofn, const char* file, int line) {
-   if (200 <= h2_task::I().state) {
+   if (20 <= h2_task::I().state) {
       if (h2_task::I().current_case)
          h2_task::I().current_case->stubs.add(befp, tofp, befn, tofn, file, line);
       else if (h2_task::I().current_suite)
@@ -2236,7 +2214,7 @@ static inline void h2_stub_g(void* befp, void* tofp, const char* befn, const cha
 }
 
 static inline void h2_mock_g(h2_mock* mock) {
-   if (200 <= h2_task::I().state) {
+   if (20 <= h2_task::I().state) {
       if (h2_task::I().current_case)
          h2_task::I().current_case->mocks.add(mock) && h2_task::I().current_case->stubs.add(mock->befp, mock->tofp, mock->befn, "", mock->file, mock->line);
       else if (h2_task::I().current_suite)
@@ -2246,10 +2224,10 @@ static inline void h2_mock_g(h2_mock* mock) {
    }
 }
 
-static inline void h2_fail_g(void* fail) {
+static inline void h2_fail_g(h2_fail* fail) {
    if (!fail) return;
    if (O.debug) h2_debugger::trap();
-   if (h2_task::I().current_case) h2_task::I().current_case->do_fail((h2_fail*)fail);
+   if (h2_task::I().current_case) h2_task::I().current_case->do_fail(fail);
 }
 }  // namespace h2
 
@@ -2341,38 +2319,39 @@ using h2::ListOf;
 #define __H2SUITE(name, QP)                                       \
    static void QP(h2::h2_suite*, h2::h2_case*);                   \
    static h2::h2_suite H2Q(suite)(name, &QP, __FILE__, __LINE__); \
-   static void QP(h2::h2_suite* ___suite, h2::h2_case* ___case)
+   static void QP(h2::h2_suite* ________suite, h2::h2_case* _________case)
 
 #define H2SUITE(name) __H2SUITE(name, H2Q(h2_suite_test_code_plus))
 
-#define __H2Cleanup()                 \
-   if (::setjmp(___suite->jump) == 0) \
-      ___suite->jumpable = true;      \
-   if (!___case)
+#define __H2Cleanup()                      \
+   if (::setjmp(________suite->jump) == 0) \
+      ________suite->jumpable = true;      \
+   if (!_________case)
 
 #define H2Cleanup() __H2Cleanup()
 
-#define __H2Case(name, todo, Qc, Q1, Q2)                              \
-   static h2::h2_case Qc(name, todo, __FILE__, __LINE__);             \
-   static h2::h2_suite::installer H2Q(installer)(___suite, &Qc);      \
-   if (&Qc == ___case)                                                \
-      for (h2::h2_suite::cleaner Q1(___suite); Q1; ___case = nullptr) \
-         for (h2::h2_case::cleaner Q2(&Qc); Q2;)                      \
+#define __H2Case(name, todo, Qc, Q1, Q2)                                         \
+   static h2::h2_case Qc(name, todo, __FILE__, __LINE__);                        \
+   static h2::h2_suite::installer H2Q(installer)(________suite, &Qc);            \
+   if (&Qc == _________case)                                                     \
+      for (h2::h2_suite::cleaner Q1(________suite); Q1; _________case = nullptr) \
+         for (h2::h2_case::cleaner Q2(&Qc); Q2;)                                 \
             if (::setjmp(Qc.jump) == 0)
 
 #define H2Case(name) __H2Case(name, 0, H2Q(t_case), H2Q(_1), H2Q(_2))
 #define H2Todo(name) __H2Case(name, 1, H2Q(t_case), H2Q(_1), H2Q(_2))
 
-#define __H2CASE(name, todo, QR, QP)                                     \
-   static void QR();                                                     \
-   static void QP(h2::h2_suite* ___suite, h2::h2_case* ___case) {        \
-      static h2::h2_case c(name, todo, __FILE__, __LINE__);              \
-      static h2::h2_suite::installer i(___suite, &c);                    \
-      if (&c == ___case)                                                 \
-         for (h2::h2_case::cleaner a(&c); a;)                            \
-            if (::setjmp(c.jump) == 0) QR();                             \
-   }                                                                     \
-   static h2::h2_suite H2Q(suite)("Anonymous", &QP, __FILE__, __LINE__); \
+#define __H2CASE(name, todo, QR, QP)                                         \
+   static void QR();                                                         \
+   static void QP(h2::h2_suite* ________suite, h2::h2_case* _________case) { \
+      static h2::h2_case c(name, todo, __FILE__, __LINE__);                  \
+      static h2::h2_suite::installer i(________suite, &c);                   \
+      if (&c == _________case)                                               \
+         for (h2::h2_case::cleaner a(&c); a;)                                \
+            if (::setjmp(c.jump) == 0)                                       \
+               QR();                                                         \
+   }                                                                         \
+   static h2::h2_suite H2Q(suite)("Anonymous", &QP, __FILE__, __LINE__);     \
    static void QR()
 
 #define H2CASE(name) __H2CASE(name, 0, H2Q(h2_case_test_code), H2Q(h2_suite_test_code_plus))
@@ -2451,26 +2430,18 @@ using h2::ListOf;
 #define __H2BLOCK0(Qb) for (h2::h2_heap::stack::block Qb(__FILE__, __LINE__); Qb;)
 #define __H2BLOCK1(Qb, ...) for (h2::h2_heap::stack::block Qb(__FILE__, __LINE__, __VA_ARGS__); Qb;)
 #define H2BLOCK(...) H2PP_IF_ELSE(H2PP_0ARG(__VA_ARGS__), __H2BLOCK0(H2Q(t_block)), __H2BLOCK1(H2Q(t_block), __VA_ARGS__))
-// #define H2BLOCK(...) for (h2::h2_heap::stack::block Qb(__FILE__, __LINE__, ##__VA_ARGS__); Qb;)
-// #define H2BLOCK(...) for (h2::h2_heap::stack::block Qb(__FILE__, __LINE__, __VA_OPT__(,) __VA_ARGS__); Qb;)
 
 #define H2DNS(...) h2::h2_dns::setaddrinfo(H2PP_NARG(__VA_ARGS__), __VA_ARGS__)
 
 #define __H2SOCK0() h2::h2_socket::start_and_fetch()
-#define __H2SOCK2(packet, size) h2::h2_socket::inject_received(packet, size, nullptr, "*");
-#define __H2SOCK3(packet, size, from) h2::h2_socket::inject_received(packet, size, from, "*");
-#define __H2SOCK4(packet, size, from, to) h2::h2_socket::inject_received(packet, size, from, to);
+#define __H2SOCK2(packet, size) h2::h2_socket::inject_received(packet, size, nullptr, "*")
+#define __H2SOCK3(packet, size, from) h2::h2_socket::inject_received(packet, size, from, "*")
+#define __H2SOCK4(packet, size, from, to) h2::h2_socket::inject_received(packet, size, from, to)
 #define H2SOCK(...) H2PP_VARIADIC_CALL(__H2SOCK, __VA_ARGS__)
 
 #define H2COUT(...) h2::h2_stdio::capture_cout(__VA_ARGS__)
 
-#define h2_main(argc, argv)                 \
-   do {                                     \
-      h2::h2_option::I().parse(argc, argv); \
-      h2::h2_task::I().prepare();           \
-      h2::h2_task::I().execute();           \
-      h2::h2_task::I().postpare();          \
-   } while (0)
+#endif
 
 #include <algorithm>     /* shuffle */
 #include <arpa/inet.h>   /* inet_addr */
@@ -2498,6 +2469,7 @@ using h2::ListOf;
 #include <sys/syscall.h> /* syscall */
 #include <sys/time.h>    /* gettimeofday */
 #include <sys/types.h>   /* size_t */
+#include <syslog.h>      /* syslog, vsyslog */
 #include <typeinfo>      /* typeid */
 #include <unistd.h>      /* sysconf */
 
@@ -2790,6 +2762,7 @@ h2_inline void h2_case::prev_setup() {
 }
 
 h2_inline void h2_case::post_cleanup() {
+   h2_stdio::capture_cout(nullptr);
    if (sock) delete sock;
    dnses.clear();
    stubs.clear();
@@ -2962,6 +2935,135 @@ h2_inline void h2_directory::list_then_exit() {
    sort();
    print_list();
    exit(0);
+}
+
+struct h2_resolver {
+   h2_singleton(h2_resolver);
+   h2_list dnses;
+
+   static bool inet_addr(const char* str, struct sockaddr_in* addr) {
+      int s1, s2, s3, s4;
+      bool is_ipv4 = 4 == ::sscanf(str, "%d.%d.%d.%d", &s1, &s2, &s3, &s4);
+      if (is_ipv4 && addr) {
+         addr->sin_family = AF_INET;
+         addr->sin_addr.s_addr = ::inet_addr(str);
+      }
+      return is_ipv4;
+   }
+
+   h2_dns* find(const char* hostname) {
+      h2_list_for_each_entry(p, &dnses, h2_dns, y) if (!strcmp("*", p->name) || !strcmp(hostname, p->name)) return p;
+      return nullptr;
+   }
+
+   static int getaddrinfo(const char* hostname, const char* servname, const struct addrinfo* hints, struct addrinfo** res) {
+      h2_dns* dns = I().find(hostname);
+      if (!dns) return -1;
+
+      static struct addrinfo addrinfos[32];
+      static struct sockaddr_in sockaddrs[32];
+      memset(addrinfos, 0, sizeof(addrinfos));
+      memset(sockaddrs, 0, sizeof(sockaddrs));
+
+      struct addrinfo** pp = res;
+      for (int i = 0; i < dns->count; ++i) {
+         struct addrinfo* a = &addrinfos[i];
+         struct sockaddr_in* b = &sockaddrs[i];
+         if (inet_addr(dns->array[i], b)) {
+            a->ai_addr = (struct sockaddr*)b;
+            a->ai_addrlen = sizeof(struct sockaddr_in);
+         } else
+            a->ai_canonname = dns->array[i];
+         if (hints) {
+            a->ai_family = hints->ai_family;
+            a->ai_socktype = hints->ai_socktype;
+            a->ai_protocol = hints->ai_protocol;
+         } else {
+            a->ai_family = AF_INET;
+            a->ai_socktype = SOCK_STREAM;
+            a->ai_protocol = IPPROTO_TCP;
+         }
+         a->ai_next = nullptr;
+         *pp = a, pp = &a->ai_next;
+      }
+      *pp = nullptr;
+      return 0;
+   }
+
+   static void freeaddrinfo(struct addrinfo* ai) {}
+
+   static struct hostent* gethostbyname(char* name) {
+      h2_dns* dns = I().find(name);
+      if (!dns) return nullptr;
+
+      static struct sockaddr_in sockaddrs[32];
+      static char* h_aliases[32];
+      static char* h_addr_list[32];
+      static struct hostent h;
+
+      h.h_name = name;
+      h.h_addrtype = AF_INET;
+      h.h_aliases = h_aliases;
+      h.h_addr_list = h_addr_list;
+
+      memset(sockaddrs, 0, sizeof(sockaddrs));
+      memset(h_aliases, 0, sizeof(h_aliases));
+      memset(h_addr_list, 0, sizeof(h_addr_list));
+
+      for (int i = 0, a = 0, c = 0; i < dns->count; ++i) {
+         struct sockaddr_in* b = &sockaddrs[i];
+         if (inet_addr(dns->array[i], b))
+            h_addr_list[a++] = (char*)&b->sin_addr;
+         else
+            h_aliases[c++] = dns->array[i];
+      }
+      return &h;
+   }
+
+   h2_stubs stubs;
+   h2_resolver() {
+      stubs.add((void*)::getaddrinfo, (void*)getaddrinfo);
+      stubs.add((void*)::freeaddrinfo, (void*)freeaddrinfo);
+      stubs.add((void*)::gethostbyname, (void*)gethostbyname);
+   }
+   ~h2_resolver() { stubs.clear(); }
+};
+
+h2_inline void h2_dnses::add(h2_dns* dns) { dnses.push(&dns->x); }
+h2_inline void h2_dnses::clear() {
+   h2_list_for_each_entry(p, &dnses, h2_dns, x) {
+      p->x.out(), p->y.out();
+      delete p;
+   }
+}
+
+h2_inline void h2_dns::setaddrinfo(int n, ...) {
+   if (n == 0) return;
+   const char* array[32];
+   int count = 0;
+   va_list a;
+   va_start(a, n);
+   for (int i = 0; i < n && i < 32; ++i)
+      array[count++] = va_arg(a, const char*);
+   va_end(a);
+
+   const char* hostname = "*";
+   for (int i = 0; i < count; ++i)
+      if (!h2_resolver::inet_addr(array[i], nullptr))
+         if (strlen(hostname) < 2 || strlen(array[i]) < strlen(hostname))
+            hostname = array[i];
+
+   h2_dns* dns = new h2_dns(hostname);
+   for (int i = 0; i < count; ++i)
+      if (strcmp(hostname, array[i]))
+         strcpy(dns->array[dns->count++], array[i]);
+
+   h2_resolver::I().dnses.push(&dns->y);
+   if (h2_task::I().current_case) h2_task::I().current_case->dnses.add(dns);
+}
+
+h2_inline void h2_dns::initialize() {
+   setaddrinfo(1, "127.0.0.1");
 }
 // TINYEXPR - Tiny recursive descent parser and evaluation engine in C
 //
@@ -3907,7 +4009,10 @@ struct h2_block : h2_libc {
          fail = new h2_fail_memleak(file, line, where);
          h2_list_for_each_entry(p, &using_list, h2_piece, x) fail->add(p->ptr, p->size, p->bt);
       }
-      h2_list_for_each_entry(p, &freed_list, h2_piece, x) h2_out_delete(p);
+      h2_list_for_each_entry(p, &freed_list, h2_piece, x) {
+         p->x.out();
+         delete p;
+      }
       return fail;
    }
 
@@ -3955,15 +4060,13 @@ struct h2_stack {
       static struct {
          void* base;
          int size;
-      } exclude_functions[] = {
-        {(void*)printf, 300},
-        {(void*)sprintf, 300},
-        {(void*)vsnprintf, 300},
-        {(void*)fprintf, 300},
-        {(void*)sscanf, 300},
-        {(void*)localtime, 300}};
+      } escape_functions[] = {
+        {(void*)sprintf, 300},  // {(void*)vsnprintf, 300}, {(void*)sscanf, 300},
+        {(void*)localtime, 300},
+        {(void*)tzset, 300},
+      };
 
-      for (auto& x : exclude_functions)
+      for (auto& x : escape_functions)
          if (bt.has(x.base, x.size))
             return true;
 
@@ -3989,18 +4092,27 @@ struct h2_stack {
    }
 
    h2_piece* get_piece(const void* ptr) {
-      h2_list_for_each_entry(p, &blocks, h2_block, x) h2_if_return(p->get_piece(ptr), );
+      h2_list_for_each_entry(p, &blocks, h2_block, x) {
+         h2_piece* piece = p->get_piece(ptr);
+         if (piece) return piece;
+      }
       return nullptr;
    }
 
    h2_fail* rel_piece(void* ptr) {
-      h2_list_for_each_entry(p, &blocks, h2_block, x) h2_if_return(p->get_piece(ptr), p->rel_piece);
+      h2_list_for_each_entry(p, &blocks, h2_block, x) {
+         h2_piece* piece = p->get_piece(ptr);
+         if (piece) return p->rel_piece(piece);
+      }
       h2_debug("Warning: free not found!");
       return nullptr;
    }
 
    h2_piece* host_piece(const void* addr) {
-      h2_list_for_each_entry(p, &blocks, h2_block, x) h2_if_return(p->host_piece(addr), );
+      h2_list_for_each_entry(p, &blocks, h2_block, x) {
+         h2_piece* piece = p->host_piece(addr);
+         if (piece) return piece;
+      }
       return nullptr;
    }
 };
@@ -4172,10 +4284,10 @@ struct h2_hook {
       malloc_zone_unregister(default_zone);
       malloc_zone_register(default_zone);
 #else
-      stubs.add((void*)::free, (void*)hook::free, "", "", __FILE__, __LINE__);
-      stubs.add((void*)::malloc, (void*)hook::malloc, "", "", __FILE__, __LINE__);
-      stubs.add((void*)::realloc, (void*)hook::realloc, "", "", __FILE__, __LINE__);
-      stubs.add((void*)::posix_memalign, (void*)hook::posix_memalign, "", "", __FILE__, __LINE__);
+      stubs.add((void*)::free, (void*)hook::free);
+      stubs.add((void*)::malloc, (void*)hook::malloc);
+      stubs.add((void*)::realloc, (void*)hook::realloc);
+      stubs.add((void*)::posix_memalign, (void*)hook::posix_memalign);
 #endif
    }
 
@@ -4199,7 +4311,7 @@ struct h2_hook {
       exit(1);
    }
 
-   void dosegv() {
+   void install_segment_fault_handler() {
       struct sigaction act;
       act.sa_sigaction = segment_fault_handler;
       act.sa_flags = SA_SIGINFO;
@@ -4209,8 +4321,9 @@ struct h2_hook {
    }
 };
 
-h2_inline void h2_heap::dosegv() {
-   if (O.memory_check && !O.debug) h2_hook::I().dosegv();
+h2_inline void h2_heap::initialize() {
+   if (O.memory_check && !O.debug) h2_hook::I().install_segment_fault_handler();
+   stack::root();
 }
 h2_inline void h2_heap::dohook() {
    if (O.memory_check) h2_hook::I().dohook();
@@ -4224,6 +4337,7 @@ h2_inline void h2_heap::stack_push_block(const char* file, int line, const char*
 h2_inline h2_fail* h2_heap::stack_pop_block() {
    return h2_stack::I().pop();
 }
+
 struct h2__json {
    static const int t_absent = 0;
 
@@ -4381,17 +4495,17 @@ struct h2__json {
             x.offset += 4;
             return true;
          }
-         /* t_string */
+         /* string */
          if (x.startswith('\"') || x.startswith('\'')) return parse_string(x);
-         /* t_regexp */
+         /* regexp */
          if (x.startswith('/')) return parse_regexp(x);
 
-         /* t_array */
+         /* array */
          if (x.startswith('[')) return parse_array(x);
-         /* t_object */
+         /* object */
          if (x.startswith('{')) return parse_object(x);
 
-         /* t_number */
+         /* number */
          if (1 /* x.startswith('-') || x.startswith('0', '9') */) return parse_number(x);
 
          return false;
@@ -4866,7 +4980,7 @@ h2_inline void* h2_libc::malloc(size_t sz) {
    if (!O.memory_check) {
       return ::malloc(sz);
    }
-   void* ptr = mmap(nullptr, sz, PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0);
+   void* ptr = ::mmap(nullptr, sz, PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0);
    if (ptr == MAP_FAILED) return nullptr;
 
    uintptr_t* p = (uintptr_t*)ptr;
@@ -4881,116 +4995,11 @@ h2_inline void h2_libc::free(void* ptr) {
    }
    if (!ptr) return;
    uintptr_t* p = ((uintptr_t*)ptr) - 1;
-   munmap((void*)p, (size_t)*p);
+   ::munmap((void*)p, (size_t)*p);
 }
 
 h2_inline ssize_t h2_libc::write(int fd, const void* buf, size_t count) {
-   return syscall(SYS_write, fd, buf, count);
-}
-
-h2_inline h2_log::h2_log() : total_cases(0), done_cases(0), percentage(0), tt(0), ts(0), tc(0) {}
-h2_inline void h2_log::on_task_start(int cases) {
-   total_cases = cases;
-   tt = h2_now();
-};
-h2_inline void h2_log::on_task_endup(int status_stats[8]) { tt = h2_now() - tt; };
-h2_inline void h2_log::on_suite_start(h2_suite* s) { ts = h2_now(); }
-h2_inline void h2_log::on_suite_endup(h2_suite* s) { ts = h2_now() - ts; }
-h2_inline void h2_log::on_case_start(h2_suite* s, h2_case* c) { tc = h2_now(); };
-h2_inline void h2_log::on_case_endup(h2_suite* s, h2_case* c) {
-   percentage = ++done_cases * 100 / total_cases;
-   tc = h2_now() - tc;
-};
-
-struct h2_log_console : h2_log {
-   void on_task_endup(int status_stats[8]) override {
-      h2_log::on_task_endup(status_stats);
-      printf("\n[%3d%%] ", percentage);
-      if (0 < status_stats[h2_case::FAILED])
-         printf("%s", SF("bold,red", "Failed <%d failed, %d passed, %d todo, %d filtered, %lld ms>\n", status_stats[h2_case::FAILED], status_stats[h2_case::PASSED], status_stats[h2_case::TODOED], status_stats[h2_case::FILTED], tt));
-      else
-         printf("%s", SF("bold,green", "Passed <%d passed, %d todo, %d filtered, %d cases, %lld ms>\n", status_stats[h2_case::PASSED], status_stats[h2_case::TODOED], status_stats[h2_case::FILTED], total_cases, tt));
-   }
-   void on_case_endup(h2_suite* s, h2_case* c) override {
-      h2_log::on_case_endup(s, c);
-      switch (c->status) {
-      case h2_case::INITED: break;
-      case h2_case::TODOED:
-         if (O.verbose) printf("[%3d%%] (%s // %s): %s at %s:%d\n", percentage, s->name, c->name, CSS[c->status], basename((char*)c->file), c->line);
-         break;
-      case h2_case::FILTED: break;
-      case h2_case::PASSED:
-         if (O.verbose)
-            printf("[%3d%%] %s", percentage, SF("light blue", "(%s // %s): Passed - %lld ms\n", s->name, c->name, tc));
-         else if (!O.debug)
-            printf("\r[%3d%%] (%d/%d)\r", percentage, done_cases, total_cases);
-         break;
-      case h2_case::FAILED:
-         printf("[%3d%%] %s", percentage, SF("bold,purple", "(%s // %s): Failed at %s:%d\n", s->name, c->name, basename((char*)c->file), c->line));
-         for (h2_fail* x_fail = c->fails; x_fail; x_fail = x_fail->x_next)
-            for (h2_fail* fail = x_fail; fail; fail = fail->y_next)
-               fail->print();
-         printf("\n");
-         break;
-      }
-   }
-};
-
-struct h2_log_xml : h2_log {
-   FILE* f;
-   void on_task_start(int cases) override {
-      h2_log::on_task_start(cases);
-      f = fopen(O.junit, "w");
-      if (!f) return;
-      fprintf(f, "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n");
-      fprintf(f, "<testsuites>\n");
-   };
-   void on_suite_start(h2_suite* s) override {
-      h2_log::on_suite_start(s);
-      if (!f) return;
-      fprintf(f, "<testsuite errors=\"0\" failures=\"%d\" hostname=\"localhost\" name=\"%s\" skipped=\"%d\" tests=\"%d\" time=\"%d\" timestamp=\"%s\">\n", s->status_stats[h2_case::FAILED], s->name, s->status_stats[h2_case::TODOED] + s->status_stats[h2_case::FILTED], (int)s->cases().size(), 0, "");
-   }
-
-   void on_case_endup(h2_suite* s, h2_case* c) override {
-      h2_log::on_case_endup(s, c);
-      if (!f) return;
-      fprintf(f, "<testcase classname=\"%s\" name=\"%s\" status=\"%s\" time=\"%.3f\">\n", s->name, c->name, CSS[c->status], tc / 1000.0);
-
-      if (c->status == h2_case::FAILED) {
-         fprintf(f, "<failure message=\"%s:%d:", c->file, c->line);
-         for (h2_fail* x_fail = c->fails; x_fail; x_fail = x_fail->x_next)
-            for (h2_fail* fail = x_fail; fail; fail = fail->y_next) {
-               fprintf(f, "{newline}");
-               fail->print(f);
-            }
-         fprintf(f, "\" type=\"AssertionFailedError\"></failure>\n");
-      }
-      fprintf(f, "<system-out></system-out><system-err></system-err>\n");
-      fprintf(f, "</testcase>\n");
-   }
-   void on_suite_endup(h2_suite* s) override {
-      h2_log::on_suite_endup(s);
-      if (!f) return;
-      fprintf(f, "</testsuite>\n");
-   }
-   void on_task_endup(int status_stats[8]) override {
-      h2_log::on_task_endup(status_stats);
-      if (!f) return;
-      fprintf(f, "</testsuites>\n");
-      fclose(f);
-   }
-};
-
-struct h2_log_tap : h2_log {
-   /* */
-};
-
-h2_inline void h2_logs::init() {
-   static h2_log_console console_log;
-   static h2_log_xml xml_log;
-   static h2_log_tap tap_log;
-   logs.push_back(&console_log);
-   if (strlen(O.junit)) logs.push_back(&xml_log);
+   return ::syscall(SYS_write, fd, buf, count);
 }
 
 h2_inline h2_fail* h2_string_equal_matches::matches(const h2_string& a, bool caseless, bool dont) const {
@@ -5125,313 +5134,20 @@ h2_inline h2_fail* h2_json_matches::matches(const h2_string& a, bool caseless, b
    return fail;
 }
 
-struct h2_resolver {
-   h2_singleton(h2_resolver);
-   h2_list dnses;
-
-   static bool inet_addr(const char* str, struct sockaddr_in* addr) {
-      int s1, s2, s3, s4;
-      bool is_ipv4 = 4 == ::sscanf(str, "%d.%d.%d.%d", &s1, &s2, &s3, &s4);
-      if (is_ipv4 && addr) {
-         addr->sin_family = AF_INET;
-         addr->sin_addr.s_addr = ::inet_addr(str);
-      }
-      return is_ipv4;
-   }
-
-   h2_dns* find(const char* hostname) {
-      h2_list_for_each_entry(p, &dnses, h2_dns, y) if (!strcmp("*", p->name) || !strcmp(hostname, p->name)) return p;
-      return nullptr;
-   }
-
-   static int getaddrinfo(const char* hostname, const char* servname, const struct addrinfo* hints, struct addrinfo** res) {
-      h2_dns* dns = I().find(hostname);
-      if (!dns) return -1;
-
-      static struct addrinfo addrinfos[32];
-      static struct sockaddr_in sockaddrs[32];
-      memset(addrinfos, 0, sizeof(addrinfos));
-      memset(sockaddrs, 0, sizeof(sockaddrs));
-
-      struct addrinfo** pp = res;
-      for (int i = 0; i < dns->count; ++i) {
-         struct addrinfo* a = &addrinfos[i];
-         struct sockaddr_in* b = &sockaddrs[i];
-         if (inet_addr(dns->array[i], b)) {
-            a->ai_addr = (struct sockaddr*)b;
-            a->ai_addrlen = sizeof(struct sockaddr_in);
-         } else
-            a->ai_canonname = dns->array[i];
-         if (hints) {
-            a->ai_family = hints->ai_family;
-            a->ai_socktype = hints->ai_socktype;
-            a->ai_protocol = hints->ai_protocol;
-         } else {
-            a->ai_family = AF_INET;
-            a->ai_socktype = SOCK_STREAM;
-            a->ai_protocol = IPPROTO_TCP;
-         }
-         a->ai_next = nullptr;
-         *pp = a, pp = &a->ai_next;
-      }
-      *pp = nullptr;
-      return 0;
-   }
-
-   static void freeaddrinfo(struct addrinfo* ai) {}
-
-   static struct hostent* gethostbyname(char* name) {
-      h2_dns* dns = I().find(name);
-      if (!dns) return nullptr;
-
-      static struct sockaddr_in sockaddrs[32];
-      static char* h_aliases[32];
-      static char* h_addr_list[32];
-      static struct hostent h;
-
-      h.h_name = name;
-      h.h_addrtype = AF_INET;
-      h.h_aliases = h_aliases;
-      h.h_addr_list = h_addr_list;
-
-      memset(sockaddrs, 0, sizeof(sockaddrs));
-      memset(h_aliases, 0, sizeof(h_aliases));
-      memset(h_addr_list, 0, sizeof(h_addr_list));
-
-      for (int i = 0, a = 0, c = 0; i < dns->count; ++i) {
-         struct sockaddr_in* b = &sockaddrs[i];
-         if (inet_addr(dns->array[i], b))
-            h_addr_list[a++] = (char*)&b->sin_addr;
-         else
-            h_aliases[c++] = dns->array[i];
-      }
-      return &h;
-   }
-
-   h2_stubs stubs;
-   h2_resolver() {
-      stubs.add((void*)::getaddrinfo, (void*)getaddrinfo, "", "", __FILE__, __LINE__);
-      stubs.add((void*)::freeaddrinfo, (void*)freeaddrinfo, "", "", __FILE__, __LINE__);
-      stubs.add((void*)::gethostbyname, (void*)gethostbyname, "", "", __FILE__, __LINE__);
-   }
-   ~h2_resolver() { stubs.clear(); }
-};
-
-h2_inline void h2_dnses::add(h2_dns* dns) { s.push(&dns->x); }
-h2_inline void h2_dnses::clear() {
-   h2_list_for_each_entry(p, &s, h2_dns, x) {
-      p->x.out(), p->y.out();
-      delete p;
-   }
+h2_inline bool h2_mocks::add(h2_mock* mock) {
+   h2_list_for_each_entry(p, &mocks, h2_mock, x) if (p == mock) return false;
+   mocks.push(&mock->x);
+   return true;
 }
 
-h2_inline void h2_dns::setaddrinfo(int n, ...) {
-   if (n == 0) return;
-   const char* array[32];
-   int count = 0;
-   va_list a;
-   va_start(a, n);
-   for (int i = 0; i < n && i < 32; ++i)
-      array[count++] = va_arg(a, const char*);
-   va_end(a);
-
-   const char* hostname = "*";
-   for (int i = 0; i < count; ++i)
-      if (!h2_resolver::inet_addr(array[i], nullptr))
-         if (strlen(hostname) < 2 || strlen(array[i]) < strlen(hostname))
-            hostname = array[i];
-
-   h2_dns* dns = new h2_dns(hostname);
-   for (int i = 0; i < count; ++i)
-      if (strcmp(hostname, array[i]))
-         strcpy(dns->array[dns->count++], array[i]);
-
-   h2_resolver::I().dnses.push(&dns->y);
-   if (h2_task::I().current_case) h2_task::I().current_case->dnses.add(dns);
-}
-
-struct h2__socket {
-   h2_singleton(h2__socket);
-   h2_list socks;
-
-   static void iport_parse(const char* str, struct sockaddr_in* addr) {
-      char temp[1024];
-      strcpy(temp, str);
-      addr->sin_family = AF_INET;
-      addr->sin_port = 0;
-      char* colon = strchr(temp, ':');
-      if (colon) {
-         *colon = '\0';
-         addr->sin_port = htons(atoi(colon + 1));
-      }
-      addr->sin_addr.s_addr = ::inet_addr(temp);
+h2_inline h2_fail* h2_mocks::clear() {
+   h2_fail* fail = nullptr;
+   h2_list_for_each_entry(p, &mocks, h2_mock, x) {
+      h2_fail::append_x(fail, p->times_check());
+      p->reset();
+      p->x.out();
    }
-
-   static const char* iport_tostring(struct sockaddr_in* addr, char* str) {
-      sprintf(str, "%s:%d", inet_ntoa(addr->sin_addr), ntohs(addr->sin_port));
-      return str;
-   }
-
-   struct temporary_noblock : h2_once {
-      int sockfd, flags;
-      temporary_noblock(int sockfd_) : sockfd(sockfd_) {
-         flags = fcntl(sockfd, F_GETFL);
-         fcntl(sockfd, F_SETFL, flags | O_NONBLOCK);
-      }
-      ~temporary_noblock() { fcntl(sockfd, F_SETFL, flags); }
-   };
-
-   static const char* getsockname(int sockfd, char* s, struct sockaddr_in* a = nullptr) {
-      struct sockaddr_in b;
-      if (!a) a = &b;
-      socklen_t l = sizeof(struct sockaddr_in);
-      ::getsockname(sockfd, (struct sockaddr*)a, &l);
-      return iport_tostring(a, s);
-   }
-
-   static h2_packet* read_incoming(int sockfd) {
-      bool block = !(fcntl(sockfd, F_GETFL) & O_NONBLOCK);
-      const char* local = getsockname(sockfd, (char*)alloca(64));
-      h2_sock* sock = h2_list_top_entry(&I().socks, h2_sock, y);
-
-      do {
-         h2_list_for_each_entry(p, &sock->incoming, h2_packet, x) if (h2_wildcard_match(p->to.c_str(), local)) {
-            p->x.out();
-            return p;
-         }
-         if (block) h2_sleep(100);
-      } while (block);
-      return nullptr;
-   }
-
-   static int accept(int socket, struct sockaddr* address, socklen_t* address_len) {
-      h2_packet* tcp = read_incoming(socket);
-      if (!tcp) {
-         errno = EWOULDBLOCK;
-         return -1;
-      }
-      iport_parse(tcp->from.c_str(), (struct sockaddr_in*)address);
-      *address_len = sizeof(struct sockaddr_in);
-
-      int fd = ::socket(AF_INET, SOCK_STREAM, 0);
-      struct sockaddr_in a;
-      const char* c = getsockname(socket, (char*)alloca(64), &a);
-      ::bind(fd, (struct sockaddr*)&a, sizeof(a));
-      h2_sock* sock = h2_list_top_entry(&I().socks, h2_sock, y);
-      sock->sockets.push_back({fd, c, tcp->from.c_str()});
-      if (tcp->data.length())
-         sock->incoming.push(&tcp->x);
-      else
-         delete tcp;
-
-      return fd;
-   }
-
-   static int connect(int socket, const struct sockaddr* address, socklen_t address_len) {
-      h2_sock* sock = h2_list_top_entry(&I().socks, h2_sock, y);
-      sock->sockets.push_back({socket, getsockname(socket, (char*)alloca(64)), iport_tostring((struct sockaddr_in*)address, (char*)alloca(64))});
-      h2_packet* tcp = read_incoming(socket);
-      if (!tcp) {
-         errno = EWOULDBLOCK;
-         return -1;
-      }
-      if (tcp->data.length())
-         sock->incoming.push(&tcp->x);
-      else
-         delete tcp;
-      return 0;
-   }
-
-   static ssize_t send(int socket, const void* buffer, size_t length, int flags) {
-      h2_sock* sock = h2_list_top_entry(&I().socks, h2_sock, y);
-      if (sock) sock->put_outgoing(socket, (const char*)buffer, length);
-      return length;
-   }
-   static ssize_t sendmsg(int socket, const struct msghdr* message, int flags) {
-      return sendto(socket, message->msg_iov[0].iov_base, message->msg_iov[0].iov_len, 0, (struct sockaddr*)message->msg_name, message->msg_namelen);
-   }
-   static ssize_t sendto(int socket, const void* buffer, size_t length, int flags, const struct sockaddr* dest_addr, socklen_t dest_len) {
-      h2_sock* sock = h2_list_top_entry(&I().socks, h2_sock, y);
-      if (sock) sock->put_outgoing(getsockname(socket, (char*)alloca(64)), iport_tostring((struct sockaddr_in*)dest_addr, (char*)alloca(64)), (const char*)buffer, length);
-      return length;
-   }
-   static ssize_t recv(int socket, void* buffer, size_t length, int flags) {
-      ssize_t ret = 0;
-      h2_packet* tcp = read_incoming(socket);
-      if (tcp) {
-         ret = tcp->data.copy((char*)buffer, tcp->data.length(), 0);
-         delete tcp;
-      }
-      return ret;
-   }
-   static ssize_t recvfrom(int socket, void* buffer, size_t length, int flags, struct sockaddr* address, socklen_t* address_len) {
-      ssize_t ret = 0;
-      h2_packet* udp = read_incoming(socket);
-      if (udp) {
-         ret = udp->data.copy((char*)buffer, udp->data.length(), 0);
-         iport_parse(udp->from.c_str(), (struct sockaddr_in*)address);
-         *address_len = sizeof(struct sockaddr_in);
-         delete udp;
-      }
-      return ret;
-   }
-   static ssize_t recvmsg(int socket, struct msghdr* message, int flags) {
-      return recvfrom(socket, message->msg_iov[0].iov_base, message->msg_iov[0].iov_len, 0, (struct sockaddr*)message->msg_name, &message->msg_namelen);
-   }
-};
-
-h2_inline h2_sock::h2_sock() {
-   stubs.add((void*)::sendto, (void*)h2__socket::sendto, "", "", __FILE__, __LINE__);
-   stubs.add((void*)::recvfrom, (void*)h2__socket::recvfrom, "", "", __FILE__, __LINE__);
-   stubs.add((void*)::sendmsg, (void*)h2__socket::sendmsg, "", "", __FILE__, __LINE__);
-   stubs.add((void*)::recvmsg, (void*)h2__socket::recvmsg, "", "", __FILE__, __LINE__);
-   stubs.add((void*)::send, (void*)h2__socket::send, "", "", __FILE__, __LINE__);
-   stubs.add((void*)::recv, (void*)h2__socket::recv, "", "", __FILE__, __LINE__);
-   stubs.add((void*)::accept, (void*)h2__socket::accept, "", "", __FILE__, __LINE__);
-   stubs.add((void*)::connect, (void*)h2__socket::connect, "", "", __FILE__, __LINE__);
-   strcpy(last_to, "0.0.0.0:0");
-}
-
-h2_inline h2_sock::~h2_sock() {
-   x.out(), y.out();
-   stubs.clear();
-}
-
-h2_inline void h2_sock::put_outgoing(const char* from, const char* to, const char* data, size_t size) {
-   strcpy(last_to, to);
-   outgoing.push_back(&(new h2_packet(from, to, data, size))->x);
-}
-
-h2_inline void h2_sock::put_outgoing(int fd, const char* data, size_t size) {
-   char from[128] = "", to[128] = "";
-   for (auto& t : sockets)
-      if (t.fd == fd) {
-         strcpy(from, t.from.c_str());
-         strcpy(to, t.to.c_str());
-         break;
-      }
-   put_outgoing(from, to, data, size);
-}
-
-h2_inline void h2_sock::put_incoming(const char* from, const char* to, const char* data, size_t size) {
-   incoming.push_back(&(new h2_packet(from ? from : last_to, to, data, size))->x);
-}
-
-h2_inline h2_packet* h2_socket::start_and_fetch() {
-   if (!h2_task::I().current_case) return nullptr;
-
-   h2_sock* sock = h2_task::I().current_case->sock;
-   if (!sock) {
-      sock = h2_task::I().current_case->sock = new h2_sock();
-      h2__socket::I().socks.push(&sock->y);
-   }
-
-   return h2_list_pop_entry(&sock->outgoing, h2_packet, x);
-}
-
-h2_inline void h2_socket::inject_received(const void* packet, size_t size, const char* from, const char* to) {
-   h2_sock* sock = h2_list_top_entry(&h2__socket::I().socks, h2_sock, y);
-   if (sock) sock->put_incoming(from, to, (const char*)packet, size);
+   return fail;
 }
 
 static inline void usage() {
@@ -5587,15 +5303,341 @@ h2_inline const char* h2_option::style(const char* s) const {
    return h2_style(s, shift_buffer[++shift_index % 32]);
 }
 
+struct h2__patch {
+   h2_singleton(h2__patch);
+   h2_stubs stubs;
+
+   static struct tm* localtime(const time_t* clock) { return ::gmtime(clock); }
+
+   h2__patch() {
+#if defined __GLIBC__
+      stubs.add((void*)::localtime, (void*)localtime);
+#endif
+   }
+};
+
+h2_inline void h2_patch::initialize() {
+   h2__patch::I();
+}
+
+h2_inline h2_report::h2_report() : total_cases(0), done_cases(0), percentage(0), tt(0), ts(0), tc(0) {}
+h2_inline void h2_report::on_task_start(int cases) {
+   total_cases = cases;
+   tt = h2_now();
+};
+h2_inline void h2_report::on_task_endup(int status_stats[8]) { tt = h2_now() - tt; };
+h2_inline void h2_report::on_suite_start(h2_suite* s) { ts = h2_now(); }
+h2_inline void h2_report::on_suite_endup(h2_suite* s) { ts = h2_now() - ts; }
+h2_inline void h2_report::on_case_start(h2_suite* s, h2_case* c) { tc = h2_now(); };
+h2_inline void h2_report::on_case_endup(h2_suite* s, h2_case* c) {
+   percentage = ++done_cases * 100 / total_cases;
+   tc = h2_now() - tc;
+};
+
+struct h2_report_console : h2_report {
+   void on_task_endup(int status_stats[8]) override {
+      h2_report::on_task_endup(status_stats);
+      printf("\n[%3d%%] ", percentage);
+      if (0 < status_stats[h2_case::FAILED])
+         printf("%s", SF("bold,red", "Failed <%d failed, %d passed, %d todo, %d filtered, %lld ms>\n", status_stats[h2_case::FAILED], status_stats[h2_case::PASSED], status_stats[h2_case::TODOED], status_stats[h2_case::FILTED], tt));
+      else
+         printf("%s", SF("bold,green", "Passed <%d passed, %d todo, %d filtered, %d cases, %lld ms>\n", status_stats[h2_case::PASSED], status_stats[h2_case::TODOED], status_stats[h2_case::FILTED], total_cases, tt));
+   }
+   void on_case_endup(h2_suite* s, h2_case* c) override {
+      h2_report::on_case_endup(s, c);
+      switch (c->status) {
+      case h2_case::INITED: break;
+      case h2_case::TODOED:
+         if (O.verbose) printf("[%3d%%] (%s // %s): %s at %s:%d\n", percentage, s->name, c->name, CSS[c->status], basename((char*)c->file), c->line);
+         break;
+      case h2_case::FILTED: break;
+      case h2_case::PASSED:
+         if (O.verbose)
+            printf("[%3d%%] %s", percentage, SF("light blue", "(%s // %s): Passed - %lld ms\n", s->name, c->name, tc));
+         else if (!O.debug)
+            printf("\r[%3d%%] (%d/%d)\r", percentage, done_cases, total_cases);
+         break;
+      case h2_case::FAILED:
+         printf("[%3d%%] %s", percentage, SF("bold,purple", "(%s // %s): Failed at %s:%d\n", s->name, c->name, basename((char*)c->file), c->line));
+         for (h2_fail* x_fail = c->fails; x_fail; x_fail = x_fail->x_next)
+            for (h2_fail* fail = x_fail; fail; fail = fail->y_next)
+               fail->print();
+         printf("\n");
+         break;
+      }
+   }
+};
+
+struct h2_report_junit : h2_report {
+   FILE* f;
+   void on_task_start(int cases) override {
+      h2_report::on_task_start(cases);
+      f = fopen(O.junit, "w");
+      if (!f) return;
+      fprintf(f, "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n");
+      fprintf(f, "<testsuites>\n");
+   };
+   void on_suite_start(h2_suite* s) override {
+      h2_report::on_suite_start(s);
+      if (!f) return;
+      fprintf(f, "<testsuite errors=\"0\" failures=\"%d\" hostname=\"localhost\" name=\"%s\" skipped=\"%d\" tests=\"%d\" time=\"%d\" timestamp=\"%s\">\n", s->status_stats[h2_case::FAILED], s->name, s->status_stats[h2_case::TODOED] + s->status_stats[h2_case::FILTED], (int)s->cases().size(), 0, "");
+   }
+
+   void on_case_endup(h2_suite* s, h2_case* c) override {
+      h2_report::on_case_endup(s, c);
+      if (!f) return;
+      fprintf(f, "<testcase classname=\"%s\" name=\"%s\" status=\"%s\" time=\"%.3f\">\n", s->name, c->name, CSS[c->status], tc / 1000.0);
+
+      if (c->status == h2_case::FAILED) {
+         fprintf(f, "<failure message=\"%s:%d:", c->file, c->line);
+         for (h2_fail* x_fail = c->fails; x_fail; x_fail = x_fail->x_next)
+            for (h2_fail* fail = x_fail; fail; fail = fail->y_next) {
+               fprintf(f, "{newline}");
+               fail->print(f);
+            }
+         fprintf(f, "\" type=\"AssertionFailedError\"></failure>\n");
+      }
+      fprintf(f, "<system-out></system-out><system-err></system-err>\n");
+      fprintf(f, "</testcase>\n");
+   }
+   void on_suite_endup(h2_suite* s) override {
+      h2_report::on_suite_endup(s);
+      if (!f) return;
+      fprintf(f, "</testsuite>\n");
+   }
+   void on_task_endup(int status_stats[8]) override {
+      h2_report::on_task_endup(status_stats);
+      if (!f) return;
+      fprintf(f, "</testsuites>\n");
+      fclose(f);
+   }
+};
+
+struct h2_report_tap : h2_report {
+   /* */
+};
+
+h2_inline void h2_reports::initialize() {
+   static h2_report_console console_report;
+   static h2_report_junit junit_report;
+   static h2_report_tap tap_report;
+   reports.push_back(&console_report);
+   if (strlen(O.junit)) reports.push_back(&junit_report);
+}
+
+inline void h2_reports::on_task_start(int cases) {
+   for (auto report : reports) report->on_task_start(cases);
+}
+inline void h2_reports::on_task_endup(int status_stats[8]) {
+   for (auto report : reports) report->on_task_endup(status_stats);
+}
+inline void h2_reports::on_suite_start(h2_suite* s) {
+   for (auto report : reports) report->on_suite_start(s);
+}
+inline void h2_reports::on_suite_endup(h2_suite* s) {
+   for (auto report : reports) report->on_suite_endup(s);
+}
+inline void h2_reports::on_case_start(h2_suite* s, h2_case* c) {
+   for (auto report : reports) report->on_case_start(s, c);
+}
+inline void h2_reports::on_case_endup(h2_suite* s, h2_case* c) {
+   for (auto report : reports) report->on_case_endup(s, c);
+}
+
+struct h2__socket {
+   h2_singleton(h2__socket);
+   h2_list socks;
+
+   static void iport_parse(const char* str, struct sockaddr_in* addr) {
+      char temp[1024];
+      strcpy(temp, str);
+      addr->sin_family = AF_INET;
+      addr->sin_port = 0;
+      char* colon = strchr(temp, ':');
+      if (colon) {
+         *colon = '\0';
+         addr->sin_port = htons(atoi(colon + 1));
+      }
+      addr->sin_addr.s_addr = ::inet_addr(temp);
+   }
+
+   static const char* iport_tostring(struct sockaddr_in* addr, char* str) {
+      sprintf(str, "%s:%d", inet_ntoa(addr->sin_addr), ntohs(addr->sin_port));
+      return str;
+   }
+
+   struct temporary_noblock : h2_once {
+      int sockfd, flags;
+      temporary_noblock(int sockfd_) : sockfd(sockfd_) {
+         flags = fcntl(sockfd, F_GETFL);
+         fcntl(sockfd, F_SETFL, flags | O_NONBLOCK);
+      }
+      ~temporary_noblock() { fcntl(sockfd, F_SETFL, flags); }
+   };
+
+   static const char* getsockname(int sockfd, char* s, struct sockaddr_in* a = nullptr) {
+      struct sockaddr_in b;
+      if (!a) a = &b;
+      socklen_t l = sizeof(struct sockaddr_in);
+      ::getsockname(sockfd, (struct sockaddr*)a, &l);
+      return iport_tostring(a, s);
+   }
+
+   static h2_packet* read_incoming(int sockfd) {
+      bool block = !(fcntl(sockfd, F_GETFL) & O_NONBLOCK);
+      const char* local = getsockname(sockfd, (char*)alloca(64));
+      h2_sock* sock = h2_list_top_entry(&I().socks, h2_sock, y);
+
+      do {
+         h2_list_for_each_entry(p, &sock->incoming, h2_packet, x) if (h2_wildcard_match(p->to.c_str(), local)) {
+            p->x.out();
+            return p;
+         }
+         if (block) h2_sleep(100);
+      } while (block);
+      return nullptr;
+   }
+
+   static int accept(int socket, struct sockaddr* address, socklen_t* address_len) {
+      h2_packet* tcp = read_incoming(socket);
+      if (!tcp) {
+         errno = EWOULDBLOCK;
+         return -1;
+      }
+      iport_parse(tcp->from.c_str(), (struct sockaddr_in*)address);
+      *address_len = sizeof(struct sockaddr_in);
+
+      int fd = ::socket(AF_INET, SOCK_STREAM, 0);
+      struct sockaddr_in a;
+      const char* c = getsockname(socket, (char*)alloca(64), &a);
+      ::bind(fd, (struct sockaddr*)&a, sizeof(a));
+      h2_sock* sock = h2_list_top_entry(&I().socks, h2_sock, y);
+      sock->sockets.push_back({fd, c, tcp->from.c_str()});
+      if (tcp->data.length())
+         sock->incoming.push(&tcp->x);
+      else
+         delete tcp;
+
+      return fd;
+   }
+
+   static int connect(int socket, const struct sockaddr* address, socklen_t address_len) {
+      h2_sock* sock = h2_list_top_entry(&I().socks, h2_sock, y);
+      sock->sockets.push_back({socket, getsockname(socket, (char*)alloca(64)), iport_tostring((struct sockaddr_in*)address, (char*)alloca(64))});
+      h2_packet* tcp = read_incoming(socket);
+      if (!tcp) {
+         errno = EWOULDBLOCK;
+         return -1;
+      }
+      if (tcp->data.length())
+         sock->incoming.push(&tcp->x);
+      else
+         delete tcp;
+      return 0;
+   }
+
+   static ssize_t send(int socket, const void* buffer, size_t length, int flags) {
+      h2_sock* sock = h2_list_top_entry(&I().socks, h2_sock, y);
+      if (sock) sock->put_outgoing(socket, (const char*)buffer, length);
+      return length;
+   }
+   static ssize_t sendmsg(int socket, const struct msghdr* message, int flags) {
+      return sendto(socket, message->msg_iov[0].iov_base, message->msg_iov[0].iov_len, 0, (struct sockaddr*)message->msg_name, message->msg_namelen);
+   }
+   static ssize_t sendto(int socket, const void* buffer, size_t length, int flags, const struct sockaddr* dest_addr, socklen_t dest_len) {
+      h2_sock* sock = h2_list_top_entry(&I().socks, h2_sock, y);
+      if (sock) sock->put_outgoing(getsockname(socket, (char*)alloca(64)), iport_tostring((struct sockaddr_in*)dest_addr, (char*)alloca(64)), (const char*)buffer, length);
+      return length;
+   }
+   static ssize_t recv(int socket, void* buffer, size_t length, int flags) {
+      ssize_t ret = 0;
+      h2_packet* tcp = read_incoming(socket);
+      if (tcp) {
+         ret = tcp->data.copy((char*)buffer, tcp->data.length(), 0);
+         delete tcp;
+      }
+      return ret;
+   }
+   static ssize_t recvfrom(int socket, void* buffer, size_t length, int flags, struct sockaddr* address, socklen_t* address_len) {
+      ssize_t ret = 0;
+      h2_packet* udp = read_incoming(socket);
+      if (udp) {
+         ret = udp->data.copy((char*)buffer, udp->data.length(), 0);
+         iport_parse(udp->from.c_str(), (struct sockaddr_in*)address);
+         *address_len = sizeof(struct sockaddr_in);
+         delete udp;
+      }
+      return ret;
+   }
+   static ssize_t recvmsg(int socket, struct msghdr* message, int flags) {
+      return recvfrom(socket, message->msg_iov[0].iov_base, message->msg_iov[0].iov_len, 0, (struct sockaddr*)message->msg_name, &message->msg_namelen);
+   }
+};
+
+h2_inline h2_sock::h2_sock() {
+   stubs.add((void*)::sendto, (void*)h2__socket::sendto);
+   stubs.add((void*)::recvfrom, (void*)h2__socket::recvfrom);
+   stubs.add((void*)::sendmsg, (void*)h2__socket::sendmsg);
+   stubs.add((void*)::recvmsg, (void*)h2__socket::recvmsg);
+   stubs.add((void*)::send, (void*)h2__socket::send);
+   stubs.add((void*)::recv, (void*)h2__socket::recv);
+   stubs.add((void*)::accept, (void*)h2__socket::accept);
+   stubs.add((void*)::connect, (void*)h2__socket::connect);
+   strcpy(last_to, "0.0.0.0:0");
+}
+
+h2_inline h2_sock::~h2_sock() {
+   x.out(), y.out();
+   stubs.clear();
+}
+
+h2_inline void h2_sock::put_outgoing(const char* from, const char* to, const char* data, size_t size) {
+   strcpy(last_to, to);
+   outgoing.push_back(&(new h2_packet(from, to, data, size))->x);
+}
+
+h2_inline void h2_sock::put_outgoing(int fd, const char* data, size_t size) {
+   char from[128] = "", to[128] = "";
+   for (auto& t : sockets)
+      if (t.fd == fd) {
+         strcpy(from, t.from.c_str());
+         strcpy(to, t.to.c_str());
+         break;
+      }
+   put_outgoing(from, to, data, size);
+}
+
+h2_inline void h2_sock::put_incoming(const char* from, const char* to, const char* data, size_t size) {
+   incoming.push_back(&(new h2_packet(from ? from : last_to, to, data, size))->x);
+}
+
+h2_inline h2_packet* h2_socket::start_and_fetch() {
+   if (!h2_task::I().current_case) return nullptr;
+
+   h2_sock* sock = h2_task::I().current_case->sock;
+   if (!sock) {
+      sock = h2_task::I().current_case->sock = new h2_sock();
+      h2__socket::I().socks.push(&sock->y);
+   }
+
+   return h2_list_pop_entry(&sock->outgoing, h2_packet, x);
+}
+
+h2_inline void h2_socket::inject_received(const void* packet, size_t size, const char* from, const char* to) {
+   h2_sock* sock = h2_list_top_entry(&h2__socket::I().socks, h2_sock, y);
+   if (sock) sock->put_incoming(from, to, (const char*)packet, size);
+}
+
 struct h2__stdio {
    h2_singleton(h2__stdio);
-   h2_string buffer;
-   bool stdout_capturable, stderr_capturable;
+   h2_stubs stubs;
+   h2_string* buffer;
+   bool stdout_capturable, stderr_capturable, syslog_capturable;
 
    static ssize_t write(int fd, const void* buf, size_t count) {
       if (!((I().stdout_capturable && fd == fileno(stdout)) || (I().stderr_capturable && fd == fileno(stderr))))
          return h2_libc::write(fd, buf, count);
-      I().buffer.append((char*)buf, count);
+      I().buffer->append((char*)buf, count);
       return count;
    }
 
@@ -5654,62 +5696,85 @@ struct h2__stdio {
       return 1;
    }
 
-   static const char* start_capture(bool out, bool err) {
-      h2_stub_g((void*)::write, (void*)write, "", "", "", 0);
-#if defined __APPLE__
-      h2_stub_g((void*)::printf, (void*)printf, "", "", "", 0);
-      h2_stub_g((void*)::vprintf, (void*)vprintf, "", "", "", 0);
-      h2_stub_g((void*)::putchar, (void*)putchar, "", "", "", 0);
-      h2_stub_g((void*)::puts, (void*)puts, "", "", "", 0);
-      h2_stub_g((void*)::fprintf, (void*)fprintf, "", "", "", 0);
-      h2_stub_g((void*)::vfprintf, (void*)vfprintf, "", "", "", 0);
-      h2_stub_g((void*)::fputc, (void*)fputc, "", "", "", 0);
-      h2_stub_g((void*)::putc, (void*)fputc, "", "", "", 0);
-      h2_stub_g((void*)::fputs, (void*)fputs, "", "", "", 0);
-      h2_stub_g((void*)::fwrite, (void*)fwrite, "", "", "", 0);
-#endif
-
-      I().stdout_capturable = out;
-      I().stderr_capturable = err;
-      I().buffer.clear();
-      return I().buffer.c_str();
+   static void vsyslog(int priority, const char* format, va_list ap) {
+      if (!I().syslog_capturable) return;
+      va_list bp;
+      va_copy(bp, ap);
+      int len = vsnprintf(nullptr, 0, format, bp);
+      char* tmp = (char*)alloca(len + 1);
+      len = vsnprintf(tmp, len + 1, format, ap);
+      I().buffer->append(tmp, len);
    }
 
-   static const char* stop_capture() {
-      I().stdout_capturable = false;
-      I().stderr_capturable = false;
+   static void syslog(int priority, const char* format, ...) {
+      va_list a;
+      va_start(a, format);
+      vsyslog(priority, format, a);
+      va_end(a);
+   }
 
-      I().buffer.push_back('\0');
-      return I().buffer.c_str();
+   h2__stdio() : stdout_capturable(false), stderr_capturable(false), syslog_capturable(false) {
+      stubs.add((void*)::write, (void*)write);
+#if defined __APPLE__
+      stubs.add((void*)::printf, (void*)printf);
+      stubs.add((void*)::vprintf, (void*)vprintf);
+      stubs.add((void*)::putchar, (void*)putchar);
+      stubs.add((void*)::puts, (void*)puts);
+      stubs.add((void*)::fprintf, (void*)fprintf);
+      stubs.add((void*)::vfprintf, (void*)vfprintf);
+      stubs.add((void*)::fputc, (void*)fputc);
+      stubs.add((void*)::putc, (void*)fputc);
+      stubs.add((void*)::fputs, (void*)fputs);
+      stubs.add((void*)::fwrite, (void*)fwrite);
+#endif
+      stubs.add((void*)::syslog, (void*)syslog);
+      stubs.add((void*)::vsyslog, (void*)vsyslog);
+   }
+
+   const char* start_capture(bool _stdout, bool _stderr, bool _syslog) {
+      stdout_capturable = _stdout;
+      stderr_capturable = _stderr;
+      syslog_capturable = _syslog;
+      buffer->clear();
+      return buffer->c_str();
+   }
+
+   const char* stop_capture() {
+      stdout_capturable = stderr_capturable = syslog_capturable = false;
+      buffer->push_back('\0');
+      return buffer->c_str();
    }
 };
 
-h2_inline void h2_stdio::init() {
-   setbuf(stdout, 0);  // unbuffered. stderr is unbuffered default, stdout is line-buffered default
+h2_inline void h2_stdio::initialize() {
+   ::setbuf(stdout, 0);  // unbuffered
+   h2__stdio::I().buffer = new h2_string();
 }
+
 h2_inline const char* h2_stdio::capture_cout(char* type) {
    if (!type) return h2__stdio::I().stop_capture();
-   return h2__stdio::I().start_capture(!strlen(type) || strcasestr(type, "out"), !strlen(type) || strcasestr(type, "err"));
+   if (!strlen(type)) return h2__stdio::I().start_capture(true, true, true);
+   return h2__stdio::I().start_capture(strcasestr(type, "out"), strcasestr(type, "err"), strcasestr(type, "syslog"));
 }
 
-h2_inline bool h2_string::equals(h2_string __str, bool caseless) const {
-   if (!caseless) return *this == __str;
-   return tolower(c_str()) == tolower(__str);
+h2_inline bool h2_string::equals(h2_string str, bool caseless) const {
+   if (!caseless) return *this == str;
+   return tolower(c_str()) == tolower(str);
 }
 
-h2_inline bool h2_string::contains(h2_string __substr, bool caseless) const {
-   if (!caseless) return find(__substr) != h2_string::npos;
-   return tolower(c_str()).find(tolower(__substr)) != h2_string::npos;
+h2_inline bool h2_string::contains(h2_string substr, bool caseless) const {
+   if (!caseless) return find(substr) != h2_string::npos;
+   return tolower(c_str()).find(tolower(substr)) != h2_string::npos;
 }
 
-h2_inline bool h2_string::startswith(h2_string __prefix, bool caseless) const {
-   if (!caseless) return find(__prefix) == 0;
-   return tolower(c_str()).find(tolower(__prefix)) == 0;
+h2_inline bool h2_string::startswith(h2_string prefix, bool caseless) const {
+   if (!caseless) return find(prefix) == 0;
+   return tolower(c_str()).find(tolower(prefix)) == 0;
 }
 
-h2_inline bool h2_string::endswith(h2_string __suffix, bool caseless) const {
-   if (!caseless) return rfind(__suffix) == length() - __suffix.length();
-   return tolower(c_str()).rfind(tolower(__suffix)) == length() - __suffix.length();
+h2_inline bool h2_string::endswith(h2_string suffix, bool caseless) const {
+   if (!caseless) return rfind(suffix) == length() - suffix.length();
+   return tolower(c_str()).rfind(tolower(suffix)) == length() - suffix.length();
 }
 
 h2_inline h2_string& h2_string::tolower() {
@@ -5757,7 +5822,7 @@ struct h2_thunk {
 #endif
 
    void* save(void* befp) {
-      static uintptr_t pagesize = (uintptr_t)sysconf(_SC_PAGE_SIZE);
+      uintptr_t pagesize = (uintptr_t)sysconf(_SC_PAGE_SIZE);
       uintptr_t start = reinterpret_cast<uintptr_t>(befp);
       uintptr_t pagestart = start & (~(pagesize - 1));
       int pagecount = ::ceil((start + sizeof(saved_code) - pagestart) / (double)pagesize);
@@ -5773,24 +5838,22 @@ struct h2_thunk {
 
    void set(void* befp, void* tofp) {
       unsigned char* I = reinterpret_cast<unsigned char*>(befp);
-      ptrdiff_t delta = (unsigned char*)tofp - (unsigned char*)befp;
+      ptrdiff_t delta = (unsigned char*)tofp - (unsigned char*)befp - 5;
 
 #if defined(__i386__) || defined(__x86_64__)
-      //x86 __asm("jmp $tofp") : 0xE9 {offset=tofp-befp-5}
-      //x86 __asm("movl $tofp, %eax; jmpl %eax") : 0xB8 {tofp} 0xFF 0xE0
-      //x86_64 __asm("movq $tofp, %rax; jmpq %rax") : 0x48 0xB8 {tofp} 0xFF 0xE0
-      if (delta < INT_MIN || INT_MAX < delta) {
+      if (delta < INT_MIN || INT_MAX < delta) {  //x86_64 asm("movq $tofp, %rax; jmpq %rax")
          unsigned char C[] = {0x48, 0xB8, 0, 0, 0, 0, 0, 0, 0, 0, 0xFF, 0xE0};
          memcpy(C + 2, &tofp, sizeof(void*));
          memcpy(I, C, sizeof(C));
-      } else {
-         *I++ = 0xE9;
-         *(int32_t*)I = delta - 5;
+      } else {  //i386 asm("jmp offset")
+         unsigned char C[] = {0xE9, 0, 0, 0, 0};
+         *(int32_t*)(&C[1]) = delta;
+         memcpy(I, C, sizeof(C));
       }
 #endif
    }
 
-   void* reset(void* befp) { return memcpy(befp, saved_code, sizeof(saved_code)); }
+   void reset(void* befp) { memcpy(befp, saved_code, sizeof(saved_code)); }
 };
 
 struct h2_native : h2_thunk {
@@ -5803,75 +5866,77 @@ struct h2_native : h2_thunk {
 
 struct h2_natives {
    h2_singleton(h2_natives);
-
-   h2_list s;
+   h2_list natives;
    h2_native* get(void* befp) {
-      h2_list_for_each_entry(p, &s, h2_native, x) if (p->befp == befp) return p;
+      h2_list_for_each_entry(p, &natives, h2_native, x) if (p->befp == befp) return p;
       return nullptr;
    }
    void dec(void* befp) {
-      h2_native* p = get(befp);
-      if (!p) return;
-      if (--p->refcount == 0) {
-         p->x.out();
-         h2_libc::free(p);
-      }
+      h2_native* native = get(befp);
+      if (native)
+         if (--native->refcount == 0) {
+            native->x.out();
+            h2_libc::free(native);
+         }
    }
    void inc(void* befp) {
-      h2_native* p = get(befp);
-      if (!p) {
-         p = new (h2_libc::malloc(sizeof(h2_native))) h2_native(befp);
-         s.push(&p->x);
+      h2_native* native = get(befp);
+      if (!native) {
+         native = new (h2_libc::malloc(sizeof(h2_native))) h2_native(befp);
+         natives.push(&native->x);
       }
-      p->refcount++;
+      native->refcount++;
    }
 };
 
-h2_inline h2_stub::h2_stub(void* befp_, const char* file_, int line_) : file(file_), line(line_) {
-   h2_natives::I().inc(befp_);
-   befp = ((h2_thunk*)thunk)->save(befp_);
-}
-h2_inline h2_stub::~h2_stub() {
-   h2_natives::I().dec(befp);
-}
+struct h2_stub : h2_thunk, h2_libc {
+   h2_list x;
+   void *befp, *tofp;
+   const char* file;
+   int line;
 
-h2_inline void h2_stub::set(void* tofp_) { ((h2_thunk*)thunk)->set(befp, tofp = tofp_); }
-h2_inline void h2_stub::reset() { befp && ((h2_thunk*)thunk)->reset(befp); }
-h2_inline void h2_stub::restore() { h2_natives::I().get(befp)->restore(); }
+   h2_stub(void* befp_, const char* file_ = nullptr, int line_ = 0) : file(file_), line(line_) {
+      h2_natives::I().inc(befp_);
+      befp = save(befp_);
+   }
+   ~h2_stub() { h2_natives::I().dec(befp); }
+   void set(void* tofp_) {
+      tofp = tofp_;
+      h2_thunk::set(befp, tofp);
+   }
+   void reset() {
+      if (befp) h2_thunk::reset(befp);
+   }
+};
 
 h2_inline bool h2_stubs::add(void* befp, void* tofp, const char* befn, const char* tofn, const char* file, int line) {
    h2_stub* stub = nullptr;
-   h2_list_for_each_entry(p, &s, h2_stub, x) h2_if_find_break(p->befp == befp, p, stub);
+   h2_list_for_each_entry(p, &stubs, h2_stub, x) if (p->befp == befp) {
+      stub = p;
+      break;
+   }
    if (!stub) {
       stub = new h2_stub(befp, file, line);
-      s.push(&stub->x);
+      stubs.push(&stub->x);
    }
    stub->set(tofp);
    return true;
 }
-
 h2_inline void h2_stubs::clear() {
-   h2_list_for_each_entry(p, &s, h2_stub, x) {
+   h2_list_for_each_entry(p, &stubs, h2_stub, x) {
       p->reset();
       p->x.out();
       delete p;
    }
 }
 
-h2_inline bool h2_mocks::add(h2_mock* mock) {
-   h2_list_for_each_entry(p, &s, h2_mock, x) if (p == mock) return false;
-   s.push(&mock->x);
-   return true;
+h2_inline h2_stub_temporary_restore::h2_stub_temporary_restore(void* befp_) {
+   befp = ((h2_thunk*)current)->save(befp_);
+   h2_native* native = h2_natives::I().get(befp);
+   if (native) native->restore();
 }
-
-h2_inline h2_fail* h2_mocks::clear() {
-   h2_fail* fail = nullptr;
-   h2_list_for_each_entry(p, &s, h2_mock, x) {
-      h2_fail::append_x(fail, p->times_check());
-      p->reset();
-      p->x.out();
-   }
-   return fail;
+h2_inline h2_stub_temporary_restore::~h2_stub_temporary_restore() {
+   if (befp) ((h2_thunk*)current)->reset(befp);
 }
 
 h2_inline h2_suite::h2_suite(const char* name_, void (*p)(h2_suite*, h2_case*), const char* file_, int line_)
@@ -5885,8 +5950,8 @@ h2_inline void h2_suite::cleanup() {
 }
 
 h2_inline std::vector<h2_case*>& h2_suite::cases() {
-   if (enumerate)
-      test_code_plus(this, nullptr); /* enumerate case by static local h2_case variable inside of h2_suite_test_code_plus() */
+   if (enumerate) /* enumerate case by static local h2_case variable inside of h2_suite_test_code_plus() */
+      test_code_plus(this, nullptr);
    return case_list;
 }
 
@@ -5899,54 +5964,55 @@ h2_inline void h2_suite::execute(h2_case* c) {
 inline h2_task::h2_task() : state(0), status_stats{0}, current_suite(nullptr), current_case(nullptr) {}
 
 inline void h2_task::prepare() {
-   state = 100;
-   h2_stdio::init();
-   h2_heap::dosegv();
+   state = 10;
    if (O.listing) h2_directory::list_then_exit();
-   logs.init();
+   reports.initialize();
    h2_directory::sort();
-   h2_heap::stack::root();
+   h2_heap::initialize();
    h2_heap::dohook();
-   h2_dns::setaddrinfo(1, "127.0.0.1");
-   state = 199;
+   h2_stdio::initialize();
+   h2_dns::initialize();
+   h2_patch::initialize();
+   state = 19;
 }
 
-inline void h2_task::postpare() {
-   state = 300;
+inline int h2_task::finalize() {
+   state = 30;
    h2_heap::unhook();
    stubs.clear();
    if (status_stats[h2_case::FAILED] == 0) h2_directory::drop_last_order();
-   state = 399;
+   state = 39;
+   return status_stats[h2::h2_case::FAILED];
 }
 
 inline void h2_task::execute() {
-   state = 200;
-   logs.on_task_start(h2_directory::count());
+   state = 20;
+   reports.on_task_start(h2_directory::count());
    for (auto& setup : global_setups) setup();
    for (auto& s : h2_directory::I().suites) {
       current_suite = s;
-      logs.on_suite_start(s);
+      reports.on_suite_start(s);
       for (auto& setup : global_suite_setups) setup();
       s->setup();
       for (auto& c : s->cases()) {
          if (0 < O.breakable && O.breakable <= status_stats[h2_case::FAILED]) break;
          current_case = c;
-         logs.on_case_start(s, c);
+         reports.on_case_start(s, c);
          for (auto& setup : global_case_setups) setup();
          if (O.filter(s->name, c->name, c->file)) c->status = h2_case::FILTED;
          if (h2_case::INITED == c->status) s->execute(c);
          for (auto& teardown : global_case_teardowns) teardown();
-         logs.on_case_endup(s, c);
+         reports.on_case_endup(s, c);
          status_stats[c->status] += 1;
          s->status_stats[c->status] += 1;
       }
       s->cleanup();
       for (auto& teardown : global_suite_teardowns) teardown();
-      logs.on_suite_endup(s);
+      reports.on_suite_endup(s);
    }
    for (auto& teardown : global_teardowns) teardown();
-   logs.on_task_endup(status_stats);
-   state = 299;
+   reports.on_task_endup(status_stats);
+   state = 29;
 }
 }  // namespace h2
 
@@ -5957,7 +6023,9 @@ inline void h2_task::execute() {
 #endif
 
 h2_weak_attribute int main(int argc, const char** argv) {
-   h2_main(argc, argv);
-   return 0;
+   h2::h2_option::I().parse(argc, argv);
+   h2::h2_task::I().prepare();
+   h2::h2_task::I().execute();
+   return h2::h2_task::I().finalize();
 }
 #endif

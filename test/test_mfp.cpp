@@ -1,3 +1,4 @@
+#include "../source/h2_unit.cpp"
 
 #if (defined(__GNUC__) && __GNUC__ >= 5) || defined __clang__
 
