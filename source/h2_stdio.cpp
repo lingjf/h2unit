@@ -85,8 +85,10 @@ struct h2__stdio {
    }
 
    h2__stdio() : stdout_capturable(false), stderr_capturable(false), syslog_capturable(false) {
+#ifndef _WIN32
       stubs.add((void*)::write, (void*)write);
-#if defined __APPLE__
+#endif
+#if defined __APPLE__ || defined _WIN32
       stubs.add((void*)::printf, (void*)printf);
       stubs.add((void*)::vprintf, (void*)vprintf);
       stubs.add((void*)::putchar, (void*)putchar);
@@ -98,8 +100,10 @@ struct h2__stdio {
       stubs.add((void*)::fputs, (void*)fputs);
       stubs.add((void*)::fwrite, (void*)fwrite);
 #endif
+#ifndef _WIN32
       stubs.add((void*)::syslog, (void*)syslog);
       stubs.add((void*)::vsyslog, (void*)vsyslog);
+#endif
    }
 
    const char* start_capture(bool _stdout, bool _stderr, bool _syslog) {
@@ -122,7 +126,7 @@ h2_inline void h2_stdio::initialize() {
    h2__stdio::I().buffer = new h2_string();
 }
 
-h2_inline const char* h2_stdio::capture_cout(char* type) {
+h2_inline const char* h2_stdio::capture_cout(const char* type) {
    if (!type) return h2__stdio::I().stop_capture();
    if (!strlen(type)) return h2__stdio::I().start_capture(true, true, true);
    return h2__stdio::I().start_capture(strcasestr(type, "out"), strcasestr(type, "err"), strcasestr(type, "syslog"));

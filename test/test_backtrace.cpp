@@ -7,14 +7,14 @@ SUITE(backtrace)
     h2::h2_backtrace bt;
     OK(0, bt.count);
     OK(0, bt.shift);
-  };
+  }
 
   Case(constructor 1)
   {
     h2::h2_backtrace bt(2);
     OK(Gt(0), bt.count);
     OK(2, bt.shift);
-  };
+  }
 
   Case(copy constructor)
   {
@@ -24,7 +24,7 @@ SUITE(backtrace)
     OK(Gt(0), b1.count);
     OK(2, b1.shift);
     OK(b1 == bt);
-  };
+  }
 
   Case(assign constructor)
   {
@@ -40,7 +40,7 @@ SUITE(backtrace)
     OK(Gt(0), b2.count);
     OK(2, b2.shift);
     OK(b2 == bt);
-  };
+  }
 
 #ifdef __APPLE__
   Case(demangle namespace class member function)
@@ -54,7 +54,7 @@ SUITE(backtrace)
 
     OK(0, status);
     OK("h2::task::execute()", demangled);
-  };
+  }
 
   Case(demangle namespace class member function one parameter)
   {
@@ -65,7 +65,7 @@ SUITE(backtrace)
     bool ret = h2::demangle(mangled, demangled, sizeof(demangled));
     OK(ret);
     OK("h2::hook::malloc(unsigned long)", demangled);
-  };
+  }
 #endif
 
   Case(demangle c - function)
@@ -76,7 +76,7 @@ SUITE(backtrace)
     h2::h2_backtrace bt;
     bool ret = h2::demangle(mangled, demangled, sizeof(demangled));
     OK(!ret);
-  };
+  }
 }
 
 SUITE(backtrace extract)
@@ -94,7 +94,7 @@ SUITE(backtrace extract)
     OK("a.out", module);
     OK("_ZN2h24hook6mallocEm", mangled);
     OK(45, offset);
-  };
+  }
 
   Case(Linux with '-rdynamic' linker option)
   {
@@ -105,7 +105,7 @@ SUITE(backtrace extract)
     OK("./a.out", module);
     OK("_ZN2h24task7executeEv", mangled);
     OK(0x131, offset);
-  };
+  }
 
   Case(Ubuntu without '-rdynamic' linker option)
   {
@@ -116,7 +116,7 @@ SUITE(backtrace extract)
     OK("./a.out", module);
     OK("", mangled);
     OK(0xb1887, offset);
-  };
+  }
 
   Case(Redhat / CentOS without '-rdynamic' linker option)
   {
@@ -127,7 +127,7 @@ SUITE(backtrace extract)
     OK("./a.out", module);
     OK("", mangled);
     OK(0x40b960, offset);
-  };
+  }
 
   Case(Linux 4)
   {
@@ -138,5 +138,5 @@ SUITE(backtrace extract)
     OK("./a.out", module);
     OK("", mangled);
     OK(0x4060e7, offset);
-  };
+  }
 }

@@ -5,17 +5,17 @@
 #define _H2_Macro_I(...) _H2_Macro_II(__VA_ARGS__)
 
 
-#define _H2_ForEachv(_Func, _Args, ...) H2PP_CAT2(_H2_ForEachv_, H2PP_0ARG(__VA_ARGS__)) (_Func, _Args, __VA_ARGS__)
+#define _H2_ForEachv(_Func, _Args, ...) H2PP_CAT2(_H2_ForEachv_, H2PP_IS_EMPTY(__VA_ARGS__)) (_Func, _Args, __VA_ARGS__)
 #define _H2_ForEachv_I() _H2_ForEachv
 #define _H2_ForEachv_0(_Func, _Args, ...) _H2_Macro_I(_Func, _Args, H2PP_HEAD(__VA_ARGS__)) H2PP_DEFER(_H2_ForEachv_I)()(_Func, _Args, H2PP_TAIL(__VA_ARGS__))
 #define _H2_ForEachv_1(...)
 #define H2ForEach(_Func, _Args, ...) H2PP_EVAL(_H2_ForEachv(_Func, _Args, __VA_ARGS__))
 
-#define _H2_ForEachy(_Func, _Args, x, ...) H2PP_CAT2(_H2_ForEachy_, H2PP_0ARG(__VA_ARGS__)) (_Func, _Args, x, __VA_ARGS__)
+#define _H2_ForEachy(_Func, _Args, x, ...) H2PP_CAT2(_H2_ForEachy_, H2PP_IS_EMPTY(__VA_ARGS__)) (_Func, _Args, x, __VA_ARGS__)
 #define _H2_ForEachy_I() _H2_ForEachy
 #define _H2_ForEachy_0(_Func, _Args, x, ...) _H2_Macro_I(_Func, _Args, x, H2PP_HEAD(__VA_ARGS__)) H2PP_DEFER(_H2_ForEachy_I)()(_Func, _Args, x, H2PP_TAIL(__VA_ARGS__))
 #define _H2_ForEachy_1(...)
-#define _H2_ForEachx(_Func, _Args, _Tupley, ...) H2PP_CAT2(_H2_ForEachx_, H2PP_0ARG(__VA_ARGS__)) (_Func, _Args, _Tupley, __VA_ARGS__)
+#define _H2_ForEachx(_Func, _Args, _Tupley, ...) H2PP_CAT2(_H2_ForEachx_, H2PP_IS_EMPTY(__VA_ARGS__)) (_Func, _Args, _Tupley, __VA_ARGS__)
 #define _H2_ForEachx_I() _H2_ForEachx
 #define _H2_ForEachx_0(_Func, _Args, _Tupley, ...) _H2_ForEachy(_Func, _Args, H2PP_HEAD(__VA_ARGS__), H2PP_REMOVE_PARENTHESES(_Tupley)) H2PP_DEFER(_H2_ForEachx_I)()(_Func, _Args, _Tupley, H2PP_TAIL(__VA_ARGS__))
 #define _H2_ForEachx_1(...)
@@ -34,11 +34,11 @@
 #define ForFullmesh(_Macro_x_y, ...) H2Fullmesh(ForFullmesh_Adapter, (_Macro_x_y), __VA_ARGS__)
 
 
-#define H2List_An(...) H2PP_CAT2(_H2List_An_, H2PP_0ARG(__VA_ARGS__)) (__VA_ARGS__)
+#define H2List_An(...) H2PP_CAT2(_H2List_An_, H2PP_IS_EMPTY(__VA_ARGS__)) (__VA_ARGS__)
 #define _H2List_An_0(_1, ...) _1
 #define _H2List_An_1(...) 0
 
-#define H2ForEach_An(...) H2PP_CAT2(_H2ForEach_An_, H2PP_0ARG(__VA_ARGS__)) (__VA_ARGS__)
+#define H2ForEach_An(...) H2PP_CAT2(_H2ForEach_An_, H2PP_IS_EMPTY(__VA_ARGS__)) (__VA_ARGS__)
 #define _H2ForEach_An_1(...) 0
 #define _H2ForEach_An_0(_1, ...) H2PP_CAT2(_H2ForEach_An_0_, H2PP_IS_BEGIN_PARENTHESES(_1))(_1)
 #define _H2ForEach_An_0_0(_1) H2List_An(_1)

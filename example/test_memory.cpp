@@ -1,5 +1,4 @@
-#include <stdlib.h>
-#include <string.h>
+#include "h2unit.h"
 
 /*
  * h2unit can detect memory leak which is allocated by:
@@ -97,8 +96,8 @@ SUITE(Memory Leak)
 
   Case(filled malloc successful)
   {
-    BLOCK(10000000,
-          "ABC" /* in the block , malloc allocated space filled with ABC */)
+    /* in the block , malloc allocated space filled with ABC */
+    BLOCK(10000000, "ABC")
     {
       char* p = (char*)malloc(8);
       OK(Me("ABCABCAB"), p);

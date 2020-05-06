@@ -20,6 +20,7 @@ struct h2_list {
 
    void add_head(h2_list* entry) { __add_between(entry, this, this->next); }
    void add_tail(h2_list* entry) { __add_between(entry, this->prev, this); }
+   void add_before(h2_list* entry) { __add_between(entry, this->prev, this); }
 
    void push_back(h2_list* entry) { add_tail(entry); }
    void push(h2_list* entry) { add_head(entry); }

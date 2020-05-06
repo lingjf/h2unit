@@ -63,12 +63,12 @@ h2_inline void h2_directory::print_list() {
          if (!O.filter(s->name, "", "")) t++;
          for (auto& c : s->cases())
             if (!O.filter(s->name, isfit(O.listing, 'c') ? c->name : "", "")) t++;
-         if (t) printf("S%d. %s \\\\ %s:%d\n", ++ss, s->name, basename((char*)s->file), s->line);
+         if (t) ::printf("S%d. %s \\\\ %s:%d\n", ++ss, s->name, basename((char*)s->file), s->line);
       }
       if (t = 0, isfit(O.listing, 'c'))
          for (auto& c : s->cases())
             if (!O.filter(s->name, c->name, ""))
-               isfit(O.listing, 's') ? printf("C%d/S%d-%d. %s // %s \\\\ %s:%d\n", ++cs, ss, ++t, s->name, c->name, basename((char*)c->file), c->line) : printf("C%d. %s // %s \\\\ %s:%d\n", ++cs, s->name, c->name, basename((char*)c->file), c->line);
+               isfit(O.listing, 's') ? ::printf("C%d/S%d-%d. %s // %s \\\\ %s:%d\n", ++cs, ss, ++t, s->name, c->name, basename((char*)c->file), c->line) : ::printf("C%d. %s // %s \\\\ %s:%d\n", ++cs, s->name, c->name, basename((char*)c->file), c->line);
    }
 }
 

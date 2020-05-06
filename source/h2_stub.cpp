@@ -1,14 +1,23 @@
 // https://www.codeproject.com/Articles/25198/Generic-Thunk-with-5-combinations-of-Calling-Conve
 
 struct h2_thunk {
-#if defined __x86_64__
+#if defined __x86_64__ || defined _M_X64
    unsigned char saved_code[sizeof(void*) + 4];
-#elif defined __i386__
+#elif defined __i386__ || defined _M_IX86
    unsigned char saved_code[sizeof(void*) + 1];
+#else
+
 #endif
 
    void* save(void* befp) {
-      uintptr_t pagesize = (uintptr_t)sysconf(_SC_PAGE_SIZE);
+#ifdef _WIN32
+      DWORD t;
+      if (!VirtualProtect(befp, sizeof(void*) + 4, PAGE_EXECUTE_READWRITE, &t)) {  // PAGE_EXECUTE_WRITECOPY OR PAGE_WRITECOPY
+         ::printf("STUB: VirtualProtect PAGE_EXECUTE_READWRITE failed %d\n", GetLastError());
+         return nullptr;
+      }
+#else
+      uintptr_t pagesize = (uintptr_t)h2_page_size();
       uintptr_t start = reinterpret_cast<uintptr_t>(befp);
       uintptr_t pagestart = start & (~(pagesize - 1));
       int pagecount = ::ceil((start + sizeof(saved_code) - pagestart) / (double)pagesize);
@@ -17,7 +26,7 @@ struct h2_thunk {
          ::printf("STUB: mprotect PROT_READ | PROT_WRITE | PROT_EXEC failed %s\n", strerror(errno));
          return nullptr;
       }
-
+#endif
       memcpy(saved_code, befp, sizeof(saved_code));
       return befp;
    }
@@ -26,7 +35,7 @@ struct h2_thunk {
       unsigned char* I = reinterpret_cast<unsigned char*>(befp);
       ptrdiff_t delta = (unsigned char*)tofp - (unsigned char*)befp - 5;
 
-#if defined(__i386__) || defined(__x86_64__)
+#if defined __i386__ || defined __x86_64__ || defined _M_IX86 || defined _M_X64
       if (delta < INT_MIN || INT_MAX < delta) {  //x86_64 asm("movq $tofp, %rax; jmpq %rax")
          unsigned char C[] = {0x48, 0xB8, 0, 0, 0, 0, 0, 0, 0, 0, 0xFF, 0xE0};
          memcpy(C + 2, &tofp, sizeof(void*));

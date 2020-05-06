@@ -53,6 +53,7 @@ static inline char* get_gdb2(char* s, int pid) {
 }
 
 h2_inline void h2_debugger::trap() {
+#ifndef _WIN32
    int pid = (int)getpid();
    if (!under_debug(pid, O.path)) {
       static h2_once only_one_time;
@@ -72,4 +73,5 @@ h2_inline void h2_debugger::trap() {
    }
 
    h2_raise_trap();
+#endif
 }

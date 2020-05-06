@@ -1,4 +1,6 @@
 
+#ifndef _WIN32
+
 struct h2_nm {
    h2_singleton(h2_nm);
 
@@ -82,11 +84,14 @@ static inline bool backtrace_extract(const char* backtrace_symbol_line, char* mo
 
    return false;
 }
+#endif
 
 h2_inline h2_backtrace::h2_backtrace(int shift_) : shift(shift_) {
+#ifndef _WIN32
    h2_heap::unhook();
    count = ::backtrace(array, sizeof(array) / sizeof(array[0]));
    h2_heap::dohook();
+#endif
 }
 
 h2_inline bool h2_backtrace::operator==(h2_backtrace& bt) {
@@ -105,6 +110,7 @@ h2_inline bool h2_backtrace::has(void* func, int size) const {
 }
 
 h2_inline void h2_backtrace::print(int pad) const {
+#ifndef _WIN32
    h2_heap::unhook();
    char** backtraces = backtrace_symbols(array, count);
    for (int i = shift; i < count; ++i) {
@@ -123,11 +129,12 @@ h2_inline void h2_backtrace::print(int pad) const {
                if (strlen(addr2lined))
                   p = addr2lined;
       }
-      ::printf("%s%d. %s\n", PAD(pad), i - shift, p);
+      h2_printf("%s%d. %s\n", PAD(pad), i - shift, p);
 
       if (!strcmp("main", mangled) || !strcmp("main", demangled) || h2_nm::I().in_main(address + offset))
          break;
    }
    free(backtraces);
    h2_heap::dohook();
+#endif
 }

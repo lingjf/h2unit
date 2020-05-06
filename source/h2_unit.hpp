@@ -6,8 +6,8 @@
 #include <cstring>     /* strcpy, memcpy */
 #include <cstddef>     /* ptrdiff_t */
 #include <climits>     /* INT_MAX */
+#include <cmath>       /* fabs */
 #include <csetjmp>     /* setjmp, longjmp */
-#include <alloca.h>    /* alloca */
 #include <sstream>     /* basic_ostringstream */
 #include <string>      /* std::string */
 #include <vector>      /* std::vector */
@@ -17,7 +17,22 @@
 #include <type_traits> /* std::true_type */
 
 #if defined _WIN32
+#   ifndef WIN32_LEAN_AND_MEAN
+#      define WIN32_LEAN_AND_MEAN
+#   endif
 #   include <windows.h>
+#   include <winsock2.h>
+#   include <ws2tcpip.h>
+#   include <iphlpapi.h>
+#   include <io.h>     /* _wirte */
+#   include <malloc.h> /* alloca */
+#   include <shlwapi.h>/* PathRemoveFileSpecA */
+#   define alloca _alloca
+#   define fileno _fileno
+#   define socklen_t int
+#   define ssize_t int
+#else
+#   include <alloca.h> /* alloca */
 #endif
 
 #if defined __GNUC__
@@ -34,6 +49,11 @@
 #   pragma clang diagnostic ignored "-Wsign-compare"
 #   pragma clang diagnostic ignored "-Wunused-function"
 #   pragma clang diagnostic ignored "-Wwritable-strings"
+#elif defined _WIN32
+#   define _CRT_SECURE_NO_WARNINGS
+#   define _WINSOCK_DEPRECATED_NO_WARNINGS
+#   pragma warning(disable : 4018)  // -Wsign-compare
+#   pragma warning(disable : 4244)  //
 #endif
 
 #if defined __H2UNIT_HPP__
@@ -98,7 +118,7 @@ namespace h2 {
 #define Todo(...) H2Todo(#__VA_ARGS__)
 
 #define OK(...) H2OK(__VA_ARGS__)
-#define JE(...) H2JE(__VA_ARGS__)
+#define JE(e, a) H2JE(e, a)
 #define MOCK(...) H2MOCK(__VA_ARGS__)
 #define STUB(...) H2STUB(__VA_ARGS__)
 #define BLOCK(...) H2BLOCK(__VA_ARGS__)
@@ -107,6 +127,11 @@ namespace h2 {
 #define COUT(...) H2COUT(__VA_ARGS__)
 
 #define MATCHER(...) H2MATCHER(__VA_ARGS__)
+
+#define CASES(name, ...) H2CASES(#name, __VA_ARGS__)
+#define CASESS(name, ...) H2CASESS(#name, __VA_ARGS__)
+#define Cases(name, ...) H2Cases(#name, __VA_ARGS__)
+#define Casess(name, ...) H2Casess(#name, __VA_ARGS__)
 
 /* clang-format off */
 using h2::_;
@@ -130,7 +155,9 @@ using h2::Contains;
 using h2::StartsWith;
 using h2::EndsWith;
 using h2::CaseLess;
+#ifndef _WIN32
 using h2::operator~;
+#endif
 using h2::Pointee;
 using h2::Not;
 using h2::operator!;
@@ -203,79 +230,9 @@ using h2::ListOf;
 #define H2CASE(name) __H2CASE(name, 0, H2Q(h2_case_test_code), H2Q(h2_suite_test_code_plus))
 #define H2TODO(name) __H2CASE(name, 1, H2Q(h2_case_test_code), H2Q(h2_suite_test_code_plus))
 
-#define CASES(name, ...) H2CASES(#name, __VA_ARGS__)
-#define CASESS(name, ...) H2CASESS(#name, __VA_ARGS__)
-#define Cases(name, ...) H2Cases(#name, __VA_ARGS__)
-#define Casess(name, ...) H2Casess(#name, __VA_ARGS__)
-
-#define __H2MOCK2(BeFunc, Signature) \
-   h2::h2_mocker<__COUNTER__, __LINE__, std::false_type, Signature>::I((void*)BeFunc, #BeFunc, __FILE__, __LINE__)
-
-#define __H2MOCK3(Class, Method, Signature) \
-   h2::h2_mocker<__COUNTER__, __LINE__, Class, Signature>::I(h2::h2_mfp<Class, Signature>::A(&Class::Method, "MOCK", "", #Class, #Method, #Signature, __FILE__, __LINE__), #Class "::" #Method, __FILE__, __LINE__)
-
-#define __H2MOCK4(Class, Method, Signature, Instance) \
-   h2::h2_mocker<__COUNTER__, __LINE__, Class, Signature>::I(h2::h2_mfp<Class, Signature>::A(&Class::Method, Instance), #Class "::" #Method, __FILE__, __LINE__)
-
-#define H2MOCK(...) H2PP_VARIADIC_CALL(__H2MOCK, __VA_ARGS__)
-
-#define __H2STUB3(BeFunc, ToFunc, _1)                                                    \
-   do {                                                                                  \
-      h2::h2_stub_g((void*)BeFunc, (void*)ToFunc, #BeFunc, #ToFunc, __FILE__, __LINE__); \
-   } while (0)
-
-#define __H2STUB4(Return, BeFunc, Args, Qt)                                         \
-   struct {                                                                         \
-      void operator=(Return(*toF) Args) {                                           \
-         Return(*beF) Args = BeFunc;                                                \
-         h2::h2_stub_g((void*)beF, (void*)(toF), #BeFunc, "~", __FILE__, __LINE__); \
-      }                                                                             \
-   } Qt;                                                                            \
-   Qt = [] Args -> Return
-
-#define __H2STUB50(Return, Class, Method, Args, Qt)                                                                                                                                                 \
-   struct {                                                                                                                                                                                         \
-      void operator=(Return (*toF)(Class * that)) {                                                                                                                                                 \
-         h2::h2_stub_g(h2::h2_mfp<Class, Return Args>::A(&Class::Method, "STUB", #Return, #Class, #Method, #Args, __FILE__, __LINE__), (void*)(toF), #Class "::" #Method, "~", __FILE__, __LINE__); \
-      }                                                                                                                                                                                             \
-   } Qt;                                                                                                                                                                                            \
-   Qt = [](Class * that) -> Return
-
-#define __H2STUB51(Return, Class, Method, Args, Qt)                                                                                                                                                 \
-   struct {                                                                                                                                                                                         \
-      void operator=(Return (*toF)(Class * that, H2PP_REMOVE_PARENTHESES(Args))) {                                                                                                                  \
-         h2::h2_stub_g(h2::h2_mfp<Class, Return Args>::A(&Class::Method, "STUB", #Return, #Class, #Method, #Args, __FILE__, __LINE__), (void*)(toF), #Class "::" #Method, "~", __FILE__, __LINE__); \
-      }                                                                                                                                                                                             \
-   } Qt;                                                                                                                                                                                            \
-   Qt = [](Class * that, H2PP_REMOVE_PARENTHESES(Args)) -> Return
-
-#define __H2STUB5(Return, Class, Method, Args, Qt) \
-   H2PP_IF_ELSE(H2PP_0ARG Args, __H2STUB50(Return, Class, Method, Args, Qt), __H2STUB51(Return, Class, Method, Args, Qt))
-
-#define __H2STUB60(Return, Class, Method, Args, Instance, Qt)                                                                                    \
-   struct {                                                                                                                                      \
-      void operator=(Return (*toF)(Class * that)) {                                                                                              \
-         h2::h2_stub_g(h2::h2_mfp<Class, Return Args>::A(&Class::Method, Instance), (void*)(toF), #Class "::" #Method, "~", __FILE__, __LINE__); \
-      }                                                                                                                                          \
-   } Qt;                                                                                                                                         \
-   Qt = [](Class * that) -> Return
-
-#define __H2STUB61(Return, Class, Method, Args, Instance, Qt)                                                                                    \
-   struct {                                                                                                                                      \
-      void operator=(Return (*toF)(Class * that, H2PP_REMOVE_PARENTHESES(Args))) {                                                               \
-         h2::h2_stub_g(h2::h2_mfp<Class, Return Args>::A(&Class::Method, Instance), (void*)(toF), #Class "::" #Method, "~", __FILE__, __LINE__); \
-      }                                                                                                                                          \
-   } Qt;                                                                                                                                         \
-   Qt = [](Class * that, H2PP_REMOVE_PARENTHESES(Args)) -> Return
-
-#define __H2STUB6(Return, Class, Method, Args, Instance, Qt) \
-   H2PP_IF_ELSE(H2PP_0ARG Args, __H2STUB60(Return, Class, Method, Args, Instance, Qt), __H2STUB61(Return, Class, Method, Args, Instance, Qt))
-
-#define H2STUB(...) H2PP_VARIADIC_CALL(__H2STUB, __VA_ARGS__, H2Q(t_stub))
-
 #define __H2BLOCK0(Qb) for (h2::h2_heap::stack::block Qb(__FILE__, __LINE__); Qb;)
 #define __H2BLOCK1(Qb, ...) for (h2::h2_heap::stack::block Qb(__FILE__, __LINE__, __VA_ARGS__); Qb;)
-#define H2BLOCK(...) H2PP_IF_ELSE(H2PP_0ARG(__VA_ARGS__), __H2BLOCK0(H2Q(t_block)), __H2BLOCK1(H2Q(t_block), __VA_ARGS__))
+#define H2BLOCK(...) H2PP_IF_ELSE(H2PP_IS_EMPTY(__VA_ARGS__), __H2BLOCK0(H2Q(t_block)), __H2BLOCK1(H2Q(t_block), __VA_ARGS__))
 
 #define H2DNS(...) h2::h2_dns::setaddrinfo(H2PP_NARG(__VA_ARGS__), __VA_ARGS__)
 

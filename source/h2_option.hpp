@@ -10,13 +10,13 @@ struct h2_option {
    static constexpr const int os = 3;
 #endif
 
-   const char* path;
+   const char* path, *debug;
    int verbose, listing, breakable, randomize;
    bool colorable, memory_check;
-   char *debug, junit[256], args[256];
+   char junit[256], args[256];
    std::vector<const char*> includes, excludes;
 
-   h2_option() : verbose(0), listing(0), breakable(0), randomize(0), colorable(true), memory_check(true), debug(nullptr), junit{0} {}
+   h2_option() : debug(nullptr), verbose(0), listing(0), breakable(0), randomize(0), colorable(true), memory_check(true), junit{0} {}
 
    void parse(int argc, const char** argv);
 

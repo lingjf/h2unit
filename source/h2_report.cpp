@@ -16,32 +16,32 @@ h2_inline void h2_report::on_case_endup(h2_suite* s, h2_case* c) {
 struct h2_report_console : h2_report {
    void on_task_endup(int status_stats[8]) override {
       h2_report::on_task_endup(status_stats);
-      printf("\n[%3d%%] ", percentage);
+      h2_printf("\n[%3d%%] ", percentage);
       if (0 < status_stats[h2_case::FAILED])
-         printf("%s", SF("bold,red", "Failed <%d failed, %d passed, %d todo, %d filtered, %lld ms>\n", status_stats[h2_case::FAILED], status_stats[h2_case::PASSED], status_stats[h2_case::TODOED], status_stats[h2_case::FILTED], tt));
+         h2_printf("%s", SF("bold,red", "Failed <%d failed, %d passed, %d todo, %d filtered, %lld ms>\n", status_stats[h2_case::FAILED], status_stats[h2_case::PASSED], status_stats[h2_case::TODOED], status_stats[h2_case::FILTED], tt));
       else
-         printf("%s", SF("bold,green", "Passed <%d passed, %d todo, %d filtered, %d cases, %lld ms>\n", status_stats[h2_case::PASSED], status_stats[h2_case::TODOED], status_stats[h2_case::FILTED], total_cases, tt));
+         h2_printf("%s", SF("bold,green", "Passed <%d passed, %d todo, %d filtered, %d cases, %lld ms>\n", status_stats[h2_case::PASSED], status_stats[h2_case::TODOED], status_stats[h2_case::FILTED], total_cases, tt));
    }
    void on_case_endup(h2_suite* s, h2_case* c) override {
       h2_report::on_case_endup(s, c);
       switch (c->status) {
       case h2_case::INITED: break;
       case h2_case::TODOED:
-         if (O.verbose) printf("[%3d%%] (%s // %s): %s at %s:%d\n", percentage, s->name, c->name, CSS[c->status], basename((char*)c->file), c->line);
+         if (O.verbose) h2_printf("[%3d%%] (%s // %s): %s at %s:%d\n", percentage, s->name, c->name, CSS[c->status], basename((char*)c->file), c->line);
          break;
       case h2_case::FILTED: break;
       case h2_case::PASSED:
          if (O.verbose)
-            printf("[%3d%%] %s", percentage, SF("light blue", "(%s // %s): Passed - %lld ms\n", s->name, c->name, tc));
+            h2_printf("[%3d%%] %s", percentage, SF("light blue", "(%s // %s): Passed - %lld ms\n", s->name, c->name, tc));
          else if (!O.debug)
-            printf("\r[%3d%%] (%d/%d)\r", percentage, done_cases, total_cases);
+            h2_printf("\r[%3d%%] (%d/%d)\r", percentage, done_cases, total_cases);
          break;
       case h2_case::FAILED:
-         printf("[%3d%%] %s", percentage, SF("bold,purple", "(%s // %s): Failed at %s:%d\n", s->name, c->name, basename((char*)c->file), c->line));
+         h2_printf("[%3d%%] %s", percentage, SF("bold,purple", "(%s // %s): Failed at %s:%d\n", s->name, c->name, basename((char*)c->file), c->line));
          for (h2_fail* x_fail = c->fails; x_fail; x_fail = x_fail->x_next)
             for (h2_fail* fail = x_fail; fail; fail = fail->y_next)
                fail->print();
-         printf("\n");
+         h2_printf("\n");
          break;
       }
    }

@@ -1,40 +1,45 @@
 #include "h2_unit.hpp"
 
-#include <algorithm>     /* shuffle */
-#include <arpa/inet.h>   /* inet_addr */
-#include <cassert>       /* assert */
-#include <cctype>        /* tolower, isspace */
-#include <cmath>         /* fabs */
-#include <cstdarg>       /* va_list */
-#include <cstdint>       /* int32_t */
-#include <cxxabi.h>      /* demangle */
-#include <errno.h>       /* strerror */
-#include <execinfo.h>    /* backtrace */
-#include <fcntl.h>       /* fcntl */
-#include <fnmatch.h>     /* fnmatch */
-#include <iostream>      /* cout */
-#include <libgen.h>      /* basename */
-#include <map>           /* std::map */
-#include <memory>        /* allocator */
-#include <netdb.h>       /* getaddrinfo, gethostbyname */
-#include <random>        /* shuffle */
-#include <regex>         /* std::regex */
-#include <signal.h>      /* sigaction */
-#include <sys/ioctl.h>   /* ioctl */
-#include <sys/mman.h>    /* mprotect, mmap */
-#include <sys/socket.h>  /* sockaddr */
-#include <sys/syscall.h> /* syscall */
-#include <sys/time.h>    /* gettimeofday */
-#include <sys/types.h>   /* size_t */
-#include <syslog.h>      /* syslog, vsyslog */
-#include <typeinfo>      /* typeid */
-#include <unistd.h>      /* sysconf */
+#include <algorithm> /* shuffle */
+#include <cassert>   /* assert */
+#include <cctype>    /* tolower, isspace */
+#include <cstdarg>   /* va_list */
+#include <cstdint>   /* int32_t */
+#include <errno.h>   /* strerror */
+#include <iostream>  /* cout */
+#include <map>       /* std::map */
+#include <memory>    /* allocator */
+#include <random>    /* shuffle */
+#include <regex>     /* std::regex */
+#include <signal.h>  /* sigaction */
+#include <typeinfo>  /* typeid */
 
-#if defined __GLIBC__
-#   include <malloc.h> /* __malloc_hook */
-#elif defined __APPLE__
-#   include <AvailabilityMacros.h>
-#   include <malloc/malloc.h> /* malloc_zone_t */
+#if defined _WIN32
+#   pragma comment(lib, "Winmm.lib")
+#   pragma comment(lib, "Ws2_32.lib")
+#   pragma comment(lib, "Shlwapi.lib")
+#else
+#   include <netdb.h>       /* getaddrinfo, gethostbyname */
+#   include <libgen.h>      /* basename */
+#   include <fcntl.h>       /* fcntl */
+#   include <fnmatch.h>     /* fnmatch */
+#   include <cxxabi.h>      /* demangle */
+#   include <execinfo.h>    /* backtrace */
+#   include <arpa/inet.h>   /* inet_addr */
+#   include <syslog.h>      /* syslog, vsyslog */
+#   include <unistd.h>      /* sysconf */
+#   include <sys/ioctl.h>   /* ioctl */
+#   include <sys/mman.h>    /* mprotect, mmap */
+#   include <sys/socket.h>  /* sockaddr */
+#   include <sys/syscall.h> /* syscall */
+#   include <sys/time.h>    /* gettimeofday */
+#   include <sys/types.h>   /* size_t */
+#   if defined __GLIBC__
+#      include <malloc.h> /* __malloc_hook */
+#   elif defined __APPLE__
+#      include <AvailabilityMacros.h>
+#      include <malloc/malloc.h> /* malloc_zone_t */
+#   endif
 #endif
 
 namespace h2 {
@@ -65,7 +70,7 @@ namespace h2 {
 }  // namespace h2
 
 #if defined _WIN32
-#   define h2_weak_attribute __declspec(selectany)
+#   define h2_weak_attribute
 #else
 #   define h2_weak_attribute __attribute__((weak))
 #endif

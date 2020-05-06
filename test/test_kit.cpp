@@ -1,15 +1,15 @@
 #include "../source/h2_unit.cpp"
 
-SUITE(tool)
+SUITE(kit)
 {
   char t1[1024];
 
-  Case(h2_style)
-  {
-    OK("", h2::h2_style("", t1));
-    OK("\033[31m", h2::h2_style("red", t1));
-    OK("\033[31;1m", h2::h2_style("red,bold", t1));
-  }
+  // Case(h2_style)
+  // {
+  //   OK("", h2::h2_style("", t1));
+  //   OK("\033[31m", h2::h2_style("red", t1));
+  //   OK("\033[31;1m", h2::h2_style("red,bold", t1));
+  // }
 
   Case(wildcard)
   {

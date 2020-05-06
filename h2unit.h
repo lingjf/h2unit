@@ -1,4 +1,4 @@
-/* v5.2  2020-04-21 22:33:31 */
+﻿/* v5.2  2020-05-06 19:18:56 */
 /* https://github.com/lingjf/h2unit */
 /* Apache Licence 2.0 */
 #ifndef __H2UNIT_H__
@@ -12,8 +12,8 @@
 #include <cstring>     /* strcpy, memcpy */
 #include <cstddef>     /* ptrdiff_t */
 #include <climits>     /* INT_MAX */
+#include <cmath>       /* fabs */
 #include <csetjmp>     /* setjmp, longjmp */
-#include <alloca.h>    /* alloca */
 #include <sstream>     /* basic_ostringstream */
 #include <string>      /* std::string */
 #include <vector>      /* std::vector */
@@ -23,7 +23,22 @@
 #include <type_traits> /* std::true_type */
 
 #if defined _WIN32
+#   ifndef WIN32_LEAN_AND_MEAN
+#      define WIN32_LEAN_AND_MEAN
+#   endif
 #   include <windows.h>
+#   include <winsock2.h>
+#   include <ws2tcpip.h>
+#   include <iphlpapi.h>
+#   include <io.h>     /* _wirte */
+#   include <malloc.h> /* alloca */
+#   include <shlwapi.h>/* PathRemoveFileSpecA */
+#   define alloca _alloca
+#   define fileno _fileno
+#   define socklen_t int
+#   define ssize_t int
+#else
+#   include <alloca.h> /* alloca */
 #endif
 
 #if defined __GNUC__
@@ -40,6 +55,11 @@
 #   pragma clang diagnostic ignored "-Wsign-compare"
 #   pragma clang diagnostic ignored "-Wunused-function"
 #   pragma clang diagnostic ignored "-Wwritable-strings"
+#elif defined _WIN32
+#   define _CRT_SECURE_NO_WARNINGS
+#   define _WINSOCK_DEPRECATED_NO_WARNINGS
+#   pragma warning(disable : 4018)  // -Wsign-compare
+#   pragma warning(disable : 4244)  //
 #endif
 
 #if defined __H2UNIT_HPP__
@@ -49,16 +69,19 @@
 #endif
 
 namespace h2 {
+/* clang-format off */
 
 #define H2PP__CAT2(_1, _2) _1##_2
 #define H2PP_CAT2(_1, _2) H2PP__CAT2(_1, _2)
 #define H2PP__CAT5(_1, _2, _3, _4, _5) _1##_2##_3##_4##_5
 #define H2PP_CAT5(_1, _2, _3, _4, _5) H2PP__CAT5(_1, _2, _3, _4, _5)
 
+#define H2PP_COMMA(...) ,
 #define H2PP_EAT(...)
+#define H2PP_ID(_1) _1
 #define H2PP_DEFER(...) __VA_ARGS__ H2PP_EAT()
 
-#define H2PP_EVAL(...) H2PP_EVAL64(__VA_ARGS__)
+#define H2PP_EVAL(...) H2PP_EVAL128(__VA_ARGS__)
 #define H2PP_EVAL1024(...) H2PP_EVAL512(H2PP_EVAL512(__VA_ARGS__))
 #define H2PP_EVAL512(...) H2PP_EVAL256(H2PP_EVAL256(__VA_ARGS__))
 #define H2PP_EVAL256(...) H2PP_EVAL128(H2PP_EVAL128(__VA_ARGS__))
@@ -76,7 +99,9 @@ namespace h2 {
 #define H2PP_3rd(_1, _2, _3, ...) _3
 #define H2PP_4th(_1, _2, _3, _4, ...) _4
 
-#define H2PP_IS_PROBE(...) H2PP_2nd(__VA_ARGS__, 0, )
+// #define H2PP_IS_PROBE(...) H2PP_2nd(__VA_ARGS__, 0, )
+#define H2PP_IS_PROBE(...) _H2PP_MSVC_VA_ARGS_WORKAROUND(H2PP_2nd, (__VA_ARGS__, 0))
+#define _H2PP_MSVC_VA_ARGS_WORKAROUND(_Define, _Args) _Define _Args
 #define H2PP_PROBE() ~, 1,
 
 #define H2PP_EQ(x, y) H2PP_IS_PROBE(H2PP_CAT5(_H2PP_EQ, __, x, __, y))
@@ -100,7 +125,6 @@ namespace h2 {
 
 #define H2PP_BOOL(_Cond) H2PP_COMPL(H2PP_NOT(_Cond))  // non-zero and thus evaluate to 1
 
-/* clang-format off */
 #define H2PP_AND(x, y) H2PP_CAT2(_H2PP_AND_, H2PP_BOOL(x))(H2PP_BOOL(y))
 #define _H2PP_AND_0(y) 0
 #define _H2PP_AND_1(y) y
@@ -112,49 +136,49 @@ namespace h2 {
 #define H2PP_IF_ELSE(_Cond, _Then, _Else) H2PP_CAT2(_H2PP_IF_ELSE_, _Cond) (_Then, _Else)
 #define _H2PP_IF_ELSE_1(_Then, _Else) _Then
 #define _H2PP_IF_ELSE_0(_Then, _Else) _Else
-/* clang-format on */
 
 #define H2PP_IF(_Cond) H2PP_CAT2(_H2PP_IF_, H2PP_BOOL(_Cond))
 #define _H2PP_IF_1(...) __VA_ARGS__
 #define _H2PP_IF_0(...)
 
-#define H2PP_IS_BEGIN_PARENTHESES(x) H2PP_IS_PROBE(_H2PP_IS_BEGIN_PARENTHESES_PROBE x)
+#define H2PP_IS_BEGIN_PARENTHESES(...) H2PP_IS_PROBE(_H2PP_IS_BEGIN_PARENTHESES_PROBE __VA_ARGS__)
 #define _H2PP_IS_BEGIN_PARENTHESES_PROBE(...) H2PP_PROBE()
 
 #define H2PP_REMOVE_PARENTHESES(...) _H2PP_REMOVE_PARENTHESES __VA_ARGS__
 #define _H2PP_REMOVE_PARENTHESES(...) __VA_ARGS__
 
-#define H2PP_0ARG(...) _H2PP_0ARG(_H2PP_HAS_COMMA(__VA_ARGS__),             \
-                                  _H2PP_HAS_COMMA(_H2PP_COMMA __VA_ARGS__), \
-                                  _H2PP_HAS_COMMA(__VA_ARGS__()),           \
-                                  _H2PP_HAS_COMMA(_H2PP_COMMA __VA_ARGS__()))
-#define _H2PP_0ARG(_1, _2, _3, _4) _H2PP_HAS_COMMA(H2PP__CAT5(_H2PP_0ARG_CASE_, _1, _2, _3, _4))
-#define _H2PP_0ARG_CASE_0001 ,
-#define _H2PP_HAS_COMMA(...) _H2PP_TH(__VA_ARGS__, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0)
-#define _H2PP_COMMA(...) ,
+#define H2PP_IS_EMPTY(...)                                  \
+  _H2PP_IS_EMPTY(_H2PP_HAS_COMMA(__VA_ARGS__),              \
+                 _H2PP_HAS_COMMA(H2PP_COMMA __VA_ARGS__),   \
+                 _H2PP_HAS_COMMA(__VA_ARGS__()),            \
+                 _H2PP_HAS_COMMA(H2PP_COMMA __VA_ARGS__()))
+#define _H2PP_IS_EMPTY(_1, _2, _3, _4) _H2PP_HAS_COMMA(H2PP__CAT5(_H2PP_IS_EMPTY_CASE_, _1, _2, _3, _4))
+#define _H2PP_IS_EMPTY_CASE_0001 ,
+#define _H2PP_HAS_COMMA(...) _H2PP_100TH((__VA_ARGS__, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0))
 
-#define H2PP_NARG(...) H2PP_IF_ELSE(H2PP_0ARG(__VA_ARGS__), 0, _H2PP_NARG(__VA_ARGS__))
-#define _H2PP_NARG(...) _H2PP_TH(__VA_ARGS__, 250, 249, 248, 247, 246, 245, 244, 243, 242, 241, 240, 239, 238, 237, 236, 235, 234, 233, 232, 231, 230, 229, 228, 227, 226, 225, 224, 223, 222, 221, 220, 219, 218, 217, 216, 215, 214, 213, 212, 211, 210, 209, 208, 207, 206, 205, 204, 203, 202, 201, 200, 199, 198, 197, 196, 195, 194, 193, 192, 191, 190, 189, 188, 187, 186, 185, 184, 183, 182, 181, 180, 179, 178, 177, 176, 175, 174, 173, 172, 171, 170, 169, 168, 167, 166, 165, 164, 163, 162, 161, 160, 159, 158, 157, 156, 155, 154, 153, 152, 151, 150, 149, 148, 147, 146, 145, 144, 143, 142, 141, 140, 139, 138, 137, 136, 135, 134, 133, 132, 131, 130, 129, 128, 127, 126, 125, 124, 123, 122, 121, 120, 119, 118, 117, 116, 115, 114, 113, 112, 111, 110, 109, 108, 107, 106, 105, 104, 103, 102, 101, 100, 99, 98, 97, 96, 95, 94, 93, 92, 91, 90, 89, 88, 87, 86, 85, 84, 83, 82, 81, 80, 79, 78, 77, 76, 75, 74, 73, 72, 71, 70, 69, 68, 67, 66, 65, 64, 63, 62, 61, 60, 59, 58, 57, 56, 55, 54, 53, 52, 51, 50, 49, 48, 47, 46, 45, 44, 43, 42, 41, 40, 39, 38, 37, 36, 35, 34, 33, 32, 31, 30, 29, 28, 27, 26, 25, 24, 23, 22, 21, 20, 19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1)
-#define _H2PP_TH(_250, _249, _248, _247, _246, _245, _244, _243, _242, _241, _240, _239, _238, _237, _236, _235, _234, _233, _232, _231, _230, _229, _228, _227, _226, _225, _224, _223, _222, _221, _220, _219, _218, _217, _216, _215, _214, _213, _212, _211, _210, _209, _208, _207, _206, _205, _204, _203, _202, _201, _200, _199, _198, _197, _196, _195, _194, _193, _192, _191, _190, _189, _188, _187, _186, _185, _184, _183, _182, _181, _180, _179, _178, _177, _176, _175, _174, _173, _172, _171, _170, _169, _168, _167, _166, _165, _164, _163, _162, _161, _160, _159, _158, _157, _156, _155, _154, _153, _152, _151, _150, _149, _148, _147, _146, _145, _144, _143, _142, _141, _140, _139, _138, _137, _136, _135, _134, _133, _132, _131, _130, _129, _128, _127, _126, _125, _124, _123, _122, _121, _120, _119, _118, _117, _116, _115, _114, _113, _112, _111, _110, _109, _108, _107, _106, _105, _104, _103, _102, _101, _100, _99, _98, _97, _96, _95, _94, _93, _92, _91, _90, _89, _88, _87, _86, _85, _84, _83, _82, _81, _80, _79, _78, _77, _76, _75, _74, _73, _72, _71, _70, _69, _68, _67, _66, _65, _64, _63, _62, _61, _60, _59, _58, _57, _56, _55, _54, _53, _52, _51, _50, _49, _48, _47, _46, _45, _44, _43, _42, _41, _40, _39, _38, _37, _36, _35, _34, _33, _32, _31, _30, _29, _28, _27, _26, _25, _24, _23, _22, _21, _20, _19, _18, _17, _16, _15, _14, _13, _12, _11, _10, _9, _8, _7, _6, _5, _4, _3, _2, _1, _x, ...) _x
+#define __H2PP_100TH(_100, _99, _98, _97, _96, _95, _94, _93, _92, _91, _90, _89, _88, _87, _86, _85, _84, _83, _82, _81, _80, _79, _78, _77, _76, _75, _74, _73, _72, _71, _70, _69, _68, _67, _66, _65, _64, _63, _62, _61, _60, _59, _58, _57, _56, _55, _54, _53, _52, _51, _50, _49, _48, _47, _46, _45, _44, _43, _42, _41, _40, _39, _38, _37, _36, _35, _34, _33, _32, _31, _30, _29, _28, _27, _26, _25, _24, _23, _22, _21, _20, _19, _18, _17, _16, _15, _14, _13, _12, _11, _10, _9, _8, _7, _6, _5, _4, _3, _2, _1, _x, ...) _x
+#define _H2PP_100TH(_Args) H2PP_ID(__H2PP_100TH _Args) // workaround for msvc
 
-/* clang-format off */
-#define H2PP_VARIADIC_CALL(_Macro, ...) H2PP_CAT2(_Macro, H2PP_NARG(__VA_ARGS__)) (__VA_ARGS__)
+#define H2PP_NARG(...) H2PP_IF_ELSE(H2PP_IS_EMPTY(__VA_ARGS__), 0, _H2PP_NARG(__VA_ARGS__))
+#define _H2PP_NARG(...) _H2PP_100TH((__VA_ARGS__, 100, 99, 98, 97, 96, 95, 94, 93, 92, 91, 90, 89, 88, 87, 86, 85, 84, 83, 82, 81, 80, 79, 78, 77, 76, 75, 74, 73, 72, 71, 70, 69, 68, 67, 66, 65, 64, 63, 62, 61, 60, 59, 58, 57, 56, 55, 54, 53, 52, 51, 50, 49, 48, 47, 46, 45, 44, 43, 42, 41, 40, 39, 38, 37, 36, 35, 34, 33, 32, 31, 30, 29, 28, 27, 26, 25, 24, 23, 22, 21, 20, 19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1))
 
-#define H2PP_HEAD(...) H2PP_CAT2(_H2PP_HEAD_, H2PP_0ARG(__VA_ARGS__)) (__VA_ARGS__)
+#define H2PP_HEAD(...) H2PP_CAT2(_H2PP_HEAD_, H2PP_IS_EMPTY(__VA_ARGS__)) (__VA_ARGS__)
 #define _H2PP_HEAD_0(_1, ...) _1
 #define _H2PP_HEAD_1(...)
 
-#define H2PP_TAIL(...) H2PP_CAT2(_H2PP_TAIL_, H2PP_0ARG(__VA_ARGS__)) (__VA_ARGS__)
+#define H2PP_TAIL(...) H2PP_CAT2(_H2PP_TAIL_, H2PP_IS_EMPTY(__VA_ARGS__)) (__VA_ARGS__)
 #define _H2PP_TAIL_0(_1, ...) __VA_ARGS__
 #define _H2PP_TAIL_1(...)
 
-#define H2PP_LAST(...) H2PP_CAT2(_H2PP_LAST_, H2PP_0ARG(__VA_ARGS__)) (__VA_ARGS__) //is empty?
+#define H2PP_LAST(...) H2PP_CAT2(_H2PP_LAST_, H2PP_IS_EMPTY(__VA_ARGS__)) (__VA_ARGS__) //is empty?
 #define _H2PP_LAST_1(...) // empty
 #define _H2PP_LAST_0(...) H2PP_EVAL(_H2PP_LAST_(__VA_ARGS__)) //at least 1 argument
 #define _H2PP_LAST_(...) H2PP_CAT2(_H2PP_LAST__, H2PP_EQ(1, H2PP_NARG(__VA_ARGS__))) (__VA_ARGS__) // one and only one?
 #define _H2PP_LAST__0(...) H2PP_DEFER(_H2PP_LAST_I)()(H2PP_TAIL(__VA_ARGS__)) // shift first, and again
 #define _H2PP_LAST__1(...) __VA_ARGS__ // only 1 argument
 #define _H2PP_LAST_I() _H2PP_LAST_
+
+#define H2PP_VARIADIC_CALL(_Macro, ...) H2PP_ID(H2PP_CAT2(_Macro, H2PP_NARG(__VA_ARGS__))(__VA_ARGS__))
 
 #define H2Q(_Prefix) H2PP_CAT5(_Prefix, _C, __COUNTER__, L, __LINE__)
 
@@ -213,6 +237,7 @@ struct h2_list {
 
    void add_head(h2_list* entry) { __add_between(entry, this, this->next); }
    void add_tail(h2_list* entry) { __add_between(entry, this->prev, this); }
+   void add_before(h2_list* entry) { __add_between(entry, this->prev, this); }
 
    void push_back(h2_list* entry) { add_tail(entry); }
    void push(h2_list* entry) { add_head(entry); }
@@ -245,13 +270,13 @@ struct h2_option {
    static constexpr const int os = 3;
 #endif
 
-   const char* path;
+   const char* path, *debug;
    int verbose, listing, breakable, randomize;
    bool colorable, memory_check;
-   char *debug, junit[256], args[256];
+   char junit[256], args[256];
    std::vector<const char*> includes, excludes;
 
-   h2_option() : verbose(0), listing(0), breakable(0), randomize(0), colorable(true), memory_check(true), debug(nullptr), junit{0} {}
+   h2_option() : debug(nullptr), verbose(0), listing(0), breakable(0), randomize(0), colorable(true), memory_check(true), junit{0} {}
 
    void parse(int argc, const char** argv);
 
@@ -266,10 +291,10 @@ struct h2_option {
 static const h2_option& O = h2_option::I(); // for pretty
 
 struct h2_libc {
-   static void* malloc(size_t sz);
+   static void* malloc(size_t size);
    static void free(void* ptr);
    static ssize_t write(int fd, const void* buf, size_t count);
-   static void* operator new(std::size_t sz) { return malloc(sz); }
+   static void* operator new(std::size_t size) { return malloc(size); }
    static void operator delete(void* ptr) { free(ptr); }
 };
 
@@ -390,13 +415,13 @@ struct h2_debugger {
    static void trap();
 };
 
-#define h2_debug(...)                                                                 \
-   do {                                                                               \
-      if (!O.debug) {                                                                 \
-         printf("%s %s : %d = %s\n", #__VA_ARGS__, __FILE__, __LINE__, __FUNCTION__); \
-         h2_backtrace bt(0);                                                          \
-         bt.print();                                                                  \
-      }                                                                               \
+#define h2_debug(...)                                                                         \
+   do {                                                                                       \
+      if (!O.debug) {                                                                         \
+         h2_printf("%s %s : %d = %s\n", #__VA_ARGS__, __FILE__, __LINE__, __FUNCTION__); \
+         h2_backtrace bt(0);                                                                  \
+         bt.print();                                                                          \
+      }                                                                                       \
    } while (0)
 
 struct tinyexpr {
@@ -548,6 +573,60 @@ struct h2_stub_temporary_restore : h2_once {
    h2_stub_temporary_restore(void* befp_);
    ~h2_stub_temporary_restore();
 };
+
+#define __H2STUB3(BeFunc, ToFunc, _1)                                                    \
+   do {                                                                                  \
+      h2::h2_stub_g((void*)BeFunc, (void*)ToFunc, #BeFunc, #ToFunc, __FILE__, __LINE__); \
+   } while (0)
+
+#define __H2STUB4(Return, BeFunc, Args, Qt)                                         \
+   struct {                                                                         \
+      void operator=(Return(*toF) Args) {                                           \
+         Return(*beF) Args = BeFunc;                                                \
+         h2::h2_stub_g((void*)beF, (void*)(toF), #BeFunc, "~", __FILE__, __LINE__); \
+      }                                                                             \
+   } Qt;                                                                            \
+   Qt = [] Args -> Return
+
+#define __H2STUB50(Return, Class, Method, Args, Qt)                                                                                                                                                 \
+   struct {                                                                                                                                                                                         \
+      void operator=(Return (*toF)(Class * that)) {                                                                                                                                                 \
+         h2::h2_stub_g(h2::h2_mfp<Class, Return Args>::A(&Class::Method, "STUB", #Return, #Class, #Method, #Args, __FILE__, __LINE__), (void*)(toF), #Class "::" #Method, "~", __FILE__, __LINE__); \
+      }                                                                                                                                                                                             \
+   } Qt;                                                                                                                                                                                            \
+   Qt = [](Class * that) -> Return
+
+#define __H2STUB51(Return, Class, Method, Args, Qt)                                                                                                                                                 \
+   struct {                                                                                                                                                                                         \
+      void operator=(Return (*toF)(Class * that, H2PP_REMOVE_PARENTHESES(Args))) {                                                                                                                  \
+         h2::h2_stub_g(h2::h2_mfp<Class, Return Args>::A(&Class::Method, "STUB", #Return, #Class, #Method, #Args, __FILE__, __LINE__), (void*)(toF), #Class "::" #Method, "~", __FILE__, __LINE__); \
+      }                                                                                                                                                                                             \
+   } Qt;                                                                                                                                                                                            \
+   Qt = [](Class * that, H2PP_REMOVE_PARENTHESES(Args)) -> Return
+
+#define __H2STUB5(Return, Class, Method, Args, Qt) \
+   H2PP_IF_ELSE(H2PP_IS_EMPTY Args, __H2STUB50(Return, Class, Method, Args, Qt), __H2STUB51(Return, Class, Method, Args, Qt))
+
+#define __H2STUB60(Return, Class, Method, Args, Instance, Qt)                                                                                    \
+   struct {                                                                                                                                      \
+      void operator=(Return (*toF)(Class * that)) {                                                                                              \
+         h2::h2_stub_g(h2::h2_mfp<Class, Return Args>::A(&Class::Method, Instance), (void*)(toF), #Class "::" #Method, "~", __FILE__, __LINE__); \
+      }                                                                                                                                          \
+   } Qt;                                                                                                                                         \
+   Qt = [](Class * that) -> Return
+
+#define __H2STUB61(Return, Class, Method, Args, Instance, Qt)                                                                                    \
+   struct {                                                                                                                                      \
+      void operator=(Return (*toF)(Class * that, H2PP_REMOVE_PARENTHESES(Args))) {                                                               \
+         h2::h2_stub_g(h2::h2_mfp<Class, Return Args>::A(&Class::Method, Instance), (void*)(toF), #Class "::" #Method, "~", __FILE__, __LINE__); \
+      }                                                                                                                                          \
+   } Qt;                                                                                                                                         \
+   Qt = [](Class * that, H2PP_REMOVE_PARENTHESES(Args)) -> Return
+
+#define __H2STUB6(Return, Class, Method, Args, Instance, Qt) \
+   H2PP_IF_ELSE(H2PP_IS_EMPTY Args, __H2STUB60(Return, Class, Method, Args, Instance, Qt), __H2STUB61(Return, Class, Method, Args, Instance, Qt))
+
+#define H2STUB(...) H2PP_VARIADIC_CALL(__H2STUB, __VA_ARGS__, H2Q(t_stub))
 
 static inline void h2_fail_g(h2_fail* fail);
 
@@ -756,7 +835,7 @@ template <typename T>
 struct h2_matcher : h2_matcher_base<T> {
    h2_matcher() {}
    explicit h2_matcher(const h2_matcher_impl<const T&>* impl, const int placeholder) : h2_matcher_base<T>(impl, placeholder) {}
-   h2_matcher(T value); // Converting constructor 转换构造函数
+   h2_matcher(T value);  // Converting constructor
 };
 
 template <>
@@ -1307,9 +1386,10 @@ template <typename M>
 inline h2_polymorphic_matcher<h2_pointee_matches<M>> Pointee(M m) { return h2_polymorphic_matcher<h2_pointee_matches<M>>(h2_pointee_matches<M>(m)); }
 template <typename M>
 inline h2_polymorphic_matcher<h2_caseless_matches> CaseLess(M m) { return h2_polymorphic_matcher<h2_caseless_matches>(h2_caseless_matches(h2_matcher<h2_string>(m))); }
+#ifndef _WIN32
 template <typename M>
 inline h2_polymorphic_matcher<h2_caseless_matches> operator~(M m) { return CaseLess(m); }
-
+#endif
 template <typename Matcher>
 inline h2_polymorphic_matcher<h2_not_matches<Matcher>> Not(Matcher m) { return h2_polymorphic_matcher<h2_not_matches<Matcher>>(h2_not_matches<Matcher>(m)); }
 template <typename Matches>
@@ -1387,10 +1467,10 @@ struct h2_callexp {
 
    void operator++() { call += 1; }
 
-   bool is_not_enough(/*不够*/) const { return call < least; }
-   bool is_satisfied(/*满足*/) const { return least <= call && call <= most; }
-   bool is_saturated(/*饱和*/) const { return call == most; }
-   bool is_overmuch(/*过多*/) const { return most < call; }
+   bool is_not_enough() const { return call < least; }
+   bool is_satisfied() const { return least <= call && call <= most; }
+   bool is_saturated() const { return call == most; }
+   bool is_overmuch() const { return most < call; }
 
    h2_fail* check();
    const char* actual();
@@ -1676,9 +1756,26 @@ struct h2_mocks {
    h2_fail* clear();
 };
 
+#ifdef _WIN32
+#   define __H2_LINE__ 0
+#else
+#   define __H2_LINE__ __LINE__
+#endif
+
+#define __H2MOCK2(BeFunc, Signature) \
+   h2::h2_mocker<__COUNTER__, __H2_LINE__, std::false_type, Signature>::I((void*)BeFunc, #BeFunc, __FILE__, __LINE__)
+
+#define __H2MOCK3(Class, Method, Signature) \
+   h2::h2_mocker<__COUNTER__, __H2_LINE__, Class, Signature>::I(h2::h2_mfp<Class, Signature>::A(&Class::Method, "MOCK", "", #Class, #Method, #Signature, __FILE__, __LINE__), #Class "::" #Method, __FILE__, __LINE__)
+
+#define __H2MOCK4(Class, Method, Signature, Instance) \
+   h2::h2_mocker<__COUNTER__, __H2_LINE__, Class, Signature>::I(h2::h2_mfp<Class, Signature>::A(&Class::Method, Instance), #Class "::" #Method, __FILE__, __LINE__)
+
+#define H2MOCK(...) H2PP_VARIADIC_CALL(__H2MOCK, __VA_ARGS__)
+
 struct h2_stdio {
    static void initialize();
-   static const char* capture_cout(char* type = nullptr);
+   static const char* capture_cout(const char* type = nullptr);
 };
 
 struct h2_dns : h2_libc {
@@ -2068,17 +2165,17 @@ static inline h2_ostringstream& h2_JE(h2_string e, h2_string a, h2_defer_fail* d
 #define _H2_Macro_I(...) _H2_Macro_II(__VA_ARGS__)
 
 
-#define _H2_ForEachv(_Func, _Args, ...) H2PP_CAT2(_H2_ForEachv_, H2PP_0ARG(__VA_ARGS__)) (_Func, _Args, __VA_ARGS__)
+#define _H2_ForEachv(_Func, _Args, ...) H2PP_CAT2(_H2_ForEachv_, H2PP_IS_EMPTY(__VA_ARGS__)) (_Func, _Args, __VA_ARGS__)
 #define _H2_ForEachv_I() _H2_ForEachv
 #define _H2_ForEachv_0(_Func, _Args, ...) _H2_Macro_I(_Func, _Args, H2PP_HEAD(__VA_ARGS__)) H2PP_DEFER(_H2_ForEachv_I)()(_Func, _Args, H2PP_TAIL(__VA_ARGS__))
 #define _H2_ForEachv_1(...)
 #define H2ForEach(_Func, _Args, ...) H2PP_EVAL(_H2_ForEachv(_Func, _Args, __VA_ARGS__))
 
-#define _H2_ForEachy(_Func, _Args, x, ...) H2PP_CAT2(_H2_ForEachy_, H2PP_0ARG(__VA_ARGS__)) (_Func, _Args, x, __VA_ARGS__)
+#define _H2_ForEachy(_Func, _Args, x, ...) H2PP_CAT2(_H2_ForEachy_, H2PP_IS_EMPTY(__VA_ARGS__)) (_Func, _Args, x, __VA_ARGS__)
 #define _H2_ForEachy_I() _H2_ForEachy
 #define _H2_ForEachy_0(_Func, _Args, x, ...) _H2_Macro_I(_Func, _Args, x, H2PP_HEAD(__VA_ARGS__)) H2PP_DEFER(_H2_ForEachy_I)()(_Func, _Args, x, H2PP_TAIL(__VA_ARGS__))
 #define _H2_ForEachy_1(...)
-#define _H2_ForEachx(_Func, _Args, _Tupley, ...) H2PP_CAT2(_H2_ForEachx_, H2PP_0ARG(__VA_ARGS__)) (_Func, _Args, _Tupley, __VA_ARGS__)
+#define _H2_ForEachx(_Func, _Args, _Tupley, ...) H2PP_CAT2(_H2_ForEachx_, H2PP_IS_EMPTY(__VA_ARGS__)) (_Func, _Args, _Tupley, __VA_ARGS__)
 #define _H2_ForEachx_I() _H2_ForEachx
 #define _H2_ForEachx_0(_Func, _Args, _Tupley, ...) _H2_ForEachy(_Func, _Args, H2PP_HEAD(__VA_ARGS__), H2PP_REMOVE_PARENTHESES(_Tupley)) H2PP_DEFER(_H2_ForEachx_I)()(_Func, _Args, _Tupley, H2PP_TAIL(__VA_ARGS__))
 #define _H2_ForEachx_1(...)
@@ -2097,11 +2194,11 @@ static inline h2_ostringstream& h2_JE(h2_string e, h2_string a, h2_defer_fail* d
 #define ForFullmesh(_Macro_x_y, ...) H2Fullmesh(ForFullmesh_Adapter, (_Macro_x_y), __VA_ARGS__)
 
 
-#define H2List_An(...) H2PP_CAT2(_H2List_An_, H2PP_0ARG(__VA_ARGS__)) (__VA_ARGS__)
+#define H2List_An(...) H2PP_CAT2(_H2List_An_, H2PP_IS_EMPTY(__VA_ARGS__)) (__VA_ARGS__)
 #define _H2List_An_0(_1, ...) _1
 #define _H2List_An_1(...) 0
 
-#define H2ForEach_An(...) H2PP_CAT2(_H2ForEach_An_, H2PP_0ARG(__VA_ARGS__)) (__VA_ARGS__)
+#define H2ForEach_An(...) H2PP_CAT2(_H2ForEach_An_, H2PP_IS_EMPTY(__VA_ARGS__)) (__VA_ARGS__)
 #define _H2ForEach_An_1(...) 0
 #define _H2ForEach_An_0(_1, ...) H2PP_CAT2(_H2ForEach_An_0_, H2PP_IS_BEGIN_PARENTHESES(_1))(_1)
 #define _H2ForEach_An_0_0(_1) H2List_An(_1)
@@ -2252,7 +2349,7 @@ static inline void h2_fail_g(h2_fail* fail) {
 #define Todo(...) H2Todo(#__VA_ARGS__)
 
 #define OK(...) H2OK(__VA_ARGS__)
-#define JE(...) H2JE(__VA_ARGS__)
+#define JE(e, a) H2JE(e, a)
 #define MOCK(...) H2MOCK(__VA_ARGS__)
 #define STUB(...) H2STUB(__VA_ARGS__)
 #define BLOCK(...) H2BLOCK(__VA_ARGS__)
@@ -2261,6 +2358,11 @@ static inline void h2_fail_g(h2_fail* fail) {
 #define COUT(...) H2COUT(__VA_ARGS__)
 
 #define MATCHER(...) H2MATCHER(__VA_ARGS__)
+
+#define CASES(name, ...) H2CASES(#name, __VA_ARGS__)
+#define CASESS(name, ...) H2CASESS(#name, __VA_ARGS__)
+#define Cases(name, ...) H2Cases(#name, __VA_ARGS__)
+#define Casess(name, ...) H2Casess(#name, __VA_ARGS__)
 
 /* clang-format off */
 using h2::_;
@@ -2284,7 +2386,9 @@ using h2::Contains;
 using h2::StartsWith;
 using h2::EndsWith;
 using h2::CaseLess;
+#ifndef _WIN32
 using h2::operator~;
+#endif
 using h2::Pointee;
 using h2::Not;
 using h2::operator!;
@@ -2357,79 +2461,9 @@ using h2::ListOf;
 #define H2CASE(name) __H2CASE(name, 0, H2Q(h2_case_test_code), H2Q(h2_suite_test_code_plus))
 #define H2TODO(name) __H2CASE(name, 1, H2Q(h2_case_test_code), H2Q(h2_suite_test_code_plus))
 
-#define CASES(name, ...) H2CASES(#name, __VA_ARGS__)
-#define CASESS(name, ...) H2CASESS(#name, __VA_ARGS__)
-#define Cases(name, ...) H2Cases(#name, __VA_ARGS__)
-#define Casess(name, ...) H2Casess(#name, __VA_ARGS__)
-
-#define __H2MOCK2(BeFunc, Signature) \
-   h2::h2_mocker<__COUNTER__, __LINE__, std::false_type, Signature>::I((void*)BeFunc, #BeFunc, __FILE__, __LINE__)
-
-#define __H2MOCK3(Class, Method, Signature) \
-   h2::h2_mocker<__COUNTER__, __LINE__, Class, Signature>::I(h2::h2_mfp<Class, Signature>::A(&Class::Method, "MOCK", "", #Class, #Method, #Signature, __FILE__, __LINE__), #Class "::" #Method, __FILE__, __LINE__)
-
-#define __H2MOCK4(Class, Method, Signature, Instance) \
-   h2::h2_mocker<__COUNTER__, __LINE__, Class, Signature>::I(h2::h2_mfp<Class, Signature>::A(&Class::Method, Instance), #Class "::" #Method, __FILE__, __LINE__)
-
-#define H2MOCK(...) H2PP_VARIADIC_CALL(__H2MOCK, __VA_ARGS__)
-
-#define __H2STUB3(BeFunc, ToFunc, _1)                                                    \
-   do {                                                                                  \
-      h2::h2_stub_g((void*)BeFunc, (void*)ToFunc, #BeFunc, #ToFunc, __FILE__, __LINE__); \
-   } while (0)
-
-#define __H2STUB4(Return, BeFunc, Args, Qt)                                         \
-   struct {                                                                         \
-      void operator=(Return(*toF) Args) {                                           \
-         Return(*beF) Args = BeFunc;                                                \
-         h2::h2_stub_g((void*)beF, (void*)(toF), #BeFunc, "~", __FILE__, __LINE__); \
-      }                                                                             \
-   } Qt;                                                                            \
-   Qt = [] Args -> Return
-
-#define __H2STUB50(Return, Class, Method, Args, Qt)                                                                                                                                                 \
-   struct {                                                                                                                                                                                         \
-      void operator=(Return (*toF)(Class * that)) {                                                                                                                                                 \
-         h2::h2_stub_g(h2::h2_mfp<Class, Return Args>::A(&Class::Method, "STUB", #Return, #Class, #Method, #Args, __FILE__, __LINE__), (void*)(toF), #Class "::" #Method, "~", __FILE__, __LINE__); \
-      }                                                                                                                                                                                             \
-   } Qt;                                                                                                                                                                                            \
-   Qt = [](Class * that) -> Return
-
-#define __H2STUB51(Return, Class, Method, Args, Qt)                                                                                                                                                 \
-   struct {                                                                                                                                                                                         \
-      void operator=(Return (*toF)(Class * that, H2PP_REMOVE_PARENTHESES(Args))) {                                                                                                                  \
-         h2::h2_stub_g(h2::h2_mfp<Class, Return Args>::A(&Class::Method, "STUB", #Return, #Class, #Method, #Args, __FILE__, __LINE__), (void*)(toF), #Class "::" #Method, "~", __FILE__, __LINE__); \
-      }                                                                                                                                                                                             \
-   } Qt;                                                                                                                                                                                            \
-   Qt = [](Class * that, H2PP_REMOVE_PARENTHESES(Args)) -> Return
-
-#define __H2STUB5(Return, Class, Method, Args, Qt) \
-   H2PP_IF_ELSE(H2PP_0ARG Args, __H2STUB50(Return, Class, Method, Args, Qt), __H2STUB51(Return, Class, Method, Args, Qt))
-
-#define __H2STUB60(Return, Class, Method, Args, Instance, Qt)                                                                                    \
-   struct {                                                                                                                                      \
-      void operator=(Return (*toF)(Class * that)) {                                                                                              \
-         h2::h2_stub_g(h2::h2_mfp<Class, Return Args>::A(&Class::Method, Instance), (void*)(toF), #Class "::" #Method, "~", __FILE__, __LINE__); \
-      }                                                                                                                                          \
-   } Qt;                                                                                                                                         \
-   Qt = [](Class * that) -> Return
-
-#define __H2STUB61(Return, Class, Method, Args, Instance, Qt)                                                                                    \
-   struct {                                                                                                                                      \
-      void operator=(Return (*toF)(Class * that, H2PP_REMOVE_PARENTHESES(Args))) {                                                               \
-         h2::h2_stub_g(h2::h2_mfp<Class, Return Args>::A(&Class::Method, Instance), (void*)(toF), #Class "::" #Method, "~", __FILE__, __LINE__); \
-      }                                                                                                                                          \
-   } Qt;                                                                                                                                         \
-   Qt = [](Class * that, H2PP_REMOVE_PARENTHESES(Args)) -> Return
-
-#define __H2STUB6(Return, Class, Method, Args, Instance, Qt) \
-   H2PP_IF_ELSE(H2PP_0ARG Args, __H2STUB60(Return, Class, Method, Args, Instance, Qt), __H2STUB61(Return, Class, Method, Args, Instance, Qt))
-
-#define H2STUB(...) H2PP_VARIADIC_CALL(__H2STUB, __VA_ARGS__, H2Q(t_stub))
-
 #define __H2BLOCK0(Qb) for (h2::h2_heap::stack::block Qb(__FILE__, __LINE__); Qb;)
 #define __H2BLOCK1(Qb, ...) for (h2::h2_heap::stack::block Qb(__FILE__, __LINE__, __VA_ARGS__); Qb;)
-#define H2BLOCK(...) H2PP_IF_ELSE(H2PP_0ARG(__VA_ARGS__), __H2BLOCK0(H2Q(t_block)), __H2BLOCK1(H2Q(t_block), __VA_ARGS__))
+#define H2BLOCK(...) H2PP_IF_ELSE(H2PP_IS_EMPTY(__VA_ARGS__), __H2BLOCK0(H2Q(t_block)), __H2BLOCK1(H2Q(t_block), __VA_ARGS__))
 
 #define H2DNS(...) h2::h2_dns::setaddrinfo(H2PP_NARG(__VA_ARGS__), __VA_ARGS__)
 
@@ -2443,120 +2477,165 @@ using h2::ListOf;
 
 #endif
 
-#include <algorithm>     /* shuffle */
-#include <arpa/inet.h>   /* inet_addr */
-#include <cassert>       /* assert */
-#include <cctype>        /* tolower, isspace */
-#include <cmath>         /* fabs */
-#include <cstdarg>       /* va_list */
-#include <cstdint>       /* int32_t */
-#include <cxxabi.h>      /* demangle */
-#include <errno.h>       /* strerror */
-#include <execinfo.h>    /* backtrace */
-#include <fcntl.h>       /* fcntl */
-#include <fnmatch.h>     /* fnmatch */
-#include <iostream>      /* cout */
-#include <libgen.h>      /* basename */
-#include <map>           /* std::map */
-#include <memory>        /* allocator */
-#include <netdb.h>       /* getaddrinfo, gethostbyname */
-#include <random>        /* shuffle */
-#include <regex>         /* std::regex */
-#include <signal.h>      /* sigaction */
-#include <sys/ioctl.h>   /* ioctl */
-#include <sys/mman.h>    /* mprotect, mmap */
-#include <sys/socket.h>  /* sockaddr */
-#include <sys/syscall.h> /* syscall */
-#include <sys/time.h>    /* gettimeofday */
-#include <sys/types.h>   /* size_t */
-#include <syslog.h>      /* syslog, vsyslog */
-#include <typeinfo>      /* typeid */
-#include <unistd.h>      /* sysconf */
+#include <algorithm> /* shuffle */
+#include <cassert>   /* assert */
+#include <cctype>    /* tolower, isspace */
+#include <cstdarg>   /* va_list */
+#include <cstdint>   /* int32_t */
+#include <errno.h>   /* strerror */
+#include <iostream>  /* cout */
+#include <map>       /* std::map */
+#include <memory>    /* allocator */
+#include <random>    /* shuffle */
+#include <regex>     /* std::regex */
+#include <signal.h>  /* sigaction */
+#include <typeinfo>  /* typeid */
 
-#if defined __GLIBC__
-#   include <malloc.h> /* __malloc_hook */
-#elif defined __APPLE__
-#   include <AvailabilityMacros.h>
-#   include <malloc/malloc.h> /* malloc_zone_t */
+#if defined _WIN32
+#   pragma comment(lib, "Winmm.lib")
+#   pragma comment(lib, "Ws2_32.lib")
+#   pragma comment(lib, "Shlwapi.lib")
+#else
+#   include <netdb.h>       /* getaddrinfo, gethostbyname */
+#   include <libgen.h>      /* basename */
+#   include <fcntl.h>       /* fcntl */
+#   include <fnmatch.h>     /* fnmatch */
+#   include <cxxabi.h>      /* demangle */
+#   include <execinfo.h>    /* backtrace */
+#   include <arpa/inet.h>   /* inet_addr */
+#   include <syslog.h>      /* syslog, vsyslog */
+#   include <unistd.h>      /* sysconf */
+#   include <sys/ioctl.h>   /* ioctl */
+#   include <sys/mman.h>    /* mprotect, mmap */
+#   include <sys/socket.h>  /* sockaddr */
+#   include <sys/syscall.h> /* syscall */
+#   include <sys/time.h>    /* gettimeofday */
+#   include <sys/types.h>   /* size_t */
+#   if defined __GLIBC__
+#      include <malloc.h> /* __malloc_hook */
+#   elif defined __APPLE__
+#      include <AvailabilityMacros.h>
+#      include <malloc/malloc.h> /* malloc_zone_t */
+#   endif
 #endif
 
 namespace h2 {
 
+template <typename T>
+T h2_max(T a, T b) {
+#ifdef _WIN32
+   return max(a, b);
+#else
+   return std::max(a, b);
+#endif
+}
+
+template <typename T>
+T h2_min(T a, T b) {
+#ifdef _WIN32
+   return min(a, b);
+#else
+   return std::min(a, b);
+#endif
+}
+
+#ifdef _WIN32
+
+static inline char* basename(char* path) {
+   static char t[MAX_PATH + 1];
+   strcpy(t, path);
+   PathRemoveFileSpecA(t);
+   return t;
+}
+
+static inline char* strcasestr(const char* s, const char* find) {  // StrStrIA
+   char c, sc;
+   size_t len;
+
+   if ((c = *find++) != 0) {
+      c = tolower((unsigned char)c);
+      len = strlen(find);
+      do {
+         do {
+            if ((sc = *s++) == 0)
+               return (NULL);
+         } while ((char)::tolower((unsigned char)sc) != c);
+      } while (_strnicmp(s, find, len) != 0);
+      s--;
+   }
+   return ((char*)s);
+}
+
+#endif
+
 static inline bool h2_regex_match(const char* pattern, const char* subject, bool caseless = false) {
    bool result = false;
-   try {  //C++11 support regex; gcc 4.8 start support regex, gcc 5.5 icase works.
+   try {  // c++11 support regex; gcc 4.8 start support regex, gcc 5.5 icase works.
       result = std::regex_match(subject, caseless ? std::regex(pattern, std::regex::icase) : std::regex(pattern));
-   } catch (const std::regex_error& e) {
+   } catch (const std::regex_error&) {
       result = false;
    }
    return result;
 }
 
 static inline bool h2_wildcard_match(const char* pattern, const char* subject, bool caseless = false) {
-   return !fnmatch(pattern, subject, caseless ? FNM_CASEFOLD : 0);  // PathMatchSpec() for windows
+#ifdef _WIN32
+   const char *scur = subject, *pcur = pattern;
+   const char *sstar = nullptr, *pstar = nullptr;
+   while (*scur) {
+      if (::tolower(*scur) == ::tolower(*pcur) || *pcur == '?') {
+         ++scur;
+         ++pcur;
+      } else if (*pcur == '*') {
+         pstar = pcur++;
+         sstar = scur;
+      } else if (pstar) {
+         pcur = pstar + 1;
+         scur = ++sstar;
+      } else
+         return false;
+   }
+   while (*pcur == '*') ++pcur;
+   return !*pcur;
+#else
+   return !fnmatch(pattern, subject, caseless ? FNM_CASEFOLD : 0);
+#endif
 }
 
 static inline long long h2_now() {
-   struct timeval tv;
-   gettimeofday(&tv, NULL);
-   return tv.tv_sec * 1000LL + tv.tv_usec / 1000;
+   return clock() * 1000 / CLOCKS_PER_SEC;
 }
 
 static inline void h2_sleep(long long milliseconds) {
+#ifdef _WIN32
+   Sleep(milliseconds);
+#else
    ::usleep(milliseconds * 1000);
+#endif
 }
 
-static inline int h2_winsz() {
+static inline int h2_page_size() {
+   static int s_page_size = 0;
+   if (s_page_size == 0) {
+#ifdef _WIN32
+      SYSTEM_INFO si;
+      GetSystemInfo(&si);
+      s_page_size = (int)si.dwPageSize;
+#else
+      s_page_size = sysconf(_SC_PAGESIZE);
+#endif
+   }
+   return s_page_size;
+}
+
+static inline int h2_term_size() {
+#ifdef _WIN32
+   return 80;
+#else
    struct winsize w;
    if (-1 == ioctl(STDOUT_FILENO, TIOCGWINSZ, &w)) return 80;
    return w.ws_col;
-}
-
-static inline const char* h2_style(const char* style, char* ascii_code) {
-   static struct {
-      const char *name, *value;
-   } K[] = {
-     {"reset", "0;"},
-     {"bold", "1;"},
-     {"italics", "3;"},
-     {"underline", "4;"},
-     {"inverse", "7;"},
-     {"strikethrough", "9;"},
-     {"black", "30;"},
-     {"red", "31;"},
-     {"green", "32;"},
-     {"yellow", "33;"},
-     {"blue", "34;"},
-     {"purple", "35;"},
-     {"cyan", "36;"},
-     {"gray", "37;"},
-     {"default", "39;"},
-     {"dark gray", "90;"},
-     {"light red", "91;"},
-     {"light green", "92;"},
-     {"light yellow", "93;"},
-     {"light blue", "94;"},
-     {"light purple", "95;"},
-     {"light cyan", "96;"},
-     {"white", "97;"},
-     {"bg_black", "40;"},
-     {"bg_red", "41;"},
-     {"bg_green", "42;"},
-     {"bg_yellow", "43;"},
-     {"bg_blue", "44;"},
-     {"bg_purple", "45;"},
-     {"bg_cyan", "46;"},
-     {"bg_white", "47;"},
-     {"bg_default", "49;"}};
-
-   char t[1024], *s = strcpy(t, style), *d = ascii_code + sprintf(ascii_code, "\033["), *q = d;
-   for (char* p = strtok(s, ","); p; p = strtok(nullptr, ","))
-      for (auto& k : K)
-         if (!strcmp(k.name, p)) {
-            q += sprintf(q, "%s", k.value);
-            break;
-         }
-   return d == q ? strcpy(ascii_code, "") : (*(q - 1) = 'm', ascii_code);
+#endif
 }
 
 static inline const char* PAD(int n) {
@@ -2582,6 +2661,144 @@ static inline char* SF(const char* style, const char* fmt, ...) {
    return s;
 }
 
+struct h2_color {
+   struct st {
+      const char* name;
+      int value;
+   };
+   static struct st* find(struct st* s, int n, const char* name) {
+      for (int i = 0; i < n; ++i)
+         if (!strcmp(s[i].name, name))
+            return &s[i];
+      return NULL;
+   }
+   static void print(char* style) {
+#ifdef _WIN32
+      static HANDLE console_handle = NULL;
+      static WORD default_attribute;
+      if (console_handle == NULL) {
+         console_handle = GetStdHandle(STD_OUTPUT_HANDLE);
+         CONSOLE_SCREEN_BUFFER_INFO csbi;
+         GetConsoleScreenBufferInfo(console_handle, &csbi);
+         default_attribute = csbi.wAttributes;
+      }
+      static struct st K[] = {
+        // normal style
+        {"reset", default_attribute},
+        {"bold", FOREGROUND_INTENSITY},
+        // { "italics", 3 },
+        {"underline", COMMON_LVB_UNDERSCORE},
+        {"inverse", COMMON_LVB_REVERSE_VIDEO},
+        // { "strikethrough", 9 },
+        // foreground color
+        // { "black", 30 },
+        {"red", FOREGROUND_RED},
+        {"green", FOREGROUND_GREEN},
+        {"yellow", FOREGROUND_RED | FOREGROUND_GREEN},
+        {"blue", FOREGROUND_BLUE},
+        {"purple", FOREGROUND_RED | FOREGROUND_BLUE},
+        {"cyan", FOREGROUND_BLUE | FOREGROUND_GREEN},
+        {"white", FOREGROUND_GREEN | FOREGROUND_RED | FOREGROUND_BLUE},
+        {"dark gray", FOREGROUND_GREEN | FOREGROUND_RED | FOREGROUND_BLUE},
+        {"default", 39},
+        // background color
+        // { "bg_black", 40 },
+        {"bg_red", BACKGROUND_RED},
+        {"bg_green", BACKGROUND_GREEN},
+        {"bg_yellow", BACKGROUND_RED | BACKGROUND_GREEN},
+        {"bg_blue", BACKGROUND_BLUE},
+        {"bg_purple", BACKGROUND_RED | BACKGROUND_BLUE},
+        {"bg_cyan", BACKGROUND_BLUE | BACKGROUND_GREEN},
+        {"bg_white", BACKGROUND_RED | BACKGROUND_GREEN | BACKGROUND_BLUE},
+        // { "bg_default", 49 }
+      };
+
+      WORD a = 0;
+#else
+      static struct st K[] = {
+        {"reset", 0},
+        {"bold", 1},
+        {"italics", 3},
+        {"underline", 4},
+        {"inverse", 7},
+        {"strikethrough", 9},
+        {"black", 30},
+        {"red", 31},
+        {"green", 32},
+        {"yellow", 33},
+        {"blue", 34},
+        {"purple", 35},
+        {"cyan", 36},
+        {"gray", 37},
+        {"default", 39},
+        {"dark gray", 90},
+        {"light red", 91},
+        {"light green", 92},
+        {"light yellow", 93},
+        {"light blue", 94},
+        {"light purple", 95},
+        {"light cyan", 96},
+        {"white", 97},
+        {"bg_black", 40},
+        {"bg_red", 41},
+        {"bg_green", 42},
+        {"bg_yellow", 43},
+        {"bg_blue", 44},
+        {"bg_purple", 45},
+        {"bg_cyan", 46},
+        {"bg_white", 47},
+        // {"bg_default", 49}
+      };
+      char a[256] = "\033[";
+#endif
+      for (char* p = strtok(style, ","); p; p = strtok(NULL, ",")) {
+         struct st* s = find(K, sizeof(K) / sizeof(K[0]), p);
+         if (!s) continue;
+#ifdef _WIN32
+         a |= s->value;
+#else
+         sprintf(a + strlen(a), "%d;", s->value);
+#endif
+      }
+#ifdef _WIN32
+      SetConsoleTextAttribute(console_handle, a);
+#else
+      if (!strcmp("\033[", a)) return;  // no style
+      a[strlen(a) - 1] = 'm';
+      h2_libc::write(1, a, strlen(a));
+#endif
+   }
+};
+
+static inline int h2_printf(const char* format, ...) {
+   int len, ret = 0;
+   va_list a, b;
+   va_start(a, format);
+   len = vsnprintf(nullptr, 0, format, a);
+   char* tmp = (char*)alloca(len + 1);
+   va_end(a);
+
+   va_start(b, format);
+   len = vsnprintf(tmp, len + 1, format, b);
+   va_end(b);
+
+   for (char* p = tmp; *p; p++) {
+      if (!memcmp("\033[", p, 2)) {
+         char* q = strchr(p + 2, ']');
+         if (!q) return 0;
+         *q = '\0';
+         h2_color::print(p + 2);
+         p = q;
+      } else {
+         ret += h2_libc::write(fileno(stdout), p, 1);
+      }
+   }
+
+   return ret;
+}
+
+
+#ifndef _WIN32
 
 struct h2_nm {
    h2_singleton(h2_nm);
@@ -2666,11 +2883,14 @@ static inline bool backtrace_extract(const char* backtrace_symbol_line, char* mo
 
    return false;
 }
+#endif
 
 h2_inline h2_backtrace::h2_backtrace(int shift_) : shift(shift_) {
+#ifndef _WIN32
    h2_heap::unhook();
    count = ::backtrace(array, sizeof(array) / sizeof(array[0]));
    h2_heap::dohook();
+#endif
 }
 
 h2_inline bool h2_backtrace::operator==(h2_backtrace& bt) {
@@ -2689,6 +2909,7 @@ h2_inline bool h2_backtrace::has(void* func, int size) const {
 }
 
 h2_inline void h2_backtrace::print(int pad) const {
+#ifndef _WIN32
    h2_heap::unhook();
    char** backtraces = backtrace_symbols(array, count);
    for (int i = shift; i < count; ++i) {
@@ -2707,13 +2928,14 @@ h2_inline void h2_backtrace::print(int pad) const {
                if (strlen(addr2lined))
                   p = addr2lined;
       }
-      ::printf("%s%d. %s\n", PAD(pad), i - shift, p);
+      h2_printf("%s%d. %s\n", PAD(pad), i - shift, p);
 
       if (!strcmp("main", mangled) || !strcmp("main", demangled) || h2_nm::I().in_main(address + offset))
          break;
    }
    free(backtraces);
    h2_heap::dohook();
+#endif
 }
 
 h2_inline h2_fail* h2_callexp::check() {
@@ -2837,6 +3059,7 @@ static inline char* get_gdb2(char* s, int pid) {
 }
 
 h2_inline void h2_debugger::trap() {
+#ifndef _WIN32
    int pid = (int)getpid();
    if (!under_debug(pid, O.path)) {
       static h2_once only_one_time;
@@ -2856,6 +3079,7 @@ h2_inline void h2_debugger::trap() {
    }
 
    h2_raise_trap();
+#endif
 }
 
 static constexpr const char* last_order_file_path = ".last_order";
@@ -2922,12 +3146,12 @@ h2_inline void h2_directory::print_list() {
          if (!O.filter(s->name, "", "")) t++;
          for (auto& c : s->cases())
             if (!O.filter(s->name, isfit(O.listing, 'c') ? c->name : "", "")) t++;
-         if (t) printf("S%d. %s \\\\ %s:%d\n", ++ss, s->name, basename((char*)s->file), s->line);
+         if (t) ::printf("S%d. %s \\\\ %s:%d\n", ++ss, s->name, basename((char*)s->file), s->line);
       }
       if (t = 0, isfit(O.listing, 'c'))
          for (auto& c : s->cases())
             if (!O.filter(s->name, c->name, ""))
-               isfit(O.listing, 's') ? printf("C%d/S%d-%d. %s // %s \\\\ %s:%d\n", ++cs, ss, ++t, s->name, c->name, basename((char*)c->file), c->line) : printf("C%d. %s // %s \\\\ %s:%d\n", ++cs, s->name, c->name, basename((char*)c->file), c->line);
+               isfit(O.listing, 's') ? ::printf("C%d/S%d-%d. %s // %s \\\\ %s:%d\n", ++cs, ss, ++t, s->name, c->name, basename((char*)c->file), c->line) : ::printf("C%d. %s // %s \\\\ %s:%d\n", ++cs, s->name, c->name, basename((char*)c->file), c->line);
    }
 }
 
@@ -2946,7 +3170,7 @@ struct h2_resolver {
       bool is_ipv4 = 4 == ::sscanf(str, "%d.%d.%d.%d", &s1, &s2, &s3, &s4);
       if (is_ipv4 && addr) {
          addr->sin_family = AF_INET;
-         addr->sin_addr.s_addr = ::inet_addr(str);
+         inet_pton(AF_INET, str, &addr->sin_addr);
       }
       return is_ipv4;
    }
@@ -3714,12 +3938,12 @@ h2_inline void h2_fail::uprintf(const char* format, ...) { _H2_XPRINTF(_u, forma
 
 h2_inline void h2_fail::print_locate() {
    static constexpr const char* a9 = "1st\0002nd\0003rd\0004th\0005th\0006th\0007th\0008th\0009th";
-   if (func && strlen(func)) ::printf(", in %s(%s)", func, 0 <= argi && argi < 9 ? a9 + argi * 4 : "");
-   if (file && strlen(file) && 0 < line) ::printf(", at %s:%d", file, line);
-   ::printf("\n");
+   if (func && strlen(func)) h2_printf(", in %s(%s)", func, 0 <= argi && argi < 9 ? a9 + argi * 4 : "");
+   if (file && strlen(file) && 0 < line) h2_printf(", at %s:%d", file, line);
+   h2_printf("\n");
 }
 
-h2_inline void h2_fail::print() { _k.size() && ::printf("%s%s", PAD(++pad), _k.c_str()); }
+h2_inline void h2_fail::print() { _k.size() && h2_printf("%s%s", PAD(++pad), _k.c_str()); }
 h2_inline void h2_fail::print(FILE* fp) { fprintf(fp, "%s", _k.c_str()); }
 
 h2_inline h2_fail_normal::h2_fail_normal(const char* file_, int line_, const char* func_, const char* format, ...)
@@ -3730,7 +3954,7 @@ h2_inline void h2_fail_normal::print() { h2_fail::print(), print_locate(); }
 h2_inline h2_fail_unexpect::h2_fail_unexpect(const char* file_, int line_) : h2_fail(file_, line_) {}
 
 h2_inline void h2_fail_unexpect::print_OK1() {
-   ::printf(" OK(%s) is %s", a_expr.c_str(), SF("bold,red", "false"));
+   h2_printf(" OK(%s) is %s", a_expr.c_str(), SF("bold,red", "false"));
 }
 
 h2_inline void h2_fail_unexpect::print_OK2() {
@@ -3748,19 +3972,19 @@ h2_inline void h2_fail_unexpect::print_OK2() {
       strcpy(t2 + strlen(t2), a_expr.acronym().c_str());
    }
 
-   ::printf(" OK(%s, %s)", t1, t2);
-   if (_m.length()) ::printf(" actual %s", _m.c_str());
+   h2_printf(" OK(%s, %s)", t1, t2);
+   if (_m.length()) h2_printf(" actual %s", _m.c_str());
 }
 
 h2_inline void h2_fail_unexpect::print_OK3() {
-   ::printf(" JE(%s, %s)", e_expr.acronym().c_str(), a_expr.acronym().c_str());
-   if (_m.length()) ::printf(" actual %s expect", _m.c_str());
+   h2_printf(" JE(%s, %s)", e_expr.acronym().c_str(), a_expr.acronym().c_str());
+   if (_m.length()) h2_printf(" actual %s expect", _m.c_str());
 }
 
 h2_inline void h2_fail_unexpect::print_MOCK() {
-   ::printf(" actual %s", SF("green", "%s", _a.acronym().c_str()));
-   if (_m.length()) ::printf(" %s", _m.c_str());
-   if (_e.length()) ::printf(" %s", SF("bold,red", "%s", _e.acronym().c_str()));
+   h2_printf(" actual %s", SF("green", "%s", _a.acronym().c_str()));
+   if (_m.length()) h2_printf(" %s", _m.c_str());
+   if (_e.length()) h2_printf(" %s", SF("bold,red", "%s", _e.acronym().c_str()));
 }
 
 h2_inline void h2_fail_unexpect::print() {
@@ -3769,7 +3993,7 @@ h2_inline void h2_fail_unexpect::print() {
    if (w_type == 1) print_OK1();
    if (w_type == 2) print_OK2();
    if (w_type == 3) print_OK3();
-   if (_u.length()) ::printf(", %s", _u.c_str());
+   if (_u.length()) h2_printf(", %s", _u.c_str());
    print_locate();
 }
 
@@ -3779,10 +4003,10 @@ h2_inline h2_fail_strcmp::h2_fail_strcmp(const h2_string& expect_, const h2_stri
 h2_inline void h2_fail_strcmp::print() {
    h2_fail_unexpect::print();
 
-   int columns = h2_winsz() - 12;
-   int rows = ::ceil(std::max(expect.length(), actual.length()) / (double)columns);
+   int columns = h2_term_size() - 12;
+   int rows = ::ceil(h2_max(expect.length(), actual.length()) / (double)columns);
    for (int i = 0; i < rows; ++i) {
-      char eline[1024], aline[1024], *ep = eline, *ap = aline;
+      char eline[1024 * 32], aline[1024 * 32], *ep = eline, *ap = aline;
       if (i * columns <= expect.length()) ep += sprintf(ep, "%s%s ", SF("dark gray", "expect"), SF("green", ">"));
       if (i * columns <= actual.length()) ap += sprintf(ap, "%s%s ", SF("dark gray", "actual"), SF("red", ">"));
       for (int j = 0; j < columns; ++j) {
@@ -3793,8 +4017,8 @@ h2_inline void h2_fail_strcmp::print() {
          ep = fmt_char(ec, eq, "green", ep);
          ap = fmt_char(ac, eq, "red,bold", ap);
       }
-      if (i * columns <= expect.length()) ::printf("%s\n", eline);
-      if (i * columns <= actual.length()) ::printf("%s\n", aline);
+      if (i * columns <= expect.length()) h2_printf("%s\n", eline);
+      if (i * columns <= actual.length()) h2_printf("%s\n", aline);
    }
 }
 
@@ -3814,10 +4038,10 @@ h2_inline h2_fail_json::h2_fail_json(const h2_string& expect_, const h2_string& 
 h2_inline void h2_fail_json::print() {
    h2_fail_unexpect::print();
    h2_string str;
-   int side_width = h2_json::diff(expect, actual, h2_winsz(), str);
+   int side_width = h2_json::diff(expect, actual, h2_term_size(), str);
 
-   ::printf("%s\n", SF("dark gray", "%s│%s", h2_string("expect").center(side_width).c_str(), h2_string("actual").center(side_width).c_str()));
-   ::printf("%s", str.c_str());
+   h2_printf("%s\n", SF("dark gray", "%s│%s", h2_string("expect").center(side_width).c_str(), h2_string("actual").center(side_width).c_str()));
+   h2_printf("%s", str.c_str());
 }
 
 h2_inline h2_fail_memcmp::h2_fail_memcmp(const unsigned char* expect_, const unsigned char* actual_, int len, const char* file_, int line_)
@@ -3828,10 +4052,10 @@ h2_inline h2_fail_memcmp::h2_fail_memcmp(const unsigned char* expect_, const uns
 
 h2_inline void h2_fail_memcmp::print() {
    h2_fail_unexpect::print();
-   ::printf("%s \n", SF("dark gray", "%s  │  %s", h2_string("expect").center(16 * 3).c_str(), h2_string("actual").center(16 * 3).c_str()));
+   h2_printf("%s \n", SF("dark gray", "%s  │  %s", h2_string("expect").center(16 * 3).c_str(), h2_string("actual").center(16 * 3).c_str()));
    int bytes = expect.size(), rows = ::ceil(bytes / 16.0);
    for (int i = 0; i < rows; ++i) {
-      char eline[256], aline[256], *ep = eline, *ap = aline;
+      char eline[1024], aline[1024], *ep = eline, *ap = aline;
       for (int j = 0; j < 16; ++j)
          if (bytes <= i * 16 + j)
             ep += sprintf(ep, "   "), ap += sprintf(ap, "   ");
@@ -3839,7 +4063,7 @@ h2_inline void h2_fail_memcmp::print() {
             ep = fmt_byte(expect[i * 16 + j], actual[i * 16 + j], j, "green", ep),
             ap = fmt_byte(actual[i * 16 + j], expect[i * 16 + j], j, "bold,red", ap);
 
-      ::printf("%s  %s  %s \n", eline, SF("dark gray", "│"), aline);
+      h2_printf("%s  %s  %s \n", eline, SF("dark gray", "│"), aline);
    }
 }
 
@@ -3856,11 +4080,11 @@ h2_inline void h2_fail_memoverflow::print() {
    h2_fail::print();
 
    for (int i = 0; i < spot.size(); ++i)
-      ::printf("%s ", SF(magic[i] == spot[i] ? "green" : "bold,red", "%02X", spot[i]));
+      h2_printf("%s ", SF(magic[i] == spot[i] ? "green" : "bold,red", "%02X", spot[i]));
 
    print_locate();
-   if (0 < bt1.count) ::printf("%s%p trampled at backtrace:\n", PAD(++pad), ptr + offset), bt1.print(pad + 1);
-   if (0 < bt0.count) ::printf("%swhich allocated at backtrace:\n", PAD(++pad)), bt0.print(pad + 1);
+   if (0 < bt1.count) h2_printf("%s%p trampled at backtrace:\n", PAD(++pad), ptr + offset), bt1.print(pad + 1);
+   if (0 < bt0.count) h2_printf("%swhich allocated at backtrace:\n", PAD(++pad)), bt0.print(pad + 1);
 }
 
 h2_inline h2_fail_memleak::h2_fail_memleak(const char* file_, int line_, const char* where_)
@@ -3886,8 +4110,8 @@ h2_inline void h2_fail_memleak::print() {
    h2_fail::print(), print_locate();
    ++pad;
    for (auto& c : places) {
-      c.times <= 1 ? ::printf("%s%p Leaked %s bytes, at backtrace\n", PAD(pad), c.ptr, SF("bold,red", "%lld", c.bytes)) :
-                     ::printf("%s%p, %p ... Leaked %s times %s bytes (%s, %s ...), at backtrace\n", PAD(pad), c.ptr, c.ptr2, SF("bold,red", "%lld", c.times), SF("bold,red", "%lld", c.bytes), SF("bold,red", "%lld", c.size), SF("bold,red", "%lld", c.size2));
+      c.times <= 1 ? h2_printf("%s%p Leaked %s bytes, at backtrace\n", PAD(pad), c.ptr, SF("bold,red", "%lld", c.bytes)) :
+                     h2_printf("%s%p, %p ... Leaked %s times %s bytes (%s, %s ...), at backtrace\n", PAD(pad), c.ptr, c.ptr2, SF("bold,red", "%lld", c.times), SF("bold,red", "%lld", c.bytes), SF("bold,red", "%lld", c.size), SF("bold,red", "%lld", c.size2));
       c.bt.print(pad + 1);
    }
 }
@@ -3896,9 +4120,9 @@ h2_inline h2_fail_doublefree::h2_fail_doublefree(void* ptr_, h2_backtrace& bt0_,
   : h2_fail(file_, line_), bt0(bt0_), bt1(bt1_) { kprintf("%p double freed", ptr_); }
 
 h2_inline void h2_fail_doublefree::print() {
-   h2_fail::print(), ::printf(" at backtrace:\n");
+   h2_fail::print(), h2_printf(" at backtrace:\n");
    bt1.print(pad + 1);
-   if (0 < bt0.count) ::printf("%swhich allocated at backtrace:\n", PAD(++pad)), bt0.print(pad + 1);
+   if (0 < bt0.count) h2_printf("%swhich allocated at backtrace:\n", PAD(++pad)), bt0.print(pad + 1);
 }
 
 h2_inline h2_fail_instantiate::h2_fail_instantiate(const char* action_type_, const char* return_type_, const char* class_type_, const char* method_name_, const char* return_args_, int why_abstract_, const char* file_, int line_)
@@ -3910,17 +4134,17 @@ h2_inline h2_fail_instantiate::h2_fail_instantiate(const char* action_type_, con
 h2_inline void h2_fail_instantiate::print() {
    h2_fail::print(), print_locate();
 
-   ::printf("You may take following solutions to fix it: \n");
+   h2_printf("You may take following solutions to fix it: \n");
    if (why_abstract)
-      ::printf("1. Add non-abstract Derived Class instance in %s(%s%s%s, %s, %s, %s) \n",
+      h2_printf("1. Add non-abstract Derived Class instance in %s(%s%s%s, %s, %s, %s) \n",
                action_type,
                strlen(return_type) ? return_type : "",
                strlen(return_type) ? ", " : "",
                class_type, method_name, return_args,
                SF("bold,yellow", "Derived_%s(...)", class_type));
    else {
-      ::printf("1. Define default constructor in class %s, or \n", class_type);
-      ::printf("2. Add parameterized construction in %s(%s%s%s, %s, %s, %s) \n",
+      h2_printf("1. Define default constructor in class %s, or \n", class_type);
+      h2_printf("2. Add parameterized construction in %s(%s%s%s, %s, %s, %s) \n",
                action_type,
                strlen(return_type) ? return_type : "",
                strlen(return_type) ? ", " : "",
@@ -3938,12 +4162,17 @@ struct h2_piece : h2_libc {
    h2_backtrace bt;
 
    h2_piece(int size_, int alignment, h2_backtrace& bt_) : size(size_), freed(0), bt(bt_) {
-      pagesize = ::sysconf(_SC_PAGE_SIZE);
+      pagesize = h2_page_size();
       if (alignment <= 0) alignment = 8;
       pagecount = ::ceil((size + alignment + sizeof(snowfield)) / (double)pagesize);
 
+#ifdef _WIN32
+      page = (unsigned char*)VirtualAlloc(NULL, pagesize * (pagecount + 1), MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
+      assert(page);
+#else
       page = (unsigned char*)::mmap(nullptr, pagesize * (pagecount + 1), PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0);
       assert(page != MAP_FAILED);
+#endif
 
       ptr = page + pagesize * pagecount - size;
       ptr = (unsigned char*)(((intptr_t)ptr / alignment) * alignment);
@@ -3955,15 +4184,24 @@ struct h2_piece : h2_libc {
    }
 
    ~h2_piece() {
+#ifdef _WIN32
+      VirtualFree(page, 0, MEM_DECOMMIT | MEM_RELEASE);
+#else
       ::munmap(page, pagesize * (pagecount + 1));
+#endif
    }
 
    void mark_snowfield() {
       memcpy(ptr - sizeof(snowfield), snowfield, sizeof(snowfield));
       memcpy(ptr + size, snowfield, sizeof(snowfield));
-
+#ifdef _WIN32
+      DWORD old;
+      if (!VirtualProtect(page + pagesize * pagecount, pagesize, PAGE_READONLY, &old))
+         ::printf("VirtualProtect PAGE_READONLY failed %d\n", GetLastError());
+#else
       if (::mprotect(page + pagesize * pagecount, pagesize, PROT_READ) != 0)
          ::printf("mprotect PROT_READ failed %s\n", strerror(errno));
+#endif
    }
 
    h2_fail* check_snowfield() {
@@ -3973,8 +4211,14 @@ struct h2_piece : h2_libc {
       if (memcmp(ptr - sizeof(snowfield), snowfield, sizeof(snowfield)))
          h2_fail::append_x(fail, new h2_fail_memoverflow(ptr, -(int)sizeof(snowfield), snowfield, sizeof(snowfield), bt, h2_backtrace()));
 
+#ifdef _WIN32
+      DWORD old;
+      if (!VirtualProtect(page, pagesize * (pagecount + 1), PAGE_NOACCESS, &old))
+         ::printf("VirtualProtect PAGE_NOACCESS failed %d\n", GetLastError());
+#else
       if (::mprotect(page, pagesize * (pagecount + 1), PROT_NONE) != 0)
          ::printf("mprotect PROT_NONE failed %s\n", strerror(errno));
+#endif
       return fail;
    }
 
@@ -4063,7 +4307,9 @@ struct h2_stack {
       } escape_functions[] = {
         {(void*)sprintf, 300},  // {(void*)vsnprintf, 300}, {(void*)sscanf, 300},
         {(void*)localtime, 300},
+#ifndef _WIN32
         {(void*)tzset, 300},
+#endif
       };
 
       for (auto& x : escape_functions)
@@ -4119,6 +4365,7 @@ struct h2_stack {
 
 // https://www.gnu.org/savannah-checkouts/gnu/libc/manual/html_node/Hooks-for-Malloc.html
 // https://github.com/gperftools/gperftools/blob/master/src/libc_override.h
+// https://github.com/google/tcmalloc/blob/master/tcmalloc/libc_override.h
 
 #if defined(__APPLE__) && defined(MAC_OS_X_VERSION_10_6) && MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_6
 extern "C" {
@@ -4171,6 +4418,40 @@ struct h2_hook {
       return p ? p->ptr : nullptr;
    }
 
+   static void* _aligned_malloc(size_t size, size_t alignment) {
+      h2_piece* p = h2_stack::I().new_piece(size, alignment, nullptr);
+      return p ? p->ptr : nullptr;
+   }
+
+   static void* new_throwing(std::size_t size) {
+      h2_piece* p = h2_stack::I().new_piece(size, 0, nullptr);
+      return p ? p->ptr : nullptr;
+   }
+   static void* new_nothrow(std::size_t size, const std::nothrow_t&) {
+      h2_piece* p = h2_stack::I().new_piece(size, 0, nullptr);
+      return p ? p->ptr : nullptr;
+   }
+   static void* newarray_throwing(std::size_t size) {
+      h2_piece* p = h2_stack::I().new_piece(size, 0, nullptr);
+      return p ? p->ptr : nullptr;
+   }
+   static void* newarray_nothrow(std::size_t size, const std::nothrow_t&) {
+      h2_piece* p = h2_stack::I().new_piece(size, 0, nullptr);
+      return p ? p->ptr : nullptr;
+   }
+   static void delete_throwing(void* ptr) {
+      if (ptr) h2_fail_g(h2_stack::I().rel_piece(ptr));
+   }
+   static void delete_nothrow(void* ptr, const std::nothrow_t&) {
+      if (ptr) h2_fail_g(h2_stack::I().rel_piece(ptr));
+   }
+   static void deletearray_throwing(void* ptr) {
+      if (ptr) h2_fail_g(h2_stack::I().rel_piece(ptr));
+   }
+   static void deletearray_nothrow(void* ptr, const std::nothrow_t&) {
+      if (ptr) h2_fail_g(h2_stack::I().rel_piece(ptr));
+   }
+
 #if defined __GLIBC__
 
    static void free_hook(void* __ptr, const void* caller) { free(__ptr); }
@@ -4220,11 +4501,12 @@ struct h2_hook {
    malloc_introspection_t mi;
    malloc_zone_t mz;
 
+#elif defined _WIN32
+   h2_stubs stubs;
+
 #else
 
 #endif
-
-   h2_stubs stubs;
 
    h2_hook() {
 #if defined __GLIBC__
@@ -4268,6 +4550,8 @@ struct h2_hook {
 
 #   endif
 
+#elif defined _WIN32
+      //TODO
 #else
 #endif
    }
@@ -4283,11 +4567,21 @@ struct h2_hook {
       malloc_zone_t* default_zone = get_default_zone();
       malloc_zone_unregister(default_zone);
       malloc_zone_register(default_zone);
+#elif defined _WIN32
+      stubs.add((void*)::free, (void*)free);
+      stubs.add((void*)::malloc, (void*)malloc);
+      stubs.add((void*)::realloc, (void*)realloc);
+      stubs.add((void*)::calloc, (void*)calloc);
+      stubs.add((void*)::_aligned_malloc, (void*)_aligned_malloc);
+      stubs.add((void*)((void* (*)(std::size_t))::operator new), (void*)new_throwing);
+      stubs.add((void*)((void* (*)(std::size_t, const std::nothrow_t&))::operator new), (void*)new_nothrow);
+      stubs.add((void*)((void* (*)(std::size_t))::operator new[]), (void*)newarray_throwing);
+      stubs.add((void*)((void* (*)(std::size_t, const std::nothrow_t&))::operator new[]), (void*)newarray_nothrow);
+      stubs.add((void*)((void (*)(void*))::operator delete), (void*)delete_throwing);
+      stubs.add((void*)((void (*)(void*, const std::nothrow_t&))::operator delete), (void*)delete_nothrow);
+      stubs.add((void*)((void (*)(void*))::operator delete[]), (void*)deletearray_throwing);
+      stubs.add((void*)((void (*)(void*, const std::nothrow_t&))::operator delete[]), (void*)deletearray_nothrow);
 #else
-      stubs.add((void*)::free, (void*)hook::free);
-      stubs.add((void*)::malloc, (void*)hook::malloc);
-      stubs.add((void*)::realloc, (void*)hook::realloc);
-      stubs.add((void*)::posix_memalign, (void*)hook::posix_memalign);
 #endif
    }
 
@@ -4299,18 +4593,19 @@ struct h2_hook {
       __memalign_hook = sys__memalign_hook;
 #elif defined __APPLE__
       malloc_zone_unregister(&mz);
-#else
+#elif defined _WIN32
       stubs.clear();
+#else
 #endif
    }
 
+#ifndef _WIN32
    static void segment_fault_handler(int sig, siginfo_t* si, void* unused) {
       h2_piece* m = h2_stack::I().host_piece(si->si_addr);
       if (m) h2_fail_g(new h2_fail_memoverflow(m->ptr, (intptr_t)si->si_addr - (intptr_t)m->ptr, nullptr, 0, m->bt, h2_backtrace(O.isMAC() ? 5 : 4)));
       h2_debug();
       exit(1);
    }
-
    void install_segment_fault_handler() {
       struct sigaction act;
       act.sa_sigaction = segment_fault_handler;
@@ -4319,10 +4614,13 @@ struct h2_hook {
       if (sigaction(SIGSEGV, &act, nullptr) == -1) perror("Register SIGSEGV handler failed");
       if (sigaction(SIGBUS, &act, nullptr) == -1) perror("Register SIGBUS handler failed");
    }
+#endif
 };
 
 h2_inline void h2_heap::initialize() {
+#ifndef _WIN32
    if (O.memory_check && !O.debug) h2_hook::I().install_segment_fault_handler();
+#endif
    stack::root();
 }
 h2_inline void h2_heap::dohook() {
@@ -4681,8 +4979,8 @@ struct h2__json {
    static void samelengthify(h2_string& e, h2_string& a) {
       int e_l = e.length(), a_l = a.length();
 
-      e.append(std::max(e_l, a_l) - e_l, samelength_char);
-      a.append(std::max(e_l, a_l) - a_l, samelength_char);
+      e.append(h2_max(e_l, a_l) - e_l, samelength_char);
+      a.append(h2_max(e_l, a_l) - a_l, samelength_char);
    }
 
    static void dual(Node* e, Node* a, Dual* d) {
@@ -4720,7 +5018,7 @@ struct h2__json {
                i++;
          }
 
-         for (int i = 0; i < std::max(e->children.size(), a->children.size()); ++i) {
+         for (int i = 0; i < h2_max(e->children.size(), a->children.size()); ++i) {
             Dual* d1 = new Dual(d->depth + 1, d);
             d->child.push_back(d1);
             Node *e1 = e->get(i), *a1 = a->get(i);
@@ -4729,7 +5027,7 @@ struct h2__json {
       }
 
       if (d->e_type == t_array) {
-         for (int i = 0; i < std::max(e->children.size(), a->children.size()); ++i) {
+         for (int i = 0; i < h2_max(e->children.size(), a->children.size()); ++i) {
             Dual* d1 = new Dual(d->depth + 1, d);
             d->child.push_back(d1);
             Node *e1 = e->get(i), *a1 = a->get(i);
@@ -4876,7 +5174,7 @@ struct h2__json {
          int curr = 0;
          for (auto& word : line)
             if (word[0] != '#') curr += word.length();
-         most = std::max(most, curr);
+         most = h2_max(most, curr);
       }
       return most;
    }
@@ -4916,13 +5214,13 @@ struct h2__json {
    static void print(Lines& e_lines, Lines& a_lines, int side_width, h2_string& str) {
       h2_string e_last_style, a_last_style;
       // assert(e_lines.size() == a_lines.size());
-      for (int i = 0; i < std::max(e_lines.size(), a_lines.size()); ++i) {
+      for (int i = 0; i < h2_max(e_lines.size(), a_lines.size()); ++i) {
          auto e_line = e_lines[i];
          auto a_line = a_lines[i];
          int e_wraps = line_wrap(e_line, side_width - 2);
          int a_wraps = line_wrap(a_line, side_width - 2);
          // assert(e_wraps == a_wraps);
-         int K = std::max(e_wraps, a_wraps);
+         int K = h2_max(e_wraps, a_wraps);
          for (int j = 0; j < K; ++j) {
             h2_string e_current_style, a_current_style;
             auto e_wrap = line_wrap(e_line, j, side_width - 2, e_current_style);
@@ -4969,23 +5267,110 @@ h2_inline int h2_json::diff(const h2_string expect, const h2_string actual, int 
    h2__json::merge_line(a_list, a_lines);
 
    int e_most = h2__json::lines_most(e_lines), a_most = h2__json::lines_most(a_lines);
-   int fav_width = std::max(std::max(e_most, a_most) + 3, 30);
-   int side_width = std::min(terminal_width / 2 - 4, fav_width);
+   int fav_width = h2_max(h2_max(e_most, a_most) + 3, 30);
+   int side_width = h2_min(terminal_width / 2 - 4, fav_width);
 
    h2__json::print(e_lines, a_lines, side_width, str);
    return side_width;
 }
 
-h2_inline void* h2_libc::malloc(size_t sz) {
-   if (!O.memory_check) {
-      return ::malloc(sz);
-   }
-   void* ptr = ::mmap(nullptr, sz, PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0);
-   if (ptr == MAP_FAILED) return nullptr;
+struct h2_libc_malloc {
+   h2_singleton(h2_libc_malloc);
 
-   uintptr_t* p = (uintptr_t*)ptr;
-   *p = (uintptr_t)sz;
-   return (void*)(p + 1);
+   struct blob {
+      size_t size;
+      h2_list link;
+   };
+
+   char buffer[1024 * 1024 * 100];
+   h2_list blobs;
+
+   h2_libc_malloc() {
+      blob* b = (blob*)buffer;
+      b->size = sizeof(buffer);
+      blobs.add_tail(&b->link);
+   }
+
+   void merge() {
+      blob* b = nullptr;
+      h2_list_for_each_entry(p, &blobs, blob, link) {
+         if (b) {
+            if (((char*)b) + b->size == (char*)p) {
+               b->size += p->size;
+               p->link.out();
+               continue;
+            }
+         }
+         b = p;
+      }
+   }
+
+   void insert(blob* b) {
+      blob* n = nullptr;
+      h2_list_for_each_entry(p, &blobs, blob, link) {
+         if (((char*)b) + b->size <= (char*)p) {
+            n = p;
+            break;
+         }
+      }
+      if (n)
+         n->link.add_before(&b->link);
+      else
+         blobs.add_tail(&b->link);
+
+      merge();
+   }
+
+   void* malloc(size_t size) {
+      size = (size + 7) / 8 * 8;
+      blob* b = nullptr;
+      h2_list_for_each_entry(p, &blobs, blob, link) {
+         if (size <= p->size - sizeof(p->size)) {
+            b = p;
+            p->link.out();
+            break;
+         }
+      }
+      if (!b) {
+         int pagesize = h2_page_size();
+         int pagecount = ::ceil((size + sizeof(b->size)) / (double)pagesize);
+
+#ifdef _WIN32
+         PVOID ptr = VirtualAlloc(NULL, pagecount * pagesize, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
+         if (ptr == NULL) return nullptr;
+#else
+         void* ptr = ::mmap(nullptr, pagecount * pagesize, PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0);
+         if (ptr == MAP_FAILED) return nullptr;
+#endif
+         b = (blob*)ptr;
+         b->size = pagecount * pagesize;
+      }
+      size_t bz = b->size;
+      b->size = size + sizeof(b->size);
+      size_t rz = bz - b->size;
+      if (sizeof(blob) <= rz) {
+         blob* r = (blob*)(((char*)b) + b->size);
+         r->size = rz;
+         insert(r);
+      } else {
+         b->size += rz;
+      }
+
+      return (void*)&b->link;
+   }
+
+   void free(void* ptr) {
+      blob* b = (blob*)(((char*)ptr) - sizeof(b->size));
+      insert(b);
+   }
+};
+
+h2_inline void* h2_libc::malloc(size_t size) {
+   if (!O.memory_check) {
+      return ::malloc(size);
+   }
+
+   return h2_libc_malloc::I().malloc(size + 10);
 }
 
 h2_inline void h2_libc::free(void* ptr) {
@@ -4993,13 +5378,16 @@ h2_inline void h2_libc::free(void* ptr) {
       ::free(ptr);
       return;
    }
-   if (!ptr) return;
-   uintptr_t* p = ((uintptr_t*)ptr) - 1;
-   ::munmap((void*)p, (size_t)*p);
+
+   if (ptr) h2_libc_malloc::I().free(ptr);
 }
 
 h2_inline ssize_t h2_libc::write(int fd, const void* buf, size_t count) {
+#ifdef _WIN32
+   return _write(fd, buf, count);
+#else
    return ::syscall(SYS_write, fd, buf, count);
+#endif
 }
 
 h2_inline h2_fail* h2_string_equal_matches::matches(const h2_string& a, bool caseless, bool dont) const {
@@ -5267,7 +5655,7 @@ h2_inline void h2_option::parse(int argc, const char** argv) {
             usage();
             exit(0);
          default:
-            printf("unknown option: -%c, -h for help\n", *p);
+            ::printf("unknown option: -%c, -h for help\n", *p);
             exit(0);
          }
       }
@@ -5300,7 +5688,9 @@ h2_inline const char* h2_option::style(const char* s) const {
    static char shift_buffer[32][128];
    static long shift_index = 0;
    if (!colorable) return "";
-   return h2_style(s, shift_buffer[++shift_index % 32]);
+   char* p = shift_buffer[++shift_index % 32];
+   sprintf(p, "\033[%s]", s);
+   return p;
 }
 
 struct h2__patch {
@@ -5337,32 +5727,32 @@ h2_inline void h2_report::on_case_endup(h2_suite* s, h2_case* c) {
 struct h2_report_console : h2_report {
    void on_task_endup(int status_stats[8]) override {
       h2_report::on_task_endup(status_stats);
-      printf("\n[%3d%%] ", percentage);
+      h2_printf("\n[%3d%%] ", percentage);
       if (0 < status_stats[h2_case::FAILED])
-         printf("%s", SF("bold,red", "Failed <%d failed, %d passed, %d todo, %d filtered, %lld ms>\n", status_stats[h2_case::FAILED], status_stats[h2_case::PASSED], status_stats[h2_case::TODOED], status_stats[h2_case::FILTED], tt));
+         h2_printf("%s", SF("bold,red", "Failed <%d failed, %d passed, %d todo, %d filtered, %lld ms>\n", status_stats[h2_case::FAILED], status_stats[h2_case::PASSED], status_stats[h2_case::TODOED], status_stats[h2_case::FILTED], tt));
       else
-         printf("%s", SF("bold,green", "Passed <%d passed, %d todo, %d filtered, %d cases, %lld ms>\n", status_stats[h2_case::PASSED], status_stats[h2_case::TODOED], status_stats[h2_case::FILTED], total_cases, tt));
+         h2_printf("%s", SF("bold,green", "Passed <%d passed, %d todo, %d filtered, %d cases, %lld ms>\n", status_stats[h2_case::PASSED], status_stats[h2_case::TODOED], status_stats[h2_case::FILTED], total_cases, tt));
    }
    void on_case_endup(h2_suite* s, h2_case* c) override {
       h2_report::on_case_endup(s, c);
       switch (c->status) {
       case h2_case::INITED: break;
       case h2_case::TODOED:
-         if (O.verbose) printf("[%3d%%] (%s // %s): %s at %s:%d\n", percentage, s->name, c->name, CSS[c->status], basename((char*)c->file), c->line);
+         if (O.verbose) h2_printf("[%3d%%] (%s // %s): %s at %s:%d\n", percentage, s->name, c->name, CSS[c->status], basename((char*)c->file), c->line);
          break;
       case h2_case::FILTED: break;
       case h2_case::PASSED:
          if (O.verbose)
-            printf("[%3d%%] %s", percentage, SF("light blue", "(%s // %s): Passed - %lld ms\n", s->name, c->name, tc));
+            h2_printf("[%3d%%] %s", percentage, SF("light blue", "(%s // %s): Passed - %lld ms\n", s->name, c->name, tc));
          else if (!O.debug)
-            printf("\r[%3d%%] (%d/%d)\r", percentage, done_cases, total_cases);
+            h2_printf("\r[%3d%%] (%d/%d)\r", percentage, done_cases, total_cases);
          break;
       case h2_case::FAILED:
-         printf("[%3d%%] %s", percentage, SF("bold,purple", "(%s // %s): Failed at %s:%d\n", s->name, c->name, basename((char*)c->file), c->line));
+         h2_printf("[%3d%%] %s", percentage, SF("bold,purple", "(%s // %s): Failed at %s:%d\n", s->name, c->name, basename((char*)c->file), c->line));
          for (h2_fail* x_fail = c->fails; x_fail; x_fail = x_fail->x_next)
             for (h2_fail* fail = x_fail; fail; fail = fail->y_next)
                fail->print();
-         printf("\n");
+         h2_printf("\n");
          break;
       }
    }
@@ -5448,6 +5838,41 @@ struct h2__socket {
    h2_singleton(h2__socket);
    h2_list socks;
 
+   static bool is_block(int sockfd) {
+#ifdef _WIN32
+      return true;
+#else
+      return !(fcntl(sockfd, F_GETFL) & O_NONBLOCK);
+#endif
+   }
+   static bool set_block(int sockfd, bool block) {
+#ifdef _WIN32
+      u_long op = block ? 0 : 1;
+      if (ioctlsocket(sockfd, FIONBIO, &op) == SOCKET_ERROR) {
+         return false;
+      }
+      return true;
+#else
+      int flags = fcntl(sockfd, F_GETFL);
+      if (flags < 0) {
+         return false;
+      }
+
+      if (block) {
+         if ((flags & O_NONBLOCK) != 0) {
+            flags ^= O_NONBLOCK;
+         }
+      } else {
+         flags |= O_NONBLOCK;
+      }
+      if (fcntl(sockfd, F_SETFL, flags) < 0) {
+         return false;
+      }
+
+      return true;
+#endif
+   }
+
    static void iport_parse(const char* str, struct sockaddr_in* addr) {
       char temp[1024];
       strcpy(temp, str);
@@ -5458,21 +5883,22 @@ struct h2__socket {
          *colon = '\0';
          addr->sin_port = htons(atoi(colon + 1));
       }
-      addr->sin_addr.s_addr = ::inet_addr(temp);
+      inet_pton(AF_INET, temp, &addr->sin_addr);
    }
 
    static const char* iport_tostring(struct sockaddr_in* addr, char* str) {
-      sprintf(str, "%s:%d", inet_ntoa(addr->sin_addr), ntohs(addr->sin_port));
+      char t[256];
+      sprintf(str, "%s:%d", inet_ntop(AF_INET, &addr->sin_addr, t, sizeof(t)), ntohs(addr->sin_port));
       return str;
    }
 
    struct temporary_noblock : h2_once {
       int sockfd, flags;
       temporary_noblock(int sockfd_) : sockfd(sockfd_) {
-         flags = fcntl(sockfd, F_GETFL);
-         fcntl(sockfd, F_SETFL, flags | O_NONBLOCK);
+         flags = is_block(sockfd);
+         set_block(sockfd, false);
       }
-      ~temporary_noblock() { fcntl(sockfd, F_SETFL, flags); }
+      ~temporary_noblock() { set_block(sockfd, flags); }
    };
 
    static const char* getsockname(int sockfd, char* s, struct sockaddr_in* a = nullptr) {
@@ -5484,7 +5910,7 @@ struct h2__socket {
    }
 
    static h2_packet* read_incoming(int sockfd) {
-      bool block = !(fcntl(sockfd, F_GETFL) & O_NONBLOCK);
+      bool block = is_block(sockfd);
       const char* local = getsockname(sockfd, (char*)alloca(64));
       h2_sock* sock = h2_list_top_entry(&I().socks, h2_sock, y);
 
@@ -5541,9 +5967,11 @@ struct h2__socket {
       if (sock) sock->put_outgoing(socket, (const char*)buffer, length);
       return length;
    }
+#ifndef _WIN32
    static ssize_t sendmsg(int socket, const struct msghdr* message, int flags) {
       return sendto(socket, message->msg_iov[0].iov_base, message->msg_iov[0].iov_len, 0, (struct sockaddr*)message->msg_name, message->msg_namelen);
    }
+#endif
    static ssize_t sendto(int socket, const void* buffer, size_t length, int flags, const struct sockaddr* dest_addr, socklen_t dest_len) {
       h2_sock* sock = h2_list_top_entry(&I().socks, h2_sock, y);
       if (sock) sock->put_outgoing(getsockname(socket, (char*)alloca(64)), iport_tostring((struct sockaddr_in*)dest_addr, (char*)alloca(64)), (const char*)buffer, length);
@@ -5569,16 +5997,20 @@ struct h2__socket {
       }
       return ret;
    }
+#ifndef _WIN32
    static ssize_t recvmsg(int socket, struct msghdr* message, int flags) {
       return recvfrom(socket, message->msg_iov[0].iov_base, message->msg_iov[0].iov_len, 0, (struct sockaddr*)message->msg_name, &message->msg_namelen);
    }
+#endif
 };
 
 h2_inline h2_sock::h2_sock() {
    stubs.add((void*)::sendto, (void*)h2__socket::sendto);
    stubs.add((void*)::recvfrom, (void*)h2__socket::recvfrom);
+#ifndef _WIN32
    stubs.add((void*)::sendmsg, (void*)h2__socket::sendmsg);
    stubs.add((void*)::recvmsg, (void*)h2__socket::recvmsg);
+#endif
    stubs.add((void*)::send, (void*)h2__socket::send);
    stubs.add((void*)::recv, (void*)h2__socket::recv);
    stubs.add((void*)::accept, (void*)h2__socket::accept);
@@ -5619,7 +6051,6 @@ h2_inline h2_packet* h2_socket::start_and_fetch() {
       sock = h2_task::I().current_case->sock = new h2_sock();
       h2__socket::I().socks.push(&sock->y);
    }
-
    return h2_list_pop_entry(&sock->outgoing, h2_packet, x);
 }
 
@@ -5714,8 +6145,10 @@ struct h2__stdio {
    }
 
    h2__stdio() : stdout_capturable(false), stderr_capturable(false), syslog_capturable(false) {
+#ifndef _WIN32
       stubs.add((void*)::write, (void*)write);
-#if defined __APPLE__
+#endif
+#if defined __APPLE__ || defined _WIN32
       stubs.add((void*)::printf, (void*)printf);
       stubs.add((void*)::vprintf, (void*)vprintf);
       stubs.add((void*)::putchar, (void*)putchar);
@@ -5727,8 +6160,10 @@ struct h2__stdio {
       stubs.add((void*)::fputs, (void*)fputs);
       stubs.add((void*)::fwrite, (void*)fwrite);
 #endif
+#ifndef _WIN32
       stubs.add((void*)::syslog, (void*)syslog);
       stubs.add((void*)::vsyslog, (void*)vsyslog);
+#endif
    }
 
    const char* start_capture(bool _stdout, bool _stderr, bool _syslog) {
@@ -5751,7 +6186,7 @@ h2_inline void h2_stdio::initialize() {
    h2__stdio::I().buffer = new h2_string();
 }
 
-h2_inline const char* h2_stdio::capture_cout(char* type) {
+h2_inline const char* h2_stdio::capture_cout(const char* type) {
    if (!type) return h2__stdio::I().stop_capture();
    if (!strlen(type)) return h2__stdio::I().start_capture(true, true, true);
    return h2__stdio::I().start_capture(strcasestr(type, "out"), strcasestr(type, "err"), strcasestr(type, "syslog"));
@@ -5815,14 +6250,23 @@ h2_inline h2_string& h2_string::sprintf(const char* format, ...) {
 // https://www.codeproject.com/Articles/25198/Generic-Thunk-with-5-combinations-of-Calling-Conve
 
 struct h2_thunk {
-#if defined __x86_64__
+#if defined __x86_64__ || defined _M_X64
    unsigned char saved_code[sizeof(void*) + 4];
-#elif defined __i386__
+#elif defined __i386__ || defined _M_IX86
    unsigned char saved_code[sizeof(void*) + 1];
+#else
+
 #endif
 
    void* save(void* befp) {
-      uintptr_t pagesize = (uintptr_t)sysconf(_SC_PAGE_SIZE);
+#ifdef _WIN32
+      DWORD t;
+      if (!VirtualProtect(befp, sizeof(void*) + 4, PAGE_EXECUTE_READWRITE, &t)) {  // PAGE_EXECUTE_WRITECOPY OR PAGE_WRITECOPY
+         ::printf("STUB: VirtualProtect PAGE_EXECUTE_READWRITE failed %d\n", GetLastError());
+         return nullptr;
+      }
+#else
+      uintptr_t pagesize = (uintptr_t)h2_page_size();
       uintptr_t start = reinterpret_cast<uintptr_t>(befp);
       uintptr_t pagestart = start & (~(pagesize - 1));
       int pagecount = ::ceil((start + sizeof(saved_code) - pagestart) / (double)pagesize);
@@ -5831,7 +6275,7 @@ struct h2_thunk {
          ::printf("STUB: mprotect PROT_READ | PROT_WRITE | PROT_EXEC failed %s\n", strerror(errno));
          return nullptr;
       }
-
+#endif
       memcpy(saved_code, befp, sizeof(saved_code));
       return befp;
    }
@@ -5840,7 +6284,7 @@ struct h2_thunk {
       unsigned char* I = reinterpret_cast<unsigned char*>(befp);
       ptrdiff_t delta = (unsigned char*)tofp - (unsigned char*)befp - 5;
 
-#if defined(__i386__) || defined(__x86_64__)
+#if defined __i386__ || defined __x86_64__ || defined _M_IX86 || defined _M_X64
       if (delta < INT_MIN || INT_MAX < delta) {  //x86_64 asm("movq $tofp, %rax; jmpq %rax")
          unsigned char C[] = {0x48, 0xB8, 0, 0, 0, 0, 0, 0, 0, 0, 0xFF, 0xE0};
          memcpy(C + 2, &tofp, sizeof(void*));
@@ -6017,7 +6461,7 @@ inline void h2_task::execute() {
 }  // namespace h2
 
 #if defined _WIN32
-#   define h2_weak_attribute __declspec(selectany)
+#   define h2_weak_attribute
 #else
 #   define h2_weak_attribute __attribute__((weak))
 #endif

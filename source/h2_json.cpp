@@ -342,8 +342,8 @@ struct h2__json {
    static void samelengthify(h2_string& e, h2_string& a) {
       int e_l = e.length(), a_l = a.length();
 
-      e.append(std::max(e_l, a_l) - e_l, samelength_char);
-      a.append(std::max(e_l, a_l) - a_l, samelength_char);
+      e.append(h2_max(e_l, a_l) - e_l, samelength_char);
+      a.append(h2_max(e_l, a_l) - a_l, samelength_char);
    }
 
    static void dual(Node* e, Node* a, Dual* d) {
@@ -381,7 +381,7 @@ struct h2__json {
                i++;
          }
 
-         for (int i = 0; i < std::max(e->children.size(), a->children.size()); ++i) {
+         for (int i = 0; i < h2_max(e->children.size(), a->children.size()); ++i) {
             Dual* d1 = new Dual(d->depth + 1, d);
             d->child.push_back(d1);
             Node *e1 = e->get(i), *a1 = a->get(i);
@@ -390,7 +390,7 @@ struct h2__json {
       }
 
       if (d->e_type == t_array) {
-         for (int i = 0; i < std::max(e->children.size(), a->children.size()); ++i) {
+         for (int i = 0; i < h2_max(e->children.size(), a->children.size()); ++i) {
             Dual* d1 = new Dual(d->depth + 1, d);
             d->child.push_back(d1);
             Node *e1 = e->get(i), *a1 = a->get(i);
@@ -537,7 +537,7 @@ struct h2__json {
          int curr = 0;
          for (auto& word : line)
             if (word[0] != '#') curr += word.length();
-         most = std::max(most, curr);
+         most = h2_max(most, curr);
       }
       return most;
    }
@@ -577,13 +577,13 @@ struct h2__json {
    static void print(Lines& e_lines, Lines& a_lines, int side_width, h2_string& str) {
       h2_string e_last_style, a_last_style;
       // assert(e_lines.size() == a_lines.size());
-      for (int i = 0; i < std::max(e_lines.size(), a_lines.size()); ++i) {
+      for (int i = 0; i < h2_max(e_lines.size(), a_lines.size()); ++i) {
          auto e_line = e_lines[i];
          auto a_line = a_lines[i];
          int e_wraps = line_wrap(e_line, side_width - 2);
          int a_wraps = line_wrap(a_line, side_width - 2);
          // assert(e_wraps == a_wraps);
-         int K = std::max(e_wraps, a_wraps);
+         int K = h2_max(e_wraps, a_wraps);
          for (int j = 0; j < K; ++j) {
             h2_string e_current_style, a_current_style;
             auto e_wrap = line_wrap(e_line, j, side_width - 2, e_current_style);
@@ -630,8 +630,8 @@ h2_inline int h2_json::diff(const h2_string expect, const h2_string actual, int 
    h2__json::merge_line(a_list, a_lines);
 
    int e_most = h2__json::lines_most(e_lines), a_most = h2__json::lines_most(a_lines);
-   int fav_width = std::max(std::max(e_most, a_most) + 3, 30);
-   int side_width = std::min(terminal_width / 2 - 4, fav_width);
+   int fav_width = h2_max(h2_max(e_most, a_most) + 3, 30);
+   int side_width = h2_min(terminal_width / 2 - 4, fav_width);
 
    h2__json::print(e_lines, a_lines, side_width, str);
    return side_width;

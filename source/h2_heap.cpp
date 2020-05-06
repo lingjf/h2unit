@@ -8,12 +8,17 @@ struct h2_piece : h2_libc {
    h2_backtrace bt;
 
    h2_piece(int size_, int alignment, h2_backtrace& bt_) : size(size_), freed(0), bt(bt_) {
-      pagesize = ::sysconf(_SC_PAGE_SIZE);
+      pagesize = h2_page_size();
       if (alignment <= 0) alignment = 8;
       pagecount = ::ceil((size + alignment + sizeof(snowfield)) / (double)pagesize);
 
+#ifdef _WIN32
+      page = (unsigned char*)VirtualAlloc(NULL, pagesize * (pagecount + 1), MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
+      assert(page);
+#else
       page = (unsigned char*)::mmap(nullptr, pagesize * (pagecount + 1), PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0);
       assert(page != MAP_FAILED);
+#endif
 
       ptr = page + pagesize * pagecount - size;
       ptr = (unsigned char*)(((intptr_t)ptr / alignment) * alignment);
@@ -25,15 +30,24 @@ struct h2_piece : h2_libc {
    }
 
    ~h2_piece() {
+#ifdef _WIN32
+      VirtualFree(page, 0, MEM_DECOMMIT | MEM_RELEASE);
+#else
       ::munmap(page, pagesize * (pagecount + 1));
+#endif
    }
 
    void mark_snowfield() {
       memcpy(ptr - sizeof(snowfield), snowfield, sizeof(snowfield));
       memcpy(ptr + size, snowfield, sizeof(snowfield));
-
+#ifdef _WIN32
+      DWORD old;
+      if (!VirtualProtect(page + pagesize * pagecount, pagesize, PAGE_READONLY, &old))
+         ::printf("VirtualProtect PAGE_READONLY failed %d\n", GetLastError());
+#else
       if (::mprotect(page + pagesize * pagecount, pagesize, PROT_READ) != 0)
          ::printf("mprotect PROT_READ failed %s\n", strerror(errno));
+#endif
    }
 
    h2_fail* check_snowfield() {
@@ -43,8 +57,14 @@ struct h2_piece : h2_libc {
       if (memcmp(ptr - sizeof(snowfield), snowfield, sizeof(snowfield)))
          h2_fail::append_x(fail, new h2_fail_memoverflow(ptr, -(int)sizeof(snowfield), snowfield, sizeof(snowfield), bt, h2_backtrace()));
 
+#ifdef _WIN32
+      DWORD old;
+      if (!VirtualProtect(page, pagesize * (pagecount + 1), PAGE_NOACCESS, &old))
+         ::printf("VirtualProtect PAGE_NOACCESS failed %d\n", GetLastError());
+#else
       if (::mprotect(page, pagesize * (pagecount + 1), PROT_NONE) != 0)
          ::printf("mprotect PROT_NONE failed %s\n", strerror(errno));
+#endif
       return fail;
    }
 
@@ -133,7 +153,9 @@ struct h2_stack {
       } escape_functions[] = {
         {(void*)sprintf, 300},  // {(void*)vsnprintf, 300}, {(void*)sscanf, 300},
         {(void*)localtime, 300},
+#ifndef _WIN32
         {(void*)tzset, 300},
+#endif
       };
 
       for (auto& x : escape_functions)
@@ -189,6 +211,7 @@ struct h2_stack {
 
 // https://www.gnu.org/savannah-checkouts/gnu/libc/manual/html_node/Hooks-for-Malloc.html
 // https://github.com/gperftools/gperftools/blob/master/src/libc_override.h
+// https://github.com/google/tcmalloc/blob/master/tcmalloc/libc_override.h
 
 #if defined(__APPLE__) && defined(MAC_OS_X_VERSION_10_6) && MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_6
 extern "C" {
@@ -241,6 +264,40 @@ struct h2_hook {
       return p ? p->ptr : nullptr;
    }
 
+   static void* _aligned_malloc(size_t size, size_t alignment) {
+      h2_piece* p = h2_stack::I().new_piece(size, alignment, nullptr);
+      return p ? p->ptr : nullptr;
+   }
+
+   static void* new_throwing(std::size_t size) {
+      h2_piece* p = h2_stack::I().new_piece(size, 0, nullptr);
+      return p ? p->ptr : nullptr;
+   }
+   static void* new_nothrow(std::size_t size, const std::nothrow_t&) {
+      h2_piece* p = h2_stack::I().new_piece(size, 0, nullptr);
+      return p ? p->ptr : nullptr;
+   }
+   static void* newarray_throwing(std::size_t size) {
+      h2_piece* p = h2_stack::I().new_piece(size, 0, nullptr);
+      return p ? p->ptr : nullptr;
+   }
+   static void* newarray_nothrow(std::size_t size, const std::nothrow_t&) {
+      h2_piece* p = h2_stack::I().new_piece(size, 0, nullptr);
+      return p ? p->ptr : nullptr;
+   }
+   static void delete_throwing(void* ptr) {
+      if (ptr) h2_fail_g(h2_stack::I().rel_piece(ptr));
+   }
+   static void delete_nothrow(void* ptr, const std::nothrow_t&) {
+      if (ptr) h2_fail_g(h2_stack::I().rel_piece(ptr));
+   }
+   static void deletearray_throwing(void* ptr) {
+      if (ptr) h2_fail_g(h2_stack::I().rel_piece(ptr));
+   }
+   static void deletearray_nothrow(void* ptr, const std::nothrow_t&) {
+      if (ptr) h2_fail_g(h2_stack::I().rel_piece(ptr));
+   }
+
 #if defined __GLIBC__
 
    static void free_hook(void* __ptr, const void* caller) { free(__ptr); }
@@ -290,11 +347,12 @@ struct h2_hook {
    malloc_introspection_t mi;
    malloc_zone_t mz;
 
+#elif defined _WIN32
+   h2_stubs stubs;
+
 #else
 
 #endif
-
-   h2_stubs stubs;
 
    h2_hook() {
 #if defined __GLIBC__
@@ -338,6 +396,8 @@ struct h2_hook {
 
 #   endif
 
+#elif defined _WIN32
+      //TODO
 #else
 #endif
    }
@@ -353,11 +413,21 @@ struct h2_hook {
       malloc_zone_t* default_zone = get_default_zone();
       malloc_zone_unregister(default_zone);
       malloc_zone_register(default_zone);
+#elif defined _WIN32
+      stubs.add((void*)::free, (void*)free);
+      stubs.add((void*)::malloc, (void*)malloc);
+      stubs.add((void*)::realloc, (void*)realloc);
+      stubs.add((void*)::calloc, (void*)calloc);
+      stubs.add((void*)::_aligned_malloc, (void*)_aligned_malloc);
+      stubs.add((void*)((void* (*)(std::size_t))::operator new), (void*)new_throwing);
+      stubs.add((void*)((void* (*)(std::size_t, const std::nothrow_t&))::operator new), (void*)new_nothrow);
+      stubs.add((void*)((void* (*)(std::size_t))::operator new[]), (void*)newarray_throwing);
+      stubs.add((void*)((void* (*)(std::size_t, const std::nothrow_t&))::operator new[]), (void*)newarray_nothrow);
+      stubs.add((void*)((void (*)(void*))::operator delete), (void*)delete_throwing);
+      stubs.add((void*)((void (*)(void*, const std::nothrow_t&))::operator delete), (void*)delete_nothrow);
+      stubs.add((void*)((void (*)(void*))::operator delete[]), (void*)deletearray_throwing);
+      stubs.add((void*)((void (*)(void*, const std::nothrow_t&))::operator delete[]), (void*)deletearray_nothrow);
 #else
-      stubs.add((void*)::free, (void*)hook::free);
-      stubs.add((void*)::malloc, (void*)hook::malloc);
-      stubs.add((void*)::realloc, (void*)hook::realloc);
-      stubs.add((void*)::posix_memalign, (void*)hook::posix_memalign);
 #endif
    }
 
@@ -369,18 +439,19 @@ struct h2_hook {
       __memalign_hook = sys__memalign_hook;
 #elif defined __APPLE__
       malloc_zone_unregister(&mz);
-#else
+#elif defined _WIN32
       stubs.clear();
+#else
 #endif
    }
 
+#ifndef _WIN32
    static void segment_fault_handler(int sig, siginfo_t* si, void* unused) {
       h2_piece* m = h2_stack::I().host_piece(si->si_addr);
       if (m) h2_fail_g(new h2_fail_memoverflow(m->ptr, (intptr_t)si->si_addr - (intptr_t)m->ptr, nullptr, 0, m->bt, h2_backtrace(O.isMAC() ? 5 : 4)));
       h2_debug();
       exit(1);
    }
-
    void install_segment_fault_handler() {
       struct sigaction act;
       act.sa_sigaction = segment_fault_handler;
@@ -389,10 +460,13 @@ struct h2_hook {
       if (sigaction(SIGSEGV, &act, nullptr) == -1) perror("Register SIGSEGV handler failed");
       if (sigaction(SIGBUS, &act, nullptr) == -1) perror("Register SIGBUS handler failed");
    }
+#endif
 };
 
 h2_inline void h2_heap::initialize() {
+#ifndef _WIN32
    if (O.memory_check && !O.debug) h2_hook::I().install_segment_fault_handler();
+#endif
    stack::root();
 }
 h2_inline void h2_heap::dohook() {

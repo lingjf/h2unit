@@ -33,7 +33,7 @@ SUITE(failure)
     // X->  fa -> fb -> fc
     const char* e[] = { "a", "b", "c" };
     H2_H2_FOREACH_FAIL(fail, fails) { OK(e[i++], fail->file); }
-  };
+  }
 
   Case(append y)
   {
@@ -55,7 +55,7 @@ SUITE(failure)
     //  fc
     const char* e[] = { "a", "b", "c" };
     H2_H2_FOREACH_FAIL(fail, fails) { OK(e[i++], fail->file); }
-  };
+  }
 
   Case(append x y)
   {
@@ -92,60 +92,5 @@ SUITE(failure)
     const char* e[] = { "a", "1", "2", "3", "b", "4",
                         "5", "6", "c", "7", "8", "9" };
     H2_H2_FOREACH_FAIL(fail, fails) { OK(e[i++], fail->file); }
-  };
-
-  Case(kprintf)
-  {
-    fa->kprintf("%s %d", "hello", 42);
-    OK("hello 42", fa->_k);
-    fa->kprintf("!");
-    OK("hello 42!", fa->_k);
-
-    COUT("");
-    fa->print();
-    OK(" hello 42!", COUT());
-  };
-
-  Case(locate)
-  {
-    h2::h2_fail* fails = nullptr;
-
-    h2::h2_fail::append_x(fails, fa);
-    h2::h2_fail::append_x(fails, fb);
-    h2::h2_fail::append_x(fails, fc);
-
-    h2::h2_fail::append_y(fa, f1);
-    h2::h2_fail::append_y(fa, f2);
-    h2::h2_fail::append_y(fa, f3);
-
-    h2::h2_fail::append_y(fb, f4);
-    h2::h2_fail::append_y(fb, f5);
-    h2::h2_fail::append_y(fb, f6);
-
-    h2::h2_fail::append_y(fc, f7);
-    h2::h2_fail::append_y(fc, f8);
-    h2::h2_fail::append_y(fc, f9);
-
-    COUT("");
-    fa->print_locate();
-    OK(", in ff(3rd), at a:11\n", COUT());
-
-    fb->locate("world", 178, "china", 8);
-    COUT("");
-    fb->print_locate();
-    OK(", in china(9th), at world:178\n", COUT());
-    COUT("");
-    f4->print_locate();
-    OK(", in china(9th), at world:178\n", COUT());
-    COUT("");
-    f5->print_locate();
-    OK(", in china(9th), at world:178\n", COUT());
-    COUT("");
-    f6->print_locate();
-    OK(", in china(9th), at world:178\n", COUT());
-
-    COUT("");
-    fc->print_locate();
-    OK(", in fx(), at c:13\n", COUT());
-  };
+  }
 }

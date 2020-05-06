@@ -1,4 +1,4 @@
-#include <stdlib.h>
+#include "h2unit.h"
 
 extern "C"
 {
@@ -58,7 +58,7 @@ SUITE(String compares)
     rectangle_t p1 = { 0, 0 };
     OK(StartsWith("Rect"), rectangle_tostring(&p1)); // successful
     OK(StartsWith("Pect"), rectangle_tostring(&p1)); // failure
-  };
+  }
 
   Case(demo EndsWith failure)
   {

@@ -236,3 +236,20 @@ struct h2_mocks {
    bool add(h2_mock* mock);
    h2_fail* clear();
 };
+
+#ifdef _WIN32
+#   define __H2_LINE__ 0
+#else
+#   define __H2_LINE__ __LINE__
+#endif
+
+#define __H2MOCK2(BeFunc, Signature) \
+   h2::h2_mocker<__COUNTER__, __H2_LINE__, std::false_type, Signature>::I((void*)BeFunc, #BeFunc, __FILE__, __LINE__)
+
+#define __H2MOCK3(Class, Method, Signature) \
+   h2::h2_mocker<__COUNTER__, __H2_LINE__, Class, Signature>::I(h2::h2_mfp<Class, Signature>::A(&Class::Method, "MOCK", "", #Class, #Method, #Signature, __FILE__, __LINE__), #Class "::" #Method, __FILE__, __LINE__)
+
+#define __H2MOCK4(Class, Method, Signature, Instance) \
+   h2::h2_mocker<__COUNTER__, __H2_LINE__, Class, Signature>::I(h2::h2_mfp<Class, Signature>::A(&Class::Method, Instance), #Class "::" #Method, __FILE__, __LINE__)
+
+#define H2MOCK(...) H2PP_VARIADIC_CALL(__H2MOCK, __VA_ARGS__)

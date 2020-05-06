@@ -32,7 +32,7 @@ SUITE(callexp)
     OK(ce.is_overmuch());
     OK("2 times", ce.actual());
     OK(ce.check());
-  };
+  }
 
   Case(twice)
   {
@@ -72,7 +72,7 @@ SUITE(callexp)
     OK(ce.is_overmuch());
     OK("3 times", ce.actual());
     OK(ce.check());
-  };
+  }
 
   Case(3 times)
   {
@@ -120,7 +120,7 @@ SUITE(callexp)
     OK(ce.is_overmuch());
     OK("4 times", ce.actual());
     OK(ce.check());
-  };
+  }
 
   Case(any)
   {
@@ -152,7 +152,7 @@ SUITE(callexp)
     OK(!ce.is_overmuch());
     OK("2 times", ce.actual());
     OK(IsNull, ce.check());
-  };
+  }
 
   Case(at least)
   {
@@ -192,7 +192,7 @@ SUITE(callexp)
     OK(!ce.is_overmuch());
     OK("3 times", ce.actual());
     OK(IsNull, ce.check());
-  };
+  }
 
   Case(at most)
   {
@@ -232,7 +232,7 @@ SUITE(callexp)
     OK(ce.is_overmuch());
     OK("3 times", ce.actual());
     OK(ce.check());
-  };
+  }
 
   Case(between)
   {
@@ -288,5 +288,5 @@ SUITE(callexp)
     OK(ce.is_overmuch());
     OK("5 times", ce.actual());
     OK(ce.check());
-  };
+  }
 }

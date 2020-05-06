@@ -165,12 +165,12 @@ SUITE(preprocessor)
     OK(12, n2[0]);
   }
 
-  Case(H2PP_0ARG)
+  Case(H2PP_IS_EMPTY)
   {
-    int n0 = H2PP_0ARG();
-    int n1 = H2PP_0ARG(a);
-    int n2 = H2PP_0ARG(a, b);
-    int n3 = H2PP_0ARG(a, b, c);
+    int n0 = H2PP_IS_EMPTY();
+    int n1 = H2PP_IS_EMPTY(a);
+    int n2 = H2PP_IS_EMPTY(a, b);
+    int n3 = H2PP_IS_EMPTY(a, b, c);
 
     OK(1, n0);
     OK(0, n1);

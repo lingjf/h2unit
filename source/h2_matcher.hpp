@@ -21,7 +21,7 @@ template <typename T>
 struct h2_matcher : h2_matcher_base<T> {
    h2_matcher() {}
    explicit h2_matcher(const h2_matcher_impl<const T&>* impl, const int placeholder) : h2_matcher_base<T>(impl, placeholder) {}
-   h2_matcher(T value); // Converting constructor 转换构造函数
+   h2_matcher(T value);  // Converting constructor
 };
 
 template <>
@@ -572,9 +572,10 @@ template <typename M>
 inline h2_polymorphic_matcher<h2_pointee_matches<M>> Pointee(M m) { return h2_polymorphic_matcher<h2_pointee_matches<M>>(h2_pointee_matches<M>(m)); }
 template <typename M>
 inline h2_polymorphic_matcher<h2_caseless_matches> CaseLess(M m) { return h2_polymorphic_matcher<h2_caseless_matches>(h2_caseless_matches(h2_matcher<h2_string>(m))); }
+#ifndef _WIN32
 template <typename M>
 inline h2_polymorphic_matcher<h2_caseless_matches> operator~(M m) { return CaseLess(m); }
-
+#endif
 template <typename Matcher>
 inline h2_polymorphic_matcher<h2_not_matches<Matcher>> Not(Matcher m) { return h2_polymorphic_matcher<h2_not_matches<Matcher>>(h2_not_matches<Matcher>(m)); }
 template <typename Matches>

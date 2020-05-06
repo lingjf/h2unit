@@ -116,7 +116,7 @@ h2_inline void h2_option::parse(int argc, const char** argv) {
             usage();
             exit(0);
          default:
-            printf("unknown option: -%c, -h for help\n", *p);
+            ::printf("unknown option: -%c, -h for help\n", *p);
             exit(0);
          }
       }
@@ -149,5 +149,7 @@ h2_inline const char* h2_option::style(const char* s) const {
    static char shift_buffer[32][128];
    static long shift_index = 0;
    if (!colorable) return "";
-   return h2_style(s, shift_buffer[++shift_index % 32]);
+   char* p = shift_buffer[++shift_index % 32];
+   sprintf(p, "\033[%s]", s);
+   return p;
 }

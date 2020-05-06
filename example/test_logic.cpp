@@ -1,3 +1,4 @@
+#include "h2unit.h"
 
 extern "C"
 {

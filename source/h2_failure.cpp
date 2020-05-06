@@ -66,12 +66,12 @@ h2_inline void h2_fail::uprintf(const char* format, ...) { _H2_XPRINTF(_u, forma
 
 h2_inline void h2_fail::print_locate() {
    static constexpr const char* a9 = "1st\0002nd\0003rd\0004th\0005th\0006th\0007th\0008th\0009th";
-   if (func && strlen(func)) ::printf(", in %s(%s)", func, 0 <= argi && argi < 9 ? a9 + argi * 4 : "");
-   if (file && strlen(file) && 0 < line) ::printf(", at %s:%d", file, line);
-   ::printf("\n");
+   if (func && strlen(func)) h2_printf(", in %s(%s)", func, 0 <= argi && argi < 9 ? a9 + argi * 4 : "");
+   if (file && strlen(file) && 0 < line) h2_printf(", at %s:%d", file, line);
+   h2_printf("\n");
 }
 
-h2_inline void h2_fail::print() { _k.size() && ::printf("%s%s", PAD(++pad), _k.c_str()); }
+h2_inline void h2_fail::print() { _k.size() && h2_printf("%s%s", PAD(++pad), _k.c_str()); }
 h2_inline void h2_fail::print(FILE* fp) { fprintf(fp, "%s", _k.c_str()); }
 
 h2_inline h2_fail_normal::h2_fail_normal(const char* file_, int line_, const char* func_, const char* format, ...)
@@ -82,7 +82,7 @@ h2_inline void h2_fail_normal::print() { h2_fail::print(), print_locate(); }
 h2_inline h2_fail_unexpect::h2_fail_unexpect(const char* file_, int line_) : h2_fail(file_, line_) {}
 
 h2_inline void h2_fail_unexpect::print_OK1() {
-   ::printf(" OK(%s) is %s", a_expr.c_str(), SF("bold,red", "false"));
+   h2_printf(" OK(%s) is %s", a_expr.c_str(), SF("bold,red", "false"));
 }
 
 h2_inline void h2_fail_unexpect::print_OK2() {
@@ -100,19 +100,19 @@ h2_inline void h2_fail_unexpect::print_OK2() {
       strcpy(t2 + strlen(t2), a_expr.acronym().c_str());
    }
 
-   ::printf(" OK(%s, %s)", t1, t2);
-   if (_m.length()) ::printf(" actual %s", _m.c_str());
+   h2_printf(" OK(%s, %s)", t1, t2);
+   if (_m.length()) h2_printf(" actual %s", _m.c_str());
 }
 
 h2_inline void h2_fail_unexpect::print_OK3() {
-   ::printf(" JE(%s, %s)", e_expr.acronym().c_str(), a_expr.acronym().c_str());
-   if (_m.length()) ::printf(" actual %s expect", _m.c_str());
+   h2_printf(" JE(%s, %s)", e_expr.acronym().c_str(), a_expr.acronym().c_str());
+   if (_m.length()) h2_printf(" actual %s expect", _m.c_str());
 }
 
 h2_inline void h2_fail_unexpect::print_MOCK() {
-   ::printf(" actual %s", SF("green", "%s", _a.acronym().c_str()));
-   if (_m.length()) ::printf(" %s", _m.c_str());
-   if (_e.length()) ::printf(" %s", SF("bold,red", "%s", _e.acronym().c_str()));
+   h2_printf(" actual %s", SF("green", "%s", _a.acronym().c_str()));
+   if (_m.length()) h2_printf(" %s", _m.c_str());
+   if (_e.length()) h2_printf(" %s", SF("bold,red", "%s", _e.acronym().c_str()));
 }
 
 h2_inline void h2_fail_unexpect::print() {
@@ -121,7 +121,7 @@ h2_inline void h2_fail_unexpect::print() {
    if (w_type == 1) print_OK1();
    if (w_type == 2) print_OK2();
    if (w_type == 3) print_OK3();
-   if (_u.length()) ::printf(", %s", _u.c_str());
+   if (_u.length()) h2_printf(", %s", _u.c_str());
    print_locate();
 }
 
@@ -131,10 +131,10 @@ h2_inline h2_fail_strcmp::h2_fail_strcmp(const h2_string& expect_, const h2_stri
 h2_inline void h2_fail_strcmp::print() {
    h2_fail_unexpect::print();
 
-   int columns = h2_winsz() - 12;
-   int rows = ::ceil(std::max(expect.length(), actual.length()) / (double)columns);
+   int columns = h2_term_size() - 12;
+   int rows = ::ceil(h2_max(expect.length(), actual.length()) / (double)columns);
    for (int i = 0; i < rows; ++i) {
-      char eline[1024], aline[1024], *ep = eline, *ap = aline;
+      char eline[1024 * 32], aline[1024 * 32], *ep = eline, *ap = aline;
       if (i * columns <= expect.length()) ep += sprintf(ep, "%s%s ", SF("dark gray", "expect"), SF("green", ">"));
       if (i * columns <= actual.length()) ap += sprintf(ap, "%s%s ", SF("dark gray", "actual"), SF("red", ">"));
       for (int j = 0; j < columns; ++j) {
@@ -145,8 +145,8 @@ h2_inline void h2_fail_strcmp::print() {
          ep = fmt_char(ec, eq, "green", ep);
          ap = fmt_char(ac, eq, "red,bold", ap);
       }
-      if (i * columns <= expect.length()) ::printf("%s\n", eline);
-      if (i * columns <= actual.length()) ::printf("%s\n", aline);
+      if (i * columns <= expect.length()) h2_printf("%s\n", eline);
+      if (i * columns <= actual.length()) h2_printf("%s\n", aline);
    }
 }
 
@@ -166,10 +166,10 @@ h2_inline h2_fail_json::h2_fail_json(const h2_string& expect_, const h2_string& 
 h2_inline void h2_fail_json::print() {
    h2_fail_unexpect::print();
    h2_string str;
-   int side_width = h2_json::diff(expect, actual, h2_winsz(), str);
+   int side_width = h2_json::diff(expect, actual, h2_term_size(), str);
 
-   ::printf("%s\n", SF("dark gray", "%s│%s", h2_string("expect").center(side_width).c_str(), h2_string("actual").center(side_width).c_str()));
-   ::printf("%s", str.c_str());
+   h2_printf("%s\n", SF("dark gray", "%s│%s", h2_string("expect").center(side_width).c_str(), h2_string("actual").center(side_width).c_str()));
+   h2_printf("%s", str.c_str());
 }
 
 h2_inline h2_fail_memcmp::h2_fail_memcmp(const unsigned char* expect_, const unsigned char* actual_, int len, const char* file_, int line_)
@@ -180,10 +180,10 @@ h2_inline h2_fail_memcmp::h2_fail_memcmp(const unsigned char* expect_, const uns
 
 h2_inline void h2_fail_memcmp::print() {
    h2_fail_unexpect::print();
-   ::printf("%s \n", SF("dark gray", "%s  │  %s", h2_string("expect").center(16 * 3).c_str(), h2_string("actual").center(16 * 3).c_str()));
+   h2_printf("%s \n", SF("dark gray", "%s  │  %s", h2_string("expect").center(16 * 3).c_str(), h2_string("actual").center(16 * 3).c_str()));
    int bytes = expect.size(), rows = ::ceil(bytes / 16.0);
    for (int i = 0; i < rows; ++i) {
-      char eline[256], aline[256], *ep = eline, *ap = aline;
+      char eline[1024], aline[1024], *ep = eline, *ap = aline;
       for (int j = 0; j < 16; ++j)
          if (bytes <= i * 16 + j)
             ep += sprintf(ep, "   "), ap += sprintf(ap, "   ");
@@ -191,7 +191,7 @@ h2_inline void h2_fail_memcmp::print() {
             ep = fmt_byte(expect[i * 16 + j], actual[i * 16 + j], j, "green", ep),
             ap = fmt_byte(actual[i * 16 + j], expect[i * 16 + j], j, "bold,red", ap);
 
-      ::printf("%s  %s  %s \n", eline, SF("dark gray", "│"), aline);
+      h2_printf("%s  %s  %s \n", eline, SF("dark gray", "│"), aline);
    }
 }
 
@@ -208,11 +208,11 @@ h2_inline void h2_fail_memoverflow::print() {
    h2_fail::print();
 
    for (int i = 0; i < spot.size(); ++i)
-      ::printf("%s ", SF(magic[i] == spot[i] ? "green" : "bold,red", "%02X", spot[i]));
+      h2_printf("%s ", SF(magic[i] == spot[i] ? "green" : "bold,red", "%02X", spot[i]));
 
    print_locate();
-   if (0 < bt1.count) ::printf("%s%p trampled at backtrace:\n", PAD(++pad), ptr + offset), bt1.print(pad + 1);
-   if (0 < bt0.count) ::printf("%swhich allocated at backtrace:\n", PAD(++pad)), bt0.print(pad + 1);
+   if (0 < bt1.count) h2_printf("%s%p trampled at backtrace:\n", PAD(++pad), ptr + offset), bt1.print(pad + 1);
+   if (0 < bt0.count) h2_printf("%swhich allocated at backtrace:\n", PAD(++pad)), bt0.print(pad + 1);
 }
 
 h2_inline h2_fail_memleak::h2_fail_memleak(const char* file_, int line_, const char* where_)
@@ -238,8 +238,8 @@ h2_inline void h2_fail_memleak::print() {
    h2_fail::print(), print_locate();
    ++pad;
    for (auto& c : places) {
-      c.times <= 1 ? ::printf("%s%p Leaked %s bytes, at backtrace\n", PAD(pad), c.ptr, SF("bold,red", "%lld", c.bytes)) :
-                     ::printf("%s%p, %p ... Leaked %s times %s bytes (%s, %s ...), at backtrace\n", PAD(pad), c.ptr, c.ptr2, SF("bold,red", "%lld", c.times), SF("bold,red", "%lld", c.bytes), SF("bold,red", "%lld", c.size), SF("bold,red", "%lld", c.size2));
+      c.times <= 1 ? h2_printf("%s%p Leaked %s bytes, at backtrace\n", PAD(pad), c.ptr, SF("bold,red", "%lld", c.bytes)) :
+                     h2_printf("%s%p, %p ... Leaked %s times %s bytes (%s, %s ...), at backtrace\n", PAD(pad), c.ptr, c.ptr2, SF("bold,red", "%lld", c.times), SF("bold,red", "%lld", c.bytes), SF("bold,red", "%lld", c.size), SF("bold,red", "%lld", c.size2));
       c.bt.print(pad + 1);
    }
 }
@@ -248,9 +248,9 @@ h2_inline h2_fail_doublefree::h2_fail_doublefree(void* ptr_, h2_backtrace& bt0_,
   : h2_fail(file_, line_), bt0(bt0_), bt1(bt1_) { kprintf("%p double freed", ptr_); }
 
 h2_inline void h2_fail_doublefree::print() {
-   h2_fail::print(), ::printf(" at backtrace:\n");
+   h2_fail::print(), h2_printf(" at backtrace:\n");
    bt1.print(pad + 1);
-   if (0 < bt0.count) ::printf("%swhich allocated at backtrace:\n", PAD(++pad)), bt0.print(pad + 1);
+   if (0 < bt0.count) h2_printf("%swhich allocated at backtrace:\n", PAD(++pad)), bt0.print(pad + 1);
 }
 
 h2_inline h2_fail_instantiate::h2_fail_instantiate(const char* action_type_, const char* return_type_, const char* class_type_, const char* method_name_, const char* return_args_, int why_abstract_, const char* file_, int line_)
@@ -262,17 +262,17 @@ h2_inline h2_fail_instantiate::h2_fail_instantiate(const char* action_type_, con
 h2_inline void h2_fail_instantiate::print() {
    h2_fail::print(), print_locate();
 
-   ::printf("You may take following solutions to fix it: \n");
+   h2_printf("You may take following solutions to fix it: \n");
    if (why_abstract)
-      ::printf("1. Add non-abstract Derived Class instance in %s(%s%s%s, %s, %s, %s) \n",
+      h2_printf("1. Add non-abstract Derived Class instance in %s(%s%s%s, %s, %s, %s) \n",
                action_type,
                strlen(return_type) ? return_type : "",
                strlen(return_type) ? ", " : "",
                class_type, method_name, return_args,
                SF("bold,yellow", "Derived_%s(...)", class_type));
    else {
-      ::printf("1. Define default constructor in class %s, or \n", class_type);
-      ::printf("2. Add parameterized construction in %s(%s%s%s, %s, %s, %s) \n",
+      h2_printf("1. Define default constructor in class %s, or \n", class_type);
+      h2_printf("2. Add parameterized construction in %s(%s%s%s, %s, %s, %s) \n",
                action_type,
                strlen(return_type) ? return_type : "",
                strlen(return_type) ? ", " : "",

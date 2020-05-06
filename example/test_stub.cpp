@@ -1,5 +1,4 @@
-#include <math.h>
-#include <stdlib.h>
+#include "h2unit.h"
 
 extern "C"
 {
@@ -58,7 +57,7 @@ SUITE(Stub function by lambda)
   }
 }
 
-#if (defined(__GNUC__) && __GNUC__ >= 5) || defined __clang__
+#if (defined(__GNUC__) && __GNUC__ >= 5) || defined __clang__ || defined _WIN32
 
 SUITE(Stub Member method)
 {

@@ -3,6 +3,41 @@ struct h2__socket {
    h2_singleton(h2__socket);
    h2_list socks;
 
+   static bool is_block(int sockfd) {
+#ifdef _WIN32
+      return true;
+#else
+      return !(fcntl(sockfd, F_GETFL) & O_NONBLOCK);
+#endif
+   }
+   static bool set_block(int sockfd, bool block) {
+#ifdef _WIN32
+      u_long op = block ? 0 : 1;
+      if (ioctlsocket(sockfd, FIONBIO, &op) == SOCKET_ERROR) {
+         return false;
+      }
+      return true;
+#else
+      int flags = fcntl(sockfd, F_GETFL);
+      if (flags < 0) {
+         return false;
+      }
+
+      if (block) {
+         if ((flags & O_NONBLOCK) != 0) {
+            flags ^= O_NONBLOCK;
+         }
+      } else {
+         flags |= O_NONBLOCK;
+      }
+      if (fcntl(sockfd, F_SETFL, flags) < 0) {
+         return false;
+      }
+
+      return true;
+#endif
+   }
+
    static void iport_parse(const char* str, struct sockaddr_in* addr) {
       char temp[1024];
       strcpy(temp, str);
@@ -13,21 +48,22 @@ struct h2__socket {
          *colon = '\0';
          addr->sin_port = htons(atoi(colon + 1));
       }
-      addr->sin_addr.s_addr = ::inet_addr(temp);
+      inet_pton(AF_INET, temp, &addr->sin_addr);
    }
 
    static const char* iport_tostring(struct sockaddr_in* addr, char* str) {
-      sprintf(str, "%s:%d", inet_ntoa(addr->sin_addr), ntohs(addr->sin_port));
+      char t[256];
+      sprintf(str, "%s:%d", inet_ntop(AF_INET, &addr->sin_addr, t, sizeof(t)), ntohs(addr->sin_port));
       return str;
    }
 
    struct temporary_noblock : h2_once {
       int sockfd, flags;
       temporary_noblock(int sockfd_) : sockfd(sockfd_) {
-         flags = fcntl(sockfd, F_GETFL);
-         fcntl(sockfd, F_SETFL, flags | O_NONBLOCK);
+         flags = is_block(sockfd);
+         set_block(sockfd, false);
       }
-      ~temporary_noblock() { fcntl(sockfd, F_SETFL, flags); }
+      ~temporary_noblock() { set_block(sockfd, flags); }
    };
 
    static const char* getsockname(int sockfd, char* s, struct sockaddr_in* a = nullptr) {
@@ -39,7 +75,7 @@ struct h2__socket {
    }
 
    static h2_packet* read_incoming(int sockfd) {
-      bool block = !(fcntl(sockfd, F_GETFL) & O_NONBLOCK);
+      bool block = is_block(sockfd);
       const char* local = getsockname(sockfd, (char*)alloca(64));
       h2_sock* sock = h2_list_top_entry(&I().socks, h2_sock, y);
 
@@ -96,9 +132,11 @@ struct h2__socket {
       if (sock) sock->put_outgoing(socket, (const char*)buffer, length);
       return length;
    }
+#ifndef _WIN32
    static ssize_t sendmsg(int socket, const struct msghdr* message, int flags) {
       return sendto(socket, message->msg_iov[0].iov_base, message->msg_iov[0].iov_len, 0, (struct sockaddr*)message->msg_name, message->msg_namelen);
    }
+#endif
    static ssize_t sendto(int socket, const void* buffer, size_t length, int flags, const struct sockaddr* dest_addr, socklen_t dest_len) {
       h2_sock* sock = h2_list_top_entry(&I().socks, h2_sock, y);
       if (sock) sock->put_outgoing(getsockname(socket, (char*)alloca(64)), iport_tostring((struct sockaddr_in*)dest_addr, (char*)alloca(64)), (const char*)buffer, length);
@@ -124,16 +162,20 @@ struct h2__socket {
       }
       return ret;
    }
+#ifndef _WIN32
    static ssize_t recvmsg(int socket, struct msghdr* message, int flags) {
       return recvfrom(socket, message->msg_iov[0].iov_base, message->msg_iov[0].iov_len, 0, (struct sockaddr*)message->msg_name, &message->msg_namelen);
    }
+#endif
 };
 
 h2_inline h2_sock::h2_sock() {
    stubs.add((void*)::sendto, (void*)h2__socket::sendto);
    stubs.add((void*)::recvfrom, (void*)h2__socket::recvfrom);
+#ifndef _WIN32
    stubs.add((void*)::sendmsg, (void*)h2__socket::sendmsg);
    stubs.add((void*)::recvmsg, (void*)h2__socket::recvmsg);
+#endif
    stubs.add((void*)::send, (void*)h2__socket::send);
    stubs.add((void*)::recv, (void*)h2__socket::recv);
    stubs.add((void*)::accept, (void*)h2__socket::accept);
@@ -174,7 +216,6 @@ h2_inline h2_packet* h2_socket::start_and_fetch() {
       sock = h2_task::I().current_case->sock = new h2_sock();
       h2__socket::I().socks.push(&sock->y);
    }
-
    return h2_list_pop_entry(&sock->outgoing, h2_packet, x);
 }
 

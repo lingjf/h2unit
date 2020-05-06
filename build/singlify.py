@@ -10,6 +10,14 @@ version_datetime = '/* v{0}  {1} */'.format(version, time.strftime('%Y-%m-%d %H:
 project_github_url = '/* https://github.com/lingjf/h2unit */'
 software_copyright = '/* Apache Licence 2.0 */'
 
+def convert_utf8_to_unicode(filename):
+    f_utf8 = open(filename,'r')
+    t = f_utf8.read()
+    f_utf8.close()
+    f_utf16 = open(filename,'wb')
+    f_utf16.write(t.decode('utf-8').encode('utf-8-sig'))
+    f_utf16.close()
+
 def copy_line1(line, f): #compat line
     l0 = line.strip()
     if len(l0) and not l0.startswith('//') and not (l0.startswith('/*') and l0.endswith('*/')):
@@ -31,7 +39,7 @@ def merge_files(inf, outf):
             copy_line2(line, outf)
 
 h2unit_h = '../h2unit.h'
-h2unit_hpp = './h2unit.hpp'
+h2unit_hpp = './h2unit.h'
 h2unit_cpp = './h2unit.cpp'
 
 f_h2unit_h = open(h2unit_h, 'w')
@@ -45,7 +53,7 @@ with open('../source/h2_unit.cpp', 'r') as f_h2_unit_cpp:
     merge_files(f_h2_unit_cpp, f_h2unit_h)
 f_h2unit_h.write('#endif' + '\n')
 f_h2unit_h.close()
-
+convert_utf8_to_unicode(h2unit_h)
 
 f_h2unit_hpp = open(h2unit_hpp, 'w')
 f_h2unit_hpp.write(version_datetime + '\n')
@@ -58,6 +66,7 @@ with open('../source/h2_unit.hpp', 'r') as f_h2_unit_hpp:
     merge_files(f_h2_unit_hpp, f_h2unit_hpp)
 f_h2unit_hpp.write('#endif' + '\n')
 f_h2unit_hpp.close()
+convert_utf8_to_unicode(h2unit_hpp)
 
 f_h2unit_cpp = open(h2unit_cpp, 'w')
 f_h2unit_cpp.write(version_datetime + '\n')
@@ -68,3 +77,4 @@ f_h2unit_cpp.write('#define H2UNIT_VERSION \"' + version + '\"\n')
 with open('../source/h2_unit.cpp', 'r') as f_h2_unit_cpp:
     merge_files(f_h2_unit_cpp, f_h2unit_cpp)
 f_h2unit_cpp.close()
+convert_utf8_to_unicode(h2unit_cpp)

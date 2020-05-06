@@ -1,5 +1,4 @@
-#include <math.h>
-#include <stdlib.h>
+#include "h2unit.h"
 
 /*
  * All header file for c language MUST be include : in extern "C" { }
@@ -50,10 +49,10 @@ SUITE(Second Demo)
     OK(result) << "0 != -0";
   }
 
-   Todo(alive for ever)
-   {
-      OK(false);
-   }
+  Todo(alive for ever)
+  {
+    OK(false);
+  }
 }
 
 /*

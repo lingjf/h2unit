@@ -107,5 +107,5 @@ SUITE(expr)
       OK(0, err);
       OK(answer, ev);
     }
-  };
+  }
 }

@@ -8,7 +8,7 @@ struct h2_resolver {
       bool is_ipv4 = 4 == ::sscanf(str, "%d.%d.%d.%d", &s1, &s2, &s3, &s4);
       if (is_ipv4 && addr) {
          addr->sin_family = AF_INET;
-         addr->sin_addr.s_addr = ::inet_addr(str);
+         inet_pton(AF_INET, str, &addr->sin_addr);
       }
       return is_ipv4;
    }
