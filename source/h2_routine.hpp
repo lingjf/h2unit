@@ -13,7 +13,8 @@ struct h2_routine<Class, Return(Args...)> {
    h2_routine(std::function<Return(Args...)> f) : _f1(f) {}
    h2_routine(std::function<Return(Class*, Args...)> f) : _f2(f) {}
 
-   Return operator()(Class* that, Args... args) {
+   Return operator()(Class* that, Args... args)
+   {
       if (_f2)
          return _f2(that, args...);
       else if (_f1)
@@ -32,7 +33,8 @@ struct h2_routine<Class, void(Args...)> {
    h2_routine(std::function<void(Args...)> f) : _f1(f) {}
    h2_routine(std::function<void(Class*, Args...)> f) : _f2(f) {}
 
-   void operator()(Class* that, Args... args) {
+   void operator()(Class* that, Args... args)
+   {
       if (_f2)
          _f2(that, args...);
       else if (_f1)

@@ -6,7 +6,7 @@ AlignConsecutiveAssignments:	false
 AlignConsecutiveDeclarations:	false
  
 AlignEscapedNewlines: Right
- 
+
 AlignOperands:	true
 AlignTrailingComments:	true
  
@@ -27,7 +27,7 @@ BraceWrapping:
   AfterClass:	false
   AfterControlStatement:	false
   AfterEnum:	false
-  AfterFunction:	false
+  AfterFunction:	true
   AfterNamespace:	false
   AfterObjCDeclaration:	false
   AfterStruct:	false

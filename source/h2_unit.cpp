@@ -15,25 +15,31 @@
 #include <typeinfo>  /* typeid */
 
 #if defined _WIN32
-#   pragma comment(lib, "Winmm.lib")
+#   include <winsock2.h> /* socket */
+#   include <ws2tcpip.h> /* getaddrinfo */
+#   include <io.h>       /* _wirte */
+#   include <shlwapi.h>  /* PathRemoveFileSpecA, StrStrIA */
+#   define fileno _fileno
+#   define socklen_t int
+#   define strcasestr StrStrIA
 #   pragma comment(lib, "Ws2_32.lib")
 #   pragma comment(lib, "Shlwapi.lib")
 #else
-#   include <netdb.h>       /* getaddrinfo, gethostbyname */
-#   include <libgen.h>      /* basename */
-#   include <fcntl.h>       /* fcntl */
-#   include <fnmatch.h>     /* fnmatch */
+#   include <arpa/inet.h>   /* inet_addr, inet_pton */
 #   include <cxxabi.h>      /* demangle */
 #   include <execinfo.h>    /* backtrace */
-#   include <arpa/inet.h>   /* inet_addr */
-#   include <syslog.h>      /* syslog, vsyslog */
-#   include <unistd.h>      /* sysconf */
+#   include <fcntl.h>       /* fcntl */
+#   include <fnmatch.h>     /* fnmatch */
+#   include <libgen.h>      /* basename */
+#   include <netdb.h>       /* getaddrinfo, gethostbyname */
 #   include <sys/ioctl.h>   /* ioctl */
 #   include <sys/mman.h>    /* mprotect, mmap */
 #   include <sys/socket.h>  /* sockaddr */
 #   include <sys/syscall.h> /* syscall */
-#   include <sys/time.h>    /* gettimeofday */
 #   include <sys/types.h>   /* size_t */
+#   include <syslog.h>      /* syslog, vsyslog */
+#   include <time.h>        /* clock */
+#   include <unistd.h>      /* sysconf */
 #   if defined __GLIBC__
 #      include <malloc.h> /* __malloc_hook */
 #   elif defined __APPLE__
@@ -75,7 +81,8 @@ namespace h2 {
 #   define h2_weak_attribute __attribute__((weak))
 #endif
 
-h2_weak_attribute int main(int argc, const char** argv) {
+h2_weak_attribute int main(int argc, const char** argv)
+{
    h2::h2_option::I().parse(argc, argv);
    h2::h2_task::I().prepare();
    h2::h2_task::I().execute();

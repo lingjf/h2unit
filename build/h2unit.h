@@ -1,4 +1,4 @@
-﻿/* v5.2  2020-05-06 19:18:56 */
+﻿/* v5.2  2020-05-07 23:30:38 */
 /* https://github.com/lingjf/h2unit */
 /* Apache Licence 2.0 */
 #ifndef __H2UNIT_HPP__
@@ -14,28 +14,20 @@
 #include <climits>     /* INT_MAX */
 #include <cmath>       /* fabs */
 #include <csetjmp>     /* setjmp, longjmp */
-#include <sstream>     /* basic_ostringstream */
+#include <sstream>     /* std::basic_ostringstream */
 #include <string>      /* std::string */
 #include <vector>      /* std::vector */
 #include <tuple>       /* std::tuple */
-#include <functional>  /* function */
-#include <utility>     /* forward_as_tuple */
+#include <functional>  /* std::function */
+#include <utility>     /* std::forward_as_tuple */
 #include <type_traits> /* std::true_type */
 
 #if defined _WIN32
-#   ifndef WIN32_LEAN_AND_MEAN
-#      define WIN32_LEAN_AND_MEAN
-#   endif
+#   define WIN32_LEAN_AND_MEAN /* fix winsock.h winsock2.h conflict */
+#   define NOMINMAX            /* fix std::min/max conflict with windows::min/max */
 #   include <windows.h>
-#   include <winsock2.h>
-#   include <ws2tcpip.h>
-#   include <iphlpapi.h>
-#   include <io.h>     /* _wirte */
 #   include <malloc.h> /* alloca */
-#   include <shlwapi.h>/* PathRemoveFileSpecA */
 #   define alloca _alloca
-#   define fileno _fileno
-#   define socklen_t int
 #   define ssize_t int
 #else
 #   include <alloca.h> /* alloca */
@@ -56,10 +48,12 @@
 #   pragma clang diagnostic ignored "-Wunused-function"
 #   pragma clang diagnostic ignored "-Wwritable-strings"
 #elif defined _WIN32
-#   define _CRT_SECURE_NO_WARNINGS
-#   define _WINSOCK_DEPRECATED_NO_WARNINGS
+#   pragma warning(disable : 4005)  // macro-redefine
 #   pragma warning(disable : 4018)  // -Wsign-compare
 #   pragma warning(disable : 4244)  //
+#   pragma warning(disable : 4819)  // Unicode
+#   define _CRT_SECURE_NO_WARNINGS
+#   define _WINSOCK_DEPRECATED_NO_WARNINGS
 #endif
 
 #if defined __H2UNIT_HPP__
@@ -226,7 +220,8 @@ struct h2_with {
 struct h2_list {
    struct h2_list *next, *prev;
 
-   static void __add_between(h2_list* _new, h2_list* prev, h2_list* next) {
+   static void __add_between(h2_list* _new, h2_list* prev, h2_list* next)
+   {
       next->prev = _new;
       _new->next = next;
       _new->prev = prev;
@@ -249,7 +244,8 @@ struct h2_list {
    h2_list* get_first() const { return empty() ? nullptr : next; }
    h2_list* get_last() const { return empty() ? nullptr : prev; }
 
-   h2_list* out() {
+   h2_list* out()
+   {
       prev->next = next;
       next->prev = prev;
       next = prev = this;
@@ -270,7 +266,7 @@ struct h2_option {
    static constexpr const int os = 3;
 #endif
 
-   const char* path, *debug;
+   const char *path, *debug;
    int verbose, listing, breakable, randomize;
    bool colorable, memory_check;
    char junit[256], args[256];
@@ -288,7 +284,7 @@ struct h2_option {
    const char* style(const char* s) const;
 };
 
-static const h2_option& O = h2_option::I(); // for pretty
+static const h2_option& O = h2_option::I();  // for pretty
 
 struct h2_libc {
    static void* malloc(size_t size);
@@ -321,15 +317,23 @@ class h2_allocator {
    void construct(pointer p, const T& val) { new ((T*)p) T(val); }
    void destroy(pointer p) { p->~T(); }
    size_type max_size() const { return size_t(-1); }
-   template <typename U> struct rebind { typedef h2_allocator<U> other; };
-   template <typename U> h2_allocator(const h2_allocator<U>&) {}
-   template <typename U> h2_allocator& operator=(const h2_allocator<U>&) { return *this; }
+   template <typename U>
+   struct rebind {
+      typedef h2_allocator<U> other;
+   };
+   template <typename U>
+   h2_allocator(const h2_allocator<U>&) {}
+   template <typename U>
+   h2_allocator& operator=(const h2_allocator<U>&) { return *this; }
 };
 
-template <typename T> inline bool operator==(const h2_allocator<T>&, const h2_allocator<T>&) { return true; }
-template <typename T> inline bool operator!=(const h2_allocator<T>&, const h2_allocator<T>&) { return false; }
+template <typename T>
+inline bool operator==(const h2_allocator<T>&, const h2_allocator<T>&) { return true; }
+template <typename T>
+inline bool operator!=(const h2_allocator<T>&, const h2_allocator<T>&) { return false; }
 
-template <typename T> using h2_vector = std::vector<T, h2_allocator<T>>;
+template <typename T>
+using h2_vector = std::vector<T, h2_allocator<T>>;
 typedef std::basic_ostringstream<char, std::char_traits<char>, h2_allocator<char>> h2_ostringstream;
 
 struct h2_string : public std::basic_string<char, std::char_traits<char>, h2_allocator<char>> {
@@ -380,7 +384,8 @@ class h2_shared_ptr : h2_libc {
    explicit h2_shared_ptr(T* p) { acquire(p, nullptr); }
    h2_shared_ptr(const h2_shared_ptr& that) { acquire(that.px, that.pn); }
    ~h2_shared_ptr() { release(); }
-   h2_shared_ptr& operator=(h2_shared_ptr that) {
+   h2_shared_ptr& operator=(h2_shared_ptr that)
+   {
       std::swap(px, that.px);
       std::swap(pn, that.pn);
       return *this;
@@ -390,7 +395,8 @@ class h2_shared_ptr : h2_libc {
    T* operator->() const { return px; }
 
  private:
-   void acquire(T* p, long* n) {
+   void acquire(T* p, long* n)
+   {
       pn = n;
       if (p) {
          if (!pn)
@@ -400,7 +406,8 @@ class h2_shared_ptr : h2_libc {
       }
       px = p;
    }
-   void release() {
+   void release()
+   {
       if (pn && !--(*pn)) {
          delete px;
          h2_libc::free(pn);
@@ -415,13 +422,13 @@ struct h2_debugger {
    static void trap();
 };
 
-#define h2_debug(...)                                                                         \
-   do {                                                                                       \
-      if (!O.debug) {                                                                         \
+#define h2_debug(...)                                                                    \
+   do {                                                                                  \
+      if (!O.debug) {                                                                    \
          h2_printf("%s %s : %d = %s\n", #__VA_ARGS__, __FILE__, __LINE__, __FUNCTION__); \
-         h2_backtrace bt(0);                                                                  \
-         bt.print();                                                                          \
-      }                                                                                       \
+         h2_backtrace bt(0);                                                             \
+         bt.print();                                                                     \
+      }                                                                                  \
    } while (0)
 
 struct tinyexpr {
@@ -461,7 +468,7 @@ struct h2_fail : h2_libc {
    h2_string _k, _h, _m, _u;
    int pad, w_type;  // 0 is MOCK; 1 is OK(condition); 2 is OK(expect, actual); 3 is JE
    h2_string e_expr, _e, a_expr, _a;
-   
+
    h2_fail(const char* file_, int line_, const char* func_ = nullptr, int argi_ = -1);
    virtual ~h2_fail();
 
@@ -495,7 +502,7 @@ struct h2_fail_unexpect : h2_fail {
    h2_fail_unexpect(const char* file_ = nullptr, int line_ = 0);
    void print_OK1();
    void print_OK2();
-   void print_OK3();
+   void print_JE();
    void print_MOCK();
    void print();
 };
@@ -515,10 +522,25 @@ struct h2_fail_json : h2_fail_unexpect {
 };
 
 struct h2_fail_memcmp : h2_fail_unexpect {
+   static constexpr const int npr_1b = 4;
+   static constexpr const int npr_8b = 16;
+   static constexpr const int npr_16b = 8;
+   static constexpr const int npr_32b = 4;
+   static constexpr const int npr_64b = 2;
    h2_vector<unsigned char> expect, actual;
-   h2_fail_memcmp(const unsigned char* expect_, const unsigned char* actual_, int len, const char* file_ = nullptr, int line_ = 0);
+   const int width, nbits;
+   h2_fail_memcmp(const unsigned char* expect_, const unsigned char* actual_, int width_, int nbits_, const char* file_ = nullptr, int line_ = 0);
    void print();
+   void print_bits();
+   void print_bytes();
+   void print_int16();
+   void print_int32();
+   void print_int64();
+   char* fmt_bit(unsigned char c, unsigned char t, const char* style, char* p);
    char* fmt_byte(unsigned char c, unsigned char t, int j, const char* style, char* p);
+   char* fmt_int16(unsigned short c, unsigned short t, const char* style, char* p);
+   char* fmt_int32(unsigned long c, unsigned long t, const char* style, char* p);
+   char* fmt_int64(unsigned long long c, unsigned long long t, const char* style, char* p);
 };
 
 struct h2_fail_memoverflow : h2_fail {
@@ -548,9 +570,9 @@ struct h2_fail_memleak : h2_fail {
    void print();
 };
 
-struct h2_fail_doublefree : h2_fail {
-   const h2_backtrace bt0, bt1;
-   h2_fail_doublefree(void* ptr_, h2_backtrace& bt0_, h2_backtrace bt1_, const char* file_ = nullptr, int line_ = 0);
+struct h2_fail_free : h2_fail {
+   const h2_backtrace bt_alloc, bt_free;
+   h2_fail_free(void* ptr_, const char* desc, h2_backtrace& bt_alloc_, h2_backtrace& bt_free_, const char* file_ = nullptr, int line_ = 0);
    void print();
 };
 
@@ -581,7 +603,8 @@ struct h2_stub_temporary_restore : h2_once {
 
 #define __H2STUB4(Return, BeFunc, Args, Qt)                                         \
    struct {                                                                         \
-      void operator=(Return(*toF) Args) {                                           \
+      void operator=(Return(*toF) Args)                                             \
+      {                                                                             \
          Return(*beF) Args = BeFunc;                                                \
          h2::h2_stub_g((void*)beF, (void*)(toF), #BeFunc, "~", __FILE__, __LINE__); \
       }                                                                             \
@@ -590,7 +613,8 @@ struct h2_stub_temporary_restore : h2_once {
 
 #define __H2STUB50(Return, Class, Method, Args, Qt)                                                                                                                                                 \
    struct {                                                                                                                                                                                         \
-      void operator=(Return (*toF)(Class * that)) {                                                                                                                                                 \
+      void operator=(Return (*toF)(Class * that))                                                                                                                                                   \
+      {                                                                                                                                                                                             \
          h2::h2_stub_g(h2::h2_mfp<Class, Return Args>::A(&Class::Method, "STUB", #Return, #Class, #Method, #Args, __FILE__, __LINE__), (void*)(toF), #Class "::" #Method, "~", __FILE__, __LINE__); \
       }                                                                                                                                                                                             \
    } Qt;                                                                                                                                                                                            \
@@ -598,7 +622,8 @@ struct h2_stub_temporary_restore : h2_once {
 
 #define __H2STUB51(Return, Class, Method, Args, Qt)                                                                                                                                                 \
    struct {                                                                                                                                                                                         \
-      void operator=(Return (*toF)(Class * that, H2PP_REMOVE_PARENTHESES(Args))) {                                                                                                                  \
+      void operator=(Return (*toF)(Class * that, H2PP_REMOVE_PARENTHESES(Args)))                                                                                                                    \
+      {                                                                                                                                                                                             \
          h2::h2_stub_g(h2::h2_mfp<Class, Return Args>::A(&Class::Method, "STUB", #Return, #Class, #Method, #Args, __FILE__, __LINE__), (void*)(toF), #Class "::" #Method, "~", __FILE__, __LINE__); \
       }                                                                                                                                                                                             \
    } Qt;                                                                                                                                                                                            \
@@ -609,7 +634,8 @@ struct h2_stub_temporary_restore : h2_once {
 
 #define __H2STUB60(Return, Class, Method, Args, Instance, Qt)                                                                                    \
    struct {                                                                                                                                      \
-      void operator=(Return (*toF)(Class * that)) {                                                                                              \
+      void operator=(Return (*toF)(Class * that))                                                                                                \
+      {                                                                                                                                          \
          h2::h2_stub_g(h2::h2_mfp<Class, Return Args>::A(&Class::Method, Instance), (void*)(toF), #Class "::" #Method, "~", __FILE__, __LINE__); \
       }                                                                                                                                          \
    } Qt;                                                                                                                                         \
@@ -617,7 +643,8 @@ struct h2_stub_temporary_restore : h2_once {
 
 #define __H2STUB61(Return, Class, Method, Args, Instance, Qt)                                                                                    \
    struct {                                                                                                                                      \
-      void operator=(Return (*toF)(Class * that, H2PP_REMOVE_PARENTHESES(Args))) {                                                               \
+      void operator=(Return (*toF)(Class * that, H2PP_REMOVE_PARENTHESES(Args)))                                                                 \
+      {                                                                                                                                          \
          h2::h2_stub_g(h2::h2_mfp<Class, Return Args>::A(&Class::Method, Instance), (void*)(toF), #Class "::" #Method, "~", __FILE__, __LINE__); \
       }                                                                                                                                          \
    } Qt;                                                                                                                                         \
@@ -787,16 +814,19 @@ struct h2_mfp<Class, Return(Args...)> {
       intptr_t v;
    } U;
 
-   static inline bool is_virtual(U& u) {
+   static inline bool is_virtual(U& u)
+   {
       return (u.v & 1) && (u.v - 1) % sizeof(void*) == 0 && (u.v - 1) / sizeof(void*) < 1000;
    }
 
-   static inline void* get_vmfp(U& u, Class* obj) {
+   static inline void* get_vmfp(U& u, Class* obj)
+   {
       void** vtable = *(void***)obj;
       return vtable[(u.v - 1) / sizeof(void*)];
    }
 
-   static void* A(F f, const char* action_type, const char* return_type, const char* class_type, const char* method_name, const char* return_args, const char* file, int line) {
+   static void* A(F f, const char* action_type, const char* return_type, const char* class_type, const char* method_name, const char* return_args, const char* file, int line)
+   {
       U u{f};
       if (!is_virtual(u)) return u.p;
       Class* o = h2_constructible<Class>::O(alloca(sizeof(Class)));
@@ -806,7 +836,8 @@ struct h2_mfp<Class, Return(Args...)> {
    }
 
    template <typename Derived>
-   static void* A(F f, Derived obj) {
+   static void* A(F f, Derived obj)
+   {
       U u{f};
       if (!is_virtual(u)) return u.p;
       return get_vmfp(u, dynamic_cast<Class*>(&obj));
@@ -879,7 +910,8 @@ struct h2_polymorphic_matcher {
 };
 
 template <typename A, typename E>
-inline h2_fail* h2_common_unexpect(const A& a, const E& e, bool dont, const char* op) {
+inline h2_fail* h2_common_unexpect(const A& a, const E& e, bool dont, const char* op)
+{
    h2_ostringstream ose, osa;
    ose << std::boolalpha << e;
    osa << std::boolalpha << a;
@@ -915,7 +947,8 @@ struct h2_equal_matches {
    explicit h2_equal_matches(const E& _e, bool _r = false) : e(_e), r(_r) {}
 
    template <typename A>
-   h2_fail* matches(const A& a, bool caseless = false, bool dont = false) const {
+   h2_fail* matches(const A& a, bool caseless = false, bool dont = false) const
+   {
       if (r) dont = !dont;
       if ((a == e) == !dont) return nullptr;
       return h2_common_unexpect(a, e, dont, "equals");
@@ -993,7 +1026,8 @@ struct h2_matcher_cast_impl<T, h2_matcher<U>> {
       explicit internal_impl(const h2_matcher<U>& from_) : from(from_) {}
 
       // Delegate the matching logic to the source h2_matcher.
-      h2_fail* matches(T a, bool caseless, bool dont) const override {
+      h2_fail* matches(T a, bool caseless, bool dont) const override
+      {
          using FromType = typename std::remove_cv<typename std::remove_pointer<typename std::remove_reference<T>::type>::type>::type;
          using ToType = typename std::remove_cv<typename std::remove_pointer<typename std::remove_reference<U>::type>::type>::type;
          // Do not allow implicitly converting base*/& to derived*/&.
@@ -1020,7 +1054,8 @@ struct h2_not_matches {
    explicit h2_not_matches(Matcher matcher_) : m(matcher_) {}
 
    template <typename A>
-   h2_fail* matches(const A& a, bool caseless = false, bool dont = false) const {
+   h2_fail* matches(const A& a, bool caseless = false, bool dont = false) const
+   {
       return h2_matcher_cast<A>(m).matches(a, caseless, !dont);
    }
 };
@@ -1032,7 +1067,8 @@ struct h2_and_matches {
    explicit h2_and_matches(M1 _m1, M2 _m2) : m1(_m1), m2(_m2) {}
 
    template <typename A>
-   h2_fail* matches(const A& a, bool caseless = false, bool dont = false) const {
+   h2_fail* matches(const A& a, bool caseless = false, bool dont = false) const
+   {
       h2_fail* fail = nullptr;
       h2_fail::append_y(fail, h2_matcher_cast<A>(m1).matches(a, caseless, false));
       h2_fail::append_y(fail, h2_matcher_cast<A>(m2).matches(a, caseless, false));
@@ -1053,7 +1089,8 @@ struct h2_or_matches {
    explicit h2_or_matches(M1 _m1, M2 _m2) : m1(_m1), m2(_m2) {}
 
    template <typename A>
-   h2_fail* matches(const A& a, bool caseless = false, bool dont = false) const {
+   h2_fail* matches(const A& a, bool caseless = false, bool dont = false) const
+   {
       h2_fail* f1 = h2_matcher_cast<A>(m1).matches(a, caseless, false);
       h2_fail* f2 = h2_matcher_cast<A>(m2).matches(a, caseless, false);
       bool result = !f1 || !f2;
@@ -1077,7 +1114,8 @@ struct h2_null_matches {
    const bool r;
    explicit h2_null_matches(bool _r = false) : r(_r) {}
    template <typename A>
-   h2_fail* matches(const A& a, bool caseless = false, bool dont = false) const {
+   h2_fail* matches(const A& a, bool caseless = false, bool dont = false) const
+   {
       if (r) dont = !dont;
       if ((nullptr == (const void*)a) == !dont) return nullptr;
       h2_fail_unexpect* fail = new h2_fail_unexpect();
@@ -1094,7 +1132,8 @@ struct h2_boolean_matches {
    const bool e;
    explicit h2_boolean_matches(bool _e) : e(_e) {}
    template <typename A>
-   h2_fail* matches(const A& a, bool caseless = false, bool dont = false) const {
+   h2_fail* matches(const A& a, bool caseless = false, bool dont = false) const
+   {
       if ((e == (bool)a) == !dont) return nullptr;
       h2_fail_unexpect* fail = new h2_fail_unexpect();
       fail->aprintf(a ? "true" : "false");
@@ -1112,7 +1151,8 @@ struct h2_ge_matches {
    explicit h2_ge_matches(const E& _e) : e(_e) {}
 
    template <typename A>
-   h2_fail* matches(const A& a, bool caseless = false, bool dont = false) const {
+   h2_fail* matches(const A& a, bool caseless = false, bool dont = false) const
+   {
       if ((a >= e) == !dont) return nullptr;
       return h2_common_unexpect(a, e, dont, ">=");
    }
@@ -1124,7 +1164,8 @@ struct h2_gt_matches {
    explicit h2_gt_matches(const E& _e) : e(_e) {}
 
    template <typename A>
-   h2_fail* matches(const A& a, bool caseless = false, bool dont = false) const {
+   h2_fail* matches(const A& a, bool caseless = false, bool dont = false) const
+   {
       if ((a > e) == !dont) return nullptr;
       return h2_common_unexpect(a, e, dont, ">");
    }
@@ -1136,7 +1177,8 @@ struct h2_le_matches {
    explicit h2_le_matches(const E& _e) : e(_e) {}
 
    template <typename A>
-   h2_fail* matches(const A& a, bool caseless = false, bool dont = false) const {
+   h2_fail* matches(const A& a, bool caseless = false, bool dont = false) const
+   {
       if ((a <= e) == !dont) return nullptr;
       return h2_common_unexpect(a, e, dont, "<=");
    }
@@ -1148,16 +1190,18 @@ struct h2_lt_matches {
    explicit h2_lt_matches(const E& _e) : e(_e) {}
 
    template <typename A>
-   h2_fail* matches(const A& a, bool caseless = false, bool dont = false) const {
+   h2_fail* matches(const A& a, bool caseless = false, bool dont = false) const
+   {
       if ((a < e) == !dont) return nullptr;
       return h2_common_unexpect(a, e, dont, "<");
    }
 };
 
 struct h2_memcmp_matches {
+   const int width;
    const void* e;
-   const int size;
-   explicit h2_memcmp_matches(const void* _e, const int _size) : e(_e), size(_size) {}
+   const int nbits;
+   explicit h2_memcmp_matches(const int _width, const void* _e, const int _nbits) : width(_width), e(_e), nbits(_nbits) {}
    h2_fail* matches(const void* a, bool caseless = false, bool dont = false) const;
 };
 
@@ -1167,12 +1211,17 @@ struct h2_pointee_matches {
    explicit h2_pointee_matches(Matcher matcher_) : m(matcher_) {}
 
    template <typename SmartPointer>
-   struct PointeeOf { typedef typename SmartPointer::element_type type; };
+   struct PointeeOf {
+      typedef typename SmartPointer::element_type type;
+   };
    template <typename T>
-   struct PointeeOf<T*> { typedef T type; };
+   struct PointeeOf<T*> {
+      typedef T type;
+   };
 
    template <typename A>
-   h2_fail* matches(A a, bool caseless = false, bool dont = false) const {
+   h2_fail* matches(A a, bool caseless = false, bool dont = false) const
+   {
       typedef typename std::remove_const<typename std::remove_reference<A>::type>::type Pointer;
       typedef typename PointeeOf<Pointer>::type Pointee;
       return h2_matcher_cast<Pointee>(m).matches(*a, caseless, dont);
@@ -1229,13 +1278,14 @@ struct h2_caseless_matches {
    h2_fail* matches(const A& a, bool caseless = false, bool dont = false) const { return m.matches(a, true, dont); }
 };
 
-#define H2_MATCHER_T2V(t_matchers)                                                                                                                            \
-   template <typename T, size_t I>                                                                                                                            \
-   h2_vector<h2_matcher<T>> t2v(std::integral_constant<size_t, I> _1 = std::integral_constant<size_t, 0>(), h2_vector<h2_matcher<T>> v_matchers = {}) const { \
-      v_matchers.push_back(h2_matcher_cast<T>(std::get<I>(t_matchers)));                                                                                      \
-      return t2v<T>(std::integral_constant<size_t, I + 1>(), v_matchers);                                                                                     \
-   }                                                                                                                                                          \
-   template <typename T>                                                                                                                                      \
+#define H2_MATCHER_T2V(t_matchers)                                                                                                                          \
+   template <typename T, size_t I>                                                                                                                          \
+   h2_vector<h2_matcher<T>> t2v(std::integral_constant<size_t, I> _1 = std::integral_constant<size_t, 0>(), h2_vector<h2_matcher<T>> v_matchers = {}) const \
+   {                                                                                                                                                        \
+      v_matchers.push_back(h2_matcher_cast<T>(std::get<I>(t_matchers)));                                                                                    \
+      return t2v<T>(std::integral_constant<size_t, I + 1>(), v_matchers);                                                                                   \
+   }                                                                                                                                                        \
+   template <typename T>                                                                                                                                    \
    h2_vector<h2_matcher<T>> t2v(std::integral_constant<size_t, sizeof...(Matchers)>, h2_vector<h2_matcher<T>> v_matchers = {}) const { return v_matchers; }
 
 template <typename... Matchers>
@@ -1245,7 +1295,8 @@ struct h2_allof_matches {
    explicit h2_allof_matches(const Matchers&... matchers) : t_matchers(matchers...) { static_assert(sizeof...(Matchers) > 0, "Must have at least one Matcher."); }
 
    template <typename A>
-   h2_fail* matches(A a, bool caseless = false, bool dont = false) const {
+   h2_fail* matches(A a, bool caseless = false, bool dont = false) const
+   {
       auto v_matchers = t2v<A, 0>();
 
       h2_fail* fails = nullptr;
@@ -1277,7 +1328,8 @@ struct h2_anyof_matches {
    explicit h2_anyof_matches(const Matchers&... matchers) : t_matchers(matchers...) { static_assert(sizeof...(Matchers) > 0, "Must have at least one Matcher."); }
 
    template <typename A>
-   h2_fail* matches(A a, bool caseless = false, bool dont = false) const {
+   h2_fail* matches(A a, bool caseless = false, bool dont = false) const
+   {
       auto v_matchers = t2v<A, 0>();
 
       int s = 0;
@@ -1311,7 +1363,8 @@ struct h2_noneof_matches {
    explicit h2_noneof_matches(const Matchers&... matchers) : t_matchers(matchers...) { static_assert(sizeof...(Matchers) > 0, "Must have at least one Matcher."); }
 
    template <typename A>
-   h2_fail* matches(A a, bool caseless = false, bool dont = false) const {
+   h2_fail* matches(A a, bool caseless = false, bool dont = false) const
+   {
       auto v_matchers = t2v<A, 0>();
 
       int s = 0;
@@ -1340,7 +1393,8 @@ struct h2_listof_matches {
    explicit h2_listof_matches(const Matchers&... matchers) : t_matchers(matchers...) { static_assert(sizeof...(Matchers) > 0, "Must have at least one Matcher."); }
 
    template <typename A>
-   h2_fail* matches(A a, bool caseless = false, bool dont = false) const {
+   h2_fail* matches(A a, bool caseless = false, bool dont = false) const
+   {
       auto v_matchers = t2v<decltype(a[0]), 0>();
 
       h2_fail* fail = nullptr;
@@ -1373,7 +1427,13 @@ inline h2_polymorphic_matcher<h2_le_matches<E>> Le(const E expect) { return h2_p
 template <typename E>
 inline h2_polymorphic_matcher<h2_lt_matches<E>> Lt(const E expect) { return h2_polymorphic_matcher<h2_lt_matches<E>>(h2_lt_matches<E>(expect)); }
 
-inline h2_polymorphic_matcher<h2_memcmp_matches> Me(const void* ptr, const int len = 0) { return h2_polymorphic_matcher<h2_memcmp_matches>(h2_memcmp_matches(ptr, len)); }
+inline h2_polymorphic_matcher<h2_memcmp_matches> Me(const void* ptr, const int len = 0) { return h2_polymorphic_matcher<h2_memcmp_matches>(h2_memcmp_matches(len ? 8 : 0, (const void*)ptr, len * 8)); }
+inline h2_polymorphic_matcher<h2_memcmp_matches> M1e(const char* str) { return h2_polymorphic_matcher<h2_memcmp_matches>(h2_memcmp_matches(0, (const void*)str, strlen(str))); }
+inline h2_polymorphic_matcher<h2_memcmp_matches> M8e(const void* ptr, const int len = 0) { return h2_polymorphic_matcher<h2_memcmp_matches>(h2_memcmp_matches(8, (const void*)ptr, len ? len * 8 : strlen((const char*)ptr))); }
+inline h2_polymorphic_matcher<h2_memcmp_matches> M16e(const void* ptr, const int len = 0) { return h2_polymorphic_matcher<h2_memcmp_matches>(h2_memcmp_matches(16, (const void*)ptr, len ? len * 16 : strlen((const char*)ptr))); }
+inline h2_polymorphic_matcher<h2_memcmp_matches> M32e(const void* ptr, const int len = 0) { return h2_polymorphic_matcher<h2_memcmp_matches>(h2_memcmp_matches(32, (const void*)ptr, len ? len * 32 : strlen((const char*)ptr))); }
+inline h2_polymorphic_matcher<h2_memcmp_matches> M64e(const void* ptr, const int len = 0) { return h2_polymorphic_matcher<h2_memcmp_matches>(h2_memcmp_matches(64, (const void*)ptr, len ? len * 64 : strlen((const char*)ptr))); }
+
 inline h2_polymorphic_matcher<h2_regex_matches> Re(const h2_string& regex_pattern) { return h2_polymorphic_matcher<h2_regex_matches>(h2_regex_matches(regex_pattern)); }
 inline h2_polymorphic_matcher<h2_wildcard_matches> We(const h2_string& wildcard_pattern) { return h2_polymorphic_matcher<h2_wildcard_matches>(h2_wildcard_matches(wildcard_pattern)); }
 inline h2_polymorphic_matcher<h2_strcmp_matches> Se(const h2_string& expect) { return h2_polymorphic_matcher<h2_strcmp_matches>(h2_strcmp_matches(expect)); }
@@ -1388,40 +1448,52 @@ template <typename M>
 inline h2_polymorphic_matcher<h2_caseless_matches> CaseLess(M m) { return h2_polymorphic_matcher<h2_caseless_matches>(h2_caseless_matches(h2_matcher<h2_string>(m))); }
 #ifndef _WIN32
 template <typename M>
-inline h2_polymorphic_matcher<h2_caseless_matches> operator~(M m) { return CaseLess(m); }
+inline h2_polymorphic_matcher<h2_caseless_matches> operator~(M m)
+{
+   return CaseLess(m);
+}
 #endif
 template <typename Matcher>
-inline h2_polymorphic_matcher<h2_not_matches<Matcher>> Not(Matcher m) { return h2_polymorphic_matcher<h2_not_matches<Matcher>>(h2_not_matches<Matcher>(m)); }
+inline h2_polymorphic_matcher<h2_not_matches<Matcher>> Not(Matcher m)
+{
+   return h2_polymorphic_matcher<h2_not_matches<Matcher>>(h2_not_matches<Matcher>(m));
+}
 template <typename Matches>
 inline h2_polymorphic_matcher<h2_not_matches<h2_polymorphic_matcher<Matches>>> operator!(const h2_polymorphic_matcher<Matches>& m) { return Not(m); }
 
 template <typename... Matchers>
-inline h2_polymorphic_matcher<h2_allof_matches<typename std::decay<const Matchers&>::type...>> AllOf(const Matchers&... matchers) {
+inline h2_polymorphic_matcher<h2_allof_matches<typename std::decay<const Matchers&>::type...>> AllOf(const Matchers&... matchers)
+{
    return h2_polymorphic_matcher<h2_allof_matches<typename std::decay<const Matchers&>::type...>>(h2_allof_matches<typename std::decay<const Matchers&>::type...>(matchers...));
 }
 template <typename... Matchers>
-inline h2_polymorphic_matcher<h2_anyof_matches<typename std::decay<const Matchers&>::type...>> AnyOf(const Matchers&... matchers) {
+inline h2_polymorphic_matcher<h2_anyof_matches<typename std::decay<const Matchers&>::type...>> AnyOf(const Matchers&... matchers)
+{
    return h2_polymorphic_matcher<h2_anyof_matches<typename std::decay<const Matchers&>::type...>>(h2_anyof_matches<typename std::decay<const Matchers&>::type...>(matchers...));
 }
 template <typename... Matchers>
-inline h2_polymorphic_matcher<h2_noneof_matches<typename std::decay<const Matchers&>::type...>> NoneOf(const Matchers&... matchers) {
+inline h2_polymorphic_matcher<h2_noneof_matches<typename std::decay<const Matchers&>::type...>> NoneOf(const Matchers&... matchers)
+{
    return h2_polymorphic_matcher<h2_noneof_matches<typename std::decay<const Matchers&>::type...>>(h2_noneof_matches<typename std::decay<const Matchers&>::type...>(matchers...));
 }
 template <typename... Matchers>
-inline h2_polymorphic_matcher<h2_listof_matches<typename std::decay<const Matchers&>::type...>> ListOf(const Matchers&... matchers) {
+inline h2_polymorphic_matcher<h2_listof_matches<typename std::decay<const Matchers&>::type...>> ListOf(const Matchers&... matchers)
+{
    return h2_polymorphic_matcher<h2_listof_matches<typename std::decay<const Matchers&>::type...>>(h2_listof_matches<typename std::decay<const Matchers&>::type...>(matchers...));
 }
 
 template <typename M1, typename M2>
 inline h2_polymorphic_matcher<h2_and_matches<h2_polymorphic_matcher<M1>, h2_polymorphic_matcher<M2>>>
-operator&&(const h2_polymorphic_matcher<M1>& m1, const h2_polymorphic_matcher<M2>& m2) {
+operator&&(const h2_polymorphic_matcher<M1>& m1, const h2_polymorphic_matcher<M2>& m2)
+{
    h2_and_matches<h2_polymorphic_matcher<M1>, h2_polymorphic_matcher<M2>> a(m1, m2);
    h2_polymorphic_matcher<h2_and_matches<h2_polymorphic_matcher<M1>, h2_polymorphic_matcher<M2>>> b(a);
    return b;
 }
 template <typename M1, typename M2>
 inline h2_polymorphic_matcher<h2_and_matches<h2_polymorphic_matcher<M1>, h2_matcher<typename h2_decay<M2>::type>>>
-operator&&(const h2_polymorphic_matcher<M1>& m1, const M2& m2) {
+operator&&(const h2_polymorphic_matcher<M1>& m1, const M2& m2)
+{
    h2_matcher<typename h2_decay<M2>::type> a(m2);
    h2_and_matches<h2_polymorphic_matcher<M1>, h2_matcher<typename h2_decay<M2>::type>> b(m1, a);
    h2_polymorphic_matcher<h2_and_matches<h2_polymorphic_matcher<M1>, h2_matcher<typename h2_decay<M2>::type>>> c(b);
@@ -1429,7 +1501,8 @@ operator&&(const h2_polymorphic_matcher<M1>& m1, const M2& m2) {
 }
 template <typename M1, typename M2>
 inline h2_polymorphic_matcher<h2_and_matches<h2_matcher<typename h2_decay<M1>::type>, h2_polymorphic_matcher<M2>>>
-operator&&(const M1& m1, const h2_polymorphic_matcher<M2>& m2) {
+operator&&(const M1& m1, const h2_polymorphic_matcher<M2>& m2)
+{
    h2_matcher<typename h2_decay<M1>::type> a(m1);
    h2_and_matches<h2_matcher<typename h2_decay<M1>::type>, h2_polymorphic_matcher<M2>> b(a, m2);
    h2_polymorphic_matcher<h2_and_matches<h2_matcher<typename h2_decay<M1>::type>, h2_polymorphic_matcher<M2>>> c(b);
@@ -1438,14 +1511,16 @@ operator&&(const M1& m1, const h2_polymorphic_matcher<M2>& m2) {
 
 template <typename M1, typename M2>
 inline h2_polymorphic_matcher<h2_or_matches<h2_polymorphic_matcher<M1>, h2_polymorphic_matcher<M2>>>
-operator||(const h2_polymorphic_matcher<M1>& m1, const h2_polymorphic_matcher<M2>& m2) {
+operator||(const h2_polymorphic_matcher<M1>& m1, const h2_polymorphic_matcher<M2>& m2)
+{
    h2_or_matches<h2_polymorphic_matcher<M1>, h2_polymorphic_matcher<M2>> a(m1, m2);
    h2_polymorphic_matcher<h2_or_matches<h2_polymorphic_matcher<M1>, h2_polymorphic_matcher<M2>>> b(a);
    return b;
 }
 template <typename M1, typename M2>
 inline h2_polymorphic_matcher<h2_or_matches<h2_polymorphic_matcher<M1>, h2_matcher<typename h2_decay<M2>::type>>>
-operator||(const h2_polymorphic_matcher<M1>& m1, const M2& m2) {
+operator||(const h2_polymorphic_matcher<M1>& m1, const M2& m2)
+{
    h2_matcher<typename h2_decay<M2>::type> a(m2);
    h2_or_matches<h2_polymorphic_matcher<M1>, h2_matcher<typename h2_decay<M2>::type>> b(m1, a);
    h2_polymorphic_matcher<h2_or_matches<h2_polymorphic_matcher<M1>, h2_matcher<typename h2_decay<M2>::type>>> c(b);
@@ -1453,7 +1528,8 @@ operator||(const h2_polymorphic_matcher<M1>& m1, const M2& m2) {
 }
 template <typename M1, typename M2>
 inline h2_polymorphic_matcher<h2_or_matches<h2_matcher<typename h2_decay<M1>::type>, h2_polymorphic_matcher<M2>>>
-operator||(const M1& m1, const h2_polymorphic_matcher<M2>& m2) {
+operator||(const M1& m1, const h2_polymorphic_matcher<M2>& m2)
+{
    h2_matcher<typename h2_decay<M1>::type> a(m1);
    h2_or_matches<h2_matcher<typename h2_decay<M1>::type>, h2_polymorphic_matcher<M2>> b(a, m2);
    h2_polymorphic_matcher<h2_or_matches<h2_matcher<typename h2_decay<M1>::type>, h2_polymorphic_matcher<M2>>> c(b);
@@ -1491,7 +1567,8 @@ struct h2_routine<Class, Return(Args...)> {
    h2_routine(std::function<Return(Args...)> f) : _f1(f) {}
    h2_routine(std::function<Return(Class*, Args...)> f) : _f2(f) {}
 
-   Return operator()(Class* that, Args... args) {
+   Return operator()(Class* that, Args... args)
+   {
       if (_f2)
          return _f2(that, args...);
       else if (_f1)
@@ -1510,7 +1587,8 @@ struct h2_routine<Class, void(Args...)> {
    h2_routine(std::function<void(Args...)> f) : _f1(f) {}
    h2_routine(std::function<void(Class*, Args...)> f) : _f2(f) {}
 
-   void operator()(Class* that, Args... args) {
+   void operator()(Class* that, Args... args)
+   {
       if (_f2)
          _f2(that, args...);
       else if (_f1)
@@ -1533,7 +1611,8 @@ struct h2_mock : h2_libc {
 
    virtual void reset() = 0;
 
-   h2_fail* times_check() {
+   h2_fail* times_check()
+   {
       h2_fail* fail = nullptr;
       for (auto& c : c_array) h2_fail::append_y(fail, c.check());
       if (fail) fail->locate(file, line, befn);
@@ -1562,7 +1641,8 @@ using h2_nth_decay = typename h2_decay<typename h2_nth_type<Index, Args...>::typ
 template <size_t N>
 struct h2_tuple_match {
    template <typename MatcherTuple, typename ArgumentTuple>
-   static h2_fail* matches(MatcherTuple& matchers, ArgumentTuple& args, const char* file, int line, const char* func) {
+   static h2_fail* matches(MatcherTuple& matchers, ArgumentTuple& args, const char* file, int line, const char* func)
+   {
       h2_fail* fail = h2_tuple_match<N - 1>::matches(matchers, args, file, line, func);
       h2_fail* f = std::get<N - 1>(matchers).matches(std::get<N - 1>(args));
       if (f) f->locate(file, line, func, N - 1);
@@ -1574,7 +1654,8 @@ struct h2_tuple_match {
 template <>
 struct h2_tuple_match<0> {
    template <typename MatcherTuple, typename ArgumentTuple>
-   static h2_fail* matches(MatcherTuple& matchers, ArgumentTuple& args, const char* file, int line, const char* func) {
+   static h2_fail* matches(MatcherTuple& matchers, ArgumentTuple& args, const char* file, int line, const char* func)
+   {
       return nullptr;
    }
 };
@@ -1617,22 +1698,26 @@ class h2_mocker<Counter, Lineno, Class, Return(Args...)> : h2_mock {
    h2_vector<matcher_tuple> m_array;
    h2_vector<h2_routine<Class, Return(Args...)>> r_array;
 
-   static Return normal_function_stub(Args... args) {
+   static Return normal_function_stub(Args... args)
+   {
       int r_index = I().matches(std::move(args)...);
       return I().r_array[r_index](nullptr, std::move(args)...);
    }
 
-   static Return member_function_stub(Class* that, Args... args) {
+   static Return member_function_stub(Class* that, Args... args)
+   {
       int r_index = I().matches(std::move(args)...);
       return I().r_array[r_index](that, std::move(args)...);
    }
 
-   h2_fail* matches(matcher_tuple& matchers, argument_tuple& args) {
+   h2_fail* matches(matcher_tuple& matchers, argument_tuple& args)
+   {
       if (1 == std::tuple_size<argument_tuple>::value) return nullptr;
       return h2_tuple_match<std::tuple_size<argument_tuple>::value>::matches(matchers, args, file, line, befn);
    }
 
-   int matches(Args... args) {
+   int matches(Args... args)
+   {
       argument_tuple a_tuple = std::make_tuple(args..., 0);
       int c_offset = -1;
       for (int i = c_index; i < c_array.size(); ++i) {
@@ -1655,7 +1740,8 @@ class h2_mocker<Counter, Lineno, Class, Return(Args...)> : h2_mock {
    void reset() override { c_array.clear(), m_array.clear(), r_array.clear(), c_index = 0; }
 
  public:
-   static h2_mocker& I(void* befp = nullptr, const char* befn = nullptr, const char* file = nullptr, int line = 0) {
+   static h2_mocker& I(void* befp = nullptr, const char* befn = nullptr, const char* file = nullptr, int line = 0)
+   {
       static h2_mocker* i = nullptr;
       if (!i) i = new h2_mocker(befp, befn, file, line);
       if (befp && file) {
@@ -1665,56 +1751,64 @@ class h2_mocker<Counter, Lineno, Class, Return(Args...)> : h2_mock {
       return *i;
    }
 
-   h2_mocker& once(MATCHER_Any_0_1_2_3_4_5_6_7_8_9) {
+   h2_mocker& once(MATCHER_Any_0_1_2_3_4_5_6_7_8_9)
+   {
       c_array.push_back(h2_callexp(1, 1));
       m_array.push_back(std::forward_as_tuple(_0, _1, _2, _3, _4, _5, _6, _7, _8, _9));
       r_array.push_back(h2_routine<Class, Return(Args...)>());
       return *this;
    }
 
-   h2_mocker& twice(MATCHER_Any_0_1_2_3_4_5_6_7_8_9) {
+   h2_mocker& twice(MATCHER_Any_0_1_2_3_4_5_6_7_8_9)
+   {
       c_array.push_back(h2_callexp(2, 2));
       m_array.push_back(std::forward_as_tuple(_0, _1, _2, _3, _4, _5, _6, _7, _8, _9));
       r_array.push_back(h2_routine<Class, Return(Args...)>());
       return *this;
    }
 
-   h2_mocker& times(int count) {
+   h2_mocker& times(int count)
+   {
       c_array.push_back(h2_callexp(count, count));
       m_array.push_back(matcher_tuple());
       r_array.push_back(h2_routine<Class, Return(Args...)>());
       return *this;
    }
 
-   h2_mocker& any(MATCHER_Any_0_1_2_3_4_5_6_7_8_9) {
+   h2_mocker& any(MATCHER_Any_0_1_2_3_4_5_6_7_8_9)
+   {
       c_array.push_back(h2_callexp(0, INT_MAX));
       m_array.push_back(std::forward_as_tuple(_0, _1, _2, _3, _4, _5, _6, _7, _8, _9));
       r_array.push_back(h2_routine<Class, Return(Args...)>());
       return *this;
    }
 
-   h2_mocker& atleast(int count) {
+   h2_mocker& atleast(int count)
+   {
       c_array.push_back(h2_callexp(count, INT_MAX));
       m_array.push_back(matcher_tuple());
       r_array.push_back(h2_routine<Class, Return(Args...)>());
       return *this;
    }
 
-   h2_mocker& atmost(int count) {
+   h2_mocker& atmost(int count)
+   {
       c_array.push_back(h2_callexp(0, count));
       m_array.push_back(matcher_tuple());
       r_array.push_back(h2_routine<Class, Return(Args...)>());
       return *this;
    }
 
-   h2_mocker& between(int left, int right) {
+   h2_mocker& between(int left, int right)
+   {
       c_array.push_back(h2_callexp(left, right));
       m_array.push_back(matcher_tuple());
       r_array.push_back(h2_routine<Class, Return(Args...)>());
       return *this;
    }
 
-   h2_mocker& with(MATCHER_Any_0_1_2_3_4_5_6_7_8_9) {
+   h2_mocker& with(MATCHER_Any_0_1_2_3_4_5_6_7_8_9)
+   {
       if (!m_array.empty()) m_array.back() = std::forward_as_tuple(_0, _1, _2, _3, _4, _5, _6, _7, _8, _9);
       return *this;
    }
@@ -1731,17 +1825,20 @@ class h2_mocker<Counter, Lineno, Class, Return(Args...)> : h2_mock {
    h2_mocker& th9(h2_matcher<h2_nth_decay<8, Args...>> e = Any) { if (!m_array.empty()) std::get<8>(m_array.back()) = e; return *this; }
    /* clang-format on */
 
-   h2_mocker& returns(h2_routine<Class, Return(Args...)> r) {
+   h2_mocker& returns(h2_routine<Class, Return(Args...)> r)
+   {
       if (!r_array.empty()) r_array.back() = r;
       return *this;
    }
 
-   h2_mocker& does(std::function<Return(Args...)> f) {
+   h2_mocker& does(std::function<Return(Args...)> f)
+   {
       if (!r_array.empty()) r_array.back() = h2_routine<Class, Return(Args...)>(f);
       return *this;
    }
 
-   h2_mocker& does(std::function<Return(Class*, Args...)> f) {
+   h2_mocker& does(std::function<Return(Class*, Args...)> f)
+   {
       if (!r_array.empty()) r_array.back() = h2_routine<Class, Return(Args...)>(f);
       return *this;
    }
@@ -1831,7 +1928,8 @@ struct h2_packet_matches {
    const M4 size;
    explicit h2_packet_matches(M1 from_, M2 to_, M3 data_, M4 size_) : from(from_), to(to_), data(data_), size(size_) {}
 
-   h2_fail* matches(h2_packet* a, bool caseless = false, bool dont = false) const {
+   h2_fail* matches(h2_packet* a, bool caseless = false, bool dont = false) const
+   {
       h2_fail* fails = nullptr;
       h2_fail::append_y(fails, h2_matcher_cast<const char*>(from).matches(a->from.c_str(), caseless, dont));
       h2_fail::append_y(fails, h2_matcher_cast<const char*>(to).matches(a->to.c_str(), caseless, dont));
@@ -1842,7 +1940,8 @@ struct h2_packet_matches {
 };
 
 template <typename M1, typename M2, typename M3, typename M4>
-inline h2_polymorphic_matcher<h2_packet_matches<M1, M2, M3, M4>> PktEq(M1 from = Any, M2 to = Any, M3 data = Any, M4 size = Any) {
+inline h2_polymorphic_matcher<h2_packet_matches<M1, M2, M3, M4>> PktEq(M1 from = Any, M2 to = Any, M3 data = Any, M4 size = Any)
+{
    return h2_polymorphic_matcher<h2_packet_matches<M1, M2, M3, M4>>(h2_packet_matches<M1, M2, M3, M4>(from, to, data, size));
 }
 
@@ -1907,7 +2006,8 @@ struct h2_suite {
    void cleanup();
 
    struct installer {
-      installer(h2_suite* s, h2_case* c) {
+      installer(h2_suite* s, h2_case* c)
+      {
          static long long seq = INT_MAX;
          s->case_list.push_back(c);
          s->seq = c->seq = ++seq;
@@ -1917,7 +2017,8 @@ struct h2_suite {
    struct cleaner : h2_once {
       h2_suite* thus;
       cleaner(h2_suite* s) : thus(s) {}
-      ~cleaner() {
+      ~cleaner()
+      {
          if (thus->jumpable) ::longjmp(thus->jump, 1);
       }
    };
@@ -1946,21 +2047,22 @@ struct h2_reports {
    void on_case_endup(h2_suite* s, h2_case* c);
 };
 
-#define __Matches_Common(message)                                                     \
-   template <typename A>                                                              \
-   bool __matches(const A& a) const;                                                  \
-   template <typename A>                                                              \
-   h2::h2_fail* matches(const A& a, bool caseless = false, bool dont = false) const { \
-      h2::h2_fail_unexpect* fail = new h2::h2_fail_unexpect();                        \
-      if (__matches(a) == !dont) return nullptr;                                      \
-      if (dont) {                                                                     \
-         fail->mprintf("should not matches");                                         \
-      } else {                                                                        \
-         h2::h2_ostringstream osm;                                                    \
-         osm << std::boolalpha << H2PP_REMOVE_PARENTHESES(message);                   \
-         fail->mprintf("%s", osm.str().c_str());                                      \
-      }                                                                               \
-      return fail;                                                                    \
+#define __Matches_Common(message)                                                   \
+   template <typename A>                                                            \
+   bool __matches(const A& a) const;                                                \
+   template <typename A>                                                            \
+   h2::h2_fail* matches(const A& a, bool caseless = false, bool dont = false) const \
+   {                                                                                \
+      h2::h2_fail_unexpect* fail = new h2::h2_fail_unexpect();                      \
+      if (__matches(a) == !dont) return nullptr;                                    \
+      if (dont) {                                                                   \
+         fail->mprintf("should not matches");                                       \
+      } else {                                                                      \
+         h2::h2_ostringstream osm;                                                  \
+         osm << std::boolalpha << H2PP_REMOVE_PARENTHESES(message);                 \
+         fail->mprintf("%s", osm.str().c_str());                                    \
+      }                                                                             \
+      return fail;                                                                  \
    }
 
 #define H2MATCHER0(name, message)                                                     \
@@ -1980,7 +2082,8 @@ struct h2_reports {
       __Matches_Common(message)                                                                 \
    };                                                                                           \
    template <typename E1>                                                                       \
-   inline h2::h2_polymorphic_matcher<h2_##name##_matches<E1>> name(const E1 _e1) {              \
+   inline h2::h2_polymorphic_matcher<h2_##name##_matches<E1>> name(const E1 _e1)                \
+   {                                                                                            \
       return h2::h2_polymorphic_matcher<h2_##name##_matches<E1>>(h2_##name##_matches<E1>(_e1)); \
    }                                                                                            \
    template <typename E1>                                                                       \
@@ -1996,7 +2099,8 @@ struct h2_reports {
       __Matches_Common(message)                                                                              \
    };                                                                                                        \
    template <typename E1, typename E2>                                                                       \
-   inline h2::h2_polymorphic_matcher<h2_##name##_matches<E1, E2>> name(const E1 _e1, const E2 _e2) {         \
+   inline h2::h2_polymorphic_matcher<h2_##name##_matches<E1, E2>> name(const E1 _e1, const E2 _e2)           \
+   {                                                                                                         \
       return h2::h2_polymorphic_matcher<h2_##name##_matches<E1, E2>>(h2_##name##_matches<E1, E2>(_e1, _e2)); \
    }                                                                                                         \
    template <typename E1, typename E2>                                                                       \
@@ -2013,29 +2117,31 @@ struct h2_reports {
       __Matches_Common(message)                                                                                           \
    };                                                                                                                     \
    template <typename E1, typename E2, typename E3>                                                                       \
-   inline h2::h2_polymorphic_matcher<h2_##name##_matches<E1, E2, E3>> name(const E1 _e1, const E2 _e2, const E3 _e3) {    \
+   inline h2::h2_polymorphic_matcher<h2_##name##_matches<E1, E2, E3>> name(const E1 _e1, const E2 _e2, const E3 _e3)      \
+   {                                                                                                                      \
       return h2::h2_polymorphic_matcher<h2_##name##_matches<E1, E2, E3>>(h2_##name##_matches<E1, E2, E3>(_e1, _e2, _e3)); \
    }                                                                                                                      \
    template <typename E1, typename E2, typename E3>                                                                       \
    template <typename A>                                                                                                  \
    bool h2_##name##_matches<E1, E2, E3>::__matches(const A& a) const
 
-#define H2MATCHER4(name, e1, e2, e3, e4, message)                                                                                        \
-   template <typename E1, typename E2, typename E3, typename E4>                                                                         \
-   struct h2_##name##_matches {                                                                                                          \
-      const E1 e1;                                                                                                                       \
-      const E2 e2;                                                                                                                       \
-      const E3 e3;                                                                                                                       \
-      const E4 e4;                                                                                                                       \
-      explicit h2_##name##_matches(const E1& _e1, const E2& _e2, const E3& _e3, const E4& _e4) : e1(_e1), e2(_e2), e3(_e3), e4(_e4) {}   \
-      __Matches_Common(message)                                                                                                          \
-   };                                                                                                                                    \
-   template <typename E1, typename E2, typename E3, typename E4>                                                                         \
-   inline h2::h2_polymorphic_matcher<h2_##name##_matches<E1, E2, E3, E4>> name(const E1 _e1, const E2 _e2, const E3 _e3, const E4 _e4) { \
-      return h2::h2_polymorphic_matcher<h2_##name##_matches<E1, E2, E3, E4>>(h2_##name##_matches<E1, E2, E3, E4>(_e1, _e2, _e3, _e4));   \
-   }                                                                                                                                     \
-   template <typename E1, typename E2, typename E3, typename E4>                                                                         \
-   template <typename A>                                                                                                                 \
+#define H2MATCHER4(name, e1, e2, e3, e4, message)                                                                                      \
+   template <typename E1, typename E2, typename E3, typename E4>                                                                       \
+   struct h2_##name##_matches {                                                                                                        \
+      const E1 e1;                                                                                                                     \
+      const E2 e2;                                                                                                                     \
+      const E3 e3;                                                                                                                     \
+      const E4 e4;                                                                                                                     \
+      explicit h2_##name##_matches(const E1& _e1, const E2& _e2, const E3& _e3, const E4& _e4) : e1(_e1), e2(_e2), e3(_e3), e4(_e4) {} \
+      __Matches_Common(message)                                                                                                        \
+   };                                                                                                                                  \
+   template <typename E1, typename E2, typename E3, typename E4>                                                                       \
+   inline h2::h2_polymorphic_matcher<h2_##name##_matches<E1, E2, E3, E4>> name(const E1 _e1, const E2 _e2, const E3 _e3, const E4 _e4) \
+   {                                                                                                                                   \
+      return h2::h2_polymorphic_matcher<h2_##name##_matches<E1, E2, E3, E4>>(h2_##name##_matches<E1, E2, E3, E4>(_e1, _e2, _e3, _e4)); \
+   }                                                                                                                                   \
+   template <typename E1, typename E2, typename E3, typename E4>                                                                       \
+   template <typename A>                                                                                                               \
    bool h2_##name##_matches<E1, E2, E3, E4>::__matches(const A& a) const
 
 #define H2MATCHER5(name, e1, e2, e3, e4, e5, message)                                                                                                          \
@@ -2050,7 +2156,8 @@ struct h2_reports {
       __Matches_Common(message)                                                                                                                                \
    };                                                                                                                                                          \
    template <typename E1, typename E2, typename E3, typename E4, typename E5>                                                                                  \
-   inline h2::h2_polymorphic_matcher<h2_##name##_matches<E1, E2, E3, E4, E5>> name(const E1 _e1, const E2 _e2, const E3 _e3, const E4 _e4, const E5 _e5) {     \
+   inline h2::h2_polymorphic_matcher<h2_##name##_matches<E1, E2, E3, E4, E5>> name(const E1 _e1, const E2 _e2, const E3 _e3, const E4 _e4, const E5 _e5)       \
+   {                                                                                                                                                           \
       return h2::h2_polymorphic_matcher<h2_##name##_matches<E1, E2, E3, E4, E5>>(h2_##name##_matches<E1, E2, E3, E4, E5>(_e1, _e2, _e3, _e4, _e5));            \
    }                                                                                                                                                           \
    template <typename E1, typename E2, typename E3, typename E4, typename E5>                                                                                  \
@@ -2112,7 +2219,8 @@ struct h2_defer_fail : h2_once {
    h2_defer_fail(int w_type_, const char* e_expr_, const char* a_expr_, const char* file_, int line_)
      : w_type(w_type_), e_expr(e_expr_), a_expr(a_expr_), file(file_), line(line_), fail(nullptr) {}
 
-   ~h2_defer_fail() {
+   ~h2_defer_fail()
+   {
       if (fail) {
          fail->set_w_type(w_type);
          fail->set_e_expr(e_expr);
@@ -2124,7 +2232,8 @@ struct h2_defer_fail : h2_once {
    }
 };
 
-static inline h2_ostringstream& h2_OK1(bool a, h2_defer_fail* d) {
+static inline h2_ostringstream& h2_OK1(bool a, h2_defer_fail* d)
+{
    if (!a) {
       h2_fail_unexpect* fail = new h2_fail_unexpect();
       fail->aprintf("false");
@@ -2134,13 +2243,15 @@ static inline h2_ostringstream& h2_OK1(bool a, h2_defer_fail* d) {
 }
 
 template <typename E, typename A>
-static inline h2_ostringstream& h2_OK2(E e, A a, h2_defer_fail* d) {
+static inline h2_ostringstream& h2_OK2(E e, A a, h2_defer_fail* d)
+{
    h2::h2_matcher<typename h2_decay<A>::type> m = h2::h2_matcher_cast<typename h2_decay<A>::type>((typename h2_decay<E>::type)e);
    d->fail = m.matches((typename h2_decay<A>::type)a);
    return d->oss;
 }
 
-static inline h2_ostringstream& h2_JE(h2_string e, h2_string a, h2_defer_fail* d) {
+static inline h2_ostringstream& h2_JE(h2_string e, h2_string a, h2_defer_fail* d)
+{
    h2::h2_matcher<h2_string> m = Je(e);
    d->fail = m.matches(a);
    return d->oss;
@@ -2209,7 +2320,8 @@ static inline h2_ostringstream& h2_JE(h2_string e, h2_string a, h2_defer_fail* d
 
 /* clang-format on */
 
-#define ___ForEach_CASE_Macro(name, Qc, x) CASE(name x) { Qc(x); }
+#define ___ForEach_CASE_Macro(name, Qc, x) \
+   CASE(name x) { Qc(x); }
 #define __ForEach_CASE_Macro(...) ___ForEach_CASE_Macro(__VA_ARGS__)
 #define _ForEach_CASE_Macro(Args, x) __ForEach_CASE_Macro(H2PP_REMOVE_PARENTHESES(Args), x)
 #define _ForEach_CASE_Impl(name, Qc, ...)                   \
@@ -2220,7 +2332,8 @@ static inline h2_ostringstream& h2_JE(h2_string e, h2_string a, h2_defer_fail* d
    void Qc(T x)
 #define H2CASES(name, ...) _ForEach_CASE_Impl(name, H2Q(f), __VA_ARGS__)
 
-#define ___Fullmesh_CASE_Macro(name, Qc, x, y) CASE(name x, y) { Qc(x, y); }
+#define ___Fullmesh_CASE_Macro(name, Qc, x, y) \
+   CASE(name x, y) { Qc(x, y); }
 #define __Fullmesh_CASE_Macro(...) ___Fullmesh_CASE_Macro(__VA_ARGS__)
 #define _Fullmesh_CASE_Macro(Args, x, y) __Fullmesh_CASE_Macro(H2PP_REMOVE_PARENTHESES(Args), x, y)
 #define _Fullmesh_CASE_Impl(name, Qc, ...)                    \
@@ -2232,7 +2345,8 @@ static inline h2_ostringstream& h2_JE(h2_string e, h2_string a, h2_defer_fail* d
 #define H2CASESS(name, ...) _Fullmesh_CASE_Impl(name, H2Q(f), __VA_ARGS__)
 
 #define ___ForEach_Case_Macro(name, Qj, Qb, Qx, Ql, x) \
-   Case(name x) {                                      \
+   Case(name x)                                        \
+   {                                                   \
       if (::setjmp(Qj) == 0) {                         \
          Qx = x;                                       \
          Qb = true;                                    \
@@ -2253,7 +2367,8 @@ static inline h2_ostringstream& h2_JE(h2_string e, h2_string a, h2_defer_fail* d
 #define H2Cases(name, ...) _ForEach_Case_Impl(name, H2Q(j), H2Q(b), H2Q(v), H2Q(l), __VA_ARGS__)
 
 #define ___Fullmesh_Case_Macro(name, Qj, Qb, Ql, Qx, Qy, x, y) \
-   Case(name x, y) {                                           \
+   Case(name x, y)                                             \
+   {                                                           \
       if (::setjmp(Qj) == 0) {                                 \
          Qx = x;                                               \
          Qy = y;                                               \
@@ -2299,7 +2414,8 @@ struct h2_task {
    void execute();
 };
 
-static inline void h2_stub_g(void* befp, void* tofp, const char* befn, const char* tofn, const char* file, int line) {
+static inline void h2_stub_g(void* befp, void* tofp, const char* befn, const char* tofn, const char* file, int line)
+{
    if (20 <= h2_task::I().state) {
       if (h2_task::I().current_case)
          h2_task::I().current_case->stubs.add(befp, tofp, befn, tofn, file, line);
@@ -2310,7 +2426,8 @@ static inline void h2_stub_g(void* befp, void* tofp, const char* befn, const cha
    }
 }
 
-static inline void h2_mock_g(h2_mock* mock) {
+static inline void h2_mock_g(h2_mock* mock)
+{
    if (20 <= h2_task::I().state) {
       if (h2_task::I().current_case)
          h2_task::I().current_case->mocks.add(mock) && h2_task::I().current_case->stubs.add(mock->befp, mock->tofp, mock->befn, "", mock->file, mock->line);
@@ -2321,7 +2438,8 @@ static inline void h2_mock_g(h2_mock* mock) {
    }
 }
 
-static inline void h2_fail_g(h2_fail* fail) {
+static inline void h2_fail_g(h2_fail* fail)
+{
    if (!fail) return;
    if (O.debug) h2_debugger::trap();
    if (h2_task::I().current_case) h2_task::I().current_case->do_fail(fail);
@@ -2378,6 +2496,11 @@ using h2::Gt;
 using h2::Le;
 using h2::Lt;
 using h2::Me;
+using h2::M1e;
+using h2::M8e;
+using h2::M16e;
+using h2::M32e;
+using h2::M64e;
 using h2::Re;
 using h2::We;
 using h2::Je;
@@ -2445,17 +2568,18 @@ using h2::ListOf;
 #define H2Case(name) __H2Case(name, 0, H2Q(t_case), H2Q(_1), H2Q(_2))
 #define H2Todo(name) __H2Case(name, 1, H2Q(t_case), H2Q(_1), H2Q(_2))
 
-#define __H2CASE(name, todo, QR, QP)                                         \
-   static void QR();                                                         \
-   static void QP(h2::h2_suite* ________suite, h2::h2_case* _________case) { \
-      static h2::h2_case c(name, todo, __FILE__, __LINE__);                  \
-      static h2::h2_suite::installer i(________suite, &c);                   \
-      if (&c == _________case)                                               \
-         for (h2::h2_case::cleaner a(&c); a;)                                \
-            if (::setjmp(c.jump) == 0)                                       \
-               QR();                                                         \
-   }                                                                         \
-   static h2::h2_suite H2Q(suite)("Anonymous", &QP, __FILE__, __LINE__);     \
+#define __H2CASE(name, todo, QR, QP)                                       \
+   static void QR();                                                       \
+   static void QP(h2::h2_suite* ________suite, h2::h2_case* _________case) \
+   {                                                                       \
+      static h2::h2_case c(name, todo, __FILE__, __LINE__);                \
+      static h2::h2_suite::installer i(________suite, &c);                 \
+      if (&c == _________case)                                             \
+         for (h2::h2_case::cleaner a(&c); a;)                              \
+            if (::setjmp(c.jump) == 0)                                     \
+               QR();                                                       \
+   }                                                                       \
+   static h2::h2_suite H2Q(suite)("Anonymous", &QP, __FILE__, __LINE__);   \
    static void QR()
 
 #define H2CASE(name) __H2CASE(name, 0, H2Q(h2_case_test_code), H2Q(h2_suite_test_code_plus))

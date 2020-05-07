@@ -1,7 +1,8 @@
 
 inline h2_task::h2_task() : state(0), status_stats{0}, current_suite(nullptr), current_case(nullptr) {}
 
-inline void h2_task::prepare() {
+inline void h2_task::prepare()
+{
    state = 10;
    if (O.listing) h2_directory::list_then_exit();
    reports.initialize();
@@ -14,7 +15,8 @@ inline void h2_task::prepare() {
    state = 19;
 }
 
-inline int h2_task::finalize() {
+inline int h2_task::finalize()
+{
    state = 30;
    h2_heap::unhook();
    stubs.clear();
@@ -23,7 +25,8 @@ inline int h2_task::finalize() {
    return status_stats[h2::h2_case::FAILED];
 }
 
-inline void h2_task::execute() {
+inline void h2_task::execute()
+{
    state = 20;
    reports.on_task_start(h2_directory::count());
    for (auto& setup : global_setups) setup();

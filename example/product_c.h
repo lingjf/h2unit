@@ -1,8 +1,7 @@
 #ifndef _PRODUCT_C_H_
 #define _PRODUCT_C_H_
 
-typedef struct rectangle_t
-{
+typedef struct rectangle_t {
    int width;
    int height;
 } rectangle_t;

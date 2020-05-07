@@ -49,7 +49,8 @@
 
 /* clang-format on */
 
-#define ___ForEach_CASE_Macro(name, Qc, x) CASE(name x) { Qc(x); }
+#define ___ForEach_CASE_Macro(name, Qc, x) \
+   CASE(name x) { Qc(x); }
 #define __ForEach_CASE_Macro(...) ___ForEach_CASE_Macro(__VA_ARGS__)
 #define _ForEach_CASE_Macro(Args, x) __ForEach_CASE_Macro(H2PP_REMOVE_PARENTHESES(Args), x)
 #define _ForEach_CASE_Impl(name, Qc, ...)                   \
@@ -60,7 +61,8 @@
    void Qc(T x)
 #define H2CASES(name, ...) _ForEach_CASE_Impl(name, H2Q(f), __VA_ARGS__)
 
-#define ___Fullmesh_CASE_Macro(name, Qc, x, y) CASE(name x, y) { Qc(x, y); }
+#define ___Fullmesh_CASE_Macro(name, Qc, x, y) \
+   CASE(name x, y) { Qc(x, y); }
 #define __Fullmesh_CASE_Macro(...) ___Fullmesh_CASE_Macro(__VA_ARGS__)
 #define _Fullmesh_CASE_Macro(Args, x, y) __Fullmesh_CASE_Macro(H2PP_REMOVE_PARENTHESES(Args), x, y)
 #define _Fullmesh_CASE_Impl(name, Qc, ...)                    \
@@ -72,7 +74,8 @@
 #define H2CASESS(name, ...) _Fullmesh_CASE_Impl(name, H2Q(f), __VA_ARGS__)
 
 #define ___ForEach_Case_Macro(name, Qj, Qb, Qx, Ql, x) \
-   Case(name x) {                                      \
+   Case(name x)                                        \
+   {                                                   \
       if (::setjmp(Qj) == 0) {                         \
          Qx = x;                                       \
          Qb = true;                                    \
@@ -93,7 +96,8 @@
 #define H2Cases(name, ...) _ForEach_Case_Impl(name, H2Q(j), H2Q(b), H2Q(v), H2Q(l), __VA_ARGS__)
 
 #define ___Fullmesh_Case_Macro(name, Qj, Qb, Ql, Qx, Qy, x, y) \
-   Case(name x, y) {                                           \
+   Case(name x, y)                                             \
+   {                                                           \
       if (::setjmp(Qj) == 0) {                                 \
          Qx = x;                                               \
          Qy = y;                                               \

@@ -1,52 +1,18 @@
 
-template <typename T>
-T h2_max(T a, T b) {
-#ifdef _WIN32
-   return max(a, b);
-#else
-   return std::max(a, b);
-#endif
-}
-
-template <typename T>
-T h2_min(T a, T b) {
-#ifdef _WIN32
-   return min(a, b);
-#else
-   return std::min(a, b);
-#endif
-}
-
 #ifdef _WIN32
 
-static inline char* basename(char* path) {
+static inline char* basename(char* path)
+{
    static char t[MAX_PATH + 1];
    strcpy(t, path);
    PathRemoveFileSpecA(t);
    return t;
 }
 
-static inline char* strcasestr(const char* s, const char* find) {  // StrStrIA
-   char c, sc;
-   size_t len;
-
-   if ((c = *find++) != 0) {
-      c = tolower((unsigned char)c);
-      len = strlen(find);
-      do {
-         do {
-            if ((sc = *s++) == 0)
-               return (NULL);
-         } while ((char)::tolower((unsigned char)sc) != c);
-      } while (_strnicmp(s, find, len) != 0);
-      s--;
-   }
-   return ((char*)s);
-}
-
 #endif
 
-static inline bool h2_regex_match(const char* pattern, const char* subject, bool caseless = false) {
+static inline bool h2_regex_match(const char* pattern, const char* subject, bool caseless = false)
+{
    bool result = false;
    try {  // c++11 support regex; gcc 4.8 start support regex, gcc 5.5 icase works.
       result = std::regex_match(subject, caseless ? std::regex(pattern, std::regex::icase) : std::regex(pattern));
@@ -56,12 +22,13 @@ static inline bool h2_regex_match(const char* pattern, const char* subject, bool
    return result;
 }
 
-static inline bool h2_wildcard_match(const char* pattern, const char* subject, bool caseless = false) {
+static inline bool h2_wildcard_match(const char* pattern, const char* subject, bool caseless = false)
+{
 #ifdef _WIN32
    const char *scur = subject, *pcur = pattern;
    const char *sstar = nullptr, *pstar = nullptr;
    while (*scur) {
-      if (::tolower(*scur) == ::tolower(*pcur) || *pcur == '?') {
+      if (caseless ? ::tolower(*scur) == ::tolower(*pcur) : *scur == *pcur || *pcur == '?') {
          ++scur;
          ++pcur;
       } else if (*pcur == '*') {
@@ -80,11 +47,13 @@ static inline bool h2_wildcard_match(const char* pattern, const char* subject, b
 #endif
 }
 
-static inline long long h2_now() {
+static inline long long h2_now()
+{
    return clock() * 1000 / CLOCKS_PER_SEC;
 }
 
-static inline void h2_sleep(long long milliseconds) {
+static inline void h2_sleep(long long milliseconds)
+{
 #ifdef _WIN32
    Sleep(milliseconds);
 #else
@@ -92,7 +61,8 @@ static inline void h2_sleep(long long milliseconds) {
 #endif
 }
 
-static inline int h2_page_size() {
+static inline int h2_page_size()
+{
    static int s_page_size = 0;
    if (s_page_size == 0) {
 #ifdef _WIN32
@@ -106,7 +76,8 @@ static inline int h2_page_size() {
    return s_page_size;
 }
 
-static inline int h2_term_size() {
+static inline int h2_term_size()
+{
 #ifdef _WIN32
    return 80;
 #else
@@ -116,14 +87,16 @@ static inline int h2_term_size() {
 #endif
 }
 
-static inline const char* PAD(int n) {
+static inline const char* PAD(int n)
+{
    static char st[1024];
    memset(st, ' ', n);
    st[n] = '\0';
    return st;
 }
 
-static inline char* SF(const char* style, const char* fmt, ...) {
+static inline char* SF(const char* style, const char* fmt, ...)
+{
    static char sb[1024 * 256], *sp;
    if (sp < sb || sb + sizeof(sb) / 2 < sp) sp = sb;
    char *s = sp, *p = s;
@@ -144,13 +117,15 @@ struct h2_color {
       const char* name;
       int value;
    };
-   static struct st* find(struct st* s, int n, const char* name) {
+   static struct st* find(struct st* s, int n, const char* name)
+   {
       for (int i = 0; i < n; ++i)
          if (!strcmp(s[i].name, name))
             return &s[i];
-      return NULL;
+      return nullptr;
    }
-   static void print(char* style) {
+   static void print(char* style)
+   {
 #ifdef _WIN32
       static HANDLE console_handle = NULL;
       static WORD default_attribute;
@@ -248,7 +223,8 @@ struct h2_color {
    }
 };
 
-static inline int h2_printf(const char* format, ...) {
+static inline int h2_printf(const char* format, ...)
+{
    int len, ret = 0;
    va_list a, b;
    va_start(a, format);

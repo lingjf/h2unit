@@ -10,7 +10,7 @@ struct h2_option {
    static constexpr const int os = 3;
 #endif
 
-   const char* path, *debug;
+   const char *path, *debug;
    int verbose, listing, breakable, randomize;
    bool colorable, memory_check;
    char junit[256], args[256];
@@ -28,4 +28,4 @@ struct h2_option {
    const char* style(const char* s) const;
 };
 
-static const h2_option& O = h2_option::I(); // for pretty
+static const h2_option& O = h2_option::I();  // for pretty

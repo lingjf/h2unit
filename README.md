@@ -93,6 +93,11 @@ CASE(Case Name)
 *    [`Le`](source/h2_unit.h#L80)(expect) : matches if value <= expect .
 *    [`Lt`](source/h2_unit.h#L80)(expect) : matches if value < expect .
 *    [`Me`](source/h2_unit.h#L80)(expect) : matches if memcmp(expect, value) .
+     *    [`M1e`](source/h2_unit.h#L80)(expect) : bit level memcmp.
+     *    [`M8e`](source/h2_unit.h#L80)(expect) : byte level memcmp.
+     *    [`M16e`](source/h2_unit.h#L80)(expect) : int16 level memcmp.
+     *    [`M32e`](source/h2_unit.h#L80)(expect) : int32 level memcmp.
+     *    [`M64e`](source/h2_unit.h#L80)(expect) : int64 level memcmp.
 *    [`Re`](source/h2_unit.h#L80)(expect) : matches if value Regex equals expect .
 *    [`We`](source/h2_unit.h#L80)(expect) : matches if value Wildcard equals expect .
 *    [`Je`](source/h2_unit.h#L80)(expect) : matches if value JSON equals expect .

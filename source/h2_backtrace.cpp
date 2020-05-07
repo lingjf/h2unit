@@ -7,7 +7,8 @@ struct h2_nm {
    std::map<std::string, unsigned long long> symbols;
    unsigned long long main_addr;
 
-   unsigned long long get(const char* name) const {
+   unsigned long long get(const char* name) const
+   {
       if (strlen(name) == 0) return 0;
       auto it = symbols.find(name);
       return it != symbols.end() ? it->second : ULLONG_MAX;
@@ -15,12 +16,14 @@ struct h2_nm {
 
    bool in_main(unsigned long long addr) const { return main_addr == ULLONG_MAX ? false : main_addr < addr && addr < main_addr + 256; }
 
-   h2_nm() {
+   h2_nm()
+   {
       nm_parse();
       main_addr = get("main");
    }
 
-   void nm_parse() {
+   void nm_parse()
+   {
       char nm[256], line[1024], addr[128], type[32], name[1024];
       sprintf(nm, "nm %s", O.path);
       h2_with f(::popen(nm, "r"), ::pclose);
@@ -32,26 +35,29 @@ struct h2_nm {
    }
 };
 
-static inline bool demangle(const char* mangled, char* demangled, size_t len) {
+static inline bool demangle(const char* mangled, char* demangled, size_t len)
+{
    int status = 0;
    abi::__cxa_demangle(mangled, demangled, &len, &status);
    return status == 0;
 }
 
-static inline bool addr2line(unsigned long long addr, char* output, size_t len) {
+static inline bool addr2line(unsigned long long addr, char* output, size_t len)
+{
    char t[256];
-#if defined __APPLE__
+#   if defined __APPLE__
    sprintf(t, "atos -o %s 0x%llx", O.path, addr);
-#else
+#   else
    sprintf(t, "addr2line -C -a -s -p -f -e %s -i %llx", O.path, addr);
-#endif
+#   endif
    h2_with f(::popen(t, "r"), ::pclose);
    if (!f.f || !::fgets(output, len, f.f)) return false;
    for (int i = strlen(output) - 1; 0 <= i && ::isspace(output[i]); --i) output[i] = '\0';  //strip tail
    return true;
 }
 
-static inline bool backtrace_extract(const char* backtrace_symbol_line, char* module, char* mangled, unsigned long long* offset) {
+static inline bool backtrace_extract(const char* backtrace_symbol_line, char* module, char* mangled, unsigned long long* offset)
+{
    //MAC: `3   a.out  0x000000010e777f3d _ZN2h24hook6mallocEm + 45
    if (3 == ::sscanf(backtrace_symbol_line, "%*s%s%*s%s + %llu", module, mangled, offset))
       return true;
@@ -86,7 +92,8 @@ static inline bool backtrace_extract(const char* backtrace_symbol_line, char* mo
 }
 #endif
 
-h2_inline h2_backtrace::h2_backtrace(int shift_) : shift(shift_) {
+h2_inline h2_backtrace::h2_backtrace(int shift_) : shift(shift_)
+{
 #ifndef _WIN32
    h2_heap::unhook();
    count = ::backtrace(array, sizeof(array) / sizeof(array[0]));
@@ -94,7 +101,8 @@ h2_inline h2_backtrace::h2_backtrace(int shift_) : shift(shift_) {
 #endif
 }
 
-h2_inline bool h2_backtrace::operator==(h2_backtrace& bt) {
+h2_inline bool h2_backtrace::operator==(h2_backtrace& bt)
+{
    if (count != bt.count) return false;
    for (int i = 0; i < count; ++i)
       if (array[i] != bt.array[i])
@@ -102,14 +110,16 @@ h2_inline bool h2_backtrace::operator==(h2_backtrace& bt) {
    return true;
 }
 
-h2_inline bool h2_backtrace::has(void* func, int size) const {
+h2_inline bool h2_backtrace::has(void* func, int size) const
+{
    for (int i = 0; i < count; ++i)
       if (func <= array[i] && (unsigned char*)array[i] < ((unsigned char*)func) + size)
          return true;
    return false;
 }
 
-h2_inline void h2_backtrace::print(int pad) const {
+h2_inline void h2_backtrace::print(int pad) const
+{
 #ifndef _WIN32
    h2_heap::unhook();
    char** backtraces = backtrace_symbols(array, count);

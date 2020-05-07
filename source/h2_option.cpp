@@ -1,5 +1,6 @@
 
-static inline void usage() {
+static inline void usage()
+{
    ::printf("  \033[33m╭─────────────────────────────────────────────────────────────────────────╮\033[0m\n");
    ::printf("  \033[33m│\033[0m                                                                         \033[33m│\033[0m\n");
    ::printf("  \033[33m│\033[0m                       Current version \033[32mh2unit \033[31m%-9s                  \033[33m│\033[0m\n", H2UNIT_VERSION);
@@ -40,17 +41,20 @@ struct getopt {
    int argc;
    const char* argv[100];
    int offset;
-   getopt(int argc_, const char** argv_) : argc(argc_), offset(0) {
+   getopt(int argc_, const char** argv_) : argc(argc_), offset(0)
+   {
       for (int i = 0; i < argc; ++i)
          argv[i] = argv_[i];
    }
-   const char* next() {
+   const char* next()
+   {
       for (; offset < argc; ++offset)
          if (argv[offset])
             return argv[offset++];
       return nullptr;
    }
-   const char* extract() {
+   const char* extract()
+   {
       const char **pp = nullptr, *p = nullptr;
       for (int i = offset; i < argc; ++i)
          if (argv[i]) {
@@ -61,17 +65,20 @@ struct getopt {
       if (pp && *pp[0] != '-') p = *pp, *pp = nullptr;
       return p;
    }
-   const char* parseint(const char* p, int& value) const {
+   const char* parseint(const char* p, int& value) const
+   {
       for (value = 0; ::isdigit(*p); p++) value = value * 10 + (*p - '0');
       return p - 1;
    }
-   void args(char* s) {
+   void args(char* s)
+   {
       for (int i = 0; i < argc; ++i)
          s += sprintf(s, " %s", argv[i]);
    }
 };
 
-h2_inline void h2_option::parse(int argc, const char** argv) {
+h2_inline void h2_option::parse(int argc, const char** argv)
+{
    path = argv[0];
    getopt get(argc - 1, argv + 1);
    get.args(args);
@@ -121,9 +128,13 @@ h2_inline void h2_option::parse(int argc, const char** argv) {
          }
       }
    }
+#ifdef _WIN32
+   memory_check = false;
+#endif
 }
 
-static inline bool match3(const std::vector<const char*>& patterns, const char* subject) {
+static inline bool match3(const std::vector<const char*>& patterns, const char* subject)
+{
    for (auto pattern : patterns)
       if (strcspn(pattern, "?*+^$\\.[]") < strlen(pattern)) {
          if (h2_regex_match(pattern, subject, true)) return true;
@@ -135,7 +146,8 @@ static inline bool match3(const std::vector<const char*>& patterns, const char* 
    return false;
 }
 
-h2_inline bool h2_option::filter(const char* suitename, const char* casename, const char* filename) const {
+h2_inline bool h2_option::filter(const char* suitename, const char* casename, const char* filename) const
+{
    if (includes.size())
       if (!match3(includes, suitename) && !match3(includes, casename) && !match3(includes, filename))
          return true;
@@ -145,7 +157,8 @@ h2_inline bool h2_option::filter(const char* suitename, const char* casename, co
    return false;
 }
 
-h2_inline const char* h2_option::style(const char* s) const {
+h2_inline const char* h2_option::style(const char* s) const
+{
    static char shift_buffer[32][128];
    static long shift_index = 0;
    if (!colorable) return "";

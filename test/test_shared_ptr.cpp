@@ -2,7 +2,7 @@
 
 SUITE(shared_ptr)
 {
-   Case(local) 
+   Case(local)
    {
       std::string* p = new std::string("h2unit");
       h2::h2_shared_ptr<std::string> s1(p);

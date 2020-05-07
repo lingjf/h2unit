@@ -11,7 +11,7 @@ struct h2_fail : h2_libc {
    h2_string _k, _h, _m, _u;
    int pad, w_type;  // 0 is MOCK; 1 is OK(condition); 2 is OK(expect, actual); 3 is JE
    h2_string e_expr, _e, a_expr, _a;
-   
+
    h2_fail(const char* file_, int line_, const char* func_ = nullptr, int argi_ = -1);
    virtual ~h2_fail();
 
@@ -45,7 +45,7 @@ struct h2_fail_unexpect : h2_fail {
    h2_fail_unexpect(const char* file_ = nullptr, int line_ = 0);
    void print_OK1();
    void print_OK2();
-   void print_OK3();
+   void print_JE();
    void print_MOCK();
    void print();
 };
@@ -65,10 +65,25 @@ struct h2_fail_json : h2_fail_unexpect {
 };
 
 struct h2_fail_memcmp : h2_fail_unexpect {
+   static constexpr const int npr_1b = 4;
+   static constexpr const int npr_8b = 16;
+   static constexpr const int npr_16b = 8;
+   static constexpr const int npr_32b = 4;
+   static constexpr const int npr_64b = 2;
    h2_vector<unsigned char> expect, actual;
-   h2_fail_memcmp(const unsigned char* expect_, const unsigned char* actual_, int len, const char* file_ = nullptr, int line_ = 0);
+   const int width, nbits;
+   h2_fail_memcmp(const unsigned char* expect_, const unsigned char* actual_, int width_, int nbits_, const char* file_ = nullptr, int line_ = 0);
    void print();
+   void print_bits();
+   void print_bytes();
+   void print_int16();
+   void print_int32();
+   void print_int64();
+   char* fmt_bit(unsigned char c, unsigned char t, const char* style, char* p);
    char* fmt_byte(unsigned char c, unsigned char t, int j, const char* style, char* p);
+   char* fmt_int16(unsigned short c, unsigned short t, const char* style, char* p);
+   char* fmt_int32(unsigned long c, unsigned long t, const char* style, char* p);
+   char* fmt_int64(unsigned long long c, unsigned long long t, const char* style, char* p);
 };
 
 struct h2_fail_memoverflow : h2_fail {
@@ -98,9 +113,9 @@ struct h2_fail_memleak : h2_fail {
    void print();
 };
 
-struct h2_fail_doublefree : h2_fail {
-   const h2_backtrace bt0, bt1;
-   h2_fail_doublefree(void* ptr_, h2_backtrace& bt0_, h2_backtrace bt1_, const char* file_ = nullptr, int line_ = 0);
+struct h2_fail_free : h2_fail {
+   const h2_backtrace bt_alloc, bt_free;
+   h2_fail_free(void* ptr_, const char* desc, h2_backtrace& bt_alloc_, h2_backtrace& bt_free_, const char* file_ = nullptr, int line_ = 0);
    void print();
 };
 

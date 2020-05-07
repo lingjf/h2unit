@@ -8,28 +8,20 @@
 #include <climits>     /* INT_MAX */
 #include <cmath>       /* fabs */
 #include <csetjmp>     /* setjmp, longjmp */
-#include <sstream>     /* basic_ostringstream */
+#include <sstream>     /* std::basic_ostringstream */
 #include <string>      /* std::string */
 #include <vector>      /* std::vector */
 #include <tuple>       /* std::tuple */
-#include <functional>  /* function */
-#include <utility>     /* forward_as_tuple */
+#include <functional>  /* std::function */
+#include <utility>     /* std::forward_as_tuple */
 #include <type_traits> /* std::true_type */
 
 #if defined _WIN32
-#   ifndef WIN32_LEAN_AND_MEAN
-#      define WIN32_LEAN_AND_MEAN
-#   endif
+#   define WIN32_LEAN_AND_MEAN /* fix winsock.h winsock2.h conflict */
+#   define NOMINMAX            /* fix std::min/max conflict with windows::min/max */
 #   include <windows.h>
-#   include <winsock2.h>
-#   include <ws2tcpip.h>
-#   include <iphlpapi.h>
-#   include <io.h>     /* _wirte */
 #   include <malloc.h> /* alloca */
-#   include <shlwapi.h>/* PathRemoveFileSpecA */
 #   define alloca _alloca
-#   define fileno _fileno
-#   define socklen_t int
 #   define ssize_t int
 #else
 #   include <alloca.h> /* alloca */
@@ -50,10 +42,12 @@
 #   pragma clang diagnostic ignored "-Wunused-function"
 #   pragma clang diagnostic ignored "-Wwritable-strings"
 #elif defined _WIN32
-#   define _CRT_SECURE_NO_WARNINGS
-#   define _WINSOCK_DEPRECATED_NO_WARNINGS
+#   pragma warning(disable : 4005)  // macro-redefine
 #   pragma warning(disable : 4018)  // -Wsign-compare
 #   pragma warning(disable : 4244)  //
+#   pragma warning(disable : 4819)  // Unicode
+#   define _CRT_SECURE_NO_WARNINGS
+#   define _WINSOCK_DEPRECATED_NO_WARNINGS
 #endif
 
 #if defined __H2UNIT_HPP__
@@ -147,6 +141,11 @@ using h2::Gt;
 using h2::Le;
 using h2::Lt;
 using h2::Me;
+using h2::M1e;
+using h2::M8e;
+using h2::M16e;
+using h2::M32e;
+using h2::M64e;
 using h2::Re;
 using h2::We;
 using h2::Je;
@@ -214,17 +213,18 @@ using h2::ListOf;
 #define H2Case(name) __H2Case(name, 0, H2Q(t_case), H2Q(_1), H2Q(_2))
 #define H2Todo(name) __H2Case(name, 1, H2Q(t_case), H2Q(_1), H2Q(_2))
 
-#define __H2CASE(name, todo, QR, QP)                                         \
-   static void QR();                                                         \
-   static void QP(h2::h2_suite* ________suite, h2::h2_case* _________case) { \
-      static h2::h2_case c(name, todo, __FILE__, __LINE__);                  \
-      static h2::h2_suite::installer i(________suite, &c);                   \
-      if (&c == _________case)                                               \
-         for (h2::h2_case::cleaner a(&c); a;)                                \
-            if (::setjmp(c.jump) == 0)                                       \
-               QR();                                                         \
-   }                                                                         \
-   static h2::h2_suite H2Q(suite)("Anonymous", &QP, __FILE__, __LINE__);     \
+#define __H2CASE(name, todo, QR, QP)                                       \
+   static void QR();                                                       \
+   static void QP(h2::h2_suite* ________suite, h2::h2_case* _________case) \
+   {                                                                       \
+      static h2::h2_case c(name, todo, __FILE__, __LINE__);                \
+      static h2::h2_suite::installer i(________suite, &c);                 \
+      if (&c == _________case)                                             \
+         for (h2::h2_case::cleaner a(&c); a;)                              \
+            if (::setjmp(c.jump) == 0)                                     \
+               QR();                                                       \
+   }                                                                       \
+   static h2::h2_suite H2Q(suite)("Anonymous", &QP, __FILE__, __LINE__);   \
    static void QR()
 
 #define H2CASE(name) __H2CASE(name, 0, H2Q(h2_case_test_code), H2Q(h2_suite_test_code_plus))

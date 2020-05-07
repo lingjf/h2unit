@@ -12,7 +12,8 @@
 #endif
 
 #if defined __linux__
-static inline bool under_debug(int, const char*) {
+static inline bool under_debug(int, const char*)
+{
    char t[1024];
    h2_with f(::fopen("/proc/self/status", "r"));
    if (f.f)
@@ -22,7 +23,8 @@ static inline bool under_debug(int, const char*) {
    return false;
 }
 #elif defined __APPLE__
-static inline bool under_debug(int pid, const char* path) {
+static inline bool under_debug(int pid, const char* path)
+{
    char t[1024], attach_pid[64];
    sprintf(attach_pid, "%d", pid);
    h2_with f(::popen("ps -ef | grep lldb | grep -v sudo | grep -v grep", "r"), ::pclose);
@@ -34,7 +36,8 @@ static inline bool under_debug(int pid, const char* path) {
 }
 #endif
 
-static inline char* get_gdb1(char* s) {
+static inline char* get_gdb1(char* s)
+{
 #if defined __linux__
    sprintf(s, "gdb --quiet --args %s %s", O.path, O.args);
 #elif defined __APPLE__
@@ -43,7 +46,8 @@ static inline char* get_gdb1(char* s) {
    return s;
 }
 
-static inline char* get_gdb2(char* s, int pid) {
+static inline char* get_gdb2(char* s, int pid)
+{
 #if defined __linux__
    sprintf(s, "sudo gdb --pid=%d", pid);
 #elif defined __APPLE__
@@ -52,7 +56,8 @@ static inline char* get_gdb2(char* s, int pid) {
    return s;
 }
 
-h2_inline void h2_debugger::trap() {
+h2_inline void h2_debugger::trap()
+{
 #ifndef _WIN32
    int pid = (int)getpid();
    if (!under_debug(pid, O.path)) {

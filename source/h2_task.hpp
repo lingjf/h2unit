@@ -18,7 +18,8 @@ struct h2_task {
    void execute();
 };
 
-static inline void h2_stub_g(void* befp, void* tofp, const char* befn, const char* tofn, const char* file, int line) {
+static inline void h2_stub_g(void* befp, void* tofp, const char* befn, const char* tofn, const char* file, int line)
+{
    if (20 <= h2_task::I().state) {
       if (h2_task::I().current_case)
          h2_task::I().current_case->stubs.add(befp, tofp, befn, tofn, file, line);
@@ -29,7 +30,8 @@ static inline void h2_stub_g(void* befp, void* tofp, const char* befn, const cha
    }
 }
 
-static inline void h2_mock_g(h2_mock* mock) {
+static inline void h2_mock_g(h2_mock* mock)
+{
    if (20 <= h2_task::I().state) {
       if (h2_task::I().current_case)
          h2_task::I().current_case->mocks.add(mock) && h2_task::I().current_case->stubs.add(mock->befp, mock->tofp, mock->befn, "", mock->file, mock->line);
@@ -40,7 +42,8 @@ static inline void h2_mock_g(h2_mock* mock) {
    }
 }
 
-static inline void h2_fail_g(h2_fail* fail) {
+static inline void h2_fail_g(h2_fail* fail)
+{
    if (!fail) return;
    if (O.debug) h2_debugger::trap();
    if (h2_task::I().current_case) h2_task::I().current_case->do_fail(fail);

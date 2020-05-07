@@ -136,16 +136,19 @@ struct h2_mfp<Class, Return(Args...)> {
       intptr_t v;
    } U;
 
-   static inline bool is_virtual(U& u) {
+   static inline bool is_virtual(U& u)
+   {
       return (u.v & 1) && (u.v - 1) % sizeof(void*) == 0 && (u.v - 1) / sizeof(void*) < 1000;
    }
 
-   static inline void* get_vmfp(U& u, Class* obj) {
+   static inline void* get_vmfp(U& u, Class* obj)
+   {
       void** vtable = *(void***)obj;
       return vtable[(u.v - 1) / sizeof(void*)];
    }
 
-   static void* A(F f, const char* action_type, const char* return_type, const char* class_type, const char* method_name, const char* return_args, const char* file, int line) {
+   static void* A(F f, const char* action_type, const char* return_type, const char* class_type, const char* method_name, const char* return_args, const char* file, int line)
+   {
       U u{f};
       if (!is_virtual(u)) return u.p;
       Class* o = h2_constructible<Class>::O(alloca(sizeof(Class)));
@@ -155,7 +158,8 @@ struct h2_mfp<Class, Return(Args...)> {
    }
 
    template <typename Derived>
-   static void* A(F f, Derived obj) {
+   static void* A(F f, Derived obj)
+   {
       U u{f};
       if (!is_virtual(u)) return u.p;
       return get_vmfp(u, dynamic_cast<Class*>(&obj));

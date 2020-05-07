@@ -65,7 +65,8 @@ struct h2_polymorphic_matcher {
 };
 
 template <typename A, typename E>
-inline h2_fail* h2_common_unexpect(const A& a, const E& e, bool dont, const char* op) {
+inline h2_fail* h2_common_unexpect(const A& a, const E& e, bool dont, const char* op)
+{
    h2_ostringstream ose, osa;
    ose << std::boolalpha << e;
    osa << std::boolalpha << a;
@@ -101,7 +102,8 @@ struct h2_equal_matches {
    explicit h2_equal_matches(const E& _e, bool _r = false) : e(_e), r(_r) {}
 
    template <typename A>
-   h2_fail* matches(const A& a, bool caseless = false, bool dont = false) const {
+   h2_fail* matches(const A& a, bool caseless = false, bool dont = false) const
+   {
       if (r) dont = !dont;
       if ((a == e) == !dont) return nullptr;
       return h2_common_unexpect(a, e, dont, "equals");
@@ -179,7 +181,8 @@ struct h2_matcher_cast_impl<T, h2_matcher<U>> {
       explicit internal_impl(const h2_matcher<U>& from_) : from(from_) {}
 
       // Delegate the matching logic to the source h2_matcher.
-      h2_fail* matches(T a, bool caseless, bool dont) const override {
+      h2_fail* matches(T a, bool caseless, bool dont) const override
+      {
          using FromType = typename std::remove_cv<typename std::remove_pointer<typename std::remove_reference<T>::type>::type>::type;
          using ToType = typename std::remove_cv<typename std::remove_pointer<typename std::remove_reference<U>::type>::type>::type;
          // Do not allow implicitly converting base*/& to derived*/&.
@@ -206,7 +209,8 @@ struct h2_not_matches {
    explicit h2_not_matches(Matcher matcher_) : m(matcher_) {}
 
    template <typename A>
-   h2_fail* matches(const A& a, bool caseless = false, bool dont = false) const {
+   h2_fail* matches(const A& a, bool caseless = false, bool dont = false) const
+   {
       return h2_matcher_cast<A>(m).matches(a, caseless, !dont);
    }
 };
@@ -218,7 +222,8 @@ struct h2_and_matches {
    explicit h2_and_matches(M1 _m1, M2 _m2) : m1(_m1), m2(_m2) {}
 
    template <typename A>
-   h2_fail* matches(const A& a, bool caseless = false, bool dont = false) const {
+   h2_fail* matches(const A& a, bool caseless = false, bool dont = false) const
+   {
       h2_fail* fail = nullptr;
       h2_fail::append_y(fail, h2_matcher_cast<A>(m1).matches(a, caseless, false));
       h2_fail::append_y(fail, h2_matcher_cast<A>(m2).matches(a, caseless, false));
@@ -239,7 +244,8 @@ struct h2_or_matches {
    explicit h2_or_matches(M1 _m1, M2 _m2) : m1(_m1), m2(_m2) {}
 
    template <typename A>
-   h2_fail* matches(const A& a, bool caseless = false, bool dont = false) const {
+   h2_fail* matches(const A& a, bool caseless = false, bool dont = false) const
+   {
       h2_fail* f1 = h2_matcher_cast<A>(m1).matches(a, caseless, false);
       h2_fail* f2 = h2_matcher_cast<A>(m2).matches(a, caseless, false);
       bool result = !f1 || !f2;
@@ -263,7 +269,8 @@ struct h2_null_matches {
    const bool r;
    explicit h2_null_matches(bool _r = false) : r(_r) {}
    template <typename A>
-   h2_fail* matches(const A& a, bool caseless = false, bool dont = false) const {
+   h2_fail* matches(const A& a, bool caseless = false, bool dont = false) const
+   {
       if (r) dont = !dont;
       if ((nullptr == (const void*)a) == !dont) return nullptr;
       h2_fail_unexpect* fail = new h2_fail_unexpect();
@@ -280,7 +287,8 @@ struct h2_boolean_matches {
    const bool e;
    explicit h2_boolean_matches(bool _e) : e(_e) {}
    template <typename A>
-   h2_fail* matches(const A& a, bool caseless = false, bool dont = false) const {
+   h2_fail* matches(const A& a, bool caseless = false, bool dont = false) const
+   {
       if ((e == (bool)a) == !dont) return nullptr;
       h2_fail_unexpect* fail = new h2_fail_unexpect();
       fail->aprintf(a ? "true" : "false");
@@ -298,7 +306,8 @@ struct h2_ge_matches {
    explicit h2_ge_matches(const E& _e) : e(_e) {}
 
    template <typename A>
-   h2_fail* matches(const A& a, bool caseless = false, bool dont = false) const {
+   h2_fail* matches(const A& a, bool caseless = false, bool dont = false) const
+   {
       if ((a >= e) == !dont) return nullptr;
       return h2_common_unexpect(a, e, dont, ">=");
    }
@@ -310,7 +319,8 @@ struct h2_gt_matches {
    explicit h2_gt_matches(const E& _e) : e(_e) {}
 
    template <typename A>
-   h2_fail* matches(const A& a, bool caseless = false, bool dont = false) const {
+   h2_fail* matches(const A& a, bool caseless = false, bool dont = false) const
+   {
       if ((a > e) == !dont) return nullptr;
       return h2_common_unexpect(a, e, dont, ">");
    }
@@ -322,7 +332,8 @@ struct h2_le_matches {
    explicit h2_le_matches(const E& _e) : e(_e) {}
 
    template <typename A>
-   h2_fail* matches(const A& a, bool caseless = false, bool dont = false) const {
+   h2_fail* matches(const A& a, bool caseless = false, bool dont = false) const
+   {
       if ((a <= e) == !dont) return nullptr;
       return h2_common_unexpect(a, e, dont, "<=");
    }
@@ -334,16 +345,18 @@ struct h2_lt_matches {
    explicit h2_lt_matches(const E& _e) : e(_e) {}
 
    template <typename A>
-   h2_fail* matches(const A& a, bool caseless = false, bool dont = false) const {
+   h2_fail* matches(const A& a, bool caseless = false, bool dont = false) const
+   {
       if ((a < e) == !dont) return nullptr;
       return h2_common_unexpect(a, e, dont, "<");
    }
 };
 
 struct h2_memcmp_matches {
+   const int width;
    const void* e;
-   const int size;
-   explicit h2_memcmp_matches(const void* _e, const int _size) : e(_e), size(_size) {}
+   const int nbits;
+   explicit h2_memcmp_matches(const int _width, const void* _e, const int _nbits) : width(_width), e(_e), nbits(_nbits) {}
    h2_fail* matches(const void* a, bool caseless = false, bool dont = false) const;
 };
 
@@ -353,12 +366,17 @@ struct h2_pointee_matches {
    explicit h2_pointee_matches(Matcher matcher_) : m(matcher_) {}
 
    template <typename SmartPointer>
-   struct PointeeOf { typedef typename SmartPointer::element_type type; };
+   struct PointeeOf {
+      typedef typename SmartPointer::element_type type;
+   };
    template <typename T>
-   struct PointeeOf<T*> { typedef T type; };
+   struct PointeeOf<T*> {
+      typedef T type;
+   };
 
    template <typename A>
-   h2_fail* matches(A a, bool caseless = false, bool dont = false) const {
+   h2_fail* matches(A a, bool caseless = false, bool dont = false) const
+   {
       typedef typename std::remove_const<typename std::remove_reference<A>::type>::type Pointer;
       typedef typename PointeeOf<Pointer>::type Pointee;
       return h2_matcher_cast<Pointee>(m).matches(*a, caseless, dont);
@@ -415,13 +433,14 @@ struct h2_caseless_matches {
    h2_fail* matches(const A& a, bool caseless = false, bool dont = false) const { return m.matches(a, true, dont); }
 };
 
-#define H2_MATCHER_T2V(t_matchers)                                                                                                                            \
-   template <typename T, size_t I>                                                                                                                            \
-   h2_vector<h2_matcher<T>> t2v(std::integral_constant<size_t, I> _1 = std::integral_constant<size_t, 0>(), h2_vector<h2_matcher<T>> v_matchers = {}) const { \
-      v_matchers.push_back(h2_matcher_cast<T>(std::get<I>(t_matchers)));                                                                                      \
-      return t2v<T>(std::integral_constant<size_t, I + 1>(), v_matchers);                                                                                     \
-   }                                                                                                                                                          \
-   template <typename T>                                                                                                                                      \
+#define H2_MATCHER_T2V(t_matchers)                                                                                                                          \
+   template <typename T, size_t I>                                                                                                                          \
+   h2_vector<h2_matcher<T>> t2v(std::integral_constant<size_t, I> _1 = std::integral_constant<size_t, 0>(), h2_vector<h2_matcher<T>> v_matchers = {}) const \
+   {                                                                                                                                                        \
+      v_matchers.push_back(h2_matcher_cast<T>(std::get<I>(t_matchers)));                                                                                    \
+      return t2v<T>(std::integral_constant<size_t, I + 1>(), v_matchers);                                                                                   \
+   }                                                                                                                                                        \
+   template <typename T>                                                                                                                                    \
    h2_vector<h2_matcher<T>> t2v(std::integral_constant<size_t, sizeof...(Matchers)>, h2_vector<h2_matcher<T>> v_matchers = {}) const { return v_matchers; }
 
 template <typename... Matchers>
@@ -431,7 +450,8 @@ struct h2_allof_matches {
    explicit h2_allof_matches(const Matchers&... matchers) : t_matchers(matchers...) { static_assert(sizeof...(Matchers) > 0, "Must have at least one Matcher."); }
 
    template <typename A>
-   h2_fail* matches(A a, bool caseless = false, bool dont = false) const {
+   h2_fail* matches(A a, bool caseless = false, bool dont = false) const
+   {
       auto v_matchers = t2v<A, 0>();
 
       h2_fail* fails = nullptr;
@@ -463,7 +483,8 @@ struct h2_anyof_matches {
    explicit h2_anyof_matches(const Matchers&... matchers) : t_matchers(matchers...) { static_assert(sizeof...(Matchers) > 0, "Must have at least one Matcher."); }
 
    template <typename A>
-   h2_fail* matches(A a, bool caseless = false, bool dont = false) const {
+   h2_fail* matches(A a, bool caseless = false, bool dont = false) const
+   {
       auto v_matchers = t2v<A, 0>();
 
       int s = 0;
@@ -497,7 +518,8 @@ struct h2_noneof_matches {
    explicit h2_noneof_matches(const Matchers&... matchers) : t_matchers(matchers...) { static_assert(sizeof...(Matchers) > 0, "Must have at least one Matcher."); }
 
    template <typename A>
-   h2_fail* matches(A a, bool caseless = false, bool dont = false) const {
+   h2_fail* matches(A a, bool caseless = false, bool dont = false) const
+   {
       auto v_matchers = t2v<A, 0>();
 
       int s = 0;
@@ -526,7 +548,8 @@ struct h2_listof_matches {
    explicit h2_listof_matches(const Matchers&... matchers) : t_matchers(matchers...) { static_assert(sizeof...(Matchers) > 0, "Must have at least one Matcher."); }
 
    template <typename A>
-   h2_fail* matches(A a, bool caseless = false, bool dont = false) const {
+   h2_fail* matches(A a, bool caseless = false, bool dont = false) const
+   {
       auto v_matchers = t2v<decltype(a[0]), 0>();
 
       h2_fail* fail = nullptr;
@@ -559,7 +582,13 @@ inline h2_polymorphic_matcher<h2_le_matches<E>> Le(const E expect) { return h2_p
 template <typename E>
 inline h2_polymorphic_matcher<h2_lt_matches<E>> Lt(const E expect) { return h2_polymorphic_matcher<h2_lt_matches<E>>(h2_lt_matches<E>(expect)); }
 
-inline h2_polymorphic_matcher<h2_memcmp_matches> Me(const void* ptr, const int len = 0) { return h2_polymorphic_matcher<h2_memcmp_matches>(h2_memcmp_matches(ptr, len)); }
+inline h2_polymorphic_matcher<h2_memcmp_matches> Me(const void* ptr, const int len = 0) { return h2_polymorphic_matcher<h2_memcmp_matches>(h2_memcmp_matches(len ? 8 : 0, (const void*)ptr, len * 8)); }
+inline h2_polymorphic_matcher<h2_memcmp_matches> M1e(const char* str) { return h2_polymorphic_matcher<h2_memcmp_matches>(h2_memcmp_matches(0, (const void*)str, strlen(str))); }
+inline h2_polymorphic_matcher<h2_memcmp_matches> M8e(const void* ptr, const int len = 0) { return h2_polymorphic_matcher<h2_memcmp_matches>(h2_memcmp_matches(8, (const void*)ptr, len ? len * 8 : strlen((const char*)ptr))); }
+inline h2_polymorphic_matcher<h2_memcmp_matches> M16e(const void* ptr, const int len = 0) { return h2_polymorphic_matcher<h2_memcmp_matches>(h2_memcmp_matches(16, (const void*)ptr, len ? len * 16 : strlen((const char*)ptr))); }
+inline h2_polymorphic_matcher<h2_memcmp_matches> M32e(const void* ptr, const int len = 0) { return h2_polymorphic_matcher<h2_memcmp_matches>(h2_memcmp_matches(32, (const void*)ptr, len ? len * 32 : strlen((const char*)ptr))); }
+inline h2_polymorphic_matcher<h2_memcmp_matches> M64e(const void* ptr, const int len = 0) { return h2_polymorphic_matcher<h2_memcmp_matches>(h2_memcmp_matches(64, (const void*)ptr, len ? len * 64 : strlen((const char*)ptr))); }
+
 inline h2_polymorphic_matcher<h2_regex_matches> Re(const h2_string& regex_pattern) { return h2_polymorphic_matcher<h2_regex_matches>(h2_regex_matches(regex_pattern)); }
 inline h2_polymorphic_matcher<h2_wildcard_matches> We(const h2_string& wildcard_pattern) { return h2_polymorphic_matcher<h2_wildcard_matches>(h2_wildcard_matches(wildcard_pattern)); }
 inline h2_polymorphic_matcher<h2_strcmp_matches> Se(const h2_string& expect) { return h2_polymorphic_matcher<h2_strcmp_matches>(h2_strcmp_matches(expect)); }
@@ -574,40 +603,52 @@ template <typename M>
 inline h2_polymorphic_matcher<h2_caseless_matches> CaseLess(M m) { return h2_polymorphic_matcher<h2_caseless_matches>(h2_caseless_matches(h2_matcher<h2_string>(m))); }
 #ifndef _WIN32
 template <typename M>
-inline h2_polymorphic_matcher<h2_caseless_matches> operator~(M m) { return CaseLess(m); }
+inline h2_polymorphic_matcher<h2_caseless_matches> operator~(M m)
+{
+   return CaseLess(m);
+}
 #endif
 template <typename Matcher>
-inline h2_polymorphic_matcher<h2_not_matches<Matcher>> Not(Matcher m) { return h2_polymorphic_matcher<h2_not_matches<Matcher>>(h2_not_matches<Matcher>(m)); }
+inline h2_polymorphic_matcher<h2_not_matches<Matcher>> Not(Matcher m)
+{
+   return h2_polymorphic_matcher<h2_not_matches<Matcher>>(h2_not_matches<Matcher>(m));
+}
 template <typename Matches>
 inline h2_polymorphic_matcher<h2_not_matches<h2_polymorphic_matcher<Matches>>> operator!(const h2_polymorphic_matcher<Matches>& m) { return Not(m); }
 
 template <typename... Matchers>
-inline h2_polymorphic_matcher<h2_allof_matches<typename std::decay<const Matchers&>::type...>> AllOf(const Matchers&... matchers) {
+inline h2_polymorphic_matcher<h2_allof_matches<typename std::decay<const Matchers&>::type...>> AllOf(const Matchers&... matchers)
+{
    return h2_polymorphic_matcher<h2_allof_matches<typename std::decay<const Matchers&>::type...>>(h2_allof_matches<typename std::decay<const Matchers&>::type...>(matchers...));
 }
 template <typename... Matchers>
-inline h2_polymorphic_matcher<h2_anyof_matches<typename std::decay<const Matchers&>::type...>> AnyOf(const Matchers&... matchers) {
+inline h2_polymorphic_matcher<h2_anyof_matches<typename std::decay<const Matchers&>::type...>> AnyOf(const Matchers&... matchers)
+{
    return h2_polymorphic_matcher<h2_anyof_matches<typename std::decay<const Matchers&>::type...>>(h2_anyof_matches<typename std::decay<const Matchers&>::type...>(matchers...));
 }
 template <typename... Matchers>
-inline h2_polymorphic_matcher<h2_noneof_matches<typename std::decay<const Matchers&>::type...>> NoneOf(const Matchers&... matchers) {
+inline h2_polymorphic_matcher<h2_noneof_matches<typename std::decay<const Matchers&>::type...>> NoneOf(const Matchers&... matchers)
+{
    return h2_polymorphic_matcher<h2_noneof_matches<typename std::decay<const Matchers&>::type...>>(h2_noneof_matches<typename std::decay<const Matchers&>::type...>(matchers...));
 }
 template <typename... Matchers>
-inline h2_polymorphic_matcher<h2_listof_matches<typename std::decay<const Matchers&>::type...>> ListOf(const Matchers&... matchers) {
+inline h2_polymorphic_matcher<h2_listof_matches<typename std::decay<const Matchers&>::type...>> ListOf(const Matchers&... matchers)
+{
    return h2_polymorphic_matcher<h2_listof_matches<typename std::decay<const Matchers&>::type...>>(h2_listof_matches<typename std::decay<const Matchers&>::type...>(matchers...));
 }
 
 template <typename M1, typename M2>
 inline h2_polymorphic_matcher<h2_and_matches<h2_polymorphic_matcher<M1>, h2_polymorphic_matcher<M2>>>
-operator&&(const h2_polymorphic_matcher<M1>& m1, const h2_polymorphic_matcher<M2>& m2) {
+operator&&(const h2_polymorphic_matcher<M1>& m1, const h2_polymorphic_matcher<M2>& m2)
+{
    h2_and_matches<h2_polymorphic_matcher<M1>, h2_polymorphic_matcher<M2>> a(m1, m2);
    h2_polymorphic_matcher<h2_and_matches<h2_polymorphic_matcher<M1>, h2_polymorphic_matcher<M2>>> b(a);
    return b;
 }
 template <typename M1, typename M2>
 inline h2_polymorphic_matcher<h2_and_matches<h2_polymorphic_matcher<M1>, h2_matcher<typename h2_decay<M2>::type>>>
-operator&&(const h2_polymorphic_matcher<M1>& m1, const M2& m2) {
+operator&&(const h2_polymorphic_matcher<M1>& m1, const M2& m2)
+{
    h2_matcher<typename h2_decay<M2>::type> a(m2);
    h2_and_matches<h2_polymorphic_matcher<M1>, h2_matcher<typename h2_decay<M2>::type>> b(m1, a);
    h2_polymorphic_matcher<h2_and_matches<h2_polymorphic_matcher<M1>, h2_matcher<typename h2_decay<M2>::type>>> c(b);
@@ -615,7 +656,8 @@ operator&&(const h2_polymorphic_matcher<M1>& m1, const M2& m2) {
 }
 template <typename M1, typename M2>
 inline h2_polymorphic_matcher<h2_and_matches<h2_matcher<typename h2_decay<M1>::type>, h2_polymorphic_matcher<M2>>>
-operator&&(const M1& m1, const h2_polymorphic_matcher<M2>& m2) {
+operator&&(const M1& m1, const h2_polymorphic_matcher<M2>& m2)
+{
    h2_matcher<typename h2_decay<M1>::type> a(m1);
    h2_and_matches<h2_matcher<typename h2_decay<M1>::type>, h2_polymorphic_matcher<M2>> b(a, m2);
    h2_polymorphic_matcher<h2_and_matches<h2_matcher<typename h2_decay<M1>::type>, h2_polymorphic_matcher<M2>>> c(b);
@@ -624,14 +666,16 @@ operator&&(const M1& m1, const h2_polymorphic_matcher<M2>& m2) {
 
 template <typename M1, typename M2>
 inline h2_polymorphic_matcher<h2_or_matches<h2_polymorphic_matcher<M1>, h2_polymorphic_matcher<M2>>>
-operator||(const h2_polymorphic_matcher<M1>& m1, const h2_polymorphic_matcher<M2>& m2) {
+operator||(const h2_polymorphic_matcher<M1>& m1, const h2_polymorphic_matcher<M2>& m2)
+{
    h2_or_matches<h2_polymorphic_matcher<M1>, h2_polymorphic_matcher<M2>> a(m1, m2);
    h2_polymorphic_matcher<h2_or_matches<h2_polymorphic_matcher<M1>, h2_polymorphic_matcher<M2>>> b(a);
    return b;
 }
 template <typename M1, typename M2>
 inline h2_polymorphic_matcher<h2_or_matches<h2_polymorphic_matcher<M1>, h2_matcher<typename h2_decay<M2>::type>>>
-operator||(const h2_polymorphic_matcher<M1>& m1, const M2& m2) {
+operator||(const h2_polymorphic_matcher<M1>& m1, const M2& m2)
+{
    h2_matcher<typename h2_decay<M2>::type> a(m2);
    h2_or_matches<h2_polymorphic_matcher<M1>, h2_matcher<typename h2_decay<M2>::type>> b(m1, a);
    h2_polymorphic_matcher<h2_or_matches<h2_polymorphic_matcher<M1>, h2_matcher<typename h2_decay<M2>::type>>> c(b);
@@ -639,7 +683,8 @@ operator||(const h2_polymorphic_matcher<M1>& m1, const M2& m2) {
 }
 template <typename M1, typename M2>
 inline h2_polymorphic_matcher<h2_or_matches<h2_matcher<typename h2_decay<M1>::type>, h2_polymorphic_matcher<M2>>>
-operator||(const M1& m1, const h2_polymorphic_matcher<M2>& m2) {
+operator||(const M1& m1, const h2_polymorphic_matcher<M2>& m2)
+{
    h2_matcher<typename h2_decay<M1>::type> a(m1);
    h2_or_matches<h2_matcher<typename h2_decay<M1>::type>, h2_polymorphic_matcher<M2>> b(a, m2);
    h2_polymorphic_matcher<h2_or_matches<h2_matcher<typename h2_decay<M1>::type>, h2_polymorphic_matcher<M2>>> c(b);

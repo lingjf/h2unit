@@ -3,7 +3,8 @@ struct h2_resolver {
    h2_singleton(h2_resolver);
    h2_list dnses;
 
-   static bool inet_addr(const char* str, struct sockaddr_in* addr) {
+   static bool inet_addr(const char* str, struct sockaddr_in* addr)
+   {
       int s1, s2, s3, s4;
       bool is_ipv4 = 4 == ::sscanf(str, "%d.%d.%d.%d", &s1, &s2, &s3, &s4);
       if (is_ipv4 && addr) {
@@ -13,12 +14,14 @@ struct h2_resolver {
       return is_ipv4;
    }
 
-   h2_dns* find(const char* hostname) {
+   h2_dns* find(const char* hostname)
+   {
       h2_list_for_each_entry(p, &dnses, h2_dns, y) if (!strcmp("*", p->name) || !strcmp(hostname, p->name)) return p;
       return nullptr;
    }
 
-   static int getaddrinfo(const char* hostname, const char* servname, const struct addrinfo* hints, struct addrinfo** res) {
+   static int getaddrinfo(const char* hostname, const char* servname, const struct addrinfo* hints, struct addrinfo** res)
+   {
       h2_dns* dns = I().find(hostname);
       if (!dns) return -1;
 
@@ -54,7 +57,8 @@ struct h2_resolver {
 
    static void freeaddrinfo(struct addrinfo* ai) {}
 
-   static struct hostent* gethostbyname(char* name) {
+   static struct hostent* gethostbyname(char* name)
+   {
       h2_dns* dns = I().find(name);
       if (!dns) return nullptr;
 
@@ -83,7 +87,8 @@ struct h2_resolver {
    }
 
    h2_stubs stubs;
-   h2_resolver() {
+   h2_resolver()
+   {
       stubs.add((void*)::getaddrinfo, (void*)getaddrinfo);
       stubs.add((void*)::freeaddrinfo, (void*)freeaddrinfo);
       stubs.add((void*)::gethostbyname, (void*)gethostbyname);
@@ -92,14 +97,17 @@ struct h2_resolver {
 };
 
 h2_inline void h2_dnses::add(h2_dns* dns) { dnses.push(&dns->x); }
-h2_inline void h2_dnses::clear() {
-   h2_list_for_each_entry(p, &dnses, h2_dns, x) {
+h2_inline void h2_dnses::clear()
+{
+   h2_list_for_each_entry(p, &dnses, h2_dns, x)
+   {
       p->x.out(), p->y.out();
       delete p;
    }
 }
 
-h2_inline void h2_dns::setaddrinfo(int n, ...) {
+h2_inline void h2_dns::setaddrinfo(int n, ...)
+{
    if (n == 0) return;
    const char* array[32];
    int count = 0;
@@ -124,6 +132,7 @@ h2_inline void h2_dns::setaddrinfo(int n, ...) {
    if (h2_task::I().current_case) h2_task::I().current_case->dnses.add(dns);
 }
 
-h2_inline void h2_dns::initialize() {
+h2_inline void h2_dns::initialize()
+{
    setaddrinfo(1, "127.0.0.1");
 }

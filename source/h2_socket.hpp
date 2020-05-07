@@ -36,7 +36,8 @@ struct h2_packet_matches {
    const M4 size;
    explicit h2_packet_matches(M1 from_, M2 to_, M3 data_, M4 size_) : from(from_), to(to_), data(data_), size(size_) {}
 
-   h2_fail* matches(h2_packet* a, bool caseless = false, bool dont = false) const {
+   h2_fail* matches(h2_packet* a, bool caseless = false, bool dont = false) const
+   {
       h2_fail* fails = nullptr;
       h2_fail::append_y(fails, h2_matcher_cast<const char*>(from).matches(a->from.c_str(), caseless, dont));
       h2_fail::append_y(fails, h2_matcher_cast<const char*>(to).matches(a->to.c_str(), caseless, dont));
@@ -47,7 +48,8 @@ struct h2_packet_matches {
 };
 
 template <typename M1, typename M2, typename M3, typename M4>
-inline h2_polymorphic_matcher<h2_packet_matches<M1, M2, M3, M4>> PktEq(M1 from = Any, M2 to = Any, M3 data = Any, M4 size = Any) {
+inline h2_polymorphic_matcher<h2_packet_matches<M1, M2, M3, M4>> PktEq(M1 from = Any, M2 to = Any, M3 data = Any, M4 size = Any)
+{
    return h2_polymorphic_matcher<h2_packet_matches<M1, M2, M3, M4>>(h2_packet_matches<M1, M2, M3, M4>(from, to, data, size));
 }
 

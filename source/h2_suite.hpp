@@ -22,7 +22,8 @@ struct h2_suite {
    void cleanup();
 
    struct installer {
-      installer(h2_suite* s, h2_case* c) {
+      installer(h2_suite* s, h2_case* c)
+      {
          static long long seq = INT_MAX;
          s->case_list.push_back(c);
          s->seq = c->seq = ++seq;
@@ -32,7 +33,8 @@ struct h2_suite {
    struct cleaner : h2_once {
       h2_suite* thus;
       cleaner(h2_suite* s) : thus(s) {}
-      ~cleaner() {
+      ~cleaner()
+      {
          if (thus->jumpable) ::longjmp(thus->jump, 1);
       }
    };

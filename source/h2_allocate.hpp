@@ -22,13 +22,21 @@ class h2_allocator {
    void construct(pointer p, const T& val) { new ((T*)p) T(val); }
    void destroy(pointer p) { p->~T(); }
    size_type max_size() const { return size_t(-1); }
-   template <typename U> struct rebind { typedef h2_allocator<U> other; };
-   template <typename U> h2_allocator(const h2_allocator<U>&) {}
-   template <typename U> h2_allocator& operator=(const h2_allocator<U>&) { return *this; }
+   template <typename U>
+   struct rebind {
+      typedef h2_allocator<U> other;
+   };
+   template <typename U>
+   h2_allocator(const h2_allocator<U>&) {}
+   template <typename U>
+   h2_allocator& operator=(const h2_allocator<U>&) { return *this; }
 };
 
-template <typename T> inline bool operator==(const h2_allocator<T>&, const h2_allocator<T>&) { return true; }
-template <typename T> inline bool operator!=(const h2_allocator<T>&, const h2_allocator<T>&) { return false; }
+template <typename T>
+inline bool operator==(const h2_allocator<T>&, const h2_allocator<T>&) { return true; }
+template <typename T>
+inline bool operator!=(const h2_allocator<T>&, const h2_allocator<T>&) { return false; }
 
-template <typename T> using h2_vector = std::vector<T, h2_allocator<T>>;
+template <typename T>
+using h2_vector = std::vector<T, h2_allocator<T>>;
 typedef std::basic_ostringstream<char, std::char_traits<char>, h2_allocator<char>> h2_ostringstream;

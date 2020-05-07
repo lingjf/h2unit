@@ -19,7 +19,8 @@ struct h2_stub_temporary_restore : h2_once {
 
 #define __H2STUB4(Return, BeFunc, Args, Qt)                                         \
    struct {                                                                         \
-      void operator=(Return(*toF) Args) {                                           \
+      void operator=(Return(*toF) Args)                                             \
+      {                                                                             \
          Return(*beF) Args = BeFunc;                                                \
          h2::h2_stub_g((void*)beF, (void*)(toF), #BeFunc, "~", __FILE__, __LINE__); \
       }                                                                             \
@@ -28,7 +29,8 @@ struct h2_stub_temporary_restore : h2_once {
 
 #define __H2STUB50(Return, Class, Method, Args, Qt)                                                                                                                                                 \
    struct {                                                                                                                                                                                         \
-      void operator=(Return (*toF)(Class * that)) {                                                                                                                                                 \
+      void operator=(Return (*toF)(Class * that))                                                                                                                                                   \
+      {                                                                                                                                                                                             \
          h2::h2_stub_g(h2::h2_mfp<Class, Return Args>::A(&Class::Method, "STUB", #Return, #Class, #Method, #Args, __FILE__, __LINE__), (void*)(toF), #Class "::" #Method, "~", __FILE__, __LINE__); \
       }                                                                                                                                                                                             \
    } Qt;                                                                                                                                                                                            \
@@ -36,7 +38,8 @@ struct h2_stub_temporary_restore : h2_once {
 
 #define __H2STUB51(Return, Class, Method, Args, Qt)                                                                                                                                                 \
    struct {                                                                                                                                                                                         \
-      void operator=(Return (*toF)(Class * that, H2PP_REMOVE_PARENTHESES(Args))) {                                                                                                                  \
+      void operator=(Return (*toF)(Class * that, H2PP_REMOVE_PARENTHESES(Args)))                                                                                                                    \
+      {                                                                                                                                                                                             \
          h2::h2_stub_g(h2::h2_mfp<Class, Return Args>::A(&Class::Method, "STUB", #Return, #Class, #Method, #Args, __FILE__, __LINE__), (void*)(toF), #Class "::" #Method, "~", __FILE__, __LINE__); \
       }                                                                                                                                                                                             \
    } Qt;                                                                                                                                                                                            \
@@ -47,7 +50,8 @@ struct h2_stub_temporary_restore : h2_once {
 
 #define __H2STUB60(Return, Class, Method, Args, Instance, Qt)                                                                                    \
    struct {                                                                                                                                      \
-      void operator=(Return (*toF)(Class * that)) {                                                                                              \
+      void operator=(Return (*toF)(Class * that))                                                                                                \
+      {                                                                                                                                          \
          h2::h2_stub_g(h2::h2_mfp<Class, Return Args>::A(&Class::Method, Instance), (void*)(toF), #Class "::" #Method, "~", __FILE__, __LINE__); \
       }                                                                                                                                          \
    } Qt;                                                                                                                                         \
@@ -55,7 +59,8 @@ struct h2_stub_temporary_restore : h2_once {
 
 #define __H2STUB61(Return, Class, Method, Args, Instance, Qt)                                                                                    \
    struct {                                                                                                                                      \
-      void operator=(Return (*toF)(Class * that, H2PP_REMOVE_PARENTHESES(Args))) {                                                               \
+      void operator=(Return (*toF)(Class * that, H2PP_REMOVE_PARENTHESES(Args)))                                                                 \
+      {                                                                                                                                          \
          h2::h2_stub_g(h2::h2_mfp<Class, Return Args>::A(&Class::Method, Instance), (void*)(toF), #Class "::" #Method, "~", __FILE__, __LINE__); \
       }                                                                                                                                          \
    } Qt;                                                                                                                                         \

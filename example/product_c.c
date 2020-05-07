@@ -7,7 +7,6 @@
 
 #include "product_c.h"
 
-
 rectangle_t* rectangle_create(int width, int height)
 {
    rectangle_t* rectangle = (rectangle_t*)malloc(sizeof(rectangle_t));

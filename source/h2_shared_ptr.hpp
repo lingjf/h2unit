@@ -6,7 +6,8 @@ class h2_shared_ptr : h2_libc {
    explicit h2_shared_ptr(T* p) { acquire(p, nullptr); }
    h2_shared_ptr(const h2_shared_ptr& that) { acquire(that.px, that.pn); }
    ~h2_shared_ptr() { release(); }
-   h2_shared_ptr& operator=(h2_shared_ptr that) {
+   h2_shared_ptr& operator=(h2_shared_ptr that)
+   {
       std::swap(px, that.px);
       std::swap(pn, that.pn);
       return *this;
@@ -16,7 +17,8 @@ class h2_shared_ptr : h2_libc {
    T* operator->() const { return px; }
 
  private:
-   void acquire(T* p, long* n) {
+   void acquire(T* p, long* n)
+   {
       pn = n;
       if (p) {
          if (!pn)
@@ -26,7 +28,8 @@ class h2_shared_ptr : h2_libc {
       }
       px = p;
    }
-   void release() {
+   void release()
+   {
       if (pn && !--(*pn)) {
          delete px;
          h2_libc::free(pn);

@@ -10,7 +10,8 @@ struct h2_defer_fail : h2_once {
    h2_defer_fail(int w_type_, const char* e_expr_, const char* a_expr_, const char* file_, int line_)
      : w_type(w_type_), e_expr(e_expr_), a_expr(a_expr_), file(file_), line(line_), fail(nullptr) {}
 
-   ~h2_defer_fail() {
+   ~h2_defer_fail()
+   {
       if (fail) {
          fail->set_w_type(w_type);
          fail->set_e_expr(e_expr);
@@ -22,7 +23,8 @@ struct h2_defer_fail : h2_once {
    }
 };
 
-static inline h2_ostringstream& h2_OK1(bool a, h2_defer_fail* d) {
+static inline h2_ostringstream& h2_OK1(bool a, h2_defer_fail* d)
+{
    if (!a) {
       h2_fail_unexpect* fail = new h2_fail_unexpect();
       fail->aprintf("false");
@@ -32,13 +34,15 @@ static inline h2_ostringstream& h2_OK1(bool a, h2_defer_fail* d) {
 }
 
 template <typename E, typename A>
-static inline h2_ostringstream& h2_OK2(E e, A a, h2_defer_fail* d) {
+static inline h2_ostringstream& h2_OK2(E e, A a, h2_defer_fail* d)
+{
    h2::h2_matcher<typename h2_decay<A>::type> m = h2::h2_matcher_cast<typename h2_decay<A>::type>((typename h2_decay<E>::type)e);
    d->fail = m.matches((typename h2_decay<A>::type)a);
    return d->oss;
 }
 
-static inline h2_ostringstream& h2_JE(h2_string e, h2_string a, h2_defer_fail* d) {
+static inline h2_ostringstream& h2_JE(h2_string e, h2_string a, h2_defer_fail* d)
+{
    h2::h2_matcher<h2_string> m = Je(e);
    d->fail = m.matches(a);
    return d->oss;

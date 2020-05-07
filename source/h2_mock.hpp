@@ -14,7 +14,8 @@ struct h2_mock : h2_libc {
 
    virtual void reset() = 0;
 
-   h2_fail* times_check() {
+   h2_fail* times_check()
+   {
       h2_fail* fail = nullptr;
       for (auto& c : c_array) h2_fail::append_y(fail, c.check());
       if (fail) fail->locate(file, line, befn);
@@ -43,7 +44,8 @@ using h2_nth_decay = typename h2_decay<typename h2_nth_type<Index, Args...>::typ
 template <size_t N>
 struct h2_tuple_match {
    template <typename MatcherTuple, typename ArgumentTuple>
-   static h2_fail* matches(MatcherTuple& matchers, ArgumentTuple& args, const char* file, int line, const char* func) {
+   static h2_fail* matches(MatcherTuple& matchers, ArgumentTuple& args, const char* file, int line, const char* func)
+   {
       h2_fail* fail = h2_tuple_match<N - 1>::matches(matchers, args, file, line, func);
       h2_fail* f = std::get<N - 1>(matchers).matches(std::get<N - 1>(args));
       if (f) f->locate(file, line, func, N - 1);
@@ -55,7 +57,8 @@ struct h2_tuple_match {
 template <>
 struct h2_tuple_match<0> {
    template <typename MatcherTuple, typename ArgumentTuple>
-   static h2_fail* matches(MatcherTuple& matchers, ArgumentTuple& args, const char* file, int line, const char* func) {
+   static h2_fail* matches(MatcherTuple& matchers, ArgumentTuple& args, const char* file, int line, const char* func)
+   {
       return nullptr;
    }
 };
@@ -98,22 +101,26 @@ class h2_mocker<Counter, Lineno, Class, Return(Args...)> : h2_mock {
    h2_vector<matcher_tuple> m_array;
    h2_vector<h2_routine<Class, Return(Args...)>> r_array;
 
-   static Return normal_function_stub(Args... args) {
+   static Return normal_function_stub(Args... args)
+   {
       int r_index = I().matches(std::move(args)...);
       return I().r_array[r_index](nullptr, std::move(args)...);
    }
 
-   static Return member_function_stub(Class* that, Args... args) {
+   static Return member_function_stub(Class* that, Args... args)
+   {
       int r_index = I().matches(std::move(args)...);
       return I().r_array[r_index](that, std::move(args)...);
    }
 
-   h2_fail* matches(matcher_tuple& matchers, argument_tuple& args) {
+   h2_fail* matches(matcher_tuple& matchers, argument_tuple& args)
+   {
       if (1 == std::tuple_size<argument_tuple>::value) return nullptr;
       return h2_tuple_match<std::tuple_size<argument_tuple>::value>::matches(matchers, args, file, line, befn);
    }
 
-   int matches(Args... args) {
+   int matches(Args... args)
+   {
       argument_tuple a_tuple = std::make_tuple(args..., 0);
       int c_offset = -1;
       for (int i = c_index; i < c_array.size(); ++i) {
@@ -136,7 +143,8 @@ class h2_mocker<Counter, Lineno, Class, Return(Args...)> : h2_mock {
    void reset() override { c_array.clear(), m_array.clear(), r_array.clear(), c_index = 0; }
 
  public:
-   static h2_mocker& I(void* befp = nullptr, const char* befn = nullptr, const char* file = nullptr, int line = 0) {
+   static h2_mocker& I(void* befp = nullptr, const char* befn = nullptr, const char* file = nullptr, int line = 0)
+   {
       static h2_mocker* i = nullptr;
       if (!i) i = new h2_mocker(befp, befn, file, line);
       if (befp && file) {
@@ -146,56 +154,64 @@ class h2_mocker<Counter, Lineno, Class, Return(Args...)> : h2_mock {
       return *i;
    }
 
-   h2_mocker& once(MATCHER_Any_0_1_2_3_4_5_6_7_8_9) {
+   h2_mocker& once(MATCHER_Any_0_1_2_3_4_5_6_7_8_9)
+   {
       c_array.push_back(h2_callexp(1, 1));
       m_array.push_back(std::forward_as_tuple(_0, _1, _2, _3, _4, _5, _6, _7, _8, _9));
       r_array.push_back(h2_routine<Class, Return(Args...)>());
       return *this;
    }
 
-   h2_mocker& twice(MATCHER_Any_0_1_2_3_4_5_6_7_8_9) {
+   h2_mocker& twice(MATCHER_Any_0_1_2_3_4_5_6_7_8_9)
+   {
       c_array.push_back(h2_callexp(2, 2));
       m_array.push_back(std::forward_as_tuple(_0, _1, _2, _3, _4, _5, _6, _7, _8, _9));
       r_array.push_back(h2_routine<Class, Return(Args...)>());
       return *this;
    }
 
-   h2_mocker& times(int count) {
+   h2_mocker& times(int count)
+   {
       c_array.push_back(h2_callexp(count, count));
       m_array.push_back(matcher_tuple());
       r_array.push_back(h2_routine<Class, Return(Args...)>());
       return *this;
    }
 
-   h2_mocker& any(MATCHER_Any_0_1_2_3_4_5_6_7_8_9) {
+   h2_mocker& any(MATCHER_Any_0_1_2_3_4_5_6_7_8_9)
+   {
       c_array.push_back(h2_callexp(0, INT_MAX));
       m_array.push_back(std::forward_as_tuple(_0, _1, _2, _3, _4, _5, _6, _7, _8, _9));
       r_array.push_back(h2_routine<Class, Return(Args...)>());
       return *this;
    }
 
-   h2_mocker& atleast(int count) {
+   h2_mocker& atleast(int count)
+   {
       c_array.push_back(h2_callexp(count, INT_MAX));
       m_array.push_back(matcher_tuple());
       r_array.push_back(h2_routine<Class, Return(Args...)>());
       return *this;
    }
 
-   h2_mocker& atmost(int count) {
+   h2_mocker& atmost(int count)
+   {
       c_array.push_back(h2_callexp(0, count));
       m_array.push_back(matcher_tuple());
       r_array.push_back(h2_routine<Class, Return(Args...)>());
       return *this;
    }
 
-   h2_mocker& between(int left, int right) {
+   h2_mocker& between(int left, int right)
+   {
       c_array.push_back(h2_callexp(left, right));
       m_array.push_back(matcher_tuple());
       r_array.push_back(h2_routine<Class, Return(Args...)>());
       return *this;
    }
 
-   h2_mocker& with(MATCHER_Any_0_1_2_3_4_5_6_7_8_9) {
+   h2_mocker& with(MATCHER_Any_0_1_2_3_4_5_6_7_8_9)
+   {
       if (!m_array.empty()) m_array.back() = std::forward_as_tuple(_0, _1, _2, _3, _4, _5, _6, _7, _8, _9);
       return *this;
    }
@@ -212,17 +228,20 @@ class h2_mocker<Counter, Lineno, Class, Return(Args...)> : h2_mock {
    h2_mocker& th9(h2_matcher<h2_nth_decay<8, Args...>> e = Any) { if (!m_array.empty()) std::get<8>(m_array.back()) = e; return *this; }
    /* clang-format on */
 
-   h2_mocker& returns(h2_routine<Class, Return(Args...)> r) {
+   h2_mocker& returns(h2_routine<Class, Return(Args...)> r)
+   {
       if (!r_array.empty()) r_array.back() = r;
       return *this;
    }
 
-   h2_mocker& does(std::function<Return(Args...)> f) {
+   h2_mocker& does(std::function<Return(Args...)> f)
+   {
       if (!r_array.empty()) r_array.back() = h2_routine<Class, Return(Args...)>(f);
       return *this;
    }
 
-   h2_mocker& does(std::function<Return(Class*, Args...)> f) {
+   h2_mocker& does(std::function<Return(Class*, Args...)> f)
+   {
       if (!r_array.empty()) r_array.back() = h2_routine<Class, Return(Args...)>(f);
       return *this;
    }

@@ -9,7 +9,8 @@
 struct h2_list {
    struct h2_list *next, *prev;
 
-   static void __add_between(h2_list* _new, h2_list* prev, h2_list* next) {
+   static void __add_between(h2_list* _new, h2_list* prev, h2_list* next)
+   {
       next->prev = _new;
       _new->next = next;
       _new->prev = prev;
@@ -32,7 +33,8 @@ struct h2_list {
    h2_list* get_first() const { return empty() ? nullptr : next; }
    h2_list* get_last() const { return empty() ? nullptr : prev; }
 
-   h2_list* out() {
+   h2_list* out()
+   {
       prev->next = next;
       next->prev = prev;
       next = prev = this;

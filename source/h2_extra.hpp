@@ -1,19 +1,20 @@
 
-#define __Matches_Common(message)                                                     \
-   template <typename A>                                                              \
-   bool __matches(const A& a) const;                                                  \
-   template <typename A>                                                              \
-   h2::h2_fail* matches(const A& a, bool caseless = false, bool dont = false) const { \
-      h2::h2_fail_unexpect* fail = new h2::h2_fail_unexpect();                        \
-      if (__matches(a) == !dont) return nullptr;                                      \
-      if (dont) {                                                                     \
-         fail->mprintf("should not matches");                                         \
-      } else {                                                                        \
-         h2::h2_ostringstream osm;                                                    \
-         osm << std::boolalpha << H2PP_REMOVE_PARENTHESES(message);                   \
-         fail->mprintf("%s", osm.str().c_str());                                      \
-      }                                                                               \
-      return fail;                                                                    \
+#define __Matches_Common(message)                                                   \
+   template <typename A>                                                            \
+   bool __matches(const A& a) const;                                                \
+   template <typename A>                                                            \
+   h2::h2_fail* matches(const A& a, bool caseless = false, bool dont = false) const \
+   {                                                                                \
+      h2::h2_fail_unexpect* fail = new h2::h2_fail_unexpect();                      \
+      if (__matches(a) == !dont) return nullptr;                                    \
+      if (dont) {                                                                   \
+         fail->mprintf("should not matches");                                       \
+      } else {                                                                      \
+         h2::h2_ostringstream osm;                                                  \
+         osm << std::boolalpha << H2PP_REMOVE_PARENTHESES(message);                 \
+         fail->mprintf("%s", osm.str().c_str());                                    \
+      }                                                                             \
+      return fail;                                                                  \
    }
 
 #define H2MATCHER0(name, message)                                                     \
@@ -33,7 +34,8 @@
       __Matches_Common(message)                                                                 \
    };                                                                                           \
    template <typename E1>                                                                       \
-   inline h2::h2_polymorphic_matcher<h2_##name##_matches<E1>> name(const E1 _e1) {              \
+   inline h2::h2_polymorphic_matcher<h2_##name##_matches<E1>> name(const E1 _e1)                \
+   {                                                                                            \
       return h2::h2_polymorphic_matcher<h2_##name##_matches<E1>>(h2_##name##_matches<E1>(_e1)); \
    }                                                                                            \
    template <typename E1>                                                                       \
@@ -49,7 +51,8 @@
       __Matches_Common(message)                                                                              \
    };                                                                                                        \
    template <typename E1, typename E2>                                                                       \
-   inline h2::h2_polymorphic_matcher<h2_##name##_matches<E1, E2>> name(const E1 _e1, const E2 _e2) {         \
+   inline h2::h2_polymorphic_matcher<h2_##name##_matches<E1, E2>> name(const E1 _e1, const E2 _e2)           \
+   {                                                                                                         \
       return h2::h2_polymorphic_matcher<h2_##name##_matches<E1, E2>>(h2_##name##_matches<E1, E2>(_e1, _e2)); \
    }                                                                                                         \
    template <typename E1, typename E2>                                                                       \
@@ -66,29 +69,31 @@
       __Matches_Common(message)                                                                                           \
    };                                                                                                                     \
    template <typename E1, typename E2, typename E3>                                                                       \
-   inline h2::h2_polymorphic_matcher<h2_##name##_matches<E1, E2, E3>> name(const E1 _e1, const E2 _e2, const E3 _e3) {    \
+   inline h2::h2_polymorphic_matcher<h2_##name##_matches<E1, E2, E3>> name(const E1 _e1, const E2 _e2, const E3 _e3)      \
+   {                                                                                                                      \
       return h2::h2_polymorphic_matcher<h2_##name##_matches<E1, E2, E3>>(h2_##name##_matches<E1, E2, E3>(_e1, _e2, _e3)); \
    }                                                                                                                      \
    template <typename E1, typename E2, typename E3>                                                                       \
    template <typename A>                                                                                                  \
    bool h2_##name##_matches<E1, E2, E3>::__matches(const A& a) const
 
-#define H2MATCHER4(name, e1, e2, e3, e4, message)                                                                                        \
-   template <typename E1, typename E2, typename E3, typename E4>                                                                         \
-   struct h2_##name##_matches {                                                                                                          \
-      const E1 e1;                                                                                                                       \
-      const E2 e2;                                                                                                                       \
-      const E3 e3;                                                                                                                       \
-      const E4 e4;                                                                                                                       \
-      explicit h2_##name##_matches(const E1& _e1, const E2& _e2, const E3& _e3, const E4& _e4) : e1(_e1), e2(_e2), e3(_e3), e4(_e4) {}   \
-      __Matches_Common(message)                                                                                                          \
-   };                                                                                                                                    \
-   template <typename E1, typename E2, typename E3, typename E4>                                                                         \
-   inline h2::h2_polymorphic_matcher<h2_##name##_matches<E1, E2, E3, E4>> name(const E1 _e1, const E2 _e2, const E3 _e3, const E4 _e4) { \
-      return h2::h2_polymorphic_matcher<h2_##name##_matches<E1, E2, E3, E4>>(h2_##name##_matches<E1, E2, E3, E4>(_e1, _e2, _e3, _e4));   \
-   }                                                                                                                                     \
-   template <typename E1, typename E2, typename E3, typename E4>                                                                         \
-   template <typename A>                                                                                                                 \
+#define H2MATCHER4(name, e1, e2, e3, e4, message)                                                                                      \
+   template <typename E1, typename E2, typename E3, typename E4>                                                                       \
+   struct h2_##name##_matches {                                                                                                        \
+      const E1 e1;                                                                                                                     \
+      const E2 e2;                                                                                                                     \
+      const E3 e3;                                                                                                                     \
+      const E4 e4;                                                                                                                     \
+      explicit h2_##name##_matches(const E1& _e1, const E2& _e2, const E3& _e3, const E4& _e4) : e1(_e1), e2(_e2), e3(_e3), e4(_e4) {} \
+      __Matches_Common(message)                                                                                                        \
+   };                                                                                                                                  \
+   template <typename E1, typename E2, typename E3, typename E4>                                                                       \
+   inline h2::h2_polymorphic_matcher<h2_##name##_matches<E1, E2, E3, E4>> name(const E1 _e1, const E2 _e2, const E3 _e3, const E4 _e4) \
+   {                                                                                                                                   \
+      return h2::h2_polymorphic_matcher<h2_##name##_matches<E1, E2, E3, E4>>(h2_##name##_matches<E1, E2, E3, E4>(_e1, _e2, _e3, _e4)); \
+   }                                                                                                                                   \
+   template <typename E1, typename E2, typename E3, typename E4>                                                                       \
+   template <typename A>                                                                                                               \
    bool h2_##name##_matches<E1, E2, E3, E4>::__matches(const A& a) const
 
 #define H2MATCHER5(name, e1, e2, e3, e4, e5, message)                                                                                                          \
@@ -103,7 +108,8 @@
       __Matches_Common(message)                                                                                                                                \
    };                                                                                                                                                          \
    template <typename E1, typename E2, typename E3, typename E4, typename E5>                                                                                  \
-   inline h2::h2_polymorphic_matcher<h2_##name##_matches<E1, E2, E3, E4, E5>> name(const E1 _e1, const E2 _e2, const E3 _e3, const E4 _e4, const E5 _e5) {     \
+   inline h2::h2_polymorphic_matcher<h2_##name##_matches<E1, E2, E3, E4, E5>> name(const E1 _e1, const E2 _e2, const E3 _e3, const E4 _e4, const E5 _e5)       \
+   {                                                                                                                                                           \
       return h2::h2_polymorphic_matcher<h2_##name##_matches<E1, E2, E3, E4, E5>>(h2_##name##_matches<E1, E2, E3, E4, E5>(_e1, _e2, _e3, _e4, _e5));            \
    }                                                                                                                                                           \
    template <typename E1, typename E2, typename E3, typename E4, typename E5>                                                                                  \

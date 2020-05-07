@@ -7,8 +7,7 @@ class Animal /* 动物 */
    int x, y;
 
  public:
-   Animal()
-     : x(0), y(0) {}
+   Animal() : x(0), y(0) {}
    virtual ~Animal() {}
 
    static int born(int a)
@@ -29,8 +28,7 @@ class Animal /* 动物 */
    virtual int cry() = 0;
 };
 
-class Vivipara /* 胎生动物 */ : public Animal
-{
+class Vivipara /* 胎生动物 */ : public Animal {
  public:
    const char* say()
    {
@@ -43,8 +41,7 @@ class Vivipara /* 胎生动物 */ : public Animal
    }
 };
 
-class Ovipara /* 卵生动物 */ : public Animal
-{
+class Ovipara /* 卵生动物 */ : public Animal {
  public:
    int cry()
    {
@@ -52,12 +49,10 @@ class Ovipara /* 卵生动物 */ : public Animal
    }
 };
 
-class Dog /* 狗 */ : public Vivipara
-{
+class Dog /* 狗 */ : public Vivipara {
  public:
    int age;
-   Dog(int age_)
-     : age(age_) {}
+   Dog(int age_) : age(age_) {}
 
    const char* say()
    {
@@ -67,8 +62,7 @@ class Dog /* 狗 */ : public Vivipara
    void run() {}
 };
 
-class Cat /* 猫 */ : public Vivipara
-{
+class Cat /* 猫 */ : public Vivipara {
  public:
    Cat(Animal* mother, Animal* father) {}
 
@@ -78,8 +72,7 @@ class Cat /* 猫 */ : public Vivipara
    }
 };
 
-class Bird /* 鸟 */ : public Ovipara
-{
+class Bird /* 鸟 */ : public Ovipara {
  public:
    const char* say()
    {
@@ -87,8 +80,7 @@ class Bird /* 鸟 */ : public Ovipara
    }
 };
 
-class Centipede /* 蜈蚣 */ : public Ovipara
-{
+class Centipede /* 蜈蚣 */ : public Ovipara {
  public:
    Centipede(int feet1,
              int feet2,
