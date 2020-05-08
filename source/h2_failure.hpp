@@ -113,9 +113,15 @@ struct h2_fail_memleak : h2_fail {
    void print();
 };
 
-struct h2_fail_free : h2_fail {
-   const h2_backtrace bt_alloc, bt_free;
-   h2_fail_free(void* ptr_, const char* desc, h2_backtrace& bt_alloc_, h2_backtrace& bt_free_, const char* file_ = nullptr, int line_ = 0);
+struct h2_fail_double_free : h2_fail {
+   const h2_backtrace bt_allocate, bt_release1, bt_release2;
+   h2_fail_double_free(void* ptr_, h2_backtrace& bt_allocate_, h2_backtrace& bt_release1_, h2_backtrace& bt_release2_);
+   void print();
+};
+
+struct h2_fail_symmetric_free : h2_fail {
+   const h2_backtrace bt_allocate, bt_release;
+   h2_fail_symmetric_free(void* ptr_, h2_backtrace& bt_allocate_, h2_backtrace& bt_release_, const char* format, ...);
    void print();
 };
 

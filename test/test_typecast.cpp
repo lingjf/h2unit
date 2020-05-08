@@ -1,6 +1,6 @@
 #include "../source/h2_unit.cpp"
 
-#ifdef __clang__
+#if 0
 
 char char0 = 0;
 const char const_char0 = 0;

@@ -1,38 +1,119 @@
 #include "../source/h2_unit.cpp"
+#include <sys/time.h>
 
-class C7 {
+class C100 {
  public:
-   int a;
-   double b;
-   char c[100];
-
-   C7(){};
+   char data[100];
+   C100(){};
 };
 
-CASE(piece malloc / free)
+SUITE(piece)
 {
-   h2::h2_backtrace bt;
-   h2::h2_piece* m = new h2::h2_piece(100, 0, bt);
-   delete m;
+   Case(new delete)
+   {
+      h2::h2_backtrace bt;
+      h2::h2_piece* m = new h2::h2_piece(100, 0, "malloc", bt);
+      delete m;
+   }
 }
 
-CASE(monitered malloc / free)
+SUITE(Heap Hook)
 {
-   free(calloc(10, 10));
-   free(realloc(malloc(10), 100));
-   void* p = NULL;
-   int ret = posix_memalign(&p, 32, 1024);
-   OK(0, ret);
-   OK(NULL != p);
-   free(p);
-   free(strdup("hello leak"));
-   free(strndup("hello leak", 8));
-}
+   Case(malloc)
+   {
+      free(malloc(100));
+      BLOCK(10)
+      {
+         OK(IsNull, malloc(100));
+      }
+   }
+   Case(calloc)
+   {
+      free(calloc(10, 10));
+      BLOCK(10)
+      {
+         OK(IsNull, calloc(10, 10));
+      }
+   }
+   Case(realloc)
+   {
+      free(realloc(NULL, 100));  // act as malloc
+      BLOCK(10)
+      {
+         OK(IsNull, realloc(NULL, 100));
+      }
+   }
+   Case(new)
+   {
+      delete new C100;
+      delete new (std::nothrow) C100;
+      BLOCK(10)
+      {
+         OK(IsNull, new C100);
+         OK(IsNull, new (std::nothrow) C100);
+      }
+   }
+   Case(new[])
+   {
+      delete[] new char[100];
+      delete[] new (std::nothrow) char[100];
+      BLOCK(10)
+      {
+         OK(IsNull, new char[100]);
+         OK(IsNull, new (std::nothrow) char[100]);
+      }
+   }
 
-CASE(C++ new and delete)
-{
-   C7* c = new C7();
-   delete c;
+   Case(strdup)
+   {
+      free(strdup("1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890"));
+      BLOCK(10)
+      {
+         OK(IsNull, strdup("1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890"));
+      }
+   }
+   Case(strndup)
+   {
+      free(strndup("1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890", 100));
+      BLOCK(10)
+      {
+         OK(IsNull, strndup("1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890", 100));
+      }
+   }
+#if defined _POSIX_C_SOURCE && _POSIX_C_SOURCE >= 200112L
+   Case(posix_memalign)
+   {
+      void* ptr = NULL;
+      OK(0, posix_memalign(&ptr, 8, 100));
+      OK(NotNull, ptr);
+      free(ptr);
+      BLOCK(10)
+      {
+         OK(Not(0), posix_memalign(&ptr, 8, 100));
+      }
+   }
+#endif
+#if defined _ISOC11_SOURCE
+   Case(aligned_alloc)
+   {
+      free(aligned_alloc(10, 10));
+      BLOCK(10)
+      {
+         OK(IsNull, aligned_alloc(10, 100));
+      }
+   }
+#endif
+
+#if (_XOPEN_SOURCE >= 500) && !(_POSIX_C_SOURCE >= 200112L) || _DEFAULT_SOURCE || _SVID_SOURCE || _BSD_SOURCE
+   Case(valloc)
+   {
+      free(valloc(100));
+      BLOCK(10)
+      {
+         OK(IsNull, valloc(100));
+      }
+   }
+#endif
 }
 
 SUITE(BLOCK)

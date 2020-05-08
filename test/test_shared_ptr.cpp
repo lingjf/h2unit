@@ -15,11 +15,12 @@ SUITE(shared_ptr)
       h2::h2_shared_ptr<std::string> s2 = s1;
    }
 
-   Case(malloc)
-   {
-      char* p = (char*)malloc(100);
-      h2::h2_shared_ptr<char> s1(p);
-   }
+   // shared_ptr can't store ptr which allocated by malloc()
+   // Case(malloc)
+   // {
+   //    char* p = (char*)malloc(100);
+   //    h2::h2_shared_ptr<char> s1(p);
+   // }
 
    Case(new)
    {

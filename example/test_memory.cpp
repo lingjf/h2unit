@@ -101,52 +101,69 @@ SUITE(Memory Leak)
    }
 }
 
-#ifndef _WIN32
-
-/*
- * h2unit can detect out-of-bound access.
- *
- * OverFlow : access out-of-bound at end.
- *
- * UnderFlow : access out-of-bound at before.
- *
- */
-
-CASE(test memory underflow failure)
+SUITE(Memory symmetric allocate and free)
 {
-   char* c1 = (char*)malloc(6);
-   memcpy(c1 - 5, "123", 3);
-   free(c1);
+   Case(malloc - delete failure)
+   {
+      char* p = (char*)malloc(100);
+      delete p;
+   }
+   Case(malloc - delete[] failure)
+   {
+      char* p = (char*)malloc(100);
+      delete[] p;
+   }
+   Case(new - free failure)
+   {
+      char* p = (char*)new char;
+      free(p);
+   }
+   Case(new - delete[] failure)
+   {
+      char* p = (char*)new char;
+      delete[] p;
+   }
+   Case(new[] - free failure)
+   {
+      char* p = (char*)new char[100];
+      free(p);
+   }
 }
 
-CASE(test memory overflow failure)
+SUITE(Ilegal Access)
 {
-   char* c1 = (char*)malloc(6);
-   memcpy(c1, "12345678901234567890123456789012345678901234567890", 50);
-   free(c1);
-}
+   Case(double free failure)
+   {
+      rectangle_t* p = rectangle_create(1, 2);
+      rectangle_destroy(p);
+      rectangle_destroy(p);
+   }
+#if 0
+   Case(memory underflow failure)
+   {
+      char* p = (char*)malloc(6);
+      memcpy(p - 5, "123", 3);
+      free(p);
+   }
+   Case(memory overflow failure)
+   {
+      char* p = (char*)malloc(6);
+      memcpy(p, "12345678901234567890123456789012345678901234567890", 50);
+      free(p);
+   }
+   Case(read after free failure)
+   {
+      rectangle_t* p = rectangle_create(1, 2);
+      rectangle_destroy(p);
 
-CASE(test double free failure)
-{
-   rectangle_t* p = rectangle_create(1, 2);
-   rectangle_destroy(p);
-   rectangle_destroy(p);
-}
+      int width = p->width;
+   }
+   Case(write after free failure)
+   {
+      rectangle_t* p = rectangle_create(1, 2);
+      rectangle_destroy(p);
 
-// CASE(test read after free failure)
-// {
-//    rectangle_t* p = rectangle_create(1, 2);
-//    rectangle_destroy(p);
-
-//    int width = p->width;
-// }
-
-// CASE(test write after free failure)
-// {
-//    rectangle_t* p = rectangle_create(1, 2);
-//    rectangle_destroy(p);
-
-//    p->width = 100;
-// }
-
+      p->width = 100;
+   }
 #endif
+}

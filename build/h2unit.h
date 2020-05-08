@@ -1,9 +1,9 @@
-﻿/* v5.2  2020-05-07 23:30:38 */
+﻿/* v5.3  2020-05-08 23:36:27 */
 /* https://github.com/lingjf/h2unit */
 /* Apache Licence 2.0 */
 #ifndef __H2UNIT_HPP__
 #define __H2UNIT_HPP__
-#define H2UNIT_VERSION "5.2"
+#define H2UNIT_VERSION "5.3"
 #ifndef ___H2UNIT_H___
 #define ___H2UNIT_H___
 
@@ -570,9 +570,15 @@ struct h2_fail_memleak : h2_fail {
    void print();
 };
 
-struct h2_fail_free : h2_fail {
-   const h2_backtrace bt_alloc, bt_free;
-   h2_fail_free(void* ptr_, const char* desc, h2_backtrace& bt_alloc_, h2_backtrace& bt_free_, const char* file_ = nullptr, int line_ = 0);
+struct h2_fail_double_free : h2_fail {
+   const h2_backtrace bt_allocate, bt_release1, bt_release2;
+   h2_fail_double_free(void* ptr_, h2_backtrace& bt_allocate_, h2_backtrace& bt_release1_, h2_backtrace& bt_release2_);
+   void print();
+};
+
+struct h2_fail_symmetric_free : h2_fail {
+   const h2_backtrace bt_allocate, bt_release;
+   h2_fail_symmetric_free(void* ptr_, h2_backtrace& bt_allocate_, h2_backtrace& bt_release_, const char* format, ...);
    void print();
 };
 
@@ -1993,11 +1999,11 @@ struct h2_suite {
    int status_stats[8];
    jmp_buf jump;
    bool jumpable;
-   void (*test_code_plus)(h2_suite*, h2_case*);
+   void (*test_code)(h2_suite*, h2_case*);
    std::vector<h2_case*> case_list;
    h2_once enumerate;
 
-   h2_suite(const char* name_, void (*p)(h2_suite*, h2_case*), const char* file_, int line_);
+   h2_suite(const char* name_, void (*test_code_)(h2_suite*, h2_case*), const char* file_, int line_);
 
    std::vector<h2_case*>& cases();
    void execute(h2_case* c);
@@ -2548,7 +2554,7 @@ using h2::ListOf;
    static h2::h2_suite H2Q(suite)(name, &QP, __FILE__, __LINE__); \
    static void QP(h2::h2_suite* ________suite, h2::h2_case* _________case)
 
-#define H2SUITE(name) __H2SUITE(name, H2Q(h2_suite_test_code_plus))
+#define H2SUITE(name) __H2SUITE(name, H2Q(h2_suite_test_code))
 
 #define __H2Cleanup()                      \
    if (::setjmp(________suite->jump) == 0) \
@@ -2582,8 +2588,8 @@ using h2::ListOf;
    static h2::h2_suite H2Q(suite)("Anonymous", &QP, __FILE__, __LINE__);   \
    static void QR()
 
-#define H2CASE(name) __H2CASE(name, 0, H2Q(h2_case_test_code), H2Q(h2_suite_test_code_plus))
-#define H2TODO(name) __H2CASE(name, 1, H2Q(h2_case_test_code), H2Q(h2_suite_test_code_plus))
+#define H2CASE(name) __H2CASE(name, 0, H2Q(h2_case_test_code), H2Q(h2_suite_test_code))
+#define H2TODO(name) __H2CASE(name, 1, H2Q(h2_case_test_code), H2Q(h2_suite_test_code))
 
 #define __H2BLOCK0(Qb) for (h2::h2_heap::stack::block Qb(__FILE__, __LINE__); Qb;)
 #define __H2BLOCK1(Qb, ...) for (h2::h2_heap::stack::block Qb(__FILE__, __LINE__, __VA_ARGS__); Qb;)

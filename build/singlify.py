@@ -4,7 +4,7 @@
 import sys
 import time
 
-version = "5.2"
+version = "5.3"
 
 version_datetime = '/* v{0}  {1} */'.format(version, time.strftime('%Y-%m-%d %H:%M:%S', time.localtime()))
 project_github_url = '/* https://github.com/lingjf/h2unit */'

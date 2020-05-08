@@ -250,3 +250,11 @@ static inline int h2_printf(const char* format, ...)
 
    return ret;
 }
+
+static inline bool h2_in(const char* x, const char* s[], int n = 0)
+{
+   n = n ? n : 1000;
+   for (int i = 0; s[i] && i < n; ++i)
+      if (!strcmp(s[i], x)) return true;
+   return false;
+}

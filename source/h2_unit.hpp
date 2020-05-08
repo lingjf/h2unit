@@ -193,7 +193,7 @@ using h2::ListOf;
    static h2::h2_suite H2Q(suite)(name, &QP, __FILE__, __LINE__); \
    static void QP(h2::h2_suite* ________suite, h2::h2_case* _________case)
 
-#define H2SUITE(name) __H2SUITE(name, H2Q(h2_suite_test_code_plus))
+#define H2SUITE(name) __H2SUITE(name, H2Q(h2_suite_test_code))
 
 #define __H2Cleanup()                      \
    if (::setjmp(________suite->jump) == 0) \
@@ -227,8 +227,8 @@ using h2::ListOf;
    static h2::h2_suite H2Q(suite)("Anonymous", &QP, __FILE__, __LINE__);   \
    static void QR()
 
-#define H2CASE(name) __H2CASE(name, 0, H2Q(h2_case_test_code), H2Q(h2_suite_test_code_plus))
-#define H2TODO(name) __H2CASE(name, 1, H2Q(h2_case_test_code), H2Q(h2_suite_test_code_plus))
+#define H2CASE(name) __H2CASE(name, 0, H2Q(h2_case_test_code), H2Q(h2_suite_test_code))
+#define H2TODO(name) __H2CASE(name, 1, H2Q(h2_case_test_code), H2Q(h2_suite_test_code))
 
 #define __H2BLOCK0(Qb) for (h2::h2_heap::stack::block Qb(__FILE__, __LINE__); Qb;)
 #define __H2BLOCK1(Qb, ...) for (h2::h2_heap::stack::block Qb(__FILE__, __LINE__, __VA_ARGS__); Qb;)

@@ -94,23 +94,18 @@ h2_inline void h2_fail_unexpect::print_OK1()
    h2_printf(" OK(%s) is %s", a_expr.c_str(), SF("bold,red", "false"));
 }
 
-static inline bool __both_inset(const char* set[], int n, const char* a, const char* b)
+static inline bool is_synonym(const char* a, const char* b)
 {
-   int ca = 0, cb = 0;
-   for (int i = 0; i < n; ++i) {
-      if (!strcmp(set[i], a)) ca++;
-      if (!strcmp(set[i], b)) cb++;
-   }
-   return ca > 0 && cb > 0;
-}
-static inline bool __is_synonym(const char* a, const char* b)
-{
-   static const char* set1[] = {"NULL", "__null", "((void *)0)", "(nil)", "nullptr", "0", "0x0"};
-   static const char* set2[] = {"true", "1"};
-   static const char* set3[] = {"false", "0"};
-   return __both_inset(set1, sizeof(set1) / sizeof(set1[0]), a, b) ||
-          __both_inset(set2, sizeof(set2) / sizeof(set2[0]), a, b) ||
-          __both_inset(set3, sizeof(set3) / sizeof(set3[0]), a, b);
+   static const char* s_null[] = {"NULL", "__null", "((void *)0)", "(nil)", "nullptr", "0", "0x0", nullptr};
+   static const char* s_true[] = {"true", "1", nullptr};
+   static const char* s_false[] = {"false", "0", nullptr};
+   static const char** S[] = {s_null, s_true, s_false};
+
+   for (int i = 0; i < sizeof(S) / sizeof(S[0]); ++i)
+      if (h2_in(a, S[i]) && h2_in(b, S[i]))
+         return true;
+
+   return false;
 }
 
 h2_inline void h2_fail_unexpect::print_OK2()
@@ -124,7 +119,7 @@ h2_inline void h2_fail_unexpect::print_OK2()
    if (a_expr == _a)
       strcpy(t2, SF("bold,red", "%s", _a.acronym().c_str()));
    else {
-      if (_a.length() && !__is_synonym(a_expr.c_str(), _a.c_str())) sprintf(t2, "%s%s", SF("bold,red", "%s", _a.acronym().c_str()), SF("dark gray", "<=="));
+      if (_a.length() && !is_synonym(a_expr.c_str(), _a.c_str())) sprintf(t2, "%s%s", SF("bold,red", "%s", _a.acronym().c_str()), SF("dark gray", "<=="));
       strcpy(t2 + strlen(t2), a_expr.acronym().c_str());
    }
 
@@ -398,14 +393,32 @@ h2_inline void h2_fail_memleak::print()
    }
 }
 
-h2_inline h2_fail_free::h2_fail_free(void* ptr_, const char* desc, h2_backtrace& bt_alloc_, h2_backtrace& bt_free_, const char* file_, int line_)
-  : h2_fail(file_, line_), bt_alloc(bt_alloc_), bt_free(bt_free_) { kprintf("%p %s", ptr_, desc); }
+h2_inline h2_fail_double_free::h2_fail_double_free(void* ptr_, h2_backtrace& bt_allocate_, h2_backtrace& bt_release1_, h2_backtrace& bt_release2_)
+  : h2_fail(nullptr, 0), bt_allocate(bt_allocate_), bt_release1(bt_release1_), bt_release2(bt_release2_)
+{
+   kprintf("%p double free", ptr_);
+}
 
-h2_inline void h2_fail_free::print()
+h2_inline void h2_fail_double_free::print()
 {
    h2_fail::print(), h2_printf(" at backtrace:\n");
-   bt_free.print(pad + 1);
-   if (0 < bt_alloc.count) h2_printf("%swhich allocated at backtrace:\n", PAD(++pad)), bt_alloc.print(pad + 1);
+   bt_release2.print(pad + 1);
+   if (0 < bt_allocate.count) h2_printf("%swhich allocated at backtrace:\n", PAD(pad + 1)), bt_allocate.print(pad + 2);
+   if (0 < bt_release1.count) h2_printf("%salready freed at backtrace:\n", PAD(pad + 1)), bt_release1.print(pad + 2);
+}
+
+h2_inline h2_fail_symmetric_free::h2_fail_symmetric_free(void* ptr_, h2_backtrace& bt_allocate_, h2_backtrace& bt_release_, const char* format, ...)
+  : h2_fail(nullptr, 0), bt_allocate(bt_allocate_), bt_release(bt_release_)
+{
+   kprintf("%p ", ptr_);
+   _H2_XPRINTF(_k, format);
+}
+
+h2_inline void h2_fail_symmetric_free::print()
+{
+   h2_fail::print(), h2_printf(" at backtrace:\n");
+   bt_release.print(pad + 1);
+   if (0 < bt_allocate.count) h2_printf("%swhich allocated at backtrace:\n", PAD(++pad)), bt_allocate.print(pad + 1);
 }
 
 h2_inline h2_fail_instantiate::h2_fail_instantiate(const char* action_type_, const char* return_type_, const char* class_type_, const char* method_name_, const char* return_args_, int why_abstract_, const char* file_, int line_)
