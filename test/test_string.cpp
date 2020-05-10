@@ -2,6 +2,12 @@
 
 SUITE(string)
 {
+   Case(constructor)
+   {
+      h2::h2_string a(3.14);
+      OK("3.14", a);
+   }
+
    Case(equals)
    {
       h2::h2_string a = "Hello World";

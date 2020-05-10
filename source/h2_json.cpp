@@ -1,7 +1,109 @@
 
-struct h2__json {
-   static const int t_absent = 0;
+typedef h2_string h2_word;
+typedef h2_vector<h2_word> h2_line;
 
+static inline h2_string indent(int depth) { return h2_string(depth * 2, ' '); }
+
+static int h2_line_length(h2_line& line)
+{
+   int len = 0;
+   for (auto& word : line)
+      if (!h2_color::is_ctrl(word.c_str()))
+         len += word.length();
+
+   return len;
+}
+
+static inline bool h2_lines_foldable(h2_vector<h2_line>& lines)
+{
+   int sum = 0;
+   for (auto& line : lines)
+      for (auto& word : line)
+         if (!word.isspace())  // ignore indent
+            sum += word.length();
+
+   return sum < 20;
+}
+
+static inline void h2_lines_folds(h2_vector<h2_line>& lines, h2_line& line)
+{
+   for (size_t i = 0; i < lines.size(); i++)
+      for (auto& word : lines[i])
+         if (!word.isspace())  // drop indent
+            line.push_back(word);
+}
+
+static inline int h2_lines_max_length(h2_vector<h2_line>& lines)
+{
+   int most = 0;
+   for (auto& line : lines) {
+      int curr = 0;
+      for (auto& word : line)
+         if (!h2_color::is_ctrl(word.c_str()))
+            curr += word.length();
+      most = std::max(most, curr);
+   }
+   return most;
+}
+
+static inline void h2_line_pad_tail(h2_line& line, int size)
+{
+   int len = 0;
+   for (auto& word : line)
+      if (!h2_color::is_ctrl(word.c_str()))
+         len += word.length();
+   line.push_back(PAD(size - len));
+}
+
+static inline void samesizify(h2_string& e, h2_string& a)
+{
+   e.append(std::max(e.length(), a.length()) - e.length(), ' ');
+   a.append(std::max(e.length(), a.length()) - a.length(), ' ');
+}
+
+static inline void samesizify(h2_line& e, h2_line& a)
+{
+   int e_len = h2_line_length(e), a_len = h2_line_length(a);
+   e.push_back(PAD(std::max(e_len, a_len) - e_len));
+   a.push_back(PAD(std::max(e_len, a_len) - a_len));
+}
+
+static inline void samesizify(h2_vector<h2_line>& e, h2_vector<h2_line>& a)
+{
+   int max_y = std::max(e.size(), a.size());
+   for (size_t i = e.size(); i < max_y; ++i) e.push_back(h2_line());
+   for (size_t i = a.size(); i < max_y; ++i) a.push_back(h2_line());
+   // int max_x = std::max(h2_lines_max_length(e), h2_lines_max_length(a));
+   // for (auto& line : e) h2_line_pad_tail(line, max_x);
+   // for (auto& line : a) h2_line_pad_tail(line, max_x);
+}
+
+struct h2_json_parse {
+   const char* text;
+   int length;
+   int offset;
+
+   h2_json_parse(const char* text_, int length_) : text(text_), length(length_), offset(0) {}
+   struct h2_json_parse& strip()
+   {
+      while (offset < length && ::isspace(text[offset])) offset++;
+      return *this;
+   }
+   bool startswith(const char* s, int n)
+   {
+      if (length - offset < n) return false;
+      return ::strncmp(text + offset, s, n) == 0;
+   }
+   bool startswith(char from, char to = '\0')
+   {
+      if (length - offset < 1) return false;
+      if (to == '\0') to = from;
+      return from <= text[offset] && text[offset] <= to;
+   }
+};
+
+struct h2_json_node : h2_libc {
+   static const int t_absent = 0;
    static const int t_null = 1;
    static const int t_boolean = 2;
    static const int t_number = 3;
@@ -10,255 +112,296 @@ struct h2__json {
    static const int t_array = 6;
    static const int t_object = 7;
 
-   static constexpr char indent_char = ' ';
-   static constexpr char samelength_char = ' ';
-   static constexpr char occupy_char = ' ';
-   static constexpr char columns_char = ' ';
+   int type;
+   h2_string key_string;
+   h2_string value_string;
+   double value_double;
+   bool value_boolean;
+   h2_vector<h2_json_node*> children; /* array or object */
 
-   struct P {
-      const char* text;
-      int length;
-      int offset;
-
-      struct P& strip()
-      {
-         while (offset < length && ::isspace(text[offset])) offset++;
-         return *this;
-      }
-      bool startswith(const char* s, int n)
-      {
-         if (length - offset < n) return false;
-         return ::strncmp(text + offset, s, n) == 0;
-      }
-      bool startswith(char from, char to = '\0')
-      {
-         if (length - offset < 1) return false;
-         if (to == '\0') to = from;
-         return from <= text[offset] && text[offset] <= to;
-      }
-   };
-
-   struct Node : h2_libc {
-      int type;
-
-      h2_string key_string;
-      h2_string value_string;
-      double value_double;
-      bool value_boolean;
-      h2_vector<Node*> children; /* array or object */
-
-      Node() : type(t_null), value_double(0), value_boolean(false) {}
-
-      int size() { return children.size(); }
-
-      Node* get(int index) { return 0 <= index && index < children.size() ? children[index] : nullptr; }
-
-      Node* get(const char* name)
-      {
-         if (name)
-            for (auto node : children)
-               if (!node->key_string.compare(name))
-                  return node;
-
-         return nullptr;
-      }
-
-      void del(Node* child)
-      {
-         for (auto it = children.begin(); it != children.end(); it++)
-            if (child == *it) {
-               children.erase(it);
-               delete child;
-               return;
-            }
-      }
-
-      bool is_null() { return t_null == type; }
-      bool is_bool() { return t_boolean == type; }
-      bool is_number() { return t_number == type; }
-      bool is_string() { return t_string == type; }
-      bool is_regexp() { return t_regexp == type; }
-      bool is_array() { return t_array == type; }
-      bool is_object() { return t_object == type; }
-
-      bool parse_number(P& x)
-      {
-         int i;
-         for (i = 0; x.offset + i < x.length; ++i) {
-            const char c = x.text[x.offset + i];
-            if (c == ',' || c == '{' || c == '}' || c == '[' || c == ']' || c == ':' || c == '\0')
-               break;
+   ~h2_json_node()
+   {
+      for (auto it : children) delete it;
+   }
+   h2_json_node() : type(t_absent), value_double(0), value_boolean(false) {}
+   h2_json_node(const char* json_string, int length = 0) : h2_json_node()
+   {
+      if (json_string) {
+         if (length == 0) length = strlen(json_string);
+         if (length) {
+            h2_json_parse x(json_string, length);
+            if (!parse_value(x.strip())) type = t_absent;
          }
+      }
+   }
 
-         value_string.assign(x.text + x.offset, i);
+   int size() { return children.size(); }
 
-         int err = 0;
-         value_double = tinyexpr::eval(value_string.c_str(), &err);
-         type = t_number;
-         x.offset += i;
+   h2_json_node* get(int index) { return 0 <= index && index < children.size() ? children[index] : nullptr; }
 
-         return 0 == err;
+   h2_json_node* get(const char* name)
+   {
+      if (name)
+         for (auto node : children)
+            if (!node->key_string.compare(name))
+               return node;
+
+      return nullptr;
+   }
+
+   void del(h2_json_node* child)
+   {
+      for (auto it = children.begin(); it != children.end(); it++) {
+         if (child == *it) {
+            children.erase(it);
+            delete child;
+            return;
+         }
+      }
+   }
+
+   bool is_null() { return t_null == type; }
+   bool is_bool() { return t_boolean == type; }
+   bool is_number() { return t_number == type; }
+   bool is_string() { return t_string == type; }
+   bool is_regexp() { return t_regexp == type; }
+   bool is_array() { return t_array == type; }
+   bool is_object() { return t_object == type; }
+
+   bool parse_number(h2_json_parse& x)
+   {
+      int i;
+      for (i = 0; x.offset + i < x.length; ++i) {
+         const char c = x.text[x.offset + i];
+         if (c == ',' || c == '{' || c == '}' || c == '[' || c == ']' || c == ':' || c == '\0')
+            break;
       }
 
-      bool parse_string(P& x)
-      {
-         const char bound = x.text[x.offset];
-         x.offset++;
+      value_string.assign(x.text + x.offset, i);
 
+      int err = 0;
+      value_double = tinyexpr::eval(value_string.c_str(), &err);
+      type = t_number;
+      x.offset += i;
+
+      return 0 == err;
+   }
+
+   bool parse_string(h2_json_parse& x)
+   {
+      const char bound = x.text[x.offset];
+      x.offset++;
+
+      if (x.length <= x.offset) return false;
+
+      const char* src = x.text + x.offset;
+      int len = 0;
+      for (; x.text[x.offset] != bound; ++len) {
+         if (x.text[x.offset++] == '\\') x.offset++;
          if (x.length <= x.offset) return false;
-
-         const char* src = x.text + x.offset;
-         int len = 0;
-         for (; x.text[x.offset] != bound; ++len) {
-            if (x.text[x.offset++] == '\\') x.offset++;
-            if (x.length <= x.offset) return false;
-         }
-
-         for (; len > 0; ++src, --len)
-            if (*src != '\\')
-               value_string.push_back(*src);
-            else
-               switch (*++src) {
-               case 'b': value_string.push_back('\b'); break;
-               case 'f': value_string.push_back('\f'); break;
-               case 'n': value_string.push_back('\n'); break;
-               case 'r': value_string.push_back('\r'); break;
-               case 't': value_string.push_back('\t'); break;
-               case '\"': value_string.push_back('\"'); break;
-               case '\\': value_string.push_back('\\'); break;
-               case '/': value_string.push_back('/'); break;
-               default: return false;
-               }
-
-         type = t_string;
-         x.offset++;
-
-         return true;
       }
 
-      bool parse_regexp(P& x)
-      {
-         bool ret = parse_string(x);
-         type = t_regexp;
-         return ret;
-      }
+      for (; len > 0; ++src, --len)
+         if (*src != '\\')
+            value_string.push_back(*src);
+         else
+            switch (*++src) {
+            case 'b': value_string.push_back('\b'); break;
+            case 'f': value_string.push_back('\f'); break;
+            case 'n': value_string.push_back('\n'); break;
+            case 'r': value_string.push_back('\r'); break;
+            case 't': value_string.push_back('\t'); break;
+            case '\"': value_string.push_back('\"'); break;
+            case '\\': value_string.push_back('\\'); break;
+            case '/': value_string.push_back('/'); break;
+            default: return false;
+            }
 
-      bool parse_value(P& x)
-      {
-         /* t_null */
-         if (x.startswith("null", 4)) {
-            type = t_null;
-            x.offset += 4;
-            return true;
-         }
-         /* false */
-         if (x.startswith("false", 5)) {
-            type = t_boolean;
-            value_boolean = false;
-            x.offset += 5;
-            return true;
-         }
-         /* true */
-         if (x.startswith("true", 4)) {
-            type = t_boolean;
-            value_boolean = true;
-            x.offset += 4;
-            return true;
-         }
-         /* string */
-         if (x.startswith('\"') || x.startswith('\'')) return parse_string(x);
-         /* regexp */
-         if (x.startswith('/')) return parse_regexp(x);
+      type = t_string;
+      x.offset++;
 
-         /* array */
-         if (x.startswith('[')) return parse_array(x);
-         /* object */
-         if (x.startswith('{')) return parse_object(x);
-
-         /* number */
-         if (1 /* x.startswith('-') || x.startswith('0', '9') */) return parse_number(x);
-
-         return false;
-      }
-
-      bool parse_array(P& x)
-      {
-         x.offset++;  //pass [
-
-         while (!x.strip().startswith(']')) {
-            Node* new_node = new Node();
-            if (!new_node) return false;
-
-            children.push_back(new_node);
-
-            if (!new_node->parse_value(x)) return false;
-
-            if (x.strip().startswith(',')) x.offset++;
-         }
-
-         type = t_array;
-         x.offset++;
-
-         return true;
-      }
-
-      bool parse_object(P& x)
-      {
-         x.offset++;  //pass {
-
-         while (!x.strip().startswith('}')) {
-            Node* new_node = new Node();
-            if (!new_node) return false;
-
-            children.push_back(new_node);
-
-            if (!new_node->parse_string(x)) return false;
-
-            new_node->key_string = new_node->value_string;
-            new_node->value_string = "";
-
-            if (!x.strip().startswith(':')) return false;
-            x.offset++;
-
-            if (!new_node->parse_value(x.strip())) return false;
-
-            if (x.strip().startswith(',')) x.offset++;
-         }
-
-         type = t_object;
-         x.offset++;
-
-         return true;
-      }
-   };
-
-   static Node* parse(const char* json_string, int length = 0)
-   {
-      if (!json_string) return nullptr;
-      if (length == 0) length = strlen(json_string);
-      if (length == 0) return nullptr;
-
-      P x;
-
-      x.text = json_string;
-      x.length = length;
-      x.offset = 0;
-
-      Node* root = new Node();
-      if (!root->parse_value(x.strip())) return nullptr;
-
-      return root;
+      return true;
    }
 
-   static void frees(Node* root)
+   bool parse_regexp(h2_json_parse& x)
    {
-      if (root) {
-         for (auto node : root->children) frees(node);
-         delete root;
+      bool ret = parse_string(x);
+      type = t_regexp;
+      return ret;
+   }
+
+   bool parse_value(h2_json_parse& x)
+   {
+      /* t_null */
+      if (x.startswith("null", 4)) {
+         type = t_null;
+         x.offset += 4;
+         return true;
+      }
+      /* false */
+      if (x.startswith("false", 5)) {
+         type = t_boolean;
+         value_boolean = false;
+         x.offset += 5;
+         return true;
+      }
+      /* true */
+      if (x.startswith("true", 4)) {
+         type = t_boolean;
+         value_boolean = true;
+         x.offset += 4;
+         return true;
+      }
+      /* string */
+      if (x.startswith('\"') || x.startswith('\'')) return parse_string(x);
+      /* regexp */
+      if (x.startswith('/')) return parse_regexp(x);
+
+      /* array */
+      if (x.startswith('[')) return parse_array(x);
+      /* object */
+      if (x.startswith('{')) return parse_object(x);
+
+      /* number */
+      if (1 /* x.startswith('-') || x.startswith('0', '9') */) return parse_number(x);
+
+      return false;
+   }
+
+   bool parse_array(h2_json_parse& x)
+   {
+      x.offset++;  //pass [
+
+      while (!x.strip().startswith(']')) {
+         h2_json_node* new_node = new h2_json_node();
+         if (!new_node) return false;
+
+         children.push_back(new_node);
+
+         if (!new_node->parse_value(x)) return false;
+
+         if (x.strip().startswith(',')) x.offset++;
+      }
+
+      type = t_array;
+      x.offset++;
+
+      return true;
+   }
+
+   bool parse_object(h2_json_parse& x)
+   {
+      x.offset++;  //pass {
+
+      while (!x.strip().startswith('}')) {
+         h2_json_node* new_node = new h2_json_node();
+         if (!new_node) return false;
+
+         children.push_back(new_node);
+
+         if (!new_node->parse_string(x)) return false;
+
+         new_node->key_string = new_node->value_string;
+         new_node->value_string = "";
+
+         if (!x.strip().startswith(':')) return false;
+         x.offset++;
+
+         if (!new_node->parse_value(x.strip())) return false;
+
+         if (x.strip().startswith(',')) x.offset++;
+      }
+
+      type = t_object;
+      x.offset++;
+
+      return true;
+   }
+
+   void dual(int& _type, const char*& _class, h2_string& _key, h2_string& _value)
+   {
+      _type = t_string;
+
+      if (key_string.size()) _key = "\"" + key_string + "\"";
+
+      switch (type) {
+      case t_null:
+         _type = t_string;
+         _class = "atomic";
+         _value = "null";
+         break;
+      case t_boolean:
+         _type = t_string;
+         _class = "atomic";
+         _value = value_boolean ? "true" : "false";
+         break;
+      case t_number:
+         _type = t_string;
+         _class = "atomic";
+         _value = h2_string(value_double);
+         break;
+      case t_string:
+         _type = t_string;
+         _class = "atomic";
+         _value = "\"" + value_string + "\"";
+         break;
+      case t_regexp:
+         _type = t_string;
+         _class = "atomic";
+         _value = value_string;
+         break;
+      case t_array:
+         _type = t_array;
+         _class = "array";
+         break;
+      case t_object:
+         _type = t_object;
+         _class = "object";
+         break;
       }
    }
 
-   static bool match_array(Node* e, Node* a)
+   void print(h2_vector<h2_line>& lines, int depth = 0, int next = 0, bool fold = false)
+   {
+      h2_line line = {indent(depth)};
+
+      if (key_string.size())
+         line.push_back("\"" + key_string + "\": ");
+      if (is_null())
+         line.push_back("null");
+      else if (is_bool())
+         line.push_back(value_boolean ? "true" : "false");
+      else if (is_number())
+         line.push_back(value_double);
+      else if (is_string())
+         line.push_back("\"" + value_string + "\"");
+      else if (is_regexp())
+         line.push_back("\"/" + value_string + "/\"");
+      else if (is_array() || is_object()) {
+         line.push_back(is_array() ? "[ " : "{ ");
+         h2_vector<h2_line> __lines;
+         for (size_t i = 0; i < children.size(); i++) {
+            children[i]->print(__lines, depth + 1, children.size() - i - 1, fold);
+         }
+         if (fold && h2_lines_foldable(__lines)) {
+            h2_lines_folds(__lines, line);
+            line.push_back(is_array() ? " ]" : " }");
+         } else {
+            lines.push_back(line), line.clear();
+            lines.insert(lines.end(), __lines.begin(), __lines.end());
+            line.push_back(indent(depth));
+            line.push_back(is_array() ? "]" : "}");
+         }
+      }
+      if (line.size()) {
+         if (next) line.push_back(",");
+         lines.push_back(line), line.clear();
+      }
+   }
+};
+
+struct h2_json_match {
+   static bool match_array(h2_json_node* e, h2_json_node* a)
    {
       if (!e || !a) return false;
       if (e->children.size() != a->children.size()) return false;
@@ -268,7 +411,7 @@ struct h2__json {
       return true;
    }
 
-   static bool match_object(Node* e, Node* a)
+   static bool match_object(h2_json_node* e, h2_json_node* a)
    {
       if (!e || !a) return false;
       if (e->children.size() > a->children.size()) return false;
@@ -278,122 +421,67 @@ struct h2__json {
       return true;
    }
 
-   static bool match(Node* e, Node* a)
+   static bool match(h2_json_node* e, h2_json_node* a)
    {
       if (!e || !a) return false;
       switch (e->type) {
-      case t_null:
+      case h2_json_node::t_null:
          return a->is_null();
-      case t_boolean:
+      case h2_json_node::t_boolean:
          return a->is_bool() && e->value_boolean == a->value_boolean;
-      case t_number:
+      case h2_json_node::t_number:
          return a->is_number() && ::fabs(e->value_double - a->value_double) < 0.00001;
-      case t_string:
+      case h2_json_node::t_string:
          return a->is_string() && e->value_string == a->value_string;
-      case t_regexp:
+      case h2_json_node::t_regexp:
          return a->is_string() && h2_regex_match(e->value_string.c_str(), a->value_string.c_str());
-      case t_array:
+      case h2_json_node::t_array:
          return a->is_array() && match_array(e, a);
-      case t_object:
+      case h2_json_node::t_object:
          return a->is_object() && match_object(e, a);
       default: return false;
       };
    }
 
-   struct Dual : h2_libc {
-      int depth;
-      int e_type, a_type;
-      h2_string e_key, a_key;
-      h2_string e_value, a_value;
-      h2_vector<Dual*> child;
-      Dual* perent;
-
-      Dual(int depth_, Dual* perent_) : depth(depth_), e_type(t_absent), a_type(t_absent), perent(perent_) {}
-   };
-
-   static void frees(Dual* root)
+   static h2_json_node* search(h2_vector<h2_json_node*>& haystack, h2_json_node* needle)
    {
-      if (root) {
-         for (auto dual : root->child) frees(dual);
-         delete root;
-      }
+      for (auto node : haystack)
+         if (match(needle, node)) return node;
+
+      return nullptr;
+   }
+};
+
+struct h2_json_dual : h2_libc {  // combine 2 Node into a Dual
+   int e_type, a_type;
+   const char *e_class, *a_class;
+   h2_string e_key, a_key;
+   h2_string e_value, a_value;
+   h2_vector<h2_line> e_blob, a_blob;
+   h2_vector<h2_json_dual*> children;
+   h2_json_dual* perent;
+   int depth;
+
+   ~h2_json_dual()
+   {
+      for (auto it : children) delete it;
    }
 
-   static void node2dual(Node* node, int& type, h2_string& key, h2_string& value)
+   h2_json_dual(h2_json_node* e, h2_json_node* a, h2_json_dual* perent_ = nullptr) : e_type(h2_json_node::t_absent), a_type(h2_json_node::t_absent), e_class("blob"), a_class("blob"), perent(perent_), depth(perent_ ? perent_->depth + 1 : 0)
    {
-      if (!node) return;
+      if (e) e->dual(e_type, e_class, e_key, e_value);
+      if (a) a->dual(a_type, a_class, a_key, a_value);
 
-      type = t_string;
-
-      if (node->key_string.size()) key = "\"" + node->key_string + "\"";
-
-      switch (node->type) {
-      case t_null:
-         type = t_string;
-         value = "null";
-         break;
-      case t_boolean:
-         type = t_string;
-         value = node->value_boolean ? "true" : "false";
-         break;
-      case t_number:
-         type = t_string;
-         value.sprintf("%1.15g", node->value_double);
-         break;
-      case t_string:
-         type = t_string;
-         value = "\"" + node->value_string + "\"";
-         break;
-      case t_regexp:
-         type = t_string;
-         value = node->value_string;
-         break;
-      case t_array:
-         type = t_array;
-         break;
-      case t_object:
-         type = t_object;
-         break;
-      }
-   }
-
-   static void samelengthify(h2_string& e, h2_string& a)
-   {
-      int e_l = e.length(), a_l = a.length();
-
-      e.append(std::max(e_l, a_l) - e_l, samelength_char);
-      a.append(std::max(e_l, a_l) - a_l, samelength_char);
-   }
-
-   static void dual(Node* e, Node* a, Dual* d)
-   {
-      node2dual(e, d->e_type, d->e_key, d->e_value);
-      node2dual(a, d->a_type, d->a_key, d->a_value);
-      samelengthify(d->e_key, d->a_key);
-      samelengthify(d->e_value, d->a_value);
-
-      if (d->e_type != d->a_type) {
-         if (d->e_type == t_object) d->e_type = t_string, d->e_value = "{ ... }";
-         if (d->e_type == t_array) d->e_type = t_string, d->e_value = "[ ... ]";
-         if (d->a_type == t_object) d->a_type = t_string, d->a_value = "{ ... }";
-         if (d->a_type == t_array) d->a_type = t_string, d->a_value = "[ ... ]";
-         samelengthify(d->e_value, d->a_value);
-         return;
-      }
-
-      if (d->e_type == t_object) {
+      if (e_type != a_type) {
+         if (e) e->print(e_blob, depth, 0, true);
+         if (a) a->print(a_blob, depth, 0, true);
+         e_class = a_class = "blob";
+      } else if (e_type == h2_json_node::t_object) {
          for (auto i = e->children.begin(); i != e->children.end();) {
-            Node *e1 = *i, *a1 = a->get(e1->key_string.c_str());
-            if (!a1)
-               for (auto& j : a->children)
-                  if (match(e1, j)) {
-                     a1 = j;
-                     break;
-                  }
+            h2_json_node *e1 = *i, *a1 = a->get(e1->key_string.c_str());
+            if (!a1) a1 = h2_json_match::search(a->children, e1);
             if (a1) {
-               Dual* d1 = new Dual(d->depth + 1, d);
-               d->child.push_back(d1);
-               dual(e1, a1, d1);
+               children.push_back(new h2_json_dual(e1, a1, this));
                a->del(a1);
                i = e->children.erase(i);
                delete e1;
@@ -402,223 +490,167 @@ struct h2__json {
          }
 
          for (int i = 0; i < std::max(e->children.size(), a->children.size()); ++i) {
-            Dual* d1 = new Dual(d->depth + 1, d);
-            d->child.push_back(d1);
-            Node *e1 = e->get(i), *a1 = a->get(i);
-            dual(e1, a1, d1);
+            children.push_back(new h2_json_dual(e->get(i), a->get(i), this));
          }
-      }
-
-      if (d->e_type == t_array) {
+      } else if (e_type == h2_json_node::t_array) {
          for (int i = 0; i < std::max(e->children.size(), a->children.size()); ++i) {
-            Dual* d1 = new Dual(d->depth + 1, d);
-            d->child.push_back(d1);
-            Node *e1 = e->get(i), *a1 = a->get(i);
-            dual(e1, a1, d1);
+            children.push_back(new h2_json_dual(e->get(i), a->get(i), this));
          }
       }
    }
 
-   static h2_string indent(int depth) { return h2_string(depth * 2, indent_char); }
-   static h2_string occupy(h2_string p) { return h2_string(p.length(), occupy_char); }
-
-   static void diff(Dual* d, h2_vector<h2_string>& e, h2_vector<h2_string>& a)
+   bool has_next_e(h2_vector<h2_json_dual*>& subling)
    {
-      if (!d) return;
-      e.push_back("\n");
-      e.push_back(indent(d->depth));
-      a.push_back("\n");
-      a.push_back(indent(d->depth));
-
-      if (d->e_type != t_absent) {
-         if (d->a_type == t_absent) {  // only e-side exist
-            if (d->e_key.size()) {
-               e.push_back("#cyan");
-               e.push_back(d->e_key + ": ");
-               e.push_back("#reset");
+      for (size_t i = 0; i < subling.size(); ++i) {
+         if (subling[i] == this) {
+            for (++i; i < subling.size(); ++i) {
+               if (subling[i]->e_type != h2_json_node::t_absent)
+                  return true;
             }
-            if (d->e_value.size()) {
-               e.push_back("#cyan");
-               e.push_back(d->e_value);
-               e.push_back("#reset");
-            }
-         } else {
-            if (d->e_key.size()) {
-               if (d->e_key != d->a_key) e.push_back("#green");
-               e.push_back(d->e_key);
-               if (d->e_key != d->a_key) e.push_back("#reset");
-               e.push_back(": ");
-            }
-            if (d->e_value.size()) {
-               if (d->e_value != d->a_value) e.push_back("#green");
-               e.push_back(d->e_value);
-               if (d->e_value != d->a_value) e.push_back("#reset");
-            }
-         }
-      } else {
-         if (d->a_key.size()) e.push_back(occupy(d->a_key + ": "));
-         if (d->a_value.size()) e.push_back(occupy(d->a_value));
-      }
-
-      if (d->a_type != t_absent) {
-         if (d->e_type == t_absent) {  // only a-side exist
-            const char* style = "#red,bold";
-            if (d->perent && d->perent->a_type == t_object) {
-               style = "#yellow";
-            }
-            if (d->a_key.size()) {
-               a.push_back(style);
-               a.push_back(d->a_key + ": ");
-               a.push_back("#reset");
-            }
-            if (d->a_value.size()) {
-               a.push_back(style);
-               a.push_back(d->a_value);
-               a.push_back("#reset");
-            }
-         } else {
-            if (d->a_key.size()) {
-               if (d->a_key != d->e_key) a.push_back("#red,bold");
-               a.push_back(d->a_key);
-               if (d->a_key != d->e_key) a.push_back("#reset");
-               a.push_back(": ");
-            }
-            if (d->a_value.size()) {
-               if (d->a_value != d->e_value) a.push_back("#red,bold");
-               a.push_back(d->a_value);
-               if (d->a_value != d->e_value) a.push_back("#reset");
-            }
-         }
-      } else {
-         if (d->e_key.size()) a.push_back(occupy(d->e_key + ": "));
-         if (d->e_value.size()) a.push_back(occupy(d->e_value));
-      }
-
-      /* e/a type shoud be same */
-
-      if (d->e_type == t_object && d->a_type == t_object) {
-         e.push_back("{");
-         a.push_back("{");
-      }
-      if (d->e_type == t_array && d->a_type == t_array) {
-         e.push_back("[");
-         a.push_back("[");
-      }
-
-      if ((d->e_type == t_object && d->a_type == t_object) || (d->e_type == t_array && d->a_type == t_array)) {
-         for (int i = 0; i < d->child.size(); i++) {
-            diff(d->child[i], e, a);
-
-            bool e_not_last = false, a_not_last = false;
-            for (int j = i + 1; j < d->child.size(); j++) {
-               e_not_last = e_not_last || (d->child[j]->e_type != t_absent);
-               a_not_last = a_not_last || (d->child[j]->a_type != t_absent);
-            }
-            if (e_not_last) e.push_back(",");
-            if (a_not_last) a.push_back(",");
-         }
-         if (d->child.size()) {
-            e.push_back("\n");
-            e.push_back(indent(d->depth));
-            a.push_back("\n");
-            a.push_back(indent(d->depth));
+            break;
          }
       }
-
-      if (d->e_type == t_object && d->a_type == t_object) {
-         e.push_back("}");
-         a.push_back("}");
-      }
-      if (d->e_type == t_array && d->a_type == t_array) {
-         e.push_back("]");
-         a.push_back("]");
-      }
+      return false;
    }
 
-   typedef h2_vector<h2_string> Line;
-   typedef h2_vector<Line> Lines;
-
-   static void merge_line(h2_vector<h2_string>& list, Lines& lines)
+   bool has_next_a(h2_vector<h2_json_dual*>& subling)
    {
-      Line line;
-      for (auto& s : list) {
-         if (s == "\n") {
-            lines.push_back(line);
-            line.clear();
-            continue;
+      for (size_t i = 0; i < subling.size(); ++i) {
+         if (subling[i] == this) {
+            for (++i; i < subling.size(); ++i) {
+               if (subling[i]->a_type != h2_json_node::t_absent)
+                  return true;
+            }
+            break;
          }
-         line.push_back(s);
       }
-      lines.push_back(line);
-      line.clear();
+      return false;
    }
 
-   static int lines_most(Lines& lines)
+   void align(h2_vector<h2_line>& e, h2_vector<h2_line>& a, h2_vector<h2_json_dual*>* subling = nullptr)
    {
-      int most = 0;
-      for (auto& line : lines) {
-         int curr = 0;
-         for (auto& word : line)
-            if (word[0] != '#') curr += word.length();
-         most = std::max(most, curr);
-      }
-      return most;
-   }
+      if (!strcmp(e_class, "blob")) {
+         samesizify(e_blob, a_blob);
+         for (auto& line : e_blob)
+            line.insert(line.begin(), "\033[bold,cyan]"), line.push_back("\033[reset]");
 
-   static int line_wrap(Line& line, int columns)
+         for (auto& line : a_blob)
+            line.insert(line.begin(), "\033[yellow]"), line.push_back("\033[reset]");
+
+         e.insert(e.end(), e_blob.begin(), e_blob.end());
+         a.insert(a.end(), a_blob.begin(), a_blob.end());
+         return;
+      }
+
+      h2_line e_line = {indent(depth)};
+      h2_line a_line = {indent(depth)};
+
+      // samesizify(e_key, a_key);
+      // samesizify(e_value, a_value);
+
+      if (e_key.size()) {
+         if (e_key != a_key) e_line.push_back("\033[green]");
+         e_line.push_back(e_key);
+         if (e_key != a_key) e_line.push_back("\033[reset]");
+         e_line.push_back(": ");
+      }
+
+      if (a_key.size()) {
+         if (a_key != e_key) a_line.push_back("\033[red,bold]");
+         a_line.push_back(a_key);
+         if (a_key != e_key) a_line.push_back("\033[reset]");
+         a_line.push_back(": ");
+      }
+
+      if (!strcmp(e_class, "atomic")) {
+         if (e_value.size()) {
+            if (e_value != a_value) e_line.push_back("\033[green]");
+            e_line.push_back(e_value);
+            if (e_value != a_value) e_line.push_back("\033[reset]");
+         }
+         if (a_value.size()) {
+            if (a_value != e_value) a_line.push_back("\033[red,bold]");
+            a_line.push_back(a_value);
+            if (a_value != e_value) a_line.push_back("\033[reset]");
+         }
+      } else if (!strcmp(e_class, "object") || !strcmp(e_class, "array")) {
+         e_line.push_back(strcmp(e_class, "object") ? "[ " : "{ ");
+         a_line.push_back(strcmp(a_class, "object") ? "[ " : "{ ");
+
+         e.push_back(e_line), e_line.clear();
+         a.push_back(a_line), a_line.clear();
+         for (size_t i = 0; i < children.size(); i++) {
+            children[i]->align(e, a, &children);
+         }
+         e_line.push_back(indent(depth));
+         e_line.push_back(strcmp(e_class, "object") ? "]" : "}");
+         a_line.push_back(indent(depth));
+         a_line.push_back(strcmp(a_class, "object") ? "]" : "}");
+      }
+      if (e_line.size()) {
+         if (subling && has_next_e(*subling)) e_line.push_back(",");
+         e.push_back(e_line), e_line.clear();
+      }
+      if (a_line.size()) {
+         if (subling && has_next_a(*subling)) a_line.push_back(",");
+         a.push_back(a_line), a_line.clear();
+      }
+   }
+};
+
+struct h2_json_diff {
+   static int line_wrap(h2_line& line, int width)
    {
       int char_count = 0;
       for (auto& word : line)
-         if (word[0] != '#') char_count += word.length();
+         if (!h2_color::is_ctrl(word.c_str()))
+            char_count += word.length();
 
-      return ::ceil(char_count / (double)columns);  // num_of_line
+      return ::ceil(char_count / (double)width);  // num_of_line
    }
 
-   static h2_string line_wrap(Line& line, int index, int columns, h2_string& current_style)
+   static h2_string line_wrap(h2_line& line, int index, int width, h2_string& current_style)
    {
       int s = 0, u = 0;
       h2_string wrap;
-      for (auto& word : line)
-         if (word[0] == '#') {
-            if (index * columns <= s && s < (index + 1) * columns) {
-               const char* style = word.c_str() + 1;
-               wrap.append(O.style(style));
-               current_style = style;
+      for (auto& word : line) {
+         if (h2_color::is_ctrl(word.c_str())) {
+            if (index * width <= s && s < (index + 1) * width) {
+               wrap.append(word);
+               current_style = word;
             }
          } else {
             for (auto& c : word) {
-               if (index * columns <= s && s < (index + 1) * columns) {
+               if (index * width <= s && s < (index + 1) * width) {
                   wrap.append(1, c);
                   ++u;
                }
                ++s;
             }
          }
-
-      wrap.append(columns - u, columns_char);
+      }
+      wrap.append(width - u, ' ');
       return wrap;
    }
 
-   static void print(Lines& e_lines, Lines& a_lines, int side_width, h2_string& str)
+   static void print(h2_vector<h2_line>& e_lines, h2_vector<h2_line>& a_lines, int width, h2_string& str)
    {
       h2_string e_last_style, a_last_style;
-      // assert(e_lines.size() == a_lines.size());
       for (int i = 0; i < std::max(e_lines.size(), a_lines.size()); ++i) {
          auto e_line = e_lines[i];
          auto a_line = a_lines[i];
-         int e_wraps = line_wrap(e_line, side_width - 2);
-         int a_wraps = line_wrap(a_line, side_width - 2);
-         // assert(e_wraps == a_wraps);
+         int e_wraps = line_wrap(e_line, width - 2);
+         int a_wraps = line_wrap(a_line, width - 2);
          int K = std::max(e_wraps, a_wraps);
          for (int j = 0; j < K; ++j) {
             h2_string e_current_style, a_current_style;
-            auto e_wrap = line_wrap(e_line, j, side_width - 2, e_current_style);
-            auto a_wrap = line_wrap(a_line, j, side_width - 2, a_current_style);
-            str.sprintf("%s %s %s %s\n",
-                        SF(e_last_style.c_str(), "%s", e_wrap.c_str()),
-                        SF("dark gray", j == K - 1 ? " │" : "\\│"),
-                        SF(a_last_style.c_str(), "%s", a_wrap.c_str()),
-                        SF("dark gray", j == K - 1 ? " " : "\\"));
+            auto e_wrap = line_wrap(e_line, j, width - 2, e_current_style);
+            auto a_wrap = line_wrap(a_line, j, width - 2, a_current_style);
+            str.sprintf("%s%s%s %s%s%s %s%s%s %s%s%s\n",
+                        e_last_style.c_str(), e_wrap.c_str(), "\033[reset]",
+                        "\033[dark gray]", j == K - 1 ? " │" : "\\│", "\033[reset]",
+                        a_last_style.c_str(), a_wrap.c_str(), "\033[reset]",
+                        "\033[dark gray]", j == K - 1 ? " " : "\\", "\033[reset]");
 
             e_last_style = e_current_style;
             a_last_style = a_current_style;
@@ -629,38 +661,23 @@ struct h2__json {
 
 h2_inline bool h2_json::match(const h2_string expect, const h2_string actual)
 {
-   h2__json::Node *e = h2__json::parse(expect.c_str()), *a = h2__json::parse(actual.c_str());
-
-   bool result = h2__json::match(e, a);
-
-   h2__json::frees(e);
-   h2__json::frees(a);
-
-   return result;
+   h2_json_node e(expect.c_str());
+   h2_json_node a(actual.c_str());
+   return h2_json_match::match(&e, &a);
 }
 
 h2_inline int h2_json::diff(const h2_string expect, const h2_string actual, int terminal_width, h2_string& str)
 {
-   h2__json::Node *e_node = h2__json::parse(expect.c_str()), *a_node = h2__json::parse(actual.c_str());
+   h2_json_node e_node(expect.c_str());
+   h2_json_node a_node(actual.c_str());
 
-   h2__json::Dual* d = new h2__json::Dual(0, nullptr);
-   h2__json::dual(e_node, a_node, d);
+   h2_vector<h2_line> e_lines, a_lines;
+   h2_json_dual dual(&e_node, &a_node);
+   dual.align(e_lines, a_lines);
 
-   h2__json::frees(e_node);
-   h2__json::frees(a_node);
-
-   h2_vector<h2_string> e_list, a_list;
-   h2__json::diff(d, e_list, a_list);
-   h2__json::frees(d);
-
-   h2__json::Lines e_lines, a_lines;
-   h2__json::merge_line(e_list, e_lines);
-   h2__json::merge_line(a_list, a_lines);
-
-   int e_most = h2__json::lines_most(e_lines), a_most = h2__json::lines_most(a_lines);
-   int fav_width = std::max(std::max(e_most, a_most) + 3, 30);
+   int fav_width = std::max(std::max(h2_lines_max_length(e_lines), h2_lines_max_length(a_lines)) + 3, 30);
    int side_width = std::min(terminal_width / 2 - 4, fav_width);
+   h2_json_diff::print(e_lines, a_lines, side_width, str);
 
-   h2__json::print(e_lines, a_lines, side_width, str);
    return side_width;
 }

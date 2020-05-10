@@ -101,18 +101,20 @@ static inline char* SF(const char* style, const char* fmt, ...)
    if (sp < sb || sb + sizeof(sb) / 2 < sp) sp = sb;
    char *s = sp, *p = s;
 
-   p += sprintf(p, "%s", h2_option::I().style(style));
+   p += sprintf(p, "\033[%s]", style);
    va_list a;
    va_start(a, fmt);
    p += vsprintf(p, fmt, a);
    va_end(a);
-   p += sprintf(p, "%s", h2_option::I().style("reset"));
+   p += sprintf(p, "\033[%s]", "reset");
 
    sp = p + 1;
    return s;
 }
 
 struct h2_color {
+   static bool is_ctrl(const char* s) { return s[0] == '\033' && s[1] == '['; };
+
    struct st {
       const char* name;
       int value;
@@ -237,11 +239,11 @@ static inline int h2_printf(const char* format, ...)
    va_end(b);
 
    for (char* p = tmp; *p; p++) {
-      if (!memcmp("\033[", p, 2)) {
+      if (h2_color::is_ctrl(p)) {
          char* q = strchr(p + 2, ']');
          if (!q) return 0;
          *q = '\0';
-         h2_color::print(p + 2);
+         if (h2_option::I().colorable) h2_color::print(p + 2);
          p = q;
       } else {
          ret += h2_libc::write(fileno(stdout), p, 1);

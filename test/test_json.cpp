@@ -1,6 +1,6 @@
 #include "../source/h2_unit.cpp"
 
-static int __node_tojson(h2::h2__json::Node* node, char* b)
+static int __node_tojson(h2::h2_json_node* node, char* b)
 {
    int l = 0;
 
@@ -44,104 +44,167 @@ static int __node_tojson(h2::h2__json::Node* node, char* b)
    return l;
 }
 
-char* node_tojson(h2::h2__json::Node* node, char* b)
+char* node_tojson(h2::h2_json_node* node, char* b)
 {
    __node_tojson(node, b);
    return b;
 }
 
-SUITE(json parser)
+static const char* __type_tostr(const int type)
+{
+   switch (type) {
+   case h2::h2_json_node::t_absent: return "absent";
+   case h2::h2_json_node::t_null: return "null";
+   case h2::h2_json_node::t_boolean: return "boolean";
+   case h2::h2_json_node::t_number: return "number";
+   case h2::h2_json_node::t_string: return "string";
+   case h2::h2_json_node::t_regexp: return "regexp";
+   case h2::h2_json_node::t_array: return "array";
+   case h2::h2_json_node::t_object: return "object";
+   }
+   return "?";
+}
+
+static int __dual_tostr(h2::h2_json_dual* dual, char* b)
+{
+   int l = 0;
+
+   l += sprintf(b + l, "(%d;%s-%s;%s-%s;%s-%s)", dual->depth,
+                __type_tostr(dual->e_type), __type_tostr(dual->e_type),
+                dual->e_key.c_str(), dual->a_key.c_str(),
+                dual->e_value.c_str(), dual->a_value.c_str());
+
+   if (dual->children.size()) {
+      l += sprintf(b + l, "[");
+      for (size_t i = 0; i < dual->children.size(); i++) {
+         l += __dual_tostr(dual->children[i], b + l);
+      }
+      l += sprintf(b + l, "]");
+   }
+   return l;
+}
+
+char* dual_tostr(h2::h2_json_dual* dual, char* b)
+{
+   __dual_tostr(dual, b);
+   return b;
+}
+
+SUITE(json utils)
+{
+   Case(h2_line_pad_tail)
+   {
+      h2::h2_line line = {"hello", " ", "world"};
+      h2::h2_line_pad_tail(line, 15);
+      OK(ListOf("hello", " ", "world", "    "), line);
+   }
+
+   Case(samesizify string)
+   {
+      h2::h2_string e = "123456";
+      h2::h2_string a = "123";
+      h2::samesizify(e, a);
+      OK("123456", e);
+      OK("123   ", a);
+   }
+
+   Todo(samesizify lines)
+   {
+      h2::h2_vector<h2::h2_line> e = {{"123", "456"}, {"1234"}};
+      h2::h2_vector<h2::h2_line> a = {{"12345"}};
+      samesizify(e, a);
+
+      OK(ListOf(
+           ListOf("123", "456"),
+           ListOf("1234", "  ")),
+         e);
+
+      OK(ListOf(
+           ListOf("12345", " "),
+           ListOf("      ")),
+         a);
+   }
+}
+
+SUITE(json node)
 {
    char t2[1024 * 32];
 
    Case(number)
    {
       const char* n1 = "-123.456";
-      h2::h2__json::Node* c1 = h2::h2__json::parse(n1);
-      OK(c1->is_number());
-      OK(-123.456, c1->value_double);
-      h2::h2__json::frees(c1);
+      h2::h2_json_node c1(n1);
+      OK(c1.is_number());
+      OK(-123.456, c1.value_double);
 
       const char* n2 = "0";
-      h2::h2__json::Node* c2 = h2::h2__json::parse(n2);
-      OK(c2->is_number());
-      OK(0, c2->value_double);
-      h2::h2__json::frees(c2);
+      h2::h2_json_node c2(n2);
+      OK(c2.is_number());
+      OK(0, c2.value_double);
 
       const char* n3 = "-1";
-      h2::h2__json::Node* c3 = h2::h2__json::parse(n3);
-      OK(c3->is_number());
-      OK(-1, c3->value_double);
-      h2::h2__json::frees(c3);
+      h2::h2_json_node c3(n3);
+      OK(c3.is_number());
+      OK(-1, c3.value_double);
 
       const char* n4 = "12345678";
-      h2::h2__json::Node* c4 = h2::h2__json::parse(n4, 4);
-      OK(c4->is_number());
-      OK(1234, c4->value_double);
-      h2::h2__json::frees(c4);
+      h2::h2_json_node c4(n4, 4);
+      OK(c4.is_number());
+      OK(1234, c4.value_double);
 
       const char* n5 = "3+2*(4-sqrt(4))";
-      h2::h2__json::Node* c5 = h2::h2__json::parse(n5);
-      OK(c5->is_number());
-      OK(7, c5->value_double);
-      h2::h2__json::frees(c5);
+      h2::h2_json_node c5(n5);
+      OK(c5.is_number());
+      OK(7, c5.value_double);
    }
 
    Case(number error)
    {
       const char* n1 = "";
-      h2::h2__json::Node* c1 = h2::h2__json::parse(n1);
-      OK(NULL == c1);
+      h2::h2_json_node c1(n1);
+      OK(c1.type == h2::h2_json_node::t_absent);
 
       const char* n2 = "-";
-      h2::h2__json::Node* c2 = h2::h2__json::parse(n2);
-      OK(NULL == c2);
+      h2::h2_json_node c2(n2);
+      OK(c2.type == h2::h2_json_node::t_absent);
    }
 
    Case(string)
    {
       const char* n1 = "\"\"";
-      h2::h2__json::Node* c1 = h2::h2__json::parse(n1);
-      OK(c1->is_string());
-      OK("", c1->value_string);
-      h2::h2__json::frees(c1);
+      h2::h2_json_node c1(n1);
+      OK(c1.is_string());
+      OK("", c1.value_string);
 
       const char* n2 = "\"12345678\"";
-      h2::h2__json::Node* c2 = h2::h2__json::parse(n2);
-      OK(c2->is_string());
-      OK("12345678", c2->value_string);
-      h2::h2__json::frees(c2);
+      h2::h2_json_node c2(n2);
+      OK(c2.is_string());
+      OK("12345678", c2.value_string);
 
       const char* n3 = "'12345678'";
-      h2::h2__json::Node* c3 = h2::h2__json::parse(n3);
-      OK(c2->is_string());
-      OK("12345678", c3->value_string);
-      h2::h2__json::frees(c3);
+      h2::h2_json_node c3(n3);
+      OK(c2.is_string());
+      OK("12345678", c3.value_string);
    }
 
    Case(string error)
    {
-      const char* n3 = "\"12345678\"";
-      h2::h2__json::Node* c3 = h2::h2__json::parse(n3, 4);
-      OK(NULL == c3);
+      h2::h2_json_node c1("\"12345678\"", 4);
+      OK(c1.type == h2::h2_json_node::t_absent);
    }
 
    Case(regexp)
    {
-      const char* n3 = "/123*567/";
-      h2::h2__json::Node* c3 = h2::h2__json::parse(n3);
-      OK(c3->is_regexp());
-      OK("123*567", c3->value_string);
-      h2::h2__json::frees(c3);
+      h2::h2_json_node c1("/123*567/");
+      OK(c1.is_regexp());
+      OK("123*567", c1.value_string);
    }
 
    Case(empty array)
    {
-      const char* n1 = " []";
-      h2::h2__json::Node* c1 = h2::h2__json::parse(n1);
-      OK(c1->is_array());
-      OK(0, c1->size());
-      h2::h2__json::frees(c1);
+      h2::h2_json_node c1(" []");
+      OK(c1.is_array());
+      OK(0, c1.size());
    }
 
    Case(normal array)
@@ -149,137 +212,129 @@ SUITE(json parser)
       const char* week = "[\"Sunday\", 'Monday', \"Tuesday\", \"Wednesday\", "
                          "\"Thursday\", \"Friday\", \"Saturday\"]";
 
-      h2::h2__json::Node* c = h2::h2__json::parse(week);
+      h2::h2_json_node c1(week);
 
-      OK(c->is_array());
-      OK(0, c->key_string.size());
-      OK(7, c->size());
+      OK(c1.is_array());
+      OK(0, c1.key_string.size());
+      OK(7, c1.size());
 
-      h2::h2__json::Node* d[7];
-      d[0] = c->get(0);
+      h2::h2_json_node* d[7];
+      d[0] = c1.get(0);
       OK("Sunday", d[0]->value_string);
 
-      d[1] = c->get(1);
+      d[1] = c1.get(1);
       OK("Monday", d[1]->value_string);
 
-      d[2] = c->get(2);
+      d[2] = c1.get(2);
       OK("Tuesday", d[2]->value_string);
 
-      d[3] = c->get(3);
+      d[3] = c1.get(3);
       OK("Wednesday", d[3]->value_string);
 
-      d[4] = c->get(4);
+      d[4] = c1.get(4);
       OK("Thursday", d[4]->value_string);
 
-      d[5] = c->get(5);
+      d[5] = c1.get(5);
       OK("Friday", d[5]->value_string);
 
-      d[6] = c->get(6);
+      d[6] = c1.get(6);
       OK("Saturday", d[6]->value_string);
 
-      JE(week, node_tojson(c, t2));
+      JE(week, node_tojson(&c1, t2));
 
-      OK(NULL == c->get("ling"));
+      OK(NULL == c1.get("ling"));
 
-      for (int i = 0; i < c->size(); i++) {
-         OK(d[i]->value_string, c->children[i]->value_string);
+      for (int i = 0; i < c1.size(); i++) {
+         OK(d[i]->value_string, c1.children[i]->value_string);
       }
-
-      h2::h2__json::frees(c);
    }
 
    Case(empty object)
    {
-      const char* n1 = " {  }";
-      h2::h2__json::Node* c1 = h2::h2__json::parse(n1);
-      OK(c1->is_object());
-      OK(0, c1->size());
-      h2::h2__json::frees(c1);
+      h2::h2_json_node c1(" {  }");
+      OK(c1.is_object());
+      OK(0, c1.size());
    }
 
    Case(normal object)
    {
-      const char* obj = "{                                                 \
+      const char* obj = "{                                              \
         \"data\": 'Click Here',                                         \
         'size': 36,                                                     \
         \"alignment\": true,                                            \
         \"bold\": false,                                                \
         \"token\": null,                                                \
         \"onMouseUp\": \"sun1.opacity = (sun1.opacity / 100) * 90;\"    \
-    }";
+      }";
 
-      h2::h2__json::Node* c = h2::h2__json::parse(obj);
+      h2::h2_json_node c(obj);
 
-      OK(c->is_object());
-      OK(6, c->size());
+      OK(c.is_object());
+      OK(6, c.size());
 
-      h2::h2__json::Node* c0 = c->get(0);
+      h2::h2_json_node* c0 = c.get(0);
       OK(c0->is_string());
       OK("data", c0->key_string);
       OK("Click Here", c0->value_string);
 
-      h2::h2__json::Node* c1 = c->get(1);
+      h2::h2_json_node* c1 = c.get(1);
       OK(c1->is_number());
       OK("size", c1->key_string);
       OK(36, c1->value_double);
 
-      h2::h2__json::Node* c2 = c->get(2);
+      h2::h2_json_node* c2 = c.get(2);
       OK(c2->is_bool());
       OK("alignment", c2->key_string);
       OK(c2->value_boolean);
 
-      h2::h2__json::Node* c3 = c->get(3);
+      h2::h2_json_node* c3 = c.get(3);
       OK(c3->is_bool());
       OK("bold", c3->key_string);
       OK(!c3->value_boolean);
 
-      h2::h2__json::Node* c4 = c->get(4);
+      h2::h2_json_node* c4 = c.get(4);
       OK(c4->is_null());
       OK("token", c4->key_string);
 
-      h2::h2__json::Node* c5 = c->get(5);
+      h2::h2_json_node* c5 = c.get(5);
       OK(c5->is_string());
       OK("onMouseUp", c5->key_string);
       OK("sun1.opacity = (sun1.opacity / 100) * 90;", c5->value_string);
 
-      JE(obj, node_tojson(c, t2));
-
-      h2::h2__json::frees(c);
+      JE(obj, node_tojson(&c, t2));
    }
 
    Case("http://www.json.org/example.html")
    {
       const char* j1 =
-        "{                                                                                                             \
-    \"glossary\": {                                                                                                 \
-        \"title\": \"example glossary\",                                                                            \
+        "{                                                                                                        \
+    \"glossary\": {                                                                                               \
+        \"title\": \"example glossary\",                                                                          \
 		\"GlossDiv\": {                                                                                             \
-            \"title\": \"S\",                                                                                       \
-			\"GlossList\": {                                                                                        \
-                \"GlossEntry\": {                                                                                   \
-                    \"ID\": \"SGML\",                                                                               \
-					\"SortAs\": \"SGML\",                                                                           \
-					\"GlossTerm\": \"Standard Generalized Markup Language\",                                        \
-					\"Acronym\": \"SGML\",                                                                          \
-					\"Abbrev\": \"ISO 8879:1986\",                                                                  \
-					\"GlossDef\": {                                                                                 \
-                        \"para\": \"A meta-markup language, used to create markup languages such as DocBook.\",     \
-						\"GlossSeeAlso\": [\"GML\", \"XML\"]                                                        \
-                    },                                                                                              \
-					\"GlossSee\": \"markup\"                                                                        \
-                }                                                                                                   \
-            }                                                                                                       \
-        }                                                                                                           \
-    }                                                                                                               \
+            \"title\": \"S\",                                                                                     \
+			\"GlossList\": {                                                                                         \
+                \"GlossEntry\": {                                                                                 \
+                    \"ID\": \"SGML\",                                                                             \
+					\"SortAs\": \"SGML\",                                                                              \
+					\"GlossTerm\": \"Standard Generalized Markup Language\",                                           \
+					\"Acronym\": \"SGML\",                                                                             \
+					\"Abbrev\": \"ISO 8879:1986\",                                                                     \
+					\"GlossDef\": {                                                                                    \
+                        \"para\": \"A meta-markup language, used to create markup languages such as DocBook.\",   \
+						\"GlossSeeAlso\": [\"GML\", \"XML\"]                                                            \
+                    },                                                                                            \
+					\"GlossSee\": \"markup\"                                                                           \
+                }                                                                                                 \
+            }                                                                                                     \
+        }                                                                                                         \
+    }                                                                                                             \
 }";
 
-      h2::h2__json::Node* c1 = h2::h2__json::parse(j1);
-      OK(c1 != nullptr);
-      JE(j1, node_tojson(c1, t2));
-      h2::h2__json::frees(c1);
+      h2::h2_json_node c1(j1);
+      JE(j1, node_tojson(&c1, t2));
 
       const char* j2 =
-        "{\"menu\": {                                                  \
+        "{\"menu\": {                                               \
   \"id\": \"file\",                                                 \
   \"value\": \"File\",                                              \
   \"popup\": {                                                      \
@@ -291,12 +346,11 @@ SUITE(json parser)
   }                                                                 \
 }}";
 
-      h2::h2__json::Node* c2 = h2::h2__json::parse(j2);
-      JE(j2, node_tojson(c2, t2));
-      h2::h2__json::frees(c2);
+      h2::h2_json_node c2(j2);
+      JE(j2, node_tojson(&c2, t2));
 
       const char* j3 =
-        "{\"widget\": {                                                        \
+        "{\"widget\": {                                                     \
     \"debug\": \"on\",                                                      \
     \"window\": {                                                           \
         \"title\": \"Sample Konfabulator Widget\",                          \
@@ -323,12 +377,11 @@ SUITE(json parser)
     }                                                                       \
 }}";
 
-      h2::h2__json::Node* c3 = h2::h2__json::parse(j3);
-      JE(j3, node_tojson(c3, t2));
-      h2::h2__json::frees(c3);
+      h2::h2_json_node c3(j3);
+      JE(j3, node_tojson(&c3, t2));
 
       const char* j4 =
-        "{\"web-app\": {                                                                       \
+        "{\"web-app\": {                                                                    \
   \"servlet\": [                                                                            \
     {                                                                                       \
       \"servlet-name\": \"cofaxCDS\",                                                       \
@@ -417,12 +470,11 @@ SUITE(json parser)
     \"taglib-uri\": \"cofax.tld\",                                                          \
     \"taglib-location\": \"/WEB-INF/tlds/cofax.tld\"}}}";
 
-      h2::h2__json::Node* c4 = h2::h2__json::parse(j4);
-      JE(j4, node_tojson(c4, t2));
-      h2::h2__json::frees(c4);
+      h2::h2_json_node c4(j4);
+      JE(j4, node_tojson(&c4, t2));
 
       const char* j5 =
-        "{\"menu\": {                                                          \
+        "{\"menu\": {                                                       \
     \"header\": \"SVG Viewer\",                                             \
     \"items\": [                                                            \
         {\"id\": \"Open\"},                                                 \
@@ -450,14 +502,13 @@ SUITE(json parser)
     ]                                                                       \
 }}";
 
-      h2::h2__json::Node* c5 = h2::h2__json::parse(j5);
-      JE(j5, node_tojson(c5, t2));
-      h2::h2__json::frees(c5);
+      h2::h2_json_node c5(j5);
+      JE(j5, node_tojson(&c5, t2));
    }
 
    Case(more 1)
    {
-      const char* j1 = "[                                             \
+      const char* j1 = "[                          \
 	 {                                              \
 	 \"precision\": \"zip\",                        \
 	 \"Latitude\":  37.7668,                        \
@@ -480,29 +531,26 @@ SUITE(json parser)
 	 }                                              \
 	 ]";
 
-      h2::h2__json::Node* c1 = h2::h2__json::parse(j1);
-      char* s1 = node_tojson(c1, t2);
-      JE(j1, s1);
-      h2::h2__json::frees(c1);
+      h2::h2_json_node c1(j1);
+      JE(j1, node_tojson(&c1, t2));
    }
 
    Case(more 2)
    {
-      const char* j2 = "    [             \
-    [0, -1, 0],         \
-    [1, 0, 0],          \
-    [0, 0, 1]           \
-	]                   \
+      const char* j2 = "    [    \
+    [0, -1, 0],                  \
+    [1, 0, 0],                   \
+    [0, 0, 1]                    \
+	]                             \
 ";
 
-      h2::h2__json::Node* c2 = h2::h2__json::parse(j2);
-      JE(j2, node_tojson(c2, t2));
-      h2::h2__json::frees(c2);
+      h2::h2_json_node c2(j2);
+      JE(j2, node_tojson(&c2, t2));
    }
 
    Case(more 3)
    {
-      const char* j3 = "{                                             \
+      const char* j3 = "{                           \
 \"name\": \"Jack (\\\"Bee\\\") Nimble\",            \
 \"format\": {\"type\":       \"rect\",              \
 \"width\":      1920,                               \
@@ -511,15 +559,74 @@ SUITE(json parser)
 }                                                   \
 }";
 
-      h2::h2__json::Node* c3 = h2::h2__json::parse(j3);
-      OK("Jack (\"Bee\") Nimble", c3->get("name")->value_string);
-      h2::h2__json::frees(c3);
+      h2::h2_json_node c3(j3);
+      OK("Jack (\"Bee\") Nimble", c3.get("name")->value_string);
+   }
+}
+
+SUITE(json node dual)
+{
+   Case(simple plain)
+   {
+      const char* json = "{\"abc\": 123}";
+      h2::h2_json_node node(json);
+
+      int type;
+      const char* cls;
+      h2::h2_string key;
+      h2::h2_string value;
+
+      node.dual(type, cls, key, value);
+      OK(h2::h2_json_node::t_object, type);
+      OK("", key);
+      OK("object", cls);
+      OK("", value);
+
+      node.get(0)->dual(type, cls, key, value);
+      OK(h2::h2_json_node::t_string, type);
+      OK("\"abc\"", key);
+      OK("atomic", cls);
+      OK("123", value);
+   }
+}
+
+SUITE(json node print)
+{
+   Case(print simple plain)
+   {
+      const char* json = "{\"abc\": 123}";
+      h2::h2_json_node node(json);
+
+      h2::h2_vector<h2::h2_line> lines;
+      node.print(lines, 0, 0, false);
+
+      OK(3, lines.size());
+      OK(ListOf(
+           ListOf("", "{ "),
+           ListOf("  ", "\"abc\": ", "123"),
+           ListOf("", "}")),
+         lines);
+   }
+
+   Case(print simple fold)
+   {
+      const char* json = "{\"abc\": 123}";
+      h2::h2_json_node node(json);
+
+      h2::h2_vector<h2::h2_line> lines;
+      node.print(lines, 0, 0, true);
+
+      OK(1, lines.size());
+      OK(ListOf(ListOf("", "{ ", "\"abc\": ", "123", " }")), lines);
    }
 }
 
 SUITE(json match)
 {
-   Case(match null) { OK(h2::h2_json::match("null", " null ")); };
+   Case(match null)
+   {
+      OK(h2::h2_json::match("null", " null "));
+   }
 
    Case(match bool)
    {
@@ -553,5 +660,39 @@ SUITE(json match)
       OK(h2::h2_json::match("{}", " {} "));
       OK(h2::h2_json::match("{'a': 1}", " {\"a\": 1} "));
       OK(h2::h2_json::match("{'a': 1}", " {\"a\": 1, \"b\": false} "));
+   }
+
+   Case(search)
+   {
+   }
+}
+
+SUITE(json dual)
+{
+   char t[1024 * 8];
+
+   Case(object only)
+   {
+      const char* e = "{\"e\": 123}";
+      const char* a = "{\"a\": 456}";
+      h2::h2_json_node e_node(e);
+      h2::h2_json_node a_node(a);
+
+      h2::h2_json_dual dual(&e_node, &a_node);
+
+      OK("(0;object-object;-;-)[(1;string-string;\"e\"-\"a\";123-456)]", dual_tostr(&dual, t));
+
+      h2::h2_vector<h2::h2_line> e_lines, a_lines;
+      dual.align(e_lines, a_lines);
+
+      int width = std::max(h2::h2_lines_max_length(e_lines), h2::h2_lines_max_length(a_lines)) + 3;
+
+      h2::h2_string result;
+      h2::h2_json_diff::print(e_lines, a_lines, width, result);
+
+      OK("{          \033[reset] \033[dark gray] │\033[reset] {          \033[reset] \033[dark gray] \033[reset]\n"
+         "  \033[green]\"e\"\033[reset]: \033[green]123\033[reset] \033[reset] \033[dark gray] │\033[reset]   \033[red,bold]\"a\"\033[reset]: \033[red,bold]456\033[reset] \033[reset] \033[dark gray] \033[reset]\n"
+         "\033[reset]}          \033[reset] \033[dark gray] │\033[reset] \033[reset]}          \033[reset] \033[dark gray] \033[reset]\n",
+         result);
    }
 }

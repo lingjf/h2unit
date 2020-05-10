@@ -161,7 +161,7 @@ SUITE(BLOCK)
    }
 }
 
-CASE(sys calls)
+CASE(sys api calls)
 {
    char t[1024];
    sprintf(t, "%g%g%g", 1.0 / 3.0, 1.0 / 7.0, 1.0 / 13.0);

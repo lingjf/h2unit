@@ -5,7 +5,7 @@ struct h2_task {
    h2_reports reports;
    h2_stubs stubs;
    h2_mocks mocks;
-   int state, status_stats[8];
+   int state, round, status_stats[8];
    h2_suite* current_suite;
    h2_case* current_case;
    std::vector<void (*)()> global_setups, global_teardowns;
@@ -13,9 +13,7 @@ struct h2_task {
    std::vector<void (*)()> global_case_setups, global_case_teardowns;
 
    h2_task();
-   void prepare();
-   int finalize();
-   void execute();
+   int execute();
 };
 
 static inline void h2_stub_g(void* befp, void* tofp, const char* befn, const char* tofn, const char* file, int line)

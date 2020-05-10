@@ -7,6 +7,7 @@ struct h2_string : public std::basic_string<char, std::char_traits<char>, h2_all
    h2_string(const char* s, size_t n) : basic_string(s, n) {}
    h2_string(size_t n, char c) : basic_string(n, c) {}
    h2_string(const unsigned char* b) : basic_string((const char*)b) {}
+   h2_string(const double d);
 
    h2_string& operator=(const h2_string& str) { return assign(str.c_str()), *this; }
    h2_string& operator=(const std::string& str) { return assign(str.c_str()), *this; }
@@ -23,6 +24,8 @@ struct h2_string : public std::basic_string<char, std::char_traits<char>, h2_all
    bool contains(h2_string substr, bool caseless = false) const;
    bool startswith(h2_string prefix, bool caseless = false) const;
    bool endswith(h2_string suffix, bool caseless = false) const;
+
+   bool isspace() const;
 
    h2_string& tolower();
    static h2_string tolower(h2_string from) { return from.tolower(); }

@@ -14,13 +14,13 @@ static inline void usage()
   ├────────┼───────────┼────────────────────────────────────────────────────┤\n\
   │ -v     │           │ Verbose output                                     │\n\
   ├────────┼───────────┼────────────────────────────────────────────────────┤\n\
-  │ -l     │   [asc]   │ List out suites and cases                          │\n\
-  ├────────┼───────────┼────────────────────┬───────────────────────────────┤\n\
-  │        │    [s]    │ Random suite order │ Run cases in random order,    │\n\
-  │ -r     ├───────────┼────────────────────┤ default both suite and case   │\n\
-  │        │    [c]    │ Random case order  │ random order                  │\n\
-  ├────────┼───────────┼────────────────────┴───────────────────────────────┤\n\
+  │ -l     │           │ List out suites and cases                          │\n\
+  ├────────┼───────────┼────────────────────────────────────────────────────┤\n\
+  │ -r     │           │ Run suite and cases in random order.               │\n\
+  ├────────┼───────────┼────────────────────────────────────────────────────┤\n\
   │ -b[n]  │    [n]    │ Breaking test once n (default 1) failures occurred │\n\
+  ├────────┼───────────┼────────────────────────────────────────────────────┤\n\
+  │ -s[n]  │    [n]    │ Repeat run n times (default 1) when no failure     │\n\
   ├────────┼───────────┼────────────────────────────────────────────────────┤\n\
   │ -c     │           │ Output in black-white color style                  │\n\
   ├────────┼───────────┼────────────────────────────────────────────────────┤\n\
@@ -88,16 +88,20 @@ h2_inline void h2_option::parse(int argc, const char** argv)
       for (const char* t; *p; p++) {
          switch (*p) {
          case 'v': verbose = 1; break;
-         case 'l':
-            listing = 'A';
-            if ((t = get.extract())) listing = t[0];
-            break;
+         case 'l': listing = true; break;
          case 'b':
             breakable = 1;
             if (::isdigit(*(p + 1)))
                p = get.parseint(p + 1, breakable);
             else if ((t = get.extract()))
                breakable = atoi(t);
+            break;
+         case 's':
+            times = 1;
+            if (::isdigit(*(p + 1)))
+               p = get.parseint(p + 1, times);
+            else if ((t = get.extract()))
+               times = atoi(t);
             break;
          case 'c': colorable = !colorable; break;
          case 'r':
@@ -155,14 +159,4 @@ h2_inline bool h2_option::filter(const char* suitename, const char* casename, co
       if (match3(excludes, suitename) || match3(excludes, casename) || match3(excludes, filename))
          return true;
    return false;
-}
-
-h2_inline const char* h2_option::style(const char* s) const
-{
-   static char shift_buffer[32][128];
-   static long shift_index = 0;
-   if (!colorable) return "";
-   char* p = shift_buffer[++shift_index % 32];
-   sprintf(p, "\033[%s]", s);
-   return p;
 }

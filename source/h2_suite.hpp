@@ -1,5 +1,6 @@
 
 struct h2_suite {
+   h2_list registered, sorted;
    const char* name;
    const char* file;
    int line;
@@ -10,12 +11,11 @@ struct h2_suite {
    jmp_buf jump;
    bool jumpable;
    void (*test_code)(h2_suite*, h2_case*);
-   std::vector<h2_case*> case_list;
-   h2_once enumerate;
+   h2_list registered_cases, sorted_cases;
 
    h2_suite(const char* name_, void (*test_code_)(h2_suite*, h2_case*), const char* file_, int line_);
 
-   std::vector<h2_case*>& cases();
+   void enumerate();
    void execute(h2_case* c);
 
    void setup() {}
@@ -25,7 +25,7 @@ struct h2_suite {
       installer(h2_suite* s, h2_case* c)
       {
          static long long seq = INT_MAX;
-         s->case_list.push_back(c);
+         s->registered_cases.push_back(&c->registered);
          s->seq = c->seq = ++seq;
       }
    };

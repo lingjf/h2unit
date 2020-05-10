@@ -1,6 +1,5 @@
 #include "h2_unit.hpp"
 
-#include <algorithm> /* shuffle */
 #include <cassert>   /* assert */
 #include <cctype>    /* tolower, isspace */
 #include <cstdarg>   /* va_list */
@@ -9,7 +8,6 @@
 #include <iostream>  /* cout */
 #include <map>       /* std::map */
 #include <memory>    /* allocator */
-#include <random>    /* shuffle */
 #include <regex>     /* std::regex */
 #include <signal.h>  /* sigaction */
 #include <typeinfo>  /* typeid */
@@ -62,6 +60,7 @@ namespace h2 {
 #include "h2_heap.cpp"
 #include "h2_json.cpp"
 #include "h2_libc.cpp"
+#include "h2_list.cpp"
 #include "h2_matcher.cpp"
 #include "h2_mock.cpp"
 #include "h2_option.cpp"
@@ -84,7 +83,5 @@ namespace h2 {
 h2_weak_attribute int main(int argc, const char** argv)
 {
    h2::h2_option::I().parse(argc, argv);
-   h2::h2_task::I().prepare();
-   h2::h2_task::I().execute();
-   return h2::h2_task::I().finalize();
+   return h2::h2_task::I().execute();
 }

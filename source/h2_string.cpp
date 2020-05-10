@@ -1,4 +1,11 @@
 
+h2_inline h2_string::h2_string(const double d) : basic_string()
+{
+   char t[128];
+   ::sprintf(t, "%1.15g", d);
+   assign(t);
+}
+
 h2_inline bool h2_string::equals(h2_string str, bool caseless) const
 {
    if (!caseless) return *this == str;
@@ -21,6 +28,13 @@ h2_inline bool h2_string::endswith(h2_string suffix, bool caseless) const
 {
    if (!caseless) return rfind(suffix) == length() - suffix.length();
    return tolower(c_str()).rfind(tolower(suffix)) == length() - suffix.length();
+}
+
+h2_inline bool h2_string::isspace() const
+{
+   for (auto& c : *this)
+      if (!::isspace(c)) return false;
+   return true;
 }
 
 h2_inline h2_string& h2_string::tolower()

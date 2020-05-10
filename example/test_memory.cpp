@@ -138,7 +138,6 @@ SUITE(Ilegal Access)
       rectangle_destroy(p);
       rectangle_destroy(p);
    }
-#if 0
    Case(memory underflow failure)
    {
       char* p = (char*)malloc(6);
@@ -151,6 +150,7 @@ SUITE(Ilegal Access)
       memcpy(p, "12345678901234567890123456789012345678901234567890", 50);
       free(p);
    }
+#if defined __clang__
    Case(read after free failure)
    {
       rectangle_t* p = rectangle_create(1, 2);

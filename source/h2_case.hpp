@@ -3,7 +3,7 @@ static constexpr const char* CSS[] = {"init", "Passed", "Failed", "TODO", "Filte
 
 struct h2_case {
    static constexpr const int INITED = 0, PASSED = 1, FAILED = 2, TODOED = 3, FILTED = 4;
-
+   h2_list registered, sorted;
    const char* name;
    const char* file;
    int line;

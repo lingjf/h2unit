@@ -11,12 +11,12 @@ struct h2_option {
 #endif
 
    const char *path, *debug;
-   int verbose, listing, breakable, randomize;
-   bool colorable, memory_check;
+   int verbose, breakable, randomize, times;
+   bool colorable, memory_check, listing;
    char junit[256], args[256];
    std::vector<const char*> includes, excludes;
 
-   h2_option() : debug(nullptr), verbose(0), listing(0), breakable(0), randomize(0), colorable(true), memory_check(true), junit{0} {}
+   h2_option() : debug(nullptr), verbose(0), breakable(0), randomize(0), times(1), colorable(true), memory_check(true), listing(false), junit{0} {}
 
    void parse(int argc, const char** argv);
 
@@ -25,7 +25,6 @@ struct h2_option {
    int isWindows() const { return 3 == os; }
 
    bool filter(const char* suitename, const char* casename, const char* filename) const;
-   const char* style(const char* s) const;
 };
 
 static const h2_option& O = h2_option::I();  // for pretty

@@ -1,4 +1,4 @@
-﻿/* v5.3  2020-05-08 23:36:27 */
+﻿/* v5.3  2020-05-10 23:29:57 */
 /* https://github.com/lingjf/h2unit */
 /* Apache Licence 2.0 */
 #ifndef __H2UNIT_HPP__
@@ -220,13 +220,7 @@ struct h2_with {
 struct h2_list {
    struct h2_list *next, *prev;
 
-   static void __add_between(h2_list* _new, h2_list* prev, h2_list* next)
-   {
-      next->prev = _new;
-      _new->next = next;
-      _new->prev = prev;
-      prev->next = _new;
-   }
+   static void __add_between(h2_list* _new, h2_list* prev, h2_list* next);
 
    h2_list() : next(this), prev(this) {}
 
@@ -244,15 +238,10 @@ struct h2_list {
    h2_list* get_first() const { return empty() ? nullptr : next; }
    h2_list* get_last() const { return empty() ? nullptr : prev; }
 
-   h2_list* out()
-   {
-      prev->next = next;
-      next->prev = prev;
-      next = prev = this;
-      return this;
-   }
+   h2_list* out();
 
    bool empty() const { return next == this; }
+   int count() const;
 };
 
 struct h2_option {
@@ -267,12 +256,12 @@ struct h2_option {
 #endif
 
    const char *path, *debug;
-   int verbose, listing, breakable, randomize;
-   bool colorable, memory_check;
+   int verbose, breakable, randomize, times;
+   bool colorable, memory_check, listing;
    char junit[256], args[256];
    std::vector<const char*> includes, excludes;
 
-   h2_option() : debug(nullptr), verbose(0), listing(0), breakable(0), randomize(0), colorable(true), memory_check(true), junit{0} {}
+   h2_option() : debug(nullptr), verbose(0), breakable(0), randomize(0), times(1), colorable(true), memory_check(true), listing(false), junit{0} {}
 
    void parse(int argc, const char** argv);
 
@@ -281,7 +270,6 @@ struct h2_option {
    int isWindows() const { return 3 == os; }
 
    bool filter(const char* suitename, const char* casename, const char* filename) const;
-   const char* style(const char* s) const;
 };
 
 static const h2_option& O = h2_option::I();  // for pretty
@@ -344,6 +332,7 @@ struct h2_string : public std::basic_string<char, std::char_traits<char>, h2_all
    h2_string(const char* s, size_t n) : basic_string(s, n) {}
    h2_string(size_t n, char c) : basic_string(n, c) {}
    h2_string(const unsigned char* b) : basic_string((const char*)b) {}
+   h2_string(const double d);
 
    h2_string& operator=(const h2_string& str) { return assign(str.c_str()), *this; }
    h2_string& operator=(const std::string& str) { return assign(str.c_str()), *this; }
@@ -360,6 +349,8 @@ struct h2_string : public std::basic_string<char, std::char_traits<char>, h2_all
    bool contains(h2_string substr, bool caseless = false) const;
    bool startswith(h2_string prefix, bool caseless = false) const;
    bool endswith(h2_string suffix, bool caseless = false) const;
+
+   bool isspace() const;
 
    h2_string& tolower();
    static h2_string tolower(h2_string from) { return from.tolower(); }
@@ -1960,7 +1951,7 @@ static constexpr const char* CSS[] = {"init", "Passed", "Failed", "TODO", "Filte
 
 struct h2_case {
    static constexpr const int INITED = 0, PASSED = 1, FAILED = 2, TODOED = 3, FILTED = 4;
-
+   h2_list registered, sorted;
    const char* name;
    const char* file;
    int line;
@@ -1990,6 +1981,7 @@ struct h2_case {
 };
 
 struct h2_suite {
+   h2_list registered, sorted;
    const char* name;
    const char* file;
    int line;
@@ -2000,12 +1992,11 @@ struct h2_suite {
    jmp_buf jump;
    bool jumpable;
    void (*test_code)(h2_suite*, h2_case*);
-   std::vector<h2_case*> case_list;
-   h2_once enumerate;
+   h2_list registered_cases, sorted_cases;
 
    h2_suite(const char* name_, void (*test_code_)(h2_suite*, h2_case*), const char* file_, int line_);
 
-   std::vector<h2_case*>& cases();
+   void enumerate();
    void execute(h2_case* c);
 
    void setup() {}
@@ -2015,7 +2006,7 @@ struct h2_suite {
       installer(h2_suite* s, h2_case* c)
       {
          static long long seq = INT_MAX;
-         s->case_list.push_back(c);
+         s->registered_cases.push_back(&c->registered);
          s->seq = c->seq = ++seq;
       }
    };
@@ -2031,11 +2022,11 @@ struct h2_suite {
 };
 
 struct h2_report {
-   int total_cases, done_cases, percentage;
+   int total_cases, done_cases, percentage, ss, cs;
    long long tt, ts, tc;
    h2_report();
    virtual void on_task_start(int cases);
-   virtual void on_task_endup(int status_stats[8]);
+   virtual void on_task_endup(int status_stats[8], int round);
    virtual void on_suite_start(h2_suite* s);
    virtual void on_suite_endup(h2_suite* s);
    virtual void on_case_start(h2_suite* s, h2_case* c);
@@ -2046,7 +2037,7 @@ struct h2_reports {
    std::vector<h2_report*> reports;
    void initialize();
    void on_task_start(int cases);
-   void on_task_endup(int status_stats[8]);
+   void on_task_endup(int status_stats[8], int round);
    void on_suite_start(h2_suite* s);
    void on_suite_endup(h2_suite* s);
    void on_case_start(h2_suite* s, h2_case* c);
@@ -2205,13 +2196,10 @@ struct h2_reports {
 struct h2_directory {
    h2_singleton(h2_directory);
 
-   std::vector<h2_suite*> suites;
+   h2_list registered_suites, sorted_suites;
 
    static void drop_last_order();
-   static int count();
    static int sort();
-   static void print_list();
-   static void list_then_exit();
 };
 
 struct h2_defer_fail : h2_once {
@@ -2407,7 +2395,7 @@ struct h2_task {
    h2_reports reports;
    h2_stubs stubs;
    h2_mocks mocks;
-   int state, status_stats[8];
+   int state, round, status_stats[8];
    h2_suite* current_suite;
    h2_case* current_case;
    std::vector<void (*)()> global_setups, global_teardowns;
@@ -2415,9 +2403,7 @@ struct h2_task {
    std::vector<void (*)()> global_case_setups, global_case_teardowns;
 
    h2_task();
-   void prepare();
-   int finalize();
-   void execute();
+   int execute();
 };
 
 static inline void h2_stub_g(void* befp, void* tofp, const char* befn, const char* tofn, const char* file, int line)
