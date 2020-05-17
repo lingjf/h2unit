@@ -20,28 +20,32 @@ struct h2_report_console : h2_report {
    {
       h2_report::on_task_endup(status_stats, round);
       if (O.listing) {
-         h2_printf("%s", SF("bold,green", "Listing <%d suites, %d cases, %d todo, %d filtered>\n", ss, total_cases, status_stats[h2_case::TODOED], status_stats[h2_case::FILTED]));
+         h2_color::printf("bold,green", "Listing <%d suites, %d cases, %d todo, %d filtered>\n", ss, total_cases, status_stats[h2_case::TODOED], status_stats[h2_case::FILTED]);
       } else {
-         h2_printf("\n[%3d%%] ", percentage);
+         h2_color::printf("", "\n[%3d%%] ", percentage);
          char t[62] = "";
          if (1 < round) sprintf(t, " %d rounds,", round);
          if (0 < status_stats[h2_case::FAILED])
-            h2_printf("%s", SF("bold,red", "Failed <%d failed, %d passed, %d todo, %d filtered,%s %lld ms>\n", status_stats[h2_case::FAILED], status_stats[h2_case::PASSED], status_stats[h2_case::TODOED], status_stats[h2_case::FILTED], t, tt));
+            h2_color::printf("bold,red", "Failed <%d failed, %d passed, %d todo, %d filtered,%s %lld ms>\n", status_stats[h2_case::FAILED], status_stats[h2_case::PASSED], status_stats[h2_case::TODOED], status_stats[h2_case::FILTED], t, tt);
          else
-            h2_printf("%s", SF("bold,green", "Passed <%d passed, %d todo, %d filtered, %d cases,%s %lld ms>\n", status_stats[h2_case::PASSED], status_stats[h2_case::TODOED], status_stats[h2_case::FILTED], total_cases, t, tt));
+            h2_color::printf("bold,green", "Passed <%d passed, %d todo, %d filtered, %d cases,%s %lld ms>\n", status_stats[h2_case::PASSED], status_stats[h2_case::TODOED], status_stats[h2_case::FILTED], total_cases, t, tt);
       }
    }
    void on_suite_start(h2_suite* s) override
    {
       cs = 0;
       if (O.listing) {
-         h2_printf("SUITE%d. %s @ %s:%d\n", ++ss, SF("bold,yellow", "%s", s->name), s->file, s->line);
+         h2_color::printf("", "SUITE%d. ", ++ss);
+         h2_color::printf("bold,yellow", "%s", s->name);
+         h2_color::printf("", " @ %s:%d\n", s->file, s->line);
       }
    }
    void on_case_start(h2_suite* s, h2_case* c) override
    {
       if (O.listing) {
-         h2_printf("   CASE%d. %s @ %s:%d\n", ++cs, SF("bold,cyan", "%s", c->name), basename((char*)c->file), c->line);
+         h2_color::printf("", "   CASE%d. ", ++cs);
+         h2_color::printf("bold,cyan", "%s", c->name);
+         h2_color::printf("", " @ %s:%d\n", basename((char*)c->file), c->line);
       }
    }
    void on_case_endup(h2_suite* s, h2_case* c) override
@@ -51,21 +55,21 @@ struct h2_report_console : h2_report {
       switch (c->status) {
       case h2_case::INITED: break;
       case h2_case::TODOED:
-         if (O.verbose) h2_printf("[%3d%%] (%s // %s): %s at %s:%d\n", percentage, s->name, c->name, CSS[c->status], basename((char*)c->file), c->line);
+         if (O.verbose) h2_color::printf("", "[%3d%%] (%s // %s): %s at %s:%d\n", percentage, s->name, c->name, CSS[c->status], basename((char*)c->file), c->line);
          break;
       case h2_case::FILTED: break;
       case h2_case::PASSED:
-         if (O.verbose)
-            h2_printf("[%3d%%] %s", percentage, SF("light blue", "(%s // %s): Passed - %lld ms\n", s->name, c->name, tc));
-         else if (!O.debug)
-            h2_printf("\r[%3d%%] (%d/%d) ", percentage, done_cases, total_cases);
+         if (O.verbose) {
+            h2_color::printf("", "[%3d%%] ", percentage);
+            h2_color::printf("light blue", "(%s // %s): Passed - %lld ms\n", s->name, c->name, tc);
+         } else if (!O.debug)
+            h2_color::printf("", "\r[%3d%%] (%d/%d) ", percentage, done_cases, total_cases);
          break;
       case h2_case::FAILED:
-         h2_printf("[%3d%%] %s", percentage, SF("bold,purple", "(%s // %s): Failed at %s:%d\n", s->name, c->name, basename((char*)c->file), c->line));
-         for (h2_fail* x_fail = c->fails; x_fail; x_fail = x_fail->x_next)
-            for (h2_fail* fail = x_fail; fail; fail = fail->y_next)
-               fail->print();
-         h2_printf("\n");
+         h2_color::printf("", "\r[%3d%%] ", percentage);
+         h2_color::printf("bold,purple", "(%s // %s): Failed at %s:%d\n", s->name, c->name, basename((char*)c->file), c->line);
+         if (c->fails) c->fails->foreach ([](h2_fail* fail, int subling_index, int child_index) { fail->print(subling_index, child_index); });
+         h2_color::printf("", "\n");
          break;
       }
    }
@@ -96,11 +100,7 @@ struct h2_report_junit : h2_report {
 
       if (c->status == h2_case::FAILED) {
          fprintf(f, "<failure message=\"%s:%d:", c->file, c->line);
-         for (h2_fail* x_fail = c->fails; x_fail; x_fail = x_fail->x_next)
-            for (h2_fail* fail = x_fail; fail; fail = fail->y_next) {
-               fprintf(f, "{newline}");
-               fail->print(f);
-            }
+         if (c->fails) c->fails->foreach ([=](h2_fail* fail, int subling_index, int child_index) {fprintf(f, "{newline}"); fail->print(f); });
          fprintf(f, "\" type=\"AssertionFailedError\"></failure>\n");
       }
       fprintf(f, "<system-out></system-out><system-err></system-err>\n");

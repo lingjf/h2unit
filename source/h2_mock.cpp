@@ -11,7 +11,7 @@ h2_inline h2_fail* h2_mocks::clear()
    h2_fail* fail = nullptr;
    h2_list_for_each_entry(p, &mocks, h2_mock, x)
    {
-      h2_fail::append_x(fail, p->times_check());
+      h2_fail::append_subling(fail, p->times_check());
       p->reset();
       p->x.out();
    }

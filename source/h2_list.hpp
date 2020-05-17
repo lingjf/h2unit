@@ -16,10 +16,12 @@ struct h2_list {
    void add_head(h2_list* entry) { __add_between(entry, this, this->next); }
    void add_tail(h2_list* entry) { __add_between(entry, this->prev, this); }
    void add_before(h2_list* entry) { __add_between(entry, this->prev, this); }
+   void add_after(h2_list* entry) { __add_between(entry, this, this->next); }
 
    void push_back(h2_list* entry) { add_tail(entry); }
    void push(h2_list* entry) { add_head(entry); }
    h2_list* pop() { return empty() ? nullptr : next->out(); }
+   h2_list* pop_back() { return empty() ? nullptr : prev->out(); }
 
    bool is_first(h2_list* entry) const { return next == entry; }
    bool is_last(h2_list* entry) const { return prev == entry; }

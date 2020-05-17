@@ -64,23 +64,6 @@ struct h2_polymorphic_matcher {
    };
 };
 
-template <typename A, typename E>
-inline h2_fail* h2_common_unexpect(const A& a, const E& e, bool dont, const char* op)
-{
-   h2_ostringstream ose, osa;
-   ose << std::boolalpha << e;
-   osa << std::boolalpha << a;
-   h2_fail_unexpect* fail = new h2_fail_unexpect();
-   fail->eprintf("%s", ose.str().c_str());
-   fail->aprintf("%s", osa.str().c_str());
-   if (dont)
-      fail->mprintf("shoud not %s", op);
-   else
-      fail->mprintf("not %s", op);
-
-   return fail;
-}
-
 struct h2_string_equal_matches {
    const h2_string e;
    const bool r;
@@ -106,7 +89,7 @@ struct h2_equal_matches {
    {
       if (r) dont = !dont;
       if ((a == e) == !dont) return nullptr;
-      return h2_common_unexpect(a, e, dont, "equals");
+      return new h2_fail_unexpect(h2_stringify(e), h2_stringify(a), dont, false, "");
    }
 };
 
@@ -225,13 +208,11 @@ struct h2_and_matches {
    h2_fail* matches(const A& a, bool caseless = false, bool dont = false) const
    {
       h2_fail* fail = nullptr;
-      h2_fail::append_y(fail, h2_matcher_cast<A>(m1).matches(a, caseless, false));
-      h2_fail::append_y(fail, h2_matcher_cast<A>(m2).matches(a, caseless, false));
+      h2_fail::append_subling(fail, h2_matcher_cast<A>(m1).matches(a, caseless, false));
+      h2_fail::append_subling(fail, h2_matcher_cast<A>(m2).matches(a, caseless, false));
       if (!fail == !dont) return nullptr;
       if (dont) {
-         fail = new h2_fail_unexpect();
-         fail->mprintf("should not both match");
-      } else {
+         fail = new h2_fail_unexpect("", h2_stringify(a), dont);
       }
       return fail;
    }
@@ -250,13 +231,7 @@ struct h2_or_matches {
       h2_fail* f2 = h2_matcher_cast<A>(m2).matches(a, caseless, false);
       bool result = !f1 || !f2;
       if (result == !dont) return nullptr;
-      h2_fail* fail = new h2_fail_unexpect();
-      if (dont)
-         fail->mprintf("should not match any");
-      else
-         fail->mprintf("not match any");
-
-      return fail;
+      return new h2_fail_unexpect("", h2_stringify(a), dont);
    }
 };
 
@@ -266,20 +241,14 @@ struct h2_any_matches {
 };
 
 struct h2_null_matches {
-   const bool r;
-   explicit h2_null_matches(bool _r = false) : r(_r) {}
+   const bool reverse;
+   explicit h2_null_matches(bool _reverse) : reverse(_reverse) {}
    template <typename A>
    h2_fail* matches(const A& a, bool caseless = false, bool dont = false) const
    {
-      if (r) dont = !dont;
+      if (reverse) dont = !dont;
       if ((nullptr == (const void*)a) == !dont) return nullptr;
-      h2_fail_unexpect* fail = new h2_fail_unexpect();
-      fail->aprintf("%p", (const void*)a);
-      if (dont)
-         fail->mprintf("should not null");
-      else
-         fail->mprintf("is not null");
-      return fail;
+      return new h2_fail_unexpect(dont ? "NotNull" : "IsNull", h2_stringify((const void*)a), false, false);
    }
 };
 
@@ -289,14 +258,9 @@ struct h2_boolean_matches {
    template <typename A>
    h2_fail* matches(const A& a, bool caseless = false, bool dont = false) const
    {
-      if ((e == (bool)a) == !dont) return nullptr;
-      h2_fail_unexpect* fail = new h2_fail_unexpect();
-      fail->aprintf(a ? "true" : "false");
-      if (dont)
-         fail->mprintf("should not %s", e ? "true" : "false");
-      else
-         fail->mprintf("is not %s", e ? "true" : "false");
-      return fail;
+      if (!e) dont = !dont;
+      if (((bool)a) == !dont) return nullptr;
+      return new h2_fail_unexpect(dont ? "false" : "true", a ? "true" : "false");
    }
 };
 
@@ -309,7 +273,7 @@ struct h2_ge_matches {
    h2_fail* matches(const A& a, bool caseless = false, bool dont = false) const
    {
       if ((a >= e) == !dont) return nullptr;
-      return h2_common_unexpect(a, e, dont, ">=");
+      return new h2_fail_unexpect(h2_stringify(e), h2_stringify(a), dont, false, ">=");
    }
 };
 
@@ -322,7 +286,7 @@ struct h2_gt_matches {
    h2_fail* matches(const A& a, bool caseless = false, bool dont = false) const
    {
       if ((a > e) == !dont) return nullptr;
-      return h2_common_unexpect(a, e, dont, ">");
+      return new h2_fail_unexpect(h2_stringify(e), h2_stringify(a), dont, false, ">");
    }
 };
 
@@ -335,7 +299,7 @@ struct h2_le_matches {
    h2_fail* matches(const A& a, bool caseless = false, bool dont = false) const
    {
       if ((a <= e) == !dont) return nullptr;
-      return h2_common_unexpect(a, e, dont, "<=");
+      return new h2_fail_unexpect(h2_stringify(e), h2_stringify(a), dont, false, "<=");
    }
 };
 
@@ -348,7 +312,7 @@ struct h2_lt_matches {
    h2_fail* matches(const A& a, bool caseless = false, bool dont = false) const
    {
       if ((a < e) == !dont) return nullptr;
-      return h2_common_unexpect(a, e, dont, "<");
+      return new h2_fail_unexpect(h2_stringify(e), h2_stringify(a), dont, false, "<");
    }
 };
 
@@ -457,18 +421,13 @@ struct h2_allof_matches {
       h2_fail* fails = nullptr;
       for (int i = 0; i < v_matchers.size(); ++i) {
          h2_fail* f = v_matchers[i].matches(a, caseless, false);
-         if (f) f->kprintf(" %d. ", i);
-         h2_fail::append_y(fails, f);
+         h2_fail::append_subling(fails, f);
       }
 
       if (!fails == !dont) return nullptr;
-
-      h2_fail* fail = new h2_fail_unexpect();
-      if (dont)
-         fail->mprintf("should not matches all of matchers");
-      else {
-         fail->mprintf("should matches all of matchers");
-         h2_fail::append_x(fail, fails);
+      h2_fail* fail = (h2_fail*)new h2_fail_unexpect("", h2_stringify(a), dont);
+      if (!dont) {
+         h2_fail::append_child(fail, fails);
       }
       return fail;
    }
@@ -492,18 +451,13 @@ struct h2_anyof_matches {
       for (int i = 0; i < v_matchers.size(); ++i) {
          h2_fail* f = v_matchers[i].matches(a, caseless, false);
          if (!f) s++;
-         if (f) f->kprintf(" %d. ", i);
-         h2_fail::append_y(fails, f);
+         h2_fail::append_subling(fails, f);
       }
 
       if ((0 < s) == !dont) return nullptr;
-
-      h2_fail* fail = (h2_fail*)new h2_fail_unexpect();
-      if (dont)
-         fail->mprintf("should not matches any of matchers");
-      else {
-         fail->mprintf("not matches any of matchers");
-         h2_fail::append_x(fail, fails);
+      h2_fail* fail = (h2_fail*)new h2_fail_unexpect("", h2_stringify(a), dont);
+      if (!dont) {
+         h2_fail::append_child(fail, fails);
       }
       return fail;
    }
@@ -529,13 +483,7 @@ struct h2_noneof_matches {
       }
 
       if ((s == 0) == !dont) return nullptr;
-
-      h2_fail_unexpect* fail = new h2_fail_unexpect();
-      if (dont)
-         fail->mprintf("should not matches none of matcher");
-      else
-         fail->mprintf("not matches none of matcher");
-      return fail;
+      return new h2_fail_unexpect("", h2_stringify(a), dont);
    }
 
    H2_MATCHER_T2V(t_matchers)
@@ -551,11 +499,9 @@ struct h2_listof_matches {
    h2_fail* matches(A a, bool caseless = false, bool dont = false) const
    {
       auto v_matchers = t2v<decltype(a[0]), 0>();
-
       h2_fail* fail = nullptr;
       for (int i = 0; i < v_matchers.size(); ++i)
-         h2_fail::append_y(fail, v_matchers[i].matches(a[i], caseless, dont));
-
+         h2_fail::append_subling(fail, v_matchers[i].matches(a[i], caseless, dont));
       return fail;
    }
 
@@ -564,7 +510,7 @@ struct h2_listof_matches {
 
 const h2_polymorphic_matcher<h2_any_matches> _{h2_any_matches()};
 const h2_polymorphic_matcher<h2_any_matches> Any{h2_any_matches()};
-const h2_polymorphic_matcher<h2_null_matches> IsNull{h2_null_matches()};
+const h2_polymorphic_matcher<h2_null_matches> IsNull{h2_null_matches(false)};
 const h2_polymorphic_matcher<h2_null_matches> NotNull{h2_null_matches(true)};
 const h2_polymorphic_matcher<h2_boolean_matches> IsTrue{h2_boolean_matches(true)};
 const h2_polymorphic_matcher<h2_boolean_matches> IsFalse{h2_boolean_matches(false)};

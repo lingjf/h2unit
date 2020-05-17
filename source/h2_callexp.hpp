@@ -11,7 +11,7 @@ struct h2_callexp {
    bool is_saturated() const { return call == most; }
    bool is_overmuch() const { return most < call; }
 
-   h2_fail* check();
+   h2_fail* check(const char* func, const char* file, int line);
    const char* actual();
    const char* expect();
 };

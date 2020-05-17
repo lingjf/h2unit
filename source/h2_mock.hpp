@@ -17,8 +17,7 @@ struct h2_mock : h2_libc {
    h2_fail* times_check()
    {
       h2_fail* fail = nullptr;
-      for (auto& c : c_array) h2_fail::append_y(fail, c.check());
-      if (fail) fail->locate(file, line, befn);
+      for (auto& c : c_array) h2_fail::append_subling(fail, c.check(befn, file, line));
       return fail;
    }
 };
@@ -48,8 +47,8 @@ struct h2_tuple_match {
    {
       h2_fail* fail = h2_tuple_match<N - 1>::matches(matchers, args, file, line, func);
       h2_fail* f = std::get<N - 1>(matchers).matches(std::get<N - 1>(args));
-      if (f) f->locate(file, line, func, N - 1);
-      h2_fail::append_x(fail, f);
+      if (f) f->set_locate(file, line, func, N - 1);
+      h2_fail::append_subling(fail, f);
       return fail;
    }
 };
@@ -134,9 +133,9 @@ class h2_mocker<Counter, Lineno, Class, Return(Args...)> : h2_mock {
             break;
          }
       }
-      if (-1 == c_offset)
-         h2_fail_g(new h2_fail_normal(file, line, befn, "unexpect call"));
-
+      if (-1 == c_offset) {
+         h2_fail_g(new h2_fail_call(befn, "", "exceed", file, line));
+      }
       return c_offset;
    }
 

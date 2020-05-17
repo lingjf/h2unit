@@ -1,5 +1,5 @@
 
 struct h2_json {
-   static bool match(const h2_string expect, const h2_string actual);
-   static int diff(const h2_string expect, const h2_string actual, int terminal_width, h2_string& str);
+   static bool match(const h2_string& expect, const h2_string& actual);
+   static void diff(const h2_string& expect, const h2_string& actual, h2_lines& e_lines, h2_lines& a_lines);
 };

@@ -6,17 +6,7 @@ h2_inline h2_fail* h2_string_equal_matches::matches(const h2_string& a, bool cas
    if (h2_wildcard_match(e.c_str(), a.c_str(), caseless) == !dont) return nullptr;
    if (h2_regex_match(e.c_str(), a.c_str(), caseless) == !dont) return nullptr;
 
-   h2_fail* fail;
-   if (dont) {
-      fail = (h2_fail*)new h2_fail_unexpect();
-      fail->mprintf("should not %sequals", caseless ? "caseless " : "");
-   } else {
-      fail = (h2_fail*)new h2_fail_strcmp(e, a, caseless);
-      fail->mprintf("not %sequals", caseless ? "caseless " : "");
-   }
-   fail->eprintf("\"%s\"", e.c_str());
-   fail->aprintf("\"%s\"", a.c_str());
-   return fail;
+   return new h2_fail_strcmp(e, a, dont, caseless);
 }
 
 h2_inline h2_fail* h2_float_equal_matches::matches(const long double a, bool caseless, bool dont) const
@@ -28,7 +18,7 @@ h2_inline h2_fail* h2_float_equal_matches::matches(const long double a, bool cas
    //      || std::fabs(a - e) < std::numeric_limits<double>::min();  // unless the result is subnormal
    bool result = std::fabs(a - e) < 0.00001;
    if (result == !dont) return nullptr;
-   return h2_common_unexpect(a, e, dont, "equals");
+   return new h2_fail_unexpect(h2_stringify(e), h2_stringify(a), dont, false, "");
 }
 
 static inline bool __is_bin_string(const char* s)
@@ -154,108 +144,47 @@ h2_inline h2_fail* h2_memcmp_matches::matches(const void* a, bool caseless, bool
 
    if (result == !dont) return nullptr;
    int j = result ? i : 0;
-   h2_fail_memcmp* fail = new h2_fail_memcmp((const unsigned char*)_e[j], (const unsigned char*)a, _width[j], _nbits[j]);
-   if (dont)
-      fail->mprintf("at %p shoud not %s equals", a, __print_size(_width[j], _nbits[j]));
-   else
-      fail->mprintf("at %p not %s equals", a, __print_size(_width[j], _nbits[j]));
-   return fail;
+   return new h2_fail_memcmp((const unsigned char*)_e[j], (const unsigned char*)a, _width[j], _nbits[j], dont, __print_size(_width[j], _nbits[j]), h2_stringify(a));
 }
 
 h2_inline h2_fail* h2_regex_matches::matches(const h2_string& a, bool caseless, bool dont) const
 {
    if (h2_regex_match(e.c_str(), a.c_str(), caseless) == !dont) return nullptr;
-   h2_fail_unexpect* fail = new h2_fail_unexpect();
-   fail->eprintf("/%s/", e.c_str());
-   fail->aprintf("\"%s\"", a.c_str());
-   if (dont)
-      fail->mprintf("shoud not Regex matches");
-   else
-      fail->mprintf("not Regex matches");
-
-   return fail;
+   return new h2_fail_strfind(e, a, dont, caseless, "Re");
 }
 
 h2_inline h2_fail* h2_wildcard_matches::matches(const h2_string& a, bool caseless, bool dont) const
 {
    if (h2_wildcard_match(e.c_str(), a.c_str(), caseless) == !dont) return nullptr;
-   h2_fail_unexpect* fail = new h2_fail_unexpect();
-   fail->eprintf("/%s/", e.c_str());
-   fail->aprintf("\"%s\"", a.c_str());
-   if (dont)
-      fail->mprintf("shoud not Wildcard matches");
-   else
-      fail->mprintf("not Wildcard matches");
-
-   return fail;
+   return new h2_fail_strfind(e, a, dont, caseless, "We");
 }
 
 h2_inline h2_fail* h2_strcmp_matches::matches(const h2_string& a, bool caseless, bool dont) const
 {
    if (a.equals(e, caseless) == !dont) return nullptr;
-   h2_fail* fail;
-   if (dont) {
-      fail = (h2_fail*)new h2_fail_unexpect();
-      fail->mprintf("should not %sequals", caseless ? "caseless " : "");
-   } else {
-      fail = (h2_fail*)new h2_fail_strcmp(e, a, caseless);
-      fail->mprintf("not %sequals", caseless ? "caseless " : "");
-   }
-   fail->eprintf("\"%s\"", e.c_str());
-   fail->aprintf("\"%s\"", a.c_str());
-   return fail;
+   return new h2_fail_strfind(e, a, dont, caseless, "");
 }
 
 h2_inline h2_fail* h2_contains_matches::matches(const h2_string& a, bool caseless, bool dont) const
 {
    if (a.contains(substring, caseless) == !dont) return nullptr;
-   h2_fail_unexpect* fail = new h2_fail_unexpect();
-   fail->eprintf("\"%s\"", substring.c_str());
-   fail->aprintf("\"%s\"", a.c_str());
-   if (dont)
-      fail->mprintf("shoud not %shas substr", caseless ? "caseless " : "");
-   else
-      fail->mprintf("not %shas substr", caseless ? "caseless " : "");
-
-   return fail;
+   return new h2_fail_strfind(substring, a, dont, caseless, "Contains");
 }
 
 h2_inline h2_fail* h2_startswith_matches::matches(const h2_string& a, bool caseless, bool dont) const
 {
    if (a.startswith(prefix_string, caseless) == !dont) return nullptr;
-   h2_fail_unexpect* fail = new h2_fail_unexpect();
-   fail->eprintf("\"%s\"", prefix_string.c_str());
-   fail->aprintf("\"%s\"", a.c_str());
-   if (dont)
-      fail->mprintf("shoud not %sstarts with", caseless ? "caseless " : "");
-   else
-      fail->mprintf("not %sstarts with", caseless ? "caseless " : "");
-
-   return fail;
+   return new h2_fail_strfind(prefix_string, a, dont, caseless, "StartsWith");
 }
 
 h2_inline h2_fail* h2_endswith_matches::matches(const h2_string& a, bool caseless, bool dont) const
 {
    if (a.endswith(suffix_string, caseless) == !dont) return nullptr;
-   h2_fail_unexpect* fail = new h2_fail_unexpect();
-   fail->eprintf("\"%s\"", suffix_string.c_str());
-   fail->aprintf("\"%s\"", a.c_str());
-   if (dont)
-      fail->mprintf("shoud not %sends with", caseless ? "caseless " : "");
-   else
-      fail->mprintf("not %sends with", caseless ? "caseless " : "");
-
-   return fail;
+   return new h2_fail_strfind(suffix_string, a, dont, caseless, "EndsWith");
 }
 
 h2_inline h2_fail* h2_json_matches::matches(const h2_string& a, bool caseless, bool dont) const
 {
    if ((h2_json::match(e, a)) == !dont) return nullptr;
-   h2_fail_json* fail = new h2_fail_json(e, a);
-   if (dont)
-      fail->mprintf("should not equals");
-   else
-      fail->mprintf("not equals");
-
-   return fail;
+   return new h2_fail_json(e, a, dont, caseless);
 }

@@ -90,42 +90,6 @@ char* dual_tostr(h2::h2_json_dual* dual, char* b)
    return b;
 }
 
-SUITE(json utils)
-{
-   Case(h2_line_pad_tail)
-   {
-      h2::h2_line line = {"hello", " ", "world"};
-      h2::h2_line_pad_tail(line, 15);
-      OK(ListOf("hello", " ", "world", "    "), line);
-   }
-
-   Case(samesizify string)
-   {
-      h2::h2_string e = "123456";
-      h2::h2_string a = "123";
-      h2::samesizify(e, a);
-      OK("123456", e);
-      OK("123   ", a);
-   }
-
-   Todo(samesizify lines)
-   {
-      h2::h2_vector<h2::h2_line> e = {{"123", "456"}, {"1234"}};
-      h2::h2_vector<h2::h2_line> a = {{"12345"}};
-      samesizify(e, a);
-
-      OK(ListOf(
-           ListOf("123", "456"),
-           ListOf("1234", "  ")),
-         e);
-
-      OK(ListOf(
-           ListOf("12345", " "),
-           ListOf("      ")),
-         a);
-   }
-}
-
 SUITE(json node)
 {
    char t2[1024 * 32];
@@ -597,7 +561,7 @@ SUITE(json node print)
       const char* json = "{\"abc\": 123}";
       h2::h2_json_node node(json);
 
-      h2::h2_vector<h2::h2_line> lines;
+      h2::h2_lines lines;
       node.print(lines, 0, 0, false);
 
       OK(3, lines.size());
@@ -613,7 +577,7 @@ SUITE(json node print)
       const char* json = "{\"abc\": 123}";
       h2::h2_json_node node(json);
 
-      h2::h2_vector<h2::h2_line> lines;
+      h2::h2_lines lines;
       node.print(lines, 0, 0, true);
 
       OK(1, lines.size());
@@ -682,17 +646,7 @@ SUITE(json dual)
 
       OK("(0;object-object;-;-)[(1;string-string;\"e\"-\"a\";123-456)]", dual_tostr(&dual, t));
 
-      h2::h2_vector<h2::h2_line> e_lines, a_lines;
+      h2::h2_lines e_lines, a_lines;
       dual.align(e_lines, a_lines);
-
-      int width = std::max(h2::h2_lines_max_length(e_lines), h2::h2_lines_max_length(a_lines)) + 3;
-
-      h2::h2_string result;
-      h2::h2_json_diff::print(e_lines, a_lines, width, result);
-
-      OK("{          \033[reset] \033[dark gray] │\033[reset] {          \033[reset] \033[dark gray] \033[reset]\n"
-         "  \033[green]\"e\"\033[reset]: \033[green]123\033[reset] \033[reset] \033[dark gray] │\033[reset]   \033[red,bold]\"a\"\033[reset]: \033[red,bold]456\033[reset] \033[reset] \033[dark gray] \033[reset]\n"
-         "\033[reset]}          \033[reset] \033[dark gray] │\033[reset] \033[reset]}          \033[reset] \033[dark gray] \033[reset]\n",
-         result);
    }
 }

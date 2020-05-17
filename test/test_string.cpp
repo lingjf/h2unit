@@ -2,12 +2,6 @@
 
 SUITE(string)
 {
-   Case(constructor)
-   {
-      h2::h2_string a(3.14);
-      OK("3.14", a);
-   }
-
    Case(equals)
    {
       h2::h2_string a = "Hello World";
@@ -90,6 +84,7 @@ SUITE(string)
       OK(a.endswith(c1));
       OK(a.endswith(c2, true));
       OK(!a.endswith(c3));
+      OK(!a.endswith("Hello  World"));
    }
 
    Case(sprintf)
@@ -101,10 +96,47 @@ SUITE(string)
 
    Case(acronym)
    {
-      h2::h2_string s1("01234");
-      OK("01234", s1.acronym(10));
-      h2::h2_string s2("0123456789ABCDEF");
-      OK(AllOf(StartsWith("0123456789"), Contains("...")), s2.acronym(10));
+      h2::h2_string s1("0123456789");
+      OK("\033{+dark gray}...\033{-dark gray}", s1.acronym(3));
+      OK("0\033{+dark gray}...\033{-dark gray}", s1.acronym(4));
+      OK("01\033{+dark gray}...\033{-dark gray}", s1.acronym(5));
+      OK("012\033{+dark gray}...\033{-dark gray}", s1.acronym(6));
+      OK("0123\033{+dark gray}...\033{-dark gray}", s1.acronym(7));
+      OK("01234\033{+dark gray}...\033{-dark gray}", s1.acronym(8));
+      OK("012345\033{+dark gray}...\033{-dark gray}", s1.acronym(9));
+      OK("0123456789", s1.acronym(10));
+      OK("0123456789", s1.acronym(11));
+   }
+
+   Case(acronym with tail 1)
+   {
+      h2::h2_string s1("0123456789");
+      OK("\033{+dark gray}...\033{-dark gray}9", s1.acronym(4, 1));
+      OK("0\033{+dark gray}...\033{-dark gray}9", s1.acronym(5, 1));
+      OK("01\033{+dark gray}...\033{-dark gray}9", s1.acronym(6, 1));
+      OK("012\033{+dark gray}...\033{-dark gray}9", s1.acronym(7, 1));
+      OK("0123\033{+dark gray}...\033{-dark gray}9", s1.acronym(8, 1));
+      OK("01234\033{+dark gray}...\033{-dark gray}9", s1.acronym(9, 1));
+      OK("0123456789", s1.acronym(10, 1));
+      OK("0123456789", s1.acronym(11, 1));
+   }
+
+   Case(acronym with tail 2)
+   {
+      h2::h2_string s1("0123456789");
+      OK("\033{+dark gray}...\033{-dark gray}89", s1.acronym(5, 2));
+      OK("0\033{+dark gray}...\033{-dark gray}89", s1.acronym(6, 2));
+      OK("01\033{+dark gray}...\033{-dark gray}89", s1.acronym(7, 2));
+      OK("012\033{+dark gray}...\033{-dark gray}89", s1.acronym(8, 2));
+      OK("0123\033{+dark gray}...\033{-dark gray}89", s1.acronym(9, 2));
+      OK("0123456789", s1.acronym(10, 2));
+      OK("0123456789", s1.acronym(11, 2));
+   }
+
+   Case(acronym with CRLF)
+   {
+      h2::h2_string s1("012\r34\t\n");
+      OK("012\\r34\\t\\n", s1.acronym(10));
    }
 
    Case(center)
@@ -162,5 +194,22 @@ SUITE(string)
       t.append("\0world\0", 7);
       OK(Me("hello\0world\0", 12), t.data());
       OK(12, t.length());
+   }
+
+   Case(stringify)
+   {
+      OK("1", h2::h2_stringify(1));
+      OK("1.41421", h2::h2_stringify(sqrt(2)));
+      OK("true", h2::h2_stringify(true));
+      long long a5 = 12345678;
+      OK("12345678", h2::h2_stringify(a5));
+      char* a6 = "hello world";
+      OK("hello world", h2::h2_stringify(a6));
+      unsigned char a7[] = {'h', 'e', 'l', 'l', 'o', 0};
+      OK("hello", h2::h2_stringify(a7));
+      void* a8 = (void*)0x12345678;
+      OK("0x12345678", h2::h2_stringify(a8));
+      OK("0", h2::h2_stringify(NULL));
+      OK("nullptr", h2::h2_stringify(nullptr));
    }
 }

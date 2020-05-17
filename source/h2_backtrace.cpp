@@ -118,7 +118,7 @@ h2_inline bool h2_backtrace::has(void* func, int size) const
    return false;
 }
 
-h2_inline void h2_backtrace::print(int pad) const
+h2_inline void h2_backtrace::print(h2_vector<h2_string>& stacks) const
 {
 #ifndef _WIN32
    h2_heap::unhook();
@@ -139,7 +139,7 @@ h2_inline void h2_backtrace::print(int pad) const
                if (strlen(addr2lined))
                   p = addr2lined;
       }
-      h2_printf("%s%d. %s\n", PAD(pad), i - shift, p);
+      stacks.push_back(p);
 
       if (!strcmp("main", mangled) || !strcmp("main", demangled) || h2_nm::I().in_main(address + offset))
          break;
@@ -147,4 +147,16 @@ h2_inline void h2_backtrace::print(int pad) const
    free(backtraces);
    h2_heap::dohook();
 #endif
+}
+
+h2_inline void h2_backtrace::print(int pad) const
+{
+   h2_vector<h2_string> stacks;
+   print(stacks);
+   h2_lines lines;
+   for (auto& c : stacks)
+      if (O.verbose || c.find("h2unit.h:") == h2_string::npos && c.find("h2unit.hpp:") == h2_string::npos && c.find("h2unit.cpp:") == h2_string::npos)
+         lines.push_back(h2_line(c));
+   lines.sequence(pad);
+   h2_color::printf(lines);
 }

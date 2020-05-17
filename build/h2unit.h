@@ -1,4 +1,4 @@
-﻿/* v5.3  2020-05-10 23:29:57 */
+﻿/* v5.3  2020-05-17 18:59:41 */
 /* https://github.com/lingjf/h2unit */
 /* Apache Licence 2.0 */
 #ifndef __H2UNIT_HPP__
@@ -227,10 +227,12 @@ struct h2_list {
    void add_head(h2_list* entry) { __add_between(entry, this, this->next); }
    void add_tail(h2_list* entry) { __add_between(entry, this->prev, this); }
    void add_before(h2_list* entry) { __add_between(entry, this->prev, this); }
+   void add_after(h2_list* entry) { __add_between(entry, this, this->next); }
 
    void push_back(h2_list* entry) { add_tail(entry); }
    void push(h2_list* entry) { add_head(entry); }
    h2_list* pop() { return empty() ? nullptr : next->out(); }
+   h2_list* pop_back() { return empty() ? nullptr : prev->out(); }
 
    bool is_first(h2_list* entry) const { return next == entry; }
    bool is_last(h2_list* entry) const { return prev == entry; }
@@ -322,7 +324,8 @@ inline bool operator!=(const h2_allocator<T>&, const h2_allocator<T>&) { return 
 
 template <typename T>
 using h2_vector = std::vector<T, h2_allocator<T>>;
-typedef std::basic_ostringstream<char, std::char_traits<char>, h2_allocator<char>> h2_ostringstream;
+
+using h2_ostringstream = std::basic_ostringstream<char, std::char_traits<char>, h2_allocator<char>>;
 
 struct h2_string : public std::basic_string<char, std::char_traits<char>, h2_allocator<char>> {
    h2_string() : basic_string() {}
@@ -332,7 +335,6 @@ struct h2_string : public std::basic_string<char, std::char_traits<char>, h2_all
    h2_string(const char* s, size_t n) : basic_string(s, n) {}
    h2_string(size_t n, char c) : basic_string(n, c) {}
    h2_string(const unsigned char* b) : basic_string((const char*)b) {}
-   h2_string(const double d);
 
    h2_string& operator=(const h2_string& str) { return assign(str.c_str()), *this; }
    h2_string& operator=(const std::string& str) { return assign(str.c_str()), *this; }
@@ -354,7 +356,7 @@ struct h2_string : public std::basic_string<char, std::char_traits<char>, h2_all
 
    h2_string& tolower();
    static h2_string tolower(h2_string from) { return from.tolower(); }
-   h2_string acronym(int atmost = 16) const;
+   h2_string acronym(int width = 16, int tail = 0) const;
    h2_string& center(int width);
    h2_string& sprintf(const char* format, ...);
 };
@@ -367,6 +369,63 @@ inline h2_string operator+(const h2_string& lhs, const std::string& rhs) { h2_st
 inline h2_string operator+(const std::string& lhs, const h2_string& rhs) { h2_string s(lhs.c_str()); s.append(rhs); return s; }
 inline h2_string operator+(const h2_string& lhs, const char rhs) { h2_string s(lhs); s.push_back(rhs); return s; }
 inline h2_string operator+(const char lhs, const h2_string& rhs) { h2_string s(1, lhs); s.append(rhs); return s; }
+
+template <typename T>
+h2_string h2_stringify(T a)
+{
+   h2_ostringstream os;
+   os << std::boolalpha;
+   os << a;
+   return h2_string(os.str().c_str());
+}
+template <>
+inline h2_string h2_stringify(std::nullptr_t a)
+{
+   return "nullptr";
+}
+struct h2_line : public h2_vector<h2_string> {
+   h2_line() {}
+   h2_line(h2_string a) : h2_vector<h2_string>({a}) {}
+   h2_line(std::initializer_list<h2_string> il) : h2_vector<h2_string>(il) {}
+
+   int length() const;
+   void indent(int n_space);
+   void padding(int n_space);
+
+   void printf(const char* style, const char* format, ...);
+   void concat_back(const char* style, h2_line& line);
+   void concat_front(const char* style, h2_line& line);
+
+   void fold(h2_vector<h2_line>& lines);
+   void samesizify(h2_line& b);
+};
+
+struct h2_lines : public h2_vector<h2_line> {
+   h2_lines() {}
+   h2_lines(std::initializer_list<h2_line> il) : h2_vector<h2_line>(il) {}
+
+   void concat_back(h2_lines& lines);
+   void concat_front(h2_lines& lines);
+
+   int max_length() const;
+   void samesizify(h2_lines& b);
+   bool foldable();
+
+   void sequence(int indent, int start = 0);
+};
+struct h2_layout {
+   static h2_lines split(h2_lines& left_lines, h2_lines& right_lines, const char* left_title, const char* right_title);
+   static h2_lines unified(h2_line& up_line, h2_line& down_line, const char* up_title, const char* down_title);
+   static h2_lines seperate(h2_line& up_line, h2_line& down_line, const char* up_title, const char* down_title);
+};
+
+struct h2_color {
+   static void printf(const char* style, const char* format, ...);
+   static void printf(h2_line& line);
+   static void printf(h2_lines& lines);
+
+   static bool is_ctrl(const char* s) { return s[0] == '\033' && s[1] == '{'; };
+};
 
 template <typename T>
 class h2_shared_ptr : h2_libc {
@@ -413,13 +472,13 @@ struct h2_debugger {
    static void trap();
 };
 
-#define h2_debug(...)                                                                    \
-   do {                                                                                  \
-      if (!O.debug) {                                                                    \
-         h2_printf("%s %s : %d = %s\n", #__VA_ARGS__, __FILE__, __LINE__, __FUNCTION__); \
-         h2_backtrace bt(0);                                                             \
-         bt.print();                                                                     \
-      }                                                                                  \
+#define h2_debug(...)                                                                               \
+   do {                                                                                             \
+      if (!O.debug) {                                                                               \
+         h2_color::printf("", "%s %s : %d = %s\n", #__VA_ARGS__, __FILE__, __LINE__, __FUNCTION__); \
+         h2_backtrace bt(0);                                                                        \
+         bt.print(3);                                                                               \
+      }                                                                                             \
    } while (0)
 
 struct tinyexpr {
@@ -427,8 +486,8 @@ struct tinyexpr {
 };
 
 struct h2_json {
-   static bool match(const h2_string expect, const h2_string actual);
-   static int diff(const h2_string expect, const h2_string actual, int terminal_width, h2_string& str);
+   static bool match(const h2_string& expect, const h2_string& actual);
+   static void diff(const h2_string& expect, const h2_string& actual, h2_lines& e_lines, h2_lines& a_lines);
 };
 
 struct h2_backtrace {
@@ -444,11 +503,12 @@ struct h2_backtrace {
    bool operator==(h2_backtrace&);
 
    bool has(void* func, int size) const;
-   void print(int pad = 3) const;
+   void print(h2_vector<h2_string>& stacks) const;
+   void print(int pad) const;
 };
 
 struct h2_fail : h2_libc {
-   h2_fail *x_next, *y_next;
+   h2_fail *subling_next, *child_next;
 
    const char* file;
    int line;
@@ -456,60 +516,61 @@ struct h2_fail : h2_libc {
    const char* func;
    int argi;
 
-   h2_string _k, _h, _m, _u;
-   int pad, w_type;  // 0 is MOCK; 1 is OK(condition); 2 is OK(expect, actual); 3 is JE
-   h2_string e_expr, _e, a_expr, _a;
+   int usage;  // 0 is Inner(Mock, AllOf, &&||); 1 is OK(condition); 2 is OK(expect, actual); 3 is JE
+   h2_string e_expression, a_expression;
+   h2_string user_explain;
 
-   h2_fail(const char* file_, int line_, const char* func_ = nullptr, int argi_ = -1);
+   //    expression     explain      represent       value
+   //     Ge(var)        Ge(5)        5               5
+   //     We(var)        We("abc")    "abc"           abc
+
+   h2_fail(const char* file_, int line_, const char* func_ = nullptr, int argi_ = -1)
+     : subling_next(nullptr), child_next(nullptr), file(file_), line(line_), func(func_), argi(argi_), usage(0) {}
    virtual ~h2_fail();
 
-   void locate(const char* file_, int line_, const char* func_ = nullptr, int argi_ = -1);
-   void set_w_type(int w_type_);
-   void set_e_expr(const char* e_expr_);
-   void set_a_expr(const char* a_expr_);
+   void set_locate(const char* file_, int line_, const char* func_ = nullptr, int argi_ = -1);
+   const char* get_locate();
 
-   void kprintf(const char* format, ...);
-   void hprintf(const char* format, ...);
-   void eprintf(const char* format, ...);
-   void aprintf(const char* format, ...);
-   void mprintf(const char* format, ...);
-   void uprintf(const char* format, ...);
-   void mprintf() {}
+   virtual void print(int subling_index = 0, int child_index = 0) {}
+   virtual void print(FILE* fp) {}
 
-   void print_locate();
-   virtual void print();
-   virtual void print(FILE* fp);
-
-   static void append_x(h2_fail*& fail, h2_fail* n);
-   static void append_y(h2_fail*& fail, h2_fail* n);
-};
-
-struct h2_fail_normal : h2_fail {
-   h2_fail_normal(const char* file_ = nullptr, int line_ = 0, const char* func_ = nullptr, const char* format = "", ...);
-   void print();
+   void foreach (std::function<void(h2_fail*, int, int)> cb, int subling_index = 0, int child_index = 0);
+   static void append_subling(h2_fail*& fail, h2_fail* n);
+   static void append_child(h2_fail*& fail, h2_fail* n);
 };
 
 struct h2_fail_unexpect : h2_fail {
-   h2_fail_unexpect(const char* file_ = nullptr, int line_ = 0);
-   void print_OK1();
-   void print_OK2();
-   void print_JE();
-   void print_MOCK();
-   void print();
+   h2_string e_represent, a_represent, e_explain;
+   h2_fail_unexpect(h2_string e_represent_, h2_string a_represent_, bool dont_ = false, bool caseless_ = false, h2_string pre = "", h2_string post = "", const char* file_ = nullptr, int line_ = 0)
+     : h2_fail(file_, line_), e_represent(e_represent_), a_represent(a_represent_), e_explain((dont_ ? "!" : "") + ((caseless_ ? "~" : "") + (pre + e_represent_ + post))) {}
+
+   void print_OK1(h2_line& line);
+   void print_OK2(h2_line& line);
+   void print_JE(h2_line& line);
+   void print_Inner(h2_line& line);
+   void print(int subling_index = 0, int child_index = 0) override;
 };
 
 struct h2_fail_strcmp : h2_fail_unexpect {
-   const h2_string expect, actual;
    const bool caseless;
-   h2_fail_strcmp(const h2_string& expect_, const h2_string& actual_, bool caseless_, const char* file_ = nullptr, int line_ = 0);
-   void print();
-   char* fmt_char(char c, bool eq, const char* style, char* p);
+   h2_string e_value, a_value;
+   h2_fail_strcmp(const h2_string& e_value_, const h2_string& a_value_, bool dont_, bool caseless_, const char* file_ = nullptr, int line_ = 0)
+     : h2_fail_unexpect("\"" + e_value_ + "\"", "\"" + a_value_ + "\"", dont_, caseless_, "", "", file_, line_), caseless(caseless_), e_value(e_value_), a_value(a_value_) {}
+   void print(int subling_index = 0, int child_index = 0);
+};
+
+struct h2_fail_strfind : h2_fail_unexpect {
+   h2_string e_value, a_value;
+   h2_fail_strfind(const h2_string& e_value_, const h2_string& a_value_, bool dont_, bool caseless_, h2_string find_, const char* file_ = nullptr, int line_ = 0)
+     : h2_fail_unexpect("\"" + e_value_ + "\"", "\"" + a_value_ + "\"", dont_, caseless_, find_ + "(", ")", file_, line_), e_value(e_value_), a_value(a_value_) {}
+   void print(int subling_index = 0, int child_index = 0);
 };
 
 struct h2_fail_json : h2_fail_unexpect {
-   const h2_string expect, actual;
-   h2_fail_json(const h2_string& expect_, const h2_string& actual_, const char* file_ = nullptr, int line_ = 0);
-   void print();
+   h2_string e_value, a_value;
+   h2_fail_json(const h2_string& e_value_, const h2_string& a_value_, bool dont_, bool caseless_, const char* file_ = nullptr, int line_ = 0)
+     : h2_fail_unexpect(e_value_, a_value_, dont_, caseless_, "Je(", ")", file_, line_), e_value(e_value_), a_value(a_value_) {}
+   void print(int subling_index = 0, int child_index = 0);
 };
 
 struct h2_fail_memcmp : h2_fail_unexpect {
@@ -518,20 +579,16 @@ struct h2_fail_memcmp : h2_fail_unexpect {
    static constexpr const int npr_16b = 8;
    static constexpr const int npr_32b = 4;
    static constexpr const int npr_64b = 2;
-   h2_vector<unsigned char> expect, actual;
+   h2_vector<unsigned char> e_value, a_value;
    const int width, nbits;
-   h2_fail_memcmp(const unsigned char* expect_, const unsigned char* actual_, int width_, int nbits_, const char* file_ = nullptr, int line_ = 0);
-   void print();
-   void print_bits();
-   void print_bytes();
-   void print_int16();
-   void print_int32();
-   void print_int64();
-   char* fmt_bit(unsigned char c, unsigned char t, const char* style, char* p);
-   char* fmt_byte(unsigned char c, unsigned char t, int j, const char* style, char* p);
-   char* fmt_int16(unsigned short c, unsigned short t, const char* style, char* p);
-   char* fmt_int32(unsigned long c, unsigned long t, const char* style, char* p);
-   char* fmt_int64(unsigned long long c, unsigned long long t, const char* style, char* p);
+   h2_fail_memcmp(const unsigned char* e_value_, const unsigned char* a_value_, int width_, int nbits_, bool dont, const char* e_ext, h2_string a_represent_, const char* file_ = nullptr, int line_ = 0)
+     : h2_fail_unexpect("", a_represent_, dont, false, e_ext, "", file_, line_), e_value(e_value_, e_value_ + (nbits_ + 7) / 8), a_value(a_value_, a_value_ + (nbits_ + 7) / 8), width(width_), nbits(nbits_) {}
+   void print(int subling_index = 0, int child_index = 0);
+   void print_bits(h2_lines& e_lines, h2_lines& a_lines);
+   void print_bytes(h2_lines& e_lines, h2_lines& a_lines);
+   void print_int16(h2_lines& e_lines, h2_lines& a_lines);
+   void print_int32(h2_lines& e_lines, h2_lines& a_lines);
+   void print_int64(h2_lines& e_lines, h2_lines& a_lines);
 };
 
 struct h2_fail_memoverflow : h2_fail {
@@ -540,8 +597,8 @@ struct h2_fail_memoverflow : h2_fail {
    const unsigned char* magic;
    const h2_vector<unsigned char> spot;
    const h2_backtrace bt0, bt1;
-   h2_fail_memoverflow(void* ptr_, int offset_, const unsigned char* magic_, int size, h2_backtrace bt0_, h2_backtrace bt1_, const char* file_ = nullptr, int line_ = 0);
-   void print();
+   h2_fail_memoverflow(void* ptr_, int offset_, const unsigned char* magic_, int size, h2_backtrace bt0_, h2_backtrace bt1_, const char* file_ = nullptr, int line_ = 0) : h2_fail(file_, line_), ptr((unsigned char*)ptr_), offset(offset_), magic(magic_), spot(((unsigned char*)ptr_) + offset_, ((unsigned char*)ptr_) + offset_ + size), bt0(bt0_), bt1(bt1_) {}
+   void print(int subling_index = 0, int child_index = 0);
 };
 
 struct h2_fail_memleak : h2_fail {
@@ -555,29 +612,46 @@ struct h2_fail_memleak : h2_fail {
    h2_vector<P> places;
    long long bytes, times;
 
-   h2_fail_memleak(const char* file_ = nullptr, int line_ = 0, const char* where_ = "");
+   h2_fail_memleak(const char* file_ = nullptr, int line_ = 0, const char* where_ = "") : h2_fail(file_, line_), where(where_), bytes(0), times(0) {}
 
    void add(void* ptr, int size, h2_backtrace& bt);
-   void print();
+   void print(int subling_index = 0, int child_index = 0);
 };
 
 struct h2_fail_double_free : h2_fail {
+   void* ptr;
    const h2_backtrace bt_allocate, bt_release1, bt_release2;
-   h2_fail_double_free(void* ptr_, h2_backtrace& bt_allocate_, h2_backtrace& bt_release1_, h2_backtrace& bt_release2_);
-   void print();
+   h2_fail_double_free(void* ptr_, h2_backtrace& bt_allocate_, h2_backtrace& bt_release1_, h2_backtrace& bt_release2_) : h2_fail(nullptr, 0), ptr(ptr_), bt_allocate(bt_allocate_), bt_release1(bt_release1_), bt_release2(bt_release2_) {}
+   void print(int subling_index = 0, int child_index = 0);
 };
 
-struct h2_fail_symmetric_free : h2_fail {
+struct h2_fail_access_after_free : h2_fail {
+   const unsigned char* ptr;
+   int offset;
+   const h2_backtrace bt_allocate, bt_release, bt_access;
+   h2_fail_access_after_free(const unsigned char* ptr_, int offset_, h2_backtrace& bt_allocate_, h2_backtrace& bt_release_, h2_backtrace& bt_access_) : h2_fail(nullptr, 0), ptr(ptr_), offset(offset_), bt_allocate(bt_allocate_), bt_release(bt_release_), bt_access(bt_access_) {}
+   void print(int subling_index = 0, int child_index = 0);
+};
+
+struct h2_fail_asymmetric_free : h2_fail {
+   void* ptr;
+   const char *who_allocate, *who_release;
    const h2_backtrace bt_allocate, bt_release;
-   h2_fail_symmetric_free(void* ptr_, h2_backtrace& bt_allocate_, h2_backtrace& bt_release_, const char* format, ...);
-   void print();
+   h2_fail_asymmetric_free(void* ptr_, const char* who_allocate_, const char* who_release_, h2_backtrace& bt_allocate_, h2_backtrace& bt_release_) : h2_fail(nullptr, 0), ptr(ptr_), who_allocate(who_allocate_), who_release(who_release_), bt_allocate(bt_allocate_), bt_release(bt_release_) {}
+   void print(int subling_index = 0, int child_index = 0);
+};
+
+struct h2_fail_call : h2_fail {
+   h2_string e_who, e_call, a_call;
+   h2_fail_call(const char* func_, const char* expect, const char* actual, const char* file_ = nullptr, int line_ = 0) : h2_fail(file_, line_), e_who(func_), e_call(expect), a_call(actual) {}
+   void print(int subling_index = 0, int child_index = 0);
 };
 
 struct h2_fail_instantiate : h2_fail {
    const char *action_type, *return_type, *class_type, *method_name, *return_args;
    const bool why_abstract;
-   h2_fail_instantiate(const char* action_type_, const char* return_type_, const char* class_type_, const char* method_name_, const char* return_args_, int why_abstract_, const char* file_, int line_);
-   void print();
+   h2_fail_instantiate(const char* action_type_, const char* return_type_, const char* class_type_, const char* method_name_, const char* return_args_, int why_abstract_, const char* file_, int line_) : h2_fail(file_, line_), action_type(action_type_), return_type(return_type_), class_type(class_type_), method_name(method_name_), return_args(return_args_), why_abstract(why_abstract_) {}
+   void print(int subling_index = 0, int child_index = 0);
 };
 
 struct h2_stubs {
@@ -906,23 +980,6 @@ struct h2_polymorphic_matcher {
    };
 };
 
-template <typename A, typename E>
-inline h2_fail* h2_common_unexpect(const A& a, const E& e, bool dont, const char* op)
-{
-   h2_ostringstream ose, osa;
-   ose << std::boolalpha << e;
-   osa << std::boolalpha << a;
-   h2_fail_unexpect* fail = new h2_fail_unexpect();
-   fail->eprintf("%s", ose.str().c_str());
-   fail->aprintf("%s", osa.str().c_str());
-   if (dont)
-      fail->mprintf("shoud not %s", op);
-   else
-      fail->mprintf("not %s", op);
-
-   return fail;
-}
-
 struct h2_string_equal_matches {
    const h2_string e;
    const bool r;
@@ -948,7 +1005,7 @@ struct h2_equal_matches {
    {
       if (r) dont = !dont;
       if ((a == e) == !dont) return nullptr;
-      return h2_common_unexpect(a, e, dont, "equals");
+      return new h2_fail_unexpect(h2_stringify(e), h2_stringify(a), dont, false, "");
    }
 };
 
@@ -1067,13 +1124,11 @@ struct h2_and_matches {
    h2_fail* matches(const A& a, bool caseless = false, bool dont = false) const
    {
       h2_fail* fail = nullptr;
-      h2_fail::append_y(fail, h2_matcher_cast<A>(m1).matches(a, caseless, false));
-      h2_fail::append_y(fail, h2_matcher_cast<A>(m2).matches(a, caseless, false));
+      h2_fail::append_subling(fail, h2_matcher_cast<A>(m1).matches(a, caseless, false));
+      h2_fail::append_subling(fail, h2_matcher_cast<A>(m2).matches(a, caseless, false));
       if (!fail == !dont) return nullptr;
       if (dont) {
-         fail = new h2_fail_unexpect();
-         fail->mprintf("should not both match");
-      } else {
+         fail = new h2_fail_unexpect("", h2_stringify(a), dont);
       }
       return fail;
    }
@@ -1092,13 +1147,7 @@ struct h2_or_matches {
       h2_fail* f2 = h2_matcher_cast<A>(m2).matches(a, caseless, false);
       bool result = !f1 || !f2;
       if (result == !dont) return nullptr;
-      h2_fail* fail = new h2_fail_unexpect();
-      if (dont)
-         fail->mprintf("should not match any");
-      else
-         fail->mprintf("not match any");
-
-      return fail;
+      return new h2_fail_unexpect("", h2_stringify(a), dont);
    }
 };
 
@@ -1108,20 +1157,14 @@ struct h2_any_matches {
 };
 
 struct h2_null_matches {
-   const bool r;
-   explicit h2_null_matches(bool _r = false) : r(_r) {}
+   const bool reverse;
+   explicit h2_null_matches(bool _reverse) : reverse(_reverse) {}
    template <typename A>
    h2_fail* matches(const A& a, bool caseless = false, bool dont = false) const
    {
-      if (r) dont = !dont;
+      if (reverse) dont = !dont;
       if ((nullptr == (const void*)a) == !dont) return nullptr;
-      h2_fail_unexpect* fail = new h2_fail_unexpect();
-      fail->aprintf("%p", (const void*)a);
-      if (dont)
-         fail->mprintf("should not null");
-      else
-         fail->mprintf("is not null");
-      return fail;
+      return new h2_fail_unexpect(dont ? "NotNull" : "IsNull", h2_stringify((const void*)a), false, false);
    }
 };
 
@@ -1131,14 +1174,9 @@ struct h2_boolean_matches {
    template <typename A>
    h2_fail* matches(const A& a, bool caseless = false, bool dont = false) const
    {
-      if ((e == (bool)a) == !dont) return nullptr;
-      h2_fail_unexpect* fail = new h2_fail_unexpect();
-      fail->aprintf(a ? "true" : "false");
-      if (dont)
-         fail->mprintf("should not %s", e ? "true" : "false");
-      else
-         fail->mprintf("is not %s", e ? "true" : "false");
-      return fail;
+      if (!e) dont = !dont;
+      if (((bool)a) == !dont) return nullptr;
+      return new h2_fail_unexpect(dont ? "false" : "true", a ? "true" : "false");
    }
 };
 
@@ -1151,7 +1189,7 @@ struct h2_ge_matches {
    h2_fail* matches(const A& a, bool caseless = false, bool dont = false) const
    {
       if ((a >= e) == !dont) return nullptr;
-      return h2_common_unexpect(a, e, dont, ">=");
+      return new h2_fail_unexpect(h2_stringify(e), h2_stringify(a), dont, false, ">=");
    }
 };
 
@@ -1164,7 +1202,7 @@ struct h2_gt_matches {
    h2_fail* matches(const A& a, bool caseless = false, bool dont = false) const
    {
       if ((a > e) == !dont) return nullptr;
-      return h2_common_unexpect(a, e, dont, ">");
+      return new h2_fail_unexpect(h2_stringify(e), h2_stringify(a), dont, false, ">");
    }
 };
 
@@ -1177,7 +1215,7 @@ struct h2_le_matches {
    h2_fail* matches(const A& a, bool caseless = false, bool dont = false) const
    {
       if ((a <= e) == !dont) return nullptr;
-      return h2_common_unexpect(a, e, dont, "<=");
+      return new h2_fail_unexpect(h2_stringify(e), h2_stringify(a), dont, false, "<=");
    }
 };
 
@@ -1190,7 +1228,7 @@ struct h2_lt_matches {
    h2_fail* matches(const A& a, bool caseless = false, bool dont = false) const
    {
       if ((a < e) == !dont) return nullptr;
-      return h2_common_unexpect(a, e, dont, "<");
+      return new h2_fail_unexpect(h2_stringify(e), h2_stringify(a), dont, false, "<");
    }
 };
 
@@ -1299,18 +1337,13 @@ struct h2_allof_matches {
       h2_fail* fails = nullptr;
       for (int i = 0; i < v_matchers.size(); ++i) {
          h2_fail* f = v_matchers[i].matches(a, caseless, false);
-         if (f) f->kprintf(" %d. ", i);
-         h2_fail::append_y(fails, f);
+         h2_fail::append_subling(fails, f);
       }
 
       if (!fails == !dont) return nullptr;
-
-      h2_fail* fail = new h2_fail_unexpect();
-      if (dont)
-         fail->mprintf("should not matches all of matchers");
-      else {
-         fail->mprintf("should matches all of matchers");
-         h2_fail::append_x(fail, fails);
+      h2_fail* fail = (h2_fail*)new h2_fail_unexpect("", h2_stringify(a), dont);
+      if (!dont) {
+         h2_fail::append_child(fail, fails);
       }
       return fail;
    }
@@ -1334,18 +1367,13 @@ struct h2_anyof_matches {
       for (int i = 0; i < v_matchers.size(); ++i) {
          h2_fail* f = v_matchers[i].matches(a, caseless, false);
          if (!f) s++;
-         if (f) f->kprintf(" %d. ", i);
-         h2_fail::append_y(fails, f);
+         h2_fail::append_subling(fails, f);
       }
 
       if ((0 < s) == !dont) return nullptr;
-
-      h2_fail* fail = (h2_fail*)new h2_fail_unexpect();
-      if (dont)
-         fail->mprintf("should not matches any of matchers");
-      else {
-         fail->mprintf("not matches any of matchers");
-         h2_fail::append_x(fail, fails);
+      h2_fail* fail = (h2_fail*)new h2_fail_unexpect("", h2_stringify(a), dont);
+      if (!dont) {
+         h2_fail::append_child(fail, fails);
       }
       return fail;
    }
@@ -1371,13 +1399,7 @@ struct h2_noneof_matches {
       }
 
       if ((s == 0) == !dont) return nullptr;
-
-      h2_fail_unexpect* fail = new h2_fail_unexpect();
-      if (dont)
-         fail->mprintf("should not matches none of matcher");
-      else
-         fail->mprintf("not matches none of matcher");
-      return fail;
+      return new h2_fail_unexpect("", h2_stringify(a), dont);
    }
 
    H2_MATCHER_T2V(t_matchers)
@@ -1393,11 +1415,9 @@ struct h2_listof_matches {
    h2_fail* matches(A a, bool caseless = false, bool dont = false) const
    {
       auto v_matchers = t2v<decltype(a[0]), 0>();
-
       h2_fail* fail = nullptr;
       for (int i = 0; i < v_matchers.size(); ++i)
-         h2_fail::append_y(fail, v_matchers[i].matches(a[i], caseless, dont));
-
+         h2_fail::append_subling(fail, v_matchers[i].matches(a[i], caseless, dont));
       return fail;
    }
 
@@ -1406,7 +1426,7 @@ struct h2_listof_matches {
 
 const h2_polymorphic_matcher<h2_any_matches> _{h2_any_matches()};
 const h2_polymorphic_matcher<h2_any_matches> Any{h2_any_matches()};
-const h2_polymorphic_matcher<h2_null_matches> IsNull{h2_null_matches()};
+const h2_polymorphic_matcher<h2_null_matches> IsNull{h2_null_matches(false)};
 const h2_polymorphic_matcher<h2_null_matches> NotNull{h2_null_matches(true)};
 const h2_polymorphic_matcher<h2_boolean_matches> IsTrue{h2_boolean_matches(true)};
 const h2_polymorphic_matcher<h2_boolean_matches> IsFalse{h2_boolean_matches(false)};
@@ -1545,7 +1565,7 @@ struct h2_callexp {
    bool is_saturated() const { return call == most; }
    bool is_overmuch() const { return most < call; }
 
-   h2_fail* check();
+   h2_fail* check(const char* func, const char* file, int line);
    const char* actual();
    const char* expect();
 };
@@ -1611,8 +1631,7 @@ struct h2_mock : h2_libc {
    h2_fail* times_check()
    {
       h2_fail* fail = nullptr;
-      for (auto& c : c_array) h2_fail::append_y(fail, c.check());
-      if (fail) fail->locate(file, line, befn);
+      for (auto& c : c_array) h2_fail::append_subling(fail, c.check(befn, file, line));
       return fail;
    }
 };
@@ -1642,8 +1661,8 @@ struct h2_tuple_match {
    {
       h2_fail* fail = h2_tuple_match<N - 1>::matches(matchers, args, file, line, func);
       h2_fail* f = std::get<N - 1>(matchers).matches(std::get<N - 1>(args));
-      if (f) f->locate(file, line, func, N - 1);
-      h2_fail::append_x(fail, f);
+      if (f) f->set_locate(file, line, func, N - 1);
+      h2_fail::append_subling(fail, f);
       return fail;
    }
 };
@@ -1728,9 +1747,9 @@ class h2_mocker<Counter, Lineno, Class, Return(Args...)> : h2_mock {
             break;
          }
       }
-      if (-1 == c_offset)
-         h2_fail_g(new h2_fail_normal(file, line, befn, "unexpect call"));
-
+      if (-1 == c_offset) {
+         h2_fail_g(new h2_fail_call(befn, "", "exceed", file, line));
+      }
       return c_offset;
    }
 
@@ -1928,10 +1947,10 @@ struct h2_packet_matches {
    h2_fail* matches(h2_packet* a, bool caseless = false, bool dont = false) const
    {
       h2_fail* fails = nullptr;
-      h2_fail::append_y(fails, h2_matcher_cast<const char*>(from).matches(a->from.c_str(), caseless, dont));
-      h2_fail::append_y(fails, h2_matcher_cast<const char*>(to).matches(a->to.c_str(), caseless, dont));
-      h2_fail::append_y(fails, h2_matcher_cast<const unsigned char*>(data).matches((unsigned char*)a->data.data(), caseless, dont));
-      h2_fail::append_y(fails, h2_matcher_cast<const int>(size).matches(a->data.length(), caseless, dont));
+      h2_fail::append_subling(fails, h2_matcher_cast<const char*>(from).matches(a->from.c_str(), caseless, dont));
+      h2_fail::append_subling(fails, h2_matcher_cast<const char*>(to).matches(a->to.c_str(), caseless, dont));
+      h2_fail::append_subling(fails, h2_matcher_cast<const unsigned char*>(data).matches((unsigned char*)a->data.data(), caseless, dont));
+      h2_fail::append_subling(fails, h2_matcher_cast<const int>(size).matches(a->data.length(), caseless, dont));
       return fails;
    }
 };
@@ -2044,22 +2063,21 @@ struct h2_reports {
    void on_case_endup(h2_suite* s, h2_case* c);
 };
 
-#define __Matches_Common(message)                                                   \
-   template <typename A>                                                            \
-   bool __matches(const A& a) const;                                                \
-   template <typename A>                                                            \
-   h2::h2_fail* matches(const A& a, bool caseless = false, bool dont = false) const \
-   {                                                                                \
-      h2::h2_fail_unexpect* fail = new h2::h2_fail_unexpect();                      \
-      if (__matches(a) == !dont) return nullptr;                                    \
-      if (dont) {                                                                   \
-         fail->mprintf("should not matches");                                       \
-      } else {                                                                      \
-         h2::h2_ostringstream osm;                                                  \
-         osm << std::boolalpha << H2PP_REMOVE_PARENTHESES(message);                 \
-         fail->mprintf("%s", osm.str().c_str());                                    \
-      }                                                                             \
-      return fail;                                                                  \
+#define __Matches_Common(message)                                                                     \
+   template <typename A>                                                                              \
+   bool __matches(const A& a) const;                                                                  \
+   template <typename A>                                                                              \
+   h2::h2_fail* matches(const A& a, bool caseless = false, bool dont = false) const                   \
+   {                                                                                                  \
+      h2::h2_fail_unexpect* fail = new h2::h2_fail_unexpect("", h2::h2_stringify(a), dont, caseless); \
+      if (__matches(a) == !dont) return nullptr;                                                      \
+      if (dont) {                                                                                     \
+      } else {                                                                                        \
+         h2::h2_ostringstream osm;                                                                    \
+         osm << std::boolalpha << H2PP_REMOVE_PARENTHESES(message);                                   \
+         fail->user_explain = osm.str().c_str();                                                      \
+      }                                                                                               \
+      return fail;                                                                                    \
    }
 
 #define H2MATCHER0(name, message)                                                     \
@@ -2203,24 +2221,25 @@ struct h2_directory {
 };
 
 struct h2_defer_fail : h2_once {
-   int w_type;
-   const char *e_expr, *a_expr;
+   int usage;
+   const char *e_expression, *a_expression;
    const char* file;
    int line;
    h2_fail* fail;
    h2_ostringstream oss;
 
-   h2_defer_fail(int w_type_, const char* e_expr_, const char* a_expr_, const char* file_, int line_)
-     : w_type(w_type_), e_expr(e_expr_), a_expr(a_expr_), file(file_), line(line_), fail(nullptr) {}
+   h2_defer_fail(int usage_, const char* e_expression_, const char* a_expression_, const char* file_, int line_)
+     : usage(usage_), e_expression(e_expression_), a_expression(a_expression_), file(file_), line(line_), fail(nullptr) {}
 
    ~h2_defer_fail()
    {
       if (fail) {
-         fail->set_w_type(w_type);
-         fail->set_e_expr(e_expr);
-         fail->set_a_expr(a_expr);
-         fail->uprintf("%s", oss.str().c_str());
-         fail->locate(file, line);
+         fail->file = file;
+         fail->line = line;
+         fail->usage = usage;
+         fail->e_expression = e_expression;
+         fail->a_expression = a_expression;
+         fail->user_explain = oss.str().c_str();
          h2_fail_g(fail);
       }
    }
@@ -2228,11 +2247,7 @@ struct h2_defer_fail : h2_once {
 
 static inline h2_ostringstream& h2_OK1(bool a, h2_defer_fail* d)
 {
-   if (!a) {
-      h2_fail_unexpect* fail = new h2_fail_unexpect();
-      fail->aprintf("false");
-      d->fail = fail;
-   }
+   if (!a) d->fail = new h2_fail_unexpect("true", "false");
    return d->oss;
 }
 
@@ -2240,7 +2255,12 @@ template <typename E, typename A>
 static inline h2_ostringstream& h2_OK2(E e, A a, h2_defer_fail* d)
 {
    h2::h2_matcher<typename h2_decay<A>::type> m = h2::h2_matcher_cast<typename h2_decay<A>::type>((typename h2_decay<E>::type)e);
-   d->fail = m.matches((typename h2_decay<A>::type)a);
+   h2_fail* fail = m.matches((typename h2_decay<A>::type)a);
+   d->fail = fail;
+   if (fail && fail->subling_next) {
+      d->fail = new h2_fail_unexpect("", "");
+      h2_fail::append_child(d->fail, fail);
+   }
    return d->oss;
 }
 

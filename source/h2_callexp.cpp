@@ -1,12 +1,8 @@
 
-h2_inline h2_fail* h2_callexp::check()
+h2_inline h2_fail* h2_callexp::check(const char* func, const char* file, int line)
 {
    if (is_satisfied() || is_saturated()) return nullptr;
-   h2_fail_unexpect* fail = new h2_fail_unexpect();
-   fail->aprintf("%s", actual());
-   fail->mprintf("called but expect");
-   fail->eprintf("%s", expect());
-   return fail;
+   return new h2_fail_call(func, expect(), actual(), file, line);
 }
 
 h2_inline const char* h2_callexp::actual()

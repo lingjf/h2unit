@@ -79,16 +79,6 @@ SUITE(Stub Member method)
       OK("mmm...", cat.say());
    }
 
-   Case(virtual member function failure)
-   {
-      STUB(const char*, Centipede, say, ())  // failure
-      {
-         return "...";
-      };
-      Centipede centipede(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11);
-      OK("...", centipede.say());
-   }
-
    Case(virtual member function successful)
    {
       STUB(const char*,
@@ -101,17 +91,6 @@ SUITE(Stub Member method)
       };
       Centipede centipede(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11);
       OK("...", centipede.say());
-   }
-
-   Case(abstract class failure)
-   {
-      STUB(int, Ovipara, cry, ())  // failure
-      {
-         return 6;
-      };
-
-      Bird bird;
-      OK(6, bird.cry());
    }
 }
 

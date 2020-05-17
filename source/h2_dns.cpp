@@ -5,13 +5,9 @@ struct h2_resolver {
 
    static bool inet_addr(const char* str, struct sockaddr_in* addr)
    {
-      int s1, s2, s3, s4;
-      bool is_ipv4 = 4 == ::sscanf(str, "%d.%d.%d.%d", &s1, &s2, &s3, &s4);
-      if (is_ipv4 && addr) {
-         addr->sin_family = AF_INET;
-         inet_pton(AF_INET, str, &addr->sin_addr);
-      }
-      return is_ipv4;
+      struct sockaddr_in a;
+      if (!addr) addr = &a;
+      return 1 == inet_pton(AF_INET, str, &addr->sin_addr);
    }
 
    h2_dns* find(const char* hostname)

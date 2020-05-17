@@ -15,12 +15,9 @@ struct h2__stdio {
 
    static int vfprintf(FILE* stream, const char* format, va_list ap)
    {
-      va_list bp;
-      va_copy(bp, ap);
-      int len = vsnprintf(nullptr, 0, format, bp);
-      char* tmp = (char*)alloca(len + 1);
-      len = vsnprintf(tmp, len + 1, format, ap);
-      return write(fileno(stream), tmp, len);
+      char* alloca_str;
+      h2_sprintvf(alloca_str, format, ap);
+      return write(fileno(stream), alloca_str, strlen(alloca_str));
    }
 
    static int fprintf(FILE* stream, const char* format, ...)
@@ -80,12 +77,9 @@ struct h2__stdio {
    static void vsyslog(int priority, const char* format, va_list ap)
    {
       if (!I().syslog_capturable) return;
-      va_list bp;
-      va_copy(bp, ap);
-      int len = vsnprintf(nullptr, 0, format, bp);
-      char* tmp = (char*)alloca(len + 1);
-      len = vsnprintf(tmp, len + 1, format, ap);
-      I().buffer->append(tmp, len);
+      char* alloca_str;
+      h2_sprintvf(alloca_str, format, ap);
+      I().buffer->append(alloca_str, strlen(alloca_str));
    }
 
    static void syslog(int priority, const char* format, ...)

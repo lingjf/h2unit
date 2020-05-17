@@ -42,7 +42,7 @@ const char* rectangle_tostring(rectangle_t* rectangle)
 const char* rectangle_tojson(rectangle_t* rectangle)
 {
    static char buffer[1024];
-   sprintf(buffer, "{\"width\": %d, \"height\": %d}", rectangle->width, rectangle->height);
+   sprintf(buffer, "{\"width\": %d, \"height\": %d, \"corners\": [1,2,3,4],\"edges\": {}, \"name\": \"#123\"}", rectangle->width, rectangle->height);
    return buffer;
 }
 

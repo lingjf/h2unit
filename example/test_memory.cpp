@@ -24,7 +24,10 @@ SUITE(Memory Leak)
    /*
    * Memory leak detection on Test Case Level
    */
-   Case(test memory leak ok successful) { free(malloc(8)); }
+   Case(test memory leak ok successful)
+   {
+      free(malloc(8));
+   }
 
    Case(test memory leak failure)
    {
@@ -36,10 +39,7 @@ SUITE(Memory Leak)
          rectangle = rectangle_create(1, i);
       }
       rectangle_destroy(rectangle);
-   }
 
-   Case(C++ new delete failure)
-   {
       Dog* dog = new Dog(3);
       delete dog;
 
@@ -101,69 +101,27 @@ SUITE(Memory Leak)
    }
 }
 
-SUITE(Memory symmetric allocate and free)
+SUITE(Memory Check)
 {
-   Case(malloc - delete failure)
+   Case(asymmetric malloc and delete failure)
    {
       char* p = (char*)malloc(100);
       delete p;
    }
-   Case(malloc - delete[] failure)
-   {
-      char* p = (char*)malloc(100);
-      delete[] p;
-   }
-   Case(new - free failure)
-   {
-      char* p = (char*)new char;
-      free(p);
-   }
-   Case(new - delete[] failure)
-   {
-      char* p = (char*)new char;
-      delete[] p;
-   }
-   Case(new[] - free failure)
-   {
-      char* p = (char*)new char[100];
-      free(p);
-   }
-}
 
-SUITE(Ilegal Access)
-{
    Case(double free failure)
    {
       rectangle_t* p = rectangle_create(1, 2);
       rectangle_destroy(p);
       rectangle_destroy(p);
    }
-   Case(memory underflow failure)
-   {
-      char* p = (char*)malloc(6);
-      memcpy(p - 5, "123", 3);
-      free(p);
-   }
-   Case(memory overflow failure)
-   {
-      char* p = (char*)malloc(6);
-      memcpy(p, "12345678901234567890123456789012345678901234567890", 50);
-      free(p);
-   }
-#if defined __clang__
-   Case(read after free failure)
+
+   Case(access after free failure)
    {
       rectangle_t* p = rectangle_create(1, 2);
       rectangle_destroy(p);
 
-      int width = p->width;
+      int height = p->height;
+      p->height = height;
    }
-   Case(write after free failure)
-   {
-      rectangle_t* p = rectangle_create(1, 2);
-      rectangle_destroy(p);
-
-      p->width = 100;
-   }
-#endif
 }

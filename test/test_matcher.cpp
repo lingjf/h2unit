@@ -124,7 +124,7 @@ SUITE(Matches)
    {
       int int65 = 65;
 
-      h2::h2_null_matches a;
+      h2::h2_null_matches a(false);
       OK(nullptr == a.matches(NULL));
       OK(nullptr == a.matches(nullptr));
       OK(nullptr != a.matches(&int65));
@@ -304,19 +304,17 @@ SUITE(Combine Matches)
    Case(Not)
    {
       h2::h2_not_matches<h2::h2_polymorphic_matcher<h2::h2_equal_matches<int>>>
-        a1(h2::h2_polymorphic_matcher<h2::h2_equal_matches<int>>{
-          h2::h2_equal_matches<int>(65)});
+        a1(h2::h2_polymorphic_matcher<h2::h2_equal_matches<int>>{h2::h2_equal_matches<int>(65)});
       OK(nullptr != a1.matches(65));
       OK(nullptr == a1.matches(66));
 
       h2::h2_not_matches<h2::h2_polymorphic_matcher<h2::h2_null_matches>> a2(
-        h2::h2_polymorphic_matcher<h2::h2_null_matches>{h2::h2_null_matches()});
+        h2::h2_polymorphic_matcher<h2::h2_null_matches>{h2::h2_null_matches(false)});
       OK(nullptr != a2.matches(nullptr));
       OK(nullptr == a2.matches(&int65));
 
       h2::h2_not_matches<h2::h2_polymorphic_matcher<h2::h2_contains_matches>> a3(
-        h2::h2_polymorphic_matcher<h2::h2_contains_matches>{
-          h2::h2_contains_matches("A")});
+        h2::h2_polymorphic_matcher<h2::h2_contains_matches>{h2::h2_contains_matches("A")});
       OK(nullptr != a3.matches("ABC"));
       OK(nullptr == a3.matches("BBC"));
    }
@@ -325,8 +323,7 @@ SUITE(Combine Matches)
    {
       using T1 = h2::h2_polymorphic_matcher<h2::h2_null_matches>;
       using T2 = h2::h2_polymorphic_matcher<h2::h2_any_matches>;
-      h2::h2_allof_matches<T1, T2> a(T1{h2::h2_null_matches()},
-                                     T2{h2::h2_any_matches()});
+      h2::h2_allof_matches<T1, T2> a(T1{h2::h2_null_matches(false)}, T2{h2::h2_any_matches()});
       OK(nullptr == a.matches(nullptr));
    }
 
@@ -334,8 +331,7 @@ SUITE(Combine Matches)
    {
       using T1 = h2::h2_polymorphic_matcher<h2::h2_null_matches>;
       using T2 = h2::h2_polymorphic_matcher<h2::h2_any_matches>;
-      h2::h2_anyof_matches<T1, T2> a(T1{h2::h2_null_matches()},
-                                     T2{h2::h2_any_matches()});
+      h2::h2_anyof_matches<T1, T2> a(T1{h2::h2_null_matches(false)}, T2{h2::h2_any_matches()});
       OK(nullptr == a.matches(nullptr));
       OK(nullptr == a.matches(NULL));
    }
@@ -343,10 +339,9 @@ SUITE(Combine Matches)
    Case(NoneOf)
    {
       using T1 = h2::h2_polymorphic_matcher<h2::h2_null_matches>;
-      using T2 =
-        h2::h2_polymorphic_matcher<h2::h2_pointee_matches<h2::h2_matcher<int>>>;
+      using T2 = h2::h2_polymorphic_matcher<h2::h2_pointee_matches<h2::h2_matcher<int>>>;
       h2::h2_pointee_matches<h2::h2_matcher<int>> a_(h2::h2_matcher<int>(66));
-      h2::h2_noneof_matches<T1, T2> a(T1{h2::h2_null_matches()}, T2(a_));
+      h2::h2_noneof_matches<T1, T2> a(T1{h2::h2_null_matches(false)}, T2(a_));
       OK(nullptr == a.matches(&int65));
    }
 
@@ -406,8 +401,7 @@ SUITE(Matcher)
 
    Case(CaseLess)
    {
-      OK(nullptr ==
-         h2::h2_matcher<const char*>(CaseLess("AbCd")).matches("ABcd"));
+      OK(nullptr == h2::h2_matcher<const char*>(CaseLess("AbCd")).matches("ABcd"));
       std::string AbCd = "AbCd";
       OK(nullptr == h2::h2_matcher<const char*>(CaseLess(AbCd)).matches("ABcd"));
       OK(nullptr == h2::h2_matcher<std::string>(CaseLess("ABcd")).matches(AbCd));
@@ -427,34 +421,25 @@ SUITE(Matcher)
 
    Case(Contains)
    {
-      OK(nullptr ==
-         h2::h2_matcher<const char*>(Contains("cd")).matches("abcdef"));
-      OK(nullptr !=
-         h2::h2_matcher<const char*>(Contains("cc")).matches("abcdef"));
+      OK(nullptr == h2::h2_matcher<const char*>(Contains("cd")).matches("abcdef"));
+      OK(nullptr != h2::h2_matcher<const char*>(Contains("cc")).matches("abcdef"));
       std::string cd = "cd";
       OK(nullptr == h2::h2_matcher<const char*>(Contains(cd)).matches("abcdef"));
-      OK(nullptr ==
-         h2::h2_matcher<const char*>(CaseLess(Contains("cd"))).matches("ABCDEF"));
+      OK(nullptr == h2::h2_matcher<const char*>(CaseLess(Contains("cd"))).matches("ABCDEF"));
    }
 
    Case(StartsWith)
    {
-      OK(nullptr ==
-         h2::h2_matcher<const char*>(StartsWith("abc")).matches("abcdef"));
+      OK(nullptr == h2::h2_matcher<const char*>(StartsWith("abc")).matches("abcdef"));
       std::string abc = "abc";
-      OK(nullptr ==
-         h2::h2_matcher<const char*>(StartsWith(abc)).matches("abcdef"));
-      OK(nullptr == h2::h2_matcher<const char*>(CaseLess(StartsWith("abc")))
-                      .matches("ABCDEF"));
+      OK(nullptr == h2::h2_matcher<const char*>(StartsWith(abc)).matches("abcdef"));
+      OK(nullptr == h2::h2_matcher<const char*>(CaseLess(StartsWith("abc"))).matches("ABCDEF"));
    }
 
    Case(EndsWith)
    {
-      OK(nullptr ==
-         h2::h2_matcher<const char*>(EndsWith("def")).matches("abcdef"));
-      OK(
-        nullptr ==
-        h2::h2_matcher<const char*>(CaseLess(EndsWith("def"))).matches("ABCDEF"));
+      OK(nullptr == h2::h2_matcher<const char*>(EndsWith("def")).matches("abcdef"));
+      OK(nullptr == h2::h2_matcher<const char*>(CaseLess(EndsWith("def"))).matches("ABCDEF"));
    }
 
    Case(Me)

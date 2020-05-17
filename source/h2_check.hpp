@@ -1,23 +1,24 @@
 
 struct h2_defer_fail : h2_once {
-   int w_type;
-   const char *e_expr, *a_expr;
+   int usage;
+   const char *e_expression, *a_expression;
    const char* file;
    int line;
    h2_fail* fail;
    h2_ostringstream oss;
 
-   h2_defer_fail(int w_type_, const char* e_expr_, const char* a_expr_, const char* file_, int line_)
-     : w_type(w_type_), e_expr(e_expr_), a_expr(a_expr_), file(file_), line(line_), fail(nullptr) {}
+   h2_defer_fail(int usage_, const char* e_expression_, const char* a_expression_, const char* file_, int line_)
+     : usage(usage_), e_expression(e_expression_), a_expression(a_expression_), file(file_), line(line_), fail(nullptr) {}
 
    ~h2_defer_fail()
    {
       if (fail) {
-         fail->set_w_type(w_type);
-         fail->set_e_expr(e_expr);
-         fail->set_a_expr(a_expr);
-         fail->uprintf("%s", oss.str().c_str());
-         fail->locate(file, line);
+         fail->file = file;
+         fail->line = line;
+         fail->usage = usage;
+         fail->e_expression = e_expression;
+         fail->a_expression = a_expression;
+         fail->user_explain = oss.str().c_str();
          h2_fail_g(fail);
       }
    }
@@ -25,11 +26,7 @@ struct h2_defer_fail : h2_once {
 
 static inline h2_ostringstream& h2_OK1(bool a, h2_defer_fail* d)
 {
-   if (!a) {
-      h2_fail_unexpect* fail = new h2_fail_unexpect();
-      fail->aprintf("false");
-      d->fail = fail;
-   }
+   if (!a) d->fail = new h2_fail_unexpect("true", "false");
    return d->oss;
 }
 
@@ -37,7 +34,12 @@ template <typename E, typename A>
 static inline h2_ostringstream& h2_OK2(E e, A a, h2_defer_fail* d)
 {
    h2::h2_matcher<typename h2_decay<A>::type> m = h2::h2_matcher_cast<typename h2_decay<A>::type>((typename h2_decay<E>::type)e);
-   d->fail = m.matches((typename h2_decay<A>::type)a);
+   h2_fail* fail = m.matches((typename h2_decay<A>::type)a);
+   d->fail = fail;
+   if (fail && fail->subling_next) {
+      d->fail = new h2_fail_unexpect("", "");
+      h2_fail::append_child(d->fail, fail);
+   }
    return d->oss;
 }
 

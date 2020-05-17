@@ -1,8 +1,8 @@
 #include "../source/h2_unit.cpp"
 
-#define H2_H2_FOREACH_FAIL(f, First)                                  \
-   for (h2::h2_fail* x_fail = First; x_fail; x_fail = x_fail->x_next) \
-      for (h2::h2_fail* f = x_fail; f; f = f->y_next)
+#define H2_H2_FOREACH_FAIL(f, First)                                        \
+   for (h2::h2_fail* x_fail = First; x_fail; x_fail = x_fail->subling_next) \
+      for (h2::h2_fail* f = x_fail; f; f = f->child_next)
 
 SUITE(failure)
 {
@@ -26,22 +26,24 @@ SUITE(failure)
    {
       h2::h2_fail* fails = nullptr;
 
-      h2::h2_fail::append_x(fails, fa);
-      h2::h2_fail::append_x(fails, fb);
-      h2::h2_fail::append_x(fails, fc);
+      h2::h2_fail::append_subling(fails, fa);
+      h2::h2_fail::append_subling(fails, fb);
+      h2::h2_fail::append_subling(fails, fc);
 
-      // X->  fa -> fb -> fc
+      // Subling ->  fa -> fb -> fc
       const char* e[] = {"a", "b", "c"};
       H2_H2_FOREACH_FAIL(fail, fails) { OK(e[i++], fail->file); }
+      fails->foreach ([&](h2::h2_fail* fail, int subling_index, int child_index) {
+      });
    }
 
    Case(append y)
    {
       h2::h2_fail* fails = nullptr;
 
-      h2::h2_fail::append_y(fails, fa);
-      h2::h2_fail::append_y(fails, fb);
-      h2::h2_fail::append_y(fails, fc);
+      h2::h2_fail::append_child(fails, fa);
+      h2::h2_fail::append_child(fails, fb);
+      h2::h2_fail::append_child(fails, fc);
 
       //  Y
       //  |
@@ -61,21 +63,21 @@ SUITE(failure)
    {
       h2::h2_fail* fails = nullptr;
 
-      h2::h2_fail::append_x(fails, fa);
-      h2::h2_fail::append_x(fails, fb);
-      h2::h2_fail::append_x(fails, fc);
+      h2::h2_fail::append_subling(fails, fa);
+      h2::h2_fail::append_subling(fails, fb);
+      h2::h2_fail::append_subling(fails, fc);
 
-      h2::h2_fail::append_y(fa, f1);
-      h2::h2_fail::append_y(fa, f2);
-      h2::h2_fail::append_y(fa, f3);
+      h2::h2_fail::append_child(fa, f1);
+      h2::h2_fail::append_child(fa, f2);
+      h2::h2_fail::append_child(fa, f3);
 
-      h2::h2_fail::append_y(fb, f4);
-      h2::h2_fail::append_y(fb, f5);
-      h2::h2_fail::append_y(fb, f6);
+      h2::h2_fail::append_child(fb, f4);
+      h2::h2_fail::append_child(fb, f5);
+      h2::h2_fail::append_child(fb, f6);
 
-      h2::h2_fail::append_y(fc, f7);
-      h2::h2_fail::append_y(fc, f8);
-      h2::h2_fail::append_y(fc, f9);
+      h2::h2_fail::append_child(fc, f7);
+      h2::h2_fail::append_child(fc, f8);
+      h2::h2_fail::append_child(fc, f9);
 
       // X->
       // Y   fa -> fb -> fc

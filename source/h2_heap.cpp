@@ -40,6 +40,30 @@ struct h2_piece : h2_libc {
 #endif
    }
 
+   void mark_forbidden()
+   {
+#ifdef _WIN32
+      DWORD old;
+      if (!VirtualProtect(page, page_size * (page_count + 1), PAGE_NOACCESS, &old))
+         ::printf("VirtualProtect PAGE_NOACCESS failed %d\n", GetLastError());
+#else
+      if (::mprotect(page, page_size * (page_count + 1), PROT_NONE) != 0)
+         ::printf("mprotect PROT_NONE failed %s\n", strerror(errno));
+#endif
+   }
+
+   void undo_forbidden()
+   {
+#ifdef _WIN32
+      DWORD old;
+      if (!VirtualProtect(page, page_size * (page_count + 1), PAGE_READWRITE, &old))
+         ::printf("VirtualProtect PAGE_NOACCESS failed %d\n", GetLastError());
+#else
+      if (::mprotect(page, page_size * (page_count + 1), PROT_READ | PROT_WRITE) != 0)
+         ::printf("mprotect PROT_NONE failed %s\n", strerror(errno));
+#endif
+   }
+
    void mark_snowfield()
    {
       memcpy(ptr - sizeof(snowfield), snowfield, sizeof(snowfield));
@@ -58,9 +82,9 @@ struct h2_piece : h2_libc {
    {
       h2_fail* fail = nullptr;
       if (memcmp(ptr + size, snowfield, sizeof(snowfield)))
-         h2_fail::append_x(fail, new h2_fail_memoverflow(ptr, size, snowfield, sizeof(snowfield), bt_allocate, h2_backtrace()));
+         h2_fail::append_subling(fail, new h2_fail_memoverflow(ptr, size, snowfield, sizeof(snowfield), bt_allocate, h2_backtrace()));
       if (memcmp(ptr - sizeof(snowfield), snowfield, sizeof(snowfield)))
-         h2_fail::append_x(fail, new h2_fail_memoverflow(ptr, -(int)sizeof(snowfield), snowfield, sizeof(snowfield), bt_allocate, h2_backtrace()));
+         h2_fail::append_subling(fail, new h2_fail_memoverflow(ptr, -(int)sizeof(snowfield), snowfield, sizeof(snowfield), bt_allocate, h2_backtrace()));
 
 #ifdef _WIN32
       DWORD old;
@@ -73,7 +97,7 @@ struct h2_piece : h2_libc {
       return fail;
    }
 
-   h2_fail* check_symmetric_free(const char* who_release)
+   h2_fail* check_asymmetric_free(const char* who_release)
    {
       static const char* free_a[] = {"malloc", "calloc", "realloc", "reallocf", "posix_memalign", "memalign", "aligned_alloc", "valloc", "pvalloc", nullptr};
       static const char* free_r[] = {"free", nullptr};
@@ -96,7 +120,7 @@ struct h2_piece : h2_libc {
             return nullptr;
 
       h2_backtrace bt_release(O.isMAC() ? 6 : 5);
-      return new h2_fail_symmetric_free(ptr, bt_allocate, bt_release, "allocate with %s, release by %s", SF("bold,red", "%s", who_allocate), SF("bold,red", "%s", who_release));
+      return new h2_fail_asymmetric_free(ptr, who_allocate, who_release, bt_allocate, bt_release);
    }
 
    h2_fail* check_double_free()
@@ -116,9 +140,12 @@ struct h2_piece : h2_libc {
       if (!fail)
          fail = check_double_free();
       if (!fail)
-         fail = check_symmetric_free(who_release);
+         fail = check_asymmetric_free(who_release);
       if (!fail)
          fail = check_snowfield();
+
+      if (!fail) mark_forbidden();
+
       return fail;
    }
 
@@ -537,12 +564,18 @@ struct h2_hook {
    }
 
 #ifndef _WIN32
+   // https://www.gnu.org/software/libsigsegv/
    static void segment_fault_handler(int sig, siginfo_t* si, void* unused)
    {
-      h2_piece* m = h2_stack::I().host_piece(si->si_addr);
-      if (m) h2_fail_g(new h2_fail_memoverflow(m->ptr, (intptr_t)si->si_addr - (intptr_t)m->ptr, nullptr, 0, m->bt_allocate, h2_backtrace(O.isMAC() ? 5 : 4)));
-      h2_debug();
-      exit(1);
+      h2_piece* piece = h2_stack::I().host_piece(si->si_addr);
+      if (piece) {
+         piece->undo_forbidden();
+         h2_backtrace bt_access(3);
+         h2_fail_g(new h2_fail_access_after_free(piece->ptr, (intptr_t)si->si_addr - (intptr_t)piece->ptr, piece->bt_allocate, piece->bt_release, bt_access));
+      } else {
+         h2_debug();
+         exit(1);
+      }
    }
    void install_segment_fault_handler()
    {

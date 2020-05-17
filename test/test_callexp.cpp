@@ -15,7 +15,7 @@ SUITE(callexp)
       OK(!ce.is_saturated());
       OK(!ce.is_overmuch());
       OK("never", ce.actual());
-      OK(ce.check());
+      OK(ce.check("", nullptr, 0));
 
       ++ce;  // call 1 times
       OK(!ce.is_not_enough());
@@ -23,7 +23,7 @@ SUITE(callexp)
       OK(ce.is_saturated());
       OK(!ce.is_overmuch());
       OK("1 times", ce.actual());
-      OK(IsNull, ce.check());
+      OK(IsNull, ce.check("", nullptr, 0));
 
       ++ce;  // call 2 times
       OK(!ce.is_not_enough());
@@ -31,7 +31,7 @@ SUITE(callexp)
       OK(!ce.is_saturated());
       OK(ce.is_overmuch());
       OK("2 times", ce.actual());
-      OK(ce.check());
+      OK(ce.check("", nullptr, 0));
    }
 
    Case(twice)
@@ -47,7 +47,7 @@ SUITE(callexp)
       OK(!ce.is_saturated());
       OK(!ce.is_overmuch());
       OK("never", ce.actual());
-      OK(ce.check());
+      OK(ce.check("", nullptr, 0));
 
       ++ce;  // call 1 times
       OK(ce.is_not_enough());
@@ -55,7 +55,7 @@ SUITE(callexp)
       OK(!ce.is_saturated());
       OK(!ce.is_overmuch());
       OK("1 times", ce.actual());
-      OK(ce.check());
+      OK(ce.check("", nullptr, 0));
 
       ++ce;  // call 2 times
       OK(!ce.is_not_enough());
@@ -63,7 +63,7 @@ SUITE(callexp)
       OK(ce.is_saturated());
       OK(!ce.is_overmuch());
       OK("2 times", ce.actual());
-      OK(IsNull, ce.check());
+      OK(IsNull, ce.check("", nullptr, 0));
 
       ++ce;  // call 3 times
       OK(!ce.is_not_enough());
@@ -71,7 +71,7 @@ SUITE(callexp)
       OK(!ce.is_saturated());
       OK(ce.is_overmuch());
       OK("3 times", ce.actual());
-      OK(ce.check());
+      OK(ce.check("", nullptr, 0));
    }
 
    Case(3 times)
@@ -87,7 +87,7 @@ SUITE(callexp)
       OK(!ce.is_saturated());
       OK(!ce.is_overmuch());
       OK("never", ce.actual());
-      OK(ce.check());
+      OK(ce.check("", nullptr, 0));
 
       ++ce;  // call 1 times
       OK(ce.is_not_enough());
@@ -95,7 +95,7 @@ SUITE(callexp)
       OK(!ce.is_saturated());
       OK(!ce.is_overmuch());
       OK("1 times", ce.actual());
-      OK(ce.check());
+      OK(ce.check("", nullptr, 0));
 
       ++ce;  // call 2 times
       OK(ce.is_not_enough());
@@ -103,7 +103,7 @@ SUITE(callexp)
       OK(!ce.is_saturated());
       OK(!ce.is_overmuch());
       OK("2 times", ce.actual());
-      OK(ce.check());
+      OK(ce.check("", nullptr, 0));
 
       ++ce;  // call 3 times
       OK(!ce.is_not_enough());
@@ -111,7 +111,7 @@ SUITE(callexp)
       OK(ce.is_saturated());
       OK(!ce.is_overmuch());
       OK("3 times", ce.actual());
-      OK(IsNull, ce.check());
+      OK(IsNull, ce.check("", nullptr, 0));
 
       ++ce;  // call 4 times
       OK(!ce.is_not_enough());
@@ -119,7 +119,7 @@ SUITE(callexp)
       OK(!ce.is_saturated());
       OK(ce.is_overmuch());
       OK("4 times", ce.actual());
-      OK(ce.check());
+      OK(ce.check("", nullptr, 0));
    }
 
    Case(any)
@@ -135,7 +135,7 @@ SUITE(callexp)
       OK(!ce.is_saturated());
       OK(!ce.is_overmuch());
       OK("never", ce.actual());
-      OK(IsNull, ce.check());
+      OK(IsNull, ce.check("", nullptr, 0));
 
       ++ce;  // call 1 times
       OK(!ce.is_not_enough());
@@ -143,7 +143,7 @@ SUITE(callexp)
       OK(!ce.is_saturated());
       OK(!ce.is_overmuch());
       OK("1 times", ce.actual());
-      OK(IsNull, ce.check());
+      OK(IsNull, ce.check("", nullptr, 0));
 
       ++ce;  // call 2 times
       OK(!ce.is_not_enough());
@@ -151,7 +151,7 @@ SUITE(callexp)
       OK(!ce.is_saturated());
       OK(!ce.is_overmuch());
       OK("2 times", ce.actual());
-      OK(IsNull, ce.check());
+      OK(IsNull, ce.check("", nullptr, 0));
    }
 
    Case(at least)
@@ -167,7 +167,7 @@ SUITE(callexp)
       OK(!ce.is_saturated());
       OK(!ce.is_overmuch());
       OK("never", ce.actual());
-      OK(ce.check());
+      OK(ce.check("", nullptr, 0));
 
       ++ce;  // call 1 times
       OK(ce.is_not_enough());
@@ -175,7 +175,7 @@ SUITE(callexp)
       OK(!ce.is_saturated());
       OK(!ce.is_overmuch());
       OK("1 times", ce.actual());
-      OK(ce.check());
+      OK(ce.check("", nullptr, 0));
 
       ++ce;  // call 2 times
       OK(!ce.is_not_enough());
@@ -183,7 +183,7 @@ SUITE(callexp)
       OK(!ce.is_saturated());
       OK(!ce.is_overmuch());
       OK("2 times", ce.actual());
-      OK(IsNull, ce.check());
+      OK(IsNull, ce.check("", nullptr, 0));
 
       ++ce;  // call 3 times
       OK(!ce.is_not_enough());
@@ -191,7 +191,7 @@ SUITE(callexp)
       OK(!ce.is_saturated());
       OK(!ce.is_overmuch());
       OK("3 times", ce.actual());
-      OK(IsNull, ce.check());
+      OK(IsNull, ce.check("", nullptr, 0));
    }
 
    Case(at most)
@@ -207,7 +207,7 @@ SUITE(callexp)
       OK(!ce.is_saturated());
       OK(!ce.is_overmuch());
       OK("never", ce.actual());
-      OK(IsNull, ce.check());
+      OK(IsNull, ce.check("", nullptr, 0));
 
       ++ce;  // call 1 times
       OK(!ce.is_not_enough());
@@ -215,7 +215,7 @@ SUITE(callexp)
       OK(!ce.is_saturated());
       OK(!ce.is_overmuch());
       OK("1 times", ce.actual());
-      OK(IsNull, ce.check());
+      OK(IsNull, ce.check("", nullptr, 0));
 
       ++ce;  // call 2 times
       OK(!ce.is_not_enough());
@@ -223,7 +223,7 @@ SUITE(callexp)
       OK(ce.is_saturated());
       OK(!ce.is_overmuch());
       OK("2 times", ce.actual());
-      OK(IsNull, ce.check());
+      OK(IsNull, ce.check("", nullptr, 0));
 
       ++ce;  // call 3 times
       OK(!ce.is_not_enough());
@@ -231,7 +231,7 @@ SUITE(callexp)
       OK(!ce.is_saturated());
       OK(ce.is_overmuch());
       OK("3 times", ce.actual());
-      OK(ce.check());
+      OK(ce.check("", nullptr, 0));
    }
 
    Case(between)
@@ -247,7 +247,7 @@ SUITE(callexp)
       OK(!ce.is_saturated());
       OK(!ce.is_overmuch());
       OK("never", ce.actual());
-      OK(ce.check());
+      OK(ce.check("", nullptr, 0));
 
       ++ce;  // call 1 times
       OK(ce.is_not_enough());
@@ -255,7 +255,7 @@ SUITE(callexp)
       OK(!ce.is_saturated());
       OK(!ce.is_overmuch());
       OK("1 times", ce.actual());
-      OK(ce.check());
+      OK(ce.check("", nullptr, 0));
 
       ++ce;  // call 2 times
       OK(!ce.is_not_enough());
@@ -263,7 +263,7 @@ SUITE(callexp)
       OK(!ce.is_saturated());
       OK(!ce.is_overmuch());
       OK("2 times", ce.actual());
-      OK(IsNull, ce.check());
+      OK(IsNull, ce.check("", nullptr, 0));
 
       ++ce;  // call 3 times
       OK(!ce.is_not_enough());
@@ -271,7 +271,7 @@ SUITE(callexp)
       OK(!ce.is_saturated());
       OK(!ce.is_overmuch());
       OK("3 times", ce.actual());
-      OK(IsNull, ce.check());
+      OK(IsNull, ce.check("", nullptr, 0));
 
       ++ce;  // call 4 times
       OK(!ce.is_not_enough());
@@ -279,7 +279,7 @@ SUITE(callexp)
       OK(ce.is_saturated());
       OK(!ce.is_overmuch());
       OK("4 times", ce.actual());
-      OK(IsNull, ce.check());
+      OK(IsNull, ce.check("", nullptr, 0));
 
       ++ce;  // call 5 times
       OK(!ce.is_not_enough());
@@ -287,6 +287,6 @@ SUITE(callexp)
       OK(!ce.is_saturated());
       OK(ce.is_overmuch());
       OK("5 times", ce.actual());
-      OK(ce.check());
+      OK(ce.check("", nullptr, 0));
    }
 }

@@ -14,10 +14,15 @@ int foobar(int a, const char* b)
 
 SUITE(Mock Function)
 {
-   Case(once failure)
+   Case(once argument failure)
    {
       MOCK(foobar, int(int, const char*)).once(1, "A").returns(11);
       OK(11, foobar(2, "B"));
+   }
+
+   Case(once call failure)
+   {
+      MOCK(time, time_t(time_t*)).once();
    }
 
    Case(twice failure)
@@ -31,11 +36,19 @@ SUITE(Mock Function)
    {
       MOCK(foobar, int(int, const char*)).times(3).with(Ge(1)).returns(11);
       OK(11, foobar(1, "A"));
-
-      MOCK(time, time_t(time_t*)).once();
    }
 
-   Case(any 0 successful) { MOCK(foobar, int(int, const char*)).any(1, "A"); }
+   Case(exceed call failure)
+   {
+      MOCK(time, time_t(time_t*)).once();
+      time(0);
+      time(0);
+   }
+
+   Case(any 0 successful)
+   {
+      MOCK(foobar, int(int, const char*)).any(1, "A");
+   }
 
    Case(any 1 successful)
    {
@@ -165,15 +178,6 @@ SUITE(Mock Member)
       OK(6, bird.cry());
    }
 
-   Case(virtual member function failure)
-   {
-      MOCK(Centipede, say, const char*()).once() = []() {
-         return "...";
-      };  // failure
-      Centipede centipede(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11);
-      OK("...", centipede.say());
-   }
-
    Case(abstract class successful)
    {
       Bird bird;
@@ -183,11 +187,6 @@ SUITE(Mock Member)
       OK("jiji", bird.say());
       MOCK(Ovipara, say, const char*(), Bird()).once() = []() { return "j..."; };
       OK("j...", bird.say());
-   }
-
-   Case(abstract class failure)
-   {
-      MOCK(Ovipara, cry, int()).once() = []() { return 6; };  // failure
    }
 }
 #endif

@@ -1,83 +1,4 @@
 
-typedef h2_string h2_word;
-typedef h2_vector<h2_word> h2_line;
-
-static inline h2_string indent(int depth) { return h2_string(depth * 2, ' '); }
-
-static int h2_line_length(h2_line& line)
-{
-   int len = 0;
-   for (auto& word : line)
-      if (!h2_color::is_ctrl(word.c_str()))
-         len += word.length();
-
-   return len;
-}
-
-static inline bool h2_lines_foldable(h2_vector<h2_line>& lines)
-{
-   int sum = 0;
-   for (auto& line : lines)
-      for (auto& word : line)
-         if (!word.isspace())  // ignore indent
-            sum += word.length();
-
-   return sum < 20;
-}
-
-static inline void h2_lines_folds(h2_vector<h2_line>& lines, h2_line& line)
-{
-   for (size_t i = 0; i < lines.size(); i++)
-      for (auto& word : lines[i])
-         if (!word.isspace())  // drop indent
-            line.push_back(word);
-}
-
-static inline int h2_lines_max_length(h2_vector<h2_line>& lines)
-{
-   int most = 0;
-   for (auto& line : lines) {
-      int curr = 0;
-      for (auto& word : line)
-         if (!h2_color::is_ctrl(word.c_str()))
-            curr += word.length();
-      most = std::max(most, curr);
-   }
-   return most;
-}
-
-static inline void h2_line_pad_tail(h2_line& line, int size)
-{
-   int len = 0;
-   for (auto& word : line)
-      if (!h2_color::is_ctrl(word.c_str()))
-         len += word.length();
-   line.push_back(PAD(size - len));
-}
-
-static inline void samesizify(h2_string& e, h2_string& a)
-{
-   e.append(std::max(e.length(), a.length()) - e.length(), ' ');
-   a.append(std::max(e.length(), a.length()) - a.length(), ' ');
-}
-
-static inline void samesizify(h2_line& e, h2_line& a)
-{
-   int e_len = h2_line_length(e), a_len = h2_line_length(a);
-   e.push_back(PAD(std::max(e_len, a_len) - e_len));
-   a.push_back(PAD(std::max(e_len, a_len) - a_len));
-}
-
-static inline void samesizify(h2_vector<h2_line>& e, h2_vector<h2_line>& a)
-{
-   int max_y = std::max(e.size(), a.size());
-   for (size_t i = e.size(); i < max_y; ++i) e.push_back(h2_line());
-   for (size_t i = a.size(); i < max_y; ++i) a.push_back(h2_line());
-   // int max_x = std::max(h2_lines_max_length(e), h2_lines_max_length(a));
-   // for (auto& line : e) h2_line_pad_tail(line, max_x);
-   // for (auto& line : a) h2_line_pad_tail(line, max_x);
-}
-
 struct h2_json_parse {
    const char* text;
    int length;
@@ -338,7 +259,7 @@ struct h2_json_node : h2_libc {
       case t_number:
          _type = t_string;
          _class = "atomic";
-         _value = h2_string(value_double);
+         _value = h2_stringify(value_double);
          break;
       case t_string:
          _type = t_string;
@@ -361,10 +282,10 @@ struct h2_json_node : h2_libc {
       }
    }
 
-   void print(h2_vector<h2_line>& lines, int depth = 0, int next = 0, bool fold = false)
+   void print(h2_lines& lines, int depth = 0, int next = 0, bool fold = false)
    {
-      h2_line line = {indent(depth)};
-
+      h2_line line;
+      line.indent(depth * 2);
       if (key_string.size())
          line.push_back("\"" + key_string + "\": ");
       if (is_null())
@@ -372,24 +293,24 @@ struct h2_json_node : h2_libc {
       else if (is_bool())
          line.push_back(value_boolean ? "true" : "false");
       else if (is_number())
-         line.push_back(value_double);
+         line.push_back(h2_stringify(value_double));
       else if (is_string())
          line.push_back("\"" + value_string + "\"");
       else if (is_regexp())
          line.push_back("\"/" + value_string + "/\"");
       else if (is_array() || is_object()) {
          line.push_back(is_array() ? "[ " : "{ ");
-         h2_vector<h2_line> __lines;
-         for (size_t i = 0; i < children.size(); i++) {
+         h2_lines __lines;
+         for (size_t i = 0; i < children.size(); ++i)
             children[i]->print(__lines, depth + 1, children.size() - i - 1, fold);
-         }
-         if (fold && h2_lines_foldable(__lines)) {
-            h2_lines_folds(__lines, line);
+
+         if (fold && __lines.foldable()) {
+            line.fold(__lines);
             line.push_back(is_array() ? " ]" : " }");
          } else {
             lines.push_back(line), line.clear();
-            lines.insert(lines.end(), __lines.begin(), __lines.end());
-            line.push_back(indent(depth));
+            lines.concat_back(__lines);
+            line.indent(depth * 2);
             line.push_back(is_array() ? "]" : "}");
          }
       }
@@ -453,11 +374,12 @@ struct h2_json_match {
 };
 
 struct h2_json_dual : h2_libc {  // combine 2 Node into a Dual
+   bool match;
    int e_type, a_type;
    const char *e_class, *a_class;
    h2_string e_key, a_key;
    h2_string e_value, a_value;
-   h2_vector<h2_line> e_blob, a_blob;
+   h2_lines e_blob, a_blob;
    h2_vector<h2_json_dual*> children;
    h2_json_dual* perent;
    int depth;
@@ -467,8 +389,9 @@ struct h2_json_dual : h2_libc {  // combine 2 Node into a Dual
       for (auto it : children) delete it;
    }
 
-   h2_json_dual(h2_json_node* e, h2_json_node* a, h2_json_dual* perent_ = nullptr) : e_type(h2_json_node::t_absent), a_type(h2_json_node::t_absent), e_class("blob"), a_class("blob"), perent(perent_), depth(perent_ ? perent_->depth + 1 : 0)
+   h2_json_dual(h2_json_node* e, h2_json_node* a, h2_json_dual* perent_ = nullptr) : match(false), e_type(h2_json_node::t_absent), a_type(h2_json_node::t_absent), e_class("blob"), a_class("blob"), perent(perent_), depth(perent_ ? perent_->depth + 1 : 0)
    {
+      match = h2_json_match::match(e, a);
       if (e) e->dual(e_type, e_class, e_key, e_value);
       if (a) a->dual(a_type, a_class, a_key, a_value);
 
@@ -489,13 +412,11 @@ struct h2_json_dual : h2_libc {  // combine 2 Node into a Dual
                i++;
          }
 
-         for (int i = 0; i < std::max(e->children.size(), a->children.size()); ++i) {
+         for (int i = 0; i < std::max(e->children.size(), a->children.size()); ++i)
             children.push_back(new h2_json_dual(e->get(i), a->get(i), this));
-         }
       } else if (e_type == h2_json_node::t_array) {
-         for (int i = 0; i < std::max(e->children.size(), a->children.size()); ++i) {
+         for (int i = 0; i < std::max(e->children.size(), a->children.size()); ++i)
             children.push_back(new h2_json_dual(e->get(i), a->get(i), this));
-         }
       }
    }
 
@@ -503,10 +424,9 @@ struct h2_json_dual : h2_libc {  // combine 2 Node into a Dual
    {
       for (size_t i = 0; i < subling.size(); ++i) {
          if (subling[i] == this) {
-            for (++i; i < subling.size(); ++i) {
+            for (++i; i < subling.size(); ++i)
                if (subling[i]->e_type != h2_json_node::t_absent)
                   return true;
-            }
             break;
          }
       }
@@ -517,61 +437,58 @@ struct h2_json_dual : h2_libc {  // combine 2 Node into a Dual
    {
       for (size_t i = 0; i < subling.size(); ++i) {
          if (subling[i] == this) {
-            for (++i; i < subling.size(); ++i) {
+            for (++i; i < subling.size(); ++i)
                if (subling[i]->a_type != h2_json_node::t_absent)
                   return true;
-            }
             break;
          }
       }
       return false;
    }
 
-   void align(h2_vector<h2_line>& e, h2_vector<h2_line>& a, h2_vector<h2_json_dual*>* subling = nullptr)
+   void align(h2_lines& e, h2_lines& a, h2_vector<h2_json_dual*>* subling = nullptr)
    {
       if (!strcmp(e_class, "blob")) {
-         samesizify(e_blob, a_blob);
+         e_blob.samesizify(a_blob);
          for (auto& line : e_blob)
-            line.insert(line.begin(), "\033[bold,cyan]"), line.push_back("\033[reset]");
+            line.insert(line.begin(), "\033{bold,cyan}"), line.push_back("\033{reset}");
 
          for (auto& line : a_blob)
-            line.insert(line.begin(), "\033[yellow]"), line.push_back("\033[reset]");
+            line.insert(line.begin(), "\033{yellow}"), line.push_back("\033{reset}");
 
-         e.insert(e.end(), e_blob.begin(), e_blob.end());
-         a.insert(a.end(), a_blob.begin(), a_blob.end());
+         e.concat_back(e_blob);
+         a.concat_back(a_blob);
          return;
       }
 
-      h2_line e_line = {indent(depth)};
-      h2_line a_line = {indent(depth)};
-
-      // samesizify(e_key, a_key);
-      // samesizify(e_value, a_value);
+      h2_line e_line, a_line;
+      e_line.indent(depth * 2);
+      a_line.indent(depth * 2);
 
       if (e_key.size()) {
-         if (e_key != a_key) e_line.push_back("\033[green]");
+         if (!match && e_key != a_key) e_line.push_back("\033{green}");
          e_line.push_back(e_key);
-         if (e_key != a_key) e_line.push_back("\033[reset]");
+         if (!match && e_key != a_key) e_line.push_back("\033{reset}");
          e_line.push_back(": ");
       }
 
       if (a_key.size()) {
-         if (a_key != e_key) a_line.push_back("\033[red,bold]");
+         if (!match && a_key != e_key) a_line.push_back("\033{red,bold}");
          a_line.push_back(a_key);
-         if (a_key != e_key) a_line.push_back("\033[reset]");
+         if (!match && a_key != e_key) a_line.push_back("\033{reset}");
          a_line.push_back(": ");
       }
 
       if (!strcmp(e_class, "atomic")) {
          if (e_value.size()) {
-            if (e_value != a_value) e_line.push_back("\033[green]");
+            if (!match && e_value != a_value) e_line.push_back("\033{green}");
             e_line.push_back(e_value);
-            if (e_value != a_value) e_line.push_back("\033[reset]");
+            if (!match && e_value != a_value) e_line.push_back("\033{reset}");
          }
          if (a_value.size()) {
-            if (a_value != e_value) a_line.push_back("\033[red,bold]");
+            if (!match && a_value != e_value) a_line.push_back("\033{red,bold}");
             a_line.push_back(a_value);
-            if (a_value != e_value) a_line.push_back("\033[reset]");
+            if (!match && a_value != e_value) a_line.push_back("\033{reset}");
          }
       } else if (!strcmp(e_class, "object") || !strcmp(e_class, "array")) {
          e_line.push_back(strcmp(e_class, "object") ? "[ " : "{ ");
@@ -579,12 +496,12 @@ struct h2_json_dual : h2_libc {  // combine 2 Node into a Dual
 
          e.push_back(e_line), e_line.clear();
          a.push_back(a_line), a_line.clear();
-         for (size_t i = 0; i < children.size(); i++) {
+         for (size_t i = 0; i < children.size(); ++i)
             children[i]->align(e, a, &children);
-         }
-         e_line.push_back(indent(depth));
+
+         e_line.indent(depth * 2);
          e_line.push_back(strcmp(e_class, "object") ? "]" : "}");
-         a_line.push_back(indent(depth));
+         a_line.indent(depth * 2);
          a_line.push_back(strcmp(a_class, "object") ? "]" : "}");
       }
       if (e_line.size()) {
@@ -598,86 +515,17 @@ struct h2_json_dual : h2_libc {  // combine 2 Node into a Dual
    }
 };
 
-struct h2_json_diff {
-   static int line_wrap(h2_line& line, int width)
-   {
-      int char_count = 0;
-      for (auto& word : line)
-         if (!h2_color::is_ctrl(word.c_str()))
-            char_count += word.length();
-
-      return ::ceil(char_count / (double)width);  // num_of_line
-   }
-
-   static h2_string line_wrap(h2_line& line, int index, int width, h2_string& current_style)
-   {
-      int s = 0, u = 0;
-      h2_string wrap;
-      for (auto& word : line) {
-         if (h2_color::is_ctrl(word.c_str())) {
-            if (index * width <= s && s < (index + 1) * width) {
-               wrap.append(word);
-               current_style = word;
-            }
-         } else {
-            for (auto& c : word) {
-               if (index * width <= s && s < (index + 1) * width) {
-                  wrap.append(1, c);
-                  ++u;
-               }
-               ++s;
-            }
-         }
-      }
-      wrap.append(width - u, ' ');
-      return wrap;
-   }
-
-   static void print(h2_vector<h2_line>& e_lines, h2_vector<h2_line>& a_lines, int width, h2_string& str)
-   {
-      h2_string e_last_style, a_last_style;
-      for (int i = 0; i < std::max(e_lines.size(), a_lines.size()); ++i) {
-         auto e_line = e_lines[i];
-         auto a_line = a_lines[i];
-         int e_wraps = line_wrap(e_line, width - 2);
-         int a_wraps = line_wrap(a_line, width - 2);
-         int K = std::max(e_wraps, a_wraps);
-         for (int j = 0; j < K; ++j) {
-            h2_string e_current_style, a_current_style;
-            auto e_wrap = line_wrap(e_line, j, width - 2, e_current_style);
-            auto a_wrap = line_wrap(a_line, j, width - 2, a_current_style);
-            str.sprintf("%s%s%s %s%s%s %s%s%s %s%s%s\n",
-                        e_last_style.c_str(), e_wrap.c_str(), "\033[reset]",
-                        "\033[dark gray]", j == K - 1 ? " │" : "\\│", "\033[reset]",
-                        a_last_style.c_str(), a_wrap.c_str(), "\033[reset]",
-                        "\033[dark gray]", j == K - 1 ? " " : "\\", "\033[reset]");
-
-            e_last_style = e_current_style;
-            a_last_style = a_current_style;
-         }
-      }
-   }
-};
-
-h2_inline bool h2_json::match(const h2_string expect, const h2_string actual)
+h2_inline bool h2_json::match(const h2_string& expect, const h2_string& actual)
 {
    h2_json_node e(expect.c_str());
    h2_json_node a(actual.c_str());
    return h2_json_match::match(&e, &a);
 }
 
-h2_inline int h2_json::diff(const h2_string expect, const h2_string actual, int terminal_width, h2_string& str)
+h2_inline void h2_json::diff(const h2_string& expect, const h2_string& actual, h2_lines& e_lines, h2_lines& a_lines)
 {
    h2_json_node e_node(expect.c_str());
    h2_json_node a_node(actual.c_str());
-
-   h2_vector<h2_line> e_lines, a_lines;
    h2_json_dual dual(&e_node, &a_node);
    dual.align(e_lines, a_lines);
-
-   int fav_width = std::max(std::max(h2_lines_max_length(e_lines), h2_lines_max_length(a_lines)) + 3, 30);
-   int side_width = std::min(terminal_width / 2 - 4, fav_width);
-   h2_json_diff::print(e_lines, a_lines, side_width, str);
-
-   return side_width;
 }
