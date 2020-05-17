@@ -40,9 +40,9 @@ static inline void h2_mock_g(h2_mock* mock)
    }
 }
 
-static inline void h2_fail_g(h2_fail* fail)
+static inline void h2_fail_g(h2_fail* fail, bool defer)
 {
    if (!fail) return;
    if (O.debug) h2_debugger::trap();
-   if (h2_task::I().current_case) h2_task::I().current_case->do_fail(fail);
+   if (h2_task::I().current_case) h2_task::I().current_case->do_fail(fail, defer);
 }

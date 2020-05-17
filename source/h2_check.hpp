@@ -19,7 +19,7 @@ struct h2_defer_fail : h2_once {
          fail->e_expression = e_expression;
          fail->a_expression = a_expression;
          fail->user_explain = oss.str().c_str();
-         h2_fail_g(fail);
+         h2_fail_g(fail, false);
       }
    }
 };

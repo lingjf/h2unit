@@ -133,7 +133,7 @@ SUITE(Ilegal Access)
       memcpy(p, "12345678901234567890123456789012345678901234567890", 50);
       free(p);
    }
-#   if defined __clang__
+
    Case(read after free failure)
    {
       a_struct* p = (a_struct*)malloc(sizeof(a_struct));
@@ -148,7 +148,6 @@ SUITE(Ilegal Access)
 
       p->b = 100;
    }
-#   endif
 }
 
 #   if (defined(__GNUC__) && __GNUC__ >= 5) || defined __clang__

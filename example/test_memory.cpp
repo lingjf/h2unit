@@ -124,4 +124,13 @@ SUITE(Memory Check)
       int height = p->height;
       p->height = height;
    }
+
+   Case(access after free failure 2)
+   {
+      rectangle_t* p = rectangle_create(1, 2);
+      rectangle_destroy(p);
+
+      int height = p->height;
+      p->height = height;
+   }
 }

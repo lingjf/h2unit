@@ -145,3 +145,5 @@ struct h2_fail_instantiate : h2_fail {
    h2_fail_instantiate(const char* action_type_, const char* return_type_, const char* class_type_, const char* method_name_, const char* return_args_, int why_abstract_, const char* file_, int line_) : h2_fail(file_, line_), action_type(action_type_), return_type(return_type_), class_type(class_type_), method_name(method_name_), return_args(return_args_), why_abstract(why_abstract_) {}
    void print(int subling_index = 0, int child_index = 0);
 };
+
+static inline void h2_fail_g(h2_fail*, bool);

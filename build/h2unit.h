@@ -1,4 +1,4 @@
-﻿/* v5.3  2020-05-17 18:59:41 */
+﻿/* v5.3  2020-05-17 22:13:02 */
 /* https://github.com/lingjf/h2unit */
 /* Apache Licence 2.0 */
 #ifndef __H2UNIT_HPP__
@@ -654,6 +654,8 @@ struct h2_fail_instantiate : h2_fail {
    void print(int subling_index = 0, int child_index = 0);
 };
 
+static inline void h2_fail_g(h2_fail*, bool);
+
 struct h2_stubs {
    h2_list stubs;
    bool add(void* befp, void* tofp, const char* befn = "", const char* tofn = "", const char* file = nullptr, int line = 0);
@@ -726,8 +728,6 @@ struct h2_stub_temporary_restore : h2_once {
 
 #define H2STUB(...) H2PP_VARIADIC_CALL(__H2STUB, __VA_ARGS__, H2Q(t_stub))
 
-static inline void h2_fail_g(h2_fail* fail);
-
 struct h2_heap {
    static void initialize();
    static void dohook();
@@ -743,7 +743,7 @@ struct h2_heap {
 
       struct block : h2_once {
          block(const char* file, int line, long long limited = LLONG_MAX >> 9, const char* fill = nullptr) { stack_push_block(file, line, "block", limited, fill); }
-         ~block() { h2_fail_g(stack_pop_block()); }
+         ~block() { h2_fail_g(stack_pop_block(), false); }
       };
    };
 };
@@ -902,7 +902,7 @@ struct h2_mfp<Class, Return(Args...)> {
       if (!is_virtual(u)) return u.p;
       Class* o = h2_constructible<Class>::O(alloca(sizeof(Class)));
       if (1 == (intptr_t)o || 2 == (intptr_t)o)
-         h2_fail_g(new h2_fail_instantiate(action_type, return_type, class_type, method_name, return_args, 1 == (intptr_t)o, file, line));
+         h2_fail_g(new h2_fail_instantiate(action_type, return_type, class_type, method_name, return_args, 1 == (intptr_t)o, file, line), file);
       return get_vmfp(u, o);
    }
 
@@ -1739,7 +1739,7 @@ class h2_mocker<Counter, Lineno, Class, Return(Args...)> : h2_mock {
       for (int i = c_index; i < c_array.size(); ++i) {
          h2_fail* fail = matches(m_array[i], a_tuple);
          if (fail) {
-            if (c_array[i].is_not_enough()) h2_fail_g(fail);
+            if (c_array[i].is_not_enough()) h2_fail_g(fail, false);
             if (c_array[i].is_satisfied()) delete fail; /* continue; try next h2_callexp */
          } else {
             ++c_array[c_offset = i];
@@ -1748,7 +1748,7 @@ class h2_mocker<Counter, Lineno, Class, Return(Args...)> : h2_mock {
          }
       }
       if (-1 == c_offset) {
-         h2_fail_g(new h2_fail_call(befn, "", "exceed", file, line));
+         h2_fail_g(new h2_fail_call(befn, "", "exceed", file, line), false);
       }
       return c_offset;
    }
@@ -1990,7 +1990,7 @@ struct h2_case {
    void prev_cleanup() {}
    void post_cleanup();
 
-   void do_fail(h2_fail* fail);
+   void do_fail(h2_fail* fail, bool defer);
 
    struct cleaner : h2_once {
       h2_case* thus;
@@ -2240,7 +2240,7 @@ struct h2_defer_fail : h2_once {
          fail->e_expression = e_expression;
          fail->a_expression = a_expression;
          fail->user_explain = oss.str().c_str();
-         h2_fail_g(fail);
+         h2_fail_g(fail, false);
       }
    }
 };
@@ -2450,11 +2450,11 @@ static inline void h2_mock_g(h2_mock* mock)
    }
 }
 
-static inline void h2_fail_g(h2_fail* fail)
+static inline void h2_fail_g(h2_fail* fail, bool defer)
 {
    if (!fail) return;
    if (O.debug) h2_debugger::trap();
-   if (h2_task::I().current_case) h2_task::I().current_case->do_fail(fail);
+   if (h2_task::I().current_case) h2_task::I().current_case->do_fail(fail, defer);
 }
 }  // namespace h2
 

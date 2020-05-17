@@ -23,7 +23,7 @@ struct h2_case {
    void prev_cleanup() {}
    void post_cleanup();
 
-   void do_fail(h2_fail* fail);
+   void do_fail(h2_fail* fail, bool defer);
 
    struct cleaner : h2_once {
       h2_case* thus;

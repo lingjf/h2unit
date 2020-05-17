@@ -1,4 +1,4 @@
-﻿/* v5.3  2020-05-17 18:59:41 */
+﻿/* v5.3  2020-05-17 22:13:02 */
 /* https://github.com/lingjf/h2unit */
 /* Apache Licence 2.0 */
 #ifndef __H2UNIT_H__
@@ -654,6 +654,8 @@ struct h2_fail_instantiate : h2_fail {
    void print(int subling_index = 0, int child_index = 0);
 };
 
+static inline void h2_fail_g(h2_fail*, bool);
+
 struct h2_stubs {
    h2_list stubs;
    bool add(void* befp, void* tofp, const char* befn = "", const char* tofn = "", const char* file = nullptr, int line = 0);
@@ -726,8 +728,6 @@ struct h2_stub_temporary_restore : h2_once {
 
 #define H2STUB(...) H2PP_VARIADIC_CALL(__H2STUB, __VA_ARGS__, H2Q(t_stub))
 
-static inline void h2_fail_g(h2_fail* fail);
-
 struct h2_heap {
    static void initialize();
    static void dohook();
@@ -743,7 +743,7 @@ struct h2_heap {
 
       struct block : h2_once {
          block(const char* file, int line, long long limited = LLONG_MAX >> 9, const char* fill = nullptr) { stack_push_block(file, line, "block", limited, fill); }
-         ~block() { h2_fail_g(stack_pop_block()); }
+         ~block() { h2_fail_g(stack_pop_block(), false); }
       };
    };
 };
@@ -902,7 +902,7 @@ struct h2_mfp<Class, Return(Args...)> {
       if (!is_virtual(u)) return u.p;
       Class* o = h2_constructible<Class>::O(alloca(sizeof(Class)));
       if (1 == (intptr_t)o || 2 == (intptr_t)o)
-         h2_fail_g(new h2_fail_instantiate(action_type, return_type, class_type, method_name, return_args, 1 == (intptr_t)o, file, line));
+         h2_fail_g(new h2_fail_instantiate(action_type, return_type, class_type, method_name, return_args, 1 == (intptr_t)o, file, line), file);
       return get_vmfp(u, o);
    }
 
@@ -1739,7 +1739,7 @@ class h2_mocker<Counter, Lineno, Class, Return(Args...)> : h2_mock {
       for (int i = c_index; i < c_array.size(); ++i) {
          h2_fail* fail = matches(m_array[i], a_tuple);
          if (fail) {
-            if (c_array[i].is_not_enough()) h2_fail_g(fail);
+            if (c_array[i].is_not_enough()) h2_fail_g(fail, false);
             if (c_array[i].is_satisfied()) delete fail; /* continue; try next h2_callexp */
          } else {
             ++c_array[c_offset = i];
@@ -1748,7 +1748,7 @@ class h2_mocker<Counter, Lineno, Class, Return(Args...)> : h2_mock {
          }
       }
       if (-1 == c_offset) {
-         h2_fail_g(new h2_fail_call(befn, "", "exceed", file, line));
+         h2_fail_g(new h2_fail_call(befn, "", "exceed", file, line), false);
       }
       return c_offset;
    }
@@ -1990,7 +1990,7 @@ struct h2_case {
    void prev_cleanup() {}
    void post_cleanup();
 
-   void do_fail(h2_fail* fail);
+   void do_fail(h2_fail* fail, bool defer);
 
    struct cleaner : h2_once {
       h2_case* thus;
@@ -2240,7 +2240,7 @@ struct h2_defer_fail : h2_once {
          fail->e_expression = e_expression;
          fail->a_expression = a_expression;
          fail->user_explain = oss.str().c_str();
-         h2_fail_g(fail);
+         h2_fail_g(fail, false);
       }
    }
 };
@@ -2450,11 +2450,11 @@ static inline void h2_mock_g(h2_mock* mock)
    }
 }
 
-static inline void h2_fail_g(h2_fail* fail)
+static inline void h2_fail_g(h2_fail* fail, bool defer)
 {
    if (!fail) return;
    if (O.debug) h2_debugger::trap();
-   if (h2_task::I().current_case) h2_task::I().current_case->do_fail(fail);
+   if (h2_task::I().current_case) h2_task::I().current_case->do_fail(fail, defer);
 }
 }  // namespace h2
 
@@ -3987,11 +3987,11 @@ h2_inline void h2_case::post_cleanup()
    status = FAILED;
 }
 
-h2_inline void h2_case::do_fail(h2_fail* fail)
+h2_inline void h2_case::do_fail(h2_fail* fail, bool defer)
 {
    status = FAILED;
    h2_fail::append_subling(fails, fail);
-   ::longjmp(jump, 1);
+   if (!defer) ::longjmp(jump, 1);
 }
 
 #if defined __linux__
@@ -4912,28 +4912,28 @@ struct h2_piece : h2_libc {
 #endif
    }
 
-   void mark_forbidden()
+   void mark_forbidden(bool forbidden)
    {
 #ifdef _WIN32
       DWORD old;
-      if (!VirtualProtect(page, page_size * (page_count + 1), PAGE_NOACCESS, &old))
+      if (!VirtualProtect(page, page_size * (page_count + 1), forbidden ? PAGE_NOACCESS : PAGE_READWRITE, &old))
          ::printf("VirtualProtect PAGE_NOACCESS failed %d\n", GetLastError());
 #else
-      if (::mprotect(page, page_size * (page_count + 1), PROT_NONE) != 0)
+      if (::mprotect(page, page_size * (page_count + 1), forbidden ? PROT_NONE : PROT_READ | PROT_WRITE) != 0)
          ::printf("mprotect PROT_NONE failed %s\n", strerror(errno));
 #endif
    }
 
-   void undo_forbidden()
+   void anti_forbidden(int offset)
    {
-#ifdef _WIN32
-      DWORD old;
-      if (!VirtualProtect(page, page_size * (page_count + 1), PAGE_READWRITE, &old))
-         ::printf("VirtualProtect PAGE_NOACCESS failed %d\n", GetLastError());
-#else
-      if (::mprotect(page, page_size * (page_count + 1), PROT_READ | PROT_WRITE) != 0)
-         ::printf("mprotect PROT_NONE failed %s\n", strerror(errno));
-#endif
+      mark_forbidden(false);
+      h2_backtrace bt_access(3);
+      h2_fail* fail = nullptr;
+      if (0 < free_times)
+         fail = new h2_fail_access_after_free(ptr, offset, bt_allocate, bt_release, bt_access);
+      else
+         fail = new h2_fail_memoverflow(ptr, offset, nullptr, 0, bt_allocate, bt_access);
+      h2_fail_g(fail, true);
    }
 
    void mark_snowfield()
@@ -4957,15 +4957,6 @@ struct h2_piece : h2_libc {
          h2_fail::append_subling(fail, new h2_fail_memoverflow(ptr, size, snowfield, sizeof(snowfield), bt_allocate, h2_backtrace()));
       if (memcmp(ptr - sizeof(snowfield), snowfield, sizeof(snowfield)))
          h2_fail::append_subling(fail, new h2_fail_memoverflow(ptr, -(int)sizeof(snowfield), snowfield, sizeof(snowfield), bt_allocate, h2_backtrace()));
-
-#ifdef _WIN32
-      DWORD old;
-      if (!VirtualProtect(page, page_size * (page_count + 1), PAGE_NOACCESS, &old))
-         ::printf("VirtualProtect PAGE_NOACCESS failed %d\n", GetLastError());
-#else
-      if (::mprotect(page, page_size * (page_count + 1), PROT_NONE) != 0)
-         ::printf("mprotect PROT_NONE failed %s\n", strerror(errno));
-#endif
       return fail;
    }
 
@@ -5016,7 +5007,7 @@ struct h2_piece : h2_libc {
       if (!fail)
          fail = check_snowfield();
 
-      if (!fail) mark_forbidden();
+      if (!fail) mark_forbidden(true);
 
       return fail;
    }
@@ -5190,7 +5181,7 @@ struct h2_hook {
 
    static void free(void* ptr)
    {
-      if (ptr) h2_fail_g(h2_stack::I().rel_piece("free", ptr)); /* overflow or double free */
+      if (ptr) h2_fail_g(h2_stack::I().rel_piece("free", ptr), false);
    }
    static void* malloc(size_t size)
    {
@@ -5216,7 +5207,7 @@ struct h2_hook {
       if (!new_p) return nullptr;
 
       memcpy(new_p->ptr, old_p->ptr, old_p->size);
-      h2_fail_g(h2_stack::I().rel_piece("free", ptr));
+      h2_fail_g(h2_stack::I().rel_piece("free", ptr), false);
 
       return new_p->ptr;
    }
@@ -5237,7 +5228,7 @@ struct h2_hook {
    }
    static void _aligned_free(void* memblock)
    {
-      if (memblock) h2_fail_g(h2_stack::I().rel_piece("_aligned_free", memblock));
+      if (memblock) h2_fail_g(h2_stack::I().rel_piece("_aligned_free", memblock), false);
    }
    static void* operator new(std::size_t size)
    {
@@ -5261,19 +5252,19 @@ struct h2_hook {
    }
    static void operator delete(void* ptr)
    {
-      if (ptr) h2_fail_g(h2_stack::I().rel_piece("delete", ptr));
+      if (ptr) h2_fail_g(h2_stack::I().rel_piece("delete", ptr), false);
    }
    static void operator delete(void* ptr, const std::nothrow_t&)
    {
-      if (ptr) h2_fail_g(h2_stack::I().rel_piece("delete", ptr));
+      if (ptr) h2_fail_g(h2_stack::I().rel_piece("delete", ptr), false);
    }
    static void operator delete[](void* ptr)
    {
-      if (ptr) h2_fail_g(h2_stack::I().rel_piece("delete[]", ptr));
+      if (ptr) h2_fail_g(h2_stack::I().rel_piece("delete[]", ptr), false);
    }
    static void operator delete[](void* ptr, const std::nothrow_t&)
    {
-      if (ptr) h2_fail_g(h2_stack::I().rel_piece("delete[]", ptr));
+      if (ptr) h2_fail_g(h2_stack::I().rel_piece("delete[]", ptr), false);
    }
 
 #if defined __GLIBC__
@@ -5441,22 +5432,82 @@ struct h2_hook {
    {
       h2_piece* piece = h2_stack::I().host_piece(si->si_addr);
       if (piece) {
-         piece->undo_forbidden();
-         h2_backtrace bt_access(3);
-         h2_fail_g(new h2_fail_access_after_free(piece->ptr, (intptr_t)si->si_addr - (intptr_t)piece->ptr, piece->bt_allocate, piece->bt_release, bt_access));
+         piece->anti_forbidden((intptr_t)si->si_addr - (intptr_t)piece->ptr);
       } else {
          h2_debug();
-         exit(1);
+         abort();
       }
    }
    void install_segment_fault_handler()
    {
-      struct sigaction act;
-      act.sa_sigaction = segment_fault_handler;
-      act.sa_flags = SA_SIGINFO;
-      sigemptyset(&act.sa_mask);
-      if (sigaction(SIGSEGV, &act, nullptr) == -1) perror("Register SIGSEGV handler failed");
-      if (sigaction(SIGBUS, &act, nullptr) == -1) perror("Register SIGBUS handler failed");
+      struct sigaction action;
+      action.sa_sigaction = segment_fault_handler;
+      action.sa_flags = SA_SIGINFO;
+      sigemptyset(&action.sa_mask);
+#   ifdef SIGHUP
+      sigaddset(&action.sa_mask, SIGHUP);
+#   endif
+#   ifdef SIGINT
+      sigaddset(&action.sa_mask, SIGINT);
+#   endif
+#   ifdef SIGQUIT
+      sigaddset(&action.sa_mask, SIGQUIT);
+#   endif
+#   ifdef SIGPIPE
+      sigaddset(&action.sa_mask, SIGPIPE);
+#   endif
+#   ifdef SIGALRM
+      sigaddset(&action.sa_mask, SIGALRM);
+#   endif
+#   ifdef SIGTERM
+      sigaddset(&action.sa_mask, SIGTERM);
+#   endif
+#   ifdef SIGUSR1
+      sigaddset(&action.sa_mask, SIGUSR1);
+#   endif
+#   ifdef SIGUSR2
+      sigaddset(&action.sa_mask, SIGUSR2);
+#   endif
+#   ifdef SIGCHLD
+      sigaddset(&action.sa_mask, SIGCHLD);
+#   endif
+#   ifdef SIGCLD
+      sigaddset(&action.sa_mask, SIGCLD);
+#   endif
+#   ifdef SIGURG
+      sigaddset(&action.sa_mask, SIGURG);
+#   endif
+#   ifdef SIGIO
+      sigaddset(&action.sa_mask, SIGIO);
+#   endif
+#   ifdef SIGPOLL
+      sigaddset(&action.sa_mask, SIGPOLL);
+#   endif
+#   ifdef SIGXCPU
+      sigaddset(&action.sa_mask, SIGXCPU);
+#   endif
+#   ifdef SIGXFSZ
+      sigaddset(&action.sa_mask, SIGXFSZ);
+#   endif
+#   ifdef SIGVTALRM
+      sigaddset(&action.sa_mask, SIGVTALRM);
+#   endif
+#   ifdef SIGPROF
+      sigaddset(&action.sa_mask, SIGPROF);
+#   endif
+#   ifdef SIGPWR
+      sigaddset(&action.sa_mask, SIGPWR);
+#   endif
+#   ifdef SIGLOST
+      sigaddset(&action.sa_mask, SIGLOST);
+#   endif
+#   ifdef SIGWINCH
+      sigaddset(&action.sa_mask, SIGWINCH);
+#   endif
+      if (sigaction(SIGSEGV, &action, nullptr) == -1) perror("Register SIGSEGV handler failed");
+#   ifdef __APPLE__
+      if (sigaction(SIGBUS, &action, nullptr) == -1) perror("Register SIGBUS handler failed");
+#   endif
    }
 #endif
 };

@@ -25,9 +25,9 @@ h2_inline void h2_case::post_cleanup()
    status = FAILED;
 }
 
-h2_inline void h2_case::do_fail(h2_fail* fail)
+h2_inline void h2_case::do_fail(h2_fail* fail, bool defer)
 {
    status = FAILED;
    h2_fail::append_subling(fails, fail);
-   ::longjmp(jump, 1);
+   if (!defer) ::longjmp(jump, 1);
 }

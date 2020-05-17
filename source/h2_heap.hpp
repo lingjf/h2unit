@@ -1,6 +1,4 @@
 
-static inline void h2_fail_g(h2_fail* fail);
-
 struct h2_heap {
    static void initialize();
    static void dohook();
@@ -16,7 +14,7 @@ struct h2_heap {
 
       struct block : h2_once {
          block(const char* file, int line, long long limited = LLONG_MAX >> 9, const char* fill = nullptr) { stack_push_block(file, line, "block", limited, fill); }
-         ~block() { h2_fail_g(stack_pop_block()); }
+         ~block() { h2_fail_g(stack_pop_block(), false); }
       };
    };
 };

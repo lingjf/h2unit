@@ -125,7 +125,7 @@ class h2_mocker<Counter, Lineno, Class, Return(Args...)> : h2_mock {
       for (int i = c_index; i < c_array.size(); ++i) {
          h2_fail* fail = matches(m_array[i], a_tuple);
          if (fail) {
-            if (c_array[i].is_not_enough()) h2_fail_g(fail);
+            if (c_array[i].is_not_enough()) h2_fail_g(fail, false);
             if (c_array[i].is_satisfied()) delete fail; /* continue; try next h2_callexp */
          } else {
             ++c_array[c_offset = i];
@@ -134,7 +134,7 @@ class h2_mocker<Counter, Lineno, Class, Return(Args...)> : h2_mock {
          }
       }
       if (-1 == c_offset) {
-         h2_fail_g(new h2_fail_call(befn, "", "exceed", file, line));
+         h2_fail_g(new h2_fail_call(befn, "", "exceed", file, line), false);
       }
       return c_offset;
    }
