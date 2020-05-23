@@ -23,3 +23,16 @@ h2_inline void h2_suite::execute(h2_case* c)
    test_code(this, c); /* include setup(); c->post_setup() and c->prev_cleanup(); cleanup() */
    c->post_cleanup();
 }
+
+h2_inline h2_suite::installer::installer(h2_suite* s, h2_case* c)
+{
+   static long long seq = INT_MAX;
+   s->registered_cases.push_back(&c->registered);
+   s->seq = c->seq = ++seq;
+}
+
+h2_inline h2_suite::cleaner::cleaner(h2_suite* s) : thus(s) {}
+h2_inline h2_suite::cleaner::~cleaner()
+{
+   if (thus->jumpable) ::longjmp(thus->jump, 1);
+}

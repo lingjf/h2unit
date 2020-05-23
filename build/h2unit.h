@@ -1,4 +1,4 @@
-﻿/* v5.3  2020-05-17 22:13:02 */
+﻿/* v5.3  2020-05-23 10:10:01 */
 /* https://github.com/lingjf/h2unit */
 /* Apache Licence 2.0 */
 #ifndef __H2UNIT_HPP__
@@ -388,7 +388,7 @@ struct h2_line : public h2_vector<h2_string> {
    h2_line(h2_string a) : h2_vector<h2_string>({a}) {}
    h2_line(std::initializer_list<h2_string> il) : h2_vector<h2_string>(il) {}
 
-   int length() const;
+   int width() const;
    void indent(int n_space);
    void padding(int n_space);
 
@@ -407,7 +407,7 @@ struct h2_lines : public h2_vector<h2_line> {
    void concat_back(h2_lines& lines);
    void concat_front(h2_lines& lines);
 
-   int max_length() const;
+   int max_width() const;
    void samesizify(h2_lines& b);
    bool foldable();
 
@@ -556,21 +556,21 @@ struct h2_fail_strcmp : h2_fail_unexpect {
    h2_string e_value, a_value;
    h2_fail_strcmp(const h2_string& e_value_, const h2_string& a_value_, bool dont_, bool caseless_, const char* file_ = nullptr, int line_ = 0)
      : h2_fail_unexpect("\"" + e_value_ + "\"", "\"" + a_value_ + "\"", dont_, caseless_, "", "", file_, line_), caseless(caseless_), e_value(e_value_), a_value(a_value_) {}
-   void print(int subling_index = 0, int child_index = 0);
+   void print(int subling_index = 0, int child_index = 0) override;
 };
 
 struct h2_fail_strfind : h2_fail_unexpect {
    h2_string e_value, a_value;
    h2_fail_strfind(const h2_string& e_value_, const h2_string& a_value_, bool dont_, bool caseless_, h2_string find_, const char* file_ = nullptr, int line_ = 0)
      : h2_fail_unexpect("\"" + e_value_ + "\"", "\"" + a_value_ + "\"", dont_, caseless_, find_ + "(", ")", file_, line_), e_value(e_value_), a_value(a_value_) {}
-   void print(int subling_index = 0, int child_index = 0);
+   void print(int subling_index = 0, int child_index = 0) override;
 };
 
 struct h2_fail_json : h2_fail_unexpect {
    h2_string e_value, a_value;
    h2_fail_json(const h2_string& e_value_, const h2_string& a_value_, bool dont_, bool caseless_, const char* file_ = nullptr, int line_ = 0)
      : h2_fail_unexpect(e_value_, a_value_, dont_, caseless_, "Je(", ")", file_, line_), e_value(e_value_), a_value(a_value_) {}
-   void print(int subling_index = 0, int child_index = 0);
+   void print(int subling_index = 0, int child_index = 0) override;
 };
 
 struct h2_fail_memcmp : h2_fail_unexpect {
@@ -583,7 +583,7 @@ struct h2_fail_memcmp : h2_fail_unexpect {
    const int width, nbits;
    h2_fail_memcmp(const unsigned char* e_value_, const unsigned char* a_value_, int width_, int nbits_, bool dont, const char* e_ext, h2_string a_represent_, const char* file_ = nullptr, int line_ = 0)
      : h2_fail_unexpect("", a_represent_, dont, false, e_ext, "", file_, line_), e_value(e_value_, e_value_ + (nbits_ + 7) / 8), a_value(a_value_, a_value_ + (nbits_ + 7) / 8), width(width_), nbits(nbits_) {}
-   void print(int subling_index = 0, int child_index = 0);
+   void print(int subling_index = 0, int child_index = 0) override;
    void print_bits(h2_lines& e_lines, h2_lines& a_lines);
    void print_bytes(h2_lines& e_lines, h2_lines& a_lines);
    void print_int16(h2_lines& e_lines, h2_lines& a_lines);
@@ -591,67 +591,66 @@ struct h2_fail_memcmp : h2_fail_unexpect {
    void print_int64(h2_lines& e_lines, h2_lines& a_lines);
 };
 
-struct h2_fail_memoverflow : h2_fail {
-   const unsigned char* ptr;
-   const int offset;
-   const unsigned char* magic;
-   const h2_vector<unsigned char> spot;
-   const h2_backtrace bt0, bt1;
-   h2_fail_memoverflow(void* ptr_, int offset_, const unsigned char* magic_, int size, h2_backtrace bt0_, h2_backtrace bt1_, const char* file_ = nullptr, int line_ = 0) : h2_fail(file_, line_), ptr((unsigned char*)ptr_), offset(offset_), magic(magic_), spot(((unsigned char*)ptr_) + offset_, ((unsigned char*)ptr_) + offset_ + size), bt0(bt0_), bt1(bt1_) {}
-   void print(int subling_index = 0, int child_index = 0);
-};
-
-struct h2_fail_memleak : h2_fail {
-   const char* where;
-   struct P {
-      void *ptr, *ptr2;
-      long long size, size2, bytes, times;
-      h2_backtrace bt;
-      P(void* ptr_, int size_, h2_backtrace& bt_) : ptr(ptr_), ptr2(nullptr), size(size_), size2(0), bytes(size_), times(1), bt(bt_) {}
-   };
-   h2_vector<P> places;
-   long long bytes, times;
-
-   h2_fail_memleak(const char* file_ = nullptr, int line_ = 0, const char* where_ = "") : h2_fail(file_, line_), where(where_), bytes(0), times(0) {}
-
-   void add(void* ptr, int size, h2_backtrace& bt);
-   void print(int subling_index = 0, int child_index = 0);
-};
-
-struct h2_fail_double_free : h2_fail {
-   void* ptr;
-   const h2_backtrace bt_allocate, bt_release1, bt_release2;
-   h2_fail_double_free(void* ptr_, h2_backtrace& bt_allocate_, h2_backtrace& bt_release1_, h2_backtrace& bt_release2_) : h2_fail(nullptr, 0), ptr(ptr_), bt_allocate(bt_allocate_), bt_release1(bt_release1_), bt_release2(bt_release2_) {}
-   void print(int subling_index = 0, int child_index = 0);
-};
-
-struct h2_fail_access_after_free : h2_fail {
-   const unsigned char* ptr;
-   int offset;
-   const h2_backtrace bt_allocate, bt_release, bt_access;
-   h2_fail_access_after_free(const unsigned char* ptr_, int offset_, h2_backtrace& bt_allocate_, h2_backtrace& bt_release_, h2_backtrace& bt_access_) : h2_fail(nullptr, 0), ptr(ptr_), offset(offset_), bt_allocate(bt_allocate_), bt_release(bt_release_), bt_access(bt_access_) {}
-   void print(int subling_index = 0, int child_index = 0);
-};
-
-struct h2_fail_asymmetric_free : h2_fail {
-   void* ptr;
-   const char *who_allocate, *who_release;
+struct h2_fail_memory : h2_fail {
+   const void* ptr;
+   const int size;
    const h2_backtrace bt_allocate, bt_release;
-   h2_fail_asymmetric_free(void* ptr_, const char* who_allocate_, const char* who_release_, h2_backtrace& bt_allocate_, h2_backtrace& bt_release_) : h2_fail(nullptr, 0), ptr(ptr_), who_allocate(who_allocate_), who_release(who_release_), bt_allocate(bt_allocate_), bt_release(bt_release_) {}
-   void print(int subling_index = 0, int child_index = 0);
+
+   h2_fail_memory(const void* ptr_, const int size_, h2_backtrace bt_allocate_, h2_backtrace bt_release_, const char* file_ = nullptr, int line_ = 0)
+     : h2_fail(file_, line_), ptr(ptr_), size(size_), bt_allocate(bt_allocate_), bt_release(bt_release_) {}
+};
+
+struct h2_fail_memory_leak : h2_fail_memory {
+   const char* where;  // case or block
+   h2_fail_memory_leak(const void* ptr_, int size_, h2_backtrace bt_allocate_, const char* where_, const char* file_, int line_)
+     : h2_fail_memory(ptr_, size_, bt_allocate_, h2_backtrace(), file_, line_), where(where_) {}
+   void print(int subling_index = 0, int child_index = 0) override;
+};
+
+struct h2_fail_double_free : h2_fail_memory {
+   const h2_backtrace bt_double_free;
+   h2_fail_double_free(const void* ptr_, h2_backtrace bt_allocate_, h2_backtrace bt_release_, h2_backtrace bt_double_free_)
+     : h2_fail_memory(ptr_, 0, bt_allocate_, bt_release_), bt_double_free(bt_double_free_) {}
+   void print(int subling_index = 0, int child_index = 0) override;
+};
+
+struct h2_fail_asymmetric_free : h2_fail_memory {
+   const char *who_allocate, *who_release;
+   h2_fail_asymmetric_free(const void* ptr_, const char* who_allocate_, const char* who_release_, h2_backtrace bt_allocate_, h2_backtrace bt_release_)
+     : h2_fail_memory(ptr_, 0, bt_allocate_, bt_release_), who_allocate(who_allocate_), who_release(who_release_) {}
+   void print(int subling_index = 0, int child_index = 0) override;
+};
+
+struct h2_fail_overflow : h2_fail_memory {
+   const void* addr;                    /* 犯罪地点 */
+   const char* action;                  /* 犯罪行为 */
+   const h2_vector<unsigned char> spot; /* 犯罪现场 */
+   const h2_backtrace bt_trample;       /* 犯罪过程 */
+   h2_fail_overflow(const void* ptr_, const int size_, const void* addr_, const char* action_, h2_vector<unsigned char> spot_, h2_backtrace bt_allocate_, h2_backtrace bt_trample_, const char* file_ = nullptr, int line_ = 0)
+     : h2_fail_memory(ptr_, size_, bt_allocate_, h2_backtrace(), file_, line_), addr(addr_), action(action_), spot(spot_), bt_trample(bt_trample_) {}
+   void print(int subling_index = 0, int child_index = 0) override;
+};
+
+struct h2_fail_use_after_free : h2_fail_memory {
+   const void* addr;          /* 犯罪地点 */
+   const char* action;        /* 犯罪行为 */
+   const h2_backtrace bt_use; /* 犯罪过程 */
+   h2_fail_use_after_free(const void* ptr_, const void* addr_, const char* action_, h2_backtrace bt_allocate_, h2_backtrace bt_release_, h2_backtrace bt_use_)
+     : h2_fail_memory(ptr_, 0, bt_allocate_, bt_release_), addr(addr_), action(action_), bt_use(bt_use_) {}
+   void print(int subling_index = 0, int child_index = 0) override;
 };
 
 struct h2_fail_call : h2_fail {
    h2_string e_who, e_call, a_call;
    h2_fail_call(const char* func_, const char* expect, const char* actual, const char* file_ = nullptr, int line_ = 0) : h2_fail(file_, line_), e_who(func_), e_call(expect), a_call(actual) {}
-   void print(int subling_index = 0, int child_index = 0);
+   void print(int subling_index = 0, int child_index = 0) override;
 };
 
 struct h2_fail_instantiate : h2_fail {
    const char *action_type, *return_type, *class_type, *method_name, *return_args;
    const bool why_abstract;
    h2_fail_instantiate(const char* action_type_, const char* return_type_, const char* class_type_, const char* method_name_, const char* return_args_, int why_abstract_, const char* file_, int line_) : h2_fail(file_, line_), action_type(action_type_), return_type(return_type_), class_type(class_type_), method_name(method_name_), return_args(return_args_), why_abstract(why_abstract_) {}
-   void print(int subling_index = 0, int child_index = 0);
+   void print(int subling_index = 0, int child_index = 0) override;
 };
 
 static inline void h2_fail_g(h2_fail*, bool);
@@ -733,17 +732,14 @@ struct h2_heap {
    static void dohook();
    static void unhook();
 
-   static void stack_push_block(const char* file, int line, const char* where, long long limited, const char* fill);
-   static h2_fail* stack_pop_block();
-
    struct stack {
-      static void root() { stack_push_block(__FILE__, __LINE__, "root", LLONG_MAX >> 9, nullptr); }
-      static void push(const char* file, int line, long long limited = LLONG_MAX >> 9, const char* fill = nullptr) { stack_push_block(file, line, "case", limited, fill); }
-      static h2_fail* pop() { return stack_pop_block(); }
+      static void root();
+      static void push(const char* file, int line, long long limited = LLONG_MAX >> 9, const char* fill = nullptr);
+      static h2_fail* pop();
 
       struct block : h2_once {
-         block(const char* file, int line, long long limited = LLONG_MAX >> 9, const char* fill = nullptr) { stack_push_block(file, line, "block", limited, fill); }
-         ~block() { h2_fail_g(stack_pop_block(), false); }
+         block(const char* file, int line, long long limited = LLONG_MAX >> 9, const char* fill = nullptr);
+         ~block();
       };
    };
 };
@@ -902,7 +898,7 @@ struct h2_mfp<Class, Return(Args...)> {
       if (!is_virtual(u)) return u.p;
       Class* o = h2_constructible<Class>::O(alloca(sizeof(Class)));
       if (1 == (intptr_t)o || 2 == (intptr_t)o)
-         h2_fail_g(new h2_fail_instantiate(action_type, return_type, class_type, method_name, return_args, 1 == (intptr_t)o, file, line), file);
+         h2_fail_g(new h2_fail_instantiate(action_type, return_type, class_type, method_name, return_args, 1 == (intptr_t)o, file, line), false);
       return get_vmfp(u, o);
    }
 
@@ -2022,21 +2018,13 @@ struct h2_suite {
    void cleanup();
 
    struct installer {
-      installer(h2_suite* s, h2_case* c)
-      {
-         static long long seq = INT_MAX;
-         s->registered_cases.push_back(&c->registered);
-         s->seq = c->seq = ++seq;
-      }
+      installer(h2_suite* s, h2_case* c);
    };
 
    struct cleaner : h2_once {
       h2_suite* thus;
-      cleaner(h2_suite* s) : thus(s) {}
-      ~cleaner()
-      {
-         if (thus->jumpable) ::longjmp(thus->jump, 1);
-      }
+      cleaner(h2_suite* s);
+      ~cleaner();
    };
 };
 
@@ -2560,7 +2548,7 @@ using h2::ListOf;
    static h2::h2_suite H2Q(suite)(name, &QP, __FILE__, __LINE__); \
    static void QP(h2::h2_suite* ________suite, h2::h2_case* _________case)
 
-#define H2SUITE(name) __H2SUITE(name, H2Q(h2_suite_test_code))
+#define H2SUITE(name) __H2SUITE(name, H2Q(h2_suite_test))
 
 #define __H2Cleanup()                      \
    if (::setjmp(________suite->jump) == 0) \

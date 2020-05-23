@@ -323,81 +323,21 @@ h2_inline void h2_fail_memcmp::print_int64(h2_lines& e_lines, h2_lines& a_lines)
    }
 }
 
-h2_inline void h2_fail_memoverflow::print(int subling_index, int child_index)
+h2_inline void h2_fail_memory_leak::print(int subling_index, int child_index)
 {
-   h2_color::printf("", " Memory overflow malloc %p %+d (%p) ", ptr, offset, ptr + offset);
-
-   for (int i = 0; i < spot.size(); ++i)
-      h2_color::printf(magic[i] == spot[i] ? "green" : "bold,red", "%02X ", spot[i]);
-
-   h2_color::printf("", "%s\n", get_locate());
-   if (0 < bt1.count) h2_color::printf("", "  %p trampled at backtrace:\n", ptr + offset), bt1.print(3);
-   if (0 < bt0.count) h2_color::printf("", "  which allocate at backtrace:\n"), bt0.print(3);
-}
-
-h2_inline void h2_fail_memleak::add(void* ptr, int size, h2_backtrace& bt)
-{
-   bytes += size, times += 1;
-   for (auto& c : places) {
-      if (c.bt == bt) {
-         c.ptr2 = ptr, c.size2 = size, c.bytes += size, c.times += 1;
-         return;
-      }
-   }
-   places.push_back(P(ptr, size, bt));
-}
-
-h2_inline void h2_fail_memleak::print(int subling_index, int child_index)
-{
-   h2_color::printf("", " Memory Leak ");
-   if (1 < places.size()) {
-      h2_color::printf("bold,red", "%d", (int)places.size());
-      h2_color::printf("", " places ");
-   }
-   if (1 < times) {
-      h2_color::printf("bold,red", "%d", times);
-      h2_color::printf("", " times ");
-   }
-   if (0 < bytes) {
-      h2_color::printf("bold,red", "%d", bytes);
-      h2_color::printf("", " bytes ");
-   }
-   h2_color::printf("", "in %s totally%s\n", where, get_locate());
-
-   for (auto& c : places) {
-      if (c.times <= 1) {
-         h2_color::printf("", "  %p Leak ", c.ptr);
-         h2_color::printf("bold,red", "%lld", c.bytes);
-         h2_color::printf("", " bytes, at backtrace:\n");
-      } else {
-         h2_color::printf("", "  %p, %p ... Leak ", c.ptr, c.ptr2);
-         h2_color::printf("bold,red", "%lld", c.times);
-         h2_color::printf("", " times ");
-         h2_color::printf("bold,red", "%lld", c.bytes);
-         h2_color::printf("", " bytes (");
-         h2_color::printf("bold,red", "%lld", c.size);
-         h2_color::printf("", ", ");
-         h2_color::printf("bold,red", "%lld", c.size2);
-         h2_color::printf("", " ...), at backtrace:\n");
-      }
-      c.bt.print(3);
-   }
+   h2_color::printf("", " %p memory leak", ptr);
+   h2_color::printf("bold,red", " %d", size);
+   h2_color::printf("", " bytes in %s totally%s\n", where, get_locate());
+   h2_color::printf("", "  which allocate at backtrace:\n"), bt_allocate.print(3);
 }
 
 h2_inline void h2_fail_double_free::print(int subling_index, int child_index)
 {
-   h2_color::printf("", " %p double free at backtrace:\n", ptr);
-   bt_release2.print(2);
-   if (0 < bt_allocate.count) h2_color::printf("", "  which allocate at backtrace:\n"), bt_allocate.print(3);
-   if (0 < bt_release1.count) h2_color::printf("", "  already free at backtrace:\n"), bt_release1.print(3);
-}
-
-h2_inline void h2_fail_access_after_free::print(int subling_index, int child_index)
-{
-   h2_color::printf("", " %p %+d (%p) access after free at backtrace:\n", ptr, offset, ptr + offset);
-   bt_access.print(2);
-   if (0 < bt_allocate.count) h2_color::printf("", "  which allocate at backtrace:\n"), bt_allocate.print(3);
-   if (0 < bt_release.count) h2_color::printf("", "  and free at backtrace:\n"), bt_release.print(3);
+   h2_color::printf("", " %p", ptr);
+   h2_color::printf("bold,red", " double free");
+   h2_color::printf("", " at backtrace:\n", ptr), bt_double_free.print(2);
+   h2_color::printf("", "  which allocate at backtrace:\n"), bt_allocate.print(3);
+   h2_color::printf("", "  already free at backtrace:\n"), bt_release.print(3);
 }
 
 h2_inline void h2_fail_asymmetric_free::print(int subling_index, int child_index)
@@ -406,9 +346,32 @@ h2_inline void h2_fail_asymmetric_free::print(int subling_index, int child_index
    h2_color::printf("bold,red", "%s", who_allocate);
    h2_color::printf("", ", release by ");
    h2_color::printf("bold,red", "%s", who_release);
-   h2_color::printf("", " asymmetrically at backtrace:\n");
-   bt_release.print(2);
+   h2_color::printf("", " asymmetrically at backtrace:\n"), bt_release.print(2);
    if (0 < bt_allocate.count) h2_color::printf("", "  which allocate at backtrace:\n"), bt_allocate.print(3);
+}
+
+h2_inline void h2_fail_overflow::print(int subling_index, int child_index)
+{
+   int offset = ptr < addr ? (intptr_t)addr - ((intptr_t)ptr + size) : (intptr_t)addr - (intptr_t)ptr;
+   h2_color::printf("", " %p %+d (%p)", ptr, offset, addr);
+   h2_color::printf("bold,red", " %s", action);
+   h2_color::printf("", " %s ", offset >= 0 ? "overflow" : "underflow");
+
+   for (int i = 0; i < spot.size(); ++i)
+      h2_color::printf("bold,red", "%02X ", spot[i]);
+
+   h2_color::printf("", "%s\n", get_locate());
+   if (bt_trample.count) h2_color::printf("", "  trampled at backtrace:\n"), bt_trample.print(3);
+   h2_color::printf("", "  which allocate at backtrace:\n"), bt_allocate.print(3);
+}
+
+h2_inline void h2_fail_use_after_free::print(int subling_index, int child_index)
+{
+   h2_color::printf("", " %p %+d (%p)", ptr, (intptr_t)addr - (intptr_t)ptr, addr);
+   h2_color::printf("bold,red", " %s after free", action);
+   h2_color::printf("", " at backtrace:\n"), bt_use.print(2);
+   h2_color::printf("", "  which allocate at backtrace:\n"), bt_allocate.print(3);
+   h2_color::printf("", "  and free at backtrace:\n"), bt_release.print(3);
 }
 
 h2_inline void h2_fail_call::print(int subling_index, int child_index)
@@ -420,7 +383,8 @@ h2_inline void h2_fail_call::print(int subling_index, int child_index)
       line.push_back(" calls but ");
    }
    line.printf("red,bold", a_call.c_str());
-   line.push_back(" called actually");
+   line.push_back(" called");
+   if (e_call.size()) line.push_back(" actually");
    line.push_back(get_locate());
    h2_color::printf(line);
 }
@@ -433,16 +397,16 @@ h2_inline void h2_fail_instantiate::print(int subling_index, int child_index)
    h2_color::printf("", "You may take following solutions to fix it: \n");
    if (why_abstract)
       h2_color::printf("", "1. Add non-abstract Derived Class instance in %s(%s%s%s, %s, %s, Derived %s(...)) \n",
-                        action_type,
-                        strlen(return_type) ? return_type : "",
-                        strlen(return_type) ? ", " : "",
-                        class_type, method_name, return_args, class_type);
+                       action_type,
+                       strlen(return_type) ? return_type : "",
+                       strlen(return_type) ? ", " : "",
+                       class_type, method_name, return_args, class_type);
    else {
       h2_color::printf("", "1. Define default constructor in class %s, or \n", class_type);
       h2_color::printf("", "2. Add parameterized construction in %s(%s%s%s, %s, %s, %s(...)) \n",
-                        action_type,
-                        strlen(return_type) ? return_type : "",
-                        strlen(return_type) ? ", " : "",
-                        class_type, method_name, return_args, class_type);
+                       action_type,
+                       strlen(return_type) ? return_type : "",
+                       strlen(return_type) ? ", " : "",
+                       class_type, method_name, return_args, class_type);
    }
 }

@@ -2,7 +2,7 @@
 
 char* h2__color_tostring(h2::h2__color* color, char* t)
 {
-   sprintf(t, "");
+   strcpy(t, "");
    for (int i = 0; i < sizeof(color->current) / sizeof(color->current[0]); ++i)
       sprintf(t + strlen(t), "%s,", color->current[i]);
    return t;

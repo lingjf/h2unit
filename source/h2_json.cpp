@@ -446,7 +446,7 @@ struct h2_json_dual : h2_libc {  // combine 2 Node into a Dual
       return false;
    }
 
-   void align(h2_lines& e, h2_lines& a, h2_vector<h2_json_dual*>* subling = nullptr)
+   void align(h2_lines& e_lines, h2_lines& a_lines, h2_vector<h2_json_dual*>* subling = nullptr)
    {
       if (!strcmp(e_class, "blob")) {
          e_blob.samesizify(a_blob);
@@ -456,8 +456,8 @@ struct h2_json_dual : h2_libc {  // combine 2 Node into a Dual
          for (auto& line : a_blob)
             line.insert(line.begin(), "\033{yellow}"), line.push_back("\033{reset}");
 
-         e.concat_back(e_blob);
-         a.concat_back(a_blob);
+         e_lines.concat_back(e_blob);
+         a_lines.concat_back(a_blob);
          return;
       }
 
@@ -494,10 +494,10 @@ struct h2_json_dual : h2_libc {  // combine 2 Node into a Dual
          e_line.push_back(strcmp(e_class, "object") ? "[ " : "{ ");
          a_line.push_back(strcmp(a_class, "object") ? "[ " : "{ ");
 
-         e.push_back(e_line), e_line.clear();
-         a.push_back(a_line), a_line.clear();
+         e_lines.push_back(e_line), e_line.clear();
+         a_lines.push_back(a_line), a_line.clear();
          for (size_t i = 0; i < children.size(); ++i)
-            children[i]->align(e, a, &children);
+            children[i]->align(e_lines, a_lines, &children);
 
          e_line.indent(depth * 2);
          e_line.push_back(strcmp(e_class, "object") ? "]" : "}");
@@ -506,11 +506,11 @@ struct h2_json_dual : h2_libc {  // combine 2 Node into a Dual
       }
       if (e_line.size()) {
          if (subling && has_next_e(*subling)) e_line.push_back(",");
-         e.push_back(e_line), e_line.clear();
+         e_lines.push_back(e_line), e_line.clear();
       }
       if (a_line.size()) {
          if (subling && has_next_a(*subling)) a_line.push_back(",");
-         a.push_back(a_line), a_line.clear();
+         a_lines.push_back(a_line), a_line.clear();
       }
    }
 };

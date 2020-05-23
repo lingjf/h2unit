@@ -1,6 +1,6 @@
 #include "../source/h2_unit.cpp"
 
-#if 0
+#if 1
 
 char char0 = 0;
 const char const_char0 = 0;
@@ -37,6 +37,8 @@ const uintptr_t const_uintptr_t0 = 0;
 
 size_t size_t0 = 0;
 const size_t const_size_t0 = 0;
+ssize_t ssize_t0 = 0;
+const ssize_t const_ssize_t0 = 0;
 
 float float0 = 0;
 const float const_float0 = 0;
@@ -87,6 +89,8 @@ const uintptr_t const_uintptr_t1 = 1;
 
 size_t size_t1 = 1;
 const size_t const_size_t1 = 1;
+ssize_t ssize_t1 = 1;
+const ssize_t const_ssize_t1 = 1;
 
 float float1 = 1;
 const float const_float1 = 1;
@@ -102,7 +106,7 @@ enum {
 bool bool1 = true;
 const bool const_bool1 = true;
 
-#   define NUMBER0_LIST 0,                         \
+#   define NUMBER0_LIST 0, 0L, 0LL,                \
                         char0,                     \
                         const_char0,               \
                         unsigned_char0,            \
@@ -133,6 +137,8 @@ const bool const_bool1 = true;
                         const_uintptr_t0,          \
                         size_t0,                   \
                         const_size_t0,             \
+                        ssize_t0,                  \
+                        const_ssize_t0,            \
                         float0,                    \
                         const_float0,              \
                         double0,                   \
@@ -144,7 +150,7 @@ const bool const_bool1 = true;
                         bool0,                     \
                         const_bool0
 
-#   define NUMBER1_LIST 1,                         \
+#   define NUMBER1_LIST 1, 1L, 1LL,                \
                         char1,                     \
                         const_char1,               \
                         unsigned_char1,            \
@@ -175,6 +181,8 @@ const bool const_bool1 = true;
                         const_uintptr_t1,          \
                         size_t1,                   \
                         const_size_t1,             \
+                        ssize_t1,                  \
+                        const_ssize_t1,            \
                         float1,                    \
                         const_float1,              \
                         double1,                   \
@@ -323,13 +331,15 @@ SUITE(number[integer, float, enum, bool])
 
    Case(OK Ge, Gt, Le, Lt, Nq, !Eq)
    {
-#   define TheCheck(x, y) \
-      OK(Ge(x), y);       \
-      OK(Gt(x), y);       \
-      OK(!Le(x), y);      \
-      OK(!Lt(x), y);      \
-      OK(Nq(x), y);       \
-      OK(!Eq(x), y);
+#   define TheCheck(x, y)     \
+      OK(Ge(x), y);           \
+      OK(Gt(x), y);           \
+      OK(!Le(x), y);          \
+      OK(!Lt(x), y);          \
+      OK(Nq(x), y);           \
+      OK(!Eq(x), y);          \
+      OK(!Eq(x) || Ge(x), y); \
+      OK(!Eq(x) && Ge(x), y);
       ForFullmesh(TheCheck, (NUMBER0_LIST), (NUMBER1_LIST));
 #   undef TheCheck
    }
@@ -366,12 +376,14 @@ SUITE(boolean)
    bool bool_false = false;
    const bool const_bool_false = false;
 
-#   define BOOL_TRUE_LIST true,      \
-                          bool_true, \
+#   define BOOL_TRUE_LIST 1, 2, -1,       \
+                          true,           \
+                          bool_true,      \
                           const_bool_true
 
-#   define BOOL_FALSE_LIST false,      \
-                           bool_false, \
+#   define BOOL_FALSE_LIST 0,             \
+                           false,         \
+                           bool_false,    \
                            const_bool_false
 
    Case(OK)
@@ -400,7 +412,7 @@ SUITE(boolean)
 
    Case(OK Not)
    {
-#   define TheCheck(x) OK(Not(IsTrue), x);
+#   define TheCheck(x) OK(Not(IsTrue), x); OK(IsTrue || IsFalse, x);
       ForForEach(TheCheck, BOOL_FALSE_LIST);
 #   undef TheCheck
    }
@@ -441,7 +453,7 @@ SUITE(pointer)
 #   define TheCheck(x, y)      \
       OK(AllOf(_, IsNull), y); \
       OK(AnyOf(_, IsNull), y); \
-      OK(NoneOf(NotNull), y);
+      OK(!!NoneOf(NotNull), y);
       ForFullmesh(TheCheck, NULLPTR_LIST);
 #   undef TheCheck
    }
@@ -476,6 +488,7 @@ SUITE(string)
       OK(x, y);             \
       OK(Eq(x), y);         \
       OK(CaseLess(x), y);   \
+      OK(~Eq(x), y);        \
       OK(Contains(x), y);   \
       OK(StartsWith(x), y); \
       OK(EndsWith(x), y);   \
@@ -494,10 +507,10 @@ SUITE(string)
 
    Case(OK AllOf, AnyOf, NoneOf)
    {
-#   define TheCheck(x, y) \
-      OK(AllOf(_, x), y); \
-      OK(AnyOf(x), y);    \
-      OK(NoneOf(Nq(x)), y);
+#   define TheCheck(x, y)     \
+      OK(AllOf(_, x), y);     \
+      OK(AnyOf(x), y);        \
+      OK(!!NoneOf(Nq(x)), y);
       ForFullmesh(TheCheck, STRING1_LIST);
 #   undef TheCheck
    }
@@ -513,8 +526,7 @@ SUITE(string)
 
    Case(MOCK)
    {
-#   define TheCheck(x, y) \
-      MOCK(foo3##x, void(decltype(x))).any(y);
+#   define TheCheck(x, y) MOCK(foo3##x, void(decltype(x))).any(y);
 
 #   define C_STR_LIST const_char_const_p1, \
                       const_char_p1,       \
@@ -526,8 +538,7 @@ SUITE(string)
       ForFullmesh(TheCheck, C_STR_LIST);
 #   undef TheCheck
 
-#   define TheCheck(x, y) \
-      MOCK(foo3##x, void(decltype(x))).any(y);
+#   define TheCheck(x, y) MOCK(foo3##x, void(decltype(x))).any(y);
 
 #   define STR_LIST const_stdstring1, \
                     stdstring1

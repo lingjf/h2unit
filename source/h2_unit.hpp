@@ -196,7 +196,7 @@ using h2::ListOf;
    static h2::h2_suite H2Q(suite)(name, &QP, __FILE__, __LINE__); \
    static void QP(h2::h2_suite* ________suite, h2::h2_case* _________case)
 
-#define H2SUITE(name) __H2SUITE(name, H2Q(h2_suite_test_code))
+#define H2SUITE(name) __H2SUITE(name, H2Q(h2_suite_test))
 
 #define __H2Cleanup()                      \
    if (::setjmp(________suite->jump) == 0) \

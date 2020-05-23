@@ -23,7 +23,7 @@ SUITE(h2_layout)
 
       OK(ListOf(ListOf("\033{reset}", "1", "2", "3", "4", "5", "6", "  ", "\033{reset}",
                        "\033{dark gray}", "  │ ", "\033{reset}",
-                       "1", "2", "3", "4", "5", " ", "  ", "\033{reset}",
+                       "\033{reset}", "1", "2", "3", "4", "5", " ", "  ", "\033{reset}",
                        "\033{dark gray}", "  ", "\033{reset}")),
          lines);
    }
@@ -36,11 +36,11 @@ SUITE(h2_layout)
 
       OK(ListOf(ListOf("\033{reset}", "1", "2", "3", "\033{reset}",
                        "\033{dark gray}", " \\│ ", "\033{reset}",
-                       "1", "2", "3", "\033{reset}",
+                       "\033{reset}", "1", "2", "3", "\033{reset}",
                        "\033{dark gray}", " \\", "\033{reset}"),
                 ListOf("\033{reset}", "4", "5", "6", "\033{reset}",
                        "\033{dark gray}", "  │ ", "\033{reset}",
-                       "4", "5", " ", "\033{reset}",
+                       "\033{reset}", "4", "5", " ", "\033{reset}",
                        "\033{dark gray}", "  ", "\033{reset}")),
          lines);
    }

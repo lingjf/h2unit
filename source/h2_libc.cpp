@@ -2,30 +2,25 @@
 struct h2_libc_malloc {
    h2_singleton(h2_libc_malloc);
 
-   struct blob {
+   struct buddy {
       size_t size;
-      h2_list link;
+      h2_list x;
    };
 
-   char buffer[1024 * 1024 * 100];
-   h2_list blobs;
+   int pages;
+   h2_list buddies;
 
-   h2_libc_malloc()
-   {
-      blob* b = (blob*)buffer;
-      b->size = sizeof(buffer);
-      blobs.add_tail(&b->link);
-   }
+   h2_libc_malloc() : pages(0) {}
 
    void merge()
    {
-      blob* b = nullptr;
-      h2_list_for_each_entry(p, &blobs, blob, link)
+      buddy* b = nullptr;
+      h2_list_for_each_entry(p, &buddies, buddy, x)
       {
          if (b) {
             if (((char*)b) + b->size == (char*)p) {
                b->size += p->size;
-               p->link.out();
+               p->x.out();
                continue;
             }
          }
@@ -33,10 +28,10 @@ struct h2_libc_malloc {
       }
    }
 
-   void insert(blob* b)
+   void insert(buddy* b)
    {
-      blob* n = nullptr;
-      h2_list_for_each_entry(p, &blobs, blob, link)
+      buddy* n = nullptr;
+      h2_list_for_each_entry(p, &buddies, buddy, x)
       {
          if (((char*)b) + b->size <= (char*)p) {
             n = p;
@@ -44,9 +39,9 @@ struct h2_libc_malloc {
          }
       }
       if (n)
-         n->link.add_before(&b->link);
+         n->x.add_before(&b->x);
       else
-         blobs.add_tail(&b->link);
+         buddies.add_tail(&b->x);
 
       merge();
    }
@@ -54,46 +49,47 @@ struct h2_libc_malloc {
    void* malloc(size_t size)
    {
       size = (size + 7) / 8 * 8;
-      blob* b = nullptr;
-      h2_list_for_each_entry(p, &blobs, blob, link)
+      buddy* b = nullptr;
+      h2_list_for_each_entry(p, &buddies, buddy, x)
       {
          if (size <= p->size - sizeof(p->size)) {
             b = p;
-            p->link.out();
+            p->x.out();
             break;
          }
       }
       if (!b) {
          int pagesize = h2_page_size();
          int pagecount = ::ceil((size + sizeof(b->size)) / (double)pagesize);
-
+         if (pages == 0) pagecount = 1024 * 25;
+         pages += pagecount;
 #ifdef _WIN32
          PVOID ptr = VirtualAlloc(NULL, pagecount * pagesize, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
-         if (ptr == NULL) return nullptr;
+         if (ptr == NULL) ::printf("VirtualAlloc failed\n at %s:%d", __FILE__, __LINE__), abort();
 #else
          void* ptr = ::mmap(nullptr, pagecount * pagesize, PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0);
-         if (ptr == MAP_FAILED) return nullptr;
+         if (ptr == MAP_FAILED) ::printf("mmap failed\n at %s:%d", __FILE__, __LINE__), abort();
 #endif
-         b = (blob*)ptr;
+         b = (buddy*)ptr;
          b->size = pagecount * pagesize;
       }
       size_t bz = b->size;
       b->size = size + sizeof(b->size);
       size_t rz = bz - b->size;
-      if (sizeof(blob) <= rz) {
-         blob* r = (blob*)(((char*)b) + b->size);
+      if (sizeof(buddy) <= rz) {
+         buddy* r = (buddy*)(((char*)b) + b->size);
          r->size = rz;
          insert(r);
       } else {
          b->size += rz;
       }
 
-      return (void*)&b->link;
+      return (void*)&b->x;
    }
 
    void free(void* ptr)
    {
-      blob* b = (blob*)(((char*)ptr) - sizeof(b->size));
+      buddy* b = (buddy*)(((char*)ptr) - sizeof(b->size));
       insert(b);
    }
 };

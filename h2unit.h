@@ -1,4 +1,4 @@
-﻿/* v5.3  2020-05-17 22:13:02 */
+﻿/* v5.3  2020-05-23 10:10:01 */
 /* https://github.com/lingjf/h2unit */
 /* Apache Licence 2.0 */
 #ifndef __H2UNIT_H__
@@ -388,7 +388,7 @@ struct h2_line : public h2_vector<h2_string> {
    h2_line(h2_string a) : h2_vector<h2_string>({a}) {}
    h2_line(std::initializer_list<h2_string> il) : h2_vector<h2_string>(il) {}
 
-   int length() const;
+   int width() const;
    void indent(int n_space);
    void padding(int n_space);
 
@@ -407,7 +407,7 @@ struct h2_lines : public h2_vector<h2_line> {
    void concat_back(h2_lines& lines);
    void concat_front(h2_lines& lines);
 
-   int max_length() const;
+   int max_width() const;
    void samesizify(h2_lines& b);
    bool foldable();
 
@@ -556,21 +556,21 @@ struct h2_fail_strcmp : h2_fail_unexpect {
    h2_string e_value, a_value;
    h2_fail_strcmp(const h2_string& e_value_, const h2_string& a_value_, bool dont_, bool caseless_, const char* file_ = nullptr, int line_ = 0)
      : h2_fail_unexpect("\"" + e_value_ + "\"", "\"" + a_value_ + "\"", dont_, caseless_, "", "", file_, line_), caseless(caseless_), e_value(e_value_), a_value(a_value_) {}
-   void print(int subling_index = 0, int child_index = 0);
+   void print(int subling_index = 0, int child_index = 0) override;
 };
 
 struct h2_fail_strfind : h2_fail_unexpect {
    h2_string e_value, a_value;
    h2_fail_strfind(const h2_string& e_value_, const h2_string& a_value_, bool dont_, bool caseless_, h2_string find_, const char* file_ = nullptr, int line_ = 0)
      : h2_fail_unexpect("\"" + e_value_ + "\"", "\"" + a_value_ + "\"", dont_, caseless_, find_ + "(", ")", file_, line_), e_value(e_value_), a_value(a_value_) {}
-   void print(int subling_index = 0, int child_index = 0);
+   void print(int subling_index = 0, int child_index = 0) override;
 };
 
 struct h2_fail_json : h2_fail_unexpect {
    h2_string e_value, a_value;
    h2_fail_json(const h2_string& e_value_, const h2_string& a_value_, bool dont_, bool caseless_, const char* file_ = nullptr, int line_ = 0)
      : h2_fail_unexpect(e_value_, a_value_, dont_, caseless_, "Je(", ")", file_, line_), e_value(e_value_), a_value(a_value_) {}
-   void print(int subling_index = 0, int child_index = 0);
+   void print(int subling_index = 0, int child_index = 0) override;
 };
 
 struct h2_fail_memcmp : h2_fail_unexpect {
@@ -583,7 +583,7 @@ struct h2_fail_memcmp : h2_fail_unexpect {
    const int width, nbits;
    h2_fail_memcmp(const unsigned char* e_value_, const unsigned char* a_value_, int width_, int nbits_, bool dont, const char* e_ext, h2_string a_represent_, const char* file_ = nullptr, int line_ = 0)
      : h2_fail_unexpect("", a_represent_, dont, false, e_ext, "", file_, line_), e_value(e_value_, e_value_ + (nbits_ + 7) / 8), a_value(a_value_, a_value_ + (nbits_ + 7) / 8), width(width_), nbits(nbits_) {}
-   void print(int subling_index = 0, int child_index = 0);
+   void print(int subling_index = 0, int child_index = 0) override;
    void print_bits(h2_lines& e_lines, h2_lines& a_lines);
    void print_bytes(h2_lines& e_lines, h2_lines& a_lines);
    void print_int16(h2_lines& e_lines, h2_lines& a_lines);
@@ -591,67 +591,66 @@ struct h2_fail_memcmp : h2_fail_unexpect {
    void print_int64(h2_lines& e_lines, h2_lines& a_lines);
 };
 
-struct h2_fail_memoverflow : h2_fail {
-   const unsigned char* ptr;
-   const int offset;
-   const unsigned char* magic;
-   const h2_vector<unsigned char> spot;
-   const h2_backtrace bt0, bt1;
-   h2_fail_memoverflow(void* ptr_, int offset_, const unsigned char* magic_, int size, h2_backtrace bt0_, h2_backtrace bt1_, const char* file_ = nullptr, int line_ = 0) : h2_fail(file_, line_), ptr((unsigned char*)ptr_), offset(offset_), magic(magic_), spot(((unsigned char*)ptr_) + offset_, ((unsigned char*)ptr_) + offset_ + size), bt0(bt0_), bt1(bt1_) {}
-   void print(int subling_index = 0, int child_index = 0);
-};
-
-struct h2_fail_memleak : h2_fail {
-   const char* where;
-   struct P {
-      void *ptr, *ptr2;
-      long long size, size2, bytes, times;
-      h2_backtrace bt;
-      P(void* ptr_, int size_, h2_backtrace& bt_) : ptr(ptr_), ptr2(nullptr), size(size_), size2(0), bytes(size_), times(1), bt(bt_) {}
-   };
-   h2_vector<P> places;
-   long long bytes, times;
-
-   h2_fail_memleak(const char* file_ = nullptr, int line_ = 0, const char* where_ = "") : h2_fail(file_, line_), where(where_), bytes(0), times(0) {}
-
-   void add(void* ptr, int size, h2_backtrace& bt);
-   void print(int subling_index = 0, int child_index = 0);
-};
-
-struct h2_fail_double_free : h2_fail {
-   void* ptr;
-   const h2_backtrace bt_allocate, bt_release1, bt_release2;
-   h2_fail_double_free(void* ptr_, h2_backtrace& bt_allocate_, h2_backtrace& bt_release1_, h2_backtrace& bt_release2_) : h2_fail(nullptr, 0), ptr(ptr_), bt_allocate(bt_allocate_), bt_release1(bt_release1_), bt_release2(bt_release2_) {}
-   void print(int subling_index = 0, int child_index = 0);
-};
-
-struct h2_fail_access_after_free : h2_fail {
-   const unsigned char* ptr;
-   int offset;
-   const h2_backtrace bt_allocate, bt_release, bt_access;
-   h2_fail_access_after_free(const unsigned char* ptr_, int offset_, h2_backtrace& bt_allocate_, h2_backtrace& bt_release_, h2_backtrace& bt_access_) : h2_fail(nullptr, 0), ptr(ptr_), offset(offset_), bt_allocate(bt_allocate_), bt_release(bt_release_), bt_access(bt_access_) {}
-   void print(int subling_index = 0, int child_index = 0);
-};
-
-struct h2_fail_asymmetric_free : h2_fail {
-   void* ptr;
-   const char *who_allocate, *who_release;
+struct h2_fail_memory : h2_fail {
+   const void* ptr;
+   const int size;
    const h2_backtrace bt_allocate, bt_release;
-   h2_fail_asymmetric_free(void* ptr_, const char* who_allocate_, const char* who_release_, h2_backtrace& bt_allocate_, h2_backtrace& bt_release_) : h2_fail(nullptr, 0), ptr(ptr_), who_allocate(who_allocate_), who_release(who_release_), bt_allocate(bt_allocate_), bt_release(bt_release_) {}
-   void print(int subling_index = 0, int child_index = 0);
+
+   h2_fail_memory(const void* ptr_, const int size_, h2_backtrace bt_allocate_, h2_backtrace bt_release_, const char* file_ = nullptr, int line_ = 0)
+     : h2_fail(file_, line_), ptr(ptr_), size(size_), bt_allocate(bt_allocate_), bt_release(bt_release_) {}
+};
+
+struct h2_fail_memory_leak : h2_fail_memory {
+   const char* where;  // case or block
+   h2_fail_memory_leak(const void* ptr_, int size_, h2_backtrace bt_allocate_, const char* where_, const char* file_, int line_)
+     : h2_fail_memory(ptr_, size_, bt_allocate_, h2_backtrace(), file_, line_), where(where_) {}
+   void print(int subling_index = 0, int child_index = 0) override;
+};
+
+struct h2_fail_double_free : h2_fail_memory {
+   const h2_backtrace bt_double_free;
+   h2_fail_double_free(const void* ptr_, h2_backtrace bt_allocate_, h2_backtrace bt_release_, h2_backtrace bt_double_free_)
+     : h2_fail_memory(ptr_, 0, bt_allocate_, bt_release_), bt_double_free(bt_double_free_) {}
+   void print(int subling_index = 0, int child_index = 0) override;
+};
+
+struct h2_fail_asymmetric_free : h2_fail_memory {
+   const char *who_allocate, *who_release;
+   h2_fail_asymmetric_free(const void* ptr_, const char* who_allocate_, const char* who_release_, h2_backtrace bt_allocate_, h2_backtrace bt_release_)
+     : h2_fail_memory(ptr_, 0, bt_allocate_, bt_release_), who_allocate(who_allocate_), who_release(who_release_) {}
+   void print(int subling_index = 0, int child_index = 0) override;
+};
+
+struct h2_fail_overflow : h2_fail_memory {
+   const void* addr;                    /* 犯罪地点 */
+   const char* action;                  /* 犯罪行为 */
+   const h2_vector<unsigned char> spot; /* 犯罪现场 */
+   const h2_backtrace bt_trample;       /* 犯罪过程 */
+   h2_fail_overflow(const void* ptr_, const int size_, const void* addr_, const char* action_, h2_vector<unsigned char> spot_, h2_backtrace bt_allocate_, h2_backtrace bt_trample_, const char* file_ = nullptr, int line_ = 0)
+     : h2_fail_memory(ptr_, size_, bt_allocate_, h2_backtrace(), file_, line_), addr(addr_), action(action_), spot(spot_), bt_trample(bt_trample_) {}
+   void print(int subling_index = 0, int child_index = 0) override;
+};
+
+struct h2_fail_use_after_free : h2_fail_memory {
+   const void* addr;          /* 犯罪地点 */
+   const char* action;        /* 犯罪行为 */
+   const h2_backtrace bt_use; /* 犯罪过程 */
+   h2_fail_use_after_free(const void* ptr_, const void* addr_, const char* action_, h2_backtrace bt_allocate_, h2_backtrace bt_release_, h2_backtrace bt_use_)
+     : h2_fail_memory(ptr_, 0, bt_allocate_, bt_release_), addr(addr_), action(action_), bt_use(bt_use_) {}
+   void print(int subling_index = 0, int child_index = 0) override;
 };
 
 struct h2_fail_call : h2_fail {
    h2_string e_who, e_call, a_call;
    h2_fail_call(const char* func_, const char* expect, const char* actual, const char* file_ = nullptr, int line_ = 0) : h2_fail(file_, line_), e_who(func_), e_call(expect), a_call(actual) {}
-   void print(int subling_index = 0, int child_index = 0);
+   void print(int subling_index = 0, int child_index = 0) override;
 };
 
 struct h2_fail_instantiate : h2_fail {
    const char *action_type, *return_type, *class_type, *method_name, *return_args;
    const bool why_abstract;
    h2_fail_instantiate(const char* action_type_, const char* return_type_, const char* class_type_, const char* method_name_, const char* return_args_, int why_abstract_, const char* file_, int line_) : h2_fail(file_, line_), action_type(action_type_), return_type(return_type_), class_type(class_type_), method_name(method_name_), return_args(return_args_), why_abstract(why_abstract_) {}
-   void print(int subling_index = 0, int child_index = 0);
+   void print(int subling_index = 0, int child_index = 0) override;
 };
 
 static inline void h2_fail_g(h2_fail*, bool);
@@ -733,17 +732,14 @@ struct h2_heap {
    static void dohook();
    static void unhook();
 
-   static void stack_push_block(const char* file, int line, const char* where, long long limited, const char* fill);
-   static h2_fail* stack_pop_block();
-
    struct stack {
-      static void root() { stack_push_block(__FILE__, __LINE__, "root", LLONG_MAX >> 9, nullptr); }
-      static void push(const char* file, int line, long long limited = LLONG_MAX >> 9, const char* fill = nullptr) { stack_push_block(file, line, "case", limited, fill); }
-      static h2_fail* pop() { return stack_pop_block(); }
+      static void root();
+      static void push(const char* file, int line, long long limited = LLONG_MAX >> 9, const char* fill = nullptr);
+      static h2_fail* pop();
 
       struct block : h2_once {
-         block(const char* file, int line, long long limited = LLONG_MAX >> 9, const char* fill = nullptr) { stack_push_block(file, line, "block", limited, fill); }
-         ~block() { h2_fail_g(stack_pop_block(), false); }
+         block(const char* file, int line, long long limited = LLONG_MAX >> 9, const char* fill = nullptr);
+         ~block();
       };
    };
 };
@@ -902,7 +898,7 @@ struct h2_mfp<Class, Return(Args...)> {
       if (!is_virtual(u)) return u.p;
       Class* o = h2_constructible<Class>::O(alloca(sizeof(Class)));
       if (1 == (intptr_t)o || 2 == (intptr_t)o)
-         h2_fail_g(new h2_fail_instantiate(action_type, return_type, class_type, method_name, return_args, 1 == (intptr_t)o, file, line), file);
+         h2_fail_g(new h2_fail_instantiate(action_type, return_type, class_type, method_name, return_args, 1 == (intptr_t)o, file, line), false);
       return get_vmfp(u, o);
    }
 
@@ -2022,21 +2018,13 @@ struct h2_suite {
    void cleanup();
 
    struct installer {
-      installer(h2_suite* s, h2_case* c)
-      {
-         static long long seq = INT_MAX;
-         s->registered_cases.push_back(&c->registered);
-         s->seq = c->seq = ++seq;
-      }
+      installer(h2_suite* s, h2_case* c);
    };
 
    struct cleaner : h2_once {
       h2_suite* thus;
-      cleaner(h2_suite* s) : thus(s) {}
-      ~cleaner()
-      {
-         if (thus->jumpable) ::longjmp(thus->jump, 1);
-      }
+      cleaner(h2_suite* s);
+      ~cleaner();
    };
 };
 
@@ -2560,7 +2548,7 @@ using h2::ListOf;
    static h2::h2_suite H2Q(suite)(name, &QP, __FILE__, __LINE__); \
    static void QP(h2::h2_suite* ________suite, h2::h2_case* _________case)
 
-#define H2SUITE(name) __H2SUITE(name, H2Q(h2_suite_test_code))
+#define H2SUITE(name) __H2SUITE(name, H2Q(h2_suite_test))
 
 #define __H2Cleanup()                      \
    if (::setjmp(________suite->jump) == 0) \
@@ -3079,13 +3067,13 @@ h2_inline h2_string& h2_string::sprintf(const char* format, ...)
    return *this;
 }
 
-h2_inline int h2_line::length() const
+h2_inline int h2_line::width() const
 {
-   int length = 0;
+   int w = 0;
    for (auto& word : *this)
       if (!h2_color::is_ctrl(word.c_str()))
-         length += word.size();
-   return length;
+         w += word.size();
+   return w;
 }
 
 h2_inline void h2_line::indent(int n_space)
@@ -3116,9 +3104,9 @@ h2_inline void h2_line::concat_back(const char* style, h2_line& line)
 
 h2_inline void h2_line::concat_front(const char* style, h2_line& line)
 {
-   if (style && strlen(style)) insert(begin(), "\033{" + h2_string(style) + "}");
-   insert(begin(), line.begin(), line.end());
    if (style && strlen(style)) insert(begin(), "\033{reset}");
+   insert(begin(), line.begin(), line.end());
+   if (style && strlen(style)) insert(begin(), "\033{" + h2_string(style) + "}");
 }
 
 h2_inline void h2_line::fold(h2_vector<h2_line>& lines)
@@ -3131,9 +3119,9 @@ h2_inline void h2_line::fold(h2_vector<h2_line>& lines)
 
 h2_inline void h2_line::samesizify(h2_line& b)
 {
-   int len = length(), b_len = b.length();
-   padding(std::max(len, b_len) - len);
-   b.padding(std::max(len, b_len) - b_len);
+   int w = width(), b_w = b.width();
+   padding(std::max(w, b_w) - w);
+   b.padding(std::max(w, b_w) - b_w);
 }
 
 h2_inline void h2_lines::concat_back(h2_lines& lines)
@@ -3145,12 +3133,12 @@ h2_inline void h2_lines::concat_front(h2_lines& lines)
    insert(begin(), lines.begin(), lines.end());
 }
 
-h2_inline int h2_lines::max_length() const
+h2_inline int h2_lines::max_width() const
 {
-   int max_length = 0;
+   int m = 0;
    for (size_t i = 0; i < size(); ++i)
-      max_length = std::max(max_length, at(i).length());
-   return max_length;
+      m = std::max(m, at(i).width());
+   return m;
 }
 
 h2_inline void h2_lines::samesizify(h2_lines& b)
@@ -4115,14 +4103,10 @@ static inline h2_lines lines_merge(h2_lines& left_lines, h2_lines& right_lines, 
       auto right_wrap_lines = line_break(right_lines[i], width - 2);
       for (size_t j = 0; j < std::max(left_wrap_lines.size(), right_wrap_lines.size()); ++j) {
          h2_line line;
-         line.push_back("\033{reset}");
-         line.concat_back("", left_wrap_lines[j]);
-         line.push_back("\033{reset}");
+         line.concat_back("reset", left_wrap_lines[j]);
          line.printf("dark gray", j == left_wrap_lines.size() - 1 ? "  │ " : " \\│ ");
-         line.concat_back("", right_wrap_lines[j]);
-         line.push_back("\033{reset}");
+         line.concat_back("reset", right_wrap_lines[j]);
          line.printf("dark gray", j == right_wrap_lines.size() - 1 ? "  " : " \\");
-
          lines.push_back(line);
       }
    }
@@ -4131,7 +4115,7 @@ static inline h2_lines lines_merge(h2_lines& left_lines, h2_lines& right_lines, 
 
 h2_inline h2_lines h2_layout::split(h2_lines& left_lines, h2_lines& right_lines, const char* left_title, const char* right_title)
 {
-   int max_line_width = std::max(left_lines.max_length(), right_lines.max_length());
+   int max_line_width = std::max(left_lines.max_width(), right_lines.max_width());
    int half_width = std::min(h2_term_size() / 2 - 4, std::max(max_line_width + 3, 30));
 
    h2_line left_title_line = {"\033{dark gray}", h2_string(left_title).center(half_width - 3), "\033{reset}"};
@@ -4747,81 +4731,21 @@ h2_inline void h2_fail_memcmp::print_int64(h2_lines& e_lines, h2_lines& a_lines)
    }
 }
 
-h2_inline void h2_fail_memoverflow::print(int subling_index, int child_index)
+h2_inline void h2_fail_memory_leak::print(int subling_index, int child_index)
 {
-   h2_color::printf("", " Memory overflow malloc %p %+d (%p) ", ptr, offset, ptr + offset);
-
-   for (int i = 0; i < spot.size(); ++i)
-      h2_color::printf(magic[i] == spot[i] ? "green" : "bold,red", "%02X ", spot[i]);
-
-   h2_color::printf("", "%s\n", get_locate());
-   if (0 < bt1.count) h2_color::printf("", "  %p trampled at backtrace:\n", ptr + offset), bt1.print(3);
-   if (0 < bt0.count) h2_color::printf("", "  which allocate at backtrace:\n"), bt0.print(3);
-}
-
-h2_inline void h2_fail_memleak::add(void* ptr, int size, h2_backtrace& bt)
-{
-   bytes += size, times += 1;
-   for (auto& c : places) {
-      if (c.bt == bt) {
-         c.ptr2 = ptr, c.size2 = size, c.bytes += size, c.times += 1;
-         return;
-      }
-   }
-   places.push_back(P(ptr, size, bt));
-}
-
-h2_inline void h2_fail_memleak::print(int subling_index, int child_index)
-{
-   h2_color::printf("", " Memory Leak ");
-   if (1 < places.size()) {
-      h2_color::printf("bold,red", "%d", (int)places.size());
-      h2_color::printf("", " places ");
-   }
-   if (1 < times) {
-      h2_color::printf("bold,red", "%d", times);
-      h2_color::printf("", " times ");
-   }
-   if (0 < bytes) {
-      h2_color::printf("bold,red", "%d", bytes);
-      h2_color::printf("", " bytes ");
-   }
-   h2_color::printf("", "in %s totally%s\n", where, get_locate());
-
-   for (auto& c : places) {
-      if (c.times <= 1) {
-         h2_color::printf("", "  %p Leak ", c.ptr);
-         h2_color::printf("bold,red", "%lld", c.bytes);
-         h2_color::printf("", " bytes, at backtrace:\n");
-      } else {
-         h2_color::printf("", "  %p, %p ... Leak ", c.ptr, c.ptr2);
-         h2_color::printf("bold,red", "%lld", c.times);
-         h2_color::printf("", " times ");
-         h2_color::printf("bold,red", "%lld", c.bytes);
-         h2_color::printf("", " bytes (");
-         h2_color::printf("bold,red", "%lld", c.size);
-         h2_color::printf("", ", ");
-         h2_color::printf("bold,red", "%lld", c.size2);
-         h2_color::printf("", " ...), at backtrace:\n");
-      }
-      c.bt.print(3);
-   }
+   h2_color::printf("", " %p memory leak", ptr);
+   h2_color::printf("bold,red", " %d", size);
+   h2_color::printf("", " bytes in %s totally%s\n", where, get_locate());
+   h2_color::printf("", "  which allocate at backtrace:\n"), bt_allocate.print(3);
 }
 
 h2_inline void h2_fail_double_free::print(int subling_index, int child_index)
 {
-   h2_color::printf("", " %p double free at backtrace:\n", ptr);
-   bt_release2.print(2);
-   if (0 < bt_allocate.count) h2_color::printf("", "  which allocate at backtrace:\n"), bt_allocate.print(3);
-   if (0 < bt_release1.count) h2_color::printf("", "  already free at backtrace:\n"), bt_release1.print(3);
-}
-
-h2_inline void h2_fail_access_after_free::print(int subling_index, int child_index)
-{
-   h2_color::printf("", " %p %+d (%p) access after free at backtrace:\n", ptr, offset, ptr + offset);
-   bt_access.print(2);
-   if (0 < bt_allocate.count) h2_color::printf("", "  which allocate at backtrace:\n"), bt_allocate.print(3);
-   if (0 < bt_release.count) h2_color::printf("", "  and free at backtrace:\n"), bt_release.print(3);
+   h2_color::printf("", " %p", ptr);
+   h2_color::printf("bold,red", " double free");
+   h2_color::printf("", " at backtrace:\n", ptr), bt_double_free.print(2);
+   h2_color::printf("", "  which allocate at backtrace:\n"), bt_allocate.print(3);
+   h2_color::printf("", "  already free at backtrace:\n"), bt_release.print(3);
 }
 
 h2_inline void h2_fail_asymmetric_free::print(int subling_index, int child_index)
@@ -4830,9 +4754,32 @@ h2_inline void h2_fail_asymmetric_free::print(int subling_index, int child_index
    h2_color::printf("bold,red", "%s", who_allocate);
    h2_color::printf("", ", release by ");
    h2_color::printf("bold,red", "%s", who_release);
-   h2_color::printf("", " asymmetrically at backtrace:\n");
-   bt_release.print(2);
+   h2_color::printf("", " asymmetrically at backtrace:\n"), bt_release.print(2);
    if (0 < bt_allocate.count) h2_color::printf("", "  which allocate at backtrace:\n"), bt_allocate.print(3);
+}
+
+h2_inline void h2_fail_overflow::print(int subling_index, int child_index)
+{
+   int offset = ptr < addr ? (intptr_t)addr - ((intptr_t)ptr + size) : (intptr_t)addr - (intptr_t)ptr;
+   h2_color::printf("", " %p %+d (%p)", ptr, offset, addr);
+   h2_color::printf("bold,red", " %s", action);
+   h2_color::printf("", " %s ", offset >= 0 ? "overflow" : "underflow");
+
+   for (int i = 0; i < spot.size(); ++i)
+      h2_color::printf("bold,red", "%02X ", spot[i]);
+
+   h2_color::printf("", "%s\n", get_locate());
+   if (bt_trample.count) h2_color::printf("", "  trampled at backtrace:\n"), bt_trample.print(3);
+   h2_color::printf("", "  which allocate at backtrace:\n"), bt_allocate.print(3);
+}
+
+h2_inline void h2_fail_use_after_free::print(int subling_index, int child_index)
+{
+   h2_color::printf("", " %p %+d (%p)", ptr, (intptr_t)addr - (intptr_t)ptr, addr);
+   h2_color::printf("bold,red", " %s after free", action);
+   h2_color::printf("", " at backtrace:\n"), bt_use.print(2);
+   h2_color::printf("", "  which allocate at backtrace:\n"), bt_allocate.print(3);
+   h2_color::printf("", "  and free at backtrace:\n"), bt_release.print(3);
 }
 
 h2_inline void h2_fail_call::print(int subling_index, int child_index)
@@ -4844,7 +4791,8 @@ h2_inline void h2_fail_call::print(int subling_index, int child_index)
       line.push_back(" calls but ");
    }
    line.printf("red,bold", a_call.c_str());
-   line.push_back(" called actually");
+   line.push_back(" called");
+   if (e_call.size()) line.push_back(" actually");
    line.push_back(get_locate());
    h2_color::printf(line);
 }
@@ -4857,48 +4805,58 @@ h2_inline void h2_fail_instantiate::print(int subling_index, int child_index)
    h2_color::printf("", "You may take following solutions to fix it: \n");
    if (why_abstract)
       h2_color::printf("", "1. Add non-abstract Derived Class instance in %s(%s%s%s, %s, %s, Derived %s(...)) \n",
-                        action_type,
-                        strlen(return_type) ? return_type : "",
-                        strlen(return_type) ? ", " : "",
-                        class_type, method_name, return_args, class_type);
+                       action_type,
+                       strlen(return_type) ? return_type : "",
+                       strlen(return_type) ? ", " : "",
+                       class_type, method_name, return_args, class_type);
    else {
       h2_color::printf("", "1. Define default constructor in class %s, or \n", class_type);
       h2_color::printf("", "2. Add parameterized construction in %s(%s%s%s, %s, %s, %s(...)) \n",
-                        action_type,
-                        strlen(return_type) ? return_type : "",
-                        strlen(return_type) ? ", " : "",
-                        class_type, method_name, return_args, class_type);
+                       action_type,
+                       strlen(return_type) ? return_type : "",
+                       strlen(return_type) ? ", " : "",
+                       class_type, method_name, return_args, class_type);
    }
 }
 
-static const unsigned char snowfield[] = {0xbe, 0xaf, 0xca, 0xfe, 0xc0, 0xde, 0xfa, 0xce};
-
 struct h2_piece : h2_libc {
-   unsigned char *ptr, *page;
    h2_list x;
-   int size, page_size, page_count, free_times;
+   unsigned char *user_ptr, *page_ptr;
+   int user_size, page_size, page_count;
+
+   // free
    const char* who_allocate;
    h2_backtrace bt_allocate, bt_release;
+   int free_times;
+   // snowfield
+   unsigned char snow;
+   // forbidden
+   static constexpr const unsigned readable = 1, writable = 1 << 1;
+   void* forbidden_page;
+   int forbidden_size;
+   int violate_times;
+   void* violate_address;
+   const char* violate_action;
+   bool violate_after_free;
+   h2_backtrace violate_backtrace;
 
-   h2_piece(int size_, int alignment, const char* who, h2_backtrace& bt) : size(size_), free_times(0), who_allocate(who), bt_allocate(bt)
+   h2_piece(int size_, int alignment, const char* who, h2_backtrace& bt)
+     : user_size(size_), who_allocate(who), bt_allocate(bt), free_times(0), forbidden_page(nullptr), forbidden_size(0), violate_times(0), violate_address(nullptr), violate_action(nullptr), violate_after_free(false)
    {
       page_size = h2_page_size();
       if (alignment <= 0) alignment = 8;
-      page_count = ::ceil((size + alignment + sizeof(snowfield)) / (double)page_size);
+      page_count = ::ceil((user_size + alignment) / (double)page_size);
 
 #ifdef _WIN32
-      page = (unsigned char*)VirtualAlloc(NULL, page_size * (page_count + 1), MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
-      assert(page);
+      page_ptr = (unsigned char*)VirtualAlloc(NULL, page_size * (page_count + 1), MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
+      if (page_ptr == NULL) ::printf("VirtualAlloc failed\n at %s:%d", __FILE__, __LINE__), abort();
 #else
-      page = (unsigned char*)::mmap(nullptr, page_size * (page_count + 1), PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0);
-      assert(page != MAP_FAILED);
+      page_ptr = (unsigned char*)::mmap(nullptr, page_size * (page_count + 1), PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0);
+      if (page_ptr == MAP_FAILED) ::printf("mmap failed\n at %s:%d", __FILE__, __LINE__), abort();
 #endif
 
-      ptr = page + page_size * page_count - size;
-      ptr = (unsigned char*)(((intptr_t)ptr / alignment) * alignment);
-
-      h2_piece** backward = (h2_piece**)(ptr - sizeof(snowfield) - sizeof(void*));
-      *backward = this;
+      user_ptr = page_ptr + page_size * page_count - user_size;
+      user_ptr = (unsigned char*)(((intptr_t)user_ptr / alignment) * alignment);
 
       mark_snowfield();
    }
@@ -4906,58 +4864,106 @@ struct h2_piece : h2_libc {
    ~h2_piece()
    {
 #ifdef _WIN32
-      VirtualFree(page, 0, MEM_DECOMMIT | MEM_RELEASE);
+      VirtualFree(page_ptr, 0, MEM_DECOMMIT | MEM_RELEASE);
 #else
-      ::munmap(page, page_size * (page_count + 1));
+      ::munmap(page_ptr, page_size * (page_count + 1));
 #endif
    }
 
-   void mark_forbidden(bool forbidden)
+   void set_forbidden(unsigned permission, void* page = 0, int size = 0)
    {
+      if (page) forbidden_page = page;
+      if (size) forbidden_size = size;
+
 #ifdef _WIN32
-      DWORD old;
-      if (!VirtualProtect(page, page_size * (page_count + 1), forbidden ? PAGE_NOACCESS : PAGE_READWRITE, &old))
-         ::printf("VirtualProtect PAGE_NOACCESS failed %d\n", GetLastError());
+      DWORD old_permission, new_permission;
+      new_permission = PAGE_NOACCESS;
+      if (permission & readable)
+         new_permission = PAGE_READONLY;
+      if (permission & writable)
+         new_permission = PAGE_READWRITE;
+      if (!VirtualProtect(forbidden_page, forbidden_size, new_permission, &old_permission))
+         ::printf("VirtualProtect failed %d\n", GetLastError());
 #else
-      if (::mprotect(page, page_size * (page_count + 1), forbidden ? PROT_NONE : PROT_READ | PROT_WRITE) != 0)
-         ::printf("mprotect PROT_NONE failed %s\n", strerror(errno));
+      int new_permission = PROT_NONE;
+      if (permission & readable)
+         new_permission = PROT_READ;
+      if (permission & writable)
+         new_permission = PROT_READ | PROT_WRITE;
+      if (::mprotect(forbidden_page, forbidden_size, new_permission) != 0)
+         ::printf("mprotect failed %s\n", strerror(errno));
 #endif
    }
 
-   void anti_forbidden(int offset)
+   void violate_forbidden(void* addr)
    {
-      mark_forbidden(false);
-      h2_backtrace bt_access(3);
-      h2_fail* fail = nullptr;
-      if (0 < free_times)
-         fail = new h2_fail_access_after_free(ptr, offset, bt_allocate, bt_release, bt_access);
-      else
-         fail = new h2_fail_memoverflow(ptr, offset, nullptr, 0, bt_allocate, bt_access);
-      h2_fail_g(fail, true);
+      /* 区分读写犯罪方法(一次或二次进入 segment fault):
+         1) 设区域为不可读不可写
+         2) 读或写行为触发 segment fault, 并进入handler
+         3) 设区域为只可读不可写, 先认为犯罪为读
+         4) 重新执行代码, 如果是读行为, 则结束(犯罪已经记录为读)
+         5) 写行为再次触发 segment fault, 并再次进入handler
+         6) 设区域为可读可写, 修正犯罪为写
+         7) 恢复执行代码
+       */
+      h2_backtrace bt(3);
+      if (!violate_times++) { /* 只记录第一犯罪现场 */
+         set_forbidden(readable);
+         violate_backtrace = bt;
+         violate_address = addr;
+         violate_action = "read";
+         violate_after_free = 0 < free_times;
+      } else {
+         set_forbidden(readable | writable);
+         if (bt == violate_backtrace) /* 是第一犯罪现场 */
+            violate_action = "write";
+      }
    }
 
    void mark_snowfield()
    {
-      memcpy(ptr - sizeof(snowfield), snowfield, sizeof(snowfield));
-      memcpy(ptr + size, snowfield, sizeof(snowfield));
-#ifdef _WIN32
-      DWORD old;
-      if (!VirtualProtect(page + page_size * page_count, page_size, PAGE_READONLY, &old))
-         ::printf("VirtualProtect PAGE_READONLY failed %d\n", GetLastError());
-#else
-      if (::mprotect(page + page_size * page_count, page_size, PROT_READ) != 0)
-         ::printf("mprotect PROT_READ failed %s\n", strerror(errno));
-#endif
+      static unsigned char s_snow = 0;
+      snow = ++s_snow;
+      memset(page_ptr, snow, user_ptr - page_ptr);
+      memset(user_ptr + user_size, snow, (page_ptr + page_size * page_count) - (user_ptr + user_size));
+      set_forbidden(readable, page_ptr + page_size * page_count, page_size);
+   }
+
+   h2_fail* check_snowfield(const unsigned char* start, const unsigned char* end)
+   {
+      for (const unsigned char* p = start; p < end; ++p) {
+         if (*p == snow) continue;
+         int n = std::min((int)(end - p), 8);
+         for (; 0 < n; --n)
+            if (p[n - 1] != snow) break;
+         h2_vector<unsigned char> spot(p, p + n);
+         return new h2_fail_overflow(user_ptr, user_size, p, "write", spot, bt_allocate, h2_backtrace());
+      }
+      return nullptr;
    }
 
    h2_fail* check_snowfield()
    {
       h2_fail* fail = nullptr;
-      if (memcmp(ptr + size, snowfield, sizeof(snowfield)))
-         h2_fail::append_subling(fail, new h2_fail_memoverflow(ptr, size, snowfield, sizeof(snowfield), bt_allocate, h2_backtrace()));
-      if (memcmp(ptr - sizeof(snowfield), snowfield, sizeof(snowfield)))
-         h2_fail::append_subling(fail, new h2_fail_memoverflow(ptr, -(int)sizeof(snowfield), snowfield, sizeof(snowfield), bt_allocate, h2_backtrace()));
+      fail = check_snowfield(user_ptr + user_size, page_ptr + page_size * page_count);
+      if (!fail)
+         fail = check_snowfield(page_ptr, user_ptr);
       return fail;
+   }
+
+   h2_fail* leak_check(const char* where, const char* file, int line)
+   {
+      if (free_times) return nullptr;
+      return new h2_fail_memory_leak(user_ptr, user_size, bt_allocate, where, file, line);
+   }
+
+   h2_fail* violate_check()
+   {
+      if (!violate_times) return nullptr;
+      if (violate_after_free)
+         return new h2_fail_use_after_free(user_ptr, violate_address, violate_action, bt_allocate, bt_release, violate_backtrace);
+      else
+         return new h2_fail_overflow(user_ptr, user_size, violate_address, violate_action, h2_vector<unsigned char>(), bt_allocate, violate_backtrace);
    }
 
    h2_fail* check_asymmetric_free(const char* who_release)
@@ -4983,7 +4989,7 @@ struct h2_piece : h2_libc {
             return nullptr;
 
       h2_backtrace bt_release(O.isMAC() ? 6 : 5);
-      return new h2_fail_asymmetric_free(ptr, who_allocate, who_release, bt_allocate, bt_release);
+      return new h2_fail_asymmetric_free(user_ptr, who_allocate, who_release, bt_allocate, bt_release);
    }
 
    h2_fail* check_double_free()
@@ -4993,7 +4999,7 @@ struct h2_piece : h2_libc {
       if (free_times++ == 0)
          bt_release = bt;
       else
-         fail = (h2_fail*)new h2_fail_double_free(ptr, bt_allocate, bt_release, bt);
+         fail = (h2_fail*)new h2_fail_double_free(user_ptr, bt_allocate, bt_release, bt);
       return fail;
    }
 
@@ -5007,22 +5013,20 @@ struct h2_piece : h2_libc {
       if (!fail)
          fail = check_snowfield();
 
-      if (!fail) mark_forbidden(true);
+      if (!fail) set_forbidden(0, page_ptr, page_size * (page_count + 1));
 
       return fail;
    }
 
-   bool in_range(const void* p)
+   bool in_page_range(const unsigned char* p)
    {
-      const unsigned char* p0 = page;
-      const unsigned char* p2 = p0 + page_size * (page_count + 1);
-      return p0 <= (const unsigned char*)p && (const unsigned char*)p < p2;
+      return page_ptr <= p && p < page_ptr + page_size * (page_count + 1);
    }
 };
 
 struct h2_block : h2_libc {
    h2_list x;
-   h2_list using_list, freed_list;
+   h2_list pieces;
 
    const char* file;
    int line;
@@ -5033,14 +5037,19 @@ struct h2_block : h2_libc {
    h2_block(const char* file_, int line_, const char* where_, long long limited_, const char* fill_)
      : file(file_), line(line_), where(where_), limited(limited_), fill(fill_) {}
 
-   h2_fail* leak_check()
+   h2_fail* check()
    {
-      h2_fail_memleak* fail = nullptr;
-      if (!using_list.empty()) {
-         fail = new h2_fail_memleak(file, line, where);
-         h2_list_for_each_entry(p, &using_list, h2_piece, x) fail->add(p->ptr, p->size, p->bt_allocate);
+      h2_fail* fail = nullptr;
+      h2_list_for_each_entry(p, &pieces, h2_piece, x)
+      {
+         fail = p->violate_check();
+         if (fail) return fail;
+         fail = p->leak_check(where, file, line);
+         if (fail) return fail;
       }
-      h2_list_for_each_entry(p, &freed_list, h2_piece, x)
+      /* why not chain fails in subling? report one fail ignore more for clean.
+         when fail, memory may be in used, don't free and keep it for robust */
+      h2_list_for_each_entry(p, &pieces, h2_piece, x)
       {
          p->x.out();
          delete p;
@@ -5057,39 +5066,33 @@ struct h2_block : h2_libc {
 
       if (fill_ ? fill_ : (fill_ = fill))
          for (int i = 0, j = 0, l = strlen(fill_); i < size; ++i, ++j)
-            ((char*)p->ptr)[i] = fill_[j % (l ? l : 1)];
+            ((char*)p->user_ptr)[i] = fill_[j % (l ? l : 1)];
 
-      using_list.push(&p->x);
+      pieces.push(&p->x);
       return p;
    }
 
    h2_piece* get_piece(const void* ptr)
    {
-      h2_list_for_each_entry(p, &using_list, h2_piece, x) if (p->ptr == ptr) return p;
-      h2_list_for_each_entry(p, &freed_list, h2_piece, x) if (p->ptr == ptr) return p;
+      h2_list_for_each_entry(p, &pieces, h2_piece, x) if (p->user_ptr == ptr) return p;
       return nullptr;
    }
 
    h2_fail* rel_piece(const char* who, h2_piece* p)
    {
-      limited += p->size;
-
-      p->x.out();
-      freed_list.push(&p->x);
+      limited += p->user_size;
       return p->free(who);
    }
 
    h2_piece* host_piece(const void* addr)
    {
-      h2_list_for_each_entry(p, &using_list, h2_piece, x) if (p->in_range(addr)) return p;
-      h2_list_for_each_entry(p, &freed_list, h2_piece, x) if (p->in_range(addr)) return p;
+      h2_list_for_each_entry(p, &pieces, h2_piece, x) if (p->in_page_range((const unsigned char*)addr)) return p;
       return nullptr;
    }
 };
 
 struct h2_stack {
    h2_singleton(h2_stack);
-
    h2_list blocks;
 
    bool escape(h2_backtrace& bt)
@@ -5122,7 +5125,7 @@ struct h2_stack {
    h2_fail* pop()
    {
       h2_block* b = h2_list_pop_entry(&blocks, h2_block, x);
-      h2_fail* fail = b->leak_check();
+      h2_fail* fail = b->check();
       delete b;
       return fail;
    }
@@ -5186,12 +5189,12 @@ struct h2_hook {
    static void* malloc(size_t size)
    {
       h2_piece* p = h2_stack::I().new_piece("malloc", size, 0, nullptr);
-      return p ? p->ptr : nullptr;
+      return p ? p->user_ptr : nullptr;
    }
    static void* calloc(size_t count, size_t size)
    {
       h2_piece* p = h2_stack::I().new_piece("calloc", size * count, 0, "\0");
-      return p ? p->ptr : nullptr;
+      return p ? p->user_ptr : nullptr;
    }
    static void* realloc(void* ptr, size_t size)
    {
@@ -5206,25 +5209,25 @@ struct h2_hook {
       h2_piece* new_p = h2_stack::I().new_piece("realloc", size, 0, nullptr);
       if (!new_p) return nullptr;
 
-      memcpy(new_p->ptr, old_p->ptr, old_p->size);
+      memcpy(new_p->user_ptr, old_p->user_ptr, old_p->user_size);
       h2_fail_g(h2_stack::I().rel_piece("free", ptr), false);
 
-      return new_p->ptr;
+      return new_p->user_ptr;
    }
    static int posix_memalign(void** memptr, size_t alignment, size_t size)
    {
       h2_piece* p = h2_stack::I().new_piece("posix_memalign", size, alignment, nullptr);
-      return p ? (*memptr = p->ptr, 0) : ENOMEM;
+      return p ? (*memptr = p->user_ptr, 0) : ENOMEM;
    }
    static void* aligned_alloc(size_t alignment, size_t size)
    {
       h2_piece* p = h2_stack::I().new_piece("aligned_alloc", size, alignment, nullptr);
-      return p ? p->ptr : nullptr;
+      return p ? p->user_ptr : nullptr;
    }
    static void* _aligned_malloc(size_t size, size_t alignment)
    {
       h2_piece* p = h2_stack::I().new_piece("_aligned_malloc", size, alignment, nullptr);
-      return p ? p->ptr : nullptr;
+      return p ? p->user_ptr : nullptr;
    }
    static void _aligned_free(void* memblock)
    {
@@ -5233,22 +5236,22 @@ struct h2_hook {
    static void* operator new(std::size_t size)
    {
       h2_piece* p = h2_stack::I().new_piece("new", size, 0, nullptr);
-      return p ? p->ptr : nullptr;
+      return p ? p->user_ptr : nullptr;
    }
    static void* operator new(std::size_t size, const std::nothrow_t&)
    {
       h2_piece* p = h2_stack::I().new_piece("new nothrow", size, 0, nullptr);
-      return p ? p->ptr : nullptr;
+      return p ? p->user_ptr : nullptr;
    }
    static void* operator new[](std::size_t size)
    {
       h2_piece* p = h2_stack::I().new_piece("new[]", size, 0, nullptr);
-      return p ? p->ptr : nullptr;
+      return p ? p->user_ptr : nullptr;
    }
    static void* operator new[](std::size_t size, const std::nothrow_t&)
    {
       h2_piece* p = h2_stack::I().new_piece("new[] nothrow", size, 0, nullptr);
-      return p ? p->ptr : nullptr;
+      return p ? p->user_ptr : nullptr;
    }
    static void operator delete(void* ptr)
    {
@@ -5286,7 +5289,7 @@ struct h2_hook {
    static size_t mz_size(malloc_zone_t* zone, const void* ptr)
    {
       h2_piece* p = h2_stack::I().get_piece(ptr);
-      return p ? p->size : 0;
+      return p ? p->user_size : 0;
    }
 
    static void* mz_malloc(malloc_zone_t* zone, size_t size) { return malloc(size); }
@@ -5432,7 +5435,7 @@ struct h2_hook {
    {
       h2_piece* piece = h2_stack::I().host_piece(si->si_addr);
       if (piece) {
-         piece->anti_forbidden((intptr_t)si->si_addr - (intptr_t)piece->ptr);
+         piece->violate_forbidden(si->si_addr);
       } else {
          h2_debug();
          abort();
@@ -5504,6 +5507,7 @@ struct h2_hook {
 #   ifdef SIGWINCH
       sigaddset(&action.sa_mask, SIGWINCH);
 #   endif
+
       if (sigaction(SIGSEGV, &action, nullptr) == -1) perror("Register SIGSEGV handler failed");
 #   ifdef __APPLE__
       if (sigaction(SIGBUS, &action, nullptr) == -1) perror("Register SIGBUS handler failed");
@@ -5527,14 +5531,22 @@ h2_inline void h2_heap::unhook()
 {
    if (O.memory_check) h2_hook::I().unhook();
 }
-h2_inline void h2_heap::stack_push_block(const char* file, int line, const char* where, long long limited, const char* fill)
+
+h2_inline void h2_heap::stack::root()
 {
-   h2_stack::I().push(file, line, where, limited, fill);
+   h2_stack::I().push(__FILE__, __LINE__, "root", LLONG_MAX >> 9, nullptr);
 }
-h2_inline h2_fail* h2_heap::stack_pop_block()
+h2_inline void h2_heap::stack::push(const char* file, int line, long long limited, const char* fill)
 {
-   return h2_stack::I().pop();
+   h2_stack::I().push(file, line, "case", limited, fill);
 }
+h2_inline h2_fail* h2_heap::stack::pop() { return h2_stack::I().pop(); }
+
+h2_inline h2_heap::stack::block::block(const char* file, int line, long long limited, const char* fill)
+{
+   h2_stack::I().push(file, line, "block", limited, fill);
+}
+h2_inline h2_heap::stack::block::~block() { h2_fail_g(h2_stack::I().pop(), false); }
 
 struct h2_json_parse {
    const char* text;
@@ -5983,7 +5995,7 @@ struct h2_json_dual : h2_libc {  // combine 2 Node into a Dual
       return false;
    }
 
-   void align(h2_lines& e, h2_lines& a, h2_vector<h2_json_dual*>* subling = nullptr)
+   void align(h2_lines& e_lines, h2_lines& a_lines, h2_vector<h2_json_dual*>* subling = nullptr)
    {
       if (!strcmp(e_class, "blob")) {
          e_blob.samesizify(a_blob);
@@ -5993,8 +6005,8 @@ struct h2_json_dual : h2_libc {  // combine 2 Node into a Dual
          for (auto& line : a_blob)
             line.insert(line.begin(), "\033{yellow}"), line.push_back("\033{reset}");
 
-         e.concat_back(e_blob);
-         a.concat_back(a_blob);
+         e_lines.concat_back(e_blob);
+         a_lines.concat_back(a_blob);
          return;
       }
 
@@ -6031,10 +6043,10 @@ struct h2_json_dual : h2_libc {  // combine 2 Node into a Dual
          e_line.push_back(strcmp(e_class, "object") ? "[ " : "{ ");
          a_line.push_back(strcmp(a_class, "object") ? "[ " : "{ ");
 
-         e.push_back(e_line), e_line.clear();
-         a.push_back(a_line), a_line.clear();
+         e_lines.push_back(e_line), e_line.clear();
+         a_lines.push_back(a_line), a_line.clear();
          for (size_t i = 0; i < children.size(); ++i)
-            children[i]->align(e, a, &children);
+            children[i]->align(e_lines, a_lines, &children);
 
          e_line.indent(depth * 2);
          e_line.push_back(strcmp(e_class, "object") ? "]" : "}");
@@ -6043,11 +6055,11 @@ struct h2_json_dual : h2_libc {  // combine 2 Node into a Dual
       }
       if (e_line.size()) {
          if (subling && has_next_e(*subling)) e_line.push_back(",");
-         e.push_back(e_line), e_line.clear();
+         e_lines.push_back(e_line), e_line.clear();
       }
       if (a_line.size()) {
          if (subling && has_next_a(*subling)) a_line.push_back(",");
-         a.push_back(a_line), a_line.clear();
+         a_lines.push_back(a_line), a_line.clear();
       }
    }
 };
@@ -6070,30 +6082,25 @@ h2_inline void h2_json::diff(const h2_string& expect, const h2_string& actual, h
 struct h2_libc_malloc {
    h2_singleton(h2_libc_malloc);
 
-   struct blob {
+   struct buddy {
       size_t size;
-      h2_list link;
+      h2_list x;
    };
 
-   char buffer[1024 * 1024 * 100];
-   h2_list blobs;
+   int pages;
+   h2_list buddies;
 
-   h2_libc_malloc()
-   {
-      blob* b = (blob*)buffer;
-      b->size = sizeof(buffer);
-      blobs.add_tail(&b->link);
-   }
+   h2_libc_malloc() : pages(0) {}
 
    void merge()
    {
-      blob* b = nullptr;
-      h2_list_for_each_entry(p, &blobs, blob, link)
+      buddy* b = nullptr;
+      h2_list_for_each_entry(p, &buddies, buddy, x)
       {
          if (b) {
             if (((char*)b) + b->size == (char*)p) {
                b->size += p->size;
-               p->link.out();
+               p->x.out();
                continue;
             }
          }
@@ -6101,10 +6108,10 @@ struct h2_libc_malloc {
       }
    }
 
-   void insert(blob* b)
+   void insert(buddy* b)
    {
-      blob* n = nullptr;
-      h2_list_for_each_entry(p, &blobs, blob, link)
+      buddy* n = nullptr;
+      h2_list_for_each_entry(p, &buddies, buddy, x)
       {
          if (((char*)b) + b->size <= (char*)p) {
             n = p;
@@ -6112,9 +6119,9 @@ struct h2_libc_malloc {
          }
       }
       if (n)
-         n->link.add_before(&b->link);
+         n->x.add_before(&b->x);
       else
-         blobs.add_tail(&b->link);
+         buddies.add_tail(&b->x);
 
       merge();
    }
@@ -6122,46 +6129,47 @@ struct h2_libc_malloc {
    void* malloc(size_t size)
    {
       size = (size + 7) / 8 * 8;
-      blob* b = nullptr;
-      h2_list_for_each_entry(p, &blobs, blob, link)
+      buddy* b = nullptr;
+      h2_list_for_each_entry(p, &buddies, buddy, x)
       {
          if (size <= p->size - sizeof(p->size)) {
             b = p;
-            p->link.out();
+            p->x.out();
             break;
          }
       }
       if (!b) {
          int pagesize = h2_page_size();
          int pagecount = ::ceil((size + sizeof(b->size)) / (double)pagesize);
-
+         if (pages == 0) pagecount = 1024 * 25;
+         pages += pagecount;
 #ifdef _WIN32
          PVOID ptr = VirtualAlloc(NULL, pagecount * pagesize, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
-         if (ptr == NULL) return nullptr;
+         if (ptr == NULL) ::printf("VirtualAlloc failed\n at %s:%d", __FILE__, __LINE__), abort();
 #else
          void* ptr = ::mmap(nullptr, pagecount * pagesize, PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0);
-         if (ptr == MAP_FAILED) return nullptr;
+         if (ptr == MAP_FAILED) ::printf("mmap failed\n at %s:%d", __FILE__, __LINE__), abort();
 #endif
-         b = (blob*)ptr;
+         b = (buddy*)ptr;
          b->size = pagecount * pagesize;
       }
       size_t bz = b->size;
       b->size = size + sizeof(b->size);
       size_t rz = bz - b->size;
-      if (sizeof(blob) <= rz) {
-         blob* r = (blob*)(((char*)b) + b->size);
+      if (sizeof(buddy) <= rz) {
+         buddy* r = (buddy*)(((char*)b) + b->size);
          r->size = rz;
          insert(r);
       } else {
          b->size += rz;
       }
 
-      return (void*)&b->link;
+      return (void*)&b->x;
    }
 
    void free(void* ptr)
    {
-      blob* b = (blob*)(((char*)ptr) - sizeof(b->size));
+      buddy* b = (buddy*)(((char*)ptr) - sizeof(b->size));
       insert(b);
    }
 };
@@ -7316,6 +7324,18 @@ h2_inline void h2_suite::execute(h2_case* c)
    c->post_cleanup();
 }
 
+h2_inline h2_suite::installer::installer(h2_suite* s, h2_case* c)
+{
+   static long long seq = INT_MAX;
+   s->registered_cases.push_back(&c->registered);
+   s->seq = c->seq = ++seq;
+}
+
+h2_inline h2_suite::cleaner::cleaner(h2_suite* s) : thus(s) {}
+h2_inline h2_suite::cleaner::~cleaner()
+{
+   if (thus->jumpable) ::longjmp(thus->jump, 1);
+}
 inline h2_task::h2_task() : state(0), round(0), status_stats{0}, current_suite(nullptr), current_case(nullptr) {}
 
 inline int h2_task::execute()

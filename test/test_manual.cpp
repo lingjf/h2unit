@@ -121,12 +121,14 @@ SUITE(Ilegal Access)
       free(p);
       free(p);
    }
+
    Case(memory underflow failure)
    {
       char* p = (char*)malloc(6);
-      memcpy(p - 5, "123", 3);
+      memcpy(p - 50, "123", 3);
       free(p);
    }
+
    Case(memory overflow failure)
    {
       char* p = (char*)malloc(6);

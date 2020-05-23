@@ -22,20 +22,12 @@ struct h2_suite {
    void cleanup();
 
    struct installer {
-      installer(h2_suite* s, h2_case* c)
-      {
-         static long long seq = INT_MAX;
-         s->registered_cases.push_back(&c->registered);
-         s->seq = c->seq = ++seq;
-      }
+      installer(h2_suite* s, h2_case* c);
    };
 
    struct cleaner : h2_once {
       h2_suite* thus;
-      cleaner(h2_suite* s) : thus(s) {}
-      ~cleaner()
-      {
-         if (thus->jumpable) ::longjmp(thus->jump, 1);
-      }
+      cleaner(h2_suite* s);
+      ~cleaner();
    };
 };

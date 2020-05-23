@@ -2,15 +2,15 @@
 
 SUITE(h2_line)
 {
-   Case(line length)
+   Case(line width)
    {
       h2::h2_line line = {" 123 ", " 456 "};
-      OK(10, line.length());
+      OK(10, line.width());
    }
-   Case(line length with color)
+   Case(line width with color)
    {
       h2::h2_line line = {"123", "\033{red}", "456"};
-      OK(6, line.length());
+      OK(6, line.width());
    }
 
    Case(indent)
@@ -32,7 +32,7 @@ SUITE(h2_line)
       h2::h2_line e = {"123", "456"};
       h2::h2_line a = {"12345"};
       e.samesizify(a);
-      OK(e.length() == a.length());
+      OK(e.width() == a.width());
    }
 
    Case(samesizify lines)
@@ -49,11 +49,12 @@ SUITE(h2_lines)
    Case(max lines length)
    {
       h2::h2_lines lines = {{"123", "456"}, {"1234"}};
-      OK(6, lines.max_length());
+      OK(6, lines.max_width());
    }
+
    Case(max lines length with color)
    {
       h2::h2_lines lines = {{"123", "\033{red}", "456"}, {"1234"}};
-      OK(6, lines.max_length());
+      OK(6, lines.max_width());
    }
 }

@@ -4,7 +4,7 @@ struct h2_line : public h2_vector<h2_string> {
    h2_line(h2_string a) : h2_vector<h2_string>({a}) {}
    h2_line(std::initializer_list<h2_string> il) : h2_vector<h2_string>(il) {}
 
-   int length() const;
+   int width() const;
    void indent(int n_space);
    void padding(int n_space);
 
@@ -23,7 +23,7 @@ struct h2_lines : public h2_vector<h2_line> {
    void concat_back(h2_lines& lines);
    void concat_front(h2_lines& lines);
 
-   int max_length() const;
+   int max_width() const;
    void samesizify(h2_lines& b);
    bool foldable();
 

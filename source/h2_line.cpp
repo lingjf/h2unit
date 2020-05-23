@@ -1,11 +1,11 @@
 
-h2_inline int h2_line::length() const
+h2_inline int h2_line::width() const
 {
-   int length = 0;
+   int w = 0;
    for (auto& word : *this)
       if (!h2_color::is_ctrl(word.c_str()))
-         length += word.size();
-   return length;
+         w += word.size();
+   return w;
 }
 
 h2_inline void h2_line::indent(int n_space)
@@ -36,9 +36,9 @@ h2_inline void h2_line::concat_back(const char* style, h2_line& line)
 
 h2_inline void h2_line::concat_front(const char* style, h2_line& line)
 {
-   if (style && strlen(style)) insert(begin(), "\033{" + h2_string(style) + "}");
-   insert(begin(), line.begin(), line.end());
    if (style && strlen(style)) insert(begin(), "\033{reset}");
+   insert(begin(), line.begin(), line.end());
+   if (style && strlen(style)) insert(begin(), "\033{" + h2_string(style) + "}");
 }
 
 h2_inline void h2_line::fold(h2_vector<h2_line>& lines)
@@ -51,9 +51,9 @@ h2_inline void h2_line::fold(h2_vector<h2_line>& lines)
 
 h2_inline void h2_line::samesizify(h2_line& b)
 {
-   int len = length(), b_len = b.length();
-   padding(std::max(len, b_len) - len);
-   b.padding(std::max(len, b_len) - b_len);
+   int w = width(), b_w = b.width();
+   padding(std::max(w, b_w) - w);
+   b.padding(std::max(w, b_w) - b_w);
 }
 
 h2_inline void h2_lines::concat_back(h2_lines& lines)
@@ -65,12 +65,12 @@ h2_inline void h2_lines::concat_front(h2_lines& lines)
    insert(begin(), lines.begin(), lines.end());
 }
 
-h2_inline int h2_lines::max_length() const
+h2_inline int h2_lines::max_width() const
 {
-   int max_length = 0;
+   int m = 0;
    for (size_t i = 0; i < size(); ++i)
-      max_length = std::max(max_length, at(i).length());
-   return max_length;
+      m = std::max(m, at(i).width());
+   return m;
 }
 
 h2_inline void h2_lines::samesizify(h2_lines& b)

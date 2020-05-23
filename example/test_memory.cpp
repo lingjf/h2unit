@@ -116,16 +116,7 @@ SUITE(Memory Check)
       rectangle_destroy(p);
    }
 
-   Case(access after free failure)
-   {
-      rectangle_t* p = rectangle_create(1, 2);
-      rectangle_destroy(p);
-
-      int height = p->height;
-      p->height = height;
-   }
-
-   Case(access after free failure 2)
+   Case(use after free failure)
    {
       rectangle_t* p = rectangle_create(1, 2);
       rectangle_destroy(p);

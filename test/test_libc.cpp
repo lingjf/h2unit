@@ -6,7 +6,7 @@ char* h2_libc_malloc_tostring(h2::h2_libc_malloc* m, char* s)
 {
    int i = 0;
    strcpy(s, "[");
-   h2_list_for_each_entry(p, &m->blobs, h2::h2_libc_malloc::blob, link)
+   h2_list_for_each_entry(p, &m->blobs, h2::h2_libc_malloc::blob, x)
    {
       sprintf(s + strlen(s), "%s%lu", i++ ? "," : "", p->size);
    }
@@ -19,7 +19,7 @@ CASE(libc_malloc)
 {
    OK(8, sizeof(size_t));
    char t1[1024];
-   JE("[1024 * 1024 * 100]", h2_libc_malloc_tostring(&M, t1));
+   JE("[]", h2_libc_malloc_tostring(&M, t1));
 
    size_t* p1 = (size_t*)M.malloc(88);
    OK(NotNull, p1);

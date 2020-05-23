@@ -616,6 +616,12 @@ SUITE(suite)
 *    JSON difference is aligned
 *    Memory leak backtrace is printed
 
+# Compile speed
+In order to speed up compile progress, split header-only-single-file [h2unit.h](h2unit.h) into 
+two files: [h2unit.cpp](build/h2unit.cpp) and [h2unit.h](build/h2unit.h). Refer to `example/make twofiles` for sample usage.
+
+twofiles speed up x3 times than onefile.
+
 # Execute options
 
 *    `-v` *verbose* output including successfull cases

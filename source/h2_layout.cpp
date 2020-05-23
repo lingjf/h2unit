@@ -38,14 +38,10 @@ static inline h2_lines lines_merge(h2_lines& left_lines, h2_lines& right_lines, 
       auto right_wrap_lines = line_break(right_lines[i], width - 2);
       for (size_t j = 0; j < std::max(left_wrap_lines.size(), right_wrap_lines.size()); ++j) {
          h2_line line;
-         line.push_back("\033{reset}");
-         line.concat_back("", left_wrap_lines[j]);
-         line.push_back("\033{reset}");
+         line.concat_back("reset", left_wrap_lines[j]);
          line.printf("dark gray", j == left_wrap_lines.size() - 1 ? "  │ " : " \\│ ");
-         line.concat_back("", right_wrap_lines[j]);
-         line.push_back("\033{reset}");
+         line.concat_back("reset", right_wrap_lines[j]);
          line.printf("dark gray", j == right_wrap_lines.size() - 1 ? "  " : " \\");
-
          lines.push_back(line);
       }
    }
@@ -54,7 +50,7 @@ static inline h2_lines lines_merge(h2_lines& left_lines, h2_lines& right_lines, 
 
 h2_inline h2_lines h2_layout::split(h2_lines& left_lines, h2_lines& right_lines, const char* left_title, const char* right_title)
 {
-   int max_line_width = std::max(left_lines.max_length(), right_lines.max_length());
+   int max_line_width = std::max(left_lines.max_width(), right_lines.max_width());
    int half_width = std::min(h2_term_size() / 2 - 4, std::max(max_line_width + 3, 30));
 
    h2_line left_title_line = {"\033{dark gray}", h2_string(left_title).center(half_width - 3), "\033{reset}"};
