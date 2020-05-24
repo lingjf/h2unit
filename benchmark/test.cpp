@@ -55,7 +55,7 @@ SUITE(c)
       OK(We(""), "");
       OK(Re(""), "");
       OK(Re(""), "");
-      OK(Contains(""), "");
+      OK(Substr(""), "");
       OK(Je(""), "");
       JE("", "");
    }

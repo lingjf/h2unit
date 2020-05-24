@@ -50,13 +50,31 @@ h2_inline void h2_fail::foreach (std::function<void(h2_fail*, int, int)> cb, int
    if (subling_next) subling_next->foreach (cb, subling_index + 1, child_index);
 }
 
-h2_inline void h2_fail_unexpect::print_OK1(h2_line& l)
+h2_inline h2_fail_normal::h2_fail_normal(const char* file_, int line_, const char* func_, const char* format, ...) : h2_fail(file_, line_, func_)
 {
-   l.printf("", "OK(%s) is ", a_expression.c_str());
-   l.printf("bold,red", "false");
+   char* alloca_str;
+   h2_sprintf(alloca_str, format);
+   explain = alloca_str;
 }
 
-static inline bool is_synonym(const char* a, const char* b)
+h2_inline void h2_fail_normal::print(int subling_index, int child_index)
+{
+   h2_line line;
+   line.indent(child_index * 2 + 1);
+   if (no.size()) line.printf("dark gray", "%s. ", no.c_str());
+   line.printf("", "%s%s", explain.c_str(), get_locate());
+   h2_color::printf(line);
+}
+
+h2_inline void h2_fail_unexpect::print_OK1(h2_line& line)
+{
+   line.push_back("OK( ");
+   line.printf("cyan", "%s", a_expression.acronym(O.verbose ? 10000 : 30).c_str());
+   line.push_back(" ) is ");
+   line.printf("bold,red", "false");
+}
+
+static inline bool is_synonym(h2_string& a, h2_string& b)
 {
    static const char* s_null[] = {"NULL", "__null", "((void *)0)", "(nil)", "nullptr", "0", "0x0", nullptr};
    static const char* s_true[] = {"IsTrue", "true", "1", nullptr};
@@ -64,50 +82,52 @@ static inline bool is_synonym(const char* a, const char* b)
    static const char** S[] = {s_null, s_true, s_false};
 
    for (int i = 0; i < sizeof(S) / sizeof(S[0]); ++i)
-      if (h2_in(a, S[i]) && h2_in(b, S[i]))
+      if (h2_in(a.c_str(), S[i]) && h2_in(b.c_str(), S[i]))
          return true;
 
    return false;
 }
 
-h2_inline void h2_fail_unexpect::print_OK2(h2_line& l)
+h2_inline void h2_fail_unexpect::print_OK2(h2_line& line)
 {
-   l.push_back("OK(");
-   if (e_expression == e_explain)
-      l.printf("green", e_explain.acronym(30, 1).c_str());
-   else {
-      l.push_back(e_expression.acronym());
-      if (e_explain.size() && !is_synonym(e_expression.c_str(), e_explain.c_str())) {
-         l.printf("dark gray", "==>");
-         l.printf("green", e_explain.acronym(30, 1).c_str());
-      }
+   line.push_back("OK( ");
+
+   if (!expection.size() || e_expression == expection || is_synonym(e_expression, expection)) {
+      line.printf("green", e_expression.acronym(O.verbose ? 10000 : 30, 1).c_str());
+   } else {
+      line.printf("cyan", e_expression.acronym(O.verbose ? 10000 : 16).c_str());
+      line.printf("dark gray", "==>");
+      line.printf("green", expection.acronym(O.verbose ? 10000 : 30, 1).c_str());
    }
 
-   l.push_back(", ");
+   line.push_back(", ");
 
-   if (a_expression == a_represent)
-      l.printf("bold,red", a_represent.acronym(30, 1).c_str());
-   else {
-      if (a_represent.size() && !is_synonym(a_expression.c_str(), a_represent.c_str())) {
-         l.printf("bold,red", a_represent.acronym(30, 1).c_str());
-         l.printf("dark gray", "<==");
-      }
-      l.push_back(a_expression.acronym());
+   if (!a_represent.size() || a_expression == a_represent || is_synonym(a_expression, a_represent)) {
+      line.printf("bold,red", a_expression.acronym(O.verbose ? 10000 : 30, 1).c_str());
+   } else {
+      line.printf("bold,red", a_represent.acronym(O.verbose ? 10000 : 30, 1).c_str());
+      line.printf("dark gray", "<==");
+      line.printf("cyan", a_expression.acronym(O.verbose ? 10000 : 16).c_str());
    }
-   l.push_back(")");
+
+   line.push_back(" )");
 }
 
-h2_inline void h2_fail_unexpect::print_JE(h2_line& l)
+h2_inline void h2_fail_unexpect::print_JE(h2_line& line)
 {
-   l.printf("", "JE(%s, %s)", e_expression.acronym().c_str(), a_expression.acronym().c_str());
+   line.push_back("JE( ");
+   line.printf("cyan", "%s", e_expression.acronym(O.verbose ? 10000 : 30).c_str());
+   line.printf("bold,red", ", %s", a_expression.acronym(O.verbose ? 10000 : 30).c_str());
+   line.push_back(" )");
 }
 
-h2_inline void h2_fail_unexpect::print_Inner(h2_line& l)
+h2_inline void h2_fail_unexpect::print_Inner(h2_line& line)
 {
-   l.push_back("expect is ");
-   l.printf("green", e_explain.acronym(30, 1).c_str());
-   l.push_back(", actual is ");
-   l.printf("bold,red", a_represent.acronym(30, 1).c_str());
+   if (no.size()) line.printf("dark gray", "%s. ", no.c_str());
+   line.push_back("expect is ");
+   line.printf("green", expection.acronym(O.verbose ? 10000 : 30, 1).c_str());
+   line.push_back(", actual is ");
+   line.printf("bold,red", a_represent.acronym(O.verbose ? 10000 : 30, 1).c_str());
 }
 
 h2_inline void h2_fail_unexpect::print(int subling_index, int child_index)
@@ -118,6 +138,7 @@ h2_inline void h2_fail_unexpect::print(int subling_index, int child_index)
    if (usage == 1) print_OK1(line);
    if (usage == 2) print_OK2(line);
    if (usage == 3) print_JE(line);
+   if (explain.size()) line.printf("", ", %s", explain.c_str());
    if (user_explain.size()) line.printf("", ", %s", user_explain.c_str());
    line.push_back(get_locate());
    h2_color::printf(line);
@@ -325,8 +346,9 @@ h2_inline void h2_fail_memcmp::print_int64(h2_lines& e_lines, h2_lines& a_lines)
 
 h2_inline void h2_fail_memory_leak::print(int subling_index, int child_index)
 {
-   h2_color::printf("", " %p memory leak", ptr);
-   h2_color::printf("bold,red", " %d", size);
+   h2_color::printf("", " %p", ptr);
+   h2_color::printf("bold,red", " memory leak");
+   h2_color::printf("red", " %d", size);
    h2_color::printf("", " bytes in %s totally%s\n", where, get_locate());
    h2_color::printf("", "  which allocate at backtrace:\n"), bt_allocate.print(3);
 }

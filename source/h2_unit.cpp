@@ -6,7 +6,6 @@
 #include <cstdint>  /* int32_t */
 #include <errno.h>  /* strerror */
 #include <iostream> /* cout */
-#include <map>      /* std::map */
 #include <memory>   /* allocator */
 #include <regex>    /* std::regex */
 #include <signal.h> /* sigaction */
@@ -65,7 +64,9 @@ namespace h2 {
 #include "h2_heap.cpp"
 #include "h2_json.cpp"
 #include "h2_libc.cpp"
+#include "h2_matchee.cpp"
 #include "h2_matcher.cpp"
+#include "h2_matches.cpp"
 #include "h2_mock.cpp"
 #include "h2_option.cpp"
 #include "h2_patch.cpp"
@@ -75,7 +76,7 @@ namespace h2 {
 #include "h2_stub.cpp"
 #include "h2_suite.cpp"
 #include "h2_task.cpp"
-}  // namespace h2
+}
 
 #if defined _WIN32
 #   define h2_weak_attribute

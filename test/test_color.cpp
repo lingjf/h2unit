@@ -11,17 +11,16 @@ char* h2__color_tostring(h2::h2__color* color, char* t)
 SUITE(h2_color)
 {
    char t[1024];
+   h2::h2__color color;
 
    Case(style2value)
    {
-      OK(0, h2::h2__color::style2value("reset"));
-      OK(31, h2::h2__color::style2value("red"));
+      OK(0, color.style2value("reset"));
+      OK(31, color.style2value("red"));
    }
 
    Case(parse)
    {
-      h2::h2__color color;
-
       char c1[1024] = "\033{red}";
       OK("}", color.parse(c1));
       OK("red,,,,,,,,", h2__color_tostring(&color, t));

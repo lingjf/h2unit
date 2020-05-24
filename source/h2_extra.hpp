@@ -1,20 +1,22 @@
 
-#define __Matches_Common(message)                                                                     \
-   template <typename A>                                                                              \
-   bool __matches(const A& a) const;                                                                  \
-   template <typename A>                                                                              \
-   h2::h2_fail* matches(const A& a, bool caseless = false, bool dont = false) const                   \
-   {                                                                                                  \
-      h2::h2_fail_unexpect* fail = new h2::h2_fail_unexpect("", h2::h2_stringify(a), dont, caseless); \
-      if (__matches(a) == !dont) return nullptr;                                                      \
-      if (dont) {                                                                                     \
-      } else {                                                                                        \
-         h2::h2_ostringstream osm;                                                                    \
-         osm << std::boolalpha << H2PP_REMOVE_PARENTHESES(message);                                   \
-         fail->user_explain = osm.str().c_str();                                                      \
-      }                                                                                               \
-      return fail;                                                                                    \
-   }
+#define __Matches_Common(message)                                                                                   \
+   template <typename A>                                                                                            \
+   bool __matches(const A& a) const;                                                                                \
+   template <typename A>                                                                                            \
+   h2::h2_fail* matches(const A& a, bool caseless = false, bool dont = false) const                                 \
+   {                                                                                                                \
+      h2::h2_fail_unexpect* fail = new h2::h2_fail_unexpect("", h2::h2_stringify(a), h2::CD("", caseless, dont)); \
+      if (__matches(a) == !dont) return nullptr;                                                                    \
+      if (dont) {                                                                                                   \
+      } else {                                                                                                      \
+         h2::h2_ostringstream osm;                                                                                  \
+         osm << std::boolalpha << H2PP_REMOVE_PARENTHESES(message);                                                 \
+         fail->user_explain = osm.str().c_str();                                                                    \
+      }                                                                                                             \
+      return fail;                                                                                                  \
+   }                                                                                                                \
+   template <typename A>                                                                                            \
+   h2::h2_string expects(const A& a, bool caseless = false, bool dont = false) const { return ""; }
 
 #define H2MATCHER0(name, message)                                                     \
    struct h2_##name##_matches {                                                       \

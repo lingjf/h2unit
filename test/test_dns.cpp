@@ -104,7 +104,7 @@ SUITE(gethostbyname)
    //    Case(system) {
    //       ret = dns_use_gethostbyname("dns.google.com", t1, t2);
    //       OK(ret);
-   //       OK(Contains("8.8.8.8;"), t1);
+   //       OK(Substr("8.8.8.8;"), t1);
    //    };
 
    Case(DNS 1)

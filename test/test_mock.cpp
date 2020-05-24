@@ -136,9 +136,9 @@ SUITE(mock c - function)
       OK(11, bar1(1, NULL));
    }
 
-   Case(Contains Matcher)
+   Case(Substr Matcher)
    {
-      MOCK(bar1, int(int, const char*)).once(1, Contains("BC")).returns(11);
+      MOCK(bar1, int(int, const char*)).once(1, Substr("BC")).returns(11);
       OK(11, bar1(1, "ABCD"));
    }
 

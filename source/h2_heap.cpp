@@ -29,10 +29,10 @@ struct h2_piece : h2_libc {
 
 #ifdef _WIN32
       page_ptr = (unsigned char*)VirtualAlloc(NULL, page_size * (page_count + 1), MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
-      if (page_ptr == NULL) ::printf("VirtualAlloc failed\n at %s:%d", __FILE__, __LINE__), abort();
+      if (page_ptr == NULL) ::printf("VirtualAlloc failed at %s:%d\n", __FILE__, __LINE__), abort();
 #else
       page_ptr = (unsigned char*)::mmap(nullptr, page_size * (page_count + 1), PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0);
-      if (page_ptr == MAP_FAILED) ::printf("mmap failed\n at %s:%d", __FILE__, __LINE__), abort();
+      if (page_ptr == MAP_FAILED) ::printf("mmap failed at %s:%d\n", __FILE__, __LINE__), abort();
 #endif
 
       user_ptr = page_ptr + page_size * page_count - user_size;
@@ -179,7 +179,7 @@ struct h2_piece : h2_libc {
       if (free_times++ == 0)
          bt_release = bt;
       else
-         fail = (h2_fail*)new h2_fail_double_free(user_ptr, bt_allocate, bt_release, bt);
+         fail = new h2_fail_double_free(user_ptr, bt_allocate, bt_release, bt);
       return fail;
    }
 
@@ -219,13 +219,12 @@ struct h2_block : h2_libc {
 
    h2_fail* check()
    {
-      h2_fail* fail = nullptr;
       h2_list_for_each_entry(p, &pieces, h2_piece, x)
       {
-         fail = p->violate_check();
-         if (fail) return fail;
-         fail = p->leak_check(where, file, line);
-         if (fail) return fail;
+         h2_fail* fail1 = p->violate_check();
+         if (fail1) return fail1;
+         h2_fail* fail2 = p->leak_check(where, file, line);
+         if (fail2) return fail2;
       }
       /* why not chain fails in subling? report one fail ignore more for clean.
          when fail, memory may be in used, don't free and keep it for robust */
@@ -234,7 +233,7 @@ struct h2_block : h2_libc {
          p->x.out();
          delete p;
       }
-      return fail;
+      return nullptr;
    }
 
    h2_piece* new_piece(const char* who, int size, int alignment, const char* fill_, h2_backtrace& bt)

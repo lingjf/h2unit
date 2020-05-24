@@ -21,6 +21,49 @@ class a_abstract_class {
 
 #if 0
 
+SUITE(ListOf)
+{
+   Case(only one not same)
+   {
+      std::vector<int> a = {1, 2, 3};
+      OK(ListOf(1, 6, 3), a);
+   }
+   Case(two not same)
+   {
+      std::vector<int> a = {1, 2, 3};
+      OK(ListOf(1, 6, 9), a);
+   }
+   Case(only one miss)
+   {
+      std::vector<int> a = {1, 2, 3};
+      OK(ListOf(1, 2, 3, 4), a);
+   }
+   Case(Not)
+   {
+      std::vector<int> a = {1, 2, 3};
+      OK(!ListOf(1, 2, 3), a);
+   }
+}
+
+SUITE(Has)
+{
+   Case(miss only one)
+   {
+      std::vector<int> a = {1, 2, 3};
+      OK(Has(8), a);
+   }
+   Case(miss two)
+   {
+      std::vector<int> a = {1, 2, 3};
+      OK(Has(8, 9), a);
+   }
+   Case(miss two)
+   {
+      std::vector<int> a = {1, 2, 3};
+      OK(!Has(2), a);
+   }
+}
+
 SUITE(Logic)
 {
    Case(Not string equal failure)
@@ -36,14 +79,18 @@ SUITE(Logic)
       OK(Ge(0) && Eq(-2) || -4, -1);  // failure
    }
 
-   Case(AllOf failure)
+   Case(AllOf)
    {
-      OK(AllOf("Rect(0, 0)", _, EndsWith("R(1, 2)")), "Rect()");  // failure
+      OK(AllOf("Rect(0, 0)", _, EndsWith("R(1, 2)")), "Rect()");
+   }
+   Case(Not AllOf)
+   {
+      OK(!AllOf("Rect(0, 0)", _, EndsWith("(0, 0)")), "Rect(0, 0)");
    }
 
-   Case(AnyOf successful)
+   Case(AnyOf)
    {
-      OK(AnyOf("Rect(0, 1)", StartsWith("Rect")), "Pect(0, 1)");  // failure
+      OK(AnyOf("Rect(0, 1)", StartsWith("Rect")), "Pect(0, 1)");
    }
 
    Case(NoneOf successful)

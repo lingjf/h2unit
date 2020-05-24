@@ -92,7 +92,7 @@ CASE(Case Name)
 *    [`Gt`](source/h2_unit.hpp#L100)(expect) : matches if value > expect .
 *    [`Le`](source/h2_unit.hpp#L100)(expect) : matches if value <= expect .
 *    [`Lt`](source/h2_unit.hpp#L100)(expect) : matches if value < expect .
-*    [`Me`](source/h2_unit.hpp#L100)(expect) : matches if memcmp(expect, value) .
+*    [`Me`](source/h2_unit.hpp#L100)(expect) : matches if memcmp(expect, value) == 0 .
      *    [`M1e`](source/h2_unit.hpp#L100)(expect) : bit level memcmp.
      *    [`M8e`](source/h2_unit.hpp#L100)(expect) : byte level memcmp.
      *    [`M16e`](source/h2_unit.hpp#L100)(expect) : int16 level memcmp.
@@ -102,7 +102,7 @@ CASE(Case Name)
 *    [`We`](source/h2_unit.hpp#L100)(expect) : matches if value Wildcard equals expect .
 *    [`Je`](source/h2_unit.hpp#L100)(expect) : matches if value JSON equals expect .
 *    [`Se`](source/h2_unit.hpp#L100)(expect) : matches if string strictly equals expect as strcmp() .
-*    [`Contains`](source/h2_unit.hpp#L100)(expect) : matches if value has substr expect .
+*    [`Substr`](source/h2_unit.hpp#L100)(expect) : matches if value has substr expect .
 *    [`StartsWith`](source/h2_unit.hpp#L100)(expect) : matches if value starts with expect .
 *    [`EndsWith`](source/h2_unit.hpp#L100)(expect) : matches if value ends with expect .
 *    [`~`](source/h2_unit.hpp#L100) / [`CaseLess`](source/h2_unit.hpp#L100)(expect) : make inner matcher case-insensitive, right operator must be Matcher, `~"Hello World"` not works .
@@ -113,7 +113,9 @@ CASE(Case Name)
 *    [`AllOf`](source/h2_unit.hpp#L100)(expect...) : matches if value matches all of inner matchers, act as AND logical operator.
 *    [`AnyOf`](source/h2_unit.hpp#L100)(expect...) : matches if value matches any one of inner matchers, act as OR logical operator.
 *    [`NoneOf`](source/h2_unit.hpp#L100)(expect...) : matches if value not matches all of inner matchers .
-*    [`ListOf`](source/h2_unit.hpp#L100)(expect...) : matches if array value matches inner matchers .
+*    [`ListOf`](source/h2_unit.hpp#L100)(expect...) : matches if sequence container(array, vector, ...) item matches inner matchers .
+*    [`Has`](source/h2_unit.hpp#L100)(expect ...) : matches if there are items in container(vector, set, map, ...) match every inner matchers.
+*    [`In`](source/h2_unit.hpp#L100)(expect...) : matches if acutal value matches any of inner matchers .
 
 Matcher can be used in OK(expect, actual), for example:
 ```C++

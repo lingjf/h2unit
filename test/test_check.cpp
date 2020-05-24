@@ -81,7 +81,7 @@ SUITE(OK Primitive)
    {
       OK(CaseLess("AbCd"), "abcd");
       OK(!CaseLess("AbCd"), "cba");
-      OK(CaseLess(Contains("AbCd")), "ABCD");
+      OK(CaseLess(Substr("AbCd")), "ABCD");
       OK(CaseLess(Re("A.*")), "abcdef");
       OK(CaseLess(We("A*")), "abcdef");
    }
@@ -90,8 +90,28 @@ SUITE(OK Primitive)
    {
       // OK(~"AbCd", "abcd");
       OK(!CaseLess("AbCd"), "cba");
-      OK(~Contains("AbCd"), "ABCD");
+      OK(~Substr("AbCd"), "ABCD");
       OK(~Re("A.*"), "abcdef");
       OK(~We("A*"), "abcdef");
+   }
+
+   Case(ListOf)
+   {
+      std::vector<int> a = {1, 2, 3};
+      OK(ListOf(1, 2, 3), a);
+   }
+
+   Case(In)
+   {
+      OK(In(1, 2, 3), 2);
+   }
+
+   Case(Has)
+   {
+      std::vector<int> a1 = {1, 2, 3};
+      OK(Has(1, 3), a1);
+
+      std::map<int, int> a2 = {{1, 111}, {2, 222}, {3, 333}};
+      OK(Has(Pair(1, 111), Pair(3, 333)), a2);
    }
 }

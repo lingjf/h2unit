@@ -1,20 +1,28 @@
 #ifndef ___H2UNIT_H___
 #define ___H2UNIT_H___
 
-#include <cstdio>      /* printf */
-#include <cstdlib>     /* malloc */
-#include <cstring>     /* strcpy, memcpy */
-#include <cstddef>     /* ptrdiff_t */
-#include <climits>     /* INT_MAX */
-#include <cmath>       /* fabs */
-#include <csetjmp>     /* setjmp, longjmp */
-#include <sstream>     /* std::basic_ostringstream */
-#include <string>      /* std::string */
-#include <vector>      /* std::vector */
-#include <tuple>       /* std::tuple */
-#include <functional>  /* std::function */
-#include <utility>     /* std::forward_as_tuple */
-#include <type_traits> /* std::true_type */
+#include <cstdio>        /* printf */
+#include <cstdlib>       /* malloc */
+#include <cstring>       /* strcpy, memcpy */
+#include <cstddef>       /* ptrdiff_t */
+#include <climits>       /* INT_MAX */
+#include <cmath>         /* fabs */
+#include <csetjmp>       /* setjmp, longjmp */
+#include <sstream>       /* std::basic_ostringstream */
+#include <string>        /* std::string */
+#include <vector>        /* std::vector */
+#include <deque>         /* std::deque */
+#include <array>         /* std::array */
+#include <list>          /* std::list */
+#include <forward_list>  /* std::forward_list */
+#include <set>           /* std::set */
+#include <unordered_set> /* std::unordered_set */
+#include <map>           /* std::map */
+#include <unordered_map> /* std::unordered_map */
+#include <tuple>         /* std::tuple */
+#include <functional>    /* std::function */
+#include <utility>       /* std::forward_as_tuple, std::pair */
+#include <type_traits>   /* std::true_type */
 
 #if defined _WIN32
 #   define WIN32_LEAN_AND_MEAN /* fix winsock.h winsock2.h conflict */
@@ -76,7 +84,9 @@ namespace h2 {
 #include "h2_stub.hpp"
 #include "h2_heap.hpp"
 #include "h2_mfp.hpp"
+#include "h2_matchee.hpp"
 #include "h2_matcher.hpp"
+#include "h2_matches.hpp"
 #include "h2_callexp.hpp"
 #include "h2_routine.hpp"
 #include "h2_mock.hpp"
@@ -92,7 +102,7 @@ namespace h2 {
 #include "h2_generator.hpp"
 #include "h2_patch.hpp"
 #include "h2_task.hpp"
-}  // namespace h2
+}
 
 /* ======> Interface <====== */
 
@@ -153,7 +163,7 @@ using h2::Re;
 using h2::We;
 using h2::Je;
 using h2::Se;
-using h2::Contains;
+using h2::Substr;
 using h2::StartsWith;
 using h2::EndsWith;
 using h2::CaseLess;
@@ -169,6 +179,9 @@ using h2::AllOf;
 using h2::AnyOf;
 using h2::NoneOf;
 using h2::ListOf;
+using h2::Has;
+using h2::In;
+using h2::Pair;
 /* clang-format on */
 
 /* ==================> implementation <============================= */

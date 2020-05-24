@@ -44,12 +44,12 @@ SUITE(String compares)
       OK("Rect(0, 0)", rectangle_tostring(&p2));  // failure
    }
 
-   Case(demo Contains failure)
+   Case(demo Substr failure)
    {
       rectangle_t p1 = {0, 0};
-      OK(Contains("(0, 0)"), rectangle_tostring(&p1));  // successful
+      OK(Substr("(0, 0)"), rectangle_tostring(&p1));  // successful
       rectangle_t p2 = {1, 2};
-      OK(Contains("(1, 1)"), rectangle_tostring(&p2));  // failure
+      OK(Substr("(1, 1)"), rectangle_tostring(&p2));  // failure
    }
 
    Case(demo StartsWith failure)

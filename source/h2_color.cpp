@@ -1,9 +1,34 @@
 
 struct h2__color {
    h2_singleton(h2__color);
-   h2__color() { memset(current, 0, sizeof(current)); }
 
    char current[8][32];
+   int default_attribute;
+#ifdef _WIN32
+   HANDLE console_handle;
+#else
+#   define FOREGROUND_INTENSITY 0
+#   define COMMON_LVB_UNDERSCORE 0
+#   define COMMON_LVB_REVERSE_VIDEO 0
+#   define FOREGROUND_RED 0
+#   define FOREGROUND_GREEN 0
+#   define FOREGROUND_BLUE 0
+#   define BACKGROUND_RED 0
+#   define BACKGROUND_GREEN 0
+#   define BACKGROUND_BLUE 0
+#endif
+
+   h2__color()
+   {
+      memset(current, 0, sizeof(current));
+      default_attribute = 0;
+#ifdef _WIN32
+      console_handle = GetStdHandle(STD_OUTPUT_HANDLE);
+      CONSOLE_SCREEN_BUFFER_INFO csbi;
+      GetConsoleScreenBufferInfo(console_handle, &csbi);
+      default_attribute = csbi.wAttributes;
+#endif
+   }
 
    void clear_style()
    {
@@ -79,96 +104,56 @@ struct h2__color {
       }
    }
 
-   static int style2value(const char* style)
+   int style2value(const char* style)
    {
-      struct st {
+      static struct st {
          const char* name;
          int value;
-      };
-
-#ifdef _WIN32
-      static HANDLE console_handle = NULL;
-      static WORD default_attribute;
-      if (console_handle == NULL) {
-         console_handle = GetStdHandle(STD_OUTPUT_HANDLE);
-         CONSOLE_SCREEN_BUFFER_INFO csbi;
-         GetConsoleScreenBufferInfo(console_handle, &csbi);
-         default_attribute = csbi.wAttributes;
-      }
-
-      static struct st K[] = {
-        // normal style
-        {"reset", default_attribute},
-        {"bold", FOREGROUND_INTENSITY},
-        // { "italics", 3 },
-        {"underline", COMMON_LVB_UNDERSCORE},
-        {"inverse", COMMON_LVB_REVERSE_VIDEO},
-        // { "strikethrough", 9 },
-        // foreground color
-        // { "black", 30 },
-        {"red", FOREGROUND_RED},
-        {"green", FOREGROUND_GREEN},
-        {"yellow", FOREGROUND_RED | FOREGROUND_GREEN},
-        {"blue", FOREGROUND_BLUE},
-        {"purple", FOREGROUND_RED | FOREGROUND_BLUE},
-        {"cyan", FOREGROUND_BLUE | FOREGROUND_GREEN},
-        {"white", FOREGROUND_GREEN | FOREGROUND_RED | FOREGROUND_BLUE},
-        {"dark gray", FOREGROUND_GREEN | FOREGROUND_RED | FOREGROUND_BLUE},
-        {"default", 39},
-        // background color
-        // { "bg_black", 40 },
-        {"bg_red", BACKGROUND_RED},
-        {"bg_green", BACKGROUND_GREEN},
-        {"bg_yellow", BACKGROUND_RED | BACKGROUND_GREEN},
-        {"bg_blue", BACKGROUND_BLUE},
-        {"bg_purple", BACKGROUND_RED | BACKGROUND_BLUE},
-        {"bg_cyan", BACKGROUND_BLUE | BACKGROUND_GREEN},
-        {"bg_white", BACKGROUND_RED | BACKGROUND_GREEN | BACKGROUND_BLUE},
-        // { "bg_default", 49 }
-      };
-
-#else
-      static struct st K[] = {
-        {"reset", 0},
-        {"bold", 1},
-        {"italics", 3},
-        {"underline", 4},
-        {"inverse", 7},
-        {"strikethrough", 9},
-        {"black", 30},
-        {"red", 31},
-        {"green", 32},
-        {"yellow", 33},
-        {"blue", 34},
-        {"purple", 35},
-        {"cyan", 36},
-        {"gray", 37},
-        {"default", 39},
-        {"dark gray", 90},
-        {"light red", 91},
-        {"light green", 92},
-        {"light yellow", 93},
-        {"light blue", 94},
-        {"light purple", 95},
-        {"light cyan", 96},
-        {"white", 97},
-        {"bg_black", 40},
-        {"bg_red", 41},
-        {"bg_green", 42},
-        {"bg_yellow", 43},
-        {"bg_blue", 44},
-        {"bg_purple", 45},
-        {"bg_cyan", 46},
-        {"bg_white", 47},
+         int attribute;
+      } K[] = {
+        {"reset", 0, default_attribute},
+        {"bold", 1, FOREGROUND_INTENSITY},
+        {"italics", 3, 0},
+        {"underline", 4, COMMON_LVB_UNDERSCORE},
+        {"inverse", 7, COMMON_LVB_REVERSE_VIDEO},
+        {"strikethrough", 9, 0},
+        {"black", 30, 0},
+        {"red", 31, FOREGROUND_RED},
+        {"green", 32, FOREGROUND_GREEN},
+        {"yellow", 33, FOREGROUND_RED | FOREGROUND_GREEN},
+        {"blue", 34, FOREGROUND_BLUE},
+        {"purple", 35, FOREGROUND_RED | FOREGROUND_BLUE},
+        {"cyan", 36, FOREGROUND_BLUE | FOREGROUND_GREEN},
+        {"gray", 37, 0},
+        {"default", 39, 0},
+        {"dark gray", 90, FOREGROUND_GREEN | FOREGROUND_RED | FOREGROUND_BLUE},
+        {"light red", 91, FOREGROUND_RED | FOREGROUND_INTENSITY},
+        {"light green", 92, FOREGROUND_GREEN | FOREGROUND_INTENSITY},
+        {"light yellow", 93, FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_INTENSITY},
+        {"light blue", 94, FOREGROUND_BLUE | FOREGROUND_INTENSITY},
+        {"light purple", 95, FOREGROUND_RED | FOREGROUND_BLUE | FOREGROUND_INTENSITY},
+        {"light cyan", 96, FOREGROUND_BLUE | FOREGROUND_GREEN | FOREGROUND_INTENSITY | BACKGROUND_BLUE},
+        {"white", 97, FOREGROUND_GREEN | FOREGROUND_RED | FOREGROUND_BLUE},
+        {"bg_black", 40, 0},
+        {"bg_red", 41, BACKGROUND_RED},
+        {"bg_green", 42, BACKGROUND_GREEN},
+        {"bg_yellow", 43, BACKGROUND_RED | BACKGROUND_GREEN},
+        {"bg_blue", 44, BACKGROUND_BLUE},
+        {"bg_purple", 45, BACKGROUND_RED | BACKGROUND_BLUE},
+        {"bg_cyan", 46, BACKGROUND_BLUE | BACKGROUND_GREEN},
+        {"bg_white", 47, BACKGROUND_RED | BACKGROUND_GREEN | BACKGROUND_BLUE},
         // {"bg_default", 49}
       };
-#endif
 
       for (int i = 0; i < sizeof(K) / sizeof(K[0]); ++i)
          if (!strcmp(K[i].name, style))
+#ifdef _WIN32
+            return K[i].attribute;
+#else
             return K[i].value;
+#endif
 
-      return K[0].value;  //reset
+      return default_attribute;
    }
 };
 

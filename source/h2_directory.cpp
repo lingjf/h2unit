@@ -1,8 +1,6 @@
 
 static constexpr const char* last_order_file_path = ".last_order";
 
-h2_inline void h2_directory::drop_last_order() { ::remove(last_order_file_path); }
-
 static inline void save_last_order()
 {
    h2_with f(fopen(last_order_file_path, "w"));
@@ -43,7 +41,7 @@ static inline int read_last_order()
    return count;
 }
 
-h2_inline void insert_suite_sort(h2_list* suite_list, h2_suite* s)
+static inline void insert_suite_sort(h2_list* suite_list, h2_suite* s)
 {
    h2_list_for_each_entry(p, suite_list, h2_suite, sorted)
    {
@@ -55,7 +53,7 @@ h2_inline void insert_suite_sort(h2_list* suite_list, h2_suite* s)
    suite_list->add_tail(&s->sorted);
 }
 
-h2_inline void insert_case_sort(h2_list* case_list, h2_case* c)
+static inline void insert_case_sort(h2_list* case_list, h2_case* c)
 {
    h2_list_for_each_entry(p, case_list, h2_case, sorted)
    {
@@ -89,6 +87,8 @@ h2_inline int h2_directory::sort()
 
    if (O.randomize && last == 0)
       save_last_order();
-   
+
    return count;
 }
+
+h2_inline void h2_directory::drop_last_order() { ::remove(last_order_file_path); }

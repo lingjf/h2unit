@@ -41,6 +41,7 @@ inline h2_string operator+(const h2_string& lhs, const std::string& rhs) { h2_st
 inline h2_string operator+(const std::string& lhs, const h2_string& rhs) { h2_string s(lhs.c_str()); s.append(rhs); return s; }
 inline h2_string operator+(const h2_string& lhs, const char rhs) { h2_string s(lhs); s.push_back(rhs); return s; }
 inline h2_string operator+(const char lhs, const h2_string& rhs) { h2_string s(1, lhs); s.append(rhs); return s; }
+/* clang-format on */
 
 template <typename T>
 h2_string h2_stringify(T a)
@@ -50,8 +51,25 @@ h2_string h2_stringify(T a)
    os << a;
    return h2_string(os.str().c_str());
 }
+
+template <typename A, size_t N>
+h2_string h2_stringify(const std::array<A, N> a) { return ""; }
+template <typename T>
+h2_string h2_stringify(const std::vector<T> a) { return ""; }
+template <typename T>
+h2_string h2_stringify(const std::deque<T> a) { return ""; }
+template <typename T>
+h2_string h2_stringify(const std::list<T> a) { return ""; }
+template <typename T>
+h2_string h2_stringify(const std::forward_list<T> a) { return ""; }
+template <typename T>
+h2_string h2_stringify(const std::set<T> a) { return ""; }
+template <typename T>
+h2_string h2_stringify(const std::multiset<T> a) { return ""; }
+template <typename T>
+h2_string h2_stringify(const std::unordered_set<T> a) { return ""; }
+template <typename T>
+h2_string h2_stringify(const std::unordered_multiset<T> a) { return ""; }
+
 template <>
-inline h2_string h2_stringify(std::nullptr_t a)
-{
-   return "nullptr";
-}
+inline h2_string h2_stringify(std::nullptr_t a) { return "nullptr"; }

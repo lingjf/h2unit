@@ -32,7 +32,7 @@ SUITE(Logic)
          rectangle_tostring(&p1));  // successful
 
       rectangle_t p2 = {1, 2};
-      OK(AllOf("Rect(0, 0)", _, ~EndsWith("R(1, 2)")),
+      OK(AllOf("Rect(0, 0)", _, EndsWith("R(1, 2)")),
          rectangle_tostring(&p2));  // failure
    }
 

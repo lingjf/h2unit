@@ -10,7 +10,7 @@ extern "C" {
 int pv;
 
 /*
- * SUITE is a unit test Suite, which contains several test cases.
+ * SUITE is a unit test Suite, which Substr several test cases.
  */
 SUITE(Basic Cases)
 {
