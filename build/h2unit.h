@@ -1,4 +1,4 @@
-﻿/* v5.4  2020-05-24 22:55:20 */
+﻿/* v5.4  2020-05-31 10:24:08 */
 /* https://github.com/lingjf/h2unit */
 /* Apache Licence 2.0 */
 #ifndef __H2UNIT_HPP__
@@ -219,7 +219,7 @@ struct h2_with {
 #define h2_singleton(_Class) static _Class& I() { static _Class i; return i; }
 
 #define h2_list_entry(ptr, type, link) ((type*)((char*)(ptr) - (char*)(&(((type*)(1))->link)) + 1))
-#define h2_list_for_each_entry(p, head, type, link) for (type* p = h2_list_entry((head)->next, type, link), *t = h2_list_entry(p->link.next, type, link); &p->link != (head); p = t, t = h2_list_entry(t->link.next, type, link))
+#define h2_list_for_each_entry(p, head, type, link) for (int i = 0; i == 0; ++i) for (type* p = h2_list_entry((head)->next, type, link), *t = h2_list_entry(p->link.next, type, link); &p->link != (head); p = t, t = h2_list_entry(t->link.next, type, link), ++i)
 
 #define h2_list_pop_entry(head, type, link) ((head)->empty() ? (type*)0 : h2_list_entry((head)->pop(), type, link))
 #define h2_list_top_entry(head, type, link) ((head)->empty() ? (type*)0 : h2_list_entry((head)->get_first(), type, link))
@@ -266,12 +266,12 @@ struct h2_option {
 #endif
 
    const char *path, *debug;
-   int verbose, breakable, randomize, times;
-   bool colorable, memory_check, listing;
+   bool verbose, colorfull, shuffle, memory_check, listing;
+   int breakable, rounds;
    char junit[256], args[256];
    std::vector<const char*> includes, excludes;
 
-   h2_option() : debug(nullptr), verbose(0), breakable(0), randomize(0), times(1), colorable(true), memory_check(true), listing(false), junit{0} {}
+   h2_option() : debug(nullptr), verbose(false), colorfull(true), shuffle(false), memory_check(true), listing(false), breakable(0), rounds(1), junit{0} {}
 
    void parse(int argc, const char** argv);
 
@@ -2138,6 +2138,7 @@ struct h2_mocks {
 
 struct h2_stdio {
    static void initialize();
+   static size_t get_length();
    static const char* capture_cout(const char* type = nullptr);
 };
 
@@ -2225,7 +2226,7 @@ struct h2_case {
    const char* name;
    const char* file;
    int line;
-   long long seq;
+   int seq;
    int status;
    jmp_buf jump;
    h2_fail* fails;
@@ -2255,7 +2256,7 @@ struct h2_suite {
    const char* name;
    const char* file;
    int line;
-   long long seq;
+   int seq;
    h2_stubs stubs;
    h2_mocks mocks;
    int status_stats[8];
@@ -2652,6 +2653,7 @@ static inline h2_ostringstream& h2_JE(h2_string e, h2_string a, h2_defer_fail* d
 
 struct h2_patch {
    static void initialize();
+   static bool exempt(h2_backtrace& bt);
 };
 
 struct h2_task {

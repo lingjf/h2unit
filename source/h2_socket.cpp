@@ -87,10 +87,11 @@ struct h2__socket {
       h2_sock* sock = h2_list_top_entry(&I().socks, h2_sock, y);
 
       do {
-         h2_list_for_each_entry(p, &sock->incoming, h2_packet, x) if (h2_wildcard_match(p->to.c_str(), local))
-         {
-            p->x.out();
-            return p;
+         h2_list_for_each_entry (p, &sock->incoming, h2_packet, x) {
+            if (h2_wildcard_match(p->to.c_str(), local)) {
+               p->x.out();
+               return p;
+            }
          }
          if (block) h2_sleep(100);
       } while (block);

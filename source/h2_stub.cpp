@@ -66,17 +66,19 @@ struct h2_natives {
    h2_list natives;
    h2_native* get(void* befp)
    {
-      h2_list_for_each_entry(p, &natives, h2_native, x) if (p->befp == befp) return p;
+      h2_list_for_each_entry (p, &natives, h2_native, x)
+         if (p->befp == befp) return p;
       return nullptr;
    }
    void dec(void* befp)
    {
       h2_native* native = get(befp);
-      if (native)
+      if (native) {
          if (--native->refcount == 0) {
             native->x.out();
             h2_libc::free(native);
          }
+      }
    }
    void inc(void* befp)
    {
@@ -115,10 +117,11 @@ struct h2_stub : h2_thunk, h2_libc {
 h2_inline bool h2_stubs::add(void* befp, void* tofp, const char* befn, const char* tofn, const char* file, int line)
 {
    h2_stub* stub = nullptr;
-   h2_list_for_each_entry(p, &stubs, h2_stub, x) if (p->befp == befp)
-   {
-      stub = p;
-      break;
+   h2_list_for_each_entry (p, &stubs, h2_stub, x) {
+      if (p->befp == befp) {
+         stub = p;
+         break;
+      }
    }
    if (!stub) {
       stub = new h2_stub(befp, file, line);
@@ -129,8 +132,7 @@ h2_inline bool h2_stubs::add(void* befp, void* tofp, const char* befn, const cha
 }
 h2_inline void h2_stubs::clear()
 {
-   h2_list_for_each_entry(p, &stubs, h2_stub, x)
-   {
+   h2_list_for_each_entry (p, &stubs, h2_stub, x) {
       p->reset();
       p->x.out();
       delete p;

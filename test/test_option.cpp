@@ -1,21 +1,5 @@
 #include "../source/h2_unit.cpp"
 
-#if defined __GLIBC__
-#   include <gnu/libc-version.h>
-#endif
-
-GlobalSetup()
-{
-#if defined __GLIBC__
-   ::printf("GCC %s \n", __VERSION__);
-   ::printf("GLIBC %s \n", gnu_get_libc_version());
-   // ::system("ldd ./a.out");
-#elif defined __APPLE__
-   ::printf("%s \n", __VERSION__);
-   // ::system("otool -L ./a.out");
-#endif
-}
-
 SUITE(h2_option)
 {
    h2::h2_option c;
@@ -25,11 +9,12 @@ SUITE(h2_option)
       const char* argv[] = {"./a.out"};
       c.parse(1, argv);
       OK(!c.verbose);
-      OK(0, c.listing);
-      OK(c.colorable);
-      OK(!c.randomize);
+      OK(!c.listing);
+      OK(c.colorfull);
+      OK(!c.shuffle);
       OK(c.memory_check);
-      OK(0, c.breakable);
+      OK(!c.breakable);
+      OK(1, c.rounds);
    }
 
    Case(verbose)
@@ -43,35 +28,42 @@ SUITE(h2_option)
    {
       const char* argv[] = {"./a.out", "-l"};
       c.parse(2, argv);
-      OK('A', c.listing);
+      OK(c.listing);
    }
 
-   Case(listing suite)
-   {
-      const char* argv[] = {"./a.out", "-l", "suite"};
-      c.parse(3, argv);
-      OK('s', c.listing);
-   }
-
-   Case(listing case)
-   {
-      const char* argv[] = {"./a.out", "-l", "case"};
-      c.parse(3, argv);
-      OK('c', c.listing);
-   }
-
-   Case(colorable)
+   Case(colorfull)
    {
       const char* argv[] = {"./a.out", "-c"};
       c.parse(2, argv);
-      OK(!c.colorable);
+      OK(!c.colorfull);
    }
 
-   Case(randomize memory_check breakable)
+   Case(rounds)
    {
-      const char* argv[] = {"./a.out", "-rmb"};
+      const char* argv[] = {"./a.out", "-r"};
       c.parse(2, argv);
-      OK(c.randomize);
+      OK(1, c.rounds);
+   }
+
+   Case(rounds - r1)
+   {
+      const char* argv[] = {"./a.out", "-r1"};
+      c.parse(2, argv);
+      OK(1, c.rounds);
+   }
+
+   Case(rounds - r 2)
+   {
+      const char* argv[] = {"./a.out", "-r", "2"};
+      c.parse(3, argv);
+      OK(2, c.rounds);
+   }
+
+   Case(shuffle memory_check breakable)
+   {
+      const char* argv[] = {"./a.out", "-smb"};
+      c.parse(2, argv);
+      OK(c.shuffle);
       OK(!c.memory_check);
       OK(1, c.breakable);
    }

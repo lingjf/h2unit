@@ -11,12 +11,12 @@ struct h2_option {
 #endif
 
    const char *path, *debug;
-   int verbose, breakable, randomize, times;
-   bool colorable, memory_check, listing;
+   bool verbose, colorfull, shuffle, memory_check, listing;
+   int breakable, rounds;
    char junit[256], args[256];
    std::vector<const char*> includes, excludes;
 
-   h2_option() : debug(nullptr), verbose(0), breakable(0), randomize(0), times(1), colorable(true), memory_check(true), listing(false), junit{0} {}
+   h2_option() : debug(nullptr), verbose(false), colorfull(true), shuffle(false), memory_check(true), listing(false), breakable(0), rounds(1), junit{0} {}
 
    void parse(int argc, const char** argv);
 

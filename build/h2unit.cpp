@@ -1,4 +1,4 @@
-﻿/* v5.4  2020-05-24 22:55:20 */
+﻿/* v5.4  2020-05-31 10:24:08 */
 /* https://github.com/lingjf/h2unit */
 /* Apache Licence 2.0 */
 #define __H2UNIT_HPP__
@@ -218,7 +218,7 @@ struct h2_with {
 #define h2_singleton(_Class) static _Class& I() { static _Class i; return i; }
 
 #define h2_list_entry(ptr, type, link) ((type*)((char*)(ptr) - (char*)(&(((type*)(1))->link)) + 1))
-#define h2_list_for_each_entry(p, head, type, link) for (type* p = h2_list_entry((head)->next, type, link), *t = h2_list_entry(p->link.next, type, link); &p->link != (head); p = t, t = h2_list_entry(t->link.next, type, link))
+#define h2_list_for_each_entry(p, head, type, link) for (int i = 0; i == 0; ++i) for (type* p = h2_list_entry((head)->next, type, link), *t = h2_list_entry(p->link.next, type, link); &p->link != (head); p = t, t = h2_list_entry(t->link.next, type, link), ++i)
 
 #define h2_list_pop_entry(head, type, link) ((head)->empty() ? (type*)0 : h2_list_entry((head)->pop(), type, link))
 #define h2_list_top_entry(head, type, link) ((head)->empty() ? (type*)0 : h2_list_entry((head)->get_first(), type, link))
@@ -265,12 +265,12 @@ struct h2_option {
 #endif
 
    const char *path, *debug;
-   int verbose, breakable, randomize, times;
-   bool colorable, memory_check, listing;
+   bool verbose, colorfull, shuffle, memory_check, listing;
+   int breakable, rounds;
    char junit[256], args[256];
    std::vector<const char*> includes, excludes;
 
-   h2_option() : debug(nullptr), verbose(0), breakable(0), randomize(0), times(1), colorable(true), memory_check(true), listing(false), junit{0} {}
+   h2_option() : debug(nullptr), verbose(false), colorfull(true), shuffle(false), memory_check(true), listing(false), breakable(0), rounds(1), junit{0} {}
 
    void parse(int argc, const char** argv);
 
@@ -2137,6 +2137,7 @@ struct h2_mocks {
 
 struct h2_stdio {
    static void initialize();
+   static size_t get_length();
    static const char* capture_cout(const char* type = nullptr);
 };
 
@@ -2224,7 +2225,7 @@ struct h2_case {
    const char* name;
    const char* file;
    int line;
-   long long seq;
+   int seq;
    int status;
    jmp_buf jump;
    h2_fail* fails;
@@ -2254,7 +2255,7 @@ struct h2_suite {
    const char* name;
    const char* file;
    int line;
-   long long seq;
+   int seq;
    h2_stubs stubs;
    h2_mocks mocks;
    int status_stats[8];
@@ -2651,6 +2652,7 @@ static inline h2_ostringstream& h2_JE(h2_string e, h2_string a, h2_defer_fail* d
 
 struct h2_patch {
    static void initialize();
+   static bool exempt(h2_backtrace& bt);
 };
 
 struct h2_task {
@@ -2893,9 +2895,9 @@ using h2::Pair;
 #   include <sys/mman.h>    /* mprotect, mmap */
 #   include <sys/socket.h>  /* sockaddr */
 #   include <sys/syscall.h> /* syscall */
+#   include <sys/time.h>    /* gettimeofday */
 #   include <sys/types.h>   /* size_t */
 #   include <syslog.h>      /* syslog, vsyslog */
-#   include <time.h>        /* clock */
 #   include <unistd.h>      /* sysconf */
 #   if defined __GLIBC__
 #      include <malloc.h> /* __malloc_hook */
@@ -2957,7 +2959,13 @@ static inline bool h2_wildcard_match(const char* pattern, const char* subject, b
 
 static inline long long h2_now()
 {
-   return clock() * 1000 / CLOCKS_PER_SEC;
+#ifdef _WIN32
+   return GetTickCount();
+#else
+   struct timeval tv;
+   gettimeofday(&tv, NULL);
+   return tv.tv_sec * 1000LL + tv.tv_usec / 1000;
+#endif
 }
 
 static inline void h2_sleep(long long milliseconds)
@@ -3043,6 +3051,7 @@ struct h2__color {
    h2__color()
    {
       memset(current, 0, sizeof(current));
+      default_attribute = 0;
 #ifdef _WIN32
       console_handle = GetStdHandle(STD_OUTPUT_HANDLE);
       CONSOLE_SCREEN_BUFFER_INFO csbi;
@@ -3118,7 +3127,7 @@ struct h2__color {
       for (const char* p = str; *p; p++) {
          if (h2_color::is_ctrl(p)) {
             p = I().parse(p);
-            if (h2_option::I().colorable) I().change();
+            if (h2_option::I().colorfull) I().change();
          } else {
             h2_libc::write(fileno(stdout), p, 1);
          }
@@ -3174,7 +3183,7 @@ struct h2__color {
             return K[i].value;
 #endif
 
-      return 0;
+      return default_attribute;
    }
 };
 
@@ -4427,20 +4436,18 @@ static inline void save_last_order()
 {
    h2_with f(fopen(last_order_file_path, "w"));
    if (f.f)
-      h2_list_for_each_entry(s, &h2_directory::I().sorted_suites, h2_suite, sorted)
-        h2_list_for_each_entry(c, &s->sorted_cases, h2_case, sorted)
-          fprintf(f.f, "%s\n%s\n", s->name, c->name);
+      h2_list_for_each_entry (s, &h2_directory::I().sorted_suites, h2_suite, sorted)
+         h2_list_for_each_entry (c, &s->sorted_cases, h2_case, sorted)
+            fprintf(f.f, "%s\n%s\n", s->name, c->name);
 }
 
 static inline bool mark_sequence(char* suitename, char* casename)
 {
-   static long long seq = INT_MIN;
+   static int seq = INT_MIN / 2;
 
-   h2_list_for_each_entry(s, &h2_directory::I().registered_suites, h2_suite, registered)
-   {
+   h2_list_for_each_entry (s, &h2_directory::I().registered_suites, h2_suite, registered) {
       if (strcmp(suitename, s->name) == 0) {
-         h2_list_for_each_entry(c, &s->registered_cases, h2_case, registered)
-         {
+         h2_list_for_each_entry (c, &s->registered_cases, h2_case, registered) {
             if (strcmp(casename, c->name) == 0) {
                s->seq = c->seq = ++seq;
                return true;
@@ -4465,8 +4472,7 @@ static inline int read_last_order()
 
 static inline void insert_suite_sort(h2_list* suite_list, h2_suite* s)
 {
-   h2_list_for_each_entry(p, suite_list, h2_suite, sorted)
-   {
+   h2_list_for_each_entry (p, suite_list, h2_suite, sorted) {
       if (s->seq < p->seq) {
          p->sorted.add_before(&s->sorted);
          return;
@@ -4477,8 +4483,7 @@ static inline void insert_suite_sort(h2_list* suite_list, h2_suite* s)
 
 static inline void insert_case_sort(h2_list* case_list, h2_case* c)
 {
-   h2_list_for_each_entry(p, case_list, h2_case, sorted)
-   {
+   h2_list_for_each_entry (p, case_list, h2_case, sorted) {
       if (c->seq < p->seq) {
          p->sorted.add_before(&c->sorted);
          return;
@@ -4491,23 +4496,21 @@ h2_inline int h2_directory::sort()
 {
    int count = 0;
    int last = read_last_order();
-   srand(clock());
-   if (O.randomize && last == 0)
-      h2_list_for_each_entry(s, &h2_directory::I().registered_suites, h2_suite, registered)
-        h2_list_for_each_entry(c, &s->registered_cases, h2_case, registered)
-          s->seq = c->seq = rand();
+   srand(h2_now());
+   if (O.shuffle && last == 0)
+      h2_list_for_each_entry (s, &h2_directory::I().registered_suites, h2_suite, registered)
+         h2_list_for_each_entry (c, &s->registered_cases, h2_case, registered)
+            s->seq = c->seq = rand();
 
-   h2_list_for_each_entry(s, &h2_directory::I().registered_suites, h2_suite, registered)
-   {
-      h2_list_for_each_entry(c, &s->registered_cases, h2_case, registered)
-      {
+   h2_list_for_each_entry (s, &h2_directory::I().registered_suites, h2_suite, registered) {
+      h2_list_for_each_entry (c, &s->registered_cases, h2_case, registered) {
          insert_case_sort(&s->sorted_cases, c);
          count += 1;
       }
       insert_suite_sort(&h2_directory::I().sorted_suites, s);
    }
 
-   if (O.randomize && last == 0)
+   if (O.shuffle && last == 0)
       save_last_order();
 
    return count;
@@ -4528,7 +4531,9 @@ struct h2_resolver {
 
    h2_dns* find(const char* hostname)
    {
-      h2_list_for_each_entry(p, &dnses, h2_dns, y) if (!strcmp("*", p->name) || !strcmp(hostname, p->name)) return p;
+      h2_list_for_each_entry (p, &dnses, h2_dns, y)
+         if (!strcmp("*", p->name) || !strcmp(hostname, p->name))
+            return p;
       return nullptr;
    }
 
@@ -4611,8 +4616,7 @@ struct h2_resolver {
 h2_inline void h2_dnses::add(h2_dns* dns) { dnses.push(&dns->x); }
 h2_inline void h2_dnses::clear()
 {
-   h2_list_for_each_entry(p, &dnses, h2_dns, x)
-   {
+   h2_list_for_each_entry (p, &dnses, h2_dns, x) {
       p->x.out(), p->y.out();
       delete p;
    }
@@ -4688,8 +4692,8 @@ h2_inline const char* h2_fail::get_locate()
    static char st[1024];
    char* p = st;
    strcpy(p, "");
-   if (func && strlen(func)) p += sprintf(p, ", in %s(%s)", func, 0 <= argi && argi < 9 ? a9 + argi * 4 : "");
-   if (file && strlen(file) && 0 < line) p += sprintf(p, ", at %s:%d", file, line);
+   if (func && strlen(func)) p += sprintf(p, " in %s(%s)", func, 0 <= argi && argi < 9 ? a9 + argi * 4 : "");
+   if (file && strlen(file) && 0 < line) p += sprintf(p, " at %s:%d", file, line);
    return st;
 }
 
@@ -4712,7 +4716,7 @@ h2_inline void h2_fail_normal::print(int subling_index, int child_index)
    h2_line line;
    line.indent(child_index * 2 + 1);
    if (no.size()) line.printf("dark gray", "%s. ", no.c_str());
-   line.printf("", "%s%s", explain.c_str(), get_locate());
+   line.printf("", "%s,%s", explain.c_str(), get_locate());
    h2_color::printf(line);
 }
 
@@ -4767,7 +4771,8 @@ h2_inline void h2_fail_unexpect::print_JE(h2_line& line)
 {
    line.push_back("JE( ");
    line.printf("cyan", "%s", e_expression.acronym(O.verbose ? 10000 : 30).c_str());
-   line.printf("bold,red", ", %s", a_expression.acronym(O.verbose ? 10000 : 30).c_str());
+   line.push_back(", ");
+   line.printf("bold,red", "%s", a_expression.acronym(O.verbose ? 10000 : 30).c_str());
    line.push_back(" )");
 }
 
@@ -4788,8 +4793,8 @@ h2_inline void h2_fail_unexpect::print(int subling_index, int child_index)
    if (usage == 1) print_OK1(line);
    if (usage == 2) print_OK2(line);
    if (usage == 3) print_JE(line);
-   if (explain.size()) line.printf("", ", %s", explain.c_str());
-   if (user_explain.size()) line.printf("", ", %s", user_explain.c_str());
+   if (explain.size()) line.printf("", " %s,", explain.c_str());
+   if (user_explain.size()) line.printf("", " %s,", user_explain.c_str());
    line.push_back(get_locate());
    h2_color::printf(line);
 }
@@ -5032,7 +5037,7 @@ h2_inline void h2_fail_overflow::print(int subling_index, int child_index)
    for (int i = 0; i < spot.size(); ++i)
       h2_color::printf("bold,red", "%02X ", spot[i]);
 
-   h2_color::printf("", "%s\n", get_locate());
+   h2_color::printf("", ",%s\n", get_locate());
    if (bt_trample.count) h2_color::printf("", "  trampled at backtrace:\n"), bt_trample.print(3);
    h2_color::printf("", "  which allocate at backtrace:\n"), bt_allocate.print(3);
 }
@@ -5303,8 +5308,7 @@ struct h2_block : h2_libc {
 
    h2_fail* check()
    {
-      h2_list_for_each_entry(p, &pieces, h2_piece, x)
-      {
+      h2_list_for_each_entry (p, &pieces, h2_piece, x) {
          h2_fail* fail1 = p->violate_check();
          if (fail1) return fail1;
          h2_fail* fail2 = p->leak_check(where, file, line);
@@ -5312,8 +5316,7 @@ struct h2_block : h2_libc {
       }
       /* why not chain fails in subling? report one fail ignore more for clean.
          when fail, memory may be in used, don't free and keep it for robust */
-      h2_list_for_each_entry(p, &pieces, h2_piece, x)
-      {
+      h2_list_for_each_entry (p, &pieces, h2_piece, x) {
          p->x.out();
          delete p;
       }
@@ -5337,7 +5340,8 @@ struct h2_block : h2_libc {
 
    h2_piece* get_piece(const void* ptr)
    {
-      h2_list_for_each_entry(p, &pieces, h2_piece, x) if (p->user_ptr == ptr) return p;
+      h2_list_for_each_entry (p, &pieces, h2_piece, x)
+         if (p->user_ptr == ptr) return p;
       return nullptr;
    }
 
@@ -5349,7 +5353,8 @@ struct h2_block : h2_libc {
 
    h2_piece* host_piece(const void* addr)
    {
-      h2_list_for_each_entry(p, &pieces, h2_piece, x) if (p->in_page_range((const unsigned char*)addr)) return p;
+      h2_list_for_each_entry (p, &pieces, h2_piece, x)
+         if (p->in_page_range((const unsigned char*)addr)) return p;
       return nullptr;
    }
 };
@@ -5357,27 +5362,6 @@ struct h2_block : h2_libc {
 struct h2_stack {
    h2_singleton(h2_stack);
    h2_list blocks;
-
-   bool escape(h2_backtrace& bt)
-   {
-      static struct {
-         void* base;
-         int size;
-      } escape_functions[] = {
-        {(void*)sprintf, 300},
-        {(void*)vsnprintf, 300},  //  {(void*)sscanf, 300},
-        {(void*)localtime, 300},
-#ifndef _WIN32
-        {(void*)tzset, 300},
-#endif
-      };
-
-      for (auto& x : escape_functions)
-         if (bt.has(x.base, x.size))
-            return true;
-
-      return false;
-   }
 
    void push(const char* file, int line, const char* where, long long limited, const char* fill)
    {
@@ -5396,14 +5380,13 @@ struct h2_stack {
    h2_piece* new_piece(const char* who, size_t size, size_t alignment, const char* fill)
    {
       h2_backtrace bt(O.isMAC() ? 3 : 2);
-      h2_block* b = escape(bt) ? h2_list_bottom_entry(&blocks, h2_block, x) : h2_list_top_entry(&blocks, h2_block, x);
+      h2_block* b = h2_patch::exempt(bt) ? h2_list_bottom_entry(&blocks, h2_block, x) : h2_list_top_entry(&blocks, h2_block, x);
       return b ? b->new_piece(who, size, alignment, fill, bt) : nullptr;
    }
 
    h2_piece* get_piece(const void* ptr)
    {
-      h2_list_for_each_entry(p, &blocks, h2_block, x)
-      {
+      h2_list_for_each_entry (p, &blocks, h2_block, x) {
          h2_piece* piece = p->get_piece(ptr);
          if (piece) return piece;
       }
@@ -5412,8 +5395,7 @@ struct h2_stack {
 
    h2_fail* rel_piece(const char* who, void* ptr)
    {
-      h2_list_for_each_entry(p, &blocks, h2_block, x)
-      {
+      h2_list_for_each_entry (p, &blocks, h2_block, x) {
          h2_piece* piece = p->get_piece(ptr);
          if (piece) return p->rel_piece(who, piece);
       }
@@ -5423,8 +5405,7 @@ struct h2_stack {
 
    h2_piece* host_piece(const void* addr)
    {
-      h2_list_for_each_entry(p, &blocks, h2_block, x)
-      {
+      h2_list_for_each_entry (p, &blocks, h2_block, x) {
          h2_piece* piece = p->host_piece(addr);
          if (piece) return piece;
       }
@@ -5850,11 +5831,14 @@ struct h2_json_node : h2_libc {
    h2_string value_string;
    double value_double;
    bool value_boolean;
-   h2_vector<h2_json_node*> children; /* array or object */
+   h2_list children, x; /* array or object */
 
    ~h2_json_node()
    {
-      for (auto it : children) delete it;
+      h2_list_for_each_entry (p, &children, h2_json_node, x) {
+         p->x.out();
+         delete p;
+      }
    }
    h2_json_node() : type(t_absent), value_double(0), value_boolean(false) {}
    h2_json_node(const char* json_string, int length = 0) : h2_json_node()
@@ -5868,29 +5852,21 @@ struct h2_json_node : h2_libc {
       }
    }
 
-   int size() { return children.size(); }
+   int size() { return children.count(); }
 
-   h2_json_node* get(int index) { return 0 <= index && index < children.size() ? children[index] : nullptr; }
+   h2_json_node* get(int index)
+   {
+      h2_list_for_each_entry (p, &children, h2_json_node, x)
+         if (i == index) return p;
+      return nullptr;
+   }
 
    h2_json_node* get(const char* name)
    {
       if (name)
-         for (auto node : children)
-            if (!node->key_string.compare(name))
-               return node;
-
+         h2_list_for_each_entry (p, &children, h2_json_node, x)
+            if (!p->key_string.compare(name)) return p;
       return nullptr;
-   }
-
-   void del(h2_json_node* child)
-   {
-      for (auto it = children.begin(); it != children.end(); it++) {
-         if (child == *it) {
-            children.erase(it);
-            delete child;
-            return;
-         }
-      }
    }
 
    bool is_null() { return t_null == type; }
@@ -6007,9 +5983,9 @@ struct h2_json_node : h2_libc {
 
       while (!x.strip().startswith(']')) {
          h2_json_node* new_node = new h2_json_node();
-         if (!new_node) return false;
+         if (!new_node) abort();
 
-         children.push_back(new_node);
+         children.push_back(&new_node->x);
 
          if (!new_node->parse_value(x)) return false;
 
@@ -6028,9 +6004,9 @@ struct h2_json_node : h2_libc {
 
       while (!x.strip().startswith('}')) {
          h2_json_node* new_node = new h2_json_node();
-         if (!new_node) return false;
+         if (!new_node) abort();
 
-         children.push_back(new_node);
+         children.push_back(&new_node->x);
 
          if (!new_node->parse_string(x)) return false;
 
@@ -6053,42 +6029,36 @@ struct h2_json_node : h2_libc {
 
    void dual(int& _type, const char*& _class, h2_string& _key, h2_string& _value)
    {
-      _type = t_string;
-
       if (key_string.size()) _key = "\"" + key_string + "\"";
-
+      _type = type;
       switch (type) {
       case t_null:
-         _type = t_string;
          _class = "atomic";
          _value = "null";
          break;
       case t_boolean:
-         _type = t_string;
          _class = "atomic";
          _value = value_boolean ? "true" : "false";
          break;
       case t_number:
-         _type = t_string;
          _class = "atomic";
-         _value = h2_stringify(value_double);
+         if (value_double - ::floor(value_double) == 0)
+            _value = h2_stringify((long long)value_double);
+         else
+            _value = h2_stringify(value_double);
          break;
       case t_string:
-         _type = t_string;
          _class = "atomic";
          _value = "\"" + value_string + "\"";
          break;
       case t_regexp:
-         _type = t_string;
          _class = "atomic";
          _value = value_string;
          break;
       case t_array:
-         _type = t_array;
          _class = "array";
          break;
       case t_object:
-         _type = t_object;
          _class = "object";
          break;
       }
@@ -6104,17 +6074,20 @@ struct h2_json_node : h2_libc {
          line.push_back("null");
       else if (is_bool())
          line.push_back(value_boolean ? "true" : "false");
-      else if (is_number())
-         line.push_back(h2_stringify(value_double));
-      else if (is_string())
+      else if (is_number()) {
+         if (value_double - ::floor(value_double) == 0)
+            line.push_back(h2_stringify((long long)value_double));
+         else
+            line.push_back(h2_stringify(value_double));
+      } else if (is_string())
          line.push_back("\"" + value_string + "\"");
       else if (is_regexp())
          line.push_back("\"/" + value_string + "/\"");
       else if (is_array() || is_object()) {
          line.push_back(is_array() ? "[ " : "{ ");
          h2_lines __lines;
-         for (size_t i = 0; i < children.size(); ++i)
-            children[i]->print(__lines, depth + 1, children.size() - i - 1, fold);
+         h2_list_for_each_entry (p, &children, h2_json_node, x)
+            p->print(__lines, depth + 1, children.count() - i - 1, fold);
 
          if (fold && __lines.foldable()) {
             line.fold(__lines);
@@ -6137,9 +6110,9 @@ struct h2_json_match {
    static bool match_array(h2_json_node* e, h2_json_node* a)
    {
       if (!e || !a) return false;
-      if (e->children.size() != a->children.size()) return false;
-      for (int i = 0; i < e->children.size(); ++i)
-         if (!match(e->children[i], a->children[i]))
+      if (e->size() != a->size()) return false;
+      h2_list_for_each_entry (p, &e->children, h2_json_node, x)
+         if (!match(p, a->get(i)))
             return false;
       return true;
    }
@@ -6147,9 +6120,9 @@ struct h2_json_match {
    static bool match_object(h2_json_node* e, h2_json_node* a)
    {
       if (!e || !a) return false;
-      if (e->children.size() > a->children.size()) return false;
-      for (int i = 0; i < e->children.size(); ++i)
-         if (!match(e->children[i], a->get(e->children[i]->key_string.c_str())))
+      if (e->size() > a->size()) return false;
+      h2_list_for_each_entry (p, &e->children, h2_json_node, x)
+         if (!match(p, a->get(p->key_string.c_str())))
             return false;
       return true;
    }
@@ -6176,11 +6149,10 @@ struct h2_json_match {
       };
    }
 
-   static h2_json_node* search(h2_vector<h2_json_node*>& haystack, h2_json_node* needle)
+   static h2_json_node* search(h2_list* haystack, h2_json_node* needle)
    {
-      for (auto node : haystack)
-         if (match(needle, node)) return node;
-
+      h2_list_for_each_entry (p, haystack, h2_json_node, x)
+         if (match(needle, p)) return p;
       return nullptr;
    }
 };
@@ -6192,13 +6164,16 @@ struct h2_json_dual : h2_libc {  // combine 2 Node into a Dual
    h2_string e_key, a_key;
    h2_string e_value, a_value;
    h2_lines e_blob, a_blob;
-   h2_vector<h2_json_dual*> children;
+   h2_list children, x;
    h2_json_dual* perent;
    int depth;
 
    ~h2_json_dual()
    {
-      for (auto it : children) delete it;
+      h2_list_for_each_entry (p, &children, h2_json_dual, x) {
+         p->x.out();
+         delete p;
+      }
    }
 
    h2_json_dual(h2_json_node* e, h2_json_node* a, h2_json_dual* perent_ = nullptr) : match(false), e_type(h2_json_node::t_absent), a_type(h2_json_node::t_absent), e_class("blob"), a_class("blob"), perent(perent_), depth(perent_ ? perent_->depth + 1 : 0)
@@ -6207,63 +6182,49 @@ struct h2_json_dual : h2_libc {  // combine 2 Node into a Dual
       if (e) e->dual(e_type, e_class, e_key, e_value);
       if (a) a->dual(a_type, a_class, a_key, a_value);
 
-      if (e_type != a_type) {
+      if (strcmp(e_class, a_class)) {
          if (e) e->print(e_blob, depth, 0, true);
          if (a) a->print(a_blob, depth, 0, true);
          e_class = a_class = "blob";
-      } else if (e_type == h2_json_node::t_object) {
-         for (auto i = e->children.begin(); i != e->children.end();) {
-            h2_json_node *e1 = *i, *a1 = a->get(e1->key_string.c_str());
-            if (!a1) a1 = h2_json_match::search(a->children, e1);
-            if (a1) {
-               children.push_back(new h2_json_dual(e1, a1, this));
-               a->del(a1);
-               i = e->children.erase(i);
-               delete e1;
-            } else
-               i++;
+      } else if (!strcmp("object", e_class)) {
+         h2_list_for_each_entry (_e, &e->children, h2_json_node, x) {
+            h2_json_node* _a = a->get(_e->key_string.c_str());
+            if (!_a) _a = h2_json_match::search(&a->children, _e);
+            if (_a) {
+               children.push_back(&(new h2_json_dual(_e, _a, this))->x);
+               _e->x.out();
+               delete _e;
+               _a->x.out();
+               delete _a;
+            }
          }
 
-         for (int i = 0; i < std::max(e->children.size(), a->children.size()); ++i)
-            children.push_back(new h2_json_dual(e->get(i), a->get(i), this));
-      } else if (e_type == h2_json_node::t_array) {
-         for (int i = 0; i < std::max(e->children.size(), a->children.size()); ++i)
-            children.push_back(new h2_json_dual(e->get(i), a->get(i), this));
+         for (int i = 0; i < std::max(e->size(), a->size()); ++i)
+            children.push_back(&(new h2_json_dual(e->get(i), a->get(i), this))->x);
+      } else if (!strcmp("array", e_class)) {
+         for (int i = 0; i < std::max(e->size(), a->size()); ++i)
+            children.push_back(&(new h2_json_dual(e->get(i), a->get(i), this))->x);
       }
    }
 
-   bool has_next_e(h2_vector<h2_json_dual*>& subling)
+   bool has_next(h2_list* subling, bool expect) const
    {
-      for (size_t i = 0; i < subling.size(); ++i) {
-         if (subling[i] == this) {
-            for (++i; i < subling.size(); ++i)
-               if (subling[i]->e_type != h2_json_node::t_absent)
-                  return true;
-            break;
+      if (subling) {
+         for (h2_list* p = x.next; p != subling; p = p->next) {
+            h2_json_dual* d = h2_list_entry(p, h2_json_dual, x);
+            if ((expect ? d->e_type : d->a_type) != h2_json_node::t_absent)
+               return true;
          }
       }
       return false;
    }
 
-   bool has_next_a(h2_vector<h2_json_dual*>& subling)
-   {
-      for (size_t i = 0; i < subling.size(); ++i) {
-         if (subling[i] == this) {
-            for (++i; i < subling.size(); ++i)
-               if (subling[i]->a_type != h2_json_node::t_absent)
-                  return true;
-            break;
-         }
-      }
-      return false;
-   }
-
-   void align(h2_lines& e_lines, h2_lines& a_lines, h2_vector<h2_json_dual*>* subling = nullptr)
+   void align(h2_lines& e_lines, h2_lines& a_lines, h2_list* subling = nullptr)
    {
       if (!strcmp(e_class, "blob")) {
          e_blob.samesizify(a_blob);
          for (auto& line : e_blob)
-            line.insert(line.begin(), "\033{bold,cyan}"), line.push_back("\033{reset}");
+            line.insert(line.begin(), "\033{cyan}"), line.push_back("\033{reset}");
 
          for (auto& line : a_blob)
             line.insert(line.begin(), "\033{yellow}"), line.push_back("\033{reset}");
@@ -6308,8 +6269,8 @@ struct h2_json_dual : h2_libc {  // combine 2 Node into a Dual
 
          e_lines.push_back(e_line), e_line.clear();
          a_lines.push_back(a_line), a_line.clear();
-         for (size_t i = 0; i < children.size(); ++i)
-            children[i]->align(e_lines, a_lines, &children);
+         h2_list_for_each_entry (p, &children, h2_json_dual, x)
+            p->align(e_lines, a_lines, &children);
 
          e_line.indent(depth * 2);
          e_line.push_back(strcmp(e_class, "object") ? "]" : "}");
@@ -6317,11 +6278,11 @@ struct h2_json_dual : h2_libc {  // combine 2 Node into a Dual
          a_line.push_back(strcmp(a_class, "object") ? "]" : "}");
       }
       if (e_line.size()) {
-         if (subling && has_next_e(*subling)) e_line.push_back(",");
+         if (has_next(subling, true)) e_line.push_back(",");
          e_lines.push_back(e_line), e_line.clear();
       }
       if (a_line.size()) {
-         if (subling && has_next_a(*subling)) a_line.push_back(",");
+         if (has_next(subling, false)) a_line.push_back(",");
          a_lines.push_back(a_line), a_line.clear();
       }
    }
@@ -6358,8 +6319,7 @@ struct h2_libc_malloc {
    void merge()
    {
       buddy* b = nullptr;
-      h2_list_for_each_entry(p, &buddies, buddy, x)
-      {
+      h2_list_for_each_entry (p, &buddies, buddy, x) {
          if (b) {
             if (((char*)b) + b->size == (char*)p) {
                b->size += p->size;
@@ -6374,8 +6334,7 @@ struct h2_libc_malloc {
    void insert(buddy* b)
    {
       buddy* n = nullptr;
-      h2_list_for_each_entry(p, &buddies, buddy, x)
-      {
+      h2_list_for_each_entry (p, &buddies, buddy, x) {
          if (((char*)b) + b->size <= (char*)p) {
             n = p;
             break;
@@ -6393,8 +6352,7 @@ struct h2_libc_malloc {
    {
       size = (size + 7) / 8 * 8;
       buddy* b = nullptr;
-      h2_list_for_each_entry(p, &buddies, buddy, x)
-      {
+      h2_list_for_each_entry (p, &buddies, buddy, x) {
          if (size <= p->size - sizeof(p->size)) {
             b = p;
             p->x.out();
@@ -6906,7 +6864,8 @@ inline h2_fail* h2_has_matches<Matchers...>::matches(const std::unordered_multim
 }
 h2_inline bool h2_mocks::add(h2_mock* mock)
 {
-   h2_list_for_each_entry(p, &mocks, h2_mock, x) if (p == mock) return false;
+   h2_list_for_each_entry (p, &mocks, h2_mock, x)
+      if (p == mock) return false;
    mocks.push(&mock->x);
    return true;
 }
@@ -6914,8 +6873,7 @@ h2_inline bool h2_mocks::add(h2_mock* mock)
 h2_inline h2_fail* h2_mocks::clear()
 {
    h2_fail* fail = nullptr;
-   h2_list_for_each_entry(p, &mocks, h2_mock, x)
-   {
+   h2_list_for_each_entry (p, &mocks, h2_mock, x) {
       h2_fail::append_subling(fail, p->times_check());
       p->reset();
       p->x.out();
@@ -6940,11 +6898,11 @@ static inline void usage()
   ├────────┼───────────┼────────────────────────────────────────────────────┤\n\
   │ -l     │           │ List out suites and cases                          │\n\
   ├────────┼───────────┼────────────────────────────────────────────────────┤\n\
-  │ -r     │           │ Run suite and cases in random order.               │\n\
+  │ -s     │           │ Shuffle cases and execute in random order          │\n\
   ├────────┼───────────┼────────────────────────────────────────────────────┤\n\
   │ -b[n]  │    [n]    │ Breaking test once n (default 1) failures occurred │\n\
   ├────────┼───────────┼────────────────────────────────────────────────────┤\n\
-  │ -s[n]  │    [n]    │ Repeat run n times (default 1) when no failure     │\n\
+  │ -r[n]  │    [n]    │ Repeat run n rounds (default 1) when no failure    │\n\
   ├────────┼───────────┼────────────────────────────────────────────────────┤\n\
   │ -c     │           │ Output in black-white color style                  │\n\
   ├────────┼───────────┼────────────────────────────────────────────────────┤\n\
@@ -6977,16 +6935,17 @@ struct getopt {
             return argv[offset++];
       return nullptr;
    }
-   const char* extract()
+   const char* extract(const char* pattern)
    {
       const char **pp = nullptr, *p = nullptr;
-      for (int i = offset; i < argc; ++i)
+      for (int i = offset; i < argc; ++i) {
          if (argv[i]) {
             pp = argv + i;
             break;
          }
+      }
 
-      if (pp && *pp[0] != '-') p = *pp, *pp = nullptr;
+      if (pp && *pp[0] != '-' && h2_regex_match(pattern, *pp)) p = *pp, *pp = nullptr;
       return p;
    }
    const char* parseint(const char* p, int& value) const
@@ -7011,39 +6970,36 @@ h2_inline void h2_option::parse(int argc, const char** argv)
       if (p[0] != '-') continue;
       for (const char* t; *p; p++) {
          switch (*p) {
-         case 'v': verbose = 1; break;
+         case 'v': verbose = true; break;
+         case 'c': colorfull = !colorfull; break;
+         case 's': shuffle = !shuffle; break;
+         case 'm': memory_check = !memory_check; break;
          case 'l': listing = true; break;
          case 'b':
             breakable = 1;
             if (::isdigit(*(p + 1)))
                p = get.parseint(p + 1, breakable);
-            else if ((t = get.extract()))
+            else if ((t = get.extract("[0-9]+")))
                breakable = atoi(t);
             break;
-         case 's':
-            times = 1;
-            if (::isdigit(*(p + 1)))
-               p = get.parseint(p + 1, times);
-            else if ((t = get.extract()))
-               times = atoi(t);
-            break;
-         case 'c': colorable = !colorable; break;
          case 'r':
-            randomize = 'A';
-            if ((t = get.extract())) randomize = t[0];
+            rounds = 1;
+            if (::isdigit(*(p + 1)))
+               p = get.parseint(p + 1, rounds);
+            else if ((t = get.extract("[0-9]+")))
+               rounds = atoi(t);
             break;
-         case 'm': memory_check = !memory_check; break;
          case 'd': debug = "gdb new"; break;
          case 'D': debug = "gdb attach"; break;
          case 'j':
             sprintf(junit, "%s.xml", path);
-            if ((t = get.extract())) strcpy(junit, t);
+            if ((t = get.extract(".*"))) strcpy(junit, t);
             break;
          case 'i':
-            while ((t = get.extract())) includes.push_back(t);
+            while ((t = get.extract(".*"))) includes.push_back(t);
             break;
          case 'x':
-            while ((t = get.extract())) excludes.push_back(t);
+            while ((t = get.extract(".*"))) excludes.push_back(t);
             break;
          case '-': break;
          case 'h':
@@ -7110,12 +7066,37 @@ h2_inline void h2_patch::initialize()
    h2__patch::I();
 }
 
+h2_inline bool h2_patch::exempt(h2_backtrace& bt)
+{
+   static struct {
+      void* base;
+      int size;
+   } exempt_functions[] = {
+     {(void*)sscanf, 300},
+     {(void*)sprintf, 300},
+     {(void*)vsnprintf, 300},
+#ifdef __APPLE__
+     {(void*)vsnprintf_l, 300},
+#endif
+     {(void*)localtime, 300},
+#ifndef _WIN32
+     {(void*)tzset, 300},
+#endif
+   };
+
+   for (auto& x : exempt_functions)
+      if (bt.has(x.base, x.size))
+         return true;
+
+   return false;
+}
+
 h2_inline h2_report::h2_report() : total_cases(0), done_cases(0), percentage(0), ss(0), cs(0), tt(0), ts(0), tc(0) {}
 h2_inline void h2_report::on_task_start(int cases)
 {
    total_cases = cases;
    tt = h2_now();
-};
+}
 h2_inline void h2_report::on_task_endup(int status_stats[8], int round) { tt = h2_now() - tt; };
 h2_inline void h2_report::on_suite_start(h2_suite* s) { ts = h2_now(); }
 h2_inline void h2_report::on_suite_endup(h2_suite* s) { ts = h2_now() - ts; }
@@ -7124,61 +7105,126 @@ h2_inline void h2_report::on_case_endup(h2_suite* s, h2_case* c)
 {
    percentage = ++done_cases * 100 / total_cases;
    tc = h2_now() - tc;
-};
+}
 
 struct h2_report_console : h2_report {
+   void print_percentage(bool percent = true, bool number = false)
+   {
+      static size_t last = 0;
+      h2_color::printf("", h2_stdio::get_length() == last ? "\r" : "\n");
+      if (percent) {
+         h2_color::printf("dark gray", "[");
+         h2_color::printf("", "%3d%%", percentage);
+         h2_color::printf("dark gray", "] ");
+      }
+      if (number) {
+         h2_color::printf("dark gray", "(");
+         h2_color::printf("", "%d", done_cases);
+         h2_color::printf("dark gray", "/");
+         h2_color::printf("", "%d", total_cases);
+         h2_color::printf("dark gray", ") ");
+      }
+      last = h2_stdio::get_length();
+   }
+
+   const char* format_duration(long long ms)
+   {
+      static char st[64];
+      if (ms < 1000 * 60)
+         sprintf(st, "%.2g seconds", ms / (double)1000.0);
+      else if (ms < 1000 * 60 * 60)
+         sprintf(st, "%.2g minutes", ms / (double)6000.0);
+      else
+         sprintf(st, "%.2g hours", ms / (double)36000.0);
+
+      return st;
+   }
+
+   void print_status(int n, const char* style, const char* name)
+   {
+      if (0 < n) {
+         h2_color::printf("dark gray", ", ");
+         h2_color::printf(style, "%d", n);
+         h2_color::printf("", " %s", name);
+      }
+   }
+
    void on_task_endup(int status_stats[8], int round) override
    {
       h2_report::on_task_endup(status_stats, round);
       if (O.listing) {
-         h2_color::printf("bold,green", "Listing <%d suites, %d cases, %d todo, %d filtered>\n", ss, total_cases, status_stats[h2_case::TODOED], status_stats[h2_case::FILTED]);
+         h2_color::printf("bold,green", "Listing <%d suites, %d cases, %d todo>\n", ss, total_cases, status_stats[h2_case::TODOED]);
       } else {
-         h2_color::printf("", "\n[%3d%%] ", percentage);
-         char t[62] = "";
-         if (1 < round) sprintf(t, " %d rounds,", round);
+         print_percentage(false, false);
          if (0 < status_stats[h2_case::FAILED])
-            h2_color::printf("bold,red", "Failed <%d failed, %d passed, %d todo, %d filtered,%s %lld ms>\n", status_stats[h2_case::FAILED], status_stats[h2_case::PASSED], status_stats[h2_case::TODOED], status_stats[h2_case::FILTED], t, tt);
+            h2_color::printf("bold,red", "Failure");
          else
-            h2_color::printf("bold,green", "Passed <%d passed, %d todo, %d filtered, %d cases,%s %lld ms>\n", status_stats[h2_case::PASSED], status_stats[h2_case::TODOED], status_stats[h2_case::FILTED], total_cases, t, tt);
+            h2_color::printf("bold,green", "Success");
+         h2_color::printf("dark gray", " (");
+         h2_color::printf("green", "%d", status_stats[h2_case::PASSED]);
+         h2_color::printf("", " passed");
+         print_status(status_stats[h2_case::FAILED], "red", "failed");
+         print_status(status_stats[h2_case::TODOED], "yellow", "todo");
+         print_status(status_stats[h2_case::FILTED], "blue", "filtered");
+         h2_color::printf("dark gray", ") ");
+         if (1 < round) h2_color::printf("", "%d rounds ", round);
+         h2_color::printf("", "%s \n", format_duration(tt));
       }
    }
    void on_suite_start(h2_suite* s) override
    {
+      h2_report::on_suite_start(s);
       cs = 0;
       if (O.listing) {
          h2_color::printf("", "SUITE%d. ", ++ss);
-         h2_color::printf("bold,yellow", "%s", s->name);
-         h2_color::printf("", " @ %s:%d\n", s->file, s->line);
+         h2_color::printf("bold,blue", "%s", s->name);
+         h2_color::printf("", " %s:%d\n", s->file, s->line);
       }
    }
    void on_case_start(h2_suite* s, h2_case* c) override
    {
+      h2_report::on_case_start(s, c);
       if (O.listing) {
-         h2_color::printf("", "   CASE%d. ", ++cs);
-         h2_color::printf("bold,cyan", "%s", c->name);
-         h2_color::printf("", " @ %s:%d\n", basename((char*)c->file), c->line);
+         h2_color::printf("", "   %s%d. ", c->status == h2_case::TODOED ? "TODO" : "CASE", ++cs);
+         h2_color::printf("cyan", "%s", c->name);
+         h2_color::printf("", " %s:%d\n", basename((char*)c->file), c->line);
       }
    }
+
+   void print_suite_case(const char* s, const char* c)
+   {
+      h2_color::printf("", "%s", s);
+      h2_color::printf("dark gray", " | ");
+      h2_color::printf("", "%s", c);
+   }
+
    void on_case_endup(h2_suite* s, h2_case* c) override
    {
-      if (O.listing) return;
       h2_report::on_case_endup(s, c);
+      if (O.listing) return;
       switch (c->status) {
       case h2_case::INITED: break;
       case h2_case::TODOED:
-         if (O.verbose) h2_color::printf("", "[%3d%%] (%s // %s): %s at %s:%d\n", percentage, s->name, c->name, CSS[c->status], basename((char*)c->file), c->line);
+         print_percentage();
+         print_suite_case(s->name, c->name);
+         h2_color::printf("yellow", " Todo");
+         h2_color::printf("", " at %s:%d\n", basename((char*)c->file), c->line);
          break;
       case h2_case::FILTED: break;
       case h2_case::PASSED:
          if (O.verbose) {
-            h2_color::printf("", "[%3d%%] ", percentage);
-            h2_color::printf("light blue", "(%s // %s): Passed - %lld ms\n", s->name, c->name, tc);
+            print_percentage();
+            print_suite_case(s->name, c->name);
+            h2_color::printf("green", " Passed");
+            h2_color::printf("", " %lld ms\n", tc);
          } else if (!O.debug)
-            h2_color::printf("", "\r[%3d%%] (%d/%d) ", percentage, done_cases, total_cases);
+            print_percentage(true, true);
          break;
       case h2_case::FAILED:
-         h2_color::printf("", "\r[%3d%%] ", percentage);
-         h2_color::printf("bold,purple", "(%s // %s): Failed at %s:%d\n", s->name, c->name, basename((char*)c->file), c->line);
+         print_percentage();
+         print_suite_case(s->name, c->name);
+         h2_color::printf("bold,red", " Failed");
+         h2_color::printf("", " at %s:%d\n", basename((char*)c->file), c->line);
          if (c->fails) c->fails->foreach ([](h2_fail* fail, int subling_index, int child_index) { fail->print(subling_index, child_index); });
          h2_color::printf("", "\n");
          break;
@@ -7358,10 +7404,11 @@ struct h2__socket {
       h2_sock* sock = h2_list_top_entry(&I().socks, h2_sock, y);
 
       do {
-         h2_list_for_each_entry(p, &sock->incoming, h2_packet, x) if (h2_wildcard_match(p->to.c_str(), local))
-         {
-            p->x.out();
-            return p;
+         h2_list_for_each_entry (p, &sock->incoming, h2_packet, x) {
+            if (h2_wildcard_match(p->to.c_str(), local)) {
+               p->x.out();
+               return p;
+            }
          }
          if (block) h2_sleep(100);
       } while (block);
@@ -7523,12 +7570,15 @@ struct h2__stdio {
    h2_stubs stubs;
    h2_string* buffer;
    bool stdout_capturable, stderr_capturable, syslog_capturable;
+   size_t length;
 
    static ssize_t write(int fd, const void* buf, size_t count)
    {
-      if (!((I().stdout_capturable && fd == fileno(stdout)) || (I().stderr_capturable && fd == fileno(stderr))))
-         return h2_libc::write(fd, buf, count);
-      I().buffer->append((char*)buf, count);
+      h2_libc::write(fd, buf, count);
+      if (fd == fileno(stdout) || fd == fileno(stderr))
+         I().length += count;
+      if ((I().stdout_capturable && fd == fileno(stdout)) || (I().stderr_capturable && fd == fileno(stderr)))
+         I().buffer->append((char*)buf, count);
       return count;
    }
 
@@ -7609,7 +7659,7 @@ struct h2__stdio {
       va_end(a);
    }
 
-   h2__stdio() : stdout_capturable(false), stderr_capturable(false), syslog_capturable(false)
+   h2__stdio() : stdout_capturable(false), stderr_capturable(false), syslog_capturable(false), length(0)
    {
 #ifndef _WIN32
       stubs.add((void*)::write, (void*)write);
@@ -7653,6 +7703,11 @@ h2_inline void h2_stdio::initialize()
 {
    ::setbuf(stdout, 0);  // unbuffered
    h2__stdio::I().buffer = new h2_string();
+}
+
+h2_inline size_t h2_stdio::get_length()
+{
+   return h2__stdio::I().length;
 }
 
 h2_inline const char* h2_stdio::capture_cout(const char* type)
@@ -7729,17 +7784,19 @@ struct h2_natives {
    h2_list natives;
    h2_native* get(void* befp)
    {
-      h2_list_for_each_entry(p, &natives, h2_native, x) if (p->befp == befp) return p;
+      h2_list_for_each_entry (p, &natives, h2_native, x)
+         if (p->befp == befp) return p;
       return nullptr;
    }
    void dec(void* befp)
    {
       h2_native* native = get(befp);
-      if (native)
+      if (native) {
          if (--native->refcount == 0) {
             native->x.out();
             h2_libc::free(native);
          }
+      }
    }
    void inc(void* befp)
    {
@@ -7778,10 +7835,11 @@ struct h2_stub : h2_thunk, h2_libc {
 h2_inline bool h2_stubs::add(void* befp, void* tofp, const char* befn, const char* tofn, const char* file, int line)
 {
    h2_stub* stub = nullptr;
-   h2_list_for_each_entry(p, &stubs, h2_stub, x) if (p->befp == befp)
-   {
-      stub = p;
-      break;
+   h2_list_for_each_entry (p, &stubs, h2_stub, x) {
+      if (p->befp == befp) {
+         stub = p;
+         break;
+      }
    }
    if (!stub) {
       stub = new h2_stub(befp, file, line);
@@ -7792,8 +7850,7 @@ h2_inline bool h2_stubs::add(void* befp, void* tofp, const char* befn, const cha
 }
 h2_inline void h2_stubs::clear()
 {
-   h2_list_for_each_entry(p, &stubs, h2_stub, x)
-   {
+   h2_list_for_each_entry (p, &stubs, h2_stub, x) {
       p->reset();
       p->x.out();
       delete p;
@@ -7838,7 +7895,7 @@ h2_inline void h2_suite::execute(h2_case* c)
 
 h2_inline h2_suite::installer::installer(h2_suite* s, h2_case* c)
 {
-   static long long seq = INT_MAX;
+   static int seq = INT_MAX / 2;
    s->registered_cases.push_back(&c->registered);
    s->seq = c->seq = ++seq;
 }
@@ -7862,8 +7919,7 @@ inline int h2_task::execute()
 
    state = 20;
    for (auto& setup : global_setups) setup();
-   h2_list_for_each_entry(s, &h2_directory::I().registered_suites, h2_suite, registered)
-   {
+   h2_list_for_each_entry (s, &h2_directory::I().registered_suites, h2_suite, registered) {
       for (auto& setup : global_suite_setups) setup();
       s->setup();
       s->enumerate();
@@ -7873,15 +7929,13 @@ inline int h2_task::execute()
    int cases = h2_directory::sort();
 
    reports.on_task_start(cases);
-   for (round = 0; round < O.times && !status_stats[h2::h2_case::FAILED]; ++round) {
-      h2_list_for_each_entry(s, &h2_directory::I().sorted_suites, h2_suite, sorted)
-      {
+   for (round = 0; round < O.rounds && !status_stats[h2::h2_case::FAILED]; ++round) {
+      h2_list_for_each_entry (s, &h2_directory::I().sorted_suites, h2_suite, sorted) {
          current_suite = s;
          reports.on_suite_start(s);
          for (auto& setup : global_suite_setups) setup();
          s->setup();
-         h2_list_for_each_entry(c, &s->sorted_cases, h2_case, sorted)
-         {
+         h2_list_for_each_entry (c, &s->sorted_cases, h2_case, sorted) {
             if (0 < O.breakable && O.breakable <= status_stats[h2_case::FAILED]) break;
             current_case = c;
             if (O.filter(s->name, c->name, c->file)) c->status = h2_case::FILTED;

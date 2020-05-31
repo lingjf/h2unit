@@ -97,7 +97,7 @@ struct h2__color {
       for (const char* p = str; *p; p++) {
          if (h2_color::is_ctrl(p)) {
             p = I().parse(p);
-            if (h2_option::I().colorable) I().change();
+            if (h2_option::I().colorfull) I().change();
          } else {
             h2_libc::write(fileno(stdout), p, 1);
          }

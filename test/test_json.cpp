@@ -24,19 +24,19 @@ static int __node_tojson(h2::h2_json_node* node, char* b)
    }
    if (node->is_array()) {
       l += sprintf(b + l, "[");
-      for (size_t i = 0; i < node->children.size(); i++) {
+      h2_list_for_each_entry (p, &node->children, h2::h2_json_node, x) {
          if (i)
             l += sprintf(b + l, ",");
-         l += __node_tojson(node->children[i], b + l);
+         l += __node_tojson(p, b + l);
       }
       l += sprintf(b + l, "]");
    }
    if (node->is_object()) {
       l += sprintf(b + l, "{");
-      for (int i = 0; i < node->size(); i++) {
+      h2_list_for_each_entry (p, &node->children, h2::h2_json_node, x) {
          if (i)
             l += sprintf(b + l, ",");
-         l += __node_tojson(node->children[i], b + l);
+         l += __node_tojson(p, b + l);
       }
       l += sprintf(b + l, "}");
    }
@@ -70,14 +70,14 @@ static int __dual_tostr(h2::h2_json_dual* dual, char* b)
    int l = 0;
 
    l += sprintf(b + l, "(%d;%s-%s;%s-%s;%s-%s)", dual->depth,
-                __type_tostr(dual->e_type), __type_tostr(dual->e_type),
+                dual->e_class, dual->a_class,
                 dual->e_key.c_str(), dual->a_key.c_str(),
                 dual->e_value.c_str(), dual->a_value.c_str());
 
-   if (dual->children.size()) {
+   if (dual->children.count()) {
       l += sprintf(b + l, "[");
-      for (size_t i = 0; i < dual->children.size(); i++) {
-         l += __dual_tostr(dual->children[i], b + l);
+      h2_list_for_each_entry (p, &dual->children, h2::h2_json_dual, x) {
+         l += __dual_tostr(p, b + l);
       }
       l += sprintf(b + l, "]");
    }
@@ -209,7 +209,7 @@ SUITE(json node)
       OK(NULL == c1.get("ling"));
 
       for (int i = 0; i < c1.size(); i++) {
-         OK(d[i]->value_string, c1.children[i]->value_string);
+         OK(d[i]->value_string, c1.get(i)->value_string);
       }
    }
 
@@ -547,7 +547,7 @@ SUITE(json node dual)
       OK("", value);
 
       node.get(0)->dual(type, cls, key, value);
-      OK(h2::h2_json_node::t_string, type);
+      OK(h2::h2_json_node::t_number, type);
       OK("\"abc\"", key);
       OK("atomic", cls);
       OK("123", value);
@@ -644,7 +644,7 @@ SUITE(json dual)
 
       h2::h2_json_dual dual(&e_node, &a_node);
 
-      OK("(0;object-object;-;-)[(1;string-string;\"e\"-\"a\";123-456)]", dual_tostr(&dual, t));
+      OK("(0;object-object;-;-)[(1;atomic-atomic;\"e\"-\"a\";123-456)]", dual_tostr(&dual, t));
 
       h2::h2_lines e_lines, a_lines;
       dual.align(e_lines, a_lines);

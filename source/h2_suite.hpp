@@ -4,7 +4,7 @@ struct h2_suite {
    const char* name;
    const char* file;
    int line;
-   long long seq;
+   int seq;
    h2_stubs stubs;
    h2_mocks mocks;
    int status_stats[8];

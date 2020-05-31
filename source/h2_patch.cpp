@@ -23,3 +23,28 @@ h2_inline void h2_patch::initialize()
 {
    h2__patch::I();
 }
+
+h2_inline bool h2_patch::exempt(h2_backtrace& bt)
+{
+   static struct {
+      void* base;
+      int size;
+   } exempt_functions[] = {
+     {(void*)sscanf, 300},
+     {(void*)sprintf, 300},
+     {(void*)vsnprintf, 300},
+#ifdef __APPLE__
+     {(void*)vsnprintf_l, 300},
+#endif
+     {(void*)localtime, 300},
+#ifndef _WIN32
+     {(void*)tzset, 300},
+#endif
+   };
+
+   for (auto& x : exempt_functions)
+      if (bt.has(x.base, x.size))
+         return true;
+
+   return false;
+}

@@ -15,8 +15,7 @@ struct h2_libc_malloc {
    void merge()
    {
       buddy* b = nullptr;
-      h2_list_for_each_entry(p, &buddies, buddy, x)
-      {
+      h2_list_for_each_entry (p, &buddies, buddy, x) {
          if (b) {
             if (((char*)b) + b->size == (char*)p) {
                b->size += p->size;
@@ -31,8 +30,7 @@ struct h2_libc_malloc {
    void insert(buddy* b)
    {
       buddy* n = nullptr;
-      h2_list_for_each_entry(p, &buddies, buddy, x)
-      {
+      h2_list_for_each_entry (p, &buddies, buddy, x) {
          if (((char*)b) + b->size <= (char*)p) {
             n = p;
             break;
@@ -50,8 +48,7 @@ struct h2_libc_malloc {
    {
       size = (size + 7) / 8 * 8;
       buddy* b = nullptr;
-      h2_list_for_each_entry(p, &buddies, buddy, x)
-      {
+      h2_list_for_each_entry (p, &buddies, buddy, x) {
          if (size <= p->size - sizeof(p->size)) {
             b = p;
             p->x.out();

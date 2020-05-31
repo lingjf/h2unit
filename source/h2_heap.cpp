@@ -219,8 +219,7 @@ struct h2_block : h2_libc {
 
    h2_fail* check()
    {
-      h2_list_for_each_entry(p, &pieces, h2_piece, x)
-      {
+      h2_list_for_each_entry (p, &pieces, h2_piece, x) {
          h2_fail* fail1 = p->violate_check();
          if (fail1) return fail1;
          h2_fail* fail2 = p->leak_check(where, file, line);
@@ -228,8 +227,7 @@ struct h2_block : h2_libc {
       }
       /* why not chain fails in subling? report one fail ignore more for clean.
          when fail, memory may be in used, don't free and keep it for robust */
-      h2_list_for_each_entry(p, &pieces, h2_piece, x)
-      {
+      h2_list_for_each_entry (p, &pieces, h2_piece, x) {
          p->x.out();
          delete p;
       }
@@ -253,7 +251,8 @@ struct h2_block : h2_libc {
 
    h2_piece* get_piece(const void* ptr)
    {
-      h2_list_for_each_entry(p, &pieces, h2_piece, x) if (p->user_ptr == ptr) return p;
+      h2_list_for_each_entry (p, &pieces, h2_piece, x)
+         if (p->user_ptr == ptr) return p;
       return nullptr;
    }
 
@@ -265,7 +264,8 @@ struct h2_block : h2_libc {
 
    h2_piece* host_piece(const void* addr)
    {
-      h2_list_for_each_entry(p, &pieces, h2_piece, x) if (p->in_page_range((const unsigned char*)addr)) return p;
+      h2_list_for_each_entry (p, &pieces, h2_piece, x)
+         if (p->in_page_range((const unsigned char*)addr)) return p;
       return nullptr;
    }
 };
@@ -273,27 +273,6 @@ struct h2_block : h2_libc {
 struct h2_stack {
    h2_singleton(h2_stack);
    h2_list blocks;
-
-   bool escape(h2_backtrace& bt)
-   {
-      static struct {
-         void* base;
-         int size;
-      } escape_functions[] = {
-        {(void*)sprintf, 300},
-        {(void*)vsnprintf, 300},  //  {(void*)sscanf, 300},
-        {(void*)localtime, 300},
-#ifndef _WIN32
-        {(void*)tzset, 300},
-#endif
-      };
-
-      for (auto& x : escape_functions)
-         if (bt.has(x.base, x.size))
-            return true;
-
-      return false;
-   }
 
    void push(const char* file, int line, const char* where, long long limited, const char* fill)
    {
@@ -312,14 +291,13 @@ struct h2_stack {
    h2_piece* new_piece(const char* who, size_t size, size_t alignment, const char* fill)
    {
       h2_backtrace bt(O.isMAC() ? 3 : 2);
-      h2_block* b = escape(bt) ? h2_list_bottom_entry(&blocks, h2_block, x) : h2_list_top_entry(&blocks, h2_block, x);
+      h2_block* b = h2_patch::exempt(bt) ? h2_list_bottom_entry(&blocks, h2_block, x) : h2_list_top_entry(&blocks, h2_block, x);
       return b ? b->new_piece(who, size, alignment, fill, bt) : nullptr;
    }
 
    h2_piece* get_piece(const void* ptr)
    {
-      h2_list_for_each_entry(p, &blocks, h2_block, x)
-      {
+      h2_list_for_each_entry (p, &blocks, h2_block, x) {
          h2_piece* piece = p->get_piece(ptr);
          if (piece) return piece;
       }
@@ -328,8 +306,7 @@ struct h2_stack {
 
    h2_fail* rel_piece(const char* who, void* ptr)
    {
-      h2_list_for_each_entry(p, &blocks, h2_block, x)
-      {
+      h2_list_for_each_entry (p, &blocks, h2_block, x) {
          h2_piece* piece = p->get_piece(ptr);
          if (piece) return p->rel_piece(who, piece);
       }
@@ -339,8 +316,7 @@ struct h2_stack {
 
    h2_piece* host_piece(const void* addr)
    {
-      h2_list_for_each_entry(p, &blocks, h2_block, x)
-      {
+      h2_list_for_each_entry (p, &blocks, h2_block, x) {
          h2_piece* piece = p->host_piece(addr);
          if (piece) return piece;
       }

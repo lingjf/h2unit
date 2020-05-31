@@ -33,9 +33,9 @@
 #   include <sys/mman.h>    /* mprotect, mmap */
 #   include <sys/socket.h>  /* sockaddr */
 #   include <sys/syscall.h> /* syscall */
+#   include <sys/time.h>    /* gettimeofday */
 #   include <sys/types.h>   /* size_t */
 #   include <syslog.h>      /* syslog, vsyslog */
-#   include <time.h>        /* clock */
 #   include <unistd.h>      /* sysconf */
 #   if defined __GLIBC__
 #      include <malloc.h> /* __malloc_hook */

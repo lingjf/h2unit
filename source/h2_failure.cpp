@@ -38,8 +38,8 @@ h2_inline const char* h2_fail::get_locate()
    static char st[1024];
    char* p = st;
    strcpy(p, "");
-   if (func && strlen(func)) p += sprintf(p, ", in %s(%s)", func, 0 <= argi && argi < 9 ? a9 + argi * 4 : "");
-   if (file && strlen(file) && 0 < line) p += sprintf(p, ", at %s:%d", file, line);
+   if (func && strlen(func)) p += sprintf(p, " in %s(%s)", func, 0 <= argi && argi < 9 ? a9 + argi * 4 : "");
+   if (file && strlen(file) && 0 < line) p += sprintf(p, " at %s:%d", file, line);
    return st;
 }
 
@@ -62,7 +62,7 @@ h2_inline void h2_fail_normal::print(int subling_index, int child_index)
    h2_line line;
    line.indent(child_index * 2 + 1);
    if (no.size()) line.printf("dark gray", "%s. ", no.c_str());
-   line.printf("", "%s%s", explain.c_str(), get_locate());
+   line.printf("", "%s,%s", explain.c_str(), get_locate());
    h2_color::printf(line);
 }
 
@@ -117,7 +117,8 @@ h2_inline void h2_fail_unexpect::print_JE(h2_line& line)
 {
    line.push_back("JE( ");
    line.printf("cyan", "%s", e_expression.acronym(O.verbose ? 10000 : 30).c_str());
-   line.printf("bold,red", ", %s", a_expression.acronym(O.verbose ? 10000 : 30).c_str());
+   line.push_back(", ");
+   line.printf("bold,red", "%s", a_expression.acronym(O.verbose ? 10000 : 30).c_str());
    line.push_back(" )");
 }
 
@@ -138,8 +139,8 @@ h2_inline void h2_fail_unexpect::print(int subling_index, int child_index)
    if (usage == 1) print_OK1(line);
    if (usage == 2) print_OK2(line);
    if (usage == 3) print_JE(line);
-   if (explain.size()) line.printf("", ", %s", explain.c_str());
-   if (user_explain.size()) line.printf("", ", %s", user_explain.c_str());
+   if (explain.size()) line.printf("", " %s,", explain.c_str());
+   if (user_explain.size()) line.printf("", " %s,", user_explain.c_str());
    line.push_back(get_locate());
    h2_color::printf(line);
 }
@@ -382,7 +383,7 @@ h2_inline void h2_fail_overflow::print(int subling_index, int child_index)
    for (int i = 0; i < spot.size(); ++i)
       h2_color::printf("bold,red", "%02X ", spot[i]);
 
-   h2_color::printf("", "%s\n", get_locate());
+   h2_color::printf("", ",%s\n", get_locate());
    if (bt_trample.count) h2_color::printf("", "  trampled at backtrace:\n"), bt_trample.print(3);
    h2_color::printf("", "  which allocate at backtrace:\n"), bt_allocate.print(3);
 }

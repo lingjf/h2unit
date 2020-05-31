@@ -4,7 +4,7 @@ h2_inline void h2_report::on_task_start(int cases)
 {
    total_cases = cases;
    tt = h2_now();
-};
+}
 h2_inline void h2_report::on_task_endup(int status_stats[8], int round) { tt = h2_now() - tt; };
 h2_inline void h2_report::on_suite_start(h2_suite* s) { ts = h2_now(); }
 h2_inline void h2_report::on_suite_endup(h2_suite* s) { ts = h2_now() - ts; }
@@ -13,61 +13,126 @@ h2_inline void h2_report::on_case_endup(h2_suite* s, h2_case* c)
 {
    percentage = ++done_cases * 100 / total_cases;
    tc = h2_now() - tc;
-};
+}
 
 struct h2_report_console : h2_report {
+   void print_percentage(bool percent = true, bool number = false)
+   {
+      static size_t last = 0;
+      h2_color::printf("", h2_stdio::get_length() == last ? "\r" : "\n");
+      if (percent) {
+         h2_color::printf("dark gray", "[");
+         h2_color::printf("", "%3d%%", percentage);
+         h2_color::printf("dark gray", "] ");
+      }
+      if (number) {
+         h2_color::printf("dark gray", "(");
+         h2_color::printf("", "%d", done_cases);
+         h2_color::printf("dark gray", "/");
+         h2_color::printf("", "%d", total_cases);
+         h2_color::printf("dark gray", ") ");
+      }
+      last = h2_stdio::get_length();
+   }
+
+   const char* format_duration(long long ms)
+   {
+      static char st[64];
+      if (ms < 1000 * 60)
+         sprintf(st, "%.2g seconds", ms / (double)1000.0);
+      else if (ms < 1000 * 60 * 60)
+         sprintf(st, "%.2g minutes", ms / (double)6000.0);
+      else
+         sprintf(st, "%.2g hours", ms / (double)36000.0);
+
+      return st;
+   }
+
+   void print_status(int n, const char* style, const char* name)
+   {
+      if (0 < n) {
+         h2_color::printf("dark gray", ", ");
+         h2_color::printf(style, "%d", n);
+         h2_color::printf("", " %s", name);
+      }
+   }
+
    void on_task_endup(int status_stats[8], int round) override
    {
       h2_report::on_task_endup(status_stats, round);
       if (O.listing) {
-         h2_color::printf("bold,green", "Listing <%d suites, %d cases, %d todo, %d filtered>\n", ss, total_cases, status_stats[h2_case::TODOED], status_stats[h2_case::FILTED]);
+         h2_color::printf("bold,green", "Listing <%d suites, %d cases, %d todo>\n", ss, total_cases, status_stats[h2_case::TODOED]);
       } else {
-         h2_color::printf("", "\n[%3d%%] ", percentage);
-         char t[62] = "";
-         if (1 < round) sprintf(t, " %d rounds,", round);
+         print_percentage(false, false);
          if (0 < status_stats[h2_case::FAILED])
-            h2_color::printf("bold,red", "Failed <%d failed, %d passed, %d todo, %d filtered,%s %lld ms>\n", status_stats[h2_case::FAILED], status_stats[h2_case::PASSED], status_stats[h2_case::TODOED], status_stats[h2_case::FILTED], t, tt);
+            h2_color::printf("bold,red", "Failure");
          else
-            h2_color::printf("bold,green", "Passed <%d passed, %d todo, %d filtered, %d cases,%s %lld ms>\n", status_stats[h2_case::PASSED], status_stats[h2_case::TODOED], status_stats[h2_case::FILTED], total_cases, t, tt);
+            h2_color::printf("bold,green", "Success");
+         h2_color::printf("dark gray", " (");
+         h2_color::printf("green", "%d", status_stats[h2_case::PASSED]);
+         h2_color::printf("", " passed");
+         print_status(status_stats[h2_case::FAILED], "red", "failed");
+         print_status(status_stats[h2_case::TODOED], "yellow", "todo");
+         print_status(status_stats[h2_case::FILTED], "blue", "filtered");
+         h2_color::printf("dark gray", ") ");
+         if (1 < round) h2_color::printf("", "%d rounds ", round);
+         h2_color::printf("", "%s \n", format_duration(tt));
       }
    }
    void on_suite_start(h2_suite* s) override
    {
+      h2_report::on_suite_start(s);
       cs = 0;
       if (O.listing) {
          h2_color::printf("", "SUITE%d. ", ++ss);
-         h2_color::printf("bold,yellow", "%s", s->name);
-         h2_color::printf("", " @ %s:%d\n", s->file, s->line);
+         h2_color::printf("bold,blue", "%s", s->name);
+         h2_color::printf("", " %s:%d\n", s->file, s->line);
       }
    }
    void on_case_start(h2_suite* s, h2_case* c) override
    {
+      h2_report::on_case_start(s, c);
       if (O.listing) {
-         h2_color::printf("", "   CASE%d. ", ++cs);
-         h2_color::printf("bold,cyan", "%s", c->name);
-         h2_color::printf("", " @ %s:%d\n", basename((char*)c->file), c->line);
+         h2_color::printf("", "   %s%d. ", c->status == h2_case::TODOED ? "TODO" : "CASE", ++cs);
+         h2_color::printf("cyan", "%s", c->name);
+         h2_color::printf("", " %s:%d\n", basename((char*)c->file), c->line);
       }
    }
+
+   void print_suite_case(const char* s, const char* c)
+   {
+      h2_color::printf("", "%s", s);
+      h2_color::printf("dark gray", " | ");
+      h2_color::printf("", "%s", c);
+   }
+
    void on_case_endup(h2_suite* s, h2_case* c) override
    {
-      if (O.listing) return;
       h2_report::on_case_endup(s, c);
+      if (O.listing) return;
       switch (c->status) {
       case h2_case::INITED: break;
       case h2_case::TODOED:
-         if (O.verbose) h2_color::printf("", "[%3d%%] (%s // %s): %s at %s:%d\n", percentage, s->name, c->name, CSS[c->status], basename((char*)c->file), c->line);
+         print_percentage();
+         print_suite_case(s->name, c->name);
+         h2_color::printf("yellow", " Todo");
+         h2_color::printf("", " at %s:%d\n", basename((char*)c->file), c->line);
          break;
       case h2_case::FILTED: break;
       case h2_case::PASSED:
          if (O.verbose) {
-            h2_color::printf("", "[%3d%%] ", percentage);
-            h2_color::printf("light blue", "(%s // %s): Passed - %lld ms\n", s->name, c->name, tc);
+            print_percentage();
+            print_suite_case(s->name, c->name);
+            h2_color::printf("green", " Passed");
+            h2_color::printf("", " %lld ms\n", tc);
          } else if (!O.debug)
-            h2_color::printf("", "\r[%3d%%] (%d/%d) ", percentage, done_cases, total_cases);
+            print_percentage(true, true);
          break;
       case h2_case::FAILED:
-         h2_color::printf("", "\r[%3d%%] ", percentage);
-         h2_color::printf("bold,purple", "(%s // %s): Failed at %s:%d\n", s->name, c->name, basename((char*)c->file), c->line);
+         print_percentage();
+         print_suite_case(s->name, c->name);
+         h2_color::printf("bold,red", " Failed");
+         h2_color::printf("", " at %s:%d\n", basename((char*)c->file), c->line);
          if (c->fails) c->fails->foreach ([](h2_fail* fail, int subling_index, int child_index) { fail->print(subling_index, child_index); });
          h2_color::printf("", "\n");
          break;

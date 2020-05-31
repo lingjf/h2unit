@@ -26,7 +26,7 @@ h2_inline void h2_suite::execute(h2_case* c)
 
 h2_inline h2_suite::installer::installer(h2_suite* s, h2_case* c)
 {
-   static long long seq = INT_MAX;
+   static int seq = INT_MAX / 2;
    s->registered_cases.push_back(&c->registered);
    s->seq = c->seq = ++seq;
 }

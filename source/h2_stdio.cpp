@@ -4,12 +4,15 @@ struct h2__stdio {
    h2_stubs stubs;
    h2_string* buffer;
    bool stdout_capturable, stderr_capturable, syslog_capturable;
+   size_t length;
 
    static ssize_t write(int fd, const void* buf, size_t count)
    {
-      if (!((I().stdout_capturable && fd == fileno(stdout)) || (I().stderr_capturable && fd == fileno(stderr))))
-         return h2_libc::write(fd, buf, count);
-      I().buffer->append((char*)buf, count);
+      h2_libc::write(fd, buf, count);
+      if (fd == fileno(stdout) || fd == fileno(stderr))
+         I().length += count;
+      if ((I().stdout_capturable && fd == fileno(stdout)) || (I().stderr_capturable && fd == fileno(stderr)))
+         I().buffer->append((char*)buf, count);
       return count;
    }
 
@@ -90,7 +93,7 @@ struct h2__stdio {
       va_end(a);
    }
 
-   h2__stdio() : stdout_capturable(false), stderr_capturable(false), syslog_capturable(false)
+   h2__stdio() : stdout_capturable(false), stderr_capturable(false), syslog_capturable(false), length(0)
    {
 #ifndef _WIN32
       stubs.add((void*)::write, (void*)write);
@@ -134,6 +137,11 @@ h2_inline void h2_stdio::initialize()
 {
    ::setbuf(stdout, 0);  // unbuffered
    h2__stdio::I().buffer = new h2_string();
+}
+
+h2_inline size_t h2_stdio::get_length()
+{
+   return h2__stdio::I().length;
 }
 
 h2_inline const char* h2_stdio::capture_cout(const char* type)

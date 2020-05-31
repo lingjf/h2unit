@@ -49,7 +49,13 @@ static inline bool h2_wildcard_match(const char* pattern, const char* subject, b
 
 static inline long long h2_now()
 {
-   return clock() * 1000 / CLOCKS_PER_SEC;
+#ifdef _WIN32
+   return GetTickCount();
+#else
+   struct timeval tv;
+   gettimeofday(&tv, NULL);
+   return tv.tv_sec * 1000LL + tv.tv_usec / 1000;
+#endif
 }
 
 static inline void h2_sleep(long long milliseconds)

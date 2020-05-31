@@ -7,7 +7,7 @@ struct h2_case {
    const char* name;
    const char* file;
    int line;
-   long long seq;
+   int seq;
    int status;
    jmp_buf jump;
    h2_fail* fails;

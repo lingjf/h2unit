@@ -628,11 +628,11 @@ twofiles speed up x3 times than onefile.
 
 *    `-v` *verbose* output including successfull cases
 *    `-l` *list* out suites and cases
-*    `-r` execute cases in *random* order
+*    `-s` *shuffle* cases and execute in random order
 *    `-b` [n] *breaking* test once failure occurred
-*    `-s` [n] repeat run n rounds when no failure
+*    `-r` [n] repeat run n *rounds* when no failure
 *    `-c` enable/disable *colorfull* output, default is enable
-*    `-m` enable/disable *memory* check(leak, overflow, trample, double free, dissymmetric free), default is enable
+*    `-m` enable/disable *memory* check(leak, overflow, trample, double free, asymmetric free), default is enable
 *    `-d/D` *Debug* mode, -D for gdb attach but requires password
 *    `-j` {path} generate *junit* compatible XML output
 *    `-i` {pattern} *include* filter, suite name or case name wildcard (?, *) matches, if pattern don't contains ? and *, wildcard change to contains. Default is `*` (include all)

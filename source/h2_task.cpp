@@ -13,8 +13,7 @@ inline int h2_task::execute()
 
    state = 20;
    for (auto& setup : global_setups) setup();
-   h2_list_for_each_entry(s, &h2_directory::I().registered_suites, h2_suite, registered)
-   {
+   h2_list_for_each_entry (s, &h2_directory::I().registered_suites, h2_suite, registered) {
       for (auto& setup : global_suite_setups) setup();
       s->setup();
       s->enumerate();
@@ -24,15 +23,13 @@ inline int h2_task::execute()
    int cases = h2_directory::sort();
 
    reports.on_task_start(cases);
-   for (round = 0; round < O.times && !status_stats[h2::h2_case::FAILED]; ++round) {
-      h2_list_for_each_entry(s, &h2_directory::I().sorted_suites, h2_suite, sorted)
-      {
+   for (round = 0; round < O.rounds && !status_stats[h2::h2_case::FAILED]; ++round) {
+      h2_list_for_each_entry (s, &h2_directory::I().sorted_suites, h2_suite, sorted) {
          current_suite = s;
          reports.on_suite_start(s);
          for (auto& setup : global_suite_setups) setup();
          s->setup();
-         h2_list_for_each_entry(c, &s->sorted_cases, h2_case, sorted)
-         {
+         h2_list_for_each_entry (c, &s->sorted_cases, h2_case, sorted) {
             if (0 < O.breakable && O.breakable <= status_stats[h2_case::FAILED]) break;
             current_case = c;
             if (O.filter(s->name, c->name, c->file)) c->status = h2_case::FILTED;

@@ -16,11 +16,11 @@ static inline void usage()
   ├────────┼───────────┼────────────────────────────────────────────────────┤\n\
   │ -l     │           │ List out suites and cases                          │\n\
   ├────────┼───────────┼────────────────────────────────────────────────────┤\n\
-  │ -r     │           │ Run suite and cases in random order.               │\n\
+  │ -s     │           │ Shuffle cases and execute in random order          │\n\
   ├────────┼───────────┼────────────────────────────────────────────────────┤\n\
   │ -b[n]  │    [n]    │ Breaking test once n (default 1) failures occurred │\n\
   ├────────┼───────────┼────────────────────────────────────────────────────┤\n\
-  │ -s[n]  │    [n]    │ Repeat run n times (default 1) when no failure     │\n\
+  │ -r[n]  │    [n]    │ Repeat run n rounds (default 1) when no failure    │\n\
   ├────────┼───────────┼────────────────────────────────────────────────────┤\n\
   │ -c     │           │ Output in black-white color style                  │\n\
   ├────────┼───────────┼────────────────────────────────────────────────────┤\n\
@@ -53,16 +53,17 @@ struct getopt {
             return argv[offset++];
       return nullptr;
    }
-   const char* extract()
+   const char* extract(const char* pattern)
    {
       const char **pp = nullptr, *p = nullptr;
-      for (int i = offset; i < argc; ++i)
+      for (int i = offset; i < argc; ++i) {
          if (argv[i]) {
             pp = argv + i;
             break;
          }
+      }
 
-      if (pp && *pp[0] != '-') p = *pp, *pp = nullptr;
+      if (pp && *pp[0] != '-' && h2_regex_match(pattern, *pp)) p = *pp, *pp = nullptr;
       return p;
    }
    const char* parseint(const char* p, int& value) const
@@ -87,39 +88,36 @@ h2_inline void h2_option::parse(int argc, const char** argv)
       if (p[0] != '-') continue;
       for (const char* t; *p; p++) {
          switch (*p) {
-         case 'v': verbose = 1; break;
+         case 'v': verbose = true; break;
+         case 'c': colorfull = !colorfull; break;
+         case 's': shuffle = !shuffle; break;
+         case 'm': memory_check = !memory_check; break;
          case 'l': listing = true; break;
          case 'b':
             breakable = 1;
             if (::isdigit(*(p + 1)))
                p = get.parseint(p + 1, breakable);
-            else if ((t = get.extract()))
+            else if ((t = get.extract("[0-9]+")))
                breakable = atoi(t);
             break;
-         case 's':
-            times = 1;
-            if (::isdigit(*(p + 1)))
-               p = get.parseint(p + 1, times);
-            else if ((t = get.extract()))
-               times = atoi(t);
-            break;
-         case 'c': colorable = !colorable; break;
          case 'r':
-            randomize = 'A';
-            if ((t = get.extract())) randomize = t[0];
+            rounds = 1;
+            if (::isdigit(*(p + 1)))
+               p = get.parseint(p + 1, rounds);
+            else if ((t = get.extract("[0-9]+")))
+               rounds = atoi(t);
             break;
-         case 'm': memory_check = !memory_check; break;
          case 'd': debug = "gdb new"; break;
          case 'D': debug = "gdb attach"; break;
          case 'j':
             sprintf(junit, "%s.xml", path);
-            if ((t = get.extract())) strcpy(junit, t);
+            if ((t = get.extract(".*"))) strcpy(junit, t);
             break;
          case 'i':
-            while ((t = get.extract())) includes.push_back(t);
+            while ((t = get.extract(".*"))) includes.push_back(t);
             break;
          case 'x':
-            while ((t = get.extract())) excludes.push_back(t);
+            while ((t = get.extract(".*"))) excludes.push_back(t);
             break;
          case '-': break;
          case 'h':
