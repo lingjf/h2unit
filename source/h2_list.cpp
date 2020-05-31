@@ -21,3 +21,20 @@ h2_inline int h2_list::count() const
    for (auto p = next; p != this; p = p->next) ++c;
    return c;
 }
+
+h2_inline void h2_list::sort(std::function<int(h2_list* a, h2_list* b)> cmp)
+{
+   h2_list sorted;
+   h2_list *p, *q;
+
+   while ((p = pop())) {
+      for (q = sorted.next; q != &sorted; q = q->next) {
+         if (0 < cmp(q, p)) {
+            q->add_before(p);
+            break;
+         }
+      }
+      if (q == &sorted) sorted.add_tail(p);
+   }
+   while ((p = sorted.pop())) push_back(p);
+}

@@ -154,7 +154,7 @@ struct h2_report_junit : h2_report {
    {
       h2_report::on_suite_start(s);
       if (!f) return;
-      fprintf(f, "<testsuite errors=\"0\" failures=\"%d\" hostname=\"localhost\" name=\"%s\" skipped=\"%d\" tests=\"%d\" time=\"%d\" timestamp=\"%s\">\n", s->status_stats[h2_case::FAILED], s->name, s->status_stats[h2_case::TODOED] + s->status_stats[h2_case::FILTED], s->sorted_cases.count(), 0, "");
+      fprintf(f, "<testsuite errors=\"0\" failures=\"%d\" hostname=\"localhost\" name=\"%s\" skipped=\"%d\" tests=\"%d\" time=\"%d\" timestamp=\"%s\">\n", s->status_stats[h2_case::FAILED], s->name, s->status_stats[h2_case::TODOED] + s->status_stats[h2_case::FILTED], s->cases.count(), 0, "");
    }
 
    void on_case_endup(h2_suite* s, h2_case* c) override

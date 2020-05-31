@@ -13,23 +13,22 @@ inline int h2_task::execute()
 
    state = 20;
    for (auto& setup : global_setups) setup();
-   h2_list_for_each_entry (s, &h2_directory::I().registered_suites, h2_suite, registered) {
+   h2_list_for_each_entry (s, &h2_directory::I().suites, h2_suite, x) {
       for (auto& setup : global_suite_setups) setup();
       s->setup();
       s->enumerate();
       s->cleanup();
       for (auto& teardown : global_suite_teardowns) teardown();
    }
-   int cases = h2_directory::sort();
-
-   reports.on_task_start(cases);
+   reports.on_task_start(h2_directory::count());
    for (round = 0; round < O.rounds && !status_stats[h2::h2_case::FAILED]; ++round) {
-      h2_list_for_each_entry (s, &h2_directory::I().sorted_suites, h2_suite, sorted) {
+      h2_directory::sort();
+      h2_list_for_each_entry (s, &h2_directory::I().suites, h2_suite, x) {
          current_suite = s;
          reports.on_suite_start(s);
          for (auto& setup : global_suite_setups) setup();
          s->setup();
-         h2_list_for_each_entry (c, &s->sorted_cases, h2_case, sorted) {
+         h2_list_for_each_entry (c, &s->cases, h2_case, x) {
             if (0 < O.breakable && O.breakable <= status_stats[h2_case::FAILED]) break;
             current_case = c;
             if (O.filter(s->name, c->name, c->file)) c->status = h2_case::FILTED;

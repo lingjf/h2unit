@@ -2,8 +2,9 @@
 struct h2_directory {
    h2_singleton(h2_directory);
 
-   h2_list registered_suites, sorted_suites;
+   h2_list suites;
 
    static void drop_last_order();
-   static int sort();
+   static void sort();
+   static int count();
 };

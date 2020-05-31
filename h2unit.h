@@ -1,4 +1,4 @@
-﻿/* v5.4  2020-05-31 10:24:08 */
+﻿/* v5.4  2020-05-31 21:37:48 */
 /* https://github.com/lingjf/h2unit */
 /* Apache Licence 2.0 */
 #ifndef __H2UNIT_H__
@@ -219,7 +219,9 @@ struct h2_with {
 #define h2_singleton(_Class) static _Class& I() { static _Class i; return i; }
 
 #define h2_list_entry(ptr, type, link) ((type*)((char*)(ptr) - (char*)(&(((type*)(1))->link)) + 1))
-#define h2_list_for_each_entry(p, head, type, link) for (int i = 0; i == 0; ++i) for (type* p = h2_list_entry((head)->next, type, link), *t = h2_list_entry(p->link.next, type, link); &p->link != (head); p = t, t = h2_list_entry(t->link.next, type, link), ++i)
+#define h2_list_for_each_entry(p, head, type, link) \
+   for (int i = 0; i == 0; ++i)                     \
+      for (type* p = h2_list_entry((head)->next, type, link), *t = h2_list_entry(p->link.next, type, link); &p->link != (head); p = t, t = h2_list_entry(t->link.next, type, link), ++i)
 
 #define h2_list_pop_entry(head, type, link) ((head)->empty() ? (type*)0 : h2_list_entry((head)->pop(), type, link))
 #define h2_list_top_entry(head, type, link) ((head)->empty() ? (type*)0 : h2_list_entry((head)->get_first(), type, link))
@@ -252,6 +254,7 @@ struct h2_list {
 
    bool empty() const { return next == this; }
    int count() const;
+   void sort(std::function<int(h2_list* a, h2_list* b)> cmp);
 };
 
 struct h2_option {
@@ -2222,10 +2225,10 @@ static constexpr const char* CSS[] = {"init", "Passed", "Failed", "TODO", "Filte
 
 struct h2_case {
    static constexpr const int INITED = 0, PASSED = 1, FAILED = 2, TODOED = 3, FILTED = 4;
-   h2_list registered, sorted;
    const char* name;
    const char* file;
    int line;
+   h2_list x;
    int seq;
    int status;
    jmp_buf jump;
@@ -2252,10 +2255,10 @@ struct h2_case {
 };
 
 struct h2_suite {
-   h2_list registered, sorted;
    const char* name;
    const char* file;
    int line;
+   h2_list x;
    int seq;
    h2_stubs stubs;
    h2_mocks mocks;
@@ -2263,7 +2266,7 @@ struct h2_suite {
    jmp_buf jump;
    bool jumpable;
    void (*test_code)(h2_suite*, h2_case*);
-   h2_list registered_cases, sorted_cases;
+   h2_list cases;
 
    h2_suite(const char* name_, void (*test_code_)(h2_suite*, h2_case*), const char* file_, int line_);
 
@@ -2460,10 +2463,11 @@ struct h2_reports {
 struct h2_directory {
    h2_singleton(h2_directory);
 
-   h2_list registered_suites, sorted_suites;
+   h2_list suites;
 
    static void drop_last_order();
-   static int sort();
+   static void sort();
+   static int count();
 };
 
 struct h2_defer_fail : h2_once {
@@ -3237,6 +3241,23 @@ h2_inline int h2_list::count() const
    int c = 0;
    for (auto p = next; p != this; p = p->next) ++c;
    return c;
+}
+
+h2_inline void h2_list::sort(std::function<int(h2_list* a, h2_list* b)> cmp)
+{
+   h2_list sorted;
+   h2_list *p, *q;
+
+   while ((p = pop())) {
+      for (q = sorted.next; q != &sorted; q = q->next) {
+         if (0 < cmp(q, p)) {
+            q->add_before(p);
+            break;
+         }
+      }
+      if (q == &sorted) sorted.add_tail(p);
+   }
+   while ((p = sorted.pop())) push_back(p);
 }
 
 h2_inline bool h2_string::equals(h2_string str, bool caseless) const
@@ -4437,19 +4458,19 @@ static inline void save_last_order()
 {
    h2_with f(fopen(last_order_file_path, "w"));
    if (f.f)
-      h2_list_for_each_entry (s, &h2_directory::I().sorted_suites, h2_suite, sorted)
-         h2_list_for_each_entry (c, &s->sorted_cases, h2_case, sorted)
+      h2_list_for_each_entry (s, &h2_directory::I().suites, h2_suite, x)
+         h2_list_for_each_entry (c, &s->cases, h2_case, x)
             fprintf(f.f, "%s\n%s\n", s->name, c->name);
 }
 
 static inline bool mark_sequence(char* suitename, char* casename)
 {
-   static int seq = INT_MIN / 2;
+   static int seq = INT_MIN / 4;
 
-   h2_list_for_each_entry (s, &h2_directory::I().registered_suites, h2_suite, registered) {
-      if (strcmp(suitename, s->name) == 0) {
-         h2_list_for_each_entry (c, &s->registered_cases, h2_case, registered) {
-            if (strcmp(casename, c->name) == 0) {
+   h2_list_for_each_entry (s, &h2_directory::I().suites, h2_suite, x) {
+      if (!strcmp(suitename, s->name)) {
+         h2_list_for_each_entry (c, &s->cases, h2_case, x) {
+            if (!strcmp(casename, c->name)) {
                s->seq = c->seq = ++seq;
                return true;
             }
@@ -4471,49 +4492,33 @@ static inline int read_last_order()
    return count;
 }
 
-static inline void insert_suite_sort(h2_list* suite_list, h2_suite* s)
+h2_inline void h2_directory::sort()
 {
-   h2_list_for_each_entry (p, suite_list, h2_suite, sorted) {
-      if (s->seq < p->seq) {
-         p->sorted.add_before(&s->sorted);
-         return;
-      }
-   }
-   suite_list->add_tail(&s->sorted);
-}
-
-static inline void insert_case_sort(h2_list* case_list, h2_case* c)
-{
-   h2_list_for_each_entry (p, case_list, h2_case, sorted) {
-      if (c->seq < p->seq) {
-         p->sorted.add_before(&c->sorted);
-         return;
-      }
-   }
-   case_list->add_tail(&c->sorted);
-}
-
-h2_inline int h2_directory::sort()
-{
-   int count = 0;
    int last = read_last_order();
    srand(h2_now());
    if (O.shuffle && last == 0)
-      h2_list_for_each_entry (s, &h2_directory::I().registered_suites, h2_suite, registered)
-         h2_list_for_each_entry (c, &s->registered_cases, h2_case, registered)
+      h2_list_for_each_entry (s, &h2_directory::I().suites, h2_suite, x)
+         h2_list_for_each_entry (c, &s->cases, h2_case, x)
             s->seq = c->seq = rand();
 
-   h2_list_for_each_entry (s, &h2_directory::I().registered_suites, h2_suite, registered) {
-      h2_list_for_each_entry (c, &s->registered_cases, h2_case, registered) {
-         insert_case_sort(&s->sorted_cases, c);
-         count += 1;
-      }
-      insert_suite_sort(&h2_directory::I().sorted_suites, s);
+   h2_directory::I().suites.sort([](h2_list* a, h2_list* b) {
+      return h2_list_entry(a, h2_suite, x)->seq - h2_list_entry(b, h2_suite, x)->seq;
+   });
+   h2_list_for_each_entry (s, &h2_directory::I().suites, h2_suite, x) {
+      s->cases.sort([](h2_list* a, h2_list* b) {
+         return h2_list_entry(a, h2_case, x)->seq - h2_list_entry(b, h2_case, x)->seq;
+      });
    }
 
    if (O.shuffle && last == 0)
       save_last_order();
+}
 
+h2_inline int h2_directory::count()
+{
+   int count = 0;
+   h2_list_for_each_entry (s, &h2_directory::I().suites, h2_suite, x)
+      count += s->cases.count();
    return count;
 }
 
@@ -7247,7 +7252,7 @@ struct h2_report_junit : h2_report {
    {
       h2_report::on_suite_start(s);
       if (!f) return;
-      fprintf(f, "<testsuite errors=\"0\" failures=\"%d\" hostname=\"localhost\" name=\"%s\" skipped=\"%d\" tests=\"%d\" time=\"%d\" timestamp=\"%s\">\n", s->status_stats[h2_case::FAILED], s->name, s->status_stats[h2_case::TODOED] + s->status_stats[h2_case::FILTED], s->sorted_cases.count(), 0, "");
+      fprintf(f, "<testsuite errors=\"0\" failures=\"%d\" hostname=\"localhost\" name=\"%s\" skipped=\"%d\" tests=\"%d\" time=\"%d\" timestamp=\"%s\">\n", s->status_stats[h2_case::FAILED], s->name, s->status_stats[h2_case::TODOED] + s->status_stats[h2_case::FILTED], s->cases.count(), 0, "");
    }
 
    void on_case_endup(h2_suite* s, h2_case* c) override
@@ -7872,7 +7877,7 @@ h2_inline h2_stub_temporary_restore::~h2_stub_temporary_restore()
 h2_inline h2_suite::h2_suite(const char* name_, void (*test_code_)(h2_suite*, h2_case*), const char* file_, int line_)
   : name(name_), file(file_), line(line_), seq(0), status_stats{0}, jumpable(false), test_code(test_code_)
 {
-   h2_directory::I().registered_suites.push_back(&registered);
+   h2_directory::I().suites.push_back(&x);
 }
 
 h2_inline void h2_suite::cleanup()
@@ -7896,8 +7901,8 @@ h2_inline void h2_suite::execute(h2_case* c)
 
 h2_inline h2_suite::installer::installer(h2_suite* s, h2_case* c)
 {
-   static int seq = INT_MAX / 2;
-   s->registered_cases.push_back(&c->registered);
+   static int seq = INT_MAX / 4;
+   s->cases.push_back(&c->x);
    s->seq = c->seq = ++seq;
 }
 
@@ -7920,23 +7925,22 @@ inline int h2_task::execute()
 
    state = 20;
    for (auto& setup : global_setups) setup();
-   h2_list_for_each_entry (s, &h2_directory::I().registered_suites, h2_suite, registered) {
+   h2_list_for_each_entry (s, &h2_directory::I().suites, h2_suite, x) {
       for (auto& setup : global_suite_setups) setup();
       s->setup();
       s->enumerate();
       s->cleanup();
       for (auto& teardown : global_suite_teardowns) teardown();
    }
-   int cases = h2_directory::sort();
-
-   reports.on_task_start(cases);
+   reports.on_task_start(h2_directory::count());
    for (round = 0; round < O.rounds && !status_stats[h2::h2_case::FAILED]; ++round) {
-      h2_list_for_each_entry (s, &h2_directory::I().sorted_suites, h2_suite, sorted) {
+      h2_directory::sort();
+      h2_list_for_each_entry (s, &h2_directory::I().suites, h2_suite, x) {
          current_suite = s;
          reports.on_suite_start(s);
          for (auto& setup : global_suite_setups) setup();
          s->setup();
-         h2_list_for_each_entry (c, &s->sorted_cases, h2_case, sorted) {
+         h2_list_for_each_entry (c, &s->cases, h2_case, x) {
             if (0 < O.breakable && O.breakable <= status_stats[h2_case::FAILED]) break;
             current_case = c;
             if (O.filter(s->name, c->name, c->file)) c->status = h2_case::FILTED;

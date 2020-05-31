@@ -5,19 +5,19 @@ static inline void save_last_order()
 {
    h2_with f(fopen(last_order_file_path, "w"));
    if (f.f)
-      h2_list_for_each_entry (s, &h2_directory::I().sorted_suites, h2_suite, sorted)
-         h2_list_for_each_entry (c, &s->sorted_cases, h2_case, sorted)
+      h2_list_for_each_entry (s, &h2_directory::I().suites, h2_suite, x)
+         h2_list_for_each_entry (c, &s->cases, h2_case, x)
             fprintf(f.f, "%s\n%s\n", s->name, c->name);
 }
 
 static inline bool mark_sequence(char* suitename, char* casename)
 {
-   static int seq = INT_MIN / 2;
+   static int seq = INT_MIN / 4;
 
-   h2_list_for_each_entry (s, &h2_directory::I().registered_suites, h2_suite, registered) {
-      if (strcmp(suitename, s->name) == 0) {
-         h2_list_for_each_entry (c, &s->registered_cases, h2_case, registered) {
-            if (strcmp(casename, c->name) == 0) {
+   h2_list_for_each_entry (s, &h2_directory::I().suites, h2_suite, x) {
+      if (!strcmp(suitename, s->name)) {
+         h2_list_for_each_entry (c, &s->cases, h2_case, x) {
+            if (!strcmp(casename, c->name)) {
                s->seq = c->seq = ++seq;
                return true;
             }
@@ -39,49 +39,33 @@ static inline int read_last_order()
    return count;
 }
 
-static inline void insert_suite_sort(h2_list* suite_list, h2_suite* s)
+h2_inline void h2_directory::sort()
 {
-   h2_list_for_each_entry (p, suite_list, h2_suite, sorted) {
-      if (s->seq < p->seq) {
-         p->sorted.add_before(&s->sorted);
-         return;
-      }
-   }
-   suite_list->add_tail(&s->sorted);
-}
-
-static inline void insert_case_sort(h2_list* case_list, h2_case* c)
-{
-   h2_list_for_each_entry (p, case_list, h2_case, sorted) {
-      if (c->seq < p->seq) {
-         p->sorted.add_before(&c->sorted);
-         return;
-      }
-   }
-   case_list->add_tail(&c->sorted);
-}
-
-h2_inline int h2_directory::sort()
-{
-   int count = 0;
    int last = read_last_order();
    srand(h2_now());
    if (O.shuffle && last == 0)
-      h2_list_for_each_entry (s, &h2_directory::I().registered_suites, h2_suite, registered)
-         h2_list_for_each_entry (c, &s->registered_cases, h2_case, registered)
+      h2_list_for_each_entry (s, &h2_directory::I().suites, h2_suite, x)
+         h2_list_for_each_entry (c, &s->cases, h2_case, x)
             s->seq = c->seq = rand();
 
-   h2_list_for_each_entry (s, &h2_directory::I().registered_suites, h2_suite, registered) {
-      h2_list_for_each_entry (c, &s->registered_cases, h2_case, registered) {
-         insert_case_sort(&s->sorted_cases, c);
-         count += 1;
-      }
-      insert_suite_sort(&h2_directory::I().sorted_suites, s);
+   h2_directory::I().suites.sort([](h2_list* a, h2_list* b) {
+      return h2_list_entry(a, h2_suite, x)->seq - h2_list_entry(b, h2_suite, x)->seq;
+   });
+   h2_list_for_each_entry (s, &h2_directory::I().suites, h2_suite, x) {
+      s->cases.sort([](h2_list* a, h2_list* b) {
+         return h2_list_entry(a, h2_case, x)->seq - h2_list_entry(b, h2_case, x)->seq;
+      });
    }
 
    if (O.shuffle && last == 0)
       save_last_order();
+}
 
+h2_inline int h2_directory::count()
+{
+   int count = 0;
+   h2_list_for_each_entry (s, &h2_directory::I().suites, h2_suite, x)
+      count += s->cases.count();
    return count;
 }
 

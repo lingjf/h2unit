@@ -2,7 +2,7 @@
 h2_inline h2_suite::h2_suite(const char* name_, void (*test_code_)(h2_suite*, h2_case*), const char* file_, int line_)
   : name(name_), file(file_), line(line_), seq(0), status_stats{0}, jumpable(false), test_code(test_code_)
 {
-   h2_directory::I().registered_suites.push_back(&registered);
+   h2_directory::I().suites.push_back(&x);
 }
 
 h2_inline void h2_suite::cleanup()
@@ -26,8 +26,8 @@ h2_inline void h2_suite::execute(h2_case* c)
 
 h2_inline h2_suite::installer::installer(h2_suite* s, h2_case* c)
 {
-   static int seq = INT_MAX / 2;
-   s->registered_cases.push_back(&c->registered);
+   static int seq = INT_MAX / 4;
+   s->cases.push_back(&c->x);
    s->seq = c->seq = ++seq;
 }
 

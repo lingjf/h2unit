@@ -1,4 +1,4 @@
-﻿/* v5.4  2020-05-31 10:24:08 */
+﻿/* v5.4  2020-05-31 21:37:48 */
 /* https://github.com/lingjf/h2unit */
 /* Apache Licence 2.0 */
 #ifndef __H2UNIT_HPP__
@@ -219,7 +219,9 @@ struct h2_with {
 #define h2_singleton(_Class) static _Class& I() { static _Class i; return i; }
 
 #define h2_list_entry(ptr, type, link) ((type*)((char*)(ptr) - (char*)(&(((type*)(1))->link)) + 1))
-#define h2_list_for_each_entry(p, head, type, link) for (int i = 0; i == 0; ++i) for (type* p = h2_list_entry((head)->next, type, link), *t = h2_list_entry(p->link.next, type, link); &p->link != (head); p = t, t = h2_list_entry(t->link.next, type, link), ++i)
+#define h2_list_for_each_entry(p, head, type, link) \
+   for (int i = 0; i == 0; ++i)                     \
+      for (type* p = h2_list_entry((head)->next, type, link), *t = h2_list_entry(p->link.next, type, link); &p->link != (head); p = t, t = h2_list_entry(t->link.next, type, link), ++i)
 
 #define h2_list_pop_entry(head, type, link) ((head)->empty() ? (type*)0 : h2_list_entry((head)->pop(), type, link))
 #define h2_list_top_entry(head, type, link) ((head)->empty() ? (type*)0 : h2_list_entry((head)->get_first(), type, link))
@@ -252,6 +254,7 @@ struct h2_list {
 
    bool empty() const { return next == this; }
    int count() const;
+   void sort(std::function<int(h2_list* a, h2_list* b)> cmp);
 };
 
 struct h2_option {
@@ -2222,10 +2225,10 @@ static constexpr const char* CSS[] = {"init", "Passed", "Failed", "TODO", "Filte
 
 struct h2_case {
    static constexpr const int INITED = 0, PASSED = 1, FAILED = 2, TODOED = 3, FILTED = 4;
-   h2_list registered, sorted;
    const char* name;
    const char* file;
    int line;
+   h2_list x;
    int seq;
    int status;
    jmp_buf jump;
@@ -2252,10 +2255,10 @@ struct h2_case {
 };
 
 struct h2_suite {
-   h2_list registered, sorted;
    const char* name;
    const char* file;
    int line;
+   h2_list x;
    int seq;
    h2_stubs stubs;
    h2_mocks mocks;
@@ -2263,7 +2266,7 @@ struct h2_suite {
    jmp_buf jump;
    bool jumpable;
    void (*test_code)(h2_suite*, h2_case*);
-   h2_list registered_cases, sorted_cases;
+   h2_list cases;
 
    h2_suite(const char* name_, void (*test_code_)(h2_suite*, h2_case*), const char* file_, int line_);
 
@@ -2460,10 +2463,11 @@ struct h2_reports {
 struct h2_directory {
    h2_singleton(h2_directory);
 
-   h2_list registered_suites, sorted_suites;
+   h2_list suites;
 
    static void drop_last_order();
-   static int sort();
+   static void sort();
+   static int count();
 };
 
 struct h2_defer_fail : h2_once {
