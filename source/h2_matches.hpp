@@ -363,7 +363,7 @@ const h2_polymorphic_matcher<h2_matchee_boolean<true>> IsTrue{h2_matchee_boolean
 const h2_polymorphic_matcher<h2_matchee_boolean<false>> IsFalse{h2_matchee_boolean<false>()};
 
 template <typename E>
-inline h2_polymorphic_matcher<h2_equals<E>> Eq(const E expect) { return h2_polymorphic_matcher<h2_equals<E>>(h2_equals<E>(expect)); }
+inline h2_polymorphic_matcher<h2_equals<E>> Eq(const E expect, const long double epsilon = 0) { return h2_polymorphic_matcher<h2_equals<E>>(h2_equals<E>(expect, epsilon)); }
 template <typename E>
 inline h2_polymorphic_matcher<h2_not_matches<E>> Nq(const E expect) { return h2_polymorphic_matcher<h2_not_matches<E>>(h2_not_matches<E>(expect)); }
 template <typename E>

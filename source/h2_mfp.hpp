@@ -133,7 +133,7 @@ struct h2_mfp<Class, Return(Args...)> {
    typedef union {
       F f;
       void* p;
-      intptr_t v;
+      long long v;
    } U;
 
    static inline bool is_virtual(U& u)
@@ -152,8 +152,8 @@ struct h2_mfp<Class, Return(Args...)> {
       U u{f};
       if (!is_virtual(u)) return u.p;
       Class* o = h2_constructible<Class>::O(alloca(sizeof(Class)));
-      if (1 == (intptr_t)o || 2 == (intptr_t)o)
-         h2_fail_g(new h2_fail_instantiate(action_type, return_type, class_type, method_name, return_args, 1 == (intptr_t)o, file, line), false);
+      if (1 == (long long)o || 2 == (long long)o)
+         h2_fail_g(new h2_fail_instantiate(action_type, return_type, class_type, method_name, return_args, 1 == (long long)o, file, line), false);
       return get_vmfp(u, o);
    }
 

@@ -7,24 +7,10 @@ static inline h2_string CD(h2_string s, bool caseless = false, bool dont = false
    return z;
 }
 
-struct h2_equals_string {
-   const h2_string e;
-   h2_equals_string(const h2_string& _e) : e(_e) {}
-   h2_fail* matches(const h2_string& a, bool caseless = false, bool dont = false) const;
-   h2_string expects(const h2_string& a, bool caseless = false, bool dont = false) const;
-};
-
-struct h2_equals_float {
-   const long double e;
-   explicit h2_equals_float(const long double _e) : e(_e) {}
-   h2_fail* matches(const long double a, bool caseless = false, bool dont = false) const;
-   h2_string expects(const long double a, bool caseless = false, bool dont = false) const;
-};
-
-template <typename E>
+template <typename E, typename = void>
 struct h2_equals {
    const E e;
-   explicit h2_equals(const E& _e) : e(_e) {}
+   explicit h2_equals(const E& _e, const long double = 0) : e(_e) {}
 
    template <typename A>
    h2_fail* matches(const A& a, bool caseless = false, bool dont = false) const
@@ -40,41 +26,48 @@ struct h2_equals {
    }
 };
 
-template <>
-struct h2_equals<char*> : h2_equals_string {
-   explicit h2_equals(const char* e) : h2_equals_string(h2_string(e)) {}
+template <typename E>
+struct h2_equals<E, typename std::enable_if<h2_stringable<E>::value>::type> {
+   const h2_string e;
+   explicit h2_equals(const E& _e, const long double = 0) : e(h2_string(_e)) {}
+
+   h2_fail* matches(const h2_string& a, bool caseless = false, bool dont = false) const
+   {
+      if (a.equals(e, caseless) == !dont) return nullptr;
+      if (h2_pattern::wildcard_match(e.c_str(), a.c_str(), caseless) == !dont) return nullptr;
+      if (h2_pattern::regex_match(e.c_str(), a.c_str(), caseless) == !dont) return nullptr;
+
+      return new h2_fail_strcmp(e, a, caseless, expects(a, caseless, dont));
+   }
+
+   h2_string expects(const h2_string& a, bool caseless = false, bool dont = false) const
+   {
+      return CD("\"" + e + "\"", caseless, dont);
+   }
 };
-template <>
-struct h2_equals<char* const> : h2_equals_string {
-   explicit h2_equals(const char* e) : h2_equals_string(h2_string(e)) {}
-};
-template <>
-struct h2_equals<const char*> : h2_equals_string {
-   explicit h2_equals(const char* e) : h2_equals_string(h2_string(e)) {}
-};
-template <>
-struct h2_equals<const char* const> : h2_equals_string {
-   explicit h2_equals(const char* e) : h2_equals_string(h2_string(e)) {}
-};
-template <>
-struct h2_equals<h2_string> : h2_equals_string {
-   explicit h2_equals(const h2_string e) : h2_equals_string(e) {}
-};
-template <>
-struct h2_equals<std::string> : h2_equals_string {
-   explicit h2_equals(const std::string e) : h2_equals_string(h2_string(e)) {}
-};
-template <>
-struct h2_equals<float> : h2_equals_float {
-   explicit h2_equals(const float e) : h2_equals_float(e) {}
-};
-template <>
-struct h2_equals<double> : h2_equals_float {
-   explicit h2_equals(const double e) : h2_equals_float(e) {}
-};
-template <>
-struct h2_equals<long double> : h2_equals_float {
-   explicit h2_equals(const long double e) : h2_equals_float(e) {}
+
+template <typename E>
+struct h2_equals<E, typename std::enable_if<std::is_floating_point<E>::value>::type> {
+   const long double e, epsilon;
+   explicit h2_equals(const E& _e, const long double _epsilon = 0) : e((long double)_e), epsilon(_epsilon) {}
+
+   h2_fail* matches(const long double& a, bool caseless = false, bool dont = false) const
+   {
+      // the machine epsilon has to be scaled to the magnitude of the values used
+      // and multiplied by the desired precision in ULPs (units in the last place)
+      // bool result = std::fabs(a - e) < std::numeric_limits<double>::epsilon() * std::fabs(a + e) * 2
+      //      || std::fabs(a - e) < std::numeric_limits<double>::min();  // unless the result is subnormal
+      long double _epsilon = epsilon;
+      if (_epsilon == 0) _epsilon = 0.00001;
+      bool result = std::fabs(a - e) < _epsilon;
+      if (result == !dont) return nullptr;
+      return new h2_fail_unexpect(h2_stringify(e), h2_stringify(a), expects(a, false, dont));
+   }
+
+   h2_string expects(const long double& a, bool caseless = false, bool dont = false) const
+   {
+      return CD(h2_stringify(e), caseless, dont);
+   }
 };
 
 struct h2_matchee_any {
@@ -95,7 +88,10 @@ struct h2_matchee_null {
       return new h2_fail_unexpect("", h2_stringify((const void*)a), expects(a, false, dont));
    }
    template <typename A>
-   h2_string expects(const A& a, bool caseless = false, bool dont = false) const { return (reverse ? !dont : dont) ? "NotNull" : "IsNull"; }
+   h2_string expects(const A& a, bool caseless = false, bool dont = false) const
+   {
+      return (reverse ? !dont : dont) ? "NotNull" : "IsNull";
+   }
 };
 
 template <bool E>
@@ -108,7 +104,10 @@ struct h2_matchee_boolean {
       return new h2_fail_unexpect("", a ? "true" : "false", expects(a, false, dont));
    }
    template <typename A>
-   h2_string expects(const A& a, bool caseless = false, bool dont = false) const { return (E ? dont : !dont) ? "false" : "true"; }
+   h2_string expects(const A& a, bool caseless = false, bool dont = false) const
+   {
+      return (E ? dont : !dont) ? "false" : "true";
+   }
 };
 
 template <typename E>

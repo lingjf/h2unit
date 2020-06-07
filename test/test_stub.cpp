@@ -57,7 +57,7 @@ double STUB_sqrt(double x)
    return 3.14;
 }
 
-int foobar(int, int)
+int foobar(int, const int&)
 {
    return 1;
 }
@@ -180,7 +180,7 @@ SUITE(stubs)
 
    Case(lambdas normal function)
    {
-      STUB(int, foobar, (int a, int b)) { return a + b; };
+      STUB(int, foobar, (int a, const int& b)) { return a + b; };
 
       OK(222, foobar(111, 111));
    }
@@ -222,7 +222,7 @@ SUITE(stubs)
 SUITE(Stub in shared_code)
 {
    STUB(time, STUB_time);
-   STUB(int, foobar, (int a, int b)) { return a + b; };
+   STUB(int, foobar, (int a, const int& b)) { return a + b; };
 
    Case(a)
    {

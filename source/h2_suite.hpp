@@ -4,12 +4,12 @@ struct h2_suite {
    const char* file;
    int line;
    h2_list x;
-   int seq;
+   int seq = 0;
    h2_stubs stubs;
    h2_mocks mocks;
-   int status_stats[8];
+   int stats[h2_case::statuss]{0};
    jmp_buf jump;
-   bool jumpable;
+   bool jumpable = false;
    void (*test_code)(h2_suite*, h2_case*);
    h2_list cases;
 

@@ -1,9 +1,9 @@
 
 struct h2_backtrace {
-   int count, shift;
+   int count = 0, shift = 0;
    void* array[100];
 
-   h2_backtrace() : count(0), shift(0) {}
+   h2_backtrace() = default;
    h2_backtrace(int shift_);
 
    h2_backtrace(const h2_backtrace&) = default;

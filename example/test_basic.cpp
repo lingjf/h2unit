@@ -17,7 +17,7 @@ SUITE(Basic Cases)
    /*
    * This variable is accessible in the test cases belong this unit.
    */
-   int uv = 2;
+   float uv = 2.00001;
 
    /*
    * Cleanup() will be executed after every test case belong to this suite.
@@ -33,11 +33,20 @@ SUITE(Basic Cases)
    /*
    * Case is a unit test case
    */
-   Case(hello world successful) { OK(2, sqrt(4)); }
+   Case(hello world successful)
+   {
+      OK(2, sqrt(4));
+   }
 
-   Case(a failure case failure) { OK(1, pv); }
+   Case(a failure case failure)
+   {
+      OK(1, pv);
+   }
 
-   Case(a success case successful) { OK(3 == uv + 1); }
+   Case(a success case successful)
+   {
+      OK(Eq(2, 0.0001), uv);
+   }
 }
 
 SUITE(Second Demo)

@@ -20,8 +20,7 @@ struct h2_decay {
 };
 
 struct h2_once {
-   int bcc;
-   h2_once() : bcc(0) {}
+   int bcc = 0;
    operator bool() { return 0 == bcc++; }
 };
 
@@ -30,6 +29,11 @@ struct h2_with {
    int (*c)(FILE*);
    h2_with(FILE* file, int (*close)(FILE*) = ::fclose) : f(file), c(close) {}
    ~h2_with() { (f && c) && c(f); }
+};
+
+struct h2_pattern {
+   static bool regex_match(const char* pattern, const char* subject, bool caseless = false);
+   static bool wildcard_match(const char* pattern, const char* subject, bool caseless = false);
 };
 
 /* clang-format off */

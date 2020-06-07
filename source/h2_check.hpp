@@ -4,11 +4,11 @@ struct h2_defer_fail : h2_once {
    const char *e_expression, *a_expression;
    const char* file;
    int line;
-   h2_fail* fail;
+   h2_fail* fail{nullptr};
    h2_ostringstream oss;
 
    h2_defer_fail(int usage_, const char* e_expression_, const char* a_expression_, const char* file_, int line_)
-     : usage(usage_), e_expression(e_expression_), a_expression(a_expression_), file(file_), line(line_), fail(nullptr) {}
+     : usage(usage_), e_expression(e_expression_), a_expression(a_expression_), file(file_), line(line_) {}
 
    ~h2_defer_fail()
    {

@@ -7,10 +7,10 @@ struct h2_mock : h2_libc {
    int line;
 
    h2_vector<h2_callexp> c_array;
-   int c_index;
+   int c_index = 0;
 
    h2_mock(void* befp_, void* tofp_, const char* befn_, const char* file_, int line_)
-     : befp(befp_), tofp(tofp_), befn(befn_), file(file_), line(line_), c_index(0) {}
+     : befp(befp_), tofp(tofp_), befn(befn_), file(file_), line(line_) {}
 
    virtual void reset() = 0;
 
@@ -83,6 +83,20 @@ class h2_mocker<Counter, Lineno, Class, Return(Args...)> : h2_mock {
    h2_matcher<h2_nth_decay<7, Args...>> _7 = Any, \
    h2_matcher<h2_nth_decay<8, Args...>> _8 = Any, \
    h2_matcher<h2_nth_decay<9, Args...>> _9 = Any
+
+// #define FORWARD_Matcher_0_1_2_3_4_5_6_7_8_9  _0, _1, _2, _3, _4, _5, _6, _7, _8, _9
+
+#define FORWARD_Matcher_0_1_2_3_4_5_6_7_8_9                \
+   std::forward<h2_matcher<h2_nth_decay<0, Args...>>>(_0), \
+   std::forward<h2_matcher<h2_nth_decay<1, Args...>>>(_1), \
+   std::forward<h2_matcher<h2_nth_decay<2, Args...>>>(_2), \
+   std::forward<h2_matcher<h2_nth_decay<3, Args...>>>(_3), \
+   std::forward<h2_matcher<h2_nth_decay<4, Args...>>>(_4), \
+   std::forward<h2_matcher<h2_nth_decay<5, Args...>>>(_5), \
+   std::forward<h2_matcher<h2_nth_decay<6, Args...>>>(_6), \
+   std::forward<h2_matcher<h2_nth_decay<7, Args...>>>(_7), \
+   std::forward<h2_matcher<h2_nth_decay<8, Args...>>>(_8), \
+   std::forward<h2_matcher<h2_nth_decay<9, Args...>>>(_9)
    /* clang-format on */
 
    using argument_tuple = std::tuple<Args..., int>;
@@ -102,14 +116,14 @@ class h2_mocker<Counter, Lineno, Class, Return(Args...)> : h2_mock {
 
    static Return normal_function_stub(Args... args)
    {
-      int r_index = I().matches(std::move(args)...);
-      return I().r_array[r_index](nullptr, std::move(args)...);
+      int r_index = I().matches(std::forward<Args>(args)...);
+      return I().r_array[r_index](nullptr, std::forward<Args>(args)...);
    }
 
    static Return member_function_stub(Class* that, Args... args)
    {
-      int r_index = I().matches(std::move(args)...);
-      return I().r_array[r_index](that, std::move(args)...);
+      int r_index = I().matches(std::forward<Args>(args)...);
+      return I().r_array[r_index](that, std::forward<Args>(args)...);
    }
 
    h2_fail* matches(matcher_tuple& matchers, argument_tuple& args)
@@ -120,7 +134,7 @@ class h2_mocker<Counter, Lineno, Class, Return(Args...)> : h2_mock {
 
    int matches(Args... args)
    {
-      argument_tuple a_tuple = std::make_tuple(args..., 0);
+      argument_tuple a_tuple = std::forward_as_tuple(std::forward<Args>(args)..., 0);
       int c_offset = -1;
       for (int i = c_index; i < c_array.size(); ++i) {
          h2_fail* fail = matches(m_array[i], a_tuple);
@@ -156,7 +170,7 @@ class h2_mocker<Counter, Lineno, Class, Return(Args...)> : h2_mock {
    h2_mocker& once(MATCHER_Any_0_1_2_3_4_5_6_7_8_9)
    {
       c_array.push_back(h2_callexp(1, 1));
-      m_array.push_back(std::forward_as_tuple(_0, _1, _2, _3, _4, _5, _6, _7, _8, _9));
+      m_array.push_back(std::forward_as_tuple(FORWARD_Matcher_0_1_2_3_4_5_6_7_8_9));
       r_array.push_back(h2_routine<Class, Return(Args...)>());
       return *this;
    }
@@ -164,7 +178,7 @@ class h2_mocker<Counter, Lineno, Class, Return(Args...)> : h2_mock {
    h2_mocker& twice(MATCHER_Any_0_1_2_3_4_5_6_7_8_9)
    {
       c_array.push_back(h2_callexp(2, 2));
-      m_array.push_back(std::forward_as_tuple(_0, _1, _2, _3, _4, _5, _6, _7, _8, _9));
+      m_array.push_back(std::forward_as_tuple(FORWARD_Matcher_0_1_2_3_4_5_6_7_8_9));
       r_array.push_back(h2_routine<Class, Return(Args...)>());
       return *this;
    }
@@ -180,7 +194,7 @@ class h2_mocker<Counter, Lineno, Class, Return(Args...)> : h2_mock {
    h2_mocker& any(MATCHER_Any_0_1_2_3_4_5_6_7_8_9)
    {
       c_array.push_back(h2_callexp(0, INT_MAX));
-      m_array.push_back(std::forward_as_tuple(_0, _1, _2, _3, _4, _5, _6, _7, _8, _9));
+      m_array.push_back(std::forward_as_tuple(FORWARD_Matcher_0_1_2_3_4_5_6_7_8_9));
       r_array.push_back(h2_routine<Class, Return(Args...)>());
       return *this;
    }
@@ -211,7 +225,7 @@ class h2_mocker<Counter, Lineno, Class, Return(Args...)> : h2_mock {
 
    h2_mocker& with(MATCHER_Any_0_1_2_3_4_5_6_7_8_9)
    {
-      if (!m_array.empty()) m_array.back() = std::forward_as_tuple(_0, _1, _2, _3, _4, _5, _6, _7, _8, _9);
+      if (!m_array.empty()) m_array.back() = std::forward_as_tuple(FORWARD_Matcher_0_1_2_3_4_5_6_7_8_9);
       return *this;
    }
 

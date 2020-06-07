@@ -102,7 +102,7 @@ namespace h2 {
 #include "h2_generator.hpp"
 #include "h2_patch.hpp"
 #include "h2_task.hpp"
-}
+}  // namespace h2
 
 /* ======> Interface <====== */
 
@@ -218,22 +218,22 @@ using h2::Pair;
 
 #define H2Cleanup() __H2Cleanup()
 
-#define __H2Case(name, todo, Qc, Q1, Q2)                                         \
-   static h2::h2_case Qc(name, todo, __FILE__, __LINE__);                        \
+#define __H2Case(name, status, Qc, Q1, Q2)                                       \
+   static h2::h2_case Qc(name, __FILE__, __LINE__, status);                      \
    static h2::h2_suite::installer H2Q(installer)(________suite, &Qc);            \
    if (&Qc == _________case)                                                     \
       for (h2::h2_suite::cleaner Q1(________suite); Q1; _________case = nullptr) \
          for (h2::h2_case::cleaner Q2(&Qc); Q2;)                                 \
             if (::setjmp(Qc.jump) == 0)
 
-#define H2Case(name) __H2Case(name, 0, H2Q(t_case), H2Q(_1), H2Q(_2))
-#define H2Todo(name) __H2Case(name, 1, H2Q(t_case), H2Q(_1), H2Q(_2))
+#define H2Case(name) __H2Case(name, h2::h2_case::initial, H2Q(t_case), H2Q(_1), H2Q(_2))
+#define H2Todo(name) __H2Case(name, h2::h2_case::todo, H2Q(t_case), H2Q(_1), H2Q(_2))
 
-#define __H2CASE(name, todo, QR, QP)                                       \
+#define __H2CASE(name, status, QR, QP)                                     \
    static void QR();                                                       \
    static void QP(h2::h2_suite* ________suite, h2::h2_case* _________case) \
    {                                                                       \
-      static h2::h2_case c(name, todo, __FILE__, __LINE__);                \
+      static h2::h2_case c(name, __FILE__, __LINE__, status);              \
       static h2::h2_suite::installer i(________suite, &c);                 \
       if (&c == _________case)                                             \
          for (h2::h2_case::cleaner a(&c); a;)                              \
@@ -243,8 +243,8 @@ using h2::Pair;
    static h2::h2_suite H2Q(suite)("Anonymous", &QP, __FILE__, __LINE__);   \
    static void QR()
 
-#define H2CASE(name) __H2CASE(name, 0, H2Q(h2_case_test_code), H2Q(h2_suite_test_code))
-#define H2TODO(name) __H2CASE(name, 1, H2Q(h2_case_test_code), H2Q(h2_suite_test_code))
+#define H2CASE(name) __H2CASE(name, h2::h2_case::initial, H2Q(h2_case_test_code), H2Q(h2_suite_test_code))
+#define H2TODO(name) __H2CASE(name, h2::h2_case::todo, H2Q(h2_case_test_code), H2Q(h2_suite_test_code))
 
 #define __H2BLOCK0(Qb) for (h2::h2_heap::stack::block Qb(__FILE__, __LINE__); Qb;)
 #define __H2BLOCK1(Qb, ...) for (h2::h2_heap::stack::block Qb(__FILE__, __LINE__, __VA_ARGS__); Qb;)

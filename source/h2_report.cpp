@@ -1,11 +1,10 @@
 
-h2_inline h2_report::h2_report() : total_cases(0), done_cases(0), percentage(0), ss(0), cs(0), tt(0), ts(0), tc(0) {}
 h2_inline void h2_report::on_task_start(int cases)
 {
    total_cases = cases;
    tt = h2_now();
 }
-h2_inline void h2_report::on_task_endup(int status_stats[8], int round) { tt = h2_now() - tt; };
+h2_inline void h2_report::on_task_endup(int stats[h2_case::statuss], int round) { tt = h2_now() - tt; };
 h2_inline void h2_report::on_suite_start(h2_suite* s) { ts = h2_now(); }
 h2_inline void h2_report::on_suite_endup(h2_suite* s) { ts = h2_now() - ts; }
 h2_inline void h2_report::on_case_start(h2_suite* s, h2_case* c) { tc = h2_now(); };
@@ -57,23 +56,23 @@ struct h2_report_console : h2_report {
       }
    }
 
-   void on_task_endup(int status_stats[8], int round) override
+   void on_task_endup(int stats[h2_case::statuss], int round) override
    {
-      h2_report::on_task_endup(status_stats, round);
+      h2_report::on_task_endup(stats, round);
       if (O.listing) {
-         h2_color::printf("bold,green", "Listing <%d suites, %d cases, %d todo>\n", ss, total_cases, status_stats[h2_case::TODOED]);
+         h2_color::printf("bold,green", "Listing <%d suites, %d cases, %d todo>\n", ss, total_cases, stats[h2_case::todo]);
       } else {
          print_percentage(false, false);
-         if (0 < status_stats[h2_case::FAILED])
+         if (0 < stats[h2_case::failed])
             h2_color::printf("bold,red", "Failure");
          else
             h2_color::printf("bold,green", "Success");
          h2_color::printf("dark gray", " (");
-         h2_color::printf("green", "%d", status_stats[h2_case::PASSED]);
+         h2_color::printf("green", "%d", stats[h2_case::passed]);
          h2_color::printf("", " passed");
-         print_status(status_stats[h2_case::FAILED], "red", "failed");
-         print_status(status_stats[h2_case::TODOED], "yellow", "todo");
-         print_status(status_stats[h2_case::FILTED], "blue", "filtered");
+         print_status(stats[h2_case::failed], "red", "failed");
+         print_status(stats[h2_case::todo], "yellow", "todo");
+         print_status(stats[h2_case::filtered], "blue", "filtered");
          h2_color::printf("dark gray", ") ");
          if (1 < round) h2_color::printf("", "%d rounds ", round);
          h2_color::printf("", "%s \n", format_duration(tt));
@@ -93,7 +92,7 @@ struct h2_report_console : h2_report {
    {
       h2_report::on_case_start(s, c);
       if (O.listing) {
-         h2_color::printf("", "   %s%d. ", c->status == h2_case::TODOED ? "TODO" : "CASE", ++cs);
+         h2_color::printf("", "   %s%d. ", c->status == h2_case::todo ? "TODO" : "CASE", ++cs);
          h2_color::printf("cyan", "%s", c->name);
          h2_color::printf("", " %s:%d\n", basename((char*)c->file), c->line);
       }
@@ -111,15 +110,15 @@ struct h2_report_console : h2_report {
       h2_report::on_case_endup(s, c);
       if (O.listing) return;
       switch (c->status) {
-      case h2_case::INITED: break;
-      case h2_case::TODOED:
+      case h2_case::initial: break;
+      case h2_case::todo:
          print_percentage();
          print_suite_case(s->name, c->name);
          h2_color::printf("yellow", " Todo");
          h2_color::printf("", " at %s:%d\n", basename((char*)c->file), c->line);
          break;
-      case h2_case::FILTED: break;
-      case h2_case::PASSED:
+      case h2_case::filtered: break;
+      case h2_case::passed:
          if (O.verbose) {
             print_percentage();
             print_suite_case(s->name, c->name);
@@ -128,12 +127,12 @@ struct h2_report_console : h2_report {
          } else if (!O.debug)
             print_percentage(true, true);
          break;
-      case h2_case::FAILED:
+      case h2_case::failed:
          print_percentage();
          print_suite_case(s->name, c->name);
          h2_color::printf("bold,red", " Failed");
          h2_color::printf("", " at %s:%d\n", basename((char*)c->file), c->line);
-         if (c->fails) c->fails->foreach ([](h2_fail* fail, int subling_index, int child_index) { fail->print(subling_index, child_index); });
+         if (c->fails) c->fails->foreach([](h2_fail* fail, int subling_index, int child_index) { fail->print(subling_index, child_index); });
          h2_color::printf("", "\n");
          break;
       }
@@ -154,18 +153,20 @@ struct h2_report_junit : h2_report {
    {
       h2_report::on_suite_start(s);
       if (!f) return;
-      fprintf(f, "<testsuite errors=\"0\" failures=\"%d\" hostname=\"localhost\" name=\"%s\" skipped=\"%d\" tests=\"%d\" time=\"%d\" timestamp=\"%s\">\n", s->status_stats[h2_case::FAILED], s->name, s->status_stats[h2_case::TODOED] + s->status_stats[h2_case::FILTED], s->cases.count(), 0, "");
+      fprintf(f, "<testsuite errors=\"0\" failures=\"%d\" hostname=\"localhost\" name=\"%s\" skipped=\"%d\" tests=\"%d\" time=\"%d\" timestamp=\"%s\">\n", s->stats[h2_case::failed], s->name, s->stats[h2_case::todo] + s->stats[h2_case::filtered], s->cases.count(), 0, "");
    }
 
    void on_case_endup(h2_suite* s, h2_case* c) override
    {
       h2_report::on_case_endup(s, c);
       if (!f) return;
+
+      static constexpr const char* CSS[] = {"Initial", "Passed", "Failed", "TODO", "Filtered"};
       fprintf(f, "<testcase classname=\"%s\" name=\"%s\" status=\"%s\" time=\"%.3f\">\n", s->name, c->name, CSS[c->status], tc / 1000.0);
 
-      if (c->status == h2_case::FAILED) {
+      if (c->status == h2_case::failed) {
          fprintf(f, "<failure message=\"%s:%d:", c->file, c->line);
-         if (c->fails) c->fails->foreach ([=](h2_fail* fail, int subling_index, int child_index) {fprintf(f, "{newline}"); fail->print(f); });
+         if (c->fails) c->fails->foreach([=](h2_fail* fail, int subling_index, int child_index) {fprintf(f, "{newline}"); fail->print(f); });
          fprintf(f, "\" type=\"AssertionFailedError\"></failure>\n");
       }
       fprintf(f, "<system-out></system-out><system-err></system-err>\n");
@@ -177,9 +178,9 @@ struct h2_report_junit : h2_report {
       if (!f) return;
       fprintf(f, "</testsuite>\n");
    }
-   void on_task_endup(int status_stats[8], int round) override
+   void on_task_endup(int stats[h2_case::statuss], int round) override
    {
-      h2_report::on_task_endup(status_stats, round);
+      h2_report::on_task_endup(stats, round);
       if (!f) return;
       fprintf(f, "</testsuites>\n");
       fclose(f);
@@ -197,15 +198,16 @@ h2_inline void h2_reports::initialize()
    static h2_report_tap tap_report;
    reports.push_back(&console_report);
    if (strlen(O.junit) && !O.listing) reports.push_back(&junit_report);
+   if (strlen(O.tap) && !O.listing) reports.push_back(&tap_report);
 }
 
 inline void h2_reports::on_task_start(int cases)
 {
    for (auto report : reports) report->on_task_start(cases);
 }
-inline void h2_reports::on_task_endup(int status_stats[8], int round)
+inline void h2_reports::on_task_endup(int stats[h2_case::statuss], int round)
 {
-   for (auto report : reports) report->on_task_endup(status_stats, round);
+   for (auto report : reports) report->on_task_endup(stats, round);
 }
 inline void h2_reports::on_suite_start(h2_suite* s)
 {

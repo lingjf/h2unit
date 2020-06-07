@@ -6,23 +6,14 @@
 
 /* clang-format off */
 
-#ifndef NAN
-#define NAN (0.0/0.0)
-#endif
-
-#ifndef INFINITY
-#define INFINITY (1.0/0.0)
-#endif
-
-#define TYPE_MASK(TYPE) ((TYPE)&0x0000001F)
-
-#define IS_PURE(TYPE) (((TYPE) & TE_FLAG_PURE) != 0)
-#define IS_FUNCTION(TYPE) (((TYPE) & TE_FUNCTION0) != 0)
-#define IS_CLOSURE(TYPE) (((TYPE) & TE_CLOSURE0) != 0)
-#define ARITY(TYPE) ( ((TYPE) & (TE_FUNCTION0 | TE_CLOSURE0)) ? ((TYPE) & 0x00000007) : 0 )
-
 struct te
 {
+    static int TYPE_MASK(int type) { return type & 0x0000001F; }
+    static bool IS_PURE(int type) { return (type & TE_FLAG_PURE) != 0; }
+    static bool IS_FUNCTION(int type) { return (type & TE_FUNCTION0) != 0; }
+    static bool IS_CLOSURE(int type) { return (type & TE_CLOSURE0) != 0; }
+    static int ARITY(int type) { return type & (TE_FUNCTION0 | TE_CLOSURE0) ? (type & 0x00000007) : 0; }
+
     /* Parses the input expression, evaluates it, and frees it. */
     /* Returns NaN on error. */
     static double te_interp(const char *expression, int *error) {
@@ -32,7 +23,7 @@ struct te
             ret = te_eval(n);
             te_free(n);
         } else {
-            ret = NAN;
+            ret = (0.0/0.0);
         }
         return ret;
     }
@@ -42,7 +33,6 @@ struct te
         union {double value; const double *bound; const void *function;};
         void *parameters[1];
     };
-
 
     enum {
         TE_VARIABLE = 0,
@@ -67,7 +57,7 @@ struct te
 
     enum { TOK_NULL = TE_CLOSURE7+1, TOK_ERROR, TOK_END, TOK_SEP, TOK_OPEN, TOK_CLOSE, TOK_NUMBER, TOK_VARIABLE, TOK_INFIX };
 
-    enum {TE_CONSTANT = 1};
+    enum { TE_CONSTANT = 1 };
 
     struct state {
         const char *start;
@@ -113,51 +103,55 @@ struct te
         h2_libc::free((void *)n);
     }
 
-    static double _fabs(double x) {return fabs(x);}
-    static double _cos(double x) {return cos(x);}
-    static double _acos(double x) {return acos(x);}
-    static double _sin(double x) {return sin(x);}
-    static double _asin(double x) {return asin(x);}
-    static double _tan(double x) {return tan(x);}
-    static double _atan(double x) {return atan(x);}
-    static double _sqrt(double x) {return sqrt(x);}
-    static double _ln(double x) {return log(x);}
-    static double _log10(double x) {return log10(x);}
-    static double _log2(double x) {return log2(x);}
-    static double _floor(double x) {return floor(x);}
-    static double _ceil(double x) {return ceil(x);}
-    static double _pow(double x, double y) {return pow(x, y);}
-    static double _exp(double x) {return exp(x);}
-    static double _fmod(double x, double y) {return fmod(x, y);}
+    static double _fabs(double x) {return ::fabs(x);}
+    static double _cos(double x) {return ::cos(x);}
+    static double _acos(double x) {return ::acos(x);}
+    static double _cosh(double x) {return ::cosh(x);}
+    static double _sin(double x) {return ::sin(x);}
+    static double _asin(double x) {return ::asin(x);}
+    static double _sinh(double x) {return ::sinh(x);}
+    static double _tan(double x) {return ::tan(x);}
+    static double _atan(double x) {return ::atan(x);}
+    static double _atan2(double x, double y) {return ::atan2(x, y);}
+    static double _tanh(double x) {return ::tanh(x);}
+    static double _sqrt(double x) {return ::sqrt(x);}
+    static double _ln(double x) {return ::log(x);}
+    static double _log(double x) {return ::log(x);}
+    static double _log10(double x) {return ::log10(x);}
+    static double _log2(double x) {return ::log2(x);}
+    static double _floor(double x) {return ::floor(x);}
+    static double _ceil(double x) {return ::ceil(x);}
+    static double _pow(double x, double y) {return ::pow(x, y);}
+    static double _exp(double x) {return ::exp(x);}
+    static double _fmod(double x, double y) {return ::fmod(x, y);}
 
     static double pi(void) {return 3.14159265358979323846;}
     static double e(void) {return 2.71828182845904523536;}
     static double fac(double a) {/* simplest version of fac */
-        if (a < 0.0) return NAN;
-        if (a > UINT_MAX) return INFINITY;
+        if (a < 0.0) return (0.0/0.0);
+        if (a > UINT_MAX) return (1.0/0.0);
         unsigned int ua = (unsigned int)(a);
         unsigned long int result = 1, i;
         for (i = 1; i <= ua; i++) {
-            if (i > ULONG_MAX / result) return INFINITY;
+            if (i > ULONG_MAX / result) return (1.0/0.0);
             result *= i;
         }
         return (double)result;
     }
     static double ncr(double n, double r) {
-        if (n < 0.0 || r < 0.0 || n < r) return NAN;
-        if (n > UINT_MAX || r > UINT_MAX) return INFINITY;
+        if (n < 0.0 || r < 0.0 || n < r) return (0.0/0.0);
+        if (n > UINT_MAX || r > UINT_MAX) return (1.0/0.0);
         unsigned long int un = (unsigned int)(n), ur = (unsigned int)(r), i;
         unsigned long int result = 1;
         if (ur > un / 2) ur = un - ur;
         for (i = 1; i <= ur; i++) {
-            if (result > ULONG_MAX / (un - ur + i)) return INFINITY;
+            if (result > ULONG_MAX / (un - ur + i)) return (1.0/0.0);
             result *= un - ur + i;
             result /= i;
         }
         return result;
     }
     static double npr(double n, double r) {return ncr(n, r) * fac(r);}
-
 
     static const te_variable *find_builtin(const char *name, int len) {
         static const te_variable functions[] = {
@@ -166,20 +160,16 @@ struct te
             {"acos", (const void *)_acos,    TE_FUNCTION1 | TE_FLAG_PURE, 0},
             {"asin", (const void *)_asin,    TE_FUNCTION1 | TE_FLAG_PURE, 0},
             {"atan", (const void *)_atan,    TE_FUNCTION1 | TE_FLAG_PURE, 0},
-        //     {"atan2", (const void *)atan2,  TE_FUNCTION2 | TE_FLAG_PURE, 0},
+            {"atan2", (const void *)_atan2,  TE_FUNCTION2 | TE_FLAG_PURE, 0},
             {"ceil", (const void *)_ceil,    TE_FUNCTION1 | TE_FLAG_PURE, 0},
             {"cos", (const void *)_cos,      TE_FUNCTION1 | TE_FLAG_PURE, 0},
-        //     {"cosh", (const void *)cosh,    TE_FUNCTION1 | TE_FLAG_PURE, 0},
+            {"cosh", (const void *)_cosh,    TE_FUNCTION1 | TE_FLAG_PURE, 0},
             {"e", (const void *)e,          TE_FUNCTION0 | TE_FLAG_PURE, 0},
             {"exp", (const void *)_exp,      TE_FUNCTION1 | TE_FLAG_PURE, 0},
             {"fac", (const void *)fac,      TE_FUNCTION1 | TE_FLAG_PURE, 0},
             {"floor", (const void *)_floor,  TE_FUNCTION1 | TE_FLAG_PURE, 0},
             {"ln", (const void *)_ln,       TE_FUNCTION1 | TE_FLAG_PURE, 0},
-        // #ifdef TE_NAT_LOG
-        //     {"log", (const void *)log,      TE_FUNCTION1 | TE_FLAG_PURE, 0},
-        // #else
-        //     {"log", (const void *)log10,    TE_FUNCTION1 | TE_FLAG_PURE, 0},
-        // #endif
+            {"log", (const void *)_log,      TE_FUNCTION1 | TE_FLAG_PURE, 0},
             {"log10", (const void *)_log10,  TE_FUNCTION1 | TE_FLAG_PURE, 0},
             {"log2", (const void *)_log2,  TE_FUNCTION1 | TE_FLAG_PURE, 0},
             {"ncr", (const void *)ncr,      TE_FUNCTION2 | TE_FLAG_PURE, 0},
@@ -187,10 +177,10 @@ struct te
             {"pi", (const void *)pi,        TE_FUNCTION0 | TE_FLAG_PURE, 0},
             {"pow", (const void *)_pow,      TE_FUNCTION2 | TE_FLAG_PURE, 0},
             {"sin", (const void *)_sin,      TE_FUNCTION1 | TE_FLAG_PURE, 0},
-        //     {"sinh", (const void *)sinh,    TE_FUNCTION1 | TE_FLAG_PURE, 0},
+            {"sinh", (const void *)_sinh,    TE_FUNCTION1 | TE_FLAG_PURE, 0},
             {"sqrt", (const void *)_sqrt,    TE_FUNCTION1 | TE_FLAG_PURE, 0},
             {"tan", (const void *)_tan,      TE_FUNCTION1 | TE_FLAG_PURE, 0},
-        //     {"tanh", (const void *)tanh,    TE_FUNCTION1 | TE_FLAG_PURE, 0},
+            {"tanh", (const void *)_tanh,    TE_FUNCTION1 | TE_FLAG_PURE, 0},
             {0, 0, 0, 0}
         };
         int imin = 0;
@@ -386,13 +376,12 @@ struct te
             default:
                 ret = new_expr(0, 0);
                 s->type = TOK_ERROR;
-                ret->value = NAN;
+                ret->value = (0.0/0.0);
                 break;
         }
 
         return ret;
     }
-
 
     static te_expr *power(state *s) {
         /* <power>     =    {("-" | "+")} <base> */
@@ -446,7 +435,6 @@ struct te
         return ret;
     }
 
-
     static te_expr *expr(state *s) {
         /* <expr>      =    <term> {("+" | "-") <term>} */
         te_expr *ret = term(s);
@@ -462,7 +450,6 @@ struct te
         return ret;
     }
 
-
     static te_expr *list(state *s) {
         /* <list>      =    <expr> {"," <expr>} */
         te_expr *ret = expr(s);
@@ -477,13 +464,11 @@ struct te
         return ret;
     }
 
-
-#define TE_FUN(...) ((double(*)(__VA_ARGS__))n->function)
-#define M(e) te_eval((const te_expr *)n->parameters[e])
-
+#define TE_F(...) ((double(*)(__VA_ARGS__))n->function)
+#define TE_M(e) te_eval((const te_expr *)n->parameters[e])
 
     static double te_eval(const te_expr *n) {
-        if (!n) return NAN;
+        if (!n) return (0.0/0.0);
 
         switch(TYPE_MASK(n->type)) {
             case TE_CONSTANT: return n->value;
@@ -492,38 +477,38 @@ struct te
             case TE_FUNCTION0: case TE_FUNCTION1: case TE_FUNCTION2: case TE_FUNCTION3:
             case TE_FUNCTION4: case TE_FUNCTION5: case TE_FUNCTION6: case TE_FUNCTION7:
                 switch(ARITY(n->type)) {
-                    case 0: return TE_FUN(void)();
-                    case 1: return TE_FUN(double)(M(0));
-                    case 2: return TE_FUN(double, double)(M(0), M(1));
-                    case 3: return TE_FUN(double, double, double)(M(0), M(1), M(2));
-                    case 4: return TE_FUN(double, double, double, double)(M(0), M(1), M(2), M(3));
-                    case 5: return TE_FUN(double, double, double, double, double)(M(0), M(1), M(2), M(3), M(4));
-                    case 6: return TE_FUN(double, double, double, double, double, double)(M(0), M(1), M(2), M(3), M(4), M(5));
-                    case 7: return TE_FUN(double, double, double, double, double, double, double)(M(0), M(1), M(2), M(3), M(4), M(5), M(6));
-                    default: return NAN;
+                    case 0: return TE_F(void)();
+                    case 1: return TE_F(double)(TE_M(0));
+                    case 2: return TE_F(double, double)(TE_M(0), TE_M(1));
+                    case 3: return TE_F(double, double, double)(TE_M(0), TE_M(1), TE_M(2));
+                    case 4: return TE_F(double, double, double, double)(TE_M(0), TE_M(1), TE_M(2), TE_M(3));
+                    case 5: return TE_F(double, double, double, double, double)(TE_M(0), TE_M(1), TE_M(2), TE_M(3), TE_M(4));
+                    case 6: return TE_F(double, double, double, double, double, double)(TE_M(0), TE_M(1), TE_M(2), TE_M(3), TE_M(4), TE_M(5));
+                    case 7: return TE_F(double, double, double, double, double, double, double)(TE_M(0), TE_M(1), TE_M(2), TE_M(3), TE_M(4), TE_M(5), TE_M(6));
+                    default: return (0.0/0.0);
                 }
 
             case TE_CLOSURE0: case TE_CLOSURE1: case TE_CLOSURE2: case TE_CLOSURE3:
             case TE_CLOSURE4: case TE_CLOSURE5: case TE_CLOSURE6: case TE_CLOSURE7:
                 switch(ARITY(n->type)) {
-                    case 0: return TE_FUN(void*)(n->parameters[0]);
-                    case 1: return TE_FUN(void*, double)(n->parameters[1], M(0));
-                    case 2: return TE_FUN(void*, double, double)(n->parameters[2], M(0), M(1));
-                    case 3: return TE_FUN(void*, double, double, double)(n->parameters[3], M(0), M(1), M(2));
-                    case 4: return TE_FUN(void*, double, double, double, double)(n->parameters[4], M(0), M(1), M(2), M(3));
-                    case 5: return TE_FUN(void*, double, double, double, double, double)(n->parameters[5], M(0), M(1), M(2), M(3), M(4));
-                    case 6: return TE_FUN(void*, double, double, double, double, double, double)(n->parameters[6], M(0), M(1), M(2), M(3), M(4), M(5));
-                    case 7: return TE_FUN(void*, double, double, double, double, double, double, double)(n->parameters[7], M(0), M(1), M(2), M(3), M(4), M(5), M(6));
-                    default: return NAN;
+                    case 0: return TE_F(void*)(n->parameters[0]);
+                    case 1: return TE_F(void*, double)(n->parameters[1], TE_M(0));
+                    case 2: return TE_F(void*, double, double)(n->parameters[2], TE_M(0), TE_M(1));
+                    case 3: return TE_F(void*, double, double, double)(n->parameters[3], TE_M(0), TE_M(1), TE_M(2));
+                    case 4: return TE_F(void*, double, double, double, double)(n->parameters[4], TE_M(0), TE_M(1), TE_M(2), TE_M(3));
+                    case 5: return TE_F(void*, double, double, double, double, double)(n->parameters[5], TE_M(0), TE_M(1), TE_M(2), TE_M(3), TE_M(4));
+                    case 6: return TE_F(void*, double, double, double, double, double, double)(n->parameters[6], TE_M(0), TE_M(1), TE_M(2), TE_M(3), TE_M(4), TE_M(5));
+                    case 7: return TE_F(void*, double, double, double, double, double, double, double)(n->parameters[7], TE_M(0), TE_M(1), TE_M(2), TE_M(3), TE_M(4), TE_M(5), TE_M(6));
+                    default: return (0.0/0.0);
                 }
 
-            default: return NAN;
+            default: return (0.0/0.0);
         }
 
     }
 
-#undef TE_FUN
-#undef M
+#undef TE_F
+#undef TE_M
 
     static void optimize(te_expr *n) {
         /* Evaluates as much as possible. */
@@ -549,7 +534,6 @@ struct te
             }
         }
     }
-
 
     static te_expr *te_compile(const char *expression, const te_variable *variables, int var_count, int *error) {
         state s;
@@ -577,6 +561,7 @@ struct te
 
 /* clang-format on */
 
-h2_inline double tinyexpr::eval(const char* expression, int* error) {
+h2_inline double tinyexpr::eval(const char* expression, int* error)
+{
    return te::te_interp(expression, error);
 }

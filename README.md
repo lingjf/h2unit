@@ -87,6 +87,7 @@ CASE(Case Name)
 *    [`IsTrue`](source/h2_unit.hpp#L100) : matches if value is true .
 *    [`IsFalse`](source/h2_unit.hpp#L100) : matches if value is false .
 *    [`Eq`](source/h2_unit.hpp#L100)(expect) : matches if value equals expect (one of [strcmp wildcard regex] equals for string compare).
+*    [`Eq`](source/h2_unit.hpp#L100)(expect, epsilon) : matches if float value near equals expect, default epsilon is 0.00001 .
 *    [`Nq`](source/h2_unit.hpp#L100)(expect) : matches if value not equals expect .
 *    [`Ge`](source/h2_unit.hpp#L100)(expect) : matches if value >= expect .
 *    [`Gt`](source/h2_unit.hpp#L100)(expect) : matches if value > expect .

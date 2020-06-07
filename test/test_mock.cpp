@@ -1,12 +1,10 @@
 #include "../source/h2_unit.cpp"
 
-#if (defined(__GNUC__) && __GNUC__ >= 5) || defined __clang__
-
 int bar1(int a, const char* b)
 {
    return 0;
 }
-void bar2(int a, char* b)
+void bar2(int& a, char* b)
 {
 }
 void bar3()
@@ -88,9 +86,11 @@ SUITE(mock c - function)
 
    Case(void return )
    {
+      MOCK(bar2, void(int& a, char*)).once(1, (char*)"A");
+
       char t[32] = "A";
-      MOCK(bar2, void(int a, char*)).once(1, (char*)"A");
-      bar2(1, t);
+      int a1 = 1;
+      bar2(a1, t);
    }
 
    Case(multi - line)
@@ -112,16 +112,20 @@ SUITE(mock c - function)
 
    Case(th0)
    {
+      MOCK(bar2, void(int& a, char*)).once().th1(1);
+
       char t[32] = "";
-      MOCK(bar2, void(int a, char*)).once().th1(1);
-      bar2(1, t);
+      int a1 = 1;
+      bar2(a1, t);
    }
 
    Case(th1)
    {
+      MOCK(bar2, void(int& a, char*)).once().th2((char*)"A");
+
       char t[32] = "A";
-      MOCK(bar2, void(int a, char*)).once().th2((char*)"A");
-      bar2(1, t);
+      int a1 = 1;
+      bar2(a1, t);
    }
 
    Case(zero parameter)
@@ -197,12 +201,13 @@ SUITE(mock does)
 
    Case(lambda_does modify parameter)
    {
-      char t[128] = "hello";
-      MOCK(bar2, void(int, char*)).once() = [](int a, char* b) {
+      MOCK(bar2, void(int&, char*)).once() = [](int& a, char* b) {
          strcpy(b, "world");
          return;
       };
-      bar2(0, t);
+      char t[128] = "hello";
+      int a1 = 0;
+      bar2(a1, t);
       OK("world", (const char*)t);
    }
 
@@ -312,5 +317,3 @@ SUITE(Mock in shared_code)
 
    Case(b) { OK(11, bar1(1, "A")); }
 }
-
-#endif

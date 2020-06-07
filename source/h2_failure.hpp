@@ -1,6 +1,6 @@
 
 struct h2_fail : h2_libc {
-   h2_fail *subling_next, *child_next;
+   h2_fail *subling_next{nullptr}, *child_next{nullptr};
 
    const char* file;
    int line;
@@ -8,7 +8,7 @@ struct h2_fail : h2_libc {
    const char* func;
    int argi;
 
-   int usage;  // 0 is Inner(Mock, AllOf, &&||); 1 is OK(condition); 2 is OK(expect, actual); 3 is JE
+   int usage = 0;  // 0 is Inner(Mock, AllOf, &&||); 1 is OK(condition); 2 is OK(expect, actual); 3 is JE
    h2_string e_expression, a_expression;
    h2_string no, explain, user_explain;
 
@@ -17,7 +17,7 @@ struct h2_fail : h2_libc {
    //     We(var)        We("abc")      "abc"           abc
 
    h2_fail(const char* file_, int line_, const char* func_ = nullptr, int argi_ = -1)
-     : subling_next(nullptr), child_next(nullptr), file(file_), line(line_), func(func_), argi(argi_), usage(0) {}
+     : file(file_), line(line_), func(func_), argi(argi_) {}
    virtual ~h2_fail();
 
    void set_locate(const char* file_, int line_, const char* func_ = nullptr, int argi_ = -1);
@@ -26,7 +26,7 @@ struct h2_fail : h2_libc {
    virtual void print(int subling_index = 0, int child_index = 0) {}
    virtual void print(FILE* fp) {}
 
-   void foreach (std::function<void(h2_fail*, int, int)> cb, int subling_index = 0, int child_index = 0);
+   void foreach(std::function<void(h2_fail*, int, int)> cb, int subling_index = 0, int child_index = 0);
    static void append_subling(h2_fail*& fail, h2_fail* n);
    static void append_child(h2_fail*& fail, h2_fail* n);
 };

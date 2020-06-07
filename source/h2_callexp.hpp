@@ -1,8 +1,9 @@
 
 struct h2_callexp {
-   int call, least, most;
+   int call = 0; /* 就地初始化 */
+   int least, most;
 
-   h2_callexp(int _least, int _most) : call(0), least(_least), most(_most) {}
+   h2_callexp(int _least, int _most) : least(_least), most(_most) {}
 
    void operator++() { call += 1; }
 

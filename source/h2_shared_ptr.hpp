@@ -2,7 +2,7 @@
 template <typename T>
 class h2_shared_ptr : h2_libc {
  public:
-   h2_shared_ptr() : px(nullptr), pn(nullptr) {}
+   h2_shared_ptr() = default;
    explicit h2_shared_ptr(T* p) { acquire(p, nullptr); }
    h2_shared_ptr(const h2_shared_ptr& that) { acquire(that.px, that.pn); }
    ~h2_shared_ptr() { release(); }
@@ -36,6 +36,6 @@ class h2_shared_ptr : h2_libc {
       }
    }
 
-   T* px;
-   long* pn;
+   T* px = nullptr;
+   long* pn = nullptr;
 };

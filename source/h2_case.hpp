@@ -1,22 +1,25 @@
 
-static constexpr const char* CSS[] = {"init", "Passed", "Failed", "TODO", "Filtered"};
-
 struct h2_case {
-   static constexpr const int INITED = 0, PASSED = 1, FAILED = 2, TODOED = 3, FILTED = 4;
+   enum { initial = 0,
+          passed = 1,
+          failed = 2,
+          todo = 3,
+          filtered = 4,
+          statuss };
    const char* name;
    const char* file;
    int line;
    h2_list x;
-   int seq;
-   int status;
+   int seq = 0;
+   int status = initial;
    jmp_buf jump;
-   h2_fail* fails;
+   h2_fail* fails{nullptr};
    h2_stubs stubs;
    h2_mocks mocks;
    h2_dnses dnses;
-   h2_sock* sock;
+   h2_sock* sock{nullptr};
 
-   h2_case(const char* name_, int todo, const char* file_, int line_);
+   h2_case(const char* name_, const char* file_, int line_, int status_) : name(name_), file(file_), line(line_), status(status_) {}
 
    void prev_setup();
    void post_setup() {}

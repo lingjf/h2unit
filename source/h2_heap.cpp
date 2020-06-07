@@ -7,21 +7,20 @@ struct h2_piece : h2_libc {
    // free
    const char* who_allocate;
    h2_backtrace bt_allocate, bt_release;
-   int free_times;
+   int free_times = 0;
    // snowfield
    unsigned char snow;
    // forbidden
    static constexpr const unsigned readable = 1, writable = 1 << 1;
-   void* forbidden_page;
-   int forbidden_size;
-   int violate_times;
-   void* violate_address;
-   const char* violate_action;
-   bool violate_after_free;
+   void* forbidden_page{nullptr};
+   int forbidden_size = 0;
+   int violate_times = 0;
+   void* violate_address{nullptr};
+   const char* violate_action{nullptr};
+   bool violate_after_free = false;
    h2_backtrace violate_backtrace;
 
-   h2_piece(int size_, int alignment, const char* who, h2_backtrace& bt)
-     : user_size(size_), who_allocate(who), bt_allocate(bt), free_times(0), forbidden_page(nullptr), forbidden_size(0), violate_times(0), violate_address(nullptr), violate_action(nullptr), violate_after_free(false)
+   h2_piece(int size_, int alignment, const char* who, h2_backtrace& bt) : user_size(size_), who_allocate(who), bt_allocate(bt)
    {
       page_size = h2_page_size();
       if (alignment <= 0) alignment = 8;
@@ -36,7 +35,7 @@ struct h2_piece : h2_libc {
 #endif
 
       user_ptr = page_ptr + page_size * page_count - user_size;
-      user_ptr = (unsigned char*)(((intptr_t)user_ptr / alignment) * alignment);
+      user_ptr = (unsigned char*)(((long long)user_ptr / alignment) * alignment);
 
       mark_snowfield();
    }
@@ -219,7 +218,7 @@ struct h2_block : h2_libc {
 
    h2_fail* check()
    {
-      h2_list_for_each_entry (p, &pieces, h2_piece, x) {
+      h2_list_for_each_entry (p, pieces, h2_piece, x) {
          h2_fail* fail1 = p->violate_check();
          if (fail1) return fail1;
          h2_fail* fail2 = p->leak_check(where, file, line);
@@ -227,7 +226,7 @@ struct h2_block : h2_libc {
       }
       /* why not chain fails in subling? report one fail ignore more for clean.
          when fail, memory may be in used, don't free and keep it for robust */
-      h2_list_for_each_entry (p, &pieces, h2_piece, x) {
+      h2_list_for_each_entry (p, pieces, h2_piece, x) {
          p->x.out();
          delete p;
       }
@@ -245,13 +244,13 @@ struct h2_block : h2_libc {
          for (int i = 0, j = 0, l = strlen(fill_); i < size; ++i, ++j)
             ((char*)p->user_ptr)[i] = fill_[j % (l ? l : 1)];
 
-      pieces.push(&p->x);
+      pieces.push(p->x);
       return p;
    }
 
    h2_piece* get_piece(const void* ptr)
    {
-      h2_list_for_each_entry (p, &pieces, h2_piece, x)
+      h2_list_for_each_entry (p, pieces, h2_piece, x)
          if (p->user_ptr == ptr) return p;
       return nullptr;
    }
@@ -264,7 +263,7 @@ struct h2_block : h2_libc {
 
    h2_piece* host_piece(const void* addr)
    {
-      h2_list_for_each_entry (p, &pieces, h2_piece, x)
+      h2_list_for_each_entry (p, pieces, h2_piece, x)
          if (p->in_page_range((const unsigned char*)addr)) return p;
       return nullptr;
    }
@@ -277,12 +276,12 @@ struct h2_stack {
    void push(const char* file, int line, const char* where, long long limited, const char* fill)
    {
       h2_block* b = new h2_block(file, line, where, limited, fill);
-      blocks.push(&b->x);
+      blocks.push(b->x);
    }
 
    h2_fail* pop()
    {
-      h2_block* b = h2_list_pop_entry(&blocks, h2_block, x);
+      h2_block* b = h2_list_pop_entry(blocks, h2_block, x);
       h2_fail* fail = b->check();
       delete b;
       return fail;
@@ -291,13 +290,13 @@ struct h2_stack {
    h2_piece* new_piece(const char* who, size_t size, size_t alignment, const char* fill)
    {
       h2_backtrace bt(O.isMAC() ? 3 : 2);
-      h2_block* b = h2_patch::exempt(bt) ? h2_list_bottom_entry(&blocks, h2_block, x) : h2_list_top_entry(&blocks, h2_block, x);
+      h2_block* b = h2_patch::exempt(bt) ? h2_list_bottom_entry(blocks, h2_block, x) : h2_list_top_entry(blocks, h2_block, x);
       return b ? b->new_piece(who, size, alignment, fill, bt) : nullptr;
    }
 
    h2_piece* get_piece(const void* ptr)
    {
-      h2_list_for_each_entry (p, &blocks, h2_block, x) {
+      h2_list_for_each_entry (p, blocks, h2_block, x) {
          h2_piece* piece = p->get_piece(ptr);
          if (piece) return piece;
       }
@@ -306,7 +305,7 @@ struct h2_stack {
 
    h2_fail* rel_piece(const char* who, void* ptr)
    {
-      h2_list_for_each_entry (p, &blocks, h2_block, x) {
+      h2_list_for_each_entry (p, blocks, h2_block, x) {
          h2_piece* piece = p->get_piece(ptr);
          if (piece) return p->rel_piece(who, piece);
       }
@@ -316,7 +315,7 @@ struct h2_stack {
 
    h2_piece* host_piece(const void* addr)
    {
-      h2_list_for_each_entry (p, &blocks, h2_block, x) {
+      h2_list_for_each_entry (p, blocks, h2_block, x) {
          h2_piece* piece = p->host_piece(addr);
          if (piece) return piece;
       }
@@ -596,86 +595,27 @@ struct h2_hook {
          abort();
       }
    }
+#endif
+
    void install_segment_fault_handler()
    {
+#ifndef _WIN32
       struct sigaction action;
       action.sa_sigaction = segment_fault_handler;
       action.sa_flags = SA_SIGINFO;
       sigemptyset(&action.sa_mask);
-#   ifdef SIGHUP
-      sigaddset(&action.sa_mask, SIGHUP);
-#   endif
-#   ifdef SIGINT
-      sigaddset(&action.sa_mask, SIGINT);
-#   endif
-#   ifdef SIGQUIT
-      sigaddset(&action.sa_mask, SIGQUIT);
-#   endif
-#   ifdef SIGPIPE
-      sigaddset(&action.sa_mask, SIGPIPE);
-#   endif
-#   ifdef SIGALRM
-      sigaddset(&action.sa_mask, SIGALRM);
-#   endif
-#   ifdef SIGTERM
-      sigaddset(&action.sa_mask, SIGTERM);
-#   endif
-#   ifdef SIGUSR1
-      sigaddset(&action.sa_mask, SIGUSR1);
-#   endif
-#   ifdef SIGUSR2
-      sigaddset(&action.sa_mask, SIGUSR2);
-#   endif
-#   ifdef SIGCHLD
-      sigaddset(&action.sa_mask, SIGCHLD);
-#   endif
-#   ifdef SIGCLD
-      sigaddset(&action.sa_mask, SIGCLD);
-#   endif
-#   ifdef SIGURG
-      sigaddset(&action.sa_mask, SIGURG);
-#   endif
-#   ifdef SIGIO
-      sigaddset(&action.sa_mask, SIGIO);
-#   endif
-#   ifdef SIGPOLL
-      sigaddset(&action.sa_mask, SIGPOLL);
-#   endif
-#   ifdef SIGXCPU
-      sigaddset(&action.sa_mask, SIGXCPU);
-#   endif
-#   ifdef SIGXFSZ
-      sigaddset(&action.sa_mask, SIGXFSZ);
-#   endif
-#   ifdef SIGVTALRM
-      sigaddset(&action.sa_mask, SIGVTALRM);
-#   endif
-#   ifdef SIGPROF
-      sigaddset(&action.sa_mask, SIGPROF);
-#   endif
-#   ifdef SIGPWR
-      sigaddset(&action.sa_mask, SIGPWR);
-#   endif
-#   ifdef SIGLOST
-      sigaddset(&action.sa_mask, SIGLOST);
-#   endif
-#   ifdef SIGWINCH
-      sigaddset(&action.sa_mask, SIGWINCH);
-#   endif
 
       if (sigaction(SIGSEGV, &action, nullptr) == -1) perror("Register SIGSEGV handler failed");
 #   ifdef __APPLE__
       if (sigaction(SIGBUS, &action, nullptr) == -1) perror("Register SIGBUS handler failed");
 #   endif
-   }
 #endif
+   }
 };
 
 h2_inline void h2_heap::initialize()
 {
-#ifndef _WIN32
    if (O.memory_check && !O.debug) h2_hook::I().install_segment_fault_handler();
-#endif
    stack::root();
 }
 h2_inline void h2_heap::dohook()
@@ -695,10 +635,15 @@ h2_inline void h2_heap::stack::push(const char* file, int line, long long limite
 {
    h2_stack::I().push(file, line, "case", limited, fill);
 }
-h2_inline h2_fail* h2_heap::stack::pop() { return h2_stack::I().pop(); }
-
+h2_inline h2_fail* h2_heap::stack::pop()
+{
+   return h2_stack::I().pop();
+}
 h2_inline h2_heap::stack::block::block(const char* file, int line, long long limited, const char* fill)
 {
    h2_stack::I().push(file, line, "block", limited, fill);
 }
-h2_inline h2_heap::stack::block::~block() { h2_fail_g(h2_stack::I().pop(), false); }
+h2_inline h2_heap::stack::block::~block()
+{
+   h2_fail_g(h2_stack::I().pop(), false);
+}

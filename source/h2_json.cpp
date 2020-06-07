@@ -2,9 +2,9 @@
 struct h2_json_parse {
    const char* text;
    int length;
-   int offset;
+   int offset = 0;
 
-   h2_json_parse(const char* text_, int length_) : text(text_), length(length_), offset(0) {}
+   h2_json_parse(const char* text_, int length_) : text(text_), length(length_) {}
    struct h2_json_parse& strip()
    {
       while (offset < length && ::isspace(text[offset])) offset++;
@@ -33,22 +33,22 @@ struct h2_json_node : h2_libc {
    static const int t_array = 6;
    static const int t_object = 7;
 
-   int type;
+   int type = t_absent;
    h2_string key_string;
    h2_string value_string;
-   double value_double;
-   bool value_boolean;
+   double value_double = 0;
+   bool value_boolean = false;
    h2_list children, x; /* array or object */
 
    ~h2_json_node()
    {
-      h2_list_for_each_entry (p, &children, h2_json_node, x) {
+      h2_list_for_each_entry (p, children, h2_json_node, x) {
          p->x.out();
          delete p;
       }
    }
-   h2_json_node() : type(t_absent), value_double(0), value_boolean(false) {}
-   h2_json_node(const char* json_string, int length = 0) : h2_json_node()
+   h2_json_node() = default;
+   h2_json_node(const char* json_string, int length = 0)
    {
       if (json_string) {
          if (length == 0) length = strlen(json_string);
@@ -63,7 +63,7 @@ struct h2_json_node : h2_libc {
 
    h2_json_node* get(int index)
    {
-      h2_list_for_each_entry (p, &children, h2_json_node, x)
+      h2_list_for_each_entry (p, children, h2_json_node, x)
          if (i == index) return p;
       return nullptr;
    }
@@ -71,7 +71,7 @@ struct h2_json_node : h2_libc {
    h2_json_node* get(const char* name)
    {
       if (name)
-         h2_list_for_each_entry (p, &children, h2_json_node, x)
+         h2_list_for_each_entry (p, children, h2_json_node, x)
             if (!p->key_string.compare(name)) return p;
       return nullptr;
    }
@@ -84,37 +84,37 @@ struct h2_json_node : h2_libc {
    bool is_array() { return t_array == type; }
    bool is_object() { return t_object == type; }
 
-   bool parse_number(h2_json_parse& x)
+   bool parse_number(h2_json_parse& p)
    {
       int i;
-      for (i = 0; x.offset + i < x.length; ++i) {
-         const char c = x.text[x.offset + i];
+      for (i = 0; p.offset + i < p.length; ++i) {
+         const char c = p.text[p.offset + i];
          if (c == ',' || c == '{' || c == '}' || c == '[' || c == ']' || c == ':' || c == '\0')
             break;
       }
 
-      value_string.assign(x.text + x.offset, i);
+      value_string.assign(p.text + p.offset, i);
 
       int err = 0;
       value_double = tinyexpr::eval(value_string.c_str(), &err);
       type = t_number;
-      x.offset += i;
+      p.offset += i;
 
       return 0 == err;
    }
 
-   bool parse_string(h2_json_parse& x)
+   bool parse_string(h2_json_parse& p)
    {
-      const char bound = x.text[x.offset];
-      x.offset++;
+      const char bound = p.text[p.offset];
+      p.offset++;
 
-      if (x.length <= x.offset) return false;
+      if (p.length <= p.offset) return false;
 
-      const char* src = x.text + x.offset;
+      const char* src = p.text + p.offset;
       int len = 0;
-      for (; x.text[x.offset] != bound; ++len) {
-         if (x.text[x.offset++] == '\\') x.offset++;
-         if (x.length <= x.offset) return false;
+      for (; p.text[p.offset] != bound; ++len) {
+         if (p.text[p.offset++] == '\\') p.offset++;
+         if (p.length <= p.offset) return false;
       }
 
       for (; len > 0; ++src, --len)
@@ -134,102 +134,98 @@ struct h2_json_node : h2_libc {
             }
 
       type = t_string;
-      x.offset++;
+      p.offset++;
 
       return true;
    }
 
-   bool parse_regexp(h2_json_parse& x)
+   bool parse_regexp(h2_json_parse& p)
    {
-      bool ret = parse_string(x);
+      bool ret = parse_string(p);
       type = t_regexp;
       return ret;
    }
 
-   bool parse_value(h2_json_parse& x)
+   bool parse_value(h2_json_parse& p)
    {
       /* t_null */
-      if (x.startswith("null", 4)) {
+      if (p.startswith("null", 4)) {
          type = t_null;
-         x.offset += 4;
+         p.offset += 4;
          return true;
       }
       /* false */
-      if (x.startswith("false", 5)) {
+      if (p.startswith("false", 5)) {
          type = t_boolean;
          value_boolean = false;
-         x.offset += 5;
+         p.offset += 5;
          return true;
       }
       /* true */
-      if (x.startswith("true", 4)) {
+      if (p.startswith("true", 4)) {
          type = t_boolean;
          value_boolean = true;
-         x.offset += 4;
+         p.offset += 4;
          return true;
       }
       /* string */
-      if (x.startswith('\"') || x.startswith('\'')) return parse_string(x);
+      if (p.startswith('\"') || p.startswith('\'')) return parse_string(p);
       /* regexp */
-      if (x.startswith('/')) return parse_regexp(x);
+      if (p.startswith('/')) return parse_regexp(p);
 
       /* array */
-      if (x.startswith('[')) return parse_array(x);
+      if (p.startswith('[')) return parse_array(p);
       /* object */
-      if (x.startswith('{')) return parse_object(x);
+      if (p.startswith('{')) return parse_object(p);
 
       /* number */
-      if (1 /* x.startswith('-') || x.startswith('0', '9') */) return parse_number(x);
+      if (1 /* p.startswith('-') || p.startswith('0', '9') */) return parse_number(p);
 
       return false;
    }
 
-   bool parse_array(h2_json_parse& x)
+   bool parse_array(h2_json_parse& p)
    {
-      x.offset++;  //pass [
+      p.offset++;  //pass [
 
-      while (!x.strip().startswith(']')) {
+      while (!p.strip().startswith(']')) {
          h2_json_node* new_node = new h2_json_node();
-         if (!new_node) abort();
+         children.push_back(new_node->x);
 
-         children.push_back(&new_node->x);
+         if (!new_node->parse_value(p)) return false;
 
-         if (!new_node->parse_value(x)) return false;
-
-         if (x.strip().startswith(',')) x.offset++;
+         if (p.strip().startswith(',')) p.offset++;
       }
 
       type = t_array;
-      x.offset++;
+      p.offset++;
 
       return true;
    }
 
-   bool parse_object(h2_json_parse& x)
+   bool parse_object(h2_json_parse& p)
    {
-      x.offset++;  //pass {
+      p.offset++;  //pass {
 
-      while (!x.strip().startswith('}')) {
+      while (!p.strip().startswith('}')) {
          h2_json_node* new_node = new h2_json_node();
-         if (!new_node) abort();
+         children.push_back(new_node->x);
 
-         children.push_back(&new_node->x);
-
-         if (!new_node->parse_string(x)) return false;
+         if (!new_node->parse_string(p)) return false;
 
          new_node->key_string = new_node->value_string;
          new_node->value_string = "";
 
-         if (!x.strip().startswith(':')) return false;
-         x.offset++;
+         if (!p.strip().startswith(':')) return false;
+         p.offset++;
 
-         if (!new_node->parse_value(x.strip())) return false;
+         if (!new_node->parse_value(p.strip())) return false;
 
-         if (x.strip().startswith(',')) x.offset++;
+         if (p.strip().startswith(',')) p.offset++;
       }
 
       type = t_object;
-      x.offset++;
+      p.offset++;
 
       return true;
    }
@@ -293,7 +289,7 @@ struct h2_json_node : h2_libc {
       else if (is_array() || is_object()) {
          line.push_back(is_array() ? "[ " : "{ ");
          h2_lines __lines;
-         h2_list_for_each_entry (p, &children, h2_json_node, x)
+         h2_list_for_each_entry (p, children, h2_json_node, x)
             p->print(__lines, depth + 1, children.count() - i - 1, fold);
 
          if (fold && __lines.foldable()) {
@@ -318,7 +314,7 @@ struct h2_json_match {
    {
       if (!e || !a) return false;
       if (e->size() != a->size()) return false;
-      h2_list_for_each_entry (p, &e->children, h2_json_node, x)
+      h2_list_for_each_entry (p, e->children, h2_json_node, x)
          if (!match(p, a->get(i)))
             return false;
       return true;
@@ -328,7 +324,7 @@ struct h2_json_match {
    {
       if (!e || !a) return false;
       if (e->size() > a->size()) return false;
-      h2_list_for_each_entry (p, &e->children, h2_json_node, x)
+      h2_list_for_each_entry (p, e->children, h2_json_node, x)
          if (!match(p, a->get(p->key_string.c_str())))
             return false;
       return true;
@@ -347,7 +343,7 @@ struct h2_json_match {
       case h2_json_node::t_string:
          return a->is_string() && e->value_string == a->value_string;
       case h2_json_node::t_regexp:
-         return a->is_string() && h2_regex_match(e->value_string.c_str(), a->value_string.c_str());
+         return a->is_string() && h2_pattern::regex_match(e->value_string.c_str(), a->value_string.c_str());
       case h2_json_node::t_array:
          return a->is_array() && match_array(e, a);
       case h2_json_node::t_object:
@@ -356,7 +352,7 @@ struct h2_json_match {
       };
    }
 
-   static h2_json_node* search(h2_list* haystack, h2_json_node* needle)
+   static h2_json_node* search(h2_list& haystack, h2_json_node* needle)
    {
       h2_list_for_each_entry (p, haystack, h2_json_node, x)
          if (match(needle, p)) return p;
@@ -365,9 +361,9 @@ struct h2_json_match {
 };
 
 struct h2_json_dual : h2_libc {  // combine 2 Node into a Dual
-   bool match;
-   int e_type, a_type;
-   const char *e_class, *a_class;
+   bool match = false;
+   int e_type = h2_json_node::t_absent, a_type = h2_json_node::t_absent;
+   const char *e_class = "blob", *a_class = "blob";
    h2_string e_key, a_key;
    h2_string e_value, a_value;
    h2_lines e_blob, a_blob;
@@ -377,13 +373,13 @@ struct h2_json_dual : h2_libc {  // combine 2 Node into a Dual
 
    ~h2_json_dual()
    {
-      h2_list_for_each_entry (p, &children, h2_json_dual, x) {
+      h2_list_for_each_entry (p, children, h2_json_dual, x) {
          p->x.out();
          delete p;
       }
    }
 
-   h2_json_dual(h2_json_node* e, h2_json_node* a, h2_json_dual* perent_ = nullptr) : match(false), e_type(h2_json_node::t_absent), a_type(h2_json_node::t_absent), e_class("blob"), a_class("blob"), perent(perent_), depth(perent_ ? perent_->depth + 1 : 0)
+   h2_json_dual(h2_json_node* e, h2_json_node* a, h2_json_dual* perent_ = nullptr) : perent(perent_), depth(perent_ ? perent_->depth + 1 : 0)
    {
       match = h2_json_match::match(e, a);
       if (e) e->dual(e_type, e_class, e_key, e_value);
@@ -394,11 +390,11 @@ struct h2_json_dual : h2_libc {  // combine 2 Node into a Dual
          if (a) a->print(a_blob, depth, 0, true);
          e_class = a_class = "blob";
       } else if (!strcmp("object", e_class)) {
-         h2_list_for_each_entry (_e, &e->children, h2_json_node, x) {
+         h2_list_for_each_entry (_e, e->children, h2_json_node, x) {
             h2_json_node* _a = a->get(_e->key_string.c_str());
-            if (!_a) _a = h2_json_match::search(&a->children, _e);
+            if (!_a) _a = h2_json_match::search(a->children, _e);
             if (_a) {
-               children.push_back(&(new h2_json_dual(_e, _a, this))->x);
+               children.push_back((new h2_json_dual(_e, _a, this))->x);
                _e->x.out();
                delete _e;
                _a->x.out();
@@ -407,10 +403,10 @@ struct h2_json_dual : h2_libc {  // combine 2 Node into a Dual
          }
 
          for (int i = 0; i < std::max(e->size(), a->size()); ++i)
-            children.push_back(&(new h2_json_dual(e->get(i), a->get(i), this))->x);
+            children.push_back((new h2_json_dual(e->get(i), a->get(i), this))->x);
       } else if (!strcmp("array", e_class)) {
          for (int i = 0; i < std::max(e->size(), a->size()); ++i)
-            children.push_back(&(new h2_json_dual(e->get(i), a->get(i), this))->x);
+            children.push_back((new h2_json_dual(e->get(i), a->get(i), this))->x);
       }
    }
 
@@ -476,7 +472,7 @@ struct h2_json_dual : h2_libc {  // combine 2 Node into a Dual
 
          e_lines.push_back(e_line), e_line.clear();
          a_lines.push_back(a_line), a_line.clear();
-         h2_list_for_each_entry (p, &children, h2_json_dual, x)
+         h2_list_for_each_entry (p, children, h2_json_dual, x)
             p->align(e_lines, a_lines, &children);
 
          e_line.indent(depth * 2);

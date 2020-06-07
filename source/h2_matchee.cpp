@@ -1,37 +1,7 @@
 
-h2_inline h2_fail* h2_equals_string::matches(const h2_string& a, bool caseless, bool dont) const
-{
-   if (a.equals(e, caseless) == !dont) return nullptr;
-   if (h2_wildcard_match(e.c_str(), a.c_str(), caseless) == !dont) return nullptr;
-   if (h2_regex_match(e.c_str(), a.c_str(), caseless) == !dont) return nullptr;
-
-   return new h2_fail_strcmp(e, a, caseless, expects(a, caseless, dont));
-}
-
-h2_inline h2_string h2_equals_string::expects(const h2_string& a, bool caseless, bool dont) const
-{
-   return CD("\"" + e + "\"", caseless, dont);
-}
-
-h2_inline h2_fail* h2_equals_float::matches(const long double a, bool caseless, bool dont) const
-{
-   // the machine epsilon has to be scaled to the magnitude of the values used
-   // and multiplied by the desired precision in ULPs (units in the last place)
-   // bool result = std::fabs(a - e) < std::numeric_limits<double>::epsilon() * std::fabs(a + e) * 2
-   //      || std::fabs(a - e) < std::numeric_limits<double>::min();  // unless the result is subnormal
-   bool result = std::fabs(a - e) < 0.00001;
-   if (result == !dont) return nullptr;
-   return new h2_fail_unexpect(h2_stringify(e), h2_stringify(a), expects(a, false, dont));
-}
-
-h2_inline h2_string h2_equals_float::expects(const long double a, bool caseless, bool dont) const
-{
-   return CD(h2_stringify(e), caseless, dont);
-}
-
 h2_inline h2_fail* h2_matchee_regex::matches(const h2_string& a, bool caseless, bool dont) const
 {
-   if (h2_regex_match(e.c_str(), a.c_str(), caseless) == !dont) return nullptr;
+   if (h2_pattern::regex_match(e.c_str(), a.c_str(), caseless) == !dont) return nullptr;
    return new h2_fail_strfind(e, a, expects(a, caseless, dont));
 }
 
@@ -42,7 +12,7 @@ h2_inline h2_string h2_matchee_regex::expects(const h2_string& a, bool caseless,
 
 h2_inline h2_fail* h2_matchee_wildcard::matches(const h2_string& a, bool caseless, bool dont) const
 {
-   if (h2_wildcard_match(e.c_str(), a.c_str(), caseless) == !dont) return nullptr;
+   if (h2_pattern::wildcard_match(e.c_str(), a.c_str(), caseless) == !dont) return nullptr;
    return new h2_fail_strfind(e, a, expects(a, caseless, dont));
 }
 

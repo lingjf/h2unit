@@ -94,6 +94,10 @@ SUITE(Matchee)
       OK(nullptr == c1.matches(65));
       h2::h2_equals<double> c2(65.000000001);
       OK(nullptr == c2.matches(65));
+      h2::h2_equals<double> c3(65.000000001, 0.001);
+      OK(nullptr == c3.matches(65));
+      h2::h2_equals<double> c4(65.001, 0.0001);
+      OK(nullptr != c4.matches(65));
 
       h2::h2_equals<char*> d1("abc");
       OK(nullptr == d1.matches("abc"));

@@ -84,11 +84,11 @@ struct h2__socket {
    {
       bool block = is_block(sockfd);
       const char* local = getsockname(sockfd, (char*)alloca(64));
-      h2_sock* sock = h2_list_top_entry(&I().socks, h2_sock, y);
+      h2_sock* sock = h2_list_top_entry(I().socks, h2_sock, y);
 
       do {
-         h2_list_for_each_entry (p, &sock->incoming, h2_packet, x) {
-            if (h2_wildcard_match(p->to.c_str(), local)) {
+         h2_list_for_each_entry (p, sock->incoming, h2_packet, x) {
+            if (h2_pattern::wildcard_match(p->to.c_str(), local)) {
                p->x.out();
                return p;
             }
@@ -112,10 +112,10 @@ struct h2__socket {
       struct sockaddr_in a;
       const char* c = getsockname(socket, (char*)alloca(64), &a);
       ::bind(fd, (struct sockaddr*)&a, sizeof(a));
-      h2_sock* sock = h2_list_top_entry(&I().socks, h2_sock, y);
+      h2_sock* sock = h2_list_top_entry(I().socks, h2_sock, y);
       sock->sockets.push_back({fd, c, tcp->from.c_str()});
       if (tcp->data.length())
-         sock->incoming.push(&tcp->x);
+         sock->incoming.push(tcp->x);
       else
          delete tcp;
 
@@ -124,7 +124,7 @@ struct h2__socket {
 
    static int connect(int socket, const struct sockaddr* address, socklen_t address_len)
    {
-      h2_sock* sock = h2_list_top_entry(&I().socks, h2_sock, y);
+      h2_sock* sock = h2_list_top_entry(I().socks, h2_sock, y);
       sock->sockets.push_back({socket, getsockname(socket, (char*)alloca(64)), iport_tostring((struct sockaddr_in*)address, (char*)alloca(64))});
       h2_packet* tcp = read_incoming(socket);
       if (!tcp) {
@@ -132,7 +132,7 @@ struct h2__socket {
          return -1;
       }
       if (tcp->data.length())
-         sock->incoming.push(&tcp->x);
+         sock->incoming.push(tcp->x);
       else
          delete tcp;
       return 0;
@@ -140,7 +140,7 @@ struct h2__socket {
 
    static ssize_t send(int socket, const void* buffer, size_t length, int flags)
    {
-      h2_sock* sock = h2_list_top_entry(&I().socks, h2_sock, y);
+      h2_sock* sock = h2_list_top_entry(I().socks, h2_sock, y);
       if (sock) sock->put_outgoing(socket, (const char*)buffer, length);
       return length;
    }
@@ -152,7 +152,7 @@ struct h2__socket {
 #endif
    static ssize_t sendto(int socket, const void* buffer, size_t length, int flags, const struct sockaddr* dest_addr, socklen_t dest_len)
    {
-      h2_sock* sock = h2_list_top_entry(&I().socks, h2_sock, y);
+      h2_sock* sock = h2_list_top_entry(I().socks, h2_sock, y);
       if (sock) sock->put_outgoing(getsockname(socket, (char*)alloca(64)), iport_tostring((struct sockaddr_in*)dest_addr, (char*)alloca(64)), (const char*)buffer, length);
       return length;
    }
@@ -210,7 +210,7 @@ h2_inline h2_sock::~h2_sock()
 h2_inline void h2_sock::put_outgoing(const char* from, const char* to, const char* data, size_t size)
 {
    strcpy(last_to, to);
-   outgoing.push_back(&(new h2_packet(from, to, data, size))->x);
+   outgoing.push_back((new h2_packet(from, to, data, size))->x);
 }
 
 h2_inline void h2_sock::put_outgoing(int fd, const char* data, size_t size)
@@ -227,7 +227,7 @@ h2_inline void h2_sock::put_outgoing(int fd, const char* data, size_t size)
 
 h2_inline void h2_sock::put_incoming(const char* from, const char* to, const char* data, size_t size)
 {
-   incoming.push_back(&(new h2_packet(from ? from : last_to, to, data, size))->x);
+   incoming.push_back((new h2_packet(from ? from : last_to, to, data, size))->x);
 }
 
 h2_inline h2_packet* h2_socket::start_and_fetch()
@@ -237,13 +237,13 @@ h2_inline h2_packet* h2_socket::start_and_fetch()
    h2_sock* sock = h2_task::I().current_case->sock;
    if (!sock) {
       sock = h2_task::I().current_case->sock = new h2_sock();
-      h2__socket::I().socks.push(&sock->y);
+      h2__socket::I().socks.push(sock->y);
    }
-   return h2_list_pop_entry(&sock->outgoing, h2_packet, x);
+   return h2_list_pop_entry(sock->outgoing, h2_packet, x);
 }
 
 h2_inline void h2_socket::inject_received(const void* packet, size_t size, const char* from, const char* to)
 {
-   h2_sock* sock = h2_list_top_entry(&h2__socket::I().socks, h2_sock, y);
+   h2_sock* sock = h2_list_top_entry(h2__socket::I().socks, h2_sock, y);
    if (sock) sock->put_incoming(from, to, (const char*)packet, size);
 }

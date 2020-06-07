@@ -1,6 +1,4 @@
 
-#ifndef _WIN32
-
 struct h2_nm {
    h2_singleton(h2_nm);
 
@@ -38,18 +36,20 @@ struct h2_nm {
 static inline bool demangle(const char* mangled, char* demangled, size_t len)
 {
    int status = 0;
+#ifndef _WIN32
    abi::__cxa_demangle(mangled, demangled, &len, &status);
+#endif
    return status == 0;
 }
 
 static inline bool addr2line(unsigned long long addr, char* output, size_t len)
 {
    char t[256];
-#   if defined __APPLE__
+#if defined __APPLE__
    sprintf(t, "atos -o %s 0x%llx", O.path, addr);
-#   else
+#else
    sprintf(t, "addr2line -C -a -s -p -f -e %s -i %llx", O.path, addr);
-#   endif
+#endif
    h2_with f(::popen(t, "r"), ::pclose);
    if (!f.f || !::fgets(output, len, f.f)) return false;
    for (int i = strlen(output) - 1; 0 <= i && ::isspace(output[i]); --i) output[i] = '\0';  //strip tail
@@ -90,7 +90,6 @@ static inline bool backtrace_extract(const char* backtrace_symbol_line, char* mo
 
    return false;
 }
-#endif
 
 h2_inline h2_backtrace::h2_backtrace(int shift_) : shift(shift_)
 {

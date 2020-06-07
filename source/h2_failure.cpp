@@ -43,11 +43,11 @@ h2_inline const char* h2_fail::get_locate()
    return st;
 }
 
-h2_inline void h2_fail::foreach (std::function<void(h2_fail*, int, int)> cb, int subling_index, int child_index)
+h2_inline void h2_fail::foreach(std::function<void(h2_fail*, int, int)> cb, int subling_index, int child_index)
 {
    cb(this, subling_index, child_index);
-   if (child_next) child_next->foreach (cb, 0, child_index + 1);
-   if (subling_next) subling_next->foreach (cb, subling_index + 1, child_index);
+   if (child_next) child_next->foreach(cb, 0, child_index + 1);
+   if (subling_next) subling_next->foreach(cb, subling_index + 1, child_index);
 }
 
 h2_inline h2_fail_normal::h2_fail_normal(const char* file_, int line_, const char* func_, const char* format, ...) : h2_fail(file_, line_, func_)
@@ -375,7 +375,7 @@ h2_inline void h2_fail_asymmetric_free::print(int subling_index, int child_index
 
 h2_inline void h2_fail_overflow::print(int subling_index, int child_index)
 {
-   int offset = ptr < addr ? (intptr_t)addr - ((intptr_t)ptr + size) : (intptr_t)addr - (intptr_t)ptr;
+   int offset = ptr < addr ? (long long)addr - ((long long)ptr + size) : (long long)addr - (long long)ptr;
    h2_color::printf("", " %p %+d (%p)", ptr, offset, addr);
    h2_color::printf("bold,red", " %s", action);
    h2_color::printf("", " %s ", offset >= 0 ? "overflow" : "underflow");
@@ -390,7 +390,7 @@ h2_inline void h2_fail_overflow::print(int subling_index, int child_index)
 
 h2_inline void h2_fail_use_after_free::print(int subling_index, int child_index)
 {
-   h2_color::printf("", " %p %+d (%p)", ptr, (intptr_t)addr - (intptr_t)ptr, addr);
+   h2_color::printf("", " %p %+d (%p)", ptr, (long long)addr - (long long)ptr, addr);
    h2_color::printf("bold,red", " %s after free", action);
    h2_color::printf("", " at backtrace:\n"), bt_use.print(2);
    h2_color::printf("", "  which allocate at backtrace:\n"), bt_allocate.print(3);

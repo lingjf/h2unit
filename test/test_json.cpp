@@ -24,7 +24,7 @@ static int __node_tojson(h2::h2_json_node* node, char* b)
    }
    if (node->is_array()) {
       l += sprintf(b + l, "[");
-      h2_list_for_each_entry (p, &node->children, h2::h2_json_node, x) {
+      h2_list_for_each_entry (p, node->children, h2::h2_json_node, x) {
          if (i)
             l += sprintf(b + l, ",");
          l += __node_tojson(p, b + l);
@@ -33,7 +33,7 @@ static int __node_tojson(h2::h2_json_node* node, char* b)
    }
    if (node->is_object()) {
       l += sprintf(b + l, "{");
-      h2_list_for_each_entry (p, &node->children, h2::h2_json_node, x) {
+      h2_list_for_each_entry (p, node->children, h2::h2_json_node, x) {
          if (i)
             l += sprintf(b + l, ",");
          l += __node_tojson(p, b + l);
@@ -76,7 +76,7 @@ static int __dual_tostr(h2::h2_json_dual* dual, char* b)
 
    if (dual->children.count()) {
       l += sprintf(b + l, "[");
-      h2_list_for_each_entry (p, &dual->children, h2::h2_json_dual, x) {
+      h2_list_for_each_entry (p, dual->children, h2::h2_json_dual, x) {
          l += __dual_tostr(p, b + l);
       }
       l += sprintf(b + l, "]");

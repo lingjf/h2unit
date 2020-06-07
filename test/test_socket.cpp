@@ -5,7 +5,7 @@ H2MATCHER(IPeq, expect, ("not equal"))
    char s[256];
    struct sockaddr_in* b = (struct sockaddr_in*)a;
    sprintf(s, "%s:%d", inet_ntoa(b->sin_addr), ntohs(b->sin_port));
-   return h2::h2_wildcard_match(expect, s);
+   return h2::h2_pattern::wildcard_match(expect, s);
 }
 
 SUITE(socket utils)

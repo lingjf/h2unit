@@ -2,9 +2,9 @@
 struct h2_dns : h2_libc {
    h2_list x, y;
    const char* name;
-   int count;
+   int count = 0;
    char array[32][128];
-   h2_dns(const char* name_) : name(name_), count(0) {}
+   h2_dns(const char* name_) : name(name_) {}
    static void setaddrinfo(int count, ...);
    static void initialize();
 };

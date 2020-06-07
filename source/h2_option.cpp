@@ -63,7 +63,7 @@ struct getopt {
          }
       }
 
-      if (pp && *pp[0] != '-' && h2_regex_match(pattern, *pp)) p = *pp, *pp = nullptr;
+      if (pp && *pp[0] != '-' && h2_pattern::regex_match(pattern, *pp)) p = *pp, *pp = nullptr;
       return p;
    }
    const char* parseint(const char* p, int& value) const
@@ -139,9 +139,9 @@ static inline bool match3(const std::vector<const char*>& patterns, const char* 
 {
    for (auto pattern : patterns)
       if (strcspn(pattern, "?*+^$\\.[]") < strlen(pattern)) {
-         if (h2_regex_match(pattern, subject, true)) return true;
+         if (h2_pattern::regex_match(pattern, subject, true)) return true;
          if (strcspn(pattern, "+^$\\.[]") == strlen(pattern))
-            if (h2_wildcard_match(pattern, subject, true)) return true;
+            if (h2_pattern::wildcard_match(pattern, subject, true)) return true;
       } else {
          if (strcasestr(subject, pattern)) return true;
       }

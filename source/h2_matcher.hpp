@@ -7,53 +7,23 @@ struct h2_matcher_impl {
 };
 
 template <typename T>
-struct h2_matcher_base {
+struct h2_matcher {
    h2_shared_ptr<const h2_matcher_impl<const T&>> impl;
 
-   h2_matcher_base() {}
-   explicit h2_matcher_base(const h2_matcher_impl<const T&>* impl_, const int placeholder) : impl(impl_) {}
-   h2_matcher_base(const h2_matcher_base&) = default;
-   h2_matcher_base& operator=(const h2_matcher_base&) = default;
-   virtual ~h2_matcher_base() {}
+   h2_matcher() {}
+   h2_matcher(T value);  // Converting constructor
+   explicit h2_matcher(const h2_matcher_impl<const T&>* impl_, const int placeholder) : impl(impl_) {}
+   h2_matcher(const h2_matcher&) = default;
+   h2_matcher& operator=(const h2_matcher&) = default;
+   virtual ~h2_matcher() {}
    h2_fail* matches(const T& a, bool caseless = false, bool dont = false) const { return impl->matches(a, caseless, dont); }
    h2_string expects(const T& a, bool caseless = false, bool dont = false) const { return impl->expects(a, caseless, dont); };
-};
-
-template <typename T>
-struct h2_matcher : h2_matcher_base<T> {
-   h2_matcher() {}
-   explicit h2_matcher(const h2_matcher_impl<const T&>* impl, const int placeholder) : h2_matcher_base<T>(impl, placeholder) {}
-   h2_matcher(T value);  // Converting constructor
-};
-
-template <>
-struct h2_matcher<const char*> : h2_matcher_base<const char*> {
-   h2_matcher() {}
-   explicit h2_matcher(const h2_matcher_impl<const char* const&>* impl, const int placeholder) : h2_matcher_base<const char*>(impl, placeholder) {}
-   h2_matcher(const std::string& value);
-   h2_matcher(const char* value);
-};
-
-template <>
-struct h2_matcher<const std::string&> : h2_matcher_base<const std::string&> {
-   h2_matcher() {}
-   explicit h2_matcher(const h2_matcher_impl<const std::string&>* impl, const int placeholder) : h2_matcher_base<const std::string&>(impl, placeholder) {}
-   h2_matcher(const std::string& value);
-   h2_matcher(const char* value);
-};
-
-template <>
-struct h2_matcher<std::string> : h2_matcher_base<std::string> {
-   h2_matcher() {}
-   explicit h2_matcher(const h2_matcher_impl<const std::string&>* impl, const int placeholder) : h2_matcher_base<std::string>(impl, placeholder) {}
-   h2_matcher(const std::string& value);
-   h2_matcher(const char* value);
 };
 
 template <typename Matches>
 struct h2_polymorphic_matcher {
    const Matches m;
-   explicit h2_polymorphic_matcher(const Matches& matches_) : m(matches_) {}
+   explicit h2_polymorphic_matcher(const Matches& _matches) : m(_matches) {}
 
    template <typename T>
    operator h2_matcher<T>() const { return h2_matcher<T>(new internal_impl<const T&>(m), 0); }
@@ -61,7 +31,7 @@ struct h2_polymorphic_matcher {
    template <typename T>
    struct internal_impl : h2_matcher_impl<T>, h2_libc {
       const Matches m;
-      explicit internal_impl(const Matches& matches_) : m(matches_) {}
+      explicit internal_impl(const Matches& _matches) : m(_matches) {}
       h2_fail* matches(T a, bool caseless = false, bool dont = false) const override { return m.matches(a, caseless, dont); }
       h2_string expects(T a, bool caseless = false, bool dont = false) const override { return m.expects(a, caseless, dont); }
    };
@@ -69,13 +39,6 @@ struct h2_polymorphic_matcher {
 
 template <typename T>
 inline h2_matcher<T>::h2_matcher(T value) { *this = h2_polymorphic_matcher<h2_equals<T>>(h2_equals<T>(value)); }
-
-inline h2_matcher<const char*>::h2_matcher(const std::string& value) { *this = h2_polymorphic_matcher<h2_equals_string>(h2_equals_string(value)); }
-inline h2_matcher<const char*>::h2_matcher(const char* value) { *this = h2_polymorphic_matcher<h2_equals_string>(h2_equals_string(value)); }
-inline h2_matcher<const std::string&>::h2_matcher(const std::string& value) { *this = h2_polymorphic_matcher<h2_equals_string>(h2_equals_string(value)); }
-inline h2_matcher<const std::string&>::h2_matcher(const char* value) { *this = h2_polymorphic_matcher<h2_equals_string>(h2_equals_string(value)); }
-inline h2_matcher<std::string>::h2_matcher(const std::string& value) { *this = h2_polymorphic_matcher<h2_equals_string>(h2_equals_string(value)); }
-inline h2_matcher<std::string>::h2_matcher(const char* value) { *this = h2_polymorphic_matcher<h2_equals_string>(h2_equals_string(value)); }
 
 template <typename T, typename M>
 struct h2_matcher_cast_impl {

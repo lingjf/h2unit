@@ -3,8 +3,8 @@ struct h2__stdio {
    h2_singleton(h2__stdio);
    h2_stubs stubs;
    h2_string* buffer;
-   bool stdout_capturable, stderr_capturable, syslog_capturable;
-   size_t length;
+   bool stdout_capturable = false, stderr_capturable = false, syslog_capturable = false;
+   size_t length = 0;
 
    static ssize_t write(int fd, const void* buf, size_t count)
    {
@@ -93,7 +93,7 @@ struct h2__stdio {
       va_end(a);
    }
 
-   h2__stdio() : stdout_capturable(false), stderr_capturable(false), syslog_capturable(false), length(0)
+   h2__stdio()
    {
 #ifndef _WIN32
       stubs.add((void*)::write, (void*)write);

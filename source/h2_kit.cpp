@@ -11,7 +11,7 @@ static inline char* basename(char* path)
 
 #endif
 
-static inline bool h2_regex_match(const char* pattern, const char* subject, bool caseless = false)
+h2_inline bool h2_pattern::regex_match(const char* pattern, const char* subject, bool caseless)
 {
    bool result = false;
    try {  // c++11 support regex; gcc 4.8 start support regex, gcc 5.5 icase works.
@@ -22,7 +22,7 @@ static inline bool h2_regex_match(const char* pattern, const char* subject, bool
    return result;
 }
 
-static inline bool h2_wildcard_match(const char* pattern, const char* subject, bool caseless = false)
+h2_inline bool h2_pattern::wildcard_match(const char* pattern, const char* subject, bool caseless)
 {
 #ifdef _WIN32
    const char *scur = subject, *pcur = pattern;
