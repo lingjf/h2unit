@@ -117,12 +117,22 @@ class h2_mocker<Counter, Lineno, Class, Return(Args...)> : h2_mock {
    static Return normal_function_stub(Args... args)
    {
       int r_index = I().matches(std::forward<Args>(args)...);
+      if (!I().r_array[r_index].empty)
+         return I().r_array[r_index](nullptr, std::forward<Args>(args)...);
+
+      h2::h2_stub_temporary_restore t(I().origin_fp);
+      I().r_array[r_index].origin_function = I().origin_fp;
       return I().r_array[r_index](nullptr, std::forward<Args>(args)...);
    }
 
    static Return member_function_stub(Class* that, Args... args)
    {
       int r_index = I().matches(std::forward<Args>(args)...);
+      if (!I().r_array[r_index].empty)
+         return I().r_array[r_index](that, std::forward<Args>(args)...);
+
+      h2::h2_stub_temporary_restore t(I().origin_fp);
+      I().r_array[r_index].origin_function = I().origin_fp;
       return I().r_array[r_index](that, std::forward<Args>(args)...);
    }
 
@@ -246,6 +256,12 @@ class h2_mocker<Counter, Lineno, Class, Return(Args...)> : h2_mock {
    h2_mocker& th8(h2_matcher<h2_nth_decay<7, Args...>> e = Any) { if (!matchers_array.empty()) std::get<7>(matchers_array.back()) = e; return *this; }
    h2_mocker& th9(h2_matcher<h2_nth_decay<8, Args...>> e = Any) { if (!matchers_array.empty()) std::get<8>(matchers_array.back()) = e; return *this; }
    /* clang-format on */
+
+   h2_mocker& returns()
+   {
+      if (!r_array.empty()) r_array.back().empty = false;
+      return *this;
+   }
 
    h2_mocker& returns(h2_routine<Class, Return(Args...)> r)
    {

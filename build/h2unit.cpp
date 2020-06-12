@@ -1,4 +1,4 @@
-﻿/* v5.5  2020-06-13 00:03:55 */
+﻿/* v5.5  2020-06-13 00:41:16 */
 /* https://github.com/lingjf/h2unit */
 /* Apache Licence 2.0 */
 #define __H2UNIT_HPP__
@@ -1965,41 +1965,57 @@ struct h2_routine;
 
 template <typename Class, typename Return, typename... Args>
 struct h2_routine<Class, Return(Args...)> {
-   Return _r;
-   std::function<Return(Args...)> _f1;
-   std::function<Return(Class*, Args...)> _f2;
+   std::function<Return(Args...)> normal_function = {}; // functional alignment issue
+   std::function<Return(Class*, Args...)> member_function = {};
+   void* origin_function = nullptr;
+   Return return_value;
+   bool empty = false;
 
-   h2_routine() : _r(), _f1(), _f2() {}
-   h2_routine(Return r) : _r(r), _f1(), _f2() {}
-   h2_routine(std::function<Return(Args...)> f) : _f1(f) {}
-   h2_routine(std::function<Return(Class*, Args...)> f) : _f2(f) {}
+   h2_routine() { empty = true; }
+   h2_routine(Return r) : return_value(r) {}
+   h2_routine(std::function<Return(Args...)> f) : normal_function(f) {}
+   h2_routine(std::function<Return(Class*, Args...)> f) : member_function(f) {}
 
    Return operator()(Class* that, Args... args)
    {
-      if (_f2)
-         return _f2(that, args...);
-      else if (_f1)
-         return _f1(args...);
-      else
-         return _r;
+      if (origin_function) {
+         if (std::is_same<std::false_type, Class>::value)
+            return ((Return(*)(Args...))origin_function)(args...);
+         else
+            return ((Return(*)(Class*, Args...))origin_function)(that, args...);
+      } else if (member_function) {
+         return member_function(that, args...);
+      } else if (normal_function) {
+         return normal_function(args...);
+      } else {
+         return return_value;
+      }
    }
 };
 
 template <typename Class, typename... Args>
 struct h2_routine<Class, void(Args...)> {
-   std::function<void(Args...)> _f1;
-   std::function<void(Class*, Args...)> _f2;
+   std::function<void(Args...)> normal_function = {};
+   std::function<void(Class*, Args...)> member_function = {};
+   void* origin_function = nullptr;
+   bool empty = false;
 
-   h2_routine() : _f1(), _f2() {}
-   h2_routine(std::function<void(Args...)> f) : _f1(f) {}
-   h2_routine(std::function<void(Class*, Args...)> f) : _f2(f) {}
+   h2_routine() { empty = true; }
+   h2_routine(std::function<void(Args...)> f) : normal_function(f) {}
+   h2_routine(std::function<void(Class*, Args...)> f) : member_function(f) {}
 
    void operator()(Class* that, Args... args)
    {
-      if (_f2)
-         _f2(that, args...);
-      else if (_f1)
-         _f1(args...);
+      if (origin_function) {
+         if (std::is_same<std::false_type, Class>::value)
+            return ((void (*)(Args...))origin_function)(args...);
+         else
+            return ((void (*)(Class*, Args...))origin_function)(that, args...);
+      } else if (member_function) {
+         member_function(that, args...);
+      } else if (normal_function) {
+         normal_function(args...);
+      }
    }
 };
 
@@ -2121,12 +2137,22 @@ class h2_mocker<Counter, Lineno, Class, Return(Args...)> : h2_mock {
    static Return normal_function_stub(Args... args)
    {
       int r_index = I().matches(std::forward<Args>(args)...);
+      if (!I().r_array[r_index].empty)
+         return I().r_array[r_index](nullptr, std::forward<Args>(args)...);
+
+      h2::h2_stub_temporary_restore t(I().origin_fp);
+      I().r_array[r_index].origin_function = I().origin_fp;
       return I().r_array[r_index](nullptr, std::forward<Args>(args)...);
    }
 
    static Return member_function_stub(Class* that, Args... args)
    {
       int r_index = I().matches(std::forward<Args>(args)...);
+      if (!I().r_array[r_index].empty)
+         return I().r_array[r_index](that, std::forward<Args>(args)...);
+
+      h2::h2_stub_temporary_restore t(I().origin_fp);
+      I().r_array[r_index].origin_function = I().origin_fp;
       return I().r_array[r_index](that, std::forward<Args>(args)...);
    }
 
@@ -2250,6 +2276,12 @@ class h2_mocker<Counter, Lineno, Class, Return(Args...)> : h2_mock {
    h2_mocker& th8(h2_matcher<h2_nth_decay<7, Args...>> e = Any) { if (!matchers_array.empty()) std::get<7>(matchers_array.back()) = e; return *this; }
    h2_mocker& th9(h2_matcher<h2_nth_decay<8, Args...>> e = Any) { if (!matchers_array.empty()) std::get<8>(matchers_array.back()) = e; return *this; }
    /* clang-format on */
+
+   h2_mocker& returns()
+   {
+      if (!r_array.empty()) r_array.back().empty = false;
+      return *this;
+   }
 
    h2_mocker& returns(h2_routine<Class, Return(Args...)> r)
    {
