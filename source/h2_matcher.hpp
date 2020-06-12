@@ -38,7 +38,10 @@ struct h2_polymorphic_matcher {
 };
 
 template <typename T>
-inline h2_matcher<T>::h2_matcher(T value) { *this = h2_polymorphic_matcher<h2_equals<T>>(h2_equals<T>(value)); }
+inline h2_matcher<T>::h2_matcher(T value)
+{
+   *this = h2_polymorphic_matcher<h2_equals<T>>(h2_equals<T>(value));
+}
 
 template <typename T, typename M>
 struct h2_matcher_cast_impl {
@@ -82,4 +85,7 @@ struct h2_matcher_cast_impl<T, h2_matcher<T>> {
 };
 
 template <typename T, typename M>
-inline h2_matcher<T> h2_matcher_cast(const M& from) { return h2_matcher_cast_impl<T, M>::cast(from); }
+inline h2_matcher<T> h2_matcher_cast(const M& from)
+{
+   return h2_matcher_cast_impl<T, M>::cast(from);
+}

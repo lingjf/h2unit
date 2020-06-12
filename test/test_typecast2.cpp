@@ -2,19 +2,25 @@
 
 bool bool_true = true;
 const bool const_bool_true = true;
+bool& bool_ref_true = bool_true;
 
 bool bool_false = false;
 const bool const_bool_false = false;
+const bool& const_bool_ref_false = false;
+bool&& bool_rref_false = false;
 
 #define BOOL_TRUE_LIST 1, 2, -1, /*(void*)1,*/ \
                        true,                   \
                        bool_true,              \
-                       const_bool_true
+                       const_bool_true,        \
+                       bool_ref_true
 
 #define BOOL_FALSE_LIST 0, /*(void*)0, NULL, nullptr,*/ \
                         false,                          \
                         bool_false,                     \
-                        const_bool_false
+                        const_bool_false,               \
+                        const_bool_ref_false,           \
+                        bool_rref_false
 SUITE(Boolean)
 {
    Case(OK)

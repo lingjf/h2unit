@@ -63,12 +63,16 @@ struct getopt {
          }
       }
 
-      if (pp && *pp[0] != '-' && h2_pattern::regex_match(pattern, *pp)) p = *pp, *pp = nullptr;
+      if (pp && *pp[0] != '-' && h2_pattern::regex_match(pattern, *pp)) {
+         p = *pp;
+         *pp = nullptr;
+      }
       return p;
    }
    const char* parseint(const char* p, int& value) const
    {
-      for (value = 0; ::isdigit(*p); p++) value = value * 10 + (*p - '0');
+      for (value = 0; ::isdigit(*p); p++)
+         value = value * 10 + (*p - '0');
       return p - 1;
    }
    void args(char* s)

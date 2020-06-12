@@ -1,200 +1,121 @@
 #include "../source/h2_unit.cpp"
 
-char char0 = 0;
-const char const_char0 = 0;
-unsigned char unsigned_char0 = 0;
-const unsigned char const_unsigned_char0 = 0;
-signed char signed_char0 = 0;
-const signed char const_signed_char0 = 0;
+static char char_0 = 0;
 
-short short0 = 0;
-const short const_short0 = 0;
-unsigned short unsigned_short0 = 0;
-const unsigned short const_unsigned_short0 = 0;
+static signed char signed_char_0 = 0;
+static short int short_int_0 = 0;
+static int int_0 = 0;
+static long int long_int_0 = 0;
+static long long int long_long_int_0 = 0LL;
 
-int int0 = 0;
-const int const_int0 = 0;
-unsigned int unsigned_int0 = 0;
-const unsigned int const_unsigned_int0 = 0;
-long long0 = 0;
-const long const_long0 = 0;
-unsigned long unsigned_long0 = 0;
-const unsigned long const_unsigned_long0 = 0;
-unsigned unsigned0 = 0;
-const unsigned const_unsigned0 = 0;
+static float float_0 = 0;
+static double double_0 = 0;
+static long double long_double_0 = 0;
 
-long long long_long0 = 0LL;
-const long long const_long_long0 = 0LL;
-unsigned long long unsigned_long_long0 = 0ULL;
-const unsigned long long const_unsigned_long_long0 = 0ULL;
+static bool bool_0 = false;
 
-intptr_t intptr_t0 = 0;
-const intptr_t const_intptr_t0 = 0;
-uintptr_t uintptr_t0 = 0;
-const uintptr_t const_uintptr_t0 = 0;
+static int& int_ref_0 = int_0;
+static const int& const_int_ref_0 = 0;
 
-size_t size_t0 = 0;
-const size_t const_size_t0 = 0;
-ssize_t ssize_t0 = 0;
-const ssize_t const_ssize_t0 = 0;
-
-float float0 = 0;
-const float const_float0 = 0;
-double double0 = 0;
-const double const_double0 = 0;
-long double long_double0 = 0;
-const long double const_long_double0 = 0;
+static const char const_char_0 = 0;
+static const int const_int_0 = 0;
+static const float const_float_0 = 0;
+static const bool const_bool_0 = false;
 
 enum {
-   enum0 = 0
+   enum_0 = 0
 };
 
-bool bool0 = false;
-const bool const_bool0 = false;
+#define NUMBER0_LIST 0, 0L, 0LL,      \
+                     char_0,          \
+                     signed_char_0,   \
+                     short_int_0,     \
+                     int_0,           \
+                     long_int_0,      \
+                     long_long_int_0, \
+                     float_0,         \
+                     double_0,        \
+                     long_double_0,   \
+                     bool_0,          \
+                     int_ref_0,       \
+                     const_int_ref_0, \
+                     const_char_0,    \
+                     const_int_0,     \
+                     const_float_0,   \
+                     const_bool_0,    \
+                     enum_0
 
-char char1 = 1;
-const char const_char1 = 1;
-unsigned char unsigned_char1 = 1;
-const unsigned char const_unsigned_char1 = 1;
-signed char signed_char1 = 1;
-const signed char const_signed_char1 = 1;
+static char char_1 = 1;
 
-short short1 = 1;
-const short const_short1 = 1;
-unsigned short unsigned_short1 = 1;
-const unsigned short const_unsigned_short1 = 1;
+static signed char signed_char_1 = 1;
+static short int short_int_1 = 1;
+static int int_1 = 1;
+static long int long_int_1 = 1;
+static long long int long_long_int_1 = 1LL;
 
-int int1 = 1;
-const int const_int1 = 1;
-unsigned int unsigned_int1 = 1;
-const unsigned int const_unsigned_int1 = 1;
-long long1 = 1;
-const long const_long1 = 1;
-unsigned long unsigned_long1 = 1;
-const unsigned long const_unsigned_long1 = 1;
-unsigned unsigned1 = 1;
-const unsigned const_unsigned1 = 1;
+static float float_1 = 1;
+static double double_1 = 1;
+static long double long_double_1 = 1;
 
-long long long_long1 = 1LL;
-const long long const_long_long1 = 1LL;
-unsigned long long unsigned_long_long1 = 1ULL;
-const unsigned long long const_unsigned_long_long1 = 1ULL;
+static bool bool_1 = true;
 
-intptr_t intptr_t1 = 1;
-const intptr_t const_intptr_t1 = 1;
-uintptr_t uintptr_t1 = 1;
-const uintptr_t const_uintptr_t1 = 1;
+static int& int_ref_1 = int_1;
+static const int& const_int_ref_1 = 1;
 
-size_t size_t1 = 1;
-const size_t const_size_t1 = 1;
-ssize_t ssize_t1 = 1;
-const ssize_t const_ssize_t1 = 1;
-
-float float1 = 1;
-const float const_float1 = 1;
-double double1 = 1;
-const double const_double1 = 1;
-long double long_double1 = 1;
-const long double const_long_double1 = 1;
+static const char const_char_1 = 1;
+static const int const_int_1 = 1;
+static const float const_float_1 = 1;
+static const bool const_bool_1 = true;
 
 enum {
-   enum1 = 1
+   enum_1 = 1
 };
 
-bool bool1 = true;
-const bool const_bool1 = true;
-
-#define NUMBER0_LIST 0, 0L, 0LL,                \
-                     char0,                     \
-                     const_char0,               \
-                     unsigned_char0,            \
-                     const_unsigned_char0,      \
-                     signed_char0,              \
-                     const_signed_char0,        \
-                     short0,                    \
-                     const_short0,              \
-                     unsigned_short0,           \
-                     const_unsigned_short0,     \
-                     int0,                      \
-                     const_int0,                \
-                     unsigned_int0,             \
-                     const_unsigned_int0,       \
-                     long0,                     \
-                     const_long0,               \
-                     unsigned_long0,            \
-                     const_unsigned_long0,      \
-                     unsigned0,                 \
-                     const_unsigned0,           \
-                     long_long0,                \
-                     const_long_long0,          \
-                     unsigned_long_long0,       \
-                     const_unsigned_long_long0, \
-                     intptr_t0,                 \
-                     const_intptr_t0,           \
-                     uintptr_t0,                \
-                     const_uintptr_t0,          \
-                     size_t0,                   \
-                     const_size_t0,             \
-                     ssize_t0,                  \
-                     const_ssize_t0,            \
-                     float0,                    \
-                     const_float0,              \
-                     double0,                   \
-                     const_double0,             \
-                     long_double0,              \
-                     const_long_double0,        \
-                     enum0,                     \
-                     false,                     \
-                     bool0,                     \
-                     const_bool0
-
-#define NUMBER1_LIST 1, 1L, 1LL,                \
-                     char1,                     \
-                     const_char1,               \
-                     unsigned_char1,            \
-                     const_unsigned_char1,      \
-                     signed_char1,              \
-                     const_signed_char1,        \
-                     short1,                    \
-                     const_short1,              \
-                     unsigned_short1,           \
-                     const_unsigned_short1,     \
-                     int1,                      \
-                     const_int1,                \
-                     unsigned_int1,             \
-                     const_unsigned_int1,       \
-                     long1,                     \
-                     const_long1,               \
-                     unsigned_long1,            \
-                     const_unsigned_long1,      \
-                     unsigned1,                 \
-                     const_unsigned1,           \
-                     long_long1,                \
-                     const_long_long1,          \
-                     unsigned_long_long1,       \
-                     const_unsigned_long_long1, \
-                     intptr_t1,                 \
-                     const_intptr_t1,           \
-                     uintptr_t1,                \
-                     const_uintptr_t1,          \
-                     size_t1,                   \
-                     const_size_t1,             \
-                     ssize_t1,                  \
-                     const_ssize_t1,            \
-                     float1,                    \
-                     const_float1,              \
-                     double1,                   \
-                     const_double1,             \
-                     long_double1,              \
-                     const_long_double1,        \
-                     enum1,                     \
-                     true,                      \
-                     bool1,                     \
-                     const_bool1
+#define NUMBER1_LIST 1, 1L, 1LL,      \
+                     char_1,          \
+                     signed_char_1,   \
+                     short_int_1,     \
+                     int_1,           \
+                     long_int_1,      \
+                     long_long_int_1, \
+                     float_1,         \
+                     double_1,        \
+                     long_double_1,   \
+                     bool_1,          \
+                     int_ref_1,       \
+                     const_int_ref_1, \
+                     const_char_1,    \
+                     const_int_1,     \
+                     const_float_1,   \
+                     const_bool_1,    \
+                     enum_1
 
 #define TheCheck(x) static void foo1##x(decltype(x) v){};
 ForForEach(TheCheck, NUMBER0_LIST);
 #undef TheCheck
+
+SUITE(Same Number Type)
+{
+   Case(signed)
+   {
+      OK((std::is_same<short, short int>::value));
+      OK((std::is_same<long, long int>::value));
+      OK((std::is_same<long long, long long int>::value));
+      OK((std::is_same<signed, int>::value) || (std::is_same<signed, long int>::value) || (std::is_same<signed, long long int>::value));
+      OK((std::is_same<intptr_t, int>::value) || (std::is_same<intptr_t, long int>::value) || (std::is_same<intptr_t, long long int>::value));
+      OK((std::is_same<ssize_t, int>::value) || (std::is_same<ssize_t, long int>::value) || (std::is_same<ssize_t, long long int>::value));
+   }
+
+   Case(unsigned)
+   {
+      OK((std::is_same<unsigned short, unsigned short int>::value));
+      OK((std::is_same<unsigned long, unsigned long int>::value));
+      OK((std::is_same<unsigned long long, unsigned long long int>::value));
+      OK((std::is_same<unsigned, unsigned int>::value) || (std::is_same<unsigned, unsigned long int>::value) || (std::is_same<unsigned, unsigned long long int>::value));
+      OK((std::is_same<uintptr_t, unsigned int>::value) || (std::is_same<uintptr_t, unsigned long int>::value) || (std::is_same<uintptr_t, unsigned long long int>::value));
+      OK((std::is_same<size_t, unsigned int>::value) || (std::is_same<size_t, unsigned long int>::value) || (std::is_same<size_t, unsigned long long int>::value));
+   }
+}
 
 SUITE(number[integer, float, enum, bool])
 {

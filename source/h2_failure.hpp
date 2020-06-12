@@ -8,7 +8,7 @@ struct h2_fail : h2_libc {
    const char* func;
    int argi;
 
-   int usage = 0;  // 0 is Inner(Mock, AllOf, &&||); 1 is OK(condition); 2 is OK(expect, actual); 3 is JE
+   const char* check_type = "Inner";  // Inner(Mock, AllOf, &&, ||)
    h2_string e_expression, a_expression;
    h2_string no, explain, user_explain;
 

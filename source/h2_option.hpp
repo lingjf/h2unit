@@ -18,7 +18,8 @@ struct h2_option {
    bool shuffle = false;
    bool memory_check = true;
    bool listing = false;
-   int breakable = 0, rounds = 1;
+   int breakable = 0;
+   int rounds = 1;
    char junit[256]{'\0'};
    char tap[256]{'\0'};
    std::vector<const char*> includes, excludes;

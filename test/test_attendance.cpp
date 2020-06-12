@@ -1,10 +1,10 @@
 #include "../source/h2_unit.cpp"
 
-SUITE(callexp)
+SUITE(attendance)
 {
    Case(once)
    {
-      h2::h2_callexp ce(1, 1);
+      h2::h2_attendance ce(1, 1);
       OK(1, ce.least);
       OK(1, ce.most);
       OK(0, ce.call);
@@ -36,7 +36,7 @@ SUITE(callexp)
 
    Case(twice)
    {
-      h2::h2_callexp ce(2, 2);
+      h2::h2_attendance ce(2, 2);
       OK(2, ce.least);
       OK(2, ce.most);
       OK(0, ce.call);
@@ -76,7 +76,7 @@ SUITE(callexp)
 
    Case(3 times)
    {
-      h2::h2_callexp ce(3, 3);
+      h2::h2_attendance ce(3, 3);
       OK(3, ce.least);
       OK(3, ce.most);
       OK(0, ce.call);
@@ -124,7 +124,7 @@ SUITE(callexp)
 
    Case(any)
    {
-      h2::h2_callexp ce(0, INT_MAX);
+      h2::h2_attendance ce(0, INT_MAX);
       OK(0, ce.least);
       OK(INT_MAX, ce.most);
       OK(0, ce.call);
@@ -156,7 +156,7 @@ SUITE(callexp)
 
    Case(at least)
    {
-      h2::h2_callexp ce(2, INT_MAX);
+      h2::h2_attendance ce(2, INT_MAX);
       OK(2, ce.least);
       OK(INT_MAX, ce.most);
       OK(0, ce.call);
@@ -196,7 +196,7 @@ SUITE(callexp)
 
    Case(at most)
    {
-      h2::h2_callexp ce(0, 2);
+      h2::h2_attendance ce(0, 2);
       OK(0, ce.least);
       OK(2, ce.most);
       OK(0, ce.call);
@@ -236,7 +236,7 @@ SUITE(callexp)
 
    Case(between)
    {
-      h2::h2_callexp ce(2, 4);
+      h2::h2_attendance ce(2, 4);
       OK(2, ce.least);
       OK(4, ce.most);
       OK(0, ce.call);

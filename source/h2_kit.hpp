@@ -36,5 +36,9 @@ struct h2_pattern {
    static bool wildcard_match(const char* pattern, const char* subject, bool caseless = false);
 };
 
-/* clang-format off */
-#define h2_singleton(_Class) static _Class& I() { static _Class i; return i; }
+#define h2_singleton(_Class) \
+   static _Class& I()        \
+   {                         \
+      static _Class i;       \
+      return i;              \
+   }

@@ -29,7 +29,8 @@ h2_inline h2_fail::~h2_fail()
 
 h2_inline void h2_fail::set_locate(const char* file_, int line_, const char* func_, int argi_)
 {
-   file = file_, line = line_, func = func_, argi = argi_;
+   file = file_, line = line_;
+   func = func_, argi = argi_;
 }
 
 h2_inline const char* h2_fail::get_locate()
@@ -135,10 +136,10 @@ h2_inline void h2_fail_unexpect::print(int subling_index, int child_index)
 {
    h2_line line;
    line.indent(child_index * 2 + 1);
-   if (usage == 0) print_Inner(line);
-   if (usage == 1) print_OK1(line);
-   if (usage == 2) print_OK2(line);
-   if (usage == 3) print_JE(line);
+   if (!strcmp("Inner", check_type)) print_Inner(line);
+   if (!strcmp("OK1", check_type)) print_OK1(line);
+   if (!strcmp("OK2", check_type)) print_OK2(line);
+   if (!strcmp("JE", check_type)) print_JE(line);
    if (explain.size()) line.printf("", " %s,", explain.c_str());
    if (user_explain.size()) line.printf("", " %s,", user_explain.c_str());
    line.push_back(get_locate());

@@ -69,4 +69,7 @@ h2_inline int h2_directory::count()
    return count;
 }
 
-h2_inline void h2_directory::drop_last_order() { ::remove(last_order_file_path); }
+h2_inline void h2_directory::drop_last_order()
+{
+   ::remove(last_order_file_path);
+}

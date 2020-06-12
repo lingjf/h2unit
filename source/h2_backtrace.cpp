@@ -3,7 +3,6 @@ struct h2_nm {
    h2_singleton(h2_nm);
 
    std::map<std::string, unsigned long long> symbols;
-   unsigned long long main_addr;
 
    unsigned long long get(const char* name) const
    {
@@ -12,15 +11,14 @@ struct h2_nm {
       return it != symbols.end() ? it->second : ULLONG_MAX;
    }
 
-   bool in_main(unsigned long long addr) const { return main_addr == ULLONG_MAX ? false : main_addr < addr && addr < main_addr + 256; }
-
-   h2_nm()
+   bool in_main(unsigned long long addr) const
    {
-      nm_parse();
-      main_addr = get("main");
+      static unsigned long long main_addr = get("main");
+      if (main_addr == ULLONG_MAX) return false;
+      return main_addr < addr && addr < main_addr + 256;
    }
 
-   void nm_parse()
+   h2_nm()
    {
       char nm[256], line[1024], addr[128], type[32], name[1024];
       sprintf(nm, "nm %s", O.path);

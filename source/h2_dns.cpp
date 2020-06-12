@@ -94,11 +94,15 @@ struct h2_resolver {
    ~h2_resolver() { stubs.clear(); }
 };
 
-h2_inline void h2_dnses::add(h2_dns* dns) { dnses.push(dns->x); }
+h2_inline void h2_dnses::add(h2_dns* dns)
+{
+   dnses.push(dns->x);
+}
 h2_inline void h2_dnses::clear()
 {
    h2_list_for_each_entry (p, dnses, h2_dns, x) {
-      p->x.out(), p->y.out();
+      p->x.out();
+      p->y.out();
       delete p;
    }
 }

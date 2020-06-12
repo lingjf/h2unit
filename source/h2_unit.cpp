@@ -54,8 +54,9 @@ namespace h2 {
 #include "h2_expr.cpp"
 
 #include "h2_backtrace.cpp"
-#include "h2_callexp.cpp"
+#include "h2_attendance.cpp"
 #include "h2_case.cpp"
+#include "h2_check.cpp"
 #include "h2_debug.cpp"
 #include "h2_layout.cpp"
 #include "h2_directory.cpp"
@@ -76,7 +77,7 @@ namespace h2 {
 #include "h2_stub.cpp"
 #include "h2_suite.cpp"
 #include "h2_task.cpp"
-}
+}  // namespace h2
 
 #if defined _WIN32
 #   define h2_weak_attribute

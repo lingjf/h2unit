@@ -1,9 +1,10 @@
 
-struct h2_callexp {
-   int call = 0; /* 就地初始化 */
+/* 考勤 check on work attendance ; 函数被调次数期望 */
+struct h2_attendance {
+   int call = 0; /* 就地初始化成员变量 */
    int least, most;
 
-   h2_callexp(int _least, int _most) : least(_least), most(_most) {}
+   h2_attendance(int _least, int _most) : least(_least), most(_most) {}
 
    void operator++() { call += 1; }
 

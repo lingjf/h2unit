@@ -1,5 +1,27 @@
 #include "../source/h2_unit.cpp"
 
+SUITE(Check Utility)
+{
+   Case(find_outer_comma)
+   {
+      OK(",b", h2::find_outer_comma("a,b"));
+      OK(",b", h2::find_outer_comma("\"a\",b"));
+      OK(",b", h2::find_outer_comma("\"a,\",b"));
+      OK(",b", h2::find_outer_comma("'a',b"));
+      OK(",b", h2::find_outer_comma("(a,),b"));
+      OK(",b", h2::find_outer_comma("<a,>,b"));
+   }
+
+   Case(split_expression)
+   {
+      h2::h2_string e_expression = "__null";
+      h2::h2_string a_expression = "((void *)0)";
+      h2::split_expression(e_expression, a_expression, "NULL, NULL");
+      OK("NULL", e_expression);
+      OK("NULL", a_expression);
+   }
+}
+
 SUITE(OK Primitive)
 {
    Case(Any)

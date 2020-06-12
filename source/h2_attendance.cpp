@@ -1,11 +1,11 @@
 
-h2_inline h2_fail* h2_callexp::check(const char* func, const char* file, int line)
+h2_inline h2_fail* h2_attendance::check(const char* func, const char* file, int line)
 {
    if (is_satisfied() || is_saturated()) return nullptr;
    return new h2_fail_call(func, expect(), actual(), file, line);
 }
 
-h2_inline const char* h2_callexp::actual()
+h2_inline const char* h2_attendance::actual()
 {
    static char st[64];
    if (call > 0)
@@ -15,7 +15,7 @@ h2_inline const char* h2_callexp::actual()
    return st;
 }
 
-h2_inline const char* h2_callexp::expect()
+h2_inline const char* h2_attendance::expect()
 {
    static char st[128];
    if (least == 0) {

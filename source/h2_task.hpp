@@ -15,24 +15,24 @@ struct h2_task {
    int execute();
 };
 
-static inline void h2_stub_g(void* befp, void* tofp, const char* befn, const char* tofn, const char* file, int line)
+static inline void h2_stub_g(void* origin_fp, void* substitute_fp, const char* origin_fn, const char* substitute_fn, const char* file, int line)
 {
    if (h2_task::I().current_case)
-      h2_task::I().current_case->stubs.add(befp, tofp, befn, tofn, file, line);
+      h2_task::I().current_case->stubs.add(origin_fp, substitute_fp, origin_fn, substitute_fn, file, line);
    else if (h2_task::I().current_suite)
-      h2_task::I().current_suite->stubs.add(befp, tofp, befn, tofn, file, line);
+      h2_task::I().current_suite->stubs.add(origin_fp, substitute_fp, origin_fn, substitute_fn, file, line);
    else
-      h2_task::I().stubs.add(befp, tofp, befn, tofn, file, line);
+      h2_task::I().stubs.add(origin_fp, substitute_fp, origin_fn, substitute_fn, file, line);
 }
 
 static inline void h2_mock_g(h2_mock* mock)
 {
    if (h2_task::I().current_case)
-      h2_task::I().current_case->mocks.add(mock) && h2_task::I().current_case->stubs.add(mock->befp, mock->tofp, mock->befn, "", mock->file, mock->line);
+      h2_task::I().current_case->mocks.add(mock) && h2_task::I().current_case->stubs.add(mock->origin_fp, mock->substitute_fp, mock->origin_fn, "", mock->file, mock->line);
    else if (h2_task::I().current_suite)
-      h2_task::I().current_suite->mocks.add(mock) && h2_task::I().current_suite->stubs.add(mock->befp, mock->tofp, mock->befn, "", mock->file, mock->line);
+      h2_task::I().current_suite->mocks.add(mock) && h2_task::I().current_suite->stubs.add(mock->origin_fp, mock->substitute_fp, mock->origin_fn, "", mock->file, mock->line);
    else
-      h2_task::I().mocks.add(mock) && h2_task::I().stubs.add(mock->befp, mock->tofp, mock->befn, "", mock->file, mock->line);
+      h2_task::I().mocks.add(mock) && h2_task::I().stubs.add(mock->origin_fp, mock->substitute_fp, mock->origin_fn, "", mock->file, mock->line);
 }
 
 static inline void h2_fail_g(h2_fail* fail, bool defer)
