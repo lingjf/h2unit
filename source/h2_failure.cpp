@@ -35,12 +35,11 @@ h2_inline void h2_fail::set_locate(const char* file_, int line_, const char* fun
 
 h2_inline const char* h2_fail::get_locate()
 {
-   static constexpr const char* a9 = "1st\0002nd\0003rd\0004th\0005th\0006th\0007th\0008th\0009th";
    static char st[1024];
-   char* p = st;
-   strcpy(p, "");
-   if (func && strlen(func)) p += sprintf(p, " in %s(%s)", func, 0 <= argi && argi < 9 ? a9 + argi * 4 : "");
-   if (file && strlen(file) && 0 < line) p += sprintf(p, " at %s:%d", file, line);
+   strcpy(st, "");
+
+   if (func && strlen(func)) sprintf(st + strlen(st), " in %s(%s)", func, h2::h2_numeric::sequence_number(argi));
+   if (file && strlen(file) && 0 < line) sprintf(st + strlen(st), " at %s:%d", file, line);
    return st;
 }
 

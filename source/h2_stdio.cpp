@@ -118,6 +118,7 @@ struct h2__stdio {
 
    const char* start_capture(bool _stdout, bool _stderr, bool _syslog)
    {
+      capturing = true;
       stdout_capturable = _stdout;
       stderr_capturable = _stderr;
       syslog_capturable = _syslog;
@@ -127,8 +128,20 @@ struct h2__stdio {
 
    const char* stop_capture()
    {
+      capturing = false;
       stdout_capturable = stderr_capturable = syslog_capturable = false;
       buffer->push_back('\0');
+      return buffer->c_str();
+   }
+
+   bool capturing = false;
+   const char* toggle_capture()
+   {
+      if (capturing)
+         stop_capture();
+      else
+         start_capture(true, true, true);
+
       return buffer->c_str();
    }
 };
@@ -146,7 +159,12 @@ h2_inline size_t h2_stdio::get_length()
 
 h2_inline const char* h2_stdio::capture_cout(const char* type)
 {
-   if (!type) return h2__stdio::I().stop_capture();
-   if (!strlen(type)) return h2__stdio::I().start_capture(true, true, true);
+   if (!strlen(type)) return h2__stdio::I().toggle_capture();
+   if (strcasestr(type, "stop")) return h2__stdio::I().stop_capture();
    return h2__stdio::I().start_capture(strcasestr(type, "out"), strcasestr(type, "err"), strcasestr(type, "syslog"));
+}
+
+h2_inline void h2_stdio::capture_cancel()
+{
+   h2__stdio::I().stop_capture();
 }

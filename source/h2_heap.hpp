@@ -6,11 +6,11 @@ struct h2_heap {
 
    struct stack {
       static void root();
-      static void push(const char* file, int line, long long limited = LLONG_MAX >> 9, const char* fill = nullptr);
+      static void push(const char* file, int line);
       static h2_fail* pop();
 
       struct block : h2_once {
-         block(const char* file, int line, long long limited = LLONG_MAX >> 9, const char* fill = nullptr);
+         block(const char* attributes, const char* file, int line);
          ~block();
       };
    };

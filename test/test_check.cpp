@@ -137,3 +137,12 @@ SUITE(OK Primitive)
       OK(Has(Pair(1, 111), Pair(3, 333)), a2);
    }
 }
+
+SUITE(bugfix)
+{
+   Case(Eq integer with float)
+   {
+      float uv = 2.00001;
+      OK(Eq(2, 0.0001), uv);
+   }
+}

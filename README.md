@@ -470,16 +470,25 @@ CASE(memory leak in block)
 ```C++
 CASE(test out of memory)
 {
-   BLOCK(10) {
+   BLOCK(limit=10) {
       OK(NULL == malloc(11));
    }
 }
 ```
-[`BLOCK`](source/h2_unit.hpp#L100) can used to initialize allocated memory. In following case, p is filled with *ABCABCAB*.
+[`BLOCK`](source/h2_unit.hpp#L100) can used to initialize allocated memory. In following case, p is filled with *C555*.
 ```C++
 CASE(test memory initialize)
 {
-   BLOCK(10, "ABC") {
+   BLOCK(limit=10, fill=0xC555) {
+      char *p = (char *)malloc(8);
+   }
+}
+```
+[`BLOCK`](source/h2_unit.hpp#L100) align allocate memory, In following case, p mod 4 equals 3.
+```C++
+CASE(test memory initialize)
+{
+   BLOCK(limit=10, fill=0xC555, align=3) {
       char *p = (char *)malloc(8);
    }
 }
@@ -530,10 +539,10 @@ CASE(test dns)
 
 ### 10. Socket Hijack
 *    [`SOCK`](source/h2_unit.hpp#L100)(): Monitor TCP/UDP send/recv, and return sent packets.
-*    [`SOCK`](source/h2_unit.hpp#L100)(packet, size, [from, [to]]): Inject UDP/TCP packet as received packet.
+*    [`SOCK`](source/h2_unit.hpp#L100)(packet, size, from=ip:port, to=ip:port]): Inject UDP/TCP packet as received packet.
 If not specified `to`, any of socket can receive the packet.
 
-If not specified `from`, the packet is received from where last send(to).
+If not specified `from`, the packet is received from where last send to.
 ```C++
 CASE(test net)
 {
@@ -542,8 +551,8 @@ CASE(test net)
    sendto(sock, ...);
    OK(..., SOCK()); // Fetch outgoing packet
 
-   SOCK(buffer1, 100, "4.3.2.1:8888", "*:4444"); // Inject as received packet from 4.3.2.1:8888 to local port 4444 socket
-   SOCK(buffer2, 100, "4.3.2.1:8888"); // Inject as received packet from 4.3.2.1:8888 to any local socket
+   SOCK(buffer1, 100, from=4.3.2.1:8888, to=*:4444); // Inject as received packet from 4.3.2.1:8888 to local port 4444 socket
+   SOCK(buffer2, 100, from=4.3.2.1:8888); // Inject as received packet from 4.3.2.1:8888 to any local socket
    SOCK(buffer3, 100); // Inject as received packet from last sendto peer to any local socket
    recvfrom(sock, ...);
 }
@@ -551,16 +560,16 @@ CASE(test net)
 
 ### 11. Capture STDOUT/STDERR/syslog
 [`COUT`](source/h2_unit.hpp#L100)(): Capture STDOUT STDERR and syslog output (printf(), std::cout<<, ...).
-*    `COUT`(""): Start Capture STDOUT and STDERR.
-*    `COUT`("stdout stderr syslog"): Start Capture STDOUT STDERR and syslog.
-*    `COUT`("STDOUT"): Start Capture STDOUT only.
-*    `COUT`("STDerr"): Start Capture STDERR only.
-*    `COUT`(): Stop Capture, and return buffer captured.
+*    `COUT`(): Toggle(Start/Stop) Capture STDOUT and STDERR.
+*    `COUT`(stdout stderr syslog): Start Capture STDOUT STDERR and syslog.
+*    `COUT`(STDOUT): Start Capture STDOUT only.
+*    `COUT`(STDerr): Start Capture STDERR only.
+*    `COUT`(stop): Stop Capture, and return buffer captured.
 
 ```C++
 CASE(test printf)
 {
-   COUT(""); // Start Capture
+   COUT(); // Start Capture
    printf("...");
    std::cout << ...;
    OK("...", COUT()); // Stop Capture and return captured string

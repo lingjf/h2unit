@@ -151,7 +151,7 @@ SUITE(memory compares)
    Case(short successfull)
    {
       short e[] = {1, 2, 3, 4, 5, 6, 7, 8, 9};
-      short a1[] = {1, 2, 3, 5, 5, 6, 7, 8, 9};
+      short a1[] = {1, 2, 3, 4, 5, 6, 7, 8, 9};
       OK(M16e(e, 9), a1);  // successful
    }
    Case(int successfull)

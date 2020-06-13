@@ -1,4 +1,4 @@
-﻿/* v5.5  2020-06-13 00:41:16 */
+﻿/* v5.5  2020-06-13 08:32:49 */
 /* https://github.com/lingjf/h2unit */
 /* Apache Licence 2.0 */
 #ifndef __H2UNIT_H__
@@ -225,6 +225,24 @@ struct h2_pattern {
       static _Class i;       \
       return i;              \
    }
+
+struct h2_numeric {
+   static int hex_to_byte(char c);
+   static bool is_bin_string(const char* s);
+   static bool is_hex_string(const char* s);
+   static int extract_hex_string(const char* s, bool ignore_space = false);
+
+   static int bin_to_bits(const char* bin, unsigned char* bytes);
+
+   static int hex_to_bits(const char* hex, unsigned char* bytes);
+   static int hex_to_bytes(const char* hex, unsigned char* bytes);
+
+   static bool bits_equal(const unsigned char* b1, const unsigned char* b2, int nbits);
+
+   static const char* sequence_number(int sequence, int shift = 1);
+
+   static long long parse_int_after_equal(const char* s);
+};
 
 #define h2_list_entry(ptr, type, link) ((type*)((char*)(ptr) - (char*)(&(((type*)(1))->link)) + 1))
 #define h2_list_for_each_entry(p, head, type, link) \
@@ -788,11 +806,11 @@ struct h2_heap {
 
    struct stack {
       static void root();
-      static void push(const char* file, int line, long long limited = LLONG_MAX >> 9, const char* fill = nullptr);
+      static void push(const char* file, int line);
       static h2_fail* pop();
 
       struct block : h2_once {
-         block(const char* file, int line, long long limited = LLONG_MAX >> 9, const char* fill = nullptr);
+         block(const char* attributes, const char* file, int line);
          ~block();
       };
    };
@@ -2332,7 +2350,8 @@ struct h2_mocks {
 struct h2_stdio {
    static void initialize();
    static size_t get_length();
-   static const char* capture_cout(const char* type = nullptr);
+   static const char* capture_cout(const char* type);
+   static void capture_cancel();
 };
 
 struct h2_dns : h2_libc {
@@ -2397,7 +2416,7 @@ struct h2_packet_matches {
       h2_fail::append_subling(fails, h2_matcher_cast<const int>(size).matches(a->data.length(), caseless, dont));
       return fails;
    }
-   h2_string expects(h2_packet* a, bool caseless = false, bool dont = false) const {return "";}
+   h2_string expects(h2_packet* a, bool caseless = false, bool dont = false) const { return ""; }
 };
 
 template <typename M1, typename M2, typename M3, typename M4>
@@ -2408,7 +2427,8 @@ inline h2_polymorphic_matcher<h2_packet_matches<M1, M2, M3, M4>> PktEq(M1 from =
 
 struct h2_socket {
    static h2_packet* start_and_fetch();
-   static void inject_received(const void* packet, size_t size, const char* from, const char* to);
+   // from=1.2.3.4:5678, to=4.3.2.1:8765
+   static void inject_received(const void* packet, size_t size, const char* attributes);
 };
 
 struct h2_case {
@@ -2755,15 +2775,27 @@ static inline void h2_fail_g(h2_fail* fail, bool defer)
 
 #ifndef OK
 #   define OK H2OK
+#else
+#   pragma message("OK is already defined using H2OK instead")
 #endif
 
 #define JE(e, a) H2JE(e, a)
 #define MOCK(...) H2MOCK(__VA_ARGS__)
 #define STUB(...) H2STUB(__VA_ARGS__)
-#define BLOCK(...) H2BLOCK(__VA_ARGS__)
+
+#ifndef BLOCK
+#   define BLOCK H2BLOCK
+#endif
+
 #define DNS(...) H2DNS(__VA_ARGS__)
-#define SOCK(...) H2SOCK(__VA_ARGS__)
-#define COUT(...) H2COUT(__VA_ARGS__)
+
+#ifndef SOCK
+#   define SOCK H2SOCK
+#endif
+
+#ifndef COUT
+#   define COUT H2COUT
+#endif
 
 #define MATCHER(...) H2MATCHER(__VA_ARGS__)
 
@@ -2878,19 +2910,18 @@ using h2::Pair;
 #define H2CASE(name) __H2CASE(name, h2::h2_case::initial, H2Q(h2_case_test_code), H2Q(h2_suite_test_code))
 #define H2TODO(name) __H2CASE(name, h2::h2_case::todo, H2Q(h2_case_test_code), H2Q(h2_suite_test_code))
 
-#define __H2BLOCK0(Qb) for (h2::h2_heap::stack::block Qb(__FILE__, __LINE__); Qb;)
-#define __H2BLOCK1(Qb, ...) for (h2::h2_heap::stack::block Qb(__FILE__, __LINE__, __VA_ARGS__); Qb;)
-#define H2BLOCK(...) H2PP_IF_ELSE(H2PP_IS_EMPTY(__VA_ARGS__), __H2BLOCK0(H2Q(t_block)), __H2BLOCK1(H2Q(t_block), __VA_ARGS__))
+#define __H2BLOCK(Attributes, Qb) for (h2::h2_heap::stack::block Qb(Attributes, __FILE__, __LINE__); Qb;)
+#define H2BLOCK(...) __H2BLOCK(#__VA_ARGS__, H2Q(t_block))
 
 #define H2DNS(...) h2::h2_dns::setaddrinfo(H2PP_NARG(__VA_ARGS__), __VA_ARGS__)
 
-#define __H2SOCK0() h2::h2_socket::start_and_fetch()
-#define __H2SOCK2(packet, size) h2::h2_socket::inject_received(packet, size, nullptr, "*")
-#define __H2SOCK3(packet, size, from) h2::h2_socket::inject_received(packet, size, from, "*")
-#define __H2SOCK4(packet, size, from, to) h2::h2_socket::inject_received(packet, size, from, to)
-#define H2SOCK(...) H2PP_VARIADIC_CALL(__H2SOCK, __VA_ARGS__)
+/* clang-format off */
+#define __H2SOCK0(_Packet, _Size, ...) h2::h2_socket::inject_received(_Packet, _Size, #__VA_ARGS__)
+#define __H2SOCK1(...) h2::h2_socket::start_and_fetch()
+#define H2SOCK(...) H2PP_CAT2(__H2SOCK, H2PP_IS_EMPTY(__VA_ARGS__)) (__VA_ARGS__)
+/* clang-format on */
 
-#define H2COUT(...) h2::h2_stdio::capture_cout(__VA_ARGS__)
+#define H2COUT(...) h2::h2_stdio::capture_cout(#__VA_ARGS__)
 
 #endif
 
@@ -3060,6 +3091,126 @@ static inline bool h2_in(const char* x, const char* s[], int n = 0)
       h2_sprintvf(str, fmt, ap); \
       va_end(ap);                \
    } while (0)
+
+h2_inline int h2_numeric::hex_to_byte(char c)
+{
+   return '0' <= c && c <= '9' ? c - '0' : ('A' <= c && c <= 'F' ? c - 'A' + 10 : ('a' <= c && c <= 'f' ? c - 'a' + 10 : -1));
+}
+
+h2_inline bool h2_numeric::is_bin_string(const char* s)
+{
+   for (const char* p = s; *p; p++)
+      if (*p != '0' && *p != '1' && !::isspace(*p))
+         return false;
+   return true;
+}
+
+h2_inline bool h2_numeric::is_hex_string(const char* s)
+{
+   if (s[0] == '0' && ::tolower(s[1]) == 'x') return true;
+   for (const char* p = s; *p; p++)
+      if (!::isxdigit(*p) && !::isspace(*p))
+         return false;
+   return true;
+}
+
+h2_inline int h2_numeric::extract_hex_string(const char* s, bool ignore_space)
+{
+   if (s[0] == '0' && ::tolower(s[1]) == 'x') s += 2;
+   for (const char* p = s; *p; p++) {
+      if (::isxdigit(*p)) continue;
+      if (::isspace(*p) && ignore_space) continue;
+      break;
+   }
+   return 0;
+}
+
+h2_inline int h2_numeric::bin_to_bits(const char* bin, unsigned char* bytes)
+{
+   memset(bytes, 0, strlen(bin));
+   int c = 0;
+   for (const char* p = bin; *p; p++) {
+      if (*p == ' ') continue;
+      int i = c / 8, j = 7 - c % 8;
+      ++c;
+      unsigned char ebit = *p == '1' ? 1 : 0;
+      bytes[i] = bytes[i] | (ebit << j);
+   }
+   return c;
+}
+
+h2_inline int h2_numeric::hex_to_bits(const char* hex, unsigned char* bytes)
+{
+   memset(bytes, 0, strlen(hex));
+   if (hex[0] == '0' && ::tolower(hex[1]) == 'x') hex += 2;
+   char b;
+   int c = 0;
+   for (const char* p = hex; *p; p++) {
+      if (::isxdigit(*p)) {
+         if (++c % 2 == 0)
+            bytes[c / 2 - 1] = (unsigned char)((hex_to_byte(b) << 4) + hex_to_byte(*p));
+         else
+            b = *p;
+      }
+   }
+   return 8 * c / 2;
+}
+
+h2_inline int h2_numeric::hex_to_bytes(const char* hex, unsigned char* bytes)
+{
+   char b;
+   int i = 0, c = 0;
+
+   for (; ::isxdigit(hex[c]);) ++c;
+   if (c % 2 == 1) {
+      b = '0';
+      i = 1;
+      c += 1;
+      hex = hex - 1;
+   }
+   for (; i < c; ++i) {
+      if (i % 2 == 1)
+         bytes[i / 2] = (unsigned char)((hex_to_byte(b) << 4) + hex_to_byte(hex[i]));
+      b = hex[i];
+   }
+   return c / 2;
+}
+
+h2_inline bool h2_numeric::bits_equal(const unsigned char* b1, const unsigned char* b2, int nbits)
+{
+   for (int k = 0; k < nbits; ++k) {
+      int i = k / 8, j = 7 - k % 8;
+      if (((b1[i] >> j) & 1) != ((b2[i] >> j) & 1)) return false;
+   }
+   return true;
+}
+
+h2_inline const char* h2_numeric::sequence_number(int sequence, int shift)
+{
+   static const char* st[] = {"0th", "1st", "2nd", "3rd", "4th", "5th", "6th", "7th", "8th", "9th", "10th", "11th", "12th", "13th", "14th", "15th"};
+   static char ss[64];
+
+   sequence += shift;
+   if (sequence < sizeof(st)/sizeof(st[0])) {
+      return st[sequence];
+   }
+   sprintf(ss, "%dth", sequence);
+   return ss;
+}
+
+h2_inline long long h2_numeric::parse_int_after_equal(const char* s)
+{
+   long long n = 0;
+   const char* p = strchr(s, '=');
+   if (p) {
+      for (p += 1; *p && ::isspace(*p);) p++;  // strip left space
+      if (p[0] == '0' && ::tolower(p[1]) == 'x')
+         n = strtoll(p + 2, (char**)NULL, 16);
+      else
+         n = strtoll(p, (char**)NULL, 10);
+   }
+   return n;
+}
 
 struct h2__color {
    h2_singleton(h2__color);
@@ -4239,7 +4390,7 @@ h2_inline void h2_case::prev_setup()
 
 h2_inline void h2_case::post_cleanup()
 {
-   h2_stdio::capture_cout(nullptr);
+   h2_stdio::capture_cancel();
    if (sock) delete sock;
    dnses.clear();
    stubs.clear();
@@ -4823,12 +4974,11 @@ h2_inline void h2_fail::set_locate(const char* file_, int line_, const char* fun
 
 h2_inline const char* h2_fail::get_locate()
 {
-   static constexpr const char* a9 = "1st\0002nd\0003rd\0004th\0005th\0006th\0007th\0008th\0009th";
    static char st[1024];
-   char* p = st;
-   strcpy(p, "");
-   if (func && strlen(func)) p += sprintf(p, " in %s(%s)", func, 0 <= argi && argi < 9 ? a9 + argi * 4 : "");
-   if (file && strlen(file) && 0 < line) p += sprintf(p, " at %s:%d", file, line);
+   strcpy(st, "");
+
+   if (func && strlen(func)) sprintf(st + strlen(st), " in %s(%s)", func, h2::h2_numeric::sequence_number(argi));
+   if (file && strlen(file) && 0 < line) sprintf(st + strlen(st), " at %s:%d", file, line);
    return st;
 }
 
@@ -5244,11 +5394,11 @@ struct h2_piece : h2_libc {
    bool violate_after_free = false;
    h2_backtrace violate_backtrace;
 
-   h2_piece(int size_, int alignment, const char* who, h2_backtrace& bt) : user_size(size_), who_allocate(who), bt_allocate(bt)
+   h2_piece(int size, int align, const char* who, h2_backtrace& bt) : user_size(size), who_allocate(who), bt_allocate(bt)
    {
       page_size = h2_page_size();
-      if (alignment <= 0) alignment = 8;
-      page_count = ::ceil((user_size + alignment) / (double)page_size);
+      if (align <= 0) align = 8;
+      page_count = ::ceil((user_size + align) / (double)page_size);
 
 #ifdef _WIN32
       page_ptr = (unsigned char*)VirtualAlloc(NULL, page_size * (page_count + 1), MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
@@ -5259,7 +5409,7 @@ struct h2_piece : h2_libc {
 #endif
 
       user_ptr = page_ptr + page_size * page_count - user_size;
-      user_ptr = (unsigned char*)(((long long)user_ptr / alignment) * alignment);
+      user_ptr = (unsigned char*)(((long long)user_ptr / align) * align);
 
       mark_snowfield();
    }
@@ -5431,14 +5581,16 @@ struct h2_block : h2_libc {
    h2_list x;
    h2_list pieces;
 
+   long long limited;
+   int alignment;
+   unsigned char s_fill[32];
+   int n_fill;
+   const char* where;
    const char* file;
    int line;
-   const char* where;
-   long long limited;
-   const char* fill;
 
-   h2_block(const char* file_, int line_, const char* where_, long long limited_, const char* fill_)
-     : file(file_), line(line_), where(where_), limited(limited_), fill(fill_) {}
+   h2_block(long long _limited, int _alignment, unsigned char _s_fill[32], int _n_fill, const char* _where, const char* _file, int _line)
+     : limited(_limited), alignment(_alignment), n_fill(_n_fill), where(_where), file(_file), line(_line) { memcpy(s_fill, _s_fill, _n_fill); }
 
    h2_fail* check()
    {
@@ -5457,16 +5609,27 @@ struct h2_block : h2_libc {
       return nullptr;
    }
 
-   h2_piece* new_piece(const char* who, int size, int alignment, const char* fill_, h2_backtrace& bt)
+   h2_piece* new_piece(const char* who, int size, int align, unsigned char c_fill, bool fill, h2_backtrace& bt)
    {
       if (limited < size) return nullptr;
       limited -= size;
 
-      h2_piece* p = new h2_piece(size, alignment, who, bt);
+      // allocate action alignment is prior to block level alignment
+      if (align == 0)
+         align = alignment;
 
-      if (fill_ ? fill_ : (fill_ = fill))
-         for (int i = 0, j = 0, l = strlen(fill_); i < size; ++i, ++j)
-            ((char*)p->user_ptr)[i] = fill_[j % (l ? l : 1)];
+      h2_piece* p = new h2_piece(size, align, who, bt);
+
+      // allocate action fill is prior to block level fill
+      unsigned char* s_filling = s_fill;
+      int n_filling = n_fill;
+      if (fill) {
+         s_filling = &c_fill;
+         n_filling = 1;
+      }
+      if (0 < n_filling)
+         for (int i = 0, j = 0; i < size; ++i, ++j)
+            ((unsigned char*)p->user_ptr)[i] = s_filling[j % n_filling];
 
       pieces.push(p->x);
       return p;
@@ -5497,9 +5660,9 @@ struct h2_stack {
    h2_singleton(h2_stack);
    h2_list blocks;
 
-   void push(const char* file, int line, const char* where, long long limited, const char* fill)
+   void push(long long limited, int align, unsigned char s_fill[32], int n_fill, const char* where, const char* file, int line)
    {
-      h2_block* b = new h2_block(file, line, where, limited, fill);
+      h2_block* b = new h2_block(limited, align, s_fill, n_fill, where, file, line);
       blocks.push(b->x);
    }
 
@@ -5511,11 +5674,11 @@ struct h2_stack {
       return fail;
    }
 
-   h2_piece* new_piece(const char* who, size_t size, size_t alignment, const char* fill)
+   h2_piece* new_piece(const char* who, size_t size, size_t align, const char* fill)
    {
       h2_backtrace bt(O.isMAC() ? 3 : 2);
       h2_block* b = h2_patch::exempt(bt) ? h2_list_bottom_entry(blocks, h2_block, x) : h2_list_top_entry(blocks, h2_block, x);
-      return b ? b->new_piece(who, size, alignment, fill, bt) : nullptr;
+      return b ? b->new_piece(who, size, align, fill ? *fill : 0, fill, bt) : nullptr;
    }
 
    h2_piece* get_piece(const void* ptr)
@@ -5853,19 +6016,66 @@ h2_inline void h2_heap::unhook()
 
 h2_inline void h2_heap::stack::root()
 {
-   h2_stack::I().push(__FILE__, __LINE__, "root", LLONG_MAX >> 9, nullptr);
+   h2_stack::I().push(LLONG_MAX >> 9, 8, nullptr, 0, "root", __FILE__, __LINE__);
 }
-h2_inline void h2_heap::stack::push(const char* file, int line, long long limited, const char* fill)
+h2_inline void h2_heap::stack::push(const char* file, int line)
 {
-   h2_stack::I().push(file, line, "case", limited, fill);
+   h2_stack::I().push(LLONG_MAX >> 9, 8, nullptr, 0, "case", file, line);
 }
 h2_inline h2_fail* h2_heap::stack::pop()
 {
    return h2_stack::I().pop();
 }
-h2_inline h2_heap::stack::block::block(const char* file, int line, long long limited, const char* fill)
+
+static inline void parse_block_attributes(const char* attributes, long long& n_limit, int& n_align, unsigned char s_fill[32], int& n_fill)
 {
-   h2_stack::I().push(file, line, "block", limited, fill);
+   n_limit = LLONG_MAX >> 9;
+   n_align = 8;
+   n_fill = 0;
+
+   const char* p_limit = strcasestr(attributes, "limit");
+   if (p_limit) {
+      n_limit = h2_numeric::parse_int_after_equal(p_limit);
+   }
+
+   const char* p_align = strcasestr(attributes, "align");
+   if (p_align) {
+      n_align = (int)h2_numeric::parse_int_after_equal(p_align);
+   }
+
+   const char* p_fill = strcasestr(attributes, "fill");
+   if (p_fill) {
+      const char* p = strchr(p_fill, '=');
+      if (p) {
+         for (p += 1; *p && ::isspace(*p);) p++;  // strip left space
+
+         if (p[0] == '0' && ::tolower(p[1]) == 'x') {
+            n_fill = h2_numeric::hex_to_bytes(p + 2, s_fill);
+         } else {
+            long long v = strtoll(p, (char**)NULL, 10);
+            if (v <= 0xFFU)
+               n_fill = 1, *((unsigned char*)s_fill) = (unsigned char)v;
+            else if (v <= 0xFFFFU)
+               n_fill = 2, *((unsigned short*)s_fill) = (unsigned short)v;
+            else if (v <= 0xFFFFFFFFU)
+               n_fill = 4, *((unsigned int*)s_fill) = (unsigned int)v;
+            else
+               n_fill = 8, *((unsigned long long*)s_fill) = (unsigned long long)v;
+         }
+      }
+   }
+}
+
+h2_inline h2_heap::stack::block::block(const char* attributes, const char* file, int line)
+{
+   long long n_limit;
+   int n_align;
+   unsigned char s_fill[32];
+   int n_fill;
+
+   parse_block_attributes(attributes, n_limit, n_align, s_fill, n_fill);
+
+   h2_stack::I().push(n_limit, n_align, s_fill, n_fill, "block", file, line);
 }
 h2_inline h2_heap::stack::block::~block()
 {
@@ -6574,69 +6784,7 @@ h2_inline h2_string h2_matchee_json::expects(const h2_string& a, bool caseless, 
    return CD("Je(\"" + h2_stringify(e) + "\")", caseless, dont);
 }
 
-static inline bool __is_bin_string(const char* s)
-{
-   for (const char* p = s; *p; p++)
-      if (*p != '0' && *p != '1' && !::isspace(*p))
-         return false;
-   return true;
-}
-
-static inline bool __is_hex_string(const char* s)
-{
-   if (s[0] == '0' && ::tolower(s[1]) == 'x') return true;
-   for (const char* p = s; *p; p++)
-      if (!::isxdigit(*p) && !::isspace(*p))
-         return false;
-   return true;
-}
-
-static inline int __hex_to_byte(char c)
-{
-   return '0' <= c && c <= '9' ? c - '0' : ('A' <= c && c <= 'F' ? c - 'A' + 10 : ('a' <= c && c <= 'f' ? c - 'a' + 10 : -1));
-}
-
-static inline int __hex_to_bytes(const char* hex, unsigned char* bytes)
-{
-   memset(bytes, 0, strlen(hex));
-   if (hex[0] == '0' && ::tolower(hex[1]) == 'x') hex += 2;
-   char b;
-   int c = 0;
-   for (const char* p = hex; *p; p++) {
-      if (::isxdigit(*p)) {
-         if (++c % 2 == 0)
-            bytes[c / 2 - 1] = (unsigned char)((__hex_to_byte(b) << 4) + __hex_to_byte(*p));
-         else
-            b = *p;
-      }
-   }
-   return 8 * c / 2;
-}
-
-static inline int __bin_to_bytes(const char* bin, unsigned char* bytes)
-{
-   memset(bytes, 0, strlen(bin));
-   int c = 0;
-   for (const char* p = bin; *p; p++) {
-      if (*p == ' ') continue;
-      int i = c / 8, j = 7 - c % 8;
-      ++c;
-      unsigned char ebit = *p == '1' ? 1 : 0;
-      bytes[i] = bytes[i] | (ebit << j);
-   }
-   return c;
-}
-
-static inline bool __bits_equal(const unsigned char* e, const unsigned char* a, int nbits)
-{
-   for (int k = 0; k < nbits; ++k) {
-      int i = k / 8, j = 7 - k % 8;
-      if (((e[i] >> j) & 1) != ((a[i] >> j) & 1)) return false;
-   }
-   return true;
-}
-
-static inline h2_string __print_size(int width, int nbits)
+static inline h2_string readable_size(int width, int nbits)
 {
    char t[64];
    switch (width) {
@@ -6661,16 +6809,16 @@ h2_inline h2_fail* h2_matchee_memcmp::matches(const void* a, bool caseless, bool
 
    if (width == 0) /* guess width */ {
       // Case1: binary string descript memory
-      if (__is_bin_string((const char*)e)) {
+      if (h2_numeric::is_bin_string((const char*)e)) {
          _e[gc] = (const unsigned char*)alloca(strlen((const char*)e));
-         _nbits[gc] = __bin_to_bytes((const char*)e, (unsigned char*)_e[gc]);
+         _nbits[gc] = h2_numeric::bin_to_bits((const char*)e, (unsigned char*)_e[gc]);
          _width[gc] = 1;
          ++gc;
       }
       // Case2: hex string descript memory
-      if (__is_hex_string((const char*)e)) {
+      if (h2_numeric::is_hex_string((const char*)e)) {
          _e[gc] = (const unsigned char*)alloca(strlen((const char*)e));
-         _nbits[gc] = __hex_to_bytes((const char*)e, (unsigned char*)_e[gc]);
+         _nbits[gc] = h2_numeric::hex_to_bits((const char*)e, (unsigned char*)_e[gc]);
          _width[gc] = 8;
          ++gc;
       }
@@ -6688,7 +6836,7 @@ h2_inline h2_fail* h2_matchee_memcmp::matches(const void* a, bool caseless, bool
 
    for (i = 0; i < gc; ++i) {
       if (_width[i] == 1)
-         result = __bits_equal((const unsigned char*)_e[i], (const unsigned char*)a, _nbits[i]);
+         result = h2_numeric::bits_equal((const unsigned char*)_e[i], (const unsigned char*)a, _nbits[i]);
       else
          result = memcmp(_e[i], a, _nbits[i] / 8) == 0;
 
@@ -6697,7 +6845,7 @@ h2_inline h2_fail* h2_matchee_memcmp::matches(const void* a, bool caseless, bool
 
    if (result == !dont) return nullptr;
    int j = result ? i : 0;
-   return new h2_fail_memcmp((const unsigned char*)_e[j], (const unsigned char*)a, _width[j], _nbits[j], "", h2_stringify(a), "memcmp " + __print_size(_width[j], _nbits[j]));
+   return new h2_fail_memcmp((const unsigned char*)_e[j], (const unsigned char*)a, _width[j], _nbits[j], "", h2_stringify(a), "memcmp " + readable_size(_width[j], _nbits[j]));
 }
 
 h2_inline h2_string h2_matchee_memcmp::expects(const void* a, bool caseless, bool dont) const
@@ -7537,6 +7685,7 @@ struct h2__socket {
    {
       ssize_t ret = 0;
       h2_packet* udp = read_incoming(socket);
+
       if (udp) {
          ret = udp->data.copy((char*)buffer, udp->data.length(), 0);
          iport_parse(udp->from.c_str(), (struct sockaddr_in*)address);
@@ -7594,7 +7743,7 @@ h2_inline void h2_sock::put_outgoing(int fd, const char* data, size_t size)
 
 h2_inline void h2_sock::put_incoming(const char* from, const char* to, const char* data, size_t size)
 {
-   incoming.push_back((new h2_packet(from ? from : last_to, to, data, size))->x);
+   incoming.push_back((new h2_packet(strlen(from) ? from : last_to, to, data, size))->x);
 }
 
 h2_inline h2_packet* h2_socket::start_and_fetch()
@@ -7609,9 +7758,39 @@ h2_inline h2_packet* h2_socket::start_and_fetch()
    return h2_list_pop_entry(sock->outgoing, h2_packet, x);
 }
 
-h2_inline void h2_socket::inject_received(const void* packet, size_t size, const char* from, const char* to)
+static inline void extract_iport_after_equal(const char* s, char* o)
+{
+   const char* p = strchr(s, '=');
+   for (p += 1; *p; p++) {
+      if (::isdigit(*p) || *p == '.' || *p == ':' || *p == '*' || *p == '?') {
+         *o++ = *p;
+      } else {
+         if (!(::isspace(*p) || *p == '\"')) return;
+      }
+   }
+}
+
+static inline void parse_sock_attributes(const char* attributes, char from[256], char to[256])
+{
+   memset(from, 0, 256);
+   memset(to, 0, 256);
+   const char* p_from = strcasestr(attributes, "from");
+   if (p_from) {
+      extract_iport_after_equal(p_from + strlen("from"), from);
+   }
+   const char* p_to = strcasestr(attributes, "to");
+   if (p_to) {
+      extract_iport_after_equal(p_to + strlen("to"), to);
+   } else {
+      strcpy(to, "*");
+   }
+}
+
+h2_inline void h2_socket::inject_received(const void* packet, size_t size, const char* attributes)
 {
    h2_sock* sock = h2_list_top_entry(h2__socket::I().socks, h2_sock, y);
+   char from[256], to[256];
+   parse_sock_attributes(attributes, from, to);
    if (sock) sock->put_incoming(from, to, (const char*)packet, size);
 }
 
@@ -7734,6 +7913,7 @@ struct h2__stdio {
 
    const char* start_capture(bool _stdout, bool _stderr, bool _syslog)
    {
+      capturing = true;
       stdout_capturable = _stdout;
       stderr_capturable = _stderr;
       syslog_capturable = _syslog;
@@ -7743,8 +7923,20 @@ struct h2__stdio {
 
    const char* stop_capture()
    {
+      capturing = false;
       stdout_capturable = stderr_capturable = syslog_capturable = false;
       buffer->push_back('\0');
+      return buffer->c_str();
+   }
+
+   bool capturing = false;
+   const char* toggle_capture()
+   {
+      if (capturing)
+         stop_capture();
+      else
+         start_capture(true, true, true);
+
       return buffer->c_str();
    }
 };
@@ -7762,9 +7954,14 @@ h2_inline size_t h2_stdio::get_length()
 
 h2_inline const char* h2_stdio::capture_cout(const char* type)
 {
-   if (!type) return h2__stdio::I().stop_capture();
-   if (!strlen(type)) return h2__stdio::I().start_capture(true, true, true);
+   if (!strlen(type)) return h2__stdio::I().toggle_capture();
+   if (strcasestr(type, "stop")) return h2__stdio::I().stop_capture();
    return h2__stdio::I().start_capture(strcasestr(type, "out"), strcasestr(type, "err"), strcasestr(type, "syslog"));
+}
+
+h2_inline void h2_stdio::capture_cancel()
+{
+   h2__stdio::I().stop_capture();
 }
 // https://www.codeproject.com/Articles/25198/Generic-Thunk-with-5-combinations-of-Calling-Conve
 

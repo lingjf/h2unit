@@ -1,4 +1,4 @@
-﻿/* v5.5  2020-06-13 00:41:16 */
+﻿/* v5.5  2020-06-13 08:32:49 */
 /* https://github.com/lingjf/h2unit */
 /* Apache Licence 2.0 */
 #ifndef __H2UNIT_HPP__
@@ -225,6 +225,24 @@ struct h2_pattern {
       static _Class i;       \
       return i;              \
    }
+
+struct h2_numeric {
+   static int hex_to_byte(char c);
+   static bool is_bin_string(const char* s);
+   static bool is_hex_string(const char* s);
+   static int extract_hex_string(const char* s, bool ignore_space = false);
+
+   static int bin_to_bits(const char* bin, unsigned char* bytes);
+
+   static int hex_to_bits(const char* hex, unsigned char* bytes);
+   static int hex_to_bytes(const char* hex, unsigned char* bytes);
+
+   static bool bits_equal(const unsigned char* b1, const unsigned char* b2, int nbits);
+
+   static const char* sequence_number(int sequence, int shift = 1);
+
+   static long long parse_int_after_equal(const char* s);
+};
 
 #define h2_list_entry(ptr, type, link) ((type*)((char*)(ptr) - (char*)(&(((type*)(1))->link)) + 1))
 #define h2_list_for_each_entry(p, head, type, link) \
@@ -788,11 +806,11 @@ struct h2_heap {
 
    struct stack {
       static void root();
-      static void push(const char* file, int line, long long limited = LLONG_MAX >> 9, const char* fill = nullptr);
+      static void push(const char* file, int line);
       static h2_fail* pop();
 
       struct block : h2_once {
-         block(const char* file, int line, long long limited = LLONG_MAX >> 9, const char* fill = nullptr);
+         block(const char* attributes, const char* file, int line);
          ~block();
       };
    };
@@ -2332,7 +2350,8 @@ struct h2_mocks {
 struct h2_stdio {
    static void initialize();
    static size_t get_length();
-   static const char* capture_cout(const char* type = nullptr);
+   static const char* capture_cout(const char* type);
+   static void capture_cancel();
 };
 
 struct h2_dns : h2_libc {
@@ -2397,7 +2416,7 @@ struct h2_packet_matches {
       h2_fail::append_subling(fails, h2_matcher_cast<const int>(size).matches(a->data.length(), caseless, dont));
       return fails;
    }
-   h2_string expects(h2_packet* a, bool caseless = false, bool dont = false) const {return "";}
+   h2_string expects(h2_packet* a, bool caseless = false, bool dont = false) const { return ""; }
 };
 
 template <typename M1, typename M2, typename M3, typename M4>
@@ -2408,7 +2427,8 @@ inline h2_polymorphic_matcher<h2_packet_matches<M1, M2, M3, M4>> PktEq(M1 from =
 
 struct h2_socket {
    static h2_packet* start_and_fetch();
-   static void inject_received(const void* packet, size_t size, const char* from, const char* to);
+   // from=1.2.3.4:5678, to=4.3.2.1:8765
+   static void inject_received(const void* packet, size_t size, const char* attributes);
 };
 
 struct h2_case {
@@ -2755,15 +2775,27 @@ static inline void h2_fail_g(h2_fail* fail, bool defer)
 
 #ifndef OK
 #   define OK H2OK
+#else
+#   pragma message("OK is already defined using H2OK instead")
 #endif
 
 #define JE(e, a) H2JE(e, a)
 #define MOCK(...) H2MOCK(__VA_ARGS__)
 #define STUB(...) H2STUB(__VA_ARGS__)
-#define BLOCK(...) H2BLOCK(__VA_ARGS__)
+
+#ifndef BLOCK
+#   define BLOCK H2BLOCK
+#endif
+
 #define DNS(...) H2DNS(__VA_ARGS__)
-#define SOCK(...) H2SOCK(__VA_ARGS__)
-#define COUT(...) H2COUT(__VA_ARGS__)
+
+#ifndef SOCK
+#   define SOCK H2SOCK
+#endif
+
+#ifndef COUT
+#   define COUT H2COUT
+#endif
 
 #define MATCHER(...) H2MATCHER(__VA_ARGS__)
 
@@ -2878,19 +2910,18 @@ using h2::Pair;
 #define H2CASE(name) __H2CASE(name, h2::h2_case::initial, H2Q(h2_case_test_code), H2Q(h2_suite_test_code))
 #define H2TODO(name) __H2CASE(name, h2::h2_case::todo, H2Q(h2_case_test_code), H2Q(h2_suite_test_code))
 
-#define __H2BLOCK0(Qb) for (h2::h2_heap::stack::block Qb(__FILE__, __LINE__); Qb;)
-#define __H2BLOCK1(Qb, ...) for (h2::h2_heap::stack::block Qb(__FILE__, __LINE__, __VA_ARGS__); Qb;)
-#define H2BLOCK(...) H2PP_IF_ELSE(H2PP_IS_EMPTY(__VA_ARGS__), __H2BLOCK0(H2Q(t_block)), __H2BLOCK1(H2Q(t_block), __VA_ARGS__))
+#define __H2BLOCK(Attributes, Qb) for (h2::h2_heap::stack::block Qb(Attributes, __FILE__, __LINE__); Qb;)
+#define H2BLOCK(...) __H2BLOCK(#__VA_ARGS__, H2Q(t_block))
 
 #define H2DNS(...) h2::h2_dns::setaddrinfo(H2PP_NARG(__VA_ARGS__), __VA_ARGS__)
 
-#define __H2SOCK0() h2::h2_socket::start_and_fetch()
-#define __H2SOCK2(packet, size) h2::h2_socket::inject_received(packet, size, nullptr, "*")
-#define __H2SOCK3(packet, size, from) h2::h2_socket::inject_received(packet, size, from, "*")
-#define __H2SOCK4(packet, size, from, to) h2::h2_socket::inject_received(packet, size, from, to)
-#define H2SOCK(...) H2PP_VARIADIC_CALL(__H2SOCK, __VA_ARGS__)
+/* clang-format off */
+#define __H2SOCK0(_Packet, _Size, ...) h2::h2_socket::inject_received(_Packet, _Size, #__VA_ARGS__)
+#define __H2SOCK1(...) h2::h2_socket::start_and_fetch()
+#define H2SOCK(...) H2PP_CAT2(__H2SOCK, H2PP_IS_EMPTY(__VA_ARGS__)) (__VA_ARGS__)
+/* clang-format on */
 
-#define H2COUT(...) h2::h2_stdio::capture_cout(__VA_ARGS__)
+#define H2COUT(...) h2::h2_stdio::capture_cout(#__VA_ARGS__)
 
 #endif
 #endif

@@ -170,6 +170,7 @@ struct h2__socket {
    {
       ssize_t ret = 0;
       h2_packet* udp = read_incoming(socket);
+
       if (udp) {
          ret = udp->data.copy((char*)buffer, udp->data.length(), 0);
          iport_parse(udp->from.c_str(), (struct sockaddr_in*)address);
@@ -227,7 +228,7 @@ h2_inline void h2_sock::put_outgoing(int fd, const char* data, size_t size)
 
 h2_inline void h2_sock::put_incoming(const char* from, const char* to, const char* data, size_t size)
 {
-   incoming.push_back((new h2_packet(from ? from : last_to, to, data, size))->x);
+   incoming.push_back((new h2_packet(strlen(from) ? from : last_to, to, data, size))->x);
 }
 
 h2_inline h2_packet* h2_socket::start_and_fetch()
@@ -242,8 +243,38 @@ h2_inline h2_packet* h2_socket::start_and_fetch()
    return h2_list_pop_entry(sock->outgoing, h2_packet, x);
 }
 
-h2_inline void h2_socket::inject_received(const void* packet, size_t size, const char* from, const char* to)
+static inline void extract_iport_after_equal(const char* s, char* o)
+{
+   const char* p = strchr(s, '=');
+   for (p += 1; *p; p++) {
+      if (::isdigit(*p) || *p == '.' || *p == ':' || *p == '*' || *p == '?') {
+         *o++ = *p;
+      } else {
+         if (!(::isspace(*p) || *p == '\"')) return;
+      }
+   }
+}
+
+static inline void parse_sock_attributes(const char* attributes, char from[256], char to[256])
+{
+   memset(from, 0, 256);
+   memset(to, 0, 256);
+   const char* p_from = strcasestr(attributes, "from");
+   if (p_from) {
+      extract_iport_after_equal(p_from + strlen("from"), from);
+   }
+   const char* p_to = strcasestr(attributes, "to");
+   if (p_to) {
+      extract_iport_after_equal(p_to + strlen("to"), to);
+   } else {
+      strcpy(to, "*");
+   }
+}
+
+h2_inline void h2_socket::inject_received(const void* packet, size_t size, const char* attributes)
 {
    h2_sock* sock = h2_list_top_entry(h2__socket::I().socks, h2_sock, y);
+   char from[256], to[256];
+   parse_sock_attributes(attributes, from, to);
    if (sock) sock->put_incoming(from, to, (const char*)packet, size);
 }

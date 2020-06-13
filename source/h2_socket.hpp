@@ -45,7 +45,7 @@ struct h2_packet_matches {
       h2_fail::append_subling(fails, h2_matcher_cast<const int>(size).matches(a->data.length(), caseless, dont));
       return fails;
    }
-   h2_string expects(h2_packet* a, bool caseless = false, bool dont = false) const {return "";}
+   h2_string expects(h2_packet* a, bool caseless = false, bool dont = false) const { return ""; }
 };
 
 template <typename M1, typename M2, typename M3, typename M4>
@@ -56,5 +56,6 @@ inline h2_polymorphic_matcher<h2_packet_matches<M1, M2, M3, M4>> PktEq(M1 from =
 
 struct h2_socket {
    static h2_packet* start_and_fetch();
-   static void inject_received(const void* packet, size_t size, const char* from, const char* to);
+   // from=1.2.3.4:5678, to=4.3.2.1:8765
+   static void inject_received(const void* packet, size_t size, const char* attributes);
 };

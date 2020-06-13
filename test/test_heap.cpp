@@ -22,7 +22,7 @@ SUITE(Heap Hook)
    Case(malloc)
    {
       free(malloc(100));
-      BLOCK(10)
+      BLOCK(limit = 10)
       {
          OK(IsNull, malloc(100));
       }
@@ -30,7 +30,7 @@ SUITE(Heap Hook)
    Case(calloc)
    {
       free(calloc(10, 10));
-      BLOCK(10)
+      BLOCK(limit = 10)
       {
          OK(IsNull, calloc(10, 10));
       }
@@ -38,7 +38,7 @@ SUITE(Heap Hook)
    Case(realloc)
    {
       free(realloc(NULL, 100));  // act as malloc
-      BLOCK(10)
+      BLOCK(limit = 10)
       {
          OK(IsNull, realloc(NULL, 100));
       }
@@ -47,7 +47,7 @@ SUITE(Heap Hook)
    {
       delete new C100;
       delete new (std::nothrow) C100;
-      BLOCK(10)
+      BLOCK(limit = 10)
       {
          OK(IsNull, new C100);
          OK(IsNull, new (std::nothrow) C100);
@@ -57,7 +57,7 @@ SUITE(Heap Hook)
    {
       delete[] new char[100];
       delete[] new (std::nothrow) char[100];
-      BLOCK(10)
+      BLOCK(limit = 10)
       {
          OK(IsNull, new char[100]);
          OK(IsNull, new (std::nothrow) char[100]);
@@ -67,7 +67,7 @@ SUITE(Heap Hook)
    Case(strdup)
    {
       free(strdup("1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890"));
-      BLOCK(10)
+      BLOCK(limit = 10)
       {
          OK(IsNull, strdup("1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890"));
       }
@@ -75,7 +75,7 @@ SUITE(Heap Hook)
    Case(strndup)
    {
       free(strndup("1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890", 100));
-      BLOCK(10)
+      BLOCK(limit = 10)
       {
          OK(IsNull, strndup("1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890", 100));
       }
@@ -87,7 +87,7 @@ SUITE(Heap Hook)
       OK(0, posix_memalign(&ptr, 8, 100));
       OK(NotNull, ptr);
       free(ptr);
-      BLOCK(10)
+      BLOCK(limit = 10)
       {
          OK(Not(0), posix_memalign(&ptr, 8, 100));
       }
@@ -97,7 +97,7 @@ SUITE(Heap Hook)
    Case(aligned_alloc)
    {
       free(aligned_alloc(10, 10));
-      BLOCK(10)
+      BLOCK(limit = 10)
       {
          OK(IsNull, aligned_alloc(10, 100));
       }
@@ -108,12 +108,55 @@ SUITE(Heap Hook)
    Case(valloc)
    {
       free(valloc(100));
-      BLOCK(10)
+      BLOCK(limit = 10)
       {
          OK(IsNull, valloc(100));
       }
    }
 #endif
+}
+
+SUITE(parse_block_attributes)
+{
+   long long n_limit;
+   int n_align;
+   unsigned char s_fill[32];
+   int n_fill;
+
+   Case("limit=1000, fill=1, align=3")
+   {
+      const char* x = "limit=1000, fill=1, align=3";
+      h2::parse_block_attributes(x, n_limit, n_align, s_fill, n_fill);
+      OK(1000, n_limit);
+      OK(3, n_align);
+      OK(1, n_fill);
+      OK(Me("\01", 1), s_fill);
+   }
+   Case("limit=0x1000, fill=0x55")
+   {
+      const char* x = "limit =0x1000, fill = 0x55";
+      h2::parse_block_attributes(x, n_limit, n_align, s_fill, n_fill);
+      OK(0x1000, n_limit);
+      OK(8, n_align);
+      OK(1, n_fill);
+      OK(Me("\x55", 1), s_fill);
+   }
+   Case("fill=0x5566")
+   {
+      const char* x = "fill=0x5566";
+      h2::parse_block_attributes(x, n_limit, n_align, s_fill, n_fill);
+      OK(Ge(0xFFFFFFFFU), n_limit);
+      OK(8, n_align);
+      OK(2, n_fill);
+      OK(Me("\x55\x66", 2), s_fill);
+   }
+   Case("fill=60000")
+   {
+      const char* x = "fill=60000";
+      h2::parse_block_attributes(x, n_limit, n_align, s_fill, n_fill);
+      OK(2, n_fill);
+      OK(Me("\x60\xEA", 2), s_fill);
+   }
 }
 
 SUITE(BLOCK)
@@ -147,7 +190,7 @@ SUITE(BLOCK)
 
    Case(limited)
    {
-      BLOCK(10)
+      BLOCK(limit = 10)
       {
          c2 = malloc(8);
          OK(NotNull, c2);

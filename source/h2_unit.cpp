@@ -47,6 +47,7 @@
 
 namespace h2 {
 #include "h2_kit.cpp"
+#include "h2_numeric.cpp"
 #include "h2_color.cpp"
 #include "h2_list.cpp"
 #include "h2_string.cpp"

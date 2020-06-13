@@ -7,7 +7,7 @@ h2_inline void h2_case::prev_setup()
 
 h2_inline void h2_case::post_cleanup()
 {
-   h2_stdio::capture_cout(nullptr);
+   h2_stdio::capture_cancel();
    if (sock) delete sock;
    dnses.clear();
    stubs.clear();

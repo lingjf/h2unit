@@ -79,7 +79,7 @@ SUITE(Memory Leak)
 
    Case(malloc faulty injection successful)
    {
-      BLOCK(10 /* in the block , available memory only 10 bytes */)
+      BLOCK(limit = 10 /* in the block , available memory only 10 bytes */)
       {
          OK(IsNull, malloc(11)); /* no enough available memory */
       }
@@ -91,11 +91,11 @@ SUITE(Memory Leak)
 
    Case(filled malloc successful)
    {
-      /* in the block , malloc allocated space filled with ABC */
-      BLOCK(10000000, "ABC")
+      /* in the block , malloc allocated space filled with 0xABCD */
+      BLOCK(limit = 10000000, fill = 0xABCD)
       {
          char* p = (char*)malloc(8);
-         OK(Me("ABCABCAB"), p);
+         OK(Me("\xAB\xCD\xAB\xCD"), p);
          free(p);
       }
    }

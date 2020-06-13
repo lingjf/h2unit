@@ -67,6 +67,7 @@
 namespace h2 {
 #include "h2_pp.hpp"
 #include "h2_kit.hpp"
+#include "h2_numeric.hpp"
 #include "h2_list.hpp"
 #include "h2_option.hpp"
 #include "h2_libc.hpp"
@@ -126,15 +127,27 @@ namespace h2 {
 
 #ifndef OK
 #   define OK H2OK
+#else
+#   pragma message("OK is already defined using H2OK instead")
 #endif
 
 #define JE(e, a) H2JE(e, a)
 #define MOCK(...) H2MOCK(__VA_ARGS__)
 #define STUB(...) H2STUB(__VA_ARGS__)
-#define BLOCK(...) H2BLOCK(__VA_ARGS__)
+
+#ifndef BLOCK
+#   define BLOCK H2BLOCK
+#endif
+
 #define DNS(...) H2DNS(__VA_ARGS__)
-#define SOCK(...) H2SOCK(__VA_ARGS__)
-#define COUT(...) H2COUT(__VA_ARGS__)
+
+#ifndef SOCK
+#   define SOCK H2SOCK
+#endif
+
+#ifndef COUT
+#   define COUT H2COUT
+#endif
 
 #define MATCHER(...) H2MATCHER(__VA_ARGS__)
 
@@ -249,18 +262,17 @@ using h2::Pair;
 #define H2CASE(name) __H2CASE(name, h2::h2_case::initial, H2Q(h2_case_test_code), H2Q(h2_suite_test_code))
 #define H2TODO(name) __H2CASE(name, h2::h2_case::todo, H2Q(h2_case_test_code), H2Q(h2_suite_test_code))
 
-#define __H2BLOCK0(Qb) for (h2::h2_heap::stack::block Qb(__FILE__, __LINE__); Qb;)
-#define __H2BLOCK1(Qb, ...) for (h2::h2_heap::stack::block Qb(__FILE__, __LINE__, __VA_ARGS__); Qb;)
-#define H2BLOCK(...) H2PP_IF_ELSE(H2PP_IS_EMPTY(__VA_ARGS__), __H2BLOCK0(H2Q(t_block)), __H2BLOCK1(H2Q(t_block), __VA_ARGS__))
+#define __H2BLOCK(Attributes, Qb) for (h2::h2_heap::stack::block Qb(Attributes, __FILE__, __LINE__); Qb;)
+#define H2BLOCK(...) __H2BLOCK(#__VA_ARGS__, H2Q(t_block))
 
 #define H2DNS(...) h2::h2_dns::setaddrinfo(H2PP_NARG(__VA_ARGS__), __VA_ARGS__)
 
-#define __H2SOCK0() h2::h2_socket::start_and_fetch()
-#define __H2SOCK2(packet, size) h2::h2_socket::inject_received(packet, size, nullptr, "*")
-#define __H2SOCK3(packet, size, from) h2::h2_socket::inject_received(packet, size, from, "*")
-#define __H2SOCK4(packet, size, from, to) h2::h2_socket::inject_received(packet, size, from, to)
-#define H2SOCK(...) H2PP_VARIADIC_CALL(__H2SOCK, __VA_ARGS__)
+/* clang-format off */
+#define __H2SOCK0(_Packet, _Size, ...) h2::h2_socket::inject_received(_Packet, _Size, #__VA_ARGS__)
+#define __H2SOCK1(...) h2::h2_socket::start_and_fetch()
+#define H2SOCK(...) H2PP_CAT2(__H2SOCK, H2PP_IS_EMPTY(__VA_ARGS__)) (__VA_ARGS__)
+/* clang-format on */
 
-#define H2COUT(...) h2::h2_stdio::capture_cout(__VA_ARGS__)
+#define H2COUT(...) h2::h2_stdio::capture_cout(#__VA_ARGS__)
 
 #endif

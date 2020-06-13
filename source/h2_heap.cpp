@@ -20,11 +20,11 @@ struct h2_piece : h2_libc {
    bool violate_after_free = false;
    h2_backtrace violate_backtrace;
 
-   h2_piece(int size_, int alignment, const char* who, h2_backtrace& bt) : user_size(size_), who_allocate(who), bt_allocate(bt)
+   h2_piece(int size, int align, const char* who, h2_backtrace& bt) : user_size(size), who_allocate(who), bt_allocate(bt)
    {
       page_size = h2_page_size();
-      if (alignment <= 0) alignment = 8;
-      page_count = ::ceil((user_size + alignment) / (double)page_size);
+      if (align <= 0) align = 8;
+      page_count = ::ceil((user_size + align) / (double)page_size);
 
 #ifdef _WIN32
       page_ptr = (unsigned char*)VirtualAlloc(NULL, page_size * (page_count + 1), MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
@@ -35,7 +35,7 @@ struct h2_piece : h2_libc {
 #endif
 
       user_ptr = page_ptr + page_size * page_count - user_size;
-      user_ptr = (unsigned char*)(((long long)user_ptr / alignment) * alignment);
+      user_ptr = (unsigned char*)(((long long)user_ptr / align) * align);
 
       mark_snowfield();
    }
@@ -207,14 +207,16 @@ struct h2_block : h2_libc {
    h2_list x;
    h2_list pieces;
 
+   long long limited;
+   int alignment;
+   unsigned char s_fill[32];
+   int n_fill;
+   const char* where;
    const char* file;
    int line;
-   const char* where;
-   long long limited;
-   const char* fill;
 
-   h2_block(const char* file_, int line_, const char* where_, long long limited_, const char* fill_)
-     : file(file_), line(line_), where(where_), limited(limited_), fill(fill_) {}
+   h2_block(long long _limited, int _alignment, unsigned char _s_fill[32], int _n_fill, const char* _where, const char* _file, int _line)
+     : limited(_limited), alignment(_alignment), n_fill(_n_fill), where(_where), file(_file), line(_line) { memcpy(s_fill, _s_fill, _n_fill); }
 
    h2_fail* check()
    {
@@ -233,16 +235,27 @@ struct h2_block : h2_libc {
       return nullptr;
    }
 
-   h2_piece* new_piece(const char* who, int size, int alignment, const char* fill_, h2_backtrace& bt)
+   h2_piece* new_piece(const char* who, int size, int align, unsigned char c_fill, bool fill, h2_backtrace& bt)
    {
       if (limited < size) return nullptr;
       limited -= size;
 
-      h2_piece* p = new h2_piece(size, alignment, who, bt);
+      // allocate action alignment is prior to block level alignment
+      if (align == 0)
+         align = alignment;
 
-      if (fill_ ? fill_ : (fill_ = fill))
-         for (int i = 0, j = 0, l = strlen(fill_); i < size; ++i, ++j)
-            ((char*)p->user_ptr)[i] = fill_[j % (l ? l : 1)];
+      h2_piece* p = new h2_piece(size, align, who, bt);
+
+      // allocate action fill is prior to block level fill
+      unsigned char* s_filling = s_fill;
+      int n_filling = n_fill;
+      if (fill) {
+         s_filling = &c_fill;
+         n_filling = 1;
+      }
+      if (0 < n_filling)
+         for (int i = 0, j = 0; i < size; ++i, ++j)
+            ((unsigned char*)p->user_ptr)[i] = s_filling[j % n_filling];
 
       pieces.push(p->x);
       return p;
@@ -273,9 +286,9 @@ struct h2_stack {
    h2_singleton(h2_stack);
    h2_list blocks;
 
-   void push(const char* file, int line, const char* where, long long limited, const char* fill)
+   void push(long long limited, int align, unsigned char s_fill[32], int n_fill, const char* where, const char* file, int line)
    {
-      h2_block* b = new h2_block(file, line, where, limited, fill);
+      h2_block* b = new h2_block(limited, align, s_fill, n_fill, where, file, line);
       blocks.push(b->x);
    }
 
@@ -287,11 +300,11 @@ struct h2_stack {
       return fail;
    }
 
-   h2_piece* new_piece(const char* who, size_t size, size_t alignment, const char* fill)
+   h2_piece* new_piece(const char* who, size_t size, size_t align, const char* fill)
    {
       h2_backtrace bt(O.isMAC() ? 3 : 2);
       h2_block* b = h2_patch::exempt(bt) ? h2_list_bottom_entry(blocks, h2_block, x) : h2_list_top_entry(blocks, h2_block, x);
-      return b ? b->new_piece(who, size, alignment, fill, bt) : nullptr;
+      return b ? b->new_piece(who, size, align, fill ? *fill : 0, fill, bt) : nullptr;
    }
 
    h2_piece* get_piece(const void* ptr)
@@ -629,19 +642,66 @@ h2_inline void h2_heap::unhook()
 
 h2_inline void h2_heap::stack::root()
 {
-   h2_stack::I().push(__FILE__, __LINE__, "root", LLONG_MAX >> 9, nullptr);
+   h2_stack::I().push(LLONG_MAX >> 9, 8, nullptr, 0, "root", __FILE__, __LINE__);
 }
-h2_inline void h2_heap::stack::push(const char* file, int line, long long limited, const char* fill)
+h2_inline void h2_heap::stack::push(const char* file, int line)
 {
-   h2_stack::I().push(file, line, "case", limited, fill);
+   h2_stack::I().push(LLONG_MAX >> 9, 8, nullptr, 0, "case", file, line);
 }
 h2_inline h2_fail* h2_heap::stack::pop()
 {
    return h2_stack::I().pop();
 }
-h2_inline h2_heap::stack::block::block(const char* file, int line, long long limited, const char* fill)
+
+static inline void parse_block_attributes(const char* attributes, long long& n_limit, int& n_align, unsigned char s_fill[32], int& n_fill)
 {
-   h2_stack::I().push(file, line, "block", limited, fill);
+   n_limit = LLONG_MAX >> 9;
+   n_align = 8;
+   n_fill = 0;
+
+   const char* p_limit = strcasestr(attributes, "limit");
+   if (p_limit) {
+      n_limit = h2_numeric::parse_int_after_equal(p_limit);
+   }
+
+   const char* p_align = strcasestr(attributes, "align");
+   if (p_align) {
+      n_align = (int)h2_numeric::parse_int_after_equal(p_align);
+   }
+
+   const char* p_fill = strcasestr(attributes, "fill");
+   if (p_fill) {
+      const char* p = strchr(p_fill, '=');
+      if (p) {
+         for (p += 1; *p && ::isspace(*p);) p++;  // strip left space
+
+         if (p[0] == '0' && ::tolower(p[1]) == 'x') {
+            n_fill = h2_numeric::hex_to_bytes(p + 2, s_fill);
+         } else {
+            long long v = strtoll(p, (char**)NULL, 10);
+            if (v <= 0xFFU)
+               n_fill = 1, *((unsigned char*)s_fill) = (unsigned char)v;
+            else if (v <= 0xFFFFU)
+               n_fill = 2, *((unsigned short*)s_fill) = (unsigned short)v;
+            else if (v <= 0xFFFFFFFFU)
+               n_fill = 4, *((unsigned int*)s_fill) = (unsigned int)v;
+            else
+               n_fill = 8, *((unsigned long long*)s_fill) = (unsigned long long)v;
+         }
+      }
+   }
+}
+
+h2_inline h2_heap::stack::block::block(const char* attributes, const char* file, int line)
+{
+   long long n_limit;
+   int n_align;
+   unsigned char s_fill[32];
+   int n_fill;
+
+   parse_block_attributes(attributes, n_limit, n_align, s_fill, n_fill);
+
+   h2_stack::I().push(n_limit, n_align, s_fill, n_fill, "block", file, line);
 }
 h2_inline h2_heap::stack::block::~block()
 {
