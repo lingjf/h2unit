@@ -1,4 +1,4 @@
-﻿/* v5.5  2020-06-13 09:45:41 */
+﻿/* v5.5  2020-06-13 12:13:58 */
 /* https://github.com/lingjf/h2unit */
 /* Apache Licence 2.0 */
 #ifndef __H2UNIT_HPP__
@@ -1034,24 +1034,32 @@ struct h2_equals<E, typename std::enable_if<h2_stringable<E>::value>::type> {
 };
 
 template <typename E>
-struct h2_equals<E, typename std::enable_if<std::is_floating_point<E>::value>::type> {
-   const long double e, epsilon;
-   explicit h2_equals(const E& _e, const long double _epsilon = 0) : e((long double)_e), epsilon(_epsilon) {}
+struct h2_equals<E, typename std::enable_if<std::is_arithmetic<E>::value>::type> {
+   const E e;
+   const long double epsilon;
+   explicit h2_equals(const E& _e, const long double _epsilon = 0) : e(_e), epsilon(_epsilon) {}
 
-   h2_fail* matches(const long double& a, bool caseless = false, bool dont = false) const
+   template <typename A>
+   h2_fail* matches(const A& a, bool caseless = false, bool dont = false) const
    {
-      // the machine epsilon has to be scaled to the magnitude of the values used
-      // and multiplied by the desired precision in ULPs (units in the last place)
-      // bool result = std::fabs(a - e) < std::numeric_limits<double>::epsilon() * std::fabs(a + e) * 2
-      //      || std::fabs(a - e) < std::numeric_limits<double>::min();  // unless the result is subnormal
-      long double _epsilon = epsilon;
-      if (_epsilon == 0) _epsilon = 0.00001;
-      bool result = std::fabs(a - e) < _epsilon;
+      bool result;
+      if (std::is_floating_point<E>::value || std::is_floating_point<A>::value) {
+         //
+         // the machine epsilon has to be scaled to the magnitude of the values used
+         // and multiplied by the desired precision in ULPs (units in the last place)
+         // bool result = std::fabs(a - e) < std::numeric_limits<double>::epsilon() * std::fabs(a + e) * 2
+         //      || std::fabs(a - e) < std::numeric_limits<double>::min();  // unless the result is subnormal
+         long double _epsilon = epsilon;
+         if (_epsilon == 0) _epsilon = 0.00001;
+         result = std::fabs((const long double)a - (const long double)e) < _epsilon;
+      } else {
+         result = a == e;
+      }
       if (result == !dont) return nullptr;
       return new h2_fail_unexpect(h2_stringify(e), h2_stringify(a), expects(a, false, dont));
    }
-
-   h2_string expects(const long double& a, bool caseless = false, bool dont = false) const
+   template <typename A>
+   h2_string expects(const A& a, bool caseless = false, bool dont = false) const
    {
       return CD(h2_stringify(e), caseless, dont);
    }
