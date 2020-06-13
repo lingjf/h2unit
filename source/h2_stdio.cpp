@@ -4,13 +4,13 @@ struct h2__stdio {
    h2_stubs stubs;
    h2_string* buffer;
    bool stdout_capturable = false, stderr_capturable = false, syslog_capturable = false;
-   size_t length = 0;
+   size_t capture_length = 0;
 
    static ssize_t write(int fd, const void* buf, size_t count)
    {
       h2_libc::write(fd, buf, count);
       if (fd == fileno(stdout) || fd == fileno(stderr))
-         I().length += count;
+         I().capture_length += count;
       if ((I().stdout_capturable && fd == fileno(stdout)) || (I().stderr_capturable && fd == fileno(stderr)))
          I().buffer->append((char*)buf, count);
       return count;
@@ -138,11 +138,9 @@ struct h2__stdio {
    const char* toggle_capture()
    {
       if (capturing)
-         stop_capture();
+         return stop_capture();
       else
-         start_capture(true, true, true);
-
-      return buffer->c_str();
+         return start_capture(true, true, true);
    }
 };
 
@@ -152,9 +150,9 @@ h2_inline void h2_stdio::initialize()
    h2__stdio::I().buffer = new h2_string();
 }
 
-h2_inline size_t h2_stdio::get_length()
+h2_inline size_t h2_stdio::capture_length()
 {
-   return h2__stdio::I().length;
+   return h2__stdio::I().capture_length;
 }
 
 h2_inline const char* h2_stdio::capture_cout(const char* type)

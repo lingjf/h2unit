@@ -8,6 +8,7 @@ struct h2_suite {
    h2_stubs stubs;
    h2_mocks mocks;
    int stats[h2_case::statuss]{0};
+   int checks = 0;
    jmp_buf jump;
    bool jumpable = false;
    void (*test_code)(h2_suite*, h2_case*);

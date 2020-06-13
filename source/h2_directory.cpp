@@ -61,14 +61,6 @@ h2_inline void h2_directory::sort()
       save_last_order();
 }
 
-h2_inline int h2_directory::count()
-{
-   int count = 0;
-   h2_list_for_each_entry (s, h2_directory::I().suites, h2_suite, x)
-      count += s->cases.count();
-   return count;
-}
-
 h2_inline void h2_directory::drop_last_order()
 {
    ::remove(last_order_file_path);

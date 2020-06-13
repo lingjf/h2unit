@@ -90,19 +90,19 @@ namespace h2 {
 #include "h2_matches.hpp"
 #include "h2_matcheu.hpp"
 #include "h2_attendance.hpp"
-#include "h2_routine.hpp"
+#include "h2_function.hpp"
 #include "h2_mock.hpp"
 #include "h2_stdio.hpp"
 #include "h2_dns.hpp"
 #include "h2_socket.hpp"
 #include "h2_case.hpp"
 #include "h2_suite.hpp"
-#include "h2_report.hpp"
 #include "h2_directory.hpp"
 #include "h2_check.hpp"
 #include "h2_generator.hpp"
 #include "h2_patch.hpp"
 #include "h2_task.hpp"
+#include "h2_report.hpp"
 }  // namespace h2
 
 /* ======> Interface <====== */
@@ -116,24 +116,26 @@ namespace h2 {
 #define GlobalCaseSetup() H2GlobalCaseSetup()
 #define GlobalCaseTeardown() H2GlobalCaseTeardown()
 
-#define SUITE(...) H2SUITE(#__VA_ARGS__)
-#define CASE(...) H2CASE(#__VA_ARGS__)
-#define TODO(...) H2TODO(#__VA_ARGS__)
+#define SUITE H2SUITE
+#define CASE H2CASE
+#define TODO H2TODO
+#define Case H2Case
+#define Todo H2Todo
 
 #define Cleanup() H2Cleanup()
-
-#define Case(...) H2Case(#__VA_ARGS__)
-#define Todo(...) H2Todo(#__VA_ARGS__)
 
 #ifndef OK
 #   define OK H2OK
 #else
-#   pragma message("OK is already defined using H2OK instead")
+#   pragma message("OK conflict, using H2OK instead")
 #endif
 
-#define JE(e, a) H2JE(e, a)
-#define MOCK(...) H2MOCK(__VA_ARGS__)
-#define STUB(...) H2STUB(__VA_ARGS__)
+#ifndef JE
+#   define JE H2JE
+#endif
+
+#define MOCK H2MOCK
+#define STUB H2STUB
 
 #ifndef BLOCK
 #   define BLOCK H2BLOCK
@@ -151,10 +153,10 @@ namespace h2 {
 
 #define MATCHER(...) H2MATCHER(__VA_ARGS__)
 
-#define CASES(name, ...) H2CASES(#name, __VA_ARGS__)
-#define CASESS(name, ...) H2CASESS(#name, __VA_ARGS__)
-#define Cases(name, ...) H2Cases(#name, __VA_ARGS__)
-#define Casess(name, ...) H2Casess(#name, __VA_ARGS__)
+#define CASES H2CASES
+#define CASESS H2CASESS
+#define Cases H2Cases
+#define Casess H2Casess
 
 /* clang-format off */
 using h2::_;
@@ -225,7 +227,7 @@ using h2::Pair;
    static h2::h2_suite H2Q(suite)(name, &QP, __FILE__, __LINE__); \
    static void QP(h2::h2_suite* ________suite, h2::h2_case* _________case)
 
-#define H2SUITE(name) __H2SUITE(name, H2Q(h2_suite_test))
+#define H2SUITE(...) __H2SUITE(#__VA_ARGS__, H2Q(h2_suite_test))
 
 #define __H2Cleanup()                      \
    if (::setjmp(________suite->jump) == 0) \
@@ -242,8 +244,8 @@ using h2::Pair;
          for (h2::h2_case::cleaner Q2(&Qc); Q2;)                                 \
             if (::setjmp(Qc.jump) == 0)
 
-#define H2Case(name) __H2Case(name, h2::h2_case::initial, H2Q(t_case), H2Q(_1), H2Q(_2))
-#define H2Todo(name) __H2Case(name, h2::h2_case::todo, H2Q(t_case), H2Q(_1), H2Q(_2))
+#define H2Case(...) __H2Case(#__VA_ARGS__, h2::h2_case::initial, H2Q(t_case), H2Q(_1), H2Q(_2))
+#define H2Todo(...) __H2Case(#__VA_ARGS__, h2::h2_case::todo, H2Q(t_case), H2Q(_1), H2Q(_2))
 
 #define __H2CASE(name, status, QR, QP)                                     \
    static void QR();                                                       \
@@ -259,8 +261,8 @@ using h2::Pair;
    static h2::h2_suite H2Q(suite)("Anonymous", &QP, __FILE__, __LINE__);   \
    static void QR()
 
-#define H2CASE(name) __H2CASE(name, h2::h2_case::initial, H2Q(h2_case_test_code), H2Q(h2_suite_test_code))
-#define H2TODO(name) __H2CASE(name, h2::h2_case::todo, H2Q(h2_case_test_code), H2Q(h2_suite_test_code))
+#define H2CASE(...) __H2CASE(#__VA_ARGS__, h2::h2_case::initial, H2Q(h2_case_test_code), H2Q(h2_suite_test_code))
+#define H2TODO(...) __H2CASE(#__VA_ARGS__, h2::h2_case::todo, H2Q(h2_case_test_code), H2Q(h2_suite_test_code))
 
 #define __H2BLOCK(Attributes, Qb) for (h2::h2_heap::stack::block Qb(Attributes, __FILE__, __LINE__); Qb;)
 #define H2BLOCK(...) __H2BLOCK(#__VA_ARGS__, H2Q(t_block))

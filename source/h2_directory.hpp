@@ -6,5 +6,4 @@ struct h2_directory {
 
    static void drop_last_order();
    static void sort();
-   static int count();
 };

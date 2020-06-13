@@ -18,12 +18,13 @@ struct h2_thunk {
          return nullptr;
       }
 #else
-      long long pagesize = (long long)h2_page_size();
-      long long start = reinterpret_cast<long long>(origin_fp);
-      long long pagestart = start & (~(pagesize - 1));
-      int pagecount = ::ceil((start + sizeof(saved_code) - pagestart) / (double)pagesize);
+      /* uintptr_t is favourite, but is optional type in c++ std, using unsigned long long for portable */
+      unsigned long long page_size = (unsigned long long)h2_page_size();
+      unsigned long long origin_start = reinterpret_cast<unsigned long long>(origin_fp);
+      unsigned long long page_start = origin_start & ~(page_size - 1);
+      int page_count = ::ceil((origin_start + sizeof(saved_code) - page_start) / (double)page_size);
 
-      if (mprotect(reinterpret_cast<void*>(pagestart), pagecount * pagesize, PROT_READ | PROT_WRITE | PROT_EXEC) != 0) {
+      if (mprotect(reinterpret_cast<void*>(page_start), page_count * page_size, PROT_READ | PROT_WRITE | PROT_EXEC) != 0) {
          ::printf("STUB: mprotect PROT_READ | PROT_WRITE | PROT_EXEC failed %s\n", strerror(errno));
          return nullptr;
       }

@@ -67,14 +67,14 @@ static inline void h2_sleep(long long milliseconds)
 #endif
 }
 
-static inline int h2_page_size()
+static inline unsigned h2_page_size()
 {
-   static int s_page_size = 0;
+   static unsigned s_page_size = 0;
    if (s_page_size == 0) {
 #ifdef _WIN32
       SYSTEM_INFO si;
       GetSystemInfo(&si);
-      s_page_size = (int)si.dwPageSize;
+      s_page_size = (unsigned)si.dwPageSize;
 #else
       s_page_size = sysconf(_SC_PAGESIZE);
 #endif
@@ -82,14 +82,14 @@ static inline int h2_page_size()
    return s_page_size;
 }
 
-static inline int h2_term_size()
+static inline unsigned h2_term_size()
 {
 #ifdef _WIN32
    return 80;
 #else
    struct winsize w;
    if (-1 == ioctl(STDOUT_FILENO, TIOCGWINSZ, &w)) return 80;
-   return w.ws_col;
+   return w.ws_col < 16 || 256 < w.ws_col ? 80 : w.ws_col;
 #endif
 }
 

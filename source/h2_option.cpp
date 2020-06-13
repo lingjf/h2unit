@@ -1,4 +1,8 @@
 
+#ifndef H2UNIT_VERSION
+#   define H2UNIT_VERSION "dev"
+#endif
+
 static inline void usage()
 {
    ::printf("  \033[33m╭─────────────────────────────────────────────────────────────────────────╮\033[0m\n");

@@ -2,10 +2,12 @@
 struct h2_task {
    h2_singleton(h2_task);
 
-   h2_reports reports;
    h2_stubs stubs;
    h2_mocks mocks;
    int stats[h2_case::statuss]{0};
+   int suites = 0, cases = 0;
+   int checks = 0;
+   int rounds = 0;
    h2_suite* current_suite = nullptr;
    h2_case* current_case = nullptr;
    std::vector<void (*)()> global_setups, global_teardowns;
@@ -33,6 +35,13 @@ static inline void h2_mock_g(h2_mock* mock)
       h2_task::I().current_suite->mocks.add(mock) && h2_task::I().current_suite->stubs.add(mock->origin_fp, mock->substitute_fp, mock->origin_fn, "", mock->file, mock->line);
    else
       h2_task::I().mocks.add(mock) && h2_task::I().stubs.add(mock->origin_fp, mock->substitute_fp, mock->origin_fn, "", mock->file, mock->line);
+}
+
+static inline void h2_check_g()
+{
+   if (h2_task::I().current_case) h2_task::I().current_case->checks += 1;
+   if (h2_task::I().current_suite) h2_task::I().current_suite->checks += 1;
+   h2_task::I().checks += 1;
 }
 
 static inline void h2_fail_g(h2_fail* fail, bool defer)

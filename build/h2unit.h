@@ -1,4 +1,4 @@
-﻿/* v5.5  2020-06-13 12:13:58 */
+﻿/* v5.5  2020-06-13 22:28:08 */
 /* https://github.com/lingjf/h2unit */
 /* Apache Licence 2.0 */
 #ifndef __H2UNIT_HPP__
@@ -1991,20 +1991,20 @@ struct h2_attendance {
 };
 
 template <typename Class, typename F>
-struct h2_routine;
+struct h2_function;
 
 template <typename Class, typename Return, typename... Args>
-struct h2_routine<Class, Return(Args...)> {
+struct h2_function<Class, Return(Args...)> {
    std::function<Return(Args...)> normal_function = {}; // functional alignment issue
    std::function<Return(Class*, Args...)> member_function = {};
    void* origin_function = nullptr;
    Return return_value;
    bool empty = false;
 
-   h2_routine() { empty = true; }
-   h2_routine(Return r) : return_value(r) {}
-   h2_routine(std::function<Return(Args...)> f) : normal_function(f) {}
-   h2_routine(std::function<Return(Class*, Args...)> f) : member_function(f) {}
+   h2_function() { empty = true; }
+   h2_function(Return r) : return_value(r) {}
+   h2_function(std::function<Return(Args...)> f) : normal_function(f) {}
+   h2_function(std::function<Return(Class*, Args...)> f) : member_function(f) {}
 
    Return operator()(Class* that, Args... args)
    {
@@ -2024,15 +2024,15 @@ struct h2_routine<Class, Return(Args...)> {
 };
 
 template <typename Class, typename... Args>
-struct h2_routine<Class, void(Args...)> {
+struct h2_function<Class, void(Args...)> {
    std::function<void(Args...)> normal_function = {};
    std::function<void(Class*, Args...)> member_function = {};
    void* origin_function = nullptr;
    bool empty = false;
 
-   h2_routine() { empty = true; }
-   h2_routine(std::function<void(Args...)> f) : normal_function(f) {}
-   h2_routine(std::function<void(Class*, Args...)> f) : member_function(f) {}
+   h2_function() { empty = true; }
+   h2_function(std::function<void(Args...)> f) : normal_function(f) {}
+   h2_function(std::function<void(Class*, Args...)> f) : member_function(f) {}
 
    void operator()(Class* that, Args... args)
    {
@@ -2049,6 +2049,8 @@ struct h2_routine<Class, void(Args...)> {
    }
 };
 
+static inline void h2_check_g();
+
 struct h2_mock : h2_libc {
    h2_list x;
    void *origin_fp, *substitute_fp;
@@ -2064,12 +2066,7 @@ struct h2_mock : h2_libc {
 
    virtual void reset() = 0;
 
-   h2_fail* times_check()
-   {
-      h2_fail* fail = nullptr;
-      for (auto& c : attendance_array) h2_fail::append_subling(fail, c.check(origin_fn, file, line));
-      return fail;
-   }
+   h2_fail* times_check();
 };
 
 static inline void h2_mock_g(h2_mock*);
@@ -2099,6 +2096,7 @@ struct h2_tuple_match {
       h2_fail* f = std::get<N - 1>(matchers).matches(std::get<N - 1>(arguments));
       if (f) f->set_locate(file, line, func, N - 1);
       h2_fail::append_subling(fail, f);
+      h2_check_g();
       return fail;
    }
 };
@@ -2162,28 +2160,28 @@ class h2_mocker<Counter, Lineno, Class, Return(Args...)> : h2_mock {
                                    h2_matcher<h2_nth_decay<9, Args...>>>;
 
    h2_vector<MatcherTuple> matchers_array;
-   h2_vector<h2_routine<Class, Return(Args...)>> r_array;
+   h2_vector<h2_function<Class, Return(Args...)>> function_array;
 
    static Return normal_function_stub(Args... args)
    {
-      int r_index = I().matches(std::forward<Args>(args)...);
-      if (!I().r_array[r_index].empty)
-         return I().r_array[r_index](nullptr, std::forward<Args>(args)...);
+      int index = I().matches(std::forward<Args>(args)...);
+      if (!I().function_array[index].empty)
+         return I().function_array[index](nullptr, std::forward<Args>(args)...);
 
       h2::h2_stub_temporary_restore t(I().origin_fp);
-      I().r_array[r_index].origin_function = I().origin_fp;
-      return I().r_array[r_index](nullptr, std::forward<Args>(args)...);
+      I().function_array[index].origin_function = I().origin_fp;
+      return I().function_array[index](nullptr, std::forward<Args>(args)...);
    }
 
    static Return member_function_stub(Class* that, Args... args)
    {
-      int r_index = I().matches(std::forward<Args>(args)...);
-      if (!I().r_array[r_index].empty)
-         return I().r_array[r_index](that, std::forward<Args>(args)...);
+      int index = I().matches(std::forward<Args>(args)...);
+      if (!I().function_array[index].empty)
+         return I().function_array[index](that, std::forward<Args>(args)...);
 
       h2::h2_stub_temporary_restore t(I().origin_fp);
-      I().r_array[r_index].origin_function = I().origin_fp;
-      return I().r_array[r_index](that, std::forward<Args>(args)...);
+      I().function_array[index].origin_function = I().origin_fp;
+      return I().function_array[index](that, std::forward<Args>(args)...);
    }
 
    h2_fail* matches(MatcherTuple& matchers, ArgumentTuple& arguments)
@@ -2195,29 +2193,29 @@ class h2_mocker<Counter, Lineno, Class, Return(Args...)> : h2_mock {
    int matches(Args... args)
    {
       ArgumentTuple at = std::forward_as_tuple(std::forward<Args>(args)..., 0);
-      int c_offset = -1;
+      int attendance_offset = -1;
       for (int i = attendance_index; i < attendance_array.size(); ++i) {
          h2_fail* fail = matches(matchers_array[i], at);
          if (fail) {
             if (attendance_array[i].is_not_enough()) h2_fail_g(fail, false);
             if (attendance_array[i].is_satisfied()) delete fail; /* continue; try next h2_attendance */
          } else {
-            ++attendance_array[c_offset = i];
+            ++attendance_array[attendance_offset = i];
             if (attendance_array[i].is_saturated()) attendance_index += 1;
             break;
          }
       }
-      if (-1 == c_offset) {
+      if (-1 == attendance_offset) {
          h2_fail_g(new h2_fail_call(origin_fn, "", "exceed", file, line), false);
       }
-      return c_offset;
+      return attendance_offset;
    }
 
    void reset() override
    {
       attendance_array.clear();
       matchers_array.clear();
-      r_array.clear();
+      function_array.clear();
       attendance_index = 0;
    }
 
@@ -2237,7 +2235,7 @@ class h2_mocker<Counter, Lineno, Class, Return(Args...)> : h2_mock {
    {
       attendance_array.push_back(h2_attendance(1, 1));
       matchers_array.push_back(std::forward_as_tuple(FORWARD_Matcher_0_1_2_3_4_5_6_7_8_9));
-      r_array.push_back(h2_routine<Class, Return(Args...)>());
+      function_array.push_back(h2_function<Class, Return(Args...)>());
       return *this;
    }
 
@@ -2245,7 +2243,7 @@ class h2_mocker<Counter, Lineno, Class, Return(Args...)> : h2_mock {
    {
       attendance_array.push_back(h2_attendance(2, 2));
       matchers_array.push_back(std::forward_as_tuple(FORWARD_Matcher_0_1_2_3_4_5_6_7_8_9));
-      r_array.push_back(h2_routine<Class, Return(Args...)>());
+      function_array.push_back(h2_function<Class, Return(Args...)>());
       return *this;
    }
 
@@ -2253,7 +2251,7 @@ class h2_mocker<Counter, Lineno, Class, Return(Args...)> : h2_mock {
    {
       attendance_array.push_back(h2_attendance(count, count));
       matchers_array.push_back(MatcherTuple());
-      r_array.push_back(h2_routine<Class, Return(Args...)>());
+      function_array.push_back(h2_function<Class, Return(Args...)>());
       return *this;
    }
 
@@ -2261,7 +2259,7 @@ class h2_mocker<Counter, Lineno, Class, Return(Args...)> : h2_mock {
    {
       attendance_array.push_back(h2_attendance(0, INT_MAX));
       matchers_array.push_back(std::forward_as_tuple(FORWARD_Matcher_0_1_2_3_4_5_6_7_8_9));
-      r_array.push_back(h2_routine<Class, Return(Args...)>());
+      function_array.push_back(h2_function<Class, Return(Args...)>());
       return *this;
    }
 
@@ -2269,7 +2267,7 @@ class h2_mocker<Counter, Lineno, Class, Return(Args...)> : h2_mock {
    {
       attendance_array.push_back(h2_attendance(count, INT_MAX));
       matchers_array.push_back(MatcherTuple());
-      r_array.push_back(h2_routine<Class, Return(Args...)>());
+      function_array.push_back(h2_function<Class, Return(Args...)>());
       return *this;
    }
 
@@ -2277,7 +2275,7 @@ class h2_mocker<Counter, Lineno, Class, Return(Args...)> : h2_mock {
    {
       attendance_array.push_back(h2_attendance(0, count));
       matchers_array.push_back(MatcherTuple());
-      r_array.push_back(h2_routine<Class, Return(Args...)>());
+      function_array.push_back(h2_function<Class, Return(Args...)>());
       return *this;
    }
 
@@ -2285,7 +2283,7 @@ class h2_mocker<Counter, Lineno, Class, Return(Args...)> : h2_mock {
    {
       attendance_array.push_back(h2_attendance(left, right));
       matchers_array.push_back(MatcherTuple());
-      r_array.push_back(h2_routine<Class, Return(Args...)>());
+      function_array.push_back(h2_function<Class, Return(Args...)>());
       return *this;
    }
 
@@ -2309,25 +2307,25 @@ class h2_mocker<Counter, Lineno, Class, Return(Args...)> : h2_mock {
 
    h2_mocker& returns()
    {
-      if (!r_array.empty()) r_array.back().empty = false;
+      if (!function_array.empty()) function_array.back().empty = false;
       return *this;
    }
 
-   h2_mocker& returns(h2_routine<Class, Return(Args...)> r)
+   h2_mocker& returns(h2_function<Class, Return(Args...)> r)
    {
-      if (!r_array.empty()) r_array.back() = r;
+      if (!function_array.empty()) function_array.back() = r;
       return *this;
    }
 
    h2_mocker& does(std::function<Return(Args...)> f)
    {
-      if (!r_array.empty()) r_array.back() = h2_routine<Class, Return(Args...)>(f);
+      if (!function_array.empty()) function_array.back() = h2_function<Class, Return(Args...)>(f);
       return *this;
    }
 
    h2_mocker& does(std::function<Return(Class*, Args...)> f)
    {
-      if (!r_array.empty()) r_array.back() = h2_routine<Class, Return(Args...)>(f);
+      if (!function_array.empty()) function_array.back() = h2_function<Class, Return(Args...)>(f);
       return *this;
    }
 
@@ -2360,7 +2358,7 @@ struct h2_mocks {
 
 struct h2_stdio {
    static void initialize();
-   static size_t get_length();
+   static size_t capture_length();
    static const char* capture_cout(const char* type);
    static void capture_cancel();
 };
@@ -2455,6 +2453,7 @@ struct h2_case {
    h2_list x;
    int seq = 0;
    int status = initial;
+   int checks = 0;
    jmp_buf jump;
    h2_fail* fails{nullptr};
    h2_stubs stubs;
@@ -2487,6 +2486,7 @@ struct h2_suite {
    h2_stubs stubs;
    h2_mocks mocks;
    int stats[h2_case::statuss]{0};
+   int checks = 0;
    jmp_buf jump;
    bool jumpable = false;
    void (*test_code)(h2_suite*, h2_case*);
@@ -2511,28 +2511,6 @@ struct h2_suite {
    };
 };
 
-struct h2_report {
-   int total_cases = 0, done_cases = 0, percentage = 0, ss = 0, cs = 0;
-   long long tt = 0, ts = 0, tc = 0;
-   virtual void on_task_start(int cases);
-   virtual void on_task_endup(int stats[h2_case::statuss], int round);
-   virtual void on_suite_start(h2_suite* s);
-   virtual void on_suite_endup(h2_suite* s);
-   virtual void on_case_start(h2_suite* s, h2_case* c);
-   virtual void on_case_endup(h2_suite* s, h2_case* c);
-};
-
-struct h2_reports {
-   std::vector<h2_report*> reports;
-   void initialize();
-   void on_task_start(int cases);
-   void on_task_endup(int stats[h2_case::statuss], int round);
-   void on_suite_start(h2_suite* s);
-   void on_suite_endup(h2_suite* s);
-   void on_case_start(h2_suite* s, h2_case* c);
-   void on_case_endup(h2_suite* s, h2_case* c);
-};
-
 struct h2_directory {
    h2_singleton(h2_directory);
 
@@ -2540,7 +2518,6 @@ struct h2_directory {
 
    static void drop_last_order();
    static void sort();
-   static int count();
 };
 
 struct h2_defer_fail : h2_once {
@@ -2558,6 +2535,7 @@ struct h2_defer_fail : h2_once {
 static inline h2_ostringstream& h2_OK1(bool a, h2_defer_fail* d)
 {
    if (!a) d->fail = new h2_fail_unexpect("true", "false");
+   h2_check_g();
    return d->oss;
 }
 
@@ -2571,6 +2549,7 @@ static inline h2_ostringstream& h2_OK2(E e, A a, h2_defer_fail* d)
       d->fail = new h2_fail_unexpect();
       h2_fail::append_child(d->fail, fail);
    }
+   h2_check_g();
    return d->oss;
 }
 
@@ -2578,6 +2557,7 @@ static inline h2_ostringstream& h2_JE(h2_string e, h2_string a, h2_defer_fail* d
 {
    h2::h2_matcher<h2_string> m = Je(e);
    d->fail = m.matches(a);
+   h2_check_g();
    return d->oss;
 }
 
@@ -2654,7 +2634,7 @@ static inline h2_ostringstream& h2_JE(h2_string e, h2_string a, h2_defer_fail* d
    H2ForEach(_ForEach_CASE_Macro, (name, Qc), __VA_ARGS__); \
    template <typename T>                                    \
    void Qc(T x)
-#define H2CASES(name, ...) _ForEach_CASE_Impl(name, H2Q(f), __VA_ARGS__)
+#define H2CASES(name, ...) _ForEach_CASE_Impl(#name, H2Q(f), __VA_ARGS__)
 
 #define ___Fullmesh_CASE_Macro(name, Qc, x, y) \
    CASE(name x, y) { Qc(x, y); }
@@ -2666,7 +2646,7 @@ static inline h2_ostringstream& h2_JE(h2_string e, h2_string a, h2_defer_fail* d
    H2Fullmesh(_Fullmesh_CASE_Macro, (name, Qc), __VA_ARGS__); \
    template <typename T, typename U>                          \
    void Qc(T x, U y)
-#define H2CASESS(name, ...) _Fullmesh_CASE_Impl(name, H2Q(f), __VA_ARGS__)
+#define H2CASESS(name, ...) _Fullmesh_CASE_Impl(#name, H2Q(f), __VA_ARGS__)
 
 #define ___ForEach_Case_Macro(name, Qj, Qb, Qx, Ql, x) \
    Case(name x)                                        \
@@ -2688,7 +2668,7 @@ static inline h2_ostringstream& h2_JE(h2_string e, h2_string a, h2_defer_fail* d
    H2ForEach(_ForEach_Case_Macro, (name, Qj, Qb, Qx, Ql), __VA_ARGS__); \
    Ql:                                                                  \
    for (auto x = Qx; Qb; Qb = false, ::longjmp(Qj, 1))
-#define H2Cases(name, ...) _ForEach_Case_Impl(name, H2Q(j), H2Q(b), H2Q(v), H2Q(l), __VA_ARGS__)
+#define H2Cases(name, ...) _ForEach_Case_Impl(#name, H2Q(j), H2Q(b), H2Q(v), H2Q(l), __VA_ARGS__)
 
 #define ___Fullmesh_Case_Macro(name, Qj, Qb, Ql, Qx, Qy, x, y) \
    Case(name x, y)                                             \
@@ -2713,7 +2693,7 @@ static inline h2_ostringstream& h2_JE(h2_string e, h2_string a, h2_defer_fail* d
    Ql:                                                                        \
    for (auto x = Qx; Qb; ::longjmp(Qj, 1))                                    \
       for (auto y = Qy; Qb; Qb = false)
-#define H2Casess(name, ...) _Fullmesh_Case_Impl(name, H2Q(j), H2Q(b), H2Q(l), H2Q(x), H2Q(y), __VA_ARGS__)
+#define H2Casess(name, ...) _Fullmesh_Case_Impl(#name, H2Q(j), H2Q(b), H2Q(l), H2Q(x), H2Q(y), __VA_ARGS__)
 
 struct h2_patch {
    static void initialize();
@@ -2723,10 +2703,12 @@ struct h2_patch {
 struct h2_task {
    h2_singleton(h2_task);
 
-   h2_reports reports;
    h2_stubs stubs;
    h2_mocks mocks;
    int stats[h2_case::statuss]{0};
+   int suites = 0, cases = 0;
+   int checks = 0;
+   int rounds = 0;
    h2_suite* current_suite = nullptr;
    h2_case* current_case = nullptr;
    std::vector<void (*)()> global_setups, global_teardowns;
@@ -2756,12 +2738,32 @@ static inline void h2_mock_g(h2_mock* mock)
       h2_task::I().mocks.add(mock) && h2_task::I().stubs.add(mock->origin_fp, mock->substitute_fp, mock->origin_fn, "", mock->file, mock->line);
 }
 
+static inline void h2_check_g()
+{
+   if (h2_task::I().current_case) h2_task::I().current_case->checks += 1;
+   if (h2_task::I().current_suite) h2_task::I().current_suite->checks += 1;
+   h2_task::I().checks += 1;
+}
+
 static inline void h2_fail_g(h2_fail* fail, bool defer)
 {
    if (!fail) return;
    if (O.debug) h2_debugger::trap();
    if (h2_task::I().current_case) h2_task::I().current_case->do_fail(fail, defer);
 }
+
+struct h2_report {
+   h2_singleton(h2_report);
+   static void initialize();
+
+   h2_list reports;
+   void on_task_start(h2_task* k);
+   void on_task_endup(h2_task* k);
+   void on_suite_start(h2_suite* s);
+   void on_suite_endup(h2_suite* s);
+   void on_case_start(h2_suite* s, h2_case* c);
+   void on_case_endup(h2_suite* s, h2_case* c);
+};
 }  // namespace h2
 
 /* ======> Interface <====== */
@@ -2775,24 +2777,26 @@ static inline void h2_fail_g(h2_fail* fail, bool defer)
 #define GlobalCaseSetup() H2GlobalCaseSetup()
 #define GlobalCaseTeardown() H2GlobalCaseTeardown()
 
-#define SUITE(...) H2SUITE(#__VA_ARGS__)
-#define CASE(...) H2CASE(#__VA_ARGS__)
-#define TODO(...) H2TODO(#__VA_ARGS__)
+#define SUITE H2SUITE
+#define CASE H2CASE
+#define TODO H2TODO
+#define Case H2Case
+#define Todo H2Todo
 
 #define Cleanup() H2Cleanup()
-
-#define Case(...) H2Case(#__VA_ARGS__)
-#define Todo(...) H2Todo(#__VA_ARGS__)
 
 #ifndef OK
 #   define OK H2OK
 #else
-#   pragma message("OK is already defined using H2OK instead")
+#   pragma message("OK conflict, using H2OK instead")
 #endif
 
-#define JE(e, a) H2JE(e, a)
-#define MOCK(...) H2MOCK(__VA_ARGS__)
-#define STUB(...) H2STUB(__VA_ARGS__)
+#ifndef JE
+#   define JE H2JE
+#endif
+
+#define MOCK H2MOCK
+#define STUB H2STUB
 
 #ifndef BLOCK
 #   define BLOCK H2BLOCK
@@ -2810,10 +2814,10 @@ static inline void h2_fail_g(h2_fail* fail, bool defer)
 
 #define MATCHER(...) H2MATCHER(__VA_ARGS__)
 
-#define CASES(name, ...) H2CASES(#name, __VA_ARGS__)
-#define CASESS(name, ...) H2CASESS(#name, __VA_ARGS__)
-#define Cases(name, ...) H2Cases(#name, __VA_ARGS__)
-#define Casess(name, ...) H2Casess(#name, __VA_ARGS__)
+#define CASES H2CASES
+#define CASESS H2CASESS
+#define Cases H2Cases
+#define Casess H2Casess
 
 /* clang-format off */
 using h2::_;
@@ -2884,7 +2888,7 @@ using h2::Pair;
    static h2::h2_suite H2Q(suite)(name, &QP, __FILE__, __LINE__); \
    static void QP(h2::h2_suite* ________suite, h2::h2_case* _________case)
 
-#define H2SUITE(name) __H2SUITE(name, H2Q(h2_suite_test))
+#define H2SUITE(...) __H2SUITE(#__VA_ARGS__, H2Q(h2_suite_test))
 
 #define __H2Cleanup()                      \
    if (::setjmp(________suite->jump) == 0) \
@@ -2901,8 +2905,8 @@ using h2::Pair;
          for (h2::h2_case::cleaner Q2(&Qc); Q2;)                                 \
             if (::setjmp(Qc.jump) == 0)
 
-#define H2Case(name) __H2Case(name, h2::h2_case::initial, H2Q(t_case), H2Q(_1), H2Q(_2))
-#define H2Todo(name) __H2Case(name, h2::h2_case::todo, H2Q(t_case), H2Q(_1), H2Q(_2))
+#define H2Case(...) __H2Case(#__VA_ARGS__, h2::h2_case::initial, H2Q(t_case), H2Q(_1), H2Q(_2))
+#define H2Todo(...) __H2Case(#__VA_ARGS__, h2::h2_case::todo, H2Q(t_case), H2Q(_1), H2Q(_2))
 
 #define __H2CASE(name, status, QR, QP)                                     \
    static void QR();                                                       \
@@ -2918,8 +2922,8 @@ using h2::Pair;
    static h2::h2_suite H2Q(suite)("Anonymous", &QP, __FILE__, __LINE__);   \
    static void QR()
 
-#define H2CASE(name) __H2CASE(name, h2::h2_case::initial, H2Q(h2_case_test_code), H2Q(h2_suite_test_code))
-#define H2TODO(name) __H2CASE(name, h2::h2_case::todo, H2Q(h2_case_test_code), H2Q(h2_suite_test_code))
+#define H2CASE(...) __H2CASE(#__VA_ARGS__, h2::h2_case::initial, H2Q(h2_case_test_code), H2Q(h2_suite_test_code))
+#define H2TODO(...) __H2CASE(#__VA_ARGS__, h2::h2_case::todo, H2Q(h2_case_test_code), H2Q(h2_suite_test_code))
 
 #define __H2BLOCK(Attributes, Qb) for (h2::h2_heap::stack::block Qb(Attributes, __FILE__, __LINE__); Qb;)
 #define H2BLOCK(...) __H2BLOCK(#__VA_ARGS__, H2Q(t_block))

@@ -12,6 +12,7 @@ struct h2_case {
    h2_list x;
    int seq = 0;
    int status = initial;
+   int checks = 0;
    jmp_buf jump;
    h2_fail* fails{nullptr};
    h2_stubs stubs;

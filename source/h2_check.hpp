@@ -14,6 +14,7 @@ struct h2_defer_fail : h2_once {
 static inline h2_ostringstream& h2_OK1(bool a, h2_defer_fail* d)
 {
    if (!a) d->fail = new h2_fail_unexpect("true", "false");
+   h2_check_g();
    return d->oss;
 }
 
@@ -27,6 +28,7 @@ static inline h2_ostringstream& h2_OK2(E e, A a, h2_defer_fail* d)
       d->fail = new h2_fail_unexpect();
       h2_fail::append_child(d->fail, fail);
    }
+   h2_check_g();
    return d->oss;
 }
 
@@ -34,6 +36,7 @@ static inline h2_ostringstream& h2_JE(h2_string e, h2_string a, h2_defer_fail* d
 {
    h2::h2_matcher<h2_string> m = Je(e);
    d->fail = m.matches(a);
+   h2_check_g();
    return d->oss;
 }
 

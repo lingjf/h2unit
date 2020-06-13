@@ -1,10 +1,10 @@
 
-static inline h2_lines line_break(h2_line& line, int width)
+static inline h2_lines line_break(h2_line& line, unsigned width)
 {
    h2_lines lines;
    h2_string current_style;
    h2_line wrap;
-   int length = 0;
+   unsigned length = 0;
 
    for (auto& word : line) {
       if (h2_color::is_ctrl(word.c_str())) {  // + - style , issue
@@ -28,7 +28,7 @@ static inline h2_lines line_break(h2_line& line, int width)
    return lines;
 }
 
-static inline h2_lines lines_merge(h2_lines& left_lines, h2_lines& right_lines, int width)
+static inline h2_lines lines_merge(h2_lines& left_lines, h2_lines& right_lines, unsigned width)
 {
    left_lines.samesizify(right_lines);
    h2_lines lines;
@@ -50,8 +50,8 @@ static inline h2_lines lines_merge(h2_lines& left_lines, h2_lines& right_lines, 
 
 h2_inline h2_lines h2_layout::split(h2_lines& left_lines, h2_lines& right_lines, const char* left_title, const char* right_title)
 {
-   int max_line_width = std::max(left_lines.max_width(), right_lines.max_width());
-   int half_width = std::min(h2_term_size() / 2 - 4, std::max(max_line_width + 3, 30));
+   unsigned max_line_width = std::max(left_lines.max_width(), right_lines.max_width());
+   unsigned half_width = std::min(h2_term_size() / 2 - 4, std::max(max_line_width + 3, 30U));
 
    h2_line left_title_line = {"\033{dark gray}", h2_string(left_title).center(half_width - 3), "\033{reset}"};
    h2_line right_title_line = {"\033{dark gray}", h2_string(right_title).center(half_width - 3), "\033{reset}"};

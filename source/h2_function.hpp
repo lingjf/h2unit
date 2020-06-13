@@ -1,19 +1,19 @@
 
 template <typename Class, typename F>
-struct h2_routine;
+struct h2_function;
 
 template <typename Class, typename Return, typename... Args>
-struct h2_routine<Class, Return(Args...)> {
+struct h2_function<Class, Return(Args...)> {
    std::function<Return(Args...)> normal_function = {}; // functional alignment issue
    std::function<Return(Class*, Args...)> member_function = {};
    void* origin_function = nullptr;
    Return return_value;
    bool empty = false;
 
-   h2_routine() { empty = true; }
-   h2_routine(Return r) : return_value(r) {}
-   h2_routine(std::function<Return(Args...)> f) : normal_function(f) {}
-   h2_routine(std::function<Return(Class*, Args...)> f) : member_function(f) {}
+   h2_function() { empty = true; }
+   h2_function(Return r) : return_value(r) {}
+   h2_function(std::function<Return(Args...)> f) : normal_function(f) {}
+   h2_function(std::function<Return(Class*, Args...)> f) : member_function(f) {}
 
    Return operator()(Class* that, Args... args)
    {
@@ -33,15 +33,15 @@ struct h2_routine<Class, Return(Args...)> {
 };
 
 template <typename Class, typename... Args>
-struct h2_routine<Class, void(Args...)> {
+struct h2_function<Class, void(Args...)> {
    std::function<void(Args...)> normal_function = {};
    std::function<void(Class*, Args...)> member_function = {};
    void* origin_function = nullptr;
    bool empty = false;
 
-   h2_routine() { empty = true; }
-   h2_routine(std::function<void(Args...)> f) : normal_function(f) {}
-   h2_routine(std::function<void(Class*, Args...)> f) : member_function(f) {}
+   h2_function() { empty = true; }
+   h2_function(std::function<void(Args...)> f) : normal_function(f) {}
+   h2_function(std::function<void(Class*, Args...)> f) : member_function(f) {}
 
    void operator()(Class* that, Args... args)
    {

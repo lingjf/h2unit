@@ -54,19 +54,19 @@ struct h2_libc_malloc {
          }
       }
       if (!b) {
-         int pagesize = h2_page_size();
-         int pagecount = ::ceil((size + sizeof(b->size)) / (double)pagesize);
-         if (pages == 0) pagecount = 1024 * 25;
-         pages += pagecount;
+         int page_size = h2_page_size();
+         int page_count = ::ceil((size + sizeof(b->size)) / (double)page_size);
+         if (pages == 0) page_count = 1024 * 25;
+         pages += page_count;
 #ifdef _WIN32
-         PVOID ptr = VirtualAlloc(NULL, pagecount * pagesize, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
+         PVOID ptr = VirtualAlloc(NULL, page_count * page_size, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
          if (ptr == NULL) ::printf("VirtualAlloc failed at %s:%d\n", __FILE__, __LINE__), abort();
 #else
-         void* ptr = ::mmap(nullptr, pagecount * pagesize, PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0);
+         void* ptr = ::mmap(nullptr, page_count * page_size, PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0);
          if (ptr == MAP_FAILED) ::printf("mmap failed at %s:%d\n", __FILE__, __LINE__), abort();
 #endif
          b = (buddy*)ptr;
-         b->size = pagecount * pagesize;
+         b->size = page_count * page_size;
       }
       size_t bz = b->size;
       b->size = size + sizeof(b->size);

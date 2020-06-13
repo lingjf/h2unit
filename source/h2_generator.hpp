@@ -59,7 +59,7 @@
    H2ForEach(_ForEach_CASE_Macro, (name, Qc), __VA_ARGS__); \
    template <typename T>                                    \
    void Qc(T x)
-#define H2CASES(name, ...) _ForEach_CASE_Impl(name, H2Q(f), __VA_ARGS__)
+#define H2CASES(name, ...) _ForEach_CASE_Impl(#name, H2Q(f), __VA_ARGS__)
 
 #define ___Fullmesh_CASE_Macro(name, Qc, x, y) \
    CASE(name x, y) { Qc(x, y); }
@@ -71,7 +71,7 @@
    H2Fullmesh(_Fullmesh_CASE_Macro, (name, Qc), __VA_ARGS__); \
    template <typename T, typename U>                          \
    void Qc(T x, U y)
-#define H2CASESS(name, ...) _Fullmesh_CASE_Impl(name, H2Q(f), __VA_ARGS__)
+#define H2CASESS(name, ...) _Fullmesh_CASE_Impl(#name, H2Q(f), __VA_ARGS__)
 
 #define ___ForEach_Case_Macro(name, Qj, Qb, Qx, Ql, x) \
    Case(name x)                                        \
@@ -93,7 +93,7 @@
    H2ForEach(_ForEach_Case_Macro, (name, Qj, Qb, Qx, Ql), __VA_ARGS__); \
    Ql:                                                                  \
    for (auto x = Qx; Qb; Qb = false, ::longjmp(Qj, 1))
-#define H2Cases(name, ...) _ForEach_Case_Impl(name, H2Q(j), H2Q(b), H2Q(v), H2Q(l), __VA_ARGS__)
+#define H2Cases(name, ...) _ForEach_Case_Impl(#name, H2Q(j), H2Q(b), H2Q(v), H2Q(l), __VA_ARGS__)
 
 #define ___Fullmesh_Case_Macro(name, Qj, Qb, Ql, Qx, Qy, x, y) \
    Case(name x, y)                                             \
@@ -118,4 +118,4 @@
    Ql:                                                                        \
    for (auto x = Qx; Qb; ::longjmp(Qj, 1))                                    \
       for (auto y = Qy; Qb; Qb = false)
-#define H2Casess(name, ...) _Fullmesh_Case_Impl(name, H2Q(j), H2Q(b), H2Q(l), H2Q(x), H2Q(y), __VA_ARGS__)
+#define H2Casess(name, ...) _Fullmesh_Case_Impl(#name, H2Q(j), H2Q(b), H2Q(l), H2Q(x), H2Q(y), __VA_ARGS__)
