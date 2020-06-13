@@ -1,4 +1,4 @@
-﻿/* v5.5  2020-06-13 08:32:49 */
+﻿/* v5.5  2020-06-13 09:45:41 */
 /* https://github.com/lingjf/h2unit */
 /* Apache Licence 2.0 */
 #ifndef __H2UNIT_HPP__
@@ -227,6 +227,9 @@ struct h2_pattern {
    }
 
 struct h2_numeric {
+   static bool not2n(unsigned x);
+   static unsigned mask2n(unsigned x);
+
    static int hex_to_byte(char c);
    static bool is_bin_string(const char* s);
    static bool is_hex_string(const char* s);

@@ -1,4 +1,19 @@
 
+h2_inline bool h2_numeric::not2n(unsigned x)
+{
+   return x & (x - 1);
+}
+
+h2_inline unsigned h2_numeric::mask2n(unsigned x)
+{
+   x |= (x >> 1);
+   x |= (x >> 2);
+   x |= (x >> 4);
+   x |= (x >> 8);
+   x |= (x >> 16);
+   return x;
+}
+
 h2_inline int h2_numeric::hex_to_byte(char c)
 {
    return '0' <= c && c <= '9' ? c - '0' : ('A' <= c && c <= 'F' ? c - 'A' + 10 : ('a' <= c && c <= 'f' ? c - 'a' + 10 : -1));
@@ -98,7 +113,7 @@ h2_inline const char* h2_numeric::sequence_number(int sequence, int shift)
    static char ss[64];
 
    sequence += shift;
-   if (sequence < sizeof(st)/sizeof(st[0])) {
+   if (sequence < sizeof(st) / sizeof(st[0])) {
       return st[sequence];
    }
    sprintf(ss, "%dth", sequence);

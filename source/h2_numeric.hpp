@@ -1,5 +1,8 @@
 
 struct h2_numeric {
+   static bool not2n(unsigned x);
+   static unsigned mask2n(unsigned x);
+
    static int hex_to_byte(char c);
    static bool is_bin_string(const char* s);
    static bool is_hex_string(const char* s);

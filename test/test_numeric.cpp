@@ -4,6 +4,55 @@ SUITE(numeric)
 {
    unsigned char z1[1024];
 
+   Case(not2n)
+   {
+      OK(!h2::h2_numeric::not2n(0));
+
+      for (int i = 0; i < 32; i++)
+         OK(!h2::h2_numeric::not2n(1 << i));
+
+      OK(h2::h2_numeric::not2n(3));
+      OK(h2::h2_numeric::not2n(0x55));
+   }
+
+   Case(mask2n)
+   {
+      OK(0x0, h2::h2_numeric::mask2n(0));
+      OK(0x1, h2::h2_numeric::mask2n(1));
+      OK(0x3, h2::h2_numeric::mask2n(2));
+      OK(0x3, h2::h2_numeric::mask2n(3));
+      OK(0x7, h2::h2_numeric::mask2n(4));
+      OK(0x7, h2::h2_numeric::mask2n(5));
+      OK(0x7, h2::h2_numeric::mask2n(6));
+      OK(0x7, h2::h2_numeric::mask2n(7));
+      OK(0xF, h2::h2_numeric::mask2n(8));
+      OK(0xF, h2::h2_numeric::mask2n(9));
+      OK(0xF, h2::h2_numeric::mask2n(10));
+      OK(0xF, h2::h2_numeric::mask2n(11));
+      OK(0xF, h2::h2_numeric::mask2n(12));
+      OK(0xF, h2::h2_numeric::mask2n(13));
+      OK(0xF, h2::h2_numeric::mask2n(14));
+      OK(0xF, h2::h2_numeric::mask2n(15));
+      for (unsigned i = 16; i < 32; ++i) {
+         OK(0x1F, h2::h2_numeric::mask2n(i));
+      }
+      for (unsigned i = 32; i < 64; ++i) {
+         OK(0x3F, h2::h2_numeric::mask2n(i));
+      }
+      for (unsigned i = 64; i < 128; ++i) {
+         OK(0x7F, h2::h2_numeric::mask2n(i));
+      }
+      for (unsigned i = 128; i < 256; ++i) {
+         OK(0xFF, h2::h2_numeric::mask2n(i));
+      }
+      for (unsigned i = 0x7FFFFFF0U; i < 0x7FFFFFFFU; ++i) {
+         OK(0x7FFFFFFFU, h2::h2_numeric::mask2n(i));
+      }
+      for (unsigned i = 0xFFFFFFF0U; i < 0xFFFFFFFFU; ++i) {
+         OK(0xFFFFFFFFU, h2::h2_numeric::mask2n(i));
+      }
+   }
+
    Case(hex_to_byte)
    {
       OK(0, h2::h2_numeric::hex_to_byte('0'));
