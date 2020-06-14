@@ -20,7 +20,8 @@ struct h2_case {
    h2_dnses dnses;
    h2_sock* sock{nullptr};
 
-   h2_case(const char* name_, const char* file_, int line_, int status_) : name(name_), file(file_), line(line_), status(status_) {}
+   h2_case(const char* name_, int status_, const char* file_, int line_)
+     : name(name_), file(file_), line(line_), status(status_) {}
 
    void prev_setup();
    void post_setup() {}

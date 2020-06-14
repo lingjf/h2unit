@@ -111,6 +111,7 @@ class h2_mocker<Counter, Lineno, Class, Return(Args...)> : h2_mock {
 
    h2_vector<MatcherTuple> matchers_array;
    h2_vector<h2_function<Class, Return(Args...)>> function_array;
+   bool greed_mode = true;
 
    static Return normal_function_stub(Args... args)
    {
@@ -147,16 +148,37 @@ class h2_mocker<Counter, Lineno, Class, Return(Args...)> : h2_mock {
       for (int i = attendance_index; i < attendance_array.size(); ++i) {
          h2_fail* fail = matches(matchers_array[i], at);
          if (fail) {
-            if (attendance_array[i].is_not_enough()) h2_fail_g(fail, false);
-            if (attendance_array[i].is_satisfied()) delete fail; /* continue; try next h2_attendance */
+            if (attendance_offset != -1) {
+               break;
+            }
+            if (attendance_array[i].is_satisfied()) {
+               if (i < attendance_array.size() - 1) { /* try next h2_attendance */
+                  delete fail;
+                  continue;
+               }
+            }
+            h2_fail_g(fail, false);
          } else {
-            ++attendance_array[attendance_offset = i];
-            if (attendance_array[i].is_saturated()) attendance_index += 1;
-            break;
+            attendance_index = i;
+            attendance_offset = i;
+            if (attendance_array[i].is_saturated()) {
+               continue;
+            }
+            if (attendance_array[i].is_not_enough()) {
+               break;
+            }
+            /* satisfied */
+            if (greed_mode) {
+               break;
+            }
+            /* continue */
          }
       }
-      if (-1 == attendance_offset) {
-         h2_fail_g(new h2_fail_call(origin_fn, "", "exceed", file, line), false);
+      if (attendance_offset != -1) {
+         ++attendance_array[attendance_offset];
+      }
+      if (attendance_offset == -1) {
+         h2_fail_g(new h2_fail_call(origin_fn, "", "unexpect", file, line), false);
       }
       return attendance_offset;
    }
@@ -167,6 +189,7 @@ class h2_mocker<Counter, Lineno, Class, Return(Args...)> : h2_mock {
       matchers_array.clear();
       function_array.clear();
       attendance_index = 0;
+      greed_mode = true;
    }
 
  public:
@@ -179,6 +202,12 @@ class h2_mocker<Counter, Lineno, Class, Return(Args...)> : h2_mock {
          h2_mock_g(i);
       }
       return *i;
+   }
+
+   h2_mocker& greed(bool mode)
+   {
+      greed_mode = mode;
+      return *this;
    }
 
    h2_mocker& once(MATCHER_Any_0_1_2_3_4_5_6_7_8_9)
@@ -306,8 +335,8 @@ struct h2_mocks {
 #   define __H2_LINE__ __LINE__
 #endif
 
-#define __H2MOCK2(BeFunc, Signature) \
-   h2::h2_mocker<__COUNTER__, __H2_LINE__, std::false_type, Signature>::I((void*)BeFunc, #BeFunc, __FILE__, __LINE__)
+#define __H2MOCK2(OriginFunction, Signature) \
+   h2::h2_mocker<__COUNTER__, __H2_LINE__, std::false_type, Signature>::I((void*)OriginFunction, #OriginFunction, __FILE__, __LINE__)
 
 #define __H2MOCK3(Class, Method, Signature) \
    h2::h2_mocker<__COUNTER__, __H2_LINE__, Class, Signature>::I(h2::h2_mfp<Class, Signature>::A(&Class::Method, "MOCK", "", #Class, #Method, #Signature, __FILE__, __LINE__), #Class "::" #Method, __FILE__, __LINE__)

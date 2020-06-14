@@ -34,6 +34,7 @@ def merge_files(inf, outf):
     for line in inf:
         if line.startswith('#include "h2_'):
             with open('../source/'+line[10:line.rindex('"')], 'r') as f:
+                outf.write('// ' + line[10:line.rindex('"')] + '\n')
                 merge_files(f, outf)
         else:
             copy_line2(line, outf)

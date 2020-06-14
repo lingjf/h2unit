@@ -174,6 +174,39 @@ SUITE(mock c - function)
    }
 }
 
+SUITE(mock greed)
+{
+   Case(greed default true)
+   {
+      MOCK(bar1, int(int, const char*))
+        //   .greed(true) // default is true
+        .between(1, 3)
+        .with(1, "A")
+        .returns(11)
+        .once(1, _)
+        .returns(22);
+
+      OK(11, bar1(1, "A"));
+      OK(11, bar1(1, "A"));
+      OK(11, bar1(1, "A"));
+      OK(22, bar1(1, "A"));
+   }
+
+   Case(greed false)
+   {
+      MOCK(bar1, int(int, const char*))
+        .greed(false)
+        .between(1, 3)
+        .with(1, "A")
+        .returns(11)
+        .once(1, _)
+        .returns(22);
+
+      OK(11, bar1(1, "A"));
+      OK(22, bar1(1, "A"));
+   }
+}
+
 // TEST(lambda_check argument)
 // {
 //     MOCK(bar1, int(int , const char *)).once().th0([](int a)->bool{

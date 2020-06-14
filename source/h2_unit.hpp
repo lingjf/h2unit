@@ -107,56 +107,155 @@ namespace h2 {
 
 /* ======> Interface <====== */
 
-#define GlobalSetup() H2GlobalSetup()
-#define GlobalTeardown() H2GlobalTeardown()
+#ifndef SUITE
+#   define SUITE H2SUITE
+#else
+#   pragma message("SUITE conflict, using H2SUITE instead.")
+#endif
 
-#define GlobalSuiteSetup() H2GlobalSuiteSetup()
-#define GlobalSuiteTeardown() H2GlobalSuiteTeardown()
+#ifndef CASE
+#   define CASE H2CASE
+#else
+#   pragma message("CASE conflict, using H2CASE instead.")
+#endif
 
-#define GlobalCaseSetup() H2GlobalCaseSetup()
-#define GlobalCaseTeardown() H2GlobalCaseTeardown()
+#ifndef TODO
+#   define TODO H2TODO
+#else
+#   pragma message("TODO conflict, using H2TODO instead.")
+#endif
 
-#define SUITE H2SUITE
-#define CASE H2CASE
-#define TODO H2TODO
-#define Case H2Case
-#define Todo H2Todo
+#ifndef Case
+#   define Case H2Case
+#else
+#   pragma message("Case conflict, using H2Case instead.")
+#endif
 
-#define Cleanup() H2Cleanup()
+#ifndef Todo
+#   define Todo H2Todo
+#else
+#   pragma message("Todo conflict, using H2Todo instead.")
+#endif
+
+#ifndef Cleanup
+#   define Cleanup H2Cleanup
+#else
+#   pragma message("Cleanup conflict, using H2Cleanup instead.")
+#endif
 
 #ifndef OK
 #   define OK H2OK
 #else
-#   pragma message("OK conflict, using H2OK instead")
+#   pragma message("OK conflict, using H2OK instead.")
 #endif
 
 #ifndef JE
 #   define JE H2JE
+#else
+#   pragma message("JE conflict, using H2JE instead.")
 #endif
 
-#define MOCK H2MOCK
-#define STUB H2STUB
+#ifndef MOCK
+#   define MOCK H2MOCK
+#else
+#   pragma message("MOCK conflict, using H2MOCK instead.")
+#endif
+
+#ifndef STUB
+#   define STUB H2STUB
+#else
+#   pragma message("STUB conflict, using H2STUB instead.")
+#endif
 
 #ifndef BLOCK
 #   define BLOCK H2BLOCK
+#else
+#   pragma message("BLOCK conflict, using H2BLOCK instead.")
 #endif
 
-#define DNS(...) H2DNS(__VA_ARGS__)
+#ifndef DNS
+#   define DNS H2DNS
+#else
+#   pragma message("DNS conflict, using H2DNS instead.")
+#endif
 
 #ifndef SOCK
 #   define SOCK H2SOCK
+#else
+#   pragma message("SOCK conflict, using H2SOCK instead.")
 #endif
 
 #ifndef COUT
 #   define COUT H2COUT
+#else
+#   pragma message("COUT conflict, using H2COUT instead.")
 #endif
 
-#define MATCHER(...) H2MATCHER(__VA_ARGS__)
+#ifndef GlobalSetup
+#   define GlobalSetup H2GlobalSetup
+#else
+#   pragma message("GlobalSetup conflict, using H2GlobalSetup instead.")
+#endif
 
-#define CASES H2CASES
-#define CASESS H2CASESS
-#define Cases H2Cases
-#define Casess H2Casess
+#ifndef GlobalTeardown
+#   define GlobalTeardown H2GlobalTeardown
+#else
+#   pragma message("GlobalTeardown conflict, using H2GlobalTeardown instead.")
+#endif
+
+#ifndef GlobalSuiteSetup
+#   define GlobalSuiteSetup H2GlobalSuiteSetup
+#else
+#   pragma message("GlobalSuiteSetup conflict, using H2GlobalSuiteSetup instead.")
+#endif
+
+#ifndef GlobalSuiteTeardown
+#   define GlobalSuiteTeardown H2GlobalSuiteTeardown
+#else
+#   pragma message("GlobalSuiteTeardown conflict, using H2GlobalSuiteTeardown instead.")
+#endif
+
+#ifndef GlobalCaseSetup
+#   define GlobalCaseSetup H2GlobalCaseSetup
+#else
+#   pragma message("GlobalCaseSetup conflict, using H2GlobalCaseSetup instead.")
+#endif
+
+#ifndef GlobalCaseTeardown
+#   define GlobalCaseTeardown H2GlobalCaseTeardown
+#else
+#   pragma message("GlobalCaseTeardown conflict, using H2GlobalCaseTeardown instead.")
+#endif
+
+#ifndef MATCHER
+#   define MATCHER H2MATCHER
+#else
+#   pragma message("MATCHER conflict, using H2MATCHER instead.")
+#endif
+
+#ifndef CASES
+#   define CASES H2CASES
+#else
+#   pragma message("CASES conflict, using H2CASES instead.")
+#endif
+
+#ifndef CASESS
+#   define CASESS H2CASESS
+#else
+#   pragma message("CASESS conflict, using H2CASESS instead.")
+#endif
+
+#ifndef Cases
+#   define Cases H2Cases
+#else
+#   pragma message("Cases conflict, using H2Cases instead.")
+#endif
+
+#ifndef Casess
+#   define Casess H2Casess
+#else
+#   pragma message("Casess conflict, using H2Casess instead.")
+#endif
 
 /* clang-format off */
 using h2::_;
@@ -225,44 +324,42 @@ using h2::Pair;
 #define __H2SUITE(name, QP)                                       \
    static void QP(h2::h2_suite*, h2::h2_case*);                   \
    static h2::h2_suite H2Q(suite)(name, &QP, __FILE__, __LINE__); \
-   static void QP(h2::h2_suite* ________suite, h2::h2_case* _________case)
+   static void QP(h2::h2_suite* _2_0_1_3_suite, h2::h2_case* _2_0_1_7_case)
 
 #define H2SUITE(...) __H2SUITE(#__VA_ARGS__, H2Q(h2_suite_test))
 
-#define __H2Cleanup()                      \
-   if (::setjmp(________suite->jump) == 0) \
-      ________suite->jumpable = true;      \
-   if (!_________case)
+#define H2Cleanup()                         \
+   if (::setjmp(_2_0_1_3_suite->jump) == 0) \
+      _2_0_1_3_suite->jumpable = true;      \
+   if (!_2_0_1_7_case)
 
-#define H2Cleanup() __H2Cleanup()
-
-#define __H2Case(name, status, Qc, Q1, Q2)                                       \
-   static h2::h2_case Qc(name, __FILE__, __LINE__, status);                      \
-   static h2::h2_suite::installer H2Q(installer)(________suite, &Qc);            \
-   if (&Qc == _________case)                                                     \
-      for (h2::h2_suite::cleaner Q1(________suite); Q1; _________case = nullptr) \
-         for (h2::h2_case::cleaner Q2(&Qc); Q2;)                                 \
+#define __H2Case(name, status, Qc, Q1, Q2)                                        \
+   static h2::h2_case Qc(name, status, __FILE__, __LINE__);                       \
+   static h2::h2_suite::installer H2Q(installer)(_2_0_1_3_suite, &Qc);            \
+   if (&Qc == _2_0_1_7_case)                                                      \
+      for (h2::h2_suite::cleaner Q1(_2_0_1_3_suite); Q1; _2_0_1_7_case = nullptr) \
+         for (h2::h2_case::cleaner Q2(&Qc); Q2;)                                  \
             if (::setjmp(Qc.jump) == 0)
 
 #define H2Case(...) __H2Case(#__VA_ARGS__, h2::h2_case::initial, H2Q(t_case), H2Q(_1), H2Q(_2))
 #define H2Todo(...) __H2Case(#__VA_ARGS__, h2::h2_case::todo, H2Q(t_case), H2Q(_1), H2Q(_2))
 
-#define __H2CASE(name, status, QR, QP)                                     \
-   static void QR();                                                       \
-   static void QP(h2::h2_suite* ________suite, h2::h2_case* _________case) \
-   {                                                                       \
-      static h2::h2_case c(name, __FILE__, __LINE__, status);              \
-      static h2::h2_suite::installer i(________suite, &c);                 \
-      if (&c == _________case)                                             \
-         for (h2::h2_case::cleaner a(&c); a;)                              \
-            if (::setjmp(c.jump) == 0)                                     \
-               QR();                                                       \
-   }                                                                       \
-   static h2::h2_suite H2Q(suite)("Anonymous", &QP, __FILE__, __LINE__);   \
+#define __H2CASE(name, status, QR, QP)                                      \
+   static void QR();                                                        \
+   static void QP(h2::h2_suite* _2_0_1_3_suite, h2::h2_case* _2_0_1_7_case) \
+   {                                                                        \
+      static h2::h2_case c(name, status, __FILE__, __LINE__);               \
+      static h2::h2_suite::installer i(_2_0_1_3_suite, &c);                 \
+      if (&c == _2_0_1_7_case)                                              \
+         for (h2::h2_case::cleaner a(&c); a;)                               \
+            if (::setjmp(c.jump) == 0)                                      \
+               QR();                                                        \
+   }                                                                        \
+   static h2::h2_suite H2Q(suite)("Anonymous", &QP, __FILE__, __LINE__);    \
    static void QR()
 
-#define H2CASE(...) __H2CASE(#__VA_ARGS__, h2::h2_case::initial, H2Q(h2_case_test_code), H2Q(h2_suite_test_code))
-#define H2TODO(...) __H2CASE(#__VA_ARGS__, h2::h2_case::todo, H2Q(h2_case_test_code), H2Q(h2_suite_test_code))
+#define H2CASE(...) __H2CASE(#__VA_ARGS__, h2::h2_case::initial, H2Q(h2_case_test), H2Q(h2_suite_test))
+#define H2TODO(...) __H2CASE(#__VA_ARGS__, h2::h2_case::todo, H2Q(h2_case_test), H2Q(h2_suite_test))
 
 #define __H2BLOCK(Attributes, Qb) for (h2::h2_heap::stack::block Qb(Attributes, __FILE__, __LINE__); Qb;)
 #define H2BLOCK(...) __H2BLOCK(#__VA_ARGS__, H2Q(t_block))

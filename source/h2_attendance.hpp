@@ -9,6 +9,7 @@ struct h2_attendance {
    void operator++() { call += 1; }
 
    bool is_not_enough(/*不够*/) const { return call < least; }
+   bool is_minimal_satisfied(/*最小满足*/) const { return least == call; }
    bool is_satisfied(/*满足*/) const { return least <= call && call <= most; }
    bool is_saturated(/*饱和*/) const { return call == most; }
    bool is_overmuch(/*过多*/) const { return most < call; }

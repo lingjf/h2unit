@@ -1,4 +1,4 @@
-﻿/* v5.5  2020-06-14 09:38:54 */
+﻿/* v5.5  2020-06-14 16:07:09 */
 /* https://github.com/lingjf/h2unit */
 /* Apache Licence 2.0 */
 #ifndef __H2UNIT_HPP__
@@ -71,6 +71,7 @@
 #endif
 
 namespace h2 {
+// h2_pp.hpp
 /* clang-format off */
 
 #define H2PP__CAT2(_1, _2) _1##_2
@@ -181,6 +182,7 @@ namespace h2 {
 #define _H2PP_LAST_I() _H2PP_LAST_
 
 #define H2PP_VARIADIC_CALL(_Macro, ...) H2PP_ID(H2PP_CAT2(_Macro, H2PP_NARG(__VA_ARGS__))(__VA_ARGS__))
+// h2_kit.hpp
 
 #define H2Q(_Prefix) H2PP_CAT5(_Prefix, _C, __COUNTER__, L, __LINE__)
 
@@ -225,6 +227,7 @@ struct h2_pattern {
       static _Class i;       \
       return i;              \
    }
+// h2_numeric.hpp
 
 struct h2_numeric {
    static bool not2n(unsigned x);
@@ -246,6 +249,7 @@ struct h2_numeric {
 
    static long long parse_int_after_equal(const char* s);
 };
+// h2_list.hpp
 
 #define h2_list_entry(ptr, type, link) ((type*)((char*)(ptr) - (char*)(&(((type*)(1))->link)) + 1))
 #define h2_list_for_each_entry(p, head, type, link) \
@@ -282,6 +286,7 @@ struct h2_list {
    int count() const;
    void sort(std::function<int(h2_list* a, h2_list* b)> cmp);
 };
+// h2_option.hpp
 
 struct h2_option {
    h2_singleton(h2_option);
@@ -318,6 +323,7 @@ struct h2_option {
 };
 
 static const h2_option& O = h2_option::I();  // for pretty
+// h2_libc.hpp
 
 struct h2_libc {
    static void* malloc(size_t size);
@@ -326,6 +332,7 @@ struct h2_libc {
    static void* operator new(std::size_t size) { return malloc(size); }
    static void operator delete(void* ptr) { free(ptr); }
 };
+// h2_allocate.hpp
 
 template <typename T>
 class h2_allocator {
@@ -369,6 +376,7 @@ template <typename T>
 using h2_vector = std::vector<T, h2_allocator<T>>;
 
 using h2_ostringstream = std::basic_ostringstream<char, std::char_traits<char>, h2_allocator<char>>;
+// h2_string.hpp
 
 struct h2_string : public std::basic_string<char, std::char_traits<char>, h2_allocator<char>> {
    h2_string() : basic_string() {}
@@ -451,6 +459,7 @@ struct h2_stringable : std::integral_constant<bool,
    std::is_same<std::string, typename std::decay<T>::type>::value || 
    std::is_same<h2_string, typename std::decay<T>::type>::value> { 
 };
+// h2_line.hpp
 
 struct h2_line : public h2_vector<h2_string> {
    h2_line() {}
@@ -481,12 +490,14 @@ struct h2_lines : public h2_vector<h2_line> {
    bool foldable();
 
    void sequence(int indent, int start = 0);
-};
+};// h2_layout.hpp
+
 struct h2_layout {
    static h2_lines split(h2_lines& left_lines, h2_lines& right_lines, const char* left_title, const char* right_title);
    static h2_lines unified(h2_line& up_line, h2_line& down_line, const char* up_title, const char* down_title);
    static h2_lines seperate(h2_line& up_line, h2_line& down_line, const char* up_title, const char* down_title);
 };
+// h2_color.hpp
 
 struct h2_color {
    static void printf(const char* style, const char* format, ...);
@@ -495,6 +506,7 @@ struct h2_color {
 
    static bool is_ctrl(const char* s) { return s[0] == '\033' && s[1] == '{'; };
 };
+// h2_shared_ptr.hpp
 
 template <typename T>
 class h2_shared_ptr : h2_libc {
@@ -536,6 +548,7 @@ class h2_shared_ptr : h2_libc {
    T* px = nullptr;
    long* pn = nullptr;
 };
+// h2_debug.hpp
 
 struct h2_debugger {
    static void trap();
@@ -549,15 +562,18 @@ struct h2_debugger {
          bt.print(3);                                                                               \
       }                                                                                             \
    } while (0)
+// h2_expr.hpp
 
 struct tinyexpr {
    static double eval(const char* expression, int* error);
 };
+// h2_json.hpp
 
 struct h2_json {
    static bool match(const h2_string& expect, const h2_string& actual);
    static void diff(const h2_string& expect, const h2_string& actual, h2_lines& e_lines, h2_lines& a_lines);
 };
+// h2_backtrace.hpp
 
 struct h2_backtrace {
    int count = 0, shift = 0;
@@ -575,6 +591,7 @@ struct h2_backtrace {
    void print(h2_vector<h2_string>& stacks) const;
    void print(int pad) const;
 };
+// h2_failure.hpp
 
 struct h2_fail : h2_libc {
    h2_fail *subling_next{nullptr}, *child_next{nullptr};
@@ -729,6 +746,7 @@ struct h2_fail_instantiate : h2_fail {
 };
 
 static inline void h2_fail_g(h2_fail*, bool);
+// h2_stub.hpp
 
 struct h2_stubs {
    h2_list stubs;
@@ -801,6 +819,7 @@ struct h2_stub_temporary_restore : h2_once {
    H2PP_IF_ELSE(H2PP_IS_EMPTY Args, __H2STUB60(Return, Class, Method, Args, Instance, Qt), __H2STUB61(Return, Class, Method, Args, Instance, Qt))
 
 #define H2STUB(...) H2PP_VARIADIC_CALL(__H2STUB, __VA_ARGS__, H2Q(t_stub))
+// h2_heap.hpp
 
 struct h2_heap {
    static void initialize();
@@ -818,6 +837,7 @@ struct h2_heap {
       };
    };
 };
+// h2_mfp.hpp
 
 /* clang-format off */
 
@@ -985,6 +1005,7 @@ struct h2_mfp<Class, Return(Args...)> {
       return get_vmfp(u, dynamic_cast<Class*>(&obj));
    }
 };
+// h2_matchee.hpp
 
 static inline h2_string CD(h2_string s, bool caseless = false, bool dont = false)
 {
@@ -1234,6 +1255,7 @@ struct h2_matchee_memcmp {
    h2_fail* matches(const void* a, bool caseless = false, bool dont = false) const;
    h2_string expects(const void* a, bool caseless = false, bool dont = false) const;
 };
+// h2_matcher.hpp
 
 template <typename T>
 struct h2_matcher_impl {
@@ -1325,6 +1347,7 @@ inline h2_matcher<T> h2_matcher_cast(const M& from)
 {
    return h2_matcher_cast_impl<T, M>::cast(from);
 }
+// h2_matches.hpp
 
 template <typename Matcher>
 struct h2_not_matches {
@@ -1820,6 +1843,7 @@ operator||(const M1& m1, const h2_polymorphic_matcher<M2>& m2)
    h2_polymorphic_matcher<h2_or_matches<h2_matcher<typename h2_decay<M1>::type>, h2_polymorphic_matcher<M2>>> c(b);
    return c;
 }
+// h2_matcheu.hpp
 
 #define __Matches_Common(message)                                                                                   \
    template <typename A>                                                                                            \
@@ -1970,6 +1994,7 @@ operator||(const M1& m1, const h2_polymorphic_matcher<M2>& m2)
 /* clang-format on */
 
 #define H2MATCHER(...) H2PP_VARIADIC_CALL(_H2MATCHER, __VA_ARGS__)
+// h2_attendance.hpp
 
 /* 考勤 check on work attendance ; 函数被调次数期望 */
 struct h2_attendance {
@@ -1981,6 +2006,7 @@ struct h2_attendance {
    void operator++() { call += 1; }
 
    bool is_not_enough(/*不够*/) const { return call < least; }
+   bool is_minimal_satisfied(/*最小满足*/) const { return least == call; }
    bool is_satisfied(/*满足*/) const { return least <= call && call <= most; }
    bool is_saturated(/*饱和*/) const { return call == most; }
    bool is_overmuch(/*过多*/) const { return most < call; }
@@ -1989,6 +2015,7 @@ struct h2_attendance {
    const char* actual();
    const char* expect();
 };
+// h2_function.hpp
 
 template <typename Return>
 struct h2_return : h2_libc {
@@ -2055,6 +2082,7 @@ struct h2_function<Class, void(Args...)> {
       }
    }
 };
+// h2_mock.hpp
 
 static inline void h2_check_g();
 
@@ -2168,6 +2196,7 @@ class h2_mocker<Counter, Lineno, Class, Return(Args...)> : h2_mock {
 
    h2_vector<MatcherTuple> matchers_array;
    h2_vector<h2_function<Class, Return(Args...)>> function_array;
+   bool greed_mode = true;
 
    static Return normal_function_stub(Args... args)
    {
@@ -2204,16 +2233,37 @@ class h2_mocker<Counter, Lineno, Class, Return(Args...)> : h2_mock {
       for (int i = attendance_index; i < attendance_array.size(); ++i) {
          h2_fail* fail = matches(matchers_array[i], at);
          if (fail) {
-            if (attendance_array[i].is_not_enough()) h2_fail_g(fail, false);
-            if (attendance_array[i].is_satisfied()) delete fail; /* continue; try next h2_attendance */
+            if (attendance_offset != -1) {
+               break;
+            }
+            if (attendance_array[i].is_satisfied()) {
+               if (i < attendance_array.size() - 1) { /* try next h2_attendance */
+                  delete fail;
+                  continue;
+               }
+            }
+            h2_fail_g(fail, false);
          } else {
-            ++attendance_array[attendance_offset = i];
-            if (attendance_array[i].is_saturated()) attendance_index += 1;
-            break;
+            attendance_index = i;
+            attendance_offset = i;
+            if (attendance_array[i].is_saturated()) {
+               continue;
+            }
+            if (attendance_array[i].is_not_enough()) {
+               break;
+            }
+            /* satisfied */
+            if (greed_mode) {
+               break;
+            }
+            /* continue */
          }
       }
-      if (-1 == attendance_offset) {
-         h2_fail_g(new h2_fail_call(origin_fn, "", "exceed", file, line), false);
+      if (attendance_offset != -1) {
+         ++attendance_array[attendance_offset];
+      }
+      if (attendance_offset == -1) {
+         h2_fail_g(new h2_fail_call(origin_fn, "", "unexpect", file, line), false);
       }
       return attendance_offset;
    }
@@ -2224,6 +2274,7 @@ class h2_mocker<Counter, Lineno, Class, Return(Args...)> : h2_mock {
       matchers_array.clear();
       function_array.clear();
       attendance_index = 0;
+      greed_mode = true;
    }
 
  public:
@@ -2236,6 +2287,12 @@ class h2_mocker<Counter, Lineno, Class, Return(Args...)> : h2_mock {
          h2_mock_g(i);
       }
       return *i;
+   }
+
+   h2_mocker& greed(bool mode)
+   {
+      greed_mode = mode;
+      return *this;
    }
 
    h2_mocker& once(MATCHER_Any_0_1_2_3_4_5_6_7_8_9)
@@ -2363,8 +2420,8 @@ struct h2_mocks {
 #   define __H2_LINE__ __LINE__
 #endif
 
-#define __H2MOCK2(BeFunc, Signature) \
-   h2::h2_mocker<__COUNTER__, __H2_LINE__, std::false_type, Signature>::I((void*)BeFunc, #BeFunc, __FILE__, __LINE__)
+#define __H2MOCK2(OriginFunction, Signature) \
+   h2::h2_mocker<__COUNTER__, __H2_LINE__, std::false_type, Signature>::I((void*)OriginFunction, #OriginFunction, __FILE__, __LINE__)
 
 #define __H2MOCK3(Class, Method, Signature) \
    h2::h2_mocker<__COUNTER__, __H2_LINE__, Class, Signature>::I(h2::h2_mfp<Class, Signature>::A(&Class::Method, "MOCK", "", #Class, #Method, #Signature, __FILE__, __LINE__), #Class "::" #Method, __FILE__, __LINE__)
@@ -2373,6 +2430,7 @@ struct h2_mocks {
    h2::h2_mocker<__COUNTER__, __H2_LINE__, Class, Signature>::I(h2::h2_mfp<Class, Signature>::A(&Class::Method, Instance), #Class "::" #Method, __FILE__, __LINE__)
 
 #define H2MOCK(...) H2PP_VARIADIC_CALL(__H2MOCK, __VA_ARGS__)
+// h2_stdio.hpp
 
 struct h2_stdio {
    static void initialize();
@@ -2380,6 +2438,7 @@ struct h2_stdio {
    static const char* capture_cout(const char* type);
    static void capture_cancel();
 };
+// h2_dns.hpp
 
 struct h2_dns : h2_libc {
    h2_list x, y;
@@ -2396,6 +2455,7 @@ struct h2_dnses {
    void add(h2_dns* dns);
    void clear();
 };
+// h2_socket.hpp
 
 struct h2_packet : h2_libc {
    h2_list x;
@@ -2457,6 +2517,7 @@ struct h2_socket {
    // from=1.2.3.4:5678, to=4.3.2.1:8765
    static void inject_received(const void* packet, size_t size, const char* attributes);
 };
+// h2_case.hpp
 
 struct h2_case {
    enum { initial = 0,
@@ -2479,7 +2540,8 @@ struct h2_case {
    h2_dnses dnses;
    h2_sock* sock{nullptr};
 
-   h2_case(const char* name_, const char* file_, int line_, int status_) : name(name_), file(file_), line(line_), status(status_) {}
+   h2_case(const char* name_, int status_, const char* file_, int line_)
+     : name(name_), file(file_), line(line_), status(status_) {}
 
    void prev_setup();
    void post_setup() {}
@@ -2494,6 +2556,7 @@ struct h2_case {
       ~cleaner() { thus->prev_cleanup(); }
    };
 };
+// h2_suite.hpp
 
 struct h2_suite {
    const char* name;
@@ -2501,14 +2564,14 @@ struct h2_suite {
    int line;
    h2_list x;
    int seq = 0;
-   h2_stubs stubs;
-   h2_mocks mocks;
    int stats[h2_case::statuss]{0};
    int checks = 0;
    jmp_buf jump;
    bool jumpable = false;
    void (*test_code)(h2_suite*, h2_case*);
    h2_list cases;
+   h2_stubs stubs;
+   h2_mocks mocks;
 
    h2_suite(const char* name_, void (*test_code_)(h2_suite*, h2_case*), const char* file_, int line_);
 
@@ -2528,6 +2591,7 @@ struct h2_suite {
       ~cleaner();
    };
 };
+// h2_directory.hpp
 
 struct h2_directory {
    h2_singleton(h2_directory);
@@ -2537,6 +2601,7 @@ struct h2_directory {
    static void drop_last_order();
    static void sort();
 };
+// h2_check.hpp
 
 struct h2_defer_fail : h2_once {
    const char* check_type;
@@ -2591,6 +2656,7 @@ static inline h2_ostringstream& h2_JE(h2_string e, h2_string a, h2_defer_fail* d
 #define H2OK(...) H2PP_VARIADIC_CALL(__H2OK, __VA_ARGS__, (#__VA_ARGS__), H2Q(t_defer_fail))
 
 #define H2JE(expect, actual) __H2JE(expect, actual, H2Q(t_defer_fail))
+// h2_generator.hpp
 
 /* clang-format off */
 
@@ -2712,23 +2778,25 @@ static inline h2_ostringstream& h2_JE(h2_string e, h2_string a, h2_defer_fail* d
    for (auto x = Qx; Qb; ::longjmp(Qj, 1))                                    \
       for (auto y = Qy; Qb; Qb = false)
 #define H2Casess(name, ...) _Fullmesh_Case_Impl(#name, H2Q(j), H2Q(b), H2Q(l), H2Q(x), H2Q(y), __VA_ARGS__)
+// h2_patch.hpp
 
 struct h2_patch {
    static void initialize();
    static bool exempt(h2_backtrace& bt);
 };
+// h2_task.hpp
 
 struct h2_task {
    h2_singleton(h2_task);
 
-   h2_stubs stubs;
-   h2_mocks mocks;
    int stats[h2_case::statuss]{0};
    int suites = 0, cases = 0;
    int checks = 0;
    int rounds = 0;
    h2_suite* current_suite = nullptr;
    h2_case* current_case = nullptr;
+   h2_stubs stubs;
+   h2_mocks mocks;
    std::vector<void (*)()> global_setups, global_teardowns;
    std::vector<void (*)()> global_suite_setups, global_suite_teardowns;
    std::vector<void (*)()> global_case_setups, global_case_teardowns;
@@ -2769,6 +2837,7 @@ static inline void h2_fail_g(h2_fail* fail, bool defer)
    if (O.debug) h2_debugger::trap();
    if (h2_task::I().current_case) h2_task::I().current_case->do_fail(fail, defer);
 }
+// h2_report.hpp
 
 struct h2_report {
    h2_singleton(h2_report);
@@ -2786,22 +2855,41 @@ struct h2_report {
 
 /* ======> Interface <====== */
 
-#define GlobalSetup() H2GlobalSetup()
-#define GlobalTeardown() H2GlobalTeardown()
+#ifndef SUITE
+#   define SUITE H2SUITE
+#else
+#   pragma message("SUITE conflict, using H2SUITE instead")
+#endif
 
-#define GlobalSuiteSetup() H2GlobalSuiteSetup()
-#define GlobalSuiteTeardown() H2GlobalSuiteTeardown()
+#ifndef CASE
+#   define CASE H2CASE
+#else
+#   pragma message("CASE conflict, using H2CASE instead")
+#endif
 
-#define GlobalCaseSetup() H2GlobalCaseSetup()
-#define GlobalCaseTeardown() H2GlobalCaseTeardown()
+#ifndef TODO
+#   define TODO H2TODO
+#else
+#   pragma message("TODO conflict, using H2TODO instead")
+#endif
 
-#define SUITE H2SUITE
-#define CASE H2CASE
-#define TODO H2TODO
-#define Case H2Case
-#define Todo H2Todo
+#ifndef Case
+#   define Case H2Case
+#else
+#   pragma message("Case conflict, using H2Case instead")
+#endif
 
-#define Cleanup() H2Cleanup()
+#ifndef Todo
+#   define Todo H2Todo
+#else
+#   pragma message("Todo conflict, using H2Todo instead")
+#endif
+
+#ifndef Cleanup
+#   define Cleanup H2Cleanup
+#else
+#   pragma message("Cleanup conflict, using H2Cleanup instead")
+#endif
 
 #ifndef OK
 #   define OK H2OK
@@ -2811,31 +2899,111 @@ struct h2_report {
 
 #ifndef JE
 #   define JE H2JE
+#else
+#   pragma message("JE conflict, using H2JE instead")
 #endif
 
-#define MOCK H2MOCK
-#define STUB H2STUB
+#ifndef MOCK
+#   define MOCK H2MOCK
+#else
+#   pragma message("MOCK conflict, using H2MOCK instead")
+#endif
+
+#ifndef STUB
+#   define STUB H2STUB
+#else
+#   pragma message("STUB conflict, using H2STUB instead")
+#endif
 
 #ifndef BLOCK
 #   define BLOCK H2BLOCK
+#else
+#   pragma message("BLOCK conflict, using H2BLOCK instead")
 #endif
 
-#define DNS(...) H2DNS(__VA_ARGS__)
+#ifndef DNS
+#   define DNS H2DNS
+#else
+#   pragma message("DNS conflict, using H2DNS instead")
+#endif
 
 #ifndef SOCK
 #   define SOCK H2SOCK
+#else
+#   pragma message("SOCK conflict, using H2SOCK instead")
 #endif
 
 #ifndef COUT
 #   define COUT H2COUT
+#else
+#   pragma message("COUT conflict, using H2COUT instead")
 #endif
 
-#define MATCHER(...) H2MATCHER(__VA_ARGS__)
+#ifndef GlobalSetup
+#   define GlobalSetup H2GlobalSetup
+#else
+#   pragma message("GlobalSetup conflict, using H2GlobalSetup instead")
+#endif
 
-#define CASES H2CASES
-#define CASESS H2CASESS
-#define Cases H2Cases
-#define Casess H2Casess
+#ifndef GlobalTeardown
+#   define GlobalTeardown H2GlobalTeardown
+#else
+#   pragma message("GlobalTeardown conflict, using H2GlobalTeardown instead")
+#endif
+
+#ifndef GlobalSuiteSetup
+#   define GlobalSuiteSetup H2GlobalSuiteSetup
+#else
+#   pragma message("GlobalSuiteSetup conflict, using H2GlobalSuiteSetup instead")
+#endif
+
+#ifndef GlobalSuiteTeardown
+#   define GlobalSuiteTeardown H2GlobalSuiteTeardown
+#else
+#   pragma message("GlobalSuiteTeardown conflict, using H2GlobalSuiteTeardown instead")
+#endif
+
+#ifndef GlobalCaseSetup
+#   define GlobalCaseSetup H2GlobalCaseSetup
+#else
+#   pragma message("GlobalCaseSetup conflict, using H2GlobalCaseSetup instead")
+#endif
+
+#ifndef GlobalCaseTeardown
+#   define GlobalCaseTeardown H2GlobalCaseTeardown
+#else
+#   pragma message("GlobalCaseTeardown conflict, using H2GlobalCaseTeardown instead")
+#endif
+
+#ifndef MATCHER
+#   define MATCHER H2MATCHER
+#else
+#   pragma message("MATCHER conflict, using H2MATCHER instead")
+#endif
+
+#ifndef CASES
+#   define CASES H2CASES
+#else
+#   pragma message("CASES conflict, using H2CASES instead")
+#endif
+
+#ifndef CASESS
+#   define CASESS H2CASESS
+#else
+#   pragma message("CASESS conflict, using H2CASESS instead")
+#endif
+
+#ifndef Cases
+#   define Cases H2Cases
+#else
+#   pragma message("Cases conflict, using H2Cases instead")
+#endif
+
+#ifndef Casess
+#   define Casess H2Casess
+#else
+#   pragma message("Casess conflict, using H2Casess instead")
+#endif
 
 /* clang-format off */
 using h2::_;
@@ -2904,44 +3072,42 @@ using h2::Pair;
 #define __H2SUITE(name, QP)                                       \
    static void QP(h2::h2_suite*, h2::h2_case*);                   \
    static h2::h2_suite H2Q(suite)(name, &QP, __FILE__, __LINE__); \
-   static void QP(h2::h2_suite* ________suite, h2::h2_case* _________case)
+   static void QP(h2::h2_suite* _2_0_1_3_suite, h2::h2_case* _2_0_1_7_case)
 
 #define H2SUITE(...) __H2SUITE(#__VA_ARGS__, H2Q(h2_suite_test))
 
-#define __H2Cleanup()                      \
-   if (::setjmp(________suite->jump) == 0) \
-      ________suite->jumpable = true;      \
-   if (!_________case)
+#define H2Cleanup()                         \
+   if (::setjmp(_2_0_1_3_suite->jump) == 0) \
+      _2_0_1_3_suite->jumpable = true;      \
+   if (!_2_0_1_7_case)
 
-#define H2Cleanup() __H2Cleanup()
-
-#define __H2Case(name, status, Qc, Q1, Q2)                                       \
-   static h2::h2_case Qc(name, __FILE__, __LINE__, status);                      \
-   static h2::h2_suite::installer H2Q(installer)(________suite, &Qc);            \
-   if (&Qc == _________case)                                                     \
-      for (h2::h2_suite::cleaner Q1(________suite); Q1; _________case = nullptr) \
-         for (h2::h2_case::cleaner Q2(&Qc); Q2;)                                 \
+#define __H2Case(name, status, Qc, Q1, Q2)                                        \
+   static h2::h2_case Qc(name, status, __FILE__, __LINE__);                       \
+   static h2::h2_suite::installer H2Q(installer)(_2_0_1_3_suite, &Qc);            \
+   if (&Qc == _2_0_1_7_case)                                                      \
+      for (h2::h2_suite::cleaner Q1(_2_0_1_3_suite); Q1; _2_0_1_7_case = nullptr) \
+         for (h2::h2_case::cleaner Q2(&Qc); Q2;)                                  \
             if (::setjmp(Qc.jump) == 0)
 
 #define H2Case(...) __H2Case(#__VA_ARGS__, h2::h2_case::initial, H2Q(t_case), H2Q(_1), H2Q(_2))
 #define H2Todo(...) __H2Case(#__VA_ARGS__, h2::h2_case::todo, H2Q(t_case), H2Q(_1), H2Q(_2))
 
-#define __H2CASE(name, status, QR, QP)                                     \
-   static void QR();                                                       \
-   static void QP(h2::h2_suite* ________suite, h2::h2_case* _________case) \
-   {                                                                       \
-      static h2::h2_case c(name, __FILE__, __LINE__, status);              \
-      static h2::h2_suite::installer i(________suite, &c);                 \
-      if (&c == _________case)                                             \
-         for (h2::h2_case::cleaner a(&c); a;)                              \
-            if (::setjmp(c.jump) == 0)                                     \
-               QR();                                                       \
-   }                                                                       \
-   static h2::h2_suite H2Q(suite)("Anonymous", &QP, __FILE__, __LINE__);   \
+#define __H2CASE(name, status, QR, QP)                                      \
+   static void QR();                                                        \
+   static void QP(h2::h2_suite* _2_0_1_3_suite, h2::h2_case* _2_0_1_7_case) \
+   {                                                                        \
+      static h2::h2_case c(name, status, __FILE__, __LINE__);               \
+      static h2::h2_suite::installer i(_2_0_1_3_suite, &c);                 \
+      if (&c == _2_0_1_7_case)                                              \
+         for (h2::h2_case::cleaner a(&c); a;)                               \
+            if (::setjmp(c.jump) == 0)                                      \
+               QR();                                                        \
+   }                                                                        \
+   static h2::h2_suite H2Q(suite)("Anonymous", &QP, __FILE__, __LINE__);    \
    static void QR()
 
-#define H2CASE(...) __H2CASE(#__VA_ARGS__, h2::h2_case::initial, H2Q(h2_case_test_code), H2Q(h2_suite_test_code))
-#define H2TODO(...) __H2CASE(#__VA_ARGS__, h2::h2_case::todo, H2Q(h2_case_test_code), H2Q(h2_suite_test_code))
+#define H2CASE(...) __H2CASE(#__VA_ARGS__, h2::h2_case::initial, H2Q(h2_case_test), H2Q(h2_suite_test))
+#define H2TODO(...) __H2CASE(#__VA_ARGS__, h2::h2_case::todo, H2Q(h2_case_test), H2Q(h2_suite_test))
 
 #define __H2BLOCK(Attributes, Qb) for (h2::h2_heap::stack::block Qb(Attributes, __FILE__, __LINE__); Qb;)
 #define H2BLOCK(...) __H2BLOCK(#__VA_ARGS__, H2Q(t_block))

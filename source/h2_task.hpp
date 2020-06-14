@@ -2,14 +2,14 @@
 struct h2_task {
    h2_singleton(h2_task);
 
-   h2_stubs stubs;
-   h2_mocks mocks;
    int stats[h2_case::statuss]{0};
    int suites = 0, cases = 0;
    int checks = 0;
    int rounds = 0;
    h2_suite* current_suite = nullptr;
    h2_case* current_case = nullptr;
+   h2_stubs stubs;
+   h2_mocks mocks;
    std::vector<void (*)()> global_setups, global_teardowns;
    std::vector<void (*)()> global_suite_setups, global_suite_teardowns;
    std::vector<void (*)()> global_case_setups, global_case_teardowns;

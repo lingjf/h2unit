@@ -5,14 +5,14 @@ struct h2_suite {
    int line;
    h2_list x;
    int seq = 0;
-   h2_stubs stubs;
-   h2_mocks mocks;
    int stats[h2_case::statuss]{0};
    int checks = 0;
    jmp_buf jump;
    bool jumpable = false;
    void (*test_code)(h2_suite*, h2_case*);
    h2_list cases;
+   h2_stubs stubs;
+   h2_mocks mocks;
 
    h2_suite(const char* name_, void (*test_code_)(h2_suite*, h2_case*), const char* file_, int line_);
 
