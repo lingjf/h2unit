@@ -257,25 +257,36 @@ class h2_mocker<Counter, Lineno, Class, Return(Args...)> : h2_mock {
 
    h2_mocker& returns()
    {
-      if (!function_array.empty()) function_array.back().empty = false;
+      if (!function_array.empty()) {
+         function_array.back().empty = false;
+      }
       return *this;
    }
 
    h2_mocker& returns(h2_function<Class, Return(Args...)> r)
    {
-      if (!function_array.empty()) function_array.back() = r;
+      if (!function_array.empty()) {
+         function_array.pop_back();
+         function_array.push_back(r);
+      }
       return *this;
    }
 
    h2_mocker& does(std::function<Return(Args...)> f)
    {
-      if (!function_array.empty()) function_array.back() = h2_function<Class, Return(Args...)>(f);
+      if (!function_array.empty()) {
+         function_array.pop_back();
+         function_array.push_back(h2_function<Class, Return(Args...)>(f));
+      }
       return *this;
    }
 
    h2_mocker& does(std::function<Return(Class*, Args...)> f)
    {
-      if (!function_array.empty()) function_array.back() = h2_function<Class, Return(Args...)>(f);
+      if (!function_array.empty()) {
+         function_array.pop_back();
+         function_array.push_back(h2_function<Class, Return(Args...)>(f));
+      }
       return *this;
    }
 

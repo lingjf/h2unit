@@ -1,17 +1,24 @@
 
+template <typename Return>
+struct h2_return : h2_libc {
+   Return value;
+   h2_return() = delete;
+   explicit h2_return(Return _value) : value(_value){};
+};
+
 template <typename Class, typename F>
 struct h2_function;
 
 template <typename Class, typename Return, typename... Args>
 struct h2_function<Class, Return(Args...)> {
-   std::function<Return(Args...)> normal_function = {}; // functional alignment issue
+   std::function<Return(Args...)> normal_function = {};  // functional alignment issue
    std::function<Return(Class*, Args...)> member_function = {};
    void* origin_function = nullptr;
-   Return return_value;
+   h2_shared_ptr<h2_return<Return>> return_value;
    bool empty = false;
 
    h2_function() { empty = true; }
-   h2_function(Return r) : return_value(r) {}
+   h2_function(Return r) : return_value(new h2_return<Return>(r)) {}
    h2_function(std::function<Return(Args...)> f) : normal_function(f) {}
    h2_function(std::function<Return(Class*, Args...)> f) : member_function(f) {}
 
@@ -27,7 +34,7 @@ struct h2_function<Class, Return(Args...)> {
       } else if (normal_function) {
          return normal_function(args...);
       } else {
-         return return_value;
+         return return_value->value;
       }
    }
 };

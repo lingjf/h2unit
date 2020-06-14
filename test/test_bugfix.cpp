@@ -1,10 +1,33 @@
 #include "../source/h2_unit.cpp"
 
-SUITE(bugfix)
+struct NoDefaultConstructorClass {
+   int a;
+   float b;
+   char c[100];
+
+   NoDefaultConstructorClass() = delete;
+   NoDefaultConstructorClass(int _a, float _b) : a(_a), b(_b) {}
+};
+
+static NoDefaultConstructorClass& foobar(int a, NoDefaultConstructorClass& x)
 {
-   Case(Eq integer with float)
-   {
-      float uv = 2.00001;
-      OK(Eq(2, 0.0001), uv);
-   }
+   x.a = a;
+   x.b += a;
+   sprintf(x.c, "%d", a);
+   return x;
+}
+
+CASE(bugfix
+     : Eq integer with float)
+{
+   float uv = 2.00001;
+   OK(Eq(2, 0.0001), uv);
+}
+
+CASE(bugfix
+     : MOCK return reference)
+{
+   NoDefaultConstructorClass x(1, 1.1);
+   MOCK(foobar, NoDefaultConstructorClass & (int, NoDefaultConstructorClass&)).once(_, _).returns(x);
+   foobar(1, x);
 }

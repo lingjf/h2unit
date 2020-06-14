@@ -1,4 +1,4 @@
-﻿/* v5.5  2020-06-13 22:28:08 */
+﻿/* v5.5  2020-06-14 09:38:54 */
 /* https://github.com/lingjf/h2unit */
 /* Apache Licence 2.0 */
 #ifndef __H2UNIT_HPP__
@@ -1990,19 +1990,26 @@ struct h2_attendance {
    const char* expect();
 };
 
+template <typename Return>
+struct h2_return : h2_libc {
+   Return value;
+   h2_return() = delete;
+   explicit h2_return(Return _value) : value(_value){};
+};
+
 template <typename Class, typename F>
 struct h2_function;
 
 template <typename Class, typename Return, typename... Args>
 struct h2_function<Class, Return(Args...)> {
-   std::function<Return(Args...)> normal_function = {}; // functional alignment issue
+   std::function<Return(Args...)> normal_function = {};  // functional alignment issue
    std::function<Return(Class*, Args...)> member_function = {};
    void* origin_function = nullptr;
-   Return return_value;
+   h2_shared_ptr<h2_return<Return>> return_value;
    bool empty = false;
 
    h2_function() { empty = true; }
-   h2_function(Return r) : return_value(r) {}
+   h2_function(Return r) : return_value(new h2_return<Return>(r)) {}
    h2_function(std::function<Return(Args...)> f) : normal_function(f) {}
    h2_function(std::function<Return(Class*, Args...)> f) : member_function(f) {}
 
@@ -2018,7 +2025,7 @@ struct h2_function<Class, Return(Args...)> {
       } else if (normal_function) {
          return normal_function(args...);
       } else {
-         return return_value;
+         return return_value->value;
       }
    }
 };
@@ -2307,25 +2314,36 @@ class h2_mocker<Counter, Lineno, Class, Return(Args...)> : h2_mock {
 
    h2_mocker& returns()
    {
-      if (!function_array.empty()) function_array.back().empty = false;
+      if (!function_array.empty()) {
+         function_array.back().empty = false;
+      }
       return *this;
    }
 
    h2_mocker& returns(h2_function<Class, Return(Args...)> r)
    {
-      if (!function_array.empty()) function_array.back() = r;
+      if (!function_array.empty()) {
+         function_array.pop_back();
+         function_array.push_back(r);
+      }
       return *this;
    }
 
    h2_mocker& does(std::function<Return(Args...)> f)
    {
-      if (!function_array.empty()) function_array.back() = h2_function<Class, Return(Args...)>(f);
+      if (!function_array.empty()) {
+         function_array.pop_back();
+         function_array.push_back(h2_function<Class, Return(Args...)>(f));
+      }
       return *this;
    }
 
    h2_mocker& does(std::function<Return(Class*, Args...)> f)
    {
-      if (!function_array.empty()) function_array.back() = h2_function<Class, Return(Args...)>(f);
+      if (!function_array.empty()) {
+         function_array.pop_back();
+         function_array.push_back(h2_function<Class, Return(Args...)>(f));
+      }
       return *this;
    }
 

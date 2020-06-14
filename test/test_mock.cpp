@@ -34,7 +34,10 @@ SUITE(mock c - function)
       OK(11, bar1(1, "A"));
    }
 
-   Case(any 0) { MOCK(bar1, int(int, const char*)).any(1, "A"); }
+   Case(any 0)
+   {
+      MOCK(bar1, int(int, const char*)).any(1, "A");
+   }
 
    Case(any 1)
    {
