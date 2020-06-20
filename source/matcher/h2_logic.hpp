@@ -30,7 +30,7 @@ struct h2_and_matches {
       h2_fail::append_subling(fail, h2_matcher_cast<A>(m2).matches(a, caseless, false));
       if (!fail == !dont) return nullptr;
       if (dont) {
-         fail = new h2_fail_unexpect("", h2_stringify(a), expects(a, caseless, dont));
+         fail = h2_fail::new_unexpect("", h2_stringify(a), expects(a, caseless, dont));
       }
       return fail;
    }
@@ -56,7 +56,7 @@ struct h2_or_matches {
       h2_fail* f2 = h2_matcher_cast<A>(m2).matches(a, caseless, false);
       bool result = !f1 || !f2;
       if (result == !dont) return nullptr;
-      return new h2_fail_unexpect("", h2_stringify(a), expects(a, caseless, dont));
+      return h2_fail::new_unexpect("", h2_stringify(a), expects(a, caseless, dont));
    }
    template <typename A>
    h2_string expects(const A& a, bool caseless = false, bool dont = false) const
@@ -97,9 +97,9 @@ struct h2_allof_matches {
       if (!fails == !dont) return nullptr;
       h2_fail* fail = nullptr;
       if (dont) {
-         fail = new h2_fail_unexpect("", h2_stringify(a), expects(a, caseless, dont), "Should not match all");
+         fail = h2_fail::new_unexpect("", h2_stringify(a), expects(a, caseless, dont), "Should not match all");
       } else {
-         fail = new h2_fail_unexpect("", h2_stringify(a), expects(a, caseless, dont));
+         fail = h2_fail::new_unexpect("", h2_stringify(a), expects(a, caseless, dont));
          h2_fail::append_child(fail, fails);
       }
       return fail;
@@ -136,9 +136,9 @@ struct h2_anyof_matches {
       if ((0 < c) == !dont) return nullptr;
       h2_fail* fail = nullptr;
       if (dont) {
-         fail = new h2_fail_unexpect("", h2_stringify(a), expects(a, caseless, dont), "Should not match any one");
+         fail = h2_fail::new_unexpect("", h2_stringify(a), expects(a, caseless, dont), "Should not match any one");
       } else {
-         fail = new h2_fail_unexpect("", h2_stringify(a), expects(a, caseless, dont), "Not match any one");
+         fail = h2_fail::new_unexpect("", h2_stringify(a), expects(a, caseless, dont), "Not match any one");
          h2_fail::append_child(fail, fails);
       }
       return fail;
@@ -165,7 +165,7 @@ struct h2_noneof_matches {
          if (!fail) ++c;
       }
       if ((c == 0) == !dont) return nullptr;
-      return new h2_fail_unexpect("", h2_stringify(a), expects(a, caseless, dont));
+      return h2_fail::new_unexpect("", h2_stringify(a), expects(a, caseless, dont));
    }
 
    template <typename A>

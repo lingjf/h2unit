@@ -63,6 +63,21 @@ SUITE(preprocessor)
       OK(3, n[2]);
    }
 
+   Case(H2PP_REMOVE_PARENTHESES_IF)
+   {
+      int n[] = {H2PP_REMOVE_PARENTHESES_IF((1, 2, 3))};
+      OK(1, n[0]);
+      OK(2, n[1]);
+      OK(3, n[2]);
+   }
+   // Case(H2PP_REMOVE_PARENTHESES_IF)
+   // {
+   //    int n[] = {H2PP_REMOVE_PARENTHESES_IF(1, 2, 3)};
+   //    OK(1, n[0]);
+   //    OK(2, n[1]);
+   //    OK(3, n[2]);
+   // }
+
    Case(H2PP_IS_BEGIN_PARENTHESES)
    {
       OK(0, H2PP_IS_BEGIN_PARENTHESES());

@@ -2,7 +2,7 @@
 h2_inline h2_fail* h2_matches_regex::matches(const h2_string& a, bool caseless, bool dont) const
 {
    if (h2_pattern::regex_match(e.c_str(), a.c_str(), caseless) == !dont) return nullptr;
-   return new h2_fail_strfind(e, a, expects(a, caseless, dont));
+   return h2_fail::new_strfind(e, a, expects(a, caseless, dont));
 }
 
 h2_inline h2_string h2_matches_regex::expects(const h2_string& a, bool caseless, bool dont) const
@@ -13,7 +13,7 @@ h2_inline h2_string h2_matches_regex::expects(const h2_string& a, bool caseless,
 h2_inline h2_fail* h2_matches_wildcard::matches(const h2_string& a, bool caseless, bool dont) const
 {
    if (h2_pattern::wildcard_match(e.c_str(), a.c_str(), caseless) == !dont) return nullptr;
-   return new h2_fail_strfind(e, a, expects(a, caseless, dont));
+   return h2_fail::new_strfind(e, a, expects(a, caseless, dont));
 }
 
 h2_inline h2_string h2_matches_wildcard::expects(const h2_string& a, bool caseless, bool dont) const
@@ -24,7 +24,7 @@ h2_inline h2_string h2_matches_wildcard::expects(const h2_string& a, bool casele
 h2_inline h2_fail* h2_matches_strcmp::matches(const h2_string& a, bool caseless, bool dont) const
 {
    if (a.equals(e, caseless) == !dont) return nullptr;
-   return new h2_fail_strfind(e, a, expects(a, caseless, dont));
+   return h2_fail::new_strfind(e, a, expects(a, caseless, dont));
 }
 
 h2_inline h2_string h2_matches_strcmp::expects(const h2_string& a, bool caseless, bool dont) const
@@ -35,7 +35,7 @@ h2_inline h2_string h2_matches_strcmp::expects(const h2_string& a, bool caseless
 h2_inline h2_fail* h2_matches_substr::matches(const h2_string& a, bool caseless, bool dont) const
 {
    if (a.contains(substring, caseless) == !dont) return nullptr;
-   return new h2_fail_strfind(substring, a, expects(a, caseless, dont));
+   return h2_fail::new_strfind(substring, a, expects(a, caseless, dont));
 }
 
 h2_inline h2_string h2_matches_substr::expects(const h2_string& a, bool caseless, bool dont) const
@@ -46,7 +46,7 @@ h2_inline h2_string h2_matches_substr::expects(const h2_string& a, bool caseless
 h2_inline h2_fail* h2_matches_startswith::matches(const h2_string& a, bool caseless, bool dont) const
 {
    if (a.startswith(prefix_string, caseless) == !dont) return nullptr;
-   return new h2_fail_strfind(prefix_string, a, expects(a, caseless, dont));
+   return h2_fail::new_strfind(prefix_string, a, expects(a, caseless, dont));
 }
 
 h2_inline h2_string h2_matches_startswith::expects(const h2_string& a, bool caseless, bool dont) const
@@ -57,7 +57,7 @@ h2_inline h2_string h2_matches_startswith::expects(const h2_string& a, bool case
 h2_inline h2_fail* h2_matches_endswith::matches(const h2_string& a, bool caseless, bool dont) const
 {
    if (a.endswith(suffix_string, caseless) == !dont) return nullptr;
-   return new h2_fail_strfind(suffix_string, a, expects(a, caseless, dont));
+   return h2_fail::new_strfind(suffix_string, a, expects(a, caseless, dont));
 }
 
 h2_inline h2_string h2_matches_endswith::expects(const h2_string& a, bool caseless, bool dont) const
@@ -68,7 +68,7 @@ h2_inline h2_string h2_matches_endswith::expects(const h2_string& a, bool casele
 h2_inline h2_fail* h2_matches_json::matches(const h2_string& a, bool caseless, bool dont) const
 {
    if ((h2_json::match(e, a)) == !dont) return nullptr;
-   return new h2_fail_json(e, a, expects(a, caseless, dont));
+   return h2_fail::new_json(e, a, expects(a, caseless, dont));
 }
 
 h2_inline h2_string h2_matches_json::expects(const h2_string& a, bool caseless, bool dont) const

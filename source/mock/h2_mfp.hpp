@@ -153,7 +153,7 @@ struct h2_mfp<Class, Return(Args...)> {
       if (!is_virtual(u)) return u.p;
       Class* o = h2_constructible<Class>::O(alloca(sizeof(Class)));
       if (1 == (long long)o || 2 == (long long)o)
-         h2_fail_g(new h2_fail_instantiate(action_type, return_type, class_type, method_name, return_args, 1 == (long long)o, file, line), false);
+         h2_fail_g(h2_fail::new_instantiate(action_type, return_type, class_type, method_name, return_args, 1 == (long long)o, file, line), false);
       return get_vmfp(u, o);
    }
 

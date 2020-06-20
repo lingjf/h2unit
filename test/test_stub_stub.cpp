@@ -206,19 +206,4 @@ SUITE(stub template)
    }
 }
 
-SUITE(stub in shared_code)
-{
-   STUB(int, foobar, (int a, const int& b)) { return a + b; };
-
-   Case(a)
-   {
-      OK(222, foobar(111, 111));
-   }
-
-   Case(b)
-   {
-      OK(222, foobar(111, 111));
-   }
-}
-
 }  // namespace

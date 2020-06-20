@@ -8,7 +8,7 @@ struct h2_matches_ge {
    h2_fail* matches(const A& a, bool caseless = false, bool dont = false) const
    {
       if ((a >= e) == !dont) return nullptr;
-      return new h2_fail_unexpect(h2_stringify(e), h2_stringify(a), expects(a, false, dont));
+      return h2_fail::new_unexpect(h2_stringify(e), h2_stringify(a), expects(a, false, dont));
    }
    template <typename A>
    h2_string expects(const A& a, bool caseless = false, bool dont = false) const
@@ -26,7 +26,7 @@ struct h2_matches_gt {
    h2_fail* matches(const A& a, bool caseless = false, bool dont = false) const
    {
       if ((a > e) == !dont) return nullptr;
-      return new h2_fail_unexpect(h2_stringify(e), h2_stringify(a), expects(a, false, dont));
+      return h2_fail::new_unexpect(h2_stringify(e), h2_stringify(a), expects(a, false, dont));
    }
    template <typename A>
    h2_string expects(const A& a, bool caseless = false, bool dont = false) const
@@ -44,7 +44,7 @@ struct h2_matches_le {
    h2_fail* matches(const A& a, bool caseless = false, bool dont = false) const
    {
       if ((a <= e) == !dont) return nullptr;
-      return new h2_fail_unexpect(h2_stringify(e), h2_stringify(a), expects(a, false, dont));
+      return h2_fail::new_unexpect(h2_stringify(e), h2_stringify(a), expects(a, false, dont));
    }
    template <typename A>
    h2_string expects(const A& a, bool caseless = false, bool dont = false) const
@@ -62,7 +62,7 @@ struct h2_matches_lt {
    h2_fail* matches(const A& a, bool caseless = false, bool dont = false) const
    {
       if ((a < e) == !dont) return nullptr;
-      return new h2_fail_unexpect(h2_stringify(e), h2_stringify(a), expects(a, false, dont));
+      return h2_fail::new_unexpect(h2_stringify(e), h2_stringify(a), expects(a, false, dont));
    }
    template <typename A>
    h2_string expects(const A& a, bool caseless = false, bool dont = false) const

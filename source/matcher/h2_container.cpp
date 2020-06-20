@@ -15,13 +15,13 @@
       if (c == 0) {                                                                   \
          type t1;                                                                     \
          h2_string t2 = v_matchers[i].expects(t1, caseless, false);                   \
-         fail = new h2_fail_unexpect("", "[missing]", t2);                            \
+         fail = h2_fail::new_unexpect("", "[missing]", t2);                            \
       }                                                                               \
       if (fail) fail->no = h2_stringify(i);                                           \
       h2_fail::append_subling(fails, fail);                                           \
    }                                                                                  \
    if (!fails == !dont) return nullptr;                                               \
-   h2_fail* fail = new h2_fail_unexpect("", "", expects(a, caseless, dont), "fails"); \
+   h2_fail* fail = h2_fail::new_unexpect("", "", expects(a, caseless, dont), "fails"); \
    h2_fail::append_child(fail, fails);                                                \
    return fail
 
@@ -37,7 +37,7 @@ inline h2_fail* h2_listof_matches<Matchers...>::matches(A a, bool caseless, bool
       h2_fail::append_subling(fails, fail);
    }
    if (!fails == !dont) return nullptr;
-   h2_fail* fail = new h2_fail_unexpect("", "", expects(a, caseless, dont), "fails");
+   h2_fail* fail = h2_fail::new_unexpect("", "", expects(a, caseless, dont), "fails");
    h2_fail::append_child(fail, fails);
    return fail;
 }
@@ -70,28 +70,28 @@ inline h2_fail* h2_listof_matches<Matchers...>::matches(const std::forward_list<
    __H2_LISTOF_COMMON(A);
 }
 
-#define __H2_HAS_COMMON(type)                                                               \
-   h2_fail* fails = nullptr;                                                                \
-   for (int i = 0; i < v_matchers.size(); ++i) {                                            \
-      bool found = false;                                                                   \
-      for (auto& j : a) {                                                                   \
-         h2_fail* fail = v_matchers[i].matches(j, caseless, false);                         \
-         if (!fail) {                                                                       \
-            found = true;                                                                   \
-            break;                                                                          \
-         }                                                                                  \
-      }                                                                                     \
-      if (!found) {                                                                         \
-         type t1;                                                                           \
-         h2_string t2 = v_matchers[i].expects(t1, caseless, false);                         \
-         h2_fail* fail = new h2_fail_normal(nullptr, 0, nullptr, "Not has %s", t2.c_str()); \
-         if (fail) fail->no = h2_stringify(i);                                              \
-         h2_fail::append_subling(fails, fail);                                              \
-      }                                                                                     \
-   }                                                                                        \
-   if (!fails == !dont) return nullptr;                                                     \
-   h2_fail* fail = new h2_fail_unexpect("", "", expects(a, caseless, dont), "fails");       \
-   h2_fail::append_child(fail, fails);                                                      \
+#define __H2_HAS_COMMON(type)                                                                \
+   h2_fail* fails = nullptr;                                                                 \
+   for (int i = 0; i < v_matchers.size(); ++i) {                                             \
+      bool found = false;                                                                    \
+      for (auto& j : a) {                                                                    \
+         h2_fail* fail = v_matchers[i].matches(j, caseless, false);                          \
+         if (!fail) {                                                                        \
+            found = true;                                                                    \
+            break;                                                                           \
+         }                                                                                   \
+      }                                                                                      \
+      if (!found) {                                                                          \
+         type t1;                                                                            \
+         h2_string t2 = v_matchers[i].expects(t1, caseless, false);                          \
+         h2_fail* fail = h2_fail::new_normal(nullptr, 0, nullptr, "Not has %s", t2.c_str()); \
+         if (fail) fail->no = h2_stringify(i);                                               \
+         h2_fail::append_subling(fails, fail);                                               \
+      }                                                                                      \
+   }                                                                                         \
+   if (!fails == !dont) return nullptr;                                                      \
+   h2_fail* fail = h2_fail::new_unexpect("", "", expects(a, caseless, dont), "fails");        \
+   h2_fail::append_child(fail, fails);                                                       \
    return fail
 
 template <typename... Matchers>

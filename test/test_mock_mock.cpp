@@ -462,13 +462,4 @@ SUITE(Mock template)
    }
 }
 
-SUITE(Mock in shared_code)
-{
-   MOCK(bar1, int(int, const char*)).once(1, "A").returns(11);
-
-   Case(a) { OK(11, bar1(1, "A")); }
-
-   Case(b) { OK(11, bar1(1, "A")); }
-}
-
 }  // namespace

@@ -14,7 +14,7 @@ struct h2_defer_fail : h2_once {
 static inline h2_ostringstream& h2_OK(h2_defer_fail* d, bool a)
 {
    d->check_type = "OK1";
-   if (!a) d->fail = new h2_fail_unexpect("true", "false");
+   if (!a) d->fail = h2_fail::new_unexpect("true", "false");
    h2_check_g();
    return d->oss;
 }
@@ -27,7 +27,7 @@ static inline h2_ostringstream& h2_OK(h2_defer_fail* d, E e, A a)
    h2_fail* fail = m.matches((typename h2_decay<A>::type)a);
    d->fail = fail;
    if (fail && fail->subling_next) {
-      d->fail = new h2_fail_unexpect();
+      d->fail = h2_fail::new_unexpect();
       h2_fail::append_child(d->fail, fail);
    }
    h2_check_g();

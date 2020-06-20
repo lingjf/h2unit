@@ -14,7 +14,7 @@ struct h2_matches_null {
    {
       bool _dont = reverse ? !dont : dont;
       if ((nullptr == (const void*)a) == !_dont) return nullptr;
-      return new h2_fail_unexpect("", h2_stringify((const void*)a), expects(a, false, dont));
+      return h2_fail::new_unexpect("", h2_stringify((const void*)a), expects(a, false, dont));
    }
    template <typename A>
    h2_string expects(const A& a, bool caseless = false, bool dont = false) const
@@ -30,7 +30,7 @@ struct h2_matches_boolean {
    {
       bool _dont = E ? dont : !dont;
       if (((bool)a) == !_dont) return nullptr;
-      return new h2_fail_unexpect("", a ? "true" : "false", expects(a, false, dont));
+      return h2_fail::new_unexpect("", a ? "true" : "false", expects(a, false, dont));
    }
    template <typename A>
    h2_string expects(const A& a, bool caseless = false, bool dont = false) const

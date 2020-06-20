@@ -50,29 +50,17 @@ h2_inline void h2_fail::foreach(std::function<void(h2_fail*, int, int)> cb, int 
    if (subling_next) subling_next->foreach(cb, subling_index + 1, child_index);
 }
 
-h2_inline h2_fail_normal::h2_fail_normal(const char* file_, int line_, const char* func_, const char* format, ...) : h2_fail(file_, line_, func_)
-{
-   char* alloca_str;
-   h2_sprintf(alloca_str, format);
-   explain = alloca_str;
-}
-
-h2_inline void h2_fail_normal::print(int subling_index, int child_index)
-{
-   h2_line line;
-   line.indent(child_index * 2 + 1);
-   if (no.size()) line.printf("dark gray", "%s. ", no.c_str());
-   line.printf("", "%s,%s", explain.c_str(), get_locate());
-   h2_color::printf(line);
-}
-
-h2_inline void h2_fail_unexpect::print_OK1(h2_line& line)
-{
-   line.push_back("OK( ");
-   line.printf("cyan", "%s", a_expression.acronym(O.verbose ? 10000 : 30).c_str());
-   line.push_back(" ) is ");
-   line.printf("bold,red", "false");
-}
+struct h2_fail_normal : h2_fail {
+   h2_fail_normal(const char* file_ = nullptr, int line_ = 0, const char* func_ = nullptr, const char* explain_ = "") : h2_fail(file_, line_) { explain = explain_; }
+   void print(int subling_index = 0, int child_index = 0) override
+   {
+      h2_line line;
+      line.indent(child_index * 2 + 1);
+      if (no.size()) line.printf("dark gray", "%s. ", no.c_str());
+      line.printf("", "%s,%s", explain.c_str(), get_locate());
+      h2_color::printf(line);
+   }
+};
 
 static inline bool is_synonym(h2_string& a, h2_string& b)
 {
@@ -88,62 +76,74 @@ static inline bool is_synonym(h2_string& a, h2_string& b)
    return false;
 }
 
-h2_inline void h2_fail_unexpect::print_OK2(h2_line& line)
-{
-   line.push_back("OK( ");
+struct h2_fail_unexpect : h2_fail {
+   h2_string e_represent, a_represent;
+   h2_string expection;
+   h2_fail_unexpect(h2_string e_represent_ = "", h2_string a_represent_ = "", h2_string expection_ = "", h2_string explain_ = "", const char* file_ = nullptr, int line_ = 0)
+     : h2_fail(file_, line_), e_represent(e_represent_), a_represent(a_represent_), expection(expection_) { explain = explain_; }
 
-   if (!expection.size() || e_expression == expection || is_synonym(e_expression, expection)) {
-      line.printf("green", e_expression.acronym(O.verbose ? 10000 : 30, 1).c_str());
-   } else {
-      line.printf("cyan", e_expression.acronym(O.verbose ? 10000 : 16).c_str());
-      line.printf("dark gray", "==>");
+   void print_OK1(h2_line& line)
+   {
+      line.push_back("OK( ");
+      line.printf("cyan", "%s", a_expression.acronym(O.verbose ? 10000 : 30).c_str());
+      line.push_back(" ) is ");
+      line.printf("bold,red", "false");
+   }
+   void print_OK2(h2_line& line)
+   {
+      line.push_back("OK( ");
+
+      if (!expection.size() || e_expression == expection || is_synonym(e_expression, expection)) {
+         line.printf("green", e_expression.acronym(O.verbose ? 10000 : 30, 1).c_str());
+      } else {
+         line.printf("cyan", e_expression.acronym(O.verbose ? 10000 : 16).c_str());
+         line.printf("dark gray", "==>");
+         line.printf("green", expection.acronym(O.verbose ? 10000 : 30, 1).c_str());
+      }
+
+      line.push_back(", ");
+
+      if (!a_represent.size() || a_expression == a_represent || is_synonym(a_expression, a_represent)) {
+         line.printf("bold,red", a_expression.acronym(O.verbose ? 10000 : 30, 1).c_str());
+      } else {
+         line.printf("bold,red", a_represent.acronym(O.verbose ? 10000 : 30, 1).c_str());
+         line.printf("dark gray", "<==");
+         line.printf("cyan", a_expression.acronym(O.verbose ? 10000 : 16).c_str());
+      }
+
+      line.push_back(" )");
+   }
+   void print_JE(h2_line& line)
+   {
+      line.push_back("JE( ");
+      line.printf("cyan", "%s", e_expression.acronym(O.verbose ? 10000 : 30).c_str());
+      line.push_back(", ");
+      line.printf("bold,red", "%s", a_expression.acronym(O.verbose ? 10000 : 30).c_str());
+      line.push_back(" )");
+   }
+   void print_Inner(h2_line& line)
+   {
+      if (no.size()) line.printf("dark gray", "%s. ", no.c_str());
+      line.push_back("expect is ");
       line.printf("green", expection.acronym(O.verbose ? 10000 : 30, 1).c_str());
-   }
-
-   line.push_back(", ");
-
-   if (!a_represent.size() || a_expression == a_represent || is_synonym(a_expression, a_represent)) {
-      line.printf("bold,red", a_expression.acronym(O.verbose ? 10000 : 30, 1).c_str());
-   } else {
+      line.push_back(", actual is ");
       line.printf("bold,red", a_represent.acronym(O.verbose ? 10000 : 30, 1).c_str());
-      line.printf("dark gray", "<==");
-      line.printf("cyan", a_expression.acronym(O.verbose ? 10000 : 16).c_str());
    }
 
-   line.push_back(" )");
-}
-
-h2_inline void h2_fail_unexpect::print_JE(h2_line& line)
-{
-   line.push_back("JE( ");
-   line.printf("cyan", "%s", e_expression.acronym(O.verbose ? 10000 : 30).c_str());
-   line.push_back(", ");
-   line.printf("bold,red", "%s", a_expression.acronym(O.verbose ? 10000 : 30).c_str());
-   line.push_back(" )");
-}
-
-h2_inline void h2_fail_unexpect::print_Inner(h2_line& line)
-{
-   if (no.size()) line.printf("dark gray", "%s. ", no.c_str());
-   line.push_back("expect is ");
-   line.printf("green", expection.acronym(O.verbose ? 10000 : 30, 1).c_str());
-   line.push_back(", actual is ");
-   line.printf("bold,red", a_represent.acronym(O.verbose ? 10000 : 30, 1).c_str());
-}
-
-h2_inline void h2_fail_unexpect::print(int subling_index, int child_index)
-{
-   h2_line line;
-   line.indent(child_index * 2 + 1);
-   if (!strcmp("Inner", check_type)) print_Inner(line);
-   if (!strcmp("OK1", check_type)) print_OK1(line);
-   if (!strcmp("OK2", check_type)) print_OK2(line);
-   if (!strcmp("JE", check_type)) print_JE(line);
-   if (explain.size()) line.printf("", " %s,", explain.c_str());
-   if (user_explain.size()) line.printf("", " %s,", user_explain.c_str());
-   line.push_back(get_locate());
-   h2_color::printf(line);
-}
+   void print(int subling_index = 0, int child_index = 0) override
+   {
+      h2_line line;
+      line.indent(child_index * 2 + 1);
+      if (!strcmp("Inner", check_type)) print_Inner(line);
+      if (!strcmp("OK1", check_type)) print_OK1(line);
+      if (!strcmp("OK2", check_type)) print_OK2(line);
+      if (!strcmp("JE", check_type)) print_JE(line);
+      if (explain.size()) line.printf("", " %s,", explain.c_str());
+      if (user_explain.size()) line.printf("", " %s,", user_explain.c_str());
+      line.push_back(get_locate());
+      h2_color::printf(line);
+   }
+};
 
 static inline void fmt_char(char c, bool eq, const char* style, h2_line& line)
 {
@@ -156,280 +156,412 @@ static inline void fmt_char(char c, bool eq, const char* style, h2_line& line)
    line.printf(t_style, "%c", c);
 }
 
-h2_inline void h2_fail_strcmp::print(int subling_index, int child_index)
-{
-   h2_fail_unexpect::print(subling_index, child_index);
+struct h2_fail_strcmp : h2_fail_unexpect {
+   const bool caseless;
+   h2_string e_value, a_value;
+   h2_fail_strcmp(const h2_string& e_value_, const h2_string& a_value_, bool caseless_, const h2_string& expection_, const char* file_ = nullptr, int line_ = 0)
+     : h2_fail_unexpect("\"" + e_value_ + "\"", "\"" + a_value_ + "\"", expection_, "", file_, line_), caseless(caseless_), e_value(e_value_), a_value(a_value_) {}
 
-   h2_line e_line, a_line;
-   for (size_t i = 0; i < e_value.size(); ++i) {
-      char ac = i < a_value.size() ? a_value[i] : ' ';
-      bool eq = caseless ? ::tolower(e_value[i]) == ::tolower(ac) : e_value[i] == ac;
-      fmt_char(e_value[i], eq, "green", e_line);
-   }
-   for (size_t i = 0; i < a_value.size(); ++i) {
-      char ec = i < e_value.size() ? e_value[i] : ' ';
-      bool eq = caseless ? ::tolower(a_value[i]) == ::tolower(ec) : a_value[i] == ec;
-      fmt_char(a_value[i], eq, "red", a_line);
-   }
+   void print(int subling_index = 0, int child_index = 0) override
+   {
+      h2_fail_unexpect::print(subling_index, child_index);
 
-   h2_lines lines = h2_layout::unified(e_line, a_line, "expect", "actual");
-   h2_color::printf(lines);
-}
-
-h2_inline void h2_fail_strfind::print(int subling_index, int child_index)
-{
-   h2_fail_unexpect::print(subling_index, child_index);
-
-   h2_line e_line, a_line;
-   for (size_t i = 0; i < e_value.size(); ++i)
-      fmt_char(e_value[i], true, "", e_line);
-
-   for (size_t i = 0; i < a_value.size(); ++i)
-      fmt_char(a_value[i], true, "", a_line);
-
-   h2_lines lines = h2_layout::seperate(e_line, a_line, "expect", "actual");
-   h2_color::printf(lines);
-}
-
-h2_inline void h2_fail_json::print(int subling_index, int child_index)
-{
-   h2_fail_unexpect::print(subling_index, child_index);
-   h2_lines e_lines, a_lines;
-   h2_json::diff(e_value, a_value, e_lines, a_lines);
-   h2_lines lines = h2_layout::split(e_lines, a_lines, "expect", "actual");
-   h2_color::printf(lines);
-}
-
-h2_inline void h2_fail_memcmp::print(int subling_index, int child_index)
-{
-   h2_fail_unexpect::print(subling_index, child_index);
-   h2_lines e_lines, a_lines;
-   switch (width) {
-   case 1: print_bits(e_lines, a_lines); break;
-   case 8: print_bytes(e_lines, a_lines); break;
-   case 16: print_int16(e_lines, a_lines); break;
-   case 32: print_int32(e_lines, a_lines); break;
-   case 64: print_int64(e_lines, a_lines); break;
-   default: break;
-   }
-   h2_lines lines = h2_layout::split(e_lines, a_lines, "expect", "actual");
-   h2_color::printf(lines);
-}
-
-h2_inline void h2_fail_memcmp::print_bits(h2_lines& e_lines, h2_lines& a_lines)
-{
-   int rows = ::ceil(e_value.size() * 1.0 / npr_1b);
-   for (int i = 0; i < rows; ++i) {
       h2_line e_line, a_line;
-      for (int j = 0; j < npr_1b; ++j) {
-         for (int k = 0; k < 8; ++k) {
-            if ((i * npr_1b + j) * 8 + k < nbits) {
-               unsigned char e_val = (e_value[i * npr_1b + j] >> (7 - k)) & 0x1;
-               unsigned char a_val = (a_value[i * npr_1b + j] >> (7 - k)) & 0x1;
-               if (e_val == a_val) {
-                  e_line.push_back(h2_string(e_val ? "1" : "0"));
-                  a_line.push_back(h2_string(a_val ? "1" : "0"));
+      for (size_t i = 0; i < e_value.size(); ++i) {
+         char ac = i < a_value.size() ? a_value[i] : ' ';
+         bool eq = caseless ? ::tolower(e_value[i]) == ::tolower(ac) : e_value[i] == ac;
+         fmt_char(e_value[i], eq, "green", e_line);
+      }
+      for (size_t i = 0; i < a_value.size(); ++i) {
+         char ec = i < e_value.size() ? e_value[i] : ' ';
+         bool eq = caseless ? ::tolower(a_value[i]) == ::tolower(ec) : a_value[i] == ec;
+         fmt_char(a_value[i], eq, "red", a_line);
+      }
+
+      h2_lines lines = h2_layout::unified(e_line, a_line, "expect", "actual");
+      h2_color::printf(lines);
+   }
+};
+
+struct h2_fail_strfind : h2_fail_unexpect {
+   h2_string e_value, a_value;
+   h2_fail_strfind(const h2_string& e_value_, const h2_string& a_value_, const h2_string& expection_, const char* file_ = nullptr, int line_ = 0)
+     : h2_fail_unexpect("\"" + e_value_ + "\"", "\"" + a_value_ + "\"", expection_, "", file_, line_), e_value(e_value_), a_value(a_value_) {}
+   void print(int subling_index = 0, int child_index = 0) override
+   {
+      h2_fail_unexpect::print(subling_index, child_index);
+
+      h2_line e_line, a_line;
+      for (size_t i = 0; i < e_value.size(); ++i)
+         fmt_char(e_value[i], true, "", e_line);
+
+      for (size_t i = 0; i < a_value.size(); ++i)
+         fmt_char(a_value[i], true, "", a_line);
+
+      h2_lines lines = h2_layout::seperate(e_line, a_line, "expect", "actual");
+      h2_color::printf(lines);
+   }
+};
+
+struct h2_fail_json : h2_fail_unexpect {
+   h2_string e_value, a_value;
+   h2_fail_json(const h2_string& e_value_, const h2_string& a_value_, const h2_string& expection_, const char* file_ = nullptr, int line_ = 0)
+     : h2_fail_unexpect(e_value_, a_value_, expection_, "", file_, line_), e_value(e_value_), a_value(a_value_) {}
+   void print(int subling_index = 0, int child_index = 0) override
+   {
+      h2_fail_unexpect::print(subling_index, child_index);
+      h2_lines e_lines, a_lines;
+      h2_json::diff(e_value, a_value, e_lines, a_lines);
+      h2_lines lines = h2_layout::split(e_lines, a_lines, "expect", "actual");
+      h2_color::printf(lines);
+   }
+};
+
+struct h2_fail_memcmp : h2_fail_unexpect {
+   static constexpr const int npr_1b = 4;
+   static constexpr const int npr_8b = 16;
+   static constexpr const int npr_16b = 8;
+   static constexpr const int npr_32b = 4;
+   static constexpr const int npr_64b = 2;
+   h2_vector<unsigned char> e_value, a_value;
+   const int width, nbits;
+   h2_fail_memcmp(const unsigned char* e_value_, const unsigned char* a_value_, int width_, int nbits_, const h2_string& expection_, h2_string a_represent_, h2_string explain_ = "", const char* file_ = nullptr, int line_ = 0)
+     : h2_fail_unexpect("", a_represent_, expection_, explain_, file_, line_), e_value(e_value_, e_value_ + (nbits_ + 7) / 8), a_value(a_value_, a_value_ + (nbits_ + 7) / 8), width(width_), nbits(nbits_) {}
+
+   void print(int subling_index, int child_index) override
+   {
+      h2_fail_unexpect::print(subling_index, child_index);
+      h2_lines e_lines, a_lines;
+      switch (width) {
+      case 1: print_bits(e_lines, a_lines); break;
+      case 8: print_bytes(e_lines, a_lines); break;
+      case 16: print_int16(e_lines, a_lines); break;
+      case 32: print_int32(e_lines, a_lines); break;
+      case 64: print_int64(e_lines, a_lines); break;
+      default: break;
+      }
+      h2_lines lines = h2_layout::split(e_lines, a_lines, "expect", "actual");
+      h2_color::printf(lines);
+   }
+
+   void print_bits(h2_lines& e_lines, h2_lines& a_lines)
+   {
+      int rows = ::ceil(e_value.size() * 1.0 / npr_1b);
+      for (int i = 0; i < rows; ++i) {
+         h2_line e_line, a_line;
+         for (int j = 0; j < npr_1b; ++j) {
+            for (int k = 0; k < 8; ++k) {
+               if ((i * npr_1b + j) * 8 + k < nbits) {
+                  unsigned char e_val = (e_value[i * npr_1b + j] >> (7 - k)) & 0x1;
+                  unsigned char a_val = (a_value[i * npr_1b + j] >> (7 - k)) & 0x1;
+                  if (e_val == a_val) {
+                     e_line.push_back(h2_string(e_val ? "1" : "0"));
+                     a_line.push_back(h2_string(a_val ? "1" : "0"));
+                  } else {
+                     e_line.printf("green", e_val ? "1" : "0");
+                     a_line.printf("bold,red", a_val ? "1" : "0");
+                  }
+               }
+            }
+            e_line.push_back(" ");
+            a_line.push_back(" ");
+         }
+         e_lines.push_back(e_line);
+         a_lines.push_back(a_line);
+      }
+   }
+
+   void print_bytes(h2_lines& e_lines, h2_lines& a_lines)
+   {
+      int count = e_value.size(), rows = ::ceil(count * 1.0 / npr_8b);
+      for (int i = 0; i < rows; ++i) {
+         h2_line e_line, a_line;
+         for (int j = 0; j < npr_8b; ++j) {
+            if (i * npr_8b + j < count) {
+               char e_str[8], a_str[8];
+               sprintf(e_str, j < 8 ? "%02X " : " %02X", e_value[i * npr_8b + j]);
+               sprintf(a_str, j < 8 ? "%02X " : " %02X", a_value[i * npr_8b + j]);
+               if (e_value[i * npr_8b + j] == a_value[i * npr_8b + j]) {
+                  e_line.push_back(e_str);
+                  a_line.push_back(a_str);
                } else {
-                  e_line.printf("green", e_val ? "1" : "0");
-                  a_line.printf("bold,red", a_val ? "1" : "0");
+                  e_line.printf("green", e_str);
+                  a_line.printf("bold,red", a_str);
                }
             }
          }
-         e_line.push_back(" ");
-         a_line.push_back(" ");
+         e_lines.push_back(e_line);
+         a_lines.push_back(a_line);
       }
-      e_lines.push_back(e_line);
-      a_lines.push_back(a_line);
    }
-}
 
-h2_inline void h2_fail_memcmp::print_bytes(h2_lines& e_lines, h2_lines& a_lines)
-{
-   int count = e_value.size(), rows = ::ceil(count * 1.0 / npr_8b);
-   for (int i = 0; i < rows; ++i) {
-      h2_line e_line, a_line;
-      for (int j = 0; j < npr_8b; ++j) {
-         if (i * npr_8b + j < count) {
-            char e_str[8], a_str[8];
-            sprintf(e_str, j < 8 ? "%02X " : " %02X", e_value[i * npr_8b + j]);
-            sprintf(a_str, j < 8 ? "%02X " : " %02X", a_value[i * npr_8b + j]);
-            if (e_value[i * npr_8b + j] == a_value[i * npr_8b + j]) {
-               e_line.push_back(e_str);
-               a_line.push_back(a_str);
-            } else {
-               e_line.printf("green", e_str);
-               a_line.printf("bold,red", a_str);
+   void print_int16(h2_lines& e_lines, h2_lines& a_lines)
+   {
+      int count = e_value.size() / 2, rows = ::ceil(count * 1.0 / npr_16b);
+      for (int i = 0; i < rows; ++i) {
+         h2_line e_line, a_line;
+         for (int j = 0; j < npr_16b; ++j) {
+            if (i * npr_16b + j < count) {
+               unsigned short e_val = *(unsigned short*)(e_value.data() + (i * npr_16b + j) * 2);
+               unsigned short a_val = *(unsigned short*)(a_value.data() + (i * npr_16b + j) * 2);
+               char e_str[32], a_str[32];
+               sprintf(e_str, "%04X ", e_val);
+               sprintf(a_str, "%04X ", a_val);
+               if (e_val == a_val) {
+                  e_line.push_back(e_str);
+                  a_line.push_back(a_str);
+               } else {
+                  e_line.printf("green", e_str);
+                  a_line.printf("bold,red", a_str);
+               }
             }
          }
+         e_lines.push_back(e_line);
+         a_lines.push_back(a_line);
       }
-      e_lines.push_back(e_line);
-      a_lines.push_back(a_line);
    }
-}
 
-h2_inline void h2_fail_memcmp::print_int16(h2_lines& e_lines, h2_lines& a_lines)
-{
-   int count = e_value.size() / 2, rows = ::ceil(count * 1.0 / npr_16b);
-   for (int i = 0; i < rows; ++i) {
-      h2_line e_line, a_line;
-      for (int j = 0; j < npr_16b; ++j) {
-         if (i * npr_16b + j < count) {
-            unsigned short e_val = *(unsigned short*)(e_value.data() + (i * npr_16b + j) * 2);
-            unsigned short a_val = *(unsigned short*)(a_value.data() + (i * npr_16b + j) * 2);
-            char e_str[32], a_str[32];
-            sprintf(e_str, "%04X ", e_val);
-            sprintf(a_str, "%04X ", a_val);
-            if (e_val == a_val) {
-               e_line.push_back(e_str);
-               a_line.push_back(a_str);
-            } else {
-               e_line.printf("green", e_str);
-               a_line.printf("bold,red", a_str);
+   void print_int32(h2_lines& e_lines, h2_lines& a_lines)
+   {
+      int count = e_value.size() / 4, rows = ::ceil(count * 1.0 / npr_32b);
+      for (int i = 0; i < rows; ++i) {
+         h2_line e_line, a_line;
+         for (int j = 0; j < npr_32b; ++j) {
+            if (i * npr_32b + j < count) {
+               unsigned int e_val = *(unsigned int*)(e_value.data() + (i * npr_32b + j) * 4);
+               unsigned int a_val = *(unsigned int*)(a_value.data() + (i * npr_32b + j) * 4);
+               char e_str[32], a_str[32];
+               sprintf(e_str, "%08X ", e_val);
+               sprintf(a_str, "%08X ", a_val);
+               if (e_val == a_val) {
+                  e_line.push_back(e_str);
+                  a_line.push_back(a_str);
+               } else {
+                  e_line.printf("green", e_str);
+                  a_line.printf("bold,red", a_str);
+               }
             }
          }
+         e_lines.push_back(e_line);
+         a_lines.push_back(a_line);
       }
-      e_lines.push_back(e_line);
-      a_lines.push_back(a_line);
    }
-}
 
-h2_inline void h2_fail_memcmp::print_int32(h2_lines& e_lines, h2_lines& a_lines)
-{
-   int count = e_value.size() / 4, rows = ::ceil(count * 1.0 / npr_32b);
-   for (int i = 0; i < rows; ++i) {
-      h2_line e_line, a_line;
-      for (int j = 0; j < npr_32b; ++j) {
-         if (i * npr_32b + j < count) {
-            unsigned int e_val = *(unsigned int*)(e_value.data() + (i * npr_32b + j) * 4);
-            unsigned int a_val = *(unsigned int*)(a_value.data() + (i * npr_32b + j) * 4);
-            char e_str[32], a_str[32];
-            sprintf(e_str, "%08X ", e_val);
-            sprintf(a_str, "%08X ", a_val);
-            if (e_val == a_val) {
-               e_line.push_back(e_str);
-               a_line.push_back(a_str);
-            } else {
-               e_line.printf("green", e_str);
-               a_line.printf("bold,red", a_str);
+   void print_int64(h2_lines& e_lines, h2_lines& a_lines)
+   {
+      int count = e_value.size() / 8, rows = ::ceil(count * 1.0 / npr_64b);
+      for (int i = 0; i < rows; ++i) {
+         h2_line e_line, a_line;
+         for (int j = 0; j < npr_64b; ++j) {
+            if (i * npr_64b + j < count) {
+               unsigned long long e_val = *(unsigned long long*)(e_value.data() + (i * npr_64b + j) * 8);
+               unsigned long long a_val = *(unsigned long long*)(a_value.data() + (i * npr_64b + j) * 8);
+               char e_str[32], a_str[32];
+               sprintf(e_str, "%016llX ", e_val);
+               sprintf(a_str, "%016llX ", a_val);
+               if (e_val == a_val) {
+                  e_line.push_back(e_str);
+                  a_line.push_back(a_str);
+               } else {
+                  e_line.printf("green", e_str);
+                  a_line.printf("bold,red", a_str);
+               }
             }
          }
+         e_lines.push_back(e_line);
+         a_lines.push_back(a_line);
       }
-      e_lines.push_back(e_line);
-      a_lines.push_back(a_line);
    }
-}
+};
 
-h2_inline void h2_fail_memcmp::print_int64(h2_lines& e_lines, h2_lines& a_lines)
-{
-   int count = e_value.size() / 8, rows = ::ceil(count * 1.0 / npr_64b);
-   for (int i = 0; i < rows; ++i) {
-      h2_line e_line, a_line;
-      for (int j = 0; j < npr_64b; ++j) {
-         if (i * npr_64b + j < count) {
-            unsigned long long e_val = *(unsigned long long*)(e_value.data() + (i * npr_64b + j) * 8);
-            unsigned long long a_val = *(unsigned long long*)(a_value.data() + (i * npr_64b + j) * 8);
-            char e_str[32], a_str[32];
-            sprintf(e_str, "%016llX ", e_val);
-            sprintf(a_str, "%016llX ", a_val);
-            if (e_val == a_val) {
-               e_line.push_back(e_str);
-               a_line.push_back(a_str);
-            } else {
-               e_line.printf("green", e_str);
-               a_line.printf("bold,red", a_str);
-            }
-         }
+struct h2_fail_memory : h2_fail {
+   const void* ptr;
+   const int size;
+   const h2_backtrace bt_allocate, bt_release;
+
+   h2_fail_memory(const void* ptr_, const int size_, h2_backtrace bt_allocate_, h2_backtrace bt_release_, const char* file_ = nullptr, int line_ = 0)
+     : h2_fail(file_, line_), ptr(ptr_), size(size_), bt_allocate(bt_allocate_), bt_release(bt_release_) {}
+};
+
+struct h2_fail_memory_leak : h2_fail_memory {
+   const char* where;  // case or block
+   h2_fail_memory_leak(const void* ptr_, int size_, h2_backtrace bt_allocate_, const char* where_, const char* file_, int line_)
+     : h2_fail_memory(ptr_, size_, bt_allocate_, h2_backtrace(), file_, line_), where(where_) {}
+   void print(int subling_index = 0, int child_index = 0) override
+   {
+      h2_color::printf("", " %p", ptr);
+      h2_color::printf("bold,red", " memory leak");
+      h2_color::printf("red", " %d", size);
+      h2_color::printf("", " bytes in %s totally%s\n", where, get_locate());
+      h2_color::printf("", "  which allocate at backtrace:\n"), bt_allocate.print(3);
+   }
+};
+
+struct h2_fail_double_free : h2_fail_memory {
+   const h2_backtrace bt_double_free;
+   h2_fail_double_free(const void* ptr_, h2_backtrace bt_allocate_, h2_backtrace bt_release_, h2_backtrace bt_double_free_)
+     : h2_fail_memory(ptr_, 0, bt_allocate_, bt_release_), bt_double_free(bt_double_free_) {}
+   void print(int subling_index = 0, int child_index = 0) override
+   {
+      h2_color::printf("", " %p", ptr);
+      h2_color::printf("bold,red", " double free");
+      h2_color::printf("", " at backtrace:\n", ptr), bt_double_free.print(2);
+      h2_color::printf("", "  which allocate at backtrace:\n"), bt_allocate.print(3);
+      h2_color::printf("", "  already free at backtrace:\n"), bt_release.print(3);
+   }
+};
+
+struct h2_fail_asymmetric_free : h2_fail_memory {
+   const char *who_allocate, *who_release;
+   h2_fail_asymmetric_free(const void* ptr_, const char* who_allocate_, const char* who_release_, h2_backtrace bt_allocate_, h2_backtrace bt_release_)
+     : h2_fail_memory(ptr_, 0, bt_allocate_, bt_release_), who_allocate(who_allocate_), who_release(who_release_) {}
+   void print(int subling_index = 0, int child_index = 0) override
+   {
+      h2_color::printf("", " %p allocate with ", ptr);
+      h2_color::printf("bold,red", "%s", who_allocate);
+      h2_color::printf("", ", release by ");
+      h2_color::printf("bold,red", "%s", who_release);
+      h2_color::printf("", " asymmetrically at backtrace:\n"), bt_release.print(2);
+      if (0 < bt_allocate.count) h2_color::printf("", "  which allocate at backtrace:\n"), bt_allocate.print(3);
+   }
+};
+
+struct h2_fail_overflow : h2_fail_memory {
+   const void* addr;                    /* 犯罪地点 */
+   const char* action;                  /* 犯罪行为 */
+   const h2_vector<unsigned char> spot; /* 犯罪现场 */
+   const h2_backtrace bt_trample;       /* 犯罪过程 */
+   h2_fail_overflow(const void* ptr_, const int size_, const void* addr_, const char* action_, h2_vector<unsigned char> spot_, h2_backtrace bt_allocate_, h2_backtrace bt_trample_, const char* file_ = nullptr, int line_ = 0)
+     : h2_fail_memory(ptr_, size_, bt_allocate_, h2_backtrace(), file_, line_), addr(addr_), action(action_), spot(spot_), bt_trample(bt_trample_) {}
+   void print(int subling_index = 0, int child_index = 0) override
+   {
+      int offset = ptr < addr ? (long long)addr - ((long long)ptr + size) : (long long)addr - (long long)ptr;
+      h2_color::printf("", " %p %+d (%p)", ptr, offset, addr);
+      h2_color::printf("bold,red", " %s", action);
+      h2_color::printf("", " %s ", offset >= 0 ? "overflow" : "underflow");
+
+      for (int i = 0; i < spot.size(); ++i)
+         h2_color::printf("bold,red", "%02X ", spot[i]);
+
+      h2_color::printf("", ",%s\n", get_locate());
+      if (bt_trample.count) h2_color::printf("", "  trampled at backtrace:\n"), bt_trample.print(3);
+      h2_color::printf("", "  which allocate at backtrace:\n"), bt_allocate.print(3);
+   }
+};
+
+struct h2_fail_use_after_free : h2_fail_memory {
+   const void* addr;          /* 犯罪地点 */
+   const char* action;        /* 犯罪行为 */
+   const h2_backtrace bt_use; /* 犯罪过程 */
+   h2_fail_use_after_free(const void* ptr_, const void* addr_, const char* action_, h2_backtrace bt_allocate_, h2_backtrace bt_release_, h2_backtrace bt_use_)
+     : h2_fail_memory(ptr_, 0, bt_allocate_, bt_release_), addr(addr_), action(action_), bt_use(bt_use_) {}
+   void print(int subling_index = 0, int child_index = 0) override
+   {
+      h2_color::printf("", " %p %+d (%p)", ptr, (long long)addr - (long long)ptr, addr);
+      h2_color::printf("bold,red", " %s after free", action);
+      h2_color::printf("", " at backtrace:\n"), bt_use.print(2);
+      h2_color::printf("", "  which allocate at backtrace:\n"), bt_allocate.print(3);
+      h2_color::printf("", "  and free at backtrace:\n"), bt_release.print(3);
+   }
+};
+
+struct h2_fail_call : h2_fail {
+   h2_string e_who, e_call, a_call;
+   h2_fail_call(const char* func_, const char* expect, const char* actual, const char* file_ = nullptr, int line_ = 0) : h2_fail(file_, line_), e_who(func_), e_call(expect), a_call(actual) {}
+   void print(int subling_index = 0, int child_index = 0) override
+   {
+      h2_line line = {" ", e_who, "() "};
+      if (e_call.size()) {
+         line.push_back("expected ");
+         line.printf("green", e_call.c_str());
+         line.push_back(" calls but ");
       }
-      e_lines.push_back(e_line);
-      a_lines.push_back(a_line);
+      line.printf("red,bold", a_call.c_str());
+      line.push_back(" called");
+      if (e_call.size()) line.push_back(" actually");
+      line.push_back(get_locate());
+      h2_color::printf(line);
    }
-}
+};
 
-h2_inline void h2_fail_memory_leak::print(int subling_index, int child_index)
-{
-   h2_color::printf("", " %p", ptr);
-   h2_color::printf("bold,red", " memory leak");
-   h2_color::printf("red", " %d", size);
-   h2_color::printf("", " bytes in %s totally%s\n", where, get_locate());
-   h2_color::printf("", "  which allocate at backtrace:\n"), bt_allocate.print(3);
-}
+struct h2_fail_instantiate : h2_fail {
+   const char *action_type, *return_type, *class_type, *method_name, *return_args;
+   const bool why_abstract;
+   h2_fail_instantiate(const char* action_type_, const char* return_type_, const char* class_type_, const char* method_name_, const char* return_args_, int why_abstract_, const char* file_, int line_) : h2_fail(file_, line_), action_type(action_type_), return_type(return_type_), class_type(class_type_), method_name(method_name_), return_args(return_args_), why_abstract(why_abstract_) {}
+   void print(int subling_index = 0, int child_index = 0) override
+   {
+      why_abstract ? h2_color::printf("", "Instantiate 'class %s' is a abstract class%s\n", class_type, get_locate()) :
+                     h2_color::printf("", "Instantiate 'class %s' don't know initialize arguments%s\n", class_type, get_locate());
 
-h2_inline void h2_fail_double_free::print(int subling_index, int child_index)
-{
-   h2_color::printf("", " %p", ptr);
-   h2_color::printf("bold,red", " double free");
-   h2_color::printf("", " at backtrace:\n", ptr), bt_double_free.print(2);
-   h2_color::printf("", "  which allocate at backtrace:\n"), bt_allocate.print(3);
-   h2_color::printf("", "  already free at backtrace:\n"), bt_release.print(3);
-}
-
-h2_inline void h2_fail_asymmetric_free::print(int subling_index, int child_index)
-{
-   h2_color::printf("", " %p allocate with ", ptr);
-   h2_color::printf("bold,red", "%s", who_allocate);
-   h2_color::printf("", ", release by ");
-   h2_color::printf("bold,red", "%s", who_release);
-   h2_color::printf("", " asymmetrically at backtrace:\n"), bt_release.print(2);
-   if (0 < bt_allocate.count) h2_color::printf("", "  which allocate at backtrace:\n"), bt_allocate.print(3);
-}
-
-h2_inline void h2_fail_overflow::print(int subling_index, int child_index)
-{
-   int offset = ptr < addr ? (long long)addr - ((long long)ptr + size) : (long long)addr - (long long)ptr;
-   h2_color::printf("", " %p %+d (%p)", ptr, offset, addr);
-   h2_color::printf("bold,red", " %s", action);
-   h2_color::printf("", " %s ", offset >= 0 ? "overflow" : "underflow");
-
-   for (int i = 0; i < spot.size(); ++i)
-      h2_color::printf("bold,red", "%02X ", spot[i]);
-
-   h2_color::printf("", ",%s\n", get_locate());
-   if (bt_trample.count) h2_color::printf("", "  trampled at backtrace:\n"), bt_trample.print(3);
-   h2_color::printf("", "  which allocate at backtrace:\n"), bt_allocate.print(3);
-}
-
-h2_inline void h2_fail_use_after_free::print(int subling_index, int child_index)
-{
-   h2_color::printf("", " %p %+d (%p)", ptr, (long long)addr - (long long)ptr, addr);
-   h2_color::printf("bold,red", " %s after free", action);
-   h2_color::printf("", " at backtrace:\n"), bt_use.print(2);
-   h2_color::printf("", "  which allocate at backtrace:\n"), bt_allocate.print(3);
-   h2_color::printf("", "  and free at backtrace:\n"), bt_release.print(3);
-}
-
-h2_inline void h2_fail_call::print(int subling_index, int child_index)
-{
-   h2_line line = {" ", e_who, "() "};
-   if (e_call.size()) {
-      line.push_back("expected ");
-      line.printf("green", e_call.c_str());
-      line.push_back(" calls but ");
+      h2_color::printf("", "You may take following solutions to fix it: \n");
+      if (why_abstract)
+         h2_color::printf("", "1. Add non-abstract Derived Class instance in %s(%s%s%s, %s, %s, Derived %s(...)) \n",
+                          action_type,
+                          strlen(return_type) ? return_type : "",
+                          strlen(return_type) ? ", " : "",
+                          class_type, method_name, return_args, class_type);
+      else {
+         h2_color::printf("", "1. Define default constructor in class %s, or \n", class_type);
+         h2_color::printf("", "2. Add parameterized construction in %s(%s%s%s, %s, %s, %s(...)) \n",
+                          action_type,
+                          strlen(return_type) ? return_type : "",
+                          strlen(return_type) ? ", " : "",
+                          class_type, method_name, return_args, class_type);
+      }
    }
-   line.printf("red,bold", a_call.c_str());
-   line.push_back(" called");
-   if (e_call.size()) line.push_back(" actually");
-   line.push_back(get_locate());
-   h2_color::printf(line);
-}
+};
 
-h2_inline void h2_fail_instantiate::print(int subling_index, int child_index)
+h2_inline h2_fail* h2_fail::new_normal(const char* file_, int line_, const char* func_, const char* format, ...)
 {
-   why_abstract ? h2_color::printf("", "Instantiate 'class %s' is a abstract class%s\n", class_type, get_locate()) :
-                  h2_color::printf("", "Instantiate 'class %s' don't know initialize arguments%s\n", class_type, get_locate());
-
-   h2_color::printf("", "You may take following solutions to fix it: \n");
-   if (why_abstract)
-      h2_color::printf("", "1. Add non-abstract Derived Class instance in %s(%s%s%s, %s, %s, Derived %s(...)) \n",
-                       action_type,
-                       strlen(return_type) ? return_type : "",
-                       strlen(return_type) ? ", " : "",
-                       class_type, method_name, return_args, class_type);
-   else {
-      h2_color::printf("", "1. Define default constructor in class %s, or \n", class_type);
-      h2_color::printf("", "2. Add parameterized construction in %s(%s%s%s, %s, %s, %s(...)) \n",
-                       action_type,
-                       strlen(return_type) ? return_type : "",
-                       strlen(return_type) ? ", " : "",
-                       class_type, method_name, return_args, class_type);
-   }
+   char* alloca_str;
+   h2_sprintf(alloca_str, format);
+   return new h2_fail_normal(file_, line_, func_, alloca_str);
+}
+h2_inline h2_fail* h2_fail::new_unexpect(h2_string e_represent_, h2_string a_represent_, h2_string expection_, h2_string explain_, const char* file_, int line_)
+{
+   return new h2_fail_unexpect(e_represent_, a_represent_, expection_, explain_, file_, line_);
+}
+h2_inline h2_fail* h2_fail::new_strcmp(const h2_string& e_value_, const h2_string& a_value_, bool caseless_, const h2_string& expection_, const char* file_, int line_)
+{
+   return new h2_fail_strcmp(e_value_, a_value_, caseless_, expection_, file_, line_);
+}
+h2_inline h2_fail* h2_fail::new_strfind(const h2_string& e_value_, const h2_string& a_value_, const h2_string& expection_, const char* file_, int line_)
+{
+   return new h2_fail_strfind(e_value_, a_value_, expection_, file_, line_);
+}
+h2_inline h2_fail* h2_fail::new_json(const h2_string& e_value_, const h2_string& a_value_, const h2_string& expection_, const char* file_, int line_)
+{
+   return new h2_fail_json(e_value_, a_value_, expection_, file_, line_);
+}
+h2_inline h2_fail* h2_fail::new_memcmp(const unsigned char* e_value_, const unsigned char* a_value_, int width_, int nbits_, const h2_string& expection_, h2_string a_represent_, h2_string explain_, const char* file_, int line_)
+{
+   return new h2_fail_memcmp(e_value_, a_value_, width_, nbits_, expection_, a_represent_, explain_, file_, line_);
+}
+h2_inline h2_fail* h2_fail::new_memory_leak(const void* ptr_, int size_, h2_backtrace bt_allocate_, const char* where_, const char* file_, int line_)
+{
+   return new h2_fail_memory_leak(ptr_, size_, bt_allocate_, where_, file_, line_);
+}
+h2_inline h2_fail* h2_fail::new_double_free(const void* ptr_, h2_backtrace bt_allocate_, h2_backtrace bt_release_, h2_backtrace bt_double_free_)
+{
+   return new h2_fail_double_free(ptr_, bt_allocate_, bt_release_, bt_double_free_);
+}
+h2_inline h2_fail* h2_fail::new_asymmetric_free(const void* ptr_, const char* who_allocate_, const char* who_release_, h2_backtrace bt_allocate_, h2_backtrace bt_release_)
+{
+   return new h2_fail_asymmetric_free(ptr_, who_allocate_, who_release_, bt_allocate_, bt_release_);
+}
+h2_inline h2_fail* h2_fail::new_overflow(const void* ptr_, const int size_, const void* addr_, const char* action_, h2_vector<unsigned char> spot_, h2_backtrace bt_allocate_, h2_backtrace bt_trample_, const char* file_, int line_)
+{
+   return new h2_fail_overflow(ptr_, size_, addr_, action_, spot_, bt_allocate_, bt_trample_, file_, line_);
+}
+h2_inline h2_fail* h2_fail::new_use_after_free(const void* ptr_, const void* addr_, const char* action_, h2_backtrace bt_allocate_, h2_backtrace bt_release_, h2_backtrace bt_use_)
+{
+   return new h2_fail_use_after_free(ptr_, addr_, action_, bt_allocate_, bt_release_, bt_use_);
+}
+h2_inline h2_fail* h2_fail::new_call(const char* func_, const char* expect, const char* actual, const char* file_, int line_)
+{
+   return new h2_fail_call(func_, expect, actual, file_, line_);
+}
+h2_inline h2_fail* h2_fail::new_instantiate(const char* action_type_, const char* return_type_, const char* class_type_, const char* method_name_, const char* return_args_, int why_abstract_, const char* file_, int line_)
+{
+   return new h2_fail_instantiate(action_type_, return_type_, class_type_, method_name_, return_args_, why_abstract_, file_, line_);
 }

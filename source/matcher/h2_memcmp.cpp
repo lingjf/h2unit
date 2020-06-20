@@ -31,7 +31,7 @@ h2_inline h2_fail* h2_matches_bytecmp::matches(const void* a, bool caseless, boo
       }
    } else {
       if (nbytes == 0) {
-         return new h2_fail_normal(nullptr, 0, nullptr, "length required");
+         return h2_fail::new_normal(nullptr, 0, nullptr, "length required");
       }
    }
    if (!result) {
@@ -39,7 +39,7 @@ h2_inline h2_fail* h2_matches_bytecmp::matches(const void* a, bool caseless, boo
       result = memcmp(e, a, _nbytes) == 0;
    }
    if (result == !dont) return nullptr;
-   return new h2_fail_memcmp((const unsigned char*)e, (const unsigned char*)a, width, _nbytes, "", h2_stringify(a), "memcmp " + readable_size(width, _nbytes * 8));
+   return h2_fail::new_memcmp((const unsigned char*)e, (const unsigned char*)a, width, _nbytes, "", h2_stringify(a), "memcmp " + readable_size(width, _nbytes * 8));
 }
 
 h2_inline h2_string h2_matches_bytecmp::expects(const void* a, bool caseless, bool dont) const
@@ -64,17 +64,17 @@ h2_inline h2_fail* h2_matches_bitcmp::matches(const void* a, bool caseless, bool
       }
    } else {
       if (nbits == 0) {
-         return new h2_fail_normal(nullptr, 0, nullptr, "length required");
+         return h2_fail::new_normal(nullptr, 0, nullptr, "length required");
       }
    }
    int _nbits = nbits;
    if (nbits == 0) _nbits = max_length;
    if (max_length < _nbits) {
-      return new h2_fail_normal(nullptr, 0, nullptr, "length too loog");
+      return h2_fail::new_normal(nullptr, 0, nullptr, "length too loog");
    }
    bool result = h2_numeric::bits_equal(_e, (const unsigned char*)a, _nbits);
    if (result == !dont) return nullptr;
-   return new h2_fail_memcmp(_e, (const unsigned char*)a, 1, _nbits, "", h2_stringify(a), "memcmp " + readable_size(1, _nbits));
+   return h2_fail::new_memcmp(_e, (const unsigned char*)a, 1, _nbits, "", h2_stringify(a), "memcmp " + readable_size(1, _nbits));
 }
 
 h2_inline h2_string h2_matches_bitcmp::expects(const void* a, bool caseless, bool dont) const

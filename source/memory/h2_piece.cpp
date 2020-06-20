@@ -119,7 +119,7 @@ struct h2_piece : h2_libc {
          for (; 0 < n; --n)
             if (p[n - 1] != snow) break;
          h2_vector<unsigned char> spot(p, p + n);
-         return new h2_fail_overflow(user_ptr, user_size, p, "write", spot, bt_allocate, h2_backtrace());
+         return h2_fail::new_overflow(user_ptr, user_size, p, "write", spot, bt_allocate, h2_backtrace());
       }
       return nullptr;
    }
@@ -136,16 +136,16 @@ struct h2_piece : h2_libc {
    h2_fail* leak_check(const char* where, const char* file, int line)
    {
       if (free_times) return nullptr;
-      return new h2_fail_memory_leak(user_ptr, user_size, bt_allocate, where, file, line);
+      return h2_fail::new_memory_leak(user_ptr, user_size, bt_allocate, where, file, line);
    }
 
    h2_fail* violate_check()
    {
       if (!violate_times) return nullptr;
       if (violate_after_free)
-         return new h2_fail_use_after_free(user_ptr, violate_address, violate_action, bt_allocate, bt_release, violate_backtrace);
+         return h2_fail::new_use_after_free(user_ptr, violate_address, violate_action, bt_allocate, bt_release, violate_backtrace);
       else
-         return new h2_fail_overflow(user_ptr, user_size, violate_address, violate_action, h2_vector<unsigned char>(), bt_allocate, violate_backtrace);
+         return h2_fail::new_overflow(user_ptr, user_size, violate_address, violate_action, h2_vector<unsigned char>(), bt_allocate, violate_backtrace);
    }
 
    h2_fail* check_asymmetric_free(const char* who_release)
@@ -171,7 +171,7 @@ struct h2_piece : h2_libc {
             return nullptr;
 
       h2_backtrace bt_release(O.isMAC() ? 6 : 5);
-      return new h2_fail_asymmetric_free(user_ptr, who_allocate, who_release, bt_allocate, bt_release);
+      return h2_fail::new_asymmetric_free(user_ptr, who_allocate, who_release, bt_allocate, bt_release);
    }
 
    h2_fail* check_double_free()
@@ -181,7 +181,7 @@ struct h2_piece : h2_libc {
       if (free_times++ == 0)
          bt_release = bt;
       else
-         fail = new h2_fail_double_free(user_ptr, bt_allocate, bt_release, bt);
+         fail = h2_fail::new_double_free(user_ptr, bt_allocate, bt_release, bt);
       return fail;
    }
 
