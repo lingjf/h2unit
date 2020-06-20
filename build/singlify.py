@@ -3,6 +3,7 @@
 
 import sys
 import time
+import re
 
 version = "5.5"
 
@@ -32,9 +33,10 @@ def copy_line2(line, f):
 
 def merge_files(inf, outf):
     for line in inf:
-        if line.startswith('#include "h2_'):
-            with open('../source/'+line[10:line.rindex('"')], 'r') as f:
-                outf.write('// ' + line[10:line.rindex('"')] + '\n')
+        inc = re.match('#include "(.*[/]*(h2_.*\.[ch]{1}pp))"', line)
+        if inc:
+            with open('../source/' + inc.group(1), 'r') as f:
+                outf.write('// ' + inc.group(2) + '\n')
                 merge_files(f, outf)
         else:
             copy_line2(line, outf)

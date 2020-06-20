@@ -108,6 +108,6 @@ CASE(list sort)
    });
 
    h2_list_for_each_entry (p, root, list_host, link) {
-      OK(i + 1, p->a);
+      OK(li + 1, p->a);
    }
 }

@@ -31,3 +31,9 @@ CASE(bugfix
    MOCK(foobar, NoDefaultConstructorClass & (int, NoDefaultConstructorClass&)).once(_, _).returns(x);
    foobar(1, x);
 }
+
+CASE(bugfix
+     : OK(<, >))
+{
+   OK(std::is_convertible<int, long>::value);
+}

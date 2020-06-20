@@ -1,5 +1,13 @@
 #include "../source/h2_unit.cpp"
 
+namespace {
+
+struct Foobar {
+   int* a;
+   Foobar(int* _a) : a(_a) { *a = 1; }
+   ~Foobar() { *a = 0; }
+};
+
 SUITE(shared_ptr)
 {
    Case(local)
@@ -22,9 +30,19 @@ SUITE(shared_ptr)
    //    h2::h2_shared_ptr<char> s1(p);
    // }
 
-   Case(new)
+   Case(free at deconstructor)
    {
       char* p = (char*)new char;
       h2::h2_shared_ptr<char> s1(p);
    }
+
+   Case(reset)
+   {
+      int a = 0;
+      h2::h2_shared_ptr<Foobar> s1(new Foobar(&a));
+      OK(1, a);
+      s1.reset();
+      OK(0, a);
+   }
 }
+}  // namespace

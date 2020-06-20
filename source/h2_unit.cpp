@@ -46,38 +46,59 @@
 #endif
 
 namespace h2 {
-#include "h2_kit.cpp"
-#include "h2_numeric.cpp"
-#include "h2_color.cpp"
-#include "h2_list.cpp"
-#include "h2_string.cpp"
-#include "h2_line.cpp"
-#include "h2_expr.cpp"
 
-#include "h2_attendance.cpp"
-#include "h2_backtrace.cpp"
-#include "h2_case.cpp"
-#include "h2_check.cpp"
-#include "h2_debug.cpp"
-#include "h2_directory.cpp"
-#include "h2_dns.cpp"
-#include "h2_failure.cpp"
-#include "h2_heap.cpp"
-#include "h2_json.cpp"
-#include "h2_layout.cpp"
-#include "h2_libc.cpp"
-#include "h2_matchee.cpp"
-#include "h2_matcher.cpp"
-#include "h2_matches.cpp"
-#include "h2_mock.cpp"
-#include "h2_option.cpp"
-#include "h2_patch.cpp"
-#include "h2_report.cpp"
-#include "h2_socket.cpp"
-#include "h2_stdio.cpp"
-#include "h2_stub.cpp"
-#include "h2_suite.cpp"
-#include "h2_task.cpp"
+#include "h2_kit.cpp"      //
+#include "h2_numeric.cpp"  //
+#include "h2_list.cpp"     //
+
+#include "json/h2_tinyexpr.cpp"  //
+#include "json/h2_node.cpp"      // ..
+#include "json/h2_parse.cpp"     // ..
+#include "json/h2_match.cpp"     // ..
+#include "json/h2_dual.cpp"      // ..
+#include "json/h2_json.cpp"      // ..
+
+#include "matcher/h2_matcher.cpp"    //
+#include "matcher/h2_strcmp.cpp"     //
+#include "matcher/h2_memcmp.cpp"     //
+#include "matcher/h2_container.cpp"  //
+
+#include "memory/h2_piece.cpp"     // kit
+#include "memory/h2_block.cpp"     // ..
+#include "memory/h2_stack.cpp"     // ..
+#include "memory/h2_override.cpp"  // ..
+#include "memory/h2_crash.cpp"     // ..
+#include "memory/h2_memory.cpp"    // ..
+
+#include "stub/h2_e9.cpp"      //
+#include "stub/h2_native.cpp"  // ..
+#include "stub/h2_stub.cpp"    // .., kit
+
+#include "mock/h2_checkin.cpp"  //
+#include "mock/h2_mock.cpp"     //
+
+#include "extension/h2_dns.cpp"     // kit
+#include "extension/h2_socket.cpp"  // kit
+#include "extension/h2_stdio.cpp"   // kit
+
+#include "h2_color.cpp"    // kit
+#include "h2_debug.cpp"    // kit
+#include "h2_failure.cpp"  // kit
+#include "h2_libc.cpp"     // kit
+#include "h2_line.cpp"     // kit
+#include "h2_report.cpp"   // kit
+#include "h2_string.cpp"   // kit
+
+#include "h2_backtrace.cpp"  //
+#include "h2_check.cpp"      //
+#include "h2_layout.cpp"     //
+#include "h2_option.cpp"     //
+#include "h2_patch.cpp"      //
+
+#include "core/h2_case.cpp"   //
+#include "core/h2_suite.cpp"  //
+#include "core/h2_task.cpp"   //
+
 }  // namespace h2
 
 #if defined _WIN32

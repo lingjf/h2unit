@@ -25,7 +25,7 @@ class a_abstract_class {
    virtual int func() = 0;
 };
 
-#if 1
+#if 0
 
 SUITE(ListOf)
 {

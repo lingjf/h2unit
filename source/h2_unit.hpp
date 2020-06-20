@@ -42,6 +42,7 @@
 #   pragma GCC diagnostic ignored "-Wsign-compare"
 #   pragma GCC diagnostic ignored "-Wunused-function"
 #   pragma GCC diagnostic ignored "-Wwrite-strings"
+#   pragma GCC diagnostic ignored "-Wreturn-type"
 #elif defined __clang__
 #   pragma clang diagnostic ignored "-Wdeprecated-declarations"
 #   pragma clang diagnostic ignored "-Wint-to-pointer-cast"
@@ -49,6 +50,7 @@
 #   pragma clang diagnostic ignored "-Wsign-compare"
 #   pragma clang diagnostic ignored "-Wunused-function"
 #   pragma clang diagnostic ignored "-Wwritable-strings"
+#   pragma clang diagnostic ignored "-Wreturn-type"
 #elif defined _WIN32
 #   pragma warning(disable : 4005)  // macro-redefine
 #   pragma warning(disable : 4018)  // -Wsign-compare
@@ -65,44 +67,50 @@
 #endif
 
 namespace h2 {
-#include "h2_pp.hpp"
-#include "h2_kit.hpp"
-#include "h2_numeric.hpp"
-#include "h2_list.hpp"
-#include "h2_option.hpp"
-#include "h2_libc.hpp"
-#include "h2_allocate.hpp"
-#include "h2_string.hpp"
-#include "h2_line.hpp"
-#include "h2_layout.hpp"
-#include "h2_color.hpp"
-#include "h2_shared_ptr.hpp"
-#include "h2_debug.hpp"
-#include "h2_expr.hpp"
-#include "h2_json.hpp"
-#include "h2_backtrace.hpp"
-#include "h2_failure.hpp"
-#include "h2_stub.hpp"
-#include "h2_heap.hpp"
-#include "h2_mfp.hpp"
-#include "h2_matchee.hpp"
-#include "h2_matcher.hpp"
-#include "h2_matches.hpp"
-#include "h2_matcheu.hpp"
-#include "h2_attendance.hpp"
-#include "h2_function.hpp"
-#include "h2_mock.hpp"
-#include "h2_stdio.hpp"
-#include "h2_dns.hpp"
-#include "h2_socket.hpp"
-#include "h2_case.hpp"
-#include "h2_suite.hpp"
-#include "h2_directory.hpp"
-#include "h2_check.hpp"
-#include "h2_generator.hpp"
-#include "h2_patch.hpp"
-#include "h2_task.hpp"
-#include "h2_report.hpp"
+#include "h2_pp.hpp"                  //
+#include "h2_list.hpp"                //
+#include "h2_numeric.hpp"             //
+#include "h2_libc.hpp"                //
+#include "h2_kit.hpp"                 // pp
+#include "h2_option.hpp"              // kit
+#include "h2_allocate.hpp"            // libc
+#include "h2_shared_ptr.hpp"          // libc
+#include "h2_string.hpp"              // allocate
+#include "h2_line.hpp"                // string
+#include "h2_layout.hpp"              // line
+#include "h2_color.hpp"               // line
+#include "h2_backtrace.hpp"           // line
+#include "h2_debug.hpp"               // option, backtrace
+#include "h2_patch.hpp"               // backtrace
+#include "h2_failure.hpp"             // backtrace
+#include "h2_generator.hpp"           // pp
+#include "json/h2_json.hpp"           // line
+#include "memory/h2_memory.hpp"       // failure, pp, kit
+#include "matcher/h2_matcher.hpp"     // failure, string, shared_ptr
+#include "matcher/h2_equation.hpp"    // kit, string
+#include "matcher/h2_cast.hpp"        // matcher
+#include "matcher/h2_matches.hpp"     // matcher, failure, string
+#include "matcher/h2_logic.hpp"       // matcher, failure, string
+#include "matcher/h2_inequation.hpp"  // matcher, failure, string
+#include "matcher/h2_strcmp.hpp"      // matcher, failure, string
+#include "matcher/h2_memcmp.hpp"      // matcher, failure, string
+#include "matcher/h2_container.hpp"   // matcher, failure, string
+#include "matcher/h2_customize.hpp"   // matcher, failure, string, pp
+#include "stub/h2_stub.hpp"           // pp
+#include "mock/h2_mfp.hpp"            // failure
+#include "mock/h2_checkin.hpp"        // failure
+#include "mock/h2_function.hpp"       // libc
+#include "mock/h2_tuple.hpp"          // failure
+#include "mock/h2_mock.hpp"           // libc, allocate, failure, checkin, list
+#include "mock/h2_mocker.hpp"         // allocate, failure, checkin, function, matcher, stub
+#include "extension/h2_dns.hpp"       // list, pp
+#include "extension/h2_socket.hpp"    // list, string, stub, failure, matcher
+#include "extension/h2_stdio.hpp"     //
+#include "core/h2_case.hpp"           // list, failure, stub, mock, dns, socket
+#include "core/h2_suite.hpp"          // case, list, stub, mock
+#include "core/h2_task.hpp"           // kit, suite, case, failure, stub, mock, option, debug
+#include "h2_check.hpp"               // kit, failure, allocate, string, matcher, pp
+#include "h2_report.hpp"              // kit, list, task, suite, case
 }  // namespace h2
 
 /* ======> Interface <====== */
@@ -360,18 +368,5 @@ using h2::Pair;
 
 #define H2CASE(...) __H2CASE(#__VA_ARGS__, h2::h2_case::initial, H2Q(h2_case_test), H2Q(h2_suite_test))
 #define H2TODO(...) __H2CASE(#__VA_ARGS__, h2::h2_case::todo, H2Q(h2_case_test), H2Q(h2_suite_test))
-
-#define __H2BLOCK(Attributes, Qb) for (h2::h2_heap::stack::block Qb(Attributes, __FILE__, __LINE__); Qb;)
-#define H2BLOCK(...) __H2BLOCK(#__VA_ARGS__, H2Q(t_block))
-
-#define H2DNS(...) h2::h2_dns::setaddrinfo(H2PP_NARG(__VA_ARGS__), __VA_ARGS__)
-
-/* clang-format off */
-#define __H2SOCK0(_Packet, _Size, ...) h2::h2_socket::inject_received(_Packet, _Size, #__VA_ARGS__)
-#define __H2SOCK1(...) h2::h2_socket::start_and_fetch()
-#define H2SOCK(...) H2PP_CAT2(__H2SOCK, H2PP_IS_EMPTY(__VA_ARGS__)) (__VA_ARGS__)
-/* clang-format on */
-
-#define H2COUT(...) h2::h2_stdio::capture_cout(#__VA_ARGS__)
 
 #endif

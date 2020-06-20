@@ -13,15 +13,44 @@ template <typename U>
 struct h2_decay_impl<U, typename std::enable_if<std::is_enum<U>::value>::type> {
    typedef int type;
 };
-
 template <typename T>
 struct h2_decay {
    using type = typename h2_decay_impl<typename std::decay<T>::type>::type;
 };
 
+template <int I, typename T, typename... Args>
+struct h2_nth_type_impl {
+   using type = typename h2_nth_type_impl<I - 1, Args...>::type;
+};
+template <typename T, typename... Args>
+struct h2_nth_type_impl<0, T, Args...> {
+   using type = T;
+};
+template <int Index, typename... Args>
+struct h2_nth_type {
+   using type = typename h2_nth_type_impl<Index, Args..., int, int, int, int, int, int, int, int, int, int, int, int, int, int>::type;
+};
+
+template <int Index, typename... Args>
+using h2_nth_decay = typename h2_decay<typename h2_nth_type<Index, Args...>::type>::type;
+
+template <typename T, typename = void>
+struct h2_sizeof_pointee : std::integral_constant<int, sizeof(typename std::remove_pointer<T>::type)> {
+};
+template <typename T>
+struct h2_sizeof_pointee<T, typename std::enable_if<std::is_void<typename std::remove_pointer<T>::type>::value>::type> : std::integral_constant<int, 1> {
+};
+
 struct h2_once {
-   int bcc = 0;
-   operator bool() { return 0 == bcc++; }
+   operator bool()
+   {
+      bool ret = c == 0;
+      c = 1;
+      return ret;
+   }
+
+ private:
+   int c = 0;
 };
 
 struct h2_with {

@@ -92,9 +92,9 @@ static inline bool backtrace_extract(const char* backtrace_symbol_line, char* mo
 h2_inline h2_backtrace::h2_backtrace(int shift_) : shift(shift_)
 {
 #ifndef _WIN32
-   h2_heap::unhook();
+   h2_memory::restores();
    count = ::backtrace(array, sizeof(array) / sizeof(array[0]));
-   h2_heap::dohook();
+   h2_memory::overrides();
 #endif
 }
 
@@ -118,7 +118,7 @@ h2_inline bool h2_backtrace::has(void* func, int size) const
 h2_inline void h2_backtrace::print(h2_vector<h2_string>& stacks) const
 {
 #ifndef _WIN32
-   h2_heap::unhook();
+   h2_memory::restores();
    char** backtraces = backtrace_symbols(array, count);
    for (int i = shift; i < count; ++i) {
       char *p = backtraces[i], module[256] = "", mangled[256] = "", demangled[256] = "", addr2lined[512] = "";
@@ -142,7 +142,7 @@ h2_inline void h2_backtrace::print(h2_vector<h2_string>& stacks) const
          break;
    }
    free(backtraces);
-   h2_heap::dohook();
+   h2_memory::overrides();
 #endif
 }
 

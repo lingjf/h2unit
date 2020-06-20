@@ -87,18 +87,18 @@ CASE(Case Name)
 *    [`IsTrue`](source/h2_unit.hpp#L100) : matches if value is true .
 *    [`IsFalse`](source/h2_unit.hpp#L100) : matches if value is false .
 *    [`Eq`](source/h2_unit.hpp#L100)(expect) : matches if value equals expect (one of [strcmp wildcard regex] equals for string compare).
-*    [`Eq`](source/h2_unit.hpp#L100)(expect, epsilon) : matches if float value near equals expect, default epsilon is 0.00001 .
+     *    [`Eq`](source/h2_unit.hpp#L100)(expect, epsilon) : matches if float value near equals expect, default epsilon is 0.00001 .
 *    [`Nq`](source/h2_unit.hpp#L100)(expect) : matches if value not equals expect .
 *    [`Ge`](source/h2_unit.hpp#L100)(expect) : matches if value >= expect .
 *    [`Gt`](source/h2_unit.hpp#L100)(expect) : matches if value > expect .
 *    [`Le`](source/h2_unit.hpp#L100)(expect) : matches if value <= expect .
 *    [`Lt`](source/h2_unit.hpp#L100)(expect) : matches if value < expect .
-*    [`Me`](source/h2_unit.hpp#L100)(expect) : matches if memcmp(expect, value) == 0 .
-     *    [`M1e`](source/h2_unit.hpp#L100)(expect) : bit level memcmp.
-     *    [`M8e`](source/h2_unit.hpp#L100)(expect) : byte level memcmp.
-     *    [`M16e`](source/h2_unit.hpp#L100)(expect) : int16 level memcmp.
-     *    [`M32e`](source/h2_unit.hpp#L100)(expect) : int32 level memcmp.
-     *    [`M64e`](source/h2_unit.hpp#L100)(expect) : int64 level memcmp.
+*    [`Me`](source/h2_unit.hpp#L100)(expect, [length]) : matches if memcmp(expect, value, length) == 0 .
+     *    [`M1e`](source/h2_unit.hpp#L100)(expect, [length]) : bit level memcmp.
+     *    [`M8e`](source/h2_unit.hpp#L100)(expect, [length]) : byte level memcmp.
+     *    [`M16e`](source/h2_unit.hpp#L100)(expect, [length]) : int16 level memcmp.
+     *    [`M32e`](source/h2_unit.hpp#L100)(expect, [length]) : int32 level memcmp.
+     *    [`M64e`](source/h2_unit.hpp#L100)(expect, [length]) : int64 level memcmp.
 *    [`Re`](source/h2_unit.hpp#L100)(expect) : matches if value Regex equals expect .
 *    [`We`](source/h2_unit.hpp#L100)(expect) : matches if value Wildcard equals expect .
 *    [`Je`](source/h2_unit.hpp#L100)(expect) : matches if value JSON equals expect .
@@ -124,7 +124,72 @@ OK(Ge(1.4142), sqrt(2))
 ```
 It asserts sqrt(2) result 1.41421356237 is greater or equal than 1.4142
 
-#### 3.1. User defined Matcher
+#### 3.1. Memcmp matcher
+Expection is described by buffer and length explicitly, comparsion is same with libc memcmp.
+```C++
+CASE(memory compare)
+{
+   unsigned char e1[] = {0x8E, 0xC8, 0x8E, 0xC8, 0xF8};
+   unsigned char *a1 = ...
+   OK(Me(e1, 5), a1);
+   
+   const char *e2 = "\x8E\0xC8\0x8E\0xC8\0xF8";
+   unsigned char *a2 = ...
+   OK(Me(e2, 5), a2);
+}
+```
+##### 3.1.1. Compare width
+
+- `M1e` bit width
+- `M8e` byte width
+- `M16e` word width (2 bytes) 
+- `M32e` dword width (4 bytes) 
+- `M64e` qword width (8 bytes) 
+
+`Me` deduce compare width by data type or string format.
+|  data type             |  width   |  matcher  |
+|  ----                  |  ----    |  ----     |
+|  unsigned char *       |  1 bytes |  M8e      |
+| [unsigned] short *     |  2 bytes |  M16e     |
+| [unsigned] int *       |  4 bytes |  M32e     |
+| [unsigned] long long * |  8 bytes |  M64e     |
+
+```C++
+const char* e3 = "1000 1110 1";
+```
+For [const] char * type, "01" formatted string is considered as M1e, others is M8e.
+
+##### 3.1.2. String expection deduce
+
+```C++
+const char* e4 = "8EC88EC8F8";
+const char* e5 = "8PC88EC8F8";
+```
+All characters in e4 are hexidecimal characters, so e4 has two possible:
+- {'8', 'E', 'C', '8', '8', 'E', 'C', '8', 'F', '8'} maximal length 10 bytes
+- {0x8E, 0xC8, 0x8E, 0xC8, 0xF8} maximal length 5 bytes
+
+Any of possible matches, Me matches.
+
+There is not hexidecimal character `P` in e5, so e5 has only one possible:
+- {'8', 'P', 'C', '8', '8', 'E', 'C', '8', 'F', '8'} maximal length 10 bytes
+
+```C++
+const char* e6 = "1000 1110 1";
+```
+All characters in e6 are binary integers, so e6 has two possible:
+- {'1', '0', '0', '0', ' ', '1', '1', '1', '0', ' ', '1'} maximal length 11 bytes
+- {0x8E, 0x80} maximal length 9 bits
+
+Why not provide hexidecimal possible i.e. {0x10, 0x00, 0x11, 0x10, 0x1} maximal length 5 bits ?
+
+User write "01" string, typically want bit level comparasion.
+
+
+If length is not specified explicitly, maximal length is used.
+
+
+#### 3.2. User defined Matcher
 ```C++
 MATCHER(Between, left, right, (a << " not in [" << left << ", " << right << "]"))
 {
@@ -297,6 +362,35 @@ CASE(demo dynamic stub with class member function)
       return 2;
    };
    do_something(Foo);
+}
+```
+
+STUB C++ template function or template member function
+
+```C++
+template <typename T1, typename T2>
+int foobar(T1 a, T2 b) { ... }
+
+template <typename U1, typename U2>
+class Foobar {
+   template <typename T1, typename T2>
+   int foobar(T1 a, T2 b) { ... }
+}
+
+CASE(demo template function)
+{
+   STUB(int, (foobar<int, char*>), (int a, char * b)) {
+      OK(1, a);
+      sprintf(b, "return value by argument");
+      return 2;
+   };
+   do_something(foobar);
+
+   STUB(int, (Foobar<int, char*>), foobar<float, std::string>, (float, std::string)) {
+      OK(1, a);
+      return 2;
+   };
+   do_something(Foobar foobar);
 }
 ```
 
@@ -488,7 +582,7 @@ CASE(test memory initialize)
 ```C++
 CASE(test memory initialize)
 {
-   BLOCK(limit=10, fill=0xC555, align=3) {
+   BLOCK(align=3) {
       char *p = (char *)malloc(8);
    }
 }
@@ -632,7 +726,7 @@ SUITE(suite)
 In order to speed up compile progress, split header-only-single-file [h2unit.h](h2unit.h) into 
 two files: [h2unit.cpp](build/h2unit.cpp) and [h2unit.h](build/h2unit.h). Refer to `example/make twofiles` for sample usage.
 
-twofiles speed up x3 times than onefile.
+twofiles speed up 2~3 times than onefile.
 
 # Execute options
 

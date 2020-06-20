@@ -22,4 +22,12 @@ SUITE(kit)
       OK(h2::h2_pattern::regex_match("a.*", subject));
       OK(h2::h2_pattern::regex_match("A.*", subject, true));
    }
+
+   Case(once)
+   {
+      h2::h2_once once;
+      OK(once);
+      OK(!once);
+      OK(!once);
+   }
 }

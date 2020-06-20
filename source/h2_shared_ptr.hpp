@@ -12,6 +12,7 @@ class h2_shared_ptr : h2_libc {
       std::swap(pn, that.pn);
       return *this;
    }
+   void reset() { release(); }
    operator bool() const { return pn && 0 < *pn; }
    T& operator*() const { return *px; }
    T* operator->() const { return px; }
@@ -24,16 +25,18 @@ class h2_shared_ptr : h2_libc {
          if (!pn)
             pn = new (h2_libc::malloc(sizeof(long))) long(1);
          else
-            ++(*pn);
+            ++*pn;
       }
       px = p;
    }
    void release()
    {
-      if (pn && !--(*pn)) {
+      if (pn && !--*pn) {
          delete px;
          h2_libc::free(pn);
       }
+      px = nullptr;
+      pn = nullptr;
    }
 
    T* px = nullptr;

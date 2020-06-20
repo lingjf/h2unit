@@ -6,13 +6,11 @@ struct h2_string : public std::basic_string<char, std::char_traits<char>, h2_all
    h2_string(const char* s) : basic_string(s) {}
    h2_string(const char* s, size_t n) : basic_string(s, n) {}
    h2_string(size_t n, char c) : basic_string(n, c) {}
-   h2_string(const unsigned char* b) : basic_string((const char*)b) {}
 
    h2_string& operator=(const h2_string& str) { return assign(str.c_str()), *this; }
    h2_string& operator=(const std::string& str) { return assign(str.c_str()), *this; }
    h2_string& operator=(const char* s) { return assign(s), *this; }
    h2_string& operator=(char c) { return assign(1, c), *this; }
-   h2_string& operator=(const unsigned char* b) { return assign((const char*)b), *this; }
 
    h2_string& operator+=(const h2_string& str) { return append(str.c_str()), *this; }
    h2_string& operator+=(const std::string& str) { return append(str.c_str()), *this; }
@@ -72,11 +70,3 @@ inline h2_string operator+(const h2_string& lhs, const std::string& rhs) { h2_st
 inline h2_string operator+(const std::string& lhs, const h2_string& rhs) { h2_string s(lhs.c_str()); s.append(rhs); return s; }
 inline h2_string operator+(const h2_string& lhs, const char rhs) { h2_string s(lhs); s.push_back(rhs); return s; }
 inline h2_string operator+(const char lhs, const h2_string& rhs) { h2_string s(1, lhs); s.append(rhs); return s; }
-
-template <typename T>
-struct h2_stringable : std::integral_constant<bool,
-   std::is_same<char*, typename std::decay<T>::type>::value || 
-   std::is_same<const char*, typename std::decay<T>::type>::value || 
-   std::is_same<std::string, typename std::decay<T>::type>::value || 
-   std::is_same<h2_string, typename std::decay<T>::type>::value> { 
-};

@@ -213,21 +213,23 @@ SUITE(string)
       OK("nullptr", h2::h2_stringify(nullptr));
    }
 
-   Case(stringable)
+   Case(convertable)
    {
-      char char_array[1024] = "h2unit";
-      // std::cout << typeid(decltype(char_array)).name() << std::endl;
-      OK(h2::h2_stringable<decltype(char_array)>::value);
-      OK(h2::h2_stringable<char*>::value);
-      OK(h2::h2_stringable<char* const>::value);
-      OK(h2::h2_stringable<char* &>::value);
-      OK(h2::h2_stringable<const char*>::value);
-      OK(h2::h2_stringable<const char* const>::value);
-      OK(h2::h2_stringable<std::string>::value);
-      OK(h2::h2_stringable<const std::string>::value);
-      OK(h2::h2_stringable<std::string &>::value);
-      OK(h2::h2_stringable<h2::h2_string>::value);
-      OK(h2::h2_stringable<const h2::h2_string>::value);
-      OK(h2::h2_stringable<h2::h2_string &>::value);
+      char char_array[128];
+      OK((std::is_convertible<char*, h2::h2_string>::value));
+      OK((std::is_convertible<char*&, h2::h2_string>::value));
+      OK((std::is_convertible<const char*, h2::h2_string>::value));
+      OK((std::is_convertible<char* const, h2::h2_string>::value));
+      OK((std::is_convertible<const char* const, h2::h2_string>::value));
+      OK((std::is_convertible<std::string, h2::h2_string>::value));
+      OK((std::is_convertible<const std::string, h2::h2_string>::value));
+      OK((std::is_convertible<std::string&, h2::h2_string>::value));
+      OK((std::is_convertible<decltype(char_array), h2::h2_string>::value));
+      OK((std::is_convertible<h2::h2_string, h2::h2_string>::value));
+
+      OK(!(std::is_convertible<int, h2::h2_string>::value));
+      OK(!(std::is_convertible<char, h2::h2_string>::value));
+      OK(!(std::is_convertible<unsigned char, h2::h2_string>::value));
+      OK(!(std::is_convertible<unsigned char*, h2::h2_string>::value));
    }
 }
