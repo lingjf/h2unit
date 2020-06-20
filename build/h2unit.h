@@ -1,4 +1,4 @@
-﻿/* v5.5  2020-06-20 11:37:33 */
+﻿/* v5.5  2020-06-20 19:56:52 */
 /* https://github.com/lingjf/h2unit */
 /* Apache Licence 2.0 */
 #ifndef __H2UNIT_HPP__
@@ -3169,38 +3169,38 @@ using h2::Pair;
 #define __H2SUITE(name, QP)                                       \
    static void QP(h2::h2_suite*, h2::h2_case*);                   \
    static h2::h2_suite H2Q(suite)(name, &QP, __FILE__, __LINE__); \
-   static void QP(h2::h2_suite* _2_0_1_3_suite, h2::h2_case* _2_0_1_7_case)
+   static void QP(h2::h2_suite* suite_2_0_1_3_0_1_0_2, h2::h2_case* case_2_0_1_7_0_3_2_5)
 
 #define H2SUITE(...) __H2SUITE(#__VA_ARGS__, H2Q(h2_suite_test))
 
-#define H2Cleanup()                         \
-   if (::setjmp(_2_0_1_3_suite->jump) == 0) \
-      _2_0_1_3_suite->jumpable = true;      \
-   if (!_2_0_1_7_case)
+#define H2Cleanup()                                \
+   if (::setjmp(suite_2_0_1_3_0_1_0_2->jump) == 0) \
+      suite_2_0_1_3_0_1_0_2->jumpable = true;      \
+   if (!case_2_0_1_7_0_3_2_5)
 
-#define __H2Case(name, status, Qc, Q1, Q2)                                        \
-   static h2::h2_case Qc(name, status, __FILE__, __LINE__);                       \
-   static h2::h2_suite::installer H2Q(installer)(_2_0_1_3_suite, &Qc);            \
-   if (&Qc == _2_0_1_7_case)                                                      \
-      for (h2::h2_suite::cleaner Q1(_2_0_1_3_suite); Q1; _2_0_1_7_case = nullptr) \
-         for (h2::h2_case::cleaner Q2(&Qc); Q2;)                                  \
+#define __H2Case(name, status, Qc, Q1, Q2)                                                      \
+   static h2::h2_case Qc(name, status, __FILE__, __LINE__);                                     \
+   static h2::h2_suite::installer H2Q(installer)(suite_2_0_1_3_0_1_0_2, &Qc);                   \
+   if (&Qc == case_2_0_1_7_0_3_2_5)                                                             \
+      for (h2::h2_suite::cleaner Q1(suite_2_0_1_3_0_1_0_2); Q1; case_2_0_1_7_0_3_2_5 = nullptr) \
+         for (h2::h2_case::cleaner Q2(&Qc); Q2;)                                                \
             if (::setjmp(Qc.jump) == 0)
 
 #define H2Case(...) __H2Case(#__VA_ARGS__, h2::h2_case::initial, H2Q(t_case), H2Q(_1), H2Q(_2))
 #define H2Todo(...) __H2Case(#__VA_ARGS__, h2::h2_case::todo, H2Q(t_case), H2Q(_1), H2Q(_2))
 
-#define __H2CASE(name, status, QR, QP)                                      \
-   static void QR();                                                        \
-   static void QP(h2::h2_suite* _2_0_1_3_suite, h2::h2_case* _2_0_1_7_case) \
-   {                                                                        \
-      static h2::h2_case c(name, status, __FILE__, __LINE__);               \
-      static h2::h2_suite::installer i(_2_0_1_3_suite, &c);                 \
-      if (&c == _2_0_1_7_case)                                              \
-         for (h2::h2_case::cleaner a(&c); a;)                               \
-            if (::setjmp(c.jump) == 0)                                      \
-               QR();                                                        \
-   }                                                                        \
-   static h2::h2_suite H2Q(suite)("Anonymous", &QP, __FILE__, __LINE__);    \
+#define __H2CASE(name, status, QR, QP)                                                    \
+   static void QR();                                                                      \
+   static void QP(h2::h2_suite* suite_2_0_1_3_0_1_0_2, h2::h2_case* case_2_0_1_7_0_3_2_5) \
+   {                                                                                      \
+      static h2::h2_case c(name, status, __FILE__, __LINE__);                             \
+      static h2::h2_suite::installer i(suite_2_0_1_3_0_1_0_2, &c);                        \
+      if (&c == case_2_0_1_7_0_3_2_5)                                                     \
+         for (h2::h2_case::cleaner a(&c); a;)                                             \
+            if (::setjmp(c.jump) == 0)                                                    \
+               QR();                                                                      \
+   }                                                                                      \
+   static h2::h2_suite H2Q(suite)("Anonymous", &QP, __FILE__, __LINE__);                  \
    static void QR()
 
 #define H2CASE(...) __H2CASE(#__VA_ARGS__, h2::h2_case::initial, H2Q(h2_case_test), H2Q(h2_suite_test))

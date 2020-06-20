@@ -3,24 +3,27 @@ struct h2_block : h2_libc {
    h2_list x;
    h2_list pieces;
 
-   long long limited;
+   long long limit;
    size_t align;
    unsigned char s_fill[32];
    int n_fill;
+   bool noleak; // ignore leak check
    const char* where;
    const char* file;
    int line;
 
-   h2_block(long long _limited, size_t _align, unsigned char _s_fill[32], int _n_fill, const char* _where, const char* _file, int _line)
-     : limited(_limited), align(_align), n_fill(_n_fill), where(_where), file(_file), line(_line) { memcpy(s_fill, _s_fill, _n_fill); }
+   h2_block(long long _limit, size_t _align, unsigned char _s_fill[32], int _n_fill, bool _noleak, const char* _where, const char* _file, int _line)
+     : limit(_limit), align(_align), n_fill(_n_fill), noleak(_noleak), where(_where), file(_file), line(_line) { memcpy(s_fill, _s_fill, _n_fill); }
 
    h2_fail* check()
    {
       h2_list_for_each_entry (p, pieces, h2_piece, x) {
          h2_fail* fail1 = p->violate_check();
          if (fail1) return fail1;
-         h2_fail* fail2 = p->leak_check(where, file, line);
-         if (fail2) return fail2;
+         if (!noleak) {
+            h2_fail* fail2 = p->leak_check(where, file, line);
+            if (fail2) return fail2;
+         }
       }
       /* why not chain fails in subling? report one fail ignore more for clean.
          when fail, memory may be in used, don't free and keep it for robust */
@@ -33,8 +36,8 @@ struct h2_block : h2_libc {
 
    h2_piece* new_piece(const char* who, size_t size, size_t alignment, unsigned char c_fill, bool fill, h2_backtrace& bt)
    {
-      if (limited < size) return nullptr;
-      limited -= size;
+      if (limit < size) return nullptr;
+      limit -= size;
 
       // allocate action alignment is prior to block level alignment
       if (alignment == 0)
@@ -66,7 +69,7 @@ struct h2_block : h2_libc {
 
    h2_fail* rel_piece(const char* who, h2_piece* p)
    {
-      limited += p->user_size;
+      limit += p->user_size;
       return p->free(who);
    }
 

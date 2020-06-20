@@ -111,8 +111,9 @@ h2_inline int h2_task::execute()
    h2_report::I().on_task_endup(this);
    for (auto& teardown : global_teardowns) teardown();
 
-   h2_memory::finalize();
    stubs.clear();
+   mocks.clear(false);
+   h2_memory::finalize();
 
    return stats[h2::h2_case::failed];
 }

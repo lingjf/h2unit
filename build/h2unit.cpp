@@ -1,4 +1,4 @@
-﻿/* v5.5  2020-06-20 11:37:33 */
+﻿/* v5.5  2020-06-20 19:56:52 */
 /* https://github.com/lingjf/h2unit */
 /* Apache Licence 2.0 */
 #define __H2UNIT_HPP__
@@ -3169,38 +3169,38 @@ using h2::Pair;
 #define __H2SUITE(name, QP)                                       \
    static void QP(h2::h2_suite*, h2::h2_case*);                   \
    static h2::h2_suite H2Q(suite)(name, &QP, __FILE__, __LINE__); \
-   static void QP(h2::h2_suite* _2_0_1_3_suite, h2::h2_case* _2_0_1_7_case)
+   static void QP(h2::h2_suite* suite_2_0_1_3_0_1_0_2, h2::h2_case* case_2_0_1_7_0_3_2_5)
 
 #define H2SUITE(...) __H2SUITE(#__VA_ARGS__, H2Q(h2_suite_test))
 
-#define H2Cleanup()                         \
-   if (::setjmp(_2_0_1_3_suite->jump) == 0) \
-      _2_0_1_3_suite->jumpable = true;      \
-   if (!_2_0_1_7_case)
+#define H2Cleanup()                                \
+   if (::setjmp(suite_2_0_1_3_0_1_0_2->jump) == 0) \
+      suite_2_0_1_3_0_1_0_2->jumpable = true;      \
+   if (!case_2_0_1_7_0_3_2_5)
 
-#define __H2Case(name, status, Qc, Q1, Q2)                                        \
-   static h2::h2_case Qc(name, status, __FILE__, __LINE__);                       \
-   static h2::h2_suite::installer H2Q(installer)(_2_0_1_3_suite, &Qc);            \
-   if (&Qc == _2_0_1_7_case)                                                      \
-      for (h2::h2_suite::cleaner Q1(_2_0_1_3_suite); Q1; _2_0_1_7_case = nullptr) \
-         for (h2::h2_case::cleaner Q2(&Qc); Q2;)                                  \
+#define __H2Case(name, status, Qc, Q1, Q2)                                                      \
+   static h2::h2_case Qc(name, status, __FILE__, __LINE__);                                     \
+   static h2::h2_suite::installer H2Q(installer)(suite_2_0_1_3_0_1_0_2, &Qc);                   \
+   if (&Qc == case_2_0_1_7_0_3_2_5)                                                             \
+      for (h2::h2_suite::cleaner Q1(suite_2_0_1_3_0_1_0_2); Q1; case_2_0_1_7_0_3_2_5 = nullptr) \
+         for (h2::h2_case::cleaner Q2(&Qc); Q2;)                                                \
             if (::setjmp(Qc.jump) == 0)
 
 #define H2Case(...) __H2Case(#__VA_ARGS__, h2::h2_case::initial, H2Q(t_case), H2Q(_1), H2Q(_2))
 #define H2Todo(...) __H2Case(#__VA_ARGS__, h2::h2_case::todo, H2Q(t_case), H2Q(_1), H2Q(_2))
 
-#define __H2CASE(name, status, QR, QP)                                      \
-   static void QR();                                                        \
-   static void QP(h2::h2_suite* _2_0_1_3_suite, h2::h2_case* _2_0_1_7_case) \
-   {                                                                        \
-      static h2::h2_case c(name, status, __FILE__, __LINE__);               \
-      static h2::h2_suite::installer i(_2_0_1_3_suite, &c);                 \
-      if (&c == _2_0_1_7_case)                                              \
-         for (h2::h2_case::cleaner a(&c); a;)                               \
-            if (::setjmp(c.jump) == 0)                                      \
-               QR();                                                        \
-   }                                                                        \
-   static h2::h2_suite H2Q(suite)("Anonymous", &QP, __FILE__, __LINE__);    \
+#define __H2CASE(name, status, QR, QP)                                                    \
+   static void QR();                                                                      \
+   static void QP(h2::h2_suite* suite_2_0_1_3_0_1_0_2, h2::h2_case* case_2_0_1_7_0_3_2_5) \
+   {                                                                                      \
+      static h2::h2_case c(name, status, __FILE__, __LINE__);                             \
+      static h2::h2_suite::installer i(suite_2_0_1_3_0_1_0_2, &c);                        \
+      if (&c == case_2_0_1_7_0_3_2_5)                                                     \
+         for (h2::h2_case::cleaner a(&c); a;)                                             \
+            if (::setjmp(c.jump) == 0)                                                    \
+               QR();                                                                      \
+   }                                                                                      \
+   static h2::h2_suite H2Q(suite)("Anonymous", &QP, __FILE__, __LINE__);                  \
    static void QR()
 
 #define H2CASE(...) __H2CASE(#__VA_ARGS__, h2::h2_case::initial, H2Q(h2_case_test), H2Q(h2_suite_test))
@@ -5187,24 +5187,27 @@ struct h2_block : h2_libc {
    h2_list x;
    h2_list pieces;
 
-   long long limited;
+   long long limit;
    size_t align;
    unsigned char s_fill[32];
    int n_fill;
+   bool noleak; // ignore leak check
    const char* where;
    const char* file;
    int line;
 
-   h2_block(long long _limited, size_t _align, unsigned char _s_fill[32], int _n_fill, const char* _where, const char* _file, int _line)
-     : limited(_limited), align(_align), n_fill(_n_fill), where(_where), file(_file), line(_line) { memcpy(s_fill, _s_fill, _n_fill); }
+   h2_block(long long _limit, size_t _align, unsigned char _s_fill[32], int _n_fill, bool _noleak, const char* _where, const char* _file, int _line)
+     : limit(_limit), align(_align), n_fill(_n_fill), noleak(_noleak), where(_where), file(_file), line(_line) { memcpy(s_fill, _s_fill, _n_fill); }
 
    h2_fail* check()
    {
       h2_list_for_each_entry (p, pieces, h2_piece, x) {
          h2_fail* fail1 = p->violate_check();
          if (fail1) return fail1;
-         h2_fail* fail2 = p->leak_check(where, file, line);
-         if (fail2) return fail2;
+         if (!noleak) {
+            h2_fail* fail2 = p->leak_check(where, file, line);
+            if (fail2) return fail2;
+         }
       }
       /* why not chain fails in subling? report one fail ignore more for clean.
          when fail, memory may be in used, don't free and keep it for robust */
@@ -5217,8 +5220,8 @@ struct h2_block : h2_libc {
 
    h2_piece* new_piece(const char* who, size_t size, size_t alignment, unsigned char c_fill, bool fill, h2_backtrace& bt)
    {
-      if (limited < size) return nullptr;
-      limited -= size;
+      if (limit < size) return nullptr;
+      limit -= size;
 
       // allocate action alignment is prior to block level alignment
       if (alignment == 0)
@@ -5250,7 +5253,7 @@ struct h2_block : h2_libc {
 
    h2_fail* rel_piece(const char* who, h2_piece* p)
    {
-      limited += p->user_size;
+      limit += p->user_size;
       return p->free(who);
    }
 
@@ -5267,9 +5270,9 @@ struct h2_stack {
    h2_singleton(h2_stack);
    h2_list blocks;
 
-   void push(long long limited, size_t align, unsigned char s_fill[32], int n_fill, const char* where, const char* file, int line)
+   void push(long long limited, size_t align, unsigned char s_fill[32], int n_fill, bool noleak, const char* where, const char* file, int line)
    {
-      h2_block* b = new h2_block(limited, align, s_fill, n_fill, where, file, line);
+      h2_block* b = new h2_block(limited, align, s_fill, n_fill, noleak, where, file, line);
       blocks.push(b->x);
    }
 
@@ -5316,7 +5319,6 @@ struct h2_stack {
       return nullptr;
    }
 };
-
 // h2_override.cpp
 
 // https://www.gnu.org/savannah-checkouts/gnu/libc/manual/html_node/Hooks-for-Malloc.html
@@ -5634,22 +5636,28 @@ h2_inline void h2_memory::restores()
 
 h2_inline void h2_memory::stack::root()
 {
-   h2_stack::I().push(LLONG_MAX >> 9, sizeof(void*), nullptr, 0, "root", __FILE__, __LINE__);
+   h2_stack::I().push(LLONG_MAX / 2, sizeof(void*), nullptr, 0, false, "root", __FILE__, __LINE__);
 }
 h2_inline void h2_memory::stack::push(const char* file, int line)
 {
-   h2_stack::I().push(LLONG_MAX >> 9, sizeof(void*), nullptr, 0, "case", file, line);
+   h2_stack::I().push(LLONG_MAX / 2, sizeof(void*), nullptr, 0, false, "case", file, line);
 }
 h2_inline h2_fail* h2_memory::stack::pop()
 {
    return h2_stack::I().pop();
 }
 
-static inline void parse_block_attributes(const char* attributes, long long& n_limit, int& n_align, unsigned char s_fill[32], int& n_fill)
+static inline void parse_block_attributes(const char* attributes, long long& n_limit, int& n_align, unsigned char s_fill[32], int& n_fill, bool& noleak)
 {
-   n_limit = LLONG_MAX >> 9;
+   n_limit = LLONG_MAX / 2;
    n_align = sizeof(void*);
    n_fill = 0;
+   noleak = false;
+
+   const char* p_noleak = strcasestr(attributes, "noleak");
+   if (p_noleak) {
+      noleak = true;
+   }
 
    const char* p_limit = strcasestr(attributes, "limit");
    if (p_limit) {
@@ -5690,10 +5698,11 @@ h2_inline h2_memory::stack::block::block(const char* attributes, const char* fil
    int n_align;
    unsigned char s_fill[32];
    int n_fill;
+   bool noleak;
 
-   parse_block_attributes(attributes, n_limit, n_align, s_fill, n_fill);
+   parse_block_attributes(attributes, n_limit, n_align, s_fill, n_fill, noleak);
 
-   h2_stack::I().push(n_limit, n_align, s_fill, n_fill, "block", file, line);
+   h2_stack::I().push(n_limit, n_align, s_fill, n_fill, noleak, "block", file, line);
 }
 h2_inline h2_memory::stack::block::~block()
 {
@@ -8724,8 +8733,9 @@ h2_inline int h2_task::execute()
    h2_report::I().on_task_endup(this);
    for (auto& teardown : global_teardowns) teardown();
 
-   h2_memory::finalize();
    stubs.clear();
+   mocks.clear(false);
+   h2_memory::finalize();
 
    return stats[h2::h2_case::failed];
 }

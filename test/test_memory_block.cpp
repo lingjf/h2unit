@@ -85,4 +85,11 @@ SUITE(BLOCK)
          free(c1);
       }
    }
+   Case(noleak)
+   {
+      BLOCK(noleak)
+      {
+         c1 = malloc(8);
+      }
+   }
 }

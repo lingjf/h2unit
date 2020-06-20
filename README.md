@@ -580,9 +580,18 @@ CASE(test memory initialize)
 ```
 [`BLOCK`](source/h2_unit.hpp#L100) align allocate memory, In following case, p mod 4 equals 3.
 ```C++
-CASE(test memory initialize)
+CASE(test ptr align)
 {
    BLOCK(align=3) {
+      char *p = (char *)malloc(8);
+   }
+}
+```
+[`BLOCK`](source/h2_unit.hpp#L100) Ignore memory leak detection, in BLOCK.
+```C++
+CASE(test ignore memory leak)
+{
+   BLOCK(noleak) {
       char *p = (char *)malloc(8);
    }
 }

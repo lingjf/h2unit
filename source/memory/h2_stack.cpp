@@ -3,9 +3,9 @@ struct h2_stack {
    h2_singleton(h2_stack);
    h2_list blocks;
 
-   void push(long long limited, size_t align, unsigned char s_fill[32], int n_fill, const char* where, const char* file, int line)
+   void push(long long limited, size_t align, unsigned char s_fill[32], int n_fill, bool noleak, const char* where, const char* file, int line)
    {
-      h2_block* b = new h2_block(limited, align, s_fill, n_fill, where, file, line);
+      h2_block* b = new h2_block(limited, align, s_fill, n_fill, noleak, where, file, line);
       blocks.push(b->x);
    }
 
@@ -52,4 +52,3 @@ struct h2_stack {
       return nullptr;
    }
 };
-

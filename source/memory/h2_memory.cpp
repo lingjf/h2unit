@@ -20,22 +20,28 @@ h2_inline void h2_memory::restores()
 
 h2_inline void h2_memory::stack::root()
 {
-   h2_stack::I().push(LLONG_MAX >> 9, sizeof(void*), nullptr, 0, "root", __FILE__, __LINE__);
+   h2_stack::I().push(LLONG_MAX / 2, sizeof(void*), nullptr, 0, false, "root", __FILE__, __LINE__);
 }
 h2_inline void h2_memory::stack::push(const char* file, int line)
 {
-   h2_stack::I().push(LLONG_MAX >> 9, sizeof(void*), nullptr, 0, "case", file, line);
+   h2_stack::I().push(LLONG_MAX / 2, sizeof(void*), nullptr, 0, false, "case", file, line);
 }
 h2_inline h2_fail* h2_memory::stack::pop()
 {
    return h2_stack::I().pop();
 }
 
-static inline void parse_block_attributes(const char* attributes, long long& n_limit, int& n_align, unsigned char s_fill[32], int& n_fill)
+static inline void parse_block_attributes(const char* attributes, long long& n_limit, int& n_align, unsigned char s_fill[32], int& n_fill, bool& noleak)
 {
-   n_limit = LLONG_MAX >> 9;
+   n_limit = LLONG_MAX / 2;
    n_align = sizeof(void*);
    n_fill = 0;
+   noleak = false;
+
+   const char* p_noleak = strcasestr(attributes, "noleak");
+   if (p_noleak) {
+      noleak = true;
+   }
 
    const char* p_limit = strcasestr(attributes, "limit");
    if (p_limit) {
@@ -76,10 +82,11 @@ h2_inline h2_memory::stack::block::block(const char* attributes, const char* fil
    int n_align;
    unsigned char s_fill[32];
    int n_fill;
+   bool noleak;
 
-   parse_block_attributes(attributes, n_limit, n_align, s_fill, n_fill);
+   parse_block_attributes(attributes, n_limit, n_align, s_fill, n_fill, noleak);
 
-   h2_stack::I().push(n_limit, n_align, s_fill, n_fill, "block", file, line);
+   h2_stack::I().push(n_limit, n_align, s_fill, n_fill, noleak, "block", file, line);
 }
 h2_inline h2_memory::stack::block::~block()
 {
