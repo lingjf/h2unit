@@ -101,10 +101,12 @@ h2_inline int h2_task::execute()
             h2_report::I().on_case_endup(s, c);
             stats[c->status] += 1;
             s->stats[c->status] += 1;
+            c->clear();
          }
          s->cleanup();
          for (auto& teardown : global_suite_teardowns) teardown();
          h2_report::I().on_suite_endup(s);
+         s->clear();
       }
       if (stats[h2_case::failed] == 0) drop_last_order();
    }

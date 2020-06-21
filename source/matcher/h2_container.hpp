@@ -14,7 +14,10 @@ struct h2_pair_matches {
       h2_fail* fail = nullptr;
       h2_fail::append_subling(fail, h2_matcher_cast<AK>(k).matches(a.first, caseless, false));
       h2_fail::append_subling(fail, h2_matcher_cast<AV>(v).matches(a.second, caseless, false));
-      if (!fail == !dont) return nullptr;
+      if (!fail == !dont) {
+         if (fail) delete fail;
+         return nullptr;
+      }
       if (dont) {
          fail = h2_fail::new_unexpect("", "{" + h2_stringify(a.first) + ", " + h2_stringify(a.second) + "}", expects(a, caseless, dont));
       }
@@ -139,6 +142,7 @@ struct h2_in_matches {
       for (auto& m : v_matchers) {
          h2_fail* fail = m.matches(a, caseless, false);
          if (!fail) ++s;
+         if (fail) delete fail;
       }
 
       if (0 < s == !dont) return nullptr;

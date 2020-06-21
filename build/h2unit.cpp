@@ -1,4 +1,4 @@
-﻿/* v5.5  2020-06-20 23:03:17 */
+﻿/* v5.5  2020-06-21 13:54:47 */
 /* https://github.com/lingjf/h2unit */
 /* Apache Licence 2.0 */
 #define __H2UNIT_HPP__
@@ -560,7 +560,8 @@ struct h2_lines : public h2_vector<h2_line> {
    bool foldable();
 
    void sequence(int indent, int start = 0);
-};// h2_layout.hpp
+};
+// h2_layout.hpp
 
 struct h2_layout {
    static h2_lines split(h2_lines& left_lines, h2_lines& right_lines, const char* left_title, const char* right_title);
@@ -1104,7 +1105,10 @@ struct h2_and_matches {
       h2_fail* fail = nullptr;
       h2_fail::append_subling(fail, h2_matcher_cast<A>(m1).matches(a, caseless, false));
       h2_fail::append_subling(fail, h2_matcher_cast<A>(m2).matches(a, caseless, false));
-      if (!fail == !dont) return nullptr;
+      if (!fail == !dont) {
+         if (fail) delete fail;
+         return nullptr;
+      }
       if (dont) {
          fail = h2_fail::new_unexpect("", h2_stringify(a), expects(a, caseless, dont));
       }
@@ -1131,7 +1135,11 @@ struct h2_or_matches {
       h2_fail* f1 = h2_matcher_cast<A>(m1).matches(a, caseless, false);
       h2_fail* f2 = h2_matcher_cast<A>(m2).matches(a, caseless, false);
       bool result = !f1 || !f2;
-      if (result == !dont) return nullptr;
+      if (result == !dont) {
+         if (f1) delete f1;
+         if (f2) delete f2;
+         return nullptr;
+      }
       return h2_fail::new_unexpect("", h2_stringify(a), expects(a, caseless, dont));
    }
    template <typename A>
@@ -1170,7 +1178,10 @@ struct h2_allof_matches {
          h2_fail::append_subling(fails, fail);
       }
 
-      if (!fails == !dont) return nullptr;
+      if (!fails == !dont) {
+         if (fails) delete fails;
+         return nullptr;
+      }
       h2_fail* fail = nullptr;
       if (dont) {
          fail = h2_fail::new_unexpect("", h2_stringify(a), expects(a, caseless, dont), "Should not match all");
@@ -1209,7 +1220,10 @@ struct h2_anyof_matches {
          h2_fail::append_subling(fails, fail);
       }
 
-      if ((0 < c) == !dont) return nullptr;
+      if ((0 < c) == !dont) {
+         if (fails) delete fails;
+         return nullptr;
+      }
       h2_fail* fail = nullptr;
       if (dont) {
          fail = h2_fail::new_unexpect("", h2_stringify(a), expects(a, caseless, dont), "Should not match any one");
@@ -1239,6 +1253,7 @@ struct h2_noneof_matches {
       for (auto& m : v_matchers) {
          h2_fail* fail = m.matches(a, caseless, false);
          if (!fail) ++c;
+         if (fail) delete fail;
       }
       if ((c == 0) == !dont) return nullptr;
       return h2_fail::new_unexpect("", h2_stringify(a), expects(a, caseless, dont));
@@ -1527,7 +1542,10 @@ struct h2_matches_memcmp {
          fail = t.matches(a);
       }
 
-      if (!fail == !dont) return nullptr;
+      if (!fail == !dont) {
+         if (fail) delete fail;
+         return nullptr;
+      }
       if (dont) {
          fail = h2_fail::new_unexpect("", h2_stringify(a), expects(a, caseless, dont));
       }
@@ -1587,7 +1605,10 @@ struct h2_pair_matches {
       h2_fail* fail = nullptr;
       h2_fail::append_subling(fail, h2_matcher_cast<AK>(k).matches(a.first, caseless, false));
       h2_fail::append_subling(fail, h2_matcher_cast<AV>(v).matches(a.second, caseless, false));
-      if (!fail == !dont) return nullptr;
+      if (!fail == !dont) {
+         if (fail) delete fail;
+         return nullptr;
+      }
       if (dont) {
          fail = h2_fail::new_unexpect("", "{" + h2_stringify(a.first) + ", " + h2_stringify(a.second) + "}", expects(a, caseless, dont));
       }
@@ -1712,6 +1733,7 @@ struct h2_in_matches {
       for (auto& m : v_matchers) {
          h2_fail* fail = m.matches(a, caseless, false);
          if (!fail) ++s;
+         if (fail) delete fail;
       }
 
       if (0 < s == !dont) return nullptr;
@@ -2667,8 +2689,8 @@ struct h2_case {
    h2_dnses dnses;
    h2_sock* sock{nullptr};
 
-   h2_case(const char* name_, int status_, const char* file_, int line_)
-     : name(name_), file(file_), line(line_), status(status_) {}
+   h2_case(const char* name, int status, const char* file, int line);
+   void clear();
 
    void prev_setup();
    void post_setup() {}
@@ -2679,8 +2701,8 @@ struct h2_case {
 
    struct cleaner : h2_once {
       h2_case* thus;
-      cleaner(h2_case* c) : thus(c) { thus->post_setup(); }
-      ~cleaner() { thus->prev_cleanup(); }
+      cleaner(h2_case* c);
+      ~cleaner();
    };
 };
 // h2_suite.hpp
@@ -2700,7 +2722,8 @@ struct h2_suite {
    h2_stubs stubs;
    h2_mocks mocks;
 
-   h2_suite(const char* name_, void (*test_code_)(h2_suite*, h2_case*), const char* file_, int line_);
+   h2_suite(const char* name, void (*)(h2_suite*, h2_case*), const char* file, int line);
+   void clear();
 
    void enumerate();
    void execute(h2_case* c);
@@ -4666,30 +4689,33 @@ h2_inline h2_string h2_matches_bitcmp::expects(const void* a, bool caseless, boo
 }
 // h2_container.cpp
 
-#define __H2_LISTOF_COMMON(type)                                                      \
-   h2_fail* fails = nullptr;                                                          \
-   auto v_matchers = t2v<type, 0>();                                                  \
-   for (int i = 0; i < v_matchers.size(); ++i) {                                      \
-      h2_fail* fail = nullptr;                                                        \
-      int j = 0, c = 0;                                                               \
-      for (auto& k : a) {                                                             \
-         if (j++ == i) {                                                              \
-            ++c;                                                                      \
-            fail = v_matchers[i].matches(k, caseless, false);                         \
-            break;                                                                    \
-         }                                                                            \
-      }                                                                               \
-      if (c == 0) {                                                                   \
-         type t1;                                                                     \
-         h2_string t2 = v_matchers[i].expects(t1, caseless, false);                   \
+#define __H2_LISTOF_COMMON(type)                                                       \
+   h2_fail* fails = nullptr;                                                           \
+   auto v_matchers = t2v<type, 0>();                                                   \
+   for (int i = 0; i < v_matchers.size(); ++i) {                                       \
+      h2_fail* fail = nullptr;                                                         \
+      int j = 0, c = 0;                                                                \
+      for (auto& k : a) {                                                              \
+         if (j++ == i) {                                                               \
+            ++c;                                                                       \
+            fail = v_matchers[i].matches(k, caseless, false);                          \
+            break;                                                                     \
+         }                                                                             \
+      }                                                                                \
+      if (c == 0) {                                                                    \
+         type t1;                                                                      \
+         h2_string t2 = v_matchers[i].expects(t1, caseless, false);                    \
          fail = h2_fail::new_unexpect("", "[missing]", t2);                            \
-      }                                                                               \
-      if (fail) fail->no = h2_stringify(i);                                           \
-      h2_fail::append_subling(fails, fail);                                           \
-   }                                                                                  \
-   if (!fails == !dont) return nullptr;                                               \
+      }                                                                                \
+      if (fail) fail->no = h2_stringify(i);                                            \
+      h2_fail::append_subling(fails, fail);                                            \
+   }                                                                                   \
+   if (!fails == !dont) {                                                              \
+      if (fails) delete fails;                                                         \
+      return nullptr;                                                                  \
+   }                                                                                   \
    h2_fail* fail = h2_fail::new_unexpect("", "", expects(a, caseless, dont), "fails"); \
-   h2_fail::append_child(fail, fails);                                                \
+   h2_fail::append_child(fail, fails);                                                 \
    return fail
 
 template <typename... Matchers>
@@ -4703,7 +4729,10 @@ inline h2_fail* h2_listof_matches<Matchers...>::matches(A a, bool caseless, bool
       if (fail) fail->no = h2_stringify(i);
       h2_fail::append_subling(fails, fail);
    }
-   if (!fails == !dont) return nullptr;
+   if (!fails == !dont) {
+      if (fails) delete fails;
+      return nullptr;
+   }
    h2_fail* fail = h2_fail::new_unexpect("", "", expects(a, caseless, dont), "fails");
    h2_fail::append_child(fail, fails);
    return fail;
@@ -4756,8 +4785,11 @@ inline h2_fail* h2_listof_matches<Matchers...>::matches(const std::forward_list<
          h2_fail::append_subling(fails, fail);                                               \
       }                                                                                      \
    }                                                                                         \
-   if (!fails == !dont) return nullptr;                                                      \
-   h2_fail* fail = h2_fail::new_unexpect("", "", expects(a, caseless, dont), "fails");        \
+   if (!fails == !dont) {                                                                    \
+      if (fails) delete fails;                                                               \
+      return nullptr;                                                                        \
+   }                                                                                         \
+   h2_fail* fail = h2_fail::new_unexpect("", "", expects(a, caseless, dont), "fails");       \
    h2_fail::append_child(fail, fails);                                                       \
    return fail
 
@@ -4879,7 +4911,7 @@ struct h2_piece : h2_libc {
    h2_backtrace bt_allocate, bt_release;
    int free_times = 0;
    // snowfield
-   unsigned char snow;
+   unsigned char snow_flower;
    // forbidden
    static constexpr const unsigned readable = 1, writable = 1 << 1;
    void* forbidden_page{nullptr};
@@ -4974,20 +5006,20 @@ struct h2_piece : h2_libc {
 
    void mark_snowfield()
    {
-      static unsigned char s_snow = 0;
-      snow = ++s_snow;
-      memset(page_ptr, snow, user_ptr - page_ptr);
-      memset(user_ptr + user_size, snow, (page_ptr + page_size * page_count) - (user_ptr + user_size));
+      static unsigned char s_snow_flower = 0;
+      snow_flower = ++s_snow_flower;
+      memset(page_ptr, snow_flower, user_ptr - page_ptr);
+      memset(user_ptr + user_size, snow_flower, (page_ptr + page_size * page_count) - (user_ptr + user_size));
       set_forbidden(readable, page_ptr + page_size * page_count, page_size);
    }
 
    h2_fail* check_snowfield(const unsigned char* start, const unsigned char* end)
    {
       for (const unsigned char* p = start; p < end; ++p) {
-         if (*p == snow) continue;
+         if (*p == snow_flower) continue;
          int n = std::min((int)(end - p), 8);
          for (; 0 < n; --n)
-            if (p[n - 1] != snow) break;
+            if (p[n - 1] != snow_flower) break;
          h2_vector<unsigned char> spot(p, p + n);
          return h2_fail::new_overflow(user_ptr, user_size, p, "write", spot, bt_allocate, h2_backtrace());
       }
@@ -5164,9 +5196,9 @@ struct h2_stack {
    h2_singleton(h2_stack);
    h2_list blocks;
 
-   void push(long long limited, size_t align, unsigned char s_fill[32], int n_fill, bool noleak, const char* where, const char* file, int line)
+   void push(long long limit, size_t align, unsigned char s_fill[32], int n_fill, bool noleak, const char* where, const char* file, int line)
    {
-      h2_block* b = new h2_block(limited, align, s_fill, n_fill, noleak, where, file, line);
+      h2_block* b = new h2_block(limit, align, s_fill, n_fill, noleak, where, file, line);
       blocks.push(b->x);
    }
 
@@ -8576,6 +8608,19 @@ h2_inline bool h2_patch::exempt(h2_backtrace& bt)
 
 // h2_case.cpp
 
+h2_inline h2_case::h2_case(const char* name_, int status_, const char* file_, int line_)
+  : name(name_), file(file_), line(line_), status(status_)
+{
+}
+
+h2_inline void h2_case::clear()
+{
+   if (fails) delete fails;
+   fails = nullptr;
+   sock = nullptr;
+   checks = 0;
+}
+
 h2_inline void h2_case::prev_setup()
 {
    status = passed;
@@ -8606,12 +8651,21 @@ h2_inline void h2_case::do_fail(h2_fail* fail, bool defer)
    h2_fail::append_subling(fails, fail);
    if (!defer) ::longjmp(jump, 1);
 }
+
+h2_inline h2_case::cleaner::cleaner(h2_case* c) : thus(c) { thus->post_setup(); }
+h2_inline h2_case::cleaner::~cleaner() { thus->prev_cleanup(); }
 // h2_suite.cpp
 
 h2_inline h2_suite::h2_suite(const char* name_, void (*test_code_)(h2_suite*, h2_case*), const char* file_, int line_)
   : name(name_), file(file_), line(line_), test_code(test_code_)
 {
    h2_task::I().suites.push_back(x);
+}
+
+h2_inline void h2_suite::clear()
+{
+   checks = 0;
+   memset(stats, 0, sizeof(stats));
 }
 
 h2_inline void h2_suite::cleanup()
@@ -8749,10 +8803,12 @@ h2_inline int h2_task::execute()
             h2_report::I().on_case_endup(s, c);
             stats[c->status] += 1;
             s->stats[c->status] += 1;
+            c->clear();
          }
          s->cleanup();
          for (auto& teardown : global_suite_teardowns) teardown();
          h2_report::I().on_suite_endup(s);
+         s->clear();
       }
       if (stats[h2_case::failed] == 0) drop_last_order();
    }

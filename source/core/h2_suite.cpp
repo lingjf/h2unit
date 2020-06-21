@@ -5,6 +5,12 @@ h2_inline h2_suite::h2_suite(const char* name_, void (*test_code_)(h2_suite*, h2
    h2_task::I().suites.push_back(x);
 }
 
+h2_inline void h2_suite::clear()
+{
+   checks = 0;
+   memset(stats, 0, sizeof(stats));
+}
+
 h2_inline void h2_suite::cleanup()
 {
    stubs.clear();

@@ -1,4 +1,4 @@
-﻿/* v5.5  2020-06-20 23:03:17 */
+﻿/* v5.5  2020-06-21 13:54:47 */
 /* https://github.com/lingjf/h2unit */
 /* Apache Licence 2.0 */
 #ifndef __H2UNIT_HPP__
@@ -560,7 +560,8 @@ struct h2_lines : public h2_vector<h2_line> {
    bool foldable();
 
    void sequence(int indent, int start = 0);
-};// h2_layout.hpp
+};
+// h2_layout.hpp
 
 struct h2_layout {
    static h2_lines split(h2_lines& left_lines, h2_lines& right_lines, const char* left_title, const char* right_title);
@@ -1104,7 +1105,10 @@ struct h2_and_matches {
       h2_fail* fail = nullptr;
       h2_fail::append_subling(fail, h2_matcher_cast<A>(m1).matches(a, caseless, false));
       h2_fail::append_subling(fail, h2_matcher_cast<A>(m2).matches(a, caseless, false));
-      if (!fail == !dont) return nullptr;
+      if (!fail == !dont) {
+         if (fail) delete fail;
+         return nullptr;
+      }
       if (dont) {
          fail = h2_fail::new_unexpect("", h2_stringify(a), expects(a, caseless, dont));
       }
@@ -1131,7 +1135,11 @@ struct h2_or_matches {
       h2_fail* f1 = h2_matcher_cast<A>(m1).matches(a, caseless, false);
       h2_fail* f2 = h2_matcher_cast<A>(m2).matches(a, caseless, false);
       bool result = !f1 || !f2;
-      if (result == !dont) return nullptr;
+      if (result == !dont) {
+         if (f1) delete f1;
+         if (f2) delete f2;
+         return nullptr;
+      }
       return h2_fail::new_unexpect("", h2_stringify(a), expects(a, caseless, dont));
    }
    template <typename A>
@@ -1170,7 +1178,10 @@ struct h2_allof_matches {
          h2_fail::append_subling(fails, fail);
       }
 
-      if (!fails == !dont) return nullptr;
+      if (!fails == !dont) {
+         if (fails) delete fails;
+         return nullptr;
+      }
       h2_fail* fail = nullptr;
       if (dont) {
          fail = h2_fail::new_unexpect("", h2_stringify(a), expects(a, caseless, dont), "Should not match all");
@@ -1209,7 +1220,10 @@ struct h2_anyof_matches {
          h2_fail::append_subling(fails, fail);
       }
 
-      if ((0 < c) == !dont) return nullptr;
+      if ((0 < c) == !dont) {
+         if (fails) delete fails;
+         return nullptr;
+      }
       h2_fail* fail = nullptr;
       if (dont) {
          fail = h2_fail::new_unexpect("", h2_stringify(a), expects(a, caseless, dont), "Should not match any one");
@@ -1239,6 +1253,7 @@ struct h2_noneof_matches {
       for (auto& m : v_matchers) {
          h2_fail* fail = m.matches(a, caseless, false);
          if (!fail) ++c;
+         if (fail) delete fail;
       }
       if ((c == 0) == !dont) return nullptr;
       return h2_fail::new_unexpect("", h2_stringify(a), expects(a, caseless, dont));
@@ -1527,7 +1542,10 @@ struct h2_matches_memcmp {
          fail = t.matches(a);
       }
 
-      if (!fail == !dont) return nullptr;
+      if (!fail == !dont) {
+         if (fail) delete fail;
+         return nullptr;
+      }
       if (dont) {
          fail = h2_fail::new_unexpect("", h2_stringify(a), expects(a, caseless, dont));
       }
@@ -1587,7 +1605,10 @@ struct h2_pair_matches {
       h2_fail* fail = nullptr;
       h2_fail::append_subling(fail, h2_matcher_cast<AK>(k).matches(a.first, caseless, false));
       h2_fail::append_subling(fail, h2_matcher_cast<AV>(v).matches(a.second, caseless, false));
-      if (!fail == !dont) return nullptr;
+      if (!fail == !dont) {
+         if (fail) delete fail;
+         return nullptr;
+      }
       if (dont) {
          fail = h2_fail::new_unexpect("", "{" + h2_stringify(a.first) + ", " + h2_stringify(a.second) + "}", expects(a, caseless, dont));
       }
@@ -1712,6 +1733,7 @@ struct h2_in_matches {
       for (auto& m : v_matchers) {
          h2_fail* fail = m.matches(a, caseless, false);
          if (!fail) ++s;
+         if (fail) delete fail;
       }
 
       if (0 < s == !dont) return nullptr;
@@ -2667,8 +2689,8 @@ struct h2_case {
    h2_dnses dnses;
    h2_sock* sock{nullptr};
 
-   h2_case(const char* name_, int status_, const char* file_, int line_)
-     : name(name_), file(file_), line(line_), status(status_) {}
+   h2_case(const char* name, int status, const char* file, int line);
+   void clear();
 
    void prev_setup();
    void post_setup() {}
@@ -2679,8 +2701,8 @@ struct h2_case {
 
    struct cleaner : h2_once {
       h2_case* thus;
-      cleaner(h2_case* c) : thus(c) { thus->post_setup(); }
-      ~cleaner() { thus->prev_cleanup(); }
+      cleaner(h2_case* c);
+      ~cleaner();
    };
 };
 // h2_suite.hpp
@@ -2700,7 +2722,8 @@ struct h2_suite {
    h2_stubs stubs;
    h2_mocks mocks;
 
-   h2_suite(const char* name_, void (*test_code_)(h2_suite*, h2_case*), const char* file_, int line_);
+   h2_suite(const char* name, void (*)(h2_suite*, h2_case*), const char* file, int line);
+   void clear();
 
    void enumerate();
    void execute(h2_case* c);

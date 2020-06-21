@@ -9,7 +9,7 @@ struct h2_piece : h2_libc {
    h2_backtrace bt_allocate, bt_release;
    int free_times = 0;
    // snowfield
-   unsigned char snow;
+   unsigned char snow_flower;
    // forbidden
    static constexpr const unsigned readable = 1, writable = 1 << 1;
    void* forbidden_page{nullptr};
@@ -104,20 +104,20 @@ struct h2_piece : h2_libc {
 
    void mark_snowfield()
    {
-      static unsigned char s_snow = 0;
-      snow = ++s_snow;
-      memset(page_ptr, snow, user_ptr - page_ptr);
-      memset(user_ptr + user_size, snow, (page_ptr + page_size * page_count) - (user_ptr + user_size));
+      static unsigned char s_snow_flower = 0;
+      snow_flower = ++s_snow_flower;
+      memset(page_ptr, snow_flower, user_ptr - page_ptr);
+      memset(user_ptr + user_size, snow_flower, (page_ptr + page_size * page_count) - (user_ptr + user_size));
       set_forbidden(readable, page_ptr + page_size * page_count, page_size);
    }
 
    h2_fail* check_snowfield(const unsigned char* start, const unsigned char* end)
    {
       for (const unsigned char* p = start; p < end; ++p) {
-         if (*p == snow) continue;
+         if (*p == snow_flower) continue;
          int n = std::min((int)(end - p), 8);
          for (; 0 < n; --n)
-            if (p[n - 1] != snow) break;
+            if (p[n - 1] != snow_flower) break;
          h2_vector<unsigned char> spot(p, p + n);
          return h2_fail::new_overflow(user_ptr, user_size, p, "write", spot, bt_allocate, h2_backtrace());
       }

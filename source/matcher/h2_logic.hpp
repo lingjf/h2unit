@@ -28,7 +28,10 @@ struct h2_and_matches {
       h2_fail* fail = nullptr;
       h2_fail::append_subling(fail, h2_matcher_cast<A>(m1).matches(a, caseless, false));
       h2_fail::append_subling(fail, h2_matcher_cast<A>(m2).matches(a, caseless, false));
-      if (!fail == !dont) return nullptr;
+      if (!fail == !dont) {
+         if (fail) delete fail;
+         return nullptr;
+      }
       if (dont) {
          fail = h2_fail::new_unexpect("", h2_stringify(a), expects(a, caseless, dont));
       }
@@ -55,7 +58,11 @@ struct h2_or_matches {
       h2_fail* f1 = h2_matcher_cast<A>(m1).matches(a, caseless, false);
       h2_fail* f2 = h2_matcher_cast<A>(m2).matches(a, caseless, false);
       bool result = !f1 || !f2;
-      if (result == !dont) return nullptr;
+      if (result == !dont) {
+         if (f1) delete f1;
+         if (f2) delete f2;
+         return nullptr;
+      }
       return h2_fail::new_unexpect("", h2_stringify(a), expects(a, caseless, dont));
    }
    template <typename A>
@@ -94,7 +101,10 @@ struct h2_allof_matches {
          h2_fail::append_subling(fails, fail);
       }
 
-      if (!fails == !dont) return nullptr;
+      if (!fails == !dont) {
+         if (fails) delete fails;
+         return nullptr;
+      }
       h2_fail* fail = nullptr;
       if (dont) {
          fail = h2_fail::new_unexpect("", h2_stringify(a), expects(a, caseless, dont), "Should not match all");
@@ -133,7 +143,10 @@ struct h2_anyof_matches {
          h2_fail::append_subling(fails, fail);
       }
 
-      if ((0 < c) == !dont) return nullptr;
+      if ((0 < c) == !dont) {
+         if (fails) delete fails;
+         return nullptr;
+      }
       h2_fail* fail = nullptr;
       if (dont) {
          fail = h2_fail::new_unexpect("", h2_stringify(a), expects(a, caseless, dont), "Should not match any one");
@@ -163,6 +176,7 @@ struct h2_noneof_matches {
       for (auto& m : v_matchers) {
          h2_fail* fail = m.matches(a, caseless, false);
          if (!fail) ++c;
+         if (fail) delete fail;
       }
       if ((c == 0) == !dont) return nullptr;
       return h2_fail::new_unexpect("", h2_stringify(a), expects(a, caseless, dont));

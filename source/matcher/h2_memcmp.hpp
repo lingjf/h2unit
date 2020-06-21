@@ -39,7 +39,10 @@ struct h2_matches_memcmp {
          fail = t.matches(a);
       }
 
-      if (!fail == !dont) return nullptr;
+      if (!fail == !dont) {
+         if (fail) delete fail;
+         return nullptr;
+      }
       if (dont) {
          fail = h2_fail::new_unexpect("", h2_stringify(a), expects(a, caseless, dont));
       }

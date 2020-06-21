@@ -14,7 +14,8 @@ struct h2_suite {
    h2_stubs stubs;
    h2_mocks mocks;
 
-   h2_suite(const char* name_, void (*test_code_)(h2_suite*, h2_case*), const char* file_, int line_);
+   h2_suite(const char* name, void (*)(h2_suite*, h2_case*), const char* file, int line);
+   void clear();
 
    void enumerate();
    void execute(h2_case* c);
