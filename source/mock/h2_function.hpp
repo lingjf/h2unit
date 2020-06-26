@@ -6,7 +6,7 @@ struct h2_return : h2_libc {
    explicit h2_return(Return _value) : value(_value){};
 };
 
-template <typename Class, typename F>
+template <typename Class, typename Function>
 struct h2_function;
 
 template <typename Class, typename Return, typename... Args>

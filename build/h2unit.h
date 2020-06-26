@@ -1,4 +1,4 @@
-﻿/* v5.5  2020-06-21 13:54:47 */
+﻿/* v5.5  2020-06-27 00:11:59 */
 /* https://github.com/lingjf/h2unit */
 /* Apache Licence 2.0 */
 #ifndef __H2UNIT_HPP__
@@ -577,6 +577,15 @@ struct h2_color {
 
    static bool is_ctrl(const char* s) { return s[0] == '\033' && s[1] == '{'; };
 };
+// h2_nm.hpp
+
+struct h2_nm {
+   h2_singleton(h2_nm);
+   static void initialize();
+   std::map<std::string, unsigned long long> symbols;
+   unsigned long long get(const char* name) const;
+   h2_nm();
+};
 // h2_backtrace.hpp
 
 struct h2_backtrace {
@@ -653,14 +662,13 @@ struct h2_fail : h2_libc {
    static h2_fail* new_strcmp(const h2_string& e_value_, const h2_string& a_value_, bool caseless_, const h2_string& expection_, const char* file_ = nullptr, int line_ = 0);
    static h2_fail* new_strfind(const h2_string& e_value_, const h2_string& a_value_, const h2_string& expection_, const char* file_ = nullptr, int line_ = 0);
    static h2_fail* new_json(const h2_string& e_value_, const h2_string& a_value_, const h2_string& expection_, const char* file_ = nullptr, int line_ = 0);
+   static h2_fail* new_memcmp(const unsigned char* e_value_, const unsigned char* a_value_, int width_, int nbits_, const h2_string& expection_, h2_string a_represent_, h2_string explain_ = "", const char* file_ = nullptr, int line_ = 0);
    static h2_fail* new_memory_leak(const void* ptr_, int size_, h2_backtrace bt_allocate_, const char* where_, const char* file_, int line_);
    static h2_fail* new_double_free(const void* ptr_, h2_backtrace bt_allocate_, h2_backtrace bt_release_, h2_backtrace bt_double_free_);
    static h2_fail* new_asymmetric_free(const void* ptr_, const char* who_allocate_, const char* who_release_, h2_backtrace bt_allocate_, h2_backtrace bt_release_);
    static h2_fail* new_overflow(const void* ptr_, const int size_, const void* addr_, const char* action_, h2_vector<unsigned char> spot_, h2_backtrace bt_allocate_, h2_backtrace bt_trample_, const char* file_ = nullptr, int line_ = 0);
    static h2_fail* new_use_after_free(const void* ptr_, const void* addr_, const char* action_, h2_backtrace bt_allocate_, h2_backtrace bt_release_, h2_backtrace bt_use_);
    static h2_fail* new_call(const char* func_, const char* expect, const char* actual, const char* file_ = nullptr, int line_ = 0);
-   static h2_fail* new_instantiate(const char* action_type_, const char* return_type_, const char* class_type_, const char* method_name_, const char* return_args_, int why_abstract_, const char* file_, int line_);
-   static h2_fail* new_memcmp(const unsigned char* e_value_, const unsigned char* a_value_, int width_, int nbits_, const h2_string& expection_, h2_string a_represent_, h2_string explain_ = "", const char* file_ = nullptr, int line_ = 0);
 };
 
 static inline void h2_fail_g(h2_fail*, bool);
@@ -1943,47 +1951,26 @@ struct h2_stub_temporary_restore : h2_once {
 
 #define __H2STUB3(Return, OriginFunction, Args) ____H2STUB3(Return, OriginFunction, Args, H2Q(t_stub))
 
-#define __H2STUB40(Return, Class, Method, Args, Qt)                                                                                                                                                                                                                                          \
-   struct {                                                                                                                                                                                                                                                                                  \
-      void operator=(Return (*substitute_fp)(H2PP_REMOVE_PARENTHESES_IF(Class) * that))                                                                                                                                                                                                      \
-      {                                                                                                                                                                                                                                                                                      \
-         h2::h2_stub_g(h2::h2_mfp<H2PP_REMOVE_PARENTHESES_IF(Class), Return Args>::A(&H2PP_REMOVE_PARENTHESES_IF(Class)::H2PP_REMOVE_PARENTHESES_IF(Method), "STUB", #Return, #Class, #Method, #Args, __FILE__, __LINE__), (void*)(substitute_fp), #Class "::" #Method, __FILE__, __LINE__); \
-      }                                                                                                                                                                                                                                                                                      \
-   } Qt;                                                                                                                                                                                                                                                                                     \
+#define __H2STUB40(Return, Class, Method, Args, Qt)                                                                                                                                                                             \
+   struct {                                                                                                                                                                                                                     \
+      void operator=(Return (*substitute_fp)(H2PP_REMOVE_PARENTHESES_IF(Class) * that))                                                                                                                                         \
+      {                                                                                                                                                                                                                         \
+         h2::h2_stub_g(h2::h2_mfp<H2PP_REMOVE_PARENTHESES_IF(Class), Return Args>::A(&H2PP_REMOVE_PARENTHESES_IF(Class)::H2PP_REMOVE_PARENTHESES_IF(Method)), (void*)(substitute_fp), #Class "::" #Method, __FILE__, __LINE__); \
+      }                                                                                                                                                                                                                         \
+   } Qt;                                                                                                                                                                                                                        \
    Qt = [](H2PP_REMOVE_PARENTHESES_IF(Class) * that) -> Return
 
-#define __H2STUB41(Return, Class, Method, Args, Qt)                                                                                                                                                                                                                                          \
-   struct {                                                                                                                                                                                                                                                                                  \
-      void operator=(Return (*substitute_fp)(H2PP_REMOVE_PARENTHESES_IF(Class) * that, H2PP_REMOVE_PARENTHESES(Args)))                                                                                                                                                                       \
-      {                                                                                                                                                                                                                                                                                      \
-         h2::h2_stub_g(h2::h2_mfp<H2PP_REMOVE_PARENTHESES_IF(Class), Return Args>::A(&H2PP_REMOVE_PARENTHESES_IF(Class)::H2PP_REMOVE_PARENTHESES_IF(Method), "STUB", #Return, #Class, #Method, #Args, __FILE__, __LINE__), (void*)(substitute_fp), #Class "::" #Method, __FILE__, __LINE__); \
-      }                                                                                                                                                                                                                                                                                      \
-   } Qt;                                                                                                                                                                                                                                                                                     \
+#define __H2STUB41(Return, Class, Method, Args, Qt)                                                                                                                                                                             \
+   struct {                                                                                                                                                                                                                     \
+      void operator=(Return (*substitute_fp)(H2PP_REMOVE_PARENTHESES_IF(Class) * that, H2PP_REMOVE_PARENTHESES(Args)))                                                                                                          \
+      {                                                                                                                                                                                                                         \
+         h2::h2_stub_g(h2::h2_mfp<H2PP_REMOVE_PARENTHESES_IF(Class), Return Args>::A(&H2PP_REMOVE_PARENTHESES_IF(Class)::H2PP_REMOVE_PARENTHESES_IF(Method)), (void*)(substitute_fp), #Class "::" #Method, __FILE__, __LINE__); \
+      }                                                                                                                                                                                                                         \
+   } Qt;                                                                                                                                                                                                                        \
    Qt = [](H2PP_REMOVE_PARENTHESES_IF(Class) * that, H2PP_REMOVE_PARENTHESES(Args)) -> Return
 
 #define __H2STUB4(Return, Class, Method, Args) \
    H2PP_IF_ELSE(H2PP_IS_EMPTY Args, __H2STUB40(Return, Class, Method, Args, H2Q(t_stub)), __H2STUB41(Return, Class, Method, Args, H2Q(t_stub)))
-
-#define __H2STUB50(Return, Class, Method, Args, Instance, Qt)                                                                                                                                                                             \
-   struct {                                                                                                                                                                                                                               \
-      void operator=(Return (*substitute_fp)(H2PP_REMOVE_PARENTHESES_IF(Class) * that))                                                                                                                                                   \
-      {                                                                                                                                                                                                                                   \
-         h2::h2_stub_g(h2::h2_mfp<H2PP_REMOVE_PARENTHESES_IF(Class), Return Args>::A(&H2PP_REMOVE_PARENTHESES_IF(Class)::H2PP_REMOVE_PARENTHESES_IF(Method), Instance), (void*)(substitute_fp), #Class "::" #Method, __FILE__, __LINE__); \
-      }                                                                                                                                                                                                                                   \
-   } Qt;                                                                                                                                                                                                                                  \
-   Qt = [](H2PP_REMOVE_PARENTHESES_IF(Class) * that) -> Return
-
-#define __H2STUB51(Return, Class, Method, Args, Instance, Qt)                                                                                                                                                                             \
-   struct {                                                                                                                                                                                                                               \
-      void operator=(Return (*substitute_fp)(H2PP_REMOVE_PARENTHESES_IF(Class) * that, H2PP_REMOVE_PARENTHESES(Args)))                                                                                                                    \
-      {                                                                                                                                                                                                                                   \
-         h2::h2_stub_g(h2::h2_mfp<H2PP_REMOVE_PARENTHESES_IF(Class), Return Args>::A(&H2PP_REMOVE_PARENTHESES_IF(Class)::H2PP_REMOVE_PARENTHESES_IF(Method), Instance), (void*)(substitute_fp), #Class "::" #Method, __FILE__, __LINE__); \
-      }                                                                                                                                                                                                                                   \
-   } Qt;                                                                                                                                                                                                                                  \
-   Qt = [](H2PP_REMOVE_PARENTHESES_IF(Class) * that, H2PP_REMOVE_PARENTHESES(Args)) -> Return
-
-#define __H2STUB5(Return, Class, Method, Args, Instance) \
-   H2PP_IF_ELSE(H2PP_IS_EMPTY Args, __H2STUB50(Return, Class, Method, Args, Instance, H2Q(t_stub)), __H2STUB51(Return, Class, Method, Args, Instance, H2Q(t_stub)))
 
 #define H2STUB(...) H2PP_VARIADIC_CALL(__H2STUB, __VA_ARGS__)
 // h2_mfp.hpp
@@ -1995,68 +1982,69 @@ template <typename...> using h2_void_t = void;
 template <typename T, int I> struct h2_constructible_error {
    static T* O(void* m) { return static_cast<T*>(m = (void*)I); }
 };
-
-template <typename, typename> struct h2_constructible0_impl : std::false_type {};
-template <typename T>
-struct h2_constructible0_impl<h2_void_t<decltype(T())>, T> : std::true_type {
+template <typename T> struct h2_constructible0 : std::true_type {
    static T* O(void* m) { return new (m) T(); }
 };
 
 template <typename, typename> struct h2_constructible1_impl : std::false_type {};
+template <typename, typename> struct h2_constructible2_impl : std::false_type {};
+template <typename, typename> struct h2_constructible3_impl : std::false_type {};
+template <typename, typename> struct h2_constructible4_impl : std::false_type {};
+template <typename, typename> struct h2_constructible5_impl : std::false_type {};
+template <typename, typename> struct h2_constructible6_impl : std::false_type {};
+template <typename, typename> struct h2_constructible7_impl : std::false_type {};
+template <typename, typename> struct h2_constructible8_impl : std::false_type {};
+template <typename, typename> struct h2_constructible9_impl : std::false_type {};
+
+#if (defined(__GNUC__) && __GNUC__ >= 5) || defined __clang__ || defined _WIN32
+
 template <typename T>
 struct h2_constructible1_impl<h2_void_t<decltype(T({}))>, T> : std::true_type {
    static T* O(void* m) { return new (m) T({}); }
 };
 
-template <typename, typename> struct h2_constructible2_impl : std::false_type {};
 template <typename T>
 struct h2_constructible2_impl<h2_void_t<decltype(T({}, {}))>, T> : std::true_type {
    static T* O(void* m) { return new (m) T({}, {}); }
 };
 
-template <typename, typename> struct h2_constructible3_impl : std::false_type {};
 template <typename T>
 struct h2_constructible3_impl<h2_void_t<decltype(T({}, {}, {}))>, T> : std::true_type {
    static T* O(void* m) { return new (m) T({}, {}, {}); }
 };
 
-template <typename, typename> struct h2_constructible4_impl : std::false_type {};
 template <typename T>
 struct h2_constructible4_impl<h2_void_t<decltype(T({}, {}, {}, {}))>, T> : std::true_type {
    static T* O(void* m) { return new (m) T({}, {}, {}, {}); }
 };
 
-template <typename, typename> struct h2_constructible5_impl : std::false_type {};
 template <typename T>
 struct h2_constructible5_impl<h2_void_t<decltype(T({}, {}, {}, {}, {}))>, T> : std::true_type {
    static T* O(void* m) { return new (m) T({}, {}, {}, {}, {}); }
 };
 
-template <typename, typename> struct h2_constructible6_impl : std::false_type {};
 template <typename T>
 struct h2_constructible6_impl<h2_void_t<decltype(T({}, {}, {}, {}, {}, {}))>, T> : std::true_type {
    static T* O(void* m) { return new (m) T({}, {}, {}, {}, {}, {}); }
 };
 
-template <typename, typename> struct h2_constructible7_impl : std::false_type {};
 template <typename T>
 struct h2_constructible7_impl<h2_void_t<decltype(T({}, {}, {}, {}, {}, {}, {}))>, T> : std::true_type {
    static T* O(void* m) { return new (m) T({}, {}, {}, {}, {}, {}, {}); }
 };
 
-template <typename, typename> struct h2_constructible8_impl : std::false_type {};
 template <typename T>
 struct h2_constructible8_impl<h2_void_t<decltype(T({}, {}, {}, {}, {}, {}, {}, {}))>, T> : std::true_type {
    static T* O(void* m) { return new (m) T({}, {}, {}, {}, {}, {}, {}, {}); }
 };
 
-template <typename, typename> struct h2_constructible9_impl : std::false_type {};
 template <typename T>
 struct h2_constructible9_impl<h2_void_t<decltype(T({}, {}, {}, {}, {}, {}, {}, {}, {}))>, T> : std::true_type {
    static T* O(void* m) { return new (m) T({}, {}, {}, {}, {}, {}, {}, {}, {}); }
 };
 
-template <typename T> using h2_constructible0 = h2_constructible0_impl<h2_void_t<>, T>;
+#endif
+
 template <typename T> using h2_constructible1 = h2_constructible1_impl<h2_void_t<>, T>;
 template <typename T> using h2_constructible2 = h2_constructible2_impl<h2_void_t<>, T>;
 template <typename T> using h2_constructible3 = h2_constructible3_impl<h2_void_t<>, T>;
@@ -2108,12 +2096,37 @@ using h2_constructible =
 
 //  https://itanium-cxx-abi.github.io/cxx-abi/
 
+//  g++ -std=c++11 -fdump-class-hierarchy
+
 //  &Class::Method has separate representations for non-virtual and virtual functions.
 //  For non-virtual functions, it is the address of the function.
 //  For virtual functions, it is 1 plus the virtual table offset (in bytes) of the function.
 //  The least-significant bit therefore discriminates between virtual and non-virtual functions.
 
-template <typename Class, typename F>
+struct h2_vtable {
+   virtual ~h2_vtable(){};
+   virtual void dummy(){};
+   static void** vtable(void* object)
+   {
+      return *(void***)object;
+   }
+   static long long offset()
+   {
+      static long long s = get_offset();
+      return s;
+   }
+   static long long get_offset()
+   {
+      char vtable_symbol[32];
+      h2_vtable t;
+      long long absolute_vtable = (long long)vtable((void*)&t);
+      sprintf(vtable_symbol, "_ZTV%s", typeid(h2_vtable).name());  // mangled for "vtable for h2_vtable"
+      long long relative_vtable = (long long)h2_nm::I().get(vtable_symbol);
+      return absolute_vtable - relative_vtable;
+   }
+};
+
+template <typename Class, typename Function>
 struct h2_mfp;
 
 template <typename Class, typename Return, typename... Args>
@@ -2130,28 +2143,29 @@ struct h2_mfp<Class, Return(Args...)> {
       return (u.v & 1) && (u.v - 1) % sizeof(void*) == 0 && (u.v - 1) / sizeof(void*) < 1000;
    }
 
-   static inline void* get_vmfp(U& u, Class* obj)
+   static inline void* get_vmfp(U& u, void** vtable)
    {
-      void** vtable = *(void***)obj;
       return vtable[(u.v - 1) / sizeof(void*)];
    }
 
-   static void* A(F f, const char* action_type, const char* return_type, const char* class_type, const char* method_name, const char* return_args, const char* file, int line)
+   static void* A(F f)
    {
       U u{f};
       if (!is_virtual(u)) return u.p;
-      Class* o = h2_constructible<Class>::O(alloca(sizeof(Class)));
-      if (1 == (long long)o || 2 == (long long)o)
-         h2_fail_g(h2_fail::new_instantiate(action_type, return_type, class_type, method_name, return_args, 1 == (long long)o, file, line), false);
-      return get_vmfp(u, o);
-   }
-
-   template <typename Derived>
-   static void* A(F f, Derived obj)
-   {
-      U u{f};
-      if (!is_virtual(u)) return u.p;
-      return get_vmfp(u, dynamic_cast<Class*>(&obj));
+      void** vtable = nullptr;
+      Class* object = h2_constructible<Class>::O(alloca(sizeof(Class)));
+      if (0 == (long long)object || 1 == (long long)object || 2 == (long long)object) {
+         char vtable_symbol[1024];
+         sprintf(vtable_symbol, "_ZTV%s", typeid(Class).name());  // mangled for "vtable for Class"
+         unsigned long long relative_vtable = h2_nm::I().get(vtable_symbol);
+         if (relative_vtable) {
+            vtable = (void**)(relative_vtable + h2_vtable::offset());
+         }
+      } else {
+         vtable = h2_vtable::vtable((void*)object);
+      }
+      if (!vtable) return nullptr;
+      return get_vmfp(u, vtable);
    }
 };
 // h2_checkin.hpp
@@ -2184,7 +2198,7 @@ struct h2_return : h2_libc {
    explicit h2_return(Return _value) : value(_value){};
 };
 
-template <typename Class, typename F>
+template <typename Class, typename Function>
 struct h2_function;
 
 template <typename Class, typename Return, typename... Args>
@@ -2298,10 +2312,7 @@ struct h2_mocks {
    h2::h2_mocker<__COUNTER__, __H2_LINE__, std::false_type, Signature>::I((void*)OriginFunction, #OriginFunction, __FILE__, __LINE__)
 
 #define __H2MOCK3(Class, Method, Signature) \
-   h2::h2_mocker<__COUNTER__, __H2_LINE__, H2PP_REMOVE_PARENTHESES_IF(Class), Signature>::I(h2::h2_mfp<H2PP_REMOVE_PARENTHESES_IF(Class), Signature>::A(&H2PP_REMOVE_PARENTHESES_IF(Class)::H2PP_REMOVE_PARENTHESES_IF(Method), "MOCK", "", #Class, #Method, #Signature, __FILE__, __LINE__), #Class "::" #Method, __FILE__, __LINE__)
-
-#define __H2MOCK4(Class, Method, Signature, Instance) \
-   h2::h2_mocker<__COUNTER__, __H2_LINE__, H2PP_REMOVE_PARENTHESES_IF(Class), Signature>::I(h2::h2_mfp<H2PP_REMOVE_PARENTHESES_IF(Class), Signature>::A(&H2PP_REMOVE_PARENTHESES_IF(Class)::H2PP_REMOVE_PARENTHESES_IF(Method), Instance), #Class "::" #Method, __FILE__, __LINE__)
+   h2::h2_mocker<__COUNTER__, __H2_LINE__, H2PP_REMOVE_PARENTHESES_IF(Class), Signature>::I(h2::h2_mfp<H2PP_REMOVE_PARENTHESES_IF(Class), Signature>::A(&H2PP_REMOVE_PARENTHESES_IF(Class)::H2PP_REMOVE_PARENTHESES_IF(Method)), #Class "::" #Method, __FILE__, __LINE__)
 
 #define H2MOCK(...) H2PP_VARIADIC_CALL(__H2MOCK, __VA_ARGS__)
 // h2_mocker.hpp
@@ -2765,6 +2776,7 @@ struct h2_task {
 
 static inline void h2_stub_g(void* origin_fp, void* substitute_fp, const char* origin_fn, const char* file, int line)
 {
+   if (!origin_fp || !substitute_fp) return;
    if (h2_task::I().current_case)
       h2_task::I().current_case->stubs.add(origin_fp, substitute_fp, origin_fn, file, line);
    else if (h2_task::I().current_suite)

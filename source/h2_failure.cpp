@@ -484,33 +484,6 @@ struct h2_fail_call : h2_fail {
    }
 };
 
-struct h2_fail_instantiate : h2_fail {
-   const char *action_type, *return_type, *class_type, *method_name, *return_args;
-   const bool why_abstract;
-   h2_fail_instantiate(const char* action_type_, const char* return_type_, const char* class_type_, const char* method_name_, const char* return_args_, int why_abstract_, const char* file_, int line_) : h2_fail(file_, line_), action_type(action_type_), return_type(return_type_), class_type(class_type_), method_name(method_name_), return_args(return_args_), why_abstract(why_abstract_) {}
-   void print(int subling_index = 0, int child_index = 0) override
-   {
-      why_abstract ? h2_color::printf("", "Instantiate 'class %s' is a abstract class%s\n", class_type, get_locate()) :
-                     h2_color::printf("", "Instantiate 'class %s' don't know initialize arguments%s\n", class_type, get_locate());
-
-      h2_color::printf("", "You may take following solutions to fix it: \n");
-      if (why_abstract)
-         h2_color::printf("", "1. Add non-abstract Derived Class instance in %s(%s%s%s, %s, %s, Derived %s(...)) \n",
-                          action_type,
-                          strlen(return_type) ? return_type : "",
-                          strlen(return_type) ? ", " : "",
-                          class_type, method_name, return_args, class_type);
-      else {
-         h2_color::printf("", "1. Define default constructor in class %s, or \n", class_type);
-         h2_color::printf("", "2. Add parameterized construction in %s(%s%s%s, %s, %s, %s(...)) \n",
-                          action_type,
-                          strlen(return_type) ? return_type : "",
-                          strlen(return_type) ? ", " : "",
-                          class_type, method_name, return_args, class_type);
-      }
-   }
-};
-
 h2_inline h2_fail* h2_fail::new_normal(const char* file_, int line_, const char* func_, const char* format, ...)
 {
    char* alloca_str;
@@ -560,8 +533,4 @@ h2_inline h2_fail* h2_fail::new_use_after_free(const void* ptr_, const void* add
 h2_inline h2_fail* h2_fail::new_call(const char* func_, const char* expect, const char* actual, const char* file_, int line_)
 {
    return new h2_fail_call(func_, expect, actual, file_, line_);
-}
-h2_inline h2_fail* h2_fail::new_instantiate(const char* action_type_, const char* return_type_, const char* class_type_, const char* method_name_, const char* return_args_, int why_abstract_, const char* file_, int line_)
-{
-   return new h2_fail_instantiate(action_type_, return_type_, class_type_, method_name_, return_args_, why_abstract_, file_, line_);
 }

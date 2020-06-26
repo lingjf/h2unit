@@ -1,35 +1,10 @@
 
-struct h2_nm {
-   h2_singleton(h2_nm);
-
-   std::map<std::string, unsigned long long> symbols;
-
-   unsigned long long get(const char* name) const
-   {
-      if (strlen(name) == 0) return 0;
-      auto it = symbols.find(name);
-      return it != symbols.end() ? it->second : ULLONG_MAX;
-   }
-
-   bool in_main(unsigned long long addr) const
-   {
-      static unsigned long long main_addr = get("main");
-      if (main_addr == ULLONG_MAX) return false;
-      return main_addr < addr && addr < main_addr + 256;
-   }
-
-   h2_nm()
-   {
-      char nm[256], line[1024], addr[128], type[32], name[1024];
-      sprintf(nm, "nm %s", O.path);
-      h2_with f(::popen(nm, "r"), ::pclose);
-      if (f.f)
-         while (::fgets(line, sizeof(line) - 1, f.f))
-            if (3 == sscanf(line, "%s%s%s", addr, type, name))
-               if (type[0] == 't' || type[0] == 'T' || type[0] == 'w' || type[0] == 'W')
-                  symbols.insert(std::make_pair(name + O.isMAC(), (unsigned long long)strtoull(addr, nullptr, 16)));
-   }
-};
+static inline bool in_main(unsigned long long addr)
+{
+   static unsigned long long main_addr = (unsigned long long)h2_nm::I().get("main");
+   if (main_addr == 0) return false;
+   return main_addr < addr && addr < main_addr + 256;
+}
 
 static inline bool demangle(const char* mangled, char* demangled, size_t len)
 {
@@ -138,7 +113,7 @@ h2_inline void h2_backtrace::print(h2_vector<h2_string>& stacks) const
       }
       stacks.push_back(p);
 
-      if (!strcmp("main", mangled) || !strcmp("main", demangled) || h2_nm::I().in_main(address + offset))
+      if (!strcmp("main", mangled) || !strcmp("main", demangled) || in_main(address + offset))
          break;
    }
    free(backtraces);

@@ -89,6 +89,7 @@ namespace h2 {
 #include "h2_report.cpp"   // kit
 #include "h2_string.cpp"   // kit
 
+#include "h2_nm.cpp"         //
 #include "h2_backtrace.cpp"  //
 #include "h2_check.cpp"      //
 #include "h2_layout.cpp"     //

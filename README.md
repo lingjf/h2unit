@@ -278,7 +278,7 @@ CASE(demo dynamic stub with fake function)
 }
 ```
 
-STUB template function or overload function
+STUB overload function
 
 ```C++
 double sin_fake(double x)
@@ -349,22 +349,6 @@ CASE(demo dynamic stub with class member function)
 }
 ```
 
-STUB C++ abstract Class member function
-
-```C++
-CASE(demo dynamic stub with class member function)
-{
-   class Coo : Foo {...}
-
-   STUB(int, Foo, bar, (int a, char * b), Coo(...)) {
-      OK(1, a);
-      sprintf(b, "return value by argument");
-      return 2;
-   };
-   do_something(Foo);
-}
-```
-
 STUB C++ template function or template member function
 
 ```C++
@@ -406,7 +390,7 @@ fake function return to the caller of original function directly.
 
 STUB formula:
 ```C++
-   STUB(Return Type[, Class Name], Function Name, (Parameter List)[, Instantiate object]) {
+   STUB(Return Type[, Class Name], Function Name, (Parameter List)) {
       Check...
       Return...
    }
@@ -442,6 +426,7 @@ Expect foobar called with *a* equals *1*, *b* equals *"A"* *1 time* in this case
     -    `atleast`(n) : Expect called atleast n times(>=n)
     -    `atmost`(n) : Expect called atmost n times(<=n)
     -    `between`(n,m) : Expect called >=n and <=m times
+    -    `greed`(boolean) : match call in greed mode or not, default is true
 -   [Arguments check](source/h2_mock.hpp#L206)
     -    `with`(matcher...) : Expect arguments matches matchers
     -    `th1~9`(matcher) : Expect 1st~9th argument matches matcher
@@ -469,7 +454,7 @@ then expect Foo::bar called any times, and 1st argument equals 5, modify 2nd, an
 
 MOCK formula:
 ```C++
-   MOCK([Class Name, ]Function Name, Return Type(Parameter List)[, Instantiate object])
+   MOCK([Class Name, ]Function Name, Return Type(Parameter List))
    .times(Number).with(Matcher List).th1~9(Matcher).returns(Return Value).does(Lambda)=Lambda;
 ```
 ### 6. Extended JSON Compare 

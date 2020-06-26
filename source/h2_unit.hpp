@@ -79,6 +79,7 @@ namespace h2 {
 #include "h2_line.hpp"                // string
 #include "h2_layout.hpp"              // line
 #include "h2_color.hpp"               // line
+#include "h2_nm.hpp"                  //
 #include "h2_backtrace.hpp"           // line
 #include "h2_debug.hpp"               // option, backtrace
 #include "h2_patch.hpp"               // backtrace
@@ -97,7 +98,7 @@ namespace h2 {
 #include "matcher/h2_container.hpp"   // matcher, failure, string
 #include "matcher/h2_customize.hpp"   // matcher, failure, string, pp
 #include "stub/h2_stub.hpp"           // pp
-#include "mock/h2_mfp.hpp"            // failure
+#include "mock/h2_mfp.hpp"            // failure, nm
 #include "mock/h2_checkin.hpp"        // failure
 #include "mock/h2_function.hpp"       // libc
 #include "mock/h2_tuple.hpp"          // failure

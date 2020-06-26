@@ -128,8 +128,6 @@ SUITE(Mock Function)
    }
 }
 
-#if (defined(__GNUC__) && __GNUC__ >= 5) || defined __clang__
-
 SUITE(Mock Member)
 {
    Case(static member function successful)
@@ -173,7 +171,7 @@ SUITE(Mock Member)
       MOCK(Vivipara, cry, int()).once() = []() { return 5; };
       OK(5, dog.cry());
 
-      MOCK(Ovipara, cry, int(), Bird()).once() = []() { return 6; };
+      MOCK(Ovipara, cry, int()).once() = []() { return 6; };
       Bird bird;
       OK(6, bird.cry());
    }
@@ -181,12 +179,8 @@ SUITE(Mock Member)
    Case(abstract class successful)
    {
       Bird bird;
-      MOCK(Ovipara, cry, int(), Bird()).once() = []() { return 6; };
+      MOCK(Animal, cry, int()).times(0) = []() { return 5; };
+      MOCK(Ovipara, cry, int()).once() = []() { return 6; };
       OK(6, bird.cry());
-
-      OK("jiji", bird.say());
-      MOCK(Ovipara, say, const char*(), Bird()).once() = []() { return "j..."; };
-      OK("j...", bird.say());
    }
 }
-#endif

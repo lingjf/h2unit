@@ -235,41 +235,13 @@ SUITE(function return void)
 
    Case(normal origin member function)
    {
-      void* void_func = h2::h2_mfp<Bar, void(int, char*)>::A(&Bar::void_func,
-                                                             "",
-                                                             "",
-                                                             "",
-                                                             "",
-                                                             "",
-                                                             __FILE__,
-                                                             __LINE__);
+      void* void_func = h2::h2_mfp<Bar, void(int, char*)>::A(&Bar::void_func);
 
-      void* int_func = h2::h2_mfp<Bar, int(int, const char*)>::A(&Bar::int_func,
-                                                                 "",
-                                                                 "",
-                                                                 "",
-                                                                 "",
-                                                                 "",
-                                                                 __FILE__,
-                                                                 __LINE__);
+      void* int_func = h2::h2_mfp<Bar, int(int, const char*)>::A(&Bar::int_func);
 
-      void* foo_func = h2::h2_mfp<Bar, Foo(int, std::string&)>::A(&Bar::foo_func,
-                                                                  "",
-                                                                  "",
-                                                                  "",
-                                                                  "",
-                                                                  "",
-                                                                  __FILE__,
-                                                                  __LINE__);
+      void* foo_func = h2::h2_mfp<Bar, Foo(int, std::string&)>::A(&Bar::foo_func);
 
-      void* ref_func = h2::h2_mfp<Bar, Foo&(int, Foo&)>::A(&Bar::ref_func,
-                                                           "",
-                                                           "",
-                                                           "",
-                                                           "",
-                                                           "",
-                                                           __FILE__,
-                                                           __LINE__);
+      void* ref_func = h2::h2_mfp<Bar, Foo&(int, Foo&)>::A(&Bar::ref_func);
 
       h2::h2_function<Bar, void(int, char*)> f2((void (*)(Bar*, int, char*))void_func);
       f2(nullptr, 1, b);

@@ -205,42 +205,8 @@ SUITE(Ilegal Access)
    }
 }
 
-#   if (defined(__GNUC__) && __GNUC__ >= 5) || defined __clang__
-
-SUITE(STUB MOCK fails)
+SUITE(MOCK fails)
 {
-   Case(STUB no default constructor failure)
-   {
-      STUB(int, a_construct_class, func, ())  // failure
-      {
-         return 1;
-      };
-      a_construct_class a(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11);
-      OK(1, a.func());
-   }
-
-   Case(STUB abstract class failure)
-   {
-      STUB(int, a_abstract_class, func, ())
-      {
-         return 1;
-      };
-   }
-
-   Case(MOCK no default constructor failure)
-   {
-      MOCK(a_construct_class, func, int()).once() = []() {
-         return 1;
-      };
-      a_construct_class a(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11);
-      OK(1, a.func());
-   }
-
-   Case(MOCK abstract class failure)
-   {
-      MOCK(a_abstract_class, func, int()).once() = []() { return 6; };
-   }
-
    Case(greed true)
    {
       MOCK(foobar, int(int, const char*))
@@ -255,8 +221,7 @@ SUITE(STUB MOCK fails)
       OK(22, foobar(1, "A"));
    }
 }
-#   endif
 
 #endif
 
-}
+}  // namespace

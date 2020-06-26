@@ -21,6 +21,7 @@ struct h2_task {
 
 static inline void h2_stub_g(void* origin_fp, void* substitute_fp, const char* origin_fn, const char* file, int line)
 {
+   if (!origin_fp || !substitute_fp) return;
    if (h2_task::I().current_case)
       h2_task::I().current_case->stubs.add(origin_fp, substitute_fp, origin_fn, file, line);
    else if (h2_task::I().current_suite)

@@ -54,8 +54,6 @@ SUITE(Stub function by lambda)
    }
 }
 
-#if (defined(__GNUC__) && __GNUC__ >= 5) || defined __clang__ || defined _WIN32
-
 SUITE(Stub Member method)
 {
    Case(normal member function successful)
@@ -81,11 +79,7 @@ SUITE(Stub Member method)
 
    Case(virtual member function successful)
    {
-      STUB(const char*,
-           Centipede,
-           say,
-           (),
-           Centipede(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11))
+      STUB(const char*, Centipede, say, ())
       {
          return "...";
       };
@@ -93,5 +87,3 @@ SUITE(Stub Member method)
       OK("...", centipede.say());
    }
 }
-
-#endif
