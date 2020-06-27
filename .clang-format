@@ -57,7 +57,7 @@ Cpp11BracedListStyle:	true
 DerivePointerAlignment:	false
 DisableFormat:	false
 ExperimentalAutoDetectBinPacking:	false
-ForEachMacros:	[ h2_list_for_each_entry ]
+ForEachMacros:	[ h2_list_for_each_entry, h2_list_for_each_reverse_entry ]
 IncludeCategories: 
   - Regex:	'^"(llvm|llvm-c|clang|clang-c)/'
     Priority:	2

@@ -7,9 +7,15 @@ struct list_host {
    char c[343];
 };
 
+int list_host_cmp(h2::h2_list* a, h2::h2_list* b)
+{
+   list_host* a_ = h2_list_entry(a, list_host, link);
+   list_host* b_ = h2_list_entry(b, list_host, link);
+   return a_->a - b_->a;
+}
+
 SUITE(list)
 {
-   int u = 0;
    h2::h2_list root;
    h2::h2_list root123;  // root <-> h1 <-> h2 <-> h3
 
@@ -39,7 +45,7 @@ SUITE(list)
       root.add_head(h3.link);
 
       h2_list_for_each_entry (p, root, list_host, link) {
-         OK(e321[u++], p->a);
+         OK(e321[li], p->a);
       }
    }
 
@@ -50,7 +56,7 @@ SUITE(list)
       root.add_tail(h3.link);
 
       h2_list_for_each_entry (p, root, list_host, link) {
-         OK(e123[u++], p->a);
+         OK(e123[li], p->a);
       }
    }
 
@@ -61,7 +67,7 @@ SUITE(list)
       root.push(h3.link);
 
       h2_list_for_each_entry (p, root, list_host, link) {
-         OK(e321[u++], p->a);
+         OK(e321[li], p->a);
       }
 
       h2::h2_list& p3 = root.pop();
@@ -69,6 +75,24 @@ SUITE(list)
       h2::h2_list& p2 = root.pop();
       OK(&h2.link, &p2);
       h2::h2_list& p1 = root.pop();
+      OK(&h1.link, &p1);
+   }
+
+   Case(push back and pop back)
+   {
+      root.push_back(h1.link);
+      root.push_back(h2.link);
+      root.push_back(h3.link);
+
+      h2_list_for_each_entry (p, root, list_host, link) {
+         OK(e123[li], p->a);
+      }
+
+      h2::h2_list& p3 = root.pop_back();
+      OK(&h3.link, &p3);
+      h2::h2_list& p2 = root.pop_back();
+      OK(&h2.link, &p2);
+      h2::h2_list& p1 = root.pop_back();
       OK(&h1.link, &p1);
    }
 
@@ -82,7 +106,7 @@ SUITE(list)
    {
       h2_list_for_each_entry (p, root123, list_host, link) {
          p->link.out();
-         OK(e123[u++], p->a);
+         OK(e123[li], p->a);
       }
    }
 }
@@ -101,11 +125,7 @@ CASE(list sort)
    root.add_tail(h3.link);
    root.add_tail(h1.link);
 
-   root.sort([](h2::h2_list* a, h2::h2_list* b) {
-      list_host* a_ = h2_list_entry(a, list_host, link);
-      list_host* b_ = h2_list_entry(b, list_host, link);
-      return a_->a - b_->a;
-   });
+   root.sort(list_host_cmp);
 
    h2_list_for_each_entry (p, root, list_host, link) {
       OK(li + 1, p->a);

@@ -1,6 +1,102 @@
 #include "../source/h2_unit.cpp"
 
+char* h2_piece_tojson(h2::h2_piece* piece, char* b)
+{
+   int l = 0;
+   l += sprintf(b + l, "{");
+
+   l += sprintf(b + l, "\"user_size\": %lu", piece->user_size);
+   l += sprintf(b + l, ",\"page_size\": %lu", piece->page_size);
+   l += sprintf(b + l, ",\"page_count\": %lu", piece->page_count);
+   l += sprintf(b + l, ",\"user_ptr\": \"%p\"", piece->user_ptr);
+   l += sprintf(b + l, ",\"page_ptr\": \"%p\"", piece->page_ptr);
+   l += sprintf(b + l, ",\"who_allocate\": \"%s\"", piece->who_allocate);
+   l += sprintf(b + l, ",\"free_times\": %d", piece->free_times);
+   l += sprintf(b + l, ",\"snow_flower\": \"%x\"", piece->snow_flower);
+   l += sprintf(b + l, ",\"forbidden_page\": \"%p\"", piece->forbidden_page);
+   l += sprintf(b + l, ",\"forbidden_size\": %lu", piece->forbidden_size);
+   l += sprintf(b + l, ",\"violate_address\": \"%p\"", piece->violate_address);
+   l += sprintf(b + l, ",\"violate_action\": \"%s\"", piece->violate_action);
+   l += sprintf(b + l, ",\"violate_times\": %d", piece->violate_times);
+   l += sprintf(b + l, ",\"violate_after_free\": %s", piece->violate_after_free ? "true" : "false");
+
+   l += sprintf(b + l, "}");
+
+   return b;
+}
+
 SUITE(piece)
+{
+   char t1[1024 * 8];
+   h2::h2_piece* m = nullptr;
+
+   Case(new piece)
+   {
+      h2::h2_backtrace bt;
+      m = new h2::h2_piece(100, 8, "malloc", bt);
+      JE("{                               \
+            'user_size': 100,             \
+            'page_size': 4096,            \
+            'page_count': 1,              \
+            'who_allocate': 'malloc',     \
+            'free_times': 0 ,             \
+            'forbidden_size': 4096        \
+         }",
+         h2_piece_tojson(m, t1));
+
+      OK(IsNull, m->free("free"));
+
+      JE("{                               \
+            'user_size': 100,             \
+            'page_size': 4096,            \
+            'page_count': 1,              \
+            'who_allocate': 'malloc',     \
+            'free_times': 1 ,             \
+            'forbidden_size': 4096 * 2    \
+         }",
+         h2_piece_tojson(m, t1));
+
+      delete m;
+   }
+
+   Case(double free)
+   {
+      h2::h2_backtrace bt;
+      m = new h2::h2_piece(100, 8, "malloc", bt);
+      OK(IsNull, m->free("free"));
+      auto fail = m->free("free");
+      OK(NotNull, fail);
+      OK(typeid(h2::h2_fail_double_free).name(), typeid(*fail).name());
+      delete m;
+   }
+
+   Case(asymmetric free)
+   {
+      h2::h2_backtrace bt;
+      m = new h2::h2_piece(100, 8, "malloc", bt);
+      auto fail = m->free("delete");
+      OK(NotNull, fail);
+      OK(typeid(h2::h2_fail_asymmetric_free).name(), typeid(*fail).name());
+      delete m;
+   }
+
+   Case(snowfield)
+   {
+      h2::h2_backtrace bt;
+      m = new h2::h2_piece(100, 8, "malloc", bt);
+      ((unsigned char*)m->user_ptr)[101] = '1';
+      auto fail = m->free("free");
+      OK(NotNull, fail);
+      OK(typeid(h2::h2_fail_overflow).name(), typeid(*fail).name());
+      delete m;
+   }
+
+   Case(use after free)
+   {
+   }
+}
+
+SUITE(piece align)
 {
    h2::h2_backtrace bt;
    h2::h2_piece* m = nullptr;

@@ -3,11 +3,12 @@ struct h2_block : h2_libc {
    h2_list x;
    h2_list pieces;
 
+   long long footprint = 0, allocated = 0;
    long long limit;
    size_t align;
    unsigned char s_fill[32];
    int n_fill;
-   bool noleak; // ignore leak check
+   bool noleak;  // ignore leak check
    const char* where;
    const char* file;
    int line;
@@ -34,11 +35,19 @@ struct h2_block : h2_libc {
       return nullptr;
    }
 
+   bool limited(size_t size)
+   {
+      return limit < allocated + size;
+   }
+
+   void balance(int size)
+   {
+      allocated += size;
+      if (footprint < allocated) footprint = allocated;
+   }
+
    h2_piece* new_piece(const char* who, size_t size, size_t alignment, unsigned char c_fill, bool fill, h2_backtrace& bt)
    {
-      if (limit < size) return nullptr;
-      limit -= size;
-
       // allocate action alignment is prior to block level alignment
       if (alignment == 0)
          alignment = align;
@@ -60,17 +69,16 @@ struct h2_block : h2_libc {
       return p;
    }
 
+   h2_fail* rel_piece(const char* who, h2_piece* p)
+   {
+      return p->free(who);
+   }
+
    h2_piece* get_piece(const void* ptr)
    {
       h2_list_for_each_entry (p, pieces, h2_piece, x)
          if (p->user_ptr == ptr) return p;
       return nullptr;
-   }
-
-   h2_fail* rel_piece(const char* who, h2_piece* p)
-   {
-      limit += p->user_size;
-      return p->free(who);
    }
 
    h2_piece* host_piece(const void* addr)

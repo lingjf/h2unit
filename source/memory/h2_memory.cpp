@@ -30,6 +30,10 @@ h2_inline h2_fail* h2_memory::stack::pop()
 {
    return h2_stack::I().pop();
 }
+h2_inline long long h2_memory::stack::footprint()
+{
+   return h2_stack::I().top()->footprint;
+}
 
 static inline void parse_block_attributes(const char* attributes, long long& n_limit, int& n_align, unsigned char s_fill[32], int& n_fill, bool& noleak)
 {

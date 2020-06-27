@@ -9,6 +9,7 @@ struct h2_memory {
       static void root();
       static void push(const char* file, int line);
       static h2_fail* pop();
+      static long long footprint();
 
       struct block : h2_once {
          block(const char* attributes, const char* file, int line);

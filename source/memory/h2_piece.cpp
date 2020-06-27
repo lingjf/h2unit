@@ -16,7 +16,7 @@ struct h2_piece : h2_libc {
    size_t forbidden_size = 0;
    int violate_times = 0;
    void* violate_address{nullptr};
-   const char* violate_action{nullptr};
+   const char* violate_action = "";
    bool violate_after_free = false;
    h2_backtrace violate_backtrace;
 

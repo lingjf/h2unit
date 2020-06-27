@@ -1,4 +1,4 @@
-﻿/* v5.5  2020-06-27 08:59:52 */
+﻿/* v5.5  2020-06-27 18:11:48 */
 /* https://github.com/lingjf/h2unit */
 /* Apache Licence 2.0 */
 #ifndef __H2UNIT_H__
@@ -195,6 +195,9 @@ namespace h2 {
 #define h2_list_for_each_entry(p, head, type, link) \
    for (int li = 0; li == 0; ++li)                  \
       for (type* p = h2_list_entry((head).next, type, link), *_t = h2_list_entry(p->link.next, type, link); &p->link != &(head); p = _t, _t = h2_list_entry(_t->link.next, type, link), ++li)
+#define h2_list_for_each_reverse_entry(p, head, type, link) \
+   for (int li = 0; li == 0; ++li)                          \
+      for (type* p = h2_list_entry((head).prev, type, link), *_t = h2_list_entry(p->link.prev, type, link); &p->link != &(head); p = _t, _t = h2_list_entry(_t->link.prev, type, link), ++li)
 
 #define h2_list_pop_entry(head, type, link) ((head).empty() ? (type*)0 : h2_list_entry(&(head).pop(), type, link))
 #define h2_list_top_entry(head, type, link) ((head).empty() ? (type*)0 : h2_list_entry((head).next, type, link))
@@ -224,7 +227,7 @@ struct h2_list {
 
    bool empty() const { return next == this; }
    int count() const;
-   void sort(std::function<int(h2_list* a, h2_list* b)> cmp);
+   void sort(int (*cmp)(h2_list*, h2_list*));
 };
 // h2_numeric.hpp
 
@@ -815,6 +818,7 @@ struct h2_memory {
       static void root();
       static void push(const char* file, int line);
       static h2_fail* pop();
+      static long long footprint();
 
       struct block : h2_once {
          block(const char* attributes, const char* file, int line);
@@ -2678,6 +2682,7 @@ struct h2_case {
    int seq = 0;
    int status = initial;
    int checks = 0;
+   long long footprint = 0;
    jmp_buf jump;
    h2_fail* fails{nullptr};
    h2_stubs stubs;
@@ -2711,6 +2716,7 @@ struct h2_suite {
    int seq = 0;
    int stats[h2_case::statuss]{0};
    int checks = 0;
+   long long footprint = 0;
    jmp_buf jump;
    bool jumpable = false;
    void (*test_code)(h2_suite*, h2_case*);
@@ -2724,7 +2730,7 @@ struct h2_suite {
    void enumerate();
    void execute(h2_case* c);
 
-   void setup() {}
+   void setup();
    void cleanup();
 
    struct installer {
@@ -2754,7 +2760,7 @@ struct h2_task {
    std::vector<void (*)()> global_suite_setups, global_suite_teardowns;
    std::vector<void (*)()> global_case_setups, global_case_teardowns;
 
-   void sort();
+   void shuffle();
    void enumerate();
    int execute();
 };
@@ -3452,7 +3458,7 @@ h2_inline int h2_list::count() const
    return c;
 }
 
-h2_inline void h2_list::sort(std::function<int(h2_list* a, h2_list* b)> cmp)
+h2_inline void h2_list::sort(int (*cmp)(h2_list*, h2_list*))
 {
    h2_list sorted, *q;
 
@@ -4927,7 +4933,7 @@ struct h2_piece : h2_libc {
    size_t forbidden_size = 0;
    int violate_times = 0;
    void* violate_address{nullptr};
-   const char* violate_action{nullptr};
+   const char* violate_action = "";
    bool violate_after_free = false;
    h2_backtrace violate_backtrace;
 
@@ -5122,11 +5128,12 @@ struct h2_block : h2_libc {
    h2_list x;
    h2_list pieces;
 
+   long long footprint = 0, allocated = 0;
    long long limit;
    size_t align;
    unsigned char s_fill[32];
    int n_fill;
-   bool noleak; // ignore leak check
+   bool noleak;  // ignore leak check
    const char* where;
    const char* file;
    int line;
@@ -5153,11 +5160,19 @@ struct h2_block : h2_libc {
       return nullptr;
    }
 
+   bool limited(size_t size)
+   {
+      return limit < allocated + size;
+   }
+
+   void balance(int size)
+   {
+      allocated += size;
+      if (footprint < allocated) footprint = allocated;
+   }
+
    h2_piece* new_piece(const char* who, size_t size, size_t alignment, unsigned char c_fill, bool fill, h2_backtrace& bt)
    {
-      if (limit < size) return nullptr;
-      limit -= size;
-
       // allocate action alignment is prior to block level alignment
       if (alignment == 0)
          alignment = align;
@@ -5179,17 +5194,16 @@ struct h2_block : h2_libc {
       return p;
    }
 
+   h2_fail* rel_piece(const char* who, h2_piece* p)
+   {
+      return p->free(who);
+   }
+
    h2_piece* get_piece(const void* ptr)
    {
       h2_list_for_each_entry (p, pieces, h2_piece, x)
          if (p->user_ptr == ptr) return p;
       return nullptr;
-   }
-
-   h2_fail* rel_piece(const char* who, h2_piece* p)
-   {
-      limit += p->user_size;
-      return p->free(who);
    }
 
    h2_piece* host_piece(const void* addr)
@@ -5219,11 +5233,40 @@ struct h2_stack {
       return fail;
    }
 
+   h2_block* top()
+   {
+      return h2_list_top_entry(blocks, h2_block, x);
+   }
+
    h2_piece* new_piece(const char* who, size_t size, size_t alignment, const char* fill)
    {
       h2_backtrace bt(O.isMAC() ? 3 : 2);
       h2_block* b = h2_patch::exempt(bt) ? h2_list_bottom_entry(blocks, h2_block, x) : h2_list_top_entry(blocks, h2_block, x);
+      h2_list_for_each_reverse_entry (p, blocks, h2_block, x) {  // from bottom to current
+         if (p->limited(size)) return nullptr;
+         if (p == b) break;
+      }
+      h2_list_for_each_reverse_entry (p, blocks, h2_block, x) {  // from bottom to current
+         p->balance(size);
+         if (p == b) break;
+      }
       return b ? b->new_piece(who, size, alignment, fill ? *fill : 0, fill, bt) : nullptr;
+   }
+
+   h2_fail* rel_piece(const char* who, void* ptr)
+   {
+      h2_list_for_each_entry (p, blocks, h2_block, x) {  // from top to bottom
+         h2_piece* piece = p->get_piece(ptr);
+         if (piece) {
+            h2_list_for_each_reverse_entry (q, blocks, h2_block, x) {  // from bottom to current
+               q->balance(-(int)piece->user_size);
+               if (q == p) break;
+            }
+            return p->rel_piece(who, piece);
+         }
+      }
+      h2_debug("Warning: free %p not found!", ptr);
+      return nullptr;
    }
 
    h2_piece* get_piece(const void* ptr)
@@ -5232,16 +5275,6 @@ struct h2_stack {
          h2_piece* piece = p->get_piece(ptr);
          if (piece) return piece;
       }
-      return nullptr;
-   }
-
-   h2_fail* rel_piece(const char* who, void* ptr)
-   {
-      h2_list_for_each_entry (p, blocks, h2_block, x) {
-         h2_piece* piece = p->get_piece(ptr);
-         if (piece) return p->rel_piece(who, piece);
-      }
-      h2_debug("Warning: free %p not found!", ptr);
       return nullptr;
    }
 
@@ -5580,6 +5613,10 @@ h2_inline void h2_memory::stack::push(const char* file, int line)
 h2_inline h2_fail* h2_memory::stack::pop()
 {
    return h2_stack::I().pop();
+}
+h2_inline long long h2_memory::stack::footprint()
+{
+   return h2_stack::I().top()->footprint;
 }
 
 static inline void parse_block_attributes(const char* attributes, long long& n_limit, int& n_align, unsigned char s_fill[32], int& n_fill, bool& noleak)
@@ -7572,7 +7609,7 @@ struct h2_report_console : h2_report_impl {
       h2_color::printf("", h2_stdio::capture_length() == last ? "\r" : "\n");
       if (percent) {
          h2_color::printf("dark gray", "[");
-         h2_color::printf("", "%3d%%", (int)(task_case_index * 100 / cases));
+         h2_color::printf("", "%3d%%", cases ? (int)(task_case_index * 100 / cases) : 100);
          h2_color::printf("dark gray", "] ");
       }
       if (number) {
@@ -7586,7 +7623,7 @@ struct h2_report_console : h2_report_impl {
    }
    const char* format_duration(long long ms)
    {
-      static char st[64];
+      static char st[128];
       if (ms < 100)
          sprintf(st, "%lld milliseconds", ms);
       else if (ms < 1000 * 60)
@@ -7595,6 +7632,20 @@ struct h2_report_console : h2_report_impl {
          sprintf(st, "%.2g minutes", ms / (double)6000.0);
       else
          sprintf(st, "%.2g hours", ms / (double)36000.0);
+
+      return st;
+   }
+   const char* format_volume(long long footprint)
+   {
+      static char st[128];
+      if (footprint < 1024)
+         sprintf(st, "%lld footprint", footprint);
+      else if (footprint < 1024 * 1024LL)
+         sprintf(st, "%.2gKB footprint", footprint / (double)1024);
+      else if (footprint < 1024 * 1024 * 1024LL)
+         sprintf(st, "%.2gMB footprint", footprint / (double)(1024 * 1024LL));
+      else
+         sprintf(st, "%.2gGB footprint", footprint / (double)(1024 * 1024 * 1024LL));
 
       return st;
    }
@@ -7658,7 +7709,7 @@ struct h2_report_console : h2_report_impl {
    void on_suite_endup(h2_suite* s) override
    {
       h2_report_impl::on_suite_endup(s);
-      if (O.verbose) {
+      if (O.verbose && O.includes.size() + O.excludes.size() == 0) {
          print_percentage();
          h2_color::printf("", "%s", s->name);
          if (1 < nonzero_count(s->stats[h2_case::passed], s->stats[h2_case::failed], s->stats[h2_case::todo], s->stats[h2_case::filtered]))
@@ -7681,6 +7732,10 @@ struct h2_report_console : h2_report_impl {
          if (0 < s->checks) {
             h2_color::printf("dark gray", ",");
             h2_color::printf("", " %d check%s", s->checks, 1 < s->checks ? "s" : "");
+         }
+         if (0 < s->footprint) {
+            h2_color::printf("dark gray", ",");
+            h2_color::printf("", " %s", format_volume(s->footprint));
          }
          if (1 < suite_cost) {
             h2_color::printf("dark gray", ",");
@@ -7723,6 +7778,10 @@ struct h2_report_console : h2_report_impl {
             print_suite_case(s->name, c->name);
             h2_color::printf("green", " Passed ");
             h2_color::printf("", "%d checks", c->checks);
+            if (0 < c->footprint) {
+               h2_color::printf("dark gray", ",");
+               h2_color::printf("", " %s", format_volume(c->footprint));
+            }
             if (1 < case_cost) {
                h2_color::printf("dark gray", ",");
                h2_color::printf("", " %s", format_duration(case_cost));
@@ -8622,6 +8681,7 @@ h2_inline bool h2_patch::exempt(h2_backtrace& bt)
 #ifdef __APPLE__
      {(void*)vsnprintf_l, 300},
 #endif
+     {(void*)h2_pattern::regex_match, 0x100}, // linux is 0xcb size, MAC is 0x100 (gap to next symbol)
    };
 
    for (auto& x : exempt_functions)
@@ -8659,6 +8719,7 @@ h2_inline void h2_case::post_cleanup()
    dnses.clear();
    stubs.clear();
    h2_fail* fail = mocks.clear(true);
+   footprint = h2_memory::stack::footprint();
    // should memory check stats into check_count ?
    h2_fail::append_subling(fail, h2_memory::stack::pop());
 
@@ -8693,10 +8754,17 @@ h2_inline void h2_suite::clear()
    memset(stats, 0, sizeof(stats));
 }
 
+h2_inline void h2_suite::setup()
+{
+   h2_memory::stack::push(file, line);
+}
+
 h2_inline void h2_suite::cleanup()
 {
    stubs.clear();
    mocks.clear(false);
+   footprint = h2_memory::stack::footprint();
+   h2_memory::stack::pop();
 }
 
 h2_inline void h2_suite::enumerate()
@@ -8749,10 +8817,12 @@ static inline void __mark_seq(h2_list& suites, char* suitename, char* casename)
 static inline int mark_last_order(h2_list& suites)
 {
    int count = 0;
-   char suitename[512], casename[512];
+   char suitename[1024], casename[1024];
    h2_with f(fopen(".last_order", "r"));
    if (!f.f) return 0;
-   while (1 == fscanf(f.f, "%[^\n]\n", suitename) && 1 == fscanf(f.f, "%[^\n]\n", casename)) {
+   while (fgets(suitename, sizeof(suitename), f.f) && fgets(casename, sizeof(casename), f.f)) {
+      suitename[strlen(suitename) - 1] = '\0';  // remove \n in save_last_order
+      casename[strlen(casename) - 1] = '\0';
       __mark_seq(suites, suitename, casename);
       count++;
    }
@@ -8764,7 +8834,17 @@ static inline void drop_last_order()
    ::remove(".last_order");
 }
 
-h2_inline void h2_task::sort()
+static int h2_suite_cmp(h2_list* a, h2_list* b)
+{
+   return h2_list_entry(a, h2_suite, x)->seq - h2_list_entry(b, h2_suite, x)->seq;
+}
+
+static int h2_case_cmp(h2_list* a, h2_list* b)
+{
+   return h2_list_entry(a, h2_case, x)->seq - h2_list_entry(b, h2_case, x)->seq;
+}
+
+h2_inline void h2_task::shuffle()
 {
    int last = mark_last_order(suites);
    srand(h2_now());
@@ -8773,14 +8853,9 @@ h2_inline void h2_task::sort()
          h2_list_for_each_entry (c, s->cases, h2_case, x)
             s->seq = c->seq = rand();
 
-   suites.sort([](h2_list* a, h2_list* b) {
-      return h2_list_entry(a, h2_suite, x)->seq - h2_list_entry(b, h2_suite, x)->seq;
-   });
-   h2_list_for_each_entry (s, suites, h2_suite, x) {
-      s->cases.sort([](h2_list* a, h2_list* b) {
-         return h2_list_entry(a, h2_case, x)->seq - h2_list_entry(b, h2_case, x)->seq;
-      });
-   }
+   suites.sort(h2_suite_cmp);
+   h2_list_for_each_entry (s, suites, h2_suite, x)
+      s->cases.sort(h2_case_cmp);
 
    if (O.shuffle && last == 0)
       save_last_order(suites);
@@ -8809,7 +8884,7 @@ h2_inline int h2_task::execute()
    enumerate();
    h2_report::I().on_task_start(this);
    for (rounds = 0; rounds < O.rounds && !stats[h2::h2_case::failed]; ++rounds) {
-      sort();
+      shuffle();
       h2_list_for_each_entry (s, suites, h2_suite, x) {
          current_suite = s;
          h2_report::I().on_suite_start(s);

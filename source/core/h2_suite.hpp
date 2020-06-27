@@ -7,6 +7,7 @@ struct h2_suite {
    int seq = 0;
    int stats[h2_case::statuss]{0};
    int checks = 0;
+   long long footprint = 0;
    jmp_buf jump;
    bool jumpable = false;
    void (*test_code)(h2_suite*, h2_case*);
@@ -20,7 +21,7 @@ struct h2_suite {
    void enumerate();
    void execute(h2_case* c);
 
-   void setup() {}
+   void setup();
    void cleanup();
 
    struct installer {

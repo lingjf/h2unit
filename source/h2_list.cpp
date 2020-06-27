@@ -22,7 +22,7 @@ h2_inline int h2_list::count() const
    return c;
 }
 
-h2_inline void h2_list::sort(std::function<int(h2_list* a, h2_list* b)> cmp)
+h2_inline void h2_list::sort(int (*cmp)(h2_list*, h2_list*))
 {
    h2_list sorted, *q;
 

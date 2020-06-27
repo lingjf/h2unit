@@ -25,6 +25,7 @@ h2_inline void h2_case::post_cleanup()
    dnses.clear();
    stubs.clear();
    h2_fail* fail = mocks.clear(true);
+   footprint = h2_memory::stack::footprint();
    // should memory check stats into check_count ?
    h2_fail::append_subling(fail, h2_memory::stack::pop());
 

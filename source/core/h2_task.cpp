@@ -22,10 +22,12 @@ static inline void __mark_seq(h2_list& suites, char* suitename, char* casename)
 static inline int mark_last_order(h2_list& suites)
 {
    int count = 0;
-   char suitename[512], casename[512];
+   char suitename[1024], casename[1024];
    h2_with f(fopen(".last_order", "r"));
    if (!f.f) return 0;
-   while (1 == fscanf(f.f, "%[^\n]\n", suitename) && 1 == fscanf(f.f, "%[^\n]\n", casename)) {
+   while (fgets(suitename, sizeof(suitename), f.f) && fgets(casename, sizeof(casename), f.f)) {
+      suitename[strlen(suitename) - 1] = '\0';  // remove \n in save_last_order
+      casename[strlen(casename) - 1] = '\0';
       __mark_seq(suites, suitename, casename);
       count++;
    }
@@ -37,7 +39,17 @@ static inline void drop_last_order()
    ::remove(".last_order");
 }
 
-h2_inline void h2_task::sort()
+static int h2_suite_cmp(h2_list* a, h2_list* b)
+{
+   return h2_list_entry(a, h2_suite, x)->seq - h2_list_entry(b, h2_suite, x)->seq;
+}
+
+static int h2_case_cmp(h2_list* a, h2_list* b)
+{
+   return h2_list_entry(a, h2_case, x)->seq - h2_list_entry(b, h2_case, x)->seq;
+}
+
+h2_inline void h2_task::shuffle()
 {
    int last = mark_last_order(suites);
    srand(h2_now());
@@ -46,14 +58,9 @@ h2_inline void h2_task::sort()
          h2_list_for_each_entry (c, s->cases, h2_case, x)
             s->seq = c->seq = rand();
 
-   suites.sort([](h2_list* a, h2_list* b) {
-      return h2_list_entry(a, h2_suite, x)->seq - h2_list_entry(b, h2_suite, x)->seq;
-   });
-   h2_list_for_each_entry (s, suites, h2_suite, x) {
-      s->cases.sort([](h2_list* a, h2_list* b) {
-         return h2_list_entry(a, h2_case, x)->seq - h2_list_entry(b, h2_case, x)->seq;
-      });
-   }
+   suites.sort(h2_suite_cmp);
+   h2_list_for_each_entry (s, suites, h2_suite, x)
+      s->cases.sort(h2_case_cmp);
 
    if (O.shuffle && last == 0)
       save_last_order(suites);
@@ -82,7 +89,7 @@ h2_inline int h2_task::execute()
    enumerate();
    h2_report::I().on_task_start(this);
    for (rounds = 0; rounds < O.rounds && !stats[h2::h2_case::failed]; ++rounds) {
-      sort();
+      shuffle();
       h2_list_for_each_entry (s, suites, h2_suite, x) {
          current_suite = s;
          h2_report::I().on_suite_start(s);

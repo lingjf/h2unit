@@ -14,7 +14,7 @@ struct h2_task {
    std::vector<void (*)()> global_suite_setups, global_suite_teardowns;
    std::vector<void (*)()> global_case_setups, global_case_teardowns;
 
-   void sort();
+   void shuffle();
    void enumerate();
    int execute();
 };

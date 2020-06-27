@@ -45,7 +45,7 @@ struct h2_report_console : h2_report_impl {
       h2_color::printf("", h2_stdio::capture_length() == last ? "\r" : "\n");
       if (percent) {
          h2_color::printf("dark gray", "[");
-         h2_color::printf("", "%3d%%", (int)(task_case_index * 100 / cases));
+         h2_color::printf("", "%3d%%", cases ? (int)(task_case_index * 100 / cases) : 100);
          h2_color::printf("dark gray", "] ");
       }
       if (number) {
@@ -59,7 +59,7 @@ struct h2_report_console : h2_report_impl {
    }
    const char* format_duration(long long ms)
    {
-      static char st[64];
+      static char st[128];
       if (ms < 100)
          sprintf(st, "%lld milliseconds", ms);
       else if (ms < 1000 * 60)
@@ -68,6 +68,20 @@ struct h2_report_console : h2_report_impl {
          sprintf(st, "%.2g minutes", ms / (double)6000.0);
       else
          sprintf(st, "%.2g hours", ms / (double)36000.0);
+
+      return st;
+   }
+   const char* format_volume(long long footprint)
+   {
+      static char st[128];
+      if (footprint < 1024)
+         sprintf(st, "%lld footprint", footprint);
+      else if (footprint < 1024 * 1024LL)
+         sprintf(st, "%.2gKB footprint", footprint / (double)1024);
+      else if (footprint < 1024 * 1024 * 1024LL)
+         sprintf(st, "%.2gMB footprint", footprint / (double)(1024 * 1024LL));
+      else
+         sprintf(st, "%.2gGB footprint", footprint / (double)(1024 * 1024 * 1024LL));
 
       return st;
    }
@@ -131,7 +145,7 @@ struct h2_report_console : h2_report_impl {
    void on_suite_endup(h2_suite* s) override
    {
       h2_report_impl::on_suite_endup(s);
-      if (O.verbose) {
+      if (O.verbose && O.includes.size() + O.excludes.size() == 0) {
          print_percentage();
          h2_color::printf("", "%s", s->name);
          if (1 < nonzero_count(s->stats[h2_case::passed], s->stats[h2_case::failed], s->stats[h2_case::todo], s->stats[h2_case::filtered]))
@@ -154,6 +168,10 @@ struct h2_report_console : h2_report_impl {
          if (0 < s->checks) {
             h2_color::printf("dark gray", ",");
             h2_color::printf("", " %d check%s", s->checks, 1 < s->checks ? "s" : "");
+         }
+         if (0 < s->footprint) {
+            h2_color::printf("dark gray", ",");
+            h2_color::printf("", " %s", format_volume(s->footprint));
          }
          if (1 < suite_cost) {
             h2_color::printf("dark gray", ",");
@@ -196,6 +214,10 @@ struct h2_report_console : h2_report_impl {
             print_suite_case(s->name, c->name);
             h2_color::printf("green", " Passed ");
             h2_color::printf("", "%d checks", c->checks);
+            if (0 < c->footprint) {
+               h2_color::printf("dark gray", ",");
+               h2_color::printf("", " %s", format_volume(c->footprint));
+            }
             if (1 < case_cost) {
                h2_color::printf("dark gray", ",");
                h2_color::printf("", " %s", format_duration(case_cost));

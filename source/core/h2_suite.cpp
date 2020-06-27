@@ -11,10 +11,17 @@ h2_inline void h2_suite::clear()
    memset(stats, 0, sizeof(stats));
 }
 
+h2_inline void h2_suite::setup()
+{
+   h2_memory::stack::push(file, line);
+}
+
 h2_inline void h2_suite::cleanup()
 {
    stubs.clear();
    mocks.clear(false);
+   footprint = h2_memory::stack::footprint();
+   h2_memory::stack::pop();
 }
 
 h2_inline void h2_suite::enumerate()

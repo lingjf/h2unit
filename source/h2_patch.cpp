@@ -90,6 +90,7 @@ h2_inline bool h2_patch::exempt(h2_backtrace& bt)
 #ifdef __APPLE__
      {(void*)vsnprintf_l, 300},
 #endif
+     {(void*)h2_pattern::regex_match, 0x100}, // linux is 0xcb size, MAC is 0x100 (gap to next symbol)
    };
 
    for (auto& x : exempt_functions)
