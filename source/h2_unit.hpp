@@ -97,6 +97,7 @@ namespace h2 {
 #include "matcher/h2_memcmp.hpp"      // matcher, failure, string
 #include "matcher/h2_container.hpp"   // matcher, failure, string
 #include "matcher/h2_customize.hpp"   // matcher, failure, string, pp
+#include "stub/h2_fp.hpp"             // nm
 #include "stub/h2_stub.hpp"           // pp
 #include "mock/h2_mfp.hpp"            // failure, nm
 #include "mock/h2_checkin.hpp"        // failure

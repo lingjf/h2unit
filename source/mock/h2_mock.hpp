@@ -27,7 +27,7 @@ struct h2_mocks {
 #endif
 
 #define __H2MOCK2(OriginFunction, Signature) \
-   h2::h2_mocker<__COUNTER__, __H2_LINE__, std::false_type, Signature>::I((void*)OriginFunction, #OriginFunction, __FILE__, __LINE__)
+   h2::h2_mocker<__COUNTER__, __H2_LINE__, std::false_type, Signature>::I(h2::h2_fp(OriginFunction), #OriginFunction, __FILE__, __LINE__)
 
 #define __H2MOCK3(Class, Method, Signature) \
    h2::h2_mocker<__COUNTER__, __H2_LINE__, H2PP_REMOVE_PARENTHESES_IF(Class), Signature>::I(h2::h2_mfp<H2PP_REMOVE_PARENTHESES_IF(Class), Signature>::A(&H2PP_REMOVE_PARENTHESES_IF(Class)::H2PP_REMOVE_PARENTHESES_IF(Method)), #Class "::" #Method, __FILE__, __LINE__)

@@ -72,7 +72,6 @@ h2_inline void h2_task::enumerate()
 
 h2_inline int h2_task::execute()
 {
-   h2_nm::initialize();
    h2_report::initialize();
    h2_memory::initialize();
    h2_patch::initialize();

@@ -1,11 +1,4 @@
 
-static inline bool in_main(unsigned long long addr)
-{
-   static unsigned long long main_addr = (unsigned long long)h2_nm::I().get("main");
-   if (main_addr == 0) return false;
-   return main_addr < addr && addr < main_addr + 256;
-}
-
 static inline bool demangle(const char* mangled, char* demangled, size_t len)
 {
    int status = 0;
@@ -105,7 +98,7 @@ h2_inline void h2_backtrace::print(h2_vector<h2_string>& stacks) const
                if (strlen(demangled))
                   p = demangled;
          }
-         address = h2_nm::I().get(mangled);
+         address = h2_nm::get(mangled);
          if (address != ULLONG_MAX)
             if (addr2line(address + offset, addr2lined, sizeof(addr2lined)))
                if (strlen(addr2lined))
@@ -113,7 +106,7 @@ h2_inline void h2_backtrace::print(h2_vector<h2_string>& stacks) const
       }
       stacks.push_back(p);
 
-      if (!strcmp("main", mangled) || !strcmp("main", demangled) || in_main(address + offset))
+      if (!strcmp("main", mangled) || !strcmp("main", demangled) || h2_nm::in_main(address + offset))
          break;
    }
    free(backtraces);

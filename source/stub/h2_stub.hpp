@@ -12,19 +12,18 @@ struct h2_stub_temporary_restore : h2_once {
    ~h2_stub_temporary_restore();
 };
 
-#define __H2STUB2(OriginFunction, SubstituteFunction)                                                       \
-   do {                                                                                                     \
-      h2::h2_stub_g((void*)OriginFunction, (void*)SubstituteFunction, #OriginFunction, __FILE__, __LINE__); \
+#define __H2STUB2(OriginFunction, SubstituteFunction)                                                           \
+   do {                                                                                                         \
+      h2::h2_stub_g(h2::h2_fp(OriginFunction), (void*)SubstituteFunction, #OriginFunction, __FILE__, __LINE__); \
    } while (0)
 
-#define ____H2STUB3(Return, OriginFunction, Args, Qt)                                                  \
-   struct {                                                                                            \
-      void operator=(Return(*substitute_fp) Args)                                                      \
-      {                                                                                                \
-         Return(*origin_fp) Args = OriginFunction;                                                     \
-         h2::h2_stub_g((void*)origin_fp, (void*)(substitute_fp), #OriginFunction, __FILE__, __LINE__); \
-      }                                                                                                \
-   } Qt;                                                                                               \
+#define ____H2STUB3(Return, OriginFunction, Args, Qt)                                                           \
+   struct {                                                                                                     \
+      void operator=(Return(*substitute_fp) Args)                                                               \
+      {                                                                                                         \
+         h2::h2_stub_g(h2::h2_fp(OriginFunction), (void*)(substitute_fp), #OriginFunction, __FILE__, __LINE__); \
+      }                                                                                                         \
+   } Qt;                                                                                                        \
    Qt = [] Args -> Return
 
 #define __H2STUB3(Return, OriginFunction, Args) ____H2STUB3(Return, OriginFunction, Args, H2Q(t_stub))

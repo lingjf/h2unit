@@ -127,29 +127,6 @@ using h2_constructible =
 //  For virtual functions, it is 1 plus the virtual table offset (in bytes) of the function.
 //  The least-significant bit therefore discriminates between virtual and non-virtual functions.
 
-struct h2_vtable {
-   virtual ~h2_vtable(){};
-   virtual void dummy(){};
-   static void** vtable(void* object)
-   {
-      return *(void***)object;
-   }
-   static long long offset()
-   {
-      static long long s = get_offset();
-      return s;
-   }
-   static long long get_offset()
-   {
-      char vtable_symbol[32];
-      h2_vtable t;
-      long long absolute_vtable = (long long)vtable((void*)&t);
-      sprintf(vtable_symbol, "_ZTV%s", typeid(h2_vtable).name());  // mangled for "vtable for h2_vtable"
-      long long relative_vtable = (long long)h2_nm::I().get(vtable_symbol);
-      return absolute_vtable - relative_vtable;
-   }
-};
-
 template <typename Class, typename Function>
 struct h2_mfp;
 
@@ -162,33 +139,28 @@ struct h2_mfp<Class, Return(Args...)> {
       long long v;
    } U;
 
-   static inline bool is_virtual(U& u)
+   static inline bool is_virtual_member(U& u)
    {
       return (u.v & 1) && (u.v - 1) % sizeof(void*) == 0 && (u.v - 1) / sizeof(void*) < 1000;
-   }
-
-   static inline void* get_vmfp(U& u, void** vtable)
-   {
-      return vtable[(u.v - 1) / sizeof(void*)];
    }
 
    static void* A(F f)
    {
       U u{f};
-      if (!is_virtual(u)) return u.p;
+      if (!is_virtual_member(u)) return u.p;
       void** vtable = nullptr;
       Class* object = h2_constructible<Class>::O(alloca(sizeof(Class)));
       if (0 == (long long)object || 1 == (long long)object || 2 == (long long)object) {
          char vtable_symbol[1024];
          sprintf(vtable_symbol, "_ZTV%s", typeid(Class).name());  // mangled for "vtable for Class"
-         unsigned long long relative_vtable = h2_nm::I().get(vtable_symbol);
+         unsigned long long relative_vtable = h2_nm::get(vtable_symbol);
          if (relative_vtable) {
-            vtable = (void**)(relative_vtable + h2_vtable::offset());
+            vtable = (void**)(relative_vtable + h2_nm::vtable_offset());
          }
       } else {
-         vtable = h2_vtable::vtable((void*)object);
+         vtable = *(void***)object;
       }
       if (!vtable) return nullptr;
-      return get_vmfp(u, vtable);
+      return vtable[(u.v - 1) / sizeof(void*)];
    }
 };

@@ -18,7 +18,7 @@ int STUB2_foobar(int, const int&)
 
 SUITE(stub)
 {
-   Case(stub localtime())
+   Case(stub simple)
    {
       OK(1, foobar(0, 1));
       STUB(foobar, STUB_foobar);
@@ -47,9 +47,7 @@ class Shape {
    int x, y;
 
  public:
-   Shape() : x(0), y(0)
-   {
-   }
+   Shape() : x(0), y(0) {}
 
    int value;
 
@@ -207,3 +205,26 @@ SUITE(stub template)
 }
 
 }  // namespace
+
+extern "C" {
+int foobar_bystub(int a)
+{
+   return 0;
+}
+}
+
+int STUB_foobar_bystub(int a)
+{
+   return -1;
+}
+
+SUITE(stub name)
+{
+   Case("foobar_bystub")
+   {
+      STUB("foobar_bystub", STUB_foobar_bystub);
+      OK(-1, foobar_bystub(0));
+      STUB(int, "foobar_bystub", (int)) { return -2; };
+      OK(-2, foobar_bystub(0));
+   }
+}

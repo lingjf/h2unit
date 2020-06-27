@@ -45,6 +45,18 @@
 #   endif
 #endif
 
+#if defined _WIN32
+#   define h2_weak_attribute
+#else
+#   define h2_weak_attribute __attribute__((weak))
+#endif
+
+h2_weak_attribute int main(int argc, const char** argv)
+{
+   h2::h2_option::I().parse(argc, argv);
+   return h2::h2_task::I().execute();
+}
+
 namespace h2 {
 
 #include "h2_kit.cpp"      //
@@ -101,15 +113,3 @@ namespace h2 {
 #include "core/h2_task.cpp"   //
 
 }  // namespace h2
-
-#if defined _WIN32
-#   define h2_weak_attribute
-#else
-#   define h2_weak_attribute __attribute__((weak))
-#endif
-
-h2_weak_attribute int main(int argc, const char** argv)
-{
-   h2::h2_option::I().parse(argc, argv);
-   return h2::h2_task::I().execute();
-}

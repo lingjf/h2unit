@@ -463,3 +463,19 @@ SUITE(Mock template)
 }
 
 }  // namespace
+
+extern "C" {
+int foobar_bymock(int a)
+{
+   return 0;
+}
+}
+
+SUITE(mock name)
+{
+   Case("foobar_bymock")
+   {
+      MOCK("foobar_bymock", int(int)).once(0).returns(-1);
+      OK(-1, foobar_bymock(0));
+   }
+}
