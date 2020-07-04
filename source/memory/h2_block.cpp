@@ -35,22 +35,14 @@ struct h2_block : h2_libc {
       return nullptr;
    }
 
-   bool limited(size_t size)
-   {
-      return limit < allocated + size;
-   }
-
-   void balance(int size)
-   {
-      allocated += size;
-      if (footprint < allocated) footprint = allocated;
-   }
-
    h2_piece* new_piece(const char* who, size_t size, size_t alignment, unsigned char c_fill, bool fill, h2_backtrace& bt)
    {
+      if (limit < allocated + size) return nullptr;
+      allocated += size;
+      if (footprint < allocated) footprint = allocated;
+
       // allocate action alignment is prior to block level alignment
-      if (alignment == 0)
-         alignment = align;
+      if (alignment == 0) alignment = align;
 
       h2_piece* p = new h2_piece(size, alignment, who, bt);
 
@@ -71,6 +63,7 @@ struct h2_block : h2_libc {
 
    h2_fail* rel_piece(const char* who, h2_piece* p)
    {
+      allocated -= p->user_size;
       return p->free(who);
    }
 

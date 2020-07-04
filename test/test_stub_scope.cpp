@@ -21,22 +21,22 @@ int foobar4(int)
 
 GlobalSetup()
 {
-   STUB(int, foobar1, (int)) { return -1; };
+   STUB(foobar1, int, (int)) { return -1; };
 }
 
 GlobalSuiteSetup()
 {
-   STUB(int, foobar2, (int)) { return -2; };
+   STUB(foobar2, int, (int)) { return -2; };
 }
 
 GlobalCaseSetup()
 {
-   STUB(int, foobar3, (int)) { return -3; };
+   STUB(foobar3, int, (int)) { return -3; };
 }
 
 SUITE(stub in shared_code)
 {
-   STUB(int, foobar4, (int)) { return -4; };
+   STUB(foobar4, int, (int)) { return -4; };
 
    Case(a)
    {

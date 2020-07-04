@@ -88,7 +88,7 @@ SUITE(c)
    }
    Case(6)
    {
-      MOCK(time, time_t(time_t*)).once();
-      STUB(time_t, time, (time_t*)) { return 0; };
+      MOCK(time, time_t, (time_t*)).once();
+      STUB(time, time_t, (time_t*)) { return 0; };
    }
 }

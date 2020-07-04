@@ -49,41 +49,36 @@ SUITE(Stub function by lambda)
    {
       rectangle_t p1 = {2, 3};
       OK(6, rectangle_area(&p1));
-      STUB(int, rectangle_area, (rectangle_t * rectangle)) { return 111; };
+      STUB(rectangle_area, int, (rectangle_t * rectangle)) { return 111; };
       OK(111, rectangle_area(&p1));
    }
 }
 
-SUITE(Stub Member method)
+SUITE(Stub member method)
 {
    Case(normal member function successful)
    {
-      STUB(int, Dog, go, (int x, int y))
+      STUB(Rect, move, int, (int x, int y))
       {
          OK(1, x);
          OK(2, y);
          return 11;
       };
-      STUB(void, Dog, run, ()) { OK(1, that->age); };
-      Dog dog(1);
-      OK(11, dog.go(1, 2));
-      dog.run();
+
+      Rect rect(0, 0, 1, 1);
+      OK(11, rect.move(1, 2));
    }
 
    Case(virtual member function successful)
    {
-      STUB(const char*, Cat, say, ()) { return "mmm..."; };
-      Cat cat(nullptr, nullptr);
-      OK("mmm...", cat.say());
-   }
-
-   Case(virtual member function successful)
-   {
-      STUB(const char*, Centipede, say, ())
+      STUB(Rect, print, const char*, ())
       {
-         return "...";
+         OK("Rect", that->name);
+         static char s[256];
+         sprintf(s, "Rect(%d,%d,%d,%d)", that->x, that->y, that->width, that->height);
+         return s;
       };
-      Centipede centipede(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11);
-      OK("...", centipede.say());
+      Rect rect(0, 0, 1, 1);
+      OK("Rect(0,0,1,1)", rect.print());
    }
 }

@@ -2,6 +2,14 @@
 
 SUITE(kit)
 {
+   Case(H2Q generate unique symbol)
+   {
+      int H2Q() = 1;
+      int H2Q() = 1;
+      int H2Q(prefix) = 1;
+      int H2Q(prefix) = 1;
+   }
+
    Case(wildcard)
    {
       OK(!h2::h2_pattern::wildcard_match("hello?world*", "welcome"));

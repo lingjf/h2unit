@@ -1,5 +1,5 @@
 
-template <int Counter, int Lineno, typename Class, typename F>
+template <int Counter, int Lineno, typename Class, typename Signature>
 class h2_mocker;
 
 template <int Counter, int Lineno, typename Class, typename Return, typename... Args>

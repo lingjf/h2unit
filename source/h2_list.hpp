@@ -3,9 +3,6 @@
 #define h2_list_for_each_entry(p, head, type, link) \
    for (int li = 0; li == 0; ++li)                  \
       for (type* p = h2_list_entry((head).next, type, link), *_t = h2_list_entry(p->link.next, type, link); &p->link != &(head); p = _t, _t = h2_list_entry(_t->link.next, type, link), ++li)
-#define h2_list_for_each_reverse_entry(p, head, type, link) \
-   for (int li = 0; li == 0; ++li)                          \
-      for (type* p = h2_list_entry((head).prev, type, link), *_t = h2_list_entry(p->link.prev, type, link); &p->link != &(head); p = _t, _t = h2_list_entry(_t->link.prev, type, link), ++li)
 
 #define h2_list_pop_entry(head, type, link) ((head).empty() ? (type*)0 : h2_list_entry(&(head).pop(), type, link))
 #define h2_list_top_entry(head, type, link) ((head).empty() ? (type*)0 : h2_list_entry((head).next, type, link))

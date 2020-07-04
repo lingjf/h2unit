@@ -28,7 +28,7 @@ CASE(bugfix
      : MOCK return reference)
 {
    NoDefaultConstructorClass x(1, 1.1);
-   MOCK(foobar, NoDefaultConstructorClass & (int, NoDefaultConstructorClass&)).once(_, _).returns(x);
+   MOCK(foobar, NoDefaultConstructorClass&, (int, NoDefaultConstructorClass&)).once(_, _).returns(x);
    foobar(1, x);
 }
 

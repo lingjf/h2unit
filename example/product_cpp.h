@@ -1,102 +1,52 @@
 #ifndef _PRODUCT_CPP_H_
 #define _PRODUCT_CPP_H_
 
-class Animal /* 动物 */
-{
- private:
+class Shape {
+ public:
    int x, y;
+   const char* name;
 
  public:
-   Animal() : x(0), y(0) {}
-   virtual ~Animal() {}
+   Shape(int _x, int _y, const char* _name) : x(_x), y(_y), name(_name) {}
+   virtual ~Shape() {}
 
    static int born(int a)
    {
       return 0;
    }
 
-   int go(int x, int y)
+   int move(int x, int y)
    {
       this->x += x;
       this->y += y;
       return 0;
    }
 
-   int go(int xy);
+   int move(int xy);
 
-   virtual const char* say() = 0;
-   virtual int cry() = 0;
+   virtual const char* print() = 0;
 };
 
-class Vivipara /* 胎生动物 */ : public Animal {
+class Rect : public Shape {
  public:
-   const char* say()
+   int width, height;
+
+ public:
+   Rect(int left, int top, int _width, int _height) : Shape(left, top, "Rect"),
+                                                      width(_width),
+                                                      height(_height)
    {
-      return "";
    }
 
-   int cry()
+   void scale(double x)
    {
-      return 1;
-   }
-};
-
-class Ovipara /* 卵生动物 */ : public Animal {
- public:
-   int cry()
-   {
-      return 0;
-   }
-};
-
-class Dog /* 狗 */ : public Vivipara {
- public:
-   int age;
-   Dog(int age_) : age(age_) {}
-
-   const char* say()
-   {
-      return "wang";
+      width *= x;
+      height *= x;
    }
 
-   void run() {}
-};
-
-class Cat /* 猫 */ : public Vivipara {
- public:
-   Cat(Animal* mother, Animal* father) {}
-
-   const char* say()
+   const char* print()
    {
-      return "miao";
-   }
-};
-
-class Bird /* 鸟 */ : public Ovipara {
- public:
-   const char* say()
-   {
-      return "jiji";
-   }
-};
-
-class Centipede /* 蜈蚣 */ : public Ovipara {
- public:
-   Centipede(int feet1,
-             int feet2,
-             int feet3,
-             int feet4,
-             int feet5,
-             int feet6,
-             int feet7,
-             int feet8,
-             int feet9,
-             int feet10,
-             int feet11) {}
-
-   const char* say()
-   {
-      return "";
+      return "Rect";
    }
 };
 

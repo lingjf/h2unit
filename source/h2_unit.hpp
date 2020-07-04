@@ -318,7 +318,7 @@ using h2::Pair;
       static struct Q {                                    \
          Q() { h2::h2_task::I().name##s.push_back(name); } \
          static void name();                               \
-      } H2Q(Q);                                            \
+      } H2Q();                                             \
    }                                                       \
    void Q::name()
 
@@ -345,7 +345,7 @@ using h2::Pair;
 
 #define __H2Case(name, status, Qc, Q1, Q2)                                                      \
    static h2::h2_case Qc(name, status, __FILE__, __LINE__);                                     \
-   static h2::h2_suite::installer H2Q(installer)(suite_2_0_1_3_0_1_0_2, &Qc);                   \
+   static h2::h2_suite::installer H2Q(i)(suite_2_0_1_3_0_1_0_2, &Qc);                           \
    if (&Qc == case_2_0_1_7_0_3_2_5)                                                             \
       for (h2::h2_suite::cleaner Q1(suite_2_0_1_3_0_1_0_2); Q1; case_2_0_1_7_0_3_2_5 = nullptr) \
          for (h2::h2_case::cleaner Q2(&Qc); Q2;)                                                \

@@ -1,7 +1,7 @@
 
 #include "product_cpp.h"
 
-int Animal::go(int xy)
+int Shape::move(int xy)
 {
    this->x += xy;
    this->y += xy;

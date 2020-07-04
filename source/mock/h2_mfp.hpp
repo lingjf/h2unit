@@ -127,7 +127,7 @@ using h2_constructible =
 //  For virtual functions, it is 1 plus the virtual table offset (in bytes) of the function.
 //  The least-significant bit therefore discriminates between virtual and non-virtual functions.
 
-template <typename Class, typename Function>
+template <typename Class, typename Signature>
 struct h2_mfp;
 
 template <typename Class, typename Return, typename... Args>
@@ -141,7 +141,9 @@ struct h2_mfp<Class, Return(Args...)> {
 
    static inline bool is_virtual_member(U& u)
    {
-      return (u.v & 1) && (u.v - 1) % sizeof(void*) == 0 && (u.v - 1) / sizeof(void*) < 1000;
+      return (u.v & 1) && (u.v - 1) % sizeof(void*) == 0
+             /* assumption: virtual member count less than 3000 */
+             && (u.v - 1) / sizeof(void*) < 3000;
    }
 
    static void* A(F f)
@@ -162,5 +164,11 @@ struct h2_mfp<Class, Return(Args...)> {
       }
       if (!vtable) return nullptr;
       return vtable[(u.v - 1) / sizeof(void*)];
+   }
+
+   static long long B(F f)
+   {
+      U u{f};
+      return u.v;
    }
 };

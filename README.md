@@ -297,7 +297,7 @@ With help of C++ lambda, separate fake function can sit together with [STUB](sou
 ```C++
 CASE(demo dynamic stub with lambda)
 {
-   STUB(int, foobar, (int a, char * b)) {
+   STUB(foobar, int, (int a, char * b)) {
       OK(1, a);
       sprintf(b, "return value by argument");
       return 2;
@@ -311,7 +311,7 @@ STUB C++ Class nonstatic or virtual member function
 ```C++
 CASE(demo dynamic stub with class member function)
 {
-   STUB(int, Foo, bar, (int a, char * b)) {
+   STUB(Foo, bar, int, (int a, char * b)) {
       OK(1, a);
       sprintf(b, "return value by argument");
       return 2;
@@ -325,7 +325,7 @@ STUB C++ Class static member function
 ```C++
 CASE(demo dynamic stub with class member function)
 {
-   STUB(int, Foo::bar, (int a, char * b)) {
+   STUB(Foo::bar, int, (int a, char * b)) {
       OK(1, a);
       sprintf(b, "return value by argument");
       return 2;
@@ -340,7 +340,7 @@ If Class has default constructor, or simple constructor which H2UNIT can guess, 
 ```C++
 CASE(demo dynamic stub with class member function)
 {
-   STUB(int, Foo, bar, (int a, char * b), Foo(...)) {
+   STUB(Foo, bar, int, (int a, char * b), Foo(...)) {
       OK(1, a);
       sprintf(b, "return value by argument");
       return 2;
@@ -363,14 +363,14 @@ class Foobar {
 
 CASE(demo template function)
 {
-   STUB(int, (foobar<int, char*>), (int a, char * b)) {
+   STUB((foobar<int, char*>), int, (int a, char * b)) {
       OK(1, a);
       sprintf(b, "return value by argument");
       return 2;
    };
    do_something(foobar);
 
-   STUB(int, (Foobar<int, char*>), foobar<float, std::string>, (float, std::string)) {
+   STUB((Foobar<int, char*>), foobar<float, std::string>, int, (float, std::string)) {
       OK(1, a);
       return 2;
    };
@@ -390,7 +390,7 @@ fake function return to the caller of original function directly.
 
 STUB formula:
 ```C++
-   STUB(Return Type[, Class Name], Function Name, (Parameter List)) {
+   STUB([Class Name,] Function Name, Return Type, (Parameter List)) {
       Check...
       Return...
    }
@@ -406,7 +406,7 @@ Compare to Dynamic STUB, Dynamic Mock provide a easy way to check call times, in
 /* unit test code */
 CASE(demo dynamic mock)
 {
-   MOCK(foobar, int(int a, char * b)).once(1, "A").returns(11);
+   MOCK(foobar, int, (int a, char * b)).once(1, "A").returns(11);
 
    do_something();
 }
@@ -436,15 +436,15 @@ Expect foobar called with *a* equals *1*, *b* equals *"A"* *1 time* in this case
     -    `=`(lambda) : Same as *does* without *()*
 
 ```C++
-MOCK(Foo, bar, int(int, char *)).once(1, _).returns(11)
-                                .twice(Gt(2), CaseLess("abc")).returns(22)
-                                .times(5).with(Not(3)).returns(33)
-                                .atleast(2).th1(4).th2("xyz")
-                                .any() = [](int a, char * b) {
-                                   OK(5, a);
-                                   sprintf(b, "return value by argument");
-                                   return 44;
-                                };
+MOCK(Foo, bar, int, (int, char *)).once(1, _).returns(11)
+                                  .twice(Gt(2), CaseLess("abc")).returns(22)
+                                  .times(5).with(Not(3)).returns(33)
+                                  .atleast(2).th1(4).th2("xyz")
+                                  .any() = [](int a, char * b) {
+                                     OK(5, a);
+                                     sprintf(b, "return value by argument");
+                                     return 44;
+                                  };
 ```
 First expect Foo::bar called 1 time, and 1st argument equals 1, any of 2nd, and inject returns value 11; <br>
 then expect Foo::bar called 2 times, and 1st argument geat than 2, 2nd case-insensitive equals "abc", and inject returns value 22; <br>
@@ -454,7 +454,7 @@ then expect Foo::bar called any times, and 1st argument equals 5, modify 2nd, an
 
 MOCK formula:
 ```C++
-   MOCK([Class Name, ]Function Name, Return Type(Parameter List))
+   MOCK([Class Name, ]Function Name, Return Type, (Parameter List))
    .times(Number).with(Matcher List).th1~9(Matcher).returns(Return Value).does(Lambda)=Lambda;
 ```
 ### 6. Extended JSON Compare 

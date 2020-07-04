@@ -212,7 +212,6 @@ SUITE(string)
       OK("0", h2::h2_stringify(NULL));
       OK("nullptr", h2::h2_stringify(nullptr));
       uint8_t a9 = 7;
-      std::cout << "a9="<< a9 << std::endl;
       OK("7", h2::h2_stringify(a9));
    }
 

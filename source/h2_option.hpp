@@ -3,11 +3,11 @@ struct h2_option {
    h2_singleton(h2_option);
 
 #if defined __linux__
-   static constexpr const int os = 1;
+   static constexpr const char* os = "linux";
 #elif defined __APPLE__
-   static constexpr const int os = 2;
+   static constexpr const char* os = "macos";
 #elif defined _WIN32
-   static constexpr const int os = 3;
+   static constexpr const char* os = "windows";
 #endif
 
    char args[256];
@@ -25,10 +25,6 @@ struct h2_option {
    std::vector<const char*> includes, excludes;
 
    void parse(int argc, const char** argv);
-
-   int isLinux() const { return 1 == os; }
-   int isMAC() const { return 2 == os; }
-   int isWindows() const { return 3 == os; }
 
    bool filter(const char* suitename, const char* casename, const char* filename) const;
 };

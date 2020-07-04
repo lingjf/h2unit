@@ -14,7 +14,7 @@ h2_inline h2_nm::h2_nm()
    if (f.f)
       while (::fgets(line, sizeof(line) - 1, f.f))
          if (3 == sscanf(line, "%s%s%s", addr, type, name))  // if (strchr("tTwWsSvV", type[0]))
-            symbols.push_back((new h2_symbol(name + O.isMAC(), (unsigned long long)strtoull(addr, nullptr, 16)))->x);
+            symbols.push_back((new h2_symbol(name + !strcmp("macos", O.os), (unsigned long long)strtoull(addr, nullptr, 16)))->x);
 }
 
 h2_inline unsigned long long h2_nm::get(const char* name)

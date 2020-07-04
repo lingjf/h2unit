@@ -1,5 +1,5 @@
 
-#define H2Q(_Prefix) H2PP_CAT5(_Prefix, _C, __COUNTER__, L, __LINE__)
+#define H2Q(...) H2PP_CAT5(__VA_ARGS__, _C, __COUNTER__, L, __LINE__)
 
 template <typename U, typename = void>
 struct h2_decay_impl {

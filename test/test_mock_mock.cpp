@@ -17,20 +17,20 @@ SUITE(mock c - function)
 {
    Case(once)
    {
-      MOCK(bar1, int(int, const char*)).once(1, "A").returns(11);
+      MOCK(bar1, int, (int, const char*)).once(1, "A").returns(11);
       OK(11, bar1(1, "A"));
    }
 
    Case(twice)
    {
-      MOCK(bar1, int(int, const char*)).twice(Eq(1), _).returns(11);
+      MOCK(bar1, int, (int, const char*)).twice(Eq(1), _).returns(11);
       OK(11, bar1(1, "A"));
       OK(11, bar1(1, "BC"));
    }
 
    Case(3 times)
    {
-      MOCK(bar1, int(int, const char*)).times(3).with(Ge(1), "A").returns(11);
+      MOCK(bar1, int, (int, const char*)).times(3).with(Ge(1), "A").returns(11);
       OK(11, bar1(1, "A"));
       OK(11, bar1(1, "A"));
       OK(11, bar1(1, "A"));
@@ -38,32 +38,32 @@ SUITE(mock c - function)
 
    Case(any 0)
    {
-      MOCK(bar1, int(int, const char*)).any(1, "A");
+      MOCK(bar1, int, (int, const char*)).any(1, "A");
    }
 
    Case(any 1)
    {
-      MOCK(bar1, int(int, const char*)).any().with(1, "A").returns(11);
+      MOCK(bar1, int, (int, const char*)).any().with(1, "A").returns(11);
       OK(11, bar1(1, "A"));
    }
 
    Case(any 2)
    {
-      MOCK(bar1, int(int, const char*)).any().with(1, "A").returns(11);
+      MOCK(bar1, int, (int, const char*)).any().with(1, "A").returns(11);
       OK(11, bar1(1, "A"));
       OK(11, bar1(1, "A"));
    }
 
    Case(atleast 2)
    {
-      MOCK(bar1, int(int, const char*)).atleast(2).with(1, "A").returns(11);
+      MOCK(bar1, int, (int, const char*)).atleast(2).with(1, "A").returns(11);
       OK(11, bar1(1, "A"));
       OK(11, bar1(1, "A"));
    }
 
    Case(atleast 3)
    {
-      MOCK(bar1, int(int, const char*)).atleast(2).with(1, "A").returns(11);
+      MOCK(bar1, int, (int, const char*)).atleast(2).with(1, "A").returns(11);
       OK(11, bar1(1, "A"));
       OK(11, bar1(1, "A"));
       OK(11, bar1(1, "A"));
@@ -71,27 +71,27 @@ SUITE(mock c - function)
 
    Case(atmost 1)
    {
-      MOCK(bar1, int(int, const char*)).atmost(2).with(1, "A").returns(11);
+      MOCK(bar1, int, (int, const char*)).atmost(2).with(1, "A").returns(11);
       OK(11, bar1(1, "A"));
    }
 
    Case(atmost 2)
    {
-      MOCK(bar1, int(int, const char*)).atmost(2).with(1, "A").returns(11);
+      MOCK(bar1, int, (int, const char*)).atmost(2).with(1, "A").returns(11);
       OK(11, bar1(1, "A"));
       OK(11, bar1(1, "A"));
    }
 
    Case(between)
    {
-      MOCK(bar1, int(int, const char*)).between(2, 4).with(1, "A").returns(11);
+      MOCK(bar1, int, (int, const char*)).between(2, 4).with(1, "A").returns(11);
       OK(11, bar1(1, "A"));
       OK(11, bar1(1, "A"));
    }
 
    Case(void return )
    {
-      MOCK(bar2, void(int& a, char*)).once(1, (char*)"A");
+      MOCK(bar2, void, (int& a, char*)).once(1, (char*)"A");
 
       char t[32] = "A";
       int a1 = 1;
@@ -100,7 +100,7 @@ SUITE(mock c - function)
 
    Case(multi - line)
    {
-      MOCK(bar1, int(int, const char*))
+      MOCK(bar1, int, (int, const char*))
         .once(1, "A")
         .returns(11)
         .once()
@@ -117,7 +117,7 @@ SUITE(mock c - function)
 
    Case(th0)
    {
-      MOCK(bar2, void(int& a, char*)).once().th1(1);
+      MOCK(bar2, void, (int& a, char*)).once().th1(1);
 
       char t[32] = "";
       int a1 = 1;
@@ -126,7 +126,7 @@ SUITE(mock c - function)
 
    Case(th1)
    {
-      MOCK(bar2, void(int& a, char*)).once().th2((char*)"A");
+      MOCK(bar2, void, (int& a, char*)).once().th2((char*)"A");
 
       char t[32] = "A";
       int a1 = 1;
@@ -135,43 +135,43 @@ SUITE(mock c - function)
 
    Case(zero parameter)
    {
-      MOCK(bar3, void()).once();
+      MOCK(bar3, void, ()).once();
       bar3();
    }
 
    Case(IsNull Matcher)
    {
-      MOCK(bar1, int(int, const char*)).once(1, IsNull).returns(11);
+      MOCK(bar1, int, (int, const char*)).once(1, IsNull).returns(11);
       OK(11, bar1(1, NULL));
    }
 
    Case(Substr Matcher)
    {
-      MOCK(bar1, int(int, const char*)).once(1, Substr("BC")).returns(11);
+      MOCK(bar1, int, (int, const char*)).once(1, Substr("BC")).returns(11);
       OK(11, bar1(1, "ABCD"));
    }
 
    Case(Not Matcher)
    {
-      MOCK(bar1, int(int, const char*)).once(Not(2), _).returns(11);
+      MOCK(bar1, int, (int, const char*)).once(Not(2), _).returns(11);
       OK(11, bar1(1, "A"));
    }
 
    Case(AllOf Matcher)
    {
-      MOCK(bar1, int(int, const char*)).once(AllOf(1, Ge(1)), _).returns(11);
+      MOCK(bar1, int, (int, const char*)).once(AllOf(1, Ge(1)), _).returns(11);
       OK(11, bar1(1, "A"));
    }
 
    Case(AnyOf Matcher)
    {
-      MOCK(bar1, int(int, const char*)).once(AnyOf(Le(1), Gt(2)), _).returns(11);
+      MOCK(bar1, int, (int, const char*)).once(AnyOf(Le(1), Gt(2)), _).returns(11);
       OK(11, bar1(1, "A"));
    }
 
    Case(NoneOf Matcher)
    {
-      MOCK(bar1, int(int, const char*)).once(NoneOf(1, Ge(1)), _).returns(11);
+      MOCK(bar1, int, (int, const char*)).once(NoneOf(1, Ge(1)), _).returns(11);
       OK(11, bar1(0, "A"));
    }
 }
@@ -180,7 +180,7 @@ SUITE(mock greed)
 {
    Case(greed default true)
    {
-      MOCK(bar1, int(int, const char*))
+      MOCK(bar1, int, (int, const char*))
         //   .greed(true) // default is true
         .between(1, 3)
         .with(1, "A")
@@ -196,7 +196,7 @@ SUITE(mock greed)
 
    Case(greed false)
    {
-      MOCK(bar1, int(int, const char*))
+      MOCK(bar1, int, (int, const char*))
         .greed(false)
         .between(1, 3)
         .with(1, "A")
@@ -213,13 +213,13 @@ SUITE(mock returns)
 {
    Case(delegate to origin when no returns / does /= =)
    {
-      MOCK(bar1, int(int, const char*)).once(1, "A");
+      MOCK(bar1, int, (int, const char*)).once(1, "A");
       OK(100, bar1(1, "A"));
    }
 
    Case(return uninitialized value)
    {
-      MOCK(bar1, int(int, const char*)).once(1, "A").returns();
+      MOCK(bar1, int, (int, const char*)).once(1, "A").returns();
       OK(_, bar1(1, "A"));
    }
 }
@@ -236,7 +236,7 @@ SUITE(mock does)
 {
    Case(lambda_does)
    {
-      MOCK(bar1, int(int, const char*)).once() = [](int a, const char* b) -> int {
+      MOCK(bar1, int, (int, const char*)).once() = [](int a, const char* b) -> int {
          return a + 1;
       };
       OK(1, bar1(0, "A"));
@@ -244,7 +244,7 @@ SUITE(mock does)
 
    Case(lambda_does check)
    {
-      MOCK(bar1, int(int, const char*)).once() = [](int a, const char* b) -> int {
+      MOCK(bar1, int, (int, const char*)).once() = [](int a, const char* b) -> int {
          OK(0, a);
          OK("A", b);
          return a + 1;
@@ -254,7 +254,7 @@ SUITE(mock does)
 
    Case(lambda_does modify parameter)
    {
-      MOCK(bar2, void(int&, char*)).once() = [](int& a, char* b) {
+      MOCK(bar2, void, (int&, char*)).once() = [](int& a, char* b) {
          strcpy(b, "world");
          return;
       };
@@ -266,7 +266,7 @@ SUITE(mock does)
 
    Case(lambda_does void)
    {
-      MOCK(bar3, void()).once() = []() { return; };
+      MOCK(bar3, void, ()).once() = []() { return; };
       bar3();
    }
 }
@@ -313,10 +313,10 @@ SUITE(mock C++ Class member)
    {
       Shape shape("111");
 
-      MOCK(Shape::fly, int(int, int)).once(1, 2).returns(11);
+      MOCK(Shape::fly, int, (int, int)).once(1, 2).returns(11);
       OK(11, Shape::fly(1, 2));
 
-      MOCK(Shape::fly, int(int, int)).once() = [](int, int) -> int { return 22; };
+      MOCK(Shape::fly, int, (int, int)).once() = [](int, int) -> int { return 22; };
       OK(22, Shape::fly(1, 2));
 
       static_assert(std::is_function<decltype(Shape::fly)>::value,
@@ -327,8 +327,8 @@ SUITE(mock C++ Class member)
    {
       Shape shape("222");
 
-      MOCK(Shape, go, int(int, int)).once(1, 2).returns(11);
-      MOCK(Shape, go, int(int)).once(1) = [](int) -> int { return 22; };
+      MOCK(Shape, go, int, (int, int)).once(1, 2).returns(11);
+      MOCK(Shape, go, int, (int)).once(1) = [](int) -> int { return 22; };
       OK(11, shape.go(1, 2));
       OK(22, shape.go(1));
    }
@@ -337,10 +337,10 @@ SUITE(mock C++ Class member)
    {
       Shape shape("333");
 
-      MOCK(Shape, work, int(int, int)).once(1, 2).returns(11);
+      MOCK(Shape, work, int, (int, int)).once(1, 2).returns(11);
       OK(11, shape.work(1, 2));
 
-      MOCK(Shape, work, int(int, int)).once(1, 2) = [](int, int) -> int {
+      MOCK(Shape, work, int, (int, int)).once(1, 2) = [](int, int) -> int {
          return 22;
       };
       OK(22, shape.work(1, 2));
@@ -350,7 +350,7 @@ SUITE(mock C++ Class member)
    {
       Shape shape("333");
 
-      MOCK(Shape, work, int(int, int)).once(1, 2) =
+      MOCK(Shape, work, int, (int, int)).once(1, 2) =
         [](Shape* that, int x, int y) -> int {
          OK(that != nullptr);
          OK("333", that->id);
@@ -411,7 +411,7 @@ SUITE(Mock template)
       int ret = template_foobar1<int>(0);
       OK(1, ret);
 
-      MOCK(template_foobar1<int>, int(int)).once() = [](int a) -> int {
+      MOCK(template_foobar1<int>, int, (int)).once() = [](int a) -> int {
          return -1;
       };
       OK(-1, template_foobar1<int>(0));
@@ -421,7 +421,7 @@ SUITE(Mock template)
    {
       int ret = template_foobar2<int, int>(0, 0);
       OK(2, ret);
-      MOCK((template_foobar2<int, int>), int(int, int)).once() = [](int a, int b) -> int {
+      MOCK((template_foobar2<int, int>), int, (int, int)).once() = [](int a, int b) -> int {
          return -2;
       };
       OK(-2, (template_foobar2<int, int>(0, 0)));
@@ -429,7 +429,7 @@ SUITE(Mock template)
 
    Case(member function 1 typename)
    {
-      MOCK(template_Foobar1<int>, foobar1<int>, int(int)).once() = [](int) -> int {
+      MOCK(template_Foobar1<int>, foobar1<int>, int, (int)).once() = [](int) -> int {
          return -1;
       };
       template_Foobar1<int> a1;
@@ -438,7 +438,7 @@ SUITE(Mock template)
 
    Case(static member function 1 typename)
    {
-      MOCK(template_Foobar1<int>::foobar2, int(int)).once() = [](int) -> int {
+      MOCK(template_Foobar1<int>::foobar2, int, (int)).once() = [](int) -> int {
          return -1;
       };
       OK(-1, template_Foobar1<int>::foobar2(0));
@@ -446,7 +446,7 @@ SUITE(Mock template)
 
    Case(member function 2 typename)
    {
-      MOCK((template_Foobar2<int, float>), (foobar1<int, float>), int(int, float)).once() = [](int, float) -> int {
+      MOCK((template_Foobar2<int, float>), (foobar1<int, float>), int, (int, float)).once() = [](int, float) -> int {
          return -1;
       };
       template_Foobar2<int, float> a1;
@@ -455,7 +455,7 @@ SUITE(Mock template)
 
    Case(static member function 2 typename)
    {
-      MOCK((template_Foobar2<int, float>::foobar2<int, float>), int(int, float)).once() = [](int, float) -> int {
+      MOCK((template_Foobar2<int, float>::foobar2<int, float>), int, (int, float)).once() = [](int, float) -> int {
          return -1;
       };
       OK(-1, (template_Foobar2<int, float>::foobar2<int, float>(0, 0)));
@@ -475,7 +475,7 @@ SUITE(mock name)
 {
    Case("foobar_bymock")
    {
-      MOCK("foobar_bymock", int(int)).once(0).returns(-1);
+      MOCK("foobar_bymock", int, (int)).once(0).returns(-1);
       OK(-1, foobar_bymock(0));
    }
 }

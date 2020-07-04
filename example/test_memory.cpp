@@ -11,6 +11,8 @@
  * -- memalign
  * -- posix_memalign
  * -- aligned_alloc
+ * -- new
+ * -- new[]
  */
 
 extern "C" {
@@ -40,11 +42,12 @@ SUITE(Memory Leak)
       }
       rectangle_destroy(rectangle);
 
-      Dog* dog = new Dog(3);
-      delete dog;
+      Rect* rect1 = new Rect(0, 0, 1, 1);
+      OK("Rect", rect1->print());
+      delete rect1;
 
-      Bird* bird = new Bird;
-      bird->say();
+      Rect* rect2 = new Rect(0, 0, 1, 1);
+      OK("Rect", rect2->print());
    }
 
    /*

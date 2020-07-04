@@ -145,7 +145,7 @@ h2_inline void h2_option::parse(int argc, const char** argv)
 
 static inline bool match3(const std::vector<const char*>& patterns, const char* subject)
 {
-   for (auto pattern : patterns)
+   for (auto pattern : patterns) {
       if (strcspn(pattern, "?*+^$\\.[]") < strlen(pattern)) {
          if (h2_pattern::regex_match(pattern, subject, true)) return true;
          if (strcspn(pattern, "+^$\\.[]") == strlen(pattern))
@@ -153,6 +153,7 @@ static inline bool match3(const std::vector<const char*>& patterns, const char* 
       } else {
          if (strcasestr(subject, pattern)) return true;
       }
+   }
    return false;
 }
 

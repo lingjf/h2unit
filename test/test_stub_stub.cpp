@@ -79,14 +79,14 @@ SUITE(stub member function)
 {
    Case(lambdas normal function)
    {
-      STUB(int, foobar, (int a, const int& b)) { return a + b; };
+      STUB(foobar, int, (int a, const int& b)) { return a + b; };
 
       OK(222, foobar(111, 111));
    }
 
    Case(lambdas normal member function)
    {
-      STUB(int, Shape, go, (int a, int b)) { return a + b; };
+      STUB(Shape, go, int, (int a, int b)) { return a + b; };
 
       Shape shape;
       OK(222, shape.go(111, 111));
@@ -94,7 +94,7 @@ SUITE(stub member function)
 
    Case(lambdas virtual member function)
    {
-      STUB(int, Shape, work, (int a, int b)) { return a + b; };
+      STUB(Shape, work, int, (int a, int b)) { return a + b; };
 
       Shape shape;
       OK(222, shape.work(111, 111));
@@ -102,7 +102,7 @@ SUITE(stub member function)
 
    Case(lambdas static member function)
    {
-      STUB(int, Shape::fly, (int a, int b)) { return a + b; };
+      STUB(Shape::fly, int, (int a, int b)) { return a + b; };
 
       OK(222, Shape::fly(111, 111));
    }
@@ -178,7 +178,7 @@ SUITE(stub template)
 
    Case(member function 1 typename)
    {
-      STUB(int, template_Foobar1<int>, foobar1<int>, (int a)) { return -1; };
+      STUB(template_Foobar1<int>, foobar1<int>, int, (int a)) { return -1; };
 
       template_Foobar1<int> a1;
       OK(-1, a1.foobar1(0));
@@ -186,20 +186,20 @@ SUITE(stub template)
 
    Case(static member function 1 typename)
    {
-      STUB(int, template_Foobar1<int>::foobar2, (int a)) { return -1; };
+      STUB(template_Foobar1<int>::foobar2, int, (int a)) { return -1; };
       OK(-1, template_Foobar1<int>::foobar2(0));
    }
 
    Case(member function 2 typename)
    {
-      STUB(int, (template_Foobar2<int, float>), (foobar1<int, float>), (int a, float b)) { return -1; };
+      STUB((template_Foobar2<int, float>), (foobar1<int, float>), int, (int a, float b)) { return -1; };
       template_Foobar2<int, float> a1;
       OK(-1, (a1.foobar1<int, float>(0, 0)));
    }
 
    Case(static member function 2 typename)
    {
-      STUB(int, (template_Foobar2<int, float>::foobar2<int, float>), (int a, float b)) { return -1; };
+      STUB((template_Foobar2<int, float>::foobar2<int, float>), int, (int a, float b)) { return -1; };
       OK(-1, (template_Foobar2<int, float>::foobar2<int, float>(0, 0)));
    }
 }
@@ -224,7 +224,7 @@ SUITE(stub name)
    {
       STUB("foobar_bystub", STUB_foobar_bystub);
       OK(-1, foobar_bystub(0));
-      STUB(int, "foobar_bystub", (int)) { return -2; };
+      STUB("foobar_bystub", int, (int)) { return -2; };
       OK(-2, foobar_bystub(0));
    }
 }
