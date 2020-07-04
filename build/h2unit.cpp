@@ -1,8 +1,8 @@
-﻿/* v5.5  2020-06-27 18:11:48 */
+﻿/* v5.6  2020-07-04 08:35:13 */
 /* https://github.com/lingjf/h2unit */
 /* Apache Licence 2.0 */
 #define __H2UNIT_HPP__
-#define H2UNIT_VERSION "5.5"
+#define H2UNIT_VERSION "5.6"
 // h2_unit.hpp
 #ifndef ___H2UNIT_H___
 #define ___H2UNIT_H___
@@ -521,6 +521,9 @@ h2_string h2_stringify(const std::unordered_set<T> a) { return ""; }
 template <typename T>
 h2_string h2_stringify(const std::unordered_multiset<T> a) { return ""; }
 
+// https://en.cppreference.com/w/cpp/string/byte/isprint
+template <>
+inline h2_string h2_stringify(unsigned char a) { return h2_stringify(static_cast<unsigned int>(a)); }
 template <>
 inline h2_string h2_stringify(std::nullptr_t a) { return "nullptr"; }
 

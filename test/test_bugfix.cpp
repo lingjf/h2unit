@@ -37,3 +37,11 @@ CASE(bugfix
 {
    OK(std::is_convertible<int, long>::value);
 }
+
+CASE(bugfix
+     : OK uint8_t print error)
+{
+   // OK( 7==>, <==type ) at ...
+   uint8_t type = 7;
+   OK(7, type);
+}

@@ -59,6 +59,9 @@ h2_string h2_stringify(const std::unordered_set<T> a) { return ""; }
 template <typename T>
 h2_string h2_stringify(const std::unordered_multiset<T> a) { return ""; }
 
+// https://en.cppreference.com/w/cpp/string/byte/isprint
+template <>
+inline h2_string h2_stringify(unsigned char a) { return h2_stringify(static_cast<unsigned int>(a)); }
 template <>
 inline h2_string h2_stringify(std::nullptr_t a) { return "nullptr"; }
 
