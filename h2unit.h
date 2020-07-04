@@ -1,4 +1,4 @@
-﻿/* v5.6  2020-07-04 18:15:24 */
+﻿/* v5.6  2020-07-05 01:31:00 */
 /* https://github.com/lingjf/h2unit */
 /* Apache Licence 2.0 */
 #ifndef __H2UNIT_H__
@@ -479,6 +479,9 @@ struct h2_string : public std::basic_string<char, std::char_traits<char>, h2_all
    bool endswith(h2_string suffix, bool caseless = false) const;
 
    bool isspace() const;
+   bool isquoted() const;
+
+   h2_string strip_quote() const;
 
    h2_string& tolower();
    static h2_string tolower(h2_string from) { return from.tolower(); }
@@ -520,6 +523,12 @@ template <>
 inline h2_string h2_stringify(unsigned char a) { return h2_stringify(static_cast<unsigned int>(a)); }
 template <>
 inline h2_string h2_stringify(std::nullptr_t a) { return "nullptr"; }
+
+template <typename T>
+h2_string h2_quote_stringfiy(const T& a)
+{
+   return (std::is_convertible<T, h2_string>::value ? "\"" : "") + h2_stringify(a) + (std::is_convertible<T, h2_string>::value ? "\"" : "");
+}
 
 /* clang-format off */
 inline h2_string operator+(const h2_string& lhs, const h2_string& rhs) { h2_string s(lhs); s.append(rhs); return s; }
@@ -1087,6 +1096,7 @@ template <typename M>
 inline h2_polymorphic_matcher<h2_pointee_matches<M>> Pointee(M m) { return h2_polymorphic_matcher<h2_pointee_matches<M>>(h2_pointee_matches<M>(m)); }
 // h2_logic.hpp
 
+
 template <typename Matcher>
 struct h2_not_matches {
    const Matcher m;
@@ -1121,7 +1131,7 @@ struct h2_and_matches {
          return nullptr;
       }
       if (dont) {
-         fail = h2_fail::new_unexpect("", h2_stringify(a), expects(a, caseless, dont));
+         fail = h2_fail::new_unexpect("", h2_quote_stringfiy(a), expects(a, caseless, dont));
       }
       return fail;
    }
@@ -1151,7 +1161,7 @@ struct h2_or_matches {
          if (f2) delete f2;
          return nullptr;
       }
-      return h2_fail::new_unexpect("", h2_stringify(a), expects(a, caseless, dont));
+      return h2_fail::new_unexpect("", h2_quote_stringfiy(a), expects(a, caseless, dont));
    }
    template <typename A>
    h2_string expects(const A& a, bool caseless = false, bool dont = false) const
@@ -1195,9 +1205,9 @@ struct h2_allof_matches {
       }
       h2_fail* fail = nullptr;
       if (dont) {
-         fail = h2_fail::new_unexpect("", h2_stringify(a), expects(a, caseless, dont), "Should not match all");
+         fail = h2_fail::new_unexpect("", h2_quote_stringfiy(a), expects(a, caseless, dont), "Should not match all");
       } else {
-         fail = h2_fail::new_unexpect("", h2_stringify(a), expects(a, caseless, dont));
+         fail = h2_fail::new_unexpect("", h2_quote_stringfiy(a), expects(a, caseless, dont));
          h2_fail::append_child(fail, fails);
       }
       return fail;
@@ -1237,9 +1247,9 @@ struct h2_anyof_matches {
       }
       h2_fail* fail = nullptr;
       if (dont) {
-         fail = h2_fail::new_unexpect("", h2_stringify(a), expects(a, caseless, dont), "Should not match any one");
+         fail = h2_fail::new_unexpect("", h2_quote_stringfiy(a), expects(a, caseless, dont), "Should not match any one");
       } else {
-         fail = h2_fail::new_unexpect("", h2_stringify(a), expects(a, caseless, dont), "Not match any one");
+         fail = h2_fail::new_unexpect("", h2_quote_stringfiy(a), expects(a, caseless, dont), "Not match any one");
          h2_fail::append_child(fail, fails);
       }
       return fail;
@@ -1267,7 +1277,7 @@ struct h2_noneof_matches {
          if (fail) delete fail;
       }
       if ((c == 0) == !dont) return nullptr;
-      return h2_fail::new_unexpect("", h2_stringify(a), expects(a, caseless, dont));
+      return h2_fail::new_unexpect("", h2_quote_stringfiy(a), expects(a, caseless, dont));
    }
 
    template <typename A>
@@ -4664,7 +4674,7 @@ h2_inline h2_fail* h2_matches_bytecmp::matches(const void* a, bool caseless, boo
       result = memcmp(e, a, _nbytes) == 0;
    }
    if (result == !dont) return nullptr;
-   return h2_fail::new_memcmp((const unsigned char*)e, (const unsigned char*)a, width, _nbytes, "", h2_stringify(a), "memcmp " + readable_size(width, _nbytes * 8));
+   return h2_fail::new_memcmp((const unsigned char*)e, (const unsigned char*)a, width, _nbytes * 8, "", h2_stringify(a), "memcmp " + readable_size(width, _nbytes * 8));
 }
 
 h2_inline h2_string h2_matches_bytecmp::expects(const void* a, bool caseless, bool dont) const
@@ -6864,6 +6874,13 @@ static inline bool is_synonym(h2_string& a, h2_string& b)
    return false;
 }
 
+static inline void acronym_print(h2_line& line, h2_string& str, const char* style)
+{
+   if (str.isquoted()) line.printf("dark gray", "\"");
+   line.printf(style, str.strip_quote().acronym(O.verbose ? 10000 : 30, str.isquoted() ? 2 : 3).c_str());
+   if (str.isquoted()) line.printf("dark gray", "\"");
+}
+
 struct h2_fail_unexpect : h2_fail {
    h2_string e_represent, a_represent;
    h2_string expection;
@@ -6882,21 +6899,21 @@ struct h2_fail_unexpect : h2_fail {
       line.push_back("OK( ");
 
       if (!expection.size() || e_expression == expection || is_synonym(e_expression, expection)) {
-         line.printf("green", e_expression.acronym(O.verbose ? 10000 : 30, 1).c_str());
+         acronym_print(line, e_expression, "green");
       } else {
-         line.printf("cyan", e_expression.acronym(O.verbose ? 10000 : 16).c_str());
+         acronym_print(line, e_expression, "cyan");
          line.printf("dark gray", "==>");
-         line.printf("green", expection.acronym(O.verbose ? 10000 : 30, 1).c_str());
+         acronym_print(line, expection, "green");
       }
 
       line.push_back(", ");
 
       if (!a_represent.size() || a_expression == a_represent || is_synonym(a_expression, a_represent)) {
-         line.printf("bold,red", a_expression.acronym(O.verbose ? 10000 : 30, 1).c_str());
+         acronym_print(line, a_expression, "bold,red");
       } else {
-         line.printf("bold,red", a_represent.acronym(O.verbose ? 10000 : 30, 1).c_str());
+         acronym_print(line, a_represent, "bold,red");
          line.printf("dark gray", "<==");
-         line.printf("cyan", a_expression.acronym(O.verbose ? 10000 : 16).c_str());
+         acronym_print(line, a_expression, "cyan");
       }
 
       line.push_back(" )");
@@ -6913,9 +6930,9 @@ struct h2_fail_unexpect : h2_fail {
    {
       if (no.size()) line.printf("dark gray", "%s. ", no.c_str());
       line.push_back("expect is ");
-      line.printf("green", expection.acronym(O.verbose ? 10000 : 30, 1).c_str());
+      acronym_print(line, expection, "green");
       line.push_back(", actual is ");
-      line.printf("bold,red", a_represent.acronym(O.verbose ? 10000 : 30, 1).c_str());
+      acronym_print(line, a_represent, "bold,red");
    }
 
    void print(int subling_index = 0, int child_index = 0) override
@@ -6948,7 +6965,7 @@ struct h2_fail_strcmp : h2_fail_unexpect {
    const bool caseless;
    h2_string e_value, a_value;
    h2_fail_strcmp(const h2_string& e_value_, const h2_string& a_value_, bool caseless_, const h2_string& expection_, const char* file_ = nullptr, int line_ = 0)
-     : h2_fail_unexpect("\"" + e_value_ + "\"", "\"" + a_value_ + "\"", expection_, "", file_, line_), caseless(caseless_), e_value(e_value_), a_value(a_value_) {}
+     : h2_fail_unexpect(h2_quote_stringfiy(e_value_), h2_quote_stringfiy(a_value_), expection_, "", file_, line_), caseless(caseless_), e_value(e_value_), a_value(a_value_) {}
 
    void print(int subling_index = 0, int child_index = 0) override
    {
@@ -6974,7 +6991,7 @@ struct h2_fail_strcmp : h2_fail_unexpect {
 struct h2_fail_strfind : h2_fail_unexpect {
    h2_string e_value, a_value;
    h2_fail_strfind(const h2_string& e_value_, const h2_string& a_value_, const h2_string& expection_, const char* file_ = nullptr, int line_ = 0)
-     : h2_fail_unexpect("\"" + e_value_ + "\"", "\"" + a_value_ + "\"", expection_, "", file_, line_), e_value(e_value_), a_value(a_value_) {}
+     : h2_fail_unexpect(h2_quote_stringfiy(e_value_), h2_quote_stringfiy(a_value_), expection_, "", file_, line_), e_value(e_value_), a_value(a_value_) {}
    void print(int subling_index = 0, int child_index = 0) override
    {
       h2_fail_unexpect::print(subling_index, child_index);
@@ -7909,6 +7926,17 @@ h2_inline bool h2_string::isspace() const
    for (auto& c : *this)
       if (!::isspace(c)) return false;
    return true;
+}
+
+h2_inline bool h2_string::isquoted() const
+{
+   return front() == '"' && back() == '"';
+}
+
+h2_inline h2_string h2_string::strip_quote() const
+{
+   if (!isquoted()) return *this;
+   return h2_string(c_str() + 1, size() - 2);
 }
 
 h2_inline h2_string& h2_string::tolower()

@@ -1,4 +1,4 @@
-﻿/* v5.6  2020-07-04 18:15:24 */
+﻿/* v5.6  2020-07-05 01:31:00 */
 /* https://github.com/lingjf/h2unit */
 /* Apache Licence 2.0 */
 #ifndef __H2UNIT_HPP__
@@ -478,6 +478,9 @@ struct h2_string : public std::basic_string<char, std::char_traits<char>, h2_all
    bool endswith(h2_string suffix, bool caseless = false) const;
 
    bool isspace() const;
+   bool isquoted() const;
+
+   h2_string strip_quote() const;
 
    h2_string& tolower();
    static h2_string tolower(h2_string from) { return from.tolower(); }
@@ -519,6 +522,12 @@ template <>
 inline h2_string h2_stringify(unsigned char a) { return h2_stringify(static_cast<unsigned int>(a)); }
 template <>
 inline h2_string h2_stringify(std::nullptr_t a) { return "nullptr"; }
+
+template <typename T>
+h2_string h2_quote_stringfiy(const T& a)
+{
+   return (std::is_convertible<T, h2_string>::value ? "\"" : "") + h2_stringify(a) + (std::is_convertible<T, h2_string>::value ? "\"" : "");
+}
 
 /* clang-format off */
 inline h2_string operator+(const h2_string& lhs, const h2_string& rhs) { h2_string s(lhs); s.append(rhs); return s; }
@@ -1086,6 +1095,7 @@ template <typename M>
 inline h2_polymorphic_matcher<h2_pointee_matches<M>> Pointee(M m) { return h2_polymorphic_matcher<h2_pointee_matches<M>>(h2_pointee_matches<M>(m)); }
 // h2_logic.hpp
 
+
 template <typename Matcher>
 struct h2_not_matches {
    const Matcher m;
@@ -1120,7 +1130,7 @@ struct h2_and_matches {
          return nullptr;
       }
       if (dont) {
-         fail = h2_fail::new_unexpect("", h2_stringify(a), expects(a, caseless, dont));
+         fail = h2_fail::new_unexpect("", h2_quote_stringfiy(a), expects(a, caseless, dont));
       }
       return fail;
    }
@@ -1150,7 +1160,7 @@ struct h2_or_matches {
          if (f2) delete f2;
          return nullptr;
       }
-      return h2_fail::new_unexpect("", h2_stringify(a), expects(a, caseless, dont));
+      return h2_fail::new_unexpect("", h2_quote_stringfiy(a), expects(a, caseless, dont));
    }
    template <typename A>
    h2_string expects(const A& a, bool caseless = false, bool dont = false) const
@@ -1194,9 +1204,9 @@ struct h2_allof_matches {
       }
       h2_fail* fail = nullptr;
       if (dont) {
-         fail = h2_fail::new_unexpect("", h2_stringify(a), expects(a, caseless, dont), "Should not match all");
+         fail = h2_fail::new_unexpect("", h2_quote_stringfiy(a), expects(a, caseless, dont), "Should not match all");
       } else {
-         fail = h2_fail::new_unexpect("", h2_stringify(a), expects(a, caseless, dont));
+         fail = h2_fail::new_unexpect("", h2_quote_stringfiy(a), expects(a, caseless, dont));
          h2_fail::append_child(fail, fails);
       }
       return fail;
@@ -1236,9 +1246,9 @@ struct h2_anyof_matches {
       }
       h2_fail* fail = nullptr;
       if (dont) {
-         fail = h2_fail::new_unexpect("", h2_stringify(a), expects(a, caseless, dont), "Should not match any one");
+         fail = h2_fail::new_unexpect("", h2_quote_stringfiy(a), expects(a, caseless, dont), "Should not match any one");
       } else {
-         fail = h2_fail::new_unexpect("", h2_stringify(a), expects(a, caseless, dont), "Not match any one");
+         fail = h2_fail::new_unexpect("", h2_quote_stringfiy(a), expects(a, caseless, dont), "Not match any one");
          h2_fail::append_child(fail, fails);
       }
       return fail;
@@ -1266,7 +1276,7 @@ struct h2_noneof_matches {
          if (fail) delete fail;
       }
       if ((c == 0) == !dont) return nullptr;
-      return h2_fail::new_unexpect("", h2_stringify(a), expects(a, caseless, dont));
+      return h2_fail::new_unexpect("", h2_quote_stringfiy(a), expects(a, caseless, dont));
    }
 
    template <typename A>

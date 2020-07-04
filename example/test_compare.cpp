@@ -116,8 +116,7 @@ SUITE(String compares)
    Case(caseless starts / end with failure)
    {
       rectangle_t p1 = {0, 0};
-      OK(CaseLess(StartsWith("Rect(0, 0)")),
-         rectangle_tostring(&p1));  // successful
+      OK(CaseLess(StartsWith("Rect(0, 0)")), rectangle_tostring(&p1));  // successful
       rectangle_t p2 = {1, 2};
       OK(CaseLess(EndsWith("R(1, 2)")), rectangle_tostring(&p2));  // failure
    }
@@ -125,11 +124,11 @@ SUITE(String compares)
 
 CASE(string compares failure)
 {
-   OK("a7af3452a5eee24a149f899\r3e48ce81b77b200b212b23c2402c221ddc4260\na608cf32"
-      "8a2133386477eb7a65958893726741cb9223419a7a0224fe7af2866944197ee4ab18e2591"
+   OK("a752a5eee24a149f899\r3e48ce81b77b200b212b23c2402c221ddc4260\na608cf32"
+      "8a2133386477eb7a65958893726741cb9223419a7a0224fe7af2866944197ee4ab18e"
       "3cae8507bb306a284f",
-      "a7af3452a5eeX24a149f899\t3e48ce81b77b200b212b23c2402c2Y1ddc4260\na608cf32"
-      "8a2133386477eb7a6595889372674Zcb9223419a7a0224fe7af2866944197ee4ab18e2591"
+      "a752a5eeX24a149f899\t3e48ce81b77b200b212b23c2402c2Y1ddc4260\na608cf32"
+      "8a2133386477eb7a6595889372674Zcb9223419a7a0224fe7af2866944197ee4ab18e"
       "3cae8507bb306a284f");
 }
 /*
@@ -140,8 +139,8 @@ SUITE(memory compares)
    Case(bytes failure)
    {
       const unsigned char e[] = "abcdefghijklmnopqrstuvwxyz";
-      OK(Me(e, sizeof(e)), "abcdefghijklmnopqrstuvwxyz");  // successful
-      OK(Me(e, sizeof(e)), "abcdEfghijklmnopqrsTuvwxyz");  // failure
+      OK(M8e(e, sizeof(e)), "abcdefghijklmnopqrstuvwxyz");  // successful
+      OK(M8e(e, sizeof(e)), "abcdEfghijklmnopqrsTuvwxyz");  // failure
    }
    Case(bits successfull)
    {

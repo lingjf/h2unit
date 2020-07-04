@@ -32,6 +32,17 @@ h2_inline bool h2_string::isspace() const
    return true;
 }
 
+h2_inline bool h2_string::isquoted() const
+{
+   return front() == '"' && back() == '"';
+}
+
+h2_inline h2_string h2_string::strip_quote() const
+{
+   if (!isquoted()) return *this;
+   return h2_string(c_str() + 1, size() - 2);
+}
+
 h2_inline h2_string& h2_string::tolower()
 {
    for (auto& c : *this) c = ::tolower(c);

@@ -87,6 +87,23 @@ SUITE(string)
       OK(!a.endswith("Hello  World"));
    }
 
+   Case(isquoted)
+   {
+      h2::h2_string a1 = "abc";
+      OK(!a1.isquoted());
+      h2::h2_string a2 = "\"abc\"";
+      OK(a2.isquoted());
+   }
+
+   Case(strip_quote)
+   {
+      h2::h2_string a1 = "abc";
+      OK("abc", a1.strip_quote());
+
+      h2::h2_string a2 = "\"abc\"";
+      OK("abc", a2.strip_quote());
+   }
+
    Case(sprintf)
    {
       h2::h2_string a;

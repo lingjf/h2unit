@@ -23,6 +23,9 @@ struct h2_string : public std::basic_string<char, std::char_traits<char>, h2_all
    bool endswith(h2_string suffix, bool caseless = false) const;
 
    bool isspace() const;
+   bool isquoted() const;
+
+   h2_string strip_quote() const;
 
    h2_string& tolower();
    static h2_string tolower(h2_string from) { return from.tolower(); }
@@ -64,6 +67,12 @@ template <>
 inline h2_string h2_stringify(unsigned char a) { return h2_stringify(static_cast<unsigned int>(a)); }
 template <>
 inline h2_string h2_stringify(std::nullptr_t a) { return "nullptr"; }
+
+template <typename T>
+h2_string h2_quote_stringfiy(const T& a)
+{
+   return (std::is_convertible<T, h2_string>::value ? "\"" : "") + h2_stringify(a) + (std::is_convertible<T, h2_string>::value ? "\"" : "");
+}
 
 /* clang-format off */
 inline h2_string operator+(const h2_string& lhs, const h2_string& rhs) { h2_string s(lhs); s.append(rhs); return s; }

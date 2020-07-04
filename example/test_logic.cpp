@@ -28,27 +28,22 @@ SUITE(Logic)
    Case(AllOf failure)
    {
       rectangle_t p1 = {0, 0};
-      OK(AllOf("Rect(0, 0)", StartsWith("Rect")),
-         rectangle_tostring(&p1));  // successful
+      OK(AllOf("Rect(0, 0)", StartsWith("Rect")), rectangle_tostring(&p1));  // successful
 
       rectangle_t p2 = {1, 2};
-      OK(AllOf("Rect(0, 0)", _, EndsWith("R(1, 2)")),
-         rectangle_tostring(&p2));  // failure
+      OK(AllOf("Rect(0, 0)", _, EndsWith("R(1, 2)")), rectangle_tostring(&p2));  // failure
    }
 
    Case(AnyOf successful)
    {
       rectangle_t p1 = {0, 0};
-      OK(AnyOf("Rect(0, 0)", StartsWith("Rect")),
-         rectangle_tostring(&p1));  // successful
-      OK(AnyOf("Rect(0, 1)", StartsWith("Rect")),
-         rectangle_tostring(&p1));  // successful
+      OK(AnyOf("Rect(0, 0)", StartsWith("Rect")), rectangle_tostring(&p1));  // successful
+      OK(AnyOf("Rect(0, 1)", StartsWith("Rect")), rectangle_tostring(&p1));  // successful
    }
 
    Case(NoneOf successful)
    {
       rectangle_t p1 = {0, 0};
-      OK(NoneOf("Rect(0, 1)", EndsWith("R(1, 2)")),
-         rectangle_tostring(&p1));  // successful
+      OK(NoneOf("Rect(0, 1)", EndsWith("R(1, 2)")), rectangle_tostring(&p1));  // successful
    }
 }

@@ -39,7 +39,7 @@ h2_inline h2_fail* h2_matches_bytecmp::matches(const void* a, bool caseless, boo
       result = memcmp(e, a, _nbytes) == 0;
    }
    if (result == !dont) return nullptr;
-   return h2_fail::new_memcmp((const unsigned char*)e, (const unsigned char*)a, width, _nbytes, "", h2_stringify(a), "memcmp " + readable_size(width, _nbytes * 8));
+   return h2_fail::new_memcmp((const unsigned char*)e, (const unsigned char*)a, width, _nbytes * 8, "", h2_stringify(a), "memcmp " + readable_size(width, _nbytes * 8));
 }
 
 h2_inline h2_string h2_matches_bytecmp::expects(const void* a, bool caseless, bool dont) const

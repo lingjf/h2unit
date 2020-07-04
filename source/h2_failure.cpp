@@ -76,6 +76,13 @@ static inline bool is_synonym(h2_string& a, h2_string& b)
    return false;
 }
 
+static inline void acronym_print(h2_line& line, h2_string& str, const char* style)
+{
+   if (str.isquoted()) line.printf("dark gray", "\"");
+   line.printf(style, str.strip_quote().acronym(O.verbose ? 10000 : 30, str.isquoted() ? 2 : 3).c_str());
+   if (str.isquoted()) line.printf("dark gray", "\"");
+}
+
 struct h2_fail_unexpect : h2_fail {
    h2_string e_represent, a_represent;
    h2_string expection;
@@ -94,21 +101,21 @@ struct h2_fail_unexpect : h2_fail {
       line.push_back("OK( ");
 
       if (!expection.size() || e_expression == expection || is_synonym(e_expression, expection)) {
-         line.printf("green", e_expression.acronym(O.verbose ? 10000 : 30, 1).c_str());
+         acronym_print(line, e_expression, "green");
       } else {
-         line.printf("cyan", e_expression.acronym(O.verbose ? 10000 : 16).c_str());
+         acronym_print(line, e_expression, "cyan");
          line.printf("dark gray", "==>");
-         line.printf("green", expection.acronym(O.verbose ? 10000 : 30, 1).c_str());
+         acronym_print(line, expection, "green");
       }
 
       line.push_back(", ");
 
       if (!a_represent.size() || a_expression == a_represent || is_synonym(a_expression, a_represent)) {
-         line.printf("bold,red", a_expression.acronym(O.verbose ? 10000 : 30, 1).c_str());
+         acronym_print(line, a_expression, "bold,red");
       } else {
-         line.printf("bold,red", a_represent.acronym(O.verbose ? 10000 : 30, 1).c_str());
+         acronym_print(line, a_represent, "bold,red");
          line.printf("dark gray", "<==");
-         line.printf("cyan", a_expression.acronym(O.verbose ? 10000 : 16).c_str());
+         acronym_print(line, a_expression, "cyan");
       }
 
       line.push_back(" )");
@@ -125,9 +132,9 @@ struct h2_fail_unexpect : h2_fail {
    {
       if (no.size()) line.printf("dark gray", "%s. ", no.c_str());
       line.push_back("expect is ");
-      line.printf("green", expection.acronym(O.verbose ? 10000 : 30, 1).c_str());
+      acronym_print(line, expection, "green");
       line.push_back(", actual is ");
-      line.printf("bold,red", a_represent.acronym(O.verbose ? 10000 : 30, 1).c_str());
+      acronym_print(line, a_represent, "bold,red");
    }
 
    void print(int subling_index = 0, int child_index = 0) override
@@ -160,7 +167,7 @@ struct h2_fail_strcmp : h2_fail_unexpect {
    const bool caseless;
    h2_string e_value, a_value;
    h2_fail_strcmp(const h2_string& e_value_, const h2_string& a_value_, bool caseless_, const h2_string& expection_, const char* file_ = nullptr, int line_ = 0)
-     : h2_fail_unexpect("\"" + e_value_ + "\"", "\"" + a_value_ + "\"", expection_, "", file_, line_), caseless(caseless_), e_value(e_value_), a_value(a_value_) {}
+     : h2_fail_unexpect(h2_quote_stringfiy(e_value_), h2_quote_stringfiy(a_value_), expection_, "", file_, line_), caseless(caseless_), e_value(e_value_), a_value(a_value_) {}
 
    void print(int subling_index = 0, int child_index = 0) override
    {
@@ -186,7 +193,7 @@ struct h2_fail_strcmp : h2_fail_unexpect {
 struct h2_fail_strfind : h2_fail_unexpect {
    h2_string e_value, a_value;
    h2_fail_strfind(const h2_string& e_value_, const h2_string& a_value_, const h2_string& expection_, const char* file_ = nullptr, int line_ = 0)
-     : h2_fail_unexpect("\"" + e_value_ + "\"", "\"" + a_value_ + "\"", expection_, "", file_, line_), e_value(e_value_), a_value(a_value_) {}
+     : h2_fail_unexpect(h2_quote_stringfiy(e_value_), h2_quote_stringfiy(a_value_), expection_, "", file_, line_), e_value(e_value_), a_value(a_value_) {}
    void print(int subling_index = 0, int child_index = 0) override
    {
       h2_fail_unexpect::print(subling_index, child_index);
