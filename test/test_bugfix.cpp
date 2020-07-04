@@ -41,7 +41,16 @@ CASE(bugfix
 CASE(bugfix
      : OK uint8_t print error)
 {
+   // actual is type = 3
    // OK( 7==>, <==type ) at ...
    uint8_t type = 7;
    OK(7, type);
+}
+
+CASE(bugfix
+     : OK with "\"" print error)
+{
+   // OK("\"", ",");
+   // OK( "\"", "==>""", ","<==" ) at ...
+   OK("\"", "\"");
 }

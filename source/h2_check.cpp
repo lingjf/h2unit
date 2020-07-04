@@ -3,8 +3,12 @@ static inline const char* find_outer_comma(const char* expression)
 {
    char stack[1024] = {'\0'};
    int top = 1;
-   for (const char* p = expression; *p; p++) {
-      switch (*p) {
+   int len = strlen(expression);
+   for (int i = 0; i < len; ++i) {
+      switch (expression[i]) {
+      case '\\':
+         if (expression[i + 1]) ++i;
+         break;
       case '\"':
          if (stack[top - 1] == '\"')
             top--;
@@ -53,8 +57,9 @@ static inline const char* find_outer_comma(const char* expression)
          }
          break;
       case ',':
-         if (top == 1) return p;
+         if (top == 1) return expression + i;
          break;
+      default: break;
       }
    }
    return nullptr;
