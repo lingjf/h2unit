@@ -73,15 +73,15 @@ inline h2_polymorphic_matcher<h2_matches_bytecmp> M8e(const E expect, const int 
 template <typename E>
 inline h2_polymorphic_matcher<h2_matches_bytecmp> M16e(const E expect, const int length = 0)
 {
-   return h2_polymorphic_matcher<h2_matches_bytecmp>(h2_matches_bytecmp(16, (const void*)expect, std::is_convertible<E, h2_string>::value, length));
+   return h2_polymorphic_matcher<h2_matches_bytecmp>(h2_matches_bytecmp(16, (const void*)expect, std::is_convertible<E, h2_string>::value, length * 2));
 }
 template <typename E>
 inline h2_polymorphic_matcher<h2_matches_bytecmp> M32e(const E expect, const int length = 0)
 {
-   return h2_polymorphic_matcher<h2_matches_bytecmp>(h2_matches_bytecmp(32, (const void*)expect, std::is_convertible<E, h2_string>::value, length));
+   return h2_polymorphic_matcher<h2_matches_bytecmp>(h2_matches_bytecmp(32, (const void*)expect, std::is_convertible<E, h2_string>::value, length * 4));
 }
 template <typename E>
 inline h2_polymorphic_matcher<h2_matches_bytecmp> M64e(const E expect, const int length = 0)
 {
-   return h2_polymorphic_matcher<h2_matches_bytecmp>(h2_matches_bytecmp(64, (const void*)expect, std::is_convertible<E, h2_string>::value, length));
+   return h2_polymorphic_matcher<h2_matches_bytecmp>(h2_matches_bytecmp(64, (const void*)expect, std::is_convertible<E, h2_string>::value, length * 8));
 }

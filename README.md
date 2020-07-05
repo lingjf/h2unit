@@ -188,6 +188,14 @@ User write "01" string, typically want bit level comparasion.
 
 If length is not specified explicitly, maximal length is used.
 
+##### 3.1.3. Compare length
+
+*    [`M1e`](source/h2_unit.hpp#L100)(expect, [length]) : number of bits.
+*    [`M8e`](source/h2_unit.hpp#L100)(expect, [length]) : number of bytes.
+*    [`M16e`](source/h2_unit.hpp#L100)(expect, [length]) : number of int16.
+*    [`M32e`](source/h2_unit.hpp#L100)(expect, [length]) : number of int32.
+*    [`M64e`](source/h2_unit.hpp#L100)(expect, [length]) : number of int64.
+*    [`Me`](source/h2_unit.hpp#L100)(expect, [length]) : following deduced type.
 
 #### 3.2. User defined Matcher
 ```C++

@@ -1,4 +1,4 @@
-﻿/* v5.6  2020-07-05 01:31:00 */
+﻿/* v5.6  2020-07-05 23:38:21 */
 /* https://github.com/lingjf/h2unit */
 /* Apache Licence 2.0 */
 #ifndef __H2UNIT_HPP__
@@ -572,7 +572,7 @@ struct h2_lines : public h2_vector<h2_line> {
 // h2_layout.hpp
 
 struct h2_layout {
-   static h2_lines split(h2_lines& left_lines, h2_lines& right_lines, const char* left_title, const char* right_title);
+   static h2_lines split(h2_lines& left_lines, h2_lines& right_lines, const char* left_title, const char* right_title, int step);
    static h2_lines unified(h2_line& up_line, h2_line& down_line, const char* up_title, const char* down_title);
    static h2_lines seperate(h2_line& up_line, h2_line& down_line, const char* up_title, const char* down_title);
 };
@@ -1596,17 +1596,17 @@ inline h2_polymorphic_matcher<h2_matches_bytecmp> M8e(const E expect, const int 
 template <typename E>
 inline h2_polymorphic_matcher<h2_matches_bytecmp> M16e(const E expect, const int length = 0)
 {
-   return h2_polymorphic_matcher<h2_matches_bytecmp>(h2_matches_bytecmp(16, (const void*)expect, std::is_convertible<E, h2_string>::value, length));
+   return h2_polymorphic_matcher<h2_matches_bytecmp>(h2_matches_bytecmp(16, (const void*)expect, std::is_convertible<E, h2_string>::value, length * 2));
 }
 template <typename E>
 inline h2_polymorphic_matcher<h2_matches_bytecmp> M32e(const E expect, const int length = 0)
 {
-   return h2_polymorphic_matcher<h2_matches_bytecmp>(h2_matches_bytecmp(32, (const void*)expect, std::is_convertible<E, h2_string>::value, length));
+   return h2_polymorphic_matcher<h2_matches_bytecmp>(h2_matches_bytecmp(32, (const void*)expect, std::is_convertible<E, h2_string>::value, length * 4));
 }
 template <typename E>
 inline h2_polymorphic_matcher<h2_matches_bytecmp> M64e(const E expect, const int length = 0)
 {
-   return h2_polymorphic_matcher<h2_matches_bytecmp>(h2_matches_bytecmp(64, (const void*)expect, std::is_convertible<E, h2_string>::value, length));
+   return h2_polymorphic_matcher<h2_matches_bytecmp>(h2_matches_bytecmp(64, (const void*)expect, std::is_convertible<E, h2_string>::value, length * 8));
 }
 // h2_container.hpp
 

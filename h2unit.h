@@ -1,4 +1,4 @@
-﻿/* v5.6  2020-07-05 01:31:00 */
+﻿/* v5.6  2020-07-05 23:38:21 */
 /* https://github.com/lingjf/h2unit */
 /* Apache Licence 2.0 */
 #ifndef __H2UNIT_H__
@@ -573,7 +573,7 @@ struct h2_lines : public h2_vector<h2_line> {
 // h2_layout.hpp
 
 struct h2_layout {
-   static h2_lines split(h2_lines& left_lines, h2_lines& right_lines, const char* left_title, const char* right_title);
+   static h2_lines split(h2_lines& left_lines, h2_lines& right_lines, const char* left_title, const char* right_title, int step);
    static h2_lines unified(h2_line& up_line, h2_line& down_line, const char* up_title, const char* down_title);
    static h2_lines seperate(h2_line& up_line, h2_line& down_line, const char* up_title, const char* down_title);
 };
@@ -1597,17 +1597,17 @@ inline h2_polymorphic_matcher<h2_matches_bytecmp> M8e(const E expect, const int 
 template <typename E>
 inline h2_polymorphic_matcher<h2_matches_bytecmp> M16e(const E expect, const int length = 0)
 {
-   return h2_polymorphic_matcher<h2_matches_bytecmp>(h2_matches_bytecmp(16, (const void*)expect, std::is_convertible<E, h2_string>::value, length));
+   return h2_polymorphic_matcher<h2_matches_bytecmp>(h2_matches_bytecmp(16, (const void*)expect, std::is_convertible<E, h2_string>::value, length * 2));
 }
 template <typename E>
 inline h2_polymorphic_matcher<h2_matches_bytecmp> M32e(const E expect, const int length = 0)
 {
-   return h2_polymorphic_matcher<h2_matches_bytecmp>(h2_matches_bytecmp(32, (const void*)expect, std::is_convertible<E, h2_string>::value, length));
+   return h2_polymorphic_matcher<h2_matches_bytecmp>(h2_matches_bytecmp(32, (const void*)expect, std::is_convertible<E, h2_string>::value, length * 4));
 }
 template <typename E>
 inline h2_polymorphic_matcher<h2_matches_bytecmp> M64e(const E expect, const int length = 0)
 {
-   return h2_polymorphic_matcher<h2_matches_bytecmp>(h2_matches_bytecmp(64, (const void*)expect, std::is_convertible<E, h2_string>::value, length));
+   return h2_polymorphic_matcher<h2_matches_bytecmp>(h2_matches_bytecmp(64, (const void*)expect, std::is_convertible<E, h2_string>::value, length * 8));
 }
 // h2_container.hpp
 
@@ -6855,7 +6855,8 @@ struct h2_fail_normal : h2_fail {
       h2_line line;
       line.indent(child_index * 2 + 1);
       if (no.size()) line.printf("dark gray", "%s. ", no.c_str());
-      line.printf("", "%s,%s", explain.c_str(), get_locate());
+      line.printf("", "%s", explain.c_str());
+      if (strlen(get_locate())) line.printf("", ",%s", get_locate());
       h2_color::printf(line);
    }
 };
@@ -6921,9 +6922,9 @@ struct h2_fail_unexpect : h2_fail {
    void print_JE(h2_line& line)
    {
       line.push_back("JE( ");
-      line.printf("cyan", "%s", e_expression.acronym(O.verbose ? 10000 : 30).c_str());
+      line.printf("cyan", "%s", e_expression.acronym(O.verbose ? 10000 : 30, 2).c_str());
       line.push_back(", ");
-      line.printf("bold,red", "%s", a_expression.acronym(O.verbose ? 10000 : 30).c_str());
+      line.printf("bold,red", "%s", a_expression.acronym(O.verbose ? 10000 : 30, 2).c_str());
       line.push_back(" )");
    }
    void print_Inner(h2_line& line)
@@ -7017,17 +7018,12 @@ struct h2_fail_json : h2_fail_unexpect {
       h2_fail_unexpect::print(subling_index, child_index);
       h2_lines e_lines, a_lines;
       h2_json::diff(e_value, a_value, e_lines, a_lines);
-      h2_lines lines = h2_layout::split(e_lines, a_lines, "expect", "actual");
+      h2_lines lines = h2_layout::split(e_lines, a_lines, "expect", "actual", 0);
       h2_color::printf(lines);
    }
 };
 
 struct h2_fail_memcmp : h2_fail_unexpect {
-   static constexpr const int npr_1b = 4;
-   static constexpr const int npr_8b = 16;
-   static constexpr const int npr_16b = 8;
-   static constexpr const int npr_32b = 4;
-   static constexpr const int npr_64b = 2;
    h2_vector<unsigned char> e_value, a_value;
    const int width, nbits;
    h2_fail_memcmp(const unsigned char* e_value_, const unsigned char* a_value_, int width_, int nbits_, const h2_string& expection_, h2_string a_represent_, h2_string explain_ = "", const char* file_ = nullptr, int line_ = 0)
@@ -7037,28 +7033,31 @@ struct h2_fail_memcmp : h2_fail_unexpect {
    {
       h2_fail_unexpect::print(subling_index, child_index);
       h2_lines e_lines, a_lines;
+      int bytes_per_row = 0;
       switch (width) {
-      case 1: print_bits(e_lines, a_lines); break;
-      case 8: print_bytes(e_lines, a_lines); break;
-      case 16: print_int16(e_lines, a_lines); break;
-      case 32: print_int32(e_lines, a_lines); break;
-      case 64: print_int64(e_lines, a_lines); break;
+      case 1: print_bits(e_lines, a_lines, bytes_per_row = 4); break;
+      case 8: print_ints<unsigned char>(e_lines, a_lines, bytes_per_row = 16); break;
+      case 16: print_ints<unsigned short>(e_lines, a_lines, bytes_per_row = 16); break;
+      case 32: print_ints<unsigned int>(e_lines, a_lines, bytes_per_row = 16); break;
+      case 64: print_ints<unsigned long long>(e_lines, a_lines, bytes_per_row = 16); break;
       default: break;
       }
-      h2_lines lines = h2_layout::split(e_lines, a_lines, "expect", "actual");
+      h2_lines lines = h2_layout::split(e_lines, a_lines, "expect", "actual", bytes_per_row * 8 / width);
       h2_color::printf(lines);
    }
 
-   void print_bits(h2_lines& e_lines, h2_lines& a_lines)
+   void print_bits(h2_lines& e_lines, h2_lines& a_lines, int bytes_per_row)
    {
-      int rows = ::ceil(e_value.size() * 1.0 / npr_1b);
+      int rows = ::ceil(e_value.size() * 1.0 / bytes_per_row);
       for (int i = 0; i < rows; ++i) {
          h2_line e_line, a_line;
-         for (int j = 0; j < npr_1b; ++j) {
+         for (int j = 0; j < bytes_per_row; ++j) {
+            if (j) e_line.push_back(" ");
+            if (j) a_line.push_back(" ");
             for (int k = 0; k < 8; ++k) {
-               if ((i * npr_1b + j) * 8 + k < nbits) {
-                  unsigned char e_val = (e_value[i * npr_1b + j] >> (7 - k)) & 0x1;
-                  unsigned char a_val = (a_value[i * npr_1b + j] >> (7 - k)) & 0x1;
+               if ((i * bytes_per_row + j) * 8 + k < nbits) {
+                  unsigned char e_val = (e_value[i * bytes_per_row + j] >> (7 - k)) & 0x1;
+                  unsigned char a_val = (a_value[i * bytes_per_row + j] >> (7 - k)) & 0x1;
                   if (e_val == a_val) {
                      e_line.push_back(h2_string(e_val ? "1" : "0"));
                      a_line.push_back(h2_string(a_val ? "1" : "0"));
@@ -7068,102 +7067,28 @@ struct h2_fail_memcmp : h2_fail_unexpect {
                   }
                }
             }
-            e_line.push_back(" ");
-            a_line.push_back(" ");
          }
          e_lines.push_back(e_line);
          a_lines.push_back(a_line);
       }
    }
 
-   void print_bytes(h2_lines& e_lines, h2_lines& a_lines)
+   template <typename T>
+   void print_ints(h2_lines& e_lines, h2_lines& a_lines, int bytes_per_row)
    {
-      int count = e_value.size(), rows = ::ceil(count * 1.0 / npr_8b);
-      for (int i = 0; i < rows; ++i) {
-         h2_line e_line, a_line;
-         for (int j = 0; j < npr_8b; ++j) {
-            if (i * npr_8b + j < count) {
-               char e_str[8], a_str[8];
-               sprintf(e_str, j < 8 ? "%02X " : " %02X", e_value[i * npr_8b + j]);
-               sprintf(a_str, j < 8 ? "%02X " : " %02X", a_value[i * npr_8b + j]);
-               if (e_value[i * npr_8b + j] == a_value[i * npr_8b + j]) {
-                  e_line.push_back(e_str);
-                  a_line.push_back(a_str);
-               } else {
-                  e_line.printf("green", e_str);
-                  a_line.printf("bold,red", a_str);
-               }
-            }
-         }
-         e_lines.push_back(e_line);
-         a_lines.push_back(a_line);
-      }
-   }
+      char fmt[32];
+      sprintf(fmt, "%%s%%0%dX", (int)sizeof(T) * 2);
 
-   void print_int16(h2_lines& e_lines, h2_lines& a_lines)
-   {
-      int count = e_value.size() / 2, rows = ::ceil(count * 1.0 / npr_16b);
+      int rows = ::ceil(e_value.size() * 1.0 / bytes_per_row);
       for (int i = 0; i < rows; ++i) {
          h2_line e_line, a_line;
-         for (int j = 0; j < npr_16b; ++j) {
-            if (i * npr_16b + j < count) {
-               unsigned short e_val = *(unsigned short*)(e_value.data() + (i * npr_16b + j) * 2);
-               unsigned short a_val = *(unsigned short*)(a_value.data() + (i * npr_16b + j) * 2);
+         for (int j = 0; j < bytes_per_row; j += sizeof(T)) {
+            if (i * bytes_per_row + j < e_value.size()) {
+               T e_val = *(T*)(e_value.data() + (i * bytes_per_row + j));
+               T a_val = *(T*)(a_value.data() + (i * bytes_per_row + j));
                char e_str[32], a_str[32];
-               sprintf(e_str, "%04X ", e_val);
-               sprintf(a_str, "%04X ", a_val);
-               if (e_val == a_val) {
-                  e_line.push_back(e_str);
-                  a_line.push_back(a_str);
-               } else {
-                  e_line.printf("green", e_str);
-                  a_line.printf("bold,red", a_str);
-               }
-            }
-         }
-         e_lines.push_back(e_line);
-         a_lines.push_back(a_line);
-      }
-   }
-
-   void print_int32(h2_lines& e_lines, h2_lines& a_lines)
-   {
-      int count = e_value.size() / 4, rows = ::ceil(count * 1.0 / npr_32b);
-      for (int i = 0; i < rows; ++i) {
-         h2_line e_line, a_line;
-         for (int j = 0; j < npr_32b; ++j) {
-            if (i * npr_32b + j < count) {
-               unsigned int e_val = *(unsigned int*)(e_value.data() + (i * npr_32b + j) * 4);
-               unsigned int a_val = *(unsigned int*)(a_value.data() + (i * npr_32b + j) * 4);
-               char e_str[32], a_str[32];
-               sprintf(e_str, "%08X ", e_val);
-               sprintf(a_str, "%08X ", a_val);
-               if (e_val == a_val) {
-                  e_line.push_back(e_str);
-                  a_line.push_back(a_str);
-               } else {
-                  e_line.printf("green", e_str);
-                  a_line.printf("bold,red", a_str);
-               }
-            }
-         }
-         e_lines.push_back(e_line);
-         a_lines.push_back(a_line);
-      }
-   }
-
-   void print_int64(h2_lines& e_lines, h2_lines& a_lines)
-   {
-      int count = e_value.size() / 8, rows = ::ceil(count * 1.0 / npr_64b);
-      for (int i = 0; i < rows; ++i) {
-         h2_line e_line, a_line;
-         for (int j = 0; j < npr_64b; ++j) {
-            if (i * npr_64b + j < count) {
-               unsigned long long e_val = *(unsigned long long*)(e_value.data() + (i * npr_64b + j) * 8);
-               unsigned long long a_val = *(unsigned long long*)(a_value.data() + (i * npr_64b + j) * 8);
-               char e_str[32], a_str[32];
-               sprintf(e_str, "%016llX ", e_val);
-               sprintf(a_str, "%016llX ", a_val);
+               sprintf(e_str, fmt, j ? (j / sizeof(T) == 8 ? "  " : " ") : "", e_val);
+               sprintf(a_str, fmt, j ? (j / sizeof(T) == 8 ? "  " : " ") : "", a_val);
                if (e_val == a_val) {
                   e_line.push_back(e_str);
                   a_line.push_back(a_str);
@@ -8350,38 +8275,56 @@ static inline h2_lines line_break(h2_line& line, unsigned width)
    return lines;
 }
 
-static inline h2_lines lines_merge(h2_lines& left_lines, h2_lines& right_lines, unsigned width)
+static inline int int_width(int v)
+{
+   char t[256];
+   sprintf(t, "%x", v);
+   return strlen(t);
+}
+
+static inline h2_lines lines_merge(h2_lines& left_lines, h2_lines& right_lines, unsigned width, int step)
 {
    left_lines.samesizify(right_lines);
    h2_lines lines;
-   for (size_t i = 0; i < std::max(left_lines.size(), right_lines.size()); ++i) {
+   size_t n = std::max(left_lines.size(), right_lines.size());
+   int seq_width = int_width(step * n);
+   char seq_fmt[32];
+   sprintf(seq_fmt, "%%0%dx> ", seq_width);
+   for (size_t i = 0; i < n; ++i) {
       left_lines[i].samesizify(right_lines[i]);
-      auto left_wrap_lines = line_break(left_lines[i], width - 2);
-      auto right_wrap_lines = line_break(right_lines[i], width - 2);
+      auto left_wrap_lines = line_break(left_lines[i], width);
+      auto right_wrap_lines = line_break(right_lines[i], width);
       for (size_t j = 0; j < std::max(left_wrap_lines.size(), right_wrap_lines.size()); ++j) {
          h2_line line;
+         if (step) {
+            if (i != 0 && j == 0) {
+               line.printf("dark gray", seq_fmt, step * (i - 1));
+            } else {
+               line.indent(seq_width + 2);
+            }
+         }
          line.concat_back("reset", left_wrap_lines[j]);
-         line.printf("dark gray", j == left_wrap_lines.size() - 1 ? "  │ " : " \\│ ");
+         line.printf("dark gray", j == left_wrap_lines.size() - 1 ? " │ " : "\\│ ");
          line.concat_back("reset", right_wrap_lines[j]);
-         line.printf("dark gray", j == right_wrap_lines.size() - 1 ? "  " : " \\");
+         line.printf("dark gray", j == right_wrap_lines.size() - 1 ? " " : "\\");
          lines.push_back(line);
       }
    }
    return lines;
 }
 
-h2_inline h2_lines h2_layout::split(h2_lines& left_lines, h2_lines& right_lines, const char* left_title, const char* right_title)
+h2_inline h2_lines h2_layout::split(h2_lines& left_lines, h2_lines& right_lines, const char* left_title, const char* right_title, int step)
 {
    unsigned max_line_width = std::max(left_lines.max_width(), right_lines.max_width());
-   unsigned half_width = std::min(h2_term_size() / 2 - 4, std::max(max_line_width + 3, 30U));
+   unsigned half_width = std::min(h2_term_size() / 2 - 10, std::max(max_line_width, 30U));
 
-   h2_line left_title_line = {"\033{dark gray}", h2_string(left_title).center(half_width - 3), "\033{reset}"};
-   h2_line right_title_line = {"\033{dark gray}", h2_string(right_title).center(half_width - 3), "\033{reset}"};
+   h2_line left_title_line = {"\033{dark gray}", h2_string(left_title).center(half_width), "\033{reset}"};
+   h2_line right_title_line = {"\033{dark gray}", h2_string(right_title).center(half_width), "\033{reset}"};
 
    left_lines.insert(left_lines.begin(), left_title_line);
    right_lines.insert(right_lines.begin(), right_title_line);
 
-   h2_lines lines = lines_merge(left_lines, right_lines, half_width);
+   h2_lines lines = lines_merge(left_lines, right_lines, half_width, step);
    return lines;
 }
 

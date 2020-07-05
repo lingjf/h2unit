@@ -57,7 +57,8 @@ struct h2_fail_normal : h2_fail {
       h2_line line;
       line.indent(child_index * 2 + 1);
       if (no.size()) line.printf("dark gray", "%s. ", no.c_str());
-      line.printf("", "%s,%s", explain.c_str(), get_locate());
+      line.printf("", "%s", explain.c_str());
+      if (strlen(get_locate())) line.printf("", ",%s", get_locate());
       h2_color::printf(line);
    }
 };
@@ -123,9 +124,9 @@ struct h2_fail_unexpect : h2_fail {
    void print_JE(h2_line& line)
    {
       line.push_back("JE( ");
-      line.printf("cyan", "%s", e_expression.acronym(O.verbose ? 10000 : 30).c_str());
+      line.printf("cyan", "%s", e_expression.acronym(O.verbose ? 10000 : 30, 2).c_str());
       line.push_back(", ");
-      line.printf("bold,red", "%s", a_expression.acronym(O.verbose ? 10000 : 30).c_str());
+      line.printf("bold,red", "%s", a_expression.acronym(O.verbose ? 10000 : 30, 2).c_str());
       line.push_back(" )");
    }
    void print_Inner(h2_line& line)
@@ -219,17 +220,12 @@ struct h2_fail_json : h2_fail_unexpect {
       h2_fail_unexpect::print(subling_index, child_index);
       h2_lines e_lines, a_lines;
       h2_json::diff(e_value, a_value, e_lines, a_lines);
-      h2_lines lines = h2_layout::split(e_lines, a_lines, "expect", "actual");
+      h2_lines lines = h2_layout::split(e_lines, a_lines, "expect", "actual", 0);
       h2_color::printf(lines);
    }
 };
 
 struct h2_fail_memcmp : h2_fail_unexpect {
-   static constexpr const int npr_1b = 4;
-   static constexpr const int npr_8b = 16;
-   static constexpr const int npr_16b = 8;
-   static constexpr const int npr_32b = 4;
-   static constexpr const int npr_64b = 2;
    h2_vector<unsigned char> e_value, a_value;
    const int width, nbits;
    h2_fail_memcmp(const unsigned char* e_value_, const unsigned char* a_value_, int width_, int nbits_, const h2_string& expection_, h2_string a_represent_, h2_string explain_ = "", const char* file_ = nullptr, int line_ = 0)
@@ -239,28 +235,31 @@ struct h2_fail_memcmp : h2_fail_unexpect {
    {
       h2_fail_unexpect::print(subling_index, child_index);
       h2_lines e_lines, a_lines;
+      int bytes_per_row = 0;
       switch (width) {
-      case 1: print_bits(e_lines, a_lines); break;
-      case 8: print_bytes(e_lines, a_lines); break;
-      case 16: print_int16(e_lines, a_lines); break;
-      case 32: print_int32(e_lines, a_lines); break;
-      case 64: print_int64(e_lines, a_lines); break;
+      case 1: print_bits(e_lines, a_lines, bytes_per_row = 4); break;
+      case 8: print_ints<unsigned char>(e_lines, a_lines, bytes_per_row = 16); break;
+      case 16: print_ints<unsigned short>(e_lines, a_lines, bytes_per_row = 16); break;
+      case 32: print_ints<unsigned int>(e_lines, a_lines, bytes_per_row = 16); break;
+      case 64: print_ints<unsigned long long>(e_lines, a_lines, bytes_per_row = 16); break;
       default: break;
       }
-      h2_lines lines = h2_layout::split(e_lines, a_lines, "expect", "actual");
+      h2_lines lines = h2_layout::split(e_lines, a_lines, "expect", "actual", bytes_per_row * 8 / width);
       h2_color::printf(lines);
    }
 
-   void print_bits(h2_lines& e_lines, h2_lines& a_lines)
+   void print_bits(h2_lines& e_lines, h2_lines& a_lines, int bytes_per_row)
    {
-      int rows = ::ceil(e_value.size() * 1.0 / npr_1b);
+      int rows = ::ceil(e_value.size() * 1.0 / bytes_per_row);
       for (int i = 0; i < rows; ++i) {
          h2_line e_line, a_line;
-         for (int j = 0; j < npr_1b; ++j) {
+         for (int j = 0; j < bytes_per_row; ++j) {
+            if (j) e_line.push_back(" ");
+            if (j) a_line.push_back(" ");
             for (int k = 0; k < 8; ++k) {
-               if ((i * npr_1b + j) * 8 + k < nbits) {
-                  unsigned char e_val = (e_value[i * npr_1b + j] >> (7 - k)) & 0x1;
-                  unsigned char a_val = (a_value[i * npr_1b + j] >> (7 - k)) & 0x1;
+               if ((i * bytes_per_row + j) * 8 + k < nbits) {
+                  unsigned char e_val = (e_value[i * bytes_per_row + j] >> (7 - k)) & 0x1;
+                  unsigned char a_val = (a_value[i * bytes_per_row + j] >> (7 - k)) & 0x1;
                   if (e_val == a_val) {
                      e_line.push_back(h2_string(e_val ? "1" : "0"));
                      a_line.push_back(h2_string(a_val ? "1" : "0"));
@@ -270,102 +269,28 @@ struct h2_fail_memcmp : h2_fail_unexpect {
                   }
                }
             }
-            e_line.push_back(" ");
-            a_line.push_back(" ");
          }
          e_lines.push_back(e_line);
          a_lines.push_back(a_line);
       }
    }
 
-   void print_bytes(h2_lines& e_lines, h2_lines& a_lines)
+   template <typename T>
+   void print_ints(h2_lines& e_lines, h2_lines& a_lines, int bytes_per_row)
    {
-      int count = e_value.size(), rows = ::ceil(count * 1.0 / npr_8b);
-      for (int i = 0; i < rows; ++i) {
-         h2_line e_line, a_line;
-         for (int j = 0; j < npr_8b; ++j) {
-            if (i * npr_8b + j < count) {
-               char e_str[8], a_str[8];
-               sprintf(e_str, j < 8 ? "%02X " : " %02X", e_value[i * npr_8b + j]);
-               sprintf(a_str, j < 8 ? "%02X " : " %02X", a_value[i * npr_8b + j]);
-               if (e_value[i * npr_8b + j] == a_value[i * npr_8b + j]) {
-                  e_line.push_back(e_str);
-                  a_line.push_back(a_str);
-               } else {
-                  e_line.printf("green", e_str);
-                  a_line.printf("bold,red", a_str);
-               }
-            }
-         }
-         e_lines.push_back(e_line);
-         a_lines.push_back(a_line);
-      }
-   }
+      char fmt[32];
+      sprintf(fmt, "%%s%%0%dX", (int)sizeof(T) * 2);
 
-   void print_int16(h2_lines& e_lines, h2_lines& a_lines)
-   {
-      int count = e_value.size() / 2, rows = ::ceil(count * 1.0 / npr_16b);
+      int rows = ::ceil(e_value.size() * 1.0 / bytes_per_row);
       for (int i = 0; i < rows; ++i) {
          h2_line e_line, a_line;
-         for (int j = 0; j < npr_16b; ++j) {
-            if (i * npr_16b + j < count) {
-               unsigned short e_val = *(unsigned short*)(e_value.data() + (i * npr_16b + j) * 2);
-               unsigned short a_val = *(unsigned short*)(a_value.data() + (i * npr_16b + j) * 2);
+         for (int j = 0; j < bytes_per_row; j += sizeof(T)) {
+            if (i * bytes_per_row + j < e_value.size()) {
+               T e_val = *(T*)(e_value.data() + (i * bytes_per_row + j));
+               T a_val = *(T*)(a_value.data() + (i * bytes_per_row + j));
                char e_str[32], a_str[32];
-               sprintf(e_str, "%04X ", e_val);
-               sprintf(a_str, "%04X ", a_val);
-               if (e_val == a_val) {
-                  e_line.push_back(e_str);
-                  a_line.push_back(a_str);
-               } else {
-                  e_line.printf("green", e_str);
-                  a_line.printf("bold,red", a_str);
-               }
-            }
-         }
-         e_lines.push_back(e_line);
-         a_lines.push_back(a_line);
-      }
-   }
-
-   void print_int32(h2_lines& e_lines, h2_lines& a_lines)
-   {
-      int count = e_value.size() / 4, rows = ::ceil(count * 1.0 / npr_32b);
-      for (int i = 0; i < rows; ++i) {
-         h2_line e_line, a_line;
-         for (int j = 0; j < npr_32b; ++j) {
-            if (i * npr_32b + j < count) {
-               unsigned int e_val = *(unsigned int*)(e_value.data() + (i * npr_32b + j) * 4);
-               unsigned int a_val = *(unsigned int*)(a_value.data() + (i * npr_32b + j) * 4);
-               char e_str[32], a_str[32];
-               sprintf(e_str, "%08X ", e_val);
-               sprintf(a_str, "%08X ", a_val);
-               if (e_val == a_val) {
-                  e_line.push_back(e_str);
-                  a_line.push_back(a_str);
-               } else {
-                  e_line.printf("green", e_str);
-                  a_line.printf("bold,red", a_str);
-               }
-            }
-         }
-         e_lines.push_back(e_line);
-         a_lines.push_back(a_line);
-      }
-   }
-
-   void print_int64(h2_lines& e_lines, h2_lines& a_lines)
-   {
-      int count = e_value.size() / 8, rows = ::ceil(count * 1.0 / npr_64b);
-      for (int i = 0; i < rows; ++i) {
-         h2_line e_line, a_line;
-         for (int j = 0; j < npr_64b; ++j) {
-            if (i * npr_64b + j < count) {
-               unsigned long long e_val = *(unsigned long long*)(e_value.data() + (i * npr_64b + j) * 8);
-               unsigned long long a_val = *(unsigned long long*)(a_value.data() + (i * npr_64b + j) * 8);
-               char e_str[32], a_str[32];
-               sprintf(e_str, "%016llX ", e_val);
-               sprintf(a_str, "%016llX ", a_val);
+               sprintf(e_str, fmt, j ? (j / sizeof(T) == 8 ? "  " : " ") : "", e_val);
+               sprintf(a_str, fmt, j ? (j / sizeof(T) == 8 ? "  " : " ") : "", a_val);
                if (e_val == a_val) {
                   e_line.push_back(e_str);
                   a_line.push_back(a_str);
