@@ -42,7 +42,7 @@ def merge_files(inf, outf):
             copy_line2(line, outf)
 
 h2unit_h = '../h2unit.h'
-h2unit_hpp = './h2unit.h'
+h2unit_hpp = './h2unit.hpp'
 h2unit_cpp = './h2unit.cpp'
 
 f_h2unit_h = open(h2unit_h, 'w')

@@ -726,7 +726,7 @@ SUITE(suite)
 
 # Compile speed
 In order to speed up compile progress, split header-only-single-file [h2unit.h](h2unit.h) into 
-two files: [h2unit.cpp](build/h2unit.cpp) and [h2unit.h](build/h2unit.h). Refer to `example/make twofiles` for sample usage.
+two files: [h2unit.cpp](build/h2unit.cpp) and [h2unit.hpp](build/h2unit.hpp). Refer to `example/make twofiles` for sample usage.
 
 twofiles speed up 2~3 times than onefile.
 
