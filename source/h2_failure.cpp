@@ -79,9 +79,9 @@ static inline bool is_synonym(h2_string& a, h2_string& b)
 
 static inline void acronym_print(h2_line& line, h2_string& str, const char* style)
 {
-   if (str.isquoted()) line.printf("dark gray", "\"");
-   line.printf(style, str.strip_quote().acronym(O.verbose ? 10000 : 30, str.isquoted() ? 2 : 3).c_str());
-   if (str.isquoted()) line.printf("dark gray", "\"");
+   if (str.enclosed('\"')) line.printf("dark gray", "\"");
+   line.printf(style, str.unquote('\"').acronym(O.verbose ? 10000 : 30, str.enclosed('\"') ? 2 : 3).c_str());
+   if (str.enclosed('\"')) line.printf("dark gray", "\"");
 }
 
 struct h2_fail_unexpect : h2_fail {
@@ -218,10 +218,11 @@ struct h2_fail_json : h2_fail_unexpect {
      : h2_fail_unexpect(e_value_, a_value_, expection_, "", file_, line_), e_value(e_value_), a_value(a_value_), caseless(caseless_) {}
    void print(int subling_index = 0, int child_index = 0) override
    {
-      h2_fail_unexpect::print(subling_index, child_index);
       h2_lines e_lines, a_lines;
-      h2_json::diff(e_value, a_value, e_lines, a_lines, caseless);
+      if (!h2_json::diff(e_value, a_value, e_lines, a_lines, caseless))
+         explain += "illformed json";
       h2_lines lines = h2_layout::split(e_lines, a_lines, "expect", "actual", 0);
+      h2_fail_unexpect::print(subling_index, child_index);
       h2_color::printf(lines);
    }
 };

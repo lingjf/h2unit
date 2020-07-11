@@ -17,16 +17,16 @@ struct h2_string : public std::basic_string<char, std::char_traits<char>, h2_all
    h2_string& operator+=(const char* s) { return append(s), *this; }
    h2_string& operator+=(char c) { return push_back(c), *this; }
 
-   bool equals(h2_string str, bool caseless = false) const;
-   bool contains(h2_string substr, bool caseless = false) const;
-   bool startswith(h2_string prefix, bool caseless = false) const;
-   bool endswith(h2_string suffix, bool caseless = false) const;
+   bool equals(const h2_string& str, bool caseless = false) const;
+   bool contains(const h2_string& substr, bool caseless = false) const;
+   bool startswith(const h2_string& prefix, bool caseless = false) const;
+   bool endswith(const h2_string& suffix, bool caseless = false) const;
 
    bool isspace() const;
-   bool isquoted() const;
+   bool enclosed(char c = '\"') const;
 
-   h2_string strip_quote() const;
-
+   h2_string unquote(char c = '\"') const;
+   h2_string& replace_all(const char* from, const char* to);
    h2_string& tolower();
    static h2_string tolower(h2_string from) { return from.tolower(); }
    h2_string acronym(int width = 16, int tail = 0) const;

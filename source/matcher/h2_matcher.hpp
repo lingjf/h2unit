@@ -42,7 +42,7 @@ struct h2_polymorphic_matcher {
    };
 };
 
-static inline h2_string CD(h2_string s, bool caseless = false, bool dont = false)
+static inline h2_string CD(const h2_string& s, bool caseless = false, bool dont = false)
 {
    h2_string z = s;
    if (dont) z = "!" + z;

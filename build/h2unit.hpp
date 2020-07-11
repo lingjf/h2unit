@@ -1,4 +1,4 @@
-﻿/* v5.6  2020-07-11 18:20:19 */
+﻿/* v5.6  2020-07-11 23:08:51 */
 /* https://github.com/lingjf/h2unit */
 /* Apache Licence 2.0 */
 #ifndef __H2UNIT_HPP__
@@ -320,16 +320,16 @@ struct h2_string : public std::basic_string<char, std::char_traits<char>, h2_all
    h2_string& operator+=(const char* s) { return append(s), *this; }
    h2_string& operator+=(char c) { return push_back(c), *this; }
 
-   bool equals(h2_string str, bool caseless = false) const;
-   bool contains(h2_string substr, bool caseless = false) const;
-   bool startswith(h2_string prefix, bool caseless = false) const;
-   bool endswith(h2_string suffix, bool caseless = false) const;
+   bool equals(const h2_string& str, bool caseless = false) const;
+   bool contains(const h2_string& substr, bool caseless = false) const;
+   bool startswith(const h2_string& prefix, bool caseless = false) const;
+   bool endswith(const h2_string& suffix, bool caseless = false) const;
 
    bool isspace() const;
-   bool isquoted() const;
+   bool enclosed(char c = '\"') const;
 
-   h2_string strip_quote() const;
-
+   h2_string unquote(char c = '\"') const;
+   h2_string& replace_all(const char* from, const char* to);
    h2_string& tolower();
    static h2_string tolower(h2_string from) { return from.tolower(); }
    h2_string acronym(int width = 16, int tail = 0) const;
@@ -934,7 +934,7 @@ static inline void h2_fail_g(h2_fail*, bool);
 
 struct h2_json {
    static bool match(const h2_string& expect, const h2_string& actual, bool caseless);
-   static void diff(const h2_string& expect, const h2_string& actual, h2_lines& e_lines, h2_lines& a_lines, bool caseless);
+   static bool diff(const h2_string& expect, const h2_string& actual, h2_lines& e_lines, h2_lines& a_lines, bool caseless);
 };
 // h2_memory.hpp
 
@@ -1004,7 +1004,7 @@ struct h2_polymorphic_matcher {
    };
 };
 
-static inline h2_string CD(h2_string s, bool caseless = false, bool dont = false)
+static inline h2_string CD(const h2_string& s, bool caseless = false, bool dont = false)
 {
    h2_string z = s;
    if (dont) z = "!" + z;
@@ -1208,7 +1208,7 @@ struct h2_pointee_matches {
       return h2_matcher_cast<Pointee>(m).matches(*a, caseless, dont);
    }
    template <typename A>
-   h2_string expects(h2_type<A> a, bool caseless = false, bool dont = false) const
+   h2_string expects(h2_type<A>, bool caseless = false, bool dont = false) const
    {
       typedef typename std::remove_const<typename std::remove_reference<A>::type>::type Pointer;
       typedef typename PointeeOf<Pointer>::type Pointee;
@@ -1703,9 +1703,9 @@ inline h2_polymorphic_matcher<h2_matches_endswith> EndsWith(const h2_string& suf
 inline h2_polymorphic_matcher<h2_matches_json> Je(const h2_string& expect) { return h2_polymorphic_matcher<h2_matches_json>(h2_matches_json(expect)); }
 
 template <typename M>
-inline h2_polymorphic_matcher<h2_caseless_matches> CaseLess(M m) { return h2_polymorphic_matcher<h2_caseless_matches>(h2_caseless_matches(h2_matcher<h2_string>(m))); }
+inline h2_polymorphic_matcher<h2_caseless_matches> CaseLess(const M& m) { return h2_polymorphic_matcher<h2_caseless_matches>(h2_caseless_matches(h2_matcher<h2_string>(m))); }
 template <typename M>
-inline h2_polymorphic_matcher<h2_caseless_matches> operator~(M m) { return CaseLess(m); }
+inline h2_polymorphic_matcher<h2_caseless_matches> operator~(const M& m) { return CaseLess(m); }
 // h2_memcmp.hpp
 
 struct h2_matches_bytecmp {

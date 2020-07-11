@@ -1,4 +1,4 @@
-﻿/* v5.6  2020-07-11 18:20:19 */
+﻿/* v5.6  2020-07-11 23:08:51 */
 /* https://github.com/lingjf/h2unit */
 /* Apache Licence 2.0 */
 #define __H2UNIT_HPP__
@@ -320,16 +320,16 @@ struct h2_string : public std::basic_string<char, std::char_traits<char>, h2_all
    h2_string& operator+=(const char* s) { return append(s), *this; }
    h2_string& operator+=(char c) { return push_back(c), *this; }
 
-   bool equals(h2_string str, bool caseless = false) const;
-   bool contains(h2_string substr, bool caseless = false) const;
-   bool startswith(h2_string prefix, bool caseless = false) const;
-   bool endswith(h2_string suffix, bool caseless = false) const;
+   bool equals(const h2_string& str, bool caseless = false) const;
+   bool contains(const h2_string& substr, bool caseless = false) const;
+   bool startswith(const h2_string& prefix, bool caseless = false) const;
+   bool endswith(const h2_string& suffix, bool caseless = false) const;
 
    bool isspace() const;
-   bool isquoted() const;
+   bool enclosed(char c = '\"') const;
 
-   h2_string strip_quote() const;
-
+   h2_string unquote(char c = '\"') const;
+   h2_string& replace_all(const char* from, const char* to);
    h2_string& tolower();
    static h2_string tolower(h2_string from) { return from.tolower(); }
    h2_string acronym(int width = 16, int tail = 0) const;
@@ -934,7 +934,7 @@ static inline void h2_fail_g(h2_fail*, bool);
 
 struct h2_json {
    static bool match(const h2_string& expect, const h2_string& actual, bool caseless);
-   static void diff(const h2_string& expect, const h2_string& actual, h2_lines& e_lines, h2_lines& a_lines, bool caseless);
+   static bool diff(const h2_string& expect, const h2_string& actual, h2_lines& e_lines, h2_lines& a_lines, bool caseless);
 };
 // h2_memory.hpp
 
@@ -1004,7 +1004,7 @@ struct h2_polymorphic_matcher {
    };
 };
 
-static inline h2_string CD(h2_string s, bool caseless = false, bool dont = false)
+static inline h2_string CD(const h2_string& s, bool caseless = false, bool dont = false)
 {
    h2_string z = s;
    if (dont) z = "!" + z;
@@ -1208,7 +1208,7 @@ struct h2_pointee_matches {
       return h2_matcher_cast<Pointee>(m).matches(*a, caseless, dont);
    }
    template <typename A>
-   h2_string expects(h2_type<A> a, bool caseless = false, bool dont = false) const
+   h2_string expects(h2_type<A>, bool caseless = false, bool dont = false) const
    {
       typedef typename std::remove_const<typename std::remove_reference<A>::type>::type Pointer;
       typedef typename PointeeOf<Pointer>::type Pointee;
@@ -1703,9 +1703,9 @@ inline h2_polymorphic_matcher<h2_matches_endswith> EndsWith(const h2_string& suf
 inline h2_polymorphic_matcher<h2_matches_json> Je(const h2_string& expect) { return h2_polymorphic_matcher<h2_matches_json>(h2_matches_json(expect)); }
 
 template <typename M>
-inline h2_polymorphic_matcher<h2_caseless_matches> CaseLess(M m) { return h2_polymorphic_matcher<h2_caseless_matches>(h2_caseless_matches(h2_matcher<h2_string>(m))); }
+inline h2_polymorphic_matcher<h2_caseless_matches> CaseLess(const M& m) { return h2_polymorphic_matcher<h2_caseless_matches>(h2_caseless_matches(h2_matcher<h2_string>(m))); }
 template <typename M>
-inline h2_polymorphic_matcher<h2_caseless_matches> operator~(M m) { return CaseLess(m); }
+inline h2_polymorphic_matcher<h2_caseless_matches> operator~(const M& m) { return CaseLess(m); }
 // h2_memcmp.hpp
 
 struct h2_matches_bytecmp {
@@ -4452,173 +4452,261 @@ struct h2_json_node : h2_libc {
       }
    }
 };
-// h2_parse.cpp
+// h2_lexical.cpp
 
-struct h2_json_parse {
-   const char* json;
-   int size;
-   int i = 0;
-
-   h2_json_node root_node;
-
-   h2_json_parse(const char* json_string, int json_length = 0) : json(json_string), size(json_length)
+struct h2_json_lexical {
+   static void new_lexis(h2_vector<h2_string>& lexical, const char* start, int size)
    {
-      if (size == 0) size = strlen(json);
-      parse_value(&root_node);
+      const char *left = start, *right = start + size;
+      for (; left < right && *left && ::isspace(*left);) left++;
+      for (; left < right - 1 && ::isspace(*(right - 1));) right--;
+
+      lexical.push_back(h2_string(left, right - left));
    }
 
-   bool leadwith(const char* s)  // left skip and start with
+   static void parse(h2_vector<h2_string>& lexical, const char* json_string, int json_length = -1)
    {
-      while (i < size && ::isspace(json[i])) i++;
-      int n = strlen(s);
-      if (size - i < n) return false;
-      return ::strncmp(json + i, s, n) == 0;
-   }
+      enum {
+         st_idle,
+         st_escape,
+         st_single_quote,
+         st_double_quote,
+         st_pattern,
+         st_normal
+      };
 
-   bool parse_number(h2_json_node* node)
-   {
-      int len = 0;
-      for (; i + len < size; ++len) {
-         const char c = json[i + len];
-         if (c == ',' || c == '{' || c == '}' || c == '[' || c == ']' || c == ':' || c == '\0')
-            break;
-      }
-
-      node->value_string.assign(json + i, len);
-
-      int err = 0;
-      node->value_double = tinyexpr::te_interp(node->value_string.c_str(), &err);
-      if (0 != err) return false;
-
-      node->type = h2_json_node::t_number;
-      i += len;
-
-      return true;
-   }
-
-   bool parse_string(h2_json_node* node)
-   {
-      const char bound = json[i];
-      i++;
-
-      if (size <= i) return false;
-
-      const char* src = json + i;
-      int len = 0;
-      for (; json[i] != bound; ++len) {
-         if (json[i++] == '\\') i++;
-         if (size <= i) return false;
-      }
-
-      for (; len > 0; ++src, --len)
-         if (*src != '\\')
-            node->value_string.push_back(*src);
-         else
-            switch (*++src) {
-            case 'b': node->value_string.push_back('\b'); break;
-            case 'f': node->value_string.push_back('\f'); break;
-            case 'n': node->value_string.push_back('\n'); break;
-            case 'r': node->value_string.push_back('\r'); break;
-            case 't': node->value_string.push_back('\t'); break;
-            case '\"': node->value_string.push_back('\"'); break;
-            case '\\': node->value_string.push_back('\\'); break;
-            case '/': node->value_string.push_back('/'); break;
-            default: return false;
+      const char* pending = nullptr;
+      const char* p;
+      int state = st_idle, stash_state = st_idle;
+      for (p = json_string; *p && json_length--; p++) {
+         switch (state) {
+         case st_idle:
+            if (::isspace(*p)) {
+               continue;
+            } else if (strchr("{:}[,]", *p)) {
+               new_lexis(lexical, p, 1);
+            } else {
+               pending = p;
+               state = st_normal;
+               if ('\"' == *p) {
+                  state = st_double_quote;
+               } else if ('\'' == *p) {
+                  state = st_single_quote;
+               } else if ('/' == *p) {
+                  state = st_pattern;
+               } else if ('\\' == *p) {
+                  stash_state = state, state = st_escape;
+               }
             }
+            break;
+         case st_escape:
+            state = stash_state;
+            break;
 
-      node->type = h2_json_node::t_string;
-      i++;
+         case st_single_quote:
+            if ('\'' == *p) {
+               new_lexis(lexical, pending, (p + 1) - pending);
+               pending = nullptr;
+               state = st_idle;
+            } else if ('\\' == *p) {
+               stash_state = state, state = st_escape;
+            }
+            break;
+         case st_double_quote:
+            if ('\"' == *p) {
+               new_lexis(lexical, pending, (p + 1) - pending);
+               pending = nullptr;
+               state = st_idle;
+            } else if ('\\' == *p) {
+               stash_state = state, state = st_escape;
+            }
+            break;
+         case st_pattern:
+            if ('/' == *p) {
+               new_lexis(lexical, pending, (p + 1) - pending);
+               pending = nullptr;
+               state = st_idle;
+            }
+            /* no escape char */
+            break;
+         case st_normal:
+            if (strchr("{:}[,]", *p)) {
+               new_lexis(lexical, pending, p - pending);
+               pending = nullptr;
+               new_lexis(lexical, p, 1);
+               state = st_idle;
+            } else if ('\\' == *p) {
+               stash_state = state, state = st_escape;
+            }
+            break;
+         }
+      }
+      if (pending && (state == st_normal)) {
+         new_lexis(lexical, pending, p - pending);
+      }
+   }
+};// h2_syntax.cpp
 
-      return true;
+struct h2_json_syntax {
+   static bool parse(h2_json_node& root_node, h2_vector<h2_string> /* not reference, force a copy */ lexical)
+   {
+      return parse_value(root_node, lexical);
    }
 
-   bool parse_pattern(h2_json_node* node)
+   static h2_string& extract_string(h2_string& s)
    {
-      bool ret = parse_string(node);
-      node->type = h2_json_node::t_pattern;
-      return ret;
+      if (s.enclosed('\"'))
+         s = s.unquote('\"');
+      else if (s.enclosed('\''))
+         s = s.unquote('\'');
+
+      s.replace_all("\\b", "\b");
+      s.replace_all("\\f", "\f");
+      s.replace_all("\\n", "\n");
+      s.replace_all("\\r", "\r");
+      s.replace_all("\\t", "\t");
+      s.replace_all("\\\"", "\"");
+      s.replace_all("\\\\", "\\");
+      return s;
    }
 
-   bool parse_value(h2_json_node* node)
+   static bool parse_value(h2_json_node& node, h2_vector<h2_string>& lexical)
    {
+      if (lexical.empty()) return true;
+
       /* t_null */
-      if (leadwith("null")) {
-         node->type = h2_json_node::t_null;
-         i += 4;
+      if (lexical.front().equals("null")) {
+         node.type = h2_json_node::t_null;
+         lexical.erase(lexical.begin());
          return true;
       }
       /* false */
-      if (leadwith("false")) {
-         node->type = h2_json_node::t_boolean;
-         node->value_boolean = false;
-         i += 5;
+      if (lexical.front().equals("false")) {
+         node.type = h2_json_node::t_boolean;
+         node.value_boolean = false;
+         lexical.erase(lexical.begin());
          return true;
       }
       /* true */
-      if (leadwith("true")) {
-         node->type = h2_json_node::t_boolean;
-         node->value_boolean = true;
-         i += 4;
+      if (lexical.front().equals("true")) {
+         node.type = h2_json_node::t_boolean;
+         node.value_boolean = true;
+         lexical.erase(lexical.begin());
          return true;
       }
-      /* string */
-      if (leadwith("\"") || leadwith("\'")) return parse_string(node);
-      /* pattern */
-      if (leadwith("/")) return parse_pattern(node);
-
       /* array */
-      if (leadwith("[")) return parse_array(node);
+      if (lexical.front().equals("[")) return parse_array(node, lexical);
       /* object */
-      if (leadwith("{")) return parse_object(node);
+      if (lexical.front().equals("{")) return parse_object(node, lexical);
+      /* pattern */
+      if (lexical.front().startswith("/")) return parse_pattern(node, lexical);
 
-      /* number */
-      return parse_number(node);
+      if (lexical.front().equals(":")) return false;
+      if (lexical.front().equals(",")) return false;
+
+      /* string or number */
+      return parse_literal(node, lexical);
    }
 
-   bool parse_array(h2_json_node* node)
+   static bool parse_key(h2_json_node& node, h2_vector<h2_string>& lexical)
    {
-      i++;  //pass [
+      node.key_string = lexical.front();
+      lexical.erase(lexical.begin());
+      extract_string(node.key_string);
+      return true;
+   }
 
-      while (!leadwith("]")) {
+   static bool parse_pattern(h2_json_node& node, h2_vector<h2_string>& lexical)
+   {
+      node.value_string = lexical.front();
+      lexical.erase(lexical.begin());
+      if (node.value_string.enclosed('/'))
+         node.value_string = node.value_string.unquote('/');
+      node.type = h2_json_node::t_pattern;
+      return true;
+   }
+
+   static bool parse_literal(h2_json_node& node, h2_vector<h2_string>& lexical)
+   {
+      node.value_string = lexical.front();
+      lexical.erase(lexical.begin());
+      if (parse_number(node)) return true;
+      return parse_string(node);
+   }
+
+   static bool parse_number(h2_json_node& node)
+   {
+      int err = 0;
+      node.value_double = tinyexpr::te_interp(node.value_string.c_str(), &err);
+      if (0 != err) return false;
+      node.type = h2_json_node::t_number;
+      return true;
+   }
+
+   static bool parse_string(h2_json_node& node)
+   {
+      extract_string(node.value_string);
+      node.type = h2_json_node::t_string;
+      return true;
+   }
+
+   static bool parse_array(h2_json_node& node, h2_vector<h2_string>& lexical)
+   {
+      lexical.erase(lexical.begin());  // pop [
+
+      while (!lexical.front().equals("]")) {
          h2_json_node* new_node = new h2_json_node();
-         node->children.push_back(new_node->x);
-
-         if (!parse_value(new_node)) return false;
-
-         if (leadwith(",")) i++;
+         node.children.push_back(new_node->x);
+         if (!parse_value(*new_node, lexical)) return false;
+         if (lexical.front().equals(","))
+            lexical.erase(lexical.begin());
+         else
+            break;
       }
 
-      node->type = h2_json_node::t_array;
-      i++;
+      if (!lexical.front().equals("]")) return false;
+      lexical.erase(lexical.begin());  // pop ]
+      node.type = h2_json_node::t_array;
 
       return true;
    }
 
-   bool parse_object(h2_json_node* node)
+   static bool parse_object(h2_json_node& node, h2_vector<h2_string>& lexical)
    {
-      i++;  //pass {
+      lexical.erase(lexical.begin());  // pop {
 
-      while (!leadwith("}")) {
+      while (!lexical.front().equals("}")) {
          h2_json_node* new_node = new h2_json_node();
-         node->children.push_back(new_node->x);
+         node.children.push_back(new_node->x);
 
-         if (!parse_string(new_node)) return false;
+         if (!parse_key(*new_node, lexical)) return false;
 
-         new_node->key_string = new_node->value_string;
-         new_node->value_string = "";
+         if (!lexical.front().equals(":")) return false;
+         lexical.erase(lexical.begin());
 
-         if (!leadwith(":")) return false;
-         i++;
+         if (!parse_value(*new_node, lexical)) return false;
 
-         if (!parse_value(new_node)) return false;
-
-         if (leadwith(",")) i++;
+         if (lexical.front().equals(","))
+            lexical.erase(lexical.begin());
+         else
+            break;
       }
+      if (!lexical.front().equals("}")) return false;
+      lexical.erase(lexical.begin());  // pop ]
 
-      node->type = h2_json_node::t_object;
-      i++;
-
+      node.type = h2_json_node::t_object;
       return true;
+   }
+};
+// h2_tree.cpp
+
+struct h2_json_tree : h2_json_node {
+   h2_vector<h2_string> lexical;
+   bool parsed;
+   h2_json_tree(const char* json_string, int json_length = -1)
+   {
+      h2_json_lexical::parse(lexical, json_string, json_length);
+      parsed = h2_json_syntax::parse(*this, lexical);
    }
 };
 // h2_match.cpp
@@ -4677,7 +4765,7 @@ struct h2_json_match {
 // h2_dual.cpp
 
 struct h2_json_dual : h2_libc {  // combine two node into a dual
-   bool key_match = false, value_match = false;
+   bool key_equal = false, match = false;
    int e_type = h2_json_node::t_absent, a_type = h2_json_node::t_absent;
    const char *e_class = "blob", *a_class = "blob";
    h2_string e_key, a_key;
@@ -4697,10 +4785,10 @@ struct h2_json_dual : h2_libc {  // combine two node into a dual
 
    h2_json_dual(h2_json_node* e, h2_json_node* a, bool caseless, h2_json_dual* perent_ = nullptr) : perent(perent_), depth(perent_ ? perent_->depth + 1 : 0)
    {
-      value_match = h2_json_match::match(e, a, caseless);
+      match = h2_json_match::match(e, a, caseless);
       if (e) e->dual(e_type, e_class, e_key, e_value);
       if (a) a->dual(a_type, a_class, a_key, a_value);
-      key_match = e_key.equals(a_key, caseless);
+      key_equal = e_key.equals(a_key, caseless);
 
       if (strcmp(e_class, a_class)) {
          if (e) e->print(e_blob, depth, 0, true);
@@ -4760,29 +4848,29 @@ struct h2_json_dual : h2_libc {  // combine two node into a dual
       a_line.indent(depth * 2);
 
       if (e_key.size()) {
-         if (!key_match) e_line.push_back("\033{green}");
+         if (!key_equal) e_line.push_back("\033{green}");
          e_line.push_back(e_key);
-         if (!key_match) e_line.push_back("\033{reset}");
+         if (!key_equal) e_line.push_back("\033{reset}");
          e_line.push_back(": ");
       }
 
       if (a_key.size()) {
-         if (!key_match) a_line.push_back("\033{red,bold}");
+         if (!key_equal) a_line.push_back("\033{red,bold}");
          a_line.push_back(a_key);
-         if (!key_match) a_line.push_back("\033{reset}");
+         if (!key_equal) a_line.push_back("\033{reset}");
          a_line.push_back(": ");
       }
 
       if (!strcmp(e_class, "atomic")) {
          if (e_value.size()) {
-            if (!value_match) e_line.push_back("\033{green}");
+            if (!match) e_line.push_back("\033{green}");
             e_line.push_back(e_value);
-            if (!value_match) e_line.push_back("\033{reset}");
+            if (!match) e_line.push_back("\033{reset}");
          }
          if (a_value.size()) {
-            if (!value_match) a_line.push_back("\033{red,bold}");
+            if (!match) a_line.push_back("\033{red,bold}");
             a_line.push_back(a_value);
-            if (!value_match) a_line.push_back("\033{reset}");
+            if (!match) a_line.push_back("\033{reset}");
          }
       } else if (!strcmp(e_class, "object") || !strcmp(e_class, "array")) {
          e_line.push_back(strcmp(e_class, "object") ? "[ " : "{ ");
@@ -4812,15 +4900,24 @@ struct h2_json_dual : h2_libc {  // combine two node into a dual
 
 h2_inline bool h2_json::match(const h2_string& expect, const h2_string& actual, bool caseless)
 {
-   h2_json_parse e(expect.c_str()), a(actual.c_str());
-   return h2_json_match::match(&e.root_node, &a.root_node, caseless);
+   h2_json_tree e_tree(expect.c_str()), a_tree(actual.c_str());
+   return h2_json_match::match(&e_tree, &a_tree, caseless);
 }
 
-h2_inline void h2_json::diff(const h2_string& expect, const h2_string& actual, h2_lines& e_lines, h2_lines& a_lines, bool caseless)
+h2_inline bool h2_json::diff(const h2_string& expect, const h2_string& actual, h2_lines& e_lines, h2_lines& a_lines, bool caseless)
 {
-   h2_json_parse e(expect.c_str()), a(actual.c_str());
-   h2_json_dual dual(&e.root_node, &a.root_node, caseless);
+   h2_json_tree e_tree(expect.c_str()), a_tree(actual.c_str());
+   if (!e_tree.parsed || !a_tree.parsed) { /* illformed json */
+      h2_line e_line, a_line;
+      for (auto&c: e_tree.lexical) e_line.push_back(c);
+      for (auto&c: a_tree.lexical) a_line.push_back(c);
+      e_lines.push_back(e_line);
+      a_lines.push_back(a_line);
+      return false;
+   }
+   h2_json_dual dual(&e_tree, &a_tree, caseless);
    dual.align(e_lines, a_lines);
+   return true;
 }
 
 // h2_matcher.cpp
@@ -6892,9 +6989,9 @@ static inline bool is_synonym(h2_string& a, h2_string& b)
 
 static inline void acronym_print(h2_line& line, h2_string& str, const char* style)
 {
-   if (str.isquoted()) line.printf("dark gray", "\"");
-   line.printf(style, str.strip_quote().acronym(O.verbose ? 10000 : 30, str.isquoted() ? 2 : 3).c_str());
-   if (str.isquoted()) line.printf("dark gray", "\"");
+   if (str.enclosed('\"')) line.printf("dark gray", "\"");
+   line.printf(style, str.unquote('\"').acronym(O.verbose ? 10000 : 30, str.enclosed('\"') ? 2 : 3).c_str());
+   if (str.enclosed('\"')) line.printf("dark gray", "\"");
 }
 
 struct h2_fail_unexpect : h2_fail {
@@ -7031,10 +7128,11 @@ struct h2_fail_json : h2_fail_unexpect {
      : h2_fail_unexpect(e_value_, a_value_, expection_, "", file_, line_), e_value(e_value_), a_value(a_value_), caseless(caseless_) {}
    void print(int subling_index = 0, int child_index = 0) override
    {
-      h2_fail_unexpect::print(subling_index, child_index);
       h2_lines e_lines, a_lines;
-      h2_json::diff(e_value, a_value, e_lines, a_lines, caseless);
+      if (!h2_json::diff(e_value, a_value, e_lines, a_lines, caseless))
+         explain += "illformed json";
       h2_lines lines = h2_layout::split(e_lines, a_lines, "expect", "actual", 0);
+      h2_fail_unexpect::print(subling_index, child_index);
       h2_color::printf(lines);
    }
 };
@@ -7836,26 +7934,26 @@ h2_inline void h2_report::on_case_endup(h2_suite* s, h2_case* c)
 }
 // h2_string.cpp
 
-h2_inline bool h2_string::equals(h2_string str, bool caseless) const
+h2_inline bool h2_string::equals(const h2_string& str, bool caseless) const
 {
    if (!caseless) return *this == str;
    return tolower(c_str()) == tolower(str);
 }
 
-h2_inline bool h2_string::contains(h2_string substr, bool caseless) const
+h2_inline bool h2_string::contains(const h2_string& substr, bool caseless) const
 {
    if (!caseless) return find(substr) != h2_string::npos;
    return tolower(c_str()).find(tolower(substr)) != h2_string::npos;
 }
 
-h2_inline bool h2_string::startswith(h2_string prefix, bool caseless) const
+h2_inline bool h2_string::startswith(const h2_string& prefix, bool caseless) const
 {
    if (size() < prefix.size()) return false;
    if (!caseless) return find(prefix) == 0;
    return tolower(c_str()).find(tolower(prefix)) == 0;
 }
 
-h2_inline bool h2_string::endswith(h2_string suffix, bool caseless) const
+h2_inline bool h2_string::endswith(const h2_string& suffix, bool caseless) const
 {
    if (size() < suffix.size()) return false;
    if (!caseless) return rfind(suffix) == length() - suffix.length();
@@ -7869,15 +7967,25 @@ h2_inline bool h2_string::isspace() const
    return true;
 }
 
-h2_inline bool h2_string::isquoted() const
+h2_inline bool h2_string::enclosed(char c) const
 {
-   return front() == '"' && back() == '"';
+   return front() == c && back() == c;
 }
 
-h2_inline h2_string h2_string::strip_quote() const
+h2_inline h2_string h2_string::unquote(char c) const
 {
-   if (!isquoted()) return *this;
+   if (!enclosed(c)) return *this;
    return h2_string(c_str() + 1, size() - 2);
+}
+
+h2_inline h2_string& h2_string::replace_all(const char* from, const char* to)
+{
+   size_t start_pos = 0, from_length = strlen(from), to_length = strlen(to);
+   while ((start_pos = find(from, start_pos)) != h2_string::npos) {
+      replace(start_pos, from_length, to);
+      start_pos += to_length;  // handles case where 'to' is a substring of 'from'
+   }
+   return *this;
 }
 
 h2_inline h2_string& h2_string::tolower()

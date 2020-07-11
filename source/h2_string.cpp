@@ -1,24 +1,24 @@
 
-h2_inline bool h2_string::equals(h2_string str, bool caseless) const
+h2_inline bool h2_string::equals(const h2_string& str, bool caseless) const
 {
    if (!caseless) return *this == str;
    return tolower(c_str()) == tolower(str);
 }
 
-h2_inline bool h2_string::contains(h2_string substr, bool caseless) const
+h2_inline bool h2_string::contains(const h2_string& substr, bool caseless) const
 {
    if (!caseless) return find(substr) != h2_string::npos;
    return tolower(c_str()).find(tolower(substr)) != h2_string::npos;
 }
 
-h2_inline bool h2_string::startswith(h2_string prefix, bool caseless) const
+h2_inline bool h2_string::startswith(const h2_string& prefix, bool caseless) const
 {
    if (size() < prefix.size()) return false;
    if (!caseless) return find(prefix) == 0;
    return tolower(c_str()).find(tolower(prefix)) == 0;
 }
 
-h2_inline bool h2_string::endswith(h2_string suffix, bool caseless) const
+h2_inline bool h2_string::endswith(const h2_string& suffix, bool caseless) const
 {
    if (size() < suffix.size()) return false;
    if (!caseless) return rfind(suffix) == length() - suffix.length();
@@ -32,15 +32,25 @@ h2_inline bool h2_string::isspace() const
    return true;
 }
 
-h2_inline bool h2_string::isquoted() const
+h2_inline bool h2_string::enclosed(char c) const
 {
-   return front() == '"' && back() == '"';
+   return front() == c && back() == c;
 }
 
-h2_inline h2_string h2_string::strip_quote() const
+h2_inline h2_string h2_string::unquote(char c) const
 {
-   if (!isquoted()) return *this;
+   if (!enclosed(c)) return *this;
    return h2_string(c_str() + 1, size() - 2);
+}
+
+h2_inline h2_string& h2_string::replace_all(const char* from, const char* to)
+{
+   size_t start_pos = 0, from_length = strlen(from), to_length = strlen(to);
+   while ((start_pos = find(from, start_pos)) != h2_string::npos) {
+      replace(start_pos, from_length, to);
+      start_pos += to_length;  // handles case where 'to' is a substring of 'from'
+   }
+   return *this;
 }
 
 h2_inline h2_string& h2_string::tolower()

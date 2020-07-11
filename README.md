@@ -467,7 +467,7 @@ MOCK formula:
 ```
 ### 6. Extended JSON Compare 
 
-#### 6.1. `'` is same as `"` , it's helpful to write JSON in C/C++ source code 
+#### 6.1. javascript style JSON for convenience 
 ```Python
 "{
    'name' : 'Zhang3',
@@ -477,7 +477,16 @@ MOCK formula:
    }
 }"
 ```
-is same as standard JSON but without escape character
+```Python
+"{
+   name : Zhang3,
+   score : {
+      Math : 100,
+      English : 99
+   }
+}"
+```
+is same as standard JSON but without escape character or quotes
 ```C++
 "{
    \"name\" : \"Zhang3\",
@@ -491,13 +500,13 @@ is same as standard JSON but without escape character
 #### 6.2. Matcher *Je* is used to compare JSON
 ```C++
 OK(Je("{
-          'name': 'Zhang3', 
-          'score': { ... }
+          name: Zhang3, 
+          score: { ... }
       }"), student_tojson(student));
 
 MOCK(foobar, int(int a, char * b)).once(1, Je("{
-                                                   'name': 'Zhang3', 
-                                                   'score': { ... }
+                                                   name: Zhang3, 
+                                                   score: { ... }
                                               }");
 ```
 
@@ -506,8 +515,8 @@ MOCK(foobar, int(int a, char * b)).once(1, Je("{
 #### 6.3. math expression is support in JSON, it is evaluated to number when parsing 
 ```C++
 JE("{
-         'width': 100 + 10 + 1, 
-         'height': 111 * sqrt(4)
+         width: 100 + 10 + 1, 
+         height: 111 * sqrt(4)
     }", rectangle_tojson(rectangle));
 ```
 It expect rectangle width equal to 111, and height equal to 222
@@ -515,8 +524,8 @@ It expect rectangle width equal to 111, and height equal to 222
 #### 6.4. Regex is support in JSON compare
 ```C++
 JE("{
-         'name': /Zhang[0-9]+/, 
-         'score': { ... }
+         name: /Zhang[0-9]+/, 
+         score: { ... }
     }", student_tojson(student));
 ```
 

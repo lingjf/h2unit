@@ -65,7 +65,9 @@ namespace h2 {
 
 #include "json/h2_tinyexpr.cpp"  //
 #include "json/h2_node.cpp"      // ..
-#include "json/h2_parse.cpp"     // ..
+#include "json/h2_lexical.cpp"   // ..
+#include "json/h2_syntax.cpp"    // ..
+#include "json/h2_tree.cpp"      // ..
 #include "json/h2_match.cpp"     // ..
 #include "json/h2_dual.cpp"      // ..
 #include "json/h2_json.cpp"      // ..

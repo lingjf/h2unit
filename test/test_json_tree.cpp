@@ -1,69 +1,8 @@
 #include "../source/h2_unit.cpp"
 
-static int __node_tojson(h2::h2_json_node* node, char* b)
-{
-   int l = 0;
+extern char* node_tojson(h2::h2_json_node* node, char* b);
 
-   if (node->key_string.size()) {
-      l += sprintf(b + l, "\"%s\":", node->key_string.c_str());
-   }
-   if (node->is_null()) {
-      l += sprintf(b + l, "null");
-   }
-   if (node->is_bool()) {
-      l += sprintf(b + l, "%s", node->value_boolean ? "true" : "false");
-   }
-   if (node->is_number()) {
-      l += sprintf(b + l, "%.15g", node->value_double);
-   }
-   if (node->is_string()) {
-      l += sprintf(b + l, "\"%s\"", node->value_string.c_str());
-   }
-   if (node->is_pattern()) {
-      l += sprintf(b + l, "\"/%s/\"", node->value_string.c_str());
-   }
-   if (node->is_array()) {
-      l += sprintf(b + l, "[");
-      h2_list_for_each_entry (p, node->children, h2::h2_json_node, x) {
-         if (li)
-            l += sprintf(b + l, ",");
-         l += __node_tojson(p, b + l);
-      }
-      l += sprintf(b + l, "]");
-   }
-   if (node->is_object()) {
-      l += sprintf(b + l, "{");
-      h2_list_for_each_entry (p, node->children, h2::h2_json_node, x) {
-         if (li)
-            l += sprintf(b + l, ",");
-         l += __node_tojson(p, b + l);
-      }
-      l += sprintf(b + l, "}");
-   }
-
-   return l;
-}
-
-char* node_tojson(h2::h2_json_node* node, char* b)
-{
-   __node_tojson(node, b);
-   return b;
-}
-
-static const char* __type_tostr(const int type)
-{
-   switch (type) {
-   case h2::h2_json_node::t_absent: return "absent";
-   case h2::h2_json_node::t_null: return "null";
-   case h2::h2_json_node::t_boolean: return "boolean";
-   case h2::h2_json_node::t_number: return "number";
-   case h2::h2_json_node::t_string: return "string";
-   case h2::h2_json_node::t_pattern: return "pattern";
-   case h2::h2_json_node::t_array: return "array";
-   case h2::h2_json_node::t_object: return "object";
-   }
-   return "?";
-}
+const char* week_json = "[\"Sunday\", \"Monday\", \"Tuesday\", \"Wednesday\", \"Thursday\", \"Friday\", \"Saturday\"]";
 
 SUITE(json parse)
 {
@@ -72,127 +11,109 @@ SUITE(json parse)
    Case(number)
    {
       const char* n1 = "-123.456";
-      h2::h2_json_parse c1(n1);
-      OK(c1.root_node.is_number());
-      OK(-123.456, c1.root_node.value_double);
+      h2::h2_json_tree c1(n1);
+      OK(c1.is_number());
+      OK(-123.456, c1.value_double);
 
       const char* n2 = "0";
-      h2::h2_json_parse c2(n2);
-      OK(c2.root_node.is_number());
-      OK(0, c2.root_node.value_double);
+      h2::h2_json_tree c2(n2);
+      OK(c2.is_number());
+      OK(0, c2.value_double);
 
       const char* n3 = "-1";
-      h2::h2_json_parse c3(n3);
-      OK(c3.root_node.is_number());
-      OK(-1, c3.root_node.value_double);
+      h2::h2_json_tree c3(n3);
+      OK(c3.is_number());
+      OK(-1, c3.value_double);
 
       const char* n4 = "12345678";
-      h2::h2_json_parse c4(n4, 4);
-      OK(c4.root_node.is_number());
-      OK(1234, c4.root_node.value_double);
+      h2::h2_json_tree c4(n4, 4);
+      OK(c4.is_number());
+      OK(1234, c4.value_double);
 
       const char* n5 = "3+2*(4-sqrt(4))";
-      h2::h2_json_parse c5(n5);
-      OK(c5.root_node.is_number());
-      OK(7, c5.root_node.value_double);
+      h2::h2_json_tree c5(n5);
+      OK(c5.is_number());
+      OK(7, c5.value_double);
    }
 
    Case(number error)
    {
       const char* n1 = "";
-      h2::h2_json_parse c1(n1);
-      OK(h2::h2_json_node::t_absent, c1.root_node.type);
+      h2::h2_json_tree c1(n1);
+      OK(h2::h2_json_node::t_absent, c1.type);
 
       const char* n2 = "-";
-      h2::h2_json_parse c2(n2);
-      OK(h2::h2_json_node::t_absent, c2.root_node.type);
+      h2::h2_json_tree c2(n2);
+      OK(h2::h2_json_node::t_string, c2.type);
    }
 
    Case(string)
    {
       const char* n1 = "\"\"";
-      h2::h2_json_parse c1(n1);
-      OK(c1.root_node.is_string());
-      OK("", c1.root_node.value_string);
+      h2::h2_json_tree c1(n1);
+      OK(c1.is_string());
+      OK("", c1.value_string);
 
       const char* n2 = "\"12345678\"";
-      h2::h2_json_parse c2(n2);
-      OK(c2.root_node.is_string());
-      OK("12345678", c2.root_node.value_string);
+      h2::h2_json_tree c2(n2);
+      OK(c2.is_string());
+      OK("12345678", c2.value_string);
 
       const char* n3 = "'12345678'";
-      h2::h2_json_parse c3(n3);
-      OK(c2.root_node.is_string());
-      OK("12345678", c3.root_node.value_string);
+      h2::h2_json_tree c3(n3);
+      OK(c2.is_string());
+      OK("12345678", c3.value_string);
    }
 
    Case(string error)
    {
-      h2::h2_json_parse c1("\"12345678\"", 4);
-      OK(c1.root_node.type == h2::h2_json_node::t_absent);
+      h2::h2_json_tree c1("\"12345678\"", 4);
+      OK(h2::h2_json_node::t_absent, c1.type);
    }
 
    Case(pattern)
    {
-      h2::h2_json_parse c1("/123*567/");
-      OK(c1.root_node.is_pattern());
-      OK("123*567", c1.root_node.value_string);
+      h2::h2_json_tree c1("/123*567/");
+      OK(c1.is_pattern());
+      OK("123*567", c1.value_string);
    }
 
    Case(empty array)
    {
-      h2::h2_json_parse c1(" []");
-      OK(c1.root_node.is_array());
-      OK(0, c1.root_node.size());
+      h2::h2_json_tree c1(" []");
+      OK(c1.is_array());
+      OK(0, c1.size());
    }
 
    Case(normal array)
    {
-      const char* week = "[\"Sunday\", 'Monday', \"Tuesday\", \"Wednesday\", "
-                         "\"Thursday\", \"Friday\", \"Saturday\"]";
+      const char* week = "[\"Sunday\", \"Monday\", \"Tuesday\", \"Wednesday\", \"Thursday\", \"Friday\", \"Saturday\"]";
 
-      h2::h2_json_parse c1(week);
+      h2::h2_json_tree c1(week);
+      JE(week_json, node_tojson(&c1, t2));
+   }
 
-      OK(c1.root_node.is_array());
-      OK(0, c1.root_node.key_string.size());
-      OK(7, c1.root_node.size());
+   Case(extend array)
+   {
+      const char* week = "['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']";
 
-      h2::h2_json_node* d[7];
-      d[0] = c1.root_node.get(0);
-      OK("Sunday", d[0]->value_string);
+      h2::h2_json_tree c1(week);
+      JE(week_json, node_tojson(&c1, t2));
+   }
 
-      d[1] = c1.root_node.get(1);
-      OK("Monday", d[1]->value_string);
+   Case(javascript array)
+   {
+      const char* week = "[Sunday, Monday, Tuesday, Wednesday, Thursday, Friday, Saturday]";
 
-      d[2] = c1.root_node.get(2);
-      OK("Tuesday", d[2]->value_string);
-
-      d[3] = c1.root_node.get(3);
-      OK("Wednesday", d[3]->value_string);
-
-      d[4] = c1.root_node.get(4);
-      OK("Thursday", d[4]->value_string);
-
-      d[5] = c1.root_node.get(5);
-      OK("Friday", d[5]->value_string);
-
-      d[6] = c1.root_node.get(6);
-      OK("Saturday", d[6]->value_string);
-
-      JE(week, node_tojson(&c1.root_node, t2));
-
-      OK(NULL == c1.root_node.get("ling", false));
-
-      for (int i = 0; i < c1.root_node.size(); i++) {
-         OK(d[i]->value_string, c1.root_node.get(i)->value_string);
-      }
+      h2::h2_json_tree c1(week);
+      JE(week_json, node_tojson(&c1, t2));
    }
 
    Case(empty object)
    {
-      h2::h2_json_parse c1(" {  }");
-      OK(c1.root_node.is_object());
-      OK(0, c1.root_node.size());
+      h2::h2_json_tree c1(" {  }");
+      OK(c1.is_object());
+      OK(0, c1.size());
    }
 
    Case(normal object)
@@ -206,41 +127,32 @@ SUITE(json parse)
         \"onMouseUp\": \"sun1.opacity = (sun1.opacity / 100) * 90;\"    \
       }";
 
-      h2::h2_json_parse c(obj);
+      h2::h2_json_tree c(obj);
 
-      OK(c.root_node.is_object());
-      OK(6, c.root_node.size());
+      JE(obj, node_tojson(&c, t2));
+   }
 
-      h2::h2_json_node* c0 = c.root_node.get(0);
-      OK(c0->is_string());
-      OK("data", c0->key_string);
-      OK("Click Here", c0->value_string);
+   Case(javascript object)
+   {
+      const char* obj = "{                                     \
+        data: Click Here,                                      \
+        size: 36,                                              \
+        alignment: true,                                       \
+        bold: false,                                           \
+        token: null,                                           \
+        onMouseUp: sun1.opacity = (sun1.opacity / 100) * 90;   \
+      }";
 
-      h2::h2_json_node* c1 = c.root_node.get(1);
-      OK(c1->is_number());
-      OK("size", c1->key_string);
-      OK(36, c1->value_double);
-
-      h2::h2_json_node* c2 = c.root_node.get(2);
-      OK(c2->is_bool());
-      OK("alignment", c2->key_string);
-      OK(c2->value_boolean);
-
-      h2::h2_json_node* c3 = c.root_node.get(3);
-      OK(c3->is_bool());
-      OK("bold", c3->key_string);
-      OK(!c3->value_boolean);
-
-      h2::h2_json_node* c4 = c.root_node.get(4);
-      OK(c4->is_null());
-      OK("token", c4->key_string);
-
-      h2::h2_json_node* c5 = c.root_node.get(5);
-      OK(c5->is_string());
-      OK("onMouseUp", c5->key_string);
-      OK("sun1.opacity = (sun1.opacity / 100) * 90;", c5->value_string);
-
-      JE(obj, node_tojson(&c.root_node, t2));
+      h2::h2_json_tree c(obj);
+      JE("{                                                                 \
+            \"data\": \"Click Here\",                                       \
+            \"size\": 36,                                                   \
+            \"alignment\": true,                                            \
+            \"bold\": false,                                                \
+            \"token\": null,                                                \
+            \"onMouseUp\": \"sun1.opacity = (sun1.opacity / 100) * 90;\"    \
+         }",
+         node_tojson(&c, t2));
    }
 
    Case("http://www.json.org/example.html")
@@ -269,8 +181,8 @@ SUITE(json parse)
     }                                                                                                             \
 }";
 
-      h2::h2_json_parse c1(j1);
-      JE(j1, node_tojson(&c1.root_node, t2));
+      h2::h2_json_tree c1(j1);
+      JE(j1, node_tojson(&c1, t2));
 
       const char* j2 =
         "{\"menu\": {                                               \
@@ -285,8 +197,8 @@ SUITE(json parse)
   }                                                                 \
 }}";
 
-      h2::h2_json_parse c2(j2);
-      JE(j2, node_tojson(&c2.root_node, t2));
+      h2::h2_json_tree c2(j2);
+      JE(j2, node_tojson(&c2, t2));
 
       const char* j3 =
         "{\"widget\": {                                                     \
@@ -316,8 +228,8 @@ SUITE(json parse)
     }                                                                       \
 }}";
 
-      h2::h2_json_parse c3(j3);
-      JE(j3, node_tojson(&c3.root_node, t2));
+      h2::h2_json_tree c3(j3);
+      JE(j3, node_tojson(&c3, t2));
 
       const char* j4 =
         "{\"web-app\": {                                                                    \
@@ -409,8 +321,8 @@ SUITE(json parse)
     \"taglib-uri\": \"cofax.tld\",                                                          \
     \"taglib-location\": \"/WEB-INF/tlds/cofax.tld\"}}}";
 
-      h2::h2_json_parse c4(j4);
-      JE(j4, node_tojson(&c4.root_node, t2));
+      h2::h2_json_tree c4(j4);
+      JE(j4, node_tojson(&c4, t2));
 
       const char* j5 =
         "{\"menu\": {                                                       \
@@ -441,8 +353,8 @@ SUITE(json parse)
     ]                                                                       \
 }}";
 
-      h2::h2_json_parse c5(j5);
-      JE(j5, node_tojson(&c5.root_node, t2));
+      h2::h2_json_tree c5(j5);
+      JE(j5, node_tojson(&c5, t2));
    }
 
    Case(more 1)
@@ -470,8 +382,8 @@ SUITE(json parse)
 	 }                                              \
 	 ]";
 
-      h2::h2_json_parse c1(j1);
-      JE(j1, node_tojson(&c1.root_node, t2));
+      h2::h2_json_tree c1(j1);
+      JE(j1, node_tojson(&c1, t2));
    }
 
    Case(more 2)
@@ -483,8 +395,8 @@ SUITE(json parse)
 	]                             \
 ";
 
-      h2::h2_json_parse c2(j2);
-      JE(j2, node_tojson(&c2.root_node, t2));
+      h2::h2_json_tree c2(j2);
+      JE(j2, node_tojson(&c2, t2));
    }
 
    Case(more 3)
@@ -498,7 +410,7 @@ SUITE(json parse)
 }                                                   \
 }";
 
-      h2::h2_json_parse c3(j3);
-      OK("Jack (\"Bee\") Nimble", c3.root_node.get("name", false)->value_string);
+      h2::h2_json_tree c3(j3);
+      OK("Jack (\"Bee\") Nimble", c3.get("name", false)->value_string);
    }
 }

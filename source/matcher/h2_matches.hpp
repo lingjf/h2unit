@@ -61,7 +61,7 @@ struct h2_pointee_matches {
       return h2_matcher_cast<Pointee>(m).matches(*a, caseless, dont);
    }
    template <typename A>
-   h2_string expects(h2_type<A> a, bool caseless = false, bool dont = false) const
+   h2_string expects(h2_type<A>, bool caseless = false, bool dont = false) const
    {
       typedef typename std::remove_const<typename std::remove_reference<A>::type>::type Pointer;
       typedef typename PointeeOf<Pointer>::type Pointee;

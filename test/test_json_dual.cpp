@@ -33,10 +33,10 @@ SUITE(json dual)
    {
       const char* e = "{\"e\": 123}";
       const char* a = "{\"a\": 456}";
-      h2::h2_json_parse e_parse(e);
-      h2::h2_json_parse a_parse(a);
+      h2::h2_json_tree e_json(e);
+      h2::h2_json_tree a_json(a);
 
-      h2::h2_json_dual dual(&e_parse.root_node, &a_parse.root_node, false);
+      h2::h2_json_dual dual(&e_json, &a_json, false);
 
       OK("(0;object-object;-;-)[(1;atomic-atomic;\"e\"-\"a\";123-456)]", dual_tostr(&dual, t));
 
