@@ -28,7 +28,7 @@ SUITE(json)
 
    Case(illformed json)
    {
-      const char* json = "{'name': \"Hello World\", 'age': 18, week: [\"Sunday\", \"Monday\", \"Tuesday\", \"Wednesday\", \"Thursday\", \"Friday\", \"Saturday\"]";
-      OK(Je("{name: /hello.*world/, Age: 18, Week:[\"Sunday\", \"Monday\", \"Tuesday\", \"Wednesday\", \"Thursday\", \"Friday\", \"Saturday\"]}"), json);
+      const char* json = "{'name': \"Hello World\", 'age': 18, week: [\"Sunday\": \"Monday\", \"Tuesday\", \"Wednesday\", \"Thursday\", \"Friday\", \"Saturday\"]}";
+      OK(Je("{name: /hello.*world/, Age: 18, Week:[\"Sunday\", \"Monday\", \"Tuesday\", \"Wednesday\", \"Thursday\", \"Friday\", \"Saturday\"]"), json);
    }
 }

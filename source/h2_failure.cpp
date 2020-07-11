@@ -174,20 +174,22 @@ struct h2_fail_strcmp : h2_fail_unexpect {
    {
       h2_fail_unexpect::print(subling_index, child_index);
 
-      h2_line e_line, a_line;
-      for (size_t i = 0; i < e_value.size(); ++i) {
-         char ac = i < a_value.size() ? a_value[i] : ' ';
-         bool eq = caseless ? ::tolower(e_value[i]) == ::tolower(ac) : e_value[i] == ac;
-         fmt_char(e_value[i], eq, "green", e_line);
-      }
-      for (size_t i = 0; i < a_value.size(); ++i) {
-         char ec = i < e_value.size() ? e_value[i] : ' ';
-         bool eq = caseless ? ::tolower(a_value[i]) == ::tolower(ec) : a_value[i] == ec;
-         fmt_char(a_value[i], eq, "red", a_line);
-      }
+      if (12 < e_value.size() || 12 < a_value.size()) {  // omit short string unified compare layout
+         h2_line e_line, a_line;
+         for (size_t i = 0; i < e_value.size(); ++i) {
+            char ac = i < a_value.size() ? a_value[i] : ' ';
+            bool eq = caseless ? ::tolower(e_value[i]) == ::tolower(ac) : e_value[i] == ac;
+            fmt_char(e_value[i], eq, "green", e_line);
+         }
+         for (size_t i = 0; i < a_value.size(); ++i) {
+            char ec = i < e_value.size() ? e_value[i] : ' ';
+            bool eq = caseless ? ::tolower(a_value[i]) == ::tolower(ec) : a_value[i] == ec;
+            fmt_char(a_value[i], eq, "red", a_line);
+         }
 
-      h2_lines lines = h2_layout::unified(e_line, a_line, "expect", "actual");
-      h2_color::printf(lines);
+         h2_lines lines = h2_layout::unified(e_line, a_line, "expect", "actual");
+         h2_color::printf(lines);
+      }
    }
 };
 
@@ -199,15 +201,17 @@ struct h2_fail_strfind : h2_fail_unexpect {
    {
       h2_fail_unexpect::print(subling_index, child_index);
 
-      h2_line e_line, a_line;
-      for (size_t i = 0; i < e_value.size(); ++i)
-         fmt_char(e_value[i], true, "", e_line);
+      if (12 < e_value.size() || 12 < a_value.size()) {  // omit short string unified compare layout
+         h2_line e_line, a_line;
+         for (size_t i = 0; i < e_value.size(); ++i)
+            fmt_char(e_value[i], true, "", e_line);
 
-      for (size_t i = 0; i < a_value.size(); ++i)
-         fmt_char(a_value[i], true, "", a_line);
+         for (size_t i = 0; i < a_value.size(); ++i)
+            fmt_char(a_value[i], true, "", a_line);
 
-      h2_lines lines = h2_layout::seperate(e_line, a_line, "expect", "actual");
-      h2_color::printf(lines);
+         h2_lines lines = h2_layout::seperate(e_line, a_line, "expect", "actual");
+         h2_color::printf(lines);
+      }
    }
 };
 

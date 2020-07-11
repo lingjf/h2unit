@@ -12,7 +12,8 @@ SUITE(json syntax simple)
       h2::h2_vector<h2::h2_string> lexical;
       h2::h2_json_lexical::parse(lexical, json);
       h2::h2_json_node node;
-      h2::h2_json_syntax::parse(node, lexical);
+      h2::h2_json_syntax syntax(lexical);
+      syntax.parse(node);
       OK(h2::h2_json_node::t_absent, node.type);
    }
 
@@ -22,7 +23,8 @@ SUITE(json syntax simple)
       h2::h2_vector<h2::h2_string> lexical;
       h2::h2_json_lexical::parse(lexical, json);
       h2::h2_json_node node;
-      h2::h2_json_syntax::parse(node, lexical);
+      h2::h2_json_syntax syntax(lexical);
+      syntax.parse(node);
       OK(h2::h2_json_node::t_null, node.type);
 
       OK("null", node_tojson(&node, t1));
@@ -34,7 +36,8 @@ SUITE(json syntax simple)
       h2::h2_vector<h2::h2_string> lexical;
       h2::h2_json_lexical::parse(lexical, json);
       h2::h2_json_node node;
-      h2::h2_json_syntax::parse(node, lexical);
+      h2::h2_json_syntax syntax(lexical);
+      syntax.parse(node);
       OK(h2::h2_json_node::t_boolean, node.type);
 
       OK("true", node_tojson(&node, t1));
@@ -46,7 +49,8 @@ SUITE(json syntax simple)
       h2::h2_vector<h2::h2_string> lexical;
       h2::h2_json_lexical::parse(lexical, json);
       h2::h2_json_node node;
-      h2::h2_json_syntax::parse(node, lexical);
+      h2::h2_json_syntax syntax(lexical);
+      syntax.parse(node);
       OK(h2::h2_json_node::t_boolean, node.type);
 
       OK("false", node_tojson(&node, t1));
@@ -58,7 +62,8 @@ SUITE(json syntax simple)
       h2::h2_vector<h2::h2_string> lexical;
       h2::h2_json_lexical::parse(lexical, json);
       h2::h2_json_node node;
-      h2::h2_json_syntax::parse(node, lexical);
+      h2::h2_json_syntax syntax(lexical);
+      syntax.parse(node);
       OK(h2::h2_json_node::t_pattern, node.type);
 
       OK("\"/hello/\"", node_tojson(&node, t1));
@@ -70,7 +75,8 @@ SUITE(json syntax simple)
       h2::h2_vector<h2::h2_string> lexical;
       h2::h2_json_lexical::parse(lexical, json);
       h2::h2_json_node node;
-      h2::h2_json_syntax::parse(node, lexical);
+      h2::h2_json_syntax syntax(lexical);
+      syntax.parse(node);
       OK(h2::h2_json_node::t_string, node.type);
 
       OK("\"hello\"", node_tojson(&node, t1));
@@ -82,7 +88,8 @@ SUITE(json syntax simple)
       h2::h2_vector<h2::h2_string> lexical;
       h2::h2_json_lexical::parse(lexical, json);
       h2::h2_json_node node;
-      h2::h2_json_syntax::parse(node, lexical);
+      h2::h2_json_syntax syntax(lexical);
+      syntax.parse(node);
       OK(h2::h2_json_node::t_string, node.type);
 
       OK("\"hello\"", node_tojson(&node, t1));
@@ -94,7 +101,8 @@ SUITE(json syntax simple)
       h2::h2_vector<h2::h2_string> lexical;
       h2::h2_json_lexical::parse(lexical, json);
       h2::h2_json_node node;
-      h2::h2_json_syntax::parse(node, lexical);
+      h2::h2_json_syntax syntax(lexical);
+      syntax.parse(node);
       OK(h2::h2_json_node::t_string, node.type);
 
       OK("\"hello world\"", node_tojson(&node, t1));
@@ -106,7 +114,8 @@ SUITE(json syntax simple)
       h2::h2_vector<h2::h2_string> lexical;
       h2::h2_json_lexical::parse(lexical, json);
       h2::h2_json_node node;
-      h2::h2_json_syntax::parse(node, lexical);
+      h2::h2_json_syntax syntax(lexical);
+      syntax.parse(node);
       OK(h2::h2_json_node::t_number, node.type);
 
       OK("1234", node_tojson(&node, t1));
@@ -118,7 +127,8 @@ SUITE(json syntax simple)
       h2::h2_vector<h2::h2_string> lexical;
       h2::h2_json_lexical::parse(lexical, json);
       h2::h2_json_node node;
-      h2::h2_json_syntax::parse(node, lexical);
+      h2::h2_json_syntax syntax(lexical);
+      syntax.parse(node);
       OK(h2::h2_json_node::t_number, node.type);
 
       OK("3", node_tojson(&node, t1));
@@ -131,7 +141,8 @@ SUITE(json syntax simple)
       h2::h2_vector<h2::h2_string> lexical;
       h2::h2_json_lexical::parse(lexical, json);
       h2::h2_json_node node;
-      h2::h2_json_syntax::parse(node, lexical);
+      h2::h2_json_syntax syntax(lexical);
+      syntax.parse(node);
       OK(h2::h2_json_node::t_object, node.type);
 
       OK("{}", node_tojson(&node, t1));
@@ -143,7 +154,8 @@ SUITE(json syntax simple)
       h2::h2_vector<h2::h2_string> lexical;
       h2::h2_json_lexical::parse(lexical, json);
       h2::h2_json_node node;
-      h2::h2_json_syntax::parse(node, lexical);
+      h2::h2_json_syntax syntax(lexical);
+      syntax.parse(node);
       OK(h2::h2_json_node::t_array, node.type);
 
       OK("[]", node_tojson(&node, t1));

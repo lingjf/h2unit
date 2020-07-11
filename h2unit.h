@@ -1,4 +1,4 @@
-﻿/* v5.6  2020-07-11 23:08:51 */
+﻿/* v5.6  2020-07-12 00:39:38 */
 /* https://github.com/lingjf/h2unit */
 /* Apache Licence 2.0 */
 #ifndef __H2UNIT_H__
@@ -4549,12 +4549,16 @@ struct h2_json_lexical {
 };// h2_syntax.cpp
 
 struct h2_json_syntax {
-   static bool parse(h2_json_node& root_node, h2_vector<h2_string> /* not reference, force a copy */ lexical)
+   int i = 0;
+   const h2_vector<h2_string>& lexical;
+   h2_json_syntax(const h2_vector<h2_string>& _lexical) : lexical(_lexical) {}
+
+   bool parse(h2_json_node& root_node)
    {
-      return parse_value(root_node, lexical);
+      return parse_value(root_node);
    }
 
-   static h2_string& extract_string(h2_string& s)
+   h2_string& extract_string(h2_string& s)
    {
       if (s.enclosed('\"'))
          s = s.unquote('\"');
@@ -4571,129 +4575,125 @@ struct h2_json_syntax {
       return s;
    }
 
-   static bool parse_value(h2_json_node& node, h2_vector<h2_string>& lexical)
+   bool extract_number(h2_string& s, double& value)
    {
-      if (lexical.empty()) return true;
+      int err = 0;
+      value = tinyexpr::te_interp(s.c_str(), &err);
+      return 0 == err;
+   }
+
+   bool requires(const char* s)
+   {
+      if (lexical.size() <= i || !lexical[i].equals(s)) return false;
+      ++i;
+      return true;
+   }
+
+   bool parse_value(h2_json_node& node)
+   {
+      if (lexical.size() <= i) return true;
 
       /* t_null */
-      if (lexical.front().equals("null")) {
+      if (lexical[i].equals("null")) {
+         ++i;
          node.type = h2_json_node::t_null;
-         lexical.erase(lexical.begin());
          return true;
       }
       /* false */
-      if (lexical.front().equals("false")) {
+      if (lexical[i].equals("false")) {
+         ++i;
          node.type = h2_json_node::t_boolean;
          node.value_boolean = false;
-         lexical.erase(lexical.begin());
          return true;
       }
       /* true */
-      if (lexical.front().equals("true")) {
+      if (lexical[i].equals("true")) {
+         ++i;
          node.type = h2_json_node::t_boolean;
          node.value_boolean = true;
-         lexical.erase(lexical.begin());
          return true;
       }
       /* array */
-      if (lexical.front().equals("[")) return parse_array(node, lexical);
+      if (lexical[i].equals("[")) return parse_array(node);
       /* object */
-      if (lexical.front().equals("{")) return parse_object(node, lexical);
+      if (lexical[i].equals("{")) return parse_object(node);
       /* pattern */
-      if (lexical.front().startswith("/")) return parse_pattern(node, lexical);
+      if (lexical[i].startswith("/")) return parse_pattern(node);
 
-      if (lexical.front().equals(":")) return false;
-      if (lexical.front().equals(",")) return false;
+      if (lexical[i].equals(":")) return false;
+      if (lexical[i].equals(",")) return false;
 
       /* string or number */
-      return parse_literal(node, lexical);
+      return parse_literal(node);
    }
 
-   static bool parse_key(h2_json_node& node, h2_vector<h2_string>& lexical)
+   bool parse_key(h2_json_node& node)
    {
-      node.key_string = lexical.front();
-      lexical.erase(lexical.begin());
+      node.key_string = lexical[i++];
       extract_string(node.key_string);
       return true;
    }
 
-   static bool parse_pattern(h2_json_node& node, h2_vector<h2_string>& lexical)
+   bool parse_pattern(h2_json_node& node)
    {
-      node.value_string = lexical.front();
-      lexical.erase(lexical.begin());
+      node.value_string = lexical[i++];
       if (node.value_string.enclosed('/'))
          node.value_string = node.value_string.unquote('/');
       node.type = h2_json_node::t_pattern;
       return true;
    }
 
-   static bool parse_literal(h2_json_node& node, h2_vector<h2_string>& lexical)
+   bool parse_literal(h2_json_node& node)
    {
-      node.value_string = lexical.front();
-      lexical.erase(lexical.begin());
-      if (parse_number(node)) return true;
-      return parse_string(node);
-   }
-
-   static bool parse_number(h2_json_node& node)
-   {
-      int err = 0;
-      node.value_double = tinyexpr::te_interp(node.value_string.c_str(), &err);
-      if (0 != err) return false;
-      node.type = h2_json_node::t_number;
-      return true;
-   }
-
-   static bool parse_string(h2_json_node& node)
-   {
+      node.value_string = lexical[i++];
+      if (extract_number(node.value_string, node.value_double)) {
+         node.type = h2_json_node::t_number;
+         return true;
+      }
       extract_string(node.value_string);
       node.type = h2_json_node::t_string;
       return true;
    }
 
-   static bool parse_array(h2_json_node& node, h2_vector<h2_string>& lexical)
+   bool parse_array(h2_json_node& node)
    {
-      lexical.erase(lexical.begin());  // pop [
-
-      while (!lexical.front().equals("]")) {
+      ++i;  // pop [
+      while (i < lexical.size() && !lexical[i].equals("]")) {
          h2_json_node* new_node = new h2_json_node();
          node.children.push_back(new_node->x);
-         if (!parse_value(*new_node, lexical)) return false;
-         if (lexical.front().equals(","))
-            lexical.erase(lexical.begin());
+         if (!parse_value(*new_node)) return false;
+         if (i < lexical.size() && lexical[i].equals(","))
+            i++;
          else
             break;
       }
 
-      if (!lexical.front().equals("]")) return false;
-      lexical.erase(lexical.begin());  // pop ]
+      if (!requires("]")) return false;
       node.type = h2_json_node::t_array;
 
       return true;
    }
 
-   static bool parse_object(h2_json_node& node, h2_vector<h2_string>& lexical)
+   bool parse_object(h2_json_node& node)
    {
-      lexical.erase(lexical.begin());  // pop {
-
-      while (!lexical.front().equals("}")) {
+      ++i;  // pop {
+      while (i < lexical.size() && !lexical[i].equals("}")) {
          h2_json_node* new_node = new h2_json_node();
          node.children.push_back(new_node->x);
 
-         if (!parse_key(*new_node, lexical)) return false;
+         if (!parse_key(*new_node)) return false;
 
-         if (!lexical.front().equals(":")) return false;
-         lexical.erase(lexical.begin());
+         if (!requires(":")) return false;
 
-         if (!parse_value(*new_node, lexical)) return false;
+         if (!parse_value(*new_node)) return false;
 
-         if (lexical.front().equals(","))
-            lexical.erase(lexical.begin());
+         if (i < lexical.size() && lexical[i].equals(","))
+            ++i;
          else
             break;
       }
-      if (!lexical.front().equals("}")) return false;
-      lexical.erase(lexical.begin());  // pop ]
+
+      if (!requires("}")) return false;
 
       node.type = h2_json_node::t_object;
       return true;
@@ -4703,11 +4703,26 @@ struct h2_json_syntax {
 
 struct h2_json_tree : h2_json_node {
    h2_vector<h2_string> lexical;
-   bool parsed;
+   h2_json_syntax syntax{lexical};
+   bool successful;
    h2_json_tree(const char* json_string, int json_length = -1)
    {
       h2_json_lexical::parse(lexical, json_string, json_length);
-      parsed = h2_json_syntax::parse(*this, lexical);
+      successful = syntax.parse(*this);
+   }
+   h2_line illformed()
+   {
+      h2_line line;
+      for (size_t j = 0; j < lexical.size(); ++j) {
+         if (j == syntax.i)
+            line.printf("red", "%s", lexical[j].c_str());
+         else
+            line.push_back(lexical[j]);
+      }
+      if (!successful && lexical.size() <= syntax.i) {
+         line.printf("red", "...");
+      }
+      return line;
    }
 };
 // h2_match.cpp
@@ -4908,12 +4923,9 @@ h2_inline bool h2_json::match(const h2_string& expect, const h2_string& actual, 
 h2_inline bool h2_json::diff(const h2_string& expect, const h2_string& actual, h2_lines& e_lines, h2_lines& a_lines, bool caseless)
 {
    h2_json_tree e_tree(expect.c_str()), a_tree(actual.c_str());
-   if (!e_tree.parsed || !a_tree.parsed) { /* illformed json */
-      h2_line e_line, a_line;
-      for (auto&c: e_tree.lexical) e_line.push_back(c);
-      for (auto&c: a_tree.lexical) a_line.push_back(c);
-      e_lines.push_back(e_line);
-      a_lines.push_back(a_line);
+   if (!e_tree.successful || !a_tree.successful) { /* illformed json */
+      e_lines.push_back(e_tree.illformed());
+      a_lines.push_back(a_tree.illformed());
       return false;
    }
    h2_json_dual dual(&e_tree, &a_tree, caseless);
@@ -7085,20 +7097,22 @@ struct h2_fail_strcmp : h2_fail_unexpect {
    {
       h2_fail_unexpect::print(subling_index, child_index);
 
-      h2_line e_line, a_line;
-      for (size_t i = 0; i < e_value.size(); ++i) {
-         char ac = i < a_value.size() ? a_value[i] : ' ';
-         bool eq = caseless ? ::tolower(e_value[i]) == ::tolower(ac) : e_value[i] == ac;
-         fmt_char(e_value[i], eq, "green", e_line);
-      }
-      for (size_t i = 0; i < a_value.size(); ++i) {
-         char ec = i < e_value.size() ? e_value[i] : ' ';
-         bool eq = caseless ? ::tolower(a_value[i]) == ::tolower(ec) : a_value[i] == ec;
-         fmt_char(a_value[i], eq, "red", a_line);
-      }
+      if (12 < e_value.size() || 12 < a_value.size()) {  // omit short string unified compare layout
+         h2_line e_line, a_line;
+         for (size_t i = 0; i < e_value.size(); ++i) {
+            char ac = i < a_value.size() ? a_value[i] : ' ';
+            bool eq = caseless ? ::tolower(e_value[i]) == ::tolower(ac) : e_value[i] == ac;
+            fmt_char(e_value[i], eq, "green", e_line);
+         }
+         for (size_t i = 0; i < a_value.size(); ++i) {
+            char ec = i < e_value.size() ? e_value[i] : ' ';
+            bool eq = caseless ? ::tolower(a_value[i]) == ::tolower(ec) : a_value[i] == ec;
+            fmt_char(a_value[i], eq, "red", a_line);
+         }
 
-      h2_lines lines = h2_layout::unified(e_line, a_line, "expect", "actual");
-      h2_color::printf(lines);
+         h2_lines lines = h2_layout::unified(e_line, a_line, "expect", "actual");
+         h2_color::printf(lines);
+      }
    }
 };
 
@@ -7110,15 +7124,17 @@ struct h2_fail_strfind : h2_fail_unexpect {
    {
       h2_fail_unexpect::print(subling_index, child_index);
 
-      h2_line e_line, a_line;
-      for (size_t i = 0; i < e_value.size(); ++i)
-         fmt_char(e_value[i], true, "", e_line);
+      if (12 < e_value.size() || 12 < a_value.size()) {  // omit short string unified compare layout
+         h2_line e_line, a_line;
+         for (size_t i = 0; i < e_value.size(); ++i)
+            fmt_char(e_value[i], true, "", e_line);
 
-      for (size_t i = 0; i < a_value.size(); ++i)
-         fmt_char(a_value[i], true, "", a_line);
+         for (size_t i = 0; i < a_value.size(); ++i)
+            fmt_char(a_value[i], true, "", a_line);
 
-      h2_lines lines = h2_layout::seperate(e_line, a_line, "expect", "actual");
-      h2_color::printf(lines);
+         h2_lines lines = h2_layout::seperate(e_line, a_line, "expect", "actual");
+         h2_color::printf(lines);
+      }
    }
 };
 
