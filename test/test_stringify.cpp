@@ -14,10 +14,25 @@ struct Foo2 {
 struct Foo3 {
    int bar(int) { return 0; }
 };
-
-std::ostream& operator<<(std::ostream& os, Foo3& a)
+std::ostream& operator<<(std::ostream& os, Foo3 a)
 {
    return os << "Foo3";
+}
+
+struct Foo4 {
+   int bar(int) { return 0; }
+};
+std::ostream& operator<<(std::ostream& os, Foo4& a)
+{
+   return os << "Foo4";
+}
+
+struct Foo5 {
+   int bar(int) { return 0; }
+};
+std::ostream& operator<<(std::ostream& os, const Foo5& a)
+{
+   return os << "Foo5";
 }
 
 SUITE(stringable)
@@ -29,6 +44,8 @@ SUITE(stringable)
       OK(!h2::h2_is_ostreamable<Foo1>::value);
       OK(!h2::h2_is_ostreamable<Foo2>::value);
       OK(h2::h2_is_ostreamable<Foo3>::value);
+      OK(h2::h2_is_ostreamable<Foo4>::value);
+      OK(h2::h2_is_ostreamable<Foo5>::value);
    }
 
    Case(is_ostreamable ex)
@@ -42,11 +59,26 @@ SUITE(stringable)
 
 SUITE(pair)
 {
-   Case(is_pair)
+   Case(direct)
    {
       OK(!h2::h2_is_pair<int>::value);
       OK(h2::h2_is_pair<std::pair<int, int>>::value);
       OK(h2::h2_is_pair<std::pair<int, std::string>>::value);
+   }
+
+   Case(value_type)
+   {
+      std::map<std::string, int> a1 = {{std::string("th1"), 1},
+                                       {std::string("th2"), 2},
+                                       {std::string("th3"), 3}};
+      OK(h2::h2_is_pair<typename std::decay<decltype(*a1.begin())>::type>::value);
+      OK(h2::h2_is_pair<decltype(a1)::value_type>::value);
+      OK(h2::h2_is_pair<std::map<std::string, int>::value_type>::value);
+
+      const std::map<std::string, int>& a2 = a1;
+      OK(h2::h2_is_pair<typename std::decay<decltype(*a2.begin())>::type>::value);
+      // OK(h2::h2_is_pair<decltype(a2)::value_type>::value);
+      // OK(h2::h2_is_pair<std::map<std::string, int>::value_type>::value);
    }
 }
 
@@ -73,8 +105,8 @@ SUITE(container)
 
       OK(h2::h2_is_container<h2::h2_vector<int>>::value);
 
-      OK(!h2::h2_is_container<std::string>::value);
-      OK(!h2::h2_is_container<h2::h2_string>::value);
+      OK(h2::h2_is_container<std::string>::value);
+      OK(h2::h2_is_container<h2::h2_string>::value);
    }
 }
 
@@ -245,7 +277,7 @@ SUITE(stringify Associative containers)
                                        {std::string("th3"), 3},
                                        {std::string("th3"), -3}};
 
-      OK("{(th1, 1), (th2, 2), (th3, 3)}", h2::h2_stringify<std::map<std::string, int>>(a1));
+      OK("[(th1, 1), (th2, 2), (th3, 3)]", h2::h2_stringify<std::map<std::string, int>>(a1));
    }
 
    Case(multiset)
@@ -261,7 +293,7 @@ SUITE(stringify Associative containers)
                                             {std::string("th3"), 3},
                                             {std::string("th3"), -3}};
 
-      OK("{(th1, 1), (th2, 2), (th3, 3), (th3, -3)}", h2::h2_stringify<std::multimap<std::string, int>>(a1));
+      OK("[(th1, 1), (th2, 2), (th3, 3), (th3, -3)]", h2::h2_stringify<std::multimap<std::string, int>>(a1));
    }
 }
 
@@ -291,7 +323,7 @@ SUITE(stringify Unordered Associative containers)
       std::unordered_map<std::string, int> a1 = {{std::string("th1"), 1},
                                                  {std::string("th2"), 2}};
 
-      OK(AnyOf("{(th1, 1), (th2, 2)}", "{(th2, 2), (th1, 1)}"), h2::h2_stringify<std::unordered_map<std::string, int>>(a1));
+      OK(AnyOf("[(th1, 1), (th2, 2)]", "[(th2, 2), (th1, 1)]"), h2::h2_stringify<std::unordered_map<std::string, int>>(a1));
    }
 
    Case(unordered_multimap)
@@ -299,7 +331,7 @@ SUITE(stringify Unordered Associative containers)
       std::unordered_multimap<std::string, int> a1 = {{std::string("th1"), 1},
                                                       {std::string("th2"), 2}};
 
-      OK(AnyOf("{(th1, 1), (th2, 2)}", "{(th2, 2), (th1, 1)}"), h2::h2_stringify<std::unordered_multimap<std::string, int>>(a1));
+      OK(AnyOf("[(th1, 1), (th2, 2)]", "[(th2, 2), (th1, 1)]"), h2::h2_stringify<std::unordered_multimap<std::string, int>>(a1));
    }
 }
 

@@ -29,7 +29,7 @@ struct h2_equation<E, typename std::enable_if<std::is_convertible<E, h2_string>:
       if (h2_pattern::wildcard_match(e.c_str(), a.c_str(), caseless) == !dont) return nullptr;
       if (h2_pattern::regex_match(e.c_str(), a.c_str(), caseless) == !dont) return nullptr;
 
-      return h2_fail::new_strcmp(e, a, caseless, expects(h2_type<h2_string>(), caseless, dont));
+      return h2_fail::new_strcmp(e, a, caseless, expects(h2_type<>(), caseless, dont));
    }
 
    template <typename A>

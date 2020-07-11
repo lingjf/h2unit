@@ -1,4 +1,4 @@
-﻿/* v5.6  2020-07-11 13:11:42 */
+﻿/* v5.6  2020-07-11 15:18:21 */
 /* https://github.com/lingjf/h2unit */
 /* Apache Licence 2.0 */
 #ifndef __H2UNIT_HPP__
@@ -443,31 +443,27 @@ struct h2_is_pair<std::pair<K, V>> : std::true_type {
 };
 
 template <typename T>
-struct has_const_iterator_begin_end {
+struct h2_is_container {
    template <typename U>
-   static std::true_type test(typename U::const_iterator*,
-                              typename std::enable_if<
-                                std::is_same<decltype(static_cast<typename U::const_iterator (U::*)() const>(&U::begin)),
-                                             typename U::const_iterator (U::*)() const>::value>::type*,
-                              typename std::enable_if<
-                                std::is_same<decltype(static_cast<typename U::const_iterator (U::*)() const>(&U::end)),
-                                             typename U::const_iterator (U::*)() const>::value,
-                                void>::type*);
+   static std::true_type has_const_iterator(typename U::const_iterator*);
+   template <typename U>
+   static std::false_type has_const_iterator(...);
 
    template <typename U>
-   static std::false_type test(...);
+   static std::true_type has_begin(typename std::enable_if<
+                                   std::is_same<decltype(static_cast<typename U::const_iterator (U::*)() const>(&U::begin)),
+                                                typename U::const_iterator (U::*)() const>::value>::type*);
+   template <typename U>
+   static std::false_type has_begin(...);
 
-   static constexpr bool value = decltype(test<T>(nullptr, nullptr, nullptr))::value;
-};
+   template <typename U>
+   static auto has_end(U* u) -> typename std::enable_if<std::is_member_function_pointer<decltype(static_cast<typename U::const_iterator (U::*)() const>(&U::end))>::value, std::true_type>::type;
+   template <typename U>
+   static std::false_type has_end(...);
 
-template <typename T>
-struct h2_is_container : public std::integral_constant<bool, has_const_iterator_begin_end<T>::value> {
-};
-template <>
-struct h2_is_container<std::string> : std::false_type {
-};
-template <>
-struct h2_is_container<h2_string> : std::false_type {
+   static constexpr bool value = decltype(has_const_iterator<T>(nullptr))::value &&
+                                 decltype(has_begin<T>(nullptr))::value &&
+                                 decltype(has_end<T>(nullptr))::value;
 };
 
 template <typename T, typename = void>
@@ -481,9 +477,9 @@ struct h2_stringify_impl {
 #define H2_STRINGIFY_IMPL_TOSTRING(member)                                                                                    \
    template <typename T>                                                                                                      \
    struct h2_stringify_impl<T, typename std::enable_if<std::is_member_function_pointer<decltype(&T::member)>::value>::type> { \
-      static h2_string print(T& a)                                                                                            \
+      static h2_string print(const T& a)                                                                                      \
       {                                                                                                                       \
-         return a.member();                                                                                                   \
+         return const_cast<T&>(a).member(); /* member may not be mark const, remove cast const in T a */                      \
       }                                                                                                                       \
    }
 
@@ -500,11 +496,11 @@ struct h2_stringify_impl<T, typename std::enable_if<h2_is_ostreamable<T>::value>
    }
 
    template <typename U>
-   static h2_string ostream_print(U a)
+   static h2_string ostream_print(const U& a)
    {
       h2_ostringstream os;
       os << std::boolalpha;
-      os << a;
+      os << const_cast<U&>(a);
       return h2_string(os.str().c_str());
    }
 
@@ -519,20 +515,19 @@ template <typename K, typename V>
 struct h2_stringify_impl<std::pair<K, V>> {
    static h2_string print(const std::pair<K, V>& a)
    {
-      return "(" + h2_stringify_impl<typename std::decay<K>::type>::print(a.first) + ", " + h2_stringify_impl<typename std::decay<V>::type>::print(a.second) + ")";
+      return "(" + h2_stringify_impl<K>::print(a.first) + ", " + h2_stringify_impl<V>::print(a.second) + ")";
    }
 };
 
 template <typename T>
-struct h2_stringify_impl<T, typename std::enable_if<h2_is_container<T>::value>::type> {
+struct h2_stringify_impl<T, typename std::enable_if<h2_is_container<T>::value && !std::is_convertible<T, h2_string>::value>::type> {
    static h2_string print(const T& a)
    {
-      bool pair = h2_is_pair<typename std::decay<decltype(*a.begin())>::type>::value;
-      h2_string ret = pair ? "{" : "[";
+      h2_string ret = "[";
       for (auto it = a.begin(); it != a.end(); it++) {
-         ret += Comma[it != a.begin()] + h2_stringify_impl<typename std::decay<decltype(*it)>::type>::print(*it);
+         ret += Comma[it != a.begin()] + h2_stringify_impl<typename T::value_type>::print(*it);
       }
-      return ret + (pair ? "}" : "]");
+      return ret + "]";
    }
 };
 
@@ -549,7 +544,7 @@ struct h2_stringify_impl<std::tuple<Args...>> {
    }
 
    static h2_string tuple_print(const std::tuple<Args...>& a, typename std::conditional<sizeof...(Args) != 0, std::integral_constant<std::size_t, 0>, std::nullptr_t>::type)
-   {
+   {  // decay inside type, because std::get<0>(a) is lvalue reference
       return h2_stringify_impl<typename std::decay<decltype(std::get<0>(a))>::type>::print(std::get<0>(a)) + tuple_print(a, std::integral_constant<std::size_t, 1>());
    }
 
@@ -569,13 +564,13 @@ struct h2_stringify_impl<std::nullptr_t> {
 };
 
 template <typename T>
-inline h2_string h2_stringify(T a)
+inline h2_string h2_stringify(const T& a)
 {
    return h2_stringify_impl<T>::print(a);
 }
 
 template <typename T>
-inline h2_string h2_stringify(T a, int n)
+inline h2_string h2_stringify(const T& a, int n)
 {
    h2_string ret = "[";
    for (int i = 0; i < n; ++i) {
@@ -965,7 +960,7 @@ struct h2_memory {
 #define H2BLOCK(...) __H2BLOCK(#__VA_ARGS__, H2Q(t_block))
 // h2_matcher.hpp
 
-template <typename T>
+template <typename T = void>
 struct h2_type {
    using type = T;
 };
@@ -1047,7 +1042,7 @@ struct h2_equation<E, typename std::enable_if<std::is_convertible<E, h2_string>:
       if (h2_pattern::wildcard_match(e.c_str(), a.c_str(), caseless) == !dont) return nullptr;
       if (h2_pattern::regex_match(e.c_str(), a.c_str(), caseless) == !dont) return nullptr;
 
-      return h2_fail::new_strcmp(e, a, caseless, expects(h2_type<h2_string>(), caseless, dont));
+      return h2_fail::new_strcmp(e, a, caseless, expects(h2_type<>(), caseless, dont));
    }
 
    template <typename A>
@@ -1765,7 +1760,7 @@ struct h2_matches_memcmp {
          return nullptr;
       }
       if (dont) {
-         fail = h2_fail::new_unexpect("", h2_stringify(a), expects(h2_type<void*>(), caseless, dont));
+         fail = h2_fail::new_unexpect("", h2_stringify(a), expects(h2_type<>(), caseless, dont));
       }
       return fail;
    }

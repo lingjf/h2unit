@@ -52,7 +52,7 @@ struct h2_matches_memcmp {
          return nullptr;
       }
       if (dont) {
-         fail = h2_fail::new_unexpect("", h2_stringify(a), expects(h2_type<void*>(), caseless, dont));
+         fail = h2_fail::new_unexpect("", h2_stringify(a), expects(h2_type<>(), caseless, dont));
       }
       return fail;
    }
