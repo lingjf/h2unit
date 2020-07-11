@@ -6,20 +6,17 @@ SUITE(logic matches)
 
    Case(Not)
    {
-      h2::h2_not_matches<h2::h2_polymorphic_matcher<h2::h2_equation<int>>>
-        a1(h2::h2_polymorphic_matcher<h2::h2_equation<int>>{h2::h2_equation<int>(65)});
+      h2::h2_not_matches<h2::h2_polymorphic_matcher<h2::h2_equation<int>>> a1(h2::h2_polymorphic_matcher<h2::h2_equation<int>>{h2::h2_equation<int>(65)});
       OK(nullptr != a1.matches(65));
       OK(nullptr == a1.matches(66));
-      OK("!65", a1.expects(65));
+      OK("!65", a1.expects(h2::h2_type<int>()));
 
-      h2::h2_not_matches<h2::h2_polymorphic_matcher<h2::h2_matches_null>> a2(
-        h2::h2_polymorphic_matcher<h2::h2_matches_null>{h2::h2_matches_null(false)});
+      h2::h2_not_matches<h2::h2_polymorphic_matcher<h2::h2_matches_null>> a2(h2::h2_polymorphic_matcher<h2::h2_matches_null>{h2::h2_matches_null(false)});
       OK(nullptr != a2.matches(nullptr));
       OK(nullptr == a2.matches(&int65));
-      OK("NotNull", a2.expects(nullptr));
+      OK("NotNull", a2.expects(h2::h2_type<std::nullptr_t>()));
 
-      h2::h2_not_matches<h2::h2_polymorphic_matcher<h2::h2_matches_substr>> a3(
-        h2::h2_polymorphic_matcher<h2::h2_matches_substr>{h2::h2_matches_substr("A")});
+      h2::h2_not_matches<h2::h2_polymorphic_matcher<h2::h2_matches_substr>> a3(h2::h2_polymorphic_matcher<h2::h2_matches_substr>{h2::h2_matches_substr("A")});
       OK(nullptr != a3.matches("ABC"));
       OK(nullptr == a3.matches("BBC"));
    }

@@ -16,7 +16,7 @@
       return fail;                                                                                        \
    }                                                                                                      \
    template <typename A>                                                                                  \
-   h2::h2_string expects(const A& a, bool caseless = false, bool dont = false) const { return ""; }
+   h2::h2_string expects(h2::h2_type<A>, bool caseless = false, bool dont = false) const { return ""; }
 
 #define H2MATCHER0(name, message)                                                     \
    struct h2_##name##_matches {                                                       \

@@ -1,37 +1,18 @@
 
-#define H2_HAS_MEMBER(member)                                    \
-   template <typename T>                                         \
-   struct h2_has_##member {                                      \
-      template <typename U>                                      \
-      static std::true_type test(decltype(&U::member));          \
-      template <typename U>                                      \
-      static std::false_type test(...);                          \
-      static constexpr bool value = decltype(test<T>(0))::value; \
-   }
-
-H2_HAS_MEMBER(tostring);
-H2_HAS_MEMBER(toString);
-H2_HAS_MEMBER(Tostring);
-H2_HAS_MEMBER(ToString);
-
 template <typename T>
 struct h2_is_ostreamable {
    template <typename U>
-   static auto test(int) -> decltype(std::declval<std::ostream&>() << std::declval<U&>(), std::true_type());
+   static auto test(U* u) -> decltype(std::declval<std::ostream&>() << *u, std::true_type());
    template <typename U>
    static auto test(...) -> std::false_type;
-   static constexpr bool value = decltype(test<T>(0))::value;
+   static constexpr bool value = decltype(test<T>(nullptr))::value;
 };
 
 template <typename T>
-struct h2_is_pair {
-   template <typename U>
-   struct test : std::false_type {
-   };
-   template <typename K, typename V>
-   struct test<std::pair<K, V>> : std::true_type {
-   };
-   static constexpr bool value = test<T>::value;
+struct h2_is_pair : std::false_type {
+};
+template <typename K, typename V>
+struct h2_is_pair<std::pair<K, V>> : std::true_type {
 };
 
 template <typename T>
@@ -55,11 +36,9 @@ struct has_const_iterator_begin_end {
 template <typename T>
 struct h2_is_container : public std::integral_constant<bool, has_const_iterator_begin_end<T>::value> {
 };
-
 template <>
 struct h2_is_container<std::string> : std::false_type {
 };
-
 template <>
 struct h2_is_container<h2_string> : std::false_type {
 };
@@ -68,17 +47,17 @@ template <typename T, typename = void>
 struct h2_stringify_impl {
    static h2_string print(T a)
    {
-      return "";
+      return "?";
    }
 };
 
-#define H2_STRINGIFY_IMPL_TOSTRING(name)                                                 \
-   template <typename T>                                                                 \
-   struct h2_stringify_impl<T, typename std::enable_if<h2_has_##name<T>::value>::type> { \
-      static h2_string print(T a)                                                        \
-      {                                                                                  \
-         return a.name();                                                                \
-      }                                                                                  \
+#define H2_STRINGIFY_IMPL_TOSTRING(member)                                                                                    \
+   template <typename T>                                                                                                      \
+   struct h2_stringify_impl<T, typename std::enable_if<std::is_member_function_pointer<decltype(&T::member)>::value>::type> { \
+      static h2_string print(T& a)                                                                                            \
+      {                                                                                                                       \
+         return a.member();                                                                                                   \
+      }                                                                                                                       \
    }
 
 H2_STRINGIFY_IMPL_TOSTRING(tostring);
@@ -88,13 +67,13 @@ H2_STRINGIFY_IMPL_TOSTRING(ToString);
 
 template <typename T>
 struct h2_stringify_impl<T, typename std::enable_if<h2_is_ostreamable<T>::value>::type> {
-   static h2_string print(T a)
+   static h2_string print(const T& a)
    {
-      return stream_print(a);
+      return ostream_print(a);
    }
 
    template <typename U>
-   static h2_string stream_print(U a)
+   static h2_string ostream_print(U a)
    {
       h2_ostringstream os;
       os << std::boolalpha;
@@ -103,9 +82,9 @@ struct h2_stringify_impl<T, typename std::enable_if<h2_is_ostreamable<T>::value>
    }
 
    // https://en.cppreference.com/w/cpp/string/byte/isprint
-   static h2_string stream_print(unsigned char a)
+   static h2_string ostream_print(unsigned char a)
    {
-      return stream_print<unsigned int>(static_cast<unsigned int>(a));
+      return ostream_print<unsigned int>(static_cast<unsigned int>(a));
    }
 };
 
@@ -113,7 +92,7 @@ template <typename K, typename V>
 struct h2_stringify_impl<std::pair<K, V>> {
    static h2_string print(const std::pair<K, V>& a)
    {
-      return h2_stringify_impl<typename std::decay<K>::type>::print(a.first) + ": " + h2_stringify_impl<typename std::decay<V>::type>::print(a.second);
+      return "(" + h2_stringify_impl<typename std::decay<K>::type>::print(a.first) + ", " + h2_stringify_impl<typename std::decay<V>::type>::print(a.second) + ")";
    }
 };
 
@@ -124,8 +103,7 @@ struct h2_stringify_impl<T, typename std::enable_if<h2_is_container<T>::value>::
       bool pair = h2_is_pair<typename std::decay<decltype(*a.begin())>::type>::value;
       h2_string ret = pair ? "{" : "[";
       for (auto it = a.begin(); it != a.end(); it++) {
-         if (it != a.begin()) ret += ", ";
-         ret += h2_stringify_impl<typename std::decay<decltype(*it)>::type>::print(*it);
+         ret += Comma[it != a.begin()] + h2_stringify_impl<typename std::decay<decltype(*it)>::type>::print(*it);
       }
       return ret + (pair ? "}" : "]");
    }
@@ -174,8 +152,7 @@ inline h2_string h2_stringify(T a, int n)
 {
    h2_string ret = "[";
    for (int i = 0; i < n; ++i) {
-      if (i) ret += ", ";
-      ret += h2_stringify(a[i]);
+      ret += Comma[!!i] + h2_stringify(a[i]);
    }
    return ret + "]";
 }

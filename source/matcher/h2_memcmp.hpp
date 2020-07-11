@@ -6,7 +6,11 @@ struct h2_matches_bytecmp {
    const int nbytes;
    explicit h2_matches_bytecmp(const int _width, const void* _e, const bool _isstring, const int _nbytes) : width(_width), e(_e), isstring(_isstring), nbytes(_nbytes) {}
    h2_fail* matches(const void* a, bool caseless = false, bool dont = false) const;
-   h2_string expects(const void* a, bool caseless = false, bool dont = false) const;
+   template <typename A>
+   h2_string expects(h2_type<A>, bool caseless = false, bool dont = false) const
+   {
+      return CD("Me()", caseless, dont);
+   }
 };
 
 struct h2_matches_bitcmp {
@@ -15,7 +19,11 @@ struct h2_matches_bitcmp {
    const int nbits;
    explicit h2_matches_bitcmp(const void* _e, const bool _isstring, const int _nbits) : e(_e), isstring(_isstring), nbits(_nbits) {}
    h2_fail* matches(const void* a, bool caseless = false, bool dont = false) const;
-   h2_string expects(const void* a, bool caseless = false, bool dont = false) const;
+   template <typename A>
+   h2_string expects(h2_type<A>, bool caseless = false, bool dont = false) const
+   {
+      return CD("Me()", caseless, dont);
+   }
 };
 
 template <typename E>
@@ -44,12 +52,13 @@ struct h2_matches_memcmp {
          return nullptr;
       }
       if (dont) {
-         fail = h2_fail::new_unexpect("", h2_stringify(a), expects(a, caseless, dont));
+         fail = h2_fail::new_unexpect("", h2_stringify(a), expects(h2_type<void*>(), caseless, dont));
       }
       return fail;
    }
 
-   h2_string expects(const void* a, bool caseless = false, bool dont = false) const
+   template <typename A>
+   h2_string expects(h2_type<A>, bool caseless = false, bool dont = false) const
    {
       return CD("Me()", caseless, dont);
    }

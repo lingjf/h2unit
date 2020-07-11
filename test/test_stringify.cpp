@@ -22,13 +22,6 @@ std::ostream& operator<<(std::ostream& os, Foo3& a)
 
 SUITE(stringable)
 {
-   Case(toString)
-   {
-      OK(!h2::h2_has_toString<int>::value);
-      OK(!h2::h2_has_toString<Foo1>::value);
-      OK(h2::h2_has_toString<Foo2>::value);
-   }
-
    Case(is_ostreamable)
    {
       OK(h2::h2_is_ostreamable<int>::value);
@@ -137,10 +130,13 @@ SUITE(stringify simple)
       OK("nullptr", h2::h2_stringify<std::nullptr_t>(nullptr));
    }
 
+   // https://en.cppreference.com/w/cpp/string/byte/isprint
    Case(uint8_t)
    {
-      uint8_t a = 7;
-      OK("7", h2::h2_stringify<uint8_t>(a));
+      unsigned char a1 = 7;
+      OK("7", h2::h2_stringify<unsigned char>(a1));
+      uint8_t a2 = 7;
+      OK("7", h2::h2_stringify<uint8_t>(a2));
    }
 }
 
@@ -164,10 +160,10 @@ SUITE(stringify complex)
    Case(pair)
    {
       std::pair<int, std::string> a1 = std::make_pair(9, std::string("nine"));
-      OK("9: nine", h2::h2_stringify<std::pair<int, std::string>>(a1));
+      OK("(9, nine)", h2::h2_stringify<std::pair<int, std::string>>(a1));
 
       std::pair<std::string, int> a2 = std::make_pair(std::string("nine"), 9);
-      OK("nine: 9", h2::h2_stringify<std::pair<std::string, int>>(a2));
+      OK("(nine, 9)", h2::h2_stringify<std::pair<std::string, int>>(a2));
    }
 
    Case(tuple)
@@ -180,7 +176,7 @@ SUITE(stringify complex)
       OK("()", h2::h2_stringify<std::tuple<>>(a0));
       OK("(42)", h2::h2_stringify<std::tuple<int>>(a1));
       OK("(nine, 9)", h2::h2_stringify<std::tuple<const char*, int>>(a2));
-      OK("(nine, 9, pai: 3.14)", h2::h2_stringify<std::tuple<const char*, int, std::pair<std::string, double>>>(a3));
+      OK("(nine, 9, (pai, 3.14))", h2::h2_stringify<std::tuple<const char*, int, std::pair<std::string, double>>>(a3));
    }
 }
 
@@ -249,7 +245,7 @@ SUITE(stringify Associative containers)
                                        {std::string("th3"), 3},
                                        {std::string("th3"), -3}};
 
-      OK("{th1: 1, th2: 2, th3: 3}", h2::h2_stringify<std::map<std::string, int>>(a1));
+      OK("{(th1, 1), (th2, 2), (th3, 3)}", h2::h2_stringify<std::map<std::string, int>>(a1));
    }
 
    Case(multiset)
@@ -265,7 +261,7 @@ SUITE(stringify Associative containers)
                                             {std::string("th3"), 3},
                                             {std::string("th3"), -3}};
 
-      OK("{th1: 1, th2: 2, th3: 3, th3: -3}", h2::h2_stringify<std::multimap<std::string, int>>(a1));
+      OK("{(th1, 1), (th2, 2), (th3, 3), (th3, -3)}", h2::h2_stringify<std::multimap<std::string, int>>(a1));
    }
 }
 
@@ -287,7 +283,7 @@ SUITE(stringify Unordered Associative containers)
    Case(unordered_multiset)
    {
       std::unordered_multiset<bool> a1 = {false, true, true};
-      OK("[false, true, true]", h2::h2_stringify<std::unordered_multiset<bool>>(a1));
+      OK(AnyOf("[false, true, true]", "[true, true, false]"), h2::h2_stringify<std::unordered_multiset<bool>>(a1));
    }
 
    Case(unordered_map)
@@ -295,7 +291,7 @@ SUITE(stringify Unordered Associative containers)
       std::unordered_map<std::string, int> a1 = {{std::string("th1"), 1},
                                                  {std::string("th2"), 2}};
 
-      OK(AnyOf("{th1: 1, th2: 2}", "{th2: 2, th1: 1}"), h2::h2_stringify<std::unordered_map<std::string, int>>(a1));
+      OK(AnyOf("{(th1, 1), (th2, 2)}", "{(th2, 2), (th1, 1)}"), h2::h2_stringify<std::unordered_map<std::string, int>>(a1));
    }
 
    Case(unordered_multimap)
@@ -303,7 +299,7 @@ SUITE(stringify Unordered Associative containers)
       std::unordered_multimap<std::string, int> a1 = {{std::string("th1"), 1},
                                                       {std::string("th2"), 2}};
 
-      OK(AnyOf("{th1: 1, th2: 2}", "{th2: 2, th1: 1}"), h2::h2_stringify<std::unordered_multimap<std::string, int>>(a1));
+      OK(AnyOf("{(th1, 1), (th2, 2)}", "{(th2, 2), (th1, 1)}"), h2::h2_stringify<std::unordered_multimap<std::string, int>>(a1));
    }
 }
 

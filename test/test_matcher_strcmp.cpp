@@ -49,7 +49,7 @@ SUITE(strcmp matches)
       h2::h2_caseless_matches a1(h2::h2_matcher<h2::h2_string>("A"));
       OK(nullptr == a1.matches("A"));
       OK(nullptr == a1.matches("a"));
-      OK("~\"A\"", a1.expects("A"));
+      OK("~\"A\"", a1.expects(h2::h2_type<h2::h2_string>()));
    }
 }
 

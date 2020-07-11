@@ -45,7 +45,9 @@ struct h2_packet_matches {
       h2_fail::append_subling(fails, h2_matcher_cast<const int>(size).matches(a->data.length(), caseless, dont));
       return fails;
    }
-   h2_string expects(h2_packet* a, bool caseless = false, bool dont = false) const { return ""; }
+
+   template <typename A>
+   h2_string expects(h2_type<A>, bool caseless = false, bool dont = false) const { return ""; }
 };
 
 template <typename M1, typename M2, typename M3, typename M4>

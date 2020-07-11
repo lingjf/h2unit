@@ -1,5 +1,4 @@
 
-
 template <typename Matcher>
 struct h2_not_matches {
    const Matcher m;
@@ -11,9 +10,9 @@ struct h2_not_matches {
       return h2_matcher_cast<A>(m).matches(a, caseless, !dont);
    }
    template <typename A>
-   h2_string expects(const A& a, bool caseless = false, bool dont = false) const
+   h2_string expects(h2_type<A>, bool caseless = false, bool dont = false) const
    {
-      return h2_matcher_cast<A>(m).expects(a, caseless, !dont);
+      return h2_matcher_cast<typename std::decay<A>::type>(m).expects(caseless, !dont);
    }
 };
 
@@ -34,16 +33,16 @@ struct h2_and_matches {
          return nullptr;
       }
       if (dont) {
-         fail = h2_fail::new_unexpect("", h2_quote_stringfiy(a), expects(a, caseless, dont));
+         fail = h2_fail::new_unexpect("", h2_quote_stringfiy(a), expects(h2_type<A>(), caseless, dont));
       }
       return fail;
    }
    template <typename A>
-   h2_string expects(const A& a, bool caseless = false, bool dont = false) const
+   h2_string expects(h2_type<A>, bool caseless = false, bool dont = false) const
    {
-      h2_string s1 = h2_matcher_cast<A>(m1).expects(a, caseless, false);
-      h2_string s2 = h2_matcher_cast<A>(m2).expects(a, caseless, false);
-      return CD(s1 + "&&" + s1, caseless, dont);
+      h2_string s1 = h2_matcher_cast<typename std::decay<A>::type>(m1).expects(caseless, false);
+      h2_string s2 = h2_matcher_cast<typename std::decay<A>::type>(m2).expects(caseless, false);
+      return CD(s1 + " && " + s2, caseless, dont);
    }
 };
 
@@ -64,26 +63,16 @@ struct h2_or_matches {
          if (f2) delete f2;
          return nullptr;
       }
-      return h2_fail::new_unexpect("", h2_quote_stringfiy(a), expects(a, caseless, dont));
+      return h2_fail::new_unexpect("", h2_quote_stringfiy(a), expects(h2_type<A>(), caseless, dont));
    }
    template <typename A>
-   h2_string expects(const A& a, bool caseless = false, bool dont = false) const
+   h2_string expects(h2_type<A>, bool caseless = false, bool dont = false) const
    {
-      h2_string s1 = h2_matcher_cast<A>(m1).expects(a, caseless, false);
-      h2_string s2 = h2_matcher_cast<A>(m2).expects(a, caseless, false);
-      return CD(s1 + "||" + s1, caseless, dont);
+      h2_string s1 = h2_matcher_cast<typename std::decay<A>::type>(m1).expects(caseless, false);
+      h2_string s2 = h2_matcher_cast<typename std::decay<A>::type>(m2).expects(caseless, false);
+      return CD(s1 + " || " + s2, caseless, dont);
    }
 };
-
-#define H2_MATCHER_T2V(t_matchers)                                                                                                                          \
-   template <typename T, size_t I>                                                                                                                          \
-   h2_vector<h2_matcher<T>> t2v(std::integral_constant<size_t, I> _1 = std::integral_constant<size_t, 0>(), h2_vector<h2_matcher<T>> v_matchers = {}) const \
-   {                                                                                                                                                        \
-      v_matchers.push_back(h2_matcher_cast<T>(std::get<I>(t_matchers)));                                                                                    \
-      return t2v<T>(std::integral_constant<size_t, I + 1>(), v_matchers);                                                                                   \
-   }                                                                                                                                                        \
-   template <typename T>                                                                                                                                    \
-   h2_vector<h2_matcher<T>> t2v(std::integral_constant<size_t, sizeof...(Matchers)>, h2_vector<h2_matcher<T>> v_matchers = {}) const { return v_matchers; }
 
 template <typename... Matchers>
 struct h2_allof_matches {
@@ -108,16 +97,25 @@ struct h2_allof_matches {
       }
       h2_fail* fail = nullptr;
       if (dont) {
-         fail = h2_fail::new_unexpect("", h2_quote_stringfiy(a), expects(a, caseless, dont), "Should not match all");
+         fail = h2_fail::new_unexpect("", h2_quote_stringfiy(a), expects(h2_type<A>(), caseless, dont), "Should not match all");
       } else {
-         fail = h2_fail::new_unexpect("", h2_quote_stringfiy(a), expects(a, caseless, dont));
+         fail = h2_fail::new_unexpect("", h2_quote_stringfiy(a), expects(h2_type<A>(), caseless, dont));
          h2_fail::append_child(fail, fails);
       }
       return fail;
    }
 
    template <typename A>
-   h2_string expects(A a, bool caseless = false, bool dont = false) const { return ""; }
+   h2_string expects(h2_type<A>, bool caseless = false, bool dont = false) const
+   {
+      h2_string ret;
+      using value_type = typename std::decay<A>::type;
+      auto v_matchers = t2v<value_type, 0>();
+      for (size_t i = 0; i < v_matchers.size(); ++i) {
+         ret += Comma[!!i] + v_matchers[i].expects(caseless, false);
+      }
+      return CD("AllOf(" + ret + ")", caseless, dont);
+   }
 
    H2_MATCHER_T2V(t_matchers)
 };
@@ -150,16 +148,25 @@ struct h2_anyof_matches {
       }
       h2_fail* fail = nullptr;
       if (dont) {
-         fail = h2_fail::new_unexpect("", h2_quote_stringfiy(a), expects(a, caseless, dont), "Should not match any one");
+         fail = h2_fail::new_unexpect("", h2_quote_stringfiy(a), expects(h2_type<A>(), caseless, dont), "Should not match any one");
       } else {
-         fail = h2_fail::new_unexpect("", h2_quote_stringfiy(a), expects(a, caseless, dont), "Not match any one");
+         fail = h2_fail::new_unexpect("", h2_quote_stringfiy(a), expects(h2_type<A>(), caseless, dont), "Not match any one");
          h2_fail::append_child(fail, fails);
       }
       return fail;
    }
 
    template <typename A>
-   h2_string expects(A a, bool caseless = false, bool dont = false) const { return ""; }
+   h2_string expects(h2_type<A>, bool caseless = false, bool dont = false) const
+   {
+      h2_string ret;
+      using value_type = typename std::decay<A>::type;
+      auto v_matchers = t2v<value_type, 0>();
+      for (size_t i = 0; i < v_matchers.size(); ++i) {
+         ret += Comma[!!i] + v_matchers[i].expects(caseless, false);
+      }
+      return CD("AnyOf(" + ret + ")", caseless, dont);
+   }
 
    H2_MATCHER_T2V(t_matchers)
 };
@@ -180,11 +187,20 @@ struct h2_noneof_matches {
          if (fail) delete fail;
       }
       if ((c == 0) == !dont) return nullptr;
-      return h2_fail::new_unexpect("", h2_quote_stringfiy(a), expects(a, caseless, dont));
+      return h2_fail::new_unexpect("", h2_quote_stringfiy(a), expects(h2_type<A>(), caseless, dont));
    }
 
    template <typename A>
-   h2_string expects(A a, bool caseless = false, bool dont = false) const { return ""; }
+   h2_string expects(h2_type<A>, bool caseless = false, bool dont = false) const
+   {
+      h2_string ret;
+      using value_type = typename std::decay<A>::type;
+      auto v_matchers = t2v<value_type, 0>();
+      for (size_t i = 0; i < v_matchers.size(); ++i) {
+         ret += Comma[!!i] + v_matchers[i].expects(caseless, false);
+      }
+      return CD("NoneOf(" + ret + ")", caseless, dont);
+   }
 
    H2_MATCHER_T2V(t_matchers)
 };

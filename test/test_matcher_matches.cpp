@@ -23,14 +23,14 @@ SUITE(matches matches)
       OK(nullptr == ee1.matches(NULL));
       OK(nullptr == ee1.matches(nullptr));
       OK(nullptr != ee1.matches(&int65));
-      OK("IsNull", ee1.expects(nullptr));
-      OK("NotNull", ee1.expects(nullptr, false, true));
+      OK("IsNull", ee1.expects(h2::h2_type<std::nullptr_t>()));
+      OK("NotNull", ee1.expects(h2::h2_type<std::nullptr_t>(), false, true));
 
       h2::h2_matches_null ee2(true);
       OK(nullptr == ee2.matches(&int65));
       OK(nullptr != ee2.matches(nullptr));
-      OK("NotNull", ee2.expects(nullptr));
-      OK("IsNull", ee2.expects(nullptr, false, true));
+      OK("NotNull", ee2.expects(h2::h2_type<std::nullptr_t>()));
+      OK("IsNull", ee2.expects(h2::h2_type<std::nullptr_t>(), false, true));
    }
 
    Case(Boolean)
@@ -38,23 +38,22 @@ SUITE(matches matches)
       h2::h2_matches_boolean<true> istrue;
       OK(nullptr == istrue.matches(true));
       OK(nullptr != istrue.matches(false));
-      OK("true", istrue.expects(false));
-      OK("false", istrue.expects(false, false, true));
+      OK("true", istrue.expects(h2::h2_type<bool>()));
+      OK("false", istrue.expects(h2::h2_type<bool>(), false, true));
 
       h2::h2_matches_boolean<false> isfalse;
       OK(nullptr == isfalse.matches(false));
       OK(nullptr != isfalse.matches(true));
-      OK("false", isfalse.expects(false));
-      OK("true", isfalse.expects(false, false, true));
+      OK("false", isfalse.expects(h2::h2_type<bool>()));
+      OK("true", isfalse.expects(h2::h2_type<bool>(), false, true));
    }
 
    Case(Pointee)
    {
-      h2::h2_pointee_matches<h2::h2_polymorphic_matcher<h2::h2_equation<int>>>
-        a1(h2::h2_polymorphic_matcher<h2::h2_equation<int>>{h2::h2_equation<int>(65)});
+      h2::h2_pointee_matches<h2::h2_polymorphic_matcher<h2::h2_equation<int>>> a1(h2::h2_polymorphic_matcher<h2::h2_equation<int>>{h2::h2_equation<int>(65)});
 
       OK(nullptr == a1.matches(&int65));
       OK(nullptr != a1.matches(&int66));
-      OK("65", a1.expects(&int65));
+      OK("65", a1.expects(h2::h2_type<decltype(&int65)>()));
    }
 }

@@ -8,11 +8,11 @@ struct h2_equation {
    h2_fail* matches(const A& a, bool caseless = false, bool dont = false) const
    {
       if ((a == e) == !dont) return nullptr;
-      return h2_fail::new_unexpect(h2_stringify(e), h2_stringify(a), expects(a, false, dont));
+      return h2_fail::new_unexpect(h2_stringify(e), h2_stringify(a), expects(h2_type<A>(), false, dont));
    }
 
    template <typename A>
-   h2_string expects(const A& a, bool caseless = false, bool dont = false) const
+   h2_string expects(h2_type<A>, bool caseless = false, bool dont = false) const
    {
       return CD(h2_stringify(e), caseless, dont);
    }
@@ -29,10 +29,11 @@ struct h2_equation<E, typename std::enable_if<std::is_convertible<E, h2_string>:
       if (h2_pattern::wildcard_match(e.c_str(), a.c_str(), caseless) == !dont) return nullptr;
       if (h2_pattern::regex_match(e.c_str(), a.c_str(), caseless) == !dont) return nullptr;
 
-      return h2_fail::new_strcmp(e, a, caseless, expects(a, caseless, dont));
+      return h2_fail::new_strcmp(e, a, caseless, expects(h2_type<h2_string>(), caseless, dont));
    }
 
-   h2_string expects(const h2_string& a, bool caseless = false, bool dont = false) const
+   template <typename A>
+   h2_string expects(h2_type<A>, bool caseless = false, bool dont = false) const
    {
       return CD("\"" + e + "\"", caseless, dont);
    }
@@ -61,10 +62,10 @@ struct h2_equation<E, typename std::enable_if<std::is_arithmetic<E>::value>::typ
          result = a == e;
       }
       if (result == !dont) return nullptr;
-      return h2_fail::new_unexpect(h2_stringify(e), h2_stringify(a), expects(a, false, dont));
+      return h2_fail::new_unexpect(h2_stringify(e), h2_stringify(a), expects(h2_type<A>(), false, dont));
    }
    template <typename A>
-   h2_string expects(const A& a, bool caseless = false, bool dont = false) const
+   h2_string expects(h2_type<A>, bool caseless = false, bool dont = false) const
    {
       return CD(h2_stringify(e), caseless, dont);
    }

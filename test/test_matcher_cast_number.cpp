@@ -115,6 +115,12 @@ SUITE(Same Number Type)
       OK((std::is_same<uintptr_t, unsigned int>::value) || (std::is_same<uintptr_t, unsigned long int>::value) || (std::is_same<uintptr_t, unsigned long long int>::value));
       OK((std::is_same<size_t, unsigned int>::value) || (std::is_same<size_t, unsigned long int>::value) || (std::is_same<size_t, unsigned long long int>::value));
    }
+
+   Case(const)
+   {
+      // OK((std::is_same<int, const int>::value));
+      // OK((std::is_same<int, int&>::value));
+   }
 }
 
 SUITE(number[integer, float, enum, bool])
