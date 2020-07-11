@@ -1,4 +1,4 @@
-﻿/* v5.6  2020-07-05 23:38:21 */
+﻿/* v5.6  2020-07-11 09:02:25 */
 /* https://github.com/lingjf/h2unit */
 /* Apache Licence 2.0 */
 #ifndef __H2UNIT_HPP__
@@ -256,9 +256,289 @@ struct h2_libc {
    static void* operator new(std::size_t size) { return malloc(size); }
    static void operator delete(void* ptr) { free(ptr); }
 };
+// h2_allocate.hpp
+
+template <typename T>
+class h2_allocator {
+ public:
+   typedef size_t size_type;
+   typedef ptrdiff_t difference_type;
+   typedef T* pointer;
+   typedef const T* const_pointer;
+   typedef T& reference;
+   typedef const T& const_reference;
+   typedef T value_type;
+
+   h2_allocator() {}
+   h2_allocator(const h2_allocator&) {}
+
+   pointer allocate(size_type n, const void* = 0) { return (T*)h2_libc::malloc(n * sizeof(T)); }
+   void deallocate(void* p, size_type) { h2_libc::free(p); }
+
+   pointer address(reference x) const { return &x; }
+   const_pointer address(const_reference x) const { return &x; }
+   h2_allocator<T>& operator=(const h2_allocator&) { return *this; }
+   void construct(pointer p, const T& val) { new ((T*)p) T(val); }
+   void destroy(pointer p) { p->~T(); }
+   size_type max_size() const { return size_t(-1); }
+   template <typename U>
+   struct rebind {
+      typedef h2_allocator<U> other;
+   };
+   template <typename U>
+   h2_allocator(const h2_allocator<U>&) {}
+   template <typename U>
+   h2_allocator& operator=(const h2_allocator<U>&) { return *this; }
+};
+
+template <typename T>
+inline bool operator==(const h2_allocator<T>&, const h2_allocator<T>&) { return true; }
+template <typename T>
+inline bool operator!=(const h2_allocator<T>&, const h2_allocator<T>&) { return false; }
+
+template <typename T>
+using h2_vector = std::vector<T, h2_allocator<T>>;
+
+using h2_ostringstream = std::basic_ostringstream<char, std::char_traits<char>, h2_allocator<char>>;
+// h2_string.hpp
+
+struct h2_string : public std::basic_string<char, std::char_traits<char>, h2_allocator<char>> {
+   h2_string() : basic_string() {}
+   h2_string(const h2_string& str) : basic_string(str.c_str()) {}
+   h2_string(const std::string& str) : basic_string(str.c_str()) {}
+   h2_string(const char* s) : basic_string(s) {}
+   h2_string(const char* s, size_t n) : basic_string(s, n) {}
+   h2_string(size_t n, char c) : basic_string(n, c) {}
+
+   h2_string& operator=(const h2_string& str) { return assign(str.c_str()), *this; }
+   h2_string& operator=(const std::string& str) { return assign(str.c_str()), *this; }
+   h2_string& operator=(const char* s) { return assign(s), *this; }
+   h2_string& operator=(char c) { return assign(1, c), *this; }
+
+   h2_string& operator+=(const h2_string& str) { return append(str.c_str()), *this; }
+   h2_string& operator+=(const std::string& str) { return append(str.c_str()), *this; }
+   h2_string& operator+=(const char* s) { return append(s), *this; }
+   h2_string& operator+=(char c) { return push_back(c), *this; }
+
+   bool equals(h2_string str, bool caseless = false) const;
+   bool contains(h2_string substr, bool caseless = false) const;
+   bool startswith(h2_string prefix, bool caseless = false) const;
+   bool endswith(h2_string suffix, bool caseless = false) const;
+
+   bool isspace() const;
+   bool isquoted() const;
+
+   h2_string strip_quote() const;
+
+   h2_string& tolower();
+   static h2_string tolower(h2_string from) { return from.tolower(); }
+   h2_string acronym(int width = 16, int tail = 0) const;
+   h2_string& center(int width);
+   h2_string& sprintf(const char* format, ...);
+};
+
+/* clang-format off */
+inline h2_string operator+(const h2_string& lhs, const h2_string& rhs) { h2_string s(lhs); s.append(rhs); return s; }
+inline h2_string operator+(const h2_string& lhs, const char* rhs) { h2_string s(lhs); s.append(rhs); return s; }
+inline h2_string operator+(const char* lhs, const h2_string& rhs) { h2_string s(lhs); s.append(rhs); return s; }
+inline h2_string operator+(const h2_string& lhs, const std::string& rhs) { h2_string s(lhs); s.append(rhs.c_str()); return s; }
+inline h2_string operator+(const std::string& lhs, const h2_string& rhs) { h2_string s(lhs.c_str()); s.append(rhs); return s; }
+inline h2_string operator+(const h2_string& lhs, const char rhs) { h2_string s(lhs); s.push_back(rhs); return s; }
+inline h2_string operator+(const char lhs, const h2_string& rhs) { h2_string s(1, lhs); s.append(rhs); return s; }
+// h2_stringify.hpp
+
+#define H2_HAS_MEMBER(member)                                    \
+   template <typename T>                                         \
+   struct h2_has_##member {                                      \
+      template <typename U>                                      \
+      static std::true_type test(decltype(&U::member));          \
+      template <typename U>                                      \
+      static std::false_type test(...);                          \
+      static constexpr bool value = decltype(test<T>(0))::value; \
+   }
+
+H2_HAS_MEMBER(tostring);
+H2_HAS_MEMBER(toString);
+H2_HAS_MEMBER(Tostring);
+H2_HAS_MEMBER(ToString);
+
+template <typename T>
+struct h2_is_ostreamable {
+   template <typename U>
+   static auto test(int) -> decltype(std::declval<std::ostream&>() << std::declval<U&>(), std::true_type());
+   template <typename U>
+   static auto test(...) -> std::false_type;
+   static constexpr bool value = decltype(test<T>(0))::value;
+};
+
+template <typename T>
+struct h2_is_pair {
+   template <typename U>
+   struct test : std::false_type {
+   };
+   template <typename K, typename V>
+   struct test<std::pair<K, V>> : std::true_type {
+   };
+   static constexpr bool value = test<T>::value;
+};
+
+template <typename T>
+struct has_const_iterator_begin_end {
+   template <typename U>
+   static std::true_type test(typename U::const_iterator*,
+                              typename std::enable_if<
+                                std::is_same<decltype(static_cast<typename U::const_iterator (U::*)() const>(&U::begin)),
+                                             typename U::const_iterator (U::*)() const>::value>::type*,
+                              typename std::enable_if<
+                                std::is_same<decltype(static_cast<typename U::const_iterator (U::*)() const>(&U::end)),
+                                             typename U::const_iterator (U::*)() const>::value,
+                                void>::type*);
+
+   template <typename U>
+   static std::false_type test(...);
+
+   static constexpr bool value = decltype(test<T>(nullptr, nullptr, nullptr))::value;
+};
+
+template <typename T>
+struct h2_is_container : public std::integral_constant<bool, has_const_iterator_begin_end<T>::value> {
+};
+
+template <>
+struct h2_is_container<std::string> : std::false_type {
+};
+
+template <>
+struct h2_is_container<h2_string> : std::false_type {
+};
+
+template <typename T, typename = void>
+struct h2_stringify_impl {
+   static h2_string print(T a)
+   {
+      return "";
+   }
+};
+
+#define H2_STRINGIFY_IMPL_TOSTRING(name)                                                 \
+   template <typename T>                                                                 \
+   struct h2_stringify_impl<T, typename std::enable_if<h2_has_##name<T>::value>::type> { \
+      static h2_string print(T a)                                                        \
+      {                                                                                  \
+         return a.name();                                                                \
+      }                                                                                  \
+   }
+
+H2_STRINGIFY_IMPL_TOSTRING(tostring);
+H2_STRINGIFY_IMPL_TOSTRING(toString);
+H2_STRINGIFY_IMPL_TOSTRING(Tostring);
+H2_STRINGIFY_IMPL_TOSTRING(ToString);
+
+template <typename T>
+struct h2_stringify_impl<T, typename std::enable_if<h2_is_ostreamable<T>::value>::type> {
+   static h2_string print(T a)
+   {
+      return stream_print(a);
+   }
+
+   template <typename U>
+   static h2_string stream_print(U a)
+   {
+      h2_ostringstream os;
+      os << std::boolalpha;
+      os << a;
+      return h2_string(os.str().c_str());
+   }
+
+   // https://en.cppreference.com/w/cpp/string/byte/isprint
+   static h2_string stream_print(unsigned char a)
+   {
+      return stream_print<unsigned int>(static_cast<unsigned int>(a));
+   }
+};
+
+template <typename K, typename V>
+struct h2_stringify_impl<std::pair<K, V>> {
+   static h2_string print(const std::pair<K, V>& a)
+   {
+      return h2_stringify_impl<typename std::decay<K>::type>::print(a.first) + ": " + h2_stringify_impl<typename std::decay<V>::type>::print(a.second);
+   }
+};
+
+template <typename T>
+struct h2_stringify_impl<T, typename std::enable_if<h2_is_container<T>::value>::type> {
+   static h2_string print(const T& a)
+   {
+      bool pair = h2_is_pair<typename std::decay<decltype(*a.begin())>::type>::value;
+      h2_string ret = pair ? "{" : "[";
+      for (auto it = a.begin(); it != a.end(); it++) {
+         if (it != a.begin()) ret += ", ";
+         ret += h2_stringify_impl<typename std::decay<decltype(*it)>::type>::print(*it);
+      }
+      return ret + (pair ? "}" : "]");
+   }
+};
+
+template <typename... Args>
+struct h2_stringify_impl<std::tuple<Args...>> {
+   static h2_string print(const std::tuple<Args...>& a)
+   {
+      return "(" + tuple_print(a, std::integral_constant<std::size_t, 0>()) + ")";
+   }
+
+   static h2_string tuple_print(const std::tuple<Args...>& a, std::integral_constant<std::size_t, sizeof...(Args)>)
+   {
+      return "";
+   }
+
+   static h2_string tuple_print(const std::tuple<Args...>& a, typename std::conditional<sizeof...(Args) != 0, std::integral_constant<std::size_t, 0>, std::nullptr_t>::type)
+   {
+      return h2_stringify_impl<typename std::decay<decltype(std::get<0>(a))>::type>::print(std::get<0>(a)) + tuple_print(a, std::integral_constant<std::size_t, 1>());
+   }
+
+   template <std::size_t N>
+   static h2_string tuple_print(const std::tuple<Args...>& a, std::integral_constant<std::size_t, N>)
+   {
+      return ", " + h2_stringify_impl<typename std::decay<decltype(std::get<N>(a))>::type>::print(std::get<N>(a)) + tuple_print(a, std::integral_constant<std::size_t, N + 1>());
+   }
+};
+
+template <>
+struct h2_stringify_impl<std::nullptr_t> {
+   static h2_string print(std::nullptr_t a)
+   {
+      return "nullptr";
+   }
+};
+
+template <typename T>
+inline h2_string h2_stringify(T a)
+{
+   return h2_stringify_impl<T>::print(a);
+}
+
+template <typename T>
+inline h2_string h2_stringify(T a, int n)
+{
+   h2_string ret = "[";
+   for (int i = 0; i < n; ++i) {
+      if (i) ret += ", ";
+      ret += h2_stringify(a[i]);
+   }
+   return ret + "]";
+}
+
+template <typename T>
+inline h2_string h2_quote_stringfiy(const T& a)
+{
+   return (std::is_convertible<T, h2_string>::value ? "\"" : "") + h2_stringify(a) + (std::is_convertible<T, h2_string>::value ? "\"" : "");
+}
 // h2_kit.hpp
 
 #define H2Q(...) H2PP_CAT5(__VA_ARGS__, _C, __COUNTER__, L, __LINE__)
+
+template <typename...>
+using h2_void_t = void;
 
 template <typename U, typename = void>
 struct h2_decay_impl {
@@ -363,50 +643,6 @@ struct h2_option {
 };
 
 static const h2_option& O = h2_option::I();  // for pretty
-// h2_allocate.hpp
-
-template <typename T>
-class h2_allocator {
- public:
-   typedef size_t size_type;
-   typedef ptrdiff_t difference_type;
-   typedef T* pointer;
-   typedef const T* const_pointer;
-   typedef T& reference;
-   typedef const T& const_reference;
-   typedef T value_type;
-
-   h2_allocator() {}
-   h2_allocator(const h2_allocator&) {}
-
-   pointer allocate(size_type n, const void* = 0) { return (T*)h2_libc::malloc(n * sizeof(T)); }
-   void deallocate(void* p, size_type) { h2_libc::free(p); }
-
-   pointer address(reference x) const { return &x; }
-   const_pointer address(const_reference x) const { return &x; }
-   h2_allocator<T>& operator=(const h2_allocator&) { return *this; }
-   void construct(pointer p, const T& val) { new ((T*)p) T(val); }
-   void destroy(pointer p) { p->~T(); }
-   size_type max_size() const { return size_t(-1); }
-   template <typename U>
-   struct rebind {
-      typedef h2_allocator<U> other;
-   };
-   template <typename U>
-   h2_allocator(const h2_allocator<U>&) {}
-   template <typename U>
-   h2_allocator& operator=(const h2_allocator<U>&) { return *this; }
-};
-
-template <typename T>
-inline bool operator==(const h2_allocator<T>&, const h2_allocator<T>&) { return true; }
-template <typename T>
-inline bool operator!=(const h2_allocator<T>&, const h2_allocator<T>&) { return false; }
-
-template <typename T>
-using h2_vector = std::vector<T, h2_allocator<T>>;
-
-using h2_ostringstream = std::basic_ostringstream<char, std::char_traits<char>, h2_allocator<char>>;
 // h2_shared_ptr.hpp
 
 template <typename T>
@@ -452,91 +688,6 @@ class h2_shared_ptr : h2_libc {
    T* px = nullptr;
    long* pn = nullptr;
 };
-// h2_string.hpp
-
-struct h2_string : public std::basic_string<char, std::char_traits<char>, h2_allocator<char>> {
-   h2_string() : basic_string() {}
-   h2_string(const h2_string& str) : basic_string(str.c_str()) {}
-   h2_string(const std::string& str) : basic_string(str.c_str()) {}
-   h2_string(const char* s) : basic_string(s) {}
-   h2_string(const char* s, size_t n) : basic_string(s, n) {}
-   h2_string(size_t n, char c) : basic_string(n, c) {}
-
-   h2_string& operator=(const h2_string& str) { return assign(str.c_str()), *this; }
-   h2_string& operator=(const std::string& str) { return assign(str.c_str()), *this; }
-   h2_string& operator=(const char* s) { return assign(s), *this; }
-   h2_string& operator=(char c) { return assign(1, c), *this; }
-
-   h2_string& operator+=(const h2_string& str) { return append(str.c_str()), *this; }
-   h2_string& operator+=(const std::string& str) { return append(str.c_str()), *this; }
-   h2_string& operator+=(const char* s) { return append(s), *this; }
-   h2_string& operator+=(char c) { return push_back(c), *this; }
-
-   bool equals(h2_string str, bool caseless = false) const;
-   bool contains(h2_string substr, bool caseless = false) const;
-   bool startswith(h2_string prefix, bool caseless = false) const;
-   bool endswith(h2_string suffix, bool caseless = false) const;
-
-   bool isspace() const;
-   bool isquoted() const;
-
-   h2_string strip_quote() const;
-
-   h2_string& tolower();
-   static h2_string tolower(h2_string from) { return from.tolower(); }
-   h2_string acronym(int width = 16, int tail = 0) const;
-   h2_string& center(int width);
-   h2_string& sprintf(const char* format, ...);
-};
-
-template <typename T>
-h2_string h2_stringify(T a)
-{
-   h2_ostringstream os;
-   os << std::boolalpha;
-   os << a;
-   return h2_string(os.str().c_str());
-}
-
-template <typename A, size_t N>
-h2_string h2_stringify(const std::array<A, N> a) { return ""; }
-template <typename T>
-h2_string h2_stringify(const std::vector<T> a) { return ""; }
-template <typename T>
-h2_string h2_stringify(const std::deque<T> a) { return ""; }
-template <typename T>
-h2_string h2_stringify(const std::list<T> a) { return ""; }
-template <typename T>
-h2_string h2_stringify(const std::forward_list<T> a) { return ""; }
-template <typename T>
-h2_string h2_stringify(const std::set<T> a) { return ""; }
-template <typename T>
-h2_string h2_stringify(const std::multiset<T> a) { return ""; }
-template <typename T>
-h2_string h2_stringify(const std::unordered_set<T> a) { return ""; }
-template <typename T>
-h2_string h2_stringify(const std::unordered_multiset<T> a) { return ""; }
-
-// https://en.cppreference.com/w/cpp/string/byte/isprint
-template <>
-inline h2_string h2_stringify(unsigned char a) { return h2_stringify(static_cast<unsigned int>(a)); }
-template <>
-inline h2_string h2_stringify(std::nullptr_t a) { return "nullptr"; }
-
-template <typename T>
-h2_string h2_quote_stringfiy(const T& a)
-{
-   return (std::is_convertible<T, h2_string>::value ? "\"" : "") + h2_stringify(a) + (std::is_convertible<T, h2_string>::value ? "\"" : "");
-}
-
-/* clang-format off */
-inline h2_string operator+(const h2_string& lhs, const h2_string& rhs) { h2_string s(lhs); s.append(rhs); return s; }
-inline h2_string operator+(const h2_string& lhs, const char* rhs) { h2_string s(lhs); s.append(rhs); return s; }
-inline h2_string operator+(const char* lhs, const h2_string& rhs) { h2_string s(lhs); s.append(rhs); return s; }
-inline h2_string operator+(const h2_string& lhs, const std::string& rhs) { h2_string s(lhs); s.append(rhs.c_str()); return s; }
-inline h2_string operator+(const std::string& lhs, const h2_string& rhs) { h2_string s(lhs.c_str()); s.append(rhs); return s; }
-inline h2_string operator+(const h2_string& lhs, const char rhs) { h2_string s(lhs); s.push_back(rhs); return s; }
-inline h2_string operator+(const char lhs, const h2_string& rhs) { h2_string s(1, lhs); s.append(rhs); return s; }
 // h2_line.hpp
 
 struct h2_line : public h2_vector<h2_string> {
@@ -1998,8 +2149,6 @@ struct h2_stub_temporary_restore : h2_once {
 // h2_mfp.hpp
 
 /* clang-format off */
-
-template <typename...> using h2_void_t = void;
 
 template <typename T, int I> struct h2_constructible_error {
    static T* O(void* m) { return static_cast<T*>(m = (void*)I); }

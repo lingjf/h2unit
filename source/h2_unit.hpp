@@ -71,11 +71,12 @@ namespace h2 {
 #include "h2_list.hpp"                //
 #include "h2_numeric.hpp"             //
 #include "h2_libc.hpp"                //
-#include "h2_kit.hpp"                 // pp
-#include "h2_option.hpp"              // kit
 #include "h2_allocate.hpp"            // libc
-#include "h2_shared_ptr.hpp"          // libc
 #include "h2_string.hpp"              // allocate
+#include "h2_stringify.hpp"           // string
+#include "h2_kit.hpp"                 // pp, string
+#include "h2_option.hpp"              // kit
+#include "h2_shared_ptr.hpp"          // libc
 #include "h2_line.hpp"                // string
 #include "h2_layout.hpp"              // line
 #include "h2_color.hpp"               // line

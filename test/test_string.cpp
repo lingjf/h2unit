@@ -213,25 +213,6 @@ SUITE(string)
       OK(12, t.length());
    }
 
-   Case(stringify)
-   {
-      OK("1", h2::h2_stringify(1));
-      OK("1.41421", h2::h2_stringify(sqrt(2)));
-      OK("true", h2::h2_stringify(true));
-      long long a5 = 12345678;
-      OK("12345678", h2::h2_stringify(a5));
-      char* a6 = "hello world";
-      OK("hello world", h2::h2_stringify(a6));
-      unsigned char a7[] = {'h', 'e', 'l', 'l', 'o', 0};
-      OK("hello", h2::h2_stringify(a7));
-      void* a8 = (void*)0x12345678;
-      OK("0x12345678", h2::h2_stringify(a8));
-      OK("0", h2::h2_stringify(NULL));
-      OK("nullptr", h2::h2_stringify(nullptr));
-      uint8_t a9 = 7;
-      OK("7", h2::h2_stringify(a9));
-   }
-
    Case(convertable)
    {
       char char_array[128];

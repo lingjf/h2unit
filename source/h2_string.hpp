@@ -34,46 +34,6 @@ struct h2_string : public std::basic_string<char, std::char_traits<char>, h2_all
    h2_string& sprintf(const char* format, ...);
 };
 
-template <typename T>
-h2_string h2_stringify(T a)
-{
-   h2_ostringstream os;
-   os << std::boolalpha;
-   os << a;
-   return h2_string(os.str().c_str());
-}
-
-template <typename A, size_t N>
-h2_string h2_stringify(const std::array<A, N> a) { return ""; }
-template <typename T>
-h2_string h2_stringify(const std::vector<T> a) { return ""; }
-template <typename T>
-h2_string h2_stringify(const std::deque<T> a) { return ""; }
-template <typename T>
-h2_string h2_stringify(const std::list<T> a) { return ""; }
-template <typename T>
-h2_string h2_stringify(const std::forward_list<T> a) { return ""; }
-template <typename T>
-h2_string h2_stringify(const std::set<T> a) { return ""; }
-template <typename T>
-h2_string h2_stringify(const std::multiset<T> a) { return ""; }
-template <typename T>
-h2_string h2_stringify(const std::unordered_set<T> a) { return ""; }
-template <typename T>
-h2_string h2_stringify(const std::unordered_multiset<T> a) { return ""; }
-
-// https://en.cppreference.com/w/cpp/string/byte/isprint
-template <>
-inline h2_string h2_stringify(unsigned char a) { return h2_stringify(static_cast<unsigned int>(a)); }
-template <>
-inline h2_string h2_stringify(std::nullptr_t a) { return "nullptr"; }
-
-template <typename T>
-h2_string h2_quote_stringfiy(const T& a)
-{
-   return (std::is_convertible<T, h2_string>::value ? "\"" : "") + h2_stringify(a) + (std::is_convertible<T, h2_string>::value ? "\"" : "");
-}
-
 /* clang-format off */
 inline h2_string operator+(const h2_string& lhs, const h2_string& rhs) { h2_string s(lhs); s.append(rhs); return s; }
 inline h2_string operator+(const h2_string& lhs, const char* rhs) { h2_string s(lhs); s.append(rhs); return s; }

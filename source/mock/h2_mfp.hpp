@@ -1,8 +1,6 @@
 
 /* clang-format off */
 
-template <typename...> using h2_void_t = void;
-
 template <typename T, int I> struct h2_constructible_error {
    static T* O(void* m) { return static_cast<T*>(m = (void*)I); }
 };
