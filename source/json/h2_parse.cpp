@@ -77,10 +77,10 @@ struct h2_json_parse {
       return true;
    }
 
-   bool parse_regexp(h2_json_node* node)
+   bool parse_pattern(h2_json_node* node)
    {
       bool ret = parse_string(node);
-      node->type = h2_json_node::t_regexp;
+      node->type = h2_json_node::t_pattern;
       return ret;
    }
 
@@ -108,8 +108,8 @@ struct h2_json_parse {
       }
       /* string */
       if (leadwith("\"") || leadwith("\'")) return parse_string(node);
-      /* regexp */
-      if (leadwith("/")) return parse_regexp(node);
+      /* pattern */
+      if (leadwith("/")) return parse_pattern(node);
 
       /* array */
       if (leadwith("[")) return parse_array(node);

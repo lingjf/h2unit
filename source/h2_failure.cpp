@@ -213,13 +213,14 @@ struct h2_fail_strfind : h2_fail_unexpect {
 
 struct h2_fail_json : h2_fail_unexpect {
    h2_string e_value, a_value;
-   h2_fail_json(const h2_string& e_value_, const h2_string& a_value_, const h2_string& expection_, const char* file_ = nullptr, int line_ = 0)
-     : h2_fail_unexpect(e_value_, a_value_, expection_, "", file_, line_), e_value(e_value_), a_value(a_value_) {}
+   const bool caseless;
+   h2_fail_json(const h2_string& e_value_, const h2_string& a_value_, const h2_string& expection_, bool caseless_, const char* file_ = nullptr, int line_ = 0)
+     : h2_fail_unexpect(e_value_, a_value_, expection_, "", file_, line_), e_value(e_value_), a_value(a_value_), caseless(caseless_) {}
    void print(int subling_index = 0, int child_index = 0) override
    {
       h2_fail_unexpect::print(subling_index, child_index);
       h2_lines e_lines, a_lines;
-      h2_json::diff(e_value, a_value, e_lines, a_lines);
+      h2_json::diff(e_value, a_value, e_lines, a_lines, caseless);
       h2_lines lines = h2_layout::split(e_lines, a_lines, "expect", "actual", 0);
       h2_color::printf(lines);
    }
@@ -416,53 +417,53 @@ struct h2_fail_call : h2_fail {
    }
 };
 
-h2_inline h2_fail* h2_fail::new_normal(const char* file_, int line_, const char* func_, const char* format, ...)
+h2_inline h2_fail* h2_fail::new_normal(const char* file, int line, const char* func, const char* format, ...)
 {
    char* alloca_str;
    h2_sprintf(alloca_str, format);
-   return new h2_fail_normal(file_, line_, func_, alloca_str);
+   return new h2_fail_normal(file, line, func, alloca_str);
 }
-h2_inline h2_fail* h2_fail::new_unexpect(h2_string e_represent_, h2_string a_represent_, h2_string expection_, h2_string explain_, const char* file_, int line_)
+h2_inline h2_fail* h2_fail::new_unexpect(h2_string e_represent, h2_string a_represent, h2_string expection, h2_string explain, const char* file, int line)
 {
-   return new h2_fail_unexpect(e_represent_, a_represent_, expection_, explain_, file_, line_);
+   return new h2_fail_unexpect(e_represent, a_represent, expection, explain, file, line);
 }
-h2_inline h2_fail* h2_fail::new_strcmp(const h2_string& e_value_, const h2_string& a_value_, bool caseless_, const h2_string& expection_, const char* file_, int line_)
+h2_inline h2_fail* h2_fail::new_strcmp(const h2_string& e_value, const h2_string& a_value, bool caseless, const h2_string& expection, const char* file, int line)
 {
-   return new h2_fail_strcmp(e_value_, a_value_, caseless_, expection_, file_, line_);
+   return new h2_fail_strcmp(e_value, a_value, caseless, expection, file, line);
 }
-h2_inline h2_fail* h2_fail::new_strfind(const h2_string& e_value_, const h2_string& a_value_, const h2_string& expection_, const char* file_, int line_)
+h2_inline h2_fail* h2_fail::new_strfind(const h2_string& e_value, const h2_string& a_value, const h2_string& expection, const char* file, int line)
 {
-   return new h2_fail_strfind(e_value_, a_value_, expection_, file_, line_);
+   return new h2_fail_strfind(e_value, a_value, expection, file, line);
 }
-h2_inline h2_fail* h2_fail::new_json(const h2_string& e_value_, const h2_string& a_value_, const h2_string& expection_, const char* file_, int line_)
+h2_inline h2_fail* h2_fail::new_json(const h2_string& e_value, const h2_string& a_value, const h2_string& expection, bool caseless, const char* file, int line)
 {
-   return new h2_fail_json(e_value_, a_value_, expection_, file_, line_);
+   return new h2_fail_json(e_value, a_value, expection, caseless, file, line);
 }
-h2_inline h2_fail* h2_fail::new_memcmp(const unsigned char* e_value_, const unsigned char* a_value_, int width_, int nbits_, const h2_string& expection_, h2_string a_represent_, h2_string explain_, const char* file_, int line_)
+h2_inline h2_fail* h2_fail::new_memcmp(const unsigned char* e_value, const unsigned char* a_value, int width, int nbits, const h2_string& expection, h2_string a_represent, h2_string explain, const char* file, int line)
 {
-   return new h2_fail_memcmp(e_value_, a_value_, width_, nbits_, expection_, a_represent_, explain_, file_, line_);
+   return new h2_fail_memcmp(e_value, a_value, width, nbits, expection, a_represent, explain, file, line);
 }
-h2_inline h2_fail* h2_fail::new_memory_leak(const void* ptr_, int size_, h2_backtrace bt_allocate_, const char* where_, const char* file_, int line_)
+h2_inline h2_fail* h2_fail::new_memory_leak(const void* ptr, int size, h2_backtrace bt_allocate, const char* where, const char* file, int line)
 {
-   return new h2_fail_memory_leak(ptr_, size_, bt_allocate_, where_, file_, line_);
+   return new h2_fail_memory_leak(ptr, size, bt_allocate, where, file, line);
 }
-h2_inline h2_fail* h2_fail::new_double_free(const void* ptr_, h2_backtrace bt_allocate_, h2_backtrace bt_release_, h2_backtrace bt_double_free_)
+h2_inline h2_fail* h2_fail::new_double_free(const void* ptr, h2_backtrace bt_allocate, h2_backtrace bt_release, h2_backtrace bt_double_free)
 {
-   return new h2_fail_double_free(ptr_, bt_allocate_, bt_release_, bt_double_free_);
+   return new h2_fail_double_free(ptr, bt_allocate, bt_release, bt_double_free);
 }
-h2_inline h2_fail* h2_fail::new_asymmetric_free(const void* ptr_, const char* who_allocate_, const char* who_release_, h2_backtrace bt_allocate_, h2_backtrace bt_release_)
+h2_inline h2_fail* h2_fail::new_asymmetric_free(const void* ptr, const char* who_allocate, const char* who_release, h2_backtrace bt_allocate, h2_backtrace bt_release)
 {
-   return new h2_fail_asymmetric_free(ptr_, who_allocate_, who_release_, bt_allocate_, bt_release_);
+   return new h2_fail_asymmetric_free(ptr, who_allocate, who_release, bt_allocate, bt_release);
 }
-h2_inline h2_fail* h2_fail::new_overflow(const void* ptr_, const int size_, const void* addr_, const char* action_, h2_vector<unsigned char> spot_, h2_backtrace bt_allocate_, h2_backtrace bt_trample_, const char* file_, int line_)
+h2_inline h2_fail* h2_fail::new_overflow(const void* ptr, const int size, const void* addr, const char* action, h2_vector<unsigned char> spot, h2_backtrace bt_allocate, h2_backtrace bt_trample, const char* file, int line)
 {
-   return new h2_fail_overflow(ptr_, size_, addr_, action_, spot_, bt_allocate_, bt_trample_, file_, line_);
+   return new h2_fail_overflow(ptr, size, addr, action, spot, bt_allocate, bt_trample, file, line);
 }
-h2_inline h2_fail* h2_fail::new_use_after_free(const void* ptr_, const void* addr_, const char* action_, h2_backtrace bt_allocate_, h2_backtrace bt_release_, h2_backtrace bt_use_)
+h2_inline h2_fail* h2_fail::new_use_after_free(const void* ptr, const void* addr, const char* action, h2_backtrace bt_allocate, h2_backtrace bt_release, h2_backtrace bt_use)
 {
-   return new h2_fail_use_after_free(ptr_, addr_, action_, bt_allocate_, bt_release_, bt_use_);
+   return new h2_fail_use_after_free(ptr, addr, action, bt_allocate, bt_release, bt_use);
 }
-h2_inline h2_fail* h2_fail::new_call(const char* func_, const char* expect, const char* actual, const char* file_, int line_)
+h2_inline h2_fail* h2_fail::new_call(const char* func, const char* expect, const char* actual, const char* file, int line)
 {
-   return new h2_fail_call(func_, expect, actual, file_, line_);
+   return new h2_fail_call(func, expect, actual, file, line);
 }

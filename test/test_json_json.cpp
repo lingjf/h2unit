@@ -6,7 +6,7 @@ SUITE(json match)
    {
       const h2::h2_string expect = "123";
       const h2::h2_string actual = "123.0";
-      OK(h2::h2_json::match(expect, actual));
+      OK(h2::h2_json::match(expect, actual, false));
    }
 }
 
@@ -19,6 +19,6 @@ SUITE(json diff)
 
       h2::h2_lines e_lines, a_lines;
 
-      h2::h2_json::diff(expect, actual, e_lines, a_lines);
+      h2::h2_json::diff(expect, actual, e_lines, a_lines, false);
    }
 }

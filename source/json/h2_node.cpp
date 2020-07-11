@@ -5,7 +5,7 @@ struct h2_json_node : h2_libc {
    static constexpr int t_boolean = 2;
    static constexpr int t_number = 3;
    static constexpr int t_string = 4;
-   static constexpr int t_regexp = 5;
+   static constexpr int t_pattern = 5; // regex or wildcard pattern
    static constexpr int t_array = 6;
    static constexpr int t_object = 7;
 
@@ -37,11 +37,10 @@ struct h2_json_node : h2_libc {
       return nullptr;
    }
 
-   h2_json_node* get(const char* name)
+   h2_json_node* get(const h2_string& name, bool caseless)
    {
-      if (!name) return nullptr;
       h2_list_for_each_entry (p, children, h2_json_node, x)
-         if (!p->key_string.compare(name))
+         if (p->key_string.equals(name, caseless))
             return p;
       return nullptr;
    }
@@ -50,7 +49,7 @@ struct h2_json_node : h2_libc {
    bool is_bool() { return t_boolean == type; }
    bool is_number() { return t_number == type; }
    bool is_string() { return t_string == type; }
-   bool is_regexp() { return t_regexp == type; }
+   bool is_pattern() { return t_pattern == type; }
    bool is_array() { return t_array == type; }
    bool is_object() { return t_object == type; }
 
@@ -78,7 +77,7 @@ struct h2_json_node : h2_libc {
          _class = "atomic";
          _value = "\"" + value_string + "\"";
          break;
-      case t_regexp:
+      case t_pattern:
          _class = "atomic";
          _value = value_string;
          break;
@@ -108,7 +107,7 @@ struct h2_json_node : h2_libc {
             line.push_back(h2_stringify(value_double));
       } else if (is_string())
          line.push_back("\"" + value_string + "\"");
-      else if (is_regexp())
+      else if (is_pattern())
          line.push_back("\"/" + value_string + "/\"");
       else if (is_array() || is_object()) {
          line.push_back(is_array() ? "[ " : "{ ");

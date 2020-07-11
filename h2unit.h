@@ -1,4 +1,4 @@
-﻿/* v5.6  2020-07-11 15:18:21 */
+﻿/* v5.6  2020-07-11 18:04:00 */
 /* https://github.com/lingjf/h2unit */
 /* Apache Licence 2.0 */
 #ifndef __H2UNIT_H__
@@ -415,6 +415,7 @@ struct h2_with {
 struct h2_pattern {
    static bool regex_match(const char* pattern, const char* subject, bool caseless = false);
    static bool wildcard_match(const char* pattern, const char* subject, bool caseless = false);
+   static bool match(const char* pattern, const char* subject, bool caseless = false);
 };
 
 static const char* const Comma[] = {"", ", "};
@@ -793,18 +794,18 @@ struct h2_fail : h2_libc {
    static void append_subling(h2_fail*& fail, h2_fail* n);
    static void append_child(h2_fail*& fail, h2_fail* n);
 
-   static h2_fail* new_normal(const char* file_ = nullptr, int line_ = 0, const char* func_ = nullptr, const char* format = "", ...);
-   static h2_fail* new_unexpect(h2_string e_represent_ = "", h2_string a_represent_ = "", h2_string expection_ = "", h2_string explain_ = "", const char* file_ = nullptr, int line_ = 0);
-   static h2_fail* new_strcmp(const h2_string& e_value_, const h2_string& a_value_, bool caseless_, const h2_string& expection_, const char* file_ = nullptr, int line_ = 0);
-   static h2_fail* new_strfind(const h2_string& e_value_, const h2_string& a_value_, const h2_string& expection_, const char* file_ = nullptr, int line_ = 0);
-   static h2_fail* new_json(const h2_string& e_value_, const h2_string& a_value_, const h2_string& expection_, const char* file_ = nullptr, int line_ = 0);
-   static h2_fail* new_memcmp(const unsigned char* e_value_, const unsigned char* a_value_, int width_, int nbits_, const h2_string& expection_, h2_string a_represent_, h2_string explain_ = "", const char* file_ = nullptr, int line_ = 0);
+   static h2_fail* new_normal(const char* file = nullptr, int line = 0, const char* func = nullptr, const char* format = "", ...);
+   static h2_fail* new_unexpect(h2_string e_represent = "", h2_string a_represent = "", h2_string expection = "", h2_string explain = "", const char* file = nullptr, int line = 0);
+   static h2_fail* new_strcmp(const h2_string& e_value_, const h2_string& a_value_, bool caseless_, const h2_string& expection_, const char* file = nullptr, int line = 0);
+   static h2_fail* new_strfind(const h2_string& e_value_, const h2_string& a_value_, const h2_string& expection_, const char* file = nullptr, int line = 0);
+   static h2_fail* new_json(const h2_string& e_value_, const h2_string& a_value_, const h2_string& expection_, bool caseless_, const char* file = nullptr, int line = 0);
+   static h2_fail* new_memcmp(const unsigned char* e_value_, const unsigned char* a_value_, int width_, int nbits_, const h2_string& expection_, h2_string a_represent_, h2_string explain = "", const char* file = nullptr, int line = 0);
    static h2_fail* new_memory_leak(const void* ptr_, int size_, h2_backtrace bt_allocate_, const char* where_, const char* file_, int line_);
    static h2_fail* new_double_free(const void* ptr_, h2_backtrace bt_allocate_, h2_backtrace bt_release_, h2_backtrace bt_double_free_);
    static h2_fail* new_asymmetric_free(const void* ptr_, const char* who_allocate_, const char* who_release_, h2_backtrace bt_allocate_, h2_backtrace bt_release_);
-   static h2_fail* new_overflow(const void* ptr_, const int size_, const void* addr_, const char* action_, h2_vector<unsigned char> spot_, h2_backtrace bt_allocate_, h2_backtrace bt_trample_, const char* file_ = nullptr, int line_ = 0);
+   static h2_fail* new_overflow(const void* ptr_, const int size_, const void* addr_, const char* action_, h2_vector<unsigned char> spot_, h2_backtrace bt_allocate_, h2_backtrace bt_trample_, const char* file = nullptr, int line = 0);
    static h2_fail* new_use_after_free(const void* ptr_, const void* addr_, const char* action_, h2_backtrace bt_allocate_, h2_backtrace bt_release_, h2_backtrace bt_use_);
-   static h2_fail* new_call(const char* func_, const char* expect, const char* actual, const char* file_ = nullptr, int line_ = 0);
+   static h2_fail* new_call(const char* func_, const char* expect, const char* actual, const char* file = nullptr, int line = 0);
 };
 
 static inline void h2_fail_g(h2_fail*, bool);
@@ -933,8 +934,8 @@ static inline void h2_fail_g(h2_fail*, bool);
 // h2_json.hpp
 
 struct h2_json {
-   static bool match(const h2_string& expect, const h2_string& actual);
-   static void diff(const h2_string& expect, const h2_string& actual, h2_lines& e_lines, h2_lines& a_lines);
+   static bool match(const h2_string& expect, const h2_string& actual, bool caseless);
+   static void diff(const h2_string& expect, const h2_string& actual, h2_lines& e_lines, h2_lines& a_lines, bool caseless);
 };
 // h2_memory.hpp
 
@@ -1280,7 +1281,7 @@ struct h2_and_matches {
    {
       h2_string s1 = h2_matcher_cast<typename std::decay<A>::type>(m1).expects(caseless, false);
       h2_string s2 = h2_matcher_cast<typename std::decay<A>::type>(m2).expects(caseless, false);
-      return CD(s1 + " && " + s2, caseless, dont);
+      return CD(s1 + " && " + s2, false, dont);
    }
 };
 
@@ -1308,7 +1309,7 @@ struct h2_or_matches {
    {
       h2_string s1 = h2_matcher_cast<typename std::decay<A>::type>(m1).expects(caseless, false);
       h2_string s2 = h2_matcher_cast<typename std::decay<A>::type>(m2).expects(caseless, false);
-      return CD(s1 + " || " + s2, caseless, dont);
+      return CD(s1 + " || " + s2, false, dont);
    }
 };
 
@@ -1352,7 +1353,7 @@ struct h2_allof_matches {
       for (size_t i = 0; i < v_matchers.size(); ++i) {
          ret += Comma[!!i] + v_matchers[i].expects(caseless, false);
       }
-      return CD("AllOf(" + ret + ")", caseless, dont);
+      return CD("AllOf(" + ret + ")", false, dont);
    }
 
    H2_MATCHER_T2V(t_matchers)
@@ -1403,7 +1404,7 @@ struct h2_anyof_matches {
       for (size_t i = 0; i < v_matchers.size(); ++i) {
          ret += Comma[!!i] + v_matchers[i].expects(caseless, false);
       }
-      return CD("AnyOf(" + ret + ")", caseless, dont);
+      return CD("AnyOf(" + ret + ")", false, dont);
    }
 
    H2_MATCHER_T2V(t_matchers)
@@ -1437,7 +1438,7 @@ struct h2_noneof_matches {
       for (size_t i = 0; i < v_matchers.size(); ++i) {
          ret += Comma[!!i] + v_matchers[i].expects(caseless, false);
       }
-      return CD("NoneOf(" + ret + ")", caseless, dont);
+      return CD("NoneOf(" + ret + ")", false, dont);
    }
 
    H2_MATCHER_T2V(t_matchers)
@@ -3515,6 +3516,11 @@ h2_inline bool h2_pattern::wildcard_match(const char* pattern, const char* subje
 #endif
 }
 
+h2_inline bool h2_pattern::match(const char* pattern, const char* subject, bool caseless)
+{
+   return wildcard_match(pattern, subject, caseless) || regex_match(pattern, subject, caseless);
+}
+
 static inline long long h2_now()
 {
 #ifdef _WIN32
@@ -4321,7 +4327,7 @@ struct h2_json_node : h2_libc {
    static constexpr int t_boolean = 2;
    static constexpr int t_number = 3;
    static constexpr int t_string = 4;
-   static constexpr int t_regexp = 5;
+   static constexpr int t_pattern = 5; // regex or wildcard pattern
    static constexpr int t_array = 6;
    static constexpr int t_object = 7;
 
@@ -4353,11 +4359,10 @@ struct h2_json_node : h2_libc {
       return nullptr;
    }
 
-   h2_json_node* get(const char* name)
+   h2_json_node* get(const h2_string& name, bool caseless)
    {
-      if (!name) return nullptr;
       h2_list_for_each_entry (p, children, h2_json_node, x)
-         if (!p->key_string.compare(name))
+         if (p->key_string.equals(name, caseless))
             return p;
       return nullptr;
    }
@@ -4366,7 +4371,7 @@ struct h2_json_node : h2_libc {
    bool is_bool() { return t_boolean == type; }
    bool is_number() { return t_number == type; }
    bool is_string() { return t_string == type; }
-   bool is_regexp() { return t_regexp == type; }
+   bool is_pattern() { return t_pattern == type; }
    bool is_array() { return t_array == type; }
    bool is_object() { return t_object == type; }
 
@@ -4394,7 +4399,7 @@ struct h2_json_node : h2_libc {
          _class = "atomic";
          _value = "\"" + value_string + "\"";
          break;
-      case t_regexp:
+      case t_pattern:
          _class = "atomic";
          _value = value_string;
          break;
@@ -4424,7 +4429,7 @@ struct h2_json_node : h2_libc {
             line.push_back(h2_stringify(value_double));
       } else if (is_string())
          line.push_back("\"" + value_string + "\"");
-      else if (is_regexp())
+      else if (is_pattern())
          line.push_back("\"/" + value_string + "/\"");
       else if (is_array() || is_object()) {
          line.push_back(is_array() ? "[ " : "{ ");
@@ -4528,10 +4533,10 @@ struct h2_json_parse {
       return true;
    }
 
-   bool parse_regexp(h2_json_node* node)
+   bool parse_pattern(h2_json_node* node)
    {
       bool ret = parse_string(node);
-      node->type = h2_json_node::t_regexp;
+      node->type = h2_json_node::t_pattern;
       return ret;
    }
 
@@ -4559,8 +4564,8 @@ struct h2_json_parse {
       }
       /* string */
       if (leadwith("\"") || leadwith("\'")) return parse_string(node);
-      /* regexp */
-      if (leadwith("/")) return parse_regexp(node);
+      /* pattern */
+      if (leadwith("/")) return parse_pattern(node);
 
       /* array */
       if (leadwith("[")) return parse_array(node);
@@ -4620,27 +4625,27 @@ struct h2_json_parse {
 // h2_match.cpp
 
 struct h2_json_match {
-   static bool match_array(h2_json_node* e, h2_json_node* a)
+   static bool match_array(h2_json_node* e, h2_json_node* a, bool caseless)
    {
       if (!e || !a) return false;
       if (e->size() != a->size()) return false;
       h2_list_for_each_entry (p, e->children, h2_json_node, x)
-         if (!match(p, a->get(li)))
+         if (!match(p, a->get(li), caseless))
             return false;
       return true;
    }
 
-   static bool match_object(h2_json_node* e, h2_json_node* a)
+   static bool match_object(h2_json_node* e, h2_json_node* a, bool caseless)
    {
       if (!e || !a) return false;
       if (e->size() > a->size()) return false;
       h2_list_for_each_entry (p, e->children, h2_json_node, x)
-         if (!match(p, a->get(p->key_string.c_str())))
+         if (!match(p, a->get(p->key_string, caseless), caseless))
             return false;
       return true;
    }
 
-   static bool match(h2_json_node* e, h2_json_node* a)
+   static bool match(h2_json_node* e, h2_json_node* a, bool caseless)
    {
       if (!e || !a) return false;
       switch (e->type) {
@@ -4651,29 +4656,29 @@ struct h2_json_match {
       case h2_json_node::t_number:
          return a->is_number() && ::fabs(e->value_double - a->value_double) < 0.00001;
       case h2_json_node::t_string:
-         return a->is_string() && e->value_string == a->value_string;
-      case h2_json_node::t_regexp:
-         return a->is_string() && h2_pattern::regex_match(e->value_string.c_str(), a->value_string.c_str());
+         return a->is_string() && e->value_string.equals(a->value_string, caseless);
+      case h2_json_node::t_pattern:
+         return a->is_string() && h2_pattern::match(e->value_string.c_str(), a->value_string.c_str(), caseless);
       case h2_json_node::t_array:
-         return a->is_array() && match_array(e, a);
+         return a->is_array() && match_array(e, a, caseless);
       case h2_json_node::t_object:
-         return a->is_object() && match_object(e, a);
+         return a->is_object() && match_object(e, a, caseless);
       default: return false;
       }
    }
 
-   static h2_json_node* search(h2_list& haystack, h2_json_node* needle)
+   static h2_json_node* search(h2_list& haystack, h2_json_node* needle, bool caseless)
    {
       h2_list_for_each_entry (p, haystack, h2_json_node, x)
-         if (match(needle, p))
+         if (match(needle, p, caseless))
             return p;
       return nullptr;
    }
 };
 // h2_dual.cpp
 
-struct h2_json_dual : h2_libc {  // combine 2 Node into a Dual
-   bool match = false;
+struct h2_json_dual : h2_libc {  // combine two node into a dual
+   bool key_match = false, value_match = false;
    int e_type = h2_json_node::t_absent, a_type = h2_json_node::t_absent;
    const char *e_class = "blob", *a_class = "blob";
    h2_string e_key, a_key;
@@ -4691,11 +4696,12 @@ struct h2_json_dual : h2_libc {  // combine 2 Node into a Dual
       }
    }
 
-   h2_json_dual(h2_json_node* e, h2_json_node* a, h2_json_dual* perent_ = nullptr) : perent(perent_), depth(perent_ ? perent_->depth + 1 : 0)
+   h2_json_dual(h2_json_node* e, h2_json_node* a, bool caseless, h2_json_dual* perent_ = nullptr) : perent(perent_), depth(perent_ ? perent_->depth + 1 : 0)
    {
-      match = h2_json_match::match(e, a);
+      value_match = h2_json_match::match(e, a, caseless);
       if (e) e->dual(e_type, e_class, e_key, e_value);
       if (a) a->dual(a_type, a_class, a_key, a_value);
+      key_match = e_key.equals(a_key, caseless);
 
       if (strcmp(e_class, a_class)) {
          if (e) e->print(e_blob, depth, 0, true);
@@ -4703,10 +4709,11 @@ struct h2_json_dual : h2_libc {  // combine 2 Node into a Dual
          e_class = a_class = "blob";
       } else if (!strcmp("object", e_class)) {
          h2_list_for_each_entry (_e, e->children, h2_json_node, x) {
-            h2_json_node* _a = a->get(_e->key_string.c_str());
-            if (!_a) _a = h2_json_match::search(a->children, _e);
+            h2_json_node* _a = a->get(_e->key_string, false);
+            if (!_a) _a = a->get(_e->key_string, caseless);
+            if (!_a) _a = h2_json_match::search(a->children, _e, caseless);
             if (_a) {
-               children.push_back((new h2_json_dual(_e, _a, this))->x);
+               children.push_back((new h2_json_dual(_e, _a, caseless, this))->x);
                _e->x.out();
                delete _e;
                _a->x.out();
@@ -4715,10 +4722,10 @@ struct h2_json_dual : h2_libc {  // combine 2 Node into a Dual
          }
 
          for (int i = 0; i < std::max(e->size(), a->size()); ++i)
-            children.push_back((new h2_json_dual(e->get(i), a->get(i), this))->x);
+            children.push_back((new h2_json_dual(e->get(i), a->get(i), caseless, this))->x);
       } else if (!strcmp("array", e_class)) {
          for (int i = 0; i < std::max(e->size(), a->size()); ++i)
-            children.push_back((new h2_json_dual(e->get(i), a->get(i), this))->x);
+            children.push_back((new h2_json_dual(e->get(i), a->get(i), caseless, this))->x);
       }
    }
 
@@ -4754,29 +4761,29 @@ struct h2_json_dual : h2_libc {  // combine 2 Node into a Dual
       a_line.indent(depth * 2);
 
       if (e_key.size()) {
-         if (!match && e_key != a_key) e_line.push_back("\033{green}");
+         if (!key_match) e_line.push_back("\033{green}");
          e_line.push_back(e_key);
-         if (!match && e_key != a_key) e_line.push_back("\033{reset}");
+         if (!key_match) e_line.push_back("\033{reset}");
          e_line.push_back(": ");
       }
 
       if (a_key.size()) {
-         if (!match && a_key != e_key) a_line.push_back("\033{red,bold}");
+         if (!key_match) a_line.push_back("\033{red,bold}");
          a_line.push_back(a_key);
-         if (!match && a_key != e_key) a_line.push_back("\033{reset}");
+         if (!key_match) a_line.push_back("\033{reset}");
          a_line.push_back(": ");
       }
 
       if (!strcmp(e_class, "atomic")) {
          if (e_value.size()) {
-            if (!match && e_value != a_value) e_line.push_back("\033{green}");
+            if (!value_match) e_line.push_back("\033{green}");
             e_line.push_back(e_value);
-            if (!match && e_value != a_value) e_line.push_back("\033{reset}");
+            if (!value_match) e_line.push_back("\033{reset}");
          }
          if (a_value.size()) {
-            if (!match && a_value != e_value) a_line.push_back("\033{red,bold}");
+            if (!value_match) a_line.push_back("\033{red,bold}");
             a_line.push_back(a_value);
-            if (!match && a_value != e_value) a_line.push_back("\033{reset}");
+            if (!value_match) a_line.push_back("\033{reset}");
          }
       } else if (!strcmp(e_class, "object") || !strcmp(e_class, "array")) {
          e_line.push_back(strcmp(e_class, "object") ? "[ " : "{ ");
@@ -4804,16 +4811,16 @@ struct h2_json_dual : h2_libc {  // combine 2 Node into a Dual
 };
 // h2_json.cpp
 
-h2_inline bool h2_json::match(const h2_string& expect, const h2_string& actual)
+h2_inline bool h2_json::match(const h2_string& expect, const h2_string& actual, bool caseless)
 {
    h2_json_parse e(expect.c_str()), a(actual.c_str());
-   return h2_json_match::match(&e.root_node, &a.root_node);
+   return h2_json_match::match(&e.root_node, &a.root_node, caseless);
 }
 
-h2_inline void h2_json::diff(const h2_string& expect, const h2_string& actual, h2_lines& e_lines, h2_lines& a_lines)
+h2_inline void h2_json::diff(const h2_string& expect, const h2_string& actual, h2_lines& e_lines, h2_lines& a_lines, bool caseless)
 {
    h2_json_parse e(expect.c_str()), a(actual.c_str());
-   h2_json_dual dual(&e.root_node, &a.root_node);
+   h2_json_dual dual(&e.root_node, &a.root_node, caseless);
    dual.align(e_lines, a_lines);
 }
 
@@ -4858,8 +4865,8 @@ h2_inline h2_fail* h2_matches_endswith::matches(const h2_string& a, bool caseles
 
 h2_inline h2_fail* h2_matches_json::matches(const h2_string& a, bool caseless, bool dont) const
 {
-   if ((h2_json::match(e, a)) == !dont) return nullptr;
-   return h2_fail::new_json(e, a, expects(h2_type<>(), caseless, dont));
+   if ((h2_json::match(e, a, caseless)) == !dont) return nullptr;
+   return h2_fail::new_json(e, a, expects(h2_type<>(), caseless, dont), caseless);
 }
 // h2_memcmp.cpp
 
@@ -7020,13 +7027,14 @@ struct h2_fail_strfind : h2_fail_unexpect {
 
 struct h2_fail_json : h2_fail_unexpect {
    h2_string e_value, a_value;
-   h2_fail_json(const h2_string& e_value_, const h2_string& a_value_, const h2_string& expection_, const char* file_ = nullptr, int line_ = 0)
-     : h2_fail_unexpect(e_value_, a_value_, expection_, "", file_, line_), e_value(e_value_), a_value(a_value_) {}
+   const bool caseless;
+   h2_fail_json(const h2_string& e_value_, const h2_string& a_value_, const h2_string& expection_, bool caseless_, const char* file_ = nullptr, int line_ = 0)
+     : h2_fail_unexpect(e_value_, a_value_, expection_, "", file_, line_), e_value(e_value_), a_value(a_value_), caseless(caseless_) {}
    void print(int subling_index = 0, int child_index = 0) override
    {
       h2_fail_unexpect::print(subling_index, child_index);
       h2_lines e_lines, a_lines;
-      h2_json::diff(e_value, a_value, e_lines, a_lines);
+      h2_json::diff(e_value, a_value, e_lines, a_lines, caseless);
       h2_lines lines = h2_layout::split(e_lines, a_lines, "expect", "actual", 0);
       h2_color::printf(lines);
    }
@@ -7223,55 +7231,55 @@ struct h2_fail_call : h2_fail {
    }
 };
 
-h2_inline h2_fail* h2_fail::new_normal(const char* file_, int line_, const char* func_, const char* format, ...)
+h2_inline h2_fail* h2_fail::new_normal(const char* file, int line, const char* func, const char* format, ...)
 {
    char* alloca_str;
    h2_sprintf(alloca_str, format);
-   return new h2_fail_normal(file_, line_, func_, alloca_str);
+   return new h2_fail_normal(file, line, func, alloca_str);
 }
-h2_inline h2_fail* h2_fail::new_unexpect(h2_string e_represent_, h2_string a_represent_, h2_string expection_, h2_string explain_, const char* file_, int line_)
+h2_inline h2_fail* h2_fail::new_unexpect(h2_string e_represent, h2_string a_represent, h2_string expection, h2_string explain, const char* file, int line)
 {
-   return new h2_fail_unexpect(e_represent_, a_represent_, expection_, explain_, file_, line_);
+   return new h2_fail_unexpect(e_represent, a_represent, expection, explain, file, line);
 }
-h2_inline h2_fail* h2_fail::new_strcmp(const h2_string& e_value_, const h2_string& a_value_, bool caseless_, const h2_string& expection_, const char* file_, int line_)
+h2_inline h2_fail* h2_fail::new_strcmp(const h2_string& e_value, const h2_string& a_value, bool caseless, const h2_string& expection, const char* file, int line)
 {
-   return new h2_fail_strcmp(e_value_, a_value_, caseless_, expection_, file_, line_);
+   return new h2_fail_strcmp(e_value, a_value, caseless, expection, file, line);
 }
-h2_inline h2_fail* h2_fail::new_strfind(const h2_string& e_value_, const h2_string& a_value_, const h2_string& expection_, const char* file_, int line_)
+h2_inline h2_fail* h2_fail::new_strfind(const h2_string& e_value, const h2_string& a_value, const h2_string& expection, const char* file, int line)
 {
-   return new h2_fail_strfind(e_value_, a_value_, expection_, file_, line_);
+   return new h2_fail_strfind(e_value, a_value, expection, file, line);
 }
-h2_inline h2_fail* h2_fail::new_json(const h2_string& e_value_, const h2_string& a_value_, const h2_string& expection_, const char* file_, int line_)
+h2_inline h2_fail* h2_fail::new_json(const h2_string& e_value, const h2_string& a_value, const h2_string& expection, bool caseless, const char* file, int line)
 {
-   return new h2_fail_json(e_value_, a_value_, expection_, file_, line_);
+   return new h2_fail_json(e_value, a_value, expection, caseless, file, line);
 }
-h2_inline h2_fail* h2_fail::new_memcmp(const unsigned char* e_value_, const unsigned char* a_value_, int width_, int nbits_, const h2_string& expection_, h2_string a_represent_, h2_string explain_, const char* file_, int line_)
+h2_inline h2_fail* h2_fail::new_memcmp(const unsigned char* e_value, const unsigned char* a_value, int width, int nbits, const h2_string& expection, h2_string a_represent, h2_string explain, const char* file, int line)
 {
-   return new h2_fail_memcmp(e_value_, a_value_, width_, nbits_, expection_, a_represent_, explain_, file_, line_);
+   return new h2_fail_memcmp(e_value, a_value, width, nbits, expection, a_represent, explain, file, line);
 }
-h2_inline h2_fail* h2_fail::new_memory_leak(const void* ptr_, int size_, h2_backtrace bt_allocate_, const char* where_, const char* file_, int line_)
+h2_inline h2_fail* h2_fail::new_memory_leak(const void* ptr, int size, h2_backtrace bt_allocate, const char* where, const char* file, int line)
 {
-   return new h2_fail_memory_leak(ptr_, size_, bt_allocate_, where_, file_, line_);
+   return new h2_fail_memory_leak(ptr, size, bt_allocate, where, file, line);
 }
-h2_inline h2_fail* h2_fail::new_double_free(const void* ptr_, h2_backtrace bt_allocate_, h2_backtrace bt_release_, h2_backtrace bt_double_free_)
+h2_inline h2_fail* h2_fail::new_double_free(const void* ptr, h2_backtrace bt_allocate, h2_backtrace bt_release, h2_backtrace bt_double_free)
 {
-   return new h2_fail_double_free(ptr_, bt_allocate_, bt_release_, bt_double_free_);
+   return new h2_fail_double_free(ptr, bt_allocate, bt_release, bt_double_free);
 }
-h2_inline h2_fail* h2_fail::new_asymmetric_free(const void* ptr_, const char* who_allocate_, const char* who_release_, h2_backtrace bt_allocate_, h2_backtrace bt_release_)
+h2_inline h2_fail* h2_fail::new_asymmetric_free(const void* ptr, const char* who_allocate, const char* who_release, h2_backtrace bt_allocate, h2_backtrace bt_release)
 {
-   return new h2_fail_asymmetric_free(ptr_, who_allocate_, who_release_, bt_allocate_, bt_release_);
+   return new h2_fail_asymmetric_free(ptr, who_allocate, who_release, bt_allocate, bt_release);
 }
-h2_inline h2_fail* h2_fail::new_overflow(const void* ptr_, const int size_, const void* addr_, const char* action_, h2_vector<unsigned char> spot_, h2_backtrace bt_allocate_, h2_backtrace bt_trample_, const char* file_, int line_)
+h2_inline h2_fail* h2_fail::new_overflow(const void* ptr, const int size, const void* addr, const char* action, h2_vector<unsigned char> spot, h2_backtrace bt_allocate, h2_backtrace bt_trample, const char* file, int line)
 {
-   return new h2_fail_overflow(ptr_, size_, addr_, action_, spot_, bt_allocate_, bt_trample_, file_, line_);
+   return new h2_fail_overflow(ptr, size, addr, action, spot, bt_allocate, bt_trample, file, line);
 }
-h2_inline h2_fail* h2_fail::new_use_after_free(const void* ptr_, const void* addr_, const char* action_, h2_backtrace bt_allocate_, h2_backtrace bt_release_, h2_backtrace bt_use_)
+h2_inline h2_fail* h2_fail::new_use_after_free(const void* ptr, const void* addr, const char* action, h2_backtrace bt_allocate, h2_backtrace bt_release, h2_backtrace bt_use)
 {
-   return new h2_fail_use_after_free(ptr_, addr_, action_, bt_allocate_, bt_release_, bt_use_);
+   return new h2_fail_use_after_free(ptr, addr, action, bt_allocate, bt_release, bt_use);
 }
-h2_inline h2_fail* h2_fail::new_call(const char* func_, const char* expect, const char* actual, const char* file_, int line_)
+h2_inline h2_fail* h2_fail::new_call(const char* func, const char* expect, const char* actual, const char* file, int line)
 {
-   return new h2_fail_call(func_, expect, actual, file_, line_);
+   return new h2_fail_call(func, expect, actual, file, line);
 }
 // h2_libc.cpp
 

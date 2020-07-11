@@ -37,6 +37,6 @@ h2_inline h2_fail* h2_matches_endswith::matches(const h2_string& a, bool caseles
 
 h2_inline h2_fail* h2_matches_json::matches(const h2_string& a, bool caseless, bool dont) const
 {
-   if ((h2_json::match(e, a)) == !dont) return nullptr;
-   return h2_fail::new_json(e, a, expects(h2_type<>(), caseless, dont));
+   if ((h2_json::match(e, a, caseless)) == !dont) return nullptr;
+   return h2_fail::new_json(e, a, expects(h2_type<>(), caseless, dont), caseless);
 }

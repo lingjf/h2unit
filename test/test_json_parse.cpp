@@ -19,7 +19,7 @@ static int __node_tojson(h2::h2_json_node* node, char* b)
    if (node->is_string()) {
       l += sprintf(b + l, "\"%s\"", node->value_string.c_str());
    }
-   if (node->is_regexp()) {
+   if (node->is_pattern()) {
       l += sprintf(b + l, "\"/%s/\"", node->value_string.c_str());
    }
    if (node->is_array()) {
@@ -58,7 +58,7 @@ static const char* __type_tostr(const int type)
    case h2::h2_json_node::t_boolean: return "boolean";
    case h2::h2_json_node::t_number: return "number";
    case h2::h2_json_node::t_string: return "string";
-   case h2::h2_json_node::t_regexp: return "regexp";
+   case h2::h2_json_node::t_pattern: return "pattern";
    case h2::h2_json_node::t_array: return "array";
    case h2::h2_json_node::t_object: return "object";
    }
@@ -132,10 +132,10 @@ SUITE(json parse)
       OK(c1.root_node.type == h2::h2_json_node::t_absent);
    }
 
-   Case(regexp)
+   Case(pattern)
    {
       h2::h2_json_parse c1("/123*567/");
-      OK(c1.root_node.is_regexp());
+      OK(c1.root_node.is_pattern());
       OK("123*567", c1.root_node.value_string);
    }
 
@@ -181,7 +181,7 @@ SUITE(json parse)
 
       JE(week, node_tojson(&c1.root_node, t2));
 
-      OK(NULL == c1.root_node.get("ling"));
+      OK(NULL == c1.root_node.get("ling", false));
 
       for (int i = 0; i < c1.root_node.size(); i++) {
          OK(d[i]->value_string, c1.root_node.get(i)->value_string);
@@ -499,6 +499,6 @@ SUITE(json parse)
 }";
 
       h2::h2_json_parse c3(j3);
-      OK("Jack (\"Bee\") Nimble", c3.root_node.get("name")->value_string);
+      OK("Jack (\"Bee\") Nimble", c3.root_node.get("name", false)->value_string);
    }
 }

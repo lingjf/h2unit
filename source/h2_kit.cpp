@@ -47,6 +47,11 @@ h2_inline bool h2_pattern::wildcard_match(const char* pattern, const char* subje
 #endif
 }
 
+h2_inline bool h2_pattern::match(const char* pattern, const char* subject, bool caseless)
+{
+   return wildcard_match(pattern, subject, caseless) || regex_match(pattern, subject, caseless);
+}
+
 static inline long long h2_now()
 {
 #ifdef _WIN32

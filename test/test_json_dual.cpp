@@ -36,7 +36,7 @@ SUITE(json dual)
       h2::h2_json_parse e_parse(e);
       h2::h2_json_parse a_parse(a);
 
-      h2::h2_json_dual dual(&e_parse.root_node, &a_parse.root_node);
+      h2::h2_json_dual dual(&e_parse.root_node, &a_parse.root_node, false);
 
       OK("(0;object-object;-;-)[(1;atomic-atomic;\"e\"-\"a\";123-456)]", dual_tostr(&dual, t));
 

@@ -42,7 +42,7 @@ struct h2_and_matches {
    {
       h2_string s1 = h2_matcher_cast<typename std::decay<A>::type>(m1).expects(caseless, false);
       h2_string s2 = h2_matcher_cast<typename std::decay<A>::type>(m2).expects(caseless, false);
-      return CD(s1 + " && " + s2, caseless, dont);
+      return CD(s1 + " && " + s2, false, dont);
    }
 };
 
@@ -70,7 +70,7 @@ struct h2_or_matches {
    {
       h2_string s1 = h2_matcher_cast<typename std::decay<A>::type>(m1).expects(caseless, false);
       h2_string s2 = h2_matcher_cast<typename std::decay<A>::type>(m2).expects(caseless, false);
-      return CD(s1 + " || " + s2, caseless, dont);
+      return CD(s1 + " || " + s2, false, dont);
    }
 };
 
@@ -114,7 +114,7 @@ struct h2_allof_matches {
       for (size_t i = 0; i < v_matchers.size(); ++i) {
          ret += Comma[!!i] + v_matchers[i].expects(caseless, false);
       }
-      return CD("AllOf(" + ret + ")", caseless, dont);
+      return CD("AllOf(" + ret + ")", false, dont);
    }
 
    H2_MATCHER_T2V(t_matchers)
@@ -165,7 +165,7 @@ struct h2_anyof_matches {
       for (size_t i = 0; i < v_matchers.size(); ++i) {
          ret += Comma[!!i] + v_matchers[i].expects(caseless, false);
       }
-      return CD("AnyOf(" + ret + ")", caseless, dont);
+      return CD("AnyOf(" + ret + ")", false, dont);
    }
 
    H2_MATCHER_T2V(t_matchers)
@@ -199,7 +199,7 @@ struct h2_noneof_matches {
       for (size_t i = 0; i < v_matchers.size(); ++i) {
          ret += Comma[!!i] + v_matchers[i].expects(caseless, false);
       }
-      return CD("NoneOf(" + ret + ")", caseless, dont);
+      return CD("NoneOf(" + ret + ")", false, dont);
    }
 
    H2_MATCHER_T2V(t_matchers)

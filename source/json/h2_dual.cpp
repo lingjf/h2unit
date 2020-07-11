@@ -1,6 +1,6 @@
 
-struct h2_json_dual : h2_libc {  // combine 2 Node into a Dual
-   bool match = false;
+struct h2_json_dual : h2_libc {  // combine two node into a dual
+   bool key_match = false, value_match = false;
    int e_type = h2_json_node::t_absent, a_type = h2_json_node::t_absent;
    const char *e_class = "blob", *a_class = "blob";
    h2_string e_key, a_key;
@@ -18,11 +18,12 @@ struct h2_json_dual : h2_libc {  // combine 2 Node into a Dual
       }
    }
 
-   h2_json_dual(h2_json_node* e, h2_json_node* a, h2_json_dual* perent_ = nullptr) : perent(perent_), depth(perent_ ? perent_->depth + 1 : 0)
+   h2_json_dual(h2_json_node* e, h2_json_node* a, bool caseless, h2_json_dual* perent_ = nullptr) : perent(perent_), depth(perent_ ? perent_->depth + 1 : 0)
    {
-      match = h2_json_match::match(e, a);
+      value_match = h2_json_match::match(e, a, caseless);
       if (e) e->dual(e_type, e_class, e_key, e_value);
       if (a) a->dual(a_type, a_class, a_key, a_value);
+      key_match = e_key.equals(a_key, caseless);
 
       if (strcmp(e_class, a_class)) {
          if (e) e->print(e_blob, depth, 0, true);
@@ -30,10 +31,11 @@ struct h2_json_dual : h2_libc {  // combine 2 Node into a Dual
          e_class = a_class = "blob";
       } else if (!strcmp("object", e_class)) {
          h2_list_for_each_entry (_e, e->children, h2_json_node, x) {
-            h2_json_node* _a = a->get(_e->key_string.c_str());
-            if (!_a) _a = h2_json_match::search(a->children, _e);
+            h2_json_node* _a = a->get(_e->key_string, false);
+            if (!_a) _a = a->get(_e->key_string, caseless);
+            if (!_a) _a = h2_json_match::search(a->children, _e, caseless);
             if (_a) {
-               children.push_back((new h2_json_dual(_e, _a, this))->x);
+               children.push_back((new h2_json_dual(_e, _a, caseless, this))->x);
                _e->x.out();
                delete _e;
                _a->x.out();
@@ -42,10 +44,10 @@ struct h2_json_dual : h2_libc {  // combine 2 Node into a Dual
          }
 
          for (int i = 0; i < std::max(e->size(), a->size()); ++i)
-            children.push_back((new h2_json_dual(e->get(i), a->get(i), this))->x);
+            children.push_back((new h2_json_dual(e->get(i), a->get(i), caseless, this))->x);
       } else if (!strcmp("array", e_class)) {
          for (int i = 0; i < std::max(e->size(), a->size()); ++i)
-            children.push_back((new h2_json_dual(e->get(i), a->get(i), this))->x);
+            children.push_back((new h2_json_dual(e->get(i), a->get(i), caseless, this))->x);
       }
    }
 
@@ -81,29 +83,29 @@ struct h2_json_dual : h2_libc {  // combine 2 Node into a Dual
       a_line.indent(depth * 2);
 
       if (e_key.size()) {
-         if (!match && e_key != a_key) e_line.push_back("\033{green}");
+         if (!key_match) e_line.push_back("\033{green}");
          e_line.push_back(e_key);
-         if (!match && e_key != a_key) e_line.push_back("\033{reset}");
+         if (!key_match) e_line.push_back("\033{reset}");
          e_line.push_back(": ");
       }
 
       if (a_key.size()) {
-         if (!match && a_key != e_key) a_line.push_back("\033{red,bold}");
+         if (!key_match) a_line.push_back("\033{red,bold}");
          a_line.push_back(a_key);
-         if (!match && a_key != e_key) a_line.push_back("\033{reset}");
+         if (!key_match) a_line.push_back("\033{reset}");
          a_line.push_back(": ");
       }
 
       if (!strcmp(e_class, "atomic")) {
          if (e_value.size()) {
-            if (!match && e_value != a_value) e_line.push_back("\033{green}");
+            if (!value_match) e_line.push_back("\033{green}");
             e_line.push_back(e_value);
-            if (!match && e_value != a_value) e_line.push_back("\033{reset}");
+            if (!value_match) e_line.push_back("\033{reset}");
          }
          if (a_value.size()) {
-            if (!match && a_value != e_value) a_line.push_back("\033{red,bold}");
+            if (!value_match) a_line.push_back("\033{red,bold}");
             a_line.push_back(a_value);
-            if (!match && a_value != e_value) a_line.push_back("\033{reset}");
+            if (!value_match) a_line.push_back("\033{reset}");
          }
       } else if (!strcmp(e_class, "object") || !strcmp(e_class, "array")) {
          e_line.push_back(strcmp(e_class, "object") ? "[ " : "{ ");
