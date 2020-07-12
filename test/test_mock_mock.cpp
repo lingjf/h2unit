@@ -319,8 +319,7 @@ SUITE(mock C++ Class member)
       MOCK(Shape::fly, int, (int, int)).once() = [](int, int) -> int { return 22; };
       OK(22, Shape::fly(1, 2));
 
-      static_assert(std::is_function<decltype(Shape::fly)>::value,
-                    "Must a member function ");
+      static_assert(std::is_function<decltype(Shape::fly)>::value, "Must a member function ");
    }
 
    Case(member function)

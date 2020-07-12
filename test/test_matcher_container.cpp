@@ -1,5 +1,17 @@
 #include "../source/h2_unit.cpp"
 
+#include <vector>
+#include <deque>
+#include <array>
+#include <list>
+#include <forward_list>
+#include <set>
+#include <unordered_set>
+#include <map>
+#include <unordered_map>
+#include <tuple>
+#include <valarray>
+
 SUITE(container matches)
 {
    Case(Pair)
@@ -9,8 +21,8 @@ SUITE(container matches)
       std::pair<int, double> a1 = std::make_pair(1, 3.14);
       std::pair<int, double> a2 = std::make_pair(2, 3.14);
 
-      OK(IsNull, e1.matches(a1, false, false));
-      OK(NotNull, e1.matches(a2, false, false));
+      OK(IsNull, e1.matches(a1, 0, false, false));
+      OK(NotNull, e1.matches(a2, 0, false, false));
    }
 
    Case(ListOf)
@@ -24,10 +36,10 @@ SUITE(container matches)
       h2::h2_listof_matches<T1, T1, T1> a(a1_, a2_, a3_);
 
       int b1[] = {1, 2, 3};
-      OK(nullptr == a.matches(b1, false, false));
+      OK(nullptr == a.matches(b1, 0, false, false));
 
       std::vector<int> b2 = {1, 2, 3};
-      OK(nullptr == a.matches(b2, false, false));
+      OK(nullptr == a.matches(b2, 0, false, false));
    }
 
    Case(In)
@@ -53,10 +65,10 @@ SUITE(Pair)
 
 SUITE(ListOf primitive)
 {
-   Case(C / C++ native array)
+   Case(C / C++ generic array)
    {
       int a1[] = {1, 2, 3};
-      OK(ListOf(1, 2, 3), a1);
+      OK(ListOf(1, 2, 3), a1, 3);
    }
 
    Case(Sequence containers / array / static contiguous array)
@@ -129,27 +141,33 @@ SUITE(ListOf primitive)
       std::unordered_multimap<int, int> a1 = {{1, 111}, {2, 222}, {3, 333}};
       // OK(ListOf(Pair(1, 111), Pair(2, 222), Pair(3, 333)), a1);
    }
+
+   Case(empty)
+   {
+      std::array<int, 3> a1 = {1, 2, 3};
+      OK(ListOf(), a1);
+   }
 }
 
 SUITE(Has primitive)
 {
-   Case(C / C++ native array)
+   Case(C / C++ generic array)
    {
       int a1[] = {1, 2, 3};
-      // OK(Has(1, 3), a1);
+      OK(Has(1, 3), a1, 3);
    }
 
    Case(Sequence containers / array / static contiguous array)
    {
       std::array<int, 3> a1 = {1, 2, 3};
       OK(Has(1, 3), a1);
-      OK(!Has(2, 4), a1);
+      OK(!Have(2, 4), a1);
    }
 
    Case(Sequence containers / vector / dynamic contiguous array)
    {
       std::vector<int> a1 = {1, 2, 3};
-      OK(Has(1, 3), a1);
+      OK(Have(1, 3), a1);
       OK(!Has(2, 4), a1);
    }
 
@@ -157,13 +175,13 @@ SUITE(Has primitive)
    {
       std::deque<int> a1 = {1, 2, 3};
       OK(Has(1, 3), a1);
-      OK(!Has(2, 4), a1);
+      OK(!Have(2, 4), a1);
    }
 
    Case(Sequence containers / forward_list / singly - linked list)
    {
       std::forward_list<int> a1 = {1, 2, 3};
-      OK(Has(1, 3), a1);
+      OK(Have(1, 3), a1);
       OK(!Has(2, 4), a1);
    }
 
@@ -227,5 +245,81 @@ SUITE(In primitive)
    Case(Ge)
    {
       OK(In(1, Ge(2), Pair(2, 3)), 2);
+   }
+}
+
+SUITE(CountOf primitive)
+{
+   Case(C / C++ generic array)
+   {
+      int a1[] = {1, 2, 3};
+      // OK(Has(1, 3), a1);
+   }
+
+   Case(Sequence containers / array / static contiguous array)
+   {
+      std::array<int, 3> a1 = {1, 2, 3};
+      OK(CountOf(3), a1);
+      OK(CountOf(Gt(2) && Lt(4)), a1);
+   }
+
+   Case(Sequence containers / vector / dynamic contiguous array)
+   {
+      std::vector<int> a1 = {1, 2, 3};
+      OK(CountOf(3), a1);
+   }
+
+   Case(Sequence containers / deque / double - ended queue)
+   {
+      std::deque<int> a1 = {1, 2, 3};
+      OK(CountOf(3), a1);
+   }
+
+   Case(Sequence containers / forward_list / singly - linked list)
+   {
+      std::forward_list<int> a1 = {1, 2, 3};
+      OK(CountOf(3), a1);
+   }
+
+   Case(Sequence containers / list / doubly - linked list)
+   {
+      std::list<int> a1 = {1, 2, 3};
+      OK(CountOf(3), a1);
+   }
+
+   Case(Associative containers / set)
+   {
+      std::set<int> a1 = {1, 2, 3};
+      OK(CountOf(3), a1);
+   }
+
+   Case(Associative containers / multiset)
+   {
+      std::multiset<int> a1 = {1, 2, 3};
+      OK(CountOf(3), a1);
+   }
+
+   Case(Associative containers / unordered_set)
+   {
+      std::unordered_set<int> a1 = {1, 2, 3};
+      OK(CountOf(3), a1);
+   }
+
+   Case(Associative containers / map)
+   {
+      std::map<int, int> a1 = {{1, 111}, {2, 222}, {3, 333}};
+      OK(CountOf(3), a1);
+   }
+
+   Case(Associative containers / multimap)
+   {
+      std::multimap<int, int> a1 = {{1, 111}, {2, 222}, {3, 333}};
+      OK(CountOf(3), a1);
+   }
+
+   Case(Associative containers / unordered_multimap)
+   {
+      std::unordered_multimap<int, int> a1 = {{1, 111}, {2, 222}, {3, 333}};
+      OK(CountOf(3), a1);
    }
 }

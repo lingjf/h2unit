@@ -13,7 +13,7 @@ static inline h2_string readable_size(int width, int nbits)
    return h2_string(t);
 }
 
-h2_inline h2_fail* h2_matches_bytecmp::matches(const void* a, bool caseless, bool dont) const
+h2_inline h2_fail* h2_matches_bytecmp::matches(const void* a, int n, bool caseless, bool dont) const
 {
    bool result = false;
    int _nbytes;
@@ -47,7 +47,7 @@ h2_inline h2_string h2_matches_bytecmp::expects(bool caseless, bool dont) const
    return CD("Me()", caseless, dont);
 }
 
-h2_inline h2_fail* h2_matches_bitcmp::matches(const void* a, bool caseless, bool dont) const
+h2_inline h2_fail* h2_matches_bitcmp::matches(const void* a, int n, bool caseless, bool dont) const
 {
    int max_length = INT_MAX;
    unsigned char* _e = (unsigned char*)e;

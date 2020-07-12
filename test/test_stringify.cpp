@@ -1,4 +1,15 @@
 #include "../source/h2_unit.cpp"
+
+#include <vector>
+#include <deque>
+#include <array>
+#include <list>
+#include <forward_list>
+#include <set>
+#include <unordered_set>
+#include <map>
+#include <unordered_map>
+#include <tuple>
 #include <valarray>
 
 namespace {

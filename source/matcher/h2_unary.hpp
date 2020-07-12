@@ -1,7 +1,7 @@
 
 struct h2_matches_any : h2_matches {
    template <typename A>
-   h2_fail* matches(const A& a, bool, bool) const { return nullptr; }
+   h2_fail* matches(const A& a, int, bool, bool) const { return nullptr; }
    virtual h2_string expects(bool, bool) const override { return "Any"; }
 };
 
@@ -9,7 +9,7 @@ struct h2_matches_null : h2_matches {
    const bool reverse;
    explicit h2_matches_null(bool _reverse) : reverse(_reverse) {}
    template <typename A>
-   h2_fail* matches(const A& a, bool, bool dont) const
+   h2_fail* matches(const A& a, int, bool, bool dont) const
    {
       bool _dont = reverse ? !dont : dont;
       if ((nullptr == (const void*)a) == !_dont) return nullptr;
@@ -24,7 +24,7 @@ struct h2_matches_null : h2_matches {
 template <bool E>
 struct h2_matches_boolean : h2_matches {
    template <typename A>
-   h2_fail* matches(const A& a, bool, bool dont) const
+   h2_fail* matches(const A& a, int, bool, bool dont) const
    {
       bool _dont = E ? dont : !dont;
       if (((bool)a) == !_dont) return nullptr;
@@ -51,11 +51,11 @@ struct h2_pointee_matches : h2_matches {
    };
 
    template <typename A>
-   h2_fail* matches(A a, bool caseless, bool dont) const
+   h2_fail* matches(A a, int, bool caseless, bool dont) const
    {
       typedef typename std::remove_const<typename std::remove_reference<A>::type>::type Pointer;
       typedef typename PointeeOf<Pointer>::type Pointee;
-      return h2_matcher_cast<Pointee>(m).matches(*a, caseless, dont);
+      return h2_matcher_cast<Pointee>(m).matches(*a, 0, caseless, dont);
    }
    virtual h2_string expects(bool caseless, bool dont) const override
    {

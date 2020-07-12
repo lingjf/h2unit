@@ -5,7 +5,7 @@ struct h2_matches_bytecmp : h2_matches {
    const bool isstring;
    const int nbytes;
    explicit h2_matches_bytecmp(const int _width, const void* _e, const bool _isstring, const int _nbytes) : width(_width), e(_e), isstring(_isstring), nbytes(_nbytes) {}
-   h2_fail* matches(const void* a, bool caseless, bool dont) const;
+   h2_fail* matches(const void* a, int n, bool caseless, bool dont) const;
    virtual h2_string expects(bool caseless, bool dont) const override;
 };
 
@@ -14,7 +14,7 @@ struct h2_matches_bitcmp : h2_matches {
    const bool isstring;
    const int nbits;
    explicit h2_matches_bitcmp(const void* _e, const bool _isstring, const int _nbits) : e(_e), isstring(_isstring), nbits(_nbits) {}
-   h2_fail* matches(const void* a, bool caseless, bool dont) const;
+   h2_fail* matches(const void* a, int n, bool caseless, bool dont) const;
    virtual h2_string expects(bool caseless, bool dont) const override;
 };
 
@@ -23,20 +23,20 @@ struct h2_matches_memcmp : h2_matches {
    const E e;
    const int length;
    explicit h2_matches_memcmp(const E _e, const int _length) : e(_e), length(_length) {}
-   h2_fail* matches(const void* a, bool caseless, bool dont) const
+   h2_fail* matches(const void* a, int n, bool caseless, bool dont) const
    {
       h2_fail* fail = (h2_fail*)1;
 
       if (std::is_convertible<E, h2_string>::value) { /* deduce */
          if (h2_numeric::is_bin_string((const char*)e)) {
             h2_matches_bitcmp t((const void*)e, true, length);
-            fail = t.matches(a, false, false);
+            fail = t.matches(a, n, false, false);
          }
       }
 
       if (fail) {
          h2_matches_bytecmp t(h2_sizeof_pointee<E>::value * 8, e, std::is_convertible<E, h2_string>::value, length * h2_sizeof_pointee<E>::value);
-         fail = t.matches(a, false, false);
+         fail = t.matches(a, n, false, false);
       }
 
       if (!fail == !dont) {

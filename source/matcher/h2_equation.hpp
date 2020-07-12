@@ -5,7 +5,7 @@ struct h2_equation : h2_matches {
    explicit h2_equation(const E& _e, const long double = 0) : e(_e) {}
 
    template <typename A>
-   h2_fail* matches(const A& a, bool caseless, bool dont) const
+   h2_fail* matches(const A& a, int, bool caseless, bool dont) const
    {
       if ((a == e) == !dont) return nullptr;
       return h2_fail::new_unexpect(h2_stringify(e), h2_stringify(a), expects(caseless, dont));
@@ -21,7 +21,7 @@ struct h2_equation<E, typename std::enable_if<std::is_convertible<E, h2_string>:
    const h2_string e;
    explicit h2_equation(const E& _e, const long double = 0) : e(h2_string(_e)) {}
 
-   h2_fail* matches(const h2_string& a, bool caseless, bool dont) const
+   h2_fail* matches(const h2_string& a, int, bool caseless, bool dont) const
    {
       if (a.equals(e, caseless) == !dont) return nullptr;
       if (h2_pattern::wildcard_match(e.c_str(), a.c_str(), caseless) == !dont) return nullptr;
@@ -42,7 +42,7 @@ struct h2_equation<E, typename std::enable_if<std::is_arithmetic<E>::value>::typ
    explicit h2_equation(const E& _e, const long double _epsilon = 0) : e(_e), epsilon(_epsilon) {}
 
    template <typename A>
-   h2_fail* matches(const A& a, bool caseless, bool dont) const
+   h2_fail* matches(const A& a, int, bool caseless, bool dont) const
    {
       bool result;
       if (std::is_floating_point<E>::value || std::is_floating_point<A>::value) {

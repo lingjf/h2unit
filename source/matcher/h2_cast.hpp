@@ -21,14 +21,14 @@ struct h2_matcher_cast_impl<T, h2_matcher<U>> {
       explicit internal_impl(const h2_matcher<U>& from_) : from(from_) {}
 
       // Delegate the matching logic to the source h2_matcher.
-      h2_fail* matches(T a, bool caseless, bool dont) const override
+      h2_fail* matches(T a, int n, bool caseless, bool dont) const override
       {
          using FromType = typename std::remove_cv<typename std::remove_pointer<typename std::remove_reference<T>::type>::type>::type;
          using ToType = typename std::remove_cv<typename std::remove_pointer<typename std::remove_reference<U>::type>::type>::type;
          // Do not allow implicitly converting base*/& to derived*/&.
          static_assert((std::is_pointer<typename std::remove_reference<T>::type>::value != std::is_pointer<typename std::remove_reference<U>::type>::value) || std::is_same<FromType, ToType>::value || !std::is_base_of<FromType, ToType>::value, "Can't implicitly convert from <base> to <derived>");
 
-         return from.matches(static_cast<U>(a), caseless, dont);
+         return from.matches(static_cast<U>(a), n, caseless, dont);
       }
       const h2_matcher<U> from;
       void operator=(internal_impl const&) = delete;

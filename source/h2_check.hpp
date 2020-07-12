@@ -20,11 +20,11 @@ static inline h2_ostringstream& h2_OK(h2_defer_fail* d, bool a)
 }
 
 template <typename E, typename A>
-static inline h2_ostringstream& h2_OK(h2_defer_fail* d, E e, A a)
+static inline h2_ostringstream& h2_OK(h2_defer_fail* d, E e, A a, int n = 0)
 {
    d->check_type = "OK2";
    h2::h2_matcher<typename h2_decay<A>::type> m = h2::h2_matcher_cast<typename h2_decay<A>::type>((typename h2_decay<E>::type)e);
-   h2_fail* fail = m.matches((typename h2_decay<A>::type)a);
+   h2_fail* fail = m.matches((typename h2_decay<A>::type)a, n);
    d->fail = fail;
    if (fail && fail->subling_next) {
       d->fail = h2_fail::new_unexpect();

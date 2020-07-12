@@ -11,14 +11,7 @@
 #include <sstream>       /* std::basic_ostringstream */
 #include <string>        /* std::string */
 #include <vector>        /* std::vector */
-#include <deque>         /* std::deque */
 #include <array>         /* std::array */
-#include <list>          /* std::list */
-#include <forward_list>  /* std::forward_list */
-#include <set>           /* std::set */
-#include <unordered_set> /* std::unordered_set */
-#include <map>           /* std::map */
-#include <unordered_map> /* std::unordered_map */
 #include <tuple>         /* std::tuple */
 #include <functional>    /* std::function */
 #include <utility>       /* std::forward, std::pair */
@@ -308,6 +301,8 @@ using h2::AllOf;
 using h2::AnyOf;
 using h2::NoneOf;
 using h2::ListOf;
+using h2::CountOf;
+using h2::Have;
 using h2::Has;
 using h2::In;
 using h2::Pair;

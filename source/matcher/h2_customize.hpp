@@ -3,7 +3,7 @@
    template <typename A>                                                                                  \
    bool __matches(const A& a) const;                                                                      \
    template <typename A>                                                                                  \
-   h2::h2_fail* matches(const A& a, bool caseless, bool dont) const                                       \
+   h2::h2_fail* matches(const A& a, int, bool caseless, bool dont) const                                  \
    {                                                                                                      \
       h2::h2_fail* fail = h2::h2_fail::new_unexpect("", h2::h2_stringify(a), h2::CD("", caseless, dont)); \
       if (__matches(a) == !dont) return nullptr;                                                          \
