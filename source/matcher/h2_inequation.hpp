@@ -1,73 +1,69 @@
 
 template <typename E>
-struct h2_matches_ge {
+struct h2_matches_ge : h2_matches {
    const E e;
    explicit h2_matches_ge(const E& _e) : e(_e) {}
 
    template <typename A>
-   h2_fail* matches(const A& a, bool caseless = false, bool dont = false) const
+   h2_fail* matches(const A& a, bool caseless, bool dont) const
    {
       if ((a >= e) == !dont) return nullptr;
-      return h2_fail::new_unexpect(h2_stringify(e), h2_stringify(a), expects(h2_type<A>(), false, dont));
+      return h2_fail::new_unexpect(h2_stringify(e), h2_stringify(a), expects(caseless, dont));
    }
-   template <typename A>
-   h2_string expects(h2_type<A>, bool caseless = false, bool dont = false) const
+   virtual h2_string expects(bool, bool dont) const override
    {
-      return CD(">=" + h2_stringify(e), caseless, dont);
+      return CD(">=" + h2_stringify(e), false, dont);
    }
 };
 
 template <typename E>
-struct h2_matches_gt {
+struct h2_matches_gt : h2_matches {
    const E e;
    explicit h2_matches_gt(const E& _e) : e(_e) {}
 
    template <typename A>
-   h2_fail* matches(const A& a, bool caseless = false, bool dont = false) const
+   h2_fail* matches(const A& a, bool caseless, bool dont) const
    {
       if ((a > e) == !dont) return nullptr;
-      return h2_fail::new_unexpect(h2_stringify(e), h2_stringify(a), expects(h2_type<A>(), false, dont));
+      return h2_fail::new_unexpect(h2_stringify(e), h2_stringify(a), expects(caseless, dont));
    }
-   template <typename A>
-   h2_string expects(h2_type<A>, bool caseless = false, bool dont = false) const
+   virtual h2_string expects(bool, bool dont) const override
    {
-      return CD(">" + h2_stringify(e), caseless, dont);
+      return CD(">" + h2_stringify(e), false, dont);
    }
 };
 
 template <typename E>
-struct h2_matches_le {
+struct h2_matches_le : h2_matches {
    const E e;
    explicit h2_matches_le(const E& _e) : e(_e) {}
 
    template <typename A>
-   h2_fail* matches(const A& a, bool caseless = false, bool dont = false) const
+   h2_fail* matches(const A& a, bool caseless, bool dont) const
    {
       if ((a <= e) == !dont) return nullptr;
-      return h2_fail::new_unexpect(h2_stringify(e), h2_stringify(a), expects(h2_type<A>(), false, dont));
+      return h2_fail::new_unexpect(h2_stringify(e), h2_stringify(a), expects(caseless, dont));
    }
-   template <typename A>
-   h2_string expects(h2_type<A>, bool caseless = false, bool dont = false) const
+   virtual h2_string expects(bool, bool dont) const override
    {
-      return CD("<=" + h2_stringify(e), caseless, dont);
+      return CD("<=" + h2_stringify(e), false, dont);
    }
 };
 
 template <typename E>
-struct h2_matches_lt {
+struct h2_matches_lt : h2_matches {
    const E e;
    explicit h2_matches_lt(const E& _e) : e(_e) {}
 
    template <typename A>
-   h2_fail* matches(const A& a, bool caseless = false, bool dont = false) const
+   h2_fail* matches(const A& a, bool caseless, bool dont) const
    {
       if ((a < e) == !dont) return nullptr;
-      return h2_fail::new_unexpect(h2_stringify(e), h2_stringify(a), expects(h2_type<A>(), false, dont));
+      return h2_fail::new_unexpect(h2_stringify(e), h2_stringify(a), expects(caseless, dont));
    }
-   template <typename A>
-   h2_string expects(h2_type<A>, bool caseless = false, bool dont = false) const
+   virtual h2_string expects(bool, bool dont) const override
    {
-      return CD("<" + h2_stringify(e), caseless, dont);
+      return CD("<" + h2_stringify(e), false, dont);
    }
 };
 

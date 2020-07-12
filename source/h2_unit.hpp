@@ -88,10 +88,11 @@ namespace h2 {
 #include "h2_generator.hpp"           // pp
 #include "json/h2_json.hpp"           // line
 #include "memory/h2_memory.hpp"       // failure, pp, kit
-#include "matcher/h2_matcher.hpp"     // failure, string, shared_ptr
+#include "matcher/h2_matches.hpp"     // failure, string
+#include "matcher/h2_matcher.hpp"     // matches, failure, string, shared_ptr
 #include "matcher/h2_equation.hpp"    // kit, string
 #include "matcher/h2_cast.hpp"        // matcher
-#include "matcher/h2_matches.hpp"     // matcher, failure, string
+#include "matcher/h2_unary.hpp"       // matcher, failure, string
 #include "matcher/h2_logic.hpp"       // matcher, failure, string
 #include "matcher/h2_inequation.hpp"  // matcher, failure, string
 #include "matcher/h2_strcmp.hpp"      // matcher, failure, string

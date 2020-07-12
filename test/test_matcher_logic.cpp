@@ -7,18 +7,18 @@ SUITE(logic matches)
    Case(Not)
    {
       h2::h2_not_matches<h2::h2_polymorphic_matcher<h2::h2_equation<int>>> a1(h2::h2_polymorphic_matcher<h2::h2_equation<int>>{h2::h2_equation<int>(65)});
-      OK(nullptr != a1.matches(65));
-      OK(nullptr == a1.matches(66));
-      OK("!65", a1.expects(h2::h2_type<int>()));
+      OK(nullptr != a1.matches(65, false, false));
+      OK(nullptr == a1.matches(66, false, false));
+      OK("!65", a1.expects(false, false));
 
       h2::h2_not_matches<h2::h2_polymorphic_matcher<h2::h2_matches_null>> a2(h2::h2_polymorphic_matcher<h2::h2_matches_null>{h2::h2_matches_null(false)});
-      OK(nullptr != a2.matches(nullptr));
-      OK(nullptr == a2.matches(&int65));
-      OK("NotNull", a2.expects(h2::h2_type<std::nullptr_t>()));
+      OK(nullptr != a2.matches(nullptr, false, false));
+      OK(nullptr == a2.matches(&int65, false, false));
+      OK("NotNull", a2.expects(false, false));
 
       h2::h2_not_matches<h2::h2_polymorphic_matcher<h2::h2_matches_substr>> a3(h2::h2_polymorphic_matcher<h2::h2_matches_substr>{h2::h2_matches_substr("A")});
-      OK(nullptr != a3.matches("ABC"));
-      OK(nullptr == a3.matches("BBC"));
+      OK(nullptr != a3.matches("ABC", false, false));
+      OK(nullptr == a3.matches("BBC", false, false));
    }
 
    Case(AllOf)
@@ -26,7 +26,7 @@ SUITE(logic matches)
       using T1 = h2::h2_polymorphic_matcher<h2::h2_matches_null>;
       using T2 = h2::h2_polymorphic_matcher<h2::h2_matches_any>;
       h2::h2_allof_matches<T1, T2> a(T1{h2::h2_matches_null(false)}, T2{h2::h2_matches_any()});
-      OK(nullptr == a.matches(nullptr));
+      OK(nullptr == a.matches(nullptr, false, false));
    }
 
    Case(AnyOf)
@@ -34,8 +34,8 @@ SUITE(logic matches)
       using T1 = h2::h2_polymorphic_matcher<h2::h2_matches_null>;
       using T2 = h2::h2_polymorphic_matcher<h2::h2_matches_any>;
       h2::h2_anyof_matches<T1, T2> a(T1{h2::h2_matches_null(false)}, T2{h2::h2_matches_any()});
-      OK(nullptr == a.matches(nullptr));
-      OK(nullptr == a.matches(NULL));
+      OK(nullptr == a.matches(nullptr, false, false));
+      OK(nullptr == a.matches(NULL, false, false));
    }
 
    Case(NoneOf)
@@ -44,7 +44,7 @@ SUITE(logic matches)
       using T2 = h2::h2_polymorphic_matcher<h2::h2_pointee_matches<h2::h2_matcher<int>>>;
       h2::h2_pointee_matches<h2::h2_matcher<int>> a_(h2::h2_matcher<int>(66));
       h2::h2_noneof_matches<T1, T2> a(T1{h2::h2_matches_null(false)}, T2(a_));
-      OK(nullptr == a.matches(&int65));
+      OK(nullptr == a.matches(&int65, false, false));
    }
 }
 

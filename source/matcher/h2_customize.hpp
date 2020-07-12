@@ -3,7 +3,7 @@
    template <typename A>                                                                                  \
    bool __matches(const A& a) const;                                                                      \
    template <typename A>                                                                                  \
-   h2::h2_fail* matches(const A& a, bool caseless = false, bool dont = false) const                       \
+   h2::h2_fail* matches(const A& a, bool caseless, bool dont) const                                       \
    {                                                                                                      \
       h2::h2_fail* fail = h2::h2_fail::new_unexpect("", h2::h2_stringify(a), h2::CD("", caseless, dont)); \
       if (__matches(a) == !dont) return nullptr;                                                          \
@@ -15,11 +15,10 @@
       }                                                                                                   \
       return fail;                                                                                        \
    }                                                                                                      \
-   template <typename A>                                                                                  \
-   h2::h2_string expects(h2::h2_type<A>, bool caseless = false, bool dont = false) const { return ""; }
+   virtual h2::h2_string expects(bool caseless, bool dont) const override { return ""; }
 
 #define H2MATCHER0(name, message)                                                     \
-   struct h2_##name##_matches {                                                       \
+   struct h2_##name##_matches : h2::h2_matches {                                      \
       explicit h2_##name##_matches() {}                                               \
       __Matches_Common(message)                                                       \
    };                                                                                 \
@@ -29,7 +28,7 @@
 
 #define H2MATCHER1(name, e1, message)                                                           \
    template <typename E1>                                                                       \
-   struct h2_##name##_matches {                                                                 \
+   struct h2_##name##_matches : h2::h2_matches {                                                \
       const E1 e1;                                                                              \
       explicit h2_##name##_matches(const E1& _e1) : e1(_e1) {}                                  \
       __Matches_Common(message)                                                                 \
@@ -45,7 +44,7 @@
 
 #define H2MATCHER2(name, e1, e2, message)                                                                    \
    template <typename E1, typename E2>                                                                       \
-   struct h2_##name##_matches {                                                                              \
+   struct h2_##name##_matches : h2::h2_matches {                                                             \
       const E1 e1;                                                                                           \
       const E2 e2;                                                                                           \
       explicit h2_##name##_matches(const E1& _e1, const E2& _e2) : e1(_e1), e2(_e2) {}                       \
@@ -62,7 +61,7 @@
 
 #define H2MATCHER3(name, e1, e2, e3, message)                                                                             \
    template <typename E1, typename E2, typename E3>                                                                       \
-   struct h2_##name##_matches {                                                                                           \
+   struct h2_##name##_matches : h2::h2_matches {                                                                          \
       const E1 e1;                                                                                                        \
       const E2 e2;                                                                                                        \
       const E3 e3;                                                                                                        \
@@ -80,7 +79,7 @@
 
 #define H2MATCHER4(name, e1, e2, e3, e4, message)                                                                                      \
    template <typename E1, typename E2, typename E3, typename E4>                                                                       \
-   struct h2_##name##_matches {                                                                                                        \
+   struct h2_##name##_matches : h2::h2_matches {                                                                                       \
       const E1 e1;                                                                                                                     \
       const E2 e2;                                                                                                                     \
       const E3 e3;                                                                                                                     \
@@ -99,7 +98,7 @@
 
 #define H2MATCHER5(name, e1, e2, e3, e4, e5, message)                                                                                                          \
    template <typename E1, typename E2, typename E3, typename E4, typename E5>                                                                                  \
-   struct h2_##name##_matches {                                                                                                                                \
+   struct h2_##name##_matches : h2::h2_matches {                                                                                                               \
       const E1 e1;                                                                                                                                             \
       const E2 e2;                                                                                                                                             \
       const E3 e3;                                                                                                                                             \

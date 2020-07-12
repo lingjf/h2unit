@@ -5,51 +5,51 @@ SUITE(strcmp matches)
    Case(Regex)
    {
       h2::h2_matches_regex a("A.*");
-      OK(nullptr == a.matches("ABC"));
-      OK(nullptr != a.matches("BBC"));
+      OK(nullptr == a.matches("ABC", false, false));
+      OK(nullptr != a.matches("BBC", false, false));
    }
 
    Case(Wildcard)
    {
       h2::h2_matches_wildcard a("A*");
-      OK(nullptr == a.matches("ABC"));
-      OK(nullptr != a.matches("BBC"));
+      OK(nullptr == a.matches("ABC", false, false));
+      OK(nullptr != a.matches("BBC", false, false));
    }
 
    Case(Substr)
    {
       h2::h2_matches_substr a("A");
-      OK(nullptr == a.matches("ABC"));
-      OK(nullptr != a.matches("BBC"));
+      OK(nullptr == a.matches("ABC", false, false));
+      OK(nullptr != a.matches("BBC", false, false));
    }
 
    Case(StartsWith)
    {
       h2::h2_matches_startswith a("A");
-      OK(nullptr == a.matches("ABC"));
-      OK(nullptr != a.matches("BBC"));
+      OK(nullptr == a.matches("ABC", false, false));
+      OK(nullptr != a.matches("BBC", false, false));
    }
 
    Case(EndsWith)
    {
       h2::h2_matches_endswith a("A");
-      OK(nullptr == a.matches("CBA"));
-      OK(nullptr != a.matches("ABC"));
+      OK(nullptr == a.matches("CBA", false, false));
+      OK(nullptr != a.matches("ABC", false, false));
    }
 
    Case(Json)
    {
       h2::h2_matches_json a("[65]");
-      OK(nullptr == a.matches("[65]"));
-      OK(nullptr != a.matches("[66]"));
+      OK(nullptr == a.matches("[65]", false, false));
+      OK(nullptr != a.matches("[66]", false, false));
    }
 
    Case(CaseLess)
    {
       h2::h2_caseless_matches a1(h2::h2_matcher<h2::h2_string>("A"));
-      OK(nullptr == a1.matches("A"));
-      OK(nullptr == a1.matches("a"));
-      OK("~\"A\"", a1.expects(h2::h2_type<h2::h2_string>()));
+      OK(nullptr == a1.matches("A", false, false));
+      OK(nullptr == a1.matches("a", false, false));
+      OK("~\"A\"", a1.expects(false, false));
    }
 }
 

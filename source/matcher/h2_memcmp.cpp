@@ -42,6 +42,11 @@ h2_inline h2_fail* h2_matches_bytecmp::matches(const void* a, bool caseless, boo
    return h2_fail::new_memcmp((const unsigned char*)e, (const unsigned char*)a, width, _nbytes * 8, "", h2_stringify(a), "memcmp " + readable_size(width, _nbytes * 8));
 }
 
+h2_inline h2_string h2_matches_bytecmp::expects(bool caseless, bool dont) const
+{
+   return CD("Me()", caseless, dont);
+}
+
 h2_inline h2_fail* h2_matches_bitcmp::matches(const void* a, bool caseless, bool dont) const
 {
    int max_length = INT_MAX;
@@ -70,4 +75,9 @@ h2_inline h2_fail* h2_matches_bitcmp::matches(const void* a, bool caseless, bool
    bool result = h2_numeric::bits_equal(_e, (const unsigned char*)a, _nbits);
    if (result == !dont) return nullptr;
    return h2_fail::new_memcmp(_e, (const unsigned char*)a, 1, _nbits, "", h2_stringify(a), "memcmp " + readable_size(1, _nbits));
+}
+
+h2_inline h2_string h2_matches_bitcmp::expects(bool caseless, bool dont) const
+{
+   return CD("Me()", caseless, dont);
 }

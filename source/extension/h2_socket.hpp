@@ -29,7 +29,7 @@ struct h2_sock : h2_libc {
 };
 
 template <typename M1, typename M2, typename M3, typename M4>
-struct h2_packet_matches {
+struct h2_packet_matches : h2_matches {
    const M1 from;
    const M2 to;
    const M3 data;
@@ -46,8 +46,7 @@ struct h2_packet_matches {
       return fails;
    }
 
-   template <typename A>
-   h2_string expects(h2_type<A>, bool caseless = false, bool dont = false) const { return ""; }
+   virtual h2_string expects(bool caseless, bool dont) const override { return ""; }
 };
 
 template <typename M1, typename M2, typename M3, typename M4>

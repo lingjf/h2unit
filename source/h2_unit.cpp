@@ -75,7 +75,6 @@ namespace h2 {
 #include "matcher/h2_matcher.cpp"    //
 #include "matcher/h2_strcmp.cpp"     //
 #include "matcher/h2_memcmp.cpp"     //
-#include "matcher/h2_container.cpp"  //
 
 #include "memory/h2_piece.cpp"     // kit
 #include "memory/h2_block.cpp"     // ..
