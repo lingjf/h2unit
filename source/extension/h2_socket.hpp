@@ -2,7 +2,7 @@
 struct h2_packet : h2_libc {
    h2_list x;
    h2_string from, to, data;
-   h2_packet(const char* from_, const char* to_, const char* data_, size_t size_) : from(from_), to(to_), data(data_, size_){};
+   h2_packet(const char* from_, const char* to_, const char* data_, size_t size_) : from(from_), to(to_), data(size_, data_){};
 };
 
 struct h2_sock : h2_libc {

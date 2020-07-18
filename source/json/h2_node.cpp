@@ -5,7 +5,7 @@ struct h2_json_node : h2_libc {
    static constexpr int t_boolean = 2;
    static constexpr int t_number = 3;
    static constexpr int t_string = 4;
-   static constexpr int t_pattern = 5; // regex or wildcard pattern
+   static constexpr int t_pattern = 5;  // regex or wildcard pattern
    static constexpr int t_array = 6;
    static constexpr int t_object = 7;
 
@@ -90,12 +90,14 @@ struct h2_json_node : h2_libc {
       }
    }
 
-   void print(h2_lines& lines, int depth = 0, int next = 0, bool fold = false)
+   h2_string slash_if(bool slash) { return slash ? "\\" : ""; }
+
+   void print(h2_lines& lines, bool fold = false, bool slash = false, int depth = 0, int next = 0)
    {
       h2_line line;
       line.indent(depth * 2);
       if (key_string.size())
-         line.push_back("\"" + key_string + "\": ");
+         line.push_back(slash_if(slash) + "\"" + key_string + slash_if(slash) + "\": ");
       if (is_null())
          line.push_back("null");
       else if (is_bool())
@@ -106,27 +108,26 @@ struct h2_json_node : h2_libc {
          else
             line.push_back(h2_stringify(value_double));
       } else if (is_string())
-         line.push_back("\"" + value_string + "\"");
+         line.push_back(slash_if(slash) + "\"" + value_string + slash_if(slash) + "\"");
       else if (is_pattern())
-         line.push_back("\"/" + value_string + "/\"");
+         line.push_back(slash_if(slash) + "\"/" + value_string + "/" + slash_if(slash) + "\"");
       else if (is_array() || is_object()) {
-         line.push_back(is_array() ? "[ " : "{ ");
-         h2_lines __lines;
+         h2_lines children_lines;
          h2_list_for_each_entry (p, children, h2_json_node, x)
-            p->print(__lines, depth + 1, children.count() - li - 1, fold);
+            p->print(children_lines, fold, slash, depth + 1, children.count() - li - 1);
 
-         if (fold && __lines.foldable()) {
-            line.fold(__lines);
-            line.push_back(is_array() ? " ]" : " }");
+         line.push_back(is_array() ? "[" : "{");
+         if (fold && children_lines.foldable()) {
+            line.concat_back(children_lines.folds());
          } else {
             lines.push_back(line), line.clear();
-            lines.concat_back(__lines);
+            lines += children_lines;
             line.indent(depth * 2);
-            line.push_back(is_array() ? "]" : "}");
          }
+         line.push_back(is_array() ? "]" : "}");
       }
       if (line.size()) {
-         if (next) line.push_back(",");
+         if (next) line.push_back(", ");
          lines.push_back(line), line.clear();
       }
    }

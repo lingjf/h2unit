@@ -78,7 +78,7 @@ h2_inline void h2_patch::initialize()
    h2__patch::I();
 }
 
-h2_inline bool h2_patch::exempt(h2_backtrace& bt)
+h2_inline bool h2_patch::exempt(const h2_backtrace& bt)
 {
    static struct {
       void* base;

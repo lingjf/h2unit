@@ -1,5 +1,33 @@
 #include "../source/h2_unit.cpp"
 
+SUITE(string assign)
+{
+   Case(init with std_string)
+   {
+      std::string s = "hello";
+      h2::h2_string a(s);
+      OK("hello", a);
+   }
+
+   Case(init with literal string)
+   {
+      h2::h2_string a("hello");
+      OK("hello", a);
+   }
+
+   Case(init with printf)
+   {
+      h2::h2_string a("hello %s", "world");
+      OK("hello world", a);
+   }
+
+   Case(init assign)
+   {
+      h2::h2_string a = "hello";
+      OK("hello", a);
+   }
+}
+
 SUITE(string)
 {
    Case(equals)
@@ -118,51 +146,6 @@ SUITE(string)
       h2::h2_string a;
       a.sprintf("%s %s", "Hello", "World");
       OK(a.equals("Hello World"));
-   }
-
-   Case(acronym)
-   {
-      h2::h2_string s1("0123456789");
-      OK("\033{+dark gray}...\033{-dark gray}", s1.acronym(3));
-      OK("0\033{+dark gray}...\033{-dark gray}", s1.acronym(4));
-      OK("01\033{+dark gray}...\033{-dark gray}", s1.acronym(5));
-      OK("012\033{+dark gray}...\033{-dark gray}", s1.acronym(6));
-      OK("0123\033{+dark gray}...\033{-dark gray}", s1.acronym(7));
-      OK("01234\033{+dark gray}...\033{-dark gray}", s1.acronym(8));
-      OK("012345\033{+dark gray}...\033{-dark gray}", s1.acronym(9));
-      OK("0123456789", s1.acronym(10));
-      OK("0123456789", s1.acronym(11));
-   }
-
-   Case(acronym with tail 1)
-   {
-      h2::h2_string s1("0123456789");
-      OK("\033{+dark gray}...\033{-dark gray}9", s1.acronym(4, 1));
-      OK("0\033{+dark gray}...\033{-dark gray}9", s1.acronym(5, 1));
-      OK("01\033{+dark gray}...\033{-dark gray}9", s1.acronym(6, 1));
-      OK("012\033{+dark gray}...\033{-dark gray}9", s1.acronym(7, 1));
-      OK("0123\033{+dark gray}...\033{-dark gray}9", s1.acronym(8, 1));
-      OK("01234\033{+dark gray}...\033{-dark gray}9", s1.acronym(9, 1));
-      OK("0123456789", s1.acronym(10, 1));
-      OK("0123456789", s1.acronym(11, 1));
-   }
-
-   Case(acronym with tail 2)
-   {
-      h2::h2_string s1("0123456789");
-      OK("\033{+dark gray}...\033{-dark gray}89", s1.acronym(5, 2));
-      OK("0\033{+dark gray}...\033{-dark gray}89", s1.acronym(6, 2));
-      OK("01\033{+dark gray}...\033{-dark gray}89", s1.acronym(7, 2));
-      OK("012\033{+dark gray}...\033{-dark gray}89", s1.acronym(8, 2));
-      OK("0123\033{+dark gray}...\033{-dark gray}89", s1.acronym(9, 2));
-      OK("0123456789", s1.acronym(10, 2));
-      OK("0123456789", s1.acronym(11, 2));
-   }
-
-   Case(acronym with CRLF)
-   {
-      h2::h2_string s1("012\r34\t\n");
-      OK("012\\r34\\t\\n", s1.acronym(10));
    }
 
    Case(center)

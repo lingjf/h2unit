@@ -1,8 +1,8 @@
 
 template <typename Matcher>
 struct h2_not_matches : h2_matches {
-   const Matcher m;
-   explicit h2_not_matches(Matcher _m) : m(_m) {}
+   const Matcher m; /* h2_polymorphic_matcher or immediate value or h2_matches */
+   explicit h2_not_matches(const Matcher& _m) : m(_m) {}
 
    template <typename A>
    h2_fail* matches(const A& a, int n, bool caseless, bool dont) const
@@ -19,7 +19,7 @@ template <typename Matcher1, typename Matcher2>
 struct h2_and_matches : h2_matches {
    const Matcher1 m1;
    const Matcher2 m2;
-   explicit h2_and_matches(Matcher1 _m1, Matcher2 _m2) : m1(_m1), m2(_m2) {}
+   explicit h2_and_matches(const Matcher1& _m1, const Matcher2& _m2) : m1(_m1), m2(_m2) {}
 
    template <typename A>
    h2_fail* matches(const A& a, int n, bool caseless, bool dont) const
@@ -47,7 +47,7 @@ template <typename Matcher1, typename Matcher2>
 struct h2_or_matches : h2_matches {
    const Matcher1 m1;
    const Matcher2 m2;
-   explicit h2_or_matches(Matcher1 _m1, Matcher2 _m2) : m1(_m1), m2(_m2) {}
+   explicit h2_or_matches(const Matcher1& _m1, const Matcher2& _m2) : m1(_m1), m2(_m2) {}
 
    template <typename A>
    h2_fail* matches(const A& a, int n, bool caseless, bool dont) const
@@ -75,15 +75,15 @@ struct h2_allof_matches : h2_matches {
    explicit h2_allof_matches(const Matchers&... matchers) : t_matchers(matchers...) {}
 
    template <typename A>
-   h2_fail* matches(A a, int n, bool caseless, bool dont) const
+   h2_fail* matches(const A& a, int n, bool caseless, bool dont) const
    {
       h2_vector<h2_matcher<A>> v_matchers;
-      t2v(v_matchers, std::integral_constant<std::size_t, 0>());
+      t2v(v_matchers);
 
       h2_fail* fails = nullptr;
       for (int i = 0; i < v_matchers.size(); ++i) {
          h2_fail* fail = v_matchers[i].matches(a, n, caseless, false);
-         if (fail) fail->no = h2_stringify(i);
+         if (fail) fail->seq = i;
          h2_fail::append_subling(fails, fail);
       }
 
@@ -103,7 +103,7 @@ struct h2_allof_matches : h2_matches {
 
    virtual h2_string expects(bool caseless, bool dont) const override
    {
-      return CD("AllOf(" + t2e(caseless, false, std::integral_constant<std::size_t, 0>()) + ")", false, dont);
+      return CD("AllOf(" + t2e(caseless, false) + ")", false, dont);
    }
 
    H2_MATCHER_T2V2E(t_matchers)
@@ -115,10 +115,10 @@ struct h2_anyof_matches : h2_matches {
    explicit h2_anyof_matches(const Matchers&... matchers) : t_matchers(matchers...) {}
 
    template <typename A>
-   h2_fail* matches(A a, int n, bool caseless, bool dont) const
+   h2_fail* matches(const A& a, int n, bool caseless, bool dont) const
    {
       h2_vector<h2_matcher<A>> v_matchers;
-      t2v(v_matchers, std::integral_constant<std::size_t, 0>());
+      t2v(v_matchers);
 
       int c = 0;
       h2_fail* fails = nullptr;
@@ -128,7 +128,7 @@ struct h2_anyof_matches : h2_matches {
             c++;
             break;
          }
-         if (fail) fail->no = h2_stringify(i);
+         if (fail) fail->seq = i;
          h2_fail::append_subling(fails, fail);
       }
 
@@ -148,7 +148,7 @@ struct h2_anyof_matches : h2_matches {
 
    virtual h2_string expects(bool caseless, bool dont) const override
    {
-      return CD("AnyOf(" + t2e(caseless, false, std::integral_constant<std::size_t, 0>()) + ")", false, dont);
+      return CD("AnyOf(" + t2e(caseless, false) + ")", false, dont);
    }
 
    H2_MATCHER_T2V2E(t_matchers)
@@ -160,10 +160,10 @@ struct h2_noneof_matches : h2_matches {
    explicit h2_noneof_matches(const Matchers&... matchers) : t_matchers(matchers...) {}
 
    template <typename A>
-   h2_fail* matches(A a, int n, bool caseless, bool dont) const
+   h2_fail* matches(const A& a, int n, bool caseless, bool dont) const
    {
       h2_vector<h2_matcher<A>> v_matchers;
-      t2v(v_matchers, std::integral_constant<std::size_t, 0>());
+      t2v(v_matchers);
 
       int c = 0;
       for (auto& m : v_matchers) {
@@ -178,7 +178,7 @@ struct h2_noneof_matches : h2_matches {
 
    virtual h2_string expects(bool caseless, bool dont) const override
    {
-      return CD("NoneOf(" + t2e(caseless, false, std::integral_constant<std::size_t, 0>()) + ")", false, dont);
+      return CD("NoneOf(" + t2e(caseless, false) + ")", false, dont);
    }
 
    H2_MATCHER_T2V2E(t_matchers)

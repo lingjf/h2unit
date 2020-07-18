@@ -173,14 +173,14 @@ h2_inline void h2_color::printf(const char* style, const char* format, ...)
       h2__color::I().print("\033{reset}");
 }
 
-h2_inline void h2_color::printf(h2_line& line)
+h2_inline void h2_color::printf(const h2_line& line)
 {
    for (auto& word : line)
       h2__color::I().print(word.c_str());
    h2__color::I().print("\n");
 }
 
-h2_inline void h2_color::printf(h2_lines& lines)
+h2_inline void h2_color::printf(const h2_lines& lines)
 {
    for (auto& line : lines) printf(line);
 }

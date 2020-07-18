@@ -193,11 +193,11 @@ SUITE(json node print)
       h2::h2_json_tree parse(json);
 
       h2::h2_lines lines;
-      parse.print(lines, 0, 0, false);
+      parse.print(lines);
 
       OK(3, lines.size());
       OK(ListOf(
-           ListOf("", "{ "),
+           ListOf("", "{"),
            ListOf("  ", "\"abc\": ", "123"),
            ListOf("", "}")),
          lines);
@@ -209,9 +209,9 @@ SUITE(json node print)
       h2::h2_json_tree parse(json);
 
       h2::h2_lines lines;
-      parse.print(lines, 0, 0, true);
+      parse.print(lines, true);
 
       OK(1, lines.size());
-      OK(ListOf(ListOf("", "{ ", "\"abc\": ", "123", " }")), lines);
+      OK(ListOf(ListOf("", "{", "\"abc\": ", "123", "}")), lines);
    }
 }

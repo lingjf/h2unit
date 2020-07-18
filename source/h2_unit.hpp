@@ -1,21 +1,23 @@
-#ifndef ___H2UNIT_H___
-#define ___H2UNIT_H___
 
-#include <cstdio>        /* printf */
-#include <cstdlib>       /* malloc */
-#include <cstring>       /* strcpy, memcpy */
-#include <cstddef>       /* ptrdiff_t */
-#include <climits>       /* INT_MAX */
-#include <cmath>         /* fabs */
-#include <csetjmp>       /* setjmp, longjmp */
-#include <sstream>       /* std::basic_ostringstream */
-#include <string>        /* std::string */
-#include <vector>        /* std::vector */
-#include <array>         /* std::array */
-#include <tuple>         /* std::tuple */
-#include <functional>    /* std::function */
-#include <utility>       /* std::forward, std::pair */
-#include <type_traits>   /* std::true_type */
+#ifndef __H2_UNIT_HPP__
+#define __H2_UNIT_HPP__
+
+#define H2UNIT_VERSION 5.6
+
+#include <cstdio>      /* printf */
+#include <cstdlib>     /* malloc */
+#include <cstring>     /* strcpy, memcpy */
+#include <cstddef>     /* ptrdiff_t */
+#include <climits>     /* INT_MAX */
+#include <cmath>       /* fabs */
+#include <csetjmp>     /* setjmp, longjmp */
+#include <sstream>     /* std::basic_ostringstream */
+#include <string>      /* std::string */
+#include <vector>      /* std::vector */
+#include <tuple>       /* std::tuple */
+#include <functional>  /* std::function */
+#include <utility>     /* std::forward, std::pair */
+#include <type_traits> /* std::true_type */
 
 #if defined _WIN32
 #   define WIN32_LEAN_AND_MEAN /* fix winsock.h winsock2.h conflict */
@@ -83,15 +85,15 @@ namespace h2 {
 #include "memory/h2_memory.hpp"       // failure, pp, kit
 #include "matcher/h2_matches.hpp"     // failure, string
 #include "matcher/h2_matcher.hpp"     // matches, failure, string, shared_ptr
-#include "matcher/h2_equation.hpp"    // kit, string
+#include "matcher/h2_equation.hpp"    // matches, kit, string
 #include "matcher/h2_cast.hpp"        // matcher
-#include "matcher/h2_unary.hpp"       // matcher, failure, string
-#include "matcher/h2_logic.hpp"       // matcher, failure, string
-#include "matcher/h2_inequation.hpp"  // matcher, failure, string
-#include "matcher/h2_strcmp.hpp"      // matcher, failure, string
-#include "matcher/h2_memcmp.hpp"      // matcher, failure, string
-#include "matcher/h2_container.hpp"   // matcher, failure, string
-#include "matcher/h2_customize.hpp"   // matcher, failure, string, pp
+#include "matcher/h2_unary.hpp"       // matches, matcher, failure, string
+#include "matcher/h2_logic.hpp"       // tuple, matches, matcher, failure, string
+#include "matcher/h2_inequation.hpp"  // matches, matcher, failure, string
+#include "matcher/h2_strcmp.hpp"      // matches, matcher, failure, string
+#include "matcher/h2_memcmp.hpp"      // matches, matcher, failure, string
+#include "matcher/h2_container.hpp"   // tuple, matches, matcher, failure, string
+#include "matcher/h2_customize.hpp"   // matches, matcher, failure, string, pp
 #include "stub/h2_fp.hpp"             // nm
 #include "stub/h2_stub.hpp"           // pp
 #include "mock/h2_mfp.hpp"            // failure, nm

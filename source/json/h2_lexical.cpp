@@ -6,7 +6,7 @@ struct h2_json_lexical {
       for (; left < right && *left && ::isspace(*left);) left++;
       for (; left < right - 1 && ::isspace(*(right - 1));) right--;
 
-      lexical.push_back(h2_string(left, right - left));
+      lexical.push_back(h2_string(right - left, left));
    }
 
    static void parse(h2_vector<h2_string>& lexical, const char* json_string, int json_length = -1)

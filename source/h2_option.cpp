@@ -1,13 +1,9 @@
 
-#ifndef H2UNIT_VERSION
-#   define H2UNIT_VERSION "dev"
-#endif
-
 static inline void usage()
 {
    ::printf("  \033[33m╭─────────────────────────────────────────────────────────────────────────╮\033[0m\n");
    ::printf("  \033[33m│\033[0m                                                                         \033[33m│\033[0m\n");
-   ::printf("  \033[33m│\033[0m                       Current version \033[32mh2unit \033[31m%-9s                  \033[33m│\033[0m\n", H2UNIT_VERSION);
+   ::printf("  \033[33m│\033[0m                       Current version \033[32mh2unit \033[31m%-9g                  \033[33m│\033[0m\n", H2UNIT_VERSION);
    ::printf("  \033[33m│\033[0m         Manual: \033[34;4mhttps://github.com/lingjf/h2unit.git \033[0;36mREADME.md          \033[33m│\033[0m\n");
    ::printf("  \033[33m│\033[0m                                                                         \033[33m│\033[0m\n");
    ::printf("  \033[33m╰─────────────────────────────────────────────────────────────────────────╯\033[0m\n");
@@ -27,6 +23,10 @@ static inline void usage()
   │ -r[n]  │    [n]    │ Repeat run n rounds (default 1) when no failure    │\n\
   ├────────┼───────────┼────────────────────────────────────────────────────┤\n\
   │ -c     │           │ Output in black-white color style                  │\n\
+  ├────────┼───────────┼────────────────────────────────────────────────────┤\n\
+  │ -f     │           │ Fold simple json object or array                   │\n\
+  ├────────┼───────────┼────────────────────────────────────────────────────┤\n\
+  │ -p     │           │ Print C/C++ source code json for copy/paste        │\n\
   ├────────┼───────────┼────────────────────────────────────────────────────┤\n\
   │ -m     │           │ Run cases without memory check                     │\n\
   ├────────┼───────────┼────────────────────────────────────────────────────┤\n\
@@ -86,6 +86,22 @@ struct getopt {
    }
 };
 
+static inline unsigned h2_term_size()
+{
+#ifdef _WIN32
+   return 80;
+#else
+   struct winsize w;
+   if (-1 == ioctl(STDOUT_FILENO, TIOCGWINSZ, &w)) return 80;
+   return w.ws_col < 16 || 256 < w.ws_col ? 80 : w.ws_col;
+#endif
+}
+
+h2_inline h2_option::h2_option()
+{
+   term_size = h2_term_size();
+}
+
 h2_inline void h2_option::parse(int argc, const char** argv)
 {
    path = argv[0];
@@ -98,6 +114,8 @@ h2_inline void h2_option::parse(int argc, const char** argv)
          switch (*p) {
          case 'v': verbose = true; break;
          case 'c': colorfull = !colorfull; break;
+         case 'f': fold = !fold; break;
+         case 'p': program = true; break;
          case 's': shuffle = !shuffle; break;
          case 'm': memory_check = !memory_check; break;
          case 'l': listing = true; break;

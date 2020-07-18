@@ -2,11 +2,32 @@
 
 SUITE(h2_line)
 {
+   Case(init empty)
+   {
+      h2::h2_line line;
+      OK(0, line.size());
+   }
+
+   Case(init string)
+   {
+      h2::h2_line line("hello");
+      OK(1, line.size());
+      OK(ListOf("hello"), line);
+   }
+
+   Case(init string initializer_list)
+   {
+      h2::h2_line line = {"hello", "world"};
+      OK(2, line.size());
+      OK(ListOf("hello", "world"), line);
+   }
+
    Case(line width)
    {
       h2::h2_line line = {" 123 ", " 456 "};
       OK(10, line.width());
    }
+
    Case(line width with color)
    {
       h2::h2_line line = {"123", "\033{red}", "456"};
@@ -49,12 +70,19 @@ SUITE(h2_lines)
    Case(max lines length)
    {
       h2::h2_lines lines = {{"123", "456"}, {"1234"}};
-      OK(6, lines.max_width());
+      OK(6, lines.width());
    }
 
    Case(max lines length with color)
    {
       h2::h2_lines lines = {{"123", "\033{red}", "456"}, {"1234"}};
-      OK(6, lines.max_width());
+      OK(6, lines.width());
    }
+}
+
+CASE(ListOf lines)
+{
+   h2::h2_lines lines = {{"123", "456"}, {"12345"}};
+
+   OK(ListOf(ListOf("123", "456"), ListOf("12345")), lines);
 }

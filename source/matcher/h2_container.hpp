@@ -3,7 +3,7 @@ template <typename EK, typename EV>
 struct h2_pair_matches : h2_matches {
    const EK k;
    const EV v;
-   explicit h2_pair_matches(const EK k_, const EV v_) : k(k_), v(v_) {}
+   explicit h2_pair_matches(const EK& k_, const EV& v_) : k(k_), v(v_) {}
 
    template <typename A>
    auto matches(const A& a, int, bool caseless, bool dont) const -> typename std::enable_if<h2_is_pair<typename std::decay<A>::type>::value, h2_fail*>::type
@@ -45,9 +45,8 @@ struct h2_listof_matches : h2_matches {
    {
       h2_fail* fails = nullptr;
 
-      using value_type = typename std::decay<decltype(*a.begin())>::type;
-      h2_vector<h2_matcher<value_type>> v_matchers;
-      t2v(v_matchers, std::integral_constant<std::size_t, 0>());
+      h2_vector<h2_matcher<typename A::value_type>> v_matchers;
+      t2v(v_matchers);
 
       for (size_t i = 0; i < v_matchers.size(); ++i) {
          h2_fail* fail = nullptr;
@@ -60,10 +59,9 @@ struct h2_listof_matches : h2_matches {
             }
          }
          if (c == 0) {
-            h2_string t2 = v_matchers[i].expects(caseless, false);
-            fail = h2_fail::new_unexpect("", "[missing]", t2);
+            fail = h2_fail::new_unexpect("", "[missing]", v_matchers[i].expects(caseless, false));
          }
-         if (fail) fail->no = h2_stringify(i);
+         if (fail) fail->seq = i;
          h2_fail::append_subling(fails, fail);
       }
       if (!fails == !dont) {
@@ -80,13 +78,12 @@ struct h2_listof_matches : h2_matches {
    {
       /* c/c++ generic array */
       h2_fail* fails = nullptr;
-      using value_type = typename std::decay<decltype(a[0])>::type;
-      h2_vector<h2_matcher<value_type>> v_matchers;
-      t2v(v_matchers, std::integral_constant<std::size_t, 0>());
+      h2_vector<h2_matcher<typename std::decay<decltype(a[0])>::type>> v_matchers;
+      t2v(v_matchers);
 
       for (size_t i = 0; i < v_matchers.size(); ++i) {
          h2_fail* fail = v_matchers[i].matches(a[i], n, caseless, false);
-         if (fail) fail->no = h2_stringify(i);
+         if (fail) fail->seq = i;
          h2_fail::append_subling(fails, fail);
       }
       if (!fails == !dont) {
@@ -100,7 +97,7 @@ struct h2_listof_matches : h2_matches {
 
    virtual h2_string expects(bool caseless, bool dont) const override
    {
-      return CD("ListOf(" + t2e(caseless, false, std::integral_constant<std::size_t, 0>()) + ")", false, dont);
+      return CD("ListOf(" + t2e(caseless, false) + ")", false, dont);
    }
 
    H2_MATCHER_T2V2E(t_matchers)
@@ -115,7 +112,7 @@ struct h2_has_matches : h2_matches {
    auto matches(const A& a, int n, bool caseless, bool dont) const -> typename std::enable_if<h2_is_container<typename std::decay<A>::type>::value, h2_fail*>::type
    {
       h2_vector<h2_matcher<typename A::value_type>> v_matchers;
-      t2v(v_matchers, std::integral_constant<std::size_t, 0>());
+      t2v(v_matchers);
 
       h2_fail* fails = nullptr;
       for (size_t i = 0; i < v_matchers.size(); ++i) {
@@ -130,7 +127,7 @@ struct h2_has_matches : h2_matches {
          if (!found) {
             h2_string t2 = v_matchers[i].expects(caseless, false);
             h2_fail* fail = h2_fail::new_normal(nullptr, 0, nullptr, "haven't %s", t2.c_str());
-            if (fail) fail->no = h2_stringify(i);
+            if (fail) fail->seq = i;
             h2_fail::append_subling(fails, fail);
          }
       }
@@ -146,8 +143,8 @@ struct h2_has_matches : h2_matches {
    template <typename A>
    auto matches(A a, int n, bool caseless, bool dont) const -> typename std::enable_if<!h2_is_container<typename std::decay<A>::type>::value, h2_fail*>::type
    {
-      using value_type = typename std::decay<decltype(a[0])>::type;
-      h2_vector<h2_matcher<value_type>> v_matchers;
+      h2_vector<h2_matcher<typename std::decay<decltype(a[0])>::type>> v_matchers;
+      t2v(v_matchers);
 
       h2_fail* fails = nullptr;
       for (size_t i = 0; i < v_matchers.size(); ++i) {
@@ -162,7 +159,7 @@ struct h2_has_matches : h2_matches {
          if (!found) {
             h2_string t2 = v_matchers[i].expects(caseless, false);
             h2_fail* fail = h2_fail::new_normal(nullptr, 0, nullptr, "haven't %s", t2.c_str());
-            if (fail) fail->no = h2_stringify(i);
+            if (fail) fail->seq = i;
             h2_fail::append_subling(fails, fail);
          }
       }
@@ -170,14 +167,14 @@ struct h2_has_matches : h2_matches {
          if (fails) delete fails;
          return nullptr;
       }
-      h2_fail* fail = h2_fail::new_unexpect("", h2_stringify(a), expects(caseless, dont), DS(!fails));
+      h2_fail* fail = h2_fail::new_unexpect("", h2_stringify(a, n), expects(caseless, dont), DS(!fails));
       h2_fail::append_child(fail, fails);
       return fail;
    }
 
    virtual h2_string expects(bool caseless, bool dont) const override
    {
-      return CD("Has(" + t2e(caseless, false, std::integral_constant<std::size_t, 0>()) + ")", false, dont);
+      return CD("Has(" + t2e(caseless, false) + ")", false, dont);
    }
 
    H2_MATCHER_T2V2E(t_matchers)
@@ -192,7 +189,7 @@ struct h2_in_matches : h2_matches {
    h2_fail* matches(const A& a, int n, bool caseless, bool dont) const
    {
       h2_vector<h2_matcher<A>> v_matchers;
-      t2v(v_matchers, std::integral_constant<std::size_t, 0>());
+      t2v(v_matchers);
 
       int s = 0;
       for (auto& m : v_matchers) {
@@ -207,7 +204,7 @@ struct h2_in_matches : h2_matches {
 
    virtual h2_string expects(bool caseless, bool dont) const override
    {
-      return CD("In(" + t2e(caseless, false, std::integral_constant<std::size_t, 0>()) + ")", false, dont);
+      return CD("In(" + t2e(caseless, false) + ")", false, dont);
    }
 
    H2_MATCHER_T2V2E(t_matchers)
@@ -241,11 +238,11 @@ struct h2_countof_matches : h2_matches {
    {
       h2_fail* fails = nullptr;
       h2_vector<h2_matcher<int>> v_matchers;
-      t2v(v_matchers, std::integral_constant<std::size_t, 0>());
+      t2v(v_matchers);
 
       for (size_t i = 0; i < v_matchers.size(); ++i) {
          h2_fail* fail = v_matchers[i].matches(count, 0, false, false);
-         if (fail) fail->no = h2_stringify(i);
+         if (fail) fail->seq = i;
          h2_fail::append_subling(fails, fail);
       }
       if (!fails == !dont) {
@@ -259,16 +256,16 @@ struct h2_countof_matches : h2_matches {
 
    virtual h2_string expects(bool, bool dont) const override
    {
-      return CD("CountOf(" + t2e(false, dont, std::integral_constant<std::size_t, 0>()) + ")", false, false);
+      return CD("CountOf(" + t2e(false, dont) + ")", false, false);
    }
 
    H2_MATCHER_T2V2E(t_matchers)
 };
 
-template <typename MK, typename MV>
-inline h2_polymorphic_matcher<h2_pair_matches<MK, MV>> Pair(const MK mk, const MV mv)
+template <typename MK, typename MV, typename EK = typename h2_decay<MK>::type, typename EV = typename h2_decay<MV>::type>
+inline h2_polymorphic_matcher<h2_pair_matches<EK, EV>> Pair(const MK& mk, const MV& mv)
 {
-   return h2_polymorphic_matcher<h2_pair_matches<MK, MV>>(h2_pair_matches<MK, MV>(mk, mv));
+   return h2_polymorphic_matcher<h2_pair_matches<EK, EV>>(h2_pair_matches<EK, EV>(mk, mv));
 }
 
 template <typename... Matchers>

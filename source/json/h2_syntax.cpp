@@ -9,7 +9,7 @@ struct h2_json_syntax {
       return parse_value(root_node);
    }
 
-   h2_string& extract_string(h2_string& s)
+   h2_string& filter_string(h2_string& s)
    {
       if (s.enclosed('\"'))
          s = s.unquote('\"');
@@ -26,7 +26,7 @@ struct h2_json_syntax {
       return s;
    }
 
-   bool extract_number(h2_string& s, double& value)
+   bool interpret_number(const h2_string& s, double& value)
    {
       int err = 0;
       value = tinyexpr::te_interp(s.c_str(), &err);
@@ -44,44 +44,37 @@ struct h2_json_syntax {
    {
       if (lexical.size() <= i) return true;
 
-      /* t_null */
       if (lexical[i].equals("null")) {
          ++i;
          node.type = h2_json_node::t_null;
          return true;
       }
-      /* false */
       if (lexical[i].equals("false")) {
          ++i;
          node.type = h2_json_node::t_boolean;
          node.value_boolean = false;
          return true;
       }
-      /* true */
       if (lexical[i].equals("true")) {
          ++i;
          node.type = h2_json_node::t_boolean;
          node.value_boolean = true;
          return true;
       }
-      /* array */
       if (lexical[i].equals("[")) return parse_array(node);
-      /* object */
       if (lexical[i].equals("{")) return parse_object(node);
-      /* pattern */
       if (lexical[i].startswith("/")) return parse_pattern(node);
 
       if (lexical[i].equals(":")) return false;
       if (lexical[i].equals(",")) return false;
 
-      /* string or number */
-      return parse_literal(node);
+      return parse_string_or_number(node);
    }
 
    bool parse_key(h2_json_node& node)
    {
       node.key_string = lexical[i++];
-      extract_string(node.key_string);
+      filter_string(node.key_string);
       return true;
    }
 
@@ -94,21 +87,21 @@ struct h2_json_syntax {
       return true;
    }
 
-   bool parse_literal(h2_json_node& node)
+   bool parse_string_or_number(h2_json_node& node)
    {
       node.value_string = lexical[i++];
-      if (extract_number(node.value_string, node.value_double)) {
+      if (interpret_number(node.value_string, node.value_double)) {
          node.type = h2_json_node::t_number;
          return true;
       }
-      extract_string(node.value_string);
+      filter_string(node.value_string);
       node.type = h2_json_node::t_string;
       return true;
    }
 
    bool parse_array(h2_json_node& node)
    {
-      ++i;  // pop [
+      if (!requires("[")) return false;
       while (i < lexical.size() && !lexical[i].equals("]")) {
          h2_json_node* new_node = new h2_json_node();
          node.children.push_back(new_node->x);
@@ -127,7 +120,7 @@ struct h2_json_syntax {
 
    bool parse_object(h2_json_node& node)
    {
-      ++i;  // pop {
+      if (!requires("{")) return false;
       while (i < lexical.size() && !lexical[i].equals("}")) {
          h2_json_node* new_node = new h2_json_node();
          node.children.push_back(new_node->x);

@@ -47,6 +47,17 @@ SUITE(Has)
       std::vector<int> a = {1, 2, 3};
       OK(!Has(2), a);
    }
+
+   Case(C / C++ generic array)
+   {
+      int a1[] = {1, 2, 3};
+      OK(Has(1, 4), a1);
+   }
+   Case(C / C++ generic array sepecified size)
+   {
+      int a1[] = {1, 2, 3};
+      OK(Has(1, 4), a1, 3);
+   }
 }
 
 SUITE(In)

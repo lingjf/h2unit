@@ -155,6 +155,7 @@ SUITE(Has primitive)
    {
       int a1[] = {1, 2, 3};
       OK(Has(1, 3), a1, 3);
+      OK(!Has(1, 4), a1, 3);
    }
 
    Case(Sequence containers / array / static contiguous array)
@@ -250,12 +251,6 @@ SUITE(In primitive)
 
 SUITE(CountOf primitive)
 {
-   Case(C / C++ generic array)
-   {
-      int a1[] = {1, 2, 3};
-      // OK(Has(1, 3), a1);
-   }
-
    Case(Sequence containers / array / static contiguous array)
    {
       std::array<int, 3> a1 = {1, 2, 3};

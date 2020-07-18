@@ -1,8 +1,6 @@
 
 h2_inline h2_case::h2_case(const char* name_, int status_, const char* file_, int line_)
-  : name(name_), file(file_), line(line_), status(status_)
-{
-}
+  : name(name_), file(file_), line(line_), status(status_) {}
 
 h2_inline void h2_case::clear()
 {

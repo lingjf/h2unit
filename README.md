@@ -198,7 +198,22 @@ If length is not specified explicitly, maximal length is used.
 *    [`M64e`](source/h2_unit.hpp#L100)(expect, [length]) : number of int64.
 *    [`Me`](source/h2_unit.hpp#L100)(expect, [length]) : following deduced type.
 
-#### 3.2. User defined Matcher
+#### 3.2. Array size
+
+OK(expect, actual, [size])
+
+the third argument in OK is used to specified C/C++ generic array size,
+for STL containers it is not necessary.
+
+```C++
+CASE(memory compare)
+{
+   int a[] = {1, 2, 3};
+   OK(Has(1, 3), a, 3);
+}
+```
+
+#### 3.3. User defined Matcher
 ```C++
 MATCHER(Between, left, right, (a << " not in [" << left << ", " << right << "]"))
 {
@@ -750,6 +765,7 @@ twofiles speed up 2~3 times than onefile.
 *    `-c` enable/disable *colorfull* output, default is enable
 *    `-m` enable/disable *memory* check(leak, overflow, trample, double free, asymmetric free), default is enable
 *    `-d/D` *Debug* mode, -D for gdb attach but requires password
+*    `-p` Print C/C++ source code json for copy/paste 
 *    `-j` {path} generate *junit* compatible XML output
 *    `-i` {pattern} *include* filter, suite name or case name wildcard (?, *) matches, if pattern don't contains ? and *, wildcard change to contains. Default is `*` (include all)
 *    `-x` {pattern} *exclude* filter, default is ` ` (exclude nothing)

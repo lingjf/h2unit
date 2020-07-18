@@ -3,8 +3,9 @@ struct h2_string : public std::basic_string<char, std::char_traits<char>, h2_all
    h2_string() : basic_string() {}
    h2_string(const h2_string& str) : basic_string(str.c_str()) {}
    h2_string(const std::string& str) : basic_string(str.c_str()) {}
-   h2_string(const char* s) : basic_string(s) {}
-   h2_string(const char* s, size_t n) : basic_string(s, n) {}
+   template <typename... T>
+   h2_string(const char* s_fmt, T... t) : basic_string() { sizeof...(T) ? sprintf(s_fmt, t...) : assign(s_fmt); }
+   h2_string(size_t n, const char* s) : basic_string(s, n) {}
    h2_string(size_t n, char c) : basic_string(n, c) {}
 
    h2_string& operator=(const h2_string& str) { return assign(str.c_str()), *this; }
@@ -23,13 +24,11 @@ struct h2_string : public std::basic_string<char, std::char_traits<char>, h2_all
    bool endswith(const h2_string& suffix, bool caseless = false) const;
 
    bool isspace() const;
-   bool enclosed(char c = '\"') const;
+   bool enclosed(const char c = '\"') const;
 
-   h2_string unquote(char c = '\"') const;
+   h2_string unquote(const char c = '\"') const;
    h2_string& replace_all(const char* from, const char* to);
    h2_string& tolower();
-   static h2_string tolower(h2_string from) { return from.tolower(); }
-   h2_string acronym(int width = 16, int tail = 0) const;
    h2_string& center(int width);
    h2_string& sprintf(const char* format, ...);
 };

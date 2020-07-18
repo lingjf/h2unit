@@ -26,8 +26,8 @@ struct h2_json_dual : h2_libc {  // combine two node into a dual
       key_equal = e_key.equals(a_key, caseless);
 
       if (strcmp(e_class, a_class)) {
-         if (e) e->print(e_blob, depth, 0, true);
-         if (a) a->print(a_blob, depth, 0, true);
+         if (e) e->print(e_blob, O.fold, false, depth);
+         if (a) a->print(a_blob, O.fold, false, depth);
          e_class = a_class = "blob";
       } else if (!strcmp("object", e_class)) {
          h2_list_for_each_entry (_e, e->children, h2_json_node, x) {
@@ -67,14 +67,11 @@ struct h2_json_dual : h2_libc {  // combine two node into a dual
    {
       if (!strcmp(e_class, "blob")) {
          e_blob.samesizify(a_blob);
-         for (auto& line : e_blob)
-            line.insert(line.begin(), "\033{cyan}"), line.push_back("\033{reset}");
+         for (auto& line : e_blob) line.brush("cyan");
+         for (auto& line : a_blob) line.brush("yellow");
 
-         for (auto& line : a_blob)
-            line.insert(line.begin(), "\033{yellow}"), line.push_back("\033{reset}");
-
-         e_lines.concat_back(e_blob);
-         a_lines.concat_back(a_blob);
+         e_lines += e_blob;
+         a_lines += a_blob;
          return;
       }
 
@@ -108,25 +105,32 @@ struct h2_json_dual : h2_libc {  // combine two node into a dual
             if (!match) a_line.push_back("\033{reset}");
          }
       } else if (!strcmp(e_class, "object") || !strcmp(e_class, "array")) {
-         e_line.push_back(strcmp(e_class, "object") ? "[ " : "{ ");
-         a_line.push_back(strcmp(a_class, "object") ? "[ " : "{ ");
-
-         e_lines.push_back(e_line), e_line.clear();
-         a_lines.push_back(a_line), a_line.clear();
+         h2_lines e_children_lines, a_children_lines;
          h2_list_for_each_entry (p, children, h2_json_dual, x)
-            p->align(e_lines, a_lines, &children);
+            p->align(e_children_lines, a_children_lines, &children);
 
-         e_line.indent(depth * 2);
+         e_line.push_back(strcmp(e_class, "object") ? "[" : "{");
+         a_line.push_back(strcmp(a_class, "object") ? "[" : "{");
+         if (O.fold && e_children_lines.foldable() && a_children_lines.foldable()) {
+            e_line.concat_back(e_children_lines.folds());
+            a_line.concat_back(a_children_lines.folds());
+         } else {
+            e_lines.push_back(e_line), e_line.clear();
+            e_lines += e_children_lines;
+            e_line.indent(depth * 2);
+            a_lines.push_back(a_line), a_line.clear();
+            a_lines += a_children_lines;
+            a_line.indent(depth * 2);
+         }
          e_line.push_back(strcmp(e_class, "object") ? "]" : "}");
-         a_line.indent(depth * 2);
          a_line.push_back(strcmp(a_class, "object") ? "]" : "}");
       }
       if (e_line.size()) {
-         if (has_next(subling, true)) e_line.push_back(",");
+         if (has_next(subling, true)) e_line.push_back(", ");
          e_lines.push_back(e_line), e_line.clear();
       }
       if (a_line.size()) {
-         if (has_next(subling, false)) a_line.push_back(",");
+         if (has_next(subling, false)) a_line.push_back(", ");
          a_lines.push_back(a_line), a_line.clear();
       }
    }

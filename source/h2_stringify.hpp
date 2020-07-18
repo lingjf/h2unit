@@ -52,14 +52,17 @@ struct h2_stringify_impl {
    struct h2_stringify_impl<T, typename std::enable_if<std::is_member_function_pointer<decltype(&T::member)>::value>::type> { \
       static h2_string print(const T& a)                                                                                      \
       {                                                                                                                       \
-         return const_cast<T&>(a).member(); /* member may not be mark const, remove cast const in T a */                      \
+         return const_cast<T&>(a).member();                                                                                   \
       }                                                                                                                       \
    }
+
+/* tostring() may not be mark const, remove cast const in T a */
 
 H2_STRINGIFY_IMPL_TOSTRING(tostring);
 H2_STRINGIFY_IMPL_TOSTRING(toString);
 H2_STRINGIFY_IMPL_TOSTRING(Tostring);
 H2_STRINGIFY_IMPL_TOSTRING(ToString);
+H2_STRINGIFY_IMPL_TOSTRING(to_string);
 
 template <typename T>
 struct h2_stringify_impl<T, typename std::enable_if<h2_is_ostreamable<T>::value>::type> {
@@ -77,9 +80,8 @@ struct h2_stringify_impl<T, typename std::enable_if<h2_is_ostreamable<T>::value>
       return h2_string(os.str().c_str());
    }
 
-   // https://en.cppreference.com/w/cpp/string/byte/isprint
    static h2_string ostream_print(unsigned char a)
-   {
+   {  // https://en.cppreference.com/w/cpp/string/byte/isprint
       return ostream_print<unsigned int>(static_cast<unsigned int>(a));
    }
 };
@@ -98,7 +100,7 @@ struct h2_stringify_impl<T, typename std::enable_if<h2_is_container<T>::value &&
    {
       h2_string ret = "[";
       for (auto it = a.begin(); it != a.end(); it++) {
-         ret += Comma[it != a.begin()] + h2_stringify_impl<typename T::value_type>::print(*it);
+         ret += comma_if(it != a.begin()) + h2_stringify_impl<typename T::value_type>::print(*it);
       }
       return ret + "]";
    }
@@ -108,23 +110,14 @@ template <typename... Args>
 struct h2_stringify_impl<std::tuple<Args...>> {
    static h2_string print(const std::tuple<Args...>& a)
    {
-      return "(" + tuple_print(a, std::integral_constant<std::size_t, 0>()) + ")";
+      return "(" + tuple_print(a, std::integral_constant<std::size_t, sizeof...(Args)>()) + ")";
    }
 
-   static h2_string tuple_print(const std::tuple<Args...>& a, std::integral_constant<std::size_t, sizeof...(Args)>)
+   static h2_string tuple_print(const std::tuple<Args...>& a, std::integral_constant<std::size_t, 0>) { return ""; }
+   template <std::size_t I>
+   static h2_string tuple_print(const std::tuple<Args...>& a, std::integral_constant<std::size_t, I>)
    {
-      return "";
-   }
-
-   static h2_string tuple_print(const std::tuple<Args...>& a, typename std::conditional<sizeof...(Args) != 0, std::integral_constant<std::size_t, 0>, std::nullptr_t>::type)
-   {  // decay inside type, because std::get<0>(a) is lvalue reference
-      return h2_stringify_impl<typename std::decay<decltype(std::get<0>(a))>::type>::print(std::get<0>(a)) + tuple_print(a, std::integral_constant<std::size_t, 1>());
-   }
-
-   template <std::size_t N>
-   static h2_string tuple_print(const std::tuple<Args...>& a, std::integral_constant<std::size_t, N>)
-   {
-      return ", " + h2_stringify_impl<typename std::decay<decltype(std::get<N>(a))>::type>::print(std::get<N>(a)) + tuple_print(a, std::integral_constant<std::size_t, N + 1>());
+      return tuple_print(a, std::integral_constant<std::size_t, I - 1>()) + comma_if(1 < I) + h2_stringify_impl<typename std::decay<decltype(std::get<I - 1>(a))>::type>::print(std::get<I - 1>(a));
    }
 };
 
@@ -143,11 +136,12 @@ inline h2_string h2_stringify(const T& a)
 }
 
 template <typename T>
-inline h2_string h2_stringify(const T& a, int n)
+inline h2_string h2_stringify(T a, size_t n)
 {
+   if (n == 0) return h2_stringify(a);
    h2_string ret = "[";
-   for (int i = 0; i < n; ++i) {
-      ret += Comma[!!i] + h2_stringify(a[i]);
+   for (size_t i = 0; i < n; ++i) {
+      ret += comma_if(i) + h2_stringify(a[i]);
    }
    return ret + "]";
 }

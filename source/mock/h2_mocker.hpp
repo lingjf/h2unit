@@ -32,7 +32,7 @@ class h2_mocker<Counter, Lineno, Class, Return(Args...)> : h2_mock {
    std::forward<h2_matcher<h2_nth_decay<9, Args...>>>(_9)
    /* clang-format on */
 
-   using ArgumentTuple = std::tuple<Args..., int>;
+   using ArgumentTuple = std::tuple<Args...>;
    using MatcherTuple = std::tuple<h2_matcher<h2_nth_decay<0, Args...>>,
                                    h2_matcher<h2_nth_decay<1, Args...>>,
                                    h2_matcher<h2_nth_decay<2, Args...>>,
@@ -62,18 +62,12 @@ class h2_mocker<Counter, Lineno, Class, Return(Args...)> : h2_mock {
       return I().function_array[index](that, std::forward<Args>(args)...);
    }
 
-   h2_fail* matches(MatcherTuple& matchers, ArgumentTuple& arguments)
-   {
-      if (1 == std::tuple_size<ArgumentTuple>::value) return nullptr;
-      return h2_tuple_matcher<std::tuple_size<ArgumentTuple>::value>::matches(matchers, arguments, file, line, origin_fn);
-   }
-
    int matches(Args... args)
    {
-      ArgumentTuple at = std::forward_as_tuple(std::forward<Args>(args)..., 0);
+      ArgumentTuple at = std::forward_as_tuple(std::forward<Args>(args)...);
       int checkin_offset = -1;
       for (int i = checkin_index; i < checkin_array.size(); ++i) {
-         h2_fail* fail = matches(matcher_array[i], at);
+         h2_fail* fail = h2_tuple_matches(matcher_array[i], at);
          if (fail) {
             if (checkin_offset != -1) {
                break;
@@ -84,6 +78,7 @@ class h2_mocker<Counter, Lineno, Class, Return(Args...)> : h2_mock {
                   continue;
                }
             }
+            fail->foreach([this](h2_fail* f, int, int) { f->file = file, f->line = line, f->func = origin_fn; });
             h2_fail_g(fail, false);
          } else {
             checkin_index = i;

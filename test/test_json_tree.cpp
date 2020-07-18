@@ -163,9 +163,9 @@ SUITE(illformed json)
       const char* sexy = "[male, female";
 
       h2::h2_json_tree c(sexy);
-      OK(!c.successful);
+      OK(c.illformed);
 
-      OK(ListOf("[", "male", ",", "female", "\033{red}", "...", "\033{reset}"), c.illformed());
+      OK(ListOf(" [", " male", " ,", " female", "\033{yellow,bold}", "...", "\033{reset}"), c.serialize());
    }
 
    Case(array seperated by colon)
@@ -173,9 +173,9 @@ SUITE(illformed json)
       const char* sexy = "[male: female]";
 
       h2::h2_json_tree c(sexy);
-      OK(!c.successful);
+      OK(c.illformed);
 
-      OK(ListOf("[", "male", "\033{red}", ":", "\033{reset}", "female", "]"), c.illformed());
+      OK(ListOf(" [", " male", "\033{yellow,bold,underline}", " : ", "\033{reset}", " female", " ]"), c.serialize());
    }
 
    Case(object seperated by comma)
@@ -183,9 +183,9 @@ SUITE(illformed json)
       const char* sexy = "{male, female}";
 
       h2::h2_json_tree c(sexy);
-      OK(!c.successful);
+      OK(c.illformed);
 
-      OK(ListOf("{", "male", "\033{red}", ",", "\033{reset}", "female", "}"), c.illformed());
+      OK(ListOf(" {", " male", "\033{yellow,bold,underline}", " , ", "\033{reset}", " female", " }"), c.serialize());
    }
 
    // Case(missing double quote)
@@ -193,8 +193,8 @@ SUITE(illformed json)
    //    const char* sexy = "{\"male: female}";
 
    //    h2::h2_json_tree c(sexy);
-   //    OK(!c.successful);
+   //    OK(c.illformed);
 
-   //    OK(ListOf("{", "\033{red}", "\"male"), c.illformed());
+   //    OK(ListOf("{", "\033{yellow,bold,underline}", "\"male"), c.illformed());
    // }
 }

@@ -66,7 +66,7 @@ h2_inline h2_backtrace::h2_backtrace(int shift_) : shift(shift_)
 #endif
 }
 
-h2_inline bool h2_backtrace::operator==(h2_backtrace& bt)
+h2_inline bool h2_backtrace::operator==(const h2_backtrace& bt)
 {
    if (count != bt.count) return false;
    for (int i = 0; i < count; ++i)

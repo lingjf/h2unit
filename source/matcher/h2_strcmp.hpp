@@ -50,7 +50,7 @@ struct h2_matches_json : h2_matches {
 
 struct h2_caseless_matches : h2_matches {
    const h2_matcher<h2_string> m;
-   explicit h2_caseless_matches(h2_matcher<h2_string> matcher_) : m(matcher_) {}
+   explicit h2_caseless_matches(const h2_matcher<h2_string>& matcher_) : m(matcher_) {}
 
    template <typename A>
    h2_fail* matches(const A& a, int n, bool caseless, bool dont) const { return m.matches(a, n, true, dont); }

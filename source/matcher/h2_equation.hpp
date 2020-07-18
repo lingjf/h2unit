@@ -66,8 +66,8 @@ struct h2_equation<E, typename std::enable_if<std::is_arithmetic<E>::value>::typ
    }
 };
 
-template <typename E>
-inline h2_polymorphic_matcher<h2_equation<E>> Eq(const E expect, const long double epsilon = 0)
+template <typename T, typename E = typename h2_decay<T>::type>
+inline h2_polymorphic_matcher<h2_equation<E>> Eq(const T& expect, const long double epsilon = 0)
 {
    return h2_polymorphic_matcher<h2_equation<E>>(h2_equation<E>(expect, epsilon));
 }

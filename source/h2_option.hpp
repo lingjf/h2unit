@@ -10,11 +10,15 @@ struct h2_option {
    static constexpr const char* os = "windows";
 #endif
 
+   unsigned term_size;
+
    char args[256];
    const char* path;
    const char* debug = nullptr;
    bool verbose = false;
    bool colorfull = true;
+   bool fold = false;
+   bool program = false;
    bool shuffle = false;
    bool memory_check = true;
    bool listing = false;
@@ -24,8 +28,8 @@ struct h2_option {
    char tap[256]{'\0'};
    std::vector<const char*> includes, excludes;
 
+   h2_option();
    void parse(int argc, const char** argv);
-
    bool filter(const char* suitename, const char* casename, const char* filename) const;
 };
 

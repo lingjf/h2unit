@@ -4,15 +4,16 @@ struct h2_line : public h2_vector<h2_string> {
    h2_line(h2_string a) : h2_vector<h2_string>({a}) {}
    h2_line(std::initializer_list<h2_string> il) : h2_vector<h2_string>(il) {}
 
-   int width() const;
-   void indent(int n_space);
-   void padding(int n_space);
+   unsigned width(bool ignore_indent = false) const;
+   h2_line& indent(int n, const char c = ' ');
+   h2_line& padding(int n, const char c = ' ');
 
-   void printf(const char* style, const char* format, ...);
-   void concat_back(const char* style, h2_line& line);
-   void concat_front(const char* style, h2_line& line);
+   h2_line& printf(const char* style, const char* format, ...);
+   h2_line& concat_back(const h2_line& line, const char* style = nullptr);
+   h2_line& concat_front(const h2_line& line, const char* style = nullptr);
+   h2_line& concat_front(const h2_string& word, const char* style = nullptr);
 
-   void fold(h2_vector<h2_line>& lines);
+   void brush(const char* style);
    void samesizify(h2_line& b);
 };
 
@@ -20,12 +21,14 @@ struct h2_lines : public h2_vector<h2_line> {
    h2_lines() {}
    h2_lines(std::initializer_list<h2_line> il) : h2_vector<h2_line>(il) {}
 
-   void concat_back(h2_lines& lines);
-   void concat_front(h2_lines& lines);
+   h2_lines& operator+=(const h2_lines& lines);
+   h2_lines& concat_front(const h2_lines& lines);
+   h2_lines& concat_front(const h2_line& line);
 
-   int max_width() const;
-   void samesizify(h2_lines& b);
-   bool foldable();
+   unsigned width() const;
+   bool foldable(unsigned width = 20);
+   h2_line folds();
 
    void sequence(int indent, int start = 0);
+   void samesizify(h2_lines& b);
 };
