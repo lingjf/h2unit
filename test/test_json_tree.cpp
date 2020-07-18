@@ -68,7 +68,7 @@ SUITE(json parse)
    Case(string error)
    {
       h2::h2_json_tree c1("\"12345678\"", 4);
-      OK(h2::h2_json_node::t_absent, c1.type);
+      OK(h2::h2_json_node::t_string, c1.type);
    }
 
    Case(pattern)

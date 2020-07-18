@@ -60,7 +60,7 @@ SUITE(h2_layout)
       h2::h2_lines right = {{"12345"}};
 
       h2::h2_lines lines;
-      h2::lines_merge(lines, left, right, 10, 10, 0, 1);
+      h2::lines_merge(lines, left, right, 10, 10, 0, 'x', 1);
 
       OK(ListOf(ListOf("\033{reset}", "1", "2", "3", "4", "5", "6", "    ", "\033{reset}",
                        "\033{dark gray}", " │ ", "\033{reset}",
@@ -74,7 +74,7 @@ SUITE(h2_layout)
       h2::h2_lines right = {{"12345"}};
 
       h2::h2_lines lines;
-      h2::lines_merge(lines, left, right, 5, 5, 0, 1);
+      h2::lines_merge(lines, left, right, 5, 5, 0, 'x', 1);
 
       OK(ListOf(ListOf("\033{reset}", "1", "2", "3", "4", "5", "\033{reset}",
                        "\033{dark gray}", "\\│ ", "\033{reset}",

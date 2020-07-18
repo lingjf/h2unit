@@ -25,7 +25,7 @@ struct h2_json_tree : h2_json_node {
    h2_lines format()
    {
       h2_lines lines;
-      print(lines, O.fold, O.program);
+      print(lines, O.fold, O.paste);
       return lines;
    }
 };

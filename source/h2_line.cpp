@@ -39,18 +39,10 @@ h2_inline h2_line& h2_line::concat_back(const h2_line& line, const char* style)
    return *this;
 }
 
-h2_inline h2_line& h2_line::concat_front(const h2_line& line, const char* style)
+h2_inline h2_line& h2_line::concat_front(const h2_line& line_or_word, const char* style)
 {
    if (style && strlen(style)) insert(begin(), "\033{reset}");
-   insert(begin(), line.begin(), line.end());
-   if (style && strlen(style)) insert(begin(), "\033{" + h2_string(style) + "}");
-   return *this;
-}
-
-h2_inline h2_line& h2_line::concat_front(const h2_string& word, const char* style)
-{
-   if (style && strlen(style)) insert(begin(), "\033{reset}");
-   insert(begin(), word);
+   insert(begin(), line_or_word.begin(), line_or_word.end());
    if (style && strlen(style)) insert(begin(), "\033{" + h2_string(style) + "}");
    return *this;
 }
@@ -117,13 +109,13 @@ h2_inline h2_line h2_lines::folds()
    return folded_line;
 }
 
-h2_inline void h2_lines::sequence(int indent, int start)
+h2_inline void h2_lines::sequence(unsigned indent, int start)
 {
    for (size_t i = 0; i < size(); ++i) {
-      h2_line sequence;
-      sequence.printf("dark gray", "%lu. ", i + start);
-      at(i).concat_front(sequence);
-      at(i).indent(indent);
+      h2_line t;
+      t.printf("dark gray", "%lu. ", i + start);
+      at(i).concat_front(t);
+      if (indent) at(i).indent(indent);
    }
 }
 

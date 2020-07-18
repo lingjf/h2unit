@@ -28,24 +28,22 @@ static inline h2_lines line_break(const h2_line& line, unsigned width)
    return lines;
 }
 
-static inline unsigned int_width(unsigned v)
+static inline unsigned int_width(int maximum, char scale)
 {
-   char t[256];
-   sprintf(t, "%x", v);
-   return strlen(t);
+   char t1[64], t2[64];
+   sprintf(t1, "%%%c", scale);
+   sprintf(t2, t1, maximum);
+   return strlen(t2);
 }
 
-static inline void lines_merge(h2_lines& lines, h2_lines& left_lines, h2_lines& right_lines, unsigned left_width, unsigned right_width, int step, int seq_width)
+static inline void lines_merge(h2_lines& lines, const h2_lines& left_lines, const h2_lines& right_lines, unsigned left_width, unsigned right_width, int step, char scale, int seq_width)
 {
-   left_lines.samesizify(right_lines);
    char seq_fmt[32];
-   sprintf(seq_fmt, "%%0%dx> ", seq_width);
-   h2_line left_empty, right_empty;
-   left_empty.indent(left_width);
-   right_empty.indent(right_width);
+   sprintf(seq_fmt, "%%0%d%c│ ", seq_width, scale);
+   const h2_line left_empty = {h2_string(left_width, ' ')}, right_empty = {h2_string(right_width, ' ')};
    for (size_t i = 0; i < std::max(left_lines.size(), right_lines.size()); ++i) {
-      auto left_wrap_lines = line_break(left_lines[i], left_width);
-      auto right_wrap_lines = line_break(right_lines[i], right_width);
+      auto left_wrap_lines = line_break(i < left_lines.size() ? left_lines[i] : left_empty, left_width);
+      auto right_wrap_lines = line_break(i < right_lines.size() ? right_lines[i] : right_empty, right_width);
       for (size_t j = 0; j < std::max(left_wrap_lines.size(), right_wrap_lines.size()); ++j) {
          h2_line line;
          if (step) {
@@ -63,38 +61,38 @@ static inline void lines_merge(h2_lines& lines, h2_lines& left_lines, h2_lines& 
    }
 }
 
-h2_inline h2_lines h2_layout::split(h2_lines& left_lines, h2_lines& right_lines, const char* left_title, const char* right_title, int step)
+h2_inline h2_lines h2_layout::split(const h2_lines& left_lines, const h2_lines& right_lines, const char* left_title, const char* right_title, int step, char scale, unsigned width)
 {
-   unsigned seq_width = int_width(step * std::max(left_lines.size(), right_lines.size()));
-   unsigned valid_term_width = O.term_size - (seq_width + 1 /* ">" */) - 1 /*|*/ - 4 /* spaces */;
+   unsigned seq_width = int_width(step * std::max(left_lines.size(), right_lines.size()), scale);
+   unsigned valid_width = width - (seq_width + 1 /* "|" */) - 1 /*|*/ - 4 /* spaces */;
 
    unsigned left_width = std::max(left_lines.width(), 8u); /* at least title width */
    unsigned right_width = std::max(right_lines.width(), 8u);
 
-   if (left_width < valid_term_width / 2)
-      right_width = std::min(valid_term_width - left_width, right_width);
-   else if (right_width < valid_term_width / 2)
-      left_width = std::min(valid_term_width - right_width, left_width);
+   if (left_width < valid_width / 2)
+      right_width = std::min(valid_width - left_width, right_width);
+   else if (right_width < valid_width / 2)
+      left_width = std::min(valid_width - right_width, left_width);
    else
-      left_width = right_width = valid_term_width / 2;
+      left_width = right_width = valid_width / 2;
 
    h2_lines lines;
-   h2_line title_line = {"\033{reset}", "\033{dark gray}", (step ? h2_string(seq_width + 2, ' ') : ""), h2_string(left_title).center(left_width), " │ ", h2_string(right_title).center(right_width), "\033{reset}"};
+   h2_line title_line = {"\033{reset}", "\033{dark gray}", (step ? h2_string(seq_width + 2, ' ') : ""), h2_string(left_title).center(left_width), "   ", h2_string(right_title).center(right_width), "\033{reset}"};
    lines.push_back(title_line);
 
-   lines_merge(lines, left_lines, right_lines, left_width, right_width, step, seq_width);
+   lines_merge(lines, left_lines, right_lines, left_width, right_width, step, scale, seq_width);
    return lines;
 }
 
-h2_inline h2_lines h2_layout::unified(h2_line& up_line, h2_line& down_line, const char* up_title, const char* down_title)
+h2_inline h2_lines h2_layout::unified(const h2_line& up_line, const h2_line& down_line, const char* up_title, const char* down_title, unsigned width)
 {
    h2_lines lines;
 
    h2_line up_title_line = {"\033{dark gray}", up_title, "\033{green}", "> ", "\033{reset}"};
    h2_line down_title_line = {"\033{dark gray}", down_title, "\033{red}", "> ", "\033{reset}"};
 
-   h2_lines up_lines = line_break(up_line, O.term_size - 8);
-   h2_lines down_lines = line_break(down_line, O.term_size - 8);
+   h2_lines up_lines = line_break(up_line, width - up_title_line.width());
+   h2_lines down_lines = line_break(down_line, width - down_title_line.width());
 
    for (size_t i = 0; i < std::max(up_lines.size(), down_lines.size()); ++i) {
       if (i < up_lines.size()) {
@@ -110,28 +108,24 @@ h2_inline h2_lines h2_layout::unified(h2_line& up_line, h2_line& down_line, cons
    return lines;
 }
 
-static inline void prefix_break(h2_line& line, h2_line& title, h2_lines& lines)
+static inline h2_lines prefix_break(const h2_line& line, const h2_line& title, unsigned width)
 {
-   h2_lines ls = line_break(line, O.term_size - 8);
+   h2_lines lines = line_break(line, width - title.width());
 
-   for (size_t i = 0; i < ls.size(); ++i) {
+   for (size_t i = 0; i < lines.size(); ++i) {
       if (i == 0)
-         ls[i].concat_front(title);
+         lines[i].concat_front(title);
       else
-         ls[i].indent(8);
-      lines.push_back(ls[i]);
+         lines[i].indent(title.width());
    }
+   return lines;
 }
 
-h2_inline h2_lines h2_layout::seperate(h2_line& up_line, h2_line& down_line, const char* up_title, const char* down_title)
+h2_inline h2_lines h2_layout::seperate(const h2_line& up_line, const h2_line& down_line, const char* up_title, const char* down_title, unsigned width)
 {
-   h2_lines lines;
-
    h2_line up_title_line = {"\033{dark gray}", up_title, "\033{green}", "> ", "\033{reset}"};
    h2_line down_title_line = {"\033{dark gray}", down_title, "\033{red}", "> ", "\033{reset}"};
 
-   prefix_break(up_line, up_title_line, lines);
-   prefix_break(down_line, down_title_line, lines);
-
-   return lines;
+   h2_lines lines = prefix_break(up_line, up_title_line, width);
+   return lines += prefix_break(down_line, down_title_line, width);
 }

@@ -761,10 +761,12 @@ twofiles speed up 2~3 times than onefile.
 *    `-l` *list* out suites and cases
 *    `-s` *shuffle* cases and execute in random order
 *    `-b` [n] *breaking* test once failure occurred
+*    `-o` *Only* execute last failed cases
 *    `-r` [n] repeat run n *rounds* when no failure
 *    `-c` enable/disable *colorfull* output, default is enable
 *    `-m` enable/disable *memory* check(leak, overflow, trample, double free, asymmetric free), default is enable
 *    `-d/D` *Debug* mode, -D for gdb attach but requires password
+*    `-f` Fold simple json object or array 
 *    `-p` Print C/C++ source code json for copy/paste 
 *    `-j` {path} generate *junit* compatible XML output
 *    `-i` {pattern} *include* filter, suite name or case name wildcard (?, *) matches, if pattern don't contains ? and *, wildcard change to contains. Default is `*` (include all)

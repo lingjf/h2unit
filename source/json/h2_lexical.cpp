@@ -86,7 +86,7 @@ struct h2_json_lexical {
             break;
          }
       }
-      if (pending && (state == st_normal)) {
+      if (pending) {
          new_lexis(lexical, pending, p - pending);
       }
    }

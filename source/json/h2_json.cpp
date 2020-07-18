@@ -8,7 +8,7 @@ h2_inline h2_lines h2_json::format(const h2_string& json_string)
       return lines;
    }
    lines = tree.format();
-   if (O.program) {
+   if (O.paste) {
       if (0 < lines.size()) lines.front().concat_front("\""), lines.back().push_back("\"");
       unsigned max_width = lines.width();
       for (auto& line : lines) {

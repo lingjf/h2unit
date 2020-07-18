@@ -5,6 +5,7 @@ struct h2_task {
    int stats[h2_case::statuss]{0};
    int checks = 0;
    int rounds = 0;
+   int last = 0;
    h2_list suites;
    h2_suite* current_suite = nullptr;
    h2_case* current_case = nullptr;
@@ -15,6 +16,7 @@ struct h2_task {
    std::vector<void (*)()> global_case_setups, global_case_teardowns;
 
    void shuffle();
+   void shadow();
    void enumerate();
    int execute();
 };

@@ -75,11 +75,26 @@ SUITE(h2_option)
       OK(2, c.breakable);
    }
 
+   Case(breakable - b2c)
+   {
+      OK(2, atoi("2c"));
+      const char* argv[] = {"./a.out", "-b2c"};
+      c.parse(2, argv);
+      OK(2, c.breakable);
+   }
+
    Case(breakable - b 2)
    {
       const char* argv[] = {"./a.out", "-b", "2"};
       c.parse(3, argv);
       OK(2, c.breakable);
+   }
+
+   Case(breakable - b)
+   {
+      const char* argv[] = {"./a.out", "-b", ""};
+      c.parse(3, argv);
+      OK(1, c.breakable);
    }
 
    Case(junit)
@@ -93,26 +108,26 @@ SUITE(h2_option)
    {
       const char* argv[] = {"./a.out", "-i", "http"};
       c.parse(3, argv);
-      OK(!c.filter("server", "connection", "httpd_connection.cpp"));
-      OK(!c.filter("server", "my_http_connection", "tcp_connection.cpp"));
-      OK(!c.filter("http", "connection", "tcp_connection.cpp"));
+      OK(!c.filter("server", "connection", "httpd_connection.cpp", 0));
+      OK(!c.filter("server", "my_http_connection", "tcp_connection.cpp", 0));
+      OK(!c.filter("http", "connection", "tcp_connection.cpp", 0));
    }
 
    Case(include substr 2)
    {
       const char* argv[] = {"./a.out", "-i", "http", "tcp*"};
       c.parse(4, argv);
-      OK(!c.filter("server", "connection", "httpd_connection.cpp"));
-      OK(!c.filter("server", "connection", "tcp_connection.cpp"));
-      OK(!c.filter("http", "connection", "tcp_connection.cpp"));
+      OK(!c.filter("server", "connection", "httpd_connection.cpp", 0));
+      OK(!c.filter("server", "connection", "tcp_connection.cpp", 0));
+      OK(!c.filter("http", "connection", "tcp_connection.cpp", 0));
    }
 
    Case(include exclude)
    {
       const char* argv[] = {"./a.out", "-x", "http", "-x", "tcp"};
       c.parse(5, argv);
-      OK(c.filter("server", "connection", "httpd_connection.cpp"));
-      OK(c.filter("server", "connection", "tcp_connection.cpp"));
-      OK(c.filter("http", "connection", "tcp_connection.cpp"));
+      OK(c.filter("server", "connection", "httpd_connection.cpp", 0));
+      OK(c.filter("server", "connection", "tcp_connection.cpp", 0));
+      OK(c.filter("http", "connection", "tcp_connection.cpp", 0));
    }
 }

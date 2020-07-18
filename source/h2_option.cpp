@@ -20,11 +20,13 @@ static inline void usage()
   ├────────┼───────────┼────────────────────────────────────────────────────┤\n\
   │ -b[n]  │    [n]    │ Breaking test once n (default 1) failures occurred │\n\
   ├────────┼───────────┼────────────────────────────────────────────────────┤\n\
+  │ -o     │           │ Only execute last failed cases                     │\n\
+  ├────────┼───────────┼────────────────────────────────────────────────────┤\n\
   │ -r[n]  │    [n]    │ Repeat run n rounds (default 1) when no failure    │\n\
   ├────────┼───────────┼────────────────────────────────────────────────────┤\n\
   │ -c     │           │ Output in black-white color style                  │\n\
   ├────────┼───────────┼────────────────────────────────────────────────────┤\n\
-  │ -f     │           │ Fold simple json object or array                   │\n\
+  │ -f     │           │ Toggle fold simple json object or array            │\n\
   ├────────┼───────────┼────────────────────────────────────────────────────┤\n\
   │ -p     │           │ Print C/C++ source code json for copy/paste        │\n\
   ├────────┼───────────┼────────────────────────────────────────────────────┤\n\
@@ -43,46 +45,49 @@ static inline void usage()
 
 struct getopt {
    int argc;
-   const char* argv[100];
-   int offset;
-   getopt(int argc_, const char** argv_) : argc(argc_), offset(0)
+   const char** args;  // argv + 1
+   int i = -1;
+   const char* j = nullptr;
+
+   getopt(int argc_, const char** args_) : argc(argc_), args(args_) {}
+
+   const char* extract_string()
    {
-      for (int i = 0; i < argc; ++i)
-         argv[i] = argv_[i];
+      ++i;
+      return i < argc ? args[i] : nullptr;
    }
-   const char* next()
+
+   const char next_option()
    {
-      for (; offset < argc; ++offset)
-         if (argv[offset])
-            return argv[offset++];
-      return nullptr;
+      do {
+         for (; j && *++j;) return *j;
+         for (; (j = extract_string()) && j[0] != '-';) {}
+      } while (j);
+      return '\0';
    }
-   const char* extract(const char* pattern)
+
+   void extract_number(int& value)
    {
-      const char **pp = nullptr, *p = nullptr;
-      for (int i = offset; i < argc; ++i) {
-         if (argv[i]) {
-            pp = argv + i;
-            break;
+      if (j) { // j always not null
+         int l = strspn(j + 1, "0123456789");
+         if (l) {
+            value = atoi(j + 1);
+            j += l;
+            return;
          }
       }
 
-      if (pp && *pp[0] != '-' && h2_pattern::regex_match(pattern, *pp)) {
-         p = *pp;
-         *pp = nullptr;
+      if (i + 1 < argc) {
+         int l = strlen(args[i + 1]);
+         if (l && strspn(args[i + 1], "0123456789") == l)
+            value = atoi(args[++i]);
       }
-      return p;
    }
-   const char* parseint(const char* p, int& value) const
+
+   void arguments(char* s)
    {
-      for (value = 0; ::isdigit(*p); p++)
-         value = value * 10 + (*p - '0');
-      return p - 1;
-   }
-   void args(char* s)
-   {
-      for (int i = 0; i < argc; ++i)
-         s += sprintf(s, " %s", argv[i]);
+      for (int k = 0; k < argc; ++k)
+         s += sprintf(s, " %s", args[k]);
    }
 };
 
@@ -100,83 +105,71 @@ static inline unsigned h2_term_size()
 h2_inline h2_option::h2_option()
 {
    term_size = h2_term_size();
+#ifdef _WIN32
+   memory_check = false;
+#endif
 }
 
 h2_inline void h2_option::parse(int argc, const char** argv)
 {
    path = argv[0];
    getopt get(argc - 1, argv + 1);
-   get.args(args);
+   get.arguments(args);
 
-   for (const char* p; p = get.next();) {
-      if (p[0] != '-') continue;
-      for (const char* t; *p; p++) {
-         switch (*p) {
-         case 'v': verbose = true; break;
-         case 'c': colorfull = !colorfull; break;
-         case 'f': fold = !fold; break;
-         case 'p': program = true; break;
-         case 's': shuffle = !shuffle; break;
-         case 'm': memory_check = !memory_check; break;
-         case 'l': listing = true; break;
-         case 'b':
-            breakable = 1;
-            if (::isdigit(*(p + 1)))
-               p = get.parseint(p + 1, breakable);
-            else if ((t = get.extract("[0-9]+")))
-               breakable = atoi(t);
-            break;
-         case 'r':
-            rounds = 1;
-            if (::isdigit(*(p + 1)))
-               p = get.parseint(p + 1, rounds);
-            else if ((t = get.extract("[0-9]+")))
-               rounds = atoi(t);
-            break;
-         case 'd': debug = "gdb new"; break;
-         case 'D': debug = "gdb attach"; break;
-         case 'j':
-            sprintf(junit, "%s.xml", path);
-            if ((t = get.extract(".*"))) strcpy(junit, t);
-            break;
-         case 'i':
-            while ((t = get.extract(".*"))) includes.push_back(t);
-            break;
-         case 'x':
-            while ((t = get.extract(".*"))) excludes.push_back(t);
-            break;
-         case '-': break;
-         case 'h':
-         case '?':
-            usage();
-            exit(0);
-         default:
-            ::printf("unknown option: -%c, -h for help\n", *p);
-            exit(0);
-         }
+   for (const char* t;;) {
+      switch (get.next_option()) {
+      case '\0': return;
+      case 'v': verbose = true; break;
+      case 'c': colorfull = !colorfull; break;
+      case 's': shuffle = !shuffle; break;
+      case 'o': only = true; break;
+      case 'S': seq = true; break;
+      case 'f': fold = !fold; break;
+      case 'p': paste = true; break;
+      case 'm': memory_check = !memory_check; break;
+      case 'l': listing = true; break;
+      case 'b':
+         breakable = 1;
+         get.extract_number(breakable);
+         break;
+      case 'r':
+         rounds = 1;
+         get.extract_number(rounds);
+         break;
+      case 'd': debug = "gdb new"; break;
+      case 'D': debug = "gdb attach"; break;
+      case 'j':
+         sprintf(junit, "%s.xml", path);
+         if ((t = get.extract_string())) strcpy(junit, t);
+         break;
+      case 'i':
+         while ((t = get.extract_string())) includes.push_back(t);
+         break;
+      case 'x':
+         while ((t = get.extract_string())) excludes.push_back(t);
+         break;
+      case 'h':
+      case '?':
+         usage();
+         exit(0);
       }
    }
-#ifdef _WIN32
-   memory_check = false;
-#endif
 }
 
 static inline bool match3(const std::vector<const char*>& patterns, const char* subject)
 {
    for (auto pattern : patterns) {
-      if (strcspn(pattern, "?*+^$\\.[]") < strlen(pattern)) {
-         if (h2_pattern::regex_match(pattern, subject, true)) return true;
-         if (strcspn(pattern, "+^$\\.[]") == strlen(pattern))
-            if (h2_pattern::wildcard_match(pattern, subject, true)) return true;
-      } else {
-         if (strcasestr(subject, pattern)) return true;
-      }
+      if (strcasestr(subject, pattern)) return true;
+      if (strcspn(pattern, "?*[]") < strlen(pattern) && h2_pattern::wildcard_match(pattern, subject, true)) return true;
+      // if (strcspn(pattern, "?*[]+^$\\.") < strlen(pattern) && h2_pattern::regex_match(pattern, subject, true)) return true;
    }
    return false;
 }
 
-h2_inline bool h2_option::filter(const char* suitename, const char* casename, const char* filename) const
+h2_inline bool h2_option::filter(const char* suitename, const char* casename, const char* file, int line) const
 {
+   char filename[1024];
+   sprintf(filename, "%s:%d", file, line);
    if (includes.size())
       if (!match3(includes, suitename) && !match3(includes, casename) && !match3(includes, filename))
          return true;

@@ -1,16 +1,19 @@
 
 struct h2_case {
    enum { initial = 0,
-          passed = 1,
-          failed = 2,
-          todo = 3,
-          filtered = 4,
+          passed,
+          failed,
+          todo,
+          filtered,
+          ignored,
           statuss };
+
    const char* name;
    const char* file;
    int line;
    h2_list x;
    int seq = 0;
+   int last_status = initial;
    int status = initial;
    int checks = 0;
    long long footprint = 0;

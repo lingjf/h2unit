@@ -42,7 +42,7 @@ struct h2_json_match {
       }
    }
 
-   static h2_json_node* search(h2_list& haystack, h2_json_node* needle, bool caseless)
+   static h2_json_node* search(const h2_list& haystack, h2_json_node* needle, bool caseless)
    {
       h2_list_for_each_entry (p, haystack, h2_json_node, x)
          if (match(needle, p, caseless))

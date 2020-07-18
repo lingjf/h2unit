@@ -23,6 +23,7 @@ struct h2_json_syntax {
       s.replace_all("\\t", "\t");
       s.replace_all("\\\"", "\"");
       s.replace_all("\\\\", "\\");
+      //todo: escape \u12ab 
       return s;
    }
 

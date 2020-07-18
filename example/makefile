@@ -56,4 +56,4 @@ singlify:
 	cd ../build && python singlify.py
 	
 clean:
-	rm -rf a.out *.o *.xml .last_order
+	rm -rf a.out h2unit.h h2unit.cpp *.o *.xml .last_order

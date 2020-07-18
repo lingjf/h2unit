@@ -41,7 +41,7 @@ struct h2_listof_matches : h2_matches {
    explicit h2_listof_matches(const Matchers&... matchers) : t_matchers(matchers...) {}
 
    template <typename A>
-   auto matches(const A& a, int n, bool caseless, bool dont) const -> typename std::enable_if<h2_is_container<typename std::decay<A>::type>::value, h2_fail*>::type
+   auto matches(const A& a, int, bool caseless, bool dont) const -> typename std::enable_if<h2_is_container<typename std::decay<A>::type>::value, h2_fail*>::type
    {
       h2_fail* fails = nullptr;
 
@@ -54,12 +54,12 @@ struct h2_listof_matches : h2_matches {
          for (auto& k : a) {
             if (j++ == i) {
                ++c;
-               fail = v_matchers[i].matches(k, n, caseless, false);
+               fail = v_matchers[i].matches(k, 0, caseless, false);
                break;
             }
          }
          if (c == 0) {
-            fail = h2_fail::new_unexpect("", "[missing]", v_matchers[i].expects(caseless, false));
+            fail = h2_fail::new_unexpect("", "", v_matchers[i].expects(caseless, false), "out of range");
          }
          if (fail) fail->seq = i;
          h2_fail::append_subling(fails, fail);
@@ -125,8 +125,7 @@ struct h2_has_matches : h2_matches {
             }
          }
          if (!found) {
-            h2_string t2 = v_matchers[i].expects(caseless, false);
-            h2_fail* fail = h2_fail::new_normal(nullptr, 0, nullptr, "haven't %s", t2.c_str());
+            h2_fail* fail = h2_fail::new_normal({"haven't ", "\033{red}", v_matchers[i].expects(caseless, false), "\033{reset}"});
             if (fail) fail->seq = i;
             h2_fail::append_subling(fails, fail);
          }
@@ -157,8 +156,7 @@ struct h2_has_matches : h2_matches {
             }
          }
          if (!found) {
-            h2_string t2 = v_matchers[i].expects(caseless, false);
-            h2_fail* fail = h2_fail::new_normal(nullptr, 0, nullptr, "haven't %s", t2.c_str());
+            h2_fail* fail = h2_fail::new_normal({"haven't ", "\033{red}", v_matchers[i].expects(caseless, false), "\033{reset}"});
             if (fail) fail->seq = i;
             h2_fail::append_subling(fails, fail);
          }

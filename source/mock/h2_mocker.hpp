@@ -100,7 +100,7 @@ class h2_mocker<Counter, Lineno, Class, Return(Args...)> : h2_mock {
          ++checkin_array[checkin_offset];
       }
       if (checkin_offset == -1) {
-         h2_fail_g(h2_fail::new_call(origin_fn, "", "unexpect", file, line), false);
+         h2_fail_g(h2_fail::new_call(origin_fn, "", "unexpect", {}, file, line), false);
       }
       return checkin_offset;
    }

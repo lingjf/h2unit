@@ -87,13 +87,13 @@ struct h2_report_console : h2_report_impl {
    }
    void comma_status(int n, const char* style, const char* name, int& c)
    {
-      if (c++) h2_color::printf("dark gray", ", ");
+      if (c++) h2_color::printf("dark gray", ",");
       h2_color::printf(style, "%d", n);
       h2_color::printf("", " %s", name);
    }
-   int nonzero_count(int a1 = 0, int a2 = 0, int a3 = 0, int a4 = 0, int a5 = 0)
+   int nonzero_count(int a1 = 0, int a2 = 0, int a3 = 0, int a4 = 0, int a5 = 0, int a6 = 0)
    {
-      return !!a1 + !!a2 + !!a3 + !!a4 + !!a5;
+      return !!a1 + !!a2 + !!a3 + !!a4 + !!a5 + !!a6;
    }
    void on_task_endup(h2_task* t) override
    {
@@ -109,7 +109,7 @@ struct h2_report_console : h2_report_impl {
          else
             h2_color::printf("bold,green", "Success ");
 
-         if (0 < nonzero_count(t->stats[h2_case::failed], t->stats[h2_case::todo], t->stats[h2_case::filtered]))
+         if (0 < nonzero_count(t->stats[h2_case::failed], t->stats[h2_case::todo], t->stats[h2_case::filtered], t->stats[h2_case::ignored]))
             h2_color::printf("dark gray", "(");
 
          int c = 0;
@@ -117,19 +117,20 @@ struct h2_report_console : h2_report_impl {
          if (t->stats[h2_case::failed]) comma_status(t->stats[h2_case::failed], "red", "failed", c);
          if (t->stats[h2_case::todo]) comma_status(t->stats[h2_case::todo], "yellow", "todo", c);
          if (t->stats[h2_case::filtered]) comma_status(t->stats[h2_case::filtered], "blue", "filtered", c);
-         if (0 < nonzero_count(t->stats[h2_case::failed], t->stats[h2_case::todo], t->stats[h2_case::filtered])) {
+         if (t->stats[h2_case::ignored]) comma_status(t->stats[h2_case::ignored], "blue", "ignored", c);
+         if (0 < nonzero_count(t->stats[h2_case::failed], t->stats[h2_case::todo], t->stats[h2_case::filtered], t->stats[h2_case::ignored])) {
             h2_color::printf("dark gray", ")");
             h2_color::printf("", " %d", cases);
          }
          h2_color::printf("", " case%s", 1 < cases ? "s" : "");
          h2_color::printf("dark gray", ",");
-         h2_color::printf("", " %d check%s", t->checks, 1 < t->checks ? "s" : "");
+         h2_color::printf("", "%d check%s", t->checks, 1 < t->checks ? "s" : "");
          if (1 < t->rounds) {
             h2_color::printf("dark gray", ",");
-            h2_color::printf("", " %d rounds", t->rounds);
+            h2_color::printf("", "%d rounds", t->rounds);
          }
          h2_color::printf("dark gray", ",");
-         h2_color::printf("", " %s \n", format_duration(task_cost));
+         h2_color::printf("", "%s \n", format_duration(task_cost));
       }
    }
    void on_suite_start(h2_suite* s) override
@@ -148,7 +149,7 @@ struct h2_report_console : h2_report_impl {
       if (O.verbose && O.includes.size() + O.excludes.size() == 0) {
          print_percentage();
          h2_color::printf("", "%s", s->name);
-         if (1 < nonzero_count(s->stats[h2_case::passed], s->stats[h2_case::failed], s->stats[h2_case::todo], s->stats[h2_case::filtered]))
+         if (1 < nonzero_count(s->stats[h2_case::passed], s->stats[h2_case::failed], s->stats[h2_case::todo], s->stats[h2_case::filtered], s->stats[h2_case::ignored]))
             h2_color::printf("dark gray", " (");
          else
             h2_color::printf("dark gray", " - ");
@@ -158,8 +159,9 @@ struct h2_report_console : h2_report_impl {
          if (s->stats[h2_case::failed]) comma_status(s->stats[h2_case::failed], "", "failed", c);
          if (s->stats[h2_case::todo]) comma_status(s->stats[h2_case::todo], "", "todo", c);
          if (s->stats[h2_case::filtered]) comma_status(s->stats[h2_case::filtered], "", "filtered", c);
+         if (s->stats[h2_case::ignored]) comma_status(s->stats[h2_case::ignored], "", "ignored", c);
 
-         if (1 < nonzero_count(s->stats[h2_case::passed], s->stats[h2_case::failed], s->stats[h2_case::todo], s->stats[h2_case::filtered]))
+         if (1 < nonzero_count(s->stats[h2_case::passed], s->stats[h2_case::failed], s->stats[h2_case::todo], s->stats[h2_case::filtered], s->stats[h2_case::ignored]))
             h2_color::printf("dark gray", ")");
          if (0 < s->cases.count())
             h2_color::printf("", " case%s", 1 < s->cases.count() ? "s" : "");
@@ -167,15 +169,15 @@ struct h2_report_console : h2_report_impl {
          h2_color::printf("dark gray", " in suite");
          if (0 < s->checks) {
             h2_color::printf("dark gray", ",");
-            h2_color::printf("", " %d check%s", s->checks, 1 < s->checks ? "s" : "");
+            h2_color::printf("", "%d check%s", s->checks, 1 < s->checks ? "s" : "");
          }
          if (0 < s->footprint) {
             h2_color::printf("dark gray", ",");
-            h2_color::printf("", " %s", format_volume(s->footprint));
+            h2_color::printf("", "%s", format_volume(s->footprint));
          }
          if (1 < suite_cost) {
             h2_color::printf("dark gray", ",");
-            h2_color::printf("", " %s", format_duration(suite_cost));
+            h2_color::printf("", "%s", format_duration(suite_cost));
          }
          h2_color::printf("", "\n");
       }
@@ -259,7 +261,7 @@ struct h2_report_junit : h2_report_impl {
       h2_report_impl::on_case_endup(s, c);
       if (!f) return;
 
-      static constexpr const char* CSS[] = {"Initial", "Passed", "Failed", "TODO", "Filtered"};
+      static constexpr const char* CSS[] = {"Initial", "Passed", "Failed", "TODO", "Filtered", "Ignored"};
       fprintf(f, "<testcase classname=\"%s\" name=\"%s\" status=\"%s\" time=\"%.3f\">\n", s->name, c->name, CSS[c->status], case_cost / 1000.0);
 
       if (c->status == h2_case::failed) {

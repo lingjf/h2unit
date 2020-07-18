@@ -17,8 +17,10 @@ struct h2_option {
    const char* debug = nullptr;
    bool verbose = false;
    bool colorfull = true;
-   bool fold = false;
-   bool program = false;
+   bool seq = false;
+   bool fold = true;
+   bool paste = false;
+   bool only = false;
    bool shuffle = false;
    bool memory_check = true;
    bool listing = false;
@@ -30,7 +32,7 @@ struct h2_option {
 
    h2_option();
    void parse(int argc, const char** argv);
-   bool filter(const char* suitename, const char* casename, const char* filename) const;
+   bool filter(const char* suitename, const char* casename, const char* file, int line) const;
 };
 
 static const h2_option& O = h2_option::I();  // for pretty

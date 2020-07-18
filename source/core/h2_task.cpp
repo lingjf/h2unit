@@ -5,30 +5,35 @@ static inline void save_last_order(h2_list& suites)
    if (!f.f) return;
    h2_list_for_each_entry (s, suites, h2_suite, x)
       h2_list_for_each_entry (c, s->cases, h2_case, x)
-         fprintf(f.f, "%s\n%s\n", s->name, c->name);
+         fprintf(f.f, "%s\n%s\n%d\n", s->name, c->name, c->status);
 }
 
-static inline void __mark_seq(h2_list& suites, char* suitename, char* casename)
+static inline void __mark(h2_list& suites, char* suitename, char* casename, int status)
 {
    static int seq = INT_MIN / 4;
 
    h2_list_for_each_entry (s, suites, h2_suite, x)
       if (!strcmp(suitename, s->name))
          h2_list_for_each_entry (c, s->cases, h2_case, x)
-            if (!strcmp(casename, c->name))
+            if (!strcmp(casename, c->name)) {
                s->seq = c->seq = ++seq;
+               c->last_status = status;
+            }
 }
 
 static inline int mark_last_order(h2_list& suites)
 {
    int count = 0;
-   char suitename[1024], casename[1024];
+   char suitename[1024], casename[1024], status[32];
    h2_with f(fopen(".last_order", "r"));
    if (!f.f) return 0;
-   while (fgets(suitename, sizeof(suitename), f.f) && fgets(casename, sizeof(casename), f.f)) {
+   while (fgets(suitename, sizeof(suitename), f.f) &&
+          fgets(casename, sizeof(casename), f.f) &&
+          fgets(status, sizeof(status), f.f)) {
       suitename[strlen(suitename) - 1] = '\0';  // remove \n in save_last_order
       casename[strlen(casename) - 1] = '\0';
-      __mark_seq(suites, suitename, casename);
+      status[strlen(status) - 1] = '\0';
+      __mark(suites, suitename, casename, atoi(status));
       count++;
    }
    return count;
@@ -51,7 +56,7 @@ static int h2_case_cmp(h2_list* a, h2_list* b)
 
 h2_inline void h2_task::shuffle()
 {
-   int last = mark_last_order(suites);
+   last = mark_last_order(suites);
    srand(h2_now());
    if (O.shuffle && last == 0)
       h2_list_for_each_entry (s, suites, h2_suite, x)
@@ -61,8 +66,13 @@ h2_inline void h2_task::shuffle()
    suites.sort(h2_suite_cmp);
    h2_list_for_each_entry (s, suites, h2_suite, x)
       s->cases.sort(h2_case_cmp);
+}
 
-   if (O.shuffle && last == 0)
+h2_inline void h2_task::shadow()
+{
+   if (stats[h2_case::failed] == 0)
+      drop_last_order();
+   else if (last == 0)
       save_last_order(suites);
 }
 
@@ -98,8 +108,11 @@ h2_inline int h2_task::execute()
          h2_list_for_each_entry (c, s->cases, h2_case, x) {
             if (0 < O.breakable && O.breakable <= stats[h2_case::failed]) break;
             current_case = c;
-            if (O.filter(s->name, c->name, c->file)) c->status = h2_case::filtered;
+            if (O.filter(s->name, c->name, c->file, c->line)) c->status = h2_case::filtered;
             h2_report::I().on_case_start(s, c);
+            if (O.only && h2_case::failed != c->last_status) {
+               if (h2_case::initial == c->status) c->status = h2_case::ignored;
+            }
             if (h2_case::initial == c->status && !O.listing) {
                for (auto& setup : global_case_setups) setup();
                s->execute(c);
@@ -115,7 +128,7 @@ h2_inline int h2_task::execute()
          h2_report::I().on_suite_endup(s);
          s->clear();
       }
-      if (stats[h2_case::failed] == 0) drop_last_order();
+      shadow();
    }
    h2_report::I().on_task_endup(this);
    for (auto& teardown : global_teardowns) teardown();
@@ -124,5 +137,5 @@ h2_inline int h2_task::execute()
    mocks.clear(false);
    h2_memory::finalize();
 
-   return stats[h2::h2_case::failed];
+   return stats[h2_case::failed];
 }

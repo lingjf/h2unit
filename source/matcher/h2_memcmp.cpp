@@ -31,7 +31,7 @@ h2_inline h2_fail* h2_matches_bytecmp::matches(const void* a, int n, bool casele
       }
    } else {
       if (nbytes == 0) {
-         return h2_fail::new_normal(nullptr, 0, nullptr, "length required");
+         return h2_fail::new_normal("length required");
       }
    }
    if (!result) {
@@ -64,13 +64,13 @@ h2_inline h2_fail* h2_matches_bitcmp::matches(const void* a, int n, bool caseles
       }
    } else {
       if (nbits == 0) {
-         return h2_fail::new_normal(nullptr, 0, nullptr, "length required");
+         return h2_fail::new_normal("length required");
       }
    }
    int _nbits = nbits;
    if (nbits == 0) _nbits = max_length;
    if (max_length < _nbits) {
-      return h2_fail::new_normal(nullptr, 0, nullptr, "length too loog");
+      return h2_fail::new_normal("length too loog");
    }
    bool result = h2_numeric::bits_equal(_e, (const unsigned char*)a, _nbits);
    if (result == !dont) return nullptr;
