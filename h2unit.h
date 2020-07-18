@@ -1,4 +1,4 @@
-﻿/* v5.6 2020-07-18 16:32:18 */
+﻿/* v5.6 2020-07-18 21:07:58 */
 /* https://github.com/lingjf/h2unit */
 /* Apache Licence 2.0 */
 #ifndef __H2UNIT_H__
@@ -3475,7 +3475,8 @@ using h2::Pair;
 h2_weak_attribute int main(int argc, const char** argv)
 {
    h2::h2_option::I().parse(argc, argv);
-   return h2::h2_task::I().execute();
+   h2::h2_task::I().execute();
+   return 0;
 }
 
 namespace h2 {

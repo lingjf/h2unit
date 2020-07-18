@@ -4,21 +4,31 @@
 *.d
 *.so
 *.out
+*.map
 
 .last_order
+example/h2unit.cpp
+example/h2unit.h
 
-*.dSYM/
 *.su
 *.idb
 *.pdb
 
 .vscode/
-.DS_Store
 
+.DS_Store
+*.dSYM/
+
+# CMake
 CMakeCache.txt
 CMakeFiles
 cmake_install.cmake
 Makefile
 
-example/h2unit.cpp
-example/h2unit.h
+
+# code coverage
+*.gcda
+*.gcno
+*.lcov
+coverage.*
+coverage/

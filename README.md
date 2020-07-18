@@ -749,6 +749,33 @@ SUITE(suite)
 *    JSON difference is aligned
 *    Memory leak backtrace is printed
 
+# Coverage
+
+- Add `-fprofile-arcs -ftest-coverage` into compiler and linker options.
+- Prerequisites lcov is installed.
+- Tool [`coverage.py`](coverage.py) generate coverage report.
+
+```Shell
+   make
+   ./a.out
+   python coverage.py "*product*" #Extract files matching PATTERN from FILE
+```
+
+## coverage.json
+```JSON
+   {
+      "Lines": { "Total": 33, "Hit": 33, "Coverage": 1.0 },
+      "Functions": { "Total": 8, "Hit": 8, "Coverage": 1.0 },
+      "Branches": { "Total": 8, "Hit": 5, "Coverage": 0.625 }
+   }
+```
+- Line coverage: Lines.Coverage
+- Function coverage: Functions.Coverage
+- Branch coverage: Branches.Coverage
+
+## html report
+coverage/index.html 
+
 # Compile speed
 In order to speed up compile progress, split header-only-single-file [h2unit.h](h2unit.h) into 
 two files: [h2unit.cpp](build/h2unit.cpp) and [h2unit.hpp](build/h2unit.hpp). Refer to `example/make twofiles` for sample usage.

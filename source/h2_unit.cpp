@@ -54,7 +54,8 @@
 h2_weak_attribute int main(int argc, const char** argv)
 {
    h2::h2_option::I().parse(argc, argv);
-   return h2::h2_task::I().execute();
+   h2::h2_task::I().execute();
+   return 0;
 }
 
 namespace h2 {

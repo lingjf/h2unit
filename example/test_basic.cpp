@@ -7,6 +7,8 @@ extern "C" {
 #include "product_c.h"
 }
 
+#include "product_cpp.h"
+
 int pv;
 
 /*
@@ -46,6 +48,12 @@ SUITE(Basic Cases)
    Case(a success case successful)
    {
       OK(2, uv);
+   }
+
+   Case(a c++ case successful)
+   {
+      Rect rect(0, 0, 1, 1);
+      OK(0, rect.move(0));
    }
 }
 
