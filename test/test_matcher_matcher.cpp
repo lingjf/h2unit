@@ -143,3 +143,18 @@ SUITE(Matcher)
       OK(nullptr == h2::h2_matcher<std::vector<int>>(ListOf(1, 3, 5)).matches(b));
    }
 }
+
+namespace {
+
+int foobar(int a, const char* b)
+{
+   return 100;
+}
+
+CASE(Any matcher{})
+{
+   MOCK(foobar, int, (int, const char*)).once({}, {}).returns(11);
+   OK(11, foobar(1, "A"));
+}
+
+}  // namespace

@@ -170,10 +170,10 @@ h2_inline bool h2_option::filter(const char* suitename, const char* casename, co
 {
    char filename[1024];
    sprintf(filename, "%s:%d", file, line);
-   if (includes.size())
+   if (!includes.empty())
       if (!match3(includes, suitename) && !match3(includes, casename) && !match3(includes, filename))
          return true;
-   if (excludes.size())
+   if (!excludes.empty())
       if (match3(excludes, suitename) || match3(excludes, casename) || match3(excludes, filename))
          return true;
    return false;

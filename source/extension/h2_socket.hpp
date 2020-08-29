@@ -42,11 +42,11 @@ struct h2_packet_matches : h2_matches {
       h2_fail::append_subling(fails, h2_matcher_cast<const char*>(from).matches(a->from.c_str(), 0, caseless, dont));
       h2_fail::append_subling(fails, h2_matcher_cast<const char*>(to).matches(a->to.c_str(), 0, caseless, dont));
       h2_fail::append_subling(fails, h2_matcher_cast<const unsigned char*>(data).matches((unsigned char*)a->data.data(), 0, caseless, dont));
-      h2_fail::append_subling(fails, h2_matcher_cast<const int>(size).matches(a->data.length(), 0, caseless, dont));
+      h2_fail::append_subling(fails, h2_matcher_cast<const int>(size).matches(a->data.size(), 0, caseless, dont));
       return fails;
    }
 
-   virtual h2_string expects(bool caseless, bool dont) const override { return ""; }
+   virtual h2_string expection(bool, bool) const override { return ""; }
 };
 
 template <typename M1, typename M2, typename M3, typename M4>

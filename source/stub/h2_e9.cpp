@@ -30,7 +30,7 @@ struct h2_e9 {
    static void set(void* origin_fp, void* substitute_fp)
    {
       unsigned char* I = reinterpret_cast<unsigned char*>(origin_fp);
-      ptrdiff_t delta = (unsigned char*)substitute_fp - (unsigned char*)origin_fp - 5;
+      long long delta = (unsigned char*)substitute_fp - (unsigned char*)origin_fp - 5;
 
 #if defined __i386__ || defined __x86_64__ || defined _M_IX86 || defined _M_X64
       if (delta < INT_MIN || INT_MAX < delta) {  //x86_64 asm("movq $substitute_fp, %rax; jmpq %rax")
@@ -39,7 +39,7 @@ struct h2_e9 {
          memcpy(I, C, sizeof(C));
       } else {  //i386 asm("jmp offset")
          unsigned char C[] = {0xE9, 0, 0, 0, 0};
-         *(int32_t*)(&C[1]) = delta;
+         *(long*)(&C[1]) = delta;
          memcpy(I, C, sizeof(C));
       }
 #endif

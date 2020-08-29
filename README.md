@@ -453,7 +453,7 @@ Expect foobar called with *a* equals *1*, *b* equals *"A"* *1 time* in this case
     -    `greed`(boolean) : match call in greed mode or not, default is true
 -   [Arguments check](source/h2_mock.hpp#L206)
     -    `with`(matcher...) : Expect arguments matches matchers
-    -    `th1~9`(matcher) : Expect 1st~9th argument matches matcher
+    -    `th0~15`(matcher) : Expect 1st~16th argument matches matcher
 -   [Actions](source/h2_mock.hpp#L223), only the lastest action works, previous is overwrite.
     -    `returns`(value) : Inject return value
     -    `does`(lambda) : Check arguments, inject return value, and other actions
@@ -463,7 +463,7 @@ Expect foobar called with *a* equals *1*, *b* equals *"A"* *1 time* in this case
 MOCK(Foo, bar, int, (int, char *)).once(1, _).returns(11)
                                   .twice(Gt(2), CaseLess("abc")).returns(22)
                                   .times(5).with(Not(3)).returns(33)
-                                  .atleast(2).th1(4).th2("xyz")
+                                  .atleast(2).th0(4).th2("xyz")
                                   .any() = [](int a, char * b) {
                                      OK(5, a);
                                      sprintf(b, "return value by argument");
@@ -479,7 +479,7 @@ then expect Foo::bar called any times, and 1st argument equals 5, modify 2nd, an
 MOCK formula:
 ```C++
    MOCK([Class Name, ]Function Name, Return Type, (Parameter List))
-   .times(Number).with(Matcher List).th1~9(Matcher).returns(Return Value).does(Lambda)=Lambda;
+   .times(Number).with(Matcher List).th0~15(Matcher).returns(Return Value).does(Lambda)=Lambda;
 ```
 ### 6. Extended JSON Compare 
 
@@ -803,4 +803,5 @@ twofiles speed up 2~3 times than onefile.
 *    C++11 is required
 *    GCC 5.5+ (regex support, SFINAE support)
 *    Variadic parameter function can't MOCK, use STUB with separate fake function instead.
+*    MOCK arguments up to 15 count.
 *    sqrt() in math.h can be STUB/MOCK, because compiler insert sqrtsd ASM instruction directly instead of function call.

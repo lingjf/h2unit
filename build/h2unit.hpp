@@ -1,18 +1,16 @@
-﻿/* v5.6 2020-07-18 21:07:58 */
+﻿/* v5.6 2020-08-30 00:22:50 */
 /* https://github.com/lingjf/h2unit */
 /* Apache Licence 2.0 */
+
 #ifndef __H2UNIT_HPP__
 #define __H2UNIT_HPP__
 
 #ifndef __H2_UNIT_HPP__
 #define __H2_UNIT_HPP__
 
-#define H2UNIT_VERSION 5.6
-
 #include <cstdio>      /* printf */
 #include <cstdlib>     /* malloc */
 #include <cstring>     /* strcpy, memcpy */
-#include <cstddef>     /* ptrdiff_t */
 #include <climits>     /* INT_MAX */
 #include <cmath>       /* fabs */
 #include <csetjmp>     /* setjmp, longjmp */
@@ -114,6 +112,12 @@ namespace h2 {
 #define _H2PP_EQ__7__7 H2PP_PROBE()
 #define _H2PP_EQ__8__8 H2PP_PROBE()
 #define _H2PP_EQ__9__9 H2PP_PROBE()
+#define _H2PP_EQ__10__10 H2PP_PROBE()
+#define _H2PP_EQ__11__11 H2PP_PROBE()
+#define _H2PP_EQ__12__12 H2PP_PROBE()
+#define _H2PP_EQ__13__13 H2PP_PROBE()
+#define _H2PP_EQ__14__14 H2PP_PROBE()
+#define _H2PP_EQ__15__15 H2PP_PROBE()
 
 #define H2PP_NOT(_Cond) H2PP_IS_PROBE(H2PP__CAT2(_H2PP_NOT_, _Cond))
 #define _H2PP_NOT_0 H2PP_PROBE()
@@ -256,7 +260,7 @@ template <typename T>
 class h2_allocator {
  public:
    typedef size_t size_type;
-   typedef ptrdiff_t difference_type;
+   typedef long long difference_type;
    typedef T* pointer;
    typedef const T* const_pointer;
    typedef T& reference;
@@ -372,7 +376,7 @@ struct h2_nth_type_impl<0, T, Args...> {
 };
 template <std::size_t Index, typename... Args>
 struct h2_nth_type {
-   using type = typename h2_nth_type_impl<Index, Args..., int, int, int, int, int, int, int, int, int, int, int, int, int, int>::type;
+   using type = typename h2_nth_type_impl<Index, Args..., int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int>::type;
 };
 
 template <std::size_t Index, typename... Args>
@@ -568,9 +572,12 @@ inline h2_string h2_stringify(T a, size_t n)
 }
 
 template <typename T>
-inline h2_string h2_quote_stringfiy(const T& a)
+inline h2_string h2_representify(const T& a)
 {
-   return (std::is_convertible<T, h2_string>::value ? "\"" : "") + h2_stringify(a) + (std::is_convertible<T, h2_string>::value ? "\"" : "");
+   const char* quote = "";
+   if (std::is_same<char, T>::value) quote = "'";
+   if (std::is_convertible<T, h2_string>::value) quote = "\"";
+   return quote + h2_stringify(a) + quote;
 }
 // h2_option.hpp
 
@@ -672,6 +679,8 @@ struct h2_line : h2_vector<h2_string> {
    h2_line& concat_back(const h2_line& line, const char* style = nullptr);
    h2_line& concat_front(const h2_line& line_or_word, const char* style = nullptr);
 
+   bool enclosed(const char c);
+   h2_line& dark_gray_enclosed_quote(); // todo
    void brush(const char* style);
    void samesizify(h2_line& b);
 };
@@ -761,23 +770,21 @@ struct h2_patch {
 struct h2_fail : h2_libc {
    h2_fail *subling_next{nullptr}, *child_next{nullptr};
 
-   const char* file;
-   int line;
-
-   const char* func;
-   int seq = -1;
-
    const char* check_type = "Inner";  // Inner(Mock, AllOf, &&, ||)
    h2_string e_expression, a_expression;
    h2_line explain;
    h2_string user_explain;
 
-   //    expression     expection      represent       value
-   //     Ge(var)        Ge(5)          5               5
-   //     We(var)        We("abc")      "abc"           abc
+   //           expression     expection      represent       value
+   // number     Ge(var)        Ge(5)          5               5
+   // string     We(var)        We("abc")      "abc"           abc
+   // char       We(var)        We('a')        'a'             a
 
-   h2_fail(const h2_line& explain_, const char* file_, int line_, const char* func_ = nullptr, int seq_ = -1)
-     : file(file_), line(line_), func(func_), seq(seq_), explain(explain_) {}
+   int seqno = -1;
+   const char* file;
+   int line;
+
+   h2_fail(const h2_line& explain_, const char* file_, int line_) : explain(explain_), file(file_), line(line_) {}
    virtual ~h2_fail();
 
    const char* locate();
@@ -789,18 +796,17 @@ struct h2_fail : h2_libc {
    static void append_subling(h2_fail*& fail, h2_fail* n);
    static void append_child(h2_fail*& fail, h2_fail* n);
 
-   static h2_fail* new_normal(const h2_line& explain, const char* func = nullptr, const char* file = nullptr, int line = 0);
+   static h2_fail* new_normal(const h2_line& explain, const char* file = nullptr, int line = 0);
    static h2_fail* new_unexpect(const h2_string& e_represent = "", const h2_string& a_represent = "", const h2_string& expection = "", const h2_line& explain = {}, const char* file = nullptr, int line = 0);
-   static h2_fail* new_strcmp(const h2_string& e_value, const h2_string& a_value, bool caseless, const h2_string& expection, const char* file = nullptr, int line = 0);
-   static h2_fail* new_strfind(const h2_string& e_value, const h2_string& a_value, const h2_string& expection, const char* file = nullptr, int line = 0);
-   static h2_fail* new_json(const h2_string& e_value, const h2_string& a_value, const h2_string& expection, bool caseless, const char* file = nullptr, int line = 0);
+   static h2_fail* new_strcmp(const h2_string& e_value, const h2_string& a_value, bool caseless, const h2_string& expection, const h2_line& explain = {}, const char* file = nullptr, int line = 0);
+   static h2_fail* new_strfind(const h2_string& e_value, const h2_string& a_value, const h2_string& expection, const h2_line& explain = {}, const char* file = nullptr, int line = 0);
+   static h2_fail* new_json(const h2_string& e_value, const h2_string& a_value, const h2_string& expection, bool caseless, const h2_line& explain = {}, const char* file = nullptr, int line = 0);
    static h2_fail* new_memcmp(const unsigned char* e_value, const unsigned char* a_value, int width, int nbits, const h2_string& expection, const h2_string& a_represent, const h2_line& explain = {}, const char* file = nullptr, int line = 0);
    static h2_fail* new_memory_leak(const void* ptr, int size, const h2_backtrace& bt_allocate, const char* where, const char* file, int line);
    static h2_fail* new_double_free(const void* ptr, const h2_backtrace& bt_allocate, const h2_backtrace& bt_release, const h2_backtrace& bt_double_free);
    static h2_fail* new_asymmetric_free(const void* ptr, const char* who_allocate, const char* who_release, const h2_backtrace& bt_allocate, const h2_backtrace& bt_release);
-   static h2_fail* new_overflow(const void* ptr, const int size, const void* addr, const char* action, h2_vector<unsigned char> spot, const h2_backtrace& bt_allocate, const h2_backtrace& bt_trample, const char* file = nullptr, int line = 0);
+   static h2_fail* new_overflow(const void* ptr, const int size, const void* addr, const char* action, const h2_vector<unsigned char>& spot, const h2_backtrace& bt_allocate, const h2_backtrace& bt_trample, const char* file = nullptr, int line = 0);
    static h2_fail* new_use_after_free(const void* ptr, const void* addr, const char* action, const h2_backtrace& bt_allocate, const h2_backtrace& bt_release, const h2_backtrace& bt_use);
-   static h2_fail* new_call(const char* func, const char* expect, const char* actual, const h2_line& explain = {}, const char* file = nullptr, int line = 0);
 };
 
 static inline void h2_fail_g(h2_fail*, bool);
@@ -959,12 +965,12 @@ struct h2_memory {
 // h2_matches.hpp
 
 struct h2_matches {
-   virtual h2_string expects(bool caseless, bool dont) const = 0;
+   virtual h2_string expection(bool caseless, bool dont) const = 0;
 };
 
 static inline h2_string DS(bool match)
 {
-   return match ? "should not match" : "";
+   return match ? "Should not match" : "";
 }
 
 static inline h2_string CD(const h2_string& s, bool caseless = false, bool dont = false)
@@ -976,42 +982,42 @@ static inline h2_string CD(const h2_string& s, bool caseless = false, bool dont 
 }
 
 template <typename T>
-inline auto h2_matches_expects(const T& a, bool caseless, bool dont) -> typename std::enable_if<std::is_base_of<h2_matches, T>::value, h2_string>::type
+inline auto h2_matches_expection(const T& e, bool caseless, bool dont) -> typename std::enable_if<std::is_base_of<h2_matches, T>::value, h2_string>::type
 {
-   return a.expects(caseless, dont);
+   return e.expection(caseless, dont);
 }
 template <typename T>
-inline auto h2_matches_expects(const T& a, bool caseless, bool dont) -> typename std::enable_if<!std::is_base_of<h2_matches, T>::value, h2_string>::type
+inline auto h2_matches_expection(const T& e, bool caseless, bool dont) -> typename std::enable_if<!std::is_base_of<h2_matches, T>::value, h2_string>::type
 {
-   return CD(h2_stringify(a), caseless, dont);
+   return CD(h2_stringify(e), caseless, dont);
 }
 
-#define H2_MATCHER_T2V2E(t_matchers)                                                                                                                           \
-                                                                                                                                                               \
-   template <typename T>                                                                                                                                       \
-   void t2v(h2_vector<h2_matcher<T>>& v_matchers, std::integral_constant<std::size_t, 0>) const {}                                                             \
-   template <typename T, std::size_t I>                                                                                                                        \
-   void t2v(h2_vector<h2_matcher<T>>& v_matchers, std::integral_constant<std::size_t, I>) const                                                                \
-   {                                                                                                                                                           \
-      t2v(v_matchers, std::integral_constant<std::size_t, I - 1>());                                                                                           \
-      v_matchers.push_back(h2_matcher_cast<T>(std::get<I - 1>(t_matchers)));                                                                                   \
-   }                                                                                                                                                           \
-   template <typename T>                                                                                                                                       \
-   void t2v(h2_vector<h2_matcher<T>>& v_matchers) const { return t2v(v_matchers, std::integral_constant<std::size_t, sizeof...(Matchers)>()); }                \
-                                                                                                                                                               \
-   h2_string t2e(bool caseless, bool dont, std::integral_constant<std::size_t, 0>) const { return ""; }                                                        \
-   template <std::size_t I>                                                                                                                                    \
-   h2_string t2e(bool caseless, bool dont, std::integral_constant<std::size_t, I>) const                                                                       \
-   {                                                                                                                                                           \
-      return t2e(caseless, dont, std::integral_constant<size_t, I - 1>()) + comma_if(1 < I) + h2_matches_expects(std::get<I - 1>(t_matchers), caseless, dont); \
-   }                                                                                                                                                           \
+#define H2_MATCHES_T2V2E(t_matchers)                                                                                                                             \
+                                                                                                                                                                 \
+   template <typename T>                                                                                                                                         \
+   void t2v(h2_vector<h2_matcher<T>>& v_matchers, std::integral_constant<std::size_t, 0>) const {}                                                               \
+   template <typename T, std::size_t I>                                                                                                                          \
+   void t2v(h2_vector<h2_matcher<T>>& v_matchers, std::integral_constant<std::size_t, I>) const                                                                  \
+   {                                                                                                                                                             \
+      t2v(v_matchers, std::integral_constant<std::size_t, I - 1>());                                                                                             \
+      v_matchers.push_back(h2_matcher_cast<T>(std::get<I - 1>(t_matchers)));                                                                                     \
+   }                                                                                                                                                             \
+   template <typename T>                                                                                                                                         \
+   void t2v(h2_vector<h2_matcher<T>>& v_matchers) const { return t2v(v_matchers, std::integral_constant<std::size_t, sizeof...(Matchers)>()); }                  \
+                                                                                                                                                                 \
+   h2_string t2e(bool caseless, bool dont, std::integral_constant<std::size_t, 0>) const { return ""; }                                                          \
+   template <std::size_t I>                                                                                                                                      \
+   h2_string t2e(bool caseless, bool dont, std::integral_constant<std::size_t, I>) const                                                                         \
+   {                                                                                                                                                             \
+      return t2e(caseless, dont, std::integral_constant<size_t, I - 1>()) + comma_if(1 < I) + h2_matches_expection(std::get<I - 1>(t_matchers), caseless, dont); \
+   }                                                                                                                                                             \
    h2_string t2e(bool caseless, bool dont) const { return t2e(caseless, dont, std::integral_constant<std::size_t, sizeof...(Matchers)>()); }
 // h2_matcher.hpp
 
 template <typename T>
 struct h2_matcher_impl : h2_matches {
    virtual h2_fail* matches(T a, int n, bool caseless, bool dont) const = 0;
-   virtual h2_string expects(bool caseless, bool dont) const override { return ""; }
+   virtual h2_string expection(bool caseless, bool dont) const override { return ""; }
    virtual ~h2_matcher_impl() {}
 };
 
@@ -1019,14 +1025,14 @@ template <typename T>
 struct h2_matcher : h2_matches {
    h2_shared_ptr<const h2_matcher_impl<const T&>> impl;
 
-   h2_matcher() {}
+   h2_matcher();         // Any matcher
    h2_matcher(T value);  // Converting constructor
    explicit h2_matcher(const h2_matcher_impl<const T&>* impl_, const int placeholder) : impl(impl_) {}
    h2_matcher(const h2_matcher&) = default;
    h2_matcher& operator=(const h2_matcher&) = default;
    virtual ~h2_matcher() {}
    h2_fail* matches(const T& a, int n = 0, bool caseless = false, bool dont = false) const { return impl->matches(a, n, caseless, dont); }
-   virtual h2_string expects(bool caseless = false, bool dont = false) const { return impl->expects(caseless, dont); };
+   virtual h2_string expection(bool caseless = false, bool dont = false) const { return impl->expection(caseless, dont); };
 };
 
 template <typename Matches>
@@ -1045,13 +1051,13 @@ struct h2_polymorphic_matcher : h2_matches {
       const Matches m;
       explicit internal_impl(const Matches& _matches) : m(_matches) {}
       h2_fail* matches(T a, int n = 0, bool caseless = false, bool dont = false) const override { return m.matches(a, n, caseless, dont); }
-      h2_string expects(bool caseless, bool dont) const override { return m.expects(caseless, dont); }
+      h2_string expection(bool caseless, bool dont) const override { return m.expection(caseless, dont); }
    };
 
-   virtual h2_string expects(bool caseless = false, bool dont = false) const override
+   virtual h2_string expection(bool caseless = false, bool dont = false) const override
    {
-      return h2_matches_expects(m, caseless, dont);
-      // return m.expects(caseless, dont);
+      return h2_matches_expection(m, caseless, dont);
+      // return m.expection(caseless, dont);
    }
 };
 // h2_equation.hpp
@@ -1065,11 +1071,11 @@ struct h2_equation : h2_matches {
    h2_fail* matches(const A& a, int, bool caseless, bool dont) const
    {
       if ((a == e) == !dont) return nullptr;
-      return h2_fail::new_unexpect(h2_stringify(e), h2_stringify(a), expects(caseless, dont));
+      return h2_fail::new_unexpect(h2_representify(e), h2_representify(a), expection(caseless, dont));
    }
-   virtual h2_string expects(bool caseless, bool dont) const override
+   virtual h2_string expection(bool caseless, bool dont) const override
    {
-      return CD(h2_stringify(e), false, dont);
+      return CD(h2_representify(e), false, dont);
    }
 };
 
@@ -1084,9 +1090,9 @@ struct h2_equation<E, typename std::enable_if<std::is_convertible<E, h2_string>:
       if (h2_pattern::wildcard_match(e.c_str(), a.c_str(), caseless) == !dont) return nullptr;
       if (h2_pattern::regex_match(e.c_str(), a.c_str(), caseless) == !dont) return nullptr;
 
-      return h2_fail::new_strcmp(e, a, caseless, expects(caseless, dont));
+      return h2_fail::new_strcmp(e, a, caseless, expection(caseless, dont));
    }
-   virtual h2_string expects(bool caseless, bool dont) const override
+   virtual h2_string expection(bool caseless, bool dont) const override
    {
       return CD("\"" + e + "\"", caseless, dont);
    }
@@ -1115,11 +1121,11 @@ struct h2_equation<E, typename std::enable_if<std::is_arithmetic<E>::value>::typ
          result = a == e;
       }
       if (result == !dont) return nullptr;
-      return h2_fail::new_unexpect(h2_stringify(e), h2_stringify(a), expects(caseless, dont));
+      return h2_fail::new_unexpect(h2_representify(e), h2_representify(a), expection(caseless, dont));
    }
-   virtual h2_string expects(bool, bool dont) const override
+   virtual h2_string expection(bool, bool dont) const override
    {
-      return CD(h2_stringify(e), false, dont);
+      return CD(h2_representify(e), false, dont);
    }
 };
 
@@ -1129,11 +1135,6 @@ inline h2_polymorphic_matcher<h2_equation<E>> Eq(const T& expect, const long dou
    return h2_polymorphic_matcher<h2_equation<E>>(h2_equation<E>(expect, epsilon));
 }
 
-template <typename T>
-inline h2_matcher<T>::h2_matcher(T value)
-{
-   *this = Eq(value);
-}
 // h2_cast.hpp
 
 template <typename T, typename M>
@@ -1187,7 +1188,7 @@ inline h2_matcher<T> h2_matcher_cast(const M& from)
 struct h2_matches_any : h2_matches {
    template <typename A>
    h2_fail* matches(const A& a, int, bool, bool) const { return nullptr; }
-   virtual h2_string expects(bool, bool) const override { return "Any"; }
+   virtual h2_string expection(bool, bool) const override { return "Any"; }
 };
 
 struct h2_matches_null : h2_matches {
@@ -1198,9 +1199,9 @@ struct h2_matches_null : h2_matches {
    {
       bool _dont = reverse ? !dont : dont;
       if ((nullptr == (const void*)a) == !_dont) return nullptr;
-      return h2_fail::new_unexpect("", h2_stringify((const void*)a), expects(false, dont));
+      return h2_fail::new_unexpect("", h2_stringify((const void*)a), expection(false, dont));
    }
-   virtual h2_string expects(bool, bool dont) const override
+   virtual h2_string expection(bool, bool dont) const override
    {
       return (reverse ? !dont : dont) ? "NotNull" : "IsNull";
    }
@@ -1213,9 +1214,9 @@ struct h2_matches_boolean : h2_matches {
    {
       bool _dont = E ? dont : !dont;
       if (((bool)a) == !_dont) return nullptr;
-      return h2_fail::new_unexpect("", a ? "true" : "false", expects(false, dont));
+      return h2_fail::new_unexpect("", a ? "true" : "false", expection(false, dont));
    }
-   virtual h2_string expects(bool, bool dont) const override
+   virtual h2_string expection(bool, bool dont) const override
    {
       return (E ? dont : !dont) ? "false" : "true";
    }
@@ -1242,9 +1243,9 @@ struct h2_pointee_matches : h2_matches {
       typedef typename PointeeOf<Pointer>::type Pointee;
       return h2_matcher_cast<Pointee>(m).matches(*a, 0, caseless, dont);
    }
-   virtual h2_string expects(bool caseless, bool dont) const override
+   virtual h2_string expection(bool caseless, bool dont) const override
    {
-      return h2_matches_expects(m, caseless, dont);
+      return h2_matches_expection(m, caseless, dont);
    }
 };
 
@@ -1269,9 +1270,9 @@ struct h2_not_matches : h2_matches {
    {
       return h2_matcher_cast<A>(m).matches(a, n, caseless, !dont);
    }
-   virtual h2_string expects(bool caseless, bool dont) const override
+   virtual h2_string expection(bool caseless, bool dont) const override
    {
-      return h2_matches_expects(m, caseless, !dont);
+      return h2_matches_expection(m, caseless, !dont);
    }
 };
 
@@ -1284,22 +1285,22 @@ struct h2_and_matches : h2_matches {
    template <typename A>
    h2_fail* matches(const A& a, int n, bool caseless, bool dont) const
    {
-      h2_fail* fail = nullptr;
-      h2_fail::append_subling(fail, h2_matcher_cast<A>(m1).matches(a, n, caseless, false));
-      h2_fail::append_subling(fail, h2_matcher_cast<A>(m2).matches(a, n, caseless, false));
-      if (!fail == !dont) {
-         if (fail) delete fail;
+      h2_fail* fails = nullptr;
+      h2_fail::append_subling(fails, h2_matcher_cast<A>(m1).matches(a, n, caseless, false));
+      h2_fail::append_subling(fails, h2_matcher_cast<A>(m2).matches(a, n, caseless, false));
+      if (!fails == !dont) {
+         if (fails) delete fails;
          return nullptr;
       }
-      if (dont) {
-         fail = h2_fail::new_unexpect("", h2_quote_stringfiy(a), expects(caseless, dont), DS(true));
-      }
+      h2_fail* fail = h2_fail::new_unexpect("", h2_representify(a), expection(caseless, dont));
+      h2_fail::append_child(fail, fails);
+
       return fail;
    }
 
-   virtual h2_string expects(bool caseless, bool dont) const override
+   virtual h2_string expection(bool caseless, bool dont) const override
    {
-      return CD(h2_matches_expects(m1, caseless, false) + " && " + h2_matches_expects(m2, caseless, false), false, dont);
+      return CD((dont ? "(" : "") + h2_matches_expection(m1, caseless, false) + " && " + h2_matches_expection(m2, caseless, false) + (dont ? ")" : ""), false, dont);
    }
 };
 
@@ -1320,12 +1321,18 @@ struct h2_or_matches : h2_matches {
          if (f2) delete f2;
          return nullptr;
       }
-      return h2_fail::new_unexpect("", h2_quote_stringfiy(a), expects(caseless, dont), DS(result));
+      h2_fail* fails = nullptr;
+      h2_fail::append_subling(fails, f1);
+      h2_fail::append_subling(fails, f2);
+
+      h2_fail* fail = h2_fail::new_unexpect("", h2_representify(a), expection(caseless, dont));
+      h2_fail::append_child(fail, fails);
+      return fail;
    }
 
-   virtual h2_string expects(bool caseless, bool dont) const override
+   virtual h2_string expection(bool caseless, bool dont) const override
    {
-      return CD(h2_matches_expects(m1, caseless, false) + " || " + h2_matches_expects(m2, caseless, false), false, dont);
+      return CD((dont ? "(" : "") + h2_matches_expection(m1, caseless, false) + " || " + h2_matches_expection(m2, caseless, false) + (dont ? ")" : ""), false, dont);
    }
 };
 
@@ -1342,8 +1349,8 @@ struct h2_allof_matches : h2_matches {
 
       h2_fail* fails = nullptr;
       for (int i = 0; i < v_matchers.size(); ++i) {
-         h2_fail* fail = v_matchers[i].matches(a, n, caseless, false);
-         if (fail) fail->seq = i;
+         h2_fail* fail = v_matchers[i].matches(a, n, caseless, false);  // dont not transfer down
+         if (fail) fail->seqno = i;
          h2_fail::append_subling(fails, fail);
       }
 
@@ -1353,20 +1360,20 @@ struct h2_allof_matches : h2_matches {
       }
       h2_fail* fail = nullptr;
       if (dont) {
-         fail = h2_fail::new_unexpect("", h2_quote_stringfiy(a), expects(caseless, dont), "Should not match all");
+         fail = h2_fail::new_unexpect("", h2_representify(a), expection(caseless, dont), "Should not match all");
       } else {
-         fail = h2_fail::new_unexpect("", h2_quote_stringfiy(a), expects(caseless, dont));
+         fail = h2_fail::new_unexpect("", h2_representify(a), expection(caseless, dont));
          h2_fail::append_child(fail, fails);
       }
       return fail;
    }
 
-   virtual h2_string expects(bool caseless, bool dont) const override
+   virtual h2_string expection(bool caseless, bool dont) const override
    {
       return CD("AllOf(" + t2e(caseless, false) + ")", false, dont);
    }
 
-   H2_MATCHER_T2V2E(t_matchers)
+   H2_MATCHES_T2V2E(t_matchers)
 };
 
 template <typename... Matchers>
@@ -1388,7 +1395,7 @@ struct h2_anyof_matches : h2_matches {
             c++;
             break;
          }
-         if (fail) fail->seq = i;
+         if (fail) fail->seqno = i;
          h2_fail::append_subling(fails, fail);
       }
 
@@ -1398,20 +1405,20 @@ struct h2_anyof_matches : h2_matches {
       }
       h2_fail* fail = nullptr;
       if (dont) {
-         fail = h2_fail::new_unexpect("", h2_quote_stringfiy(a), expects(caseless, dont), "Should not match any one");
+         fail = h2_fail::new_unexpect("", h2_representify(a), expection(caseless, dont), "Should not match any one");
       } else {
-         fail = h2_fail::new_unexpect("", h2_quote_stringfiy(a), expects(caseless, dont), "Not match any one");
+         fail = h2_fail::new_unexpect("", h2_representify(a), expection(caseless, dont), "Not match any one");
          h2_fail::append_child(fail, fails);
       }
       return fail;
    }
 
-   virtual h2_string expects(bool caseless, bool dont) const override
+   virtual h2_string expection(bool caseless, bool dont) const override
    {
       return CD("AnyOf(" + t2e(caseless, false) + ")", false, dont);
    }
 
-   H2_MATCHER_T2V2E(t_matchers)
+   H2_MATCHES_T2V2E(t_matchers)
 };
 
 template <typename... Matchers>
@@ -1425,23 +1432,32 @@ struct h2_noneof_matches : h2_matches {
       h2_vector<h2_matcher<A>> v_matchers;
       t2v(v_matchers);
 
-      int c = 0;
-      for (auto& m : v_matchers) {
-         h2_fail* fail = m.matches(a, n, caseless, false);
-         if (!fail) ++c;
-         if (fail) delete fail;
+      h2_fail* fails = nullptr;
+      for (int i = 0; i < v_matchers.size(); ++i) {
+         h2_fail* fail = v_matchers[i].matches(a, n, caseless, false);
+         if (fail)
+            delete fail;
+         else {
+            fail = h2_fail::new_normal({"Should not match ", "\033{green}", v_matchers[i].expection(caseless, false), "\033{reset}"});
+            fail->seqno = i;
+            h2_fail::append_subling(fails, fail);
+         }
       }
-      bool result = c == 0;
-      if (result == !dont) return nullptr;
-      return h2_fail::new_unexpect("", h2_quote_stringfiy(a), expects(caseless, dont), DS(result));
+      if (!fails == !dont) {
+         delete fails;
+         return nullptr;
+      }
+      h2_fail* fail = h2_fail::new_unexpect("", h2_representify(a), expection(caseless, dont));
+      h2_fail::append_child(fail, fails);
+      return fail;
    }
 
-   virtual h2_string expects(bool caseless, bool dont) const override
+   virtual h2_string expection(bool caseless, bool dont) const override
    {
       return CD("NoneOf(" + t2e(caseless, false) + ")", false, dont);
    }
 
-   H2_MATCHER_T2V2E(t_matchers)
+   H2_MATCHES_T2V2E(t_matchers)
 };
 
 template <typename Matcher>
@@ -1532,11 +1548,11 @@ struct h2_matches_ge : h2_matches {
    h2_fail* matches(const A& a, int, bool caseless, bool dont) const
    {
       if ((a >= e) == !dont) return nullptr;
-      return h2_fail::new_unexpect(h2_stringify(e), h2_stringify(a), expects(caseless, dont));
+      return h2_fail::new_unexpect(h2_representify(e), h2_representify(a), expection(caseless, dont));
    }
-   virtual h2_string expects(bool, bool dont) const override
+   virtual h2_string expection(bool, bool dont) const override
    {
-      return CD(">=" + h2_stringify(e), false, dont);
+      return CD(">=" + h2_representify(e), false, dont);
    }
 };
 
@@ -1549,9 +1565,9 @@ struct h2_matches_gt : h2_matches {
    h2_fail* matches(const A& a, int, bool caseless, bool dont) const
    {
       if ((a > e) == !dont) return nullptr;
-      return h2_fail::new_unexpect(h2_stringify(e), h2_stringify(a), expects(caseless, dont));
+      return h2_fail::new_unexpect(h2_stringify(e), h2_stringify(a), expection(caseless, dont));
    }
-   virtual h2_string expects(bool, bool dont) const override
+   virtual h2_string expection(bool, bool dont) const override
    {
       return CD(">" + h2_stringify(e), false, dont);
    }
@@ -1566,9 +1582,9 @@ struct h2_matches_le : h2_matches {
    h2_fail* matches(const A& a, int, bool caseless, bool dont) const
    {
       if ((a <= e) == !dont) return nullptr;
-      return h2_fail::new_unexpect(h2_stringify(e), h2_stringify(a), expects(caseless, dont));
+      return h2_fail::new_unexpect(h2_stringify(e), h2_stringify(a), expection(caseless, dont));
    }
-   virtual h2_string expects(bool, bool dont) const override
+   virtual h2_string expection(bool, bool dont) const override
    {
       return CD("<=" + h2_stringify(e), false, dont);
    }
@@ -1583,9 +1599,9 @@ struct h2_matches_lt : h2_matches {
    h2_fail* matches(const A& a, int, bool caseless, bool dont) const
    {
       if ((a < e) == !dont) return nullptr;
-      return h2_fail::new_unexpect(h2_stringify(e), h2_stringify(a), expects(caseless, dont));
+      return h2_fail::new_unexpect(h2_stringify(e), h2_stringify(a), expection(caseless, dont));
    }
-   virtual h2_string expects(bool, bool dont) const override
+   virtual h2_string expection(bool, bool dont) const override
    {
       return CD("<" + h2_stringify(e), false, dont);
    }
@@ -1608,49 +1624,49 @@ struct h2_matches_regex : h2_matches {
    const h2_string e;
    explicit h2_matches_regex(const h2_string& _e) : e(_e) {}
    h2_fail* matches(const h2_string& a, int n, bool caseless, bool dont) const;
-   virtual h2_string expects(bool caseless, bool dont) const override;
+   virtual h2_string expection(bool caseless, bool dont) const override;
 };
 
 struct h2_matches_wildcard : h2_matches {
    const h2_string e;
    explicit h2_matches_wildcard(const h2_string& _e) : e(_e) {}
    h2_fail* matches(const h2_string& a, int n, bool caseless, bool dont) const;
-   virtual h2_string expects(bool caseless, bool dont) const override;
+   virtual h2_string expection(bool caseless, bool dont) const override;
 };
 
 struct h2_matches_strcmp : h2_matches {
    const h2_string e;
    explicit h2_matches_strcmp(const h2_string& _e) : e(_e) {}
    h2_fail* matches(const h2_string& a, int n, bool caseless, bool dont) const;
-   virtual h2_string expects(bool caseless, bool dont) const override;
+   virtual h2_string expection(bool caseless, bool dont) const override;
 };
 
 struct h2_matches_substr : h2_matches {
    const h2_string substring;
    explicit h2_matches_substr(const h2_string& substring_) : substring(substring_) {}
    h2_fail* matches(const h2_string& a, int n, bool caseless, bool dont) const;
-   virtual h2_string expects(bool caseless, bool dont) const override;
+   virtual h2_string expection(bool caseless, bool dont) const override;
 };
 
 struct h2_matches_startswith : h2_matches {
    const h2_string prefix_string;
    explicit h2_matches_startswith(const h2_string& prefix_string_) : prefix_string(prefix_string_) {}
    h2_fail* matches(const h2_string& a, int n, bool caseless, bool dont) const;
-   virtual h2_string expects(bool caseless, bool dont) const override;
+   virtual h2_string expection(bool caseless, bool dont) const override;
 };
 
 struct h2_matches_endswith : h2_matches {
    const h2_string suffix_string;
    explicit h2_matches_endswith(const h2_string& suffix_string_) : suffix_string(suffix_string_) {}
    h2_fail* matches(const h2_string& a, int n, bool caseless, bool dont) const;
-   virtual h2_string expects(bool caseless, bool dont) const override;
+   virtual h2_string expection(bool caseless, bool dont) const override;
 };
 
 struct h2_matches_json : h2_matches {
    const h2_string e;
    explicit h2_matches_json(const h2_string& _e) : e(_e) {}
-   h2_fail* matches(const h2_string& a, int n, bool caseless, bool dont) const;
-   virtual h2_string expects(bool caseless, bool dont) const override;
+   h2_fail* matches(const h2_string& a, int, bool caseless, bool dont) const;
+   virtual h2_string expection(bool caseless, bool dont) const override;
 };
 
 struct h2_caseless_matches : h2_matches {
@@ -1659,7 +1675,7 @@ struct h2_caseless_matches : h2_matches {
 
    template <typename A>
    h2_fail* matches(const A& a, int n, bool caseless, bool dont) const { return m.matches(a, n, true, dont); }
-   virtual h2_string expects(bool caseless, bool dont) const override { return m.expects(true, dont); }
+   virtual h2_string expection(bool caseless, bool dont) const override { return m.expection(true, dont); }
 };
 
 inline h2_polymorphic_matcher<h2_matches_regex> Re(const h2_string& regex_pattern) { return h2_polymorphic_matcher<h2_matches_regex>(h2_matches_regex(regex_pattern)); }
@@ -1683,7 +1699,7 @@ struct h2_matches_bytecmp : h2_matches {
    const int nbytes;
    explicit h2_matches_bytecmp(const int _width, const void* _e, const bool _isstring, const int _nbytes) : width(_width), e(_e), isstring(_isstring), nbytes(_nbytes) {}
    h2_fail* matches(const void* a, int n, bool caseless, bool dont) const;
-   virtual h2_string expects(bool caseless, bool dont) const override;
+   virtual h2_string expection(bool caseless, bool dont) const override;
 };
 
 struct h2_matches_bitcmp : h2_matches {
@@ -1692,7 +1708,7 @@ struct h2_matches_bitcmp : h2_matches {
    const int nbits;
    explicit h2_matches_bitcmp(const void* _e, const bool _isstring, const int _nbits) : e(_e), isstring(_isstring), nbits(_nbits) {}
    h2_fail* matches(const void* a, int n, bool caseless, bool dont) const;
-   virtual h2_string expects(bool caseless, bool dont) const override;
+   virtual h2_string expection(bool caseless, bool dont) const override;
 };
 
 template <typename E>
@@ -1721,11 +1737,11 @@ struct h2_matches_memcmp : h2_matches {
          return nullptr;
       }
       if (dont) {
-         fail = h2_fail::new_unexpect("", h2_stringify(a), expects(caseless, dont));
+         fail = h2_fail::new_unexpect("", h2_stringify(a), expection(caseless, dont));
       }
       return fail;
    }
-   virtual h2_string expects(bool caseless, bool dont) const override
+   virtual h2_string expection(bool caseless, bool dont) const override
    {
       return CD("Me()", caseless, dont);
    }
@@ -1782,7 +1798,7 @@ struct h2_pair_matches : h2_matches {
          return nullptr;
       }
       if (dont) {
-         fail = h2_fail::new_unexpect("", h2_stringify(a), expects(caseless, dont));
+         fail = h2_fail::new_unexpect("", h2_stringify(a), expection(caseless, dont));
       }
       return fail;
    }
@@ -1790,12 +1806,12 @@ struct h2_pair_matches : h2_matches {
    template <typename A>
    auto matches(const A& a, int n, bool caseless, bool dont) const -> typename std::enable_if<!h2_is_pair<typename std::decay<A>::type>::value, h2_fail*>::type
    {
-      return h2_fail::new_unexpect("", h2_stringify(a), expects(caseless, dont));
+      return h2_fail::new_unexpect("", h2_stringify(a), expection(caseless, dont));
    }
 
-   virtual h2_string expects(bool caseless, bool dont) const override
+   virtual h2_string expection(bool caseless, bool dont) const override
    {
-      return CD("(" + h2_matches_expects(k, caseless, dont) + ", " + h2_matches_expects(v, caseless, dont) + ")", false, dont);
+      return CD("(" + h2_matches_expection(k, caseless, dont) + ", " + h2_matches_expection(v, caseless, dont) + ")", false, dont);
    }
 };
 
@@ -1823,16 +1839,16 @@ struct h2_listof_matches : h2_matches {
             }
          }
          if (c == 0) {
-            fail = h2_fail::new_unexpect("", "", v_matchers[i].expects(caseless, false), "out of range");
+            fail = h2_fail::new_unexpect("", "", v_matchers[i].expection(caseless, false), "but out of range");
          }
-         if (fail) fail->seq = i;
+         if (fail) fail->seqno = i;
          h2_fail::append_subling(fails, fail);
       }
       if (!fails == !dont) {
          if (fails) delete fails;
          return nullptr;
       }
-      h2_fail* fail = h2_fail::new_unexpect("", h2_stringify(a), expects(caseless, dont), DS(!fails));
+      h2_fail* fail = h2_fail::new_unexpect("", h2_stringify(a), expection(caseless, dont), DS(!fails));
       h2_fail::append_child(fail, fails);
       return fail;
    }
@@ -1847,24 +1863,24 @@ struct h2_listof_matches : h2_matches {
 
       for (size_t i = 0; i < v_matchers.size(); ++i) {
          h2_fail* fail = v_matchers[i].matches(a[i], n, caseless, false);
-         if (fail) fail->seq = i;
+         if (fail) fail->seqno = i;
          h2_fail::append_subling(fails, fail);
       }
       if (!fails == !dont) {
          if (fails) delete fails;
          return nullptr;
       }
-      h2_fail* fail = h2_fail::new_unexpect("", h2_stringify(a), expects(caseless, dont), DS(!fails));
+      h2_fail* fail = h2_fail::new_unexpect("", h2_stringify(a), expection(caseless, dont), DS(!fails));
       h2_fail::append_child(fail, fails);
       return fail;
    }
 
-   virtual h2_string expects(bool caseless, bool dont) const override
+   virtual h2_string expection(bool caseless, bool dont) const override
    {
       return CD("ListOf(" + t2e(caseless, false) + ")", false, dont);
    }
 
-   H2_MATCHER_T2V2E(t_matchers)
+   H2_MATCHES_T2V2E(t_matchers)
 };
 
 template <typename... Matchers>
@@ -1889,8 +1905,8 @@ struct h2_has_matches : h2_matches {
             }
          }
          if (!found) {
-            h2_fail* fail = h2_fail::new_normal({"haven't ", "\033{red}", v_matchers[i].expects(caseless, false), "\033{reset}"});
-            if (fail) fail->seq = i;
+            h2_fail* fail = h2_fail::new_unexpect("", "", v_matchers[i].expection(caseless, false), "but haven't");
+            if (fail) fail->seqno = i;
             h2_fail::append_subling(fails, fail);
          }
       }
@@ -1898,7 +1914,7 @@ struct h2_has_matches : h2_matches {
          if (fails) delete fails;
          return nullptr;
       }
-      h2_fail* fail = h2_fail::new_unexpect("", h2_stringify(a), expects(caseless, dont), DS(!fails));
+      h2_fail* fail = h2_fail::new_unexpect("", h2_stringify(a), expection(caseless, dont), DS(!fails));
       h2_fail::append_child(fail, fails);
       return fail;
    }
@@ -1920,8 +1936,8 @@ struct h2_has_matches : h2_matches {
             }
          }
          if (!found) {
-            h2_fail* fail = h2_fail::new_normal({"haven't ", "\033{red}", v_matchers[i].expects(caseless, false), "\033{reset}"});
-            if (fail) fail->seq = i;
+            h2_fail* fail = h2_fail::new_unexpect("", "", v_matchers[i].expection(caseless, false), "but haven't");
+            if (fail) fail->seqno = i;
             h2_fail::append_subling(fails, fail);
          }
       }
@@ -1929,17 +1945,17 @@ struct h2_has_matches : h2_matches {
          if (fails) delete fails;
          return nullptr;
       }
-      h2_fail* fail = h2_fail::new_unexpect("", h2_stringify(a, n), expects(caseless, dont), DS(!fails));
+      h2_fail* fail = h2_fail::new_unexpect("", h2_stringify(a, n), expection(caseless, dont), DS(!fails));
       h2_fail::append_child(fail, fails);
       return fail;
    }
 
-   virtual h2_string expects(bool caseless, bool dont) const override
+   virtual h2_string expection(bool caseless, bool dont) const override
    {
       return CD("Has(" + t2e(caseless, false) + ")", false, dont);
    }
 
-   H2_MATCHER_T2V2E(t_matchers)
+   H2_MATCHES_T2V2E(t_matchers)
 };
 
 template <typename... Matchers>
@@ -1961,15 +1977,15 @@ struct h2_in_matches : h2_matches {
       }
       bool result = 0 < s;
       if (result == !dont) return nullptr;
-      return h2_fail::new_unexpect("", h2_stringify(a), expects(caseless, dont), DS(result));
+      return h2_fail::new_unexpect("", h2_stringify(a), expection(caseless, dont), DS(result));
    }
 
-   virtual h2_string expects(bool caseless, bool dont) const override
+   virtual h2_string expection(bool caseless, bool dont) const override
    {
       return CD("In(" + t2e(caseless, false) + ")", false, dont);
    }
 
-   H2_MATCHER_T2V2E(t_matchers)
+   H2_MATCHES_T2V2E(t_matchers)
 };
 
 template <typename... Matchers>
@@ -2004,24 +2020,24 @@ struct h2_countof_matches : h2_matches {
 
       for (size_t i = 0; i < v_matchers.size(); ++i) {
          h2_fail* fail = v_matchers[i].matches(count, 0, false, false);
-         if (fail) fail->seq = i;
+         if (fail) fail->seqno = i;
          h2_fail::append_subling(fails, fail);
       }
       if (!fails == !dont) {
          if (fails) delete fails;
          return nullptr;
       }
-      h2_fail* fail = h2_fail::new_unexpect("", a_represent + "/" + h2_stringify(count), expects(false, dont), DS(!fails));
+      h2_fail* fail = h2_fail::new_unexpect("", a_represent + "/" + h2_stringify(count), expection(false, dont), DS(!fails));
       h2_fail::append_child(fail, fails);
       return fail;
    }
 
-   virtual h2_string expects(bool, bool dont) const override
+   virtual h2_string expection(bool, bool dont) const override
    {
       return CD("CountOf(" + t2e(false, dont) + ")", false, false);
    }
 
-   H2_MATCHER_T2V2E(t_matchers)
+   H2_MATCHES_T2V2E(t_matchers)
 };
 
 template <typename MK, typename MV, typename EK = typename h2_decay<MK>::type, typename EV = typename h2_decay<MV>::type>
@@ -2077,7 +2093,7 @@ inline h2_polymorphic_matcher<h2_countof_matches<typename std::decay<const Match
       }                                                                                                   \
       return fail;                                                                                        \
    }                                                                                                      \
-   virtual h2::h2_string expects(bool caseless, bool dont) const override { return ""; }
+   virtual h2::h2_string expection(bool, bool) const override { return ""; }
 
 #define H2MATCHER0(name, message)                                                     \
    struct h2_##name##_matches : h2::h2_matches {                                      \
@@ -2209,6 +2225,19 @@ inline h2_polymorphic_matcher<h2_countof_matches<typename std::decay<const Match
 /* clang-format on */
 
 #define H2MATCHER(...) H2PP_VARIADIC_CALL(_H2MATCHER, __VA_ARGS__)
+// h2_matcher.cpp
+
+template <typename T>
+inline h2_matcher<T>::h2_matcher()
+{
+   *this = Any;
+}
+
+template <typename T>
+inline h2_matcher<T>::h2_matcher(T value)
+{
+   *this = Eq(value);
+}
 // h2_fp.hpp
 
 template <typename T>
@@ -2457,11 +2486,10 @@ struct h2_checkin {
 
    void operator++() { call += 1; }
 
-   bool is_not_enough(/*不够*/) const { return call < least; }
-   bool is_minimal_satisfied(/*最小满足*/) const { return least == call; }
+   bool insufficient(/*不够*/) const { return call < least; }
    bool is_satisfied(/*满足*/) const { return least <= call && call <= most; }
    bool is_saturated(/*饱和*/) const { return call == most; }
-   bool is_overmuch(/*过多*/) const { return most < call; }
+   bool is_excessive(/*过多*/) const { return most < call; }
 
    h2_fail* check(const char* func, const char* file, int line);
    const char* actual();
@@ -2540,7 +2568,7 @@ inline h2_fail* matches(MatcherTuple& matchers, ArgumentTuple& arguments, std::i
 {
    h2_fail* fails = matches(matchers, arguments, std::integral_constant<std::size_t, I - 1>());
    h2_fail* fail = std::get<I - 1>(matchers).matches(std::get<I - 1>(arguments));
-   if (fail) fail->seq = I - 1;
+   if (fail) fail->seqno = I - 1;
    h2_fail::append_subling(fails, fail);
    h2_check_g();
    return fails;
@@ -2562,9 +2590,14 @@ inline h2_fail* h2_tuple_matches(MatcherTuple& matchers, ArgumentTuple& argument
 struct h2_mock : h2_libc {
    h2_list x;
    void *origin_fp, *substitute_fp;
-   const char* origin_fn;
+   const char* ret;
+   const char* func;
+   h2_vector<const char*> argv;
    const char* file;
    int line;
+
+   h2_line argvs(int seq = -1);
+   h2_line signature();
 
    h2_vector<h2_checkin> checkin_array;
    int checkin_index = 0;
@@ -2580,52 +2613,80 @@ struct h2_mocks {
    h2_fail* clear(bool check);
 };
 
-#ifdef _WIN32
-#   define __H2_LINENO__ 0
-#else
-#   define __H2_LINENO__ __LINE__
-#endif
+/* clang-format off */
+#define __H2ARGV0() {}
+#define __H2ARGV1(_1) {#_1}
+#define __H2ARGV2(_1, _2) {#_1, #_2}
+#define __H2ARGV3(_1, _2, _3) {#_1, #_2, #_3}
+#define __H2ARGV4(_1, _2, _3, _4) {#_1, #_2, #_3, #_4}
+#define __H2ARGV5(_1, _2, _3, _4, _5) {#_1, #_2, #_3, #_4, #_5}
+#define __H2ARGV6(_1, _2, _3, _4, _5, _6) {#_1, #_2, #_3, #_4, #_5, #_6}
+#define __H2ARGV7(_1, _2, _3, _4, _5, _6, _7) {#_1, #_2, #_3, #_4, #_5, #_6, #_7}
+#define __H2ARGV8(_1, _2, _3, _4, _5, _6, _7, _8) {#_1, #_2, #_3, #_4, #_5, #_6, #_7, #_8}
+#define __H2ARGV9(_1, _2, _3, _4, _5, _6, _7, _8, _9) {#_1, #_2, #_3, #_4, #_5, #_6, #_7, #_8, #_9}
+#define __H2ARGV10(_1, _2, _3, _4, _5, _6, _7, _8, _9, _10) {#_1, #_2, #_3, #_4, #_5, #_6, #_7, #_8, #_9, #_10}
+#define __H2ARGV11(_1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11) {#_1, #_2, #_3, #_4, #_5, #_6, #_7, #_8, #_9, #_10, #_11}
+#define __H2ARGV12(_1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12) {#_1, #_2, #_3, #_4, #_5, #_6, #_7, #_8, #_9, #_10, #_11, #_12}
+#define __H2ARGV13(_1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13) {#_1, #_2, #_3, #_4, #_5, #_6, #_7, #_8, #_9, #_10, #_11, #_12, #_13}
+#define __H2ARGV14(_1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14) {#_1, #_2, #_3, #_4, #_5, #_6, #_7, #_8, #_9, #_10, #_11, #_12, #_13, #_14}
+#define __H2ARGV15(_1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15) {#_1, #_2, #_3, #_4, #_5, #_6, #_7, #_8, #_9, #_10, #_11, #_12, #_13, #_14, #_15}
 
-#define __H2MOCK3(OriginFunction, Return, Args) \
-   h2::h2_mocker<__COUNTER__, __H2_LINENO__, std::false_type, Return Args>::I(h2::h2_fp(OriginFunction), #OriginFunction, __FILE__, __LINE__)
+#define __H2ARGV(...) H2PP_CAT2(__H2ARGV, H2PP_NARG(__VA_ARGS__))(__VA_ARGS__)  // Duplicated H2PP_VARIADIC_CALL avoid recursion
+#define H2ARGV(...) __H2ARGV(H2PP_REMOVE_PARENTHESES(__VA_ARGS__))
 
-#define __H2MOCK4(Class, Method, Return, Args) \
-   h2::h2_mocker<__COUNTER__, __H2_LINENO__, H2PP_REMOVE_PARENTHESES_IF(Class), Return Args>::I(h2::h2_mfp<H2PP_REMOVE_PARENTHESES_IF(Class), Return Args>::A(&H2PP_REMOVE_PARENTHESES_IF(Class)::H2PP_REMOVE_PARENTHESES_IF(Method)), #Class "::" #Method, __FILE__, __LINE__)
+#define __H2MOCK4(OriginFunction, Return, Args, Expression) \
+   h2::h2_mocker<__COUNTER__, std::false_type, Return Args>::I(h2::h2_fp(OriginFunction), #Return, #OriginFunction, H2ARGV(Args), __FILE__, __LINE__)
 
-#define H2MOCK(...) H2PP_VARIADIC_CALL(__H2MOCK, __VA_ARGS__)
+#define __H2MOCK5(Class, Method, Return, Args, Expression) \
+   h2::h2_mocker<__COUNTER__, H2PP_REMOVE_PARENTHESES_IF(Class), Return Args>::I(h2::h2_mfp<H2PP_REMOVE_PARENTHESES_IF(Class), Return Args>::A(&H2PP_REMOVE_PARENTHESES_IF(Class)::H2PP_REMOVE_PARENTHESES_IF(Method)), #Return, #Class "::" #Method, H2ARGV(Args), __FILE__, __LINE__)
+
+#define __H2MOCK(Expression, ...) H2PP_VARIADIC_CALL(__H2MOCK, __VA_ARGS__, (Expression))
+#define H2MOCK(...) __H2MOCK(#__VA_ARGS__, __VA_ARGS__)
 // h2_mocker.hpp
 
-template <int Counter, int Lineno, typename Class, typename Signature>
+namespace {
+
+template <int Counter, typename Class, typename Signature>
 class h2_mocker;
 
-template <int Counter, int Lineno, typename Class, typename Return, typename... Args>
-class h2_mocker<Counter, Lineno, Class, Return(Args...)> : h2_mock {
+template <int Counter, typename Class, typename Return, typename... Args>
+class h2_mocker<Counter, Class, Return(Args...)> : h2_mock {
    /* clang-format off */
-#define MATCHER_Any_0_1_2_3_4_5_6_7_8_9           \
-   h2_matcher<h2_nth_decay<0, Args...>> _0 = Any, \
-   h2_matcher<h2_nth_decay<1, Args...>> _1 = Any, \
-   h2_matcher<h2_nth_decay<2, Args...>> _2 = Any, \
-   h2_matcher<h2_nth_decay<3, Args...>> _3 = Any, \
-   h2_matcher<h2_nth_decay<4, Args...>> _4 = Any, \
-   h2_matcher<h2_nth_decay<5, Args...>> _5 = Any, \
-   h2_matcher<h2_nth_decay<6, Args...>> _6 = Any, \
-   h2_matcher<h2_nth_decay<7, Args...>> _7 = Any, \
-   h2_matcher<h2_nth_decay<8, Args...>> _8 = Any, \
-   h2_matcher<h2_nth_decay<9, Args...>> _9 = Any
+#define MATCHER_Any_0_1_2_3_4_5_6_7_8_9_A_B_C_D_E_F   \
+   h2_matcher<h2_nth_decay<0, Args...>> _0 = Any,     \
+   h2_matcher<h2_nth_decay<1, Args...>> _1 = Any,     \
+   h2_matcher<h2_nth_decay<2, Args...>> _2 = Any,     \
+   h2_matcher<h2_nth_decay<3, Args...>> _3 = Any,     \
+   h2_matcher<h2_nth_decay<4, Args...>> _4 = Any,     \
+   h2_matcher<h2_nth_decay<5, Args...>> _5 = Any,     \
+   h2_matcher<h2_nth_decay<6, Args...>> _6 = Any,     \
+   h2_matcher<h2_nth_decay<7, Args...>> _7 = Any,     \
+   h2_matcher<h2_nth_decay<8, Args...>> _8 = Any,     \
+   h2_matcher<h2_nth_decay<9, Args...>> _9 = Any,     \
+   h2_matcher<h2_nth_decay<10, Args...>> _10 = Any,   \
+   h2_matcher<h2_nth_decay<11, Args...>> _11 = Any,   \
+   h2_matcher<h2_nth_decay<12, Args...>> _12 = Any,   \
+   h2_matcher<h2_nth_decay<13, Args...>> _13 = Any,   \
+   h2_matcher<h2_nth_decay<14, Args...>> _14 = Any,   \
+   h2_matcher<h2_nth_decay<15, Args...>> _15 = Any
 
-// #define FORWARD_Matcher_0_1_2_3_4_5_6_7_8_9  _0, _1, _2, _3, _4, _5, _6, _7, _8, _9
-
-#define FORWARD_Matcher_0_1_2_3_4_5_6_7_8_9                \
-   std::forward<h2_matcher<h2_nth_decay<0, Args...>>>(_0), \
-   std::forward<h2_matcher<h2_nth_decay<1, Args...>>>(_1), \
-   std::forward<h2_matcher<h2_nth_decay<2, Args...>>>(_2), \
-   std::forward<h2_matcher<h2_nth_decay<3, Args...>>>(_3), \
-   std::forward<h2_matcher<h2_nth_decay<4, Args...>>>(_4), \
-   std::forward<h2_matcher<h2_nth_decay<5, Args...>>>(_5), \
-   std::forward<h2_matcher<h2_nth_decay<6, Args...>>>(_6), \
-   std::forward<h2_matcher<h2_nth_decay<7, Args...>>>(_7), \
-   std::forward<h2_matcher<h2_nth_decay<8, Args...>>>(_8), \
-   std::forward<h2_matcher<h2_nth_decay<9, Args...>>>(_9)
+#define FORWARD_Matcher_0_1_2_3_4_5_6_7_8_9_A_B_C_D_E_F        \
+   std::forward<h2_matcher<h2_nth_decay<0, Args...>>>(_0),     \
+   std::forward<h2_matcher<h2_nth_decay<1, Args...>>>(_1),     \
+   std::forward<h2_matcher<h2_nth_decay<2, Args...>>>(_2),     \
+   std::forward<h2_matcher<h2_nth_decay<3, Args...>>>(_3),     \
+   std::forward<h2_matcher<h2_nth_decay<4, Args...>>>(_4),     \
+   std::forward<h2_matcher<h2_nth_decay<5, Args...>>>(_5),     \
+   std::forward<h2_matcher<h2_nth_decay<6, Args...>>>(_6),     \
+   std::forward<h2_matcher<h2_nth_decay<7, Args...>>>(_7),     \
+   std::forward<h2_matcher<h2_nth_decay<8, Args...>>>(_8),     \
+   std::forward<h2_matcher<h2_nth_decay<9, Args...>>>(_9),     \
+   std::forward<h2_matcher<h2_nth_decay<10, Args...>>>(_10),   \
+   std::forward<h2_matcher<h2_nth_decay<11, Args...>>>(_11),   \
+   std::forward<h2_matcher<h2_nth_decay<12, Args...>>>(_12),   \
+   std::forward<h2_matcher<h2_nth_decay<13, Args...>>>(_13),   \
+   std::forward<h2_matcher<h2_nth_decay<14, Args...>>>(_14),   \
+   std::forward<h2_matcher<h2_nth_decay<15, Args...>>>(_15)
    /* clang-format on */
 
    using ArgumentTuple = std::tuple<Args...>;
@@ -2638,7 +2699,13 @@ class h2_mocker<Counter, Lineno, Class, Return(Args...)> : h2_mock {
                                    h2_matcher<h2_nth_decay<6, Args...>>,
                                    h2_matcher<h2_nth_decay<7, Args...>>,
                                    h2_matcher<h2_nth_decay<8, Args...>>,
-                                   h2_matcher<h2_nth_decay<9, Args...>>>;
+                                   h2_matcher<h2_nth_decay<9, Args...>>,
+                                   h2_matcher<h2_nth_decay<10, Args...>>,
+                                   h2_matcher<h2_nth_decay<11, Args...>>,
+                                   h2_matcher<h2_nth_decay<12, Args...>>,
+                                   h2_matcher<h2_nth_decay<13, Args...>>,
+                                   h2_matcher<h2_nth_decay<14, Args...>>,
+                                   h2_matcher<h2_nth_decay<15, Args...>>>;
 
    h2_vector<MatcherTuple> matcher_array;
    h2_vector<h2_function<Class, Return(Args...)>> function_array;
@@ -2663,18 +2730,22 @@ class h2_mocker<Counter, Lineno, Class, Return(Args...)> : h2_mock {
       ArgumentTuple at = std::forward_as_tuple(std::forward<Args>(args)...);
       int checkin_offset = -1;
       for (int i = checkin_index; i < checkin_array.size(); ++i) {
-         h2_fail* fail = h2_tuple_matches(matcher_array[i], at);
-         if (fail) {
+         h2_fail* fails = h2_tuple_matches(matcher_array[i], at);
+         if (fails) {
             if (checkin_offset != -1) {
                break;
             }
-            if (checkin_array[i].is_satisfied()) {
-               if (i < checkin_array.size() - 1) { /* try next h2_checkin */
-                  delete fail;
-                  continue;
-               }
+            if (checkin_array[i].is_satisfied()) { /* try next h2_checkin */
+               delete fails;
+               continue;
             }
-            fail->foreach([this](h2_fail* f, int, int) { f->file = file, f->line = line, f->func = origin_fn; });
+            fails->foreach([this](h2_fail* f, int, int) {
+               f->explain.concat_back({"on ", func, "\033{+dark gray}", "(", "\033{-dark gray}"});
+               f->explain.concat_back(argvs(f->seqno));
+               f->explain.concat_back({"\033{+dark gray}", ")", "\033{-dark gray}"});
+            });
+            h2_fail* fail = h2_fail::new_normal(signature(), file, line);
+            h2_fail::append_child(fail, fails);
             h2_fail_g(fail, false);
          } else {
             checkin_index = i;
@@ -2682,7 +2753,7 @@ class h2_mocker<Counter, Lineno, Class, Return(Args...)> : h2_mock {
             if (checkin_array[i].is_saturated()) {
                continue;
             }
-            if (checkin_array[i].is_not_enough()) {
+            if (checkin_array[i].insufficient()) {
                break;
             }
             /* satisfied */
@@ -2696,7 +2767,10 @@ class h2_mocker<Counter, Lineno, Class, Return(Args...)> : h2_mock {
          ++checkin_array[checkin_offset];
       }
       if (checkin_offset == -1) {
-         h2_fail_g(h2_fail::new_call(origin_fn, "", "unexpect", {}, file, line), false);
+         h2_fail* fail = h2_fail::new_normal(signature(), file, line);
+         h2_fail* f = h2_fail::new_normal({func, h2_stringify(at), " ", "\033{red,bold}", "unexpectedly", "\033{reset}", " called"});
+         h2_fail::append_child(fail, f);
+         h2_fail_g(fail, false);
       }
       return checkin_offset;
    }
@@ -2726,11 +2800,13 @@ class h2_mocker<Counter, Lineno, Class, Return(Args...)> : h2_mock {
       return *i;
    }
 
-   static h2_mocker& I(void* origin_fp, const char* origin_fn, const char* file, int line)
+   static h2_mocker& I(void* origin_fp, const char* ret, const char* func, const h2_vector<const char*>& argv, const char* file, int line)
    {
       I().origin_fp = origin_fp;
       I().substitute_fp = std::is_same<std::false_type, Class>::value ? (void*)normal_function_stub : (void*)member_function_stub;
-      I().origin_fn = origin_fn;
+      I().ret = ret;
+      I().func = func;
+      I().argv = argv;
       I().file = file;
       I().line = line;
       I().reset();
@@ -2744,80 +2820,87 @@ class h2_mocker<Counter, Lineno, Class, Return(Args...)> : h2_mock {
       return *this;
    }
 
-   h2_mocker& once(MATCHER_Any_0_1_2_3_4_5_6_7_8_9)
+   h2_mocker& once(MATCHER_Any_0_1_2_3_4_5_6_7_8_9_A_B_C_D_E_F)
    {
       checkin_array.push_back(h2_checkin(1, 1));
-      matcher_array.push_back(std::forward_as_tuple(FORWARD_Matcher_0_1_2_3_4_5_6_7_8_9));
+      matcher_array.push_back(std::forward_as_tuple(FORWARD_Matcher_0_1_2_3_4_5_6_7_8_9_A_B_C_D_E_F));
       function_array.push_back(origin());
       return *this;
    }
 
-   h2_mocker& twice(MATCHER_Any_0_1_2_3_4_5_6_7_8_9)
+   h2_mocker& twice(MATCHER_Any_0_1_2_3_4_5_6_7_8_9_A_B_C_D_E_F)
    {
       checkin_array.push_back(h2_checkin(2, 2));
-      matcher_array.push_back(std::forward_as_tuple(FORWARD_Matcher_0_1_2_3_4_5_6_7_8_9));
+      matcher_array.push_back(std::forward_as_tuple(FORWARD_Matcher_0_1_2_3_4_5_6_7_8_9_A_B_C_D_E_F));
       function_array.push_back(origin());
       return *this;
    }
 
-   h2_mocker& times(int count)
+   h2_mocker& times(int count, MATCHER_Any_0_1_2_3_4_5_6_7_8_9_A_B_C_D_E_F)
    {
       checkin_array.push_back(h2_checkin(count, count));
-      matcher_array.push_back(MatcherTuple());
+      matcher_array.push_back(std::forward_as_tuple(FORWARD_Matcher_0_1_2_3_4_5_6_7_8_9_A_B_C_D_E_F));
       function_array.push_back(origin());
       return *this;
    }
 
-   h2_mocker& any(MATCHER_Any_0_1_2_3_4_5_6_7_8_9)
+   h2_mocker& any(MATCHER_Any_0_1_2_3_4_5_6_7_8_9_A_B_C_D_E_F)
    {
       checkin_array.push_back(h2_checkin(0, INT_MAX));
-      matcher_array.push_back(std::forward_as_tuple(FORWARD_Matcher_0_1_2_3_4_5_6_7_8_9));
+      matcher_array.push_back(std::forward_as_tuple(FORWARD_Matcher_0_1_2_3_4_5_6_7_8_9_A_B_C_D_E_F));
       function_array.push_back(origin());
       return *this;
    }
 
-   h2_mocker& atleast(int count)
+   h2_mocker& atleast(int count, MATCHER_Any_0_1_2_3_4_5_6_7_8_9_A_B_C_D_E_F)
    {
       checkin_array.push_back(h2_checkin(count, INT_MAX));
-      matcher_array.push_back(MatcherTuple());
+      matcher_array.push_back(std::forward_as_tuple(FORWARD_Matcher_0_1_2_3_4_5_6_7_8_9_A_B_C_D_E_F));
       function_array.push_back(origin());
       return *this;
    }
 
-   h2_mocker& atmost(int count)
+   h2_mocker& atmost(int count, MATCHER_Any_0_1_2_3_4_5_6_7_8_9_A_B_C_D_E_F)
    {
       checkin_array.push_back(h2_checkin(0, count));
-      matcher_array.push_back(MatcherTuple());
+      matcher_array.push_back(std::forward_as_tuple(FORWARD_Matcher_0_1_2_3_4_5_6_7_8_9_A_B_C_D_E_F));
       function_array.push_back(origin());
       return *this;
    }
 
-   h2_mocker& between(int left, int right)
+   h2_mocker& between(int left, int right, MATCHER_Any_0_1_2_3_4_5_6_7_8_9_A_B_C_D_E_F)
    {
       checkin_array.push_back(h2_checkin(left, right));
-      matcher_array.push_back(MatcherTuple());
+      matcher_array.push_back(std::forward_as_tuple(FORWARD_Matcher_0_1_2_3_4_5_6_7_8_9_A_B_C_D_E_F));
       function_array.push_back(origin());
       return *this;
    }
 
-   h2_mocker& with(MATCHER_Any_0_1_2_3_4_5_6_7_8_9)
+   h2_mocker& with(MATCHER_Any_0_1_2_3_4_5_6_7_8_9_A_B_C_D_E_F)
    {
       if (!matcher_array.empty()) {
-         matcher_array.back() = std::forward_as_tuple(FORWARD_Matcher_0_1_2_3_4_5_6_7_8_9);
+         matcher_array.back() = std::forward_as_tuple(FORWARD_Matcher_0_1_2_3_4_5_6_7_8_9_A_B_C_D_E_F);
       }
       return *this;
    }
 
    /* clang-format off */
-   h2_mocker& th1(h2_matcher<h2_nth_decay<0, Args...>> e = Any) { if (!matcher_array.empty()) std::get<0>(matcher_array.back()) = e; return *this; }
-   h2_mocker& th2(h2_matcher<h2_nth_decay<1, Args...>> e = Any) { if (!matcher_array.empty()) std::get<1>(matcher_array.back()) = e; return *this; }
-   h2_mocker& th3(h2_matcher<h2_nth_decay<2, Args...>> e = Any) { if (!matcher_array.empty()) std::get<2>(matcher_array.back()) = e; return *this; }
-   h2_mocker& th4(h2_matcher<h2_nth_decay<3, Args...>> e = Any) { if (!matcher_array.empty()) std::get<3>(matcher_array.back()) = e; return *this; }
-   h2_mocker& th5(h2_matcher<h2_nth_decay<4, Args...>> e = Any) { if (!matcher_array.empty()) std::get<4>(matcher_array.back()) = e; return *this; }
-   h2_mocker& th6(h2_matcher<h2_nth_decay<5, Args...>> e = Any) { if (!matcher_array.empty()) std::get<5>(matcher_array.back()) = e; return *this; }
-   h2_mocker& th7(h2_matcher<h2_nth_decay<6, Args...>> e = Any) { if (!matcher_array.empty()) std::get<6>(matcher_array.back()) = e; return *this; }
-   h2_mocker& th8(h2_matcher<h2_nth_decay<7, Args...>> e = Any) { if (!matcher_array.empty()) std::get<7>(matcher_array.back()) = e; return *this; }
-   h2_mocker& th9(h2_matcher<h2_nth_decay<8, Args...>> e = Any) { if (!matcher_array.empty()) std::get<8>(matcher_array.back()) = e; return *this; }
+   h2_mocker& th0(h2_matcher<h2_nth_decay<0, Args...>> e = Any) { if (!matcher_array.empty()) std::get<0>(matcher_array.back()) = e; return *this; }
+   h2_mocker& th1(h2_matcher<h2_nth_decay<1, Args...>> e = Any) { if (!matcher_array.empty()) std::get<1>(matcher_array.back()) = e; return *this; }
+   h2_mocker& th2(h2_matcher<h2_nth_decay<2, Args...>> e = Any) { if (!matcher_array.empty()) std::get<2>(matcher_array.back()) = e; return *this; }
+   h2_mocker& th3(h2_matcher<h2_nth_decay<3, Args...>> e = Any) { if (!matcher_array.empty()) std::get<3>(matcher_array.back()) = e; return *this; }
+   h2_mocker& th4(h2_matcher<h2_nth_decay<4, Args...>> e = Any) { if (!matcher_array.empty()) std::get<4>(matcher_array.back()) = e; return *this; }
+   h2_mocker& th5(h2_matcher<h2_nth_decay<5, Args...>> e = Any) { if (!matcher_array.empty()) std::get<5>(matcher_array.back()) = e; return *this; }
+   h2_mocker& th6(h2_matcher<h2_nth_decay<6, Args...>> e = Any) { if (!matcher_array.empty()) std::get<6>(matcher_array.back()) = e; return *this; }
+   h2_mocker& th7(h2_matcher<h2_nth_decay<7, Args...>> e = Any) { if (!matcher_array.empty()) std::get<7>(matcher_array.back()) = e; return *this; }
+   h2_mocker& th8(h2_matcher<h2_nth_decay<8, Args...>> e = Any) { if (!matcher_array.empty()) std::get<8>(matcher_array.back()) = e; return *this; }
+   h2_mocker& th9(h2_matcher<h2_nth_decay<9, Args...>> e = Any) { if (!matcher_array.empty()) std::get<9>(matcher_array.back()) = e; return *this; }
+   h2_mocker& th10(h2_matcher<h2_nth_decay<10, Args...>> e = Any) { if (!matcher_array.empty()) std::get<10>(matcher_array.back()) = e; return *this; }
+   h2_mocker& th11(h2_matcher<h2_nth_decay<11, Args...>> e = Any) { if (!matcher_array.empty()) std::get<11>(matcher_array.back()) = e; return *this; }
+   h2_mocker& th12(h2_matcher<h2_nth_decay<12, Args...>> e = Any) { if (!matcher_array.empty()) std::get<12>(matcher_array.back()) = e; return *this; }
+   h2_mocker& th13(h2_matcher<h2_nth_decay<13, Args...>> e = Any) { if (!matcher_array.empty()) std::get<13>(matcher_array.back()) = e; return *this; }
+   h2_mocker& th14(h2_matcher<h2_nth_decay<14, Args...>> e = Any) { if (!matcher_array.empty()) std::get<14>(matcher_array.back()) = e; return *this; }
+   h2_mocker& th15(h2_matcher<h2_nth_decay<15, Args...>> e = Any) { if (!matcher_array.empty()) std::get<15>(matcher_array.back()) = e; return *this; }
    /* clang-format on */
 
    h2_mocker& returns()
@@ -2858,6 +2941,8 @@ class h2_mocker<Counter, Lineno, Class, Return(Args...)> : h2_mock {
    h2_mocker& operator=(std::function<Return(Args...)> f) { return does(f); }
    h2_mocker& operator=(std::function<Return(Class*, Args...)> f) { return does(f); }
 };
+
+}  // namespace
 // h2_dns.hpp
 
 struct h2_dns {
@@ -2917,11 +3002,11 @@ struct h2_packet_matches : h2_matches {
       h2_fail::append_subling(fails, h2_matcher_cast<const char*>(from).matches(a->from.c_str(), 0, caseless, dont));
       h2_fail::append_subling(fails, h2_matcher_cast<const char*>(to).matches(a->to.c_str(), 0, caseless, dont));
       h2_fail::append_subling(fails, h2_matcher_cast<const unsigned char*>(data).matches((unsigned char*)a->data.data(), 0, caseless, dont));
-      h2_fail::append_subling(fails, h2_matcher_cast<const int>(size).matches(a->data.length(), 0, caseless, dont));
+      h2_fail::append_subling(fails, h2_matcher_cast<const int>(size).matches(a->data.size(), 0, caseless, dont));
       return fails;
    }
 
-   virtual h2_string expects(bool caseless, bool dont) const override { return ""; }
+   virtual h2_string expection(bool, bool) const override { return ""; }
 };
 
 template <typename M1, typename M2, typename M3, typename M4>

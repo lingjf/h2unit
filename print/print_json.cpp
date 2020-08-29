@@ -27,6 +27,11 @@ SUITE(json)
       OK(~Je("{'name': /hello.*world/, 'age': 18}"), "{'Name': \"hello world\", 'age': 20}");
    }
 
+   Case(donot)
+   {
+      OK(!Je("{'name': /hello.*world/, 'age': 18}"), "{'name': \"hello world\", 'age': 18}");
+   }
+
    Case(illformed json)
    {
       const char* json = "{'name': \"Hello World\", 'age': 18, week: [\"Sunday\": \"Monday\", \"Tuesday\", \"Wednesday\", \"Thursday\", \"Friday\", \"Saturday\"]}";

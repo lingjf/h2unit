@@ -109,6 +109,33 @@ SUITE(h2_line)
       OK(e.width() == a.width());
    }
 
+   Case(enclosed)
+   {
+      h2::h2_line a1 = {"123"};
+      OK(!a1.enclosed('\"'));
+      h2::h2_line a2 = {"123", "456"};
+      OK(!a2.enclosed('\"'));
+      h2::h2_line a3 = {"123", "\033{red}", "456", "\033{reset}"};
+      OK(!a3.enclosed('\"'));
+
+      h2::h2_line b1 = {"\"123\""};
+      OK(b1.enclosed('\"'));
+      h2::h2_line b2 = {"\"123", "456\""};
+      OK(b2.enclosed('\"'));
+      h2::h2_line b3 = {"\"123", "\033{red}", "456\"", "\033{reset}"};
+      OK(b3.enclosed('\"'));
+   }
+
+   // Case(dark_gray_enclosed_quote)
+   // {
+   //    h2::h2_line b1 = {"\"123\""};
+   //    b1.dark_gray_enclosed_quote();
+   //    OK(ListOf("\033{+dark gray}", "\"", "\033{+dark gray}",
+   //              "123",
+   //              "\033{+dark gray}", "\"", "\033{+dark gray}"),
+   //       b1);
+   // }
+
    Case(samesizify lines)
    {
       h2::h2_lines e = {{"123", "456"}, {"1234"}};

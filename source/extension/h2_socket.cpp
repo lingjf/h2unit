@@ -114,7 +114,7 @@ struct h2__socket {
       ::bind(fd, (struct sockaddr*)&a, sizeof(a));
       h2_sock* sock = h2_list_top_entry(I().socks, h2_sock, y);
       sock->sockets.push_back({fd, c, tcp->from.c_str()});
-      if (tcp->data.length())
+      if (tcp->data.size())
          sock->incoming.push(tcp->x);
       else
          delete tcp;
@@ -131,7 +131,7 @@ struct h2__socket {
          errno = EWOULDBLOCK;
          return -1;
       }
-      if (tcp->data.length())
+      if (tcp->data.size())
          sock->incoming.push(tcp->x);
       else
          delete tcp;
@@ -161,7 +161,7 @@ struct h2__socket {
       ssize_t ret = 0;
       h2_packet* tcp = read_incoming(socket);
       if (tcp) {
-         ret = tcp->data.copy((char*)buffer, tcp->data.length(), 0);
+         ret = tcp->data.copy((char*)buffer, tcp->data.size(), 0);
          delete tcp;
       }
       return ret;
@@ -172,7 +172,7 @@ struct h2__socket {
       h2_packet* udp = read_incoming(socket);
 
       if (udp) {
-         ret = udp->data.copy((char*)buffer, udp->data.length(), 0);
+         ret = udp->data.copy((char*)buffer, udp->data.size(), 0);
          iport_parse(udp->from.c_str(), (struct sockaddr_in*)address);
          *address_len = sizeof(struct sockaddr_in);
          delete udp;

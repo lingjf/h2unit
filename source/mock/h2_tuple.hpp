@@ -6,7 +6,7 @@ inline h2_fail* matches(MatcherTuple& matchers, ArgumentTuple& arguments, std::i
 {
    h2_fail* fails = matches(matchers, arguments, std::integral_constant<std::size_t, I - 1>());
    h2_fail* fail = std::get<I - 1>(matchers).matches(std::get<I - 1>(arguments));
-   if (fail) fail->seq = I - 1;
+   if (fail) fail->seqno = I - 1;
    h2_fail::append_subling(fails, fail);
    h2_check_g();
    return fails;

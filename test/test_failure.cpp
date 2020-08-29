@@ -56,9 +56,9 @@ SUITE(failure utils)
 
 SUITE(failure)
 {
-   auto fa = new h2::h2_fail({}, "a", 11, "ff", 2);
+   auto fa = new h2::h2_fail({}, "a", 11);
    auto fb = new h2::h2_fail({}, "b", 12);
-   auto fc = new h2::h2_fail({}, "c", 13, "fx");
+   auto fc = new h2::h2_fail({}, "c", 13);
 
    auto f1 = new h2::h2_fail({}, "1", 21);
    auto f2 = new h2::h2_fail({}, "2", 22);

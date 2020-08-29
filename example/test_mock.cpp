@@ -115,15 +115,15 @@ SUITE(Mock Function)
       OK(33, foobar(3, "C"));
    }
 
-   Case(th1 successful)
+   Case(th0 successful)
    {
-      MOCK(foobar, int, (int, const char*)).once().th1(1);
+      MOCK(foobar, int, (int, const char*)).once().th0(1);
       foobar(1, "A");
    }
 
-   Case(th2 successful)
+   Case(th1 successful)
    {
-      MOCK(foobar, int, (int, const char*)).once().th2("A");
+      MOCK(foobar, int, (int, const char*)).once().th1("A");
       foobar(1, "A");
    }
 }

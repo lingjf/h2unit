@@ -147,7 +147,10 @@ inline h2_string h2_stringify(T a, size_t n)
 }
 
 template <typename T>
-inline h2_string h2_quote_stringfiy(const T& a)
+inline h2_string h2_representify(const T& a)
 {
-   return (std::is_convertible<T, h2_string>::value ? "\"" : "") + h2_stringify(a) + (std::is_convertible<T, h2_string>::value ? "\"" : "");
+   const char* quote = "";
+   if (std::is_same<char, T>::value) quote = "'";
+   if (std::is_convertible<T, h2_string>::value) quote = "\"";
+   return quote + h2_stringify(a) + quote;
 }

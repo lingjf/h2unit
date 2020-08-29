@@ -7,7 +7,7 @@ import re
 
 
 def read_version():
-    with open('../source/h2_unit.hpp', 'r') as f:
+    with open('../source/h2_unit.cpp', 'r') as f:
         for line in f:
             version = re.match('#define H2UNIT_VERSION \s*(.*)', line)
             if version:
@@ -61,7 +61,7 @@ h2unit_cpp = './h2unit.cpp'
 f_h2unit_h = open(h2unit_h, 'w')
 f_h2unit_h.write(version_datetime + '\n')
 f_h2unit_h.write(project_github_url + '\n')
-f_h2unit_h.write(software_copyright + '\n')
+f_h2unit_h.write(software_copyright + '\n\n')
 f_h2unit_h.write('#ifndef __H2UNIT_H__' + '\n')
 f_h2unit_h.write('#define __H2UNIT_H__' + '\n')
 with open('../source/h2_unit.cpp', 'r') as f_h2_unit_cpp:
@@ -73,7 +73,7 @@ convert_utf8_to_unicode(h2unit_h)
 f_h2unit_hpp = open(h2unit_hpp, 'w')
 f_h2unit_hpp.write(version_datetime + '\n')
 f_h2unit_hpp.write(project_github_url + '\n')
-f_h2unit_hpp.write(software_copyright + '\n')
+f_h2unit_hpp.write(software_copyright + '\n\n')
 f_h2unit_hpp.write('#ifndef __H2UNIT_HPP__' + '\n')
 f_h2unit_hpp.write('#define __H2UNIT_HPP__' + '\n')
 with open('../source/h2_unit.hpp', 'r') as f_h2_unit_hpp:
@@ -85,7 +85,7 @@ convert_utf8_to_unicode(h2unit_hpp)
 f_h2unit_cpp = open(h2unit_cpp, 'w')
 f_h2unit_cpp.write(version_datetime + '\n')
 f_h2unit_cpp.write(project_github_url + '\n')
-f_h2unit_cpp.write(software_copyright + '\n')
+f_h2unit_cpp.write(software_copyright + '\n\n')
 f_h2unit_cpp.write('#define __H2UNIT_HPP__' + '\n')
 with open('../source/h2_unit.cpp', 'r') as f_h2_unit_cpp:
     merge_files(f_h2_unit_cpp, f_h2unit_cpp)

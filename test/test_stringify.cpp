@@ -145,6 +145,12 @@ SUITE(stringify simple)
       OK("12345678", h2::h2_stringify<long long>(a));
    }
 
+   Case(char)
+   {
+      char a = 'A';
+      OK("A", h2::h2_stringify<char>(a));
+   }
+
    Case(char*)
    {
       char* a = "hello world";
@@ -361,6 +367,32 @@ SUITE(array with count)
       a1[1] = 2;
       a1[2] = 3;
       OK("[1, 2, 3]", h2::h2_stringify(a1, 3));
+   }
+}
+
+SUITE(representify)
+{
+   Case(char)
+   {
+      // OK(std::is_same<char, const char>::value);
+
+      const char a = 'A';
+      OK("'A'", h2::h2_representify(a));
+   }
+
+   Case(string)
+   {
+      const char* a1 = "hello";
+      OK("\"hello\"", h2::h2_representify(a1));
+
+      std::string a2 = "hello";
+      OK("\"hello\"", h2::h2_representify(a2));
+   }
+
+   Case(integer)
+   {
+      int a1 = 123;
+      OK("123", h2::h2_representify(a1));
    }
 }
 

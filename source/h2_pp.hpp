@@ -44,6 +44,12 @@
 #define _H2PP_EQ__7__7 H2PP_PROBE()
 #define _H2PP_EQ__8__8 H2PP_PROBE()
 #define _H2PP_EQ__9__9 H2PP_PROBE()
+#define _H2PP_EQ__10__10 H2PP_PROBE()
+#define _H2PP_EQ__11__11 H2PP_PROBE()
+#define _H2PP_EQ__12__12 H2PP_PROBE()
+#define _H2PP_EQ__13__13 H2PP_PROBE()
+#define _H2PP_EQ__14__14 H2PP_PROBE()
+#define _H2PP_EQ__15__15 H2PP_PROBE()
 
 #define H2PP_NOT(_Cond) H2PP_IS_PROBE(H2PP__CAT2(_H2PP_NOT_, _Cond))
 #define _H2PP_NOT_0 H2PP_PROBE()

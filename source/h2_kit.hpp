@@ -31,7 +31,7 @@ struct h2_nth_type_impl<0, T, Args...> {
 };
 template <std::size_t Index, typename... Args>
 struct h2_nth_type {
-   using type = typename h2_nth_type_impl<Index, Args..., int, int, int, int, int, int, int, int, int, int, int, int, int, int>::type;
+   using type = typename h2_nth_type_impl<Index, Args..., int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int>::type;
 };
 
 template <std::size_t Index, typename... Args>

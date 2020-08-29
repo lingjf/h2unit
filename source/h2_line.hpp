@@ -13,6 +13,8 @@ struct h2_line : h2_vector<h2_string> {
    h2_line& concat_back(const h2_line& line, const char* style = nullptr);
    h2_line& concat_front(const h2_line& line_or_word, const char* style = nullptr);
 
+   bool enclosed(const char c);
+   h2_line& dark_gray_enclosed_quote(); // todo
    void brush(const char* style);
    void samesizify(h2_line& b);
 };

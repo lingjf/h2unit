@@ -8,11 +8,11 @@ struct h2_matches_ge : h2_matches {
    h2_fail* matches(const A& a, int, bool caseless, bool dont) const
    {
       if ((a >= e) == !dont) return nullptr;
-      return h2_fail::new_unexpect(h2_stringify(e), h2_stringify(a), expects(caseless, dont));
+      return h2_fail::new_unexpect(h2_representify(e), h2_representify(a), expection(caseless, dont));
    }
-   virtual h2_string expects(bool, bool dont) const override
+   virtual h2_string expection(bool, bool dont) const override
    {
-      return CD(">=" + h2_stringify(e), false, dont);
+      return CD(">=" + h2_representify(e), false, dont);
    }
 };
 
@@ -25,9 +25,9 @@ struct h2_matches_gt : h2_matches {
    h2_fail* matches(const A& a, int, bool caseless, bool dont) const
    {
       if ((a > e) == !dont) return nullptr;
-      return h2_fail::new_unexpect(h2_stringify(e), h2_stringify(a), expects(caseless, dont));
+      return h2_fail::new_unexpect(h2_stringify(e), h2_stringify(a), expection(caseless, dont));
    }
-   virtual h2_string expects(bool, bool dont) const override
+   virtual h2_string expection(bool, bool dont) const override
    {
       return CD(">" + h2_stringify(e), false, dont);
    }
@@ -42,9 +42,9 @@ struct h2_matches_le : h2_matches {
    h2_fail* matches(const A& a, int, bool caseless, bool dont) const
    {
       if ((a <= e) == !dont) return nullptr;
-      return h2_fail::new_unexpect(h2_stringify(e), h2_stringify(a), expects(caseless, dont));
+      return h2_fail::new_unexpect(h2_stringify(e), h2_stringify(a), expection(caseless, dont));
    }
-   virtual h2_string expects(bool, bool dont) const override
+   virtual h2_string expection(bool, bool dont) const override
    {
       return CD("<=" + h2_stringify(e), false, dont);
    }
@@ -59,9 +59,9 @@ struct h2_matches_lt : h2_matches {
    h2_fail* matches(const A& a, int, bool caseless, bool dont) const
    {
       if ((a < e) == !dont) return nullptr;
-      return h2_fail::new_unexpect(h2_stringify(e), h2_stringify(a), expects(caseless, dont));
+      return h2_fail::new_unexpect(h2_stringify(e), h2_stringify(a), expection(caseless, dont));
    }
-   virtual h2_string expects(bool, bool dont) const override
+   virtual h2_string expection(bool, bool dont) const override
    {
       return CD("<" + h2_stringify(e), false, dont);
    }

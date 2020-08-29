@@ -1,9 +1,11 @@
+
+#define H2UNIT_VERSION 5.6
+
 #include "h2_unit.hpp"
 
 #include <cassert>  /* assert */
 #include <cctype>   /* tolower, isspace */
 #include <cstdarg>  /* va_list */
-#include <cstdint>  /* int32_t */
 #include <errno.h>  /* strerror */
 #include <iostream> /* cout */
 #include <memory>   /* allocator */
@@ -73,9 +75,8 @@ namespace h2 {
 #include "json/h2_dual.cpp"      // ..
 #include "json/h2_json.cpp"      // ..
 
-#include "matcher/h2_matcher.cpp"    //
-#include "matcher/h2_strcmp.cpp"     //
-#include "matcher/h2_memcmp.cpp"     //
+#include "matcher/h2_strcmp.cpp"   //
+#include "matcher/h2_memcmp.cpp"   //
 
 #include "memory/h2_piece.cpp"     // kit
 #include "memory/h2_block.cpp"     // ..

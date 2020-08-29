@@ -9,7 +9,7 @@ h2_inline h2_lines h2_json::format(const h2_string& json_string)
    }
    lines = tree.format();
    if (O.paste) {
-      if (0 < lines.size()) lines.front().concat_front("\""), lines.back().push_back("\"");
+      if (!lines.empty()) lines.front().concat_front("\""), lines.back().push_back("\"");
       unsigned max_width = lines.width();
       for (auto& line : lines) {
          line.padding(max_width - line.width() + 3);

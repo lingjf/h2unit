@@ -15,7 +15,7 @@
       }                                                                                                   \
       return fail;                                                                                        \
    }                                                                                                      \
-   virtual h2::h2_string expects(bool caseless, bool dont) const override { return ""; }
+   virtual h2::h2_string expection(bool, bool) const override { return ""; }
 
 #define H2MATCHER0(name, message)                                                     \
    struct h2_##name##_matches : h2::h2_matches {                                      \

@@ -18,7 +18,7 @@ struct h2_pair_matches : h2_matches {
          return nullptr;
       }
       if (dont) {
-         fail = h2_fail::new_unexpect("", h2_stringify(a), expects(caseless, dont));
+         fail = h2_fail::new_unexpect("", h2_stringify(a), expection(caseless, dont));
       }
       return fail;
    }
@@ -26,12 +26,12 @@ struct h2_pair_matches : h2_matches {
    template <typename A>
    auto matches(const A& a, int n, bool caseless, bool dont) const -> typename std::enable_if<!h2_is_pair<typename std::decay<A>::type>::value, h2_fail*>::type
    {
-      return h2_fail::new_unexpect("", h2_stringify(a), expects(caseless, dont));
+      return h2_fail::new_unexpect("", h2_stringify(a), expection(caseless, dont));
    }
 
-   virtual h2_string expects(bool caseless, bool dont) const override
+   virtual h2_string expection(bool caseless, bool dont) const override
    {
-      return CD("(" + h2_matches_expects(k, caseless, dont) + ", " + h2_matches_expects(v, caseless, dont) + ")", false, dont);
+      return CD("(" + h2_matches_expection(k, caseless, dont) + ", " + h2_matches_expection(v, caseless, dont) + ")", false, dont);
    }
 };
 
@@ -59,16 +59,16 @@ struct h2_listof_matches : h2_matches {
             }
          }
          if (c == 0) {
-            fail = h2_fail::new_unexpect("", "", v_matchers[i].expects(caseless, false), "out of range");
+            fail = h2_fail::new_unexpect("", "", v_matchers[i].expection(caseless, false), "but out of range");
          }
-         if (fail) fail->seq = i;
+         if (fail) fail->seqno = i;
          h2_fail::append_subling(fails, fail);
       }
       if (!fails == !dont) {
          if (fails) delete fails;
          return nullptr;
       }
-      h2_fail* fail = h2_fail::new_unexpect("", h2_stringify(a), expects(caseless, dont), DS(!fails));
+      h2_fail* fail = h2_fail::new_unexpect("", h2_stringify(a), expection(caseless, dont), DS(!fails));
       h2_fail::append_child(fail, fails);
       return fail;
    }
@@ -83,24 +83,24 @@ struct h2_listof_matches : h2_matches {
 
       for (size_t i = 0; i < v_matchers.size(); ++i) {
          h2_fail* fail = v_matchers[i].matches(a[i], n, caseless, false);
-         if (fail) fail->seq = i;
+         if (fail) fail->seqno = i;
          h2_fail::append_subling(fails, fail);
       }
       if (!fails == !dont) {
          if (fails) delete fails;
          return nullptr;
       }
-      h2_fail* fail = h2_fail::new_unexpect("", h2_stringify(a), expects(caseless, dont), DS(!fails));
+      h2_fail* fail = h2_fail::new_unexpect("", h2_stringify(a), expection(caseless, dont), DS(!fails));
       h2_fail::append_child(fail, fails);
       return fail;
    }
 
-   virtual h2_string expects(bool caseless, bool dont) const override
+   virtual h2_string expection(bool caseless, bool dont) const override
    {
       return CD("ListOf(" + t2e(caseless, false) + ")", false, dont);
    }
 
-   H2_MATCHER_T2V2E(t_matchers)
+   H2_MATCHES_T2V2E(t_matchers)
 };
 
 template <typename... Matchers>
@@ -125,8 +125,8 @@ struct h2_has_matches : h2_matches {
             }
          }
          if (!found) {
-            h2_fail* fail = h2_fail::new_normal({"haven't ", "\033{red}", v_matchers[i].expects(caseless, false), "\033{reset}"});
-            if (fail) fail->seq = i;
+            h2_fail* fail = h2_fail::new_unexpect("", "", v_matchers[i].expection(caseless, false), "but haven't");
+            if (fail) fail->seqno = i;
             h2_fail::append_subling(fails, fail);
          }
       }
@@ -134,7 +134,7 @@ struct h2_has_matches : h2_matches {
          if (fails) delete fails;
          return nullptr;
       }
-      h2_fail* fail = h2_fail::new_unexpect("", h2_stringify(a), expects(caseless, dont), DS(!fails));
+      h2_fail* fail = h2_fail::new_unexpect("", h2_stringify(a), expection(caseless, dont), DS(!fails));
       h2_fail::append_child(fail, fails);
       return fail;
    }
@@ -156,8 +156,8 @@ struct h2_has_matches : h2_matches {
             }
          }
          if (!found) {
-            h2_fail* fail = h2_fail::new_normal({"haven't ", "\033{red}", v_matchers[i].expects(caseless, false), "\033{reset}"});
-            if (fail) fail->seq = i;
+            h2_fail* fail = h2_fail::new_unexpect("", "", v_matchers[i].expection(caseless, false), "but haven't");
+            if (fail) fail->seqno = i;
             h2_fail::append_subling(fails, fail);
          }
       }
@@ -165,17 +165,17 @@ struct h2_has_matches : h2_matches {
          if (fails) delete fails;
          return nullptr;
       }
-      h2_fail* fail = h2_fail::new_unexpect("", h2_stringify(a, n), expects(caseless, dont), DS(!fails));
+      h2_fail* fail = h2_fail::new_unexpect("", h2_stringify(a, n), expection(caseless, dont), DS(!fails));
       h2_fail::append_child(fail, fails);
       return fail;
    }
 
-   virtual h2_string expects(bool caseless, bool dont) const override
+   virtual h2_string expection(bool caseless, bool dont) const override
    {
       return CD("Has(" + t2e(caseless, false) + ")", false, dont);
    }
 
-   H2_MATCHER_T2V2E(t_matchers)
+   H2_MATCHES_T2V2E(t_matchers)
 };
 
 template <typename... Matchers>
@@ -197,15 +197,15 @@ struct h2_in_matches : h2_matches {
       }
       bool result = 0 < s;
       if (result == !dont) return nullptr;
-      return h2_fail::new_unexpect("", h2_stringify(a), expects(caseless, dont), DS(result));
+      return h2_fail::new_unexpect("", h2_stringify(a), expection(caseless, dont), DS(result));
    }
 
-   virtual h2_string expects(bool caseless, bool dont) const override
+   virtual h2_string expection(bool caseless, bool dont) const override
    {
       return CD("In(" + t2e(caseless, false) + ")", false, dont);
    }
 
-   H2_MATCHER_T2V2E(t_matchers)
+   H2_MATCHES_T2V2E(t_matchers)
 };
 
 template <typename... Matchers>
@@ -240,24 +240,24 @@ struct h2_countof_matches : h2_matches {
 
       for (size_t i = 0; i < v_matchers.size(); ++i) {
          h2_fail* fail = v_matchers[i].matches(count, 0, false, false);
-         if (fail) fail->seq = i;
+         if (fail) fail->seqno = i;
          h2_fail::append_subling(fails, fail);
       }
       if (!fails == !dont) {
          if (fails) delete fails;
          return nullptr;
       }
-      h2_fail* fail = h2_fail::new_unexpect("", a_represent + "/" + h2_stringify(count), expects(false, dont), DS(!fails));
+      h2_fail* fail = h2_fail::new_unexpect("", a_represent + "/" + h2_stringify(count), expection(false, dont), DS(!fails));
       h2_fail::append_child(fail, fails);
       return fail;
    }
 
-   virtual h2_string expects(bool, bool dont) const override
+   virtual h2_string expection(bool, bool dont) const override
    {
       return CD("CountOf(" + t2e(false, dont) + ")", false, false);
    }
 
-   H2_MATCHER_T2V2E(t_matchers)
+   H2_MATCHES_T2V2E(t_matchers)
 };
 
 template <typename MK, typename MV, typename EK = typename h2_decay<MK>::type, typename EV = typename h2_decay<MV>::type>

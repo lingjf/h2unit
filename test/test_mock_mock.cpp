@@ -13,6 +13,10 @@ void bar3()
 {
 }
 
+int bar16(int _0, int _1, int _2, int _3, int _4, int _5, int _6, int _7, int _8, int _9, int _10, int _11, int _12, int _13, int _14, int _15)
+{
+}
+
 SUITE(mock c - function)
 {
    Case(once)
@@ -117,7 +121,7 @@ SUITE(mock c - function)
 
    Case(th0)
    {
-      MOCK(bar2, void, (int& a, char*)).once().th1(1);
+      MOCK(bar2, void, (int& a, char*)).once().th0(1);
 
       char t[32] = "";
       int a1 = 1;
@@ -126,7 +130,7 @@ SUITE(mock c - function)
 
    Case(th1)
    {
-      MOCK(bar2, void, (int& a, char*)).once().th2((char*)"A");
+      MOCK(bar2, void, (int& a, char*)).once().th1((char*)"A");
 
       char t[32] = "A";
       int a1 = 1;
@@ -173,6 +177,12 @@ SUITE(mock c - function)
    {
       MOCK(bar1, int, (int, const char*)).once(NoneOf(1, Ge(1)), _).returns(11);
       OK(11, bar1(0, "A"));
+   }
+
+   Case(arguments up to 15)
+   {
+      MOCK(bar16, int, (int, int, int, int, int, int, int, int, int, int, int, int, int, int, int)).once().returns(11);
+      OK(11, bar16(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15));
    }
 }
 

@@ -8,11 +8,11 @@ struct h2_equation : h2_matches {
    h2_fail* matches(const A& a, int, bool caseless, bool dont) const
    {
       if ((a == e) == !dont) return nullptr;
-      return h2_fail::new_unexpect(h2_stringify(e), h2_stringify(a), expects(caseless, dont));
+      return h2_fail::new_unexpect(h2_representify(e), h2_representify(a), expection(caseless, dont));
    }
-   virtual h2_string expects(bool caseless, bool dont) const override
+   virtual h2_string expection(bool caseless, bool dont) const override
    {
-      return CD(h2_stringify(e), false, dont);
+      return CD(h2_representify(e), false, dont);
    }
 };
 
@@ -27,9 +27,9 @@ struct h2_equation<E, typename std::enable_if<std::is_convertible<E, h2_string>:
       if (h2_pattern::wildcard_match(e.c_str(), a.c_str(), caseless) == !dont) return nullptr;
       if (h2_pattern::regex_match(e.c_str(), a.c_str(), caseless) == !dont) return nullptr;
 
-      return h2_fail::new_strcmp(e, a, caseless, expects(caseless, dont));
+      return h2_fail::new_strcmp(e, a, caseless, expection(caseless, dont));
    }
-   virtual h2_string expects(bool caseless, bool dont) const override
+   virtual h2_string expection(bool caseless, bool dont) const override
    {
       return CD("\"" + e + "\"", caseless, dont);
    }
@@ -58,11 +58,11 @@ struct h2_equation<E, typename std::enable_if<std::is_arithmetic<E>::value>::typ
          result = a == e;
       }
       if (result == !dont) return nullptr;
-      return h2_fail::new_unexpect(h2_stringify(e), h2_stringify(a), expects(caseless, dont));
+      return h2_fail::new_unexpect(h2_representify(e), h2_representify(a), expection(caseless, dont));
    }
-   virtual h2_string expects(bool, bool dont) const override
+   virtual h2_string expection(bool, bool dont) const override
    {
-      return CD(h2_stringify(e), false, dont);
+      return CD(h2_representify(e), false, dont);
    }
 };
 
@@ -72,8 +72,3 @@ inline h2_polymorphic_matcher<h2_equation<E>> Eq(const T& expect, const long dou
    return h2_polymorphic_matcher<h2_equation<E>>(h2_equation<E>(expect, epsilon));
 }
 
-template <typename T>
-inline h2_matcher<T>::h2_matcher(T value)
-{
-   *this = Eq(value);
-}

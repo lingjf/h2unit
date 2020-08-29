@@ -2,12 +2,9 @@
 #ifndef __H2_UNIT_HPP__
 #define __H2_UNIT_HPP__
 
-#define H2UNIT_VERSION 5.6
-
 #include <cstdio>      /* printf */
 #include <cstdlib>     /* malloc */
 #include <cstring>     /* strcpy, memcpy */
-#include <cstddef>     /* ptrdiff_t */
 #include <climits>     /* INT_MAX */
 #include <cmath>       /* fabs */
 #include <csetjmp>     /* setjmp, longjmp */
@@ -94,6 +91,7 @@ namespace h2 {
 #include "matcher/h2_memcmp.hpp"      // matches, matcher, failure, string
 #include "matcher/h2_container.hpp"   // tuple, matches, matcher, failure, string
 #include "matcher/h2_customize.hpp"   // matches, matcher, failure, string, pp
+#include "matcher/h2_matcher.cpp"     // matches, matcher, equation
 #include "stub/h2_fp.hpp"             // nm
 #include "stub/h2_stub.hpp"           // pp
 #include "mock/h2_mfp.hpp"            // failure, nm

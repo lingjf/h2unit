@@ -23,14 +23,14 @@ SUITE(matches unary)
       OK(nullptr == ee1.matches(NULL, 0, false, false));
       OK(nullptr == ee1.matches(nullptr, 0, false, false));
       OK(nullptr != ee1.matches(&int65, 0, false, false));
-      OK("IsNull", ee1.expects(false, false));
-      OK("NotNull", ee1.expects(false, true));
+      OK("IsNull", ee1.expection(false, false));
+      OK("NotNull", ee1.expection(false, true));
 
       h2::h2_matches_null ee2(true);
       OK(nullptr == ee2.matches(&int65, 0, false, false));
       OK(nullptr != ee2.matches(nullptr, 0, false, false));
-      OK("NotNull", ee2.expects(false, false));
-      OK("IsNull", ee2.expects(false, true));
+      OK("NotNull", ee2.expection(false, false));
+      OK("IsNull", ee2.expection(false, true));
    }
 
    Case(Boolean)
@@ -38,14 +38,14 @@ SUITE(matches unary)
       h2::h2_matches_boolean<true> istrue;
       OK(nullptr == istrue.matches(true, 0, false, false));
       OK(nullptr != istrue.matches(false, 0, false, false));
-      OK("true", istrue.expects(false, false));
-      OK("false", istrue.expects(false, true));
+      OK("true", istrue.expection(false, false));
+      OK("false", istrue.expection(false, true));
 
       h2::h2_matches_boolean<false> isfalse;
       OK(nullptr == isfalse.matches(false, 0, false, false));
       OK(nullptr != isfalse.matches(true, 0, false, false));
-      OK("false", isfalse.expects(false, false));
-      OK("true", isfalse.expects(false, true));
+      OK("false", isfalse.expection(false, false));
+      OK("true", isfalse.expection(false, true));
    }
 
    Case(Pointee)
@@ -54,6 +54,6 @@ SUITE(matches unary)
 
       OK(nullptr == a1.matches(&int65, 0, false, false));
       OK(nullptr != a1.matches(&int66, 0, false, false));
-      OK("65", a1.expects(false, false));
+      OK("65", a1.expection(false, false));
    }
 }

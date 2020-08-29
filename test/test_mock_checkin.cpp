@@ -10,26 +10,26 @@ SUITE(checkin)
       OK(0, ci.call);
       OK("exactly 1 times", ci.expect());
 
-      OK(ci.is_not_enough());
+      OK(ci.insufficient());
       OK(!ci.is_satisfied());
       OK(!ci.is_saturated());
-      OK(!ci.is_overmuch());
+      OK(!ci.is_excessive());
       OK("never", ci.actual());
       OK(ci.check("", nullptr, 0));
 
       ++ci;  // call 1 times
-      OK(!ci.is_not_enough());
+      OK(!ci.insufficient());
       OK(ci.is_satisfied());
       OK(ci.is_saturated());
-      OK(!ci.is_overmuch());
+      OK(!ci.is_excessive());
       OK("1 times", ci.actual());
       OK(IsNull, ci.check("", nullptr, 0));
 
       ++ci;  // call 2 times
-      OK(!ci.is_not_enough());
+      OK(!ci.insufficient());
       OK(!ci.is_satisfied());
       OK(!ci.is_saturated());
-      OK(ci.is_overmuch());
+      OK(ci.is_excessive());
       OK("2 times", ci.actual());
       OK(ci.check("", nullptr, 0));
    }
@@ -42,34 +42,34 @@ SUITE(checkin)
       OK(0, ci.call);
       OK("exactly 2 times", ci.expect());
 
-      OK(ci.is_not_enough());
+      OK(ci.insufficient());
       OK(!ci.is_satisfied());
       OK(!ci.is_saturated());
-      OK(!ci.is_overmuch());
+      OK(!ci.is_excessive());
       OK("never", ci.actual());
       OK(ci.check("", nullptr, 0));
 
       ++ci;  // call 1 times
-      OK(ci.is_not_enough());
+      OK(ci.insufficient());
       OK(!ci.is_satisfied());
       OK(!ci.is_saturated());
-      OK(!ci.is_overmuch());
+      OK(!ci.is_excessive());
       OK("1 times", ci.actual());
       OK(ci.check("", nullptr, 0));
 
       ++ci;  // call 2 times
-      OK(!ci.is_not_enough());
+      OK(!ci.insufficient());
       OK(ci.is_satisfied());
       OK(ci.is_saturated());
-      OK(!ci.is_overmuch());
+      OK(!ci.is_excessive());
       OK("2 times", ci.actual());
       OK(IsNull, ci.check("", nullptr, 0));
 
       ++ci;  // call 3 times
-      OK(!ci.is_not_enough());
+      OK(!ci.insufficient());
       OK(!ci.is_satisfied());
       OK(!ci.is_saturated());
-      OK(ci.is_overmuch());
+      OK(ci.is_excessive());
       OK("3 times", ci.actual());
       OK(ci.check("", nullptr, 0));
    }
@@ -82,42 +82,42 @@ SUITE(checkin)
       OK(0, ci.call);
       OK("exactly 3 times", ci.expect());
 
-      OK(ci.is_not_enough());
+      OK(ci.insufficient());
       OK(!ci.is_satisfied());
       OK(!ci.is_saturated());
-      OK(!ci.is_overmuch());
+      OK(!ci.is_excessive());
       OK("never", ci.actual());
       OK(ci.check("", nullptr, 0));
 
       ++ci;  // call 1 times
-      OK(ci.is_not_enough());
+      OK(ci.insufficient());
       OK(!ci.is_satisfied());
       OK(!ci.is_saturated());
-      OK(!ci.is_overmuch());
+      OK(!ci.is_excessive());
       OK("1 times", ci.actual());
       OK(ci.check("", nullptr, 0));
 
       ++ci;  // call 2 times
-      OK(ci.is_not_enough());
+      OK(ci.insufficient());
       OK(!ci.is_satisfied());
       OK(!ci.is_saturated());
-      OK(!ci.is_overmuch());
+      OK(!ci.is_excessive());
       OK("2 times", ci.actual());
       OK(ci.check("", nullptr, 0));
 
       ++ci;  // call 3 times
-      OK(!ci.is_not_enough());
+      OK(!ci.insufficient());
       OK(ci.is_satisfied());
       OK(ci.is_saturated());
-      OK(!ci.is_overmuch());
+      OK(!ci.is_excessive());
       OK("3 times", ci.actual());
       OK(IsNull, ci.check("", nullptr, 0));
 
       ++ci;  // call 4 times
-      OK(!ci.is_not_enough());
+      OK(!ci.insufficient());
       OK(!ci.is_satisfied());
       OK(!ci.is_saturated());
-      OK(ci.is_overmuch());
+      OK(ci.is_excessive());
       OK("4 times", ci.actual());
       OK(ci.check("", nullptr, 0));
    }
@@ -130,26 +130,26 @@ SUITE(checkin)
       OK(0, ci.call);
       OK("any number of times", ci.expect());
 
-      OK(!ci.is_not_enough());
+      OK(!ci.insufficient());
       OK(ci.is_satisfied());
       OK(!ci.is_saturated());
-      OK(!ci.is_overmuch());
+      OK(!ci.is_excessive());
       OK("never", ci.actual());
       OK(IsNull, ci.check("", nullptr, 0));
 
       ++ci;  // call 1 times
-      OK(!ci.is_not_enough());
+      OK(!ci.insufficient());
       OK(ci.is_satisfied());
       OK(!ci.is_saturated());
-      OK(!ci.is_overmuch());
+      OK(!ci.is_excessive());
       OK("1 times", ci.actual());
       OK(IsNull, ci.check("", nullptr, 0));
 
       ++ci;  // call 2 times
-      OK(!ci.is_not_enough());
+      OK(!ci.insufficient());
       OK(ci.is_satisfied());
       OK(!ci.is_saturated());
-      OK(!ci.is_overmuch());
+      OK(!ci.is_excessive());
       OK("2 times", ci.actual());
       OK(IsNull, ci.check("", nullptr, 0));
    }
@@ -162,34 +162,34 @@ SUITE(checkin)
       OK(0, ci.call);
       OK("at least 2 times", ci.expect());
 
-      OK(ci.is_not_enough());
+      OK(ci.insufficient());
       OK(!ci.is_satisfied());
       OK(!ci.is_saturated());
-      OK(!ci.is_overmuch());
+      OK(!ci.is_excessive());
       OK("never", ci.actual());
       OK(ci.check("", nullptr, 0));
 
       ++ci;  // call 1 times
-      OK(ci.is_not_enough());
+      OK(ci.insufficient());
       OK(!ci.is_satisfied());
       OK(!ci.is_saturated());
-      OK(!ci.is_overmuch());
+      OK(!ci.is_excessive());
       OK("1 times", ci.actual());
       OK(ci.check("", nullptr, 0));
 
       ++ci;  // call 2 times
-      OK(!ci.is_not_enough());
+      OK(!ci.insufficient());
       OK(ci.is_satisfied());
       OK(!ci.is_saturated());
-      OK(!ci.is_overmuch());
+      OK(!ci.is_excessive());
       OK("2 times", ci.actual());
       OK(IsNull, ci.check("", nullptr, 0));
 
       ++ci;  // call 3 times
-      OK(!ci.is_not_enough());
+      OK(!ci.insufficient());
       OK(ci.is_satisfied());
       OK(!ci.is_saturated());
-      OK(!ci.is_overmuch());
+      OK(!ci.is_excessive());
       OK("3 times", ci.actual());
       OK(IsNull, ci.check("", nullptr, 0));
    }
@@ -202,34 +202,34 @@ SUITE(checkin)
       OK(0, ci.call);
       OK("at most 2 times", ci.expect());
 
-      OK(!ci.is_not_enough());
+      OK(!ci.insufficient());
       OK(ci.is_satisfied());
       OK(!ci.is_saturated());
-      OK(!ci.is_overmuch());
+      OK(!ci.is_excessive());
       OK("never", ci.actual());
       OK(IsNull, ci.check("", nullptr, 0));
 
       ++ci;  // call 1 times
-      OK(!ci.is_not_enough());
+      OK(!ci.insufficient());
       OK(ci.is_satisfied());
       OK(!ci.is_saturated());
-      OK(!ci.is_overmuch());
+      OK(!ci.is_excessive());
       OK("1 times", ci.actual());
       OK(IsNull, ci.check("", nullptr, 0));
 
       ++ci;  // call 2 times
-      OK(!ci.is_not_enough());
+      OK(!ci.insufficient());
       OK(ci.is_satisfied());
       OK(ci.is_saturated());
-      OK(!ci.is_overmuch());
+      OK(!ci.is_excessive());
       OK("2 times", ci.actual());
       OK(IsNull, ci.check("", nullptr, 0));
 
       ++ci;  // call 3 times
-      OK(!ci.is_not_enough());
+      OK(!ci.insufficient());
       OK(!ci.is_satisfied());
       OK(!ci.is_saturated());
-      OK(ci.is_overmuch());
+      OK(ci.is_excessive());
       OK("3 times", ci.actual());
       OK(ci.check("", nullptr, 0));
    }
@@ -242,50 +242,50 @@ SUITE(checkin)
       OK(0, ci.call);
       OK("between 2 and 4 times", ci.expect());
 
-      OK(ci.is_not_enough());
+      OK(ci.insufficient());
       OK(!ci.is_satisfied());
       OK(!ci.is_saturated());
-      OK(!ci.is_overmuch());
+      OK(!ci.is_excessive());
       OK("never", ci.actual());
       OK(ci.check("", nullptr, 0));
 
       ++ci;  // call 1 times
-      OK(ci.is_not_enough());
+      OK(ci.insufficient());
       OK(!ci.is_satisfied());
       OK(!ci.is_saturated());
-      OK(!ci.is_overmuch());
+      OK(!ci.is_excessive());
       OK("1 times", ci.actual());
       OK(ci.check("", nullptr, 0));
 
       ++ci;  // call 2 times
-      OK(!ci.is_not_enough());
+      OK(!ci.insufficient());
       OK(ci.is_satisfied());
       OK(!ci.is_saturated());
-      OK(!ci.is_overmuch());
+      OK(!ci.is_excessive());
       OK("2 times", ci.actual());
       OK(IsNull, ci.check("", nullptr, 0));
 
       ++ci;  // call 3 times
-      OK(!ci.is_not_enough());
+      OK(!ci.insufficient());
       OK(ci.is_satisfied());
       OK(!ci.is_saturated());
-      OK(!ci.is_overmuch());
+      OK(!ci.is_excessive());
       OK("3 times", ci.actual());
       OK(IsNull, ci.check("", nullptr, 0));
 
       ++ci;  // call 4 times
-      OK(!ci.is_not_enough());
+      OK(!ci.insufficient());
       OK(ci.is_satisfied());
       OK(ci.is_saturated());
-      OK(!ci.is_overmuch());
+      OK(!ci.is_excessive());
       OK("4 times", ci.actual());
       OK(IsNull, ci.check("", nullptr, 0));
 
       ++ci;  // call 5 times
-      OK(!ci.is_not_enough());
+      OK(!ci.insufficient());
       OK(!ci.is_satisfied());
       OK(!ci.is_saturated());
-      OK(ci.is_overmuch());
+      OK(ci.is_excessive());
       OK("5 times", ci.actual());
       OK(ci.check("", nullptr, 0));
    }

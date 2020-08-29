@@ -1,18 +1,54 @@
 #include "../source/h2_unit.cpp"
 
+SUITE(number compares)
+{
+   Case(integer)
+   {
+      int a1 = 2017;
+      OK(2013, a1);
+      OK(Nq(2015), 2015);
+   }
+
+   Case(integer)
+   {
+      int a1 = 2015;
+      OK(Nq(2015), a1);
+   }
+
+   Case(double)
+   {
+      double a1 = 3.1415926;
+      OK(1, a1);
+   }
+
+   Case(bool)
+   {
+      bool a1 = false;
+      OK(true, a1);
+   }
+
+   Case(char)
+   {
+      char a1 = 'a';
+      OK('b', a1);
+   }
+}
+
 SUITE(string compares)
 {
    Case(unprintable characters)
    {
+      const char* a1 = "a752a5eeX24a149f899\t3e48ce81b77b200b212b23c2402c2Y1ddc4260\na608cf32"
+                       "8a2133386477eb7a6595889372674Zcb9223419a7a0224fe7af2866944197ee4ab18e"
+                       "3cae8507bb306a284f";
+
       OK("a752a5eee24a149f899\r3e48ce81b77b200b212b23c2402c221ddc4260\na608cf32"
          "8a2133386477eb7a65958893726741cb9223419a7a0224fe7af2866944197ee4ab18e"
          "3cae8507bb306a284f",
-         "a752a5eeX24a149f899\t3e48ce81b77b200b212b23c2402c2Y1ddc4260\na608cf32"
-         "8a2133386477eb7a6595889372674Zcb9223419a7a0224fe7af2866944197ee4ab18e"
-         "3cae8507bb306a284f");
+         a1);
    }
 
-   Case(caseless not)
+   Case(caseless not )
    {
       OK(!~(Se("Hello World") && Substr("Hello") || Re(".*World")), "hello world");
       OK(!~AllOf("Hello World", Substr("Hello"), Re(".*World")), "hello world");

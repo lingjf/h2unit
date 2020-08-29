@@ -23,8 +23,8 @@ h2_inline bool h2_string::startswith(const h2_string& prefix, bool caseless) con
 h2_inline bool h2_string::endswith(const h2_string& suffix, bool caseless) const
 {
    if (size() < suffix.size()) return false;
-   if (!caseless) return rfind(suffix) == length() - suffix.length();
-   return getlower(c_str()).rfind(getlower(suffix)) == length() - suffix.length();
+   if (!caseless) return rfind(suffix) == size() - suffix.size();
+   return getlower(c_str()).rfind(getlower(suffix)) == size() - suffix.size();
 }
 
 h2_inline bool h2_string::isspace() const
@@ -63,7 +63,7 @@ h2_inline h2_string& h2_string::tolower()
 
 h2_inline h2_string& h2_string::center(int width)
 {
-   int left = (width - length()) / 2, right = width - left - length();
+   int left = (width - size()) / 2, right = width - left - size();
    insert(0, left, ' ');
    append(right, ' ');
    return *this;

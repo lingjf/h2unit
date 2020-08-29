@@ -54,3 +54,10 @@ CASE(bugfix
    // OK( "\"", "==>""", ","<==" ) at ...
    OK("\"", "\"");
 }
+
+CASE(bugfix
+     : MOCK without matcher cause crash)
+{
+   // MOCK(foobar, int, (int, const char*)).times(0);
+   // foobar(1, "A");
+}

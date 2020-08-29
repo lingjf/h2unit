@@ -47,6 +47,20 @@ h2_inline h2_line& h2_line::concat_front(const h2_line& line_or_word, const char
    return *this;
 }
 
+h2_inline bool h2_line::enclosed(const char c)
+{
+   bool f = false, ff = false, b = false;
+   for (auto& word : *this) {
+      if (!h2_color::is_ctrl(word.c_str())) {
+         if (!ff) f = word.front() == c;
+         ff = true;
+         b = word.back() == c;
+      }
+   }
+
+   return f && b;
+}
+
 h2_inline void h2_line::brush(const char* style)
 {
    if (style && strlen(style)) {
@@ -94,7 +108,7 @@ h2_inline bool h2_lines::foldable(unsigned width)
    for (auto& line : *this)
       for (auto& word : line)
          if (!word.isspace() && !h2_color::is_ctrl(word.c_str()))  // ignore indent and \033m controller
-            sum += word.length();
+            sum += word.size();
 
    return sum < width;
 }
@@ -121,7 +135,7 @@ h2_inline void h2_lines::sequence(unsigned indent, int start)
 
 h2_inline void h2_lines::samesizify(h2_lines& b)
 {
-   int max_y = std::max(size(), b.size());
+   size_t max_y = std::max(size(), b.size());
    for (size_t i = size(); i < max_y; ++i) push_back(h2_line());
    for (size_t i = b.size(); i < max_y; ++i) b.push_back(h2_line());
 }
