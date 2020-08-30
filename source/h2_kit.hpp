@@ -69,7 +69,7 @@ struct h2_pattern {
    static bool match(const char* pattern, const char* subject, bool caseless = false);
 };
 
-static inline const char* comma_if(bool a) { return a ? ", " : ""; };
+static inline const char* comma_if(bool a, const char* s = ", ") { return a ? s : ""; };
 
 #define h2_singleton(_Class) \
    static _Class& I()        \

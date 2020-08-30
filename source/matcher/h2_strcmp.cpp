@@ -61,8 +61,12 @@ h2_inline h2_string h2_matches_endswith::expection(bool caseless, bool dont) con
 
 h2_inline h2_fail* h2_matches_json::matches(const h2_string& a, int, bool caseless, bool dont) const
 {
-   if ((h2_json::match(e, a, caseless)) == !dont) return nullptr;
-   return h2_fail::new_json(e, a, expection(caseless, dont), caseless, DS(dont));
+   h2_string _a = a;
+   if (selector.size()) _a = h2_json::select(a, selector, caseless);
+   int ret = h2_json::match(e, _a, caseless);
+   if (ret < 0) return h2_fail::new_json(e, _a, expection(caseless, dont), caseless, "illformed json");
+   if ((ret == 0) == !dont) return nullptr;
+   return h2_fail::new_json(e, _a, expection(caseless, dont), caseless, DS(dont));
 }
 h2_inline h2_string h2_matches_json::expection(bool caseless, bool dont) const
 {

@@ -6,7 +6,7 @@ SUITE(json match)
    {
       const h2::h2_string expect = "123";
       const h2::h2_string actual = "123.0";
-      OK(h2::h2_json::match(expect, actual, false));
+      OK(0 == h2::h2_json::match(expect, actual, false));
    }
 }
 

@@ -545,12 +545,39 @@ JE("{
     }", student_tojson(student));
 ```
 
-#### 6.5. JSON Compare principle
-##### 6.5.1. Value Compare
+#### 6.5. JSON Compare selector
+Inspired by [jq](https://github.com/stedolan/jq), JE/Je can compare JSON subnet specified by selector.
+
+```Python
+scores = {
+    Zhang3 : { Math : 100, English : 99 },
+    Li4 : { Math : 97, English : 100 },
+    Wang5 : { Math : 98, English : 98 }
+}
+```
+```C++
+JE("{ Math : 100, English : 99 }", scores, ".Zhang3");
+
+OK(Je("{ Math : 100, English : 99 }", ".Zhang3"), scores);
+
+JE("99", scores, ".Zhang3.English");
+
+OK(Je("99", ".Zhang3.English"), scores);
+```
+- Object Identifier-Index: .foo, .foo.bar
+  
+   When given a JSON object as input, it produces the value at the key "foo", or null if there's none present.
+- Array Index: [2], [2][3]
+
+   When the index value is an integer, `[<value>]` can index arrays. Arrays are zero-based, so `[2]` returns the third element.
+   Negative indices are allowed, with -1 referring to the last element, -2 referring to the next to last element, and so on.
+
+#### 6.6. JSON Compare principle
+##### 6.6.1. Value Compare
    Matches when Expect Value is Regex, otherwise Equals .
-##### 6.5.2. Object compare
+##### 6.6.2. Object compare
    Every key in Expect Object is Exist in Actual Object, and value equals.
-##### 6.5.3. Array compare
+##### 6.6.3. Array compare
    Size is same, and each element equals.
 
 

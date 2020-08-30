@@ -1,4 +1,4 @@
-﻿/* v5.6 2020-08-30 00:22:50 */
+﻿/* v5.6 2020-08-30 09:41:10 */
 /* https://github.com/lingjf/h2unit */
 /* Apache Licence 2.0 */
 
@@ -417,7 +417,7 @@ struct h2_pattern {
    static bool match(const char* pattern, const char* subject, bool caseless = false);
 };
 
-static inline const char* comma_if(bool a) { return a ? ", " : ""; };
+static inline const char* comma_if(bool a, const char* s = ", ") { return a ? s : ""; };
 
 #define h2_singleton(_Class) \
    static _Class& I()        \
@@ -700,6 +700,8 @@ struct h2_lines : h2_vector<h2_line> {
    bool foldable(unsigned width = 20);
    h2_line folds();
 
+   h2_string stringify() const;
+
    void sequence(unsigned indent = 0, int start = 0);
    void samesizify(h2_lines& b);
 };
@@ -939,7 +941,9 @@ static inline void h2_fail_g(h2_fail*, bool);
 
 struct h2_json {
    static h2_lines format(const h2_string& json_string);
-   static bool match(const h2_string& expect, const h2_string& actual, bool caseless);
+   static h2_string select(const h2_string& json_string, const h2_string& selector, bool caseless);
+   // < 0 illformed json; = 0 matched; > 0 unmatched
+   static int match(const h2_string& expect, const h2_string& actual, bool caseless);
    static bool diff(const h2_string& expect, const h2_string& actual, h2_lines& e_lines, h2_lines& a_lines, bool caseless);
 };
 // h2_memory.hpp
@@ -1667,7 +1671,8 @@ struct h2_matches_endswith : h2_matches {
 
 struct h2_matches_json : h2_matches {
    const h2_string e;
-   explicit h2_matches_json(const h2_string& _e) : e(_e) {}
+   const h2_string selector;
+   explicit h2_matches_json(const h2_string& _e, const h2_string& _selector) : e(_e), selector(_selector) {}
    h2_fail* matches(const h2_string& a, int, bool caseless, bool dont) const;
    virtual h2_string expection(bool caseless, bool dont) const override;
 };
@@ -1687,7 +1692,7 @@ inline h2_polymorphic_matcher<h2_matches_strcmp> Se(const h2_string& expect) { r
 inline h2_polymorphic_matcher<h2_matches_substr> Substr(const h2_string& substring) { return h2_polymorphic_matcher<h2_matches_substr>(h2_matches_substr(substring)); }
 inline h2_polymorphic_matcher<h2_matches_startswith> StartsWith(const h2_string& prefix_string) { return h2_polymorphic_matcher<h2_matches_startswith>(h2_matches_startswith(prefix_string)); }
 inline h2_polymorphic_matcher<h2_matches_endswith> EndsWith(const h2_string& suffix_string) { return h2_polymorphic_matcher<h2_matches_endswith>(h2_matches_endswith(suffix_string)); }
-inline h2_polymorphic_matcher<h2_matches_json> Je(const h2_string& expect) { return h2_polymorphic_matcher<h2_matches_json>(h2_matches_json(expect)); }
+inline h2_polymorphic_matcher<h2_matches_json> Je(const h2_string& expect, const h2_string& selector = "") { return h2_polymorphic_matcher<h2_matches_json>(h2_matches_json(expect, selector)); }
 
 template <typename M>
 inline h2_polymorphic_matcher<h2_caseless_matches> CaseLess(const M& m) { return h2_polymorphic_matcher<h2_caseless_matches>(h2_caseless_matches(h2_matcher<h2_string>(m))); }
@@ -3214,10 +3219,10 @@ static inline h2_ostringstream& h2_OK(h2_defer_fail* d, E e, A a, int n = 0)
    return d->oss;
 }
 
-static inline h2_ostringstream& h2_JE(h2_defer_fail* d, h2_string e, h2_string a)
+static inline h2_ostringstream& h2_JE(h2_defer_fail* d, h2_string e, h2_string a, h2_string selector)
 {
    d->check_type = "JE";
-   h2::h2_matcher<h2_string> m = Je(e);
+   h2::h2_matcher<h2_string> m = Je(e, selector);
    d->fail = m.matches(a);
    h2_check_g();
    return d->oss;
@@ -3226,12 +3231,15 @@ static inline h2_ostringstream& h2_JE(h2_defer_fail* d, h2_string e, h2_string a
 #define __H2OK(Qt, expression, ...) \
    for (h2::h2_defer_fail Qt("", "", expression, __FILE__, __LINE__); Qt;) h2::h2_OK(&Qt, __VA_ARGS__)
 
-#define __H2JE(Qt, expect, actual) \
-   for (h2::h2_defer_fail Qt(#expect, #actual, "", __FILE__, __LINE__); Qt;) h2::h2_JE(&Qt, expect, actual)
+#define __H2JE3(Qt, expect, actual) \
+   for (h2::h2_defer_fail Qt(#expect, #actual, "", __FILE__, __LINE__); Qt;) h2::h2_JE(&Qt, expect, actual, "")
+
+#define __H2JE4(Qt, expect, actual, selector) \
+   for (h2::h2_defer_fail Qt(#expect, #actual, "", __FILE__, __LINE__); Qt;) h2::h2_JE(&Qt, expect, actual, selector)
 
 #define H2OK(...) __H2OK(H2Q(t_defer_fail), (#__VA_ARGS__), __VA_ARGS__)
 
-#define H2JE(expect, actual) __H2JE(H2Q(t_defer_fail), expect, actual)
+#define H2JE(...) H2PP_VARIADIC_CALL(__H2JE, H2Q(t_defer_fail), __VA_ARGS__)
 // h2_report.hpp
 
 struct h2_report {
@@ -4454,6 +4462,7 @@ struct h2_json_node : h2_libc {
 
    h2_json_node* get(int index)
    {
+      if (index < 0) index = children.count() + index;
       h2_list_for_each_entry (p, children, h2_json_node, x)
          if (li == index)
             return p;
@@ -4796,6 +4805,77 @@ struct h2_json_syntax {
       return true;
    }
 };
+// h2_select.cpp
+
+struct h2_json_select {
+   struct value {
+      int index;
+      h2_string key;
+   };
+
+   h2_vector<value> values;
+
+   h2_json_select(const char* selector)
+   {
+      const int st_idle = 0;
+      const int st_in_dot = 1;
+      const int st_in_bracket = 2;
+      int state = 0;
+      const char *s = nullptr, *p = selector;
+      do {
+         switch (state) {
+         case st_idle:
+            if (*p == '.') {
+               state = st_in_dot;
+               s = p + 1;
+            } else if (*p == '[') {
+               state = st_in_bracket;
+               s = p + 1;
+            }
+            break;
+         case st_in_dot:
+            if (*p == '.') {  // end a part
+               if (s < p) add(s, p - 1, true);
+               // restart a new part
+               state = st_in_dot;
+               s = p + 1;
+            } else if (*p == '[') {  // end a part
+               if (s < p) add(s, p - 1, true);
+               // restart a new part
+               state = st_in_bracket;
+               s = p + 1;
+            } else if (*p == '\0') {
+               if (s < p) add(s, p - 1, true);
+               state = st_idle;
+            }
+            break;
+         case st_in_bracket:
+            if (*p == ']') {
+               if (s < p) add(s, p - 1, false);
+               state = st_idle;
+            }
+            break;
+         }
+      } while (*p++);
+   }
+
+   void add(const char* start, const char* end, bool only_key)
+   {
+      for (; start <= end && ::isspace(*start);) start++;  //strip left space
+      for (; start <= end && ::isspace(*end);) end--;      //strip right space
+      if (start <= end) {
+         if (!only_key) {
+            if (strspn(start, "-0123456789") == end - start + 1) {
+               values.push_back({atoi(start), ""});
+               return;
+            } else if ((*start == '\"' && *end == '\"') || (*start == '\'' && *end == '\'')) {
+               start++, end--;
+            }
+         }
+         if (start <= end) values.push_back({0, h2_string(end - start + 1, start)});
+      }
+   }
+};
 // h2_tree.cpp
 
 struct h2_json_tree : h2_json_node {
@@ -4807,17 +4887,26 @@ struct h2_json_tree : h2_json_node {
       h2_json_lexical::parse(lexical, json_string, json_length);
       illformed = !syntax.parse(*this);
    }
+   h2_json_node* select(const char* selector, bool caseless)
+   {
+      h2_json_select select(selector);
+      h2_json_node* node = this;
+      for (auto& c : select.values)
+         node = c.key.size() ? node->get(c.key, caseless) : node->get(c.index);
+      node->key_string = "";
+      return node;
+   }
    h2_line serialize()
    {
       h2_line line;
       for (size_t j = 0; j < lexical.size(); ++j) {
          if (j == syntax.i)
-            line.printf("yellow,bold,underline", " %s ", lexical[j].c_str());
+            line.printf("yellow,bold,underline", "%s%s ", comma_if(j, " "), lexical[j].c_str());
          else
-            line.push_back(" " + lexical[j]);
+            line.push_back(comma_if(j, " ") + lexical[j]);
       }
       if (illformed && lexical.size() <= syntax.i) {
-         line.printf("yellow,bold", "...");
+         line.printf("yellow,bold,underline", " ... ");
       }
       return line;
    }
@@ -5023,37 +5112,42 @@ struct h2_json_dual : h2_libc {  // combine two node into a dual
 
 h2_inline h2_lines h2_json::format(const h2_string& json_string)
 {
-   h2_lines lines;
    h2_json_tree tree(json_string.c_str());
-   if (tree.illformed) {
-      lines.push_back(tree.serialize());
-      return lines;
-   }
-   lines = tree.format();
+   if (tree.illformed) return {tree.serialize()};
+   h2_lines lines = tree.format();
    if (O.paste) {
       if (!lines.empty()) lines.front().concat_front("\""), lines.back().push_back("\"");
       unsigned max_width = lines.width();
-      for (auto& line : lines) {
-         line.padding(max_width - line.width() + 3);
-         line.indent(1);
-         line.push_back("\\");
+      for (size_t i = 0; i < lines.size(); ++i) {
+         lines[i].padding(max_width - lines[i].width() + 3);
+         if (i < lines.size() - 1) lines[i].push_back("\\");
       }
    }
    return lines;
 }
 
-h2_inline bool h2_json::match(const h2_string& expect, const h2_string& actual, bool caseless)
+h2_inline h2_string h2_json::select(const h2_string& json_string, const h2_string& selector, bool caseless)
+{
+   h2_json_tree tree(json_string.c_str());
+   if (tree.illformed) return json_string;
+   h2_json_node* node = tree.select(selector.c_str(), caseless);
+   if (!node) return "";
+   h2_lines lines;
+   node->print(lines, O.fold, false);
+   return lines.stringify();
+}
+
+h2_inline int h2_json::match(const h2_string& expect, const h2_string& actual, bool caseless)
 {
    h2_json_tree e_tree(expect.c_str()), a_tree(actual.c_str());
-   return h2_json_match::match(&e_tree, &a_tree, caseless);
+   if (e_tree.illformed || a_tree.illformed) return -1;
+   return h2_json_match::match(&e_tree, &a_tree, caseless) ? 0 : 1;
 }
 
 h2_inline bool h2_json::diff(const h2_string& expect, const h2_string& actual, h2_lines& e_lines, h2_lines& a_lines, bool caseless)
 {
    h2_json_tree e_tree(expect.c_str()), a_tree(actual.c_str());
-   if (e_tree.illformed || a_tree.illformed) {
-      return false;
-   }
+   if (e_tree.illformed || a_tree.illformed) return false;
    h2_json_dual dual(&e_tree, &a_tree, caseless);
    dual.align(e_lines, a_lines);
    return true;
@@ -5123,8 +5217,12 @@ h2_inline h2_string h2_matches_endswith::expection(bool caseless, bool dont) con
 
 h2_inline h2_fail* h2_matches_json::matches(const h2_string& a, int, bool caseless, bool dont) const
 {
-   if ((h2_json::match(e, a, caseless)) == !dont) return nullptr;
-   return h2_fail::new_json(e, a, expection(caseless, dont), caseless, DS(dont));
+   h2_string _a = a;
+   if (selector.size()) _a = h2_json::select(a, selector, caseless);
+   int ret = h2_json::match(e, _a, caseless);
+   if (ret < 0) return h2_fail::new_json(e, _a, expection(caseless, dont), caseless, "illformed json");
+   if ((ret == 0) == !dont) return nullptr;
+   return h2_fail::new_json(e, _a, expection(caseless, dont), caseless, DS(dont));
 }
 h2_inline h2_string h2_matches_json::expection(bool caseless, bool dont) const
 {
@@ -7355,17 +7453,19 @@ struct h2_fail_json : h2_fail_unexpect {
    void print(int subling_index = 0, int child_index = 0) override
    {
       h2_lines e_lines, a_lines;
-      bool illformed = !h2_json::diff(e_value, a_value, e_lines, a_lines, caseless);
-      if (illformed) explain.push_back("illformed json");
       h2_fail_unexpect::print(subling_index, child_index);
-      if (O.paste || illformed) {
+      if (O.paste || !h2_json::diff(e_value, a_value, e_lines, a_lines, caseless)) {
          e_lines = h2_json::format(e_value);
          a_lines = h2_json::format(a_value);
+         for (size_t i = 0; i < e_lines.size(); ++i)
+            if (i) e_lines[i].indent(8);
+         for (size_t i = 0; i < a_lines.size(); ++i)
+            if (i) a_lines[i].indent(8);
          h2_color::printf("dark gray", "expect");
-         h2_color::printf("bold,green", ">\n");
+         h2_color::printf("green", "> ");
          h2_color::printf(e_lines);
          h2_color::printf("dark gray", "actual");
-         h2_color::printf("bold,red", ">\n");
+         h2_color::printf("red", "> ");
          h2_color::printf(a_lines);
       } else {
          h2_lines lines = h2_layout::split(e_lines, a_lines, "expect", "actual", (O.seq ? 1 : 0), 'd', O.term_size - 1);
@@ -7833,6 +7933,16 @@ h2_inline h2_line h2_lines::folds()
          if (!word.isspace())  // drop indent
             folded_line.push_back(word);
    return folded_line;
+}
+
+h2_inline h2_string h2_lines::stringify() const
+{
+   h2_string s;
+   for (auto& line : *this)
+      for (auto& word : line)
+         if (!word.isspace() && !h2_color::is_ctrl(word.c_str()))
+            s += word;
+   return s;
 }
 
 h2_inline void h2_lines::sequence(unsigned indent, int start)

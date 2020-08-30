@@ -131,6 +131,11 @@ SUITE(json node get)
       OK("data", c0->key_string);
       OK("Click Here", c0->value_string);
 
+      c0 = c.get("data", true);
+      OK(c0->is_string());
+      OK("data", c0->key_string);
+      OK("Click Here", c0->value_string);
+
       h2::h2_json_node* c1 = c.get(1);
       OK(c1->is_number());
       OK("size", c1->key_string);

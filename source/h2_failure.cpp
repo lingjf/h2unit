@@ -245,17 +245,19 @@ struct h2_fail_json : h2_fail_unexpect {
    void print(int subling_index = 0, int child_index = 0) override
    {
       h2_lines e_lines, a_lines;
-      bool illformed = !h2_json::diff(e_value, a_value, e_lines, a_lines, caseless);
-      if (illformed) explain.push_back("illformed json");
       h2_fail_unexpect::print(subling_index, child_index);
-      if (O.paste || illformed) {
+      if (O.paste || !h2_json::diff(e_value, a_value, e_lines, a_lines, caseless)) {
          e_lines = h2_json::format(e_value);
          a_lines = h2_json::format(a_value);
+         for (size_t i = 0; i < e_lines.size(); ++i)
+            if (i) e_lines[i].indent(8);
+         for (size_t i = 0; i < a_lines.size(); ++i)
+            if (i) a_lines[i].indent(8);
          h2_color::printf("dark gray", "expect");
-         h2_color::printf("bold,green", ">\n");
+         h2_color::printf("green", "> ");
          h2_color::printf(e_lines);
          h2_color::printf("dark gray", "actual");
-         h2_color::printf("bold,red", ">\n");
+         h2_color::printf("red", "> ");
          h2_color::printf(a_lines);
       } else {
          h2_lines lines = h2_layout::split(e_lines, a_lines, "expect", "actual", (O.seq ? 1 : 0), 'd', O.term_size - 1);

@@ -1,4 +1,4 @@
-﻿/* v5.6 2020-08-30 00:22:50 */
+﻿/* v5.6 2020-08-30 09:41:10 */
 /* https://github.com/lingjf/h2unit */
 /* Apache Licence 2.0 */
 
@@ -414,7 +414,7 @@ struct h2_pattern {
    static bool match(const char* pattern, const char* subject, bool caseless = false);
 };
 
-static inline const char* comma_if(bool a) { return a ? ", " : ""; };
+static inline const char* comma_if(bool a, const char* s = ", ") { return a ? s : ""; };
 
 #define h2_singleton(_Class) \
    static _Class& I()        \
@@ -697,6 +697,8 @@ struct h2_lines : h2_vector<h2_line> {
    bool foldable(unsigned width = 20);
    h2_line folds();
 
+   h2_string stringify() const;
+
    void sequence(unsigned indent = 0, int start = 0);
    void samesizify(h2_lines& b);
 };
@@ -936,7 +938,9 @@ static inline void h2_fail_g(h2_fail*, bool);
 
 struct h2_json {
    static h2_lines format(const h2_string& json_string);
-   static bool match(const h2_string& expect, const h2_string& actual, bool caseless);
+   static h2_string select(const h2_string& json_string, const h2_string& selector, bool caseless);
+   // < 0 illformed json; = 0 matched; > 0 unmatched
+   static int match(const h2_string& expect, const h2_string& actual, bool caseless);
    static bool diff(const h2_string& expect, const h2_string& actual, h2_lines& e_lines, h2_lines& a_lines, bool caseless);
 };
 // h2_memory.hpp
@@ -1664,7 +1668,8 @@ struct h2_matches_endswith : h2_matches {
 
 struct h2_matches_json : h2_matches {
    const h2_string e;
-   explicit h2_matches_json(const h2_string& _e) : e(_e) {}
+   const h2_string selector;
+   explicit h2_matches_json(const h2_string& _e, const h2_string& _selector) : e(_e), selector(_selector) {}
    h2_fail* matches(const h2_string& a, int, bool caseless, bool dont) const;
    virtual h2_string expection(bool caseless, bool dont) const override;
 };
@@ -1684,7 +1689,7 @@ inline h2_polymorphic_matcher<h2_matches_strcmp> Se(const h2_string& expect) { r
 inline h2_polymorphic_matcher<h2_matches_substr> Substr(const h2_string& substring) { return h2_polymorphic_matcher<h2_matches_substr>(h2_matches_substr(substring)); }
 inline h2_polymorphic_matcher<h2_matches_startswith> StartsWith(const h2_string& prefix_string) { return h2_polymorphic_matcher<h2_matches_startswith>(h2_matches_startswith(prefix_string)); }
 inline h2_polymorphic_matcher<h2_matches_endswith> EndsWith(const h2_string& suffix_string) { return h2_polymorphic_matcher<h2_matches_endswith>(h2_matches_endswith(suffix_string)); }
-inline h2_polymorphic_matcher<h2_matches_json> Je(const h2_string& expect) { return h2_polymorphic_matcher<h2_matches_json>(h2_matches_json(expect)); }
+inline h2_polymorphic_matcher<h2_matches_json> Je(const h2_string& expect, const h2_string& selector = "") { return h2_polymorphic_matcher<h2_matches_json>(h2_matches_json(expect, selector)); }
 
 template <typename M>
 inline h2_polymorphic_matcher<h2_caseless_matches> CaseLess(const M& m) { return h2_polymorphic_matcher<h2_caseless_matches>(h2_caseless_matches(h2_matcher<h2_string>(m))); }
@@ -3211,10 +3216,10 @@ static inline h2_ostringstream& h2_OK(h2_defer_fail* d, E e, A a, int n = 0)
    return d->oss;
 }
 
-static inline h2_ostringstream& h2_JE(h2_defer_fail* d, h2_string e, h2_string a)
+static inline h2_ostringstream& h2_JE(h2_defer_fail* d, h2_string e, h2_string a, h2_string selector)
 {
    d->check_type = "JE";
-   h2::h2_matcher<h2_string> m = Je(e);
+   h2::h2_matcher<h2_string> m = Je(e, selector);
    d->fail = m.matches(a);
    h2_check_g();
    return d->oss;
@@ -3223,12 +3228,15 @@ static inline h2_ostringstream& h2_JE(h2_defer_fail* d, h2_string e, h2_string a
 #define __H2OK(Qt, expression, ...) \
    for (h2::h2_defer_fail Qt("", "", expression, __FILE__, __LINE__); Qt;) h2::h2_OK(&Qt, __VA_ARGS__)
 
-#define __H2JE(Qt, expect, actual) \
-   for (h2::h2_defer_fail Qt(#expect, #actual, "", __FILE__, __LINE__); Qt;) h2::h2_JE(&Qt, expect, actual)
+#define __H2JE3(Qt, expect, actual) \
+   for (h2::h2_defer_fail Qt(#expect, #actual, "", __FILE__, __LINE__); Qt;) h2::h2_JE(&Qt, expect, actual, "")
+
+#define __H2JE4(Qt, expect, actual, selector) \
+   for (h2::h2_defer_fail Qt(#expect, #actual, "", __FILE__, __LINE__); Qt;) h2::h2_JE(&Qt, expect, actual, selector)
 
 #define H2OK(...) __H2OK(H2Q(t_defer_fail), (#__VA_ARGS__), __VA_ARGS__)
 
-#define H2JE(expect, actual) __H2JE(H2Q(t_defer_fail), expect, actual)
+#define H2JE(...) H2PP_VARIADIC_CALL(__H2JE, H2Q(t_defer_fail), __VA_ARGS__)
 // h2_report.hpp
 
 struct h2_report {

@@ -31,6 +31,8 @@ struct h2_lines : h2_vector<h2_line> {
    bool foldable(unsigned width = 20);
    h2_line folds();
 
+   h2_string stringify() const;
+
    void sequence(unsigned indent = 0, int start = 0);
    void samesizify(h2_lines& b);
 };

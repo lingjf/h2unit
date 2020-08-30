@@ -3,6 +3,7 @@
 extern char* node_tojson(h2::h2_json_node* node, char* b);
 
 const char* week_json = "[\"Sunday\", \"Monday\", \"Tuesday\", \"Wednesday\", \"Thursday\", \"Friday\", \"Saturday\"]";
+const char* day_json = "{\"am\": [0, 12], \"pm\": {\"afternoon\": 18, \"midnight\": 24}}";
 
 SUITE(json parse)
 {
@@ -156,6 +157,49 @@ SUITE(json parse)
    }
 }
 
+SUITE(select json)
+{
+   char t2[1024 * 32];
+   const char* week = "[\"Sunday\", \"Monday\", \"Tuesday\", \"Wednesday\", \"Thursday\", \"Friday\", \"Saturday\"]";
+   const char* day = "{\"am\": [0, 12], \"pm\": {\"afternoon\": 18, \"midnight\": 24}}";
+
+   Case(all)
+   {
+      h2::h2_json_tree c1(week);
+      JE(week_json, node_tojson(c1.select("", true), t2));
+
+      h2::h2_json_tree c2(day);
+      JE(day_json, node_tojson(c2.select("", true), t2));
+   }
+
+   Case(.)
+   {
+      h2::h2_json_tree c2(day);
+      JE("[0, 12]", node_tojson(c2.select(".am", true), t2));
+   }
+
+   Case([])
+   {
+      h2::h2_json_tree c1(week);
+      JE("Monday", node_tojson(c1.select("[1]", true), t2));
+
+      h2::h2_json_tree c2(day);
+      JE("[0, 12]", node_tojson(c2.select("[am]", true), t2));
+   }
+
+   Case(.[])
+   {
+      h2::h2_json_tree c2(day);
+      JE("12", node_tojson(c2.select(".am[1]", true), t2));
+   }
+
+   Case(..)
+   {
+      h2::h2_json_tree c2(day);
+      JE("18", node_tojson(c2.select(".pm.afternoon", true), t2));
+   }
+}
+
 SUITE(illformed json)
 {
    Case(missing end closeure)
@@ -165,7 +209,7 @@ SUITE(illformed json)
       h2::h2_json_tree c(sexy);
       OK(c.illformed);
 
-      OK(ListOf(" [", " male", " ,", " female", "\033{yellow,bold}", "...", "\033{reset}"), c.serialize());
+      OK(ListOf("[", " male", " ,", " female", "\033{yellow,bold,underline}", " ... ", "\033{reset}"), c.serialize());
    }
 
    Case(array seperated by colon)
@@ -175,7 +219,7 @@ SUITE(illformed json)
       h2::h2_json_tree c(sexy);
       OK(c.illformed);
 
-      OK(ListOf(" [", " male", "\033{yellow,bold,underline}", " : ", "\033{reset}", " female", " ]"), c.serialize());
+      OK(ListOf("[", " male", "\033{yellow,bold,underline}", " : ", "\033{reset}", " female", " ]"), c.serialize());
    }
 
    Case(object seperated by comma)
@@ -185,7 +229,7 @@ SUITE(illformed json)
       h2::h2_json_tree c(sexy);
       OK(c.illformed);
 
-      OK(ListOf(" {", " male", "\033{yellow,bold,underline}", " , ", "\033{reset}", " female", " }"), c.serialize());
+      OK(ListOf("{", " male", "\033{yellow,bold,underline}", " , ", "\033{reset}", " female", " }"), c.serialize());
    }
 
    // Case(missing double quote)

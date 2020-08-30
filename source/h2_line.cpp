@@ -123,6 +123,16 @@ h2_inline h2_line h2_lines::folds()
    return folded_line;
 }
 
+h2_inline h2_string h2_lines::stringify() const
+{
+   h2_string s;
+   for (auto& line : *this)
+      for (auto& word : line)
+         if (!word.isspace() && !h2_color::is_ctrl(word.c_str()))
+            s += word;
+   return s;
+}
+
 h2_inline void h2_lines::sequence(unsigned indent, int start)
 {
    for (size_t i = 0; i < size(); ++i) {

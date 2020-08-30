@@ -39,7 +39,7 @@ SUITE(strcmp matches)
 
    Case(Json)
    {
-      h2::h2_matches_json a("[65]");
+      h2::h2_matches_json a("[65]", "");
       OK(nullptr == a.matches("[65]", 0, false, false));
       OK(nullptr != a.matches("[66]", 0, false, false));
    }
