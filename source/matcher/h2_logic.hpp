@@ -9,7 +9,7 @@ struct h2_not_matches : h2_matches {
    {
       return h2_matcher_cast<A>(m).matches(a, n, caseless, !dont);
    }
-   virtual h2_string expection(bool caseless, bool dont) const override
+   virtual h2_line expection(bool caseless, bool dont) const override
    {
       return h2_matches_expection(m, caseless, !dont);
    }
@@ -31,15 +31,15 @@ struct h2_and_matches : h2_matches {
          if (fails) delete fails;
          return nullptr;
       }
-      h2_fail* fail = h2_fail::new_unexpect("", h2_representify(a), expection(caseless, dont));
+      h2_fail* fail = h2_fail::new_unexpect(expection(caseless, dont), h2_representify(a));
       h2_fail::append_child(fail, fails);
 
       return fail;
    }
 
-   virtual h2_string expection(bool caseless, bool dont) const override
+   virtual h2_line expection(bool caseless, bool dont) const override
    {
-      return CD((dont ? "(" : "") + h2_matches_expection(m1, caseless, false) + " && " + h2_matches_expection(m2, caseless, false) + (dont ? ")" : ""), false, dont);
+      return CD((dont ? gray("(") : h2_line()) + h2_matches_expection(m1, caseless, false) + " and " + h2_matches_expection(m2, caseless, false) + (dont ? gray(")") : h2_line()), false, dont);
    }
 };
 
@@ -64,14 +64,14 @@ struct h2_or_matches : h2_matches {
       h2_fail::append_subling(fails, f1);
       h2_fail::append_subling(fails, f2);
 
-      h2_fail* fail = h2_fail::new_unexpect("", h2_representify(a), expection(caseless, dont));
+      h2_fail* fail = h2_fail::new_unexpect(expection(caseless, dont), h2_representify(a));
       h2_fail::append_child(fail, fails);
       return fail;
    }
 
-   virtual h2_string expection(bool caseless, bool dont) const override
+   virtual h2_line expection(bool caseless, bool dont) const override
    {
-      return CD((dont ? "(" : "") + h2_matches_expection(m1, caseless, false) + " || " + h2_matches_expection(m2, caseless, false) + (dont ? ")" : ""), false, dont);
+      return CD((dont ? gray("(") : h2_line()) + h2_matches_expection(m1, caseless, false) + " or " + h2_matches_expection(m2, caseless, false) + (dont ? gray(")") : h2_line()), false, dont);
    }
 };
 
@@ -99,17 +99,17 @@ struct h2_allof_matches : h2_matches {
       }
       h2_fail* fail = nullptr;
       if (dont) {
-         fail = h2_fail::new_unexpect("", h2_representify(a), expection(caseless, dont), "Should not match all");
+         fail = h2_fail::new_unexpect(expection(caseless, dont), h2_representify(a), "should not match all");
       } else {
-         fail = h2_fail::new_unexpect("", h2_representify(a), expection(caseless, dont));
+         fail = h2_fail::new_unexpect(expection(caseless, dont), h2_representify(a));
          h2_fail::append_child(fail, fails);
       }
       return fail;
    }
 
-   virtual h2_string expection(bool caseless, bool dont) const override
+   virtual h2_line expection(bool caseless, bool dont) const override
    {
-      return CD("AllOf(" + t2e(caseless, false) + ")", false, dont);
+      return CD("AllOf" + gray("(") + t2e(caseless, false) + gray(")"), false, dont);
    }
 
    H2_MATCHES_T2V2E(t_matchers)
@@ -144,17 +144,17 @@ struct h2_anyof_matches : h2_matches {
       }
       h2_fail* fail = nullptr;
       if (dont) {
-         fail = h2_fail::new_unexpect("", h2_representify(a), expection(caseless, dont), "Should not match any one");
+         fail = h2_fail::new_unexpect(expection(caseless, dont), h2_representify(a), "should not match any one");
       } else {
-         fail = h2_fail::new_unexpect("", h2_representify(a), expection(caseless, dont), "Not match any one");
+         fail = h2_fail::new_unexpect(expection(caseless, dont), h2_representify(a), "not match any one");
          h2_fail::append_child(fail, fails);
       }
       return fail;
    }
 
-   virtual h2_string expection(bool caseless, bool dont) const override
+   virtual h2_line expection(bool caseless, bool dont) const override
    {
-      return CD("AnyOf(" + t2e(caseless, false) + ")", false, dont);
+      return CD("AnyOf" + gray("(") + t2e(caseless, false) + gray(")"), false, dont);
    }
 
    H2_MATCHES_T2V2E(t_matchers)
@@ -177,7 +177,7 @@ struct h2_noneof_matches : h2_matches {
          if (fail)
             delete fail;
          else {
-            fail = h2_fail::new_normal({"Should not match ", "\033{green}", v_matchers[i].expection(caseless, false), "\033{reset}"});
+            fail = h2_fail::new_normal("should not match " + v_matchers[i].expection(caseless, false).brush("green"));
             fail->seqno = i;
             h2_fail::append_subling(fails, fail);
          }
@@ -186,14 +186,14 @@ struct h2_noneof_matches : h2_matches {
          delete fails;
          return nullptr;
       }
-      h2_fail* fail = h2_fail::new_unexpect("", h2_representify(a), expection(caseless, dont));
+      h2_fail* fail = h2_fail::new_unexpect(expection(caseless, dont), h2_representify(a));
       h2_fail::append_child(fail, fails);
       return fail;
    }
 
-   virtual h2_string expection(bool caseless, bool dont) const override
+   virtual h2_line expection(bool caseless, bool dont) const override
    {
-      return CD("NoneOf(" + t2e(caseless, false) + ")", false, dont);
+      return CD("NoneOf" + gray("(") + t2e(caseless, false) + gray(")"), false, dont);
    }
 
    H2_MATCHES_T2V2E(t_matchers)

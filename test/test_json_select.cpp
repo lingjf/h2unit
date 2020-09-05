@@ -124,7 +124,7 @@ SUITE(json select)
       OK("", select2.values[0].key);
    }
 
-    Case([1][2])
+   Case([1][-2])
    {
       h2::h2_json_select select1("[1][-2]");
       OK(2, select1.values.size());

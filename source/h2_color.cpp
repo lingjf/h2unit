@@ -36,19 +36,20 @@ struct h2__color {
          current[i][0] = '\0';
    }
 
-   void push_style(const char* style)
+   void push_style(const char* style, int length)
    {
       for (int i = 0; i < sizeof(current) / sizeof(current[0]); ++i)
          if (current[i][0] == '\0') {
-            strcpy(current[i], style);
+            strncpy(current[i], style, length);
+            current[i][length] = '\0';
             break;
          }
    }
 
-   void pop_style(const char* style)
+   void pop_style(const char* style, int length)
    {
       for (int i = 0; i < sizeof(current) / sizeof(current[0]); ++i)
-         if (!strcmp(current[i], style))
+         if (!strncmp(current[i], style, length) && strlen(current[i]) == length)
             current[i][0] = '\0';
    }
 
@@ -72,35 +73,27 @@ struct h2__color {
 #endif
    }
 
-   char* parse(const char* style)
+   void parse(const char* style)
    {
-      char* end = strchr((char*)style, '}');
-      assert(end);
-      char t[128];
-      strncpy(t, style, sizeof(t));
-      *strchr(t, '}') = '\0';
-      for (char* p = strtok(t + 2, ","); p; p = strtok(NULL, ",")) {
-         if (p[0] == '-')
-            pop_style(p + 1);
-         else if (p[0] == '+')
-            push_style(p + 1);
-         else
-            push_style(p);
+      const char* p = style + 2;
+      char s = '+';
+      if (*p == '+' || *p == '-') s = *p++;
 
-         if (!strcmp("reset", p)) clear_style();
+      for (;;) {
+         int l = strcspn(p, ",}");
+         s == '-' ? pop_style(p, l) : push_style(p, l);
+         if (!strncmp("reset", p, l)) clear_style();
+         if (*(p + l) == '}' || *(p + l) == '\0') break;
+         p += l + 1;
       }
-      return end;
    }
 
    void print(const char* str)
    {
-      for (const char* p = str; *p; p++) {
-         if (h2_color::is_ctrl(p)) {
-            p = I().parse(p);
-            if (h2_option::I().colorfull) I().change();
-         } else {
-            h2_libc::write(fileno(stdout), p, 1);
-         }
+      if (h2_color::is_ctrl(str)) {
+         if (h2_option::I().colorful) I().parse(str), I().change();
+      } else {
+         h2_libc::write(fileno(stdout), str, strlen(str));
       }
    }
 

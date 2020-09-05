@@ -12,7 +12,7 @@ def lcov_to_json():
                 'Lines': { 'Total': 0, 'Hit': 0 },
                 'Functions': { 'Total': 0, 'Hit': 0 },
                 'Branches': { 'Total': 0, 'Hit': 0 }
-            }
+           }
     with open('coverage.lcov', 'r') as f:
         for line in f:
             fnf = re.match('FNF:(.*)', line)

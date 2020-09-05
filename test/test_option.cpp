@@ -9,11 +9,11 @@ SUITE(h2_option)
       const char* argv[] = {"./a.out"};
       c.parse(1, argv);
       OK(!c.verbose);
-      OK(!c.listing);
-      OK(c.colorfull);
-      OK(!c.shuffle);
+      OK(!c.list_cases);
+      OK(c.colorful);
+      OK(!c.shuffle_order);
       OK(c.memory_check);
-      OK(!c.breakable);
+      OK(!c.break_after_fails);
       OK(1, c.rounds);
    }
 
@@ -24,18 +24,18 @@ SUITE(h2_option)
       OK(c.verbose);
    }
 
-   Case(listing)
+   Case(list_cases)
    {
       const char* argv[] = {"./a.out", "-l"};
       c.parse(2, argv);
-      OK(c.listing);
+      OK(c.list_cases);
    }
 
-   Case(colorfull)
+   Case(colorful)
    {
       const char* argv[] = {"./a.out", "-c"};
       c.parse(2, argv);
-      OK(!c.colorfull);
+      OK(!c.colorful);
    }
 
    Case(rounds)
@@ -59,42 +59,42 @@ SUITE(h2_option)
       OK(2, c.rounds);
    }
 
-   Case(shuffle memory_check breakable)
+   Case(shuffle memory_check break_after_fails)
    {
       const char* argv[] = {"./a.out", "-smb"};
       c.parse(2, argv);
-      OK(c.shuffle);
+      OK(c.shuffle_order);
       OK(!c.memory_check);
-      OK(1, c.breakable);
+      OK(1, c.break_after_fails);
    }
 
-   Case(breakable - b2)
+   Case(break_after_fails - b2)
    {
       const char* argv[] = {"./a.out", "-b2"};
       c.parse(2, argv);
-      OK(2, c.breakable);
+      OK(2, c.break_after_fails);
    }
 
-   Case(breakable - b2c)
+   Case(break_after_fails - b2c)
    {
       OK(2, atoi("2c"));
       const char* argv[] = {"./a.out", "-b2c"};
       c.parse(2, argv);
-      OK(2, c.breakable);
+      OK(2, c.break_after_fails);
    }
 
-   Case(breakable - b 2)
+   Case(break_after_fails - b 2)
    {
       const char* argv[] = {"./a.out", "-b", "2"};
       c.parse(3, argv);
-      OK(2, c.breakable);
+      OK(2, c.break_after_fails);
    }
 
-   Case(breakable - b)
+   Case(break_after_fails - b)
    {
       const char* argv[] = {"./a.out", "-b", ""};
       c.parse(3, argv);
-      OK(1, c.breakable);
+      OK(1, c.break_after_fails);
    }
 
    Case(junit)
@@ -124,10 +124,17 @@ SUITE(h2_option)
 
    Case(include exclude)
    {
-      const char* argv[] = {"./a.out", "-x", "http", "-x", "tcp"};
+      const char* argv[] = {"./a.out", "-e", "http", "-e", "tcp"};
       c.parse(5, argv);
       OK(c.filter("server", "connection", "httpd_connection.cpp", 0));
       OK(c.filter("server", "connection", "tcp_connection.cpp", 0));
       OK(c.filter("http", "connection", "tcp_connection.cpp", 0));
+   }
+
+   Case(include verbose)
+   {
+      const char* argv[] = {"./a.out", "-i", "http", "-v"};
+      c.parse(4, argv);
+      OK(c.verbose);
    }
 }

@@ -6,7 +6,7 @@ char* h2_libc_malloc_tostring(h2::h2_libc_malloc* m, char* s)
 {
    strcpy(s, "[");
    h2_list_for_each_entry (p, m->buddies, h2::h2_libc_malloc::buddy, x) {
-      sprintf(s + strlen(s), "%s%lu", li ? "," : "", p->size);
+      sprintf(s + strlen(s), "%s%zu", li ? "," : "", p->size);
    }
    strcat(s, "]");
 

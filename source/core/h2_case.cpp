@@ -1,6 +1,6 @@
 
-h2_inline h2_case::h2_case(const char* name_, int status_, const char* file_, int line_)
-  : name(name_), file(file_), line(line_), status(status_) {}
+h2_inline h2_case::h2_case(const char* name_, int status_, const char* file_, int lino_)
+  : name(name_), file(file_), lino(lino_), status(status_) {}
 
 h2_inline void h2_case::clear()
 {
@@ -13,7 +13,7 @@ h2_inline void h2_case::clear()
 h2_inline void h2_case::prev_setup()
 {
    status = passed;
-   h2_memory::stack::push(file, line);
+   h2_memory::stack::push(file, lino);
 }
 
 h2_inline void h2_case::post_cleanup()

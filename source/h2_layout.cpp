@@ -39,8 +39,8 @@ static inline unsigned int_width(int maximum, char scale)
 static inline void lines_merge(h2_lines& lines, const h2_lines& left_lines, const h2_lines& right_lines, unsigned left_width, unsigned right_width, int step, char scale, int seq_width)
 {
    char seq_fmt[32];
-   sprintf(seq_fmt, "%%0%d%c│ ", seq_width, scale);
-   const h2_line left_empty = {h2_string(left_width, ' ')}, right_empty = {h2_string(right_width, ' ')};
+   sprintf(seq_fmt, "%%%d%c│ ", seq_width, scale);
+   const h2_string left_empty(left_width, ' '), right_empty(right_width, ' ');
    for (size_t i = 0; i < std::max(left_lines.size(), right_lines.size()); ++i) {
       auto left_wrap_lines = line_break(i < left_lines.size() ? left_lines[i] : left_empty, left_width);
       auto right_wrap_lines = line_break(i < right_lines.size() ? right_lines[i] : right_empty, right_width);
@@ -52,9 +52,9 @@ static inline void lines_merge(h2_lines& lines, const h2_lines& left_lines, cons
             else
                line.indent(seq_width + 2);
          }
-         line.concat_back(j < left_wrap_lines.size() ? left_wrap_lines[j] : left_empty, "reset");
+         line += j < left_wrap_lines.size() ? left_wrap_lines[j].brush("reset") : color(left_empty, "reset");
          line.printf("dark gray", j < left_wrap_lines.size() - 1 ? "\\│ " : " │ ");
-         line.concat_back(j < right_wrap_lines.size() ? right_wrap_lines[j] : right_empty, "reset");
+         line += j < right_wrap_lines.size() ? right_wrap_lines[j].brush("reset") : color(right_empty, "reset");
          line.printf("dark gray", j < right_wrap_lines.size() - 1 ? "\\" : " ");
          lines.push_back(line);
       }
@@ -95,14 +95,10 @@ h2_inline h2_lines h2_layout::unified(const h2_line& up_line, const h2_line& dow
    h2_lines down_lines = line_break(down_line, width - down_title_line.width());
 
    for (size_t i = 0; i < std::max(up_lines.size(), down_lines.size()); ++i) {
-      if (i < up_lines.size()) {
-         up_lines[i].concat_front(up_title_line);
-         lines.push_back(up_lines[i]);
-      }
-      if (i < down_lines.size()) {
-         down_lines[i].concat_front(down_title_line);
-         lines.push_back(down_lines[i]);
-      }
+      if (i < up_lines.size())
+         lines.push_back(up_title_line + up_lines[i]);
+      if (i < down_lines.size())
+         lines.push_back(down_title_line + down_lines[i]);
    }
 
    return lines;
@@ -114,7 +110,7 @@ static inline h2_lines prefix_break(const h2_line& line, const h2_line& title, u
 
    for (size_t i = 0; i < lines.size(); ++i) {
       if (i == 0)
-         lines[i].concat_front(title);
+         lines[i] = title + lines[i];
       else
          lines[i].indent(title.width());
    }

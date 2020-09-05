@@ -1,4 +1,4 @@
-#include "../source/h2_unit.cpp"
+#include "../h2unit.h"
 
 struct A_struct {
    char a[100];
@@ -13,21 +13,25 @@ SUITE(Memory asymmetric allocate and free)
       char* p = (char*)malloc(100);
       delete p;
    }
+
    Case(malloc - delete[] failure)
    {
       char* p = (char*)malloc(100);
       delete[] p;
    }
+
    Case(new - free failure)
    {
       char* p = (char*)new char;
       free(p);
    }
+
    Case(new - delete[] failure)
    {
       char* p = (char*)new char;
       delete[] p;
    }
+
    Case(new[] - free failure)
    {
       char* p = (char*)new char[100];

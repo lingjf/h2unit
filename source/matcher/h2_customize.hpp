@@ -1,21 +1,21 @@
 
-#define __Matches_Common(message)                                                                         \
-   template <typename A>                                                                                  \
-   bool __matches(const A& a) const;                                                                      \
-   template <typename A>                                                                                  \
-   h2::h2_fail* matches(const A& a, int, bool caseless, bool dont) const                                  \
-   {                                                                                                      \
-      h2::h2_fail* fail = h2::h2_fail::new_unexpect("", h2::h2_stringify(a), h2::CD("", caseless, dont)); \
-      if (__matches(a) == !dont) return nullptr;                                                          \
-      if (dont) {                                                                                         \
-      } else {                                                                                            \
-         h2::h2_ostringstream osm;                                                                        \
-         osm << std::boolalpha << H2PP_REMOVE_PARENTHESES(message);                                       \
-         fail->user_explain = osm.str().c_str();                                                          \
-      }                                                                                                   \
-      return fail;                                                                                        \
-   }                                                                                                      \
-   virtual h2::h2_string expection(bool, bool) const override { return ""; }
+#define __Matches_Common(message)                                                                        \
+   template <typename A>                                                                                 \
+   bool __matches(const A& a) const;                                                                     \
+   template <typename A>                                                                                 \
+   h2::h2_fail* matches(const A& a, int, bool caseless, bool dont) const                                 \
+   {                                                                                                     \
+      h2::h2_fail* fail = h2::h2_fail::new_unexpect(h2::CD("", caseless, dont), h2::h2_representify(a)); \
+      if (__matches(a) == !dont) return nullptr;                                                         \
+      if (dont) {                                                                                        \
+      } else {                                                                                           \
+         h2::h2_ostringstream osm;                                                                       \
+         osm << std::boolalpha << H2PP_REMOVE_PARENTHESES(message);                                      \
+         fail->user_explain = osm.str().c_str();                                                         \
+      }                                                                                                  \
+      return fail;                                                                                       \
+   }                                                                                                     \
+   virtual h2::h2_line expection(bool, bool) const override { return ""; }
 
 #define H2MATCHER0(name, message)                                                     \
    struct h2_##name##_matches : h2::h2_matches {                                      \
@@ -122,27 +122,27 @@
 
 #define _H2MATCHER20(name, e1) H2MATCHER1(name, e1, (""))
 #define _H2MATCHER21(name, message) H2MATCHER0(name, message)
-#define _H2MATCHER2(name, t) H2PP_CAT2(_H2MATCHER2, H2PP_IS_BEGIN_PARENTHESES(t)) (name, t)
+#define _H2MATCHER2(name, t) H2PP_CAT(_H2MATCHER2, H2PP_IBP(t)) (name, t)
 
 #define _H2MATCHER30(name, e1, e2) H2MATCHER2(name, e1, e2, (""))
 #define _H2MATCHER31(name, e1, message) H2MATCHER1(name, e1, message)
-#define _H2MATCHER3(name, e1, t) H2PP_CAT2(_H2MATCHER3, H2PP_IS_BEGIN_PARENTHESES(t)) (name, e1, t)
+#define _H2MATCHER3(name, e1, t) H2PP_CAT(_H2MATCHER3, H2PP_IBP(t)) (name, e1, t)
 
 #define _H2MATCHER40(name, e1, e2, e3) H2MATCHER3(name, e1, e2, e3, (""))
 #define _H2MATCHER41(name, e1, e2, message) H2MATCHER2(name, e1, e2, message)
-#define _H2MATCHER4(name, e1, e2, t) H2PP_CAT2(_H2MATCHER4, H2PP_IS_BEGIN_PARENTHESES(t)) (name, e1, e2, t)
+#define _H2MATCHER4(name, e1, e2, t) H2PP_CAT(_H2MATCHER4, H2PP_IBP(t)) (name, e1, e2, t)
 
 #define _H2MATCHER50(name, e1, e2, e3, e4) H2MATCHER4(name, e1, e2, e3, e4, (""))
 #define _H2MATCHER51(name, e1, e2, e3, message) H2MATCHER3(name, e1, e2, e3, message)
-#define _H2MATCHER5(name, e1, e2, e3, t) H2PP_CAT2(_H2MATCHER5, H2PP_IS_BEGIN_PARENTHESES(t)) (name, e1, e2, e3, t)
+#define _H2MATCHER5(name, e1, e2, e3, t) H2PP_CAT(_H2MATCHER5, H2PP_IBP(t)) (name, e1, e2, e3, t)
 
 #define _H2MATCHER60(name, e1, e2, e3, e4, e5) H2MATCHER5(name, e1, e2, e3, e4, e5, (""))
 #define _H2MATCHER61(name, e1, e2, e3, e4, message) H2MATCHER4(name, e1, e2, e3, e4, message)
-#define _H2MATCHER6(name, e1, e2, e3, e4, t) H2PP_CAT2(_H2MATCHER6, H2PP_IS_BEGIN_PARENTHESES(t)) (name, e1, e2, e3, e4, t)
+#define _H2MATCHER6(name, e1, e2, e3, e4, t) H2PP_CAT(_H2MATCHER6, H2PP_IBP(t)) (name, e1, e2, e3, e4, t)
 
 #define _H2MATCHER70(name, e1, e2, e3, e4, e5, e6)
 #define _H2MATCHER71(name, e1, e2, e3, e4, e5, message) H2MATCHER5(name, e1, e2, e3, e4, e5, message)
-#define _H2MATCHER7(name, e1, e2, e3, e4, e5, t) H2PP_CAT2(_H2MATCHER7, H2PP_IS_BEGIN_PARENTHESES(t)) (name, e1, e2, e3, e4, e5, t)
+#define _H2MATCHER7(name, e1, e2, e3, e4, e5, t) H2PP_CAT(_H2MATCHER7, H2PP_IBP(t)) (name, e1, e2, e3, e4, e5, t)
 
 /* clang-format on */
 

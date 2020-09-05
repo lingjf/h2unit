@@ -11,10 +11,10 @@ struct h2_block : h2_libc {
    bool noleak;  // ignore leak check
    const char* where;
    const char* file;
-   int line;
+   int lino;
 
-   h2_block(long long _limit, size_t _align, unsigned char _s_fill[32], int _n_fill, bool _noleak, const char* _where, const char* _file, int _line)
-     : limit(_limit), align(_align), n_fill(_n_fill), noleak(_noleak), where(_where), file(_file), line(_line) { memcpy(s_fill, _s_fill, _n_fill); }
+   h2_block(long long _limit, size_t _align, unsigned char _s_fill[32], int _n_fill, bool _noleak, const char* _where, const char* _file, int _lino)
+     : limit(_limit), align(_align), n_fill(_n_fill), noleak(_noleak), where(_where), file(_file), lino(_lino) { memcpy(s_fill, _s_fill, _n_fill); }
 
    h2_fail* check()
    {
@@ -22,7 +22,7 @@ struct h2_block : h2_libc {
          h2_fail* fail1 = p->violate_check();
          if (fail1) return fail1;
          if (!noleak) {
-            h2_fail* fail2 = p->leak_check(where, file, line);
+            h2_fail* fail2 = p->leak_check(where, file, lino);
             if (fail2) return fail2;
          }
       }

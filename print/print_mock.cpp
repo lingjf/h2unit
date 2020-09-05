@@ -1,4 +1,4 @@
-#include "../source/h2_unit.cpp"
+#include "../h2unit.h"
 
 int foobar(int a, const char* b)
 {

@@ -13,7 +13,7 @@ struct h2_checkin {
    bool is_saturated(/*饱和*/) const { return call == most; }
    bool is_excessive(/*过多*/) const { return most < call; }
 
-   h2_fail* check(const char* func, const char* file, int line);
+   h2_fail* check(const char* func, const char* file, int lino);
    const char* actual();
    const char* expect();
 };

@@ -1,6 +1,6 @@
 #include "../source/h2_unit.cpp"
 
-SUITE(preprocessor)
+SUITE(macro)
 {
 #define X1 1
 #define X13 -13
@@ -63,29 +63,22 @@ SUITE(preprocessor)
       OK(3, n[2]);
    }
 
-   Case(H2PP_REMOVE_PARENTHESES_IF)
+   Case(H2PP_RPS)
    {
-      int n[] = {H2PP_REMOVE_PARENTHESES_IF((1, 2, 3))};
+      int n[] = {H2PP_RPS((1, 2, 3))};
       OK(1, n[0]);
       OK(2, n[1]);
       OK(3, n[2]);
    }
-   // Case(H2PP_REMOVE_PARENTHESES_IF)
-   // {
-   //    int n[] = {H2PP_REMOVE_PARENTHESES_IF(1, 2, 3)};
-   //    OK(1, n[0]);
-   //    OK(2, n[1]);
-   //    OK(3, n[2]);
-   // }
 
-   Case(H2PP_IS_BEGIN_PARENTHESES)
+   Case(H2PP_IBP)
    {
-      OK(0, H2PP_IS_BEGIN_PARENTHESES());
-      OK(0, H2PP_IS_BEGIN_PARENTHESES(a));
-      OK(1, H2PP_IS_BEGIN_PARENTHESES((a)));
-      OK(1, H2PP_IS_BEGIN_PARENTHESES((a, b)));
-      // OK(1, H2PP_IS_BEGIN_PARENTHESES((a, b), 1)); // compile error
-      OK(1, H2PP_IS_BEGIN_PARENTHESES(()));
+      OK(0, H2PP_IBP());
+      OK(0, H2PP_IBP(a));
+      OK(1, H2PP_IBP((a)));
+      OK(1, H2PP_IBP((a, b)));
+      // OK(1, H2PP_IBP((a, b), 1)); // compile error
+      OK(1, H2PP_IBP(()));
    }
 
    Case(H2PP_NOT)
@@ -243,4 +236,12 @@ SUITE(preprocessor)
       OK(2, n2);
       OK(3, n3);
    }
+}
+
+CASE(H2Q generate unique symbol)
+{
+   int H2Q() = 1;
+   int H2Q() = 1;
+   int H2Q(prefix) = 1;
+   int H2Q(prefix) = 1;
 }

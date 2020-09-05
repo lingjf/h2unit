@@ -7,12 +7,12 @@ struct h2_memory {
 
    struct stack {
       static void root();
-      static void push(const char* file, int line);
+      static void push(const char* file, int lino);
       static h2_fail* pop();
       static long long footprint();
 
       struct block : h2_once {
-         block(const char* attributes, const char* file, int line);
+         block(const char* attributes, const char* file, int lino);
          ~block();
       };
    };

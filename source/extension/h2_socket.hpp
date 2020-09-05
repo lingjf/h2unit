@@ -46,7 +46,7 @@ struct h2_packet_matches : h2_matches {
       return fails;
    }
 
-   virtual h2_string expection(bool, bool) const override { return ""; }
+   virtual h2_line expection(bool, bool) const override { return ""; }
 };
 
 template <typename M1, typename M2, typename M3, typename M4>
@@ -64,5 +64,5 @@ struct h2_socket {
 /* clang-format off */
 #define __H2SOCK0(_Packet, _Size, ...) h2::h2_socket::inject_received(_Packet, _Size, #__VA_ARGS__)
 #define __H2SOCK1(...) h2::h2_socket::start_and_fetch()
-#define H2SOCK(...) H2PP_CAT2(__H2SOCK, H2PP_IS_EMPTY(__VA_ARGS__)) (__VA_ARGS__)
+#define H2SOCK(...) H2PP_CAT(__H2SOCK, H2PP_IS_EMPTY(__VA_ARGS__)) (__VA_ARGS__)
 /* clang-format on */

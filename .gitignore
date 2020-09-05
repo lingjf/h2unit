@@ -25,8 +25,7 @@ CMakeFiles
 cmake_install.cmake
 Makefile
 
-
-# code coverage
+# Coverage
 *.gcda
 *.gcno
 *.lcov

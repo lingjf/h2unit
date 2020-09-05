@@ -5,16 +5,16 @@ char* h2_piece_tojson(h2::h2_piece* piece, char* b)
    int l = 0;
    l += sprintf(b + l, "{");
 
-   l += sprintf(b + l, "\"user_size\": %lu", piece->user_size);
-   l += sprintf(b + l, ",\"page_size\": %lu", piece->page_size);
-   l += sprintf(b + l, ",\"page_count\": %lu", piece->page_count);
+   l += sprintf(b + l, "\"user_size\": %zu", piece->user_size);
+   l += sprintf(b + l, ",\"page_size\": %zu", piece->page_size);
+   l += sprintf(b + l, ",\"page_count\": %zu", piece->page_count);
    l += sprintf(b + l, ",\"user_ptr\": \"%p\"", piece->user_ptr);
    l += sprintf(b + l, ",\"page_ptr\": \"%p\"", piece->page_ptr);
    l += sprintf(b + l, ",\"who_allocate\": \"%s\"", piece->who_allocate);
    l += sprintf(b + l, ",\"free_times\": %d", piece->free_times);
    l += sprintf(b + l, ",\"snow_flower\": \"%x\"", piece->snow_flower);
    l += sprintf(b + l, ",\"forbidden_page\": \"%p\"", piece->forbidden_page);
-   l += sprintf(b + l, ",\"forbidden_size\": %lu", piece->forbidden_size);
+   l += sprintf(b + l, ",\"forbidden_size\": %zu", piece->forbidden_size);
    l += sprintf(b + l, ",\"violate_address\": \"%p\"", piece->violate_address);
    l += sprintf(b + l, ",\"violate_action\": \"%s\"", piece->violate_action);
    l += sprintf(b + l, ",\"violate_times\": %d", piece->violate_times);

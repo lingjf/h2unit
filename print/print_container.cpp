@@ -1,4 +1,4 @@
-#include "../source/h2_unit.cpp"
+#include "../h2unit.h"
 
 SUITE(ListOf)
 {
@@ -7,16 +7,19 @@ SUITE(ListOf)
       std::vector<int> a = {1, 2, 3};
       OK(ListOf(1, 6, 3), a);
    }
+
    Case(two not same)
    {
       std::vector<int> a = {1, 2, 3};
       OK(ListOf(1, 6, _), a);
    }
+
    Case(only one miss)
    {
       std::vector<int> a = {1, 2, 3};
       OK(ListOf(1, 2, 3, 4), a);
    }
+
    Case(Not)
    {
       std::vector<int> a = {1, 2, 3};
@@ -37,11 +40,13 @@ SUITE(Has)
       std::vector<int> a = {1, 2, 3};
       OK(Has(8), a);
    }
+
    Case(miss two)
    {
       std::vector<int> a = {1, 2, 3};
       OK(Has(8, Ge(9)), a);
    }
+
    Case(miss two)
    {
       std::vector<int> a = {1, 2, 3};
@@ -53,6 +58,7 @@ SUITE(Has)
       int a1[] = {1, 2, 3};
       OK(Has(1, 4), a1);
    }
+
    Case(C / C++ generic array sepecified size)
    {
       int a1[] = {1, 2, 3};

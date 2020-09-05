@@ -10,21 +10,22 @@ struct h2_option {
    static constexpr const char* os = "windows";
 #endif
 
-   unsigned term_size;
+   unsigned terminal_width;
 
    char args[256];
    const char* path;
    const char* debug = nullptr;
    bool verbose = false;
-   bool colorfull = true;
+   bool colorful = true;
+   bool execute_progress = true;
    bool seq = false;
-   bool fold = true;
-   bool paste = false;
-   bool only = false;
-   bool shuffle = false;
+   bool fold_json = true;
+   bool copy_paste_json = false;
+   bool only_execute_fails = false;
+   bool shuffle_order = false;
    bool memory_check = true;
-   bool listing = false;
-   int breakable = 0;
+   bool list_cases = false;
+   int break_after_fails = 0;
    int rounds = 1;
    char junit[256]{'\0'};
    char tap[256]{'\0'};
@@ -32,7 +33,7 @@ struct h2_option {
 
    h2_option();
    void parse(int argc, const char** argv);
-   bool filter(const char* suitename, const char* casename, const char* file, int line) const;
+   bool filter(const char* suitename, const char* casename, const char* file, int lino) const;
 };
 
 static const h2_option& O = h2_option::I();  // for pretty

@@ -123,6 +123,18 @@ SUITE(string)
       OK(a2.enclosed('\"'));
    }
 
+   Case(escape)
+   {
+      h2::h2_string a1 = "a\rb\nc";
+      OK("a\\rb\\nc", a1.escape());
+   }
+
+   Case(unescape)
+   {
+      h2::h2_string a1 = "a\\rb\\nc";
+      OK("a\rb\nc", a1.unescape());
+   }
+
    Case(unquote)
    {
       h2::h2_string a1 = "abc";

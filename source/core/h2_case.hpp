@@ -10,7 +10,7 @@ struct h2_case {
 
    const char* name;
    const char* file;
-   int line;
+   int lino;
    h2_list x;
    int seq = 0;
    int last_status = initial;
@@ -24,7 +24,7 @@ struct h2_case {
    h2_dnses dnses;
    h2_sock* sock{nullptr};
 
-   h2_case(const char* name, int status, const char* file, int line);
+   h2_case(const char* name, int status, const char* file, int lino);
    void clear();
 
    void prev_setup();

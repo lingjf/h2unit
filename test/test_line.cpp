@@ -69,36 +69,31 @@ SUITE(h2_line)
       OK(ListOf("123"), line);
    }
 
-   Case(concat_back)
+   Case(+=)
    {
       h2::h2_line s = {"456", "789"};
       h2::h2_line line = "123";
-      line.concat_back(s);
+      line += s;
       OK(ListOf("123", "456", "789"), line);
    }
 
-   Case(concat_back with style)
+   Case(gray_quote)
    {
-      h2::h2_line s = {"456", "789"};
-      h2::h2_line line = "123";
-      line.concat_back(s, "red");
-      OK(ListOf("123", "\033{red}", "456", "789", "\033{reset}"), line);
+      h2::h2_line l1({"012", "\033{red}", "3456789", "\033{reset}"});
+      OK(ListOf("012", "\033{red}", "3456789", "\033{reset}"), l1.gray_quote());
+
+      h2::h2_line l2({"\"012", "\033{red}", "3456789\"", "\033{reset}"});
+      OK(ListOf("\033{+dark gray}", "\"", "\033{-dark gray}",
+                "012", "\033{red}", "3456789",
+                "\033{+dark gray}", "\"", "\033{-dark gray}",
+                "\033{reset}"),
+         l2.gray_quote());
    }
 
-   Case(concat_front)
+   Case(stringify)
    {
-      h2::h2_line s = {"456", "789"};
-      h2::h2_line line = "123";
-      line.concat_front(s);
-      OK(ListOf("456", "789", "123"), line);
-   }
-
-   Case(concat_front with style)
-   {
-      h2::h2_line s = {"456", "789"};
-      h2::h2_line line = "123";
-      line.concat_front(s, "red");
-      OK(ListOf("\033{red}", "456", "789", "\033{reset}", "123"), line);
+      h2::h2_line line({"012", "\033{red}", "3456789", "\033{reset}"});
+      OK("0123456789", line.string());
    }
 
    Case(samesizify line)
@@ -126,16 +121,6 @@ SUITE(h2_line)
       OK(b3.enclosed('\"'));
    }
 
-   // Case(dark_gray_enclosed_quote)
-   // {
-   //    h2::h2_line b1 = {"\"123\""};
-   //    b1.dark_gray_enclosed_quote();
-   //    OK(ListOf("\033{+dark gray}", "\"", "\033{+dark gray}",
-   //              "123",
-   //              "\033{+dark gray}", "\"", "\033{+dark gray}"),
-   //       b1);
-   // }
-
    Case(samesizify lines)
    {
       h2::h2_lines e = {{"123", "456"}, {"1234"}};
@@ -143,6 +128,180 @@ SUITE(h2_line)
       e.samesizify(a);
       OK(e.size() == a.size());
    }
+}
+
+SUITE(h2_line operator+)
+{
+   Case(const char*)
+   {
+      h2::h2_line s1 = {"456", "789"};
+
+      h2::h2_line line1 = s1 + "123";
+      OK(ListOf("456", "789", "123"), line1);
+
+      h2::h2_line line2 = "123" + s1;
+      OK(ListOf("123", "456", "789"), line2);
+   }
+
+   Case(h2_string)
+   {
+      h2::h2_line s1 = {"456", "789"};
+      h2::h2_string s2 = "123";
+
+      h2::h2_line line1 = s1 + s2;
+      OK(ListOf("456", "789", "123"), line1);
+
+      h2::h2_line line2 = s2 + s1;
+      OK(ListOf("123", "456", "789"), line2);
+   }
+
+   Case(line)
+   {
+      h2::h2_line s1 = {"456", "789"};
+      h2::h2_line s2 = "123";
+
+      h2::h2_line line1 = s1 + s2;
+      OK(ListOf("456", "789", "123"), line1);
+
+      h2::h2_line line2 = s2 + s1;
+      OK(ListOf("123", "456", "789"), line2);
+   }
+}
+
+SUITE(h2_line acronym without style)
+{
+   Case(no acronym with 1 string)
+   {
+      h2::h2_line line("0123456789");
+      OK(ListOf("0123456789"), line.acronym(10));
+      OK(ListOf("0123456789"), line.acronym(11));
+   }
+
+   Case(no acronym with 2 string)
+   {
+      h2::h2_line line({"012", "3456789"});
+      OK(ListOf("012", "3456789"), line.acronym(10));
+      OK(ListOf("012", "3456789"), line.acronym(11));
+   }
+
+   Case(acronym 1 string)
+   {
+      h2::h2_line line("0123456789");
+      OK(ListOf("\033{+dark gray}", "...", "\033{-dark gray}"), line.acronym(3));
+      OK(ListOf("0", "\033{+dark gray}", "...", "\033{-dark gray}"), line.acronym(4));
+      OK(ListOf("01", "\033{+dark gray}", "...", "\033{-dark gray}"), line.acronym(5));
+      OK(ListOf("012", "\033{+dark gray}", "...", "\033{-dark gray}"), line.acronym(6));
+      OK(ListOf("0123", "\033{+dark gray}", "...", "\033{-dark gray}"), line.acronym(7));
+      OK(ListOf("01234", "\033{+dark gray}", "...", "\033{-dark gray}"), line.acronym(8));
+      OK(ListOf("012345", "\033{+dark gray}", "...", "\033{-dark gray}"), line.acronym(9));
+   }
+
+   Case(acronym 2 string)
+   {
+      h2::h2_line line({"012", "3456789"});
+      OK(ListOf("\033{+dark gray}", "...", "\033{-dark gray}"), line.acronym(3));
+      OK(ListOf("0", "\033{+dark gray}", "...", "\033{-dark gray}"), line.acronym(4));
+      OK(ListOf("01", "\033{+dark gray}", "...", "\033{-dark gray}"), line.acronym(5));
+      OK(ListOf("012", "\033{+dark gray}", "...", "\033{-dark gray}"), line.acronym(6));
+      OK(ListOf("012", "3", "\033{+dark gray}", "...", "\033{-dark gray}"), line.acronym(7));
+      OK(ListOf("012", "34", "\033{+dark gray}", "...", "\033{-dark gray}"), line.acronym(8));
+      OK(ListOf("012", "345", "\033{+dark gray}", "...", "\033{-dark gray}"), line.acronym(9));
+   }
+
+   Case(acronym 1 string with tail 1)
+   {
+      h2::h2_line line("0123456789");
+      OK(ListOf("\033{+dark gray}", "...", "\033{-dark gray}", "9"), line.acronym(4, 1));
+      OK(ListOf("0", "\033{+dark gray}", "...", "\033{-dark gray}", "9"), line.acronym(5, 1));
+      OK(ListOf("01", "\033{+dark gray}", "...", "\033{-dark gray}", "9"), line.acronym(6, 1));
+      OK(ListOf("012", "\033{+dark gray}", "...", "\033{-dark gray}", "9"), line.acronym(7, 1));
+      OK(ListOf("0123", "\033{+dark gray}", "...", "\033{-dark gray}", "9"), line.acronym(8, 1));
+      OK(ListOf("01234", "\033{+dark gray}", "...", "\033{-dark gray}", "9"), line.acronym(9, 1));
+   }
+
+   Case(acronym 2 string with tail 1)
+   {
+      h2::h2_line line({"012", "3456789"});
+      OK(ListOf("\033{+dark gray}", "...", "\033{-dark gray}", "9"), line.acronym(4, 1));
+      OK(ListOf("0", "\033{+dark gray}", "...", "\033{-dark gray}", "9"), line.acronym(5, 1));
+      OK(ListOf("01", "\033{+dark gray}", "...", "\033{-dark gray}", "9"), line.acronym(6, 1));
+      OK(ListOf("012", "\033{+dark gray}", "...", "\033{-dark gray}", "9"), line.acronym(7, 1));
+      OK(ListOf("012", "3", "\033{+dark gray}", "...", "\033{-dark gray}", "9"), line.acronym(8, 1));
+      OK(ListOf("012", "34", "\033{+dark gray}", "...", "\033{-dark gray}", "9"), line.acronym(9, 1));
+   }
+
+   Case(acronym 1 string with tail 2)
+   {
+      h2::h2_line line("0123456789");
+      OK(ListOf("\033{+dark gray}", "...", "\033{-dark gray}", "89"), line.acronym(5, 2));
+      OK(ListOf("0", "\033{+dark gray}", "...", "\033{-dark gray}", "89"), line.acronym(6, 2));
+      OK(ListOf("01", "\033{+dark gray}", "...", "\033{-dark gray}", "89"), line.acronym(7, 2));
+      OK(ListOf("012", "\033{+dark gray}", "...", "\033{-dark gray}", "89"), line.acronym(8, 2));
+      OK(ListOf("0123", "\033{+dark gray}", "...", "\033{-dark gray}", "89"), line.acronym(9, 2));
+   }
+
+   Case(acronym 2 string with tail 2)
+   {
+      h2::h2_line line({"012", "3456789"});
+      OK(ListOf("\033{+dark gray}", "...", "\033{-dark gray}", "89"), line.acronym(5, 2));
+      OK(ListOf("0", "\033{+dark gray}", "...", "\033{-dark gray}", "89"), line.acronym(6, 2));
+      OK(ListOf("01", "\033{+dark gray}", "...", "\033{-dark gray}", "89"), line.acronym(7, 2));
+      OK(ListOf("012", "\033{+dark gray}", "...", "\033{-dark gray}", "89"), line.acronym(8, 2));
+      OK(ListOf("012", "3", "\033{+dark gray}", "...", "\033{-dark gray}", "89"), line.acronym(9, 2));
+   }
+}
+
+SUITE(h2_line acronym with style)
+{
+   Case(no acronym with 2 string)
+   {
+      h2::h2_line line({"\033{red}", "012", "3456789", "\033{reset}"});
+      OK(ListOf("\033{red}", "012", "3456789", "\033{reset}"), line.acronym(10));
+      OK(ListOf("\033{red}", "012", "3456789", "\033{reset}"), line.acronym(11));
+   }
+
+   Case(acronym 1 string)
+   {
+      h2::h2_line line({"\033{red}", "0123456789", "\033{reset}"});
+      OK(ListOf("\033{red}", "\033{+dark gray}", "...", "\033{-dark gray}", "\033{reset}"), line.acronym(3));
+      OK(ListOf("\033{red}", "0", "\033{+dark gray}", "...", "\033{-dark gray}", "\033{reset}"), line.acronym(4));
+      OK(ListOf("\033{red}", "01", "\033{+dark gray}", "...", "\033{-dark gray}", "\033{reset}"), line.acronym(5));
+      OK(ListOf("\033{red}", "012", "\033{+dark gray}", "...", "\033{-dark gray}", "\033{reset}"), line.acronym(6));
+      OK(ListOf("\033{red}", "0123", "\033{+dark gray}", "...", "\033{-dark gray}", "\033{reset}"), line.acronym(7));
+      OK(ListOf("\033{red}", "01234", "\033{+dark gray}", "...", "\033{-dark gray}", "\033{reset}"), line.acronym(8));
+      OK(ListOf("\033{red}", "012345", "\033{+dark gray}", "...", "\033{-dark gray}", "\033{reset}"), line.acronym(9));
+   }
+
+   Case(acronym 2 string with tail 2)
+   {
+      h2::h2_line line({"012", "\033{red}", "3456789", "\033{reset}"});
+      OK(ListOf("\033{+dark gray}", "...", "\033{-dark gray}", "\033{red}", "89", "\033{reset}"), line.acronym(5, 2));
+      OK(ListOf("0", "\033{+dark gray}", "...", "\033{-dark gray}", "\033{red}", "89", "\033{reset}"), line.acronym(6, 2));
+      OK(ListOf("01", "\033{+dark gray}", "...", "\033{-dark gray}", "\033{red}", "89", "\033{reset}"), line.acronym(7, 2));
+      OK(ListOf("012", "\033{red}", "\033{+dark gray}", "...", "\033{-dark gray}", "89", "\033{reset}"), line.acronym(8, 2));
+      OK(ListOf("012", "\033{red}", "3", "\033{+dark gray}", "...", "\033{-dark gray}", "89", "\033{reset}"), line.acronym(9, 2));
+   }
+}
+
+SUITE(h2_line acronym escape)
+{
+   Case(acronym with CRLF)
+   {
+      h2::h2_line line("A\r1\t\n");
+      OK(ListOf("A\\r1\\t\\n"), line.acronym(10));
+   }
+}
+
+h2::h2_lines& concat_front(h2::h2_lines& thus, const h2::h2_lines& lines)
+{
+   thus.insert(thus.begin(), lines.begin(), lines.end());
+   return thus;
+}
+
+h2::h2_lines& concat_front(h2::h2_lines& thus, const h2::h2_line& line)
+{
+   thus.insert(thus.begin(), line);
+   return thus;
 }
 
 SUITE(h2_lines)
@@ -159,7 +318,7 @@ SUITE(h2_lines)
       OK(6, lines.width());
    }
 
-   Case(concat back)
+   Case(+=)
    {
       h2::h2_lines s = {{"abc", "def"}, {"ghi"}};
       h2::h2_lines lines = {{"123", "456"}, {"789"}};
@@ -173,7 +332,7 @@ SUITE(h2_lines)
       h2::h2_lines s = {{"abc", "def"}, {"ghi"}};
       h2::h2_lines lines = {{"123", "456"}, {"789"}};
 
-      lines.concat_front(s);
+      concat_front(lines, s);
       OK(ListOf(ListOf("abc", "def"), ListOf("ghi"), ListOf("123", "456"), ListOf("789")), lines);
    }
 
@@ -182,7 +341,7 @@ SUITE(h2_lines)
       h2::h2_line s = {"abc", "def"};
       h2::h2_lines lines = {{"123", "456"}, {"789"}};
 
-      lines.concat_front(s);
+      concat_front(lines, s);
       OK(ListOf(ListOf("abc", "def"), ListOf("123", "456"), ListOf("789")), lines);
    }
 
@@ -214,14 +373,14 @@ SUITE(h2_lines)
    {
       h2::h2_lines lines = {{"123", "456"}, {"789"}};
       lines.sequence();
-      OK(ListOf(ListOf("\033{dark gray}", "0. ", "\033{reset}", "123", "456"), ListOf("\033{dark gray}", "1. ", "\033{reset}", "789")), lines);
+      OK(ListOf(ListOf("\033{+dark gray}", "0. ", "\033{-dark gray}", "123", "456"), ListOf("\033{+dark gray}", "1. ", "\033{-dark gray}", "789")), lines);
    }
 
    Case(sequence indent and start from 1)
    {
       h2::h2_lines lines = {{"123", "456"}, {"789"}};
       lines.sequence(2, 1);
-      OK(ListOf(ListOf("  ", "\033{dark gray}", "1. ", "\033{reset}", "123", "456"), ListOf("  ", "\033{dark gray}", "2. ", "\033{reset}", "789")), lines);
+      OK(ListOf(ListOf("  ", "\033{+dark gray}", "1. ", "\033{-dark gray}", "123", "456"), ListOf("  ", "\033{+dark gray}", "2. ", "\033{-dark gray}", "789")), lines);
    }
 
    Case(samesizify)

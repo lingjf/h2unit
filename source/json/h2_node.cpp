@@ -70,9 +70,9 @@ struct h2_json_node : h2_libc {
       case t_number:
          _class = "atomic";
          if (value_double - ::floor(value_double) == 0)
-            _value = h2_stringify((long long)value_double);
+            _value = std::to_string((long long)value_double).c_str();
          else
-            _value = h2_stringify(value_double);
+            _value = std::to_string(value_double).c_str();
          break;
       case t_string:
          _class = "atomic";
@@ -105,9 +105,9 @@ struct h2_json_node : h2_libc {
          line.push_back(value_boolean ? "true" : "false");
       else if (is_number()) {
          if (value_double - ::floor(value_double) == 0)
-            line.push_back(h2_stringify((long long)value_double));
+            line.push_back(std::to_string((long long)value_double).c_str());
          else
-            line.push_back(h2_stringify(value_double));
+            line.push_back(std::to_string(value_double).c_str());
       } else if (is_string())
          line.push_back(slash_if(slash) + "\"" + value_string + slash_if(slash) + "\"");
       else if (is_pattern())
@@ -119,7 +119,7 @@ struct h2_json_node : h2_libc {
 
          line.push_back(is_array() ? "[" : "{");
          if (fold && children_lines.foldable()) {
-            line.concat_back(children_lines.folds());
+            line += children_lines.folds();
          } else {
             lines.push_back(line), line.clear();
             lines += children_lines;

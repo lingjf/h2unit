@@ -1,4 +1,4 @@
-#include "../source/h2_unit.cpp"
+#include "../h2unit.h"
 
 SUITE(Logic)
 {
@@ -42,6 +42,7 @@ SUITE(Logic)
    {
       OK(AllOf("Rect(0, 0)", _, EndsWith("R(1, 2)")), "Rect()");
    }
+
    Case(Not AllOf)
    {
       OK(!AllOf("Rect(0, 0)", _, EndsWith("(0, 0)")), "Rect(0, 0)");

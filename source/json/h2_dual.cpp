@@ -26,8 +26,8 @@ struct h2_json_dual : h2_libc {  // combine two node into a dual
       key_equal = e_key.equals(a_key, caseless);
 
       if (strcmp(e_class, a_class)) {
-         if (e) e->print(e_blob, O.fold, false, depth);
-         if (a) a->print(a_blob, O.fold, false, depth);
+         if (e) e->print(e_blob, O.fold_json, false, depth);
+         if (a) a->print(a_blob, O.fold_json, false, depth);
          e_class = a_class = "blob";
       } else if (!strcmp("object", e_class)) {
          h2_list_for_each_entry (_e, e->children, h2_json_node, x) {
@@ -111,9 +111,9 @@ struct h2_json_dual : h2_libc {  // combine two node into a dual
 
          e_line.push_back(strcmp(e_class, "object") ? "[" : "{");
          a_line.push_back(strcmp(a_class, "object") ? "[" : "{");
-         if (O.fold && e_children_lines.foldable() && a_children_lines.foldable()) {
-            e_line.concat_back(e_children_lines.folds());
-            a_line.concat_back(a_children_lines.folds());
+         if (O.fold_json && e_children_lines.foldable() && a_children_lines.foldable()) {
+            e_line += e_children_lines.folds();
+            a_line += a_children_lines.folds();
          } else {
             e_lines.push_back(e_line), e_line.clear();
             e_lines += e_children_lines;

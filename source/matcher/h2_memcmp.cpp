@@ -39,10 +39,10 @@ h2_inline h2_fail* h2_matches_bytecmp::matches(const void* a, int n, bool casele
       result = memcmp(e, a, _nbytes) == 0;
    }
    if (result == !dont) return nullptr;
-   return h2_fail::new_memcmp((const unsigned char*)e, (const unsigned char*)a, width, _nbytes * 8, "", h2_stringify(a), "memcmp " + readable_size(width, _nbytes * 8));
+   return h2_fail::new_memcmp((const unsigned char*)e, (const unsigned char*)a, width, _nbytes * 8, h2_stringify(a).string(), "memcmp " + readable_size(width, _nbytes * 8));
 }
 
-h2_inline h2_string h2_matches_bytecmp::expection(bool caseless, bool dont) const
+h2_inline h2_line h2_matches_bytecmp::expection(bool caseless, bool dont) const
 {
    return CD("Me()", caseless, dont);
 }
@@ -74,10 +74,10 @@ h2_inline h2_fail* h2_matches_bitcmp::matches(const void* a, int n, bool caseles
    }
    bool result = h2_numeric::bits_equal(_e, (const unsigned char*)a, _nbits);
    if (result == !dont) return nullptr;
-   return h2_fail::new_memcmp(_e, (const unsigned char*)a, 1, _nbits, "", h2_stringify(a), "memcmp " + readable_size(1, _nbits));
+   return h2_fail::new_memcmp(_e, (const unsigned char*)a, 1, _nbits, h2_stringify(a).string(), "memcmp " + readable_size(1, _nbits));
 }
 
-h2_inline h2_string h2_matches_bitcmp::expection(bool caseless, bool dont) const
+h2_inline h2_line h2_matches_bitcmp::expection(bool caseless, bool dont) const
 {
    return CD("Me()", caseless, dont);
 }

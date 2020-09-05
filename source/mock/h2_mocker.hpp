@@ -7,23 +7,23 @@ class h2_mocker;
 template <int Counter, typename Class, typename Return, typename... Args>
 class h2_mocker<Counter, Class, Return(Args...)> : h2_mock {
    /* clang-format off */
-#define MATCHER_Any_0_1_2_3_4_5_6_7_8_9_A_B_C_D_E_F   \
-   h2_matcher<h2_nth_decay<0, Args...>> _0 = Any,     \
-   h2_matcher<h2_nth_decay<1, Args...>> _1 = Any,     \
-   h2_matcher<h2_nth_decay<2, Args...>> _2 = Any,     \
-   h2_matcher<h2_nth_decay<3, Args...>> _3 = Any,     \
-   h2_matcher<h2_nth_decay<4, Args...>> _4 = Any,     \
-   h2_matcher<h2_nth_decay<5, Args...>> _5 = Any,     \
-   h2_matcher<h2_nth_decay<6, Args...>> _6 = Any,     \
-   h2_matcher<h2_nth_decay<7, Args...>> _7 = Any,     \
-   h2_matcher<h2_nth_decay<8, Args...>> _8 = Any,     \
-   h2_matcher<h2_nth_decay<9, Args...>> _9 = Any,     \
-   h2_matcher<h2_nth_decay<10, Args...>> _10 = Any,   \
-   h2_matcher<h2_nth_decay<11, Args...>> _11 = Any,   \
-   h2_matcher<h2_nth_decay<12, Args...>> _12 = Any,   \
-   h2_matcher<h2_nth_decay<13, Args...>> _13 = Any,   \
-   h2_matcher<h2_nth_decay<14, Args...>> _14 = Any,   \
-   h2_matcher<h2_nth_decay<15, Args...>> _15 = Any
+#define MATCHER_Any_0_1_2_3_4_5_6_7_8_9_A_B_C_D_E_F  \
+   h2_matcher<h2_nth_decay<0, Args...>> _0 = {},     \
+   h2_matcher<h2_nth_decay<1, Args...>> _1 = {},     \
+   h2_matcher<h2_nth_decay<2, Args...>> _2 = {},     \
+   h2_matcher<h2_nth_decay<3, Args...>> _3 = {},     \
+   h2_matcher<h2_nth_decay<4, Args...>> _4 = {},     \
+   h2_matcher<h2_nth_decay<5, Args...>> _5 = {},     \
+   h2_matcher<h2_nth_decay<6, Args...>> _6 = {},     \
+   h2_matcher<h2_nth_decay<7, Args...>> _7 = {},     \
+   h2_matcher<h2_nth_decay<8, Args...>> _8 = {},     \
+   h2_matcher<h2_nth_decay<9, Args...>> _9 = {},     \
+   h2_matcher<h2_nth_decay<10, Args...>> _10 = {},   \
+   h2_matcher<h2_nth_decay<11, Args...>> _11 = {},   \
+   h2_matcher<h2_nth_decay<12, Args...>> _12 = {},   \
+   h2_matcher<h2_nth_decay<13, Args...>> _13 = {},   \
+   h2_matcher<h2_nth_decay<14, Args...>> _14 = {},   \
+   h2_matcher<h2_nth_decay<15, Args...>> _15 = {}
 
 #define FORWARD_Matcher_0_1_2_3_4_5_6_7_8_9_A_B_C_D_E_F        \
    std::forward<h2_matcher<h2_nth_decay<0, Args...>>>(_0),     \
@@ -95,11 +95,9 @@ class h2_mocker<Counter, Class, Return(Args...)> : h2_mock {
                continue;
             }
             fails->foreach([this](h2_fail* f, int, int) {
-               f->explain.concat_back({"on ", func, "\033{+dark gray}", "(", "\033{-dark gray}"});
-               f->explain.concat_back(argvs(f->seqno));
-               f->explain.concat_back({"\033{+dark gray}", ")", "\033{-dark gray}"});
+               f->explain += "on " + (func + argvs(f->seqno));
             });
-            h2_fail* fail = h2_fail::new_normal(signature(), file, line);
+            h2_fail* fail = h2_fail::new_normal(signature(), file, lino);
             h2_fail::append_child(fail, fails);
             h2_fail_g(fail, false);
          } else {
@@ -122,8 +120,8 @@ class h2_mocker<Counter, Class, Return(Args...)> : h2_mock {
          ++checkin_array[checkin_offset];
       }
       if (checkin_offset == -1) {
-         h2_fail* fail = h2_fail::new_normal(signature(), file, line);
-         h2_fail* f = h2_fail::new_normal({func, h2_stringify(at), " ", "\033{red,bold}", "unexpectedly", "\033{reset}", " called"});
+         h2_fail* fail = h2_fail::new_normal(signature(), file, lino);
+         h2_fail* f = h2_fail::new_normal(func + h2_representify(at) + color(" unexpectedly", "red,bold") + " called");
          h2_fail::append_child(fail, f);
          h2_fail_g(fail, false);
       }
@@ -155,7 +153,7 @@ class h2_mocker<Counter, Class, Return(Args...)> : h2_mock {
       return *i;
    }
 
-   static h2_mocker& I(void* origin_fp, const char* ret, const char* func, const h2_vector<const char*>& argv, const char* file, int line)
+   static h2_mocker& I(void* origin_fp, const char* ret, const char* func, const h2_vector<const char*>& argv, const char* file, int lino)
    {
       I().origin_fp = origin_fp;
       I().substitute_fp = std::is_same<std::false_type, Class>::value ? (void*)normal_function_stub : (void*)member_function_stub;
@@ -163,7 +161,7 @@ class h2_mocker<Counter, Class, Return(Args...)> : h2_mock {
       I().func = func;
       I().argv = argv;
       I().file = file;
-      I().line = line;
+      I().lino = lino;
       I().reset();
       I().mock();
       return I();
@@ -240,22 +238,22 @@ class h2_mocker<Counter, Class, Return(Args...)> : h2_mock {
    }
 
    /* clang-format off */
-   h2_mocker& th0(h2_matcher<h2_nth_decay<0, Args...>> e = Any) { if (!matcher_array.empty()) std::get<0>(matcher_array.back()) = e; return *this; }
-   h2_mocker& th1(h2_matcher<h2_nth_decay<1, Args...>> e = Any) { if (!matcher_array.empty()) std::get<1>(matcher_array.back()) = e; return *this; }
-   h2_mocker& th2(h2_matcher<h2_nth_decay<2, Args...>> e = Any) { if (!matcher_array.empty()) std::get<2>(matcher_array.back()) = e; return *this; }
-   h2_mocker& th3(h2_matcher<h2_nth_decay<3, Args...>> e = Any) { if (!matcher_array.empty()) std::get<3>(matcher_array.back()) = e; return *this; }
-   h2_mocker& th4(h2_matcher<h2_nth_decay<4, Args...>> e = Any) { if (!matcher_array.empty()) std::get<4>(matcher_array.back()) = e; return *this; }
-   h2_mocker& th5(h2_matcher<h2_nth_decay<5, Args...>> e = Any) { if (!matcher_array.empty()) std::get<5>(matcher_array.back()) = e; return *this; }
-   h2_mocker& th6(h2_matcher<h2_nth_decay<6, Args...>> e = Any) { if (!matcher_array.empty()) std::get<6>(matcher_array.back()) = e; return *this; }
-   h2_mocker& th7(h2_matcher<h2_nth_decay<7, Args...>> e = Any) { if (!matcher_array.empty()) std::get<7>(matcher_array.back()) = e; return *this; }
-   h2_mocker& th8(h2_matcher<h2_nth_decay<8, Args...>> e = Any) { if (!matcher_array.empty()) std::get<8>(matcher_array.back()) = e; return *this; }
-   h2_mocker& th9(h2_matcher<h2_nth_decay<9, Args...>> e = Any) { if (!matcher_array.empty()) std::get<9>(matcher_array.back()) = e; return *this; }
-   h2_mocker& th10(h2_matcher<h2_nth_decay<10, Args...>> e = Any) { if (!matcher_array.empty()) std::get<10>(matcher_array.back()) = e; return *this; }
-   h2_mocker& th11(h2_matcher<h2_nth_decay<11, Args...>> e = Any) { if (!matcher_array.empty()) std::get<11>(matcher_array.back()) = e; return *this; }
-   h2_mocker& th12(h2_matcher<h2_nth_decay<12, Args...>> e = Any) { if (!matcher_array.empty()) std::get<12>(matcher_array.back()) = e; return *this; }
-   h2_mocker& th13(h2_matcher<h2_nth_decay<13, Args...>> e = Any) { if (!matcher_array.empty()) std::get<13>(matcher_array.back()) = e; return *this; }
-   h2_mocker& th14(h2_matcher<h2_nth_decay<14, Args...>> e = Any) { if (!matcher_array.empty()) std::get<14>(matcher_array.back()) = e; return *this; }
-   h2_mocker& th15(h2_matcher<h2_nth_decay<15, Args...>> e = Any) { if (!matcher_array.empty()) std::get<15>(matcher_array.back()) = e; return *this; }
+   h2_mocker& th0(h2_matcher<h2_nth_decay<0, Args...>> e = {}) { if (!matcher_array.empty()) std::get<0>(matcher_array.back()) = e; return *this; }
+   h2_mocker& th1(h2_matcher<h2_nth_decay<1, Args...>> e = {}) { if (!matcher_array.empty()) std::get<1>(matcher_array.back()) = e; return *this; }
+   h2_mocker& th2(h2_matcher<h2_nth_decay<2, Args...>> e = {}) { if (!matcher_array.empty()) std::get<2>(matcher_array.back()) = e; return *this; }
+   h2_mocker& th3(h2_matcher<h2_nth_decay<3, Args...>> e = {}) { if (!matcher_array.empty()) std::get<3>(matcher_array.back()) = e; return *this; }
+   h2_mocker& th4(h2_matcher<h2_nth_decay<4, Args...>> e = {}) { if (!matcher_array.empty()) std::get<4>(matcher_array.back()) = e; return *this; }
+   h2_mocker& th5(h2_matcher<h2_nth_decay<5, Args...>> e = {}) { if (!matcher_array.empty()) std::get<5>(matcher_array.back()) = e; return *this; }
+   h2_mocker& th6(h2_matcher<h2_nth_decay<6, Args...>> e = {}) { if (!matcher_array.empty()) std::get<6>(matcher_array.back()) = e; return *this; }
+   h2_mocker& th7(h2_matcher<h2_nth_decay<7, Args...>> e = {}) { if (!matcher_array.empty()) std::get<7>(matcher_array.back()) = e; return *this; }
+   h2_mocker& th8(h2_matcher<h2_nth_decay<8, Args...>> e = {}) { if (!matcher_array.empty()) std::get<8>(matcher_array.back()) = e; return *this; }
+   h2_mocker& th9(h2_matcher<h2_nth_decay<9, Args...>> e = {}) { if (!matcher_array.empty()) std::get<9>(matcher_array.back()) = e; return *this; }
+   h2_mocker& th10(h2_matcher<h2_nth_decay<10, Args...>> e = {}) { if (!matcher_array.empty()) std::get<10>(matcher_array.back()) = e; return *this; }
+   h2_mocker& th11(h2_matcher<h2_nth_decay<11, Args...>> e = {}) { if (!matcher_array.empty()) std::get<11>(matcher_array.back()) = e; return *this; }
+   h2_mocker& th12(h2_matcher<h2_nth_decay<12, Args...>> e = {}) { if (!matcher_array.empty()) std::get<12>(matcher_array.back()) = e; return *this; }
+   h2_mocker& th13(h2_matcher<h2_nth_decay<13, Args...>> e = {}) { if (!matcher_array.empty()) std::get<13>(matcher_array.back()) = e; return *this; }
+   h2_mocker& th14(h2_matcher<h2_nth_decay<14, Args...>> e = {}) { if (!matcher_array.empty()) std::get<14>(matcher_array.back()) = e; return *this; }
+   h2_mocker& th15(h2_matcher<h2_nth_decay<15, Args...>> e = {}) { if (!matcher_array.empty()) std::get<15>(matcher_array.back()) = e; return *this; }
    /* clang-format on */
 
    h2_mocker& returns()

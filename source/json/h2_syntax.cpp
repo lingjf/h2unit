@@ -15,15 +15,7 @@ struct h2_json_syntax {
          s = s.unquote('\"');
       else if (s.enclosed('\''))
          s = s.unquote('\'');
-
-      s.replace_all("\\b", "\b");
-      s.replace_all("\\f", "\f");
-      s.replace_all("\\n", "\n");
-      s.replace_all("\\r", "\r");
-      s.replace_all("\\t", "\t");
-      s.replace_all("\\\"", "\"");
-      s.replace_all("\\\\", "\\");
-      //todo: escape \u12ab 
+      s = s.unescape();
       return s;
    }
 
@@ -115,7 +107,6 @@ struct h2_json_syntax {
 
       if (!requires("]")) return false;
       node.type = h2_json_node::t_array;
-
       return true;
    }
 
@@ -125,13 +116,9 @@ struct h2_json_syntax {
       while (i < lexical.size() && !lexical[i].equals("}")) {
          h2_json_node* new_node = new h2_json_node();
          node.children.push_back(new_node->x);
-
          if (!parse_key(*new_node)) return false;
-
          if (!requires(":")) return false;
-
          if (!parse_value(*new_node)) return false;
-
          if (i < lexical.size() && lexical[i].equals(","))
             ++i;
          else
@@ -139,7 +126,6 @@ struct h2_json_syntax {
       }
 
       if (!requires("}")) return false;
-
       node.type = h2_json_node::t_object;
       return true;
    }

@@ -3,11 +3,11 @@ struct h2_defer_fail : h2_once {
    const char* check_type;
    const char *e_expression, *a_expression, *expression;
    const char* file;
-   int line;
+   int lino;
    h2_fail* fail{nullptr};
    h2_ostringstream oss;
 
-   h2_defer_fail(const char* e_expression_, const char* a_expression_, const char* expression_, const char* file_, int line_);
+   h2_defer_fail(const char* e_expression_, const char* a_expression_, const char* expression_, const char* file_, int lino_);
    ~h2_defer_fail();
 };
 

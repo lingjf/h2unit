@@ -4,7 +4,7 @@ static inline void usage()
    ::printf("  \033[33m╭─────────────────────────────────────────────────────────────────────────╮\033[0m\n");
    ::printf("  \033[33m│\033[0m                                                                         \033[33m│\033[0m\n");
    ::printf("  \033[33m│\033[0m                       Current version \033[32mh2unit \033[31m%-9g                  \033[33m│\033[0m\n", H2UNIT_VERSION);
-   ::printf("  \033[33m│\033[0m         Manual: \033[34;4mhttps://github.com/lingjf/h2unit.git \033[0;36mREADME.md          \033[33m│\033[0m\n");
+   ::printf("  \033[33m│\033[0m         Manual: \033[34;4mhttps://github.com/lingjf/h2unit.git\033[0m \033[0;36mREADME.md          \033[33m│\033[0m\n");
    ::printf("  \033[33m│\033[0m                                                                         \033[33m│\033[0m\n");
    ::printf("  \033[33m╰─────────────────────────────────────────────────────────────────────────╯\033[0m\n");
 
@@ -22,13 +22,15 @@ static inline void usage()
   ├────────┼───────────┼────────────────────────────────────────────────────┤\n\
   │ -o     │           │ Only execute last failed cases                     │\n\
   ├────────┼───────────┼────────────────────────────────────────────────────┤\n\
+  │ -p     │           │ Show execute progressing toggle (default show)     │\n\
+  ├────────┼───────────┼────────────────────────────────────────────────────┤\n\
   │ -r[n]  │    [n]    │ Repeat run n rounds (default 1) when no failure    │\n\
   ├────────┼───────────┼────────────────────────────────────────────────────┤\n\
   │ -c     │           │ Output in black-white color style                  │\n\
   ├────────┼───────────┼────────────────────────────────────────────────────┤\n\
-  │ -f     │           │ Toggle fold simple json object or array            │\n\
+  │ -f     │           │ Fold simple JSON object or array toggle            │\n\
   ├────────┼───────────┼────────────────────────────────────────────────────┤\n\
-  │ -p     │           │ Print C/C++ source code json for copy/paste        │\n\
+  │ -y     │           │ Copy-paste JSON C/C++ source code                  │\n\
   ├────────┼───────────┼────────────────────────────────────────────────────┤\n\
   │ -m     │           │ Run cases without memory check                     │\n\
   ├────────┼───────────┼────────────────────────────────────────────────────┤\n\
@@ -38,7 +40,7 @@ static inline void usage()
   ├────────┼───────────┼────────────────┬───────────────────────────────────┤\n\
   │ -i     │ patterns  │ include filter │ case, suite or file name          │\n\
   ├────────┤ separated ├────────────────┤ case-insensitive matches patterns │\n\
-  │ -x     │ by space  │ exclude filter │ default include all, exclude none │\n\
+  │ -e     │ by space  │ exclude filter │ default include all, exclude none │\n\
   └────────┴───────────┴────────────────┴───────────────────────────────────┘\n\
 \n");
 }
@@ -51,24 +53,30 @@ struct getopt {
 
    getopt(int argc_, const char** args_) : argc(argc_), args(args_) {}
 
-   const char* extract_string()
+   const char* extract_next()
    {
       ++i;
       return i < argc ? args[i] : nullptr;
+   }
+
+   const char* extract_string()
+   {
+      if (i + 1 < argc && args[i + 1] && args[i + 1][0] != '-') return args[++i];
+      return nullptr;
    }
 
    const char next_option()
    {
       do {
          for (; j && *++j;) return *j;
-         for (; (j = extract_string()) && j[0] != '-';) {}
+         for (; (j = extract_next()) && j[0] != '-';) {}
       } while (j);
       return '\0';
    }
 
    void extract_number(int& value)
    {
-      if (j) { // j always not null
+      if (j) {  // j always not null
          int l = strspn(j + 1, "0123456789");
          if (l) {
             value = atoi(j + 1);
@@ -91,20 +99,9 @@ struct getopt {
    }
 };
 
-static inline unsigned h2_term_size()
-{
-#ifdef _WIN32
-   return 80;
-#else
-   struct winsize w;
-   if (-1 == ioctl(STDOUT_FILENO, TIOCGWINSZ, &w)) return 80;
-   return w.ws_col < 16 || 256 < w.ws_col ? 80 : w.ws_col;
-#endif
-}
-
 h2_inline h2_option::h2_option()
 {
-   term_size = h2_term_size();
+   terminal_width = h2_termimal_width();
 #ifdef _WIN32
    memory_check = false;
 #endif
@@ -120,17 +117,18 @@ h2_inline void h2_option::parse(int argc, const char** argv)
       switch (get.next_option()) {
       case '\0': return;
       case 'v': verbose = true; break;
-      case 'c': colorfull = !colorfull; break;
-      case 's': shuffle = !shuffle; break;
-      case 'o': only = true; break;
+      case 'c': colorful = !colorful; break;
+      case 's': shuffle_order = !shuffle_order; break;
+      case 'o': only_execute_fails = true; break;
       case 'S': seq = true; break;
-      case 'f': fold = !fold; break;
-      case 'p': paste = true; break;
+      case 'f': fold_json = !fold_json; break;
+      case 'p': execute_progress = !execute_progress; break;
+      case 'y': copy_paste_json = true; break;
       case 'm': memory_check = !memory_check; break;
-      case 'l': listing = true; break;
+      case 'l': list_cases = true; break;
       case 'b':
-         breakable = 1;
-         get.extract_number(breakable);
+         break_after_fails = 1;
+         get.extract_number(break_after_fails);
          break;
       case 'r':
          rounds = 1;
@@ -145,7 +143,7 @@ h2_inline void h2_option::parse(int argc, const char** argv)
       case 'i':
          while ((t = get.extract_string())) includes.push_back(t);
          break;
-      case 'x':
+      case 'e':
          while ((t = get.extract_string())) excludes.push_back(t);
          break;
       case 'h':
@@ -166,10 +164,10 @@ static inline bool match3(const std::vector<const char*>& patterns, const char* 
    return false;
 }
 
-h2_inline bool h2_option::filter(const char* suitename, const char* casename, const char* file, int line) const
+h2_inline bool h2_option::filter(const char* suitename, const char* casename, const char* file, int lino) const
 {
    char filename[1024];
-   sprintf(filename, "%s:%d", file, line);
+   sprintf(filename, "%s:%d", file, lino);
    if (!includes.empty())
       if (!match3(includes, suitename) && !match3(includes, casename) && !match3(includes, filename))
          return true;

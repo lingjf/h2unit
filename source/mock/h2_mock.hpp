@@ -6,7 +6,7 @@ struct h2_mock : h2_libc {
    const char* func;
    h2_vector<const char*> argv;
    const char* file;
-   int line;
+   int lino;
 
    h2_line argvs(int seq = -1);
    h2_line signature();
@@ -43,14 +43,14 @@ struct h2_mocks {
 #define __H2ARGV14(_1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14) {#_1, #_2, #_3, #_4, #_5, #_6, #_7, #_8, #_9, #_10, #_11, #_12, #_13, #_14}
 #define __H2ARGV15(_1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15) {#_1, #_2, #_3, #_4, #_5, #_6, #_7, #_8, #_9, #_10, #_11, #_12, #_13, #_14, #_15}
 
-#define __H2ARGV(...) H2PP_CAT2(__H2ARGV, H2PP_NARG(__VA_ARGS__))(__VA_ARGS__)  // Duplicated H2PP_VARIADIC_CALL avoid recursion
+#define __H2ARGV(...) H2PP_CAT(__H2ARGV, H2PP_NARG(__VA_ARGS__))(__VA_ARGS__)  // Duplicated H2PP_VARIADIC_CALL avoid recursion
 #define H2ARGV(...) __H2ARGV(H2PP_REMOVE_PARENTHESES(__VA_ARGS__))
 
 #define __H2MOCK4(OriginFunction, Return, Args, Expression) \
    h2::h2_mocker<__COUNTER__, std::false_type, Return Args>::I(h2::h2_fp(OriginFunction), #Return, #OriginFunction, H2ARGV(Args), __FILE__, __LINE__)
 
 #define __H2MOCK5(Class, Method, Return, Args, Expression) \
-   h2::h2_mocker<__COUNTER__, H2PP_REMOVE_PARENTHESES_IF(Class), Return Args>::I(h2::h2_mfp<H2PP_REMOVE_PARENTHESES_IF(Class), Return Args>::A(&H2PP_REMOVE_PARENTHESES_IF(Class)::H2PP_REMOVE_PARENTHESES_IF(Method)), #Return, #Class "::" #Method, H2ARGV(Args), __FILE__, __LINE__)
+   h2::h2_mocker<__COUNTER__, H2PP_RPS(Class), Return Args>::I(h2::h2_mfp<H2PP_RPS(Class), Return Args>::A(&H2PP_RPS(Class)::H2PP_RPS(Method)), #Return, #Class "::" #Method, H2ARGV(Args), __FILE__, __LINE__)
 
 #define __H2MOCK(Expression, ...) H2PP_VARIADIC_CALL(__H2MOCK, __VA_ARGS__, (Expression))
 #define H2MOCK(...) __H2MOCK(#__VA_ARGS__, __VA_ARGS__)

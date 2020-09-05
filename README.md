@@ -7,7 +7,7 @@ The special features is :
 ### 1. Header-only Single-file 
 Only need to include *1* *ONE* *一* *いち* source file: [**h2unit.h**](h2unit.h) 
 
-**h2unit.h** contains [`main()`](source/h2_unit.hpp#L283) function, and `main()` will execute test cases.
+**h2unit.h** contains [`main()`](source/h2_unit.cpp#L56) function, and `main()` will execute test cases.
 user no need to write main() anymore.
 
 ### 2. Dynamic STUB/MOCK
@@ -23,9 +23,9 @@ All the code of following features can be found in the [example folder](example/
 # Features
 
 ### 1. Test Suite and Test Case
-[`SUITE`](source/h2_unit.hpp#L100) is used to define a Test Suite. [`Case`](source/h2_unit.hpp#L100) is used to define a Test Case inside of Test Suite. <br>
+[`SUITE`](source/h2_unit.hpp#L114) is used to define a Test Suite. [`Case`](source/h2_unit.hpp#L114) is used to define a Test Case inside of Test Suite. <br>
 Variables defined in Suite scope are shared by cases which can see them. <br>
-[`Cleanup`](source/h2_unit.hpp#L100) is executed after every test case whatever success or fail. <br>
+[`Cleanup`](source/h2_unit.hpp#L114) is executed after every test case whatever success or fail. <br>
 Each case is executed separately and begin from first of suite scope, 
    shared variables are initialized, then shared code is executed until case section,
    after test code, Cleanup() is invoked to release resources. <br>
@@ -52,7 +52,7 @@ SUITE(Suite Name)
    shared_code as cleanup;
 }
 ```
-[`CASE`](source/h2_unit.hpp#L100) macro is used to define a standalone test case.
+[`CASE`](source/h2_unit.hpp#L114) macro is used to define a standalone test case.
 ```C++
 CASE(Case Name)
 {
@@ -70,8 +70,8 @@ All the test cases are registered to a global list automatically (C++ global obj
 It means user should not write extra code to register test cases.
 
 ### 2. Compare
-*    [`OK`](source/h2_unit.hpp#L100)(expr) : check the result of `expr` is true.
-*    [`OK`](source/h2_unit.hpp#L100)(expect, actual) : check the actual value matches with expect value.
+*    [`OK`](source/h2_unit.hpp#L114)(expr) : check the result of `expr` is true.
+*    [`OK`](source/h2_unit.hpp#L114)(expect, actual) : check the actual value matches with expect value.
 
 Add user specified error description by following << operator.
 ```C++
@@ -81,43 +81,43 @@ CASE(Case Name)
 }
 ```
 ### 3. Matcher
-*    [`_`](source/h2_unit.hpp#L100) / [`Any`](source/h2_unit.hpp#L100) : matches any value .
-*    [`IsNull`](source/h2_unit.hpp#L100) : matches if value is null .
-*    [`NotNull`](source/h2_unit.hpp#L100) : matches if value is not null .
-*    [`IsTrue`](source/h2_unit.hpp#L100) : matches if value is true .
-*    [`IsFalse`](source/h2_unit.hpp#L100) : matches if value is false .
-*    [`Eq`](source/h2_unit.hpp#L100)(expect) : matches if value equals expect (one of [strcmp wildcard regex] equals for string compare).
-     *    [`Eq`](source/h2_unit.hpp#L100)(expect, epsilon) : matches if float value near equals expect, default epsilon is 0.00001 .
-*    [`Nq`](source/h2_unit.hpp#L100)(expect) : matches if value not equals expect .
-*    [`Ge`](source/h2_unit.hpp#L100)(expect) : matches if value >= expect .
-*    [`Gt`](source/h2_unit.hpp#L100)(expect) : matches if value > expect .
-*    [`Le`](source/h2_unit.hpp#L100)(expect) : matches if value <= expect .
-*    [`Lt`](source/h2_unit.hpp#L100)(expect) : matches if value < expect .
-*    [`Me`](source/h2_unit.hpp#L100)(expect, [length]) : matches if memcmp(expect, value, length) == 0 .
-     *    [`M1e`](source/h2_unit.hpp#L100)(expect, [length]) : bit level memcmp.
-     *    [`M8e`](source/h2_unit.hpp#L100)(expect, [length]) : byte level memcmp.
-     *    [`M16e`](source/h2_unit.hpp#L100)(expect, [length]) : int16 level memcmp.
-     *    [`M32e`](source/h2_unit.hpp#L100)(expect, [length]) : int32 level memcmp.
-     *    [`M64e`](source/h2_unit.hpp#L100)(expect, [length]) : int64 level memcmp.
-*    [`Re`](source/h2_unit.hpp#L100)(expect) : matches if value Regex equals expect .
-*    [`We`](source/h2_unit.hpp#L100)(expect) : matches if value Wildcard equals expect .
-*    [`Je`](source/h2_unit.hpp#L100)(expect) : matches if value JSON equals expect .
-*    [`Se`](source/h2_unit.hpp#L100)(expect) : matches if string strictly equals expect as strcmp() .
-*    [`Substr`](source/h2_unit.hpp#L100)(expect) : matches if value has substr expect .
-*    [`StartsWith`](source/h2_unit.hpp#L100)(expect) : matches if value starts with expect .
-*    [`EndsWith`](source/h2_unit.hpp#L100)(expect) : matches if value ends with expect .
-*    [`~`](source/h2_unit.hpp#L100) / [`CaseLess`](source/h2_unit.hpp#L100)(expect) : make inner matcher case-insensitive, right operator must be Matcher, `~"Hello World"` not works .
-*    [`Pointee`](source/h2_unit.hpp#L100)(expect) : matches if point to value equals expect .
-*    [`!`](source/h2_unit.hpp#L100) / [`Not`](source/h2_unit.hpp#L100)(expect) : matches if not matches inner matcher, right operator must be Matcher, !3 is considered as normal semantics .
-*    [`&&`](source/h2_unit.hpp#L100)(expect) : Logical AND of two matchers, left and right operator shoud at least one Matcher .
-*    [`||`](source/h2_unit.hpp#L100)(expect) : Logical OR of two matchers .
-*    [`AllOf`](source/h2_unit.hpp#L100)(expect...) : matches if value matches all of inner matchers, act as AND logical operator.
-*    [`AnyOf`](source/h2_unit.hpp#L100)(expect...) : matches if value matches any one of inner matchers, act as OR logical operator.
-*    [`NoneOf`](source/h2_unit.hpp#L100)(expect...) : matches if value not matches all of inner matchers .
-*    [`ListOf`](source/h2_unit.hpp#L100)(expect...) : matches if sequence container(array, vector, ...) item matches inner matchers .
-*    [`CountOf`](source/h2_unit.hpp#L100)(expect...) : matches if container(array, vector, ...) item count matches inner matchers .
-*    [`Have`/`Has`](source/h2_unit.hpp#L100)(expect ...) : matches if there are items in container(vector, set, map, ...) match every inner matchers.
-*    [`In`](source/h2_unit.hpp#L100)(expect...) : matches if acutal value matches any of inner matchers .
+*    [`_`](source/h2_unit.hpp#L266) / [`Any`](source/h2_unit.hpp#L266) : matches any value 
+*    [`IsNull`](source/h2_unit.hpp#L266) : matches if value is null 
+*    [`NotNull`](source/h2_unit.hpp#L266) : matches if value is not null 
+*    [`IsTrue`](source/h2_unit.hpp#L266) : matches if value is true 
+*    [`IsFalse`](source/h2_unit.hpp#L266) : matches if value is false 
+*    [`Eq`](source/h2_unit.hpp#L266)(expect) : matches if value equals expect (one of [strcmp wildcard regex] equals for string compare) 
+     *    [`Eq`](source/h2_unit.hpp#L266)(expect, epsilon) : matches if float value near equals expect, default epsilon is 0.00001 
+*    [`Nq`](source/h2_unit.hpp#L266)(expect) : matches if value not equals expect 
+*    [`Ge`](source/h2_unit.hpp#L266)(expect) : matches if value >= expect 
+*    [`Gt`](source/h2_unit.hpp#L266)(expect) : matches if value > expect 
+*    [`Le`](source/h2_unit.hpp#L266)(expect) : matches if value <= expect 
+*    [`Lt`](source/h2_unit.hpp#L266)(expect) : matches if value < expect 
+*    [`Me`](source/h2_unit.hpp#L266)(expect, [length]) : matches if memcmp(expect, value, length) == 0 
+     *    [`M1e`](source/h2_unit.hpp#L266)(expect, [length]) : bit level memcmp
+     *    [`M8e`](source/h2_unit.hpp#L266)(expect, [length]) : byte level memcmp
+     *    [`M16e`](source/h2_unit.hpp#L266)(expect, [length]) : int16 level memcmp
+     *    [`M32e`](source/h2_unit.hpp#L266)(expect, [length]) : int32 level memcmp
+     *    [`M64e`](source/h2_unit.hpp#L266)(expect, [length]) : int64 level memcmp
+*    [`Re`](source/h2_unit.hpp#L266)(expect) : matches if value Regex equals expect 
+*    [`We`](source/h2_unit.hpp#L266)(expect) : matches if value Wildcard equals expect 
+*    [`Je`](source/h2_unit.hpp#L266)(expect) : matches if value JSON equals expect 
+*    [`Se`](source/h2_unit.hpp#L266)(expect) : matches if string strictly equals expect as strcmp() 
+*    [`Substr`](source/h2_unit.hpp#L266)(expect) : matches if value has substr expect 
+*    [`StartsWith`](source/h2_unit.hpp#L266)(expect) : matches if value starts with expect 
+*    [`EndsWith`](source/h2_unit.hpp#L266)(expect) : matches if value ends with expect 
+*    [`~`](source/h2_unit.hpp#L266) / [`CaseLess`](source/h2_unit.hpp#L266)(expect) : make inner matcher case-insensitive, right operator must be Matcher, `~"Hello World"` not works 
+*    [`Pointee`](source/h2_unit.hpp#L266)(expect) : matches if point to value equals expect 
+*    [`!`](source/h2_unit.hpp#L266) / [`Not`](source/h2_unit.hpp#L266)(expect) : matches if not matches inner matcher, right operator must be Matcher, !3 is considered as normal semantics 
+*    [`&&`](source/h2_unit.hpp#L266)(expect) : Logical AND of two matchers, left and right operator shoud at least one Matcher 
+*    [`||`](source/h2_unit.hpp#L266)(expect) : Logical OR of two matchers 
+*    [`AllOf`](source/h2_unit.hpp#L266)(expect...) : matches if value matches all of inner matchers, act as AND logical operator
+*    [`AnyOf`](source/h2_unit.hpp#L266)(expect...) : matches if value matches any one of inner matchers, act as OR logical operator
+*    [`NoneOf`](source/h2_unit.hpp#L266)(expect...) : matches if value not matches all of inner matchers 
+*    [`ListOf`](source/h2_unit.hpp#L266)(expect...) : matches if sequence container(array, vector, ...) item matches inner matchers 
+*    [`CountOf`](source/h2_unit.hpp#L266)(expect...) : matches if container(array, vector, ...) item count matches inner matchers 
+*    [`Have`/`Has`](source/h2_unit.hpp#L266)(expect ...) : matches if there are items in container(vector, set, map, ...) match every inner matchers
+*    [`In`](source/h2_unit.hpp#L266)(expect...) : matches if acutal value matches any of inner matchers 
 
 Matcher can be used in OK(expect, actual), for example:
 ```C++
@@ -134,7 +134,7 @@ CASE(memory compare)
    unsigned char *a1 = ...
    OK(Me(e1, 5), a1);
    
-   const char *e2 = "\x8E\0xC8\0x8E\0xC8\0xF8";
+   const char *e2 = "\x8E\xC8\x8E\xC8\xF8";
    unsigned char *a2 = ...
    OK(Me(e2, 5), a2);
 }
@@ -191,12 +191,12 @@ If length is not specified explicitly, maximal length is used.
 
 ##### 3.1.3. Compare length
 
-*    [`M1e`](source/h2_unit.hpp#L100)(expect, [length]) : number of bits.
-*    [`M8e`](source/h2_unit.hpp#L100)(expect, [length]) : number of bytes.
-*    [`M16e`](source/h2_unit.hpp#L100)(expect, [length]) : number of int16.
-*    [`M32e`](source/h2_unit.hpp#L100)(expect, [length]) : number of int32.
-*    [`M64e`](source/h2_unit.hpp#L100)(expect, [length]) : number of int64.
-*    [`Me`](source/h2_unit.hpp#L100)(expect, [length]) : following deduced type.
+*    [`M1e`](source/h2_unit.hpp#L266)(expect, [length]) : number of bits.
+*    [`M8e`](source/h2_unit.hpp#L266)(expect, [length]) : number of bytes.
+*    [`M16e`](source/h2_unit.hpp#L266)(expect, [length]) : number of int16.
+*    [`M32e`](source/h2_unit.hpp#L266)(expect, [length]) : number of int32.
+*    [`M64e`](source/h2_unit.hpp#L266)(expect, [length]) : number of int64.
+*    [`Me`](source/h2_unit.hpp#L266)(expect, [length]) : following deduced type.
 
 #### 3.2. Array size
 
@@ -215,12 +215,12 @@ CASE(memory compare)
 
 #### 3.3. User defined Matcher
 ```C++
-MATCHER(Between, left, right, (a << " not in [" << left << ", " << right << "]"))
+MATCHER(InRange, left, right, (a << " not in [" << left << ", " << right << "]"))
 {
-   return left <= a && a <= right; 
+   return left <= a && a <= right;
 }
 ```
-Define a new Matcher named 'Between', with 2 arguments left and right in constructor.
+Define a new Matcher named 'InRange', with 2 arguments left and right in constructor.
 In matcher body, specific `a` is actual value variable name.
 If matches fail, error message is result of 
 ```C++
@@ -232,7 +232,7 @@ in following case, left is 1, right is 4, a is 5, error message is `"5 not in [1
 ```C++
 Case(test user defined matcher)
 {
-   OK(Between(1, 4), 5);
+   OK(InRange(1, 4), 5);
 }
 ```
 
@@ -271,7 +271,7 @@ void this_is_a_test_case()
 ```
 The most disadvantage of function pointer replacement is changing of product source code. <br>
 Objective of Dynamic STUB is same as function pointer replacement, but it is unnecessary to change product source code. <br> 
-[STUB](source/h2_unit.hpp#L100) is easier to use.
+[STUB](source/h2_unit.hpp#L114) is easier to use.
 
 ```C++
 /* product code */ 
@@ -305,18 +305,26 @@ CASE(demo dynamic stub with fake function)
 STUB overload function
 
 ```C++
-double sin_fake(double x)
+bool is_equal(double a, double b)
 {
-   return 3.14;
+   return a == b;
+}
+bool is_equal(char * a, char * b)
+{
+   return strcmp(a, b) == 0;
+}
+bool is_equal_fake(char * a, char * b)
+{
+   return stricmp(a, b) == 0;
 }
 CASE(demo dynamic stub with fake function)
 {
-   STUB((double(*)(double))sin, sin_fake);
-   do_something_with_call_sin();
+   STUB((bool(*)(char*, char*))is_equal, is_equal_fake);
+   do_something_with_call_is_equal();
 }
 ```
 
-With help of C++ lambda, separate fake function can sit together with [STUB](source/h2_unit.hpp#L100), it makes test code more tidy and fitness.
+With help of C++ lambda, separate fake function can sit together with [STUB](source/h2_unit.hpp#L114), it makes test code more tidy and fitness.
 
 ```C++
 CASE(demo dynamic stub with lambda)
@@ -347,24 +355,9 @@ CASE(demo dynamic stub with class member function)
 STUB C++ Class static member function
 
 ```C++
-CASE(demo dynamic stub with class member function)
+CASE(demo dynamic stub with static class member function)
 {
    STUB(Foo::bar, int, (int a, char * b)) {
-      OK(1, a);
-      sprintf(b, "return value by argument");
-      return 2;
-   };
-   do_something(Foo);
-}
-```
-
-STUB C++ Class virtual member function with quite special constructor which H2UNIT can't guess. <br>
-If Class has default constructor, or simple constructor which H2UNIT can guess, Instantiate can be omitted.
-
-```C++
-CASE(demo dynamic stub with class member function)
-{
-   STUB(Foo, bar, int, (int a, char * b), Foo(...)) {
       OK(1, a);
       sprintf(b, "return value by argument");
       return 2;
@@ -454,7 +447,7 @@ Expect foobar called with *a* equals *1*, *b* equals *"A"* *1 time* in this case
 -   [Arguments check](source/h2_mock.hpp#L206)
     -    `with`(matcher...) : Expect arguments matches matchers
     -    `th0~15`(matcher) : Expect 1st~16th argument matches matcher
--   [Actions](source/h2_mock.hpp#L223), only the lastest action works, previous is overwrite.
+-   [Actions](source/h2_mock.hpp#L223), only the lastest action works, previous is overwrite
     -    `returns`(value) : Inject return value
     -    `does`(lambda) : Check arguments, inject return value, and other actions
     -    `=`(lambda) : Same as *does* without *()*
@@ -526,7 +519,7 @@ MOCK(foobar, int(int a, char * b)).once(1, Je("{
                                               }");
 ```
 
-[`JE`](source/h2_unit.hpp#L100) is abbreviated for OK(Je(expect json), actual json)
+[`JE`](source/h2_unit.hpp#L114) is abbreviated for OK(Je(expect json), actual json)
 
 #### 6.3. math expression is support in JSON, it is evaluated to number when parsing 
 ```C++
@@ -546,7 +539,7 @@ JE("{
 ```
 
 #### 6.5. JSON Compare selector
-Inspired by [jq](https://github.com/stedolan/jq), JE/Je can compare JSON subnet specified by selector.
+Inspired by [jq](https://github.com/stedolan/jq), JE/Je can compare JSON subset specified by selector.
 
 ```Python
 scores = {
@@ -572,7 +565,7 @@ OK(Je("99", ".Zhang3.English"), scores);
    When the index value is an integer, `[<value>]` can index arrays. Arrays are zero-based, so `[2]` returns the third element.
    Negative indices are allowed, with -1 referring to the last element, -2 referring to the next to last element, and so on.
 
-#### 6.6. JSON Compare principle
+#### 6.6. JSON Compare rule
 ##### 6.6.1. Value Compare
    Matches when Expect Value is Regex, otherwise Equals .
 ##### 6.6.2. Object compare
@@ -588,7 +581,7 @@ In order to detect memory leak, h2unit hook malloc,free,new,delete,calloc,reallo
 Every test case should balance the memory usage. In other word,
 After a test case finished, the memory usage should be same as before the test case execute, otherwise memory leak detected.
 
-[`BLOCK`](source/h2_unit.hpp#L100) can be used to detect memory leak in a code block. p2 is reported as leak in the following:
+[`BLOCK`](source/h2_unit.hpp#L114) can be used to detect memory leak in a code block. p2 is reported as leak in the following:
 ```C++
 CASE(memory leak in block)
 {
@@ -605,7 +598,7 @@ CASE(memory leak in block)
 ```
 
 #### 7.2. Memory Faulty Injection
-[`BLOCK`](source/h2_unit.hpp#L100) can used to control the remain memory resource, it can makes malloc() fail with "out of memory" error. The following case will fail due to malloc() fail.
+[`BLOCK`](source/h2_unit.hpp#L114) can used to control the remain memory resource, it can makes malloc() fail with "out of memory" error. The following case will fail due to malloc() fail.
 ```C++
 CASE(test out of memory)
 {
@@ -614,7 +607,7 @@ CASE(test out of memory)
    }
 }
 ```
-[`BLOCK`](source/h2_unit.hpp#L100) can used to initialize allocated memory. In following case, p is filled with *C555*.
+[`BLOCK`](source/h2_unit.hpp#L114) can used to initialize allocated memory. In following case, p is filled with *C555*.
 ```C++
 CASE(test memory initialize)
 {
@@ -623,7 +616,7 @@ CASE(test memory initialize)
    }
 }
 ```
-[`BLOCK`](source/h2_unit.hpp#L100) align allocate memory, In following case, p mod 4 equals 3.
+[`BLOCK`](source/h2_unit.hpp#L114) align allocate memory, In following case, p mod 4 equals 3.
 ```C++
 CASE(test ptr align)
 {
@@ -632,7 +625,7 @@ CASE(test ptr align)
    }
 }
 ```
-[`BLOCK`](source/h2_unit.hpp#L100) Ignore memory leak detection, in BLOCK.
+[`BLOCK`](source/h2_unit.hpp#L114) Ignore memory leak detection, in BLOCK.
 ```C++
 CASE(test ignore memory leak)
 {
@@ -654,12 +647,12 @@ Writing out of allocated memory area[start, start+size], memory overflow/underfl
 Read/Write memory which already freed, will be detected.
 
 ### 8. Global Setup/Teardown
-*    [`GlobalSetup`](source/h2_unit.hpp#L100): Invoked before test case.
-*    [`GlobalTeardown`](source/h2_unit.hpp#L100): Invoked after all test case executed.
-*    [`GlobalSuiteSetup`](source/h2_unit.hpp#L100): Invoked before every suite.
-*    [`GlobalSuiteTeardown`](source/h2_unit.hpp#L100): Invoked after every suite executed.
-*    [`GlobalCaseSetup`](source/h2_unit.hpp#L100): Invoked before every case.
-*    [`GlobalCaseTeardown`](source/h2_unit.hpp#L100): Invoked after every case executed.
+*    [`GlobalSetup`](source/h2_unit.hpp#L114): Invoked before test case
+*    [`GlobalTeardown`](source/h2_unit.hpp#L114): Invoked after all test case executed
+*    [`GlobalSuiteSetup`](source/h2_unit.hpp#L114): Invoked before every suite
+*    [`GlobalSuiteTeardown`](source/h2_unit.hpp#L114): Invoked after every suite executed
+*    [`GlobalCaseSetup`](source/h2_unit.hpp#L114): Invoked before every case
+*    [`GlobalCaseTeardown`](source/h2_unit.hpp#L114): Invoked after every case executed
 ```C++
 GlobalSetup() {
    WSAStartup();
@@ -672,7 +665,7 @@ GlobalTeardown() {
 Global Setup/Teardown can define multiple times, all of them will be invoked.
 
 ### 9. DNS Hijack
-[`DNS`](source/h2_unit.hpp#L100)("hostname", "ip1", "ip2", "alias1", "alias2", ...): Set DNS resolve results (getaddrinfo, gethostbyname)
+[`DNS`](source/h2_unit.hpp#L114)("hostname", "ip1", "ip2", "alias1", "alias2", ...): Set DNS resolve results (getaddrinfo, gethostbyname)
 
 DNS resolve is default controlled, and result is empty.
 ```C++
@@ -686,8 +679,8 @@ CASE(test dns)
 ```
 
 ### 10. Socket Hijack
-*    [`SOCK`](source/h2_unit.hpp#L100)(): Monitor TCP/UDP send/recv, and return sent packets.
-*    [`SOCK`](source/h2_unit.hpp#L100)(packet, size, from=ip:port, to=ip:port]): Inject UDP/TCP packet as received packet.
+*    [`SOCK`](source/h2_unit.hpp#L114)(): Monitor TCP/UDP send/recv, and return sent packets.
+*    [`SOCK`](source/h2_unit.hpp#L114)(packet, size, from=ip:port, to=ip:port]): Inject UDP/TCP packet as received packet.
 If not specified `to`, any of socket can receive the packet.
 
 If not specified `from`, the packet is received from where last send to.
@@ -707,12 +700,12 @@ CASE(test net)
 ```
 
 ### 11. Capture STDOUT/STDERR/syslog
-[`COUT`](source/h2_unit.hpp#L100)(): Capture STDOUT STDERR and syslog output (printf(), std::cout<<, ...).
-*    `COUT`(): Toggle(Start/Stop) Capture STDOUT and STDERR.
-*    `COUT`(stdout stderr syslog): Start Capture STDOUT STDERR and syslog.
-*    `COUT`(STDOUT): Start Capture STDOUT only.
-*    `COUT`(STDerr): Start Capture STDERR only.
-*    `COUT`(stop): Stop Capture, and return buffer captured.
+[`COUT`](source/h2_unit.hpp#L114)(): Capture STDOUT STDERR and syslog output (printf(), std::cout<<, ...)
+*    `COUT`(): Toggle(Start/Stop) Capture STDOUT and STDERR
+*    `COUT`(stdout stderr syslog): Start Capture STDOUT STDERR and syslog
+*    `COUT`(STDOUT): Start Capture STDOUT only
+*    `COUT`(STDerr): Start Capture STDERR only
+*    `COUT`(stop): Stop Capture, and return buffer captured
 
 ```C++
 CASE(test printf)
@@ -766,15 +759,6 @@ SUITE(suite)
 *    ForFullmesh(Macro, values...): Call Macro(values x values)
 *    ForFullmesh(Macro, (x-values...), (y-values...)): Call Macro(x-values x y-values)
 
-### 13. Human friendly console output
-
-*    Failure is high-lighted
-*    Expect and Actual are high-lighted
-*    Difference is high-lighted
-*    String difference is aligned
-*    Memory difference is aligned
-*    JSON difference is aligned
-*    Memory leak backtrace is printed
 
 # Coverage
 
@@ -815,20 +799,21 @@ twofiles speed up 2~3 times than onefile.
 *    `-l` *list* out suites and cases
 *    `-s` *shuffle* cases and execute in random order
 *    `-b` [n] *breaking* test once failure occurred
-*    `-o` *Only* execute last failed cases
+*    `-o` *only* execute last failed cases
+*    `-p` show/Hide execute *progressing* (default show)
 *    `-r` [n] repeat run n *rounds* when no failure
-*    `-c` enable/disable *colorfull* output, default is enable
+*    `-c` enable/disable *colorful* output, default is enable
 *    `-m` enable/disable *memory* check(leak, overflow, trample, double free, asymmetric free), default is enable
-*    `-d/D` *Debug* mode, -D for gdb attach but requires password
-*    `-f` Fold simple json object or array 
-*    `-p` Print C/C++ source code json for copy/paste 
+*    `-d/D` *debug* mode, -D for gdb attach but requires password
+*    `-f` *fold* simple json object or array 
+*    `-y` *copy-paste* JSON C/C++ source code  
 *    `-j` {path} generate *junit* compatible XML output
 *    `-i` {pattern} *include* filter, suite name or case name wildcard (?, *) matches, if pattern don't contains ? and *, wildcard change to contains. Default is `*` (include all)
-*    `-x` {pattern} *exclude* filter, default is ` ` (exclude nothing)
+*    `-e` {pattern} *exclude* filter, default is ` ` (exclude nothing)
 
 # Limitations
 *    C++11 is required
 *    GCC 5.5+ (regex support, SFINAE support)
-*    Variadic parameter function can't MOCK, use STUB with separate fake function instead.
-*    MOCK arguments up to 15 count.
-*    sqrt() in math.h can be STUB/MOCK, because compiler insert sqrtsd ASM instruction directly instead of function call.
+*    Variadic parameter function can't MOCK, use STUB with separate fake function instead
+*    MOCK arguments up to 15 count
+*    sqrt() in math.h can be STUB/MOCK, because compiler insert sqrtsd ASM instruction directly instead of function call

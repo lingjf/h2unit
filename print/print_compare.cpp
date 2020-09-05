@@ -1,4 +1,4 @@
-#include "../source/h2_unit.cpp"
+#include "../h2unit.h"
 
 SUITE(number compares)
 {
@@ -40,7 +40,7 @@ SUITE(string compares)
    {
       const char* a1 = "a752a5eeX24a149f899\t3e48ce81b77b200b212b23c2402c2Y1ddc4260\na608cf32"
                        "8a2133386477eb7a6595889372674Zcb9223419a7a0224fe7af2866944197ee4ab18e"
-                       "3cae8507bb306a284f";
+                       "3cae8507bb306a284fz";
 
       OK("a752a5eee24a149f899\r3e48ce81b77b200b212b23c2402c221ddc4260\na608cf32"
          "8a2133386477eb7a65958893726741cb9223419a7a0224fe7af2866944197ee4ab18e"

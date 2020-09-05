@@ -11,17 +11,15 @@
 struct h2_list {
    struct h2_list *next, *prev;
 
-   static void __add_between(h2_list* thus, h2_list* prev, h2_list* next);
-
    h2_list() : next(this), prev(this) {}
 
-   void add_head(h2_list& entry) { __add_between(&entry, this, this->next); }
-   void add_tail(h2_list& entry) { __add_between(&entry, this->prev, this); }
-   void add_before(h2_list& entry) { __add_between(&entry, this->prev, this); }
-   void add_after(h2_list& entry) { __add_between(&entry, this, this->next); }
+   h2_list& add_head(h2_list& entry);
+   h2_list& add_tail(h2_list& entry);
+   h2_list& add_before(h2_list& entry);
+   h2_list& add_after(h2_list& entry);
 
-   void push_back(h2_list& entry) { add_tail(entry); }
-   void push(h2_list& entry) { add_head(entry); }
+   h2_list& push_back(h2_list& entry) { return add_tail(entry); }
+   h2_list& push(h2_list& entry) { return add_head(entry); }
    h2_list& pop() { return next->out(); }
    h2_list& pop_back() { return prev->out(); }
 

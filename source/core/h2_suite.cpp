@@ -1,6 +1,6 @@
 
-h2_inline h2_suite::h2_suite(const char* name_, void (*test_code_)(h2_suite*, h2_case*), const char* file_, int line_)
-  : name(name_), file(file_), line(line_), test_code(test_code_)
+h2_inline h2_suite::h2_suite(const char* name_, void (*test_code_)(h2_suite*, h2_case*), const char* file_, int lino_)
+  : name(name_), file(file_), lino(lino_), test_code(test_code_)
 {
    h2_task::I().suites.push_back(x);
 }
@@ -13,7 +13,7 @@ h2_inline void h2_suite::clear()
 
 h2_inline void h2_suite::setup()
 {
-   h2_memory::stack::push(file, line);
+   h2_memory::stack::push(file, lino);
 }
 
 h2_inline void h2_suite::cleanup()
@@ -26,8 +26,7 @@ h2_inline void h2_suite::cleanup()
 
 h2_inline void h2_suite::enumerate()
 {
-   /* enumerate case by static local h2_case variable inside of h2_suite_test_code() */
-   test_code(this, nullptr);
+   test_code(this, nullptr); /* enumerate case by static local h2_case variable inside of h2_suite_test_CmLn() */
 }
 
 h2_inline void h2_suite::execute(h2_case* c)

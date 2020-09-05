@@ -1,6 +1,5 @@
 
 #ifdef _WIN32
-
 static inline char* basename(char* path)
 {
    static char t[MAX_PATH + 1];
@@ -8,7 +7,6 @@ static inline char* basename(char* path)
    PathRemoveFileSpecA(t);
    return t;
 }
-
 #endif
 
 h2_inline bool h2_pattern::regex_match(const char* pattern, const char* subject, bool caseless)
@@ -72,25 +70,31 @@ static inline void h2_sleep(long long milliseconds)
 #endif
 }
 
+static inline unsigned h2_termimal_width()
+{
+#ifdef _WIN32
+   return 80;
+#else
+   struct winsize w;
+   if (-1 == ioctl(STDOUT_FILENO, TIOCGWINSZ, &w)) return 80;
+   return w.ws_col < 16 || 256 < w.ws_col ? 80 : w.ws_col;
+#endif
+}
+
 static inline unsigned h2_page_size()
 {
-   static unsigned s_page_size = 0;
-   if (s_page_size == 0) {
 #ifdef _WIN32
-      SYSTEM_INFO si;
-      GetSystemInfo(&si);
-      s_page_size = (unsigned)si.dwPageSize;
+   SYSTEM_INFO si;
+   GetSystemInfo(&si);
+   return (unsigned)si.dwPageSize;
 #else
-      s_page_size = sysconf(_SC_PAGESIZE);
+   return sysconf(_SC_PAGESIZE);
 #endif
-   }
-   return s_page_size;
 }
 
 static inline bool h2_in(const char* x, const char* s[], int n = 0)
 {
-   n = n ? n : 1000;
-   for (int i = 0; s[i] && i < n; ++i)
+   for (int i = 0; s[i] && i < (n ? n : 1000); ++i)
       if (!strcmp(s[i], x)) return true;
    return false;
 }

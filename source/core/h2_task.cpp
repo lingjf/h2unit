@@ -58,7 +58,7 @@ h2_inline void h2_task::shuffle()
 {
    last = mark_last_order(suites);
    srand(h2_now());
-   if (O.shuffle && last == 0)
+   if (O.shuffle_order && last == 0)
       h2_list_for_each_entry (s, suites, h2_suite, x)
          h2_list_for_each_entry (c, s->cases, h2_case, x)
             s->seq = c->seq = rand();
@@ -106,14 +106,14 @@ h2_inline int h2_task::execute()
          for (auto& setup : global_suite_setups) setup();
          s->setup();
          h2_list_for_each_entry (c, s->cases, h2_case, x) {
-            if (0 < O.breakable && O.breakable <= stats[h2_case::failed]) break;
+            if (0 < O.break_after_fails && O.break_after_fails <= stats[h2_case::failed]) break;
             current_case = c;
-            if (O.filter(s->name, c->name, c->file, c->line)) c->status = h2_case::filtered;
+            if (O.filter(s->name, c->name, c->file, c->lino)) c->status = h2_case::filtered;
             h2_report::I().on_case_start(s, c);
-            if (O.only && h2_case::failed != c->last_status) {
+            if (O.only_execute_fails && h2_case::failed != c->last_status) {
                if (h2_case::initial == c->status) c->status = h2_case::ignored;
             }
-            if (h2_case::initial == c->status && !O.listing) {
+            if (h2_case::initial == c->status && !O.list_cases) {
                for (auto& setup : global_case_setups) setup();
                s->execute(c);
                for (auto& teardown : global_case_teardowns) teardown();

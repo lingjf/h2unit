@@ -21,7 +21,7 @@ struct h2_stub : h2_libc {
    }
 };
 
-h2_inline bool h2_stubs::add(void* origin_fp, void* substitute_fp, const char* origin_fn, const char* file, int line)
+h2_inline bool h2_stubs::add(void* origin_fp, void* substitute_fp, const char* origin_fn, const char* file, int lino)
 {
    h2_stub* stub = nullptr;
    h2_list_for_each_entry (p, stubs, h2_stub, x) {
@@ -32,7 +32,7 @@ h2_inline bool h2_stubs::add(void* origin_fp, void* substitute_fp, const char* o
    }
    if (!stub) {
       if (!h2_e9::save(origin_fp, nullptr)) {
-         ::printf("STUB failed: %s %s:%d\n", origin_fn, file, line);
+         ::printf("STUB failed: %s %s:%d\n", origin_fn, file, lino);
          return false;
       }
       stub = new h2_stub(origin_fp);

@@ -2,28 +2,28 @@
 h2_inline h2_line h2_mock::argvs(int seq)
 {
    h2_line line;
+   line += gray("(");
    for (int i = 0; i < argv.size(); ++i) {
-      line.concat_back({"\033{+dark gray}", comma_if(i), "\033{-dark gray}"});
-      if (seq == i) line.push_back("\033{red,bold}");
-      line.push_back(argv[i]);
-      if (seq == i) line.push_back("\033{reset}");
+      if (i) line += gray(", ");
+      if (seq == i)
+         line += color(argv[i], "red,bold");
+      else
+         line.push_back(argv[i]);
    }
+   line += gray(")");
    return line;
 }
 
 h2_inline h2_line h2_mock::signature()
 {
-   h2_line line = {"MOCK( ", "\033{cyan}", ret, " ", "\033{+green}", func, "\033{-green}", "\033{+dark gray}", "(", "\033{-dark gray}"};
-   line.concat_back(argvs());
-   line.concat_back({"\033{+dark gray}", ")", "\033{-dark gray}", "\033{reset}", " ) fails"});
-   return line;
+   return "MOCK" + gray("<") + delta(ret, "cyan") + " " + delta(func, "green") + argvs() + gray(">") + " fails";
 }
 
 h2_inline void h2_mock::mock()
 {
    x.out();
    h2_mock_g(this);
-   h2_stub_g(origin_fp, substitute_fp, func, file, line);
+   h2_stub_g(origin_fp, substitute_fp, func, file, lino);
 }
 
 h2_inline h2_fail* h2_mock::times_check()
@@ -36,7 +36,7 @@ h2_inline h2_fail* h2_mock::times_check()
       h2_check_g();
    }
    if (!fails) return nullptr;
-   h2_fail* fail = h2_fail::new_normal(signature(), file, line);
+   h2_fail* fail = h2_fail::new_normal(signature(), file, lino);
    h2_fail::append_child(fail, fails);
    return fail;
 }

@@ -2,7 +2,7 @@
 struct h2_matches_any : h2_matches {
    template <typename A>
    h2_fail* matches(const A& a, int, bool, bool) const { return nullptr; }
-   virtual h2_string expection(bool, bool) const override { return "Any"; }
+   virtual h2_line expection(bool, bool) const override { return "Any"; }
 };
 
 struct h2_matches_null : h2_matches {
@@ -13,9 +13,9 @@ struct h2_matches_null : h2_matches {
    {
       bool _dont = reverse ? !dont : dont;
       if ((nullptr == (const void*)a) == !_dont) return nullptr;
-      return h2_fail::new_unexpect("", h2_stringify((const void*)a), expection(false, dont));
+      return h2_fail::new_unexpect(expection(false, dont), h2_stringify((const void*)a));
    }
-   virtual h2_string expection(bool, bool dont) const override
+   virtual h2_line expection(bool, bool dont) const override
    {
       return (reverse ? !dont : dont) ? "NotNull" : "IsNull";
    }
@@ -28,9 +28,9 @@ struct h2_matches_boolean : h2_matches {
    {
       bool _dont = E ? dont : !dont;
       if (((bool)a) == !_dont) return nullptr;
-      return h2_fail::new_unexpect("", a ? "true" : "false", expection(false, dont));
+      return h2_fail::new_unexpect(expection(false, dont), a ? "true" : "false");
    }
-   virtual h2_string expection(bool, bool dont) const override
+   virtual h2_line expection(bool, bool dont) const override
    {
       return (E ? dont : !dont) ? "false" : "true";
    }
@@ -57,7 +57,7 @@ struct h2_pointee_matches : h2_matches {
       typedef typename PointeeOf<Pointer>::type Pointee;
       return h2_matcher_cast<Pointee>(m).matches(*a, 0, caseless, dont);
    }
-   virtual h2_string expection(bool caseless, bool dont) const override
+   virtual h2_line expection(bool caseless, bool dont) const override
    {
       return h2_matches_expection(m, caseless, dont);
    }
