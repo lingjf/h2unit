@@ -44,6 +44,41 @@ SUITE(macro)
       OK(3, n[1]);
    }
 
+   Case(H2PP_TH0)
+   {
+      int n0 H2PP_TH0();
+      int n1 = H2PP_TH0(0);
+      OK(0, n1);
+      int n2 = H2PP_TH0(0, 1);
+      OK(0, n2);
+   }
+
+   Case(H2PP_TH1)
+   {
+      int n0 H2PP_TH1();
+      int n1 H2PP_TH1(0);
+      int n2 = H2PP_TH1(0, 1);
+      OK(1, n2);
+      int n3 = H2PP_TH1(0, 1, 2);
+      OK(1, n3);
+   }
+
+   Case(H2PP_TH9)
+   {
+      int n0 H2PP_TH9();
+      int n1 H2PP_TH9(0);
+      int n2 H2PP_TH9(0, 1);
+      int n3 H2PP_TH9(0, 1, 2);
+      int n4 H2PP_TH9(0, 1, 2, 3);
+      int n5 H2PP_TH9(0, 1, 2, 3, 4);
+      int n6 H2PP_TH9(0, 1, 2, 3, 4, 5);
+      int n7 H2PP_TH9(0, 1, 2, 3, 4, 5, 6);
+      int n8 H2PP_TH9(0, 1, 2, 3, 4, 5, 6, 7);
+      int n9 H2PP_TH9(0, 1, 2, 3, 4, 5, 6, 7, 8);
+      int n10 = H2PP_TH9(0, 1, 2, 3, 4, 5, 6, 7, 8, 9);
+      OK(9, n10);
+   }
+
    Case(H2PP_LAST)
    {
       int n0[3] = {H2PP_LAST()};

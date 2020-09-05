@@ -88,7 +88,7 @@ static Foo& ref_bar_foobar(Bar*, int a, Foo& foo)
    return foo;
 }
 
-SUITE(function return void)
+SUITE(action)
 {
    char b[1024];
    std::string d = "hello";
@@ -97,28 +97,28 @@ SUITE(function return void)
 
    Case(return value)
    {
-      h2::h2_function<std::false_type, int(int, const char*)> f3(1234);
+      h2::h2_routine<std::false_type, int(int, const char*)> f3(1234);
       OK(1234, f3(nullptr, 1, ""));
 
-      h2::h2_function<Bar, int(int, const char*)> f4(1234);
+      h2::h2_routine<Bar, int(int, const char*)> f4(1234);
       OK(1234, f4(&bar, 1, ""));
 
-      h2::h2_function<std::false_type, const Foo(int, std::string&)> f5(foo);
+      h2::h2_routine<std::false_type, const Foo(int, std::string&)> f5(foo);
       auto a5 = f5(nullptr, 1, d);
       OK(42, a5.int_value);
       OK("42", a5.char_value);
 
-      h2::h2_function<Bar, const Foo(int, std::string&)> f6(foo);
+      h2::h2_routine<Bar, const Foo(int, std::string&)> f6(foo);
       auto a6 = f6(&bar, 1, d);
       OK(42, a6.int_value);
       OK("42", a6.char_value);
 
-      h2::h2_function<std::false_type, const Foo&(int, Foo&)> f7(foo);
+      h2::h2_routine<std::false_type, const Foo&(int, Foo&)> f7(foo);
       auto a7 = f7(nullptr, 1, foo);
       OK(42, a7.int_value);
       OK("42", a7.char_value);
 
-      h2::h2_function<Bar, Foo&(int, Foo&)> f8(foo);
+      h2::h2_routine<Bar, Foo&(int, Foo&)> f8(foo);
       auto a8 = f8(&bar, 1, foo);
       OK(42, a8.int_value);
       OK("42", a8.char_value);
@@ -126,36 +126,36 @@ SUITE(function return void)
 
    Case(normal function)
    {
-      h2::h2_function<std::false_type, void(int, char*)> f1(void_foobar);
+      h2::h2_routine<std::false_type, void(int, char*)> f1(void_foobar);
       f1(nullptr, 1, b);
       OK("1", b);
 
-      h2::h2_function<Bar, void(int, char*)> f2(void_bar_foobar);
+      h2::h2_routine<Bar, void(int, char*)> f2(void_bar_foobar);
       f2(nullptr, 1, b);
       OK("1", b);
 
-      h2::h2_function<std::false_type, const int(int, const char*)> f3(int_foobar);
+      h2::h2_routine<std::false_type, const int(int, const char*)> f3(int_foobar);
       OK(2, f3(nullptr, 1, "2"));
 
-      h2::h2_function<Bar, int(int, const char*)> f4(int_bar_foobar);
+      h2::h2_routine<Bar, int(int, const char*)> f4(int_bar_foobar);
       OK(2, f4(&bar, 1, "2"));
 
-      h2::h2_function<std::false_type, const Foo(int, std::string&)> f5(foo_foobar);
+      h2::h2_routine<std::false_type, const Foo(int, std::string&)> f5(foo_foobar);
       auto a5 = f5(nullptr, 1, d);
       OK(1, a5.int_value);
       OK("hello", a5.char_value);
 
-      h2::h2_function<Bar, Foo(int, std::string&)> f6(foo_bar_foobar);
+      h2::h2_routine<Bar, Foo(int, std::string&)> f6(foo_bar_foobar);
       auto a6 = f6(&bar, 1, d);
       OK(1, a6.int_value);
       OK("hello", a6.char_value);
 
-      h2::h2_function<std::false_type, const Foo&(int, Foo&)> f7(ref_foobar);
+      h2::h2_routine<std::false_type, const Foo&(int, Foo&)> f7(ref_foobar);
       auto a7 = f7(nullptr, 1, foo);
       OK(1, a7.int_value);
       OK("1", a7.char_value);
 
-      h2::h2_function<Bar, Foo&(int, Foo&)> f8(ref_bar_foobar);
+      h2::h2_routine<Bar, Foo&(int, Foo&)> f8(ref_bar_foobar);
       auto a8 = f8(&bar, 1, foo);
       OK(1, a8.int_value);
       OK("1", a8.char_value);
@@ -163,29 +163,29 @@ SUITE(function return void)
 
    Case(lambda function)
    {
-      h2::h2_function<std::false_type, void(int, char*)> f1([](int a, char* b) {
+      h2::h2_routine<std::false_type, void(int, char*)> f1([](int a, char* b) -> void {
          sprintf(b, "%d", a);
       });
       f1(nullptr, 1, b);
       OK("1", b);
 
-      h2::h2_function<Bar, void(int, char*)> f2([](int a, char* b) {
+      h2::h2_routine<Bar, void(int, char*)> f2([](int a, char* b) -> void {
          sprintf(b, "%d", a);
       });
       f2(&bar, 1, b);
       OK("1", b);
 
-      h2::h2_function<std::false_type, int(int, const char*)> f3([](int a, const char* b) {
+      h2::h2_routine<std::false_type, int(int, const char*)> f3([](int a, const char* b) -> int {
          return a + strlen(b);
       });
       OK(2, f3(nullptr, 1, "2"));
 
-      h2::h2_function<Bar, int(int, const char*)> f4([](int a, const char* b) {
+      h2::h2_routine<Bar, int(int, const char*)> f4([](int a, const char* b) -> int {
          return a + strlen(b);
       });
       OK(2, f4(&bar, 1, "2"));
 
-      h2::h2_function<std::false_type, const Foo(int, std::string&)> f5([](int a, std::string& d) {
+      h2::h2_routine<std::false_type, const Foo(int, std::string&)> f5([](int a, std::string& d) -> const Foo {
          Foo foo;
          foo.int_value = a;
          strcpy(foo.char_value, d.c_str());
@@ -195,7 +195,7 @@ SUITE(function return void)
       OK(1, a5.int_value);
       OK("hello", a5.char_value);
 
-      h2::h2_function<Bar, const Foo(int, std::string&)> f6([](int a, std::string& d) {
+      h2::h2_routine<Bar, const Foo(int, std::string&)> f6([](int a, std::string& d) -> const Foo {
          Foo foo;
          foo.int_value = a;
          strcpy(foo.char_value, d.c_str());
@@ -208,26 +208,26 @@ SUITE(function return void)
 
    Case(normal origin function)
    {
-      h2::h2_function<std::false_type, void(int, char*)> f1(void_foobar);
+      h2::h2_routine<std::false_type, void(int, char*)> f1(void_foobar);
       f1(nullptr, 1, b);
       OK("1", b);
 
-      h2::h2_function<Bar, void(int, char*)> f2(void_bar_foobar);
+      h2::h2_routine<Bar, void(int, char*)> f2(void_bar_foobar);
       f2(nullptr, 1, b);
       OK("1", b);
 
-      h2::h2_function<std::false_type, const int(int, const char*)> f3(int_foobar);
+      h2::h2_routine<std::false_type, const int(int, const char*)> f3(int_foobar);
       OK(2, f3(nullptr, 1, "2"));
 
-      h2::h2_function<Bar, int(int, const char*)> f4(int_bar_foobar);
+      h2::h2_routine<Bar, int(int, const char*)> f4(int_bar_foobar);
       OK(2, f4(&bar, 1, "2"));
 
-      h2::h2_function<std::false_type, const Foo(int, std::string&)> f5(foo_foobar);
+      h2::h2_routine<std::false_type, const Foo(int, std::string&)> f5(foo_foobar);
       auto a5 = f5(nullptr, 1, d);
       OK(1, a5.int_value);
       OK("hello", a5.char_value);
 
-      h2::h2_function<Bar, Foo(int, std::string&)> f6(foo_bar_foobar);
+      h2::h2_routine<Bar, Foo(int, std::string&)> f6(foo_bar_foobar);
       auto a6 = f6(&bar, 1, d);
       OK(1, a6.int_value);
       OK("hello", a6.char_value);
@@ -243,22 +243,23 @@ SUITE(function return void)
 
       void* ref_func = h2::h2_mfp<Bar, Foo&(int, Foo&)>::A(&Bar::ref_func);
 
-      h2::h2_function<Bar, void(int, char*)> f2((void (*)(Bar*, int, char*))void_func);
+      h2::h2_routine<Bar, void(int, char*)> f2((void (*)(Bar*, int, char*))void_func);
       f2(nullptr, 1, b);
       OK("1", b);
 
-      h2::h2_function<Bar, int(int, const char*)> f4((int (*)(Bar*, int, const char*))int_func);
+      h2::h2_routine<Bar, int(int, const char*)> f4((int (*)(Bar*, int, const char*))int_func);
       OK(2, f4(&bar, 1, "2"));
 
-      h2::h2_function<Bar, const Foo(int, std::string&)> f6((const Foo (*)(Bar*, int, std::string&))foo_func);
+      h2::h2_routine<Bar, const Foo(int, std::string&)> f6((const Foo (*)(Bar*, int, std::string&))foo_func);
       auto a6 = f6(&bar, 1, d);
       OK(1, a6.int_value);
       OK("hello", a6.char_value);
 
-      h2::h2_function<Bar, Foo&(int, Foo&)> f8((Foo & (*)(Bar*, int, Foo&)) ref_func);
+      h2::h2_routine<Bar, Foo&(int, Foo&)> f8((Foo & (*)(Bar*, int, Foo&)) ref_func);
       auto a8 = f8(&bar, 1, foo);
       OK(1, a8.int_value);
       OK("1", a8.char_value);
    }
 }
+
 }  // namespace

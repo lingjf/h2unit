@@ -39,6 +39,8 @@ SUITE(b)
    }
 }
 
+time_t time_fake(time_t*) { return 0; }
+
 SUITE(c)
 {
    Case(1)
@@ -87,7 +89,7 @@ SUITE(c)
    }
    Case(6)
    {
-      MOCK(time, time_t, (time_t*)).once();
-      STUB(time, time_t, (time_t*)) { return 0; };
+      MOCK(time, time_t, (time_t*), Once()) { return 0; };
+      STUB(time, time_t, (time_t*), time_fake);
    }
 }

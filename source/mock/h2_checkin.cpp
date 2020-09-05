@@ -1,8 +1,11 @@
 
-h2_inline h2_fail* h2_checkin::check(const char* func, const char* file, int lino)
+h2_inline h2_fail* h2_checkin::check(const char* func, int index, int total, const char* file, int lino)
 {
    if (is_satisfied() || is_saturated()) return nullptr;
-   return h2_fail::new_normal(func + gray("()") + " expected " + delta(expect(), "green") + " but actually " + delta(actual(), "red,bold") + " called", file, lino);
+   h2_line t = func + gray("()") + " expected " + delta(expect(), "green") + " but actually " + delta(actual(), "red,bold") + " called";
+   if (1 < total)
+      t += gray(" when ") + h2_numeric::sequence_number(index) + " checkin " + color(expr, "cyan");
+   return h2_fail::new_normal(t, file, lino);
 }
 
 h2_inline const char* h2_checkin::actual()

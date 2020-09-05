@@ -4,7 +4,7 @@ SUITE(checkin)
 {
    Case(once)
    {
-      h2::h2_checkin ci(1, 1);
+      h2::h2_checkin ci = h2::h2_checkin::Once();
       OK(1, ci.least);
       OK(1, ci.most);
       OK(0, ci.call);
@@ -15,7 +15,7 @@ SUITE(checkin)
       OK(!ci.is_saturated());
       OK(!ci.is_excessive());
       OK("never", ci.actual());
-      OK(ci.check("", nullptr, 0));
+      OK(ci.check("", 0, 1, nullptr, 0));
 
       ++ci;  // call 1 times
       OK(!ci.insufficient());
@@ -23,7 +23,7 @@ SUITE(checkin)
       OK(ci.is_saturated());
       OK(!ci.is_excessive());
       OK("1 times", ci.actual());
-      OK(IsNull, ci.check("", nullptr, 0));
+      OK(IsNull, ci.check("", 0, 1, nullptr, 0));
 
       ++ci;  // call 2 times
       OK(!ci.insufficient());
@@ -31,12 +31,12 @@ SUITE(checkin)
       OK(!ci.is_saturated());
       OK(ci.is_excessive());
       OK("2 times", ci.actual());
-      OK(ci.check("", nullptr, 0));
+      OK(ci.check("", 0, 1, nullptr, 0));
    }
 
    Case(twice)
    {
-      h2::h2_checkin ci(2, 2);
+      h2::h2_checkin ci = h2::h2_checkin::Twice();
       OK(2, ci.least);
       OK(2, ci.most);
       OK(0, ci.call);
@@ -47,7 +47,7 @@ SUITE(checkin)
       OK(!ci.is_saturated());
       OK(!ci.is_excessive());
       OK("never", ci.actual());
-      OK(ci.check("", nullptr, 0));
+      OK(ci.check("", 0, 1, nullptr, 0));
 
       ++ci;  // call 1 times
       OK(ci.insufficient());
@@ -55,7 +55,7 @@ SUITE(checkin)
       OK(!ci.is_saturated());
       OK(!ci.is_excessive());
       OK("1 times", ci.actual());
-      OK(ci.check("", nullptr, 0));
+      OK(ci.check("", 0, 1, nullptr, 0));
 
       ++ci;  // call 2 times
       OK(!ci.insufficient());
@@ -63,7 +63,7 @@ SUITE(checkin)
       OK(ci.is_saturated());
       OK(!ci.is_excessive());
       OK("2 times", ci.actual());
-      OK(IsNull, ci.check("", nullptr, 0));
+      OK(IsNull, ci.check("", 0, 1, nullptr, 0));
 
       ++ci;  // call 3 times
       OK(!ci.insufficient());
@@ -71,12 +71,12 @@ SUITE(checkin)
       OK(!ci.is_saturated());
       OK(ci.is_excessive());
       OK("3 times", ci.actual());
-      OK(ci.check("", nullptr, 0));
+      OK(ci.check("", 0, 1, nullptr, 0));
    }
 
    Case(3 times)
    {
-      h2::h2_checkin ci(3, 3);
+      h2::h2_checkin ci = h2::h2_checkin::Times(3);
       OK(3, ci.least);
       OK(3, ci.most);
       OK(0, ci.call);
@@ -87,7 +87,7 @@ SUITE(checkin)
       OK(!ci.is_saturated());
       OK(!ci.is_excessive());
       OK("never", ci.actual());
-      OK(ci.check("", nullptr, 0));
+      OK(ci.check("", 0, 1, nullptr, 0));
 
       ++ci;  // call 1 times
       OK(ci.insufficient());
@@ -95,7 +95,7 @@ SUITE(checkin)
       OK(!ci.is_saturated());
       OK(!ci.is_excessive());
       OK("1 times", ci.actual());
-      OK(ci.check("", nullptr, 0));
+      OK(ci.check("", 0, 1, nullptr, 0));
 
       ++ci;  // call 2 times
       OK(ci.insufficient());
@@ -103,7 +103,7 @@ SUITE(checkin)
       OK(!ci.is_saturated());
       OK(!ci.is_excessive());
       OK("2 times", ci.actual());
-      OK(ci.check("", nullptr, 0));
+      OK(ci.check("", 0, 1, nullptr, 0));
 
       ++ci;  // call 3 times
       OK(!ci.insufficient());
@@ -111,7 +111,7 @@ SUITE(checkin)
       OK(ci.is_saturated());
       OK(!ci.is_excessive());
       OK("3 times", ci.actual());
-      OK(IsNull, ci.check("", nullptr, 0));
+      OK(IsNull, ci.check("", 0, 1, nullptr, 0));
 
       ++ci;  // call 4 times
       OK(!ci.insufficient());
@@ -119,12 +119,12 @@ SUITE(checkin)
       OK(!ci.is_saturated());
       OK(ci.is_excessive());
       OK("4 times", ci.actual());
-      OK(ci.check("", nullptr, 0));
+      OK(ci.check("", 0, 1, nullptr, 0));
    }
 
    Case(any)
    {
-      h2::h2_checkin ci(0, INT_MAX);
+      h2::h2_checkin ci = h2::h2_checkin::Any();
       OK(0, ci.least);
       OK(INT_MAX, ci.most);
       OK(0, ci.call);
@@ -135,7 +135,7 @@ SUITE(checkin)
       OK(!ci.is_saturated());
       OK(!ci.is_excessive());
       OK("never", ci.actual());
-      OK(IsNull, ci.check("", nullptr, 0));
+      OK(IsNull, ci.check("", 0, 1, nullptr, 0));
 
       ++ci;  // call 1 times
       OK(!ci.insufficient());
@@ -143,7 +143,7 @@ SUITE(checkin)
       OK(!ci.is_saturated());
       OK(!ci.is_excessive());
       OK("1 times", ci.actual());
-      OK(IsNull, ci.check("", nullptr, 0));
+      OK(IsNull, ci.check("", 0, 1, nullptr, 0));
 
       ++ci;  // call 2 times
       OK(!ci.insufficient());
@@ -151,12 +151,12 @@ SUITE(checkin)
       OK(!ci.is_saturated());
       OK(!ci.is_excessive());
       OK("2 times", ci.actual());
-      OK(IsNull, ci.check("", nullptr, 0));
+      OK(IsNull, ci.check("", 0, 1, nullptr, 0));
    }
 
    Case(at least)
    {
-      h2::h2_checkin ci(2, INT_MAX);
+      h2::h2_checkin ci = h2::h2_checkin::Atleast(2);
       OK(2, ci.least);
       OK(INT_MAX, ci.most);
       OK(0, ci.call);
@@ -167,7 +167,7 @@ SUITE(checkin)
       OK(!ci.is_saturated());
       OK(!ci.is_excessive());
       OK("never", ci.actual());
-      OK(ci.check("", nullptr, 0));
+      OK(ci.check("", 0, 1, nullptr, 0));
 
       ++ci;  // call 1 times
       OK(ci.insufficient());
@@ -175,7 +175,7 @@ SUITE(checkin)
       OK(!ci.is_saturated());
       OK(!ci.is_excessive());
       OK("1 times", ci.actual());
-      OK(ci.check("", nullptr, 0));
+      OK(ci.check("", 0, 1, nullptr, 0));
 
       ++ci;  // call 2 times
       OK(!ci.insufficient());
@@ -183,7 +183,7 @@ SUITE(checkin)
       OK(!ci.is_saturated());
       OK(!ci.is_excessive());
       OK("2 times", ci.actual());
-      OK(IsNull, ci.check("", nullptr, 0));
+      OK(IsNull, ci.check("", 0, 1, nullptr, 0));
 
       ++ci;  // call 3 times
       OK(!ci.insufficient());
@@ -191,12 +191,12 @@ SUITE(checkin)
       OK(!ci.is_saturated());
       OK(!ci.is_excessive());
       OK("3 times", ci.actual());
-      OK(IsNull, ci.check("", nullptr, 0));
+      OK(IsNull, ci.check("", 0, 1, nullptr, 0));
    }
 
    Case(at most)
    {
-      h2::h2_checkin ci(0, 2);
+      h2::h2_checkin ci = h2::h2_checkin::Atmost(2);
       OK(0, ci.least);
       OK(2, ci.most);
       OK(0, ci.call);
@@ -207,7 +207,7 @@ SUITE(checkin)
       OK(!ci.is_saturated());
       OK(!ci.is_excessive());
       OK("never", ci.actual());
-      OK(IsNull, ci.check("", nullptr, 0));
+      OK(IsNull, ci.check("", 0, 1, nullptr, 0));
 
       ++ci;  // call 1 times
       OK(!ci.insufficient());
@@ -215,7 +215,7 @@ SUITE(checkin)
       OK(!ci.is_saturated());
       OK(!ci.is_excessive());
       OK("1 times", ci.actual());
-      OK(IsNull, ci.check("", nullptr, 0));
+      OK(IsNull, ci.check("", 0, 1, nullptr, 0));
 
       ++ci;  // call 2 times
       OK(!ci.insufficient());
@@ -223,7 +223,7 @@ SUITE(checkin)
       OK(ci.is_saturated());
       OK(!ci.is_excessive());
       OK("2 times", ci.actual());
-      OK(IsNull, ci.check("", nullptr, 0));
+      OK(IsNull, ci.check("", 0, 1, nullptr, 0));
 
       ++ci;  // call 3 times
       OK(!ci.insufficient());
@@ -231,12 +231,12 @@ SUITE(checkin)
       OK(!ci.is_saturated());
       OK(ci.is_excessive());
       OK("3 times", ci.actual());
-      OK(ci.check("", nullptr, 0));
+      OK(ci.check("", 0, 1, nullptr, 0));
    }
 
    Case(between)
    {
-      h2::h2_checkin ci(2, 4);
+      h2::h2_checkin ci = h2::h2_checkin::Between(2, 4);
       OK(2, ci.least);
       OK(4, ci.most);
       OK(0, ci.call);
@@ -247,7 +247,7 @@ SUITE(checkin)
       OK(!ci.is_saturated());
       OK(!ci.is_excessive());
       OK("never", ci.actual());
-      OK(ci.check("", nullptr, 0));
+      OK(ci.check("", 0, 1, nullptr, 0));
 
       ++ci;  // call 1 times
       OK(ci.insufficient());
@@ -255,7 +255,7 @@ SUITE(checkin)
       OK(!ci.is_saturated());
       OK(!ci.is_excessive());
       OK("1 times", ci.actual());
-      OK(ci.check("", nullptr, 0));
+      OK(ci.check("", 0, 1, nullptr, 0));
 
       ++ci;  // call 2 times
       OK(!ci.insufficient());
@@ -263,7 +263,7 @@ SUITE(checkin)
       OK(!ci.is_saturated());
       OK(!ci.is_excessive());
       OK("2 times", ci.actual());
-      OK(IsNull, ci.check("", nullptr, 0));
+      OK(IsNull, ci.check("", 0, 1, nullptr, 0));
 
       ++ci;  // call 3 times
       OK(!ci.insufficient());
@@ -271,7 +271,7 @@ SUITE(checkin)
       OK(!ci.is_saturated());
       OK(!ci.is_excessive());
       OK("3 times", ci.actual());
-      OK(IsNull, ci.check("", nullptr, 0));
+      OK(IsNull, ci.check("", 0, 1, nullptr, 0));
 
       ++ci;  // call 4 times
       OK(!ci.insufficient());
@@ -279,7 +279,7 @@ SUITE(checkin)
       OK(ci.is_saturated());
       OK(!ci.is_excessive());
       OK("4 times", ci.actual());
-      OK(IsNull, ci.check("", nullptr, 0));
+      OK(IsNull, ci.check("", 0, 1, nullptr, 0));
 
       ++ci;  // call 5 times
       OK(!ci.insufficient());
@@ -287,6 +287,6 @@ SUITE(checkin)
       OK(!ci.is_saturated());
       OK(ci.is_excessive());
       OK("5 times", ci.actual());
-      OK(ci.check("", nullptr, 0));
+      OK(ci.check("", 0, 1, nullptr, 0));
    }
 }

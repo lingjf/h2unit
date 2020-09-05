@@ -107,8 +107,8 @@ SUITE(Pointer)
 
    Case(MOCK)
    {
-#define TheCheck(x, y)                                \
-   MOCK(foobar##x, void, (decltype(x))).once(IsNull); \
+#define TheCheck(x, y)                                      \
+   MOCK(foobar##x, void, (decltype(x)), Once(IsNull)){};    \
    foobar##x((decltype(x))y);
       ForFullmesh(TheCheck, (PTR_LIST), (NULLPTR_LIST));
 #undef TheCheck

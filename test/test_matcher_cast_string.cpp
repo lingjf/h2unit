@@ -121,7 +121,7 @@ SUITE(String)
 
    Case(MOCK)
    {
-#define TheCheck(x, y) MOCK(foobar##x, void, (decltype(x))).any(y);
+#define TheCheck(x, y) MOCK(foobar##x, void, (decltype(x)), Any(y)){};
 
 #define C_STR_LIST const_char_const_p1, \
                    const_char_p1,       \
@@ -134,7 +134,7 @@ SUITE(String)
       ForFullmesh(TheCheck, C_STR_LIST);
 #undef TheCheck
 
-#define TheCheck(x, y) MOCK(foobar##x, void, (decltype(x))).any(y);
+#define TheCheck(x, y) MOCK(foobar##x, void, (decltype(x)), Any(y)){};
 
 #define STR_LIST const_stdstring1, \
                  stdstring1, stdstringref1

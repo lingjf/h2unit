@@ -1,4 +1,4 @@
-﻿/* v5.6 2020-09-05 18:12:14 */
+﻿/* v5.6 2020-09-05 23:50:22 */
 /* https://github.com/lingjf/h2unit */
 /* Apache Licence 2.0 */
 
@@ -178,6 +178,17 @@ namespace h2 {
 #define H2PP_TAIL(...) H2PP_CAT2(_H2PP_TAIL_, H2PP_IS_EMPTY(__VA_ARGS__)) (__VA_ARGS__)
 #define _H2PP_TAIL_0(_1, ...) __VA_ARGS__
 #define _H2PP_TAIL_1(...)
+
+#define H2PP_TH0(...) H2PP_HEAD(__VA_ARGS__)
+#define H2PP_TH1(...) H2PP_HEAD(H2PP_TAIL(__VA_ARGS__))
+#define H2PP_TH2(...) H2PP_HEAD(H2PP_TAIL(H2PP_TAIL(__VA_ARGS__)))
+#define H2PP_TH3(...) H2PP_HEAD(H2PP_TAIL(H2PP_TAIL(H2PP_TAIL(__VA_ARGS__))))
+#define H2PP_TH4(...) H2PP_HEAD(H2PP_TAIL(H2PP_TAIL(H2PP_TAIL(H2PP_TAIL(__VA_ARGS__)))))
+#define H2PP_TH5(...) H2PP_HEAD(H2PP_TAIL(H2PP_TAIL(H2PP_TAIL(H2PP_TAIL(H2PP_TAIL(__VA_ARGS__))))))
+#define H2PP_TH6(...) H2PP_HEAD(H2PP_TAIL(H2PP_TAIL(H2PP_TAIL(H2PP_TAIL(H2PP_TAIL(H2PP_TAIL(__VA_ARGS__)))))))
+#define H2PP_TH7(...) H2PP_HEAD(H2PP_TAIL(H2PP_TAIL(H2PP_TAIL(H2PP_TAIL(H2PP_TAIL(H2PP_TAIL(H2PP_TAIL(__VA_ARGS__))))))))
+#define H2PP_TH8(...) H2PP_HEAD(H2PP_TAIL(H2PP_TAIL(H2PP_TAIL(H2PP_TAIL(H2PP_TAIL(H2PP_TAIL(H2PP_TAIL(H2PP_TAIL(__VA_ARGS__)))))))))
+#define H2PP_TH9(...) H2PP_HEAD(H2PP_TAIL(H2PP_TAIL(H2PP_TAIL(H2PP_TAIL(H2PP_TAIL(H2PP_TAIL(H2PP_TAIL(H2PP_TAIL(H2PP_TAIL(__VA_ARGS__))))))))))
 
 #define H2PP_LAST(...) H2PP_CAT2(_H2PP_LAST_, H2PP_IS_EMPTY(__VA_ARGS__)) (__VA_ARGS__) //is empty?
 #define _H2PP_LAST_1(...) // empty
@@ -2258,59 +2269,6 @@ void* h2_fp(T p)
    }
    return fp;
 }
-// h2_stub.hpp
-
-struct h2_stubs {
-   h2_list stubs;
-   bool add(void* origin_fp, void* substitute_fp, const char* origin_fn, const char* file, int lino);
-   void clear();
-};
-
-struct h2_stub_temporary_restore : h2_once {
-   unsigned char saved[32];
-   void* origin_fp;
-   h2_stub_temporary_restore(void* origin_fp);
-   ~h2_stub_temporary_restore();
-};
-
-#define __H2STUB2(OriginFunction, SubstituteFunction)                                                           \
-   do {                                                                                                         \
-      h2::h2_stub_g(h2::h2_fp(OriginFunction), (void*)SubstituteFunction, #OriginFunction, __FILE__, __LINE__); \
-   } while (0)
-
-#define ____H2STUB3(OriginFunction, Return, Args, Q)                                                            \
-   struct {                                                                                                     \
-      void operator=(Return(*substitute_fp) Args)                                                               \
-      {                                                                                                         \
-         h2::h2_stub_g(h2::h2_fp(OriginFunction), (void*)(substitute_fp), #OriginFunction, __FILE__, __LINE__); \
-      }                                                                                                         \
-   } Q;                                                                                                         \
-   Q = [] Args -> Return /* captureless lambda implicit cast to function pointer */
-
-#define __H2STUB3(OriginFunction, Return, Args) ____H2STUB3(OriginFunction, Return, Args, H2Q(t_stub3))
-
-#define __H2STUB40(Class, Method, Return, Args, Q)                                                                                                                        \
-   struct {                                                                                                                                                               \
-      void operator=(Return (*substitute_fp)(H2PP_RPS(Class) * that))                                                                                                     \
-      {                                                                                                                                                                   \
-         h2::h2_stub_g(h2::h2_mfp<H2PP_RPS(Class), Return Args>::A(&H2PP_RPS(Class)::H2PP_RPS(Method)), (void*)(substitute_fp), #Class "::" #Method, __FILE__, __LINE__); \
-      }                                                                                                                                                                   \
-   } Q;                                                                                                                                                                   \
-   Q = [](H2PP_RPS(Class) * that) -> Return
-
-#define __H2STUB41(Class, Method, Return, Args, Q)                                                                                                                        \
-   struct {                                                                                                                                                               \
-      void operator=(Return (*substitute_fp)(H2PP_RPS(Class) * that, H2PP_REMOVE_PARENTHESES(Args)))                                                                      \
-      {                                                                                                                                                                   \
-         h2::h2_stub_g(h2::h2_mfp<H2PP_RPS(Class), Return Args>::A(&H2PP_RPS(Class)::H2PP_RPS(Method)), (void*)(substitute_fp), #Class "::" #Method, __FILE__, __LINE__); \
-      }                                                                                                                                                                   \
-   } Q;                                                                                                                                                                   \
-   Q = [](H2PP_RPS(Class) * that, H2PP_REMOVE_PARENTHESES(Args)) -> Return
-
-#define __H2STUB4(Class, Method, Return, Args) \
-   H2PP_IF_ELSE(H2PP_IS_EMPTY Args, __H2STUB40(Class, Method, Return, Args, H2Q(t_stub40)), __H2STUB41(Class, Method, Return, Args, H2Q(t_stub41)))
-
-#define H2STUB(...) H2PP_VARIADIC_CALL(__H2STUB, __VA_ARGS__)
 // h2_mfp.hpp
 
 /* clang-format off */
@@ -2442,26 +2400,31 @@ using h2_constructible =
 template <typename Class, typename Signature>
 struct h2_mfp;
 
-template <typename Class, typename Return, typename... Args>
-struct h2_mfp<Class, Return(Args...)> {
-   typedef Return (Class::*F)(Args...);
-   typedef union {
-      F f;
-      void* p;
-      long long v;
-   } U;
+template <typename Class, typename ReturnType, typename... Args>
+struct h2_mfp<Class, ReturnType(Args...)> {
+   static constexpr bool is_static_member_function(ReturnType (*)(Args...)) { return true; }
+   static constexpr bool is_static_member_function(ReturnType (Class::*)(Args...)) { return false; }
 
-   static inline bool is_virtual_member(U& u)
+   static void* A(ReturnType (*f)(Args...))
    {
-      return (u.v & 1) && (u.v - 1) % sizeof(void*) == 0
-             /* assumption: virtual member count less than 3000 */
-             && (u.v - 1) / sizeof(void*) < 3000;
+      return (void*)f;
    }
 
-   static void* A(F f)
+   static bool is_virtual_member_function(long long uv)
    {
-      U u{f};
-      if (!is_virtual_member(u)) return u.p;
+      return (uv & 1) && (uv - 1) % sizeof(void*) == 0
+             /* assumption: virtual member count less than 1000 */
+             && (uv - 1) / sizeof(void*) < 1000;
+   }
+
+   static void* A(ReturnType (Class::*f)(Args...))
+   {
+      union {
+         ReturnType (Class::*f)(Args...);
+         void* p;
+         long long v;
+      } u{f};
+      if (!is_virtual_member_function(u.v)) return u.p;
       void** vtable = nullptr;
       Class* object = h2_constructible<Class>::O(alloca(sizeof(Class)));
       if (0 == (long long)object || 1 == (long long)object || 2 == (long long)object) {
@@ -2477,11 +2440,150 @@ struct h2_mfp<Class, Return(Args...)> {
       if (!vtable) return nullptr;
       return vtable[(u.v - 1) / sizeof(void*)];
    }
+};
+// h2_stub.hpp
 
-   static long long B(F f)
+struct h2_stubs {
+   h2_list stubs;
+   bool add(void* origin_fp, void* substitute_fp, const char* origin_fn, const char* file, int lino);
+   void clear();
+};
+
+struct h2_stub_temporary_restore : h2_once {
+   unsigned char saved[32];
+   void* origin_fp;
+   h2_stub_temporary_restore(void* origin_fp);
+   ~h2_stub_temporary_restore();
+};
+
+#define __H2STUB2(Origin, Substitute)                                                   \
+   do {                                                                                 \
+      h2::h2_stub_g(h2::h2_fp(Origin), (void*)Substitute, #Origin, __FILE__, __LINE__); \
+   } while (0)
+
+#define __H2STUB4(Function, ReturnType, Args, Substitute)                                                                             \
+   do {                                                                                                                               \
+      h2::h2_stub_g(h2::h2_fp((H2PP_RPS(ReturnType)(*) Args)H2PP_RPS(Function)), (void*)(Substitute), #Function, __FILE__, __LINE__); \
+   } while (0)
+
+#define __H2STUB5(Class, Method, ReturnType, Args, Substitute)                                                                                                                    \
+   do {                                                                                                                                                                           \
+      h2::h2_stub_g(h2::h2_mfp<H2PP_RPS(Class), H2PP_RPS(ReturnType) Args>::A(&H2PP_RPS(Class)::H2PP_RPS(Method)), (void*)(Substitute), #Class "::" #Method, __FILE__, __LINE__); \
+   } while (0)
+
+#define H2STUB(...) H2PP_VARIADIC_CALL(__H2STUB, __VA_ARGS__)
+
+////////////////////////////////////////////////////////////////
+
+#define __H3STUB2(Origin, Substitute)                                                   \
+   do {                                                                                 \
+      h2::h2_stub_g(h2::h2_fp(Origin), (void*)Substitute, #Origin, __FILE__, __LINE__); \
+   } while (0)
+
+#define ____H3STUB3(Function, ReturnType, Args, Q)                                                  \
+   struct {                                                                                         \
+      void operator=(ReturnType(*substitute_fp) Args)                                               \
+      {                                                                                             \
+         h2::h2_stub_g(h2::h2_fp(Function), (void*)(substitute_fp), #Function, __FILE__, __LINE__); \
+      }                                                                                             \
+   } Q;                                                                                             \
+   Q = [] Args -> ReturnType /* captureless lambda implicit cast to function pointer */
+
+#define __H3STUB3(Function, ReturnType, Args) ____H3STUB3(Function, ReturnType, Args, H2Q(t_stub3))
+
+#define __H3STUB40(Class, Method, ReturnType, Args, Q)                                                                                                                        \
+   struct {                                                                                                                                                                   \
+      void operator=(ReturnType (*substitute_fp)(H2PP_RPS(Class) *))                                                                                                          \
+      {                                                                                                                                                                       \
+         h2::h2_stub_g(h2::h2_mfp<H2PP_RPS(Class), ReturnType Args>::A(&H2PP_RPS(Class)::H2PP_RPS(Method)), (void*)(substitute_fp), #Class "::" #Method, __FILE__, __LINE__); \
+      }                                                                                                                                                                       \
+   } Q;                                                                                                                                                                       \
+   Q = [](H2PP_RPS(Class) * This) -> ReturnType
+
+#define __H3STUB41(Class, Method, ReturnType, Args, Q)                                                                                                                        \
+   struct {                                                                                                                                                                   \
+      void operator=(ReturnType (*substitute_fp)(H2PP_RPS(Class) *, H2PP_REMOVE_PARENTHESES(Args)))                                                                           \
+      {                                                                                                                                                                       \
+         h2::h2_stub_g(h2::h2_mfp<H2PP_RPS(Class), ReturnType Args>::A(&H2PP_RPS(Class)::H2PP_RPS(Method)), (void*)(substitute_fp), #Class "::" #Method, __FILE__, __LINE__); \
+      }                                                                                                                                                                       \
+   } Q;                                                                                                                                                                       \
+   Q = [](H2PP_RPS(Class) * This, H2PP_REMOVE_PARENTHESES(Args)) -> ReturnType
+
+#define __H3STUB4(Class, Method, ReturnType, Args) \
+   H2PP_IF_ELSE(H2PP_IS_EMPTY Args, __H3STUB40(Class, Method, ReturnType, Args, H2Q(t_stub40)), __H3STUB41(Class, Method, ReturnType, Args, H2Q(t_stub41)))
+
+#define STUBS(...) H2PP_VARIADIC_CALL(__H3STUB, __VA_ARGS__)
+// h2_routine.hpp
+
+template <typename ReturnType>
+struct h2_return : h2_libc {
+   ReturnType value;
+   h2_return() = delete;
+   explicit h2_return(ReturnType _value) : value(_value){};
+};
+
+template <typename Class, typename Signature>
+struct h2_routine;
+
+template <typename Class, typename ReturnType, typename... Args>
+struct h2_routine<Class, ReturnType(Args...)> {
+   ReturnType (*nfp)(Args...) = nullptr; // normal function pointer
+   ReturnType (*mfp)(Class*, Args...) = nullptr; // member function pointer
+   h2_shared_ptr<h2_return<ReturnType>> return_value;
+
+   h2_routine() {}
+   h2_routine(ReturnType r) : return_value(new h2_return<ReturnType>(r)) {}
+   h2_routine(ReturnType (*f)(Args...)) : nfp(f) {}
+   h2_routine(ReturnType (*f)(Class*, Args...)) : mfp(f) {}
+
+   ReturnType operator()(Class* This, Args... args)
    {
-      U u{f};
-      return u.v;
+      if (mfp) {
+         return mfp(This, args...);
+      } else if (nfp) {
+         return nfp(args...);
+      } else if (return_value) {
+         return return_value->value;
+      }
+      /* return uninitialized value */
+   }
+   operator bool()
+   {
+      return nfp || mfp || return_value;
+   }
+   void clear()
+   {
+      nfp = nullptr;
+      mfp = nullptr;
+      return_value.reset();
+   }
+};
+
+template <typename Class, typename... Args>
+struct h2_routine<Class, void(Args...)> {
+   void (*nfp)(Args...) = nullptr;
+   void (*mfp)(Class*, Args...) = nullptr;
+
+   h2_routine() {}
+   h2_routine(void (*f)(Args...)) : nfp(f) {}
+   h2_routine(void (*f)(Class*, Args...)) : mfp(f) {}
+
+   void operator()(Class* This, Args... args)
+   {
+      if (mfp) {
+         mfp(This, args...);
+      } else if (nfp) {
+         nfp(args...);
+      }
+   }
+   operator bool()
+   {
+      return nfp || mfp;
+   }
+   void clear()
+   {
+      nfp = nullptr;
+      mfp = nullptr;
    }
 };
 // h2_checkin.hpp
@@ -2489,9 +2591,10 @@ struct h2_mfp<Class, Return(Args...)> {
 /* 考勤 ; 函数被调次数期望 */
 struct h2_checkin {
    int call = 0;
-   int least, most;
+   const int least, most;
+   const h2_string expr;
 
-   h2_checkin(int _least, int _most) : least(_least), most(_most) {}
+   h2_checkin(int _least, int _most, const h2_string& _expr) : least(_least), most(_most), expr(_expr) {}
 
    void operator++() { call += 1; }
 
@@ -2500,75 +2603,19 @@ struct h2_checkin {
    bool is_saturated(/*饱和*/) const { return call == most; }
    bool is_excessive(/*过多*/) const { return most < call; }
 
-   h2_fail* check(const char* func, const char* file, int lino);
+   h2_fail* check(const char* func, int index, int total, const char* file, int lino);
    const char* actual();
    const char* expect();
+
+   static h2_checkin Once() { return h2_checkin(1, 1, "Once"); }
+   static h2_checkin Twice() { return h2_checkin(2, 2, "Twice"); }
+   static h2_checkin Times(int count) { return h2_checkin(count, count, "Times"); }
+   static h2_checkin Any() { return h2_checkin(0, INT_MAX, "Any"); }
+   static h2_checkin Atleast(int count) { return h2_checkin(count, INT_MAX, "Atleast"); }
+   static h2_checkin Atmost(int count) { return h2_checkin(0, count, "Atmost"); }
+   static h2_checkin Between(int left, int right) { return h2_checkin(left, right, "Between"); }
 };
-// h2_function.hpp
-
-template <typename Return>
-struct h2_return : h2_libc {
-   Return value;
-   h2_return() = delete;
-   explicit h2_return(Return _value) : value(_value){};
-};
-
-template <typename Class, typename Signature>
-struct h2_function;
-
-template <typename Class, typename Return, typename... Args>
-struct h2_function<Class, Return(Args...)> {
-   std::function<Return(Args...)> normal_function = {};  // functional alignment issue
-   std::function<Return(Class*, Args...)> member_function = {};
-   h2_shared_ptr<h2_return<Return>> return_value;
-
-   h2_function(Return r) : return_value(new h2_return<Return>(r)) {}
-   h2_function(std::function<Return(Args...)> f) : normal_function(f) {}
-   h2_function(std::function<Return(Class*, Args...)> f) : member_function(f) {}
-
-   Return operator()(Class* that, Args... args)
-   {
-      if (member_function) {
-         return member_function(that, args...);
-      } else if (normal_function) {
-         return normal_function(args...);
-      } else if (return_value) {
-         return return_value->value;
-      }
-      /* return uninitialized value */
-   }
-   void clear()
-   {
-      normal_function = nullptr;
-      member_function = nullptr;
-      return_value.reset();
-   }
-};
-
-template <typename Class, typename... Args>
-struct h2_function<Class, void(Args...)> {
-   std::function<void(Args...)> normal_function = {};
-   std::function<void(Class*, Args...)> member_function = {};
-
-   h2_function() {}
-   h2_function(std::function<void(Args...)> f) : normal_function(f) {}
-   h2_function(std::function<void(Class*, Args...)> f) : member_function(f) {}
-
-   void operator()(Class* that, Args... args)
-   {
-      if (member_function) {
-         member_function(that, args...);
-      } else if (normal_function) {
-         normal_function(args...);
-      }
-   }
-   void clear()
-   {
-      normal_function = nullptr;
-      member_function = nullptr;
-   }
-};
-// h2_tuple.hpp
+// h2_match.hpp
 
 static inline void h2_check_g();
 
@@ -2594,18 +2641,19 @@ inline h2_fail* h2_tuple_matches(MatcherTuple& matchers, ArgumentTuple& argument
 {
    return matches(matchers, arguments, std::integral_constant<std::size_t, std::tuple_size<ArgumentTuple>::value>());
 }
-// h2_mock.hpp
+// h2_mocking.hpp
 
-struct h2_mock : h2_libc {
+struct h2_mockee : h2_libc {
    h2_list x;
    void *origin_fp, *substitute_fp;
-   const char* ret;
-   const char* func;
-   h2_vector<const char*> argv;
+   const char* return_type;
+   const char* class_function;
+   h2_vector<const char*> argument_type;
+   const char* inspects;
    const char* file;
    int lino;
 
-   h2_line argvs(int seq = -1);
+   h2_line arguments(int seq = -1);
    h2_line signature();
 
    h2_vector<h2_checkin> checkin_array;
@@ -2616,122 +2664,38 @@ struct h2_mock : h2_libc {
    h2_fail* times_check();
 };
 
-struct h2_mocks {
-   h2_list mocks;
-   bool add(h2_mock* mock);
-   h2_fail* clear(bool check);
-};
-
-/* clang-format off */
-#define __H2ARGV0() {}
-#define __H2ARGV1(_1) {#_1}
-#define __H2ARGV2(_1, _2) {#_1, #_2}
-#define __H2ARGV3(_1, _2, _3) {#_1, #_2, #_3}
-#define __H2ARGV4(_1, _2, _3, _4) {#_1, #_2, #_3, #_4}
-#define __H2ARGV5(_1, _2, _3, _4, _5) {#_1, #_2, #_3, #_4, #_5}
-#define __H2ARGV6(_1, _2, _3, _4, _5, _6) {#_1, #_2, #_3, #_4, #_5, #_6}
-#define __H2ARGV7(_1, _2, _3, _4, _5, _6, _7) {#_1, #_2, #_3, #_4, #_5, #_6, #_7}
-#define __H2ARGV8(_1, _2, _3, _4, _5, _6, _7, _8) {#_1, #_2, #_3, #_4, #_5, #_6, #_7, #_8}
-#define __H2ARGV9(_1, _2, _3, _4, _5, _6, _7, _8, _9) {#_1, #_2, #_3, #_4, #_5, #_6, #_7, #_8, #_9}
-#define __H2ARGV10(_1, _2, _3, _4, _5, _6, _7, _8, _9, _10) {#_1, #_2, #_3, #_4, #_5, #_6, #_7, #_8, #_9, #_10}
-#define __H2ARGV11(_1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11) {#_1, #_2, #_3, #_4, #_5, #_6, #_7, #_8, #_9, #_10, #_11}
-#define __H2ARGV12(_1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12) {#_1, #_2, #_3, #_4, #_5, #_6, #_7, #_8, #_9, #_10, #_11, #_12}
-#define __H2ARGV13(_1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13) {#_1, #_2, #_3, #_4, #_5, #_6, #_7, #_8, #_9, #_10, #_11, #_12, #_13}
-#define __H2ARGV14(_1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14) {#_1, #_2, #_3, #_4, #_5, #_6, #_7, #_8, #_9, #_10, #_11, #_12, #_13, #_14}
-#define __H2ARGV15(_1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15) {#_1, #_2, #_3, #_4, #_5, #_6, #_7, #_8, #_9, #_10, #_11, #_12, #_13, #_14, #_15}
-
-#define __H2ARGV(...) H2PP_CAT(__H2ARGV, H2PP_NARG(__VA_ARGS__))(__VA_ARGS__)  // Duplicated H2PP_VARIADIC_CALL avoid recursion
-#define H2ARGV(...) __H2ARGV(H2PP_REMOVE_PARENTHESES(__VA_ARGS__))
-
-#define __H2MOCK4(OriginFunction, Return, Args, Expression) \
-   h2::h2_mocker<__COUNTER__, std::false_type, Return Args>::I(h2::h2_fp(OriginFunction), #Return, #OriginFunction, H2ARGV(Args), __FILE__, __LINE__)
-
-#define __H2MOCK5(Class, Method, Return, Args, Expression) \
-   h2::h2_mocker<__COUNTER__, H2PP_RPS(Class), Return Args>::I(h2::h2_mfp<H2PP_RPS(Class), Return Args>::A(&H2PP_RPS(Class)::H2PP_RPS(Method)), #Return, #Class "::" #Method, H2ARGV(Args), __FILE__, __LINE__)
-
-#define __H2MOCK(Expression, ...) H2PP_VARIADIC_CALL(__H2MOCK, __VA_ARGS__, (Expression))
-#define H2MOCK(...) __H2MOCK(#__VA_ARGS__, __VA_ARGS__)
-// h2_mocker.hpp
-
 namespace {
+
+#define H2_ForEach_Comma(_Macro) _Macro(0), _Macro(1), _Macro(2), _Macro(3), _Macro(4), _Macro(5), _Macro(6), _Macro(7), _Macro(8), _Macro(9), _Macro(10), _Macro(11), _Macro(12), _Macro(13), _Macro(14), _Macro(15)
+#define H2_ForEach_Space(_Macro) _Macro(0) _Macro(1) _Macro(2) _Macro(3) _Macro(4) _Macro(5) _Macro(6) _Macro(7) _Macro(8) _Macro(9) _Macro(10) _Macro(11) _Macro(12) _Macro(13) _Macro(14) _Macro(15)
 
 template <int Counter, typename Class, typename Signature>
 class h2_mocker;
 
-template <int Counter, typename Class, typename Return, typename... Args>
-class h2_mocker<Counter, Class, Return(Args...)> : h2_mock {
-   /* clang-format off */
-#define MATCHER_Any_0_1_2_3_4_5_6_7_8_9_A_B_C_D_E_F  \
-   h2_matcher<h2_nth_decay<0, Args...>> _0 = {},     \
-   h2_matcher<h2_nth_decay<1, Args...>> _1 = {},     \
-   h2_matcher<h2_nth_decay<2, Args...>> _2 = {},     \
-   h2_matcher<h2_nth_decay<3, Args...>> _3 = {},     \
-   h2_matcher<h2_nth_decay<4, Args...>> _4 = {},     \
-   h2_matcher<h2_nth_decay<5, Args...>> _5 = {},     \
-   h2_matcher<h2_nth_decay<6, Args...>> _6 = {},     \
-   h2_matcher<h2_nth_decay<7, Args...>> _7 = {},     \
-   h2_matcher<h2_nth_decay<8, Args...>> _8 = {},     \
-   h2_matcher<h2_nth_decay<9, Args...>> _9 = {},     \
-   h2_matcher<h2_nth_decay<10, Args...>> _10 = {},   \
-   h2_matcher<h2_nth_decay<11, Args...>> _11 = {},   \
-   h2_matcher<h2_nth_decay<12, Args...>> _12 = {},   \
-   h2_matcher<h2_nth_decay<13, Args...>> _13 = {},   \
-   h2_matcher<h2_nth_decay<14, Args...>> _14 = {},   \
-   h2_matcher<h2_nth_decay<15, Args...>> _15 = {}
-
-#define FORWARD_Matcher_0_1_2_3_4_5_6_7_8_9_A_B_C_D_E_F        \
-   std::forward<h2_matcher<h2_nth_decay<0, Args...>>>(_0),     \
-   std::forward<h2_matcher<h2_nth_decay<1, Args...>>>(_1),     \
-   std::forward<h2_matcher<h2_nth_decay<2, Args...>>>(_2),     \
-   std::forward<h2_matcher<h2_nth_decay<3, Args...>>>(_3),     \
-   std::forward<h2_matcher<h2_nth_decay<4, Args...>>>(_4),     \
-   std::forward<h2_matcher<h2_nth_decay<5, Args...>>>(_5),     \
-   std::forward<h2_matcher<h2_nth_decay<6, Args...>>>(_6),     \
-   std::forward<h2_matcher<h2_nth_decay<7, Args...>>>(_7),     \
-   std::forward<h2_matcher<h2_nth_decay<8, Args...>>>(_8),     \
-   std::forward<h2_matcher<h2_nth_decay<9, Args...>>>(_9),     \
-   std::forward<h2_matcher<h2_nth_decay<10, Args...>>>(_10),   \
-   std::forward<h2_matcher<h2_nth_decay<11, Args...>>>(_11),   \
-   std::forward<h2_matcher<h2_nth_decay<12, Args...>>>(_12),   \
-   std::forward<h2_matcher<h2_nth_decay<13, Args...>>>(_13),   \
-   std::forward<h2_matcher<h2_nth_decay<14, Args...>>>(_14),   \
-   std::forward<h2_matcher<h2_nth_decay<15, Args...>>>(_15)
-   /* clang-format on */
-
+template <int Counter, typename Class, typename ReturnType, typename... Args>
+class h2_mocker<Counter, Class, ReturnType(Args...)> : h2_mockee {
    using ArgumentTuple = std::tuple<Args...>;
-   using MatcherTuple = std::tuple<h2_matcher<h2_nth_decay<0, Args...>>,
-                                   h2_matcher<h2_nth_decay<1, Args...>>,
-                                   h2_matcher<h2_nth_decay<2, Args...>>,
-                                   h2_matcher<h2_nth_decay<3, Args...>>,
-                                   h2_matcher<h2_nth_decay<4, Args...>>,
-                                   h2_matcher<h2_nth_decay<5, Args...>>,
-                                   h2_matcher<h2_nth_decay<6, Args...>>,
-                                   h2_matcher<h2_nth_decay<7, Args...>>,
-                                   h2_matcher<h2_nth_decay<8, Args...>>,
-                                   h2_matcher<h2_nth_decay<9, Args...>>,
-                                   h2_matcher<h2_nth_decay<10, Args...>>,
-                                   h2_matcher<h2_nth_decay<11, Args...>>,
-                                   h2_matcher<h2_nth_decay<12, Args...>>,
-                                   h2_matcher<h2_nth_decay<13, Args...>>,
-                                   h2_matcher<h2_nth_decay<14, Args...>>,
-                                   h2_matcher<h2_nth_decay<15, Args...>>>;
+
+#define H2_Typedef_Matcher(i) h2_matcher<h2_nth_decay<i, Args...>>
+   using MatcherTuple = std::tuple<H2_ForEach_Comma(H2_Typedef_Matcher)>;
+#undef H2_Typedef_Matcher
 
    h2_vector<MatcherTuple> matcher_array;
-   h2_vector<h2_function<Class, Return(Args...)>> function_array;
+   h2_vector<h2_routine<Class, ReturnType(Args...)>> routine_array;
    bool greed_mode = true;
 
-   static Return normal_function_stub(Args... args)
+   static ReturnType normal_function_stub(Args... args)
    {
       int index = I().matches(std::forward<Args>(args)...);
       h2::h2_stub_temporary_restore t(I().origin_fp);
-      return I().function_array[index](nullptr, std::forward<Args>(args)...);
+      return I().routine_array[index](nullptr, std::forward<Args>(args)...);
    }
 
-   static Return member_function_stub(Class* that, Args... args)
+   static ReturnType member_function_stub(Class* This, Args... args)
    {
       int index = I().matches(std::forward<Args>(args)...);
       h2::h2_stub_temporary_restore t(I().origin_fp);
-      return I().function_array[index](that, std::forward<Args>(args)...);
+      return I().routine_array[index](This, std::forward<Args>(args)...);
    }
 
    int matches(Args... args)
@@ -2748,8 +2712,11 @@ class h2_mocker<Counter, Class, Return(Args...)> : h2_mock {
                delete fails;
                continue;
             }
-            fails->foreach([this](h2_fail* f, int, int) {
-               f->explain += "on " + (func + argvs(f->seqno));
+            fails->foreach([this, i](h2_fail* f, int, int) {
+               f->explain += gray("on ") + (class_function + arguments(f->seqno));
+               if (1 < checkin_array.size()) {
+                  f->explain += gray(" when ") + h2_numeric::sequence_number(i) + " checkin " + color(checkin_array[i].expr, "cyan");
+               }
             });
             h2_fail* fail = h2_fail::new_normal(signature(), file, lino);
             h2_fail::append_child(fail, fails);
@@ -2775,7 +2742,7 @@ class h2_mocker<Counter, Class, Return(Args...)> : h2_mock {
       }
       if (checkin_offset == -1) {
          h2_fail* fail = h2_fail::new_normal(signature(), file, lino);
-         h2_fail* f = h2_fail::new_normal(func + h2_representify(at) + color(" unexpectedly", "red,bold") + " called");
+         h2_fail* f = h2_fail::new_normal(class_function + h2_representify(at) + color(" unexpectedly", "red,bold") + " called");
          h2_fail::append_child(fail, f);
          h2_fail_g(fail, false);
       }
@@ -2786,17 +2753,9 @@ class h2_mocker<Counter, Class, Return(Args...)> : h2_mock {
    {
       checkin_array.clear();
       matcher_array.clear();
-      function_array.clear();
+      routine_array.clear();
       checkin_index = 0;
       greed_mode = true;
-   }
-
-   h2_function<Class, Return(Args...)> origin()
-   {
-      if (std::is_same<std::false_type, Class>::value)
-         return h2_function<Class, Return(Args...)>(std::function<Return(Args...)>((Return(*)(Args...))origin_fp));
-      else
-         return h2_function<Class, Return(Args...)>(std::function<Return(Class*, Args...)>((Return(*)(Class*, Args...))origin_fp));
    }
 
  public:
@@ -2807,13 +2766,14 @@ class h2_mocker<Counter, Class, Return(Args...)> : h2_mock {
       return *i;
    }
 
-   static h2_mocker& I(void* origin_fp, const char* ret, const char* func, const h2_vector<const char*>& argv, const char* file, int lino)
+   static h2_mocker& I(void* origin_fp, const char* return_type, const char* class_function, const h2_vector<const char*>& argument_type, const char* inspects, const char* file, int lino)
    {
       I().origin_fp = origin_fp;
       I().substitute_fp = std::is_same<std::false_type, Class>::value ? (void*)normal_function_stub : (void*)member_function_stub;
-      I().ret = ret;
-      I().func = func;
-      I().argv = argv;
+      I().return_type = return_type;
+      I().class_function = class_function;
+      I().argument_type = argument_type;
+      I().inspects = inspects;
       I().file = file;
       I().lino = lino;
       I().reset();
@@ -2827,129 +2787,316 @@ class h2_mocker<Counter, Class, Return(Args...)> : h2_mock {
       return *this;
    }
 
-   h2_mocker& once(MATCHER_Any_0_1_2_3_4_5_6_7_8_9_A_B_C_D_E_F)
+#define H2_Default_Matcher(i) h2_matcher<h2_nth_decay<i, Args...>> _##i = {}
+#define H2_Forward_Matcher(i) std::forward<h2_matcher<h2_nth_decay<i, Args...>>>(_##i)
+
+   h2_mocker& Once(H2_ForEach_Comma(H2_Default_Matcher))
    {
-      checkin_array.push_back(h2_checkin(1, 1));
-      matcher_array.push_back(std::forward_as_tuple(FORWARD_Matcher_0_1_2_3_4_5_6_7_8_9_A_B_C_D_E_F));
-      function_array.push_back(origin());
+      checkin_array.push_back(h2_checkin::Once());
+      matcher_array.push_back(std::forward_as_tuple(H2_ForEach_Comma(H2_Forward_Matcher)));
+      routine_array.push_back(h2_routine<Class, ReturnType(Args...)>());
       return *this;
    }
 
-   h2_mocker& twice(MATCHER_Any_0_1_2_3_4_5_6_7_8_9_A_B_C_D_E_F)
+   h2_mocker& Twice(H2_ForEach_Comma(H2_Default_Matcher))
    {
-      checkin_array.push_back(h2_checkin(2, 2));
-      matcher_array.push_back(std::forward_as_tuple(FORWARD_Matcher_0_1_2_3_4_5_6_7_8_9_A_B_C_D_E_F));
-      function_array.push_back(origin());
+      checkin_array.push_back(h2_checkin::Twice());
+      matcher_array.push_back(std::forward_as_tuple(H2_ForEach_Comma(H2_Forward_Matcher)));
+      routine_array.push_back(h2_routine<Class, ReturnType(Args...)>());
       return *this;
    }
 
-   h2_mocker& times(int count, MATCHER_Any_0_1_2_3_4_5_6_7_8_9_A_B_C_D_E_F)
+   h2_mocker& Times(int count, H2_ForEach_Comma(H2_Default_Matcher))
    {
-      checkin_array.push_back(h2_checkin(count, count));
-      matcher_array.push_back(std::forward_as_tuple(FORWARD_Matcher_0_1_2_3_4_5_6_7_8_9_A_B_C_D_E_F));
-      function_array.push_back(origin());
+      checkin_array.push_back(h2_checkin::Times(count));
+      matcher_array.push_back(std::forward_as_tuple(H2_ForEach_Comma(H2_Forward_Matcher)));
+      routine_array.push_back(h2_routine<Class, ReturnType(Args...)>());
       return *this;
    }
 
-   h2_mocker& any(MATCHER_Any_0_1_2_3_4_5_6_7_8_9_A_B_C_D_E_F)
+   h2_mocker& Any(H2_ForEach_Comma(H2_Default_Matcher))
    {
-      checkin_array.push_back(h2_checkin(0, INT_MAX));
-      matcher_array.push_back(std::forward_as_tuple(FORWARD_Matcher_0_1_2_3_4_5_6_7_8_9_A_B_C_D_E_F));
-      function_array.push_back(origin());
+      checkin_array.push_back(h2_checkin::Any());
+      matcher_array.push_back(std::forward_as_tuple(H2_ForEach_Comma(H2_Forward_Matcher)));
+      routine_array.push_back(h2_routine<Class, ReturnType(Args...)>());
       return *this;
    }
 
-   h2_mocker& atleast(int count, MATCHER_Any_0_1_2_3_4_5_6_7_8_9_A_B_C_D_E_F)
+   h2_mocker& Atleast(int count, H2_ForEach_Comma(H2_Default_Matcher))
    {
-      checkin_array.push_back(h2_checkin(count, INT_MAX));
-      matcher_array.push_back(std::forward_as_tuple(FORWARD_Matcher_0_1_2_3_4_5_6_7_8_9_A_B_C_D_E_F));
-      function_array.push_back(origin());
+      checkin_array.push_back(h2_checkin::Atleast(count));
+      matcher_array.push_back(std::forward_as_tuple(H2_ForEach_Comma(H2_Forward_Matcher)));
+      routine_array.push_back(h2_routine<Class, ReturnType(Args...)>());
       return *this;
    }
 
-   h2_mocker& atmost(int count, MATCHER_Any_0_1_2_3_4_5_6_7_8_9_A_B_C_D_E_F)
+   h2_mocker& Atmost(int count, H2_ForEach_Comma(H2_Default_Matcher))
    {
-      checkin_array.push_back(h2_checkin(0, count));
-      matcher_array.push_back(std::forward_as_tuple(FORWARD_Matcher_0_1_2_3_4_5_6_7_8_9_A_B_C_D_E_F));
-      function_array.push_back(origin());
+      checkin_array.push_back(h2_checkin::Atmost(count));
+      matcher_array.push_back(std::forward_as_tuple(H2_ForEach_Comma(H2_Forward_Matcher)));
+      routine_array.push_back(h2_routine<Class, ReturnType(Args...)>());
       return *this;
    }
 
-   h2_mocker& between(int left, int right, MATCHER_Any_0_1_2_3_4_5_6_7_8_9_A_B_C_D_E_F)
+   h2_mocker& Between(int left, int right, H2_ForEach_Comma(H2_Default_Matcher))
    {
-      checkin_array.push_back(h2_checkin(left, right));
-      matcher_array.push_back(std::forward_as_tuple(FORWARD_Matcher_0_1_2_3_4_5_6_7_8_9_A_B_C_D_E_F));
-      function_array.push_back(origin());
+      checkin_array.push_back(h2_checkin::Between(left, right));
+      matcher_array.push_back(std::forward_as_tuple(H2_ForEach_Comma(H2_Forward_Matcher)));
+      routine_array.push_back(h2_routine<Class, ReturnType(Args...)>());
       return *this;
    }
 
-   h2_mocker& with(MATCHER_Any_0_1_2_3_4_5_6_7_8_9_A_B_C_D_E_F)
+   h2_mocker& With(H2_ForEach_Comma(H2_Default_Matcher))
    {
-      if (!matcher_array.empty()) {
-         matcher_array.back() = std::forward_as_tuple(FORWARD_Matcher_0_1_2_3_4_5_6_7_8_9_A_B_C_D_E_F);
-      }
+      if (checkin_array.empty()) Any();
+      matcher_array.back() = std::forward_as_tuple(H2_ForEach_Comma(H2_Forward_Matcher));
       return *this;
    }
 
-   /* clang-format off */
-   h2_mocker& th0(h2_matcher<h2_nth_decay<0, Args...>> e = {}) { if (!matcher_array.empty()) std::get<0>(matcher_array.back()) = e; return *this; }
-   h2_mocker& th1(h2_matcher<h2_nth_decay<1, Args...>> e = {}) { if (!matcher_array.empty()) std::get<1>(matcher_array.back()) = e; return *this; }
-   h2_mocker& th2(h2_matcher<h2_nth_decay<2, Args...>> e = {}) { if (!matcher_array.empty()) std::get<2>(matcher_array.back()) = e; return *this; }
-   h2_mocker& th3(h2_matcher<h2_nth_decay<3, Args...>> e = {}) { if (!matcher_array.empty()) std::get<3>(matcher_array.back()) = e; return *this; }
-   h2_mocker& th4(h2_matcher<h2_nth_decay<4, Args...>> e = {}) { if (!matcher_array.empty()) std::get<4>(matcher_array.back()) = e; return *this; }
-   h2_mocker& th5(h2_matcher<h2_nth_decay<5, Args...>> e = {}) { if (!matcher_array.empty()) std::get<5>(matcher_array.back()) = e; return *this; }
-   h2_mocker& th6(h2_matcher<h2_nth_decay<6, Args...>> e = {}) { if (!matcher_array.empty()) std::get<6>(matcher_array.back()) = e; return *this; }
-   h2_mocker& th7(h2_matcher<h2_nth_decay<7, Args...>> e = {}) { if (!matcher_array.empty()) std::get<7>(matcher_array.back()) = e; return *this; }
-   h2_mocker& th8(h2_matcher<h2_nth_decay<8, Args...>> e = {}) { if (!matcher_array.empty()) std::get<8>(matcher_array.back()) = e; return *this; }
-   h2_mocker& th9(h2_matcher<h2_nth_decay<9, Args...>> e = {}) { if (!matcher_array.empty()) std::get<9>(matcher_array.back()) = e; return *this; }
-   h2_mocker& th10(h2_matcher<h2_nth_decay<10, Args...>> e = {}) { if (!matcher_array.empty()) std::get<10>(matcher_array.back()) = e; return *this; }
-   h2_mocker& th11(h2_matcher<h2_nth_decay<11, Args...>> e = {}) { if (!matcher_array.empty()) std::get<11>(matcher_array.back()) = e; return *this; }
-   h2_mocker& th12(h2_matcher<h2_nth_decay<12, Args...>> e = {}) { if (!matcher_array.empty()) std::get<12>(matcher_array.back()) = e; return *this; }
-   h2_mocker& th13(h2_matcher<h2_nth_decay<13, Args...>> e = {}) { if (!matcher_array.empty()) std::get<13>(matcher_array.back()) = e; return *this; }
-   h2_mocker& th14(h2_matcher<h2_nth_decay<14, Args...>> e = {}) { if (!matcher_array.empty()) std::get<14>(matcher_array.back()) = e; return *this; }
-   h2_mocker& th15(h2_matcher<h2_nth_decay<15, Args...>> e = {}) { if (!matcher_array.empty()) std::get<15>(matcher_array.back()) = e; return *this; }
-   /* clang-format on */
+#undef H2_Default_Matcher
+#undef H2_Forward_Matcher
 
-   h2_mocker& returns()
+#define H2_Th_Matcher(i)                                         \
+   h2_mocker& Th##i(h2_matcher<h2_nth_decay<i, Args...>> e = {}) \
+   {                                                             \
+      if (checkin_array.empty()) Any();                          \
+      std::get<i>(matcher_array.back()) = e;                     \
+      return *this;                                              \
+   }
+   H2_ForEach_Space(H2_Th_Matcher);
+#undef H2_Th_Matcher
+
+   h2_mocker& Return()
    {
-      if (!function_array.empty()) {
-         function_array.back().clear();
-      }
+      if (checkin_array.empty()) Any();
+      if (std::is_same<std::false_type, Class>::value)
+         routine_array.back().nfp = (ReturnType(*)(Args...))origin_fp;
+      else
+         routine_array.back().mfp = (ReturnType(*)(Class*, Args...))origin_fp;
       return *this;
    }
 
-   h2_mocker& returns(h2_function<Class, Return(Args...)> r)
+   h2_mocker& Return(h2_routine<Class, ReturnType(Args...)> r)
    {
-      if (!function_array.empty()) {
-         function_array.pop_back();
-         function_array.push_back(r);
-      }
+      if (checkin_array.empty()) Any();
+      if (!routine_array.empty()) routine_array.pop_back();
+      routine_array.push_back(r);
       return *this;
    }
 
-   h2_mocker& does(std::function<Return(Args...)> f)
+   void operator=(ReturnType (*f)(Args...))
    {
-      if (!function_array.empty()) {
-         function_array.pop_back();
-         function_array.push_back(h2_function<Class, Return(Args...)>(f));
-      }
-      return *this;
+      if (checkin_array.empty()) Any();
+      for (auto& a : routine_array)
+         if (!a) a.nfp = f;
    }
 
-   h2_mocker& does(std::function<Return(Class*, Args...)> f)
+   void operator=(ReturnType (*f)(Class*, Args...))
    {
-      if (!function_array.empty()) {
-         function_array.pop_back();
-         function_array.push_back(h2_function<Class, Return(Args...)>(f));
-      }
-      return *this;
+      if (checkin_array.empty()) Any();
+      for (auto& a : routine_array)
+         if (!a) a.mfp = f;
    }
-
-   h2_mocker& operator=(std::function<Return(Args...)> f) { return does(f); }
-   h2_mocker& operator=(std::function<Return(Class*, Args...)> f) { return does(f); }
 };
 
+#undef H2_ForEach_Comma
+#undef H2_ForEach_Space
+
 }  // namespace
+// h2_mocks.hpp
+
+struct h2_mocks {
+   h2_list mocks;
+   bool add(void* mock);
+   h2_fail* clear(bool check);
+};
+// h2_mock.hpp
+
+/* clang-format off */
+#define __H2ARGV0() {}
+#define __H2ARGV1(_1) {#_1}
+#define __H2ARGV2(_1, _2) {#_1, #_2}
+#define __H2ARGV3(_1, _2, _3) {#_1, #_2, #_3}
+#define __H2ARGV4(_1, _2, _3, _4) {#_1, #_2, #_3, #_4}
+#define __H2ARGV5(_1, _2, _3, _4, _5) {#_1, #_2, #_3, #_4, #_5}
+#define __H2ARGV6(_1, _2, _3, _4, _5, _6) {#_1, #_2, #_3, #_4, #_5, #_6}
+#define __H2ARGV7(_1, _2, _3, _4, _5, _6, _7) {#_1, #_2, #_3, #_4, #_5, #_6, #_7}
+#define __H2ARGV8(_1, _2, _3, _4, _5, _6, _7, _8) {#_1, #_2, #_3, #_4, #_5, #_6, #_7, #_8}
+#define __H2ARGV9(_1, _2, _3, _4, _5, _6, _7, _8, _9) {#_1, #_2, #_3, #_4, #_5, #_6, #_7, #_8, #_9}
+#define __H2ARGV10(_1, _2, _3, _4, _5, _6, _7, _8, _9, _10) {#_1, #_2, #_3, #_4, #_5, #_6, #_7, #_8, #_9, #_10}
+#define __H2ARGV11(_1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11) {#_1, #_2, #_3, #_4, #_5, #_6, #_7, #_8, #_9, #_10, #_11}
+#define __H2ARGV12(_1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12) {#_1, #_2, #_3, #_4, #_5, #_6, #_7, #_8, #_9, #_10, #_11, #_12}
+#define __H2ARGV13(_1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13) {#_1, #_2, #_3, #_4, #_5, #_6, #_7, #_8, #_9, #_10, #_11, #_12, #_13}
+#define __H2ARGV14(_1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14) {#_1, #_2, #_3, #_4, #_5, #_6, #_7, #_8, #_9, #_10, #_11, #_12, #_13, #_14}
+#define __H2ARGV15(_1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15) {#_1, #_2, #_3, #_4, #_5, #_6, #_7, #_8, #_9, #_10, #_11, #_12, #_13, #_14, #_15}
+
+#define __H2ARGV(...) H2PP_CAT(__H2ARGV, H2PP_NARG(__VA_ARGS__))(__VA_ARGS__)  // = H2PP_VARIADIC_CALL to avoid recursion
+#define H2ARGV(...) __H2ARGV(H2PP_REMOVE_PARENTHESES(__VA_ARGS__))
+
+
+#define __H2MOCK_1_3(Function, ReturnType, Args) \
+   h2::h2_mocker<__COUNTER__, std::false_type, H2PP_RPS(ReturnType) Args>::I(h2::h2_fp(Function), #ReturnType, #Function, H2ARGV(Args), "", __FILE__, __LINE__) = [] Args -> H2PP_RPS(ReturnType)
+
+#define __H2MOCK_1_4(Function, ReturnType, Args, Inspect1) \
+   h2::h2_mocker<__COUNTER__, std::false_type, H2PP_RPS(ReturnType) Args>::I(h2::h2_fp(Function), #ReturnType, #Function, H2ARGV(Args), #Inspect1, __FILE__, __LINE__).Inspect1 = [] Args -> H2PP_RPS(ReturnType)
+
+#define __H2MOCK_1_5(Function, ReturnType, Args, Inspect1, Inspect2) \
+   h2::h2_mocker<__COUNTER__, std::false_type, H2PP_RPS(ReturnType) Args>::I(h2::h2_fp(Function), #ReturnType, #Function, H2ARGV(Args), #Inspect1 " " #Inspect2, __FILE__, __LINE__).Inspect1.Inspect2 = [] Args -> H2PP_RPS(ReturnType)
+
+#define __H2MOCK_1_6(Function, ReturnType, Args, Inspect1, Inspect2, Inspect3) \
+   h2::h2_mocker<__COUNTER__, std::false_type, H2PP_RPS(ReturnType) Args>::I(h2::h2_fp(Function), #ReturnType, #Function, H2ARGV(Args), #Inspect1 " " #Inspect2 " " #Inspect3, __FILE__, __LINE__).Inspect1.Inspect2.Inspect3 = [] Args -> H2PP_RPS(ReturnType)
+
+#define __H2MOCK_1_7(Function, ReturnType, Args, Inspect1, Inspect2, Inspect3, Inspect4) \
+   h2::h2_mocker<__COUNTER__, std::false_type, H2PP_RPS(ReturnType) Args>::I(h2::h2_fp(Function), #ReturnType, #Function, H2ARGV(Args), #Inspect1 " " #Inspect2 " " #Inspect3 " " #Inspect4, __FILE__, __LINE__).Inspect1.Inspect2.Inspect3.Inspect4 = [] Args -> H2PP_RPS(ReturnType)
+
+#define __H2MOCK_1_8(Function, ReturnType, Args, Inspect1, Inspect2, Inspect3, Inspect4, Inspect5) \
+   h2::h2_mocker<__COUNTER__, std::false_type, H2PP_RPS(ReturnType) Args>::I(h2::h2_fp(Function), #ReturnType, #Function, H2ARGV(Args), #Inspect1 " " #Inspect2 " " #Inspect3 " " #Inspect4 " " #Inspect5, __FILE__, __LINE__).Inspect1.Inspect2.Inspect3.Inspect4.Inspect5 = [] Args -> H2PP_RPS(ReturnType)
+
+#define __H2MOCK_1_9(Function, ReturnType, Args, Inspect1, Inspect2, Inspect3, Inspect4, Inspect5, Inspect6) \
+   h2::h2_mocker<__COUNTER__, std::false_type, H2PP_RPS(ReturnType) Args>::I(h2::h2_fp(Function), #ReturnType, #Function, H2ARGV(Args), #Inspect1 " " #Inspect2 " " #Inspect3 " " #Inspect4 " " #Inspect5 " " #Inspect6, __FILE__, __LINE__).Inspect1.Inspect2.Inspect3.Inspect4.Inspect5.Inspect6 = [] Args -> H2PP_RPS(ReturnType)
+
+#define __H2MOCK_1_10(Function, ReturnType, Args, Inspect1, Inspect2, Inspect3, Inspect4, Inspect5, Inspect6, Inspect7) \
+   h2::h2_mocker<__COUNTER__, std::false_type, H2PP_RPS(ReturnType) Args>::I(h2::h2_fp(Function), #ReturnType, #Function, H2ARGV(Args), #Inspect1 " " #Inspect2 " " #Inspect3 " " #Inspect4 " " #Inspect5 " " #Inspect6 " " #Inspect7, __FILE__, __LINE__).Inspect1.Inspect2.Inspect3.Inspect4.Inspect5.Inspect6.Inspect7 = [] Args -> H2PP_RPS(ReturnType)
+
+#define __H2MOCK_1_11(Function, ReturnType, Args, Inspect1, Inspect2, Inspect3, Inspect4, Inspect5, Inspect6, Inspect7, Inspect8) \
+   h2::h2_mocker<__COUNTER__, std::false_type, H2PP_RPS(ReturnType) Args>::I(h2::h2_fp(Function), #ReturnType, #Function, H2ARGV(Args), #Inspect1 " " #Inspect2 " " #Inspect3 " " #Inspect4 " " #Inspect5 " " #Inspect6 " " #Inspect7 " " Inspect8, __FILE__, __LINE__).Inspect1.Inspect2.Inspect3.Inspect4.Inspect5.Inspect6.Inspect7.Inspect8 = [] Args -> H2PP_RPS(ReturnType)
+
+#define __H2MOCK_1_12(Function, ReturnType, Args, Inspect1, Inspect2, Inspect3, Inspect4, Inspect5, Inspect6, Inspect7, Inspect8, Inspect9) \
+   h2::h2_mocker<__COUNTER__, std::false_type, H2PP_RPS(ReturnType) Args>::I(h2::h2_fp(Function), #ReturnType, #Function, H2ARGV(Args), #Inspect1 " " #Inspect2 " " #Inspect3 " " #Inspect4 " " #Inspect5 " " #Inspect6 " " #Inspect7 " " Inspect8 " " Inspect9, __FILE__, __LINE__).Inspect1.Inspect2.Inspect3.Inspect4.Inspect5.Inspect6.Inspect7.Inspect8.Inspect9 = [] Args -> H2PP_RPS(ReturnType)
+
+#define __H2MOCK_0_4_1(Class, Method, ReturnType, Args) \
+   h2::h2_mocker<__COUNTER__, H2PP_RPS(Class), H2PP_RPS(ReturnType) Args>::I(h2::h2_mfp<H2PP_RPS(Class), H2PP_RPS(ReturnType) Args>::A(&H2PP_RPS(Class)::H2PP_RPS(Method)), #ReturnType, #Class "::" #Method, H2ARGV(Args), "", __FILE__, __LINE__) = [](H2PP_RPS(Class) * This) -> H2PP_RPS(ReturnType)
+#define __H2MOCK_0_4_0(Class, Method, ReturnType, Args) \
+   h2::h2_mocker<__COUNTER__, H2PP_RPS(Class), H2PP_RPS(ReturnType) Args>::I(h2::h2_mfp<H2PP_RPS(Class), H2PP_RPS(ReturnType) Args>::A(&H2PP_RPS(Class)::H2PP_RPS(Method)), #ReturnType, #Class "::" #Method, H2ARGV(Args), "", __FILE__, __LINE__) = [](H2PP_RPS(Class) * This, H2PP_REMOVE_PARENTHESES(Args)) -> H2PP_RPS(ReturnType)
+
+#define __H2MOCK_0_5_1(Class, Method, ReturnType, Args, Inspect1) \
+   h2::h2_mocker<__COUNTER__, H2PP_RPS(Class), H2PP_RPS(ReturnType) Args>::I(h2::h2_mfp<H2PP_RPS(Class), H2PP_RPS(ReturnType) Args>::A(&H2PP_RPS(Class)::H2PP_RPS(Method)), #ReturnType, #Class "::" #Method, H2ARGV(Args), #Inspect1, __FILE__, __LINE__).Inspect1 = [](H2PP_RPS(Class) * This) -> H2PP_RPS(ReturnType)
+#define __H2MOCK_0_5_0(Class, Method, ReturnType, Args, Inspect1) \
+   h2::h2_mocker<__COUNTER__, H2PP_RPS(Class), H2PP_RPS(ReturnType) Args>::I(h2::h2_mfp<H2PP_RPS(Class), H2PP_RPS(ReturnType) Args>::A(&H2PP_RPS(Class)::H2PP_RPS(Method)), #ReturnType, #Class "::" #Method, H2ARGV(Args), #Inspect1, __FILE__, __LINE__).Inspect1 = [](H2PP_RPS(Class) * This, H2PP_REMOVE_PARENTHESES(Args)) -> H2PP_RPS(ReturnType)
+
+#define __H2MOCK_0_6_1(Class, Method, ReturnType, Args, Inspect1, Inspect2) \
+   h2::h2_mocker<__COUNTER__, H2PP_RPS(Class), H2PP_RPS(ReturnType) Args>::I(h2::h2_mfp<H2PP_RPS(Class), H2PP_RPS(ReturnType) Args>::A(&H2PP_RPS(Class)::H2PP_RPS(Method)), #ReturnType, #Class "::" #Method, H2ARGV(Args), #Inspect1 " " #Inspect2, __FILE__, __LINE__).Inspect1.Inspect2 = [](H2PP_RPS(Class) * This) -> H2PP_RPS(ReturnType)
+#define __H2MOCK_0_6_0(Class, Method, ReturnType, Args, Inspect1, Inspect2) \
+   h2::h2_mocker<__COUNTER__, H2PP_RPS(Class), H2PP_RPS(ReturnType) Args>::I(h2::h2_mfp<H2PP_RPS(Class), H2PP_RPS(ReturnType) Args>::A(&H2PP_RPS(Class)::H2PP_RPS(Method)), #ReturnType, #Class "::" #Method, H2ARGV(Args), #Inspect1 " " #Inspect2, __FILE__, __LINE__).Inspect1.Inspect2 = [](H2PP_RPS(Class) * This, H2PP_REMOVE_PARENTHESES(Args)) -> H2PP_RPS(ReturnType)
+
+#define __H2MOCK_0_7_1(Class, Method, ReturnType, Args, Inspect1, Inspect2, Inspect3) \
+   h2::h2_mocker<__COUNTER__, H2PP_RPS(Class), H2PP_RPS(ReturnType) Args>::I(h2::h2_mfp<H2PP_RPS(Class), H2PP_RPS(ReturnType) Args>::A(&H2PP_RPS(Class)::H2PP_RPS(Method)), #ReturnType, #Class "::" #Method, H2ARGV(Args), #Inspect1 " " #Inspect2 " " #Inspect3, __FILE__, __LINE__).Inspect1.Inspect2.Inspect3 = [](H2PP_RPS(Class) * This) -> H2PP_RPS(ReturnType)
+#define __H2MOCK_0_7_0(Class, Method, ReturnType, Args, Inspect1, Inspect2, Inspect3) \
+   h2::h2_mocker<__COUNTER__, H2PP_RPS(Class), H2PP_RPS(ReturnType) Args>::I(h2::h2_mfp<H2PP_RPS(Class), H2PP_RPS(ReturnType) Args>::A(&H2PP_RPS(Class)::H2PP_RPS(Method)), #ReturnType, #Class "::" #Method, H2ARGV(Args), #Inspect1 " " #Inspect2 " " #Inspect3, __FILE__, __LINE__).Inspect1.Inspect2.Inspect3 = [](H2PP_RPS(Class) * This, H2PP_REMOVE_PARENTHESES(Args)) -> H2PP_RPS(ReturnType)
+
+#define __H2MOCK_0_8_1(Class, Method, ReturnType, Args, Inspect1, Inspect2, Inspect3, Inspect4) \
+   h2::h2_mocker<__COUNTER__, H2PP_RPS(Class), H2PP_RPS(ReturnType) Args>::I(h2::h2_mfp<H2PP_RPS(Class), H2PP_RPS(ReturnType) Args>::A(&H2PP_RPS(Class)::H2PP_RPS(Method)), #ReturnType, #Class "::" #Method, H2ARGV(Args), #Inspect1 " " #Inspect2 " " #Inspect3 " " #Inspect4, __FILE__, __LINE__).Inspect1.Inspect2.Inspect3.Inspect4 = [](H2PP_RPS(Class) * This) -> H2PP_RPS(ReturnType)
+#define __H2MOCK_0_8_0(Class, Method, ReturnType, Args, Inspect1, Inspect2, Inspect3, Inspect4) \
+   h2::h2_mocker<__COUNTER__, H2PP_RPS(Class), H2PP_RPS(ReturnType) Args>::I(h2::h2_mfp<H2PP_RPS(Class), H2PP_RPS(ReturnType) Args>::A(&H2PP_RPS(Class)::H2PP_RPS(Method)), #ReturnType, #Class "::" #Method, H2ARGV(Args), #Inspect1 " " #Inspect2 " " #Inspect3 " " #Inspect4, __FILE__, __LINE__).Inspect1.Inspect2.Inspect3.Inspect4 = [](H2PP_RPS(Class) * This, H2PP_REMOVE_PARENTHESES(Args)) -> H2PP_RPS(ReturnType)
+
+#define __H2MOCK_0_9_1(Class, Method, ReturnType, Args, Inspect1, Inspect2, Inspect3, Inspect4, Inspect5) \
+   h2::h2_mocker<__COUNTER__, H2PP_RPS(Class), H2PP_RPS(ReturnType) Args>::I(h2::h2_mfp<H2PP_RPS(Class), H2PP_RPS(ReturnType) Args>::A(&H2PP_RPS(Class)::H2PP_RPS(Method)), #ReturnType, #Class "::" #Method, H2ARGV(Args), #Inspect1 " " #Inspect2 " " #Inspect3 " " #Inspect4 " " Inspect5, __FILE__, __LINE__).Inspect1.Inspect2.Inspect3.Inspect4.Inspect5 = [](H2PP_RPS(Class) * This) -> H2PP_RPS(ReturnType)
+#define __H2MOCK_0_9_0(Class, Method, ReturnType, Args, Inspect1, Inspect2, Inspect3, Inspect4, Inspect5) \
+   h2::h2_mocker<__COUNTER__, H2PP_RPS(Class), H2PP_RPS(ReturnType) Args>::I(h2::h2_mfp<H2PP_RPS(Class), H2PP_RPS(ReturnType) Args>::A(&H2PP_RPS(Class)::H2PP_RPS(Method)), #ReturnType, #Class "::" #Method, H2ARGV(Args), #Inspect1 " " #Inspect2 " " #Inspect3 " " #Inspect4 " " Inspect5, __FILE__, __LINE__).Inspect1.Inspect2.Inspect3.Inspect4.Inspect5 = [](H2PP_RPS(Class) * This, H2PP_REMOVE_PARENTHESES(Args)) -> H2PP_RPS(ReturnType)
+
+#define __H2MOCK_0_10_1(Class, Method, ReturnType, Args, Inspect1, Inspect2, Inspect3, Inspect4, Inspect5, Inspect6) \
+   h2::h2_mocker<__COUNTER__, H2PP_RPS(Class), H2PP_RPS(ReturnType) Args>::I(h2::h2_mfp<H2PP_RPS(Class), H2PP_RPS(ReturnType) Args>::A(&H2PP_RPS(Class)::H2PP_RPS(Method)), #ReturnType, #Class "::" #Method, H2ARGV(Args), #Inspect1 " " #Inspect2 " " #Inspect3 " " #Inspect4 " " Inspect5 " " Inspect6, __FILE__, __LINE__).Inspect1.Inspect2.Inspect3.Inspect4.Inspect5.Inspect6 = [](H2PP_RPS(Class) * This) -> H2PP_RPS(ReturnType)
+#define __H2MOCK_0_10_0(Class, Method, ReturnType, Args, Inspect1, Inspect2, Inspect3, Inspect4, Inspect5, Inspect6) \
+   h2::h2_mocker<__COUNTER__, H2PP_RPS(Class), H2PP_RPS(ReturnType) Args>::I(h2::h2_mfp<H2PP_RPS(Class), H2PP_RPS(ReturnType) Args>::A(&H2PP_RPS(Class)::H2PP_RPS(Method)), #ReturnType, #Class "::" #Method, H2ARGV(Args), #Inspect1 " " #Inspect2 " " #Inspect3 " " #Inspect4 " " Inspect5 " " Inspect6, __FILE__, __LINE__).Inspect1.Inspect2.Inspect3.Inspect4.Inspect5.Inspect6 = [](H2PP_RPS(Class) * This, H2PP_REMOVE_PARENTHESES(Args)) -> H2PP_RPS(ReturnType)
+
+#define __H2MOCK_0_11_1(Class, Method, ReturnType, Args, Inspect1, Inspect2, Inspect3, Inspect4, Inspect5, Inspect6, Inspect7) \
+   h2::h2_mocker<__COUNTER__, H2PP_RPS(Class), H2PP_RPS(ReturnType) Args>::I(h2::h2_mfp<H2PP_RPS(Class), H2PP_RPS(ReturnType) Args>::A(&H2PP_RPS(Class)::H2PP_RPS(Method)), #ReturnType, #Class "::" #Method, H2ARGV(Args), #Inspect1 " " #Inspect2 " " #Inspect3 " " #Inspect4 " " Inspect5 " " Inspect6 " " Inspect7, __FILE__, __LINE__).Inspect1.Inspect2.Inspect3.Inspect4.Inspect5.Inspect6.Inspect7 = [](H2PP_RPS(Class) * This) -> H2PP_RPS(ReturnType)
+#define __H2MOCK_0_11_0(Class, Method, ReturnType, Args, Inspect1, Inspect2, Inspect3, Inspect4, Inspect5, Inspect6, Inspect7) \
+   h2::h2_mocker<__COUNTER__, H2PP_RPS(Class), H2PP_RPS(ReturnType) Args>::I(h2::h2_mfp<H2PP_RPS(Class), H2PP_RPS(ReturnType) Args>::A(&H2PP_RPS(Class)::H2PP_RPS(Method)), #ReturnType, #Class "::" #Method, H2ARGV(Args), #Inspect1 " " #Inspect2 " " #Inspect3 " " #Inspect4 " " Inspect5 " " Inspect6 " " Inspect7, __FILE__, __LINE__).Inspect1.Inspect2.Inspect3.Inspect4.Inspect5.Inspect6.Inspect7 = [](H2PP_RPS(Class) * This, H2PP_REMOVE_PARENTHESES(Args)) -> H2PP_RPS(ReturnType)
+
+#define __H2MOCK_0_12_1(Class, Method, ReturnType, Args, Inspect1, Inspect2, Inspect3, Inspect4, Inspect5, Inspect6, Inspect7, Inspect8) \
+   h2::h2_mocker<__COUNTER__, H2PP_RPS(Class), H2PP_RPS(ReturnType) Args>::I(h2::h2_mfp<H2PP_RPS(Class), H2PP_RPS(ReturnType) Args>::A(&H2PP_RPS(Class)::H2PP_RPS(Method)), #ReturnType, #Class "::" #Method, H2ARGV(Args), #Inspect1 " " #Inspect2 " " #Inspect3 " " #Inspect4 " " Inspect5 " " Inspect6 " " Inspect7 " " Inspect8, __FILE__, __LINE__).Inspect1.Inspect2.Inspect3.Inspect4.Inspect5.Inspect6.Inspect7.Inspect8 = [](H2PP_RPS(Class) * This) -> H2PP_RPS(ReturnType)
+#define __H2MOCK_0_12_0(Class, Method, ReturnType, Args, Inspect1, Inspect2, Inspect3, Inspect4, Inspect5, Inspect6, Inspect7, Inspect8) \
+   h2::h2_mocker<__COUNTER__, H2PP_RPS(Class), H2PP_RPS(ReturnType) Args>::I(h2::h2_mfp<H2PP_RPS(Class), H2PP_RPS(ReturnType) Args>::A(&H2PP_RPS(Class)::H2PP_RPS(Method)), #ReturnType, #Class "::" #Method, H2ARGV(Args), #Inspect1 " " #Inspect2 " " #Inspect3 " " #Inspect4 " " Inspect5 " " Inspect6 " " Inspect7 " " Inspect8, __FILE__, __LINE__).Inspect1.Inspect2.Inspect3.Inspect4.Inspect5.Inspect6.Inspect7.Inspect8 = [](H2PP_RPS(Class) * This, H2PP_REMOVE_PARENTHESES(Args)) -> H2PP_RPS(ReturnType)
+
+#define __H2MOCK_0_13_1(Class, Method, ReturnType, Args, Inspect1, Inspect2, Inspect3, Inspect4, Inspect5, Inspect6, Inspect7, Inspect8, Inspect9) \
+   h2::h2_mocker<__COUNTER__, H2PP_RPS(Class), H2PP_RPS(ReturnType) Args>::I(h2::h2_mfp<H2PP_RPS(Class), H2PP_RPS(ReturnType) Args>::A(&H2PP_RPS(Class)::H2PP_RPS(Method)), #ReturnType, #Class "::" #Method, H2ARGV(Args), #Inspect1 " " #Inspect2 " " #Inspect3 " " #Inspect4 " " Inspect5 " " Inspect6 " " Inspect7 " " Inspect8 " " Inspect9, __FILE__, __LINE__).Inspect1.Inspect2.Inspect3.Inspect4.Inspect5.Inspect6.Inspect7.Inspect8.Inspect9 = [](H2PP_RPS(Class) * This) -> H2PP_RPS(ReturnType)
+#define __H2MOCK_0_13_0(Class, Method, ReturnType, Args, Inspect1, Inspect2, Inspect3, Inspect4, Inspect5, Inspect6, Inspect7, Inspect8, Inspect9) \
+   h2::h2_mocker<__COUNTER__, H2PP_RPS(Class), H2PP_RPS(ReturnType) Args>::I(h2::h2_mfp<H2PP_RPS(Class), H2PP_RPS(ReturnType) Args>::A(&H2PP_RPS(Class)::H2PP_RPS(Method)), #ReturnType, #Class "::" #Method, H2ARGV(Args), #Inspect1 " " #Inspect2 " " #Inspect3 " " #Inspect4 " " Inspect5 " " Inspect6 " " Inspect7 " " Inspect8 " " Inspect9, __FILE__, __LINE__).Inspect1.Inspect2.Inspect3.Inspect4.Inspect5.Inspect6.Inspect7.Inspect8.Inspect9 = [](H2PP_RPS(Class) * This, H2PP_REMOVE_PARENTHESES(Args)) -> H2PP_RPS(ReturnType)
+
+#define __H2MOCK_0_4(Class, Method, ReturnType, Args) H2PP_CAT(__H2MOCK_0_4_, H2PP_IS_EMPTY Args)(Class, Method, ReturnType, Args)
+#define __H2MOCK_0_5(Class, Method, ReturnType, Args, Inspect1) H2PP_CAT(__H2MOCK_0_5_, H2PP_IS_EMPTY Args)(Class, Method, ReturnType, Args, Inspect1)
+#define __H2MOCK_0_6(Class, Method, ReturnType, Args, Inspect1, Inspect2) H2PP_CAT(__H2MOCK_0_6_, H2PP_IS_EMPTY Args)(Class, Method, ReturnType, Args, Inspect1, Inspect2)
+#define __H2MOCK_0_7(Class, Method, ReturnType, Args, Inspect1, Inspect2, Inspect3) H2PP_CAT(__H2MOCK_0_7_, H2PP_IS_EMPTY Args)(Class, Method, ReturnType, Args, Inspect1, Inspect2, Inspect3)
+#define __H2MOCK_0_8(Class, Method, ReturnType, Args, Inspect1, Inspect2, Inspect3, Inspect4) H2PP_CAT(__H2MOCK_0_8_, H2PP_IS_EMPTY Args)(Class, Method, ReturnType, Args, Inspect1, Inspect2, Inspect3, Inspect4)
+#define __H2MOCK_0_9(Class, Method, ReturnType, Args, Inspect1, Inspect2, Inspect3, Inspect4, Inspect5) H2PP_CAT(__H2MOCK_0_9_, H2PP_IS_EMPTY Args)(Class, Method, ReturnType, Args, Inspect1, Inspect2, Inspect3, Inspect4, Inspect5)
+#define __H2MOCK_0_10(Class, Method, ReturnType, Args, Inspect1, Inspect2, Inspect3, Inspect4, Inspect5, Inspect6) H2PP_CAT(__H2MOCK_0_10_, H2PP_IS_EMPTY Args)(Class, Method, ReturnType, Args, Inspect1, Inspect2, Inspect3, Inspect4, Inspect5, Inspect6)
+#define __H2MOCK_0_11(Class, Method, ReturnType, Args, Inspect1, Inspect2, Inspect3, Inspect4, Inspect5, Inspect6, Inspect7) H2PP_CAT(__H2MOCK_0_11_, H2PP_IS_EMPTY Args)(Class, Method, ReturnType, Args, Inspect1, Inspect2, Inspect3, Inspect4, Inspect5, Inspect6, Inspect7)
+#define __H2MOCK_0_12(Class, Method, ReturnType, Args, Inspect1, Inspect2, Inspect3, Inspect4, Inspect5, Inspect6, Inspect7, Inspect8) H2PP_CAT(__H2MOCK_0_12_, H2PP_IS_EMPTY Args)(Class, Method, ReturnType, Args, Inspect1, Inspect2, Inspect3, Inspect4, Inspect5, Inspect6, Inspect7, Inspect8)
+#define __H2MOCK_0_13(Class, Method, ReturnType, Args, Inspect1, Inspect2, Inspect3, Inspect4, Inspect5, Inspect6, Inspect7, Inspect8, Inspect9) H2PP_CAT(__H2MOCK_0_13_, H2PP_IS_EMPTY Args)(Class, Method, ReturnType, Args, Inspect1, Inspect2, Inspect3, Inspect4, Inspect5, Inspect6, Inspect7, Inspect8, Inspect9)
+
+#define __H2MOCK_0(...) H2PP_VARIADIC_CALL(__H2MOCK_0_, __VA_ARGS__) // normal function
+#define __H2MOCK_1(...) H2PP_VARIADIC_CALL(__H2MOCK_1_, __VA_ARGS__) // class member method
+
+// normal function 3rd is (...) i.e. arguments, 4th is not (...) or not exist
+#define H2MOCK(...) H2PP_CAT(__H2MOCK_, H2PP_AND(H2PP_IBP(H2PP_TH2(__VA_ARGS__)), H2PP_NOT(H2PP_IBP(H2PP_TH3(__VA_ARGS__))))) (__VA_ARGS__)
+
+////////////////////////////////////////////////////////////////
+
+#define __H3MOCK_1_3(Function, ReturnType, Args) \
+   h2::h2_mocker<__COUNTER__, std::false_type, H2PP_RPS(ReturnType) Args>::I(h2::h2_fp(Function), #ReturnType, #Function, H2ARGV(Args), "", __FILE__, __LINE__)
+
+#define __H3MOCK_1_4(Function, ReturnType, Args, Inspect1) \
+   h2::h2_mocker<__COUNTER__, std::false_type, H2PP_RPS(ReturnType) Args>::I(h2::h2_fp(Function), #ReturnType, #Function, H2ARGV(Args), #Inspect1, __FILE__, __LINE__).Inspect1
+
+#define __H3MOCK_1_5(Function, ReturnType, Args, Inspect1, Inspect2) \
+   h2::h2_mocker<__COUNTER__, std::false_type, H2PP_RPS(ReturnType) Args>::I(h2::h2_fp(Function), #ReturnType, #Function, H2ARGV(Args), #Inspect1 " " #Inspect2, __FILE__, __LINE__).Inspect1.Inspect2
+
+#define __H3MOCK_1_6(Function, ReturnType, Args, Inspect1, Inspect2, Inspect3) \
+   h2::h2_mocker<__COUNTER__, std::false_type, H2PP_RPS(ReturnType) Args>::I(h2::h2_fp(Function), #ReturnType, #Function, H2ARGV(Args), #Inspect1 " " #Inspect2 " " #Inspect3, __FILE__, __LINE__).Inspect1.Inspect2.Inspect3
+
+#define __H3MOCK_1_7(Function, ReturnType, Args, Inspect1, Inspect2, Inspect3, Inspect4) \
+   h2::h2_mocker<__COUNTER__, std::false_type, H2PP_RPS(ReturnType) Args>::I(h2::h2_fp(Function), #ReturnType, #Function, H2ARGV(Args), #Inspect1 " " #Inspect2 " " #Inspect3 " " #Inspect4, __FILE__, __LINE__).Inspect1.Inspect2.Inspect3.Inspect4
+
+#define __H3MOCK_1_8(Function, ReturnType, Args, Inspect1, Inspect2, Inspect3, Inspect4, Inspect5) \
+   h2::h2_mocker<__COUNTER__, std::false_type, H2PP_RPS(ReturnType) Args>::I(h2::h2_fp(Function), #ReturnType, #Function, H2ARGV(Args), #Inspect1 " " #Inspect2 " " #Inspect3 " " #Inspect4 " " #Inspect5, __FILE__, __LINE__).Inspect1.Inspect2.Inspect3.Inspect4.Inspect5
+
+#define __H3MOCK_1_9(Function, ReturnType, Args, Inspect1, Inspect2, Inspect3, Inspect4, Inspect5, Inspect6) \
+   h2::h2_mocker<__COUNTER__, std::false_type, H2PP_RPS(ReturnType) Args>::I(h2::h2_fp(Function), #ReturnType, #Function, H2ARGV(Args), #Inspect1 " " #Inspect2 " " #Inspect3 " " #Inspect4 " " #Inspect5 " " #Inspect6, __FILE__, __LINE__).Inspect1.Inspect2.Inspect3.Inspect4.Inspect5.Inspect6
+
+#define __H3MOCK_1_10(Function, ReturnType, Args, Inspect1, Inspect2, Inspect3, Inspect4, Inspect5, Inspect6, Inspect7) \
+   h2::h2_mocker<__COUNTER__, std::false_type, H2PP_RPS(ReturnType) Args>::I(h2::h2_fp(Function), #ReturnType, #Function, H2ARGV(Args), #Inspect1 " " #Inspect2 " " #Inspect3 " " #Inspect4 " " #Inspect5 " " #Inspect6 " " #Inspect7, __FILE__, __LINE__).Inspect1.Inspect2.Inspect3.Inspect4.Inspect5.Inspect6.Inspect7
+
+#define __H3MOCK_1_11(Function, ReturnType, Args, Inspect1, Inspect2, Inspect3, Inspect4, Inspect5, Inspect6, Inspect7, Inspect8) \
+   h2::h2_mocker<__COUNTER__, std::false_type, H2PP_RPS(ReturnType) Args>::I(h2::h2_fp(Function), #ReturnType, #Function, H2ARGV(Args), #Inspect1 " " #Inspect2 " " #Inspect3 " " #Inspect4 " " #Inspect5 " " #Inspect6 " " #Inspect7 " " Inspect8, __FILE__, __LINE__).Inspect1.Inspect2.Inspect3.Inspect4.Inspect5.Inspect6.Inspect7.Inspect8
+
+#define __H3MOCK_1_12(Function, ReturnType, Args, Inspect1, Inspect2, Inspect3, Inspect4, Inspect5, Inspect6, Inspect7, Inspect8, Inspect9) \
+   h2::h2_mocker<__COUNTER__, std::false_type, H2PP_RPS(ReturnType) Args>::I(h2::h2_fp(Function), #ReturnType, #Function, H2ARGV(Args), #Inspect1 " " #Inspect2 " " #Inspect3 " " #Inspect4 " " #Inspect5 " " #Inspect6 " " #Inspect7 " " Inspect8 " " Inspect9, __FILE__, __LINE__).Inspect1.Inspect2.Inspect3.Inspect4.Inspect5.Inspect6.Inspect7.Inspect8.Inspect9
+
+#define __H3MOCK_0_4(Class, Method, ReturnType, Args) \
+   h2::h2_mocker<__COUNTER__, H2PP_RPS(Class), H2PP_RPS(ReturnType) Args>::I(h2::h2_mfp<H2PP_RPS(Class), H2PP_RPS(ReturnType) Args>::A(&H2PP_RPS(Class)::H2PP_RPS(Method)), #ReturnType, #Class "::" #Method, H2ARGV(Args), "", __FILE__, __LINE__)
+
+#define __H3MOCK_0_5(Class, Method, ReturnType, Args, Inspect1) \
+   h2::h2_mocker<__COUNTER__, H2PP_RPS(Class), H2PP_RPS(ReturnType) Args>::I(h2::h2_mfp<H2PP_RPS(Class), H2PP_RPS(ReturnType) Args>::A(&H2PP_RPS(Class)::H2PP_RPS(Method)), #ReturnType, #Class "::" #Method, H2ARGV(Args), #Inspect1, __FILE__, __LINE__).Inspect1
+
+#define __H3MOCK_0_6(Class, Method, ReturnType, Args, Inspect1, Inspect2) \
+   h2::h2_mocker<__COUNTER__, H2PP_RPS(Class), H2PP_RPS(ReturnType) Args>::I(h2::h2_mfp<H2PP_RPS(Class), H2PP_RPS(ReturnType) Args>::A(&H2PP_RPS(Class)::H2PP_RPS(Method)), #ReturnType, #Class "::" #Method, H2ARGV(Args), #Inspect1 " " #Inspect2, __FILE__, __LINE__).Inspect1.Inspect2
+
+#define __H3MOCK_0_7(Class, Method, ReturnType, Args, Inspect1, Inspect2, Inspect3) \
+   h2::h2_mocker<__COUNTER__, H2PP_RPS(Class), H2PP_RPS(ReturnType) Args>::I(h2::h2_mfp<H2PP_RPS(Class), H2PP_RPS(ReturnType) Args>::A(&H2PP_RPS(Class)::H2PP_RPS(Method)), #ReturnType, #Class "::" #Method, H2ARGV(Args), #Inspect1 " " #Inspect2 " " #Inspect3, __FILE__, __LINE__).Inspect1.Inspect2.Inspect3
+
+#define __H3MOCK_0_8(Class, Method, ReturnType, Args, Inspect1, Inspect2, Inspect3, Inspect4) \
+   h2::h2_mocker<__COUNTER__, H2PP_RPS(Class), H2PP_RPS(ReturnType) Args>::I(h2::h2_mfp<H2PP_RPS(Class), H2PP_RPS(ReturnType) Args>::A(&H2PP_RPS(Class)::H2PP_RPS(Method)), #ReturnType, #Class "::" #Method, H2ARGV(Args), #Inspect1 " " #Inspect2 " " #Inspect3 " " #Inspect4, __FILE__, __LINE__).Inspect1.Inspect2.Inspect3.Inspect4
+
+#define __H3MOCK_0_9(Class, Method, ReturnType, Args, Inspect1, Inspect2, Inspect3, Inspect4, Inspect5) \
+   h2::h2_mocker<__COUNTER__, H2PP_RPS(Class), H2PP_RPS(ReturnType) Args>::I(h2::h2_mfp<H2PP_RPS(Class), H2PP_RPS(ReturnType) Args>::A(&H2PP_RPS(Class)::H2PP_RPS(Method)), #ReturnType, #Class "::" #Method, H2ARGV(Args), #Inspect1 " " #Inspect2 " " #Inspect3 " " #Inspect4 " " Inspect5, __FILE__, __LINE__).Inspect1.Inspect2.Inspect3.Inspect4.Inspect5
+
+#define __H3MOCK_0_10(Class, Method, ReturnType, Args, Inspect1, Inspect2, Inspect3, Inspect4, Inspect5, Inspect6) \
+   h2::h2_mocker<__COUNTER__, H2PP_RPS(Class), H2PP_RPS(ReturnType) Args>::I(h2::h2_mfp<H2PP_RPS(Class), H2PP_RPS(ReturnType) Args>::A(&H2PP_RPS(Class)::H2PP_RPS(Method)), #ReturnType, #Class "::" #Method, H2ARGV(Args), #Inspect1 " " #Inspect2 " " #Inspect3 " " #Inspect4 " " Inspect5 " " Inspect6, __FILE__, __LINE__).Inspect1.Inspect2.Inspect3.Inspect4.Inspect5.Inspect6
+
+#define __H3MOCK_0_11(Class, Method, ReturnType, Args, Inspect1, Inspect2, Inspect3, Inspect4, Inspect5, Inspect6, Inspect7) \
+   h2::h2_mocker<__COUNTER__, H2PP_RPS(Class), H2PP_RPS(ReturnType) Args>::I(h2::h2_mfp<H2PP_RPS(Class), H2PP_RPS(ReturnType) Args>::A(&H2PP_RPS(Class)::H2PP_RPS(Method)), #ReturnType, #Class "::" #Method, H2ARGV(Args), #Inspect1 " " #Inspect2 " " #Inspect3 " " #Inspect4 " " Inspect5 " " Inspect6 " " Inspect7, __FILE__, __LINE__).Inspect1.Inspect2.Inspect3.Inspect4.Inspect5.Inspect6.Inspect7
+
+#define __H3MOCK_0_12(Class, Method, ReturnType, Args, Inspect1, Inspect2, Inspect3, Inspect4, Inspect5, Inspect6, Inspect7, Inspect8) \
+   h2::h2_mocker<__COUNTER__, H2PP_RPS(Class), H2PP_RPS(ReturnType) Args>::I(h2::h2_mfp<H2PP_RPS(Class), H2PP_RPS(ReturnType) Args>::A(&H2PP_RPS(Class)::H2PP_RPS(Method)), #ReturnType, #Class "::" #Method, H2ARGV(Args), #Inspect1 " " #Inspect2 " " #Inspect3 " " #Inspect4 " " Inspect5 " " Inspect6 " " Inspect7 " " Inspect8, __FILE__, __LINE__).Inspect1.Inspect2.Inspect3.Inspect4.Inspect5.Inspect6.Inspect7.Inspect8
+
+#define __H3MOCK_0_13(Class, Method, ReturnType, Args, Inspect1, Inspect2, Inspect3, Inspect4, Inspect5, Inspect6, Inspect7, Inspect8, Inspect9) \
+   h2::h2_mocker<__COUNTER__, H2PP_RPS(Class), H2PP_RPS(ReturnType) Args>::I(h2::h2_mfp<H2PP_RPS(Class), H2PP_RPS(ReturnType) Args>::A(&H2PP_RPS(Class)::H2PP_RPS(Method)), #ReturnType, #Class "::" #Method, H2ARGV(Args), #Inspect1 " " #Inspect2 " " #Inspect3 " " #Inspect4 " " Inspect5 " " Inspect6 " " Inspect7 " " Inspect8 " " Inspect9, __FILE__, __LINE__).Inspect1.Inspect2.Inspect3.Inspect4.Inspect5.Inspect6.Inspect7.Inspect8.Inspect9
+
+#define __H3MOCK_0(...) H2PP_VARIADIC_CALL(__H3MOCK_0_, __VA_ARGS__)
+#define __H3MOCK_1(...) H2PP_VARIADIC_CALL(__H3MOCK_1_, __VA_ARGS__)
+
+#define MOCKS(...) H2PP_CAT(__H3MOCK_, H2PP_AND(H2PP_IBP(H2PP_TH2(__VA_ARGS__)), H2PP_NOT(H2PP_IBP(H2PP_TH3(__VA_ARGS__))))) (__VA_ARGS__)
 // h2_dns.hpp
 
 struct h2_dns {
@@ -3158,7 +3305,7 @@ static inline void h2_stub_g(void* origin_fp, void* substitute_fp, const char* o
       h2_task::I().stubs.add(origin_fp, substitute_fp, origin_fn, file, line);
 }
 
-static inline void h2_mock_g(h2_mock* mock)
+static inline void h2_mock_g(void* mock)
 {
    if (h2_task::I().current_case)
       h2_task::I().current_case->mocks.add(mock);
@@ -3473,10 +3620,10 @@ using h2::Pair;
 #define H2GlobalCaseSetup() __H2GlobalCallback(global_case_setup, H2Q(Global_Case_Setup))
 #define H2GlobalCaseTeardown() __H2GlobalCallback(global_case_teardown, H2Q(Global_Case_Teardown))
 
-#define __H2SUITE(name, QP)                                       \
-   static void QP(h2::h2_suite*, h2::h2_case*);                   \
-   static h2::h2_suite H2Q(suite)(name, &QP, __FILE__, __LINE__); \
-   static void QP(h2::h2_suite* suite_2_0_1_3_0_1_0_2, h2::h2_case* case_2_0_1_7_0_3_2_5)
+#define __H2SUITE(name, Q)                                       \
+   static void Q(h2::h2_suite*, h2::h2_case*);                   \
+   static h2::h2_suite H2Q(suite)(name, &Q, __FILE__, __LINE__); \
+   static void Q(h2::h2_suite* suite_2_0_1_3_0_1_0_2, h2::h2_case* case_2_0_1_7_0_3_2_5)
 
 #define H2SUITE(...) __H2SUITE(#__VA_ARGS__, H2Q(h2_suite_test))
 
@@ -3485,30 +3632,30 @@ using h2::Pair;
       suite_2_0_1_3_0_1_0_2->jumpable = true;      \
    if (!case_2_0_1_7_0_3_2_5)
 
-#define __H2Case(name, status, Qc, Q1, Q2)                                                      \
-   static h2::h2_case Qc(name, status, __FILE__, __LINE__);                                     \
-   static h2::h2_suite::installer H2Q(i)(suite_2_0_1_3_0_1_0_2, &Qc);                           \
-   if (&Qc == case_2_0_1_7_0_3_2_5)                                                             \
-      for (h2::h2_suite::cleaner Q1(suite_2_0_1_3_0_1_0_2); Q1; case_2_0_1_7_0_3_2_5 = nullptr) \
-         for (h2::h2_case::cleaner Q2(&Qc); Q2;)                                                \
-            if (::setjmp(Qc.jump) == 0)
+#define __H2Case(name, status, Q)                                                                             \
+   static h2::h2_case Q(name, status, __FILE__, __LINE__);                                                    \
+   static h2::h2_suite::installer H2Q(i)(suite_2_0_1_3_0_1_0_2, &Q);                                          \
+   if (&Q == case_2_0_1_7_0_3_2_5)                                                                            \
+      for (h2::h2_suite::cleaner _1_9_8_0_(suite_2_0_1_3_0_1_0_2); _1_9_8_0_; case_2_0_1_7_0_3_2_5 = nullptr) \
+         for (h2::h2_case::cleaner _1_9_8_1_(&Q); _1_9_8_1_;)                                                 \
+            if (::setjmp(Q.jump) == 0)
 
-#define H2Case(...) __H2Case(#__VA_ARGS__, h2::h2_case::initial, H2Q(t_case), H2Q(_1), H2Q(_2))
-#define H2Todo(...) __H2Case(#__VA_ARGS__, h2::h2_case::todo, H2Q(t_case), H2Q(_1), H2Q(_2))
+#define H2Case(...) __H2Case(#__VA_ARGS__, h2::h2_case::initial, H2Q(t_case))
+#define H2Todo(...) __H2Case(#__VA_ARGS__, h2::h2_case::todo, H2Q(t_case))
 
-#define __H2CASE(name, status, QR, QP)                                                    \
-   static void QR();                                                                      \
-   static void QP(h2::h2_suite* suite_2_0_1_3_0_1_0_2, h2::h2_case* case_2_0_1_7_0_3_2_5) \
+#define __H2CASE(name, status, QC, QS)                                                    \
+   static void QC();                                                                      \
+   static void QS(h2::h2_suite* suite_2_0_1_3_0_1_0_2, h2::h2_case* case_2_0_1_7_0_3_2_5) \
    {                                                                                      \
       static h2::h2_case c(name, status, __FILE__, __LINE__);                             \
       static h2::h2_suite::installer i(suite_2_0_1_3_0_1_0_2, &c);                        \
       if (&c == case_2_0_1_7_0_3_2_5)                                                     \
          for (h2::h2_case::cleaner a(&c); a;)                                             \
             if (::setjmp(c.jump) == 0)                                                    \
-               QR();                                                                      \
+               QC();                                                                      \
    }                                                                                      \
-   static h2::h2_suite H2Q(suite)("Anonymous", &QP, __FILE__, __LINE__);                  \
-   static void QR()
+   static h2::h2_suite H2Q(suite)("Anonymous", &QS, __FILE__, __LINE__);                  \
+   static void QC()
 
 #define H2CASE(...) __H2CASE(#__VA_ARGS__, h2::h2_case::initial, H2Q(h2_case_test), H2Q(h2_suite_test))
 #define H2TODO(...) __H2CASE(#__VA_ARGS__, h2::h2_case::todo, H2Q(h2_case_test), H2Q(h2_suite_test))

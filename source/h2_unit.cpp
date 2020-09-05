@@ -93,7 +93,8 @@ namespace h2 {
 #include "stub/h2_stub.cpp"    // ..
 
 #include "mock/h2_checkin.cpp"  //
-#include "mock/h2_mock.cpp"     //
+#include "mock/h2_mocking.cpp"  //
+#include "mock/h2_mocks.cpp"    //
 
 #include "extension/h2_dns.cpp"     //
 #include "extension/h2_socket.cpp"  //

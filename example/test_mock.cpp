@@ -16,63 +16,63 @@ SUITE(Mock Function)
 {
    Case(once argument failure)
    {
-      MOCK(foobar, int, (int, const char*)).once(1, "A").returns(11);
+      MOCK(foobar, int, (int, const char*), Once(1, "A")) { return 11; };
       OK(11, foobar(2, "B"));
    }
 
    Case(once call failure)
    {
-      MOCK(time, time_t, (time_t*)).once();
+      MOCK(time, time_t, (time_t*), Once()) { return 0; };
    }
 
    Case(twice failure)
    {
-      MOCK(foobar, int, (int, const char*)).twice(Eq(1), _).returns(11);
+      MOCK(foobar, int, (int, const char*), Twice(Eq(1), _)) { return 11; };
       OK(11, foobar(1, "A"));
       OK(22, foobar(1, "BC"));  // failure
    }
 
    Case(3 times failure)
    {
-      MOCK(foobar, int, (int, const char*)).times(3).with(Ge(1)).returns(11);
+      MOCK(foobar, int, (int, const char*), Times(3).With(Ge(1))) { return 11; };
       OK(11, foobar(1, "A"));
    }
 
    Case(exceed call failure)
    {
-      MOCK(time, time_t, (time_t*)).once();
+      MOCK(time, time_t, (time_t*), Once()){};
       time(0);
       time(0);
    }
 
    Case(any 0 successful)
    {
-      MOCK(foobar, int, (int, const char*)).any(1, "A");
+      MOCK(foobar, int, (int, const char*), Any(1, "A")){};
    }
 
    Case(any 1 successful)
    {
-      MOCK(foobar, int, (int, const char*)).any().with(1, "A").returns(11);
+      MOCK(foobar, int, (int, const char*), Any().With(1, "A")) { return 11; };
       OK(11, foobar(1, "A"));
    }
 
    Case(any 2 successful)
    {
-      MOCK(foobar, int, (int, const char*)).any().with(1, "A").returns(11);
+      MOCK(foobar, int, (int, const char*), Any().With(1, "A")) { return 11; };
       OK(11, foobar(1, "A"));
       OK(11, foobar(1, "A"));
    }
 
    Case(atleast 2 successful)
    {
-      MOCK(foobar, int, (int, const char*)).atleast(2).with(1, "A").returns(11);
+      MOCK(foobar, int, (int, const char*), Atleast(2).With(1, "A")) { return 11; };
       OK(11, foobar(1, "A"));
       OK(11, foobar(1, "A"));
    }
 
    Case(atleast 3 successful)
    {
-      MOCK(foobar, int, (int, const char*)).atleast(2).with(1, "A").returns(11);
+      MOCK(foobar, int, (int, const char*), Atleast(2).With(1, "A")) { return 11; };
       OK(11, foobar(1, "A"));
       OK(11, foobar(1, "A"));
       OK(11, foobar(1, "A"));
@@ -80,34 +80,34 @@ SUITE(Mock Function)
 
    Case(atmost 1 successful)
    {
-      MOCK(foobar, int, (int, const char*)).atmost(2).with(1, "A").returns(11);
+      MOCK(foobar, int, (int, const char*), Atmost(2).With(1, "A")) { return 11; };
       OK(11, foobar(1, "A"));
    }
 
    Case(atmost 2 successful)
    {
-      MOCK(foobar, int, (int, const char*)).atmost(2).with(1, "A").returns(11);
+      MOCK(foobar, int, (int, const char*), Atmost(2).With(1, "A")) { return 11; };
       OK(11, foobar(1, "A"));
       OK(11, foobar(1, "A"));
    }
 
    Case(between successful)
    {
-      MOCK(foobar, int, (int, const char*)).between(2, 4).with(1, "A").returns(11);
+      MOCK(foobar, int, (int, const char*), Between(2, 4).With(1, "A")) { return 11; };
       OK(11, foobar(1, "A"));
       OK(11, foobar(1, "A"));
    }
 
    Case(multi - line successful)
    {
-      MOCK(foobar, int, (int, const char*))
-        .once(1, "A")
-        .returns(11)
-        .once()
-        .with(2, "B")
-        .returns(22)
-        .twice(3, "C")
-        .returns(33);
+      MOCK(foobar, int, (int, const char*),
+           Once(1, "A")
+             .Return(11)
+             .Once()
+             .With(2, "B")
+             .Return(22)
+             .Twice(3, "C")
+             .Return(33)){};
 
       OK(11, foobar(1, "A"));
       OK(22, foobar(2, "B"));
@@ -117,13 +117,13 @@ SUITE(Mock Function)
 
    Case(th0 successful)
    {
-      MOCK(foobar, int, (int, const char*)).once().th0(1);
+      MOCK(foobar, int, (int, const char*), Once().Th0(1)){};
       foobar(1, "A");
    }
 
    Case(th1 successful)
    {
-      MOCK(foobar, int, (int, const char*)).once().th1("A");
+      MOCK(foobar, int, (int, const char*), Once().Th1("A")){};
       foobar(1, "A");
    }
 }
@@ -132,14 +132,14 @@ SUITE(Mock Member)
 {
    Case(static member function successful)
    {
-      MOCK(Shape::born, int, (int)).once(1).returns(11);
+      MOCK(Shape::born, int, (int), Once(1)) { return 11; };
       OK(11, Shape::born(1));
    }
 
    Case(member function successful)
    {
-      MOCK(Rect, move, int, (int, int)).once(1, 2).returns(11);
-      MOCK(Rect, move, int, (int)).once(3).returns(22);
+      MOCK(Rect, move, int, (int, int), Once(1, 2)) { return 11; };
+      MOCK(Rect, move, int, (int), Once(3)) { return 22; };
       Rect rect(0, 0, 1, 1);
       OK(11, rect.move(1, 2));
       OK(22, rect.move(3));
@@ -147,11 +147,13 @@ SUITE(Mock Member)
 
    Case(member function lambda failure)
    {
-      MOCK(Rect, move, int, (int, int)).once(1, 2) = [](int x, int y) {
+      MOCK(Rect, move, int, (int x, int y), Once(1, 2))
+      {
          return x + y + 1;
       };
-      MOCK(Rect, move, int, (int)).once() = [](Rect* rect, int xy) {
-         OK("Rect", rect->name);
+      MOCK(Rect, move, int, (int xy), Once())
+      {
+         OK("Rect", This->name);
          return xy + 1;
       };
       Rect rect(0, 0, 1, 1);
@@ -161,7 +163,7 @@ SUITE(Mock Member)
 
    Case(virtual member function successful)
    {
-      MOCK(Rect, print, const char*, ()).once().returns("rect(0,0,1,1)");
+      MOCK(Rect, print, const char*, (), Once()) { return "rect(0,0,1,1)"; };
       Rect rect(0, 0, 1, 1);
       OK("rect(0,0,1,1)", rect.print());
    }
@@ -169,8 +171,8 @@ SUITE(Mock Member)
    Case(abstract class successful)
    {
       Rect rect(0, 0, 1, 1);
-      MOCK(Shape, print, const char*, ()).times(0) = []() { return "Shape"; };
-      MOCK(Rect, print, const char*, ()).once() = []() { return "rect(0,0,1,1)"; };
+      MOCK(Shape, print, const char*, (), Times(0)) { return "Shape"; };
+      MOCK(Rect, print, const char*, (), Once()) { return "rect(0,0,1,1)"; };
       OK("rect(0,0,1,1)", rect.print());
    }
 }

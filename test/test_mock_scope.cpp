@@ -21,22 +21,22 @@ int foobar4(int)
 
 GlobalSetup()
 {
-   MOCK(foobar1, int, (int)).any().returns(-1);
+   MOCK(foobar1, int, (int), Any()) { return -1; };
 }
 
 GlobalSuiteSetup()
 {
-   MOCK(foobar2, int, (int)).any().returns(-2);
+   MOCK(foobar2, int, (int), Any()) { return -2; };
 }
 
 GlobalCaseSetup()
 {
-   MOCK(foobar3, int, (int)).any().returns(-3);
+   MOCK(foobar3, int, (int), Any()) { return -3; };
 }
 
 SUITE(stub in shared_code)
 {
-   MOCK(foobar4, int, (int)).any().returns(-4);
+   MOCK(foobar4, int, (int), Any()) { return -4; };
 
    Case(a)
    {

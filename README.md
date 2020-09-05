@@ -10,7 +10,7 @@ Only need to include *1* *ONE* *一* *いち* source file: [**h2unit.h**](h2unit
 **h2unit.h** contains [`main()`](source/h2_unit.cpp#L56) function, and `main()` will execute test cases.
 user no need to write main() anymore.
 
-### 2. Dynamic STUB/MOCK
+### 2. Dynamic MOCK
 
 ### 3. JSON Compare
 
@@ -86,8 +86,7 @@ CASE(Case Name)
 *    [`NotNull`](source/h2_unit.hpp#L266) : matches if value is not null 
 *    [`IsTrue`](source/h2_unit.hpp#L266) : matches if value is true 
 *    [`IsFalse`](source/h2_unit.hpp#L266) : matches if value is false 
-*    [`Eq`](source/h2_unit.hpp#L266)(expect) : matches if value equals expect (one of [strcmp wildcard regex] equals for string compare) 
-     *    [`Eq`](source/h2_unit.hpp#L266)(expect, epsilon) : matches if float value near equals expect, default epsilon is 0.00001 
+*    [`Eq`](source/h2_unit.hpp#L266)(expect [, epsilon]) : matches if value equals expect (one of [strcmp wildcard regex] equals for string compare), float value near equals expect, default epsilon is 0.00001 
 *    [`Nq`](source/h2_unit.hpp#L266)(expect) : matches if value not equals expect 
 *    [`Ge`](source/h2_unit.hpp#L266)(expect) : matches if value >= expect 
 *    [`Gt`](source/h2_unit.hpp#L266)(expect) : matches if value > expect 
@@ -273,6 +272,8 @@ The most disadvantage of function pointer replacement is changing of product sou
 Objective of Dynamic STUB is same as function pointer replacement, but it is unnecessary to change product source code. <br> 
 [STUB](source/h2_unit.hpp#L114) is easier to use.
 
+#### 4.1. raw function substitution
+
 ```C++
 /* product code */ 
 int foobar(int a, char * b)
@@ -302,7 +303,7 @@ CASE(demo dynamic stub with fake function)
 }
 ```
 
-STUB overload function
+#### 4.2. STUB overload function
 
 ```C++
 bool is_equal(double a, double b)
@@ -317,6 +318,9 @@ bool is_equal_fake(char * a, char * b)
 {
    return stricmp(a, b) == 0;
 }
+```
+
+```C++
 CASE(demo dynamic stub with fake function)
 {
    STUB((bool(*)(char*, char*))is_equal, is_equal_fake);
@@ -324,77 +328,13 @@ CASE(demo dynamic stub with fake function)
 }
 ```
 
-With help of C++ lambda, separate fake function can sit together with [STUB](source/h2_unit.hpp#L114), it makes test code more tidy and fitness.
-
 ```C++
-CASE(demo dynamic stub with lambda)
+CASE(demo dynamic stub with fake function)
 {
-   STUB(foobar, int, (int a, char * b)) {
-      OK(1, a);
-      sprintf(b, "return value by argument");
-      return 2;
-   };
-   do_something();
+   STUB(is_equal, bool, (char*, char*), is_equal_fake);
+   do_something_with_call_is_equal();
 }
 ```
-
-STUB C++ Class nonstatic or virtual member function
-
-```C++
-CASE(demo dynamic stub with class member function)
-{
-   STUB(Foo, bar, int, (int a, char * b)) {
-      OK(1, a);
-      sprintf(b, "return value by argument");
-      return 2;
-   };
-   do_something(Foo);
-}
-```
-
-STUB C++ Class static member function
-
-```C++
-CASE(demo dynamic stub with static class member function)
-{
-   STUB(Foo::bar, int, (int a, char * b)) {
-      OK(1, a);
-      sprintf(b, "return value by argument");
-      return 2;
-   };
-   do_something(Foo);
-}
-```
-
-STUB C++ template function or template member function
-
-```C++
-template <typename T1, typename T2>
-int foobar(T1 a, T2 b) { ... }
-
-template <typename U1, typename U2>
-class Foobar {
-   template <typename T1, typename T2>
-   int foobar(T1 a, T2 b) { ... }
-}
-
-CASE(demo template function)
-{
-   STUB((foobar<int, char*>), int, (int a, char * b)) {
-      OK(1, a);
-      sprintf(b, "return value by argument");
-      return 2;
-   };
-   do_something(foobar);
-
-   STUB((Foobar<int, char*>), foobar<float, std::string>, int, (float, std::string)) {
-      OK(1, a);
-      return 2;
-   };
-   do_something(Foobar foobar);
-}
-```
-
 
 The principle of Dynamic STUB is :
 
@@ -407,73 +347,216 @@ fake function return to the caller of original function directly.
 
 STUB formula:
 ```C++
-   STUB([Class Name,] Function Name, Return Type, (Parameter List)) {
-      Check...
-      Return...
-   }
+   STUB([Class Name,] Function Name, Return Type, (Parameter List), Substitute Function Name);
 ```
-
-clang >= version 11, default make code section (__TEXT) max protect (maxprot) `rx`, mprotect() in STUB fails.
-To fix it, add `-Wl,-segprot,__TEXT,rwx,rwx` in link(ld) option to make maxprot `rwx`. 
 
 ### 5. Dynamic MOCK
 Compare to Dynamic STUB, Dynamic Mock provide a easy way to check call times, input arguments and inject return value.
 
 ```C++
 /* unit test code */
-CASE(demo dynamic mock)
+CASE(demo dynamic mock function)
 {
-   MOCK(foobar, int, (int a, char * b)).once(1, "A").returns(11);
+   MOCK(foobar, int, (int a, char * b), Once(1, "A")) { return 11; };
+
+   do_something();
+}
+
+CASE(demo dynamic mock class method)
+{
+   MOCK(Foo, bar, int, (int a, char * b), Once(1, "A")) { return 11; };
 
    do_something();
 }
 ```
 Expect foobar called with *a* equals *1*, *b* equals *"A"* *1 time* in this case, and make it returns *11*.
 
--   [`MOCK`](source/h2_unit.hpp#L100)
-    -    `MOCK`(Function Name, Return Type(Parameter List)) 
-          Mock normal function (class static method is considered as normal function)
-    -    `MOCK`(Class Name, Method Name, Return Type(Parameter List)) 
-          Mock class member function
--   [Expectation of call times](source/h2_mock.hpp#L157)
-    -    `once`() : Expect called 1 time
-    -    `twice`() : Expect called 2 times
-    -    `times`(n) : Expect called n times
-    -    `any`() : Expect called any times(include 0 times)
-    -    `atleast`(n) : Expect called atleast n times(>=n)
-    -    `atmost`(n) : Expect called atmost n times(<=n)
-    -    `between`(n,m) : Expect called >=n and <=m times
-    -    `greed`(boolean) : match call in greed mode or not, default is true
--   [Arguments check](source/h2_mock.hpp#L206)
-    -    `with`(matcher...) : Expect arguments matches matchers
-    -    `th0~15`(matcher) : Expect 1st~16th argument matches matcher
--   [Actions](source/h2_mock.hpp#L223), only the lastest action works, previous is overwrite
-    -    `returns`(value) : Inject return value
-    -    `does`(lambda) : Check arguments, inject return value, and other actions
-    -    `=`(lambda) : Same as *does* without *()*
+#### 5.1. [`MOCK`](source/h2_unit.hpp#L114) primitive 
 
+##### 5.1.1. Mock normal function
+  
 ```C++
-MOCK(Foo, bar, int, (int, char *)).once(1, _).returns(11)
-                                  .twice(Gt(2), CaseLess("abc")).returns(22)
-                                  .times(5).with(Not(3)).returns(33)
-                                  .atleast(2).th0(4).th2("xyz")
-                                  .any() = [](int a, char * b) {
-                                     OK(5, a);
-                                     sprintf(b, "return value by argument");
-                                     return 44;
-                                  };
+   MOCK(Function Name, Return Type, (Parameter List) [, Chained Inspection]) {
+      check... ;
+      return... ;
+   };
 ```
-First expect Foo::bar called 1 time, and 1st argument equals 1, any of 2nd, and inject returns value 11; <br>
-then expect Foo::bar called 2 times, and 1st argument geat than 2, 2nd case-insensitive equals "abc", and inject returns value 22; <br>
-then expect Foo::bar called 5 times, and 1st argument not equals 3, ignore check 2nd (any of 2nd), and inject returns value 33; <br>
-then expect Foo::bar called atleast 2 times, and 1st argument equals 4, 2nd equals "xyz"; <br>
-then expect Foo::bar called any times, and 1st argument equals 5, modify 2nd, and inject returns value 34. <br>
+
+including class static member method.
+
+##### 5.1.2. Mock class member function
+  
+```C++
+   MOCK([Class Name,] Method Name, Return Type, (Parameter List) [, Chained Inspection]) { 
+      check... ;
+      return... ;
+   };
+```
 
 MOCK formula:
 ```C++
-   MOCK([Class Name, ]Function Name, Return Type, (Parameter List))
-   .times(Number).with(Matcher List).th0~15(Matcher).returns(Return Value).does(Lambda)=Lambda;
+   MOCK([Class Name,] Function Name, Return Type, (Parameter List) [, Chained Inspection]) { 
+      ... substitute function body ...
+      check... ;
+      return... ;
+   };
 ```
+
+#### 5.2. Chained Inspection
+
+##### 5.2.1. Checkin of call
+
+-    `Once`([matcher...]) : Expect called 1 time, and expect arguments match matchers, default match any
+-    `Twice`([matcher...]) : Expect called 2 times
+-    `Times`(n, [matcher...]) : Expect called n times
+-    `Any`([matcher...]) : Expect called any times(include 0 times)
+-    `Atleast`(n, [matcher...]) : Expect called atleast n times(>=n)
+-    `Atmost`(n, [matcher...]) : Expect called atmost n times(<=n)
+-    `Between`(n, m, [matcher...]) : Expect called >=n and <=m times
+
+If checkin not specified, default is `Any`.
+
+`greed`(boolean) : match call in greed mode or not, default is true
+
+##### 5.2.2. Arguments check
+
+-    `With`(matcher...) : Expect arguments match matchers
+-    `Th0~15`(matcher) : Expect 1st~16th argument match matcher
+
+##### 5.2.3. Return
+
+-    `Return`() : Delegate to origin function/method
+-    `Return`(value) : Inject return value
+
+#### 5.3. Substitute function
+
+`{ }` following MOCK(...), when `Return` is provided substitute function is ignored.
+
+`This` is dedicated variable of class instance pointr like `this`.
+
+In Substitute function, Can check arguments, return value, and other actions. 
+
+#### 5.4. MOCK scenarios
+
+##### 5.4.1. normal function
+
+```C++
+CASE(simple function)
+{
+   MOCK(foobar, int, (int a, char * b), Once(1, "A")) { 
+      return 11; 
+   };
+   do_something_with_call_foobar();
+}
+```
+
+##### 5.4.2. overload function
+
+```C++
+bool is_equal(double a, double b)
+{
+   return a == b;
+}
+bool is_equal(char * a, char * b)
+{
+   return strcmp(a, b) == 0;
+}
+```
+
+```C++
+CASE(mock overload function)
+{
+   MOCK(is_equal, bool, (char *, char *)) {
+      return false;
+   };
+   do_something_with_call_is_equal();
+}
+```
+
+##### 5.4.3. nonstatic or virtual member function
+
+```C++
+CASE(normal member function)
+{
+   MOCK(Foo, bar, int, (int a, char * b)) {
+      OK(1, a);
+      sprintf(b, "return value by argument");
+      return 2;
+   };
+   do_something(Foo);
+}
+```
+
+##### 5.4.4. static member function
+
+```C++
+CASE(static class member function)
+{
+   MOCK(Foo::bar, int, (int a, char * b)) {
+      OK(1, a);
+      sprintf(b, "return value by argument");
+      return 2;
+   };
+   do_something(Foo);
+}
+```
+
+##### 5.4.5. template function or template member function
+
+```C++
+template <typename T1, typename T2>
+int foobar(T1 a, T2 b) { ... }
+
+template <typename U1, typename U2>
+class Foo {
+   template <typename T1, typename T2>
+   int bar(T1 a, T2 b) { ... }
+}
+```
+
+```C++
+CASE(template function)
+{
+   MOCK((foobar<int, char*>), int, (int a, char * b)) {
+      OK(1, a);
+      sprintf(b, "return value by argument");
+      return 2;
+   };
+   ...do_something(foobar);
+
+   MOCK((Foo<int, char*>), (bar<float, std::string>), int, (float, std::string)) {
+      OK(1, a);
+      return 2;
+   };
+   ...do_something(Foo bar);
+}
+```
+
+C/C++ preprocessor can't handle MACRO argument which contains comma in '<>' correctly. <br>
+A workaround is enclose such argument with parentheses '()'.
+
+```C++
+MOCK(Foo, bar, int, (int a, char * b), 
+      Once(1, _).Return(11)
+     .Twice(Gt(2), CaseLess("abc")).Return(22)
+     .Times(5).With(Not(3)).Return(33)
+     .Atleast(2).Th0(4).Th2("xyz")
+     .Any()) {
+       OK(5, a);
+       sprintf(b, This->name);
+       return 44;
+     };
+```
+First expect Foo::bar called 1 time, and 1st argument equals 1, any of 2nd, and inject Return value 11; <br>
+then expect Foo::bar called 2 times, and 1st argument geat than 2, 2nd case-insensitive equals "abc", and inject Return value 22; <br>
+then expect Foo::bar called 5 times, and 1st argument not equals 3, ignore check 2nd (any of 2nd), and inject Return value 33; <br>
+then expect Foo::bar called atleast 2 times, and 1st argument equals 4, 2nd equals "xyz", and inject Return value 44; <br>
+then expect Foo::bar called any times, and 1st argument equals 5, modify 2nd, and inject Return value 44. <br>
+
+clang >= version 11, default make code section (__TEXT) max protect (maxprot) `rx`, mprotect() in STUB/MOCK fails.
+
+To fix it, add `-Wl,-segprot,__TEXT,rwx,rwx` in link(ld) option to make maxprot `rwx`. 
+
 ### 6. Extended JSON Compare 
 
 #### 6.1. javascript style JSON for convenience 
@@ -513,7 +596,7 @@ OK(Je("{
           score: { ... }
       }"), student_tojson(student));
 
-MOCK(foobar, int(int a, char * b)).once(1, Je("{
+MOCK(foobar, int(int a, char * b)).Once(1, Je("{
                                                    name: Zhang3, 
                                                    score: { ... }
                                               }");
@@ -551,11 +634,11 @@ scores = {
 ```C++
 JE("{ Math : 100, English : 99 }", scores, ".Zhang3");
 
-OK(Je("{ Math : 100, English : 99 }", ".Zhang3"), scores);
+MOCK(foobar, int, (char *), Once(Je("{ Math : 100, English : 99 }", ".Zhang3"))) {};
 
 JE("99", scores, ".Zhang3.English");
 
-OK(Je("99", ".Zhang3.English"), scores);
+MOCK(foobar, int, (char *), Once(Je("99", ".Zhang3.English"))) {};
 ```
 - Object Identifier-Index: .foo, .foo.bar
   
@@ -815,5 +898,5 @@ twofiles speed up 2~3 times than onefile.
 *    C++11 is required
 *    GCC 5.5+ (regex support, SFINAE support)
 *    Variadic parameter function can't MOCK, use STUB with separate fake function instead
-*    MOCK arguments up to 15 count
+*    MOCK function arguments up to 15 count
 *    sqrt() in math.h can be STUB/MOCK, because compiler insert sqrtsd ASM instruction directly instead of function call

@@ -43,41 +43,33 @@ SUITE(Stub function by fake function)
    }
 }
 
-SUITE(Stub function by lambda)
+static int Rect_move_fake(Rect* rect, int x, int y)
 {
-   Case(stub local extern function successful)
-   {
-      rectangle_t p1 = {2, 3};
-      OK(6, rectangle_area(&p1));
-      STUB(rectangle_area, int, (rectangle_t * rectangle)) { return 111; };
-      OK(111, rectangle_area(&p1));
-   }
+   OK(1, x);
+   OK(2, y);
+   return 11;
+}
+
+static const char* Rect_print_fake(Rect* rect)
+{
+   OK("Rect", rect->name);
+   static char s[256];
+   sprintf(s, "Rect(%d,%d,%d,%d)", rect->x, rect->y, rect->width, rect->height);
+   return s;
 }
 
 SUITE(Stub member method)
 {
    Case(normal member function successful)
    {
-      STUB(Rect, move, int, (int x, int y))
-      {
-         OK(1, x);
-         OK(2, y);
-         return 11;
-      };
-
+      STUB(Rect, move, int, (int x, int y), Rect_move_fake);
       Rect rect(0, 0, 1, 1);
       OK(11, rect.move(1, 2));
    }
 
    Case(virtual member function successful)
    {
-      STUB(Rect, print, const char*, ())
-      {
-         OK("Rect", that->name);
-         static char s[256];
-         sprintf(s, "Rect(%d,%d,%d,%d)", that->x, that->y, that->width, that->height);
-         return s;
-      };
+      STUB(Rect, print, const char*, (), Rect_print_fake);
       Rect rect(0, 0, 1, 1);
       OK("Rect(0,0,1,1)", rect.print());
    }

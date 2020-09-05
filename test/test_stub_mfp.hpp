@@ -9,12 +9,13 @@ class Shape {
    Shape() : x(0), y(0) {}
 
    static int fly(int x, int y) { return 0; }
+   static int fly(int xy) { return 1; }
 
    int go(int x, int y) { return 1; }
-
    int go(int xy) { return 2; }
 
    virtual int work(int x, int y) { return 3; }
+   virtual int work(int xy) { return 4; }
 };
 
 class Rect : public Shape {
@@ -67,6 +68,23 @@ H2MATCHER(IsOdd, ("is not Odd"))
 {
    return a % 2 == 1;
 }
+
+template <typename Class, typename Signature>
+struct __h2_mfp;
+
+template <typename Class, typename Return, typename... Args>
+struct __h2_mfp<Class, Return(Args...)> {
+   static long long B(Return (Class::*f)(Args...))
+   {
+      union {
+         Return (Class::*f)(Args...);
+         void* p;
+         long long v;
+      } u{f};
+
+      return u.v;
+   }
+};
 
 SUITE(mfp)
 {
@@ -130,16 +148,17 @@ SUITE(mfp)
 
    Case(B)
    {
-      OK(Ge(0x10000), h2::h2_mfp<Shape, int(int, int)>::B(&Shape::go));
-      OK(IsOdd && Lt(1000 * 8), h2::h2_mfp<Shape, int(int, int)>::B(&Shape::work));
-      OK(IsOdd && Lt(1000 * 8), h2::h2_mfp<Color, int(int, int)>::B(&Color::print));
-      OK(IsOdd && Lt(1000 * 8), h2::h2_mfp<Six, int(int, int)>::B(&Six::work));
-      OK(IsOdd && Lt(1000 * 8), h2::h2_mfp<Six, int(int, int)>::B(&Six::print));
+      OK(Ge(0x10000), __h2_mfp<Shape, int(int, int)>::B(&Shape::go));
+      OK(IsOdd && Lt(1000 * 8), __h2_mfp<Shape, int(int, int)>::B(&Shape::work));
+      OK(IsOdd && Lt(1000 * 8), __h2_mfp<Color, int(int, int)>::B(&Color::print));
+      OK(IsOdd && Lt(1000 * 8), __h2_mfp<Six, int(int, int)>::B(&Six::work));
+      OK(IsOdd && Lt(1000 * 8), __h2_mfp<Six, int(int, int)>::B(&Six::print));
    }
 
    Case(no default constructor)
    {
-      MOCK(A_construct_class, func, int, ()).once() = []() {
+      MOCK(A_construct_class, func, int, (), Once())
+      {
          return 1;
       };
       A_construct_class a(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11);
@@ -148,13 +167,25 @@ SUITE(mfp)
 
    Case(abstract class)
    {
-      MOCK(A_abstract_class, f1, int, ()).once() = []() { return -1; };
-      MOCK(A_abstract_class, f2, int, ()).times(0) = []() { return -2; };
+      MOCK(A_abstract_class, f1, int, (), Once()) { return -1; };
+      MOCK(A_abstract_class, f2, int, (), Times(0)) { return -2; };
 
       A_derived_class a;
       OK(-1, a.f1());
       OK(2, a.f2());
    }
+}
+
+CASE(is static member function)
+{
+   OK(h2::h2_mfp<Shape, int(int, int)>::is_static_member_function(&Shape::fly));
+   OK(h2::h2_mfp<Shape, int(int)>::is_static_member_function(&Shape::fly));
+
+   OK(!h2::h2_mfp<Shape, int(int, int)>::is_static_member_function(&Shape::go));
+   OK(!h2::h2_mfp<Shape, int(int)>::is_static_member_function(&Shape::go));
+
+   OK(!h2::h2_mfp<Shape, int(int, int)>::is_static_member_function(&Shape::work));
+   OK(!h2::h2_mfp<Shape, int(int)>::is_static_member_function(&Shape::work));
 }
 
 }  // namespace

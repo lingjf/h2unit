@@ -61,20 +61,20 @@ SUITE(Ilegal Access)
       memcpy(p, "12345678901234567890123456789012345678901234567890", 50);
       free(p);
    }
+}
 
-   Case(read after free failure)
-   {
-      A_struct* p = (A_struct*)malloc(sizeof(A_struct));
-      free(p);
+CASE(read after free failure)
+{
+   A_struct* p = (A_struct*)malloc(sizeof(A_struct));
+   free(p);
 
-      int b = p->b;
-   }
+   int b = p->b;
+}
 
-   Case(write after free failure)
-   {
-      A_struct* p = (A_struct*)malloc(sizeof(A_struct));
-      free(p);
+CASE(write after free failure)
+{
+   A_struct* p = (A_struct*)malloc(sizeof(A_struct));
+   free(p);
 
-      p->b = 100;
-   }
+   p->b = 100;
 }

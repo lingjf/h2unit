@@ -162,8 +162,8 @@ SUITE(number[integer, float, enum, bool])
 
    Case(MOCK)
    {
-#define TheCheck(x)                            \
-   MOCK(foo1##x, void, (decltype(x))).once(x); \
+#define TheCheck(x)                                 \
+   MOCK(foo1##x, void, (decltype(x)), Once(x)){};   \
    foo1##x(x);
       ForForEach(TheCheck, NUMBER0_LIST);
 #undef TheCheck

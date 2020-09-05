@@ -75,18 +75,193 @@ class Shape {
    }
 };
 
+int Shape_go_fake(Shape* shape, int x, int y)
+{
+   return x + y;
+}
+int Shape_work_fake(Shape* shape, int x, int y)
+{
+   return x + y;
+}
+int Shape_fly_fake(int x, int y)
+{
+   return x + y;
+}
+
 SUITE(stub member function)
+{
+   Case(normal member function)
+   {
+      STUB(Shape, go, int, (int a, int b), Shape_go_fake);
+
+      Shape shape;
+      OK(222, shape.go(111, 111));
+   }
+
+   Case(virtual member function)
+   {
+      STUB(Shape, work, int, (int a, int b), Shape_work_fake);
+
+      Shape shape;
+      OK(222, shape.work(111, 111));
+   }
+
+   Case(static member function)
+   {
+      STUB(Shape::fly, int, (int a, int b), Shape_fly_fake);
+
+      OK(222, Shape::fly(111, 111));
+   }
+}
+
+template <typename T>
+int foobar1(T a)
+{
+   return 1;
+}
+int STUB_foobar1(int a)
+{
+   return -1;
+}
+
+template <typename T1, typename T2>
+int foobar2(T1 a, T2 b)
+{
+   return 2;
+}
+int STUB_foobar2(int a, float b)
+{
+   return -2;
+}
+
+template <typename T>
+struct Foo1 {
+   T m = 0;
+   template <typename U>
+   int bar1(U a)
+   {
+      return 1;
+   }
+   static int bar2(T a)
+   {
+      return 2;
+   }
+};
+
+int STUB_Foo1bar1(void* foo1, int a)
+{
+   return -1;
+}
+
+int STUB_Foo1bar2(int a)
+{
+   return -2;
+}
+
+template <typename T1, typename T2>
+struct Foo2 {
+   T1 m1 = 0;
+   T2 m2 = 0;
+
+   template <typename U1, typename U2>
+   int bar1(U1 a, U2 b)
+   {
+      return 1;
+   }
+
+   template <typename U1, typename U2>
+   static int bar2(U1 a, U2 b)
+   {
+      return 2;
+   }
+
+   template <typename U1, typename U2>
+   std::pair<U1, U2> bar3(U1 a, U2 b)
+   {
+      return std::make_pair(a, b);
+   }
+};
+
+int STUB_Foo2bar1(void* foo2, int a, float b)
+{
+   return -1;
+}
+
+int STUB_Foo2bar2(int a, float b)
+{
+   return -2;
+}
+
+std::pair<int, float> STUB_Foo2bar3(void* foo2, int a, float b)
+{
+   return std::make_pair(-3, a + b);
+}
+
+SUITE(stub template)
+{
+   Case(function 1 typename)
+   {
+      int ret = foobar1<int>(0);
+      OK(1, ret);
+      STUB(foobar1<int>, STUB_foobar1);
+      OK(-1, foobar1<int>(0));
+   }
+
+   Case(function 2 typename)
+   {
+      int ret = foobar2<int, float>(0, 0);
+      OK(2, ret);
+      STUB((foobar2<int, float>), STUB_foobar2);
+      OK(-2, (foobar2<int, float>(0, 0)));
+   }
+
+   Case(member function 1 typename)
+   {
+      STUB(Foo1<int>, bar1<int>, int, (int a), STUB_Foo1bar1);
+
+      Foo1<int> a1;
+      OK(-1, a1.bar1(0));
+   }
+
+   Case(static member function 1 typename)
+   {
+      STUB(Foo1<int>::bar2, int, (int a), STUB_Foo1bar2);
+      OK(-2, Foo1<int>::bar2(0));
+   }
+
+   Case(member function 2 typename)
+   {
+      STUB((Foo2<int, float>), (bar1<int, float>), int, (int a, float b), STUB_Foo2bar1);
+      Foo2<int, float> a1;
+      OK(-1, (a1.bar1<int, float>(0, 0)));
+   }
+
+   Case(static member function 2 typename)
+   {
+      STUB((Foo2<int, float>::bar2<int, float>), int, (int a, float b), STUB_Foo2bar2);
+      OK(-2, (Foo2<int, float>::bar2<int, float>(0, 0)));
+   }
+
+   Case(return template)
+   {
+      STUB((Foo2<int, float>), (bar3<int, float>), (std::pair<int, float>), (int a, float b), STUB_Foo2bar3);
+      Foo2<int, float> a1;
+      OK(Pair(-3, 0), (a1.bar3<int, float>(0, 0)));
+   }
+}
+
+SUITE(STUBS)
 {
    Case(lambdas normal function)
    {
-      STUB(foobar, int, (int a, const int& b)) { return a + b; };
+      STUBS(foobar, int, (int a, const int& b)) { return a + b; };
 
       OK(222, foobar(111, 111));
    }
 
    Case(lambdas normal member function)
    {
-      STUB(Shape, go, int, (int a, int b)) { return a + b; };
+      STUBS(Shape, go, int, (int a, int b)) { return a + b; };
 
       Shape shape;
       OK(222, shape.go(111, 111));
@@ -94,7 +269,7 @@ SUITE(stub member function)
 
    Case(lambdas virtual member function)
    {
-      STUB(Shape, work, int, (int a, int b)) { return a + b; };
+      STUBS(Shape, work, int, (int a, int b)) { return a + b; };
 
       Shape shape;
       OK(222, shape.work(111, 111));
@@ -102,105 +277,9 @@ SUITE(stub member function)
 
    Case(lambdas static member function)
    {
-      STUB(Shape::fly, int, (int a, int b)) { return a + b; };
+      STUBS(Shape::fly, int, (int a, int b)) { return a + b; };
 
       OK(222, Shape::fly(111, 111));
-   }
-}
-
-template <typename T>
-int template_foobar1(T a)
-{
-   return 1;
-}
-int STUB_template_foobar1(int a)
-{
-   return -1;
-}
-
-template <typename T1, typename T2>
-int template_foobar2(T1 a, T2 b)
-{
-   return 2;
-}
-int STUB_template_foobar2(int a, int b)
-{
-   return -2;
-}
-
-template <typename T>
-struct template_Foobar1 {
-   T m = 0;
-   template <typename U>
-   int foobar1(U a)
-   {
-      return 1;
-   }
-   static int foobar2(T a)
-   {
-      return 2;
-   }
-};
-
-template <typename T1, typename T2>
-struct template_Foobar2 {
-   T1 m1 = 0;
-   T2 m2 = 0;
-   template <typename U1, typename U2>
-   int foobar1(U1 a, U2 b)
-   {
-      return 1;
-   }
-   template <typename U1, typename U2>
-   static int foobar2(U1 a, U2 b)
-   {
-      return 2;
-   }
-};
-
-SUITE(stub template)
-{
-   Case(function 1 typename)
-   {
-      int ret = template_foobar1<int>(0);
-      OK(1, ret);
-      STUB(template_foobar1<int>, STUB_template_foobar1);
-      OK(-1, template_foobar1<int>(0));
-   }
-
-   Case(function 2 typename)
-   {
-      int ret = template_foobar2<int, int>(0, 0);
-      OK(2, ret);
-      STUB((template_foobar2<int, int>), STUB_template_foobar2);
-      OK(-2, (template_foobar2<int, int>(0, 0)));
-   }
-
-   Case(member function 1 typename)
-   {
-      STUB(template_Foobar1<int>, foobar1<int>, int, (int a)) { return -1; };
-
-      template_Foobar1<int> a1;
-      OK(-1, a1.foobar1(0));
-   }
-
-   Case(static member function 1 typename)
-   {
-      STUB(template_Foobar1<int>::foobar2, int, (int a)) { return -1; };
-      OK(-1, template_Foobar1<int>::foobar2(0));
-   }
-
-   Case(member function 2 typename)
-   {
-      STUB((template_Foobar2<int, float>), (foobar1<int, float>), int, (int a, float b)) { return -1; };
-      template_Foobar2<int, float> a1;
-      OK(-1, (a1.foobar1<int, float>(0, 0)));
-   }
-
-   Case(static member function 2 typename)
-   {
-      STUB((template_Foobar2<int, float>::foobar2<int, float>), int, (int a, float b)) { return -1; };
-      OK(-1, (template_Foobar2<int, float>::foobar2<int, float>(0, 0)));
    }
 }
 
@@ -224,7 +303,5 @@ SUITE(stub name)
    {
       STUB("foobar_bystub", STUB_foobar_bystub);
       OK(-1, foobar_bystub(0));
-      STUB("foobar_bystub", int, (int)) { return -2; };
-      OK(-2, foobar_bystub(0));
    }
 }

@@ -28,7 +28,7 @@ CASE(bugfix
      : MOCK return reference)
 {
    NoDefaultConstructorClass x(1, 1.1);
-   MOCK(foobar, NoDefaultConstructorClass&, (int, NoDefaultConstructorClass&)).once(_, _).returns(x);
+   MOCK(foobar, NoDefaultConstructorClass&, (int, NoDefaultConstructorClass&), Once(_, _).Return(x)){};
    foobar(1, x);
 }
 
@@ -58,6 +58,6 @@ CASE(bugfix
 CASE(bugfix
      : MOCK without matcher cause crash)
 {
-   // MOCK(foobar, int, (int, const char*)).times(0);
+   // MOCK(foobar, int, (int, const char*), Times(0)){};
    // foobar(1, "A");
 }

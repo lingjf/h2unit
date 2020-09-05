@@ -128,26 +128,31 @@ using h2_constructible =
 template <typename Class, typename Signature>
 struct h2_mfp;
 
-template <typename Class, typename Return, typename... Args>
-struct h2_mfp<Class, Return(Args...)> {
-   typedef Return (Class::*F)(Args...);
-   typedef union {
-      F f;
-      void* p;
-      long long v;
-   } U;
+template <typename Class, typename ReturnType, typename... Args>
+struct h2_mfp<Class, ReturnType(Args...)> {
+   static constexpr bool is_static_member_function(ReturnType (*)(Args...)) { return true; }
+   static constexpr bool is_static_member_function(ReturnType (Class::*)(Args...)) { return false; }
 
-   static inline bool is_virtual_member(U& u)
+   static void* A(ReturnType (*f)(Args...))
    {
-      return (u.v & 1) && (u.v - 1) % sizeof(void*) == 0
-             /* assumption: virtual member count less than 3000 */
-             && (u.v - 1) / sizeof(void*) < 3000;
+      return (void*)f;
    }
 
-   static void* A(F f)
+   static bool is_virtual_member_function(long long uv)
    {
-      U u{f};
-      if (!is_virtual_member(u)) return u.p;
+      return (uv & 1) && (uv - 1) % sizeof(void*) == 0
+             /* assumption: virtual member count less than 1000 */
+             && (uv - 1) / sizeof(void*) < 1000;
+   }
+
+   static void* A(ReturnType (Class::*f)(Args...))
+   {
+      union {
+         ReturnType (Class::*f)(Args...);
+         void* p;
+         long long v;
+      } u{f};
+      if (!is_virtual_member_function(u.v)) return u.p;
       void** vtable = nullptr;
       Class* object = h2_constructible<Class>::O(alloca(sizeof(Class)));
       if (0 == (long long)object || 1 == (long long)object || 2 == (long long)object) {
@@ -162,11 +167,5 @@ struct h2_mfp<Class, Return(Args...)> {
       }
       if (!vtable) return nullptr;
       return vtable[(u.v - 1) / sizeof(void*)];
-   }
-
-   static long long B(F f)
-   {
-      U u{f};
-      return u.v;
    }
 };

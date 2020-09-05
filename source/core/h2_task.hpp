@@ -32,7 +32,7 @@ static inline void h2_stub_g(void* origin_fp, void* substitute_fp, const char* o
       h2_task::I().stubs.add(origin_fp, substitute_fp, origin_fn, file, line);
 }
 
-static inline void h2_mock_g(h2_mock* mock)
+static inline void h2_mock_g(void* mock)
 {
    if (h2_task::I().current_case)
       h2_task::I().current_case->mocks.add(mock);
