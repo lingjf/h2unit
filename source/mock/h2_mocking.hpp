@@ -22,9 +22,6 @@ struct h2_mockee : h2_libc {
 
 namespace {
 
-#define H2_ForEach_Comma(_Macro) _Macro(0), _Macro(1), _Macro(2), _Macro(3), _Macro(4), _Macro(5), _Macro(6), _Macro(7), _Macro(8), _Macro(9), _Macro(10), _Macro(11), _Macro(12), _Macro(13), _Macro(14), _Macro(15)
-#define H2_ForEach_Space(_Macro) _Macro(0) _Macro(1) _Macro(2) _Macro(3) _Macro(4) _Macro(5) _Macro(6) _Macro(7) _Macro(8) _Macro(9) _Macro(10) _Macro(11) _Macro(12) _Macro(13) _Macro(14) _Macro(15)
-
 template <int Counter, typename Class, typename Signature>
 class h2_mocker;
 
@@ -33,7 +30,7 @@ class h2_mocker<Counter, Class, ReturnType(Args...)> : h2_mockee {
    using ArgumentTuple = std::tuple<Args...>;
 
 #define H2_Typedef_Matcher(i) h2_matcher<h2_nth_decay<i, Args...>>
-   using MatcherTuple = std::tuple<H2_ForEach_Comma(H2_Typedef_Matcher)>;
+   using MatcherTuple = std::tuple<H2PP_REPEAT(20, (, ), H2_Typedef_Matcher)>;
 #undef H2_Typedef_Matcher
 
    h2_vector<MatcherTuple> matcher_array;
@@ -146,66 +143,66 @@ class h2_mocker<Counter, Class, ReturnType(Args...)> : h2_mockee {
 #define H2_Default_Matcher(i) h2_matcher<h2_nth_decay<i, Args...>> _##i = {}
 #define H2_Forward_Matcher(i) std::forward<h2_matcher<h2_nth_decay<i, Args...>>>(_##i)
 
-   h2_mocker& Once(H2_ForEach_Comma(H2_Default_Matcher))
+   h2_mocker& Once(H2PP_REPEAT(20, (, ), H2_Default_Matcher))
    {
       checkin_array.push_back(h2_checkin::Once());
-      matcher_array.push_back(std::forward_as_tuple(H2_ForEach_Comma(H2_Forward_Matcher)));
+      matcher_array.push_back(std::forward_as_tuple(H2PP_REPEAT(20, (, ), H2_Forward_Matcher)));
       routine_array.push_back(h2_routine<Class, ReturnType(Args...)>());
       return *this;
    }
 
-   h2_mocker& Twice(H2_ForEach_Comma(H2_Default_Matcher))
+   h2_mocker& Twice(H2PP_REPEAT(20, (, ), H2_Default_Matcher))
    {
       checkin_array.push_back(h2_checkin::Twice());
-      matcher_array.push_back(std::forward_as_tuple(H2_ForEach_Comma(H2_Forward_Matcher)));
+      matcher_array.push_back(std::forward_as_tuple(H2PP_REPEAT(20, (, ), H2_Forward_Matcher)));
       routine_array.push_back(h2_routine<Class, ReturnType(Args...)>());
       return *this;
    }
 
-   h2_mocker& Times(int count, H2_ForEach_Comma(H2_Default_Matcher))
+   h2_mocker& Times(int count, H2PP_REPEAT(20, (, ), H2_Default_Matcher))
    {
       checkin_array.push_back(h2_checkin::Times(count));
-      matcher_array.push_back(std::forward_as_tuple(H2_ForEach_Comma(H2_Forward_Matcher)));
+      matcher_array.push_back(std::forward_as_tuple(H2PP_REPEAT(20, (, ), H2_Forward_Matcher)));
       routine_array.push_back(h2_routine<Class, ReturnType(Args...)>());
       return *this;
    }
 
-   h2_mocker& Any(H2_ForEach_Comma(H2_Default_Matcher))
+   h2_mocker& Any(H2PP_REPEAT(20, (, ), H2_Default_Matcher))
    {
       checkin_array.push_back(h2_checkin::Any());
-      matcher_array.push_back(std::forward_as_tuple(H2_ForEach_Comma(H2_Forward_Matcher)));
+      matcher_array.push_back(std::forward_as_tuple(H2PP_REPEAT(20, (, ), H2_Forward_Matcher)));
       routine_array.push_back(h2_routine<Class, ReturnType(Args...)>());
       return *this;
    }
 
-   h2_mocker& Atleast(int count, H2_ForEach_Comma(H2_Default_Matcher))
+   h2_mocker& Atleast(int count, H2PP_REPEAT(20, (, ), H2_Default_Matcher))
    {
       checkin_array.push_back(h2_checkin::Atleast(count));
-      matcher_array.push_back(std::forward_as_tuple(H2_ForEach_Comma(H2_Forward_Matcher)));
+      matcher_array.push_back(std::forward_as_tuple(H2PP_REPEAT(20, (, ), H2_Forward_Matcher)));
       routine_array.push_back(h2_routine<Class, ReturnType(Args...)>());
       return *this;
    }
 
-   h2_mocker& Atmost(int count, H2_ForEach_Comma(H2_Default_Matcher))
+   h2_mocker& Atmost(int count, H2PP_REPEAT(20, (, ), H2_Default_Matcher))
    {
       checkin_array.push_back(h2_checkin::Atmost(count));
-      matcher_array.push_back(std::forward_as_tuple(H2_ForEach_Comma(H2_Forward_Matcher)));
+      matcher_array.push_back(std::forward_as_tuple(H2PP_REPEAT(20, (, ), H2_Forward_Matcher)));
       routine_array.push_back(h2_routine<Class, ReturnType(Args...)>());
       return *this;
    }
 
-   h2_mocker& Between(int left, int right, H2_ForEach_Comma(H2_Default_Matcher))
+   h2_mocker& Between(int left, int right, H2PP_REPEAT(20, (, ), H2_Default_Matcher))
    {
       checkin_array.push_back(h2_checkin::Between(left, right));
-      matcher_array.push_back(std::forward_as_tuple(H2_ForEach_Comma(H2_Forward_Matcher)));
+      matcher_array.push_back(std::forward_as_tuple(H2PP_REPEAT(20, (, ), H2_Forward_Matcher)));
       routine_array.push_back(h2_routine<Class, ReturnType(Args...)>());
       return *this;
    }
 
-   h2_mocker& With(H2_ForEach_Comma(H2_Default_Matcher))
+   h2_mocker& With(H2PP_REPEAT(20, (, ), H2_Default_Matcher))
    {
       if (checkin_array.empty()) Any();
-      matcher_array.back() = std::forward_as_tuple(H2_ForEach_Comma(H2_Forward_Matcher));
+      matcher_array.back() = std::forward_as_tuple(H2PP_REPEAT(20, (, ), H2_Forward_Matcher));
       return *this;
    }
 
@@ -219,7 +216,7 @@ class h2_mocker<Counter, Class, ReturnType(Args...)> : h2_mockee {
       std::get<i>(matcher_array.back()) = e;                     \
       return *this;                                              \
    }
-   H2_ForEach_Space(H2_Th_Matcher);
+   H2PP_REPEAT(20, , H2_Th_Matcher);
 #undef H2_Th_Matcher
 
    h2_mocker& Return()
@@ -254,8 +251,5 @@ class h2_mocker<Counter, Class, ReturnType(Args...)> : h2_mockee {
          if (!a) a.mfp = f;
    }
 };
-
-#undef H2_ForEach_Comma
-#undef H2_ForEach_Space
 
 }  // namespace

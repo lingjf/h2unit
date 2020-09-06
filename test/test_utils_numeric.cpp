@@ -200,27 +200,3 @@ SUITE(sequence_number)
       OK(e[x], h2::h2_numeric::sequence_number(x));
    }
 }
-
-SUITE(parse_int_after_equal)
-{
-   Case(= 1000)
-   {
-      auto a = h2::h2_numeric::parse_int_after_equal("=1000");
-      OK(1000, a);
-   }
-   Case(= 1000)
-   {
-      auto a = h2::h2_numeric::parse_int_after_equal("= 1000");
-      OK(1000, a);
-   }
-   Case(= 1000, )
-   {
-      auto a = h2::h2_numeric::parse_int_after_equal("= 1000, ");
-      OK(1000, a);
-   }
-   Case(= 0x1000, )
-   {
-      auto a = h2::h2_numeric::parse_int_after_equal("= 0x1000, ");
-      OK(0x1000, a);
-   }
-}

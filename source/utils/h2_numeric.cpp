@@ -119,17 +119,3 @@ h2_inline const char* h2_numeric::sequence_number(int sequence, int shift)
    sprintf(ss, "%dth", sequence);
    return ss;
 }
-
-h2_inline long long h2_numeric::parse_int_after_equal(const char* s)
-{
-   long long n = 0;
-   const char* p = strchr(s, '=');
-   if (p) {
-      for (p += 1; *p && ::isspace(*p);) p++;  // strip left space
-      if (p[0] == '0' && ::tolower(p[1]) == 'x')
-         n = strtoll(p + 2, (char**)0, 16);
-      else
-         n = strtoll(p, (char**)0, 10);
-   }
-   return n;
-}

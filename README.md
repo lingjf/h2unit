@@ -898,5 +898,5 @@ twofiles speed up 2~3 times than onefile.
 *    C++11 is required
 *    GCC 5.5+ (regex support, SFINAE support)
 *    Variadic parameter function can't MOCK, use STUB with separate fake function instead
-*    MOCK function arguments up to 15 count
+*    MOCK function arguments up to 16 count
 *    sqrt() in math.h can be STUB/MOCK, because compiler insert sqrtsd ASM instruction directly instead of function call

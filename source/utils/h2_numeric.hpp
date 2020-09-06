@@ -16,6 +16,4 @@ struct h2_numeric {
    static bool bits_equal(const unsigned char* b1, const unsigned char* b2, int nbits);
 
    static const char* sequence_number(int sequence, int shift = 1);
-
-   static long long parse_int_after_equal(const char* s);
 };

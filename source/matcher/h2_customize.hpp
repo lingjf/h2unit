@@ -118,32 +118,32 @@
 
 /* clang-format off */
 
-#define _H2MATCHER1(name) H2MATCHER0(name, (""))
+#define _H2MATCHER_1(name) H2MATCHER0(name, (""))
 
-#define _H2MATCHER20(name, e1) H2MATCHER1(name, e1, (""))
-#define _H2MATCHER21(name, message) H2MATCHER0(name, message)
-#define _H2MATCHER2(name, t) H2PP_CAT(_H2MATCHER2, H2PP_IBP(t)) (name, t)
+#define _H2MATCHER_2_0(name, e1) H2MATCHER1(name, e1, (""))
+#define _H2MATCHER_2_1(name, message) H2MATCHER0(name, message)
+#define _H2MATCHER_2(name, t) H2PP_CAT(_H2MATCHER_2_, H2PP_IBP(t)) (name, t)
 
-#define _H2MATCHER30(name, e1, e2) H2MATCHER2(name, e1, e2, (""))
-#define _H2MATCHER31(name, e1, message) H2MATCHER1(name, e1, message)
-#define _H2MATCHER3(name, e1, t) H2PP_CAT(_H2MATCHER3, H2PP_IBP(t)) (name, e1, t)
+#define _H2MATCHER_3_0(name, e1, e2) H2MATCHER2(name, e1, e2, (""))
+#define _H2MATCHER_3_1(name, e1, message) H2MATCHER1(name, e1, message)
+#define _H2MATCHER_3(name, e1, t) H2PP_CAT(_H2MATCHER_3_, H2PP_IBP(t)) (name, e1, t)
 
-#define _H2MATCHER40(name, e1, e2, e3) H2MATCHER3(name, e1, e2, e3, (""))
-#define _H2MATCHER41(name, e1, e2, message) H2MATCHER2(name, e1, e2, message)
-#define _H2MATCHER4(name, e1, e2, t) H2PP_CAT(_H2MATCHER4, H2PP_IBP(t)) (name, e1, e2, t)
+#define _H2MATCHER_4_0(name, e1, e2, e3) H2MATCHER3(name, e1, e2, e3, (""))
+#define _H2MATCHER_4_1(name, e1, e2, message) H2MATCHER2(name, e1, e2, message)
+#define _H2MATCHER_4(name, e1, e2, t) H2PP_CAT(_H2MATCHER_4_, H2PP_IBP(t)) (name, e1, e2, t)
 
-#define _H2MATCHER50(name, e1, e2, e3, e4) H2MATCHER4(name, e1, e2, e3, e4, (""))
-#define _H2MATCHER51(name, e1, e2, e3, message) H2MATCHER3(name, e1, e2, e3, message)
-#define _H2MATCHER5(name, e1, e2, e3, t) H2PP_CAT(_H2MATCHER5, H2PP_IBP(t)) (name, e1, e2, e3, t)
+#define _H2MATCHER_5_0(name, e1, e2, e3, e4) H2MATCHER4(name, e1, e2, e3, e4, (""))
+#define _H2MATCHER_5_1(name, e1, e2, e3, message) H2MATCHER3(name, e1, e2, e3, message)
+#define _H2MATCHER_5(name, e1, e2, e3, t) H2PP_CAT(_H2MATCHER_5_, H2PP_IBP(t)) (name, e1, e2, e3, t)
 
-#define _H2MATCHER60(name, e1, e2, e3, e4, e5) H2MATCHER5(name, e1, e2, e3, e4, e5, (""))
-#define _H2MATCHER61(name, e1, e2, e3, e4, message) H2MATCHER4(name, e1, e2, e3, e4, message)
-#define _H2MATCHER6(name, e1, e2, e3, e4, t) H2PP_CAT(_H2MATCHER6, H2PP_IBP(t)) (name, e1, e2, e3, e4, t)
+#define _H2MATCHER_6_0(name, e1, e2, e3, e4, e5) H2MATCHER5(name, e1, e2, e3, e4, e5, (""))
+#define _H2MATCHER_6_1(name, e1, e2, e3, e4, message) H2MATCHER4(name, e1, e2, e3, e4, message)
+#define _H2MATCHER_6(name, e1, e2, e3, e4, t) H2PP_CAT(_H2MATCHER_6_, H2PP_IBP(t)) (name, e1, e2, e3, e4, t)
 
-#define _H2MATCHER70(name, e1, e2, e3, e4, e5, e6)
-#define _H2MATCHER71(name, e1, e2, e3, e4, e5, message) H2MATCHER5(name, e1, e2, e3, e4, e5, message)
-#define _H2MATCHER7(name, e1, e2, e3, e4, e5, t) H2PP_CAT(_H2MATCHER7, H2PP_IBP(t)) (name, e1, e2, e3, e4, e5, t)
+#define _H2MATCHER_7_0(name, e1, e2, e3, e4, e5, e6)
+#define _H2MATCHER_7_1(name, e1, e2, e3, e4, e5, message) H2MATCHER5(name, e1, e2, e3, e4, e5, message)
+#define _H2MATCHER_7(name, e1, e2, e3, e4, e5, t) H2PP_CAT(_H2MATCHER_7_, H2PP_IBP(t)) (name, e1, e2, e3, e4, e5, t)
 
 /* clang-format on */
 
-#define H2MATCHER(...) H2PP_VARIADIC_CALL(_H2MATCHER, __VA_ARGS__)
+#define H2MATCHER(...) H2PP_VARIADIC_CALL(_H2MATCHER_, __VA_ARGS__)

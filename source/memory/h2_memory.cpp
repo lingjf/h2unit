@@ -35,6 +35,20 @@ h2_inline long long h2_memory::stack::footprint()
    return h2_stack::I().top()->footprint;
 }
 
+inline long long parse_int_after_equal(const char* s)
+{
+   long long n = 0;
+   const char* p = strchr(s, '=');
+   if (p) {
+      for (p += 1; *p && ::isspace(*p);) p++;  // strip left space
+      if (p[0] == '0' && ::tolower(p[1]) == 'x')
+         n = strtoll(p + 2, (char**)0, 16);
+      else
+         n = strtoll(p, (char**)0, 10);
+   }
+   return n;
+}
+
 static inline void parse_block_attributes(const char* attributes, long long& n_limit, int& n_align, unsigned char s_fill[32], int& n_fill, bool& noleak)
 {
    n_limit = LLONG_MAX / 2;
@@ -49,12 +63,12 @@ static inline void parse_block_attributes(const char* attributes, long long& n_l
 
    const char* p_limit = strcasestr(attributes, "limit");
    if (p_limit) {
-      n_limit = h2_numeric::parse_int_after_equal(p_limit);
+      n_limit = parse_int_after_equal(p_limit);
    }
 
    const char* p_align = strcasestr(attributes, "align");
    if (p_align) {
-      n_align = (int)h2_numeric::parse_int_after_equal(p_align);
+      n_align = (int)parse_int_after_equal(p_align);
    }
 
    const char* p_fill = strcasestr(attributes, "fill");
