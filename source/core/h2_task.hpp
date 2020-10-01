@@ -3,7 +3,7 @@ struct h2_task {
    h2_singleton(h2_task);
 
    int stats[h2_case::statuss]{0};
-   int checks = 0;
+   int asserts = 0;
    int rounds = 0;
    int last = 0;
    h2_list suites;
@@ -42,11 +42,11 @@ static inline void h2_mock_g(void* mock)
       h2_task::I().mocks.add(mock);
 }
 
-static inline void h2_check_g()
+static inline void h2_assert_g()
 {
-   if (h2_task::I().current_case) h2_task::I().current_case->checks += 1;
-   if (h2_task::I().current_suite) h2_task::I().current_suite->checks += 1;
-   h2_task::I().checks += 1;
+   if (h2_task::I().current_case) h2_task::I().current_case->asserts += 1;
+   if (h2_task::I().current_suite) h2_task::I().current_suite->asserts += 1;
+   h2_task::I().asserts += 1;
 }
 
 static inline void h2_fail_g(h2_fail* fail, bool defer)

@@ -879,6 +879,7 @@ twofiles speed up 2~3 times than onefile.
 # Execute options
 
 *    `-v` *verbose* output including successfull cases
+*    `-q` Compact output without failure detail
 *    `-l` *list* out suites and cases
 *    `-s` *shuffle* cases and execute in random order
 *    `-b` [n] *breaking* test once failure occurred

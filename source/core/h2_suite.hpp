@@ -6,7 +6,7 @@ struct h2_suite {
    h2_list x;
    int seq = 0;
    int stats[h2_case::statuss]{0};
-   int checks = 0;
+   int asserts = 0;
    long long footprint = 0;
    jmp_buf jump;
    bool jumpable = false;

@@ -108,7 +108,6 @@ namespace h2 {
 
 #include "h2_nm.cpp"         //
 #include "h2_backtrace.cpp"  //
-#include "h2_check.cpp"      //
 #include "h2_layout.cpp"     //
 #include "h2_option.cpp"     //
 #include "h2_patch.cpp"      //
@@ -117,4 +116,5 @@ namespace h2 {
 #include "core/h2_suite.cpp"  //
 #include "core/h2_task.cpp"   //
 
+#include "assert/h2_assert.cpp"  //
 }  // namespace h2

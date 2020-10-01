@@ -7,7 +7,7 @@ h2_inline void h2_case::clear()
    if (fails) delete fails;
    fails = nullptr;
    sock = nullptr;
-   checks = 0;
+   asserts = 0;
 }
 
 h2_inline void h2_case::prev_setup()
@@ -24,7 +24,7 @@ h2_inline void h2_case::post_cleanup()
    stubs.clear();
    h2_fail* fail = mocks.clear(true);
    footprint = h2_memory::stack::footprint();
-   // should memory check stats into check_count ?
+   // should memory assert stats into assert count ?
    h2_fail::append_subling(fail, h2_memory::stack::pop());
 
    if (!fail) return;

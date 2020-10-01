@@ -1,5 +1,5 @@
 
-static inline void h2_check_g();
+static inline void h2_assert_g();
 
 template <typename MatcherTuple, typename ArgumentTuple, std::size_t I>
 inline h2_fail* matches(MatcherTuple& matchers, ArgumentTuple& arguments, std::integral_constant<std::size_t, I>)
@@ -8,7 +8,7 @@ inline h2_fail* matches(MatcherTuple& matchers, ArgumentTuple& arguments, std::i
    h2_fail* fail = std::get<I - 1>(matchers).matches(std::get<I - 1>(arguments));
    if (fail) fail->seqno = I - 1;
    h2_fail::append_subling(fails, fail);
-   h2_check_g();
+   h2_assert_g();
    return fails;
 }
 

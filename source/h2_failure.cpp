@@ -122,10 +122,10 @@ struct h2_fail_unexpect : h2_fail {
    {
       h2_line line;
       line.indent(child_index * 2 + 1);
-      if (!strcmp("Inner", check_type)) print_Inner(line);
-      if (!strcmp("OK1", check_type)) print_OK1(line);
-      if (!strcmp("OK2", check_type)) print_OK2(line);
-      if (!strcmp("JE", check_type)) print_JE(line);
+      if (!strcmp("Inner", assert_type)) print_Inner(line);
+      if (!strcmp("OK1", assert_type)) print_OK1(line);
+      if (!strcmp("OK2", assert_type)) print_OK2(line);
+      if (!strcmp("JE", assert_type)) print_JE(line);
       if (explain.width()) line += comma_if(c++, ", ", " ") + explain;
       if (user_explain.size()) line += {comma_if(c++, ", ", " "), user_explain};
       h2_color::printf(line + locate());

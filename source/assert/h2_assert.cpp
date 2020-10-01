@@ -87,11 +87,11 @@ h2_inline h2_defer_fail::~h2_defer_fail()
    if (fail) {
       fail->file = file;
       fail->lino = lino;
-      fail->check_type = check_type;
-      if (!strcmp("OK1", check_type)) {
+      fail->assert_type = assert_type;
+      if (!strcmp("OK1", assert_type)) {
          fail->e_expression = e_expression;
          fail->a_expression = expression;
-      } else if (!strcmp("OK2", check_type)) {
+      } else if (!strcmp("OK2", assert_type)) {
          const char* comma = find_outer_comma(expression);
          if (comma) {
             const char *p, *q;

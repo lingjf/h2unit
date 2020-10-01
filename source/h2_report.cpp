@@ -80,7 +80,7 @@ struct h2_report_console : h2_report_impl {
    }
    void comma_status(int n, const char* style, const char* name, int& c)
    {
-      if (c++) h2_color::printf("dark gray", ",");
+      if (c++) h2_color::printf("dark gray", ", ");
       h2_color::printf(style, "%d", n);
       h2_color::printf("", " %s", name);
    }
@@ -116,13 +116,13 @@ struct h2_report_console : h2_report_impl {
             h2_color::printf("", " %d", cases);
          }
          h2_color::printf("", " case%s", 1 < cases ? "s" : "");
-         h2_color::printf("dark gray", ",");
-         h2_color::printf("", "%d check%s", t->checks, 1 < t->checks ? "s" : "");
+         h2_color::printf("dark gray", ", ");
+         h2_color::printf("", "%d assert%s", t->asserts, 1 < t->asserts ? "s" : "");
          if (1 < t->rounds) {
-            h2_color::printf("dark gray", ",");
+            h2_color::printf("dark gray", ", ");
             h2_color::printf("", "%d rounds", t->rounds);
          }
-         h2_color::printf("dark gray", ",");
+         h2_color::printf("dark gray", ", ");
          h2_color::printf("", "%s \n", format_duration(task_cost));
       }
    }
@@ -139,6 +139,7 @@ struct h2_report_console : h2_report_impl {
    void on_suite_endup(h2_suite* s) override
    {
       h2_report_impl::on_suite_endup(s);
+      if (O.compact) return;
       if (O.verbose && O.includes.size() + O.excludes.size() == 0) {
          print_perfix(true);
          h2_color::printf("dark gray", "suite ");
@@ -160,16 +161,16 @@ struct h2_report_console : h2_report_impl {
          if (0 < s->cases.count())
             h2_color::printf("", " case%s", 1 < s->cases.count() ? "s" : "");
 
-         if (0 < s->checks) {
-            h2_color::printf("dark gray", ",");
-            h2_color::printf("", "%d check%s", s->checks, 1 < s->checks ? "s" : "");
+         if (0 < s->asserts) {
+            h2_color::printf("dark gray", ", ");
+            h2_color::printf("", "%d assert%s", s->asserts, 1 < s->asserts ? "s" : "");
          }
          if (0 < s->footprint) {
-            h2_color::printf("dark gray", ",");
+            h2_color::printf("dark gray", ", ");
             h2_color::printf("", "%s", format_volume(s->footprint));
          }
          if (1 < suite_cost) {
-            h2_color::printf("dark gray", ",");
+            h2_color::printf("dark gray", ", ");
             h2_color::printf("", "%s", format_duration(suite_cost));
          }
          h2_color::printf("", "\n");
@@ -186,9 +187,15 @@ struct h2_report_console : h2_report_impl {
    }
    void print_title(const char* s, const char* c, const char* file, int lino)
    {
-      h2_color::printf("", "%s", c);
+      if (strlen(c))
+         h2_color::printf("", "%s", c);
+      else
+         h2_color::printf("dark gray", "case");
       h2_color::printf("dark gray", " | ");
-      h2_color::printf("", "%s", s);
+      if (strlen(s))
+         h2_color::printf("", "%s", s);
+      else
+         h2_color::printf("dark gray", "suite");
       h2_color::printf("dark gray", " | ");
       h2_color::printf("", "%s:%d", basename((char*)file), lino);
    }
@@ -200,7 +207,7 @@ struct h2_report_console : h2_report_impl {
       case h2_case::initial: break;
       case h2_case::todo:
          print_perfix(true);
-         h2_color::printf("yellow", "Todo ");
+         h2_color::printf("yellow", "Todo   ");
          print_title(s->name, c->name, c->file, c->lino);
          h2_color::printf("", "\n");
          break;
@@ -210,9 +217,9 @@ struct h2_report_console : h2_report_impl {
             print_perfix(true);
             h2_color::printf("green", "Passed ");
             print_title(s->name, c->name, c->file, c->lino);
-            if (0 < c->checks) {
+            if (0 < c->asserts) {
                h2_color::printf("dark gray", " - ");
-               h2_color::printf("", "%d checks", c->checks);
+               h2_color::printf("", "%d assert%s", c->asserts, 1 < c->asserts ? "s" : "");
             }
             if (0 < c->footprint) {
                h2_color::printf("dark gray", ",");
@@ -231,6 +238,7 @@ struct h2_report_console : h2_report_impl {
          h2_color::printf("bold,red", "Failed ");
          print_title(s->name, c->name, c->file, c->lino);
          h2_color::printf("", "\n");
+         if (O.compact) break;
          if (c->fails) c->fails->foreach([](h2_fail* fail, int subling_index, int child_index) { fail->print(subling_index, child_index); });
          h2_color::printf("", "\n");
          break;

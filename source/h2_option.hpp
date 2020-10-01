@@ -16,6 +16,7 @@ struct h2_option {
    const char* path;
    const char* debug = nullptr;
    bool verbose = false;
+   bool compact = false;
    bool colorful = true;
    bool execute_progress = true;
    bool seq = false;

@@ -1,4 +1,4 @@
-﻿/* v5.6 2020-09-05 23:50:22 */
+﻿/* v5.6 2020-10-01 12:13:22 */
 /* https://github.com/lingjf/h2unit */
 /* Apache Licence 2.0 */
 
@@ -707,6 +707,7 @@ struct h2_option {
    const char* path;
    const char* debug = nullptr;
    bool verbose = false;
+   bool compact = false;
    bool colorful = true;
    bool execute_progress = true;
    bool seq = false;
@@ -798,7 +799,7 @@ struct h2_patch {
 struct h2_fail : h2_libc {
    h2_fail *subling_next{nullptr}, *child_next{nullptr};
 
-   const char* check_type = "Inner";  // Inner(Mock, AllOf, &&, ||)
+   const char* assert_type = "Inner";  // Inner(Mock, AllOf, &&, ||)
    h2_string e_expression, a_expression;
    h2_line explain;
    h2_string user_explain;
@@ -2617,7 +2618,7 @@ struct h2_checkin {
 };
 // h2_match.hpp
 
-static inline void h2_check_g();
+static inline void h2_assert_g();
 
 template <typename MatcherTuple, typename ArgumentTuple, std::size_t I>
 inline h2_fail* matches(MatcherTuple& matchers, ArgumentTuple& arguments, std::integral_constant<std::size_t, I>)
@@ -2626,7 +2627,7 @@ inline h2_fail* matches(MatcherTuple& matchers, ArgumentTuple& arguments, std::i
    h2_fail* fail = std::get<I - 1>(matchers).matches(std::get<I - 1>(arguments));
    if (fail) fail->seqno = I - 1;
    h2_fail::append_subling(fails, fail);
-   h2_check_g();
+   h2_assert_g();
    return fails;
 }
 
@@ -3208,7 +3209,7 @@ struct h2_case {
    int seq = 0;
    int last_status = initial;
    int status = initial;
-   int checks = 0;
+   int asserts = 0;
    long long footprint = 0;
    jmp_buf jump;
    h2_fail* fails{nullptr};
@@ -3242,7 +3243,7 @@ struct h2_suite {
    h2_list x;
    int seq = 0;
    int stats[h2_case::statuss]{0};
-   int checks = 0;
+   int asserts = 0;
    long long footprint = 0;
    jmp_buf jump;
    bool jumpable = false;
@@ -3276,7 +3277,7 @@ struct h2_task {
    h2_singleton(h2_task);
 
    int stats[h2_case::statuss]{0};
-   int checks = 0;
+   int asserts = 0;
    int rounds = 0;
    int last = 0;
    h2_list suites;
@@ -3315,11 +3316,11 @@ static inline void h2_mock_g(void* mock)
       h2_task::I().mocks.add(mock);
 }
 
-static inline void h2_check_g()
+static inline void h2_assert_g()
 {
-   if (h2_task::I().current_case) h2_task::I().current_case->checks += 1;
-   if (h2_task::I().current_suite) h2_task::I().current_suite->checks += 1;
-   h2_task::I().checks += 1;
+   if (h2_task::I().current_case) h2_task::I().current_case->asserts += 1;
+   if (h2_task::I().current_suite) h2_task::I().current_suite->asserts += 1;
+   h2_task::I().asserts += 1;
 }
 
 static inline void h2_fail_g(h2_fail* fail, bool defer)
@@ -3328,10 +3329,10 @@ static inline void h2_fail_g(h2_fail* fail, bool defer)
    if (O.debug) h2_debugger::trap();
    if (h2_task::I().current_case) h2_task::I().current_case->do_fail(fail, defer);
 }
-// h2_check.hpp
+// h2_assert.hpp
 
 struct h2_defer_fail : h2_once {
-   const char* check_type;
+   const char* assert_type;
    const char *e_expression, *a_expression, *expression;
    const char* file;
    int lino;
@@ -3344,16 +3345,16 @@ struct h2_defer_fail : h2_once {
 
 static inline h2_ostringstream& h2_OK(h2_defer_fail* d, bool a)
 {
-   d->check_type = "OK1";
+   d->assert_type = "OK1";
    if (!a) d->fail = h2_fail::new_unexpect("true", "false");
-   h2_check_g();
+   h2_assert_g();
    return d->oss;
 }
 
 template <typename E, typename A>
 static inline h2_ostringstream& h2_OK(h2_defer_fail* d, E e, A a, int n = 0)
 {
-   d->check_type = "OK2";
+   d->assert_type = "OK2";
    h2::h2_matcher<typename h2_decay<A>::type> m = h2::h2_matcher_cast<typename h2_decay<A>::type>((typename h2_decay<E>::type)e);
    h2_fail* fail = m.matches((typename h2_decay<A>::type)a, n);
    d->fail = fail;
@@ -3361,31 +3362,18 @@ static inline h2_ostringstream& h2_OK(h2_defer_fail* d, E e, A a, int n = 0)
       d->fail = h2_fail::new_unexpect();
       h2_fail::append_child(d->fail, fail);
    }
-   h2_check_g();
+   h2_assert_g();
    return d->oss;
 }
 
 static inline h2_ostringstream& h2_JE(h2_defer_fail* d, h2_string e, h2_string a, h2_string selector)
 {
-   d->check_type = "JE";
+   d->assert_type = "JE";
    h2::h2_matcher<h2_string> m = Je(e, selector);
    d->fail = m.matches(a);
-   h2_check_g();
+   h2_assert_g();
    return d->oss;
 }
-
-#define __H2OK(Qt, expression, ...) \
-   for (h2::h2_defer_fail Qt("", "", expression, __FILE__, __LINE__); Qt;) h2::h2_OK(&Qt, __VA_ARGS__)
-
-#define __H2JE3(Qt, expect, actual) \
-   for (h2::h2_defer_fail Qt(#expect, #actual, "", __FILE__, __LINE__); Qt;) h2::h2_JE(&Qt, expect, actual, "")
-
-#define __H2JE4(Qt, expect, actual, selector) \
-   for (h2::h2_defer_fail Qt(#expect, #actual, "", __FILE__, __LINE__); Qt;) h2::h2_JE(&Qt, expect, actual, selector)
-
-#define H2OK(...) __H2OK(H2Q(t_defer_fail), (#__VA_ARGS__), __VA_ARGS__)
-
-#define H2JE(...) H2PP_VARIADIC_CALL(__H2JE, H2Q(t_defer_fail), __VA_ARGS__)
 // h2_report.hpp
 
 struct h2_report {
@@ -3401,6 +3389,65 @@ struct h2_report {
    void on_case_endup(h2_suite* s, h2_case* c);
 };
 }  // namespace h2
+// h2_use.hpp
+
+#define __H2OK(Qt, expression, ...) \
+   for (h2::h2_defer_fail Qt("", "", expression, __FILE__, __LINE__); Qt;) h2::h2_OK(&Qt, __VA_ARGS__)
+
+#define __H2JE3(Qt, expect, actual) \
+   for (h2::h2_defer_fail Qt(#expect, #actual, "", __FILE__, __LINE__); Qt;) h2::h2_JE(&Qt, expect, actual, "")
+
+#define __H2JE4(Qt, expect, actual, selector) \
+   for (h2::h2_defer_fail Qt(#expect, #actual, "", __FILE__, __LINE__); Qt;) h2::h2_JE(&Qt, expect, actual, selector)
+
+#define H2OK(...) __H2OK(H2Q(t_defer_fail), (#__VA_ARGS__), __VA_ARGS__)
+
+#define H2JE(...) H2PP_VARIADIC_CALL(__H2JE, H2Q(t_defer_fail), __VA_ARGS__)
+
+/* clang-format off */
+using h2::_;
+using h2::Any;
+using h2::IsNull;
+using h2::NotNull;
+using h2::IsTrue;
+using h2::IsFalse;
+using h2::Eq;
+using h2::Nq;
+using h2::Ge;
+using h2::Gt;
+using h2::Le;
+using h2::Lt;
+using h2::Me;
+using h2::M1e;
+using h2::M8e;
+using h2::M16e;
+using h2::M32e;
+using h2::M64e;
+using h2::Re;
+using h2::We;
+using h2::Je;
+using h2::Se;
+using h2::Substr;
+using h2::StartsWith;
+using h2::EndsWith;
+using h2::CaseLess;
+#ifndef _WIN32
+using h2::operator~;
+#endif
+using h2::Pointee;
+using h2::Not;
+using h2::operator!;
+using h2::operator&&;
+using h2::operator||;
+using h2::AllOf;
+using h2::AnyOf;
+using h2::NoneOf;
+using h2::ListOf;
+using h2::CountOf;
+using h2::Have;
+using h2::Has;
+using h2::In;
+using h2::Pair;
 
 /* ======> Interface <====== */
 

@@ -7,7 +7,7 @@ h2_inline h2_suite::h2_suite(const char* name_, void (*test_code_)(h2_suite*, h2
 
 h2_inline void h2_suite::clear()
 {
-   checks = 0;
+   asserts = 0;
    memset(stats, 0, sizeof(stats));
 }
 

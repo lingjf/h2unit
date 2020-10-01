@@ -108,9 +108,10 @@ namespace h2 {
 #include "core/h2_case.hpp"           // failure, stub, mock, dns, socket
 #include "core/h2_suite.hpp"          // case, stub, mock
 #include "core/h2_task.hpp"           // suite, case, failure, stub, mock, option, debug
-#include "h2_check.hpp"               // failure, matcher
+#include "assert/h2_assert.hpp"       // failure, matcher
 #include "h2_report.hpp"              // task, suite, case
 }  // namespace h2
+#include "assert/h2_use.hpp"
 
 /* ======> Interface <====== */
 

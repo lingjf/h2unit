@@ -15,7 +15,7 @@ struct h2_case {
    int seq = 0;
    int last_status = initial;
    int status = initial;
-   int checks = 0;
+   int asserts = 0;
    long long footprint = 0;
    jmp_buf jump;
    h2_fail* fails{nullptr};

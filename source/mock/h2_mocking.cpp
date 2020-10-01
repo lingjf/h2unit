@@ -33,7 +33,7 @@ h2_inline h2_fail* h2_mockee::times_check()
       h2_fail* fail = checkin_array[i].check(class_function, i, checkin_array.size(), nullptr, 0);
       if (fail) fail->seqno = i;
       h2_fail::append_subling(fails, fail);
-      h2_check_g();
+      h2_assert_g();
    }
    if (!fails) return nullptr;
    h2_fail* fail = h2_fail::new_normal(signature(), file, lino);

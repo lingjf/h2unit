@@ -1,47 +1,47 @@
 
 static inline void usage()
 {
-   ::printf("  \033[33m╭─────────────────────────────────────────────────────────────────────────╮\033[0m\n");
-   ::printf("  \033[33m│\033[0m                                                                         \033[33m│\033[0m\n");
-   ::printf("  \033[33m│\033[0m                       Current version \033[32mh2unit \033[31m%-9g                  \033[33m│\033[0m\n", H2UNIT_VERSION);
-   ::printf("  \033[33m│\033[0m         Manual: \033[34;4mhttps://github.com/lingjf/h2unit.git\033[0m \033[0;36mREADME.md          \033[33m│\033[0m\n");
-   ::printf("  \033[33m│\033[0m                                                                         \033[33m│\033[0m\n");
-   ::printf("  \033[33m╰─────────────────────────────────────────────────────────────────────────╯\033[0m\n");
+   ::printf(" \033[33m╭────────────────────────────────────────────────────────────────────────────╮\033[0m\n");
+   ::printf(" \033[33m│\033[0m                                \033[32mh2unit \033[31m%-9g                            \033[33m│\033[0m\n", H2UNIT_VERSION);
+   ::printf(" \033[33m│\033[0m          Manual: \033[34;4mhttps://github.com/lingjf/h2unit.git\033[0m \033[0;36mREADME.md            \033[33m│\033[0m\n");
+   ::printf(" \033[33m╰────────────────────────────────────────────────────────────────────────────╯\033[0m\n");
 
    ::printf("\
-  ┌────────┬───────────┬────────────────────────────────────────────────────┐\n\
-  │ Option │ Parameter │ Description                                        │\n\
-  ├────────┼───────────┼────────────────────────────────────────────────────┤\n\
-  │ -v     │           │ Verbose output                                     │\n\
-  ├────────┼───────────┼────────────────────────────────────────────────────┤\n\
-  │ -l     │           │ List out suites and cases                          │\n\
-  ├────────┼───────────┼────────────────────────────────────────────────────┤\n\
-  │ -s     │           │ Shuffle cases and execute in random order          │\n\
-  ├────────┼───────────┼────────────────────────────────────────────────────┤\n\
-  │ -b[n]  │    [n]    │ Breaking test once n (default 1) failures occurred │\n\
-  ├────────┼───────────┼────────────────────────────────────────────────────┤\n\
-  │ -o     │           │ Only execute last failed cases                     │\n\
-  ├────────┼───────────┼────────────────────────────────────────────────────┤\n\
-  │ -p     │           │ Show execute progressing toggle (default show)     │\n\
-  ├────────┼───────────┼────────────────────────────────────────────────────┤\n\
-  │ -r[n]  │    [n]    │ Repeat run n rounds (default 1) when no failure    │\n\
-  ├────────┼───────────┼────────────────────────────────────────────────────┤\n\
-  │ -c     │           │ Output in black-white color style                  │\n\
-  ├────────┼───────────┼────────────────────────────────────────────────────┤\n\
-  │ -f     │           │ Fold simple JSON object or array toggle            │\n\
-  ├────────┼───────────┼────────────────────────────────────────────────────┤\n\
-  │ -y     │           │ Copy-paste JSON C/C++ source code                  │\n\
-  ├────────┼───────────┼────────────────────────────────────────────────────┤\n\
-  │ -m     │           │ Run cases without memory check                     │\n\
-  ├────────┼───────────┼────────────────────────────────────────────────────┤\n\
-  │ -d     │           │ Debug with gdb once failure occurred               │\n\
-  ├────────┼───────────┼────────────────────────────────────────────────────┤\n\
-  │ -j     │  [path]   │ Generate junit report, default path is junit.xml   │\n\
-  ├────────┼───────────┼────────────────┬───────────────────────────────────┤\n\
-  │ -i     │ patterns  │ include filter │ case, suite or file name          │\n\
-  ├────────┤ separated ├────────────────┤ case-insensitive matches patterns │\n\
-  │ -e     │ by space  │ exclude filter │ default include all, exclude none │\n\
-  └────────┴───────────┴────────────────┴───────────────────────────────────┘\n\
+ ┌────────┬───────────┬───────────────────────────────────────────────────────┐\n\
+ │ Option │ Parameter │ Description                                           │\n\
+ ├────────┼───────────┼───────────────────────────────────────────────────────┤\n\
+ │ -v     │           │ Verbose output                                        │\n\
+ ├────────┼───────────┼───────────────────────────────────────────────────────┤\n\
+ │ -q     │           │ Compact output without failure detail                 │\n\
+ ├────────┼───────────┼───────────────────────────────────────────────────────┤\n\
+ │ -l     │           │ List out suites and cases                             │\n\
+ ├────────┼───────────┼───────────────────────────────────────────────────────┤\n\
+ │ -s     │           │ Shuffle cases and execute in random order             │\n\
+ ├────────┼───────────┼───────────────────────────────────────────────────────┤\n\
+ │ -b[n]  │    [n]    │ Breaking test once n (default 1) failures occurred    │\n\
+ ├────────┼───────────┼───────────────────────────────────────────────────────┤\n\
+ │ -o     │           │ Only execute last failed cases                        │\n\
+ ├────────┼───────────┼───────────────────────────────────────────────────────┤\n\
+ │ -p     │           │ Show execute progressing toggle (default show)        │\n\
+ ├────────┼───────────┼───────────────────────────────────────────────────────┤\n\
+ │ -r[n]  │    [n]    │ Repeat run n rounds (default 1) when no failure       │\n\
+ ├────────┼───────────┼───────────────────────────────────────────────────────┤\n\
+ │ -c     │           │ Output in black-white color style                     │\n\
+ ├────────┼───────────┼───────────────────────────────────────────────────────┤\n\
+ │ -f     │           │ Fold simple JSON object or array toggle               │\n\
+ ├────────┼───────────┼───────────────────────────────────────────────────────┤\n\
+ │ -y     │           │ Copy-paste JSON C/C++ source code                     │\n\
+ ├────────┼───────────┼───────────────────────────────────────────────────────┤\n\
+ │ -m     │           │ Run cases without memory check                        │\n\
+ ├────────┼───────────┼───────────────────────────────────────────────────────┤\n\
+ │ -d     │           │ Debug with gdb once failure occurred                  │\n\
+ ├────────┼───────────┼───────────────────────────────────────────────────────┤\n\
+ │ -j     │  [path]   │ Generate junit report, default path is junit.xml      │\n\
+ ├────────┼───────────┼────────────────┬──────────────────────────────────────┤\n\
+ │ -i     │ patterns  │ include filter │ case, suite or file name             │\n\
+ ├────────┤ separated ├────────────────┤ case-insensitive matches patterns    │\n\
+ │ -e     │ by space  │ exclude filter │ default include all, exclude none    │\n\
+ └────────┴───────────┴────────────────┴──────────────────────────────────────┘\n\
 \n");
 }
 
@@ -117,6 +117,7 @@ h2_inline void h2_option::parse(int argc, const char** argv)
       switch (get.next_option()) {
       case '\0': return;
       case 'v': verbose = true; break;
+      case 'q': compact = !compact; break;
       case 'c': colorful = !colorful; break;
       case 's': shuffle_order = !shuffle_order; break;
       case 'o': only_execute_fails = true; break;
