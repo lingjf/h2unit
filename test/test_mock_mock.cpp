@@ -496,18 +496,27 @@ SUITE(omit Checkin)
 }  // namespace
 
 extern "C" {
-int foobar_bymock(int a)
+int foobar1_bymock(int a)
 {
    return 0;
 }
 }
+int foobar2_bymock(int a)
+{
+   return 0;
+}
 
 SUITE(mock name)
 {
-   Case("foobar_bymock")
+   Case("foobar1_bymock")
    {
-      MOCK("foobar_bymock", int, (int), Once(0)) { return -1; };
-      OK(-1, foobar_bymock(0));
+      MOCK("foobar1_bymock", int, (int), Once(0)) { return -1; };
+      OK(-1, foobar1_bymock(0));
+   }
+   Case("foobar2_bymock")
+   {
+      MOCK("foobar2_bymock", int, (int), Once(0)) { return -1; };
+      OK(-1, foobar2_bymock(0));
    }
 }
 

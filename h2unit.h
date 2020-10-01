@@ -1,4 +1,4 @@
-﻿/* v5.6 2020-10-01 12:13:22 */
+﻿/* v5.6 2020-10-01 16:38:47 */
 /* https://github.com/lingjf/h2unit */
 /* Apache Licence 2.0 */
 
@@ -21,6 +21,7 @@
 #include <sstream>     /* std::basic_ostringstream */
 #include <string>      /* std::string */
 #include <vector>      /* std::vector */
+#include <map>         /* std::map */
 #include <tuple>       /* std::tuple */
 #include <functional>  /* std::function */
 #include <utility>     /* std::forward, std::pair */
@@ -692,6 +693,26 @@ inline h2_line h2_representify(const T& a) { return h2_stringify(a, true); }
 
 template <typename T>
 inline h2_line h2_representify(T a, size_t n) { return h2_stringify(a, n, true); }
+// h2_nm.hpp
+
+struct h2_symbol {
+   h2_list x;
+   std::string name;
+   unsigned long long addr;
+   h2_symbol(char* _name, unsigned long long _addr) : name(_name), addr(_addr) {}
+};
+
+struct h2_nm {
+   h2_singleton(h2_nm);
+   std::map<std::string, unsigned long long> *symbols_mangled;
+   h2_list symbols_demangled;
+   h2_nm(){};
+   static unsigned long long get(const char* name); // by mangled name
+   static int find(const char* name, h2_symbol* res[], int n); // by demangled name
+   static long long text_offset();
+   static long long vtable_offset();
+   static bool in_main(unsigned long long addr);
+};
 // h2_option.hpp
 
 struct h2_option {
@@ -748,17 +769,6 @@ struct h2_color {
    static void printf(const h2_lines& lines);
 
    static bool is_ctrl(const char* s) { return s[0] == '\033' && s[1] == '{'; };
-};
-// h2_nm.hpp
-
-struct h2_nm {
-   h2_singleton(h2_nm);
-   h2_list symbols;
-   h2_nm();
-   static unsigned long long get(const char* name);
-   static long long text_offset();
-   static long long vtable_offset();
-   static bool in_main(unsigned long long addr);
 };
 // h2_backtrace.hpp
 
@@ -2270,7 +2280,19 @@ void* h2_fp(T p)
 {
    void* fp = (void*)p;
    if (std::is_convertible<T, h2::h2_string>::value) {
-      fp = (void*)(h2_nm::get((const char*)p) + h2_nm::text_offset());
+      h2_symbol* res[100];
+      int n = h2_nm::find((const char*)p, res, 100);
+      if (n != 1) {
+         if (n == 0) {
+            h2_color::printf("yellow", "\nDon't find %s\n", (const char*)p);
+         } else {
+            h2_color::printf("yellow", "\nFind multiple %s :\n", (const char*)p);
+            for (int i = 0; i < n; ++i)
+               h2_color::printf("yellow", "  %d. %s \n", i + 1, res[i]->name.c_str());
+         }
+         return nullptr;
+      }
+      fp = (void*)(res[0]->addr + h2_nm::text_offset());
    }
    return fp;
 }
@@ -4094,89 +4116,121 @@ struct h2_libc_malloc {
    h2_singleton(h2_libc_malloc);
 
    struct buddy {
-      size_t size;
+      long long size;
       h2_list x;
+      buddy(long long _size) : size(_size) {}
+      bool join_right(buddy* b)
+      {
+         return ((char*)this) + size == (char*)b;
+      }
+      bool join_left(buddy* b)
+      {
+         return ((char*)b) + b->size == (char*)this;
+      }
    };
 
-   int pages = 0;
-   h2_list buddies;
+   struct block {
+      long long size;
+      block* next = nullptr;
+      h2_list buddies;
 
-   void merge()
-   {
-      buddy* b = nullptr;
-      h2_list_for_each_entry (p, buddies, buddy, x) {
-         if (b) {
-            if (((char*)b) + b->size == (char*)p) {
-               b->size += p->size;
-               p->x.out();
-               continue;
+      block(long long _size) : size(_size)
+      {
+         buddy* b = new ((char*)this + sizeof(block)) buddy(size - sizeof(block));
+         buddies.add_tail(b->x);
+      }
+
+      buddy* malloc(long long size)
+      {
+         h2_list_for_each_entry (p, buddies, buddy, x) {
+            if (size + sizeof(p->size) <= p->size) {
+               long long left = p->size - (size + sizeof(p->size));
+               if (sizeof(buddy) + 64 <= left) {  // avoid smash buddy for performance
+                  buddy* b = new ((char*)p + left) buddy(size + sizeof(b->size));
+                  p->size = left;
+                  return b;
+               } else {
+                  p->x.out();
+                  return p;
+               }
             }
          }
-         b = p;
+         return nullptr;
       }
+
+      bool free(buddy* b)
+      {
+         if ((char*)b < (char*)this && (char*)this + size <= (char*)b) return false;
+         h2_list_for_each_entry (p, buddies, buddy, x) {
+            if (p->join_right(b)) {
+               p->size += b->size;
+               //TODO: join_left with next buddy
+               return true;
+            }
+            if (p->join_left(b)) {
+               p->x.add_before(b->x);
+               b->size += p->size;
+               p->x.out();
+               return true;
+            }
+            if ((char*)b + b->size < (char*)p) {
+               p->x.add_before(b->x);
+               return true;
+            }
+         }
+         buddies.add_tail(b->x);
+         return true;
+      }
+   };
+
+   block* next = nullptr;
+
+   void batch(long long size)
+   {
+      int page_size = h2_page_size();
+      int page_count = ::ceil(size / (double)page_size) + 256;
+
+#ifdef _WIN32
+      PVOID ptr = VirtualAlloc(NULL, page_count * page_size, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
+      if (ptr == NULL) ::printf("VirtualAlloc failed at %s:%d\n", __FILE__, __LINE__), abort();
+#else
+      void* ptr = ::mmap(nullptr, page_count * page_size, PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0);
+      if (ptr == MAP_FAILED) ::printf("mmap failed at %s:%d\n", __FILE__, __LINE__), abort();
+#endif
+
+      block* p = new (ptr) block(page_count * page_size);
+      p->next = next;
+      next = p;
    }
 
-   void insert(buddy* b)
+   buddy* alloc(long long size)
    {
-      buddy* n = nullptr;
-      h2_list_for_each_entry (p, buddies, buddy, x) {
-         if (((char*)b) + b->size <= (char*)p) {
-            n = p;
-            break;
-         }
+      for (block* p = next; p; p = p->next) {
+         buddy* b = p->malloc(size);
+         if (b) return b;
       }
-      if (n)
-         n->x.add_before(b->x);
-      else
-         buddies.add_tail(b->x);
-
-      merge();
+      return nullptr;
    }
 
    void* malloc(size_t size)
    {
-      size = (size + 7) / 8 * 8;
-      buddy* b = nullptr;
-      h2_list_for_each_entry (p, buddies, buddy, x) {
-         if (size <= p->size - sizeof(p->size)) {
-            b = p;
-            p->x.out();
-            break;
-         }
-      }
+      long long _size = (size + 7) / 8 * 8;
+      buddy* b = alloc(_size);
       if (!b) {
-         int page_size = h2_page_size();
-         int page_count = ::ceil((size + sizeof(b->size)) / (double)page_size);
-         if (pages == 0) page_count = 1024 * 25;
-         pages += page_count;
-#ifdef _WIN32
-         PVOID ptr = VirtualAlloc(NULL, page_count * page_size, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
-         if (ptr == NULL) ::printf("VirtualAlloc failed at %s:%d\n", __FILE__, __LINE__), abort();
-#else
-         void* ptr = ::mmap(nullptr, page_count * page_size, PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0);
-         if (ptr == MAP_FAILED) ::printf("mmap failed at %s:%d\n", __FILE__, __LINE__), abort();
-#endif
-         b = (buddy*)ptr;
-         b->size = page_count * page_size;
-      }
-      size_t bz = b->size;
-      b->size = size + sizeof(b->size);
-      size_t rz = bz - b->size;
-      if (sizeof(buddy) <= rz) {
-         buddy* r = (buddy*)(((char*)b) + b->size);
-         r->size = rz;
-         insert(r);
-      } else {
-         b->size += rz;
+         batch(_size);
+         b = alloc(_size);
       }
 
-      return (void*)&b->x;
+      return b ? (void*)&b->x : nullptr;
    }
 
    void free(void* ptr)
    {
-      buddy* b = (buddy*)(((char*)ptr) - sizeof(b->size));
-      insert(b);
+      if (ptr) {
+         buddy* b = (buddy*)((char*)ptr - sizeof(b->size));
+         for (block* p = next; p; p = p->next)
+            if (p->free(b)) return;
+      }
    }
 };
 
@@ -4314,6 +4368,146 @@ h2_inline h2_string h2_string::center(int width) const
    s.append(*this);
    s.append(right, ' ');
    return s;
+}
+// h2_nm.cpp
+
+static inline void nm1(std::map<std::string, unsigned long long>*& symbols)
+{
+   h2_memory::restores();
+   char nm[256], line[2048], addr[128], type, name[2048];
+   symbols = new std::map<std::string, unsigned long long>();
+   sprintf(nm, "nm %s", O.path);
+#if defined __APPLE__
+   sprintf(nm, "nm -U %s", O.path);
+#else
+   sprintf(nm, "nm --defined-only %s", O.path);
+#endif
+   FILE* f = ::popen(nm, "r");
+   if (!f) return;
+   while (::fgets(line, sizeof(line) - 1, f)) {
+      if (3 != sscanf(line, "%s %c %s", addr, &type, name)) continue;
+      if (strchr("bBcCdDiIuU", type)) continue;  // reject bBcCdDiIuU, accept tTwWsSvV, sS for vtable
+      int _ = 0;
+      if (!strcmp("macos", O.os)) _ = 1;  // remove prefix '_' in MacOS
+      (*symbols)[name + _] = (unsigned long long)strtoull(addr, nullptr, 16);
+   }
+   ::pclose(f);
+   h2_memory::overrides();
+}
+
+static inline void nm2(h2_list& symbols)
+{
+   h2_memory::restores();
+   char nm[256], line[2048], addr[128], type, name[2048];
+#if defined __APPLE__
+   sprintf(nm, "nm --demangle -U %s", O.path);
+#else
+   sprintf(nm, "nm --demangle --defined-only %s", O.path);
+#endif
+   FILE* f = ::popen(nm, "r");
+   if (!f) return;
+   while (::fgets(line, sizeof(line) - 1, f)) {
+      if (3 != sscanf(line, "%s %c %[^\n]", addr, &type, name)) continue;
+      if (strchr("bBcCdDiIuU", type)) continue;
+      int _ = 0;
+      if (!strcmp("macos", O.os) && !strchr(name, '(')) _ = 1;
+      symbols.push_back((new h2_symbol(name + _, (unsigned long long)strtoull(addr, nullptr, 16)))->x);
+   }
+   ::pclose(f);
+   h2_memory::overrides();
+}
+
+h2_inline unsigned long long h2_nm::get(const char* name)
+{
+   if (!name || strlen(name) == 0) return 0;
+   if (!I().symbols_mangled) nm1(I().symbols_mangled);
+
+   auto it = I().symbols_mangled->find(name);
+   return it != I().symbols_mangled->end() ? it->second : 0ULL;
+}
+
+static inline bool strncmp_reverse(const char* a, const char* ae, const char* b, const char* be, int n)  // [a, ae) [b, be)
+{
+   if (ae < a + n || be < b + n) return false;
+   return !strncmp(ae - n, be - n, n);
+}
+
+h2_inline int h2_nm::find(const char* name, h2_symbol* res[], int n)
+{
+   if (!name) return 0;
+   int len = strlen(name);
+   if (len == 0) return 0;
+   if (I().symbols_demangled.empty()) nm2(I().symbols_demangled);
+
+   h2_list_for_each_entry (p, I().symbols_demangled, h2_symbol, x) {
+      if (!strcmp(p->name.c_str(), name)) {
+         res[0] = p;
+         return 1;
+      }
+   }
+
+   int count = 0;
+   h2_list_for_each_entry (p, I().symbols_demangled, h2_symbol, x) {
+      char* parentheses = strchr((char*)p->name.c_str(), '(');
+      if (!parentheses) continue;
+      if (!strncmp_reverse(p->name.c_str(), parentheses, name, name + len, len)) continue;  // compare function name
+      char* func = parentheses - len;
+      if (p->name.c_str() < func && func[-1] != ':' && func[-2] != ':') continue;  // strip namespace
+      if (count < n) res[count++] = p;
+   }
+   return count;
+}
+
+struct h2_offset {
+   h2_offset() {}
+   virtual ~h2_offset() {}
+   virtual void dummy() {}
+
+   static long long vtable_offset()
+   {
+      static long long s = get_vtable_offset();
+      return s;
+   }
+
+   static long long get_vtable_offset()
+   {
+      char vtable_symbol[256];
+      h2_offset t;
+      long long absolute_vtable = (long long)*(void***)&t;
+      sprintf(vtable_symbol, "_ZTV%s", typeid(h2_offset).name());  // mangled for "vtable for h2_offset"
+      long long relative_vtable = (long long)h2_nm::get(vtable_symbol);
+      return absolute_vtable - relative_vtable;
+   }
+
+   static long long text_offset()
+   {
+      static long long s = get_text_offset();
+      return s;
+   }
+
+   static long long get_text_offset()
+   {
+      long long relative_vtable = (long long)h2_nm::get("main");
+      return (long long)&main - relative_vtable;
+   }
+};
+
+h2_inline long long h2_nm::text_offset()
+{
+   return h2_offset::text_offset();
+}
+
+h2_inline long long h2_nm::vtable_offset()
+{
+   return h2_offset::vtable_offset();
+}
+
+h2_inline bool h2_nm::in_main(unsigned long long addr)
+{
+   static unsigned long long main_addr = get("main");
+   if (main_addr == 0) return false;
+   /* main() 52~60 bytes code in linux MAC */
+   return main_addr < addr && addr < main_addr + 128;
 }
 
 // h2_tinyexpr.cpp
@@ -5827,7 +6021,7 @@ struct h2_piece : h2_libc {
       if (permission & writable)
          new_permission = PROT_READ | PROT_WRITE;
       if (::mprotect(forbidden_page, forbidden_size, new_permission) != 0)
-         ::printf("mprotect failed %s\n", strerror(errno));
+         h2_color::printf("yellow", "mprotect failed %s\n", strerror(errno));
 #endif
    }
 
@@ -6519,7 +6713,7 @@ struct h2_e9 {
       int page_count = ::ceil((origin_start + size - page_start) / (double)page_size);
 
       if (mprotect(reinterpret_cast<void*>(page_start), page_count * page_size, PROT_READ | PROT_WRITE | PROT_EXEC) != 0) {
-         ::printf("STUB failed: mprotect PROT_READ | PROT_WRITE | PROT_EXEC %s\n", strerror(errno));
+         h2_color::printf("yellow", "STUB failed: mprotect PROT_READ | PROT_WRITE | PROT_EXEC %s\n", strerror(errno));
          return false;
       }
 #endif
@@ -6638,7 +6832,7 @@ h2_inline bool h2_stubs::add(void* origin_fp, void* substitute_fp, const char* o
    }
    if (!stub) {
       if (!h2_e9::save(origin_fp, nullptr)) {
-         ::printf("STUB failed: %s %s:%d\n", origin_fn, file, lino);
+         h2_color::printf("yellow", "STUB failed: %s %s:%d\n", origin_fn, file, lino);
          return false;
       }
       stub = new h2_stub(origin_fp);
@@ -8624,85 +8818,6 @@ h2_inline void h2_report::on_case_endup(h2_suite* s, h2_case* c)
       p->on_case_endup(s, c);
 }
 
-// h2_nm.cpp
-
-struct h2_symbol : h2_libc {
-   h2_list x;
-   char name[128];
-   unsigned long long addr;
-   h2_symbol(char* _name, unsigned long long _addr) : addr(_addr) { strncpy(name, _name, sizeof(name)); }
-};
-
-h2_inline h2_nm::h2_nm()
-{
-   char nm[256], line[1024], addr[128], type[32], name[1024];
-   sprintf(nm, "nm %s", O.path);
-   h2_with f(::popen(nm, "r"), ::pclose);
-   if (f.f)
-      while (::fgets(line, sizeof(line) - 1, f.f))
-         if (3 == sscanf(line, "%s%s%s", addr, type, name))  // if (strchr("tTwWsSvV", type[0]))
-            symbols.push_back((new h2_symbol(name + !strcmp("macos", O.os), (unsigned long long)strtoull(addr, nullptr, 16)))->x);
-}
-
-h2_inline unsigned long long h2_nm::get(const char* name)
-{
-   if (!name || strlen(name) == 0) return 0;
-   h2_list_for_each_entry (p, I().symbols, h2_symbol, x)
-      if (!strcmp(p->name, name))
-         return p->addr;
-   return 0;
-}
-
-struct h2_offset {
-   h2_offset() {}
-   virtual ~h2_offset() {}
-   virtual void dummy() {}
-
-   static long long vtable_offset()
-   {
-      static long long s = get_vtable_offset();
-      return s;
-   }
-
-   static long long get_vtable_offset()
-   {
-      char vtable_symbol[256];
-      h2_offset t;
-      long long absolute_vtable = (long long)*(void***)&t;
-      sprintf(vtable_symbol, "_ZTV%s", typeid(h2_offset).name());  // mangled for "vtable for h2_offset"
-      long long relative_vtable = (long long)h2_nm::get(vtable_symbol);
-      return absolute_vtable - relative_vtable;
-   }
-
-   static long long text_offset()
-   {
-      static long long s = get_text_offset();
-      return s;
-   }
-
-   static long long get_text_offset()
-   {
-      long long relative_vtable = (long long)h2_nm::get("main");
-      return (long long)&main - relative_vtable;
-   }
-};
-
-h2_inline long long h2_nm::text_offset()
-{
-   return h2_offset::text_offset();
-}
-h2_inline long long h2_nm::vtable_offset()
-{
-   return h2_offset::vtable_offset();
-}
-
-h2_inline bool h2_nm::in_main(unsigned long long addr)
-{
-   static unsigned long long main_addr = get("main");
-   if (main_addr == 0) return false;
-   /* main() 52~60 bytes code in linux MAC */
-   return main_addr < addr && addr < main_addr + 128;
-}
 // h2_backtrace.cpp
 
 static inline bool demangle(const char* mangled, char* demangled, size_t len)

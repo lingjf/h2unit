@@ -1,4 +1,4 @@
-﻿/* v5.6 2020-10-01 12:13:22 */
+﻿/* v5.6 2020-10-01 16:38:47 */
 /* https://github.com/lingjf/h2unit */
 /* Apache Licence 2.0 */
 
@@ -17,6 +17,7 @@
 #include <sstream>     /* std::basic_ostringstream */
 #include <string>      /* std::string */
 #include <vector>      /* std::vector */
+#include <map>         /* std::map */
 #include <tuple>       /* std::tuple */
 #include <functional>  /* std::function */
 #include <utility>     /* std::forward, std::pair */
@@ -688,6 +689,26 @@ inline h2_line h2_representify(const T& a) { return h2_stringify(a, true); }
 
 template <typename T>
 inline h2_line h2_representify(T a, size_t n) { return h2_stringify(a, n, true); }
+// h2_nm.hpp
+
+struct h2_symbol {
+   h2_list x;
+   std::string name;
+   unsigned long long addr;
+   h2_symbol(char* _name, unsigned long long _addr) : name(_name), addr(_addr) {}
+};
+
+struct h2_nm {
+   h2_singleton(h2_nm);
+   std::map<std::string, unsigned long long> *symbols_mangled;
+   h2_list symbols_demangled;
+   h2_nm(){};
+   static unsigned long long get(const char* name); // by mangled name
+   static int find(const char* name, h2_symbol* res[], int n); // by demangled name
+   static long long text_offset();
+   static long long vtable_offset();
+   static bool in_main(unsigned long long addr);
+};
 // h2_option.hpp
 
 struct h2_option {
@@ -744,17 +765,6 @@ struct h2_color {
    static void printf(const h2_lines& lines);
 
    static bool is_ctrl(const char* s) { return s[0] == '\033' && s[1] == '{'; };
-};
-// h2_nm.hpp
-
-struct h2_nm {
-   h2_singleton(h2_nm);
-   h2_list symbols;
-   h2_nm();
-   static unsigned long long get(const char* name);
-   static long long text_offset();
-   static long long vtable_offset();
-   static bool in_main(unsigned long long addr);
 };
 // h2_backtrace.hpp
 
@@ -2266,7 +2276,19 @@ void* h2_fp(T p)
 {
    void* fp = (void*)p;
    if (std::is_convertible<T, h2::h2_string>::value) {
-      fp = (void*)(h2_nm::get((const char*)p) + h2_nm::text_offset());
+      h2_symbol* res[100];
+      int n = h2_nm::find((const char*)p, res, 100);
+      if (n != 1) {
+         if (n == 0) {
+            h2_color::printf("yellow", "\nDon't find %s\n", (const char*)p);
+         } else {
+            h2_color::printf("yellow", "\nFind multiple %s :\n", (const char*)p);
+            for (int i = 0; i < n; ++i)
+               h2_color::printf("yellow", "  %d. %s \n", i + 1, res[i]->name.c_str());
+         }
+         return nullptr;
+      }
+      fp = (void*)(res[0]->addr + h2_nm::text_offset());
    }
    return fp;
 }

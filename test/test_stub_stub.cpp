@@ -7,6 +7,13 @@ int foobar(int, const int&)
    return 1;
 }
 
+namespace ns111 {
+   int foobar(int, const int&)
+   {
+      return 1;
+   }
+}  // namespace ns111
+
 int STUB_foobar(int, const int&)
 {
    return -1;
@@ -39,6 +46,13 @@ SUITE(stub)
       STUB(STUB_foobar, STUB2_foobar);
 
       OK(-2, foobar(0, 1));
+   }
+
+   Case(stub in namespace)
+   {
+      OK(1, ns111::foobar(0, 1));
+      STUB(ns111::foobar, STUB_foobar);
+      OK(-1, ns111::foobar(0, 1));
    }
 }
 
@@ -75,6 +89,16 @@ class Shape {
    }
 };
 
+namespace ns112 {
+   class Rect : public Shape {
+    public:
+      int go(int x, int y)
+      {
+         return 0;
+      }
+   };
+}  // namespace ns112
+
 int Shape_go_fake(Shape* shape, int x, int y)
 {
    return x + y;
@@ -84,6 +108,11 @@ int Shape_work_fake(Shape* shape, int x, int y)
    return x + y;
 }
 int Shape_fly_fake(int x, int y)
+{
+   return x + y;
+}
+
+int Rect_go_fake(ns112::Rect* rect, int x, int y)
 {
    return x + y;
 }
@@ -111,6 +140,14 @@ SUITE(stub member function)
       STUB(Shape::fly, int, (int a, int b), Shape_fly_fake);
 
       OK(222, Shape::fly(111, 111));
+   }
+
+   Case(in namespace)
+   {
+      STUB(ns112::Rect, go, int, (int a, int b), Rect_go_fake);
+
+      ns112::Rect rect;
+      OK(222, rect.go(111, 111));
    }
 }
 
@@ -286,11 +323,23 @@ SUITE(STUBS)
 }  // namespace
 
 extern "C" {
-int foobar_bystub(int a)
+int foobar1_bystub(int a)
 {
    return 0;
 }
 }
+
+int foobar2_bystub(int a)
+{
+   return 0;
+}
+
+namespace ns113 {
+int foobar3_bystub(int a)
+{
+   return 0;
+}
+}  // namespace ns113
 
 int STUB_foobar_bystub(int a)
 {
@@ -299,9 +348,33 @@ int STUB_foobar_bystub(int a)
 
 SUITE(stub name)
 {
-   Case("foobar_bystub")
+   Case("foobar1_bystub")
    {
-      STUB("foobar_bystub", STUB_foobar_bystub);
-      OK(-1, foobar_bystub(0));
+      STUB("foobar1_bystub", STUB_foobar_bystub);
+      OK(-1, foobar1_bystub(0));
+   }
+
+   Case("foobar2_bystub")
+   {
+      STUB("foobar2_bystub", STUB_foobar_bystub);
+      OK(-1, foobar2_bystub(0));
+   }
+
+   Case("foobar2_bystub(int)")
+   {
+      STUB("foobar2_bystub(int)", STUB_foobar_bystub);
+      OK(-1, foobar2_bystub(0));
+   }
+
+   Case("foobar3_bystub")
+   {
+      STUB("foobar3_bystub", STUB_foobar_bystub);
+      OK(-1, ns113::foobar3_bystub(0));
+   }
+
+   Case("ns113::foobar3_bystub(int)")
+   {
+      STUB("ns113::foobar3_bystub(int)", STUB_foobar_bystub);
+      OK(-1, ns113::foobar3_bystub(0));
    }
 }

@@ -3,89 +3,121 @@ struct h2_libc_malloc {
    h2_singleton(h2_libc_malloc);
 
    struct buddy {
-      size_t size;
+      long long size;
       h2_list x;
+      buddy(long long _size) : size(_size) {}
+      bool join_right(buddy* b)
+      {
+         return ((char*)this) + size == (char*)b;
+      }
+      bool join_left(buddy* b)
+      {
+         return ((char*)b) + b->size == (char*)this;
+      }
    };
 
-   int pages = 0;
-   h2_list buddies;
+   struct block {
+      long long size;
+      block* next = nullptr;
+      h2_list buddies;
 
-   void merge()
-   {
-      buddy* b = nullptr;
-      h2_list_for_each_entry (p, buddies, buddy, x) {
-         if (b) {
-            if (((char*)b) + b->size == (char*)p) {
-               b->size += p->size;
-               p->x.out();
-               continue;
+      block(long long _size) : size(_size)
+      {
+         buddy* b = new ((char*)this + sizeof(block)) buddy(size - sizeof(block));
+         buddies.add_tail(b->x);
+      }
+
+      buddy* malloc(long long size)
+      {
+         h2_list_for_each_entry (p, buddies, buddy, x) {
+            if (size + sizeof(p->size) <= p->size) {
+               long long left = p->size - (size + sizeof(p->size));
+               if (sizeof(buddy) + 64 <= left) {  // avoid smash buddy for performance
+                  buddy* b = new ((char*)p + left) buddy(size + sizeof(b->size));
+                  p->size = left;
+                  return b;
+               } else {
+                  p->x.out();
+                  return p;
+               }
             }
          }
-         b = p;
+         return nullptr;
       }
+
+      bool free(buddy* b)
+      {
+         if ((char*)b < (char*)this && (char*)this + size <= (char*)b) return false;
+         h2_list_for_each_entry (p, buddies, buddy, x) {
+            if (p->join_right(b)) {
+               p->size += b->size;
+               //TODO: join_left with next buddy
+               return true;
+            }
+            if (p->join_left(b)) {
+               p->x.add_before(b->x);
+               b->size += p->size;
+               p->x.out();
+               return true;
+            }
+            if ((char*)b + b->size < (char*)p) {
+               p->x.add_before(b->x);
+               return true;
+            }
+         }
+         buddies.add_tail(b->x);
+         return true;
+      }
+   };
+
+   block* next = nullptr;
+
+   void batch(long long size)
+   {
+      int page_size = h2_page_size();
+      int page_count = ::ceil(size / (double)page_size) + 256;
+
+#ifdef _WIN32
+      PVOID ptr = VirtualAlloc(NULL, page_count * page_size, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
+      if (ptr == NULL) ::printf("VirtualAlloc failed at %s:%d\n", __FILE__, __LINE__), abort();
+#else
+      void* ptr = ::mmap(nullptr, page_count * page_size, PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0);
+      if (ptr == MAP_FAILED) ::printf("mmap failed at %s:%d\n", __FILE__, __LINE__), abort();
+#endif
+
+      block* p = new (ptr) block(page_count * page_size);
+      p->next = next;
+      next = p;
    }
 
-   void insert(buddy* b)
+   buddy* alloc(long long size)
    {
-      buddy* n = nullptr;
-      h2_list_for_each_entry (p, buddies, buddy, x) {
-         if (((char*)b) + b->size <= (char*)p) {
-            n = p;
-            break;
-         }
+      for (block* p = next; p; p = p->next) {
+         buddy* b = p->malloc(size);
+         if (b) return b;
       }
-      if (n)
-         n->x.add_before(b->x);
-      else
-         buddies.add_tail(b->x);
-
-      merge();
+      return nullptr;
    }
 
    void* malloc(size_t size)
    {
-      size = (size + 7) / 8 * 8;
-      buddy* b = nullptr;
-      h2_list_for_each_entry (p, buddies, buddy, x) {
-         if (size <= p->size - sizeof(p->size)) {
-            b = p;
-            p->x.out();
-            break;
-         }
-      }
+      long long _size = (size + 7) / 8 * 8;
+      buddy* b = alloc(_size);
       if (!b) {
-         int page_size = h2_page_size();
-         int page_count = ::ceil((size + sizeof(b->size)) / (double)page_size);
-         if (pages == 0) page_count = 1024 * 25;
-         pages += page_count;
-#ifdef _WIN32
-         PVOID ptr = VirtualAlloc(NULL, page_count * page_size, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
-         if (ptr == NULL) ::printf("VirtualAlloc failed at %s:%d\n", __FILE__, __LINE__), abort();
-#else
-         void* ptr = ::mmap(nullptr, page_count * page_size, PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0);
-         if (ptr == MAP_FAILED) ::printf("mmap failed at %s:%d\n", __FILE__, __LINE__), abort();
-#endif
-         b = (buddy*)ptr;
-         b->size = page_count * page_size;
-      }
-      size_t bz = b->size;
-      b->size = size + sizeof(b->size);
-      size_t rz = bz - b->size;
-      if (sizeof(buddy) <= rz) {
-         buddy* r = (buddy*)(((char*)b) + b->size);
-         r->size = rz;
-         insert(r);
-      } else {
-         b->size += rz;
+         batch(_size);
+         b = alloc(_size);
       }
 
-      return (void*)&b->x;
+      return b ? (void*)&b->x : nullptr;
    }
 
    void free(void* ptr)
    {
-      buddy* b = (buddy*)(((char*)ptr) - sizeof(b->size));
-      insert(b);
+      if (ptr) {
+         buddy* b = (buddy*)((char*)ptr - sizeof(b->size));
+         for (block* p = next; p; p = p->next)
+            if (p->free(b)) return;
+      }
    }
 };
 

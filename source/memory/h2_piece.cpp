@@ -73,7 +73,7 @@ struct h2_piece : h2_libc {
       if (permission & writable)
          new_permission = PROT_READ | PROT_WRITE;
       if (::mprotect(forbidden_page, forbidden_size, new_permission) != 0)
-         ::printf("mprotect failed %s\n", strerror(errno));
+         h2_color::printf("yellow", "mprotect failed %s\n", strerror(errno));
 #endif
    }
 

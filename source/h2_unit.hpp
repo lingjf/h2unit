@@ -11,6 +11,7 @@
 #include <sstream>     /* std::basic_ostringstream */
 #include <string>      /* std::string */
 #include <vector>      /* std::vector */
+#include <map>         /* std::map */
 #include <tuple>       /* std::tuple */
 #include <functional>  /* std::function */
 #include <utility>     /* std::forward, std::pair */
@@ -59,21 +60,21 @@
 #endif
 
 namespace h2 {
-#include "utils/h2_macro.hpp"         //
-#include "utils/h2_template.hpp"      //
-#include "utils/h2_list.hpp"          //
-#include "utils/h2_misc.hpp"          //
-#include "utils/h2_numeric.hpp"       //
-#include "utils/h2_libc.hpp"          // list
-#include "utils/h2_shared_ptr.hpp"    // libc
-#include "utils/h2_allocate.hpp"      // libc
-#include "utils/h2_string.hpp"        // allocate
+#include "utils/h2_macro.hpp"
+#include "utils/h2_template.hpp"
+#include "utils/h2_list.hpp"
+#include "utils/h2_misc.hpp"
+#include "utils/h2_numeric.hpp"
+#include "utils/h2_libc.hpp"
+#include "utils/h2_shared_ptr.hpp"
+#include "utils/h2_allocate.hpp"
+#include "utils/h2_string.hpp"
 #include "h2_line.hpp"                // utils
 #include "h2_stringify.hpp"           // utils
+#include "utils/h2_nm.hpp"            //
 #include "h2_option.hpp"              // utils
 #include "h2_layout.hpp"              // line
 #include "h2_color.hpp"               // line
-#include "h2_nm.hpp"                  //
 #include "h2_backtrace.hpp"           // line
 #include "h2_debug.hpp"               // option, backtrace
 #include "h2_patch.hpp"               // backtrace

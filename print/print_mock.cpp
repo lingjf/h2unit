@@ -68,3 +68,29 @@ SUITE(MOCK)
       OK(22, foobar(1, "A"));
    }
 }
+
+int foobar1_bystub(int a)
+{
+   return 0;
+}
+
+int foobar1_bystub(int a, const char* b)
+{
+   return 0;
+}
+
+int STUB_foobar_bystub(int a)
+{
+   return -1;
+}
+
+CASE("foobar0_bystub")
+{
+   STUB("foobar0_bystub", STUB_foobar_bystub);
+}
+
+CASE("foobar1_bystub")
+{
+   STUB("foobar1_bystub", STUB_foobar_bystub);
+   OK(-1, foobar1_bystub(0));
+}

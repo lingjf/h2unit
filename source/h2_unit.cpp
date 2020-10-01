@@ -67,6 +67,7 @@ namespace h2 {
 #include "utils/h2_numeric.cpp"  //
 #include "utils/h2_libc.cpp"     //
 #include "utils/h2_string.cpp"   //
+#include "utils/h2_nm.cpp"
 
 #include "json/h2_tinyexpr.cpp"  //
 #include "json/h2_node.cpp"      // ..
@@ -106,7 +107,6 @@ namespace h2 {
 #include "h2_line.cpp"     //
 #include "h2_report.cpp"   //
 
-#include "h2_nm.cpp"         //
 #include "h2_backtrace.cpp"  //
 #include "h2_layout.cpp"     //
 #include "h2_option.cpp"     //

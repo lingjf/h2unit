@@ -19,7 +19,7 @@ struct h2_e9 {
       int page_count = ::ceil((origin_start + size - page_start) / (double)page_size);
 
       if (mprotect(reinterpret_cast<void*>(page_start), page_count * page_size, PROT_READ | PROT_WRITE | PROT_EXEC) != 0) {
-         ::printf("STUB failed: mprotect PROT_READ | PROT_WRITE | PROT_EXEC %s\n", strerror(errno));
+         h2_color::printf("yellow", "STUB failed: mprotect PROT_READ | PROT_WRITE | PROT_EXEC %s\n", strerror(errno));
          return false;
       }
 #endif
