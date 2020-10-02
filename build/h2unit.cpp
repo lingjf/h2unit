@@ -1,4 +1,4 @@
-﻿/* v5.6 2020-10-01 16:38:47 */
+﻿/* v5.6 2020-10-02 22:24:33 */
 /* https://github.com/lingjf/h2unit */
 /* Apache Licence 2.0 */
 
@@ -902,78 +902,96 @@ static inline void h2_fail_g(h2_fail*, bool);
 #define H2Fullmesh_Ax(...) H2ForEach_An(H2PP_HEAD(__VA_ARGS__))
 #define H2Fullmesh_Ay(...) H2ForEach_An(H2PP_LAST(__VA_ARGS__))
 
-/* clang-format on */
-
-#define ___ForEach_CASE_Macro(name, Qc, x) \
-   CASE(name x) { Qc(x); }
+#define ___ForEach_CASE_Macro(Qc, x) CASE(x) { Qc(x); }
 #define __ForEach_CASE_Macro(...) ___ForEach_CASE_Macro(__VA_ARGS__)
 #define _ForEach_CASE_Macro(Args, x) __ForEach_CASE_Macro(H2PP_REMOVE_PARENTHESES(Args), x)
-#define _ForEach_CASE_Impl(name, Qc, ...)                   \
-   template <typename T>                                    \
-   void Qc(T x);                                            \
-   H2ForEach(_ForEach_CASE_Macro, (name, Qc), __VA_ARGS__); \
-   template <typename T>                                    \
+#define _ForEach_CASE_Impl(Qc, ...)                   \
+   template <typename T>                              \
+   void Qc(T x);                                      \
+   H2ForEach(_ForEach_CASE_Macro, (Qc), __VA_ARGS__); \
+   template <typename T>                              \
    void Qc(T x)
-#define H2CASES(name, ...) _ForEach_CASE_Impl(#name, H2Q(f), __VA_ARGS__)
+#define H2CASES(...) _ForEach_CASE_Impl(H2Q(f), __VA_ARGS__)
 
-#define ___Fullmesh_CASE_Macro(name, Qc, x, y) \
-   CASE(name x, y) { Qc(x, y); }
+#define ___Fullmesh_CASE_Macro(Qc, x, y) CASE(x, y) { Qc(x, y); }
 #define __Fullmesh_CASE_Macro(...) ___Fullmesh_CASE_Macro(__VA_ARGS__)
 #define _Fullmesh_CASE_Macro(Args, x, y) __Fullmesh_CASE_Macro(H2PP_REMOVE_PARENTHESES(Args), x, y)
-#define _Fullmesh_CASE_Impl(name, Qc, ...)                    \
-   template <typename T, typename U>                          \
-   void Qc(T x, U y);                                         \
-   H2Fullmesh(_Fullmesh_CASE_Macro, (name, Qc), __VA_ARGS__); \
-   template <typename T, typename U>                          \
+#define _Fullmesh_CASE_Impl(Qc, ...)                    \
+   template <typename T, typename U>                    \
+   void Qc(T x, U y);                                   \
+   H2Fullmesh(_Fullmesh_CASE_Macro, (Qc), __VA_ARGS__); \
+   template <typename T, typename U>                    \
    void Qc(T x, U y)
-#define H2CASESS(name, ...) _Fullmesh_CASE_Impl(#name, H2Q(f), __VA_ARGS__)
+#define H2CASESS(...) _Fullmesh_CASE_Impl(H2Q(f), __VA_ARGS__)
 
-#define ___ForEach_Case_Macro(name, Qj, Qb, Qx, Ql, x) \
-   Case(name x)                                        \
-   {                                                   \
-      if (::setjmp(Qj) == 0) {                         \
-         Qx = x;                                       \
-         Qb = true;                                    \
-         goto Ql;                                      \
-      } else {                                         \
-      }                                                \
-   };                                                  \
+#define ___ForEach_Case_Macro(Qj, Qb, Qx, Ql, x) \
+   Case(x)                                       \
+   {                                             \
+      if (::setjmp(Qj) == 0) {                   \
+         Qx = x;                                 \
+         Qb = true;                              \
+         goto Ql;                                \
+      } else {                                   \
+      }                                          \
+   };                                            \
    Qb = false;
 #define __ForEach_Case_Macro(...) ___ForEach_Case_Macro(__VA_ARGS__)
 #define _ForEach_Case_Macro(Args, x) __ForEach_Case_Macro(H2PP_REMOVE_PARENTHESES(Args), x)
-#define _ForEach_Case_Impl(name, Qj, Qb, Qx, Ql, ...)                   \
-   jmp_buf Qj;                                                          \
-   bool Qb = false;                                                     \
-   auto Qx = H2ForEach_An(__VA_ARGS__);                                 \
-   H2ForEach(_ForEach_Case_Macro, (name, Qj, Qb, Qx, Ql), __VA_ARGS__); \
-   Ql:                                                                  \
+#define _ForEach_Case_Impl(Qj, Qb, Qx, Ql, ...)                   \
+   jmp_buf Qj;                                                    \
+   bool Qb = false;                                               \
+   auto Qx = H2ForEach_An(__VA_ARGS__);                           \
+   H2ForEach(_ForEach_Case_Macro, (Qj, Qb, Qx, Ql), __VA_ARGS__); \
+   Ql:                                                            \
    for (auto x = Qx; Qb; Qb = false, ::longjmp(Qj, 1))
-#define H2Cases(name, ...) _ForEach_Case_Impl(#name, H2Q(j), H2Q(b), H2Q(v), H2Q(l), __VA_ARGS__)
+#define H2Cases(...) _ForEach_Case_Impl(H2Q(j), H2Q(b), H2Q(v), H2Q(l), __VA_ARGS__)
 
-#define ___Fullmesh_Case_Macro(name, Qj, Qb, Ql, Qx, Qy, x, y) \
-   Case(name x, y)                                             \
-   {                                                           \
-      if (::setjmp(Qj) == 0) {                                 \
-         Qx = x;                                               \
-         Qy = y;                                               \
-         Qb = true;                                            \
-         goto Ql;                                              \
-      } else {                                                 \
-      }                                                        \
-   };                                                          \
+#define ___Fullmesh_Case_Macro(Qj, Qb, Ql, Qx, Qy, x, y) \
+   Case(x, y)                                            \
+   {                                                     \
+      if (::setjmp(Qj) == 0) {                           \
+         Qx = x;                                         \
+         Qy = y;                                         \
+         Qb = true;                                      \
+         goto Ql;                                        \
+      } else {                                           \
+      }                                                  \
+   };                                                    \
    Qb = false;
 #define __Fullmesh_Case_Macro(...) ___Fullmesh_Case_Macro(__VA_ARGS__)
 #define _Fullmesh_Case_Macro(Args, x, y) __Fullmesh_Case_Macro(H2PP_REMOVE_PARENTHESES(Args), x, y)
-#define _Fullmesh_Case_Impl(name, Qj, Qb, Ql, Qx, Qy, ...)                    \
-   jmp_buf Qj;                                                                \
-   bool Qb = false;                                                           \
-   auto Qx = H2Fullmesh_Ax(__VA_ARGS__);                                      \
-   auto Qy = H2Fullmesh_Ay(__VA_ARGS__);                                      \
-   H2Fullmesh(_Fullmesh_Case_Macro, (name, Qj, Qb, Ql, Qx, Qy), __VA_ARGS__); \
-   Ql:                                                                        \
-   for (auto x = Qx; Qb; ::longjmp(Qj, 1))                                    \
+#define _Fullmesh_Case_Impl(Qj, Qb, Ql, Qx, Qy, ...)                    \
+   jmp_buf Qj;                                                          \
+   bool Qb = false;                                                     \
+   auto Qx = H2Fullmesh_Ax(__VA_ARGS__);                                \
+   auto Qy = H2Fullmesh_Ay(__VA_ARGS__);                                \
+   H2Fullmesh(_Fullmesh_Case_Macro, (Qj, Qb, Ql, Qx, Qy), __VA_ARGS__); \
+   Ql:                                                                  \
+   for (auto x = Qx; Qb; ::longjmp(Qj, 1))                              \
       for (auto y = Qy; Qb; Qb = false)
-#define H2Casess(name, ...) _Fullmesh_Case_Impl(#name, H2Q(j), H2Q(b), H2Q(l), H2Q(x), H2Q(y), __VA_ARGS__)
+#define H2Casess(...) _Fullmesh_Case_Impl(H2Q(j), H2Q(b), H2Q(l), H2Q(x), H2Q(y), __VA_ARGS__)
+
+#define ___H2CASES_T_Macro(Qc, x) CASE(x) { Qc<x>(); }
+#define __H2CASES_T_Macro(...) ___H2CASES_T_Macro(__VA_ARGS__)
+#define _H2CASES_T_Macro(args, x) __H2CASES_T_Macro(H2PP_REMOVE_PARENTHESES(args), x)
+#define __H2CASES_T(Qc, ...)                       \
+   template <typename x>                           \
+   void Qc();                                      \
+   H2ForEach(_H2CASES_T_Macro, (Qc), __VA_ARGS__); \
+   template <typename x>                           \
+   void Qc()
+#define H2CASES_T(...) __H2CASES_T(H2Q(f), __VA_ARGS__)
+
+#define ___H2CASESS_T_Macro(Qc, x, y) CASE(x, y) { Qc<x, y>(); }
+#define __H2CASESS_T_Macro(...) ___H2CASESS_T_Macro(__VA_ARGS__)
+#define _H2CASESS_T_Macro(args, x, y) __H2CASESS_T_Macro(H2PP_REMOVE_PARENTHESES(args), x, y)
+#define __H2CASESS_T(Qc, ...)                        \
+   template <typename x, typename y>                 \
+   void Qc();                                        \
+   H2Fullmesh(_H2CASESS_T_Macro, (Qc), __VA_ARGS__); \
+   template <typename x, typename y>                 \
+   void Qc()
+#define H2CASESS_T(...) __H2CASESS_T(H2Q(f), __VA_ARGS__)
 // h2_json.hpp
 
 struct h2_json {
@@ -3624,6 +3642,18 @@ using h2::Pair;
 #   define Casess H2Casess
 #else
 #   pragma message("Casess conflict, using H2Casess instead.")
+#endif
+
+#ifndef CASES_T
+#   define CASES_T H2CASES_T
+#else
+#   pragma message("CASES_T conflict, using H2CASES_T instead.")
+#endif
+
+#ifndef CASESS_T
+#   define CASESS_T H2CASESS_T
+#else
+#   pragma message("CASESS_T conflict, using H2CASESS_T instead.")
 #endif
 
 /* clang-format off */

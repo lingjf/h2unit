@@ -266,6 +266,18 @@ namespace h2 {
 #   pragma message("Casess conflict, using H2Casess instead.")
 #endif
 
+#ifndef CASES_T
+#   define CASES_T H2CASES_T
+#else
+#   pragma message("CASES_T conflict, using H2CASES_T instead.")
+#endif
+
+#ifndef CASESS_T
+#   define CASESS_T H2CASESS_T
+#else
+#   pragma message("CASESS_T conflict, using H2CASESS_T instead.")
+#endif
+
 /* clang-format off */
 using h2::_;
 using h2::Any;

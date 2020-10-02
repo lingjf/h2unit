@@ -801,43 +801,68 @@ CASE(test printf)
 ```
 
 ### 12. Parameterized test
-*    CASES(name, values...): Automatically generate CASE with each value (access by x)
-*    Cases(name, values...): Automatically generate Case inside of SUITE
-*    CASESS(name, values...): Automatically generate CASE with fullmesh value (access by x, y)
-*    Casess(name, values...): Automatically generate Case inside of SUITE
+#### 12.1. Value-Parameterized test
+*    CASES(values...): Automatically generate CASE with each value (access by x)
+*    CASESS(values...): Automatically generate CASE with fullmesh value (access by x, y)
+*    Cases(values...): Automatically generate Case with each value inside of SUITE (access by x)
+*    Casess(values...): Automatically generate Case with fullmesh value inside of SUITE (access by x, y)
+
+
 ```C++
-CASES(test foreach, 1,2,3) // Generate 3 CASE : x=1;x=2;x=3
+CASES(1,2,3) // Generate 3 CASE : x=1;x=2;x=3
 {
    OK(x...);
 }
 SUITE(suite)
 {
-   Cases(test foreach, 1,2,3) // Generate 3 Case : x=1;x=2;x=3
+   Cases(1,2,3) // Generate 3 Case : x=1;x=2;x=3
    {
       OK(x...);
    }
 }
-CASESS(test (1,2,3)x(1,2,3) fullmesh, 1,2,3) 
-{                              // Generate 9 CASE : x,y=(1,1);(1,2);(1,3);
-   OK(x...y);                  //                       (2,1);(2,2);(2,3);
-}                              //                       (3,1);(3,2);(3,3);
-CASESS(test (1,2,3)x(4,5,6) fullmesh, (1,2,3), (4,5,6)) 
-{                              // Generate 9 CASE : x,y=(1,4);(1,5);(1,6);
-   OK(x...y);                  //                       (2,4);(2,5);(2,6);
-}                              //                       (3,4);(3,5);(3,6);
+CASESS(1,2,3)             // (1,2,3)x(1,2,3)
+{                         // Generate 9 CASE : x,y=(1,1);(1,2);(1,3);
+   OK(x...y);             //                       (2,1);(2,2);(2,3);
+}                         //                       (3,1);(3,2);(3,3);
+CASESS((1,2,3), (4,5,6))  // (1,2,3)x(4,5,6)
+{                         // Generate 9 CASE : x,y=(1,4);(1,5);(1,6);
+   OK(x...y);             //                       (2,4);(2,5);(2,6);
+}                         //                       (3,4);(3,5);(3,6);
 SUITE(suite)
 {
-   Casess(test, 1,2,3)            // Generate 9 CASE : (1,2,3)x(1,2,3)
+   Casess(1,2,3)            // Generate 9 Case : (1,2,3)x(1,2,3)
    {
       OK(x...y);
    }
-   Casess(test, (1,2,3), (4,5,6)) // Generate 9 CASE : (1,2,3)x(4,5,6)
+   Casess((1,2,3), (4,5,6)) // Generate 9 Case : (1,2,3)x(4,5,6)
    {
       OK(x...y);
    }
 }
+
 ```
 
+#### 12.2. Type-Parameterized test
+*    CASES_T(types...): Automatically generate CASE with each type (access by x)
+*    CASESS_T(types...): Automatically generate CASE with fullmesh type (access by x, y)
+*    Cases_t(types...): NOT implemented, Automatically generate CASE with each type inside of SUITE (access by x)
+*    Casess_t(types...): NOT implemented, Automatically generate CASE with fullmesh type inside of SUITE (access by x, y)
+
+```C++
+CASES_T(short,int,long) // Generate 3 CASE : x=short;x=int;x=long
+{
+   OK(x...);
+}
+CASESS_T(short,int,long)  // (short,int,long)x(short,int,long)
+{                         // Generate 9 CASE : x,y=(short,short);(short,int);(short,long);
+   OK(x...y);             //                       (int,short);(int,int);(int,long);
+}                         //                       (long,short);(long,int);(long,long);
+CASESS_T((short,int,long), (char,unsigned,double))  // (short,int,long)x(char,unsigned,double)
+{                                                   // Generate 9 CASE : x,y=(short,char);(short,unsigned);(short,double);
+   OK(x...y);                                       //                       (int,char);(int,unsigned);(int,double);
+}                                                   //                       (long,char);(long,unsigned);(long,double);
+
+```
 *    ForForEach(Macro, values...): Call Macro(value)
 *    ForFullmesh(Macro, values...): Call Macro(values x values)
 *    ForFullmesh(Macro, (x-values...), (y-values...)): Call Macro(x-values x y-values)

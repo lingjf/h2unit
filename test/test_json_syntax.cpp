@@ -17,7 +17,7 @@ SUITE(json syntax simple)
       OK(h2::h2_json_node::t_absent, node.type);
    }
 
-   Cases(true, "null", " null ")
+   Cases("null", " null ")
    {
       const char* json = x;
       h2::h2_vector<h2::h2_string> lexical;
@@ -30,7 +30,7 @@ SUITE(json syntax simple)
       OK("null", node_tojson(&node, t1));
    }
 
-   Cases(true, "true", " true ")
+   Cases("true", " true ")
    {
       const char* json = x;
       h2::h2_vector<h2::h2_string> lexical;
@@ -43,7 +43,7 @@ SUITE(json syntax simple)
       OK("true", node_tojson(&node, t1));
    }
 
-   Cases(true, "false", " false ")
+   Cases("false", " false ")
    {
       const char* json = x;
       h2::h2_vector<h2::h2_string> lexical;
@@ -135,7 +135,7 @@ SUITE(json syntax simple)
       OK("2 +1", node.value_string);
    }
 
-   Cases({}, "{}", " { } ")
+   Cases("{}", " { } ")
    {
       const char* json = x;
       h2::h2_vector<h2::h2_string> lexical;
@@ -148,7 +148,7 @@ SUITE(json syntax simple)
       OK("{}", node_tojson(&node, t1));
    }
 
-   Cases({}, "[]", " [ ]  ")
+   Cases("[]", " [ ]  ")
    {
       const char* json = x;
       h2::h2_vector<h2::h2_string> lexical;

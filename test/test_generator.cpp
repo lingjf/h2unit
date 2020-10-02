@@ -65,32 +65,57 @@ CASE(ForFullmesh)
 ForFullmesh(BAR, (A, B, C), (1, 2, 3))
 #undef BAR
 
-  CASES(test foreach CASE, 1, 2, 3)
-{
-   OK(Gt(0), x);
-}
-CASES(test foreach CASE, 1, 2, 3)
+
+CASES(1, 2, 3)
 {
    OK(Gt(0), x);
 }
 
-CASESS(test fullmesh CASE, (1, 2, 3), (4, 5, 6))
+CASES(1, 2, 3)
+{
+   OK(Gt(0), x);
+}
+
+CASESS((1, 2, 3), (4, 5, 6))
 {
    OK(x < y);
 }
 
-CASESS(test fullmesh CASE, 1, 2, 3)
+CASESS(1, 2, 3)
 {
    OK(1 < x + y);
 }
 
-SUITE()
+SUITE(test foreach)
 {
-   Cases(test foreach Case, 1, 2, 3) { OK(Gt(0), x); };
-   Cases(test foreach Case, 1, 2, 3) { OK(Gt(0), x); };
+   Cases(1, 2, 3)
+   {
+      OK(Gt(0), x);
+   }
+
+   Cases(1, 2, 3)
+   {
+      OK(Gt(0), x);
+   }
 }
 
-SUITE()
+SUITE(test fullmesh)
 {
-   Casess(test fullmesh Case, 1, 2, 3) { OK(Gt(1), x + y); }
+   Casess(1, 2, 3)
+   {
+      OK(Gt(1), x + y);
+   }
+}
+
+CASES_T(int, long, double)
+{
+   x value = 1;
+   OK(Gt(0), value);
+}
+
+CASESS_T(int, long, double)
+{
+   x value_x = 1;
+   y value_y = 1;
+   OK(value_x, value_y);
 }
