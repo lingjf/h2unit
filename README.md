@@ -557,6 +557,15 @@ clang >= version 11, default make code section (__TEXT) max protect (maxprot) `r
 
 To fix it, add `-Wl,-segprot,__TEXT,rwx,rwx` in link(ld) option to make maxprot `rwx`. 
 
+
+In order to STUB/MOCK class private member function successfully, `private` token is substituted with `public` using MACRO definition by default.
+
+If test target is C language project, and `private` is used as normal token, define `TEST_C` in compiler options to prevent above substitution.
+
+```Shell
+   g++ -DTEST_C ...
+```
+
 ### 6. Extended JSON Compare 
 
 #### 6.1. javascript style JSON for convenience 

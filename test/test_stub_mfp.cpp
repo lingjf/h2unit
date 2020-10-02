@@ -8,6 +8,7 @@ class Shape {
 
    Shape() : x(0), y(0) {}
 
+private:
    static int fly(int x, int y) { return 0; }
    static int fly(int xy) { return 1; }
 

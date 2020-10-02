@@ -64,6 +64,14 @@ class Shape {
       this->y *= xy;
       return 0;
    }
+
+ private:
+   int move(int x, int y)
+   {
+      this->x += x;
+      this->y += y;
+      return 0;
+   }
 };
 
 SUITE(mock c - function)
@@ -334,6 +342,14 @@ SUITE(mock C++ Class member)
          return 22;
       };
       OK(22, shape.work(1, 2));
+   }
+
+   Case(private member function)
+   {
+      Shape shape("444");
+
+      MOCK(Shape, move, int, (int, int), Once(1, 2)) { return 11; };
+      OK(11, shape.move(1, 2));
    }
 }
 

@@ -384,4 +384,8 @@ using h2::Pair;
 #define H2CASE(...) __H2CASE(#__VA_ARGS__, h2::h2_case::initial, H2Q(h2_case_test), H2Q(h2_suite_test))
 #define H2TODO(...) __H2CASE(#__VA_ARGS__, h2::h2_case::todo, H2Q(h2_case_test), H2Q(h2_suite_test))
 
+#ifndef TEST_C
+#   define private public
+#endif
+
 #endif
