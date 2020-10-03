@@ -1,4 +1,4 @@
-#include "../h2unit.h"
+#include "../build/h2unit.hpp"
 
 struct A_struct {
    char a[100];

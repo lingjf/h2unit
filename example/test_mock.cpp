@@ -1,5 +1,5 @@
 #include <time.h>
-#include "h2unit.h"
+#include "../h2unit.h"
 
 extern "C" {
 #include "product_c.h"

@@ -1,4 +1,4 @@
-#include "h2unit.h"
+#include "../h2unit.h"
 
 /*
  * h2unit can detect memory leak which is allocated by:

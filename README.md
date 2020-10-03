@@ -937,13 +937,17 @@ CASESS_T((short,int,long), (char,unsigned,double))  // (short,int,long)x(char,un
 # Coverage
 
 - Add `-fprofile-arcs -ftest-coverage` into compiler and linker options.
+   for CMake: <br>
+      TARGET_COMPILE_OPTIONS(a.out PRIVATE  --coverage) <br>
+      TARGET_LINK_OPTIONS(a.out PRIVATE  --coverage)
+
 - Prerequisites lcov is installed.
-- Tool [`coverage.py`](coverage.py) generate coverage report.
+- Tool [`h2cov.py`](h2cov.py) generate coverage report.
 
 ```Shell
    make
    ./a.out
-   python coverage.py "*product*" #Extract files matching PATTERN from FILE
+   python h2cov.py "*product*" #Extract files matching PATTERN from FILE
 ```
 
 ## coverage.json

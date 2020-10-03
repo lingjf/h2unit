@@ -12,21 +12,32 @@ def read_version():
             version = re.match('#define H2UNIT_VERSION \s*(.*)', line)
             if version:
                 return version.group(1)
-    return "dev"
+    return "    "
 
 
 version_datetime = '/* v{0} {1} */'.format(read_version(), time.strftime('%Y-%m-%d %H:%M:%S', time.localtime()))
 project_github_url = '/* https://github.com/lingjf/h2unit */'
 software_copyright = '/* Apache Licence 2.0 */'
 
+# MSVC support:
+#   UTF-16 little endian with or without byte order mark (BOM)
+#   UTF-16 big endian with or without BOM
+#   UTF-8 with BOM
+# GCC/clang support:
+#   UTF-8 with or without BOM
 
-def convert_utf8_to_unicode(filename):
-    f_utf8 = open(filename, 'r')
-    t = f_utf8.read()
-    f_utf8.close()
-    f_utf16 = open(filename, 'wb')
-    f_utf16.write(t.decode('utf-8').encode('utf-8-sig'))
-    f_utf16.close()
+# minimal common is UTF-8 with BOM
+def convert_utf8_to_utf8bom(filename):
+    f = open(filename, 'r')
+    t = f.read()
+    f.close()
+    with open(filename, 'wb') as f:
+        if sys.version_info.major == 2:
+            f.write(t.decode('utf-8').encode('utf-8-sig'))
+        elif sys.version_info.major == 3:
+            f.write(t.encode('utf-8').decode('utf-8').encode('utf-8-sig'))
+        else:
+            raise Exception('invalid python version')
 
 
 def copy_line1(line, f):  # compat line
@@ -45,10 +56,10 @@ def copy_line2(line, f):
 
 def merge_files(inf, outf):
     for line in inf:
-        inc = re.match('#include "(.*[/]*(h2_.*\.[ch]{1}pp))"', line)
+        inc = re.match('#include "(.*[/]*h2_.*\.[ch]{1}pp)"', line)
         if inc:
             with open('../source/' + inc.group(1), 'r') as f:
-                outf.write('// ' + inc.group(2) + '\n')
+                outf.write('// source/' + inc.group(1) + '\n')
                 merge_files(f, outf)
         else:
             copy_line2(line, outf)
@@ -59,6 +70,7 @@ h2unit_hpp = './h2unit.hpp'
 h2unit_cpp = './h2unit.cpp'
 
 f_h2unit_h = open(h2unit_h, 'w')
+f_h2unit_h.write('\n')
 f_h2unit_h.write(version_datetime + '\n')
 f_h2unit_h.write(project_github_url + '\n')
 f_h2unit_h.write(software_copyright + '\n\n')
@@ -68,9 +80,10 @@ with open('../source/h2_unit.cpp', 'r') as f_h2_unit_cpp:
     merge_files(f_h2_unit_cpp, f_h2unit_h)
 f_h2unit_h.write('#endif' + '\n')
 f_h2unit_h.close()
-convert_utf8_to_unicode(h2unit_h)
+convert_utf8_to_utf8bom(h2unit_h)
 
 f_h2unit_hpp = open(h2unit_hpp, 'w')
+f_h2unit_hpp.write('\n')
 f_h2unit_hpp.write(version_datetime + '\n')
 f_h2unit_hpp.write(project_github_url + '\n')
 f_h2unit_hpp.write(software_copyright + '\n\n')
@@ -80,9 +93,10 @@ with open('../source/h2_unit.hpp', 'r') as f_h2_unit_hpp:
     merge_files(f_h2_unit_hpp, f_h2unit_hpp)
 f_h2unit_hpp.write('#endif' + '\n')
 f_h2unit_hpp.close()
-convert_utf8_to_unicode(h2unit_hpp)
+convert_utf8_to_utf8bom(h2unit_hpp)
 
 f_h2unit_cpp = open(h2unit_cpp, 'w')
+f_h2unit_cpp.write('\n')
 f_h2unit_cpp.write(version_datetime + '\n')
 f_h2unit_cpp.write(project_github_url + '\n')
 f_h2unit_cpp.write(software_copyright + '\n\n')
@@ -90,4 +104,4 @@ f_h2unit_cpp.write('#define __H2UNIT_HPP__' + '\n')
 with open('../source/h2_unit.cpp', 'r') as f_h2_unit_cpp:
     merge_files(f_h2_unit_cpp, f_h2unit_cpp)
 f_h2unit_cpp.close()
-convert_utf8_to_unicode(h2unit_cpp)
+convert_utf8_to_utf8bom(h2unit_cpp)

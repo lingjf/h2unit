@@ -1,4 +1,4 @@
-#include "h2unit.h"
+#include "../h2unit.h"
 
 /*
  * All header file for c language MUST be include : in extern "C" { }
