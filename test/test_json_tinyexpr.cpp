@@ -108,4 +108,20 @@ SUITE(tinyexpr)
          OK(answer, ev);
       }
    }
+
+   Case(very large number)
+   {
+      int err;
+      const double ev = h2::tinyexpr::te_interp("1912000101600571", &err);
+      OK(0, err);
+      OK(1912000101600571LL, ev);
+   }
+
+   Case(hex)
+   {
+      int err;
+      const double ev = h2::tinyexpr::te_interp("0xffff + 1", &err);
+      OK(0, err);
+      OK(0xffffU + 1, ev);
+   }
 }

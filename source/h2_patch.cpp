@@ -59,17 +59,29 @@ struct h2__patch {
       return ret;
    }
 
+   static double strtod(const char* nptr, char** endptr)
+   {
+      double ret;
+      h2_memory::restores();
+      for (h2::h2_stub_temporary_restore t((void*)::strtod); t;) ret = ::strtod(nptr, endptr);
+      h2_memory::overrides();
+      return ret;
+   }
+
    h2__patch()
    {
-      stubs.add((void*)::gmtime, (void*)gmtime, "gmtime", __FILE__, __LINE__);
-      stubs.add((void*)::gmtime_r, (void*)gmtime_r, "gmtime_r", __FILE__, __LINE__);
-      stubs.add((void*)::ctime, (void*)ctime, "ctime", __FILE__, __LINE__);
-      stubs.add((void*)::ctime_r, (void*)ctime_r, "ctime_r", __FILE__, __LINE__);
-      stubs.add((void*)::asctime, (void*)asctime, "asctime", __FILE__, __LINE__);
-      stubs.add((void*)::asctime_r, (void*)asctime_r, "asctime_r", __FILE__, __LINE__);
-      stubs.add((void*)::localtime, (void*)localtime, "localtime", __FILE__, __LINE__);
-      stubs.add((void*)::localtime_r, (void*)localtime_r, "localtime_r", __FILE__, __LINE__);
-      stubs.add((void*)::mktime, (void*)mktime, "mktime", __FILE__, __LINE__);
+      if (O.memory_check) {
+         stubs.add((void*)::gmtime, (void*)gmtime, "gmtime", __FILE__, __LINE__);
+         stubs.add((void*)::gmtime_r, (void*)gmtime_r, "gmtime_r", __FILE__, __LINE__);
+         stubs.add((void*)::ctime, (void*)ctime, "ctime", __FILE__, __LINE__);
+         stubs.add((void*)::ctime_r, (void*)ctime_r, "ctime_r", __FILE__, __LINE__);
+         stubs.add((void*)::asctime, (void*)asctime, "asctime", __FILE__, __LINE__);
+         stubs.add((void*)::asctime_r, (void*)asctime_r, "asctime_r", __FILE__, __LINE__);
+         stubs.add((void*)::localtime, (void*)localtime, "localtime", __FILE__, __LINE__);
+         stubs.add((void*)::localtime_r, (void*)localtime_r, "localtime_r", __FILE__, __LINE__);
+         stubs.add((void*)::mktime, (void*)mktime, "mktime", __FILE__, __LINE__);
+         stubs.add((void*)::strtod, (void*)strtod, "strtod", __FILE__, __LINE__);
+      }
    }
 };
 
@@ -90,7 +102,7 @@ h2_inline bool h2_patch::exempt(const h2_backtrace& bt)
 #ifdef __APPLE__
      {(void*)vsnprintf_l, 300},
 #endif
-     {(void*)h2_pattern::regex_match, 0x100}, // linux is 0xcb size, MAC is 0x100 (gap to next symbol)
+     {(void*)h2_pattern::regex_match, 0x100},  // linux is 0xcb size, MAC is 0x100 (gap to next symbol)
    };
 
    for (auto& x : exempt_functions)

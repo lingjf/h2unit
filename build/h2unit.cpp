@@ -1,4 +1,4 @@
-﻿/* v5.6 2020-10-02 23:21:02 */
+﻿/* v5.6 2020-10-03 08:25:03 */
 /* https://github.com/lingjf/h2unit */
 /* Apache Licence 2.0 */
 
@@ -5343,7 +5343,8 @@ struct h2_json_syntax {
 
    bool parse(h2_json_node& root_node)
    {
-      return parse_value(root_node);
+      if (!parse_value(root_node)) return false;
+      return lexical.size() <= i;  // nothing more, "{},{}"
    }
 
    h2_string& filter_string(h2_string& s)
@@ -5544,11 +5545,13 @@ struct h2_json_tree : h2_json_node {
    h2_vector<h2_string> lexical;
    h2_json_syntax syntax{lexical};
    bool illformed;
+
    h2_json_tree(const char* json_string, int json_length = -1)
    {
       h2_json_lexical::parse(lexical, json_string, json_length);
       illformed = !syntax.parse(*this);
    }
+
    h2_json_node* select(const char* selector, bool caseless)
    {
       h2_json_select select(selector);
@@ -5558,6 +5561,7 @@ struct h2_json_tree : h2_json_node {
       node->key_string = "";
       return node;
    }
+
    h2_line serialize()
    {
       h2_line line;
@@ -5572,6 +5576,7 @@ struct h2_json_tree : h2_json_node {
       }
       return line;
    }
+
    h2_lines format()
    {
       h2_lines lines;
@@ -9349,17 +9354,29 @@ struct h2__patch {
       return ret;
    }
 
+   static double strtod(const char* nptr, char** endptr)
+   {
+      double ret;
+      h2_memory::restores();
+      for (h2::h2_stub_temporary_restore t((void*)::strtod); t;) ret = ::strtod(nptr, endptr);
+      h2_memory::overrides();
+      return ret;
+   }
+
    h2__patch()
    {
-      stubs.add((void*)::gmtime, (void*)gmtime, "gmtime", __FILE__, __LINE__);
-      stubs.add((void*)::gmtime_r, (void*)gmtime_r, "gmtime_r", __FILE__, __LINE__);
-      stubs.add((void*)::ctime, (void*)ctime, "ctime", __FILE__, __LINE__);
-      stubs.add((void*)::ctime_r, (void*)ctime_r, "ctime_r", __FILE__, __LINE__);
-      stubs.add((void*)::asctime, (void*)asctime, "asctime", __FILE__, __LINE__);
-      stubs.add((void*)::asctime_r, (void*)asctime_r, "asctime_r", __FILE__, __LINE__);
-      stubs.add((void*)::localtime, (void*)localtime, "localtime", __FILE__, __LINE__);
-      stubs.add((void*)::localtime_r, (void*)localtime_r, "localtime_r", __FILE__, __LINE__);
-      stubs.add((void*)::mktime, (void*)mktime, "mktime", __FILE__, __LINE__);
+      if (O.memory_check) {
+         stubs.add((void*)::gmtime, (void*)gmtime, "gmtime", __FILE__, __LINE__);
+         stubs.add((void*)::gmtime_r, (void*)gmtime_r, "gmtime_r", __FILE__, __LINE__);
+         stubs.add((void*)::ctime, (void*)ctime, "ctime", __FILE__, __LINE__);
+         stubs.add((void*)::ctime_r, (void*)ctime_r, "ctime_r", __FILE__, __LINE__);
+         stubs.add((void*)::asctime, (void*)asctime, "asctime", __FILE__, __LINE__);
+         stubs.add((void*)::asctime_r, (void*)asctime_r, "asctime_r", __FILE__, __LINE__);
+         stubs.add((void*)::localtime, (void*)localtime, "localtime", __FILE__, __LINE__);
+         stubs.add((void*)::localtime_r, (void*)localtime_r, "localtime_r", __FILE__, __LINE__);
+         stubs.add((void*)::mktime, (void*)mktime, "mktime", __FILE__, __LINE__);
+         stubs.add((void*)::strtod, (void*)strtod, "strtod", __FILE__, __LINE__);
+      }
    }
 };
 
@@ -9380,7 +9397,7 @@ h2_inline bool h2_patch::exempt(const h2_backtrace& bt)
 #ifdef __APPLE__
      {(void*)vsnprintf_l, 300},
 #endif
-     {(void*)h2_pattern::regex_match, 0x100}, // linux is 0xcb size, MAC is 0x100 (gap to next symbol)
+     {(void*)h2_pattern::regex_match, 0x100},  // linux is 0xcb size, MAC is 0x100 (gap to next symbol)
    };
 
    for (auto& x : exempt_functions)

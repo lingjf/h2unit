@@ -3,11 +3,13 @@ struct h2_json_tree : h2_json_node {
    h2_vector<h2_string> lexical;
    h2_json_syntax syntax{lexical};
    bool illformed;
+
    h2_json_tree(const char* json_string, int json_length = -1)
    {
       h2_json_lexical::parse(lexical, json_string, json_length);
       illformed = !syntax.parse(*this);
    }
+
    h2_json_node* select(const char* selector, bool caseless)
    {
       h2_json_select select(selector);
@@ -17,6 +19,7 @@ struct h2_json_tree : h2_json_node {
       node->key_string = "";
       return node;
    }
+
    h2_line serialize()
    {
       h2_line line;
@@ -31,6 +34,7 @@ struct h2_json_tree : h2_json_node {
       }
       return line;
    }
+
    h2_lines format()
    {
       h2_lines lines;

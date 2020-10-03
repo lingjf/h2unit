@@ -6,7 +6,8 @@ struct h2_json_syntax {
 
    bool parse(h2_json_node& root_node)
    {
-      return parse_value(root_node);
+      if (!parse_value(root_node)) return false;
+      return lexical.size() <= i;  // nothing more, "{},{}"
    }
 
    h2_string& filter_string(h2_string& s)

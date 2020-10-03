@@ -61,3 +61,16 @@ CASE(bugfix
    // MOCK(foobar, int, (int, const char*), Times(0)){};
    // foobar(1, "A");
 }
+
+CASE(bugfix
+     : parse json very large number)
+{
+   JE("1912000101600571", "1912000101600571");
+}
+
+CASE(bugfix
+     : parse json '{},{}')
+{
+   // Passed before fixed
+   // JE("{}", "{}, {}");
+}
