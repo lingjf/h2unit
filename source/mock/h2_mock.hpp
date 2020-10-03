@@ -118,6 +118,8 @@
 // normal function 3rd is (...) i.e. arguments, 4th is not (...) or not exist
 #define H2MOCK(...) H2PP_CAT(__H2MOCK_, H2PP_AND(H2PP_IBP(H2PP_TH2(__VA_ARGS__)), H2PP_NOT(H2PP_IBP(H2PP_TH3(__VA_ARGS__))))) (__VA_ARGS__)
 
+#define H2UNMOCK H2UNSTUB
+
 ////////////////////////////////////////////////////////////////
 
 #define __H3MOCK_1_3(Function, ReturnType, Args) \

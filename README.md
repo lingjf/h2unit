@@ -270,7 +270,9 @@ void this_is_a_test_case()
 ```
 The most disadvantage of function pointer replacement is changing of product source code. <br>
 Objective of Dynamic STUB is same as function pointer replacement, but it is unnecessary to change product source code. <br> 
-[STUB](source/h2_unit.hpp#L114) is easier to use.
+[STUB](source/stub/h2_use.hpp) is easier to use.
+
+[UNSTUB](source/stub/h2_use.hpp) reset STUB, recover original function.
 
 #### 4.1. raw function substitution
 
@@ -348,6 +350,8 @@ fake function return to the caller of original function directly.
 STUB formula:
 ```C++
    STUB([Class Name,] Function Name, Return Type, (Parameter List), Substitute Function Name);
+
+   UNSTUB([Class Name,] Function Name, Return Type, (Parameter List));
 ```
 
 ### 5. Dynamic MOCK
@@ -393,6 +397,8 @@ including class static member method.
    };
 ```
 
+[UNMOCK](source/mock/h2_use.hpp) reset MOCK, recover original function.
+
 MOCK formula:
 ```C++
    MOCK([Class Name,] Function Name, Return Type, (Parameter List) [, Chained Inspection]) { 
@@ -400,6 +406,8 @@ MOCK formula:
       check... ;
       return... ;
    };
+
+   UNMOCK([Class Name,] Function Name, Return Type, (Parameter List));
 ```
 
 #### 5.2. Chained Inspection
@@ -532,8 +540,6 @@ CASE(template function)
 }
 ```
 
-C/C++ preprocessor can't handle MACRO argument which contains comma in '<>' correctly. <br>
-A workaround is enclose such argument with parentheses '()'.
 
 ```C++
 MOCK(Foo, bar, int, (int a, char * b), 
@@ -553,11 +559,20 @@ then expect Foo::bar called 5 times, and 1st argument not equals 3, ignore check
 then expect Foo::bar called atleast 2 times, and 1st argument equals 4, 2nd equals "xyz", and inject Return value 44; <br>
 then expect Foo::bar called any times, and 1st argument equals 5, modify 2nd, and inject Return value 44. <br>
 
+#### 5.5. Others
+##### 5.5.1. unprotected commas
+
+C/C++ preprocessor can't parse MACRO arguments which contains comma in '<>' correctly. 
+
+A solution is wrapping such argument with parentheses '()'.
+
+##### 5.5.2. mprotect failure
+
 clang >= version 11, default make code section (__TEXT) max protect (maxprot) `rx`, mprotect() in STUB/MOCK fails.
 
 To fix it, add `-Wl,-segprot,__TEXT,rwx,rwx` in link(ld) option to make maxprot `rwx`. 
 
-
+##### 5.5.3. private member method accessibility
 In order to STUB/MOCK class private member function successfully, `private` token is substituted with `public` using MACRO definition by default.
 
 If test target is C language project, and `private` is used as normal token, define `TEST_C` in compiler options to prevent above substitution.
@@ -565,6 +580,48 @@ If test target is C language project, and `private` is used as normal token, def
 ```Shell
    g++ -DTEST_C ...
 ```
+
+##### 5.5.4. static function accessibility
+static function is unaccessible outside of source file. In order to STUB/MOCK such function successfully, there are two solutions:
+
+###### 5.5.4.1. solution 1: include source file in test file
+
+```C++
+   // test_module.cpp
+   #include "h2unit.h"
+   #include "module.c/cpp"
+   CASE(a test)
+   {
+      ...
+   }
+```
+
+###### 5.5.4.2. solution 2: STUB/MOCK by function string name
+
+```C++
+   static int a_static_function(char * str) {
+      ...
+   }
+```
+```C++
+   CASE(a test)
+   {
+      STUB("a_static_function", fake_function);
+      MOCK("a_static_function", int, (char *), Once) { return 11; }
+   }
+```
+
+If function is overload function, arguments type should specified, i.e. C++ demangled function name.
+
+```C++
+   CASE(a test)
+   {
+      STUB("a_static_function(char*)", fake_function);
+      MOCK("a_static_function(char*)", int, (char *), Once) { return 11; }
+   }
+```
+
+  `nm --demangle ./a.out | grep a_static_function` can find out demangled function name.
 
 ### 6. Extended JSON Compare 
 

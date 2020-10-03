@@ -28,31 +28,53 @@ SUITE(stub)
    Case(stub simple)
    {
       OK(1, foobar(0, 1));
+
       STUB(foobar, STUB_foobar);
       OK(-1, foobar(0, 1));
+
+      UNSTUB(foobar);
+      OK(1, foobar(0, 1));
    }
 
    Case(stub overwrite)
    {
-      STUB(foobar, STUB_foobar);
-      STUB(foobar, STUB2_foobar);
+      OK(1, foobar(0, 1));
 
+      STUB(foobar, STUB_foobar);
+      OK(-1, foobar(0, 1));
+      STUB(foobar, STUB2_foobar);
       OK(-2, foobar(0, 1));
+
+      UNSTUB(foobar);
+      OK(1, foobar(0, 1));
    }
 
    Case(stub chained)
    {
-      STUB(foobar, STUB_foobar);
-      STUB(STUB_foobar, STUB2_foobar);
+      OK(1, foobar(0, 1));
 
+      STUB(foobar, STUB_foobar);
+      OK(-1, foobar(0, 1));
+
+      STUB(STUB_foobar, STUB2_foobar);
       OK(-2, foobar(0, 1));
+
+      UNSTUB(STUB_foobar);
+      OK(-1, foobar(0, 1));
+
+      UNSTUB(foobar);
+      OK(1, foobar(0, 1));
    }
 
    Case(stub in namespace)
    {
       OK(1, ns111::foobar(0, 1));
+
       STUB(ns111::foobar, STUB_foobar);
       OK(-1, ns111::foobar(0, 1));
+
+      UNSTUB(ns111::foobar);
+      OK(1, ns111::foobar(0, 1));
    }
 }
 
@@ -121,33 +143,49 @@ SUITE(stub member function)
 {
    Case(normal member function)
    {
-      STUB(Shape, go, int, (int a, int b), Shape_go_fake);
-
       Shape shape;
+      OK(0, shape.go(111, 111));
+
+      STUB(Shape, go, int, (int a, int b), Shape_go_fake);
       OK(222, shape.go(111, 111));
+
+      UNSTUB(Shape, go, int, (int a, int b));
+      OK(0, shape.go(111, 111));
    }
 
    Case(virtual member function)
    {
-      STUB(Shape, work, int, (int a, int b), Shape_work_fake);
-
       Shape shape;
+      OK(0, shape.work(111, 111));
+
+      STUB(Shape, work, int, (int a, int b), Shape_work_fake);
       OK(222, shape.work(111, 111));
+
+      UNSTUB(Shape, work, int, (int a, int b));
+      OK(0, shape.work(111, 111));
    }
 
    Case(static member function)
    {
-      STUB(Shape::fly, int, (int a, int b), Shape_fly_fake);
+      OK(0, Shape::fly(111, 111));
 
+      STUB(Shape::fly, int, (int a, int b), Shape_fly_fake);
       OK(222, Shape::fly(111, 111));
+
+      UNSTUB(Shape::fly, int, (int a, int b));
+      OK(0, Shape::fly(111, 111));
    }
 
    Case(in namespace)
    {
-      STUB(ns112::Rect, go, int, (int a, int b), Rect_go_fake);
-
       ns112::Rect rect;
+      OK(0, rect.go(111, 111));
+
+      STUB(ns112::Rect, go, int, (int a, int b), Rect_go_fake);
       OK(222, rect.go(111, 111));
+
+      UNSTUB(ns112::Rect, go, int, (int a, int b));
+      OK(0, rect.go(111, 111));
    }
 }
 
@@ -238,52 +276,78 @@ SUITE(stub template)
 {
    Case(function 1 typename)
    {
-      int ret = foobar1<int>(0);
-      OK(1, ret);
+      OK(1, foobar1<int>(0));
+
       STUB(foobar1<int>, STUB_foobar1);
       OK(-1, foobar1<int>(0));
+
+      UNSTUB(foobar1<int>);
+      OK(1, foobar1<int>(0));
    }
 
    Case(function 2 typename)
    {
-      int ret = foobar2<int, float>(0, 0);
-      OK(2, ret);
+      OK(2, foobar2<int, float>(0, 0));
+
       STUB((foobar2<int, float>), STUB_foobar2);
       OK(-2, (foobar2<int, float>(0, 0)));
+
+      UNSTUB((foobar2<int, float>));
+      OK(2, (foobar2<int, float>(0, 0)));
    }
 
    Case(member function 1 typename)
    {
-      STUB(Foo1<int>, bar1<int>, int, (int a), STUB_Foo1bar1);
-
       Foo1<int> a1;
+      OK(1, a1.bar1(0));
+
+      STUB(Foo1<int>, bar1<int>, int, (int a), STUB_Foo1bar1);
       OK(-1, a1.bar1(0));
+
+      UNSTUB(Foo1<int>, bar1<int>, int, (int a));
+      OK(1, a1.bar1(0));
    }
 
    Case(static member function 1 typename)
    {
       STUB(Foo1<int>::bar2, int, (int a), STUB_Foo1bar2);
       OK(-2, Foo1<int>::bar2(0));
+
+      UNSTUB(Foo1<int>::bar2, int, (int a));
+      OK(2, Foo1<int>::bar2(0));
    }
 
    Case(member function 2 typename)
    {
-      STUB((Foo2<int, float>), (bar1<int, float>), int, (int a, float b), STUB_Foo2bar1);
       Foo2<int, float> a1;
+      OK(1, (a1.bar1<int, float>(0, 0)));
+
+      STUB((Foo2<int, float>), (bar1<int, float>), int, (int a, float b), STUB_Foo2bar1);
       OK(-1, (a1.bar1<int, float>(0, 0)));
+
+      UNSTUB((Foo2<int, float>), (bar1<int, float>), int, (int a, float b));
+      OK(1, (a1.bar1<int, float>(0, 0)));
    }
 
    Case(static member function 2 typename)
    {
       STUB((Foo2<int, float>::bar2<int, float>), int, (int a, float b), STUB_Foo2bar2);
       OK(-2, (Foo2<int, float>::bar2<int, float>(0, 0)));
+
+      UNSTUB((Foo2<int, float>::bar2<int, float>), int, (int a, float b));
+      OK(2, (Foo2<int, float>::bar2<int, float>(0, 0)));
    }
 
    Case(return template)
    {
-      STUB((Foo2<int, float>), (bar3<int, float>), (std::pair<int, float>), (int a, float b), STUB_Foo2bar3);
       Foo2<int, float> a1;
+      OK(Pair(0, 0), (a1.bar3<int, float>(0, 0)));
+
+      STUB((Foo2<int, float>), (bar3<int, float>), (std::pair<int, float>), (int a, float b), STUB_Foo2bar3);
       OK(Pair(-3, 0), (a1.bar3<int, float>(0, 0)));
+
+      UNSTUB((Foo2<int, float>), (bar3<int, float>), (std::pair<int, float>), (int a, float b));
+      OK(Pair(0, 0), (a1.bar3<int, float>(0, 0)));
    }
 }
 
@@ -292,31 +356,41 @@ SUITE(STUBS)
    Case(lambdas normal function)
    {
       STUBS(foobar, int, (int a, const int& b)) { return a + b; };
-
       OK(222, foobar(111, 111));
+
+      UNSTUB(foobar, int, (int a, const int& b));
+      OK(1, foobar(111, 111));
    }
 
    Case(lambdas normal member function)
    {
-      STUBS(Shape, go, int, (int a, int b)) { return a + b; };
-
       Shape shape;
+
+      STUBS(Shape, go, int, (int a, int b)) { return a + b; };
       OK(222, shape.go(111, 111));
+
+      UNSTUB(Shape, go, int, (int a, int b));
+      OK(0, shape.go(111, 111));
    }
 
    Case(lambdas virtual member function)
    {
-      STUBS(Shape, work, int, (int a, int b)) { return a + b; };
-
       Shape shape;
+
+      STUBS(Shape, work, int, (int a, int b)) { return a + b; };
       OK(222, shape.work(111, 111));
+
+      UNSTUB(Shape, work, int, (int a, int b));
+      OK(0, shape.work(111, 111));
    }
 
    Case(lambdas static member function)
    {
       STUBS(Shape::fly, int, (int a, int b)) { return a + b; };
-
       OK(222, Shape::fly(111, 111));
+
+      UNSTUB(Shape::fly, int, (int a, int b));
+      OK(0, Shape::fly(111, 111));
    }
 }
 
@@ -350,31 +424,56 @@ SUITE(stub name)
 {
    Case("foobar1_bystub")
    {
+      OK(0, foobar1_bystub(0));
+
       STUB("foobar1_bystub", STUB_foobar_bystub);
       OK(-1, foobar1_bystub(0));
+
+      UNSTUB("foobar1_bystub");
+      OK(0, foobar1_bystub(0));
    }
 
    Case("foobar2_bystub")
    {
+      OK(0, foobar2_bystub(0));
+
       STUB("foobar2_bystub", STUB_foobar_bystub);
       OK(-1, foobar2_bystub(0));
+
+      UNSTUB("foobar2_bystub");
+      OK(0, foobar2_bystub(0));
    }
 
    Case("foobar2_bystub(int)")
    {
+      OK(0, foobar2_bystub(0));
+
       STUB("foobar2_bystub(int)", STUB_foobar_bystub);
       OK(-1, foobar2_bystub(0));
+
+      UNSTUB("foobar2_bystub(int)");
+      OK(0, foobar2_bystub(0));
    }
 
    Case("foobar3_bystub")
    {
+      OK(0, ns113::foobar3_bystub(0));
+
       STUB("foobar3_bystub", STUB_foobar_bystub);
       OK(-1, ns113::foobar3_bystub(0));
+
+      UNSTUB("foobar3_bystub");
+      OK(0, ns113::foobar3_bystub(0));
    }
 
    Case("ns113::foobar3_bystub(int)")
    {
+      OK(0, ns113::foobar3_bystub(0));
+
       STUB("ns113::foobar3_bystub(int)", STUB_foobar_bystub);
       OK(-1, ns113::foobar3_bystub(0));
+
+      UNSTUB("ns113::foobar3_bystub(int)");
+      OK(0, ns113::foobar3_bystub(0));
    }
 }

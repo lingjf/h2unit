@@ -2,6 +2,7 @@
 struct h2_stubs {
    h2_list stubs;
    bool add(void* origin_fp, void* substitute_fp, const char* origin_fn, const char* file, int lino);
+   void clear(void* origin_fp);
    void clear();
 };
 
@@ -28,6 +29,11 @@ struct h2_stub_temporary_restore : h2_once {
    } while (0)
 
 #define H2STUB(...) H2PP_VARIADIC_CALL(__H2STUB, __VA_ARGS__)
+
+#define __H2UNSTUB1(Origin) h2::h2_unstub_g(h2::h2_fp(Origin))
+#define __H2UNSTUB3(Function, ReturnType, Args) h2::h2_unstub_g(h2::h2_fp((H2PP_RPS(ReturnType)(*) Args)H2PP_RPS(Function)))
+#define __H2UNSTUB4(Class, Method, ReturnType, Args) h2::h2_unstub_g(h2::h2_mfp<H2PP_RPS(Class), H2PP_RPS(ReturnType) Args>::A(&H2PP_RPS(Class)::H2PP_RPS(Method)))
+#define H2UNSTUB(...) H2PP_VARIADIC_CALL(__H2UNSTUB, __VA_ARGS__)
 
 ////////////////////////////////////////////////////////////////
 

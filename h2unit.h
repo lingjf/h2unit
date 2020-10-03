@@ -1,4 +1,4 @@
-﻿/* v5.6 2020-10-03 08:25:03 */
+﻿/* v5.6 2020-10-03 20:19:01 */
 /* https://github.com/lingjf/h2unit */
 /* Apache Licence 2.0 */
 
@@ -2491,6 +2491,7 @@ struct h2_mfp<Class, ReturnType(Args...)> {
 struct h2_stubs {
    h2_list stubs;
    bool add(void* origin_fp, void* substitute_fp, const char* origin_fn, const char* file, int lino);
+   void clear(void* origin_fp);
    void clear();
 };
 
@@ -2517,6 +2518,11 @@ struct h2_stub_temporary_restore : h2_once {
    } while (0)
 
 #define H2STUB(...) H2PP_VARIADIC_CALL(__H2STUB, __VA_ARGS__)
+
+#define __H2UNSTUB1(Origin) h2::h2_unstub_g(h2::h2_fp(Origin))
+#define __H2UNSTUB3(Function, ReturnType, Args) h2::h2_unstub_g(h2::h2_fp((H2PP_RPS(ReturnType)(*) Args)H2PP_RPS(Function)))
+#define __H2UNSTUB4(Class, Method, ReturnType, Args) h2::h2_unstub_g(h2::h2_mfp<H2PP_RPS(Class), H2PP_RPS(ReturnType) Args>::A(&H2PP_RPS(Class)::H2PP_RPS(Method)))
+#define H2UNSTUB(...) H2PP_VARIADIC_CALL(__H2UNSTUB, __VA_ARGS__)
 
 ////////////////////////////////////////////////////////////////
 
@@ -3076,6 +3082,8 @@ struct h2_mocks {
 // normal function 3rd is (...) i.e. arguments, 4th is not (...) or not exist
 #define H2MOCK(...) H2PP_CAT(__H2MOCK_, H2PP_AND(H2PP_IBP(H2PP_TH2(__VA_ARGS__)), H2PP_NOT(H2PP_IBP(H2PP_TH3(__VA_ARGS__))))) (__VA_ARGS__)
 
+#define H2UNMOCK H2UNSTUB
+
 ////////////////////////////////////////////////////////////////
 
 #define __H3MOCK_1_3(Function, ReturnType, Args) \
@@ -3350,6 +3358,17 @@ static inline void h2_stub_g(void* origin_fp, void* substitute_fp, const char* o
       h2_task::I().stubs.add(origin_fp, substitute_fp, origin_fn, file, line);
 }
 
+static inline void h2_unstub_g(void* origin_fp)
+{
+   if (!origin_fp) return;
+   if (h2_task::I().current_case)
+      h2_task::I().current_case->stubs.clear(origin_fp);
+   else if (h2_task::I().current_suite)
+      h2_task::I().current_suite->stubs.clear(origin_fp);
+   else
+      h2_task::I().stubs.clear(origin_fp);
+}
+
 static inline void h2_mock_g(void* mock)
 {
    if (h2_task::I().current_case)
@@ -3553,6 +3572,18 @@ using h2::Pair;
 #   define STUB H2STUB
 #else
 #   pragma message("STUB conflict, using H2STUB instead.")
+#endif
+
+#ifndef UNSTUB
+#   define UNSTUB H2UNSTUB
+#else
+#   pragma message("UNSTUB conflict, using H2UNSTUB instead.")
+#endif
+
+#ifndef UNMOCK
+#   define UNMOCK H2UNMOCK
+#else
+#   pragma message("UNMOCK conflict, using H2UNMOCK instead.")
 #endif
 
 #ifndef BLOCK
@@ -6879,6 +6910,16 @@ h2_inline bool h2_stubs::add(void* origin_fp, void* substitute_fp, const char* o
    }
    stub->stub(substitute_fp);
    return true;
+}
+
+h2_inline void h2_stubs::clear(void* origin_fp)
+{
+   h2_list_for_each_entry (p, stubs, h2_stub, x) {
+      if (p->origin_fp == origin_fp) {
+         p->x.out();
+         delete p;
+      }
+   }
 }
 
 h2_inline void h2_stubs::clear()

@@ -32,6 +32,17 @@ static inline void h2_stub_g(void* origin_fp, void* substitute_fp, const char* o
       h2_task::I().stubs.add(origin_fp, substitute_fp, origin_fn, file, line);
 }
 
+static inline void h2_unstub_g(void* origin_fp)
+{
+   if (!origin_fp) return;
+   if (h2_task::I().current_case)
+      h2_task::I().current_case->stubs.clear(origin_fp);
+   else if (h2_task::I().current_suite)
+      h2_task::I().current_suite->stubs.clear(origin_fp);
+   else
+      h2_task::I().stubs.clear(origin_fp);
+}
+
 static inline void h2_mock_g(void* mock)
 {
    if (h2_task::I().current_case)

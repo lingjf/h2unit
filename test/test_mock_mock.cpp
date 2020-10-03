@@ -1,5 +1,16 @@
 #include "../source/h2_unit.cpp"
 
+extern "C" {
+int foobar1_bymock(int a)
+{
+   return 0;
+}
+}
+int foobar2_bymock(int a)
+{
+   return 0;
+}
+
 namespace {
 
 int bar1(int a, const char* b)
@@ -509,19 +520,6 @@ SUITE(omit Checkin)
    }
 }
 
-}  // namespace
-
-extern "C" {
-int foobar1_bymock(int a)
-{
-   return 0;
-}
-}
-int foobar2_bymock(int a)
-{
-   return 0;
-}
-
 SUITE(mock name)
 {
    Case("foobar1_bymock")
@@ -541,3 +539,36 @@ CASE(MOCKS)
    MOCKS(bar1, int, (int, const char*), Return(11));
    OK(11, bar1(1, "A"));
 }
+
+SUITE(UNMOCK)
+{
+   Case(normal function)
+   {
+      MOCK(foobar1_bymock, int, (int), Once(0)) { return -1; };
+      OK(-1, foobar1_bymock(0));
+      UNMOCK(foobar1_bymock);
+      OK(0, foobar1_bymock(0));
+   }
+
+   Case(template member function)
+   {
+      Foo1<int> a1;
+      MOCK(Foo1<int>, bar1<int>, int, (int), Once())
+      {
+         return -1;
+      };
+      OK(-1, a1.bar1(0));
+
+      UNMOCK(Foo1<int>, bar1<int>, int, (int));
+      OK(1, a1.bar1(0));
+   }
+
+   Case("foobar1_bymock")
+   {
+      MOCK("foobar1_bymock", int, (int), Once(0)) { return -1; };
+      OK(-1, foobar1_bymock(0));
+      UNMOCK("foobar1_bymock");
+      OK(0, foobar1_bymock(0));
+   }
+}
+}  // namespace

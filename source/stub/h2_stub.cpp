@@ -42,6 +42,16 @@ h2_inline bool h2_stubs::add(void* origin_fp, void* substitute_fp, const char* o
    return true;
 }
 
+h2_inline void h2_stubs::clear(void* origin_fp)
+{
+   h2_list_for_each_entry (p, stubs, h2_stub, x) {
+      if (p->origin_fp == origin_fp) {
+         p->x.out();
+         delete p;
+      }
+   }
+}
+
 h2_inline void h2_stubs::clear()
 {
    h2_list_for_each_entry (p, stubs, h2_stub, x) {

@@ -176,6 +176,18 @@ namespace h2 {
 #   pragma message("STUB conflict, using H2STUB instead.")
 #endif
 
+#ifndef UNSTUB
+#   define UNSTUB H2UNSTUB
+#else
+#   pragma message("UNSTUB conflict, using H2UNSTUB instead.")
+#endif
+
+#ifndef UNMOCK
+#   define UNMOCK H2UNMOCK
+#else
+#   pragma message("UNMOCK conflict, using H2UNMOCK instead.")
+#endif
+
 #ifndef BLOCK
 #   define BLOCK H2BLOCK
 #else
