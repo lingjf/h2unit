@@ -91,7 +91,6 @@ h2_inline int h2_task::execute()
 {
    h2_report::initialize();
    h2_memory::initialize();
-   h2_patch::initialize();
    h2_stdio::initialize();
    h2_dns::initialize();
 

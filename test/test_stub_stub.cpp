@@ -1,6 +1,6 @@
 #include "../source/h2_unit.cpp"
 
-namespace {
+namespace test_stub_stub {
 
 int foobar(int, const int&)
 {
@@ -394,7 +394,7 @@ SUITE(STUBS)
    }
 }
 
-}  // namespace
+}  // namespace test_stub_stub
 
 extern "C" {
 int foobar1_bystub(int a)

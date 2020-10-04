@@ -7,8 +7,6 @@
 *.map
 
 .last_order
-example/h2unit.cpp
-example/h2unit.h
 
 *.su
 *.idb

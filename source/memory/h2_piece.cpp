@@ -35,7 +35,7 @@ struct h2_piece : h2_libc {
       if (page_ptr == NULL) ::printf("VirtualAlloc failed at %s:%d\n", __FILE__, __LINE__), abort();
 #else
       page_ptr = (unsigned char*)::mmap(nullptr, page_size * (page_count + 1), PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0);
-      if (page_ptr == MAP_FAILED) ::printf("mmap failed at %s:%d\n", __FILE__, __LINE__), abort();
+      if (page_ptr == MAP_FAILED) h2_color::printf("yellow", "mmap failed at %s:%d\n", __FILE__, __LINE__), abort();
 #endif
 
       user_ptr = page_ptr + page_size * page_count - user_size_plus + alignment;
@@ -170,14 +170,14 @@ struct h2_piece : h2_libc {
          if (h2_in(who_allocate, S[i].a) && h2_in(who_release, S[i].r))
             return nullptr;
 
-      h2_backtrace bt_release(strcmp("macos", O.os) ? 5 : 6);
+      h2_backtrace bt_release(O.os == macos ? 6 : 5);
       return h2_fail::new_asymmetric_free(user_ptr, who_allocate, who_release, bt_allocate, bt_release);
    }
 
    h2_fail* check_double_free()
    {
       h2_fail* fail = nullptr;
-      h2_backtrace bt(strcmp("macos", O.os) ? 5 : 6);
+      h2_backtrace bt(O.os == macos ? 6 : 5);
       if (free_times++ == 0)
          bt_release = bt;
       else

@@ -16,7 +16,7 @@ static inline void nm1(std::map<std::string, unsigned long long>*& symbols)
       if (3 != sscanf(line, "%s %c %s", addr, &type, name)) continue;
       if (strchr("bBcCdDiIuU", type)) continue;  // reject bBcCdDiIuU, accept tTwWsSvV, sS for vtable
       int _ = 0;
-      if (!strcmp("macos", O.os)) _ = 1;  // remove prefix '_' in MacOS
+      if (O.os == macos) _ = 1;  // remove prefix '_' in MacOS
       (*symbols)[name + _] = (unsigned long long)strtoull(addr, nullptr, 16);
    }
    ::pclose(f);
@@ -38,7 +38,7 @@ static inline void nm2(h2_list& symbols)
       if (3 != sscanf(line, "%s %c %[^\n]", addr, &type, name)) continue;
       if (strchr("bBcCdDiIuU", type)) continue;
       int _ = 0;
-      if (!strcmp("macos", O.os) && !strchr(name, '(')) _ = 1;
+      if (O.os == macos && !strchr(name, '(')) _ = 1;
       symbols.push_back((new h2_symbol(name + _, (unsigned long long)strtoull(addr, nullptr, 16)))->x);
    }
    ::pclose(f);

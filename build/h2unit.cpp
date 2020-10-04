@@ -1,5 +1,5 @@
 ﻿
-/* v5.6 2020-10-03 23:00:53 */
+/* v5.6 2020-10-04 20:15:07 */
 /* https://github.com/lingjf/h2unit */
 /* Apache Licence 2.0 */
 
@@ -715,15 +715,19 @@ struct h2_nm {
 };
 // source/h2_option.hpp
 
+static constexpr unsigned linux = 0x0101;
+static constexpr unsigned macos = 0x0102;
+static constexpr unsigned windows = 0x0200;
+
 struct h2_option {
    h2_singleton(h2_option);
 
 #if defined __linux__
-   static constexpr const char* os = "linux";
+   static constexpr unsigned os = linux;
 #elif defined __APPLE__
-   static constexpr const char* os = "macos";
+   static constexpr unsigned os = macos;
 #elif defined _WIN32
-   static constexpr const char* os = "windows";
+   static constexpr unsigned os = windows;
 #endif
 
    unsigned terminal_width;
@@ -802,12 +806,6 @@ struct h2_debugger {
          bt.print(3);                                                                               \
       }                                                                                             \
    } while (0)
-// source/h2_patch.hpp
-
-struct h2_patch {
-   static void initialize();
-   static bool exempt(const h2_backtrace& bt);
-};
 // source/h2_failure.hpp
 
 struct h2_fail : h2_libc {
@@ -1002,6 +1000,17 @@ struct h2_json {
    static int match(const h2_string& expect, const h2_string& actual, bool caseless);
    static bool diff(const h2_string& expect, const h2_string& actual, h2_lines& e_lines, h2_lines& a_lines, bool caseless);
 };
+// source/memory/h2_exempt.hpp
+
+struct h2_exempt {
+   h2_list exempts;
+   h2_singleton(h2_exempt);
+   static void setup();
+   static void add(void* func);
+   static bool in(const h2_backtrace& bt);
+};
+
+#define H2UNMEM(func) h2::h2_exempt::add((void*)func)
 // source/memory/h2_memory.hpp
 
 struct h2_memory {
@@ -3592,6 +3601,12 @@ using h2::Pair;
 #   pragma message("BLOCK conflict, using H2BLOCK instead.")
 #endif
 
+#ifndef UNMEM
+#   define UNMEM H2UNMEM
+#else
+#   pragma message("UNMEM conflict, using H2UNMEM instead.")
+#endif
+
 #ifndef DNS
 #   define DNS H2DNS
 #else
@@ -4453,7 +4468,7 @@ static inline void nm1(std::map<std::string, unsigned long long>*& symbols)
       if (3 != sscanf(line, "%s %c %s", addr, &type, name)) continue;
       if (strchr("bBcCdDiIuU", type)) continue;  // reject bBcCdDiIuU, accept tTwWsSvV, sS for vtable
       int _ = 0;
-      if (!strcmp("macos", O.os)) _ = 1;  // remove prefix '_' in MacOS
+      if (O.os == macos) _ = 1;  // remove prefix '_' in MacOS
       (*symbols)[name + _] = (unsigned long long)strtoull(addr, nullptr, 16);
    }
    ::pclose(f);
@@ -4475,7 +4490,7 @@ static inline void nm2(h2_list& symbols)
       if (3 != sscanf(line, "%s %c %[^\n]", addr, &type, name)) continue;
       if (strchr("bBcCdDiIuU", type)) continue;
       int _ = 0;
-      if (!strcmp("macos", O.os) && !strchr(name, '(')) _ = 1;
+      if (O.os == macos && !strchr(name, '(')) _ = 1;
       symbols.push_back((new h2_symbol(name + _, (unsigned long long)strtoull(addr, nullptr, 16)))->x);
    }
    ::pclose(f);
@@ -6053,7 +6068,7 @@ struct h2_piece : h2_libc {
       if (page_ptr == NULL) ::printf("VirtualAlloc failed at %s:%d\n", __FILE__, __LINE__), abort();
 #else
       page_ptr = (unsigned char*)::mmap(nullptr, page_size * (page_count + 1), PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0);
-      if (page_ptr == MAP_FAILED) ::printf("mmap failed at %s:%d\n", __FILE__, __LINE__), abort();
+      if (page_ptr == MAP_FAILED) h2_color::printf("yellow", "mmap failed at %s:%d\n", __FILE__, __LINE__), abort();
 #endif
 
       user_ptr = page_ptr + page_size * page_count - user_size_plus + alignment;
@@ -6188,14 +6203,14 @@ struct h2_piece : h2_libc {
          if (h2_in(who_allocate, S[i].a) && h2_in(who_release, S[i].r))
             return nullptr;
 
-      h2_backtrace bt_release(strcmp("macos", O.os) ? 5 : 6);
+      h2_backtrace bt_release(O.os == macos ? 6 : 5);
       return h2_fail::new_asymmetric_free(user_ptr, who_allocate, who_release, bt_allocate, bt_release);
    }
 
    h2_fail* check_double_free()
    {
       h2_fail* fail = nullptr;
-      h2_backtrace bt(strcmp("macos", O.os) ? 5 : 6);
+      h2_backtrace bt(O.os == macos ? 6 : 5);
       if (free_times++ == 0)
          bt_release = bt;
       else
@@ -6334,8 +6349,8 @@ struct h2_stack {
 
    h2_piece* new_piece(const char* who, size_t size, size_t alignment, const char* fill)
    {
-      h2_backtrace bt(strcmp("macos", O.os) ? 2 : 3);
-      h2_block* b = h2_patch::exempt(bt) ? h2_list_bottom_entry(blocks, h2_block, x) : h2_list_top_entry(blocks, h2_block, x);
+      h2_backtrace bt(O.os == macos ? 3 : 2);
+      h2_block* b = h2_exempt::in(bt) ? h2_list_bottom_entry(blocks, h2_block, x) : h2_list_top_entry(blocks, h2_block, x);
       return b ? b->new_piece(who, size, alignment, fill ? *fill : 0, fill, bt) : nullptr;
    }
 
@@ -6668,6 +6683,7 @@ h2_inline void h2_memory::initialize()
    if (O.memory_check && !O.debug) h2_crash::install_segment_fault_handler();
    stack::root();
    if (O.memory_check) h2_override::I().overrides();
+   if (O.memory_check) h2_exempt::setup();
 }
 h2_inline void h2_memory::finalize()
 {
@@ -6713,12 +6729,18 @@ static inline void parse_block_attributes(const char* attributes, long long& n_l
 
    const char* p_limit = strcasestr(attributes, "limit");
    if (p_limit) {
-      n_limit = h2_numeric::parse_int_after_equal(p_limit);
+      const char* p = strchr(p_limit, '=');
+      if (p) {
+         n_limit = (long long)strtod(p + 1, nullptr);
+      }
    }
 
    const char* p_align = strcasestr(attributes, "align");
    if (p_align) {
-      n_align = (int)h2_numeric::parse_int_after_equal(p_align);
+      const char* p = strchr(p_align, '=');
+      if (p) {
+         n_align = (int)strtod(p + 1, nullptr);
+      }
    }
 
    const char* p_fill = strcasestr(attributes, "fill");
@@ -6756,9 +6778,158 @@ h2_inline h2_memory::stack::block::block(const char* attributes, const char* fil
 
    h2_stack::I().push(n_limit, n_align, s_fill, n_fill, noleak, "block", file, lino);
 }
+
 h2_inline h2_memory::stack::block::~block()
 {
    h2_fail_g(h2_stack::I().pop(), false);
+}
+// source/memory/h2_exempt.cpp
+
+struct h2_patch {  // allocate memory inside asymmetrically
+   static char* asctime(const struct tm* timeptr)
+   {
+      static char st[256];
+      asctime_r(timeptr, st);
+      return st;
+   }
+
+   static char* asctime_r(const struct tm* timeptr, char* buf)
+   {
+      char* ret;
+      h2_memory::restores();
+      for (h2::h2_stub_temporary_restore t((void*)::asctime_r); t;) ret = ::asctime_r(timeptr, buf);
+      h2_memory::overrides();
+      return ret;
+   }
+
+   static char* ctime(const time_t* clock)
+   {
+      static char st[256];
+      ctime_r(clock, st);
+      return st;
+   }
+
+   static char* ctime_r(const time_t* clock, char* buf)
+   {
+      struct tm t;
+      return asctime_r(gmtime_r(clock, &t), buf);
+   }
+
+   static struct tm* localtime(const time_t* clock)
+   {
+      return gmtime(clock);
+   }
+
+   static struct tm* localtime_r(const time_t* timep, struct tm* result)
+   {
+      return gmtime_r(timep, result);
+   }
+
+   static struct tm* gmtime_r(const time_t* clock, struct tm* result)
+   {
+      struct tm* ret;
+      h2_memory::restores();
+      for (h2::h2_stub_temporary_restore t((void*)::gmtime_r); t;) ret = ::gmtime_r(clock, result);
+      h2_memory::overrides();
+      return ret;
+   }
+
+   static struct tm* gmtime(const time_t* clock)
+   {
+      static struct tm st;
+      gmtime_r(clock, &st);
+      return &st;
+   }
+
+   static time_t mktime(struct tm* timeptr)
+   {
+      time_t ret;
+      h2_memory::restores();
+      for (h2::h2_stub_temporary_restore t((void*)::mktime); t;) ret = ::mktime(timeptr);
+      h2_memory::overrides();
+      return ret;
+   }
+
+   static double strtod(const char* nptr, char** endptr)
+   {
+      double ret;
+      h2_memory::restores();
+      for (h2::h2_stub_temporary_restore t((void*)::strtod); t;) ret = ::strtod(nptr, endptr);
+      h2_memory::overrides();
+      return ret;
+   }
+
+   static long double strtold(const char* nptr, char** endptr)
+   {
+      double ret;
+      h2_memory::restores();
+      for (h2::h2_stub_temporary_restore t((void*)::strtold); t;) ret = ::strtold(nptr, endptr);
+      h2_memory::overrides();
+      return ret;
+   }
+};
+
+struct h2_exemption : h2_libc {
+   h2_list x;
+   void* base;
+   int size;
+
+   h2_exemption(void* _base, int _size = 0) : base(_base), size(_size)
+   {
+      if (!size) {
+         size = function_size((unsigned char*)base);
+      }
+   }
+
+   int function_size(unsigned char* func)
+   {
+      for (unsigned char* p = func + 1;; p++) {
+         if (*p == 0xC3) {
+            if ((*(p - 1) == 0x5D) || (*(p - 1) == 0xC9)) {
+               return p - func;
+            }
+         }
+      }
+      return 300;
+   }
+};
+
+h2_inline void h2_exempt::setup()
+{
+   static h2_stubs stubs;
+
+   stubs.add((void*)::gmtime, (void*)h2_patch::gmtime, "gmtime", __FILE__, __LINE__);
+   stubs.add((void*)::gmtime_r, (void*)h2_patch::gmtime_r, "gmtime_r", __FILE__, __LINE__);
+   stubs.add((void*)::ctime, (void*)h2_patch::ctime, "ctime", __FILE__, __LINE__);
+   stubs.add((void*)::ctime_r, (void*)h2_patch::ctime_r, "ctime_r", __FILE__, __LINE__);
+   stubs.add((void*)::asctime, (void*)h2_patch::asctime, "asctime", __FILE__, __LINE__);
+   stubs.add((void*)::asctime_r, (void*)h2_patch::asctime_r, "asctime_r", __FILE__, __LINE__);
+   stubs.add((void*)::localtime, (void*)h2_patch::localtime, "localtime", __FILE__, __LINE__);
+   stubs.add((void*)::localtime_r, (void*)h2_patch::localtime_r, "localtime_r", __FILE__, __LINE__);
+   if (O.os == linux) stubs.add((void*)::mktime, (void*)h2_patch::mktime, "mktime", __FILE__, __LINE__);
+   if (O.os == macos) stubs.add((void*)::strtod, (void*)h2_patch::strtod, "strtod", __FILE__, __LINE__);
+   if (O.os == macos) stubs.add((void*)::strtold, (void*)h2_patch::strtold, "strtold", __FILE__, __LINE__);
+
+   add((void*)::sscanf);
+   add((void*)::sprintf);
+   add((void*)::vsnprintf);
+#ifdef __APPLE__
+   add((void*)::vsnprintf_l);
+#endif
+   add((void*)h2_pattern::regex_match);  // linux is 0xcb size, MAC is 0x100 (gap to next symbol)
+}
+
+h2_inline void h2_exempt::add(void* func)
+{
+   I().exempts.push_back((new h2_exemption((void*)func))->x);
+}
+
+h2_inline bool h2_exempt::in(const h2_backtrace& bt)
+{
+   h2_list_for_each_entry (p, I().exempts, h2_exemption, x)
+      if (bt.has(p->base, p->size))
+         return true;
+   return false;
 }
 
 // source/stub/h2_e9.cpp
@@ -9334,120 +9505,6 @@ h2_inline bool h2_option::filter(const char* suitename, const char* casename, co
          return true;
    return false;
 }
-// source/h2_patch.cpp
-
-struct h2__patch {
-   h2_singleton(h2__patch);
-   h2_stubs stubs;
-
-   static char* asctime(const struct tm* timeptr)
-   {
-      static char st[256];
-      asctime_r(timeptr, st);
-      return st;
-   }
-   static char* asctime_r(const struct tm* timeptr, char* buf)
-   {
-      char* ret;
-      h2_memory::restores();
-      for (h2::h2_stub_temporary_restore t((void*)::asctime_r); t;) ret = ::asctime_r(timeptr, buf);
-      h2_memory::overrides();
-      return ret;
-   }
-   static char* ctime(const time_t* clock)
-   {
-      static char st[256];
-      ctime_r(clock, st);
-      return st;
-   }
-   static char* ctime_r(const time_t* clock, char* buf)
-   {
-      struct tm t;
-      return asctime_r(gmtime_r(clock, &t), buf);
-   }
-   static struct tm* localtime(const time_t* clock)
-   {
-      return gmtime(clock);
-   }
-   static struct tm* localtime_r(const time_t* timep, struct tm* result)
-   {
-      return gmtime_r(timep, result);
-   }
-   static struct tm* gmtime_r(const time_t* clock, struct tm* result)
-   {
-      struct tm* ret;
-      h2_memory::restores();
-      for (h2::h2_stub_temporary_restore t((void*)::gmtime_r); t;) ret = ::gmtime_r(clock, result);
-      h2_memory::overrides();
-      return ret;
-   }
-   static struct tm* gmtime(const time_t* clock)
-   {
-      static struct tm st;
-      gmtime_r(clock, &st);
-      return &st;
-   }
-   static time_t mktime(struct tm* timeptr)
-   {
-      time_t ret;
-      h2_memory::restores();
-      for (h2::h2_stub_temporary_restore t((void*)::mktime); t;) ret = ::mktime(timeptr);
-      h2_memory::overrides();
-      return ret;
-   }
-
-   static double strtod(const char* nptr, char** endptr)
-   {
-      double ret;
-      h2_memory::restores();
-      for (h2::h2_stub_temporary_restore t((void*)::strtod); t;) ret = ::strtod(nptr, endptr);
-      h2_memory::overrides();
-      return ret;
-   }
-
-   h2__patch()
-   {
-      if (O.memory_check) {
-         stubs.add((void*)::gmtime, (void*)gmtime, "gmtime", __FILE__, __LINE__);
-         stubs.add((void*)::gmtime_r, (void*)gmtime_r, "gmtime_r", __FILE__, __LINE__);
-         stubs.add((void*)::ctime, (void*)ctime, "ctime", __FILE__, __LINE__);
-         stubs.add((void*)::ctime_r, (void*)ctime_r, "ctime_r", __FILE__, __LINE__);
-         stubs.add((void*)::asctime, (void*)asctime, "asctime", __FILE__, __LINE__);
-         stubs.add((void*)::asctime_r, (void*)asctime_r, "asctime_r", __FILE__, __LINE__);
-         stubs.add((void*)::localtime, (void*)localtime, "localtime", __FILE__, __LINE__);
-         stubs.add((void*)::localtime_r, (void*)localtime_r, "localtime_r", __FILE__, __LINE__);
-         stubs.add((void*)::mktime, (void*)mktime, "mktime", __FILE__, __LINE__);
-         stubs.add((void*)::strtod, (void*)strtod, "strtod", __FILE__, __LINE__);
-      }
-   }
-};
-
-h2_inline void h2_patch::initialize()
-{
-   h2__patch::I();
-}
-
-h2_inline bool h2_patch::exempt(const h2_backtrace& bt)
-{
-   static struct {
-      void* base;
-      int size;
-   } exempt_functions[] = {
-     {(void*)sscanf, 300},
-     {(void*)sprintf, 300},
-     {(void*)vsnprintf, 300},
-#ifdef __APPLE__
-     {(void*)vsnprintf_l, 300},
-#endif
-     {(void*)h2_pattern::regex_match, 0x100},  // linux is 0xcb size, MAC is 0x100 (gap to next symbol)
-   };
-
-   for (auto& x : exempt_functions)
-      if (bt.has(x.base, x.size))
-         return true;
-
-   return false;
-}
 
 // source/core/h2_case.cpp
 
@@ -9641,7 +9698,6 @@ h2_inline int h2_task::execute()
 {
    h2_report::initialize();
    h2_memory::initialize();
-   h2_patch::initialize();
    h2_stdio::initialize();
    h2_dns::initialize();
 

@@ -43,6 +43,7 @@ SUITE(BLOCK)
          free(c4);
       }
    }
+
    Case(fill)
    {
       BLOCK(fill = 0xC5)
@@ -58,6 +59,7 @@ SUITE(BLOCK)
          free(c1);
       }
    }
+
    Case(align)
    {
       BLOCK(align = 1)
@@ -78,13 +80,14 @@ SUITE(BLOCK)
          OK(3, (uintptr_t)c1 & 0x03);
          free(c1);
       }
-      BLOCK(align = 4)
+      BLOCK(align = 0x4)
       {
          c1 = malloc(8);
          OK(4, (uintptr_t)c1 & 0x07);
          free(c1);
       }
    }
+
    Case(noleak)
    {
       BLOCK(noleak)

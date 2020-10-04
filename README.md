@@ -746,6 +746,15 @@ CASE(memory leak in block)
 }
 ```
 
+Some libc functions allocate memory inside and cache them, these memory will be report as leak.
+
+'asctime, asctime_r, ctime, ctime_r, localtime, localtime_r, gmtime, gmtime_r, mktime, strtod, strtold, sscanf, sprintf, vsnprintf' are ignored by default. 
+
+Others can use `UNMEM` to avoid.
+
+```C++
+   UNMEM(strtoull)
+```
 #### 7.2. Memory Faulty Injection
 [`BLOCK`](source/h2_unit.hpp#L114) can used to control the remain memory resource, it can makes malloc() fail with "out of memory" error. The following case will fail due to malloc() fail.
 ```C++
@@ -984,8 +993,8 @@ twofiles speed up 2~3 times than onefile.
 *    `-c` enable/disable *colorful* output, default is enable
 *    `-m` enable/disable *memory* check(leak, overflow, trample, double free, asymmetric free), default is enable
 *    `-d/D` *debug* mode, -D for gdb attach but requires password
-*    `-f` *fold* simple json object or array 
-*    `-y` *copy-paste* JSON C/C++ source code  
+*    `-f` *fold* simple json object or array
+*    `-y` *copy-paste* JSON C/C++ source code
 *    `-j` {path} generate *junit* compatible XML output
 *    `-i` {pattern} *include* filter, suite name or case name wildcard (?, *) matches, if pattern don't contains ? and *, wildcard change to contains. Default is `*` (include all)
 *    `-e` {pattern} *exclude* filter, default is ` ` (exclude nothing)

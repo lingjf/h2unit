@@ -19,6 +19,7 @@ SUITE(parse_block_attributes)
       OK(Me("\01", 1), s_fill);
       OK(noleak);
    }
+
    Case("limit=0x1000, fill=0x55")
    {
       const char* x = "limit =0x1000, fill = 0x55";
@@ -29,6 +30,7 @@ SUITE(parse_block_attributes)
       OK(Me("\x55", 1), s_fill);
       OK(!noleak);
    }
+
    Case("fill=0x5566")
    {
       const char* x = "fill=0x5566";
@@ -39,6 +41,7 @@ SUITE(parse_block_attributes)
       OK(Me("\x55\x66", 2), s_fill);
       OK(!noleak);
    }
+
    Case("fill=60000")
    {
       const char* x = "fill=60000";
@@ -47,6 +50,12 @@ SUITE(parse_block_attributes)
       OK(Me("\x60\xEA", 2), s_fill);
       OK(!noleak);
    }
+}
+
+void parse_something()
+{
+   static char* buffer = NULL;
+   if (buffer == NULL) { buffer = (char*)malloc(1000); }
 }
 
 SUITE(leak)
@@ -59,5 +68,12 @@ SUITE(leak)
    {
       strcpy((char*)p, "hello world");
       OK("hello world", (char*)p);
+   }
+
+   Case(UNMEM)
+   {
+      UNMEM(parse_something);
+
+      parse_something();
    }
 }

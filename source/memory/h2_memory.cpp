@@ -4,6 +4,7 @@ h2_inline void h2_memory::initialize()
    if (O.memory_check && !O.debug) h2_crash::install_segment_fault_handler();
    stack::root();
    if (O.memory_check) h2_override::I().overrides();
+   if (O.memory_check) h2_exempt::setup();
 }
 h2_inline void h2_memory::finalize()
 {
@@ -49,12 +50,18 @@ static inline void parse_block_attributes(const char* attributes, long long& n_l
 
    const char* p_limit = strcasestr(attributes, "limit");
    if (p_limit) {
-      n_limit = h2_numeric::parse_int_after_equal(p_limit);
+      const char* p = strchr(p_limit, '=');
+      if (p) {
+         n_limit = (long long)strtod(p + 1, nullptr);
+      }
    }
 
    const char* p_align = strcasestr(attributes, "align");
    if (p_align) {
-      n_align = (int)h2_numeric::parse_int_after_equal(p_align);
+      const char* p = strchr(p_align, '=');
+      if (p) {
+         n_align = (int)strtod(p + 1, nullptr);
+      }
    }
 
    const char* p_fill = strcasestr(attributes, "fill");
@@ -92,6 +99,7 @@ h2_inline h2_memory::stack::block::block(const char* attributes, const char* fil
 
    h2_stack::I().push(n_limit, n_align, s_fill, n_fill, noleak, "block", file, lino);
 }
+
 h2_inline h2_memory::stack::block::~block()
 {
    h2_fail_g(h2_stack::I().pop(), false);

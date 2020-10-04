@@ -62,59 +62,59 @@ h2_weak_attribute int main(int argc, const char** argv)
 
 namespace h2 {
 
-#include "utils/h2_list.cpp"     //
-#include "utils/h2_misc.cpp"     //
-#include "utils/h2_numeric.cpp"  //
-#include "utils/h2_libc.cpp"     //
-#include "utils/h2_string.cpp"   //
+#include "utils/h2_list.cpp"
+#include "utils/h2_misc.cpp"
+#include "utils/h2_numeric.cpp"
+#include "utils/h2_libc.cpp"
+#include "utils/h2_string.cpp"
 #include "utils/h2_nm.cpp"
 
-#include "json/h2_tinyexpr.cpp"  //
-#include "json/h2_node.cpp"      // ..
-#include "json/h2_lexical.cpp"   // ..
-#include "json/h2_syntax.cpp"    // ..
-#include "json/h2_select.cpp"    // ..
-#include "json/h2_tree.cpp"      // ..
-#include "json/h2_match.cpp"     // ..
-#include "json/h2_dual.cpp"      // ..
-#include "json/h2_json.cpp"      // ..
+#include "json/h2_tinyexpr.cpp"
+#include "json/h2_node.cpp"
+#include "json/h2_lexical.cpp"
+#include "json/h2_syntax.cpp"
+#include "json/h2_select.cpp"
+#include "json/h2_tree.cpp"
+#include "json/h2_match.cpp"
+#include "json/h2_dual.cpp"
+#include "json/h2_json.cpp"
 
-#include "matcher/h2_strcmp.cpp"  //
-#include "matcher/h2_memcmp.cpp"  //
+#include "matcher/h2_strcmp.cpp"
+#include "matcher/h2_memcmp.cpp"
 
-#include "memory/h2_piece.cpp"     // ..
-#include "memory/h2_block.cpp"     // ..
-#include "memory/h2_stack.cpp"     // ..
-#include "memory/h2_override.cpp"  // ..
-#include "memory/h2_crash.cpp"     // ..
-#include "memory/h2_memory.cpp"    // ..
+#include "memory/h2_piece.cpp"
+#include "memory/h2_block.cpp"
+#include "memory/h2_stack.cpp"
+#include "memory/h2_override.cpp"
+#include "memory/h2_crash.cpp"
+#include "memory/h2_memory.cpp"
+#include "memory/h2_exempt.cpp"
 
-#include "stub/h2_e9.cpp"      //
-#include "stub/h2_native.cpp"  // ..
-#include "stub/h2_stub.cpp"    // ..
+#include "stub/h2_e9.cpp"
+#include "stub/h2_native.cpp"
+#include "stub/h2_stub.cpp"
 
-#include "mock/h2_checkin.cpp"  //
-#include "mock/h2_mocking.cpp"  //
-#include "mock/h2_mocks.cpp"    //
+#include "mock/h2_checkin.cpp"
+#include "mock/h2_mocking.cpp"
+#include "mock/h2_mocks.cpp"
 
-#include "extension/h2_dns.cpp"     //
-#include "extension/h2_socket.cpp"  //
-#include "extension/h2_stdio.cpp"   //
+#include "extension/h2_dns.cpp"
+#include "extension/h2_socket.cpp"
+#include "extension/h2_stdio.cpp"
 
-#include "h2_color.cpp"    //
-#include "h2_debug.cpp"    //
-#include "h2_failure.cpp"  //
-#include "h2_line.cpp"     //
-#include "h2_report.cpp"   //
+#include "h2_color.cpp"
+#include "h2_debug.cpp"
+#include "h2_failure.cpp"
+#include "h2_line.cpp"
+#include "h2_report.cpp"
 
-#include "h2_backtrace.cpp"  //
-#include "h2_layout.cpp"     //
-#include "h2_option.cpp"     //
-#include "h2_patch.cpp"      //
+#include "h2_backtrace.cpp"
+#include "h2_layout.cpp"
+#include "h2_option.cpp"
 
-#include "core/h2_case.cpp"   //
-#include "core/h2_suite.cpp"  //
-#include "core/h2_task.cpp"   //
+#include "core/h2_case.cpp"
+#include "core/h2_suite.cpp"
+#include "core/h2_task.cpp"
 
-#include "assert/h2_assert.cpp"  //
+#include "assert/h2_assert.cpp"
 }  // namespace h2

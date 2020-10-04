@@ -1,13 +1,17 @@
 
+static constexpr unsigned linux = 0x0101;
+static constexpr unsigned macos = 0x0102;
+static constexpr unsigned windows = 0x0200;
+
 struct h2_option {
    h2_singleton(h2_option);
 
 #if defined __linux__
-   static constexpr const char* os = "linux";
+   static constexpr unsigned os = linux;
 #elif defined __APPLE__
-   static constexpr const char* os = "macos";
+   static constexpr unsigned os = macos;
 #elif defined _WIN32
-   static constexpr const char* os = "windows";
+   static constexpr unsigned os = windows;
 #endif
 
    unsigned terminal_width;

@@ -1,5 +1,5 @@
 ﻿
-/* v5.6 2020-10-03 23:00:53 */
+/* v5.6 2020-10-04 20:15:07 */
 /* https://github.com/lingjf/h2unit */
 /* Apache Licence 2.0 */
 
@@ -712,15 +712,19 @@ struct h2_nm {
 };
 // source/h2_option.hpp
 
+static constexpr unsigned linux = 0x0101;
+static constexpr unsigned macos = 0x0102;
+static constexpr unsigned windows = 0x0200;
+
 struct h2_option {
    h2_singleton(h2_option);
 
 #if defined __linux__
-   static constexpr const char* os = "linux";
+   static constexpr unsigned os = linux;
 #elif defined __APPLE__
-   static constexpr const char* os = "macos";
+   static constexpr unsigned os = macos;
 #elif defined _WIN32
-   static constexpr const char* os = "windows";
+   static constexpr unsigned os = windows;
 #endif
 
    unsigned terminal_width;
@@ -799,12 +803,6 @@ struct h2_debugger {
          bt.print(3);                                                                               \
       }                                                                                             \
    } while (0)
-// source/h2_patch.hpp
-
-struct h2_patch {
-   static void initialize();
-   static bool exempt(const h2_backtrace& bt);
-};
 // source/h2_failure.hpp
 
 struct h2_fail : h2_libc {
@@ -999,6 +997,17 @@ struct h2_json {
    static int match(const h2_string& expect, const h2_string& actual, bool caseless);
    static bool diff(const h2_string& expect, const h2_string& actual, h2_lines& e_lines, h2_lines& a_lines, bool caseless);
 };
+// source/memory/h2_exempt.hpp
+
+struct h2_exempt {
+   h2_list exempts;
+   h2_singleton(h2_exempt);
+   static void setup();
+   static void add(void* func);
+   static bool in(const h2_backtrace& bt);
+};
+
+#define H2UNMEM(func) h2::h2_exempt::add((void*)func)
 // source/memory/h2_memory.hpp
 
 struct h2_memory {
@@ -3587,6 +3596,12 @@ using h2::Pair;
 #   define BLOCK H2BLOCK
 #else
 #   pragma message("BLOCK conflict, using H2BLOCK instead.")
+#endif
+
+#ifndef UNMEM
+#   define UNMEM H2UNMEM
+#else
+#   pragma message("UNMEM conflict, using H2UNMEM instead.")
 #endif
 
 #ifndef DNS

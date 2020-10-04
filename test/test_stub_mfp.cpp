@@ -1,6 +1,6 @@
 #include "../source/h2_unit.cpp"
 
-namespace {
+namespace test_stub_mfp {
 
 class Shape {
  public:
@@ -8,7 +8,7 @@ class Shape {
 
    Shape() : x(0), y(0) {}
 
-private:
+ private:
    static int fly(int x, int y) { return 0; }
    static int fly(int xy) { return 1; }
 
@@ -189,4 +189,4 @@ CASE(is static member function)
    OK(!h2::h2_mfp<Shape, int(int)>::is_static_member_function(&Shape::work));
 }
 
-}  // namespace
+}  // namespace test_stub_mfp

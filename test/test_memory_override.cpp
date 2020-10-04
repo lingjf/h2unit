@@ -130,6 +130,14 @@ CASE(harmless)
    localtime(&t3);
    localtime_r(&t3, &t5);
 
+   strtof("12345678.12", NULL);
+   strtod("1912000101600571", NULL);
+   strtold("1912000101600571", NULL);
+   strtol("12345678", NULL, 10);
+   strtoll("1234567890", NULL, 10);
+   strtoul("12345678", NULL, 10);
+   strtoull("1234567890", NULL, 10);
+
    strerror(ENOMEM);
    double t9 = sqrt(42.0);
    sprintf(t, "%g", t9);

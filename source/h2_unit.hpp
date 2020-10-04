@@ -77,10 +77,10 @@ namespace h2 {
 #include "h2_color.hpp"               // line
 #include "h2_backtrace.hpp"           // line
 #include "h2_debug.hpp"               // option, backtrace
-#include "h2_patch.hpp"               // backtrace
 #include "h2_failure.hpp"             // backtrace
 #include "h2_generator.hpp"           // utils
 #include "json/h2_json.hpp"           // line
+#include "memory/h2_exempt.hpp"       // backtrace
 #include "memory/h2_memory.hpp"       // failure
 #include "matcher/h2_matches.hpp"     // failure
 #include "matcher/h2_matcher.hpp"     // matches, failure
@@ -192,6 +192,12 @@ namespace h2 {
 #   define BLOCK H2BLOCK
 #else
 #   pragma message("BLOCK conflict, using H2BLOCK instead.")
+#endif
+
+#ifndef UNMEM
+#   define UNMEM H2UNMEM
+#else
+#   pragma message("UNMEM conflict, using H2UNMEM instead.")
 #endif
 
 #ifndef DNS
