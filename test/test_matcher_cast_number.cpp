@@ -91,19 +91,19 @@ enum {
                      enum_1
 
 #define TheCheck(x) static void foo1##x(decltype(x) v){};
-ForForEach(TheCheck, NUMBER0_LIST);
+H2Foreach(TheCheck, NUMBER0_LIST);
 #undef TheCheck
 
 SUITE(Same Number Type)
 {
    Case(signed)
    {
-      OK((std::is_same<short, short int>::value));
-      OK((std::is_same<long, long int>::value));
-      OK((std::is_same<long long, long long int>::value));
-      OK((std::is_same<signed, int>::value) || (std::is_same<signed, long int>::value) || (std::is_same<signed, long long int>::value));
-      OK((std::is_same<intptr_t, int>::value) || (std::is_same<intptr_t, long int>::value) || (std::is_same<intptr_t, long long int>::value));
-      OK((std::is_same<ssize_t, int>::value) || (std::is_same<ssize_t, long int>::value) || (std::is_same<ssize_t, long long int>::value));
+      OK(std::is_same<short, short int>::value);
+      OK(std::is_same<long, long int>::value);
+      OK(std::is_same<long long, long long int>::value);
+      OK(std::is_same<signed, int>::value || std::is_same<signed, long int>::value || std::is_same<signed, long long int>::value);
+      OK(std::is_same<intptr_t, int>::value || std::is_same<intptr_t, long int>::value || std::is_same<intptr_t, long long int>::value);
+      OK(std::is_same<ssize_t, int>::value || std::is_same<ssize_t, long int>::value || std::is_same<ssize_t, long long int>::value);
    }
 
    Case(unsigned)
@@ -128,35 +128,35 @@ SUITE(number[integer, float, enum, bool])
    Case(OK boolean)
    {
 #define TheCheck(x) OK(x);
-      ForForEach(TheCheck, NUMBER1_LIST);
+      H2Foreach(TheCheck, NUMBER1_LIST);
 #undef TheCheck
    }
 
    Case(OK)
    {
 #define TheCheck(x, y) OK(x, y);
-      ForFullmesh(TheCheck, NUMBER1_LIST);
+      H2Fullmesh(TheCheck, NUMBER1_LIST);
 #undef TheCheck
    }
 
    Case(OK Eq, Ge, Gt, Le, Lt, Nq, !, &&, ||)
    {
 #define TheCheck(x, y) OK(Ge(x) && !Lt(x) || Nq(x) && !Eq(x), y);
-      ForFullmesh(TheCheck, (NUMBER0_LIST), (NUMBER1_LIST));
+      H2Fullmesh(TheCheck, (NUMBER0_LIST), (NUMBER1_LIST));
 #undef TheCheck
    }
 
    Case(OK IsTrue)
    {
 #define TheCheck(x) OK(IsTrue, x);
-      ForForEach(TheCheck, NUMBER1_LIST);
+      H2Foreach(TheCheck, NUMBER1_LIST);
 #undef TheCheck
    }
 
    Case(OK IsFalse)
    {
 #define TheCheck(x) OK(IsFalse, x);
-      ForForEach(TheCheck, NUMBER0_LIST);
+      H2Foreach(TheCheck, NUMBER0_LIST);
 #undef TheCheck
    }
 
@@ -165,7 +165,7 @@ SUITE(number[integer, float, enum, bool])
 #define TheCheck(x)                                 \
    MOCK(foo1##x, void, (decltype(x)), Once(x)){};   \
    foo1##x(x);
-      ForForEach(TheCheck, NUMBER0_LIST);
+      H2Foreach(TheCheck, NUMBER0_LIST);
 #undef TheCheck
    }
 }
@@ -173,6 +173,6 @@ SUITE(number[integer, float, enum, bool])
 CASE(Integer stringify)
 {
 #define TheCheck(x) h2::h2_stringify(x);
-   ForForEach(TheCheck, NUMBER0_LIST);
+   H2Foreach(TheCheck, NUMBER0_LIST);
 #undef TheCheck
 }

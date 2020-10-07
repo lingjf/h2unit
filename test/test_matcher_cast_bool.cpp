@@ -26,24 +26,24 @@ SUITE(Boolean)
    Case(OK)
    {
 #define TheCheck(x) OK(x);
-      ForForEach(TheCheck, BOOL_TRUE_LIST);
+      H2Foreach(TheCheck, BOOL_TRUE_LIST);
 #undef TheCheck
 #define TheCheck(x) OK(!x);
-      ForForEach(TheCheck, BOOL_FALSE_LIST);
+      H2Foreach(TheCheck, BOOL_FALSE_LIST);
 #undef TheCheck
    }
 
    Case(OK IsTrue)
    {
 #define TheCheck(x) OK(IsTrue, x);
-      ForForEach(TheCheck, BOOL_TRUE_LIST);
+      H2Foreach(TheCheck, BOOL_TRUE_LIST);
 #undef TheCheck
    }
 
    Case(OK IsFalse)
    {
 #define TheCheck(x) OK(IsFalse, x);
-      ForForEach(TheCheck, BOOL_FALSE_LIST);
+      H2Foreach(TheCheck, BOOL_FALSE_LIST);
 #undef TheCheck
    }
 
@@ -52,14 +52,14 @@ SUITE(Boolean)
 #define TheCheck(x)    \
    OK(Not(IsTrue), x); \
    OK(IsTrue || IsFalse, x);
-      ForForEach(TheCheck, BOOL_FALSE_LIST);
+      H2Foreach(TheCheck, BOOL_FALSE_LIST);
 #undef TheCheck
    }
 
    Case(OK Not)
    {
 #define TheCheck(x, y) OK(Not(x), y);
-      ForFullmesh(TheCheck, (BOOL_FALSE_LIST), (BOOL_TRUE_LIST));
+      H2Fullmesh(TheCheck, (BOOL_FALSE_LIST), (BOOL_TRUE_LIST));
 #undef TheCheck
    }
 }
@@ -67,6 +67,6 @@ SUITE(Boolean)
 CASE(Boolean stringify)
 {
 #define TheCheck(x) h2::h2_stringify(x);
-   ForForEach(TheCheck, BOOL_FALSE_LIST);
+   H2Foreach(TheCheck, BOOL_FALSE_LIST);
 #undef TheCheck
 }

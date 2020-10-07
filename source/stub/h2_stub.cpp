@@ -32,7 +32,7 @@ h2_inline bool h2_stubs::add(void* origin_fp, void* substitute_fp, const char* o
    }
    if (!stub) {
       if (!h2_e9::save(origin_fp, nullptr)) {
-         h2_color::printf("yellow", "STUB failed: %s %s:%d\n", origin_fn, file, lino);
+         h2_color::prints("yellow", "STUB failed: %s %s:%d\n", origin_fn, file, lino);
          return false;
       }
       stub = new h2_stub(origin_fp);

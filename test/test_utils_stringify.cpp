@@ -19,7 +19,8 @@ struct Foo1 {
 };
 
 struct Foo2 {
-   h2::h2_string toString() { return "Foo2"; }
+   h2::h2_string tostring() { return "tostring"; }
+   h2::h2_string toString() { return "toString"; }
 };
 
 struct Foo3 {
@@ -28,6 +29,31 @@ struct Foo3 {
 std::ostream& operator<<(std::ostream& os, Foo3 a)
 {
    return os << "Foo3";
+}
+
+struct Foo4 {
+   std::string tostring() { return "std::string toString()"; }
+   h2::h2_string toString() { return "h2::h2_string toString"; }
+   std::string Tostring(int) { return "std::string Tostring"; }
+   int ToString() { return 0; }
+   const char *to_string() { return "const char* to_string"; }
+};
+
+CASE(tostring able)
+{
+   OK(h2::h2_toString_able<Foo2>::value);
+
+   OK(h2::h2_tostring_able<Foo4>::value);
+   OK(h2::h2_toString_able<Foo4>::value);
+   OK(!h2::h2_Tostring_able<Foo4>::value);
+   OK(!h2::h2_ToString_able<Foo4>::value);
+   OK(h2::h2_to_string_able<Foo4>::value);
+
+   OK(!h2::h2_tostring_able<Foo1>::value);
+   OK(!h2::h2_toString_able<Foo1>::value);
+   OK(!h2::h2_Tostring_able<Foo1>::value);
+   OK(!h2::h2_ToString_able<Foo1>::value);
+   OK(!h2::h2_to_string_able<Foo1>::value);
 }
 
 SUITE(stringify simple)
@@ -115,8 +141,8 @@ SUITE(stringify user)
    Case(toString)
    {
       Foo2 f2;
-      OK("Foo2", h2::h2_stringify<Foo2>(f2));
-      OK("Foo2", h2::h2_stringify<Foo2>(f2, true));
+      OK("tostring", h2::h2_stringify<Foo2>(f2));
+      OK("tostring", h2::h2_stringify<Foo2>(f2, true));
    }
 
    Case(operator<<)

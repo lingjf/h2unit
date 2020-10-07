@@ -12,16 +12,19 @@ h2_inline h2_list& h2_list::add_head(h2_list& entry)
    add_between(&entry, this, this->next);
    return *this;
 }
+
 h2_inline h2_list& h2_list::add_tail(h2_list& entry)
 {
    add_between(&entry, this->prev, this);
    return *this;
 }
+
 h2_inline h2_list& h2_list::add_before(h2_list& entry)
 {
    add_between(&entry, this->prev, this);
    return *this;
 }
+
 h2_inline h2_list& h2_list::add_after(h2_list& entry)
 {
    add_between(&entry, this, this->next);

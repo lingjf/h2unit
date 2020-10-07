@@ -1,5 +1,5 @@
 
-struct h2_defer_fail : h2_once {
+struct h2_defer_failure : h2_once {
    const char* assert_type;
    const char *e_expression, *a_expression, *expression;
    const char* file;
@@ -7,11 +7,11 @@ struct h2_defer_fail : h2_once {
    h2_fail* fail{nullptr};
    h2_ostringstream oss;
 
-   h2_defer_fail(const char* e_expression_, const char* a_expression_, const char* expression_, const char* file_, int lino_);
-   ~h2_defer_fail();
+   h2_defer_failure(const char* e_expression_, const char* a_expression_, const char* expression_, const char* file_, int lino_);
+   ~h2_defer_failure();
 };
 
-static inline h2_ostringstream& h2_OK(h2_defer_fail* d, bool a)
+static inline h2_ostringstream& h2_OK(h2_defer_failure* d, bool a)
 {
    d->assert_type = "OK1";
    if (!a) d->fail = h2_fail::new_unexpect("true", "false");
@@ -20,7 +20,7 @@ static inline h2_ostringstream& h2_OK(h2_defer_fail* d, bool a)
 }
 
 template <typename E, typename A>
-static inline h2_ostringstream& h2_OK(h2_defer_fail* d, E e, A a, int n = 0)
+static inline h2_ostringstream& h2_OK(h2_defer_failure* d, E e, A a, int n = 0)
 {
    d->assert_type = "OK2";
    h2::h2_matcher<typename h2_decay<A>::type> m = h2::h2_matcher_cast<typename h2_decay<A>::type>((typename h2_decay<E>::type)e);
@@ -34,7 +34,7 @@ static inline h2_ostringstream& h2_OK(h2_defer_fail* d, E e, A a, int n = 0)
    return d->oss;
 }
 
-static inline h2_ostringstream& h2_JE(h2_defer_fail* d, h2_string e, h2_string a, h2_string selector)
+static inline h2_ostringstream& h2_JE(h2_defer_failure* d, h2_string e, h2_string a, h2_string selector)
 {
    d->assert_type = "JE";
    h2::h2_matcher<h2_string> m = Je(e, selector);

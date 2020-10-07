@@ -102,7 +102,7 @@ struct getopt {
 h2_inline h2_option::h2_option()
 {
    terminal_width = h2_termimal_width();
-#ifdef _WIN32
+#if defined WIN32 || defined __WIN32__ || defined _WIN32 || defined _MSC_VER || defined __MINGW32__
    memory_check = false;
 #endif
 }
@@ -121,7 +121,6 @@ h2_inline void h2_option::parse(int argc, const char** argv)
       case 'c': colorful = !colorful; break;
       case 's': shuffle_order = !shuffle_order; break;
       case 'o': only_execute_fails = true; break;
-      case 'S': seq = true; break;
       case 'f': fold_json = !fold_json; break;
       case 'p': execute_progress = !execute_progress; break;
       case 'y': copy_paste_json = true; break;

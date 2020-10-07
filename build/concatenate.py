@@ -1,13 +1,15 @@
 #!/usr/bin/python
 # coding=utf-8
 
+import os
 import sys
 import time
 import re
 
+h2unit_build = os.path.dirname(os.path.realpath(__file__))
 
 def read_version():
-    with open('../source/h2_unit.cpp', 'r') as f:
+    with open(os.path.join(h2unit_build, '../source/h2_unit.cpp'), 'r') as f:
         for line in f:
             version = re.match('#define H2UNIT_VERSION \s*(.*)', line)
             if version:
@@ -58,16 +60,16 @@ def merge_files(inf, outf):
     for line in inf:
         inc = re.match('#include "(.*[/]*h2_.*\.[ch]{1}pp)"', line)
         if inc:
-            with open('../source/' + inc.group(1), 'r') as f:
+            with open(os.path.join(h2unit_build, '../source/' + inc.group(1)), 'r') as f:
                 outf.write('// source/' + inc.group(1) + '\n')
                 merge_files(f, outf)
         else:
             copy_line2(line, outf)
 
 
-h2unit_h = '../h2unit.h'
-h2unit_hpp = './h2unit.hpp'
-h2unit_cpp = './h2unit.cpp'
+h2unit_h = os.path.join(h2unit_build, '../h2unit.h')
+h2unit_hpp = os.path.join(h2unit_build, 'h2unit.hpp')
+h2unit_cpp = os.path.join(h2unit_build, 'h2unit.cpp')
 
 f_h2unit_h = open(h2unit_h, 'w')
 f_h2unit_h.write('\n')
@@ -76,7 +78,7 @@ f_h2unit_h.write(project_github_url + '\n')
 f_h2unit_h.write(software_copyright + '\n\n')
 f_h2unit_h.write('#ifndef __H2UNIT_H__' + '\n')
 f_h2unit_h.write('#define __H2UNIT_H__' + '\n')
-with open('../source/h2_unit.cpp', 'r') as f_h2_unit_cpp:
+with open(os.path.join(h2unit_build, '../source/h2_unit.cpp'), 'r') as f_h2_unit_cpp:
     merge_files(f_h2_unit_cpp, f_h2unit_h)
 f_h2unit_h.write('#endif' + '\n')
 f_h2unit_h.close()
@@ -89,7 +91,7 @@ f_h2unit_hpp.write(project_github_url + '\n')
 f_h2unit_hpp.write(software_copyright + '\n\n')
 f_h2unit_hpp.write('#ifndef __H2UNIT_HPP__' + '\n')
 f_h2unit_hpp.write('#define __H2UNIT_HPP__' + '\n')
-with open('../source/h2_unit.hpp', 'r') as f_h2_unit_hpp:
+with open(os.path.join(h2unit_build, '../source/h2_unit.hpp'), 'r') as f_h2_unit_hpp:
     merge_files(f_h2_unit_hpp, f_h2unit_hpp)
 f_h2unit_hpp.write('#endif' + '\n')
 f_h2unit_hpp.close()
@@ -101,7 +103,7 @@ f_h2unit_cpp.write(version_datetime + '\n')
 f_h2unit_cpp.write(project_github_url + '\n')
 f_h2unit_cpp.write(software_copyright + '\n\n')
 f_h2unit_cpp.write('#define __H2UNIT_HPP__' + '\n')
-with open('../source/h2_unit.cpp', 'r') as f_h2_unit_cpp:
+with open(os.path.join(h2unit_build, '../source/h2_unit.cpp'), 'r') as f_h2_unit_cpp:
     merge_files(f_h2_unit_cpp, f_h2unit_cpp)
 f_h2unit_cpp.close()
 convert_utf8_to_utf8bom(h2unit_cpp)

@@ -49,7 +49,7 @@ const std::string* const_stdstring_nullptr = nullptr;
                      NULL, 0
 
 #define TheCheck(x) static void foobar##x(decltype(x) v){};
-ForForEach(TheCheck, PTR_LIST);
+H2Foreach(TheCheck, PTR_LIST);
 #undef TheCheck
 
 SUITE(Pointer)
@@ -57,21 +57,21 @@ SUITE(Pointer)
    Case(OK IsNull)
    {
 #define TheCheck(x) OK(IsNull, x);
-      ForForEach(TheCheck, NULLPTR_LIST);
+      H2Foreach(TheCheck, NULLPTR_LIST);
 #undef TheCheck
    }
 
    Case(OK NotNull)
    {
 #define TheCheck(x) OK(NotNull, x);
-      ForForEach(TheCheck, FILLPTR_LIST);
+      H2Foreach(TheCheck, FILLPTR_LIST);
 #undef TheCheck
    }
 
    Case(OK Me)
    {
 #define TheCheck(x, y) OK(Me(x, 10), y);
-      ForFullmesh(TheCheck, FILLPTR_LIST);
+      H2Fullmesh(TheCheck, FILLPTR_LIST);
 #undef TheCheck
    }
 
@@ -81,7 +81,7 @@ SUITE(Pointer)
    OK(AllOf(_, IsNull), y); \
    OK(AnyOf(_, IsNull), y); \
    OK(!!NoneOf(NotNull), y);
-      ForFullmesh(TheCheck, NULLPTR_LIST);
+      H2Fullmesh(TheCheck, NULLPTR_LIST);
 #undef TheCheck
    }
 
@@ -110,7 +110,7 @@ SUITE(Pointer)
 #define TheCheck(x, y)                                      \
    MOCK(foobar##x, void, (decltype(x)), Once(IsNull)){};    \
    foobar##x((decltype(x))y);
-      ForFullmesh(TheCheck, (PTR_LIST), (NULLPTR_LIST));
+      H2Fullmesh(TheCheck, (PTR_LIST), (NULLPTR_LIST));
 #undef TheCheck
    }
 }
@@ -118,6 +118,6 @@ SUITE(Pointer)
 CASE(Ptr stringify)
 {
 #define TheCheck(x) h2::h2_stringify(x);
-   ForForEach(TheCheck, FILLPTR_LIST);
+   H2Foreach(TheCheck, FILLPTR_LIST);
 #undef TheCheck
 }

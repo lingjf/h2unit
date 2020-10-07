@@ -77,12 +77,12 @@ struct h2_libc_malloc {
       int page_size = h2_page_size();
       int page_count = ::ceil(size / (double)page_size) + 256;
 
-#ifdef _WIN32
+#if defined WIN32 || defined __WIN32__ || defined _WIN32 || defined _MSC_VER || defined __MINGW32__
       PVOID ptr = VirtualAlloc(NULL, page_count * page_size, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
       if (ptr == NULL) ::printf("VirtualAlloc failed at %s:%d\n", __FILE__, __LINE__), abort();
 #else
       void* ptr = ::mmap(nullptr, page_count * page_size, PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0);
-      if (ptr == MAP_FAILED) ::printf("mmap failed at %s:%d\n", __FILE__, __LINE__), abort();
+      if (ptr == MAP_FAILED) h2_color::prints("yellow", "mmap failed at %s:%d\n", __FILE__, __LINE__), abort();
 #endif
 
       block* p = new (ptr) block(page_count * page_size);
@@ -142,7 +142,7 @@ h2_inline void h2_libc::free(void* ptr)
 
 h2_inline ssize_t h2_libc::write(int fd, const void* buf, size_t count)
 {
-#ifdef _WIN32
+#if defined WIN32 || defined __WIN32__ || defined _WIN32 || defined _MSC_VER || defined __MINGW32__
    return _write(fd, buf, count);
 #else
    return ::syscall(SYS_write, fd, buf, count);

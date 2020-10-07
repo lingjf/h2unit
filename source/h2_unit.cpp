@@ -1,5 +1,5 @@
 
-#define H2UNIT_VERSION 5.6
+#define H2UNIT_VERSION 5.7
 
 #include "h2_unit.hpp"
 
@@ -13,7 +13,7 @@
 #include <signal.h> /* sigaction */
 #include <typeinfo> /* typeid */
 
-#if defined _WIN32
+#if defined WIN32 || defined __WIN32__ || defined _WIN32 || defined _MSC_VER || defined __MINGW32__
 #   include <winsock2.h> /* socket */
 #   include <ws2tcpip.h> /* getaddrinfo */
 #   include <io.h>       /* _wirte */
@@ -47,7 +47,7 @@
 #   endif
 #endif
 
-#if defined _WIN32
+#if defined WIN32 || defined __WIN32__ || defined _WIN32 || defined _MSC_VER || defined __MINGW32__
 #   define h2_weak_attribute
 #else
 #   define h2_weak_attribute __attribute__((weak))
@@ -67,7 +67,10 @@ namespace h2 {
 #include "utils/h2_numeric.cpp"
 #include "utils/h2_libc.cpp"
 #include "utils/h2_string.cpp"
+#include "utils/h2_line.cpp"
+#include "utils/h2_color.cpp"
 #include "utils/h2_nm.cpp"
+#include "utils/h2_backtrace.cpp"
 
 #include "json/h2_tinyexpr.cpp"
 #include "json/h2_node.cpp"
@@ -95,26 +98,24 @@ namespace h2 {
 #include "stub/h2_stub.cpp"
 
 #include "mock/h2_checkin.cpp"
-#include "mock/h2_mocking.cpp"
+#include "mock/h2_mock.cpp"
 #include "mock/h2_mocks.cpp"
 
 #include "extension/h2_dns.cpp"
 #include "extension/h2_socket.cpp"
 #include "extension/h2_stdio.cpp"
 
-#include "h2_color.cpp"
-#include "h2_debug.cpp"
-#include "h2_failure.cpp"
-#include "h2_line.cpp"
-#include "h2_report.cpp"
-
-#include "h2_backtrace.cpp"
-#include "h2_layout.cpp"
-#include "h2_option.cpp"
-
 #include "core/h2_case.cpp"
 #include "core/h2_suite.cpp"
 #include "core/h2_task.cpp"
 
 #include "assert/h2_assert.cpp"
+
+#include "h2_debug.cpp"
+#include "h2_failure.cpp"
+#include "h2_report.cpp"
+
+#include "h2_layout.cpp"
+#include "h2_option.cpp"
+
 }  // namespace h2

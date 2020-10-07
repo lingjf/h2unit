@@ -5,7 +5,7 @@ struct h2_e9 {
 
    static bool save(void* origin_fp, unsigned char* saved)
    {
-#ifdef _WIN32
+#if defined WIN32 || defined __WIN32__ || defined _WIN32 || defined _MSC_VER || defined __MINGW32__
       DWORD t;
       if (!VirtualProtect(origin_fp, sizeof(void*) + 4, PAGE_EXECUTE_READWRITE, &t)) {  // PAGE_EXECUTE_WRITECOPY OR PAGE_WRITECOPY
          ::printf("STUB failed: VirtualProtect PAGE_EXECUTE_READWRITE %d\n", GetLastError());
@@ -19,7 +19,7 @@ struct h2_e9 {
       int page_count = ::ceil((origin_start + size - page_start) / (double)page_size);
 
       if (mprotect(reinterpret_cast<void*>(page_start), page_count * page_size, PROT_READ | PROT_WRITE | PROT_EXEC) != 0) {
-         h2_color::printf("yellow", "STUB failed: mprotect PROT_READ | PROT_WRITE | PROT_EXEC %s\n", strerror(errno));
+         h2_color::prints("yellow", "STUB failed: mprotect PROT_READ | PROT_WRITE | PROT_EXEC %s\n", strerror(errno));
          return false;
       }
 #endif

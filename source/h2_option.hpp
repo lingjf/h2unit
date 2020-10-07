@@ -6,11 +6,11 @@ static constexpr unsigned windows = 0x0200;
 struct h2_option {
    h2_singleton(h2_option);
 
-#if defined __linux__
+#if defined linux || defined __linux || defined __linux__
    static constexpr unsigned os = linux;
 #elif defined __APPLE__
    static constexpr unsigned os = macos;
-#elif defined _WIN32
+#elif defined WIN32 || defined __WIN32__ || defined _WIN32 || defined _MSC_VER || defined __MINGW32__
    static constexpr unsigned os = windows;
 #endif
 
@@ -23,7 +23,6 @@ struct h2_option {
    bool compact = false;
    bool colorful = true;
    bool execute_progress = true;
-   bool seq = false;
    bool fold_json = true;
    bool copy_paste_json = false;
    bool only_execute_fails = false;

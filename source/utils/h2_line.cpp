@@ -3,7 +3,7 @@ h2_inline unsigned h2_line::width(bool ignore_indent) const
 {
    unsigned w = 0;
    for (auto& word : *this)
-      if (!h2_color::is_ctrl(word.c_str()))
+      if (!h2_color::isctrl(word.c_str()))
          if (!ignore_indent || !word.isspace())
             w += word.size();
    return w;
@@ -50,7 +50,7 @@ h2_inline bool h2_line::enclosed(const char c) const
 {
    bool f = false, ff = false, b = false;
    for (auto& word : *this) {
-      if (!h2_color::is_ctrl(word.c_str())) {
+      if (!h2_color::isctrl(word.c_str())) {
          if (!ff) f = word.front() == c;
          ff = true;
          b = word.back() == c;
@@ -69,7 +69,7 @@ h2_inline h2_line h2_line::gray_quote() const
    unsigned i = 0;
 
    for (auto& word : *this) {
-      if (h2_color::is_ctrl(word.c_str())) {
+      if (h2_color::isctrl(word.c_str())) {
          line.push_back(word);
       } else {
          h2_string h, m, t;
@@ -96,7 +96,7 @@ h2_inline h2_line h2_line::acronym(int width, int tail) const
 {
    h2_line l1;
    for (auto& word : *this) {
-      if (h2_color::is_ctrl(word.c_str())) {
+      if (h2_color::isctrl(word.c_str())) {
          l1.push_back(word);
       } else {
          l1.push_back(word.escape());
@@ -109,7 +109,7 @@ h2_inline h2_line h2_line::acronym(int width, int tail) const
    h2_line l2;
    int i = 0;
    for (auto& word : l1) {
-      if (h2_color::is_ctrl(word.c_str())) {
+      if (h2_color::isctrl(word.c_str())) {
          l2.push_back(word);
       } else {
          h2_string h, m, t;
@@ -136,7 +136,7 @@ h2_inline h2_string h2_line::string() const
 {
    h2_string s;
    for (auto& word : *this)
-      if (!h2_color::is_ctrl(word.c_str()))
+      if (!h2_color::isctrl(word.c_str()))
          s += word;
    return s;
 }
@@ -167,7 +167,7 @@ h2_inline bool h2_lines::foldable(unsigned width)
    int sum = 0;
    for (auto& line : *this)
       for (auto& word : line)
-         if (!word.isspace() && !h2_color::is_ctrl(word.c_str()))  // ignore indent and \033m controller
+         if (!word.isspace() && !h2_color::isctrl(word.c_str()))  // ignore indent and \033m controller
             sum += word.size();
 
    return sum < width;
@@ -188,7 +188,7 @@ h2_inline h2_string h2_lines::string() const
    h2_string s;
    for (auto& line : *this)
       for (auto& word : line)
-         if (!word.isspace() && !h2_color::is_ctrl(word.c_str()))
+         if (!word.isspace() && !h2_color::isctrl(word.c_str()))
             s += word;
    return s;
 }

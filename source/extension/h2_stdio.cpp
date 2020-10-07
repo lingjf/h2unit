@@ -98,7 +98,8 @@ struct h2__stdio {
 #ifndef _WIN32
       stubs.add((void*)::write, (void*)write, "write", __FILE__, __LINE__);
 #endif
-#if defined __APPLE__ || defined _WIN32
+#if defined __GNUC__ && __GNUC__ > 5
+#else  // MACOS && WIN32 && GCC<=5
       stubs.add((void*)::printf, (void*)printf, "printf", __FILE__, __LINE__);
       stubs.add((void*)::vprintf, (void*)vprintf, "vprintf", __FILE__, __LINE__);
       stubs.add((void*)::putchar, (void*)putchar, "putchar", __FILE__, __LINE__);
@@ -109,7 +110,10 @@ struct h2__stdio {
       stubs.add((void*)::putc, (void*)fputc, "fputc", __FILE__, __LINE__);
       stubs.add((void*)::fputs, (void*)fputs, "fputs", __FILE__, __LINE__);
       stubs.add((void*)::fwrite, (void*)fwrite, "fwrite", __FILE__, __LINE__);
+      // GCC<=5 cout issue
+      // std::cout.rdbuf(&streambuf);
 #endif
+
 #ifndef _WIN32
       stubs.add((void*)::syslog, (void*)syslog, "syslog", __FILE__, __LINE__);
       stubs.add((void*)::vsyslog, (void*)vsyslog, "vsyslog", __FILE__, __LINE__);

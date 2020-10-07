@@ -25,7 +25,7 @@ SUITE(parse_block_attributes)
       const char* x = "limit =0x1000, fill = 0x55";
       h2::parse_block_attributes(x, n_limit, n_align, s_fill, n_fill, noleak);
       OK(0x1000, n_limit);
-      OK(8, n_align);
+      OK(sizeof(void*), n_align);
       OK(1, n_fill);
       OK(Me("\x55", 1), s_fill);
       OK(!noleak);
@@ -36,7 +36,7 @@ SUITE(parse_block_attributes)
       const char* x = "fill=0x5566";
       h2::parse_block_attributes(x, n_limit, n_align, s_fill, n_fill, noleak);
       OK(Ge(0xFFFFFFFFU), n_limit);
-      OK(8, n_align);
+      OK(sizeof(void*), n_align);
       OK(2, n_fill);
       OK(Me("\x55\x66", 2), s_fill);
       OK(!noleak);

@@ -65,4 +65,3 @@ struct h2_socket {
 #define __H2SOCK0(_Packet, _Size, ...) h2::h2_socket::inject_received(_Packet, _Size, #__VA_ARGS__)
 #define __H2SOCK1(...) h2::h2_socket::start_and_fetch()
 #define H2SOCK(...) H2PP_CAT(__H2SOCK, H2PP_IS_EMPTY(__VA_ARGS__)) (__VA_ARGS__)
-/* clang-format on */

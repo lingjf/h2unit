@@ -9,7 +9,7 @@ IF(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
 ENDIF()
 
 ADD_CUSTOM_TARGET(release ALL
-    COMMAND  cd ${CMAKE_CURRENT_SOURCE_DIR}/../build && python concatenate.py
+    COMMAND  python ${CMAKE_CURRENT_SOURCE_DIR}/../build/concatenate.py
 )
 
 AUX_SOURCE_DIRECTORY(. SRC_TEST)

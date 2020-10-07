@@ -4,8 +4,8 @@ struct h2_json_match {
    {
       if (!e || !a) return false;
       if (e->size() != a->size()) return false;
-      h2_list_for_each_entry (p, e->children, h2_json_node, x)
-         if (!match(p, a->get(li), caseless))
+      h2_list_for_each_entry (p, i, e->children, h2_json_node, x)
+         if (!match(p, a->get(i), caseless))
             return false;
       return true;
    }

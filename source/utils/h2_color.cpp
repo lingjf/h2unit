@@ -4,7 +4,7 @@ struct h2__color {
 
    char current[8][32];
    int default_attribute;
-#ifdef _WIN32
+#if defined WIN32 || defined __WIN32__ || defined _WIN32 || defined _MSC_VER || defined __MINGW32__
    HANDLE console_handle;
 #else
 #   define FOREGROUND_INTENSITY 0
@@ -22,7 +22,7 @@ struct h2__color {
    {
       memset(current, 0, sizeof(current));
       default_attribute = 0;
-#ifdef _WIN32
+#if defined WIN32 || defined __WIN32__ || defined _WIN32 || defined _MSC_VER || defined __MINGW32__
       console_handle = GetStdHandle(STD_OUTPUT_HANDLE);
       CONSOLE_SCREEN_BUFFER_INFO csbi;
       GetConsoleScreenBufferInfo(console_handle, &csbi);
@@ -55,7 +55,7 @@ struct h2__color {
 
    void change()
    {
-#ifdef _WIN32
+#if defined WIN32 || defined __WIN32__ || defined _WIN32 || defined _MSC_VER || defined __MINGW32__
       SetConsoleTextAttribute(console_handle, style2value("reset"));
       WORD a = 0;
       for (int i = 0; i < sizeof(current) / sizeof(current[0]); ++i)
@@ -90,7 +90,7 @@ struct h2__color {
 
    void print(const char* str)
    {
-      if (h2_color::is_ctrl(str)) {
+      if (h2_color::isctrl(str)) {
          if (h2_option::I().colorful) I().parse(str), I().change();
       } else {
          h2_libc::write(fileno(stdout), str, strlen(str));
@@ -140,7 +140,7 @@ struct h2__color {
 
       for (int i = 0; i < sizeof(K) / sizeof(K[0]); ++i)
          if (!strcmp(K[i].name, style))
-#ifdef _WIN32
+#if defined WIN32 || defined __WIN32__ || defined _WIN32 || defined _MSC_VER || defined __MINGW32__
             return K[i].attribute;
 #else
             return K[i].value;
@@ -150,7 +150,7 @@ struct h2__color {
    }
 };
 
-h2_inline void h2_color::printf(const char* style, const char* format, ...)
+h2_inline void h2_color::prints(const char* style, const char* format, ...)
 {
    if (style && strlen(style)) {
       char t[128];
@@ -166,14 +166,14 @@ h2_inline void h2_color::printf(const char* style, const char* format, ...)
       h2__color::I().print("\033{reset}");
 }
 
-h2_inline void h2_color::printf(const h2_line& line)
+h2_inline void h2_color::printl(const h2_line& line)
 {
    for (auto& word : line)
       h2__color::I().print(word.c_str());
    h2__color::I().print("\n");
 }
 
-h2_inline void h2_color::printf(const h2_lines& lines)
+h2_inline void h2_color::printl(const h2_lines& lines)
 {
-   for (auto& line : lines) printf(line);
+   for (auto& line : lines) printl(line);
 }

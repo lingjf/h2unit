@@ -44,8 +44,10 @@ SUITE(list)
       root.add_head(h2.link);
       root.add_head(h3.link);
 
+      int i = 0;
       h2_list_for_each_entry (p, root, list_host, link) {
-         OK(e321[li], p->a);
+         OK(e321[i], p->a);
+         i++;
       }
    }
 
@@ -55,8 +57,8 @@ SUITE(list)
       root.add_tail(h2.link);
       root.add_tail(h3.link);
 
-      h2_list_for_each_entry (p, root, list_host, link) {
-         OK(e123[li], p->a);
+      h2_list_for_each_entry (p, i, root, list_host, link) {
+         OK(e123[i], p->a);
       }
    }
 
@@ -66,8 +68,8 @@ SUITE(list)
       root.push(h2.link);
       root.push(h3.link);
 
-      h2_list_for_each_entry (p, root, list_host, link) {
-         OK(e321[li], p->a);
+      h2_list_for_each_entry (p, i, root, list_host, link) {
+         OK(e321[i], p->a);
       }
 
       h2::h2_list& p3 = root.pop();
@@ -84,8 +86,8 @@ SUITE(list)
       root.push_back(h2.link);
       root.push_back(h3.link);
 
-      h2_list_for_each_entry (p, root, list_host, link) {
-         OK(e123[li], p->a);
+      h2_list_for_each_entry (p, i, root, list_host, link) {
+         OK(e123[i], p->a);
       }
 
       h2::h2_list& p3 = root.pop_back();
@@ -104,9 +106,9 @@ SUITE(list)
 
    Case(out)
    {
-      h2_list_for_each_entry (p, root123, list_host, link) {
+      h2_list_for_each_entry (p, i, root123, list_host, link) {
          p->link.out();
-         OK(e123[li], p->a);
+         OK(e123[i], p->a);
       }
    }
 }
@@ -127,7 +129,7 @@ CASE(list sort)
 
    root.sort(list_host_cmp);
 
-   h2_list_for_each_entry (p, root, list_host, link) {
-      OK(li + 1, p->a);
+   h2_list_for_each_entry (p, i, root, list_host, link) {
+      OK(i + 1, p->a);
    }
 }

@@ -32,8 +32,8 @@ struct h2_json_node : h2_libc {
    h2_json_node* get(int index)
    {
       if (index < 0) index = children.count() + index;
-      h2_list_for_each_entry (p, children, h2_json_node, x)
-         if (li == index)
+      h2_list_for_each_entry (p, i, children, h2_json_node, x)
+         if (i == index)
             return p;
       return nullptr;
    }
@@ -114,8 +114,8 @@ struct h2_json_node : h2_libc {
          line.push_back(slash_if(slash) + "\"/" + value_string + "/" + slash_if(slash) + "\"");
       else if (is_array() || is_object()) {
          h2_lines children_lines;
-         h2_list_for_each_entry (p, children, h2_json_node, x)
-            p->print(children_lines, fold, slash, depth + 1, children.count() - li - 1);
+         h2_list_for_each_entry (p, i, children, h2_json_node, x)
+            p->print(children_lines, fold, slash, depth + 1, children.count() - i - 1);
 
          line.push_back(is_array() ? "[" : "{");
          if (fold && children_lines.foldable()) {

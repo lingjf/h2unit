@@ -72,7 +72,7 @@ std::string& stdstringref2 = stdstring2;
                      stdstringref2
 
 #define TheCheck(x) static void foobar##x(decltype(x) v){};
-ForForEach(TheCheck, STRING_LIST);
+H2Foreach(TheCheck, STRING_LIST);
 #undef TheCheck
 
 SUITE(String)
@@ -89,14 +89,14 @@ SUITE(String)
    OK(EndsWith(x), y);   \
    OK(We(x), y);         \
    OK(Re(x), y);
-      ForFullmesh(TheCheck, STRING1_LIST);
+      H2Fullmesh(TheCheck, STRING1_LIST);
 #undef TheCheck
    }
 
    Case(OK Je)
    {
 #define TheCheck(x, y) OK(Je(x), y);
-      ForFullmesh(TheCheck, STRING2_LIST);
+      H2Fullmesh(TheCheck, STRING2_LIST);
 #undef TheCheck
    }
 
@@ -106,7 +106,7 @@ SUITE(String)
    OK(AllOf(_, x), y); \
    OK(AnyOf(x), y);    \
    OK(!!NoneOf(Nq(x)), y);
-      ForFullmesh(TheCheck, STRING1_LIST);
+      H2Fullmesh(TheCheck, STRING1_LIST);
 #undef TheCheck
    }
 
@@ -115,7 +115,7 @@ SUITE(String)
 #define TheCheck(x, y) \
    OK(Nq(x), y);       \
    OK(Not(x), y);
-      ForFullmesh(TheCheck, (STRING1_LIST), (STRING2_LIST));
+      H2Fullmesh(TheCheck, (STRING1_LIST), (STRING2_LIST));
 #undef TheCheck
    }
 
@@ -131,7 +131,7 @@ SUITE(String)
                    char_array1,         \
                    const_char_array1
 
-      ForFullmesh(TheCheck, C_STR_LIST);
+      H2Fullmesh(TheCheck, C_STR_LIST);
 #undef TheCheck
 
 #define TheCheck(x, y) MOCK(foobar##x, void, (decltype(x)), Any(y)){};
@@ -139,7 +139,7 @@ SUITE(String)
 #define STR_LIST const_stdstring1, \
                  stdstring1, stdstringref1
 
-      ForFullmesh(TheCheck, STR_LIST);
+      H2Fullmesh(TheCheck, STR_LIST);
 #undef TheCheck
    }
 }
@@ -147,6 +147,6 @@ SUITE(String)
 CASE(String stringify)
 {
 #define TheCheck(x) OK("h2unit", h2::h2_stringify(x));
-   ForForEach(TheCheck, STRING1_LIST);
+   H2Foreach(TheCheck, STRING1_LIST);
 #undef TheCheck
 }

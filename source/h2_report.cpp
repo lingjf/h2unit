@@ -42,11 +42,11 @@ struct h2_report_console : h2_report_impl {
    void print_perfix(bool percentage)
    {
       static size_t last = 0;
-      h2_color::printf("", h2_stdio::capture_length() == last ? "\r" : "\n");
+      h2_color::prints("", h2_stdio::capture_length() == last ? "\r" : "\n");
       if (percentage && O.execute_progress) {
-         h2_color::printf("dark gray", "[");
-         h2_color::printf("", "%3d%%", cases ? (int)(task_case_index * 100 / cases) : 100);
-         h2_color::printf("dark gray", "] ");
+         h2_color::prints("dark gray", "[");
+         h2_color::prints("", "%3d%%", cases ? (int)(task_case_index * 100 / cases) : 100);
+         h2_color::prints("dark gray", "] ");
       }
       last = h2_stdio::capture_length();
    }
@@ -80,9 +80,9 @@ struct h2_report_console : h2_report_impl {
    }
    void comma_status(int n, const char* style, const char* name, int& c)
    {
-      if (c++) h2_color::printf("dark gray", ", ");
-      h2_color::printf(style, "%d", n);
-      h2_color::printf("", " %s", name);
+      if (c++) h2_color::prints("dark gray", ", ");
+      h2_color::prints(style, "%d", n);
+      h2_color::prints("", " %s", name);
    }
    int nonzero_count(int a1 = 0, int a2 = 0, int a3 = 0, int a4 = 0, int a5 = 0, int a6 = 0)
    {
@@ -92,18 +92,18 @@ struct h2_report_console : h2_report_impl {
    {
       h2_report_impl::on_task_endup(t);
       if (O.list_cases) {
-         h2_color::printf("bold,green", "Listing <%d suites, %d cases, %d todo>\n", suites, cases - t->stats[h2_case::todo], t->stats[h2_case::todo]);
+         h2_color::prints("bold,green", "Listing <%d suites, %d cases, %d todo>\n", suites, cases - t->stats[h2_case::todo], t->stats[h2_case::todo]);
       } else {
          print_perfix(false);
          if (O.verbose)
-            h2_color::printf("", "\n");
+            h2_color::prints("", "\n");
          if (0 < t->stats[h2_case::failed])
-            h2_color::printf("bold,red", "Failure ");
+            h2_color::prints("bold,red", "Failure ");
          else
-            h2_color::printf("bold,green", "Success ");
+            h2_color::prints("bold,green", "Success ");
 
          if (0 < nonzero_count(t->stats[h2_case::failed], t->stats[h2_case::todo], t->stats[h2_case::filtered], t->stats[h2_case::ignored]))
-            h2_color::printf("dark gray", "(");
+            h2_color::prints("dark gray", "(");
 
          int c = 0;
          comma_status(t->stats[h2_case::passed], "green", "passed", c);
@@ -112,27 +112,27 @@ struct h2_report_console : h2_report_impl {
          if (t->stats[h2_case::filtered]) comma_status(t->stats[h2_case::filtered], "blue", "filtered", c);
          if (t->stats[h2_case::ignored]) comma_status(t->stats[h2_case::ignored], "blue", "ignored", c);
          if (0 < nonzero_count(t->stats[h2_case::failed], t->stats[h2_case::todo], t->stats[h2_case::filtered], t->stats[h2_case::ignored])) {
-            h2_color::printf("dark gray", ")");
-            h2_color::printf("", " %d", cases);
+            h2_color::prints("dark gray", ")");
+            h2_color::prints("", " %d", cases);
          }
-         h2_color::printf("", " case%s", 1 < cases ? "s" : "");
-         h2_color::printf("dark gray", ", ");
-         h2_color::printf("", "%d assert%s", t->asserts, 1 < t->asserts ? "s" : "");
+         h2_color::prints("", " case%s", 1 < cases ? "s" : "");
+         h2_color::prints("dark gray", ", ");
+         h2_color::prints("", "%d assert%s", t->asserts, 1 < t->asserts ? "s" : "");
          if (1 < t->rounds) {
-            h2_color::printf("dark gray", ", ");
-            h2_color::printf("", "%d rounds", t->rounds);
+            h2_color::prints("dark gray", ", ");
+            h2_color::prints("", "%d rounds", t->rounds);
          }
-         h2_color::printf("dark gray", ", ");
-         h2_color::printf("", "%s \n", format_duration(task_cost));
+         h2_color::prints("dark gray", ", ");
+         h2_color::prints("", "%s \n", format_duration(task_cost));
       }
    }
    void on_suite_start(h2_suite* s) override
    {
       h2_report_impl::on_suite_start(s);
       if (O.list_cases) {
-         h2_color::printf("", "SUITE-%d. ", ++suite_index);
-         h2_color::printf("bold,blue", "%s", s->name);
-         h2_color::printf("", " %s:%d\n", s->file, s->lino);
+         h2_color::prints("", "SUITE-%d. ", ++suite_index);
+         h2_color::prints("bold,blue", "%s", s->name);
+         h2_color::prints("", " %s:%d\n", s->file, s->lino);
       }
    }
 
@@ -142,12 +142,12 @@ struct h2_report_console : h2_report_impl {
       if (O.compact) return;
       if (O.verbose && O.includes.size() + O.excludes.size() == 0) {
          print_perfix(true);
-         h2_color::printf("dark gray", "suite ");
-         h2_color::printf("", "%s", s->name);
+         h2_color::prints("dark gray", "suite ");
+         h2_color::prints("", "%s", s->name);
          if (1 < nonzero_count(s->stats[h2_case::passed], s->stats[h2_case::failed], s->stats[h2_case::todo], s->stats[h2_case::filtered], s->stats[h2_case::ignored]))
-            h2_color::printf("dark gray", " (");
+            h2_color::prints("dark gray", " (");
          else
-            h2_color::printf("dark gray", " - ");
+            h2_color::prints("dark gray", " - ");
 
          int c = 0;
          if (s->stats[h2_case::passed]) comma_status(s->stats[h2_case::passed], "", "passed", c);
@@ -157,47 +157,47 @@ struct h2_report_console : h2_report_impl {
          if (s->stats[h2_case::ignored]) comma_status(s->stats[h2_case::ignored], "", "ignored", c);
 
          if (1 < nonzero_count(s->stats[h2_case::passed], s->stats[h2_case::failed], s->stats[h2_case::todo], s->stats[h2_case::filtered], s->stats[h2_case::ignored]))
-            h2_color::printf("dark gray", ")");
+            h2_color::prints("dark gray", ")");
          if (0 < s->cases.count())
-            h2_color::printf("", " case%s", 1 < s->cases.count() ? "s" : "");
+            h2_color::prints("", " case%s", 1 < s->cases.count() ? "s" : "");
 
          if (0 < s->asserts) {
-            h2_color::printf("dark gray", ", ");
-            h2_color::printf("", "%d assert%s", s->asserts, 1 < s->asserts ? "s" : "");
+            h2_color::prints("dark gray", ", ");
+            h2_color::prints("", "%d assert%s", s->asserts, 1 < s->asserts ? "s" : "");
          }
          if (0 < s->footprint) {
-            h2_color::printf("dark gray", ", ");
-            h2_color::printf("", "%s", format_volume(s->footprint));
+            h2_color::prints("dark gray", ", ");
+            h2_color::prints("", "%s", format_volume(s->footprint));
          }
          if (1 < suite_cost) {
-            h2_color::printf("dark gray", ", ");
-            h2_color::printf("", "%s", format_duration(suite_cost));
+            h2_color::prints("dark gray", ", ");
+            h2_color::prints("", "%s", format_duration(suite_cost));
          }
-         h2_color::printf("", "\n");
+         h2_color::prints("", "\n");
       }
    }
    void on_case_start(h2_suite* s, h2_case* c) override
    {
       h2_report_impl::on_case_start(s, c);
       if (O.list_cases) {
-         h2_color::printf("", " %s-%d. ", c->status == h2_case::todo ? "TODO" : "CASE", suite_case_index);
-         h2_color::printf("cyan", "%s", c->name);
-         h2_color::printf("", " %s:%d\n", basename((char*)c->file), c->lino);
+         h2_color::prints("", " %s-%d. ", c->status == h2_case::todo ? "TODO" : "CASE", suite_case_index);
+         h2_color::prints("cyan", "%s", c->name);
+         h2_color::prints("", " %s:%d\n", basename((char*)c->file), c->lino);
       }
    }
    void print_title(const char* s, const char* c, const char* file, int lino)
    {
       if (strlen(c))
-         h2_color::printf("", "%s", c);
+         h2_color::prints("", "%s", c);
       else
-         h2_color::printf("dark gray", "case");
-      h2_color::printf("dark gray", " | ");
+         h2_color::prints("dark gray", "case");
+      h2_color::prints("dark gray", " | ");
       if (strlen(s))
-         h2_color::printf("", "%s", s);
+         h2_color::prints("", "%s", s);
       else
-         h2_color::printf("dark gray", "suite");
-      h2_color::printf("dark gray", " | ");
-      h2_color::printf("", "%s:%d", basename((char*)file), lino);
+         h2_color::prints("dark gray", "suite");
+      h2_color::prints("dark gray", " | ");
+      h2_color::prints("", "%s:%d", basename((char*)file), lino);
    }
    void on_case_endup(h2_suite* s, h2_case* c) override
    {
@@ -207,40 +207,40 @@ struct h2_report_console : h2_report_impl {
       case h2_case::initial: break;
       case h2_case::todo:
          print_perfix(true);
-         h2_color::printf("yellow", "Todo   ");
+         h2_color::prints("yellow", "Todo   ");
          print_title(s->name, c->name, c->file, c->lino);
-         h2_color::printf("", "\n");
+         h2_color::prints("", "\n");
          break;
       case h2_case::filtered: break;
       case h2_case::passed:
          if (O.verbose) {
             print_perfix(true);
-            h2_color::printf("green", "Passed ");
+            h2_color::prints("green", "Passed ");
             print_title(s->name, c->name, c->file, c->lino);
             if (0 < c->asserts) {
-               h2_color::printf("dark gray", " - ");
-               h2_color::printf("", "%d assert%s", c->asserts, 1 < c->asserts ? "s" : "");
+               h2_color::prints("dark gray", " - ");
+               h2_color::prints("", "%d assert%s", c->asserts, 1 < c->asserts ? "s" : "");
             }
             if (0 < c->footprint) {
-               h2_color::printf("dark gray", ",");
-               h2_color::printf("", " %s", format_volume(c->footprint));
+               h2_color::prints("dark gray", ",");
+               h2_color::prints("", " %s", format_volume(c->footprint));
             }
             if (1 < case_cost) {
-               h2_color::printf("dark gray", ",");
-               h2_color::printf("", " %s", format_duration(case_cost));
+               h2_color::prints("dark gray", ",");
+               h2_color::prints("", " %s", format_duration(case_cost));
             }
-            h2_color::printf("", "\n");
+            h2_color::prints("", "\n");
          } else if (!O.debug)
             print_perfix(true);
          break;
       case h2_case::failed:
          print_perfix(true);
-         h2_color::printf("bold,red", "Failed ");
+         h2_color::prints("bold,red", "Failed ");
          print_title(s->name, c->name, c->file, c->lino);
-         h2_color::printf("", "\n");
+         h2_color::prints("", "\n");
          if (O.compact) break;
          if (c->fails) c->fails->foreach([](h2_fail* fail, int subling_index, int child_index) { fail->print(subling_index, child_index); });
-         h2_color::printf("", "\n");
+         h2_color::prints("", "\n");
          break;
       }
    }
@@ -255,7 +255,7 @@ struct h2_report_junit : h2_report_impl {
       if (!f) return;
       fprintf(f, "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n");
       fprintf(f, "<testsuites>\n");
-   };
+   }
    void on_suite_start(h2_suite* s) override
    {
       h2_report_impl::on_suite_start(s);

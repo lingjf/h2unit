@@ -1,9 +1,9 @@
 
 h2_inline void h2_fail::append_subling(h2_fail*& fail, h2_fail* n)
 {
-   if (!fail)
+   if (!fail) {
       fail = n;
-   else {
+   } else {
       h2_fail** pp = &fail->subling_next;
       while (*pp) pp = &(*pp)->subling_next;
       *pp = n;
@@ -12,9 +12,9 @@ h2_inline void h2_fail::append_subling(h2_fail*& fail, h2_fail* n)
 
 h2_inline void h2_fail::append_child(h2_fail*& fail, h2_fail* n)
 {
-   if (!fail)
+   if (!fail) {
       fail = n;
-   else {
+   } else {
       h2_fail** pp = &fail->child_next;
       while (*pp) pp = &(*pp)->child_next;
       *pp = n;
@@ -49,7 +49,7 @@ struct h2_fail_normal : h2_fail {
       line.indent(child_index * 2 + 1);
       if (0 <= seqno) line.printf("dark gray", "%d. ", seqno);
       line += explain;
-      h2_color::printf(line + locate());
+      h2_color::printl(line + locate());
    }
 };
 
@@ -128,7 +128,7 @@ struct h2_fail_unexpect : h2_fail {
       if (!strcmp("JE", assert_type)) print_JE(line);
       if (explain.width()) line += comma_if(c++, ", ", " ") + explain;
       if (user_explain.size()) line += {comma_if(c++, ", ", " "), user_explain};
-      h2_color::printf(line + locate());
+      h2_color::printl(line + locate());
    }
 };
 
@@ -166,7 +166,7 @@ struct h2_fail_strcmp : h2_fail_unexpect {
             fmt_char(a_value[i], eq, "red", a_line);
          }
 
-         h2_color::printf(h2_layout::unified(e_line, a_line, "expect", "actual", O.terminal_width));
+         h2_color::printl(h2_layout::unified(e_line, a_line, "expect", "actual", O.terminal_width));
       }
    }
 };
@@ -187,7 +187,7 @@ struct h2_fail_strfind : h2_fail_unexpect {
          for (size_t i = 0; i < a_value.size(); ++i)
             fmt_char(a_value[i], true, "", a_line);
 
-         h2_color::printf(h2_layout::seperate(e_line, a_line, "expect", "actual", O.terminal_width));
+         h2_color::printl(h2_layout::seperate(e_line, a_line, "expect", "actual", O.terminal_width));
       }
    }
 };
@@ -208,16 +208,16 @@ struct h2_fail_json : h2_fail_unexpect {
             if (i) e_lines[i].indent(8);
          for (size_t i = 0; i < a_lines.size(); ++i)
             if (i) a_lines[i].indent(8);
-         h2_color::printf("dark gray", "expect");
-         h2_color::printf("green", "> ");
-         h2_color::printf(e_lines);
-         h2_color::printf("dark gray", "actual");
-         h2_color::printf("red", "> ");
-         h2_color::printf(a_lines);
+         h2_color::prints("dark gray", "expect");
+         h2_color::prints("green", "> ");
+         h2_color::printl(e_lines);
+         h2_color::prints("dark gray", "actual");
+         h2_color::prints("red", "> ");
+         h2_color::printl(a_lines);
       } else {
-         h2_lines lines = h2_layout::split(e_lines, a_lines, "expect", "actual", (O.seq ? 1 : 0), 'd', O.terminal_width - 1);
+         h2_lines lines = h2_layout::split(e_lines, a_lines, "expect", "actual", 0, 'd', O.terminal_width - 1);
          for (auto& line : lines) line.indent(1);
-         h2_color::printf(lines);
+         h2_color::printl(lines);
       }
    }
 };
@@ -241,7 +241,7 @@ struct h2_fail_memcmp : h2_fail_unexpect {
       case 64: print_ints<unsigned long long>(e_lines, a_lines, bytes_per_row = 16); break;
       default: break;
       }
-      h2_color::printf(h2_layout::split(e_lines, a_lines, "expect", "actual", bytes_per_row * 8 / width, 'x', O.terminal_width));
+      h2_color::printl(h2_layout::split(e_lines, a_lines, "expect", "actual", bytes_per_row * 8 / width, 'x', O.terminal_width));
    }
 
    void print_bits(h2_lines& e_lines, h2_lines& a_lines, int bytes_per_row)
@@ -318,8 +318,8 @@ struct h2_fail_memory_leak : h2_fail_memory {
    void print(int subling_index = 0, int child_index = 0) override
    {
       h2_line line = h2_stringify(ptr) + color(" memory leak ", "bold,red") + h2_stringify(size).brush("red") + " bytes in " + where + " totally";
-      h2_color::printf(" " + line + locate());
-      h2_color::printf("", "  which allocate at backtrace:\n"), bt_allocate.print(3);
+      h2_color::printl(" " + line + locate());
+      h2_color::prints("", "  which allocate at backtrace:\n"), bt_allocate.print(3);
    }
 };
 
@@ -329,11 +329,11 @@ struct h2_fail_double_free : h2_fail_memory {
      : h2_fail_memory(ptr_, 0, bt_allocate_, bt_release_), bt_double_free(bt_double_free_) {}
    void print(int subling_index = 0, int child_index = 0) override
    {
-      h2_color::printf("", " %p", ptr);
-      h2_color::printf("bold,red", " double free");
-      h2_color::printf("", " at backtrace:\n", ptr), bt_double_free.print(2);
-      h2_color::printf("", "  which allocate at backtrace:\n"), bt_allocate.print(3);
-      h2_color::printf("", "  already free at backtrace:\n"), bt_release.print(3);
+      h2_color::prints("", " %p", ptr);
+      h2_color::prints("bold,red", " double free");
+      h2_color::prints("", " at backtrace:\n", ptr), bt_double_free.print(2);
+      h2_color::prints("", "  which allocate at backtrace:\n"), bt_allocate.print(3);
+      h2_color::prints("", "  already free at backtrace:\n"), bt_release.print(3);
    }
 };
 
@@ -343,12 +343,12 @@ struct h2_fail_asymmetric_free : h2_fail_memory {
      : h2_fail_memory(ptr_, 0, bt_allocate_, bt_release_), who_allocate(who_allocate_), who_release(who_release_) {}
    void print(int subling_index = 0, int child_index = 0) override
    {
-      h2_color::printf("", " %p allocate with ", ptr);
-      h2_color::printf("bold,red", "%s", who_allocate);
-      h2_color::printf("", ", release by ");
-      h2_color::printf("bold,red", "%s", who_release);
-      h2_color::printf("", " asymmetrically at backtrace:\n"), bt_release.print(2);
-      if (0 < bt_allocate.count) h2_color::printf("", "  which allocate at backtrace:\n"), bt_allocate.print(3);
+      h2_color::prints("", " %p allocate with ", ptr);
+      h2_color::prints("bold,red", "%s", who_allocate);
+      h2_color::prints("", ", release by ");
+      h2_color::prints("bold,red", "%s", who_release);
+      h2_color::prints("", " asymmetrically at backtrace:\n"), bt_release.print(2);
+      if (0 < bt_allocate.count) h2_color::prints("", "  which allocate at backtrace:\n"), bt_allocate.print(3);
    }
 };
 
@@ -364,9 +364,9 @@ struct h2_fail_overflow : h2_fail_memory {
       int offset = ptr < addr ? (long long)addr - ((long long)ptr + size) : (long long)addr - (long long)ptr;
       h2_line line = h2_stringify(ptr) + " " + color(h2_string("%+d", offset), "bold,red") + " " + gray("(") + h2_stringify(addr) + gray(")") + " " + color(action, "bold,red") + " " + (offset >= 0 ? "overflow" : "underflow") + " ";
       for (int i = 0; i < spot.size(); ++i) line.printf("bold,red", "%02X ", spot[i]);
-      h2_color::printf(" " + line + locate());
-      if (bt_trample.count) h2_color::printf("", "  trampled at backtrace:\n"), bt_trample.print(3);
-      h2_color::printf("", "  which allocate at backtrace:\n"), bt_allocate.print(3);
+      h2_color::printl(" " + line + locate());
+      if (bt_trample.count) h2_color::prints("", "  trampled at backtrace:\n"), bt_trample.print(3);
+      h2_color::prints("", "  which allocate at backtrace:\n"), bt_allocate.print(3);
    }
 };
 
@@ -379,9 +379,9 @@ struct h2_fail_use_after_free : h2_fail_memory {
    void print(int subling_index = 0, int child_index = 0) override
    {
       h2_line line = h2_stringify(ptr) + " " + color(h2_string("%+d", (long long)addr - (long long)ptr), "bold,red") + " " + gray("(") + h2_stringify(addr) + gray(")") + " " + color(action, "bold,red") + color(" after free", "bold,red");
-      h2_color::printf(" " + line + " at backtrace:"), bt_use.print(2);
-      h2_color::printf("", "  which allocate at backtrace:\n"), bt_allocate.print(3);
-      h2_color::printf("", "  and free at backtrace:\n"), bt_release.print(3);
+      h2_color::printl(" " + line + " at backtrace:"), bt_use.print(2);
+      h2_color::prints("", "  which allocate at backtrace:\n"), bt_allocate.print(3);
+      h2_color::prints("", "  and free at backtrace:\n"), bt_release.print(3);
    }
 };
 

@@ -79,10 +79,10 @@ static inline void split_expression(h2_string& e_expression, h2_string& a_expres
    }
 }
 
-h2_inline h2_defer_fail::h2_defer_fail(const char* e_expression_, const char* a_expression_, const char* expression_, const char* file_, int lino_)
+h2_inline h2_defer_failure::h2_defer_failure(const char* e_expression_, const char* a_expression_, const char* expression_, const char* file_, int lino_)
   : e_expression(e_expression_), a_expression(a_expression_), expression(expression_), file(file_), lino(lino_) {}
 
-h2_inline h2_defer_fail::~h2_defer_fail()
+h2_inline h2_defer_failure::~h2_defer_failure()
 {
    if (fail) {
       fail->file = file;

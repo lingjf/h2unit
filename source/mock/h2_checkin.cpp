@@ -28,12 +28,12 @@ h2_inline const char* h2_checkin::expect()
          sprintf(st, "any number of times");
       else
          sprintf(st, "at most %d times", most);
-   } else if (least == most)
+   } else if (least == most) {
       sprintf(st, "exactly %d times", least);
-   else if (most == INT_MAX)
+   } else if (most == INT_MAX) {
       sprintf(st, "at least %d times", least);
-   else  // 0 < least < most < INT_MAX
+   } else {  // 0 < least < most < INT_MAX
       sprintf(st, "between %d and %d times", least, most);
-
+   }
    return st;
 }

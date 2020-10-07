@@ -7,7 +7,7 @@ static inline h2_lines line_break(const h2_line& line, unsigned width)
    unsigned length = 0;
 
    for (auto& word : line) {
-      if (h2_color::is_ctrl(word.c_str())) {  // + - style , issue
+      if (h2_color::isctrl(word.c_str())) {  // + - style , issue
          wrap.push_back(word);
          current_style = word;
       } else {

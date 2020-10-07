@@ -97,13 +97,19 @@ struct h2_exemption : h2_libc {
 
    int function_size(unsigned char* func)
    {
+#if defined __i386__ || defined __x86_64__ || defined _M_IX86 || defined _M_X64
+      // e8/e9/ff15/ff25   call/jmp PLT
+      if (*func == 0xE8 || *func == 0xE9) return 1;
+      if (*func == 0xFF && (*(func + 1) == 0x15 || *(func + 1) == 0x25)) return 2;
       for (unsigned char* p = func + 1;; p++) {
-         if (*p == 0xC3) {
-            if ((*(p - 1) == 0x5D) || (*(p - 1) == 0xC9)) {
-               return p - func;
-            }
+         // 5d c3   pop %ebp; ret;
+         // 5b c3   pop %ebx; ret;
+         // c9 c3   leave; ret;
+         if (*p == 0xC3 && ((*(p - 1) == 0x5D) || (*(p - 1) == 0x5B) || (*(p - 1) == 0xC9))) {
+            return p - func;
          }
       }
+#endif
       return 300;
    }
 };

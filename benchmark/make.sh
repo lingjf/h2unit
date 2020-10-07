@@ -1,7 +1,7 @@
 #!/bin/bash
 #coding=utf-8
 
-cd ../build && python singlify.py
+cd ../build && python concatenate.py
 cd ../benchmark
 
 t_start1=$(date +%s)

@@ -8,11 +8,11 @@ void* h2_fp(T p)
       int n = h2_nm::find((const char*)p, res, 100);
       if (n != 1) {
          if (n == 0) {
-            h2_color::printf("yellow", "\nDon't find %s\n", (const char*)p);
+            h2_color::prints("yellow", "\nDon't find %s\n", (const char*)p);
          } else {
-            h2_color::printf("yellow", "\nFind multiple %s :\n", (const char*)p);
+            h2_color::prints("yellow", "\nFind multiple %s :\n", (const char*)p);
             for (int i = 0; i < n; ++i)
-               h2_color::printf("yellow", "  %d. %s \n", i + 1, res[i]->name.c_str());
+               h2_color::prints("yellow", "  %d. %s \n", i + 1, res[i]->name.c_str());
          }
          return nullptr;
       }

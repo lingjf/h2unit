@@ -11,24 +11,18 @@ struct h2_once {
    int c = 0;
 };
 
-struct h2_with {
-   FILE* f;
-   int (*c)(FILE*);
-   h2_with(FILE* file, int (*close)(FILE*) = ::fclose) : f(file), c(close) {}
-   ~h2_with() { (f && c) && c(f); }
-};
-
 struct h2_pattern {
    static bool regex_match(const char* pattern, const char* subject, bool caseless = false);
    static bool wildcard_match(const char* pattern, const char* subject, bool caseless = false);
    static bool match(const char* pattern, const char* subject, bool caseless = false);
 };
 
-static inline const char* comma_if(bool a, const char* t = ", ", const char* f = "") { return a ? t : f; };
+/* clang-format off */
 
-#define h2_singleton(_Class) \
-   static _Class& I()        \
-   {                         \
-      static _Class i;       \
-      return i;              \
-   }
+#define h2_singleton(_Class) static _Class& I() { static _Class i; return i; }
+
+#define H2Foreach(_Macro_x, ...) H2PP_FOREACH(, _H2ForeachMacro, (_Macro_x), __VA_ARGS__)
+#define _H2ForeachMacro(_Args, i, x) H2PP_REMOVE_PARENTHESES(_Args)(x)
+
+#define H2Fullmesh(_Macro_x_y, ...) H2PP_FULLMESH(, _H2FullmeshMacro, (_Macro_x_y), __VA_ARGS__)
+#define _H2FullmeshMacro(_Args, i, j, x, y) H2PP_REMOVE_PARENTHESES(_Args)(x, y)

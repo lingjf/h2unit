@@ -36,17 +36,6 @@ h2_inline bool h2_numeric::is_hex_string(const char* s)
    return true;
 }
 
-h2_inline int h2_numeric::extract_hex_string(const char* s, bool ignore_space)
-{
-   if (s[0] == '0' && ::tolower(s[1]) == 'x') s += 2;
-   for (const char* p = s; *p; p++) {
-      if (::isxdigit(*p)) continue;
-      if (::isspace(*p) && ignore_space) continue;
-      break;
-   }
-   return 0;
-}
-
 h2_inline int h2_numeric::bin_to_bits(const char* bin, unsigned char* bytes)
 {
    memset(bytes, 0, strlen(bin));
@@ -118,18 +107,4 @@ h2_inline const char* h2_numeric::sequence_number(int sequence, int shift)
    }
    sprintf(ss, "%dth", sequence);
    return ss;
-}
-
-h2_inline long long h2_numeric::parse_int_after_equal(const char* s)
-{
-   long long n = 0;
-   const char* p = strchr(s, '=');
-   if (p) {
-      for (p += 1; *p && ::isspace(*p);) p++;  // strip left space
-      if (p[0] == '0' && ::tolower(p[1]) == 'x')
-         n = strtoll(p + 2, (char**)0, 16);
-      else
-         n = strtoll(p, (char**)0, 10);
-   }
-   return n;
 }

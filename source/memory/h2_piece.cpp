@@ -30,12 +30,12 @@ struct h2_piece : h2_libc {
       unsigned user_size_plus = (user_size + alignment_2n - 1 + alignment_2n) & ~(alignment_2n - 1);
       page_count = ::ceil(user_size_plus / (double)page_size);
 
-#ifdef _WIN32
+#if defined WIN32 || defined __WIN32__ || defined _WIN32 || defined _MSC_VER || defined __MINGW32__
       page_ptr = (unsigned char*)VirtualAlloc(NULL, page_size * (page_count + 1), MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
       if (page_ptr == NULL) ::printf("VirtualAlloc failed at %s:%d\n", __FILE__, __LINE__), abort();
 #else
       page_ptr = (unsigned char*)::mmap(nullptr, page_size * (page_count + 1), PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0);
-      if (page_ptr == MAP_FAILED) h2_color::printf("yellow", "mmap failed at %s:%d\n", __FILE__, __LINE__), abort();
+      if (page_ptr == MAP_FAILED) h2_color::prints("yellow", "mmap failed at %s:%d\n", __FILE__, __LINE__), abort();
 #endif
 
       user_ptr = page_ptr + page_size * page_count - user_size_plus + alignment;
@@ -45,7 +45,7 @@ struct h2_piece : h2_libc {
 
    ~h2_piece()
    {
-#ifdef _WIN32
+#if defined WIN32 || defined __WIN32__ || defined _WIN32 || defined _MSC_VER || defined __MINGW32__
       VirtualFree(page_ptr, 0, MEM_DECOMMIT | MEM_RELEASE);
 #else
       ::munmap(page_ptr, page_size * (page_count + 1));
@@ -57,7 +57,7 @@ struct h2_piece : h2_libc {
       if (page) forbidden_page = page;
       if (size) forbidden_size = size;
 
-#ifdef _WIN32
+#if defined WIN32 || defined __WIN32__ || defined _WIN32 || defined _MSC_VER || defined __MINGW32__
       DWORD old_permission, new_permission;
       new_permission = PAGE_NOACCESS;
       if (permission & readable)
@@ -73,7 +73,7 @@ struct h2_piece : h2_libc {
       if (permission & writable)
          new_permission = PROT_READ | PROT_WRITE;
       if (::mprotect(forbidden_page, forbidden_size, new_permission) != 0)
-         h2_color::printf("yellow", "mprotect failed %s\n", strerror(errno));
+         h2_color::prints("yellow", "mprotect failed %s\n", strerror(errno));
 #endif
    }
 

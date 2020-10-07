@@ -16,8 +16,11 @@ static inline bool addr2line(unsigned long long addr, char* output, size_t len)
 #else
    sprintf(t, "addr2line -C -a -s -p -f -e %s -i %llx", O.path, addr);
 #endif
-   h2_with f(::popen(t, "r"), ::pclose);
-   if (!f.f || !::fgets(output, len, f.f)) return false;
+   FILE* f = ::popen(t, "r");
+   if (!f) return false;
+   output = ::fgets(output, len, f);
+   ::pclose(f);
+   if (!output) return false;
    for (int i = strlen(output) - 1; 0 <= i && ::isspace(output[i]); --i) output[i] = '\0';  //strip tail
    return true;
 }
@@ -88,6 +91,8 @@ h2_inline void h2_backtrace::print(h2_vector<h2_string>& stacks) const
 #ifndef _WIN32
    h2_memory::restores();
    char** backtraces = backtrace_symbols(array, count);
+   h2_memory::overrides();
+
    for (int i = shift; i < count; ++i) {
       char *p = backtraces[i], module[256] = "", mangled[256] = "", demangled[256] = "", addr2lined[512] = "";
       unsigned long long address = 0, offset = 0;
@@ -109,6 +114,8 @@ h2_inline void h2_backtrace::print(h2_vector<h2_string>& stacks) const
       if (!strcmp("main", mangled) || !strcmp("main", demangled) || h2_nm::in_main(address + offset))
          break;
    }
+
+   h2_memory::restores();
    free(backtraces);
    h2_memory::overrides();
 #endif
@@ -123,5 +130,5 @@ h2_inline void h2_backtrace::print(int pad) const
       if (O.verbose || c.find("h2unit.h:") == h2_string::npos && c.find("h2unit.hpp:") == h2_string::npos && c.find("h2unit.cpp:") == h2_string::npos)
          lines.push_back(h2_line(c));
    lines.sequence(pad);
-   h2_color::printf(lines);
+   h2_color::printl(lines);
 }

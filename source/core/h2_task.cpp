@@ -1,41 +1,46 @@
 
 static inline void save_last_order(h2_list& suites)
 {
-   h2_with f(fopen(".last_order", "w"));
-   if (!f.f) return;
+   FILE* f = ::fopen(".last_order", "w");
+   if (!f) return;
    h2_list_for_each_entry (s, suites, h2_suite, x)
       h2_list_for_each_entry (c, s->cases, h2_case, x)
-         fprintf(f.f, "%s\n%s\n%d\n", s->name, c->name, c->status);
+         ::fprintf(f, "%s\n%s\n%d\n", s->name, c->name, c->status);
+   ::fclose(f);
 }
 
 static inline void __mark(h2_list& suites, char* suitename, char* casename, int status)
 {
    static int seq = INT_MIN / 4;
 
-   h2_list_for_each_entry (s, suites, h2_suite, x)
-      if (!strcmp(suitename, s->name))
-         h2_list_for_each_entry (c, s->cases, h2_case, x)
+   h2_list_for_each_entry (s, suites, h2_suite, x) {
+      if (!strcmp(suitename, s->name)) {
+         h2_list_for_each_entry (c, s->cases, h2_case, x) {
             if (!strcmp(casename, c->name)) {
                s->seq = c->seq = ++seq;
                c->last_status = status;
             }
+         }
+      }
+   }
 }
 
 static inline int mark_last_order(h2_list& suites)
 {
    int count = 0;
    char suitename[1024], casename[1024], status[32];
-   h2_with f(fopen(".last_order", "r"));
-   if (!f.f) return 0;
-   while (fgets(suitename, sizeof(suitename), f.f) &&
-          fgets(casename, sizeof(casename), f.f) &&
-          fgets(status, sizeof(status), f.f)) {
+   FILE* f = ::fopen(".last_order", "r");
+   if (!f) return 0;
+   while (::fgets(suitename, sizeof(suitename), f) &&
+          ::fgets(casename, sizeof(casename), f) &&
+          ::fgets(status, sizeof(status), f)) {
       suitename[strlen(suitename) - 1] = '\0';  // remove \n in save_last_order
       casename[strlen(casename) - 1] = '\0';
       status[strlen(status) - 1] = '\0';
       __mark(suites, suitename, casename, atoi(status));
       count++;
    }
+   ::fclose(f);
    return count;
 }
 

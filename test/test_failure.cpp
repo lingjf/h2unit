@@ -29,7 +29,7 @@ SUITE(failure utils)
      a_0x0
 
 #define TheCheck(x, y) OK(h2::is_synonym(x, y));
-      ForFullmesh(TheCheck, NULL_SET);
+      H2Fullmesh(TheCheck, NULL_SET);
 #undef TheCheck
    }
 
@@ -37,7 +37,7 @@ SUITE(failure utils)
    {
 #define TRUE_SET true_IsTrue, true_true, true_1
 #define TheCheck(x, y) OK(h2::is_synonym(x, y));
-      ForFullmesh(TheCheck, TRUE_SET);
+      H2Fullmesh(TheCheck, TRUE_SET);
 #undef TheCheck
    }
 
@@ -45,7 +45,7 @@ SUITE(failure utils)
    {
 #define FALSE_SET false_IsFalse, false_false, false_0
 #define TheCheck(x, y) OK(h2::is_synonym(x, y));
-      ForFullmesh(TheCheck, FALSE_SET);
+      H2Fullmesh(TheCheck, FALSE_SET);
 #undef TheCheck
    }
 }

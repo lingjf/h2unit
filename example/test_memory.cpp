@@ -102,6 +102,14 @@ SUITE(Memory Leak)
          free(p);
       }
    }
+
+   Case(exempt leak function)
+   {
+      UNMEM(rectangle_create);
+
+      rectangle_t* rectangle = rectangle_create(1, 2);
+      OK(2, rectangle_area(rectangle));
+   }
 }
 
 SUITE(Memory Check)

@@ -1,5 +1,5 @@
 
-#ifdef _WIN32
+#if defined WIN32 || defined __WIN32__ || defined _WIN32 || defined _MSC_VER || defined __MINGW32__
 static inline char* basename(char* path)
 {
    static char t[MAX_PATH + 1];
@@ -22,7 +22,7 @@ h2_inline bool h2_pattern::regex_match(const char* pattern, const char* subject,
 
 h2_inline bool h2_pattern::wildcard_match(const char* pattern, const char* subject, bool caseless)
 {
-#ifdef _WIN32
+#if defined WIN32 || defined __WIN32__ || defined _WIN32 || defined _MSC_VER || defined __MINGW32__
    const char *scur = subject, *pcur = pattern;
    const char *sstar = nullptr, *pstar = nullptr;
    while (*scur) {
@@ -52,7 +52,7 @@ h2_inline bool h2_pattern::match(const char* pattern, const char* subject, bool 
 
 static inline long long h2_now()
 {
-#ifdef _WIN32
+#if defined WIN32 || defined __WIN32__ || defined _WIN32 || defined _MSC_VER || defined __MINGW32__
    return GetTickCount();
 #else
    struct timeval tv;
@@ -63,7 +63,7 @@ static inline long long h2_now()
 
 static inline void h2_sleep(long long milliseconds)
 {
-#ifdef _WIN32
+#if defined WIN32 || defined __WIN32__ || defined _WIN32 || defined _MSC_VER || defined __MINGW32__
    Sleep(milliseconds);
 #else
    ::usleep(milliseconds * 1000);
@@ -72,7 +72,7 @@ static inline void h2_sleep(long long milliseconds)
 
 static inline unsigned h2_termimal_width()
 {
-#ifdef _WIN32
+#if defined WIN32 || defined __WIN32__ || defined _WIN32 || defined _MSC_VER || defined __MINGW32__
    return 80;
 #else
    struct winsize w;
@@ -83,7 +83,7 @@ static inline unsigned h2_termimal_width()
 
 static inline unsigned h2_page_size()
 {
-#ifdef _WIN32
+#if defined WIN32 || defined __WIN32__ || defined _WIN32 || defined _MSC_VER || defined __MINGW32__
    SYSTEM_INFO si;
    GetSystemInfo(&si);
    return (unsigned)si.dwPageSize;
@@ -98,6 +98,8 @@ static inline bool h2_in(const char* x, const char* s[], int n = 0)
       if (!strcmp(s[i], x)) return true;
    return false;
 }
+
+static inline const char* comma_if(bool a, const char* t = ", ", const char* f = "") { return a ? t : f; };
 
 #define h2_sprintvf(str, fmt, ap)               \
    do {                                         \

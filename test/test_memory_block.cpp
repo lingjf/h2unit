@@ -74,16 +74,22 @@ SUITE(BLOCK)
          OK(2, (uintptr_t)c1 & 0x03);
          free(c1);
       }
-      BLOCK(align = 3)
+      BLOCK(align = 0x3)
       {
          c1 = malloc(8);
          OK(3, (uintptr_t)c1 & 0x03);
          free(c1);
       }
-      BLOCK(align = 0x4)
+      BLOCK(align = 4)
       {
          c1 = malloc(8);
+
+#if defined __x86_64__
          OK(4, (uintptr_t)c1 & 0x07);
+#elif defined __i386__
+         OK(0, (uintptr_t)c1 & 0x07);
+#endif
+
          free(c1);
       }
    }

@@ -5,7 +5,7 @@ struct h2__socket {
 
    static bool is_block(int sockfd)
    {
-#ifdef _WIN32
+#if defined WIN32 || defined __WIN32__ || defined _WIN32 || defined _MSC_VER || defined __MINGW32__
       return true;
 #else
       return !(fcntl(sockfd, F_GETFL) & O_NONBLOCK);
@@ -13,7 +13,7 @@ struct h2__socket {
    }
    static bool set_block(int sockfd, bool block)
    {
-#ifdef _WIN32
+#if defined WIN32 || defined __WIN32__ || defined _WIN32 || defined _MSC_VER || defined __MINGW32__
       u_long op = block ? 0 : 1;
       if (ioctlsocket(sockfd, FIONBIO, &op) == SOCKET_ERROR) {
          return false;
