@@ -31,12 +31,23 @@ h2_inline void h2_suite::enumerate()
 
 h2_inline void h2_suite::execute(h2_case* c)
 {
+   h2_string ex;
    c->prev_setup();
-   test_code(this, c); /* include setup(); c->post_setup() and c->prev_cleanup(); cleanup() */
-   c->post_cleanup();
+   try {
+      test_code(this, c); /* include setup(); c->post_setup() and c->prev_cleanup(); cleanup() */
+   } catch (std::exception& e) {
+      ex = e.what();
+   } catch (std::string& m) {
+      ex = m.c_str();
+   } catch (const char* m) {
+      ex = m;
+   } catch (...) {
+      ex = "Unknown exception";
+   }
+   c->post_cleanup(ex);
 }
 
-h2_inline h2_suite::installer::installer(h2_suite* s, h2_case* c)
+h2_inline h2_suite::registrar::registrar(h2_suite* s, h2_case* c)
 {
    static int seq = INT_MAX / 4;
    s->cases.push_back(c->x);

@@ -92,10 +92,11 @@ h2_inline void h2_task::enumerate()
    }
 }
 
-h2_inline int h2_task::execute()
+h2_inline void h2_task::execute()
 {
    h2_report::initialize();
    h2_memory::initialize();
+   h2_exception::initialize();
    h2_stdio::initialize();
    h2_dns::initialize();
 
@@ -140,6 +141,4 @@ h2_inline int h2_task::execute()
    stubs.clear();
    mocks.clear(false);
    h2_memory::finalize();
-
-   return stats[h2_case::failed];
 }

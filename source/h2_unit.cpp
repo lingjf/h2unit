@@ -3,15 +3,16 @@
 
 #include "h2_unit.hpp"
 
-#include <cassert>  /* assert */
-#include <cctype>   /* tolower, isspace */
-#include <cstdarg>  /* va_list */
-#include <errno.h>  /* strerror */
-#include <iostream> /* cout */
-#include <memory>   /* allocator */
-#include <regex>    /* std::regex */
-#include <signal.h> /* sigaction */
-#include <typeinfo> /* typeid */
+#include <cassert>   /* assert */
+#include <cctype>    /* tolower, isspace */
+#include <cstdarg>   /* va_list */
+#include <errno.h>   /* strerror */
+#include <exception> /* std::exception */
+#include <iostream>  /* std::cout, std::streambuf */
+#include <memory>    /* std::allocator */
+#include <regex>     /* std::regex */
+#include <signal.h>  /* sigaction */
+#include <typeinfo>  /* std::typeid, std::type_info */
 
 #if defined WIN32 || defined __WIN32__ || defined _WIN32 || defined _MSC_VER || defined __MINGW32__
 #   include <winsock2.h> /* socket */
@@ -25,7 +26,7 @@
 #   pragma comment(lib, "Shlwapi.lib")
 #else
 #   include <arpa/inet.h>   /* inet_addr, inet_pton */
-#   include <cxxabi.h>      /* demangle */
+#   include <cxxabi.h>      /* abi::__cxa_demangle, abi::__cxa_throw */
 #   include <execinfo.h>    /* backtrace */
 #   include <fcntl.h>       /* fcntl */
 #   include <fnmatch.h>     /* fnmatch */
@@ -92,6 +93,8 @@ namespace h2 {
 #include "memory/h2_crash.cpp"
 #include "memory/h2_memory.cpp"
 #include "memory/h2_exempt.cpp"
+
+#include "exception/h2_exception.cpp"
 
 #include "stub/h2_e9.cpp"
 #include "stub/h2_native.cpp"

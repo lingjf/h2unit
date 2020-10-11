@@ -4,18 +4,9 @@ struct h2_native : h2_libc {
    unsigned char saved[32];
    void* origin_fp;
    int reference_count = 0;
-   h2_native(void* _origin_fp) : origin_fp(_origin_fp)
-   {
-      h2_e9::save(origin_fp, saved);
-   }
-   ~h2_native()
-   {
-      restore();
-   }
-   void restore()
-   {
-      h2_e9::reset(origin_fp, saved);
-   }
+   h2_native(void* _origin_fp) : origin_fp(_origin_fp) { h2_e9::save(origin_fp, saved); }
+   ~h2_native() { restore(); }
+   void restore() { h2_e9::reset(origin_fp, saved); }
 };
 
 struct h2_natives {
@@ -39,6 +30,7 @@ struct h2_natives {
       }
       native->reference_count++;
    }
+
    void operator-=(void* origin_fp)
    {
       h2_native* native = get(origin_fp);

@@ -223,7 +223,7 @@ class h2_mocker<Counter, Class, ReturnType(Args...)> : h2_mockee {
    {
       if (checkin_array.empty()) Any();
       if (std::is_same<std::false_type, Class>::value)
-         routine_array.back().nfp = (ReturnType(*)(Args...))origin_fp;
+         routine_array.back().fp = (ReturnType(*)(Args...))origin_fp;
       else
          routine_array.back().mfp = (ReturnType(*)(Class*, Args...))origin_fp;
       return *this;
@@ -241,7 +241,7 @@ class h2_mocker<Counter, Class, ReturnType(Args...)> : h2_mockee {
    {
       if (checkin_array.empty()) Any();
       for (auto& a : routine_array)
-         if (!a) a.nfp = f;
+         if (!a) a.fp = f;
    }
 
    void operator=(ReturnType (*f)(Class*, Args...))

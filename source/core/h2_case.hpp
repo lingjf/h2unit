@@ -30,13 +30,13 @@ struct h2_case {
    void prev_setup();
    void post_setup() {}
    void prev_cleanup() {}
-   void post_cleanup();
+   void post_cleanup(const h2_string& ex);
 
    void do_fail(h2_fail* fail, bool defer);
 
    struct cleaner : h2_once {
       h2_case* thus;
-      cleaner(h2_case* c);
-      ~cleaner();
+      cleaner(h2_case* c) : thus(c) { thus->post_setup(); }
+      ~cleaner() { thus->prev_cleanup(); }
    };
 };

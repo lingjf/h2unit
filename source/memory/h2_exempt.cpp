@@ -1,5 +1,5 @@
 
-struct h2_patch {  // allocate memory inside asymmetrically
+struct h2_exempt_stub {  // allocate memory inside asymmetrically
    static char* asctime(const struct tm* timeptr)
    {
       static char st[256];
@@ -118,23 +118,24 @@ h2_inline void h2_exempt::setup()
 {
    static h2_stubs stubs;
 
-   stubs.add((void*)::gmtime, (void*)h2_patch::gmtime, "gmtime", __FILE__, __LINE__);
-   stubs.add((void*)::gmtime_r, (void*)h2_patch::gmtime_r, "gmtime_r", __FILE__, __LINE__);
-   stubs.add((void*)::ctime, (void*)h2_patch::ctime, "ctime", __FILE__, __LINE__);
-   stubs.add((void*)::ctime_r, (void*)h2_patch::ctime_r, "ctime_r", __FILE__, __LINE__);
-   stubs.add((void*)::asctime, (void*)h2_patch::asctime, "asctime", __FILE__, __LINE__);
-   stubs.add((void*)::asctime_r, (void*)h2_patch::asctime_r, "asctime_r", __FILE__, __LINE__);
-   stubs.add((void*)::localtime, (void*)h2_patch::localtime, "localtime", __FILE__, __LINE__);
-   stubs.add((void*)::localtime_r, (void*)h2_patch::localtime_r, "localtime_r", __FILE__, __LINE__);
-   if (O.os == linux) stubs.add((void*)::mktime, (void*)h2_patch::mktime, "mktime", __FILE__, __LINE__);
-   if (O.os == macos) stubs.add((void*)::strtod, (void*)h2_patch::strtod, "strtod", __FILE__, __LINE__);
-   if (O.os == macos) stubs.add((void*)::strtold, (void*)h2_patch::strtold, "strtold", __FILE__, __LINE__);
+   stubs.add((void*)::gmtime, (void*)h2_exempt_stub::gmtime, "gmtime", __FILE__, __LINE__);
+   stubs.add((void*)::gmtime_r, (void*)h2_exempt_stub::gmtime_r, "gmtime_r", __FILE__, __LINE__);
+   stubs.add((void*)::ctime, (void*)h2_exempt_stub::ctime, "ctime", __FILE__, __LINE__);
+   stubs.add((void*)::ctime_r, (void*)h2_exempt_stub::ctime_r, "ctime_r", __FILE__, __LINE__);
+   stubs.add((void*)::asctime, (void*)h2_exempt_stub::asctime, "asctime", __FILE__, __LINE__);
+   stubs.add((void*)::asctime_r, (void*)h2_exempt_stub::asctime_r, "asctime_r", __FILE__, __LINE__);
+   stubs.add((void*)::localtime, (void*)h2_exempt_stub::localtime, "localtime", __FILE__, __LINE__);
+   stubs.add((void*)::localtime_r, (void*)h2_exempt_stub::localtime_r, "localtime_r", __FILE__, __LINE__);
+   if (O.os == linux) stubs.add((void*)::mktime, (void*)h2_exempt_stub::mktime, "mktime", __FILE__, __LINE__);
+   if (O.os == macos) stubs.add((void*)::strtod, (void*)h2_exempt_stub::strtod, "strtod", __FILE__, __LINE__);
+   if (O.os == macos) stubs.add((void*)::strtold, (void*)h2_exempt_stub::strtold, "strtold", __FILE__, __LINE__);
 
    add((void*)::sscanf);
    add((void*)::sprintf);
    add((void*)::vsnprintf);
 #ifdef __APPLE__
    add((void*)::vsnprintf_l);
+   add((void*)abi::__cxa_throw);
 #endif
    add((void*)h2_pattern::regex_match);  // linux is 0xcb size, MAC is 0x100 (gap to next symbol)
 }
@@ -147,7 +148,6 @@ h2_inline void h2_exempt::add(void* func)
 h2_inline bool h2_exempt::in(const h2_backtrace& bt)
 {
    h2_list_for_each_entry (p, I().exempts, h2_exemption, x)
-      if (bt.has(p->base, p->size))
-         return true;
+      if (bt.has(p->base, p->size)) return true;
    return false;
 }

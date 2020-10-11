@@ -1,11 +1,11 @@
-/* clang-format off */
 
 #define __H2ARGV(Args, i) H2PP_STR(H2PP_CAT(H2PP_TH, i) Args)
 #define H2ARGV(...) H2PP_REPEAT((, ), __H2ARGV, __VA_ARGS__, H2PP_NARG __VA_ARGS__)
 
-#define __H2MOCK_0(...) H2PP_VARIADIC_CALL(__H2MOCK_0_, __VA_ARGS__) // normal function
-#define __H2MOCK_1(...) H2PP_VARIADIC_CALL(__H2MOCK_1_, __VA_ARGS__) // class member method
+#define __H2MOCK_0(...) H2PP_VARIADIC_CALL(__H2MOCK_0_, __VA_ARGS__)  // normal function
+#define __H2MOCK_1(...) H2PP_VARIADIC_CALL(__H2MOCK_1_, __VA_ARGS__)  // class member method
 
+/* clang-format off */
 //       0th       1th         2th          3th          4th
 // MOCK( Function ,ReturnType ,Arguments  [,Inspect0     ... ] )
 // MOCK( Class    ,Method     ,ReturnType  ,Arguments  [,Inspect0 ... ] )

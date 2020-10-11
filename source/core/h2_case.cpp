@@ -16,7 +16,7 @@ h2_inline void h2_case::prev_setup()
    h2_memory::stack::push(file, lino);
 }
 
-h2_inline void h2_case::post_cleanup()
+h2_inline void h2_case::post_cleanup(const h2_string& ex)
 {
    h2_stdio::capture_cancel();
    if (sock) delete sock;
@@ -24,15 +24,24 @@ h2_inline void h2_case::post_cleanup()
    stubs.clear();
    h2_fail* fail = mocks.clear(true);
    footprint = h2_memory::stack::footprint();
-   // should memory assert stats into assert count ?
    h2_fail::append_subling(fail, h2_memory::stack::pop());
+   // should memory assert stats into assert count ?
 
-   if (!fail) return;
-   if (status != failed)
+   if (status == failed) {
+      if (fail) delete fail;
+      return;
+   }
+   if (!ex.empty()) {
+      h2_fail::append_subling(fails, h2_fail::new_normal({"Uncaught Exception : ", ex}));
+      if (fail) delete fail;
+      status = failed;
+      return;
+   }
+   if (fail) {
       h2_fail::append_subling(fails, fail);
-   else
-      delete fail;
-   status = failed;
+      status = failed;
+      return;
+   }
 }
 
 h2_inline void h2_case::do_fail(h2_fail* fail, bool defer)
@@ -41,6 +50,3 @@ h2_inline void h2_case::do_fail(h2_fail* fail, bool defer)
    h2_fail::append_subling(fails, fail);
    if (!defer) ::longjmp(jump, 1);
 }
-
-h2_inline h2_case::cleaner::cleaner(h2_case* c) : thus(c) { thus->post_setup(); }
-h2_inline h2_case::cleaner::~cleaner() { thus->prev_cleanup(); }

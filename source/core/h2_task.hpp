@@ -18,7 +18,7 @@ struct h2_task {
    void shuffle();
    void shadow();
    void enumerate();
-   int execute();
+   void execute();
 };
 
 static inline void h2_stub_g(void* origin_fp, void* substitute_fp, const char* origin_fn, const char* file, int line)

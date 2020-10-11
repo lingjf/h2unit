@@ -26,10 +26,7 @@ struct h2_polymorphic_matcher : h2_matches {
    explicit h2_polymorphic_matcher(const Matches& _matches) : m(_matches) {}
 
    template <typename T>
-   operator h2_matcher<T>() const
-   {
-      return h2_matcher<T>(new internal_impl<const T&>(m), 0);
-   }
+   operator h2_matcher<T>() const { return h2_matcher<T>(new internal_impl<const T&>(m), 0); }
 
    template <typename T>
    struct internal_impl : h2_matcher_impl<T>, h2_libc {
@@ -39,8 +36,5 @@ struct h2_polymorphic_matcher : h2_matches {
       h2_line expection(bool caseless, bool dont) const override { return m.expection(caseless, dont); }
    };
 
-   virtual h2_line expection(bool caseless = false, bool dont = false) const override
-   {
-      return h2_matches_expection(m, caseless, dont);
-   }
+   virtual h2_line expection(bool caseless = false, bool dont = false) const override { return h2_matches_expection(m, caseless, dont); }
 };

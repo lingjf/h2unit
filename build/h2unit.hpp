@@ -1,5 +1,5 @@
 ﻿
-/* v5.7 2020-10-11 11:18:11 */
+/* v5.7 2020-10-11 19:18:36 */
 /* https://github.com/lingjf/h2unit */
 /* Apache Licence 2.0 */
 
@@ -554,15 +554,8 @@ struct h2_list {
 // source/utils/h2_misc.hpp
 
 struct h2_once {
-   operator bool()
-   {
-      bool ret = c == 0;
-      c = 1;
-      return ret;
-   }
-
- private:
-   int c = 0;
+   unsigned long c = 0;
+   operator bool() { return !c++; }
 };
 
 struct h2_pattern {
@@ -1016,6 +1009,7 @@ struct h2_option {
    bool only_execute_fails = false;
    bool shuffle_order = false;
    bool memory_check = true;
+   bool exception_fails = false;
    bool list_cases = false;
    int break_after_fails = 0;
    int rounds = 1;
@@ -1138,16 +1132,18 @@ struct h2_memory {
 
 #define __H2BLOCK(Attributes, Qb) for (h2::h2_memory::stack::block Qb(Attributes, __FILE__, __LINE__); Qb;)
 #define H2BLOCK(...) __H2BLOCK(#__VA_ARGS__, H2PP_UNIQUE(t_block))
+// source/exception/h2_exception.hpp
+
+struct h2_exception {
+   static void initialize();
+};
 // source/matcher/h2_matches.hpp
 
 struct h2_matches {
    virtual h2_line expection(bool caseless, bool dont) const = 0;
 };
 
-static inline h2_string DS(bool match)
-{
-   return match ? "should not match" : "";
-}
+static inline h2_string DS(bool match) { return match ? "should not match" : ""; }
 
 static inline h2_line CD(const h2_line& s, bool caseless, bool dont, const char* dsym = "!")
 {
@@ -1159,18 +1155,11 @@ static inline h2_line CD(const h2_line& s, bool caseless, bool dont, const char*
 }
 
 template <typename T>
-inline auto h2_matches_expection(const T& e, bool caseless, bool dont) -> typename std::enable_if<std::is_base_of<h2_matches, T>::value, h2_line>::type
-{
-   return e.expection(caseless, dont);
-}
+inline auto h2_matches_expection(const T& e, bool caseless, bool dont) -> typename std::enable_if<std::is_base_of<h2_matches, T>::value, h2_line>::type { return e.expection(caseless, dont); }
 template <typename T>
-inline auto h2_matches_expection(const T& e, bool caseless, bool dont) -> typename std::enable_if<!std::is_base_of<h2_matches, T>::value, h2_line>::type
-{
-   return CD(h2_representify(e), caseless, dont);
-}
+inline auto h2_matches_expection(const T& e, bool caseless, bool dont) -> typename std::enable_if<!std::is_base_of<h2_matches, T>::value, h2_line>::type { return CD(h2_representify(e), caseless, dont); }
 
 #define H2_MATCHES_T2V2E(t_matchers)                                                                                                                                              \
-                                                                                                                                                                                  \
    template <typename T>                                                                                                                                                          \
    void t2v(h2_vector<h2_matcher<T>>& v_matchers, std::integral_constant<std::size_t, 0>) const {}                                                                                \
    template <typename T, std::size_t I>                                                                                                                                           \
@@ -1181,7 +1170,6 @@ inline auto h2_matches_expection(const T& e, bool caseless, bool dont) -> typena
    }                                                                                                                                                                              \
    template <typename T>                                                                                                                                                          \
    void t2v(h2_vector<h2_matcher<T>>& v_matchers) const { return t2v(v_matchers, std::integral_constant<std::size_t, sizeof...(Matchers)>()); }                                   \
-                                                                                                                                                                                  \
    h2_line t2e(bool caseless, bool dont, std::integral_constant<std::size_t, 0>) const { return {}; }                                                                             \
    template <std::size_t I>                                                                                                                                                       \
    h2_line t2e(bool caseless, bool dont, std::integral_constant<std::size_t, I>) const                                                                                            \
@@ -1218,10 +1206,7 @@ struct h2_polymorphic_matcher : h2_matches {
    explicit h2_polymorphic_matcher(const Matches& _matches) : m(_matches) {}
 
    template <typename T>
-   operator h2_matcher<T>() const
-   {
-      return h2_matcher<T>(new internal_impl<const T&>(m), 0);
-   }
+   operator h2_matcher<T>() const { return h2_matcher<T>(new internal_impl<const T&>(m), 0); }
 
    template <typename T>
    struct internal_impl : h2_matcher_impl<T>, h2_libc {
@@ -1231,10 +1216,7 @@ struct h2_polymorphic_matcher : h2_matches {
       h2_line expection(bool caseless, bool dont) const override { return m.expection(caseless, dont); }
    };
 
-   virtual h2_line expection(bool caseless = false, bool dont = false) const override
-   {
-      return h2_matches_expection(m, caseless, dont);
-   }
+   virtual h2_line expection(bool caseless = false, bool dont = false) const override { return h2_matches_expection(m, caseless, dont); }
 };
 // source/matcher/h2_equation.hpp
 
@@ -2388,8 +2370,6 @@ inline h2_polymorphic_matcher<h2_countof_matches<typename std::decay<const Match
 #define _H2MATCHER_7_1(name, e1, e2, e3, e4, e5, message) H2MATCHER5(name, e1, e2, e3, e4, e5, message)
 #define _H2MATCHER_7(name, e1, e2, e3, e4, e5, t) H2PP_CAT(_H2MATCHER_7_, H2PP_IS_BEGIN_PARENTHESIS(t)) (name, e1, e2, e3, e4, e5, t)
 
-/* clang-format on */
-
 #define H2MATCHER(...) H2PP_VARIADIC_CALL(_H2MATCHER_, __VA_ARGS__)
 // source/matcher/h2_matcher.cpp
 
@@ -2628,21 +2608,21 @@ struct h2_routine;
 
 template <typename Class, typename ReturnType, typename... Args>
 struct h2_routine<Class, ReturnType(Args...)> {
-   ReturnType (*nfp)(Args...) = nullptr; // normal function pointer
+   ReturnType (*fp)(Args...) = nullptr; // normal function pointer
    ReturnType (*mfp)(Class*, Args...) = nullptr; // member function pointer
    h2_shared_ptr<h2_return<ReturnType>> return_value;
 
    h2_routine() {}
    h2_routine(ReturnType r) : return_value(new h2_return<ReturnType>(r)) {}
-   h2_routine(ReturnType (*f)(Args...)) : nfp(f) {}
+   h2_routine(ReturnType (*f)(Args...)) : fp(f) {}
    h2_routine(ReturnType (*f)(Class*, Args...)) : mfp(f) {}
 
    ReturnType operator()(Class* This, Args... args)
    {
       if (mfp) {
          return mfp(This, args...);
-      } else if (nfp) {
-         return nfp(args...);
+      } else if (fp) {
+         return fp(args...);
       } else if (return_value) {
          return return_value->value;
       }
@@ -2650,11 +2630,11 @@ struct h2_routine<Class, ReturnType(Args...)> {
    }
    operator bool()
    {
-      return nfp || mfp || return_value;
+      return fp || mfp || return_value;
    }
    void clear()
    {
-      nfp = nullptr;
+      fp = nullptr;
       mfp = nullptr;
       return_value.reset();
    }
@@ -2662,28 +2642,28 @@ struct h2_routine<Class, ReturnType(Args...)> {
 
 template <typename Class, typename... Args>
 struct h2_routine<Class, void(Args...)> {
-   void (*nfp)(Args...) = nullptr;
+   void (*fp)(Args...) = nullptr;
    void (*mfp)(Class*, Args...) = nullptr;
 
    h2_routine() {}
-   h2_routine(void (*f)(Args...)) : nfp(f) {}
+   h2_routine(void (*f)(Args...)) : fp(f) {}
    h2_routine(void (*f)(Class*, Args...)) : mfp(f) {}
 
    void operator()(Class* This, Args... args)
    {
       if (mfp) {
          mfp(This, args...);
-      } else if (nfp) {
-         nfp(args...);
+      } else if (fp) {
+         fp(args...);
       }
    }
    operator bool()
    {
-      return nfp || mfp;
+      return fp || mfp;
    }
    void clear()
    {
-      nfp = nullptr;
+      fp = nullptr;
       mfp = nullptr;
    }
 };
@@ -2968,7 +2948,7 @@ class h2_mocker<Counter, Class, ReturnType(Args...)> : h2_mockee {
    {
       if (checkin_array.empty()) Any();
       if (std::is_same<std::false_type, Class>::value)
-         routine_array.back().nfp = (ReturnType(*)(Args...))origin_fp;
+         routine_array.back().fp = (ReturnType(*)(Args...))origin_fp;
       else
          routine_array.back().mfp = (ReturnType(*)(Class*, Args...))origin_fp;
       return *this;
@@ -2986,7 +2966,7 @@ class h2_mocker<Counter, Class, ReturnType(Args...)> : h2_mockee {
    {
       if (checkin_array.empty()) Any();
       for (auto& a : routine_array)
-         if (!a) a.nfp = f;
+         if (!a) a.fp = f;
    }
 
    void operator=(ReturnType (*f)(Class*, Args...))
@@ -3130,14 +3110,14 @@ struct h2_case {
    void prev_setup();
    void post_setup() {}
    void prev_cleanup() {}
-   void post_cleanup();
+   void post_cleanup(const h2_string& ex);
 
    void do_fail(h2_fail* fail, bool defer);
 
    struct cleaner : h2_once {
       h2_case* thus;
-      cleaner(h2_case* c);
-      ~cleaner();
+      cleaner(h2_case* c) : thus(c) { thus->post_setup(); }
+      ~cleaner() { thus->prev_cleanup(); }
    };
 };
 // source/core/h2_suite.hpp
@@ -3167,8 +3147,8 @@ struct h2_suite {
    void setup();
    void cleanup();
 
-   struct installer {
-      installer(h2_suite* s, h2_case* c);
+   struct registrar {
+      registrar(h2_suite* s, h2_case* c);
    };
 
    struct cleaner : h2_once {
@@ -3198,7 +3178,7 @@ struct h2_task {
    void shuffle();
    void shadow();
    void enumerate();
-   int execute();
+   void execute();
 };
 
 static inline void h2_stub_g(void* origin_fp, void* substitute_fp, const char* origin_fn, const char* file, int line)
@@ -3358,14 +3338,14 @@ struct h2_report {
 
 #define STUBS(...) H2PP_VARIADIC_CALL(__H3STUB, __VA_ARGS__)
 // source/mock/h2_use.hpp
-/* clang-format off */
 
 #define __H2ARGV(Args, i) H2PP_STR(H2PP_CAT(H2PP_TH, i) Args)
 #define H2ARGV(...) H2PP_REPEAT((, ), __H2ARGV, __VA_ARGS__, H2PP_NARG __VA_ARGS__)
 
-#define __H2MOCK_0(...) H2PP_VARIADIC_CALL(__H2MOCK_0_, __VA_ARGS__) // normal function
-#define __H2MOCK_1(...) H2PP_VARIADIC_CALL(__H2MOCK_1_, __VA_ARGS__) // class member method
+#define __H2MOCK_0(...) H2PP_VARIADIC_CALL(__H2MOCK_0_, __VA_ARGS__)  // normal function
+#define __H2MOCK_1(...) H2PP_VARIADIC_CALL(__H2MOCK_1_, __VA_ARGS__)  // class member method
 
+/* clang-format off */
 //       0th       1th         2th          3th          4th
 // MOCK( Function ,ReturnType ,Arguments  [,Inspect0     ... ] )
 // MOCK( Class    ,Method     ,ReturnType  ,Arguments  [,Inspect0 ... ] )
@@ -3593,7 +3573,7 @@ struct h2_report {
 
 #define __H2Case(name, status, Q)                                                                             \
    static h2::h2_case Q(name, status, __FILE__, __LINE__);                                                    \
-   static h2::h2_suite::installer H2PP_UNIQUE(s_installer)(suite_2_0_1_3_0_1_0_2, &Q);                        \
+   static h2::h2_suite::registrar H2PP_UNIQUE(s_registrar)(suite_2_0_1_3_0_1_0_2, &Q);                        \
    if (&Q == case_2_0_1_7_0_3_2_5)                                                                            \
       for (h2::h2_suite::cleaner _1_9_8_0_(suite_2_0_1_3_0_1_0_2); _1_9_8_0_; case_2_0_1_7_0_3_2_5 = nullptr) \
          for (h2::h2_case::cleaner _1_9_8_1_(&Q); _1_9_8_1_;)                                                 \
@@ -3607,7 +3587,7 @@ struct h2_report {
    static void QS(h2::h2_suite* suite_2_0_1_3_0_1_0_2, h2::h2_case* case_2_0_1_7_0_3_2_5) \
    {                                                                                      \
       static h2::h2_case c(name, status, __FILE__, __LINE__);                             \
-      static h2::h2_suite::installer i(suite_2_0_1_3_0_1_0_2, &c);                        \
+      static h2::h2_suite::registrar s_registrar(suite_2_0_1_3_0_1_0_2, &c);              \
       if (&c == case_2_0_1_7_0_3_2_5)                                                     \
          for (h2::h2_case::cleaner t(&c); t;)                                             \
             if (::setjmp(c.jump) == 0)                                                    \
@@ -3656,7 +3636,7 @@ struct h2_report {
    void Qc(Tx x, Ty y)
 #define H2CASESS(...) __H2CASESS(H2PP_UNIQUE(f_casess), __VA_ARGS__)
 
-#define ___H2Cases_Macro(Qj, Qb, Qx, Ql, i, x) \
+#define ___H2Cases_Macro(Qj, Qb, Ql, Qx, i, x) \
    H2Case(i. x)                                \
    {                                           \
       if (::setjmp(Qj) == 0) {                 \
@@ -3668,14 +3648,14 @@ struct h2_report {
    Qb = false;
 #define __H2Cases_Macro(...) ___H2Cases_Macro(__VA_ARGS__)
 #define _H2Cases_Macro(args, i, x) __H2Cases_Macro(H2PP_REMOVE_PARENTHESES(args), i, x)
-#define __H2Cases(Qj, Qb, Qx, Ql, ...)                            \
+#define __H2Cases(Qj, Qb, Ql, Qx, ...)                            \
    jmp_buf Qj;                                                    \
    bool Qb = false;                                               \
    auto Qx = _H2_An_ForEach(__VA_ARGS__);                         \
-   H2PP_FOREACH(, _H2Cases_Macro, (Qj, Qb, Qx, Ql), __VA_ARGS__); \
+   H2PP_FOREACH(, _H2Cases_Macro, (Qj, Qb, Ql, Qx), __VA_ARGS__); \
    Ql:                                                            \
    for (auto x = Qx; Qb; Qb = false, ::longjmp(Qj, 1))
-#define H2Cases(...) __H2Cases(H2PP_UNIQUE(j), H2PP_UNIQUE(b), H2PP_UNIQUE(v), H2PP_UNIQUE(l), __VA_ARGS__)
+#define H2Cases(...) __H2Cases(H2PP_UNIQUE(j), H2PP_UNIQUE(b), H2PP_UNIQUE(l), H2PP_UNIQUE(x), __VA_ARGS__)
 
 #define ___H2Casess_Macro(Qj, Qb, Ql, Qx, Qy, i, j, x, y) \
    H2Case(i.j. x, y)                                      \

@@ -24,8 +24,8 @@ struct h2_suite {
    void setup();
    void cleanup();
 
-   struct installer {
-      installer(h2_suite* s, h2_case* c);
+   struct registrar {
+      registrar(h2_suite* s, h2_case* c);
    };
 
    struct cleaner : h2_once {

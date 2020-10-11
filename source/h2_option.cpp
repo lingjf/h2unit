@@ -22,17 +22,19 @@ static inline void usage()
  ├────────┼───────────┼───────────────────────────────────────────────────────┤\n\
  │ -o     │           │ Only execute last failed cases                        │\n\
  ├────────┼───────────┼───────────────────────────────────────────────────────┤\n\
- │ -p     │           │ Show execute progressing toggle (default show)        │\n\
+ │ -p     │           │ Hide execute progressing                              │\n\
  ├────────┼───────────┼───────────────────────────────────────────────────────┤\n\
  │ -r[n]  │    [n]    │ Repeat run n rounds (default 1) when no failure       │\n\
  ├────────┼───────────┼───────────────────────────────────────────────────────┤\n\
  │ -c     │           │ Output in black-white color style                     │\n\
  ├────────┼───────────┼───────────────────────────────────────────────────────┤\n\
- │ -f     │           │ Fold simple JSON object or array toggle               │\n\
+ │ -f     │           │ Fold simple JSON object or array                      │\n\
  ├────────┼───────────┼───────────────────────────────────────────────────────┤\n\
  │ -y     │           │ Copy-paste JSON C/C++ source code                     │\n\
  ├────────┼───────────┼───────────────────────────────────────────────────────┤\n\
  │ -m     │           │ Run cases without memory check                        │\n\
+ ├────────┼───────────┼───────────────────────────────────────────────────────┤\n\
+ │ -x     │           │ Throw exception is considered as failure              │\n\
  ├────────┼───────────┼───────────────────────────────────────────────────────┤\n\
  │ -d     │           │ Debug with gdb once failure occurred                  │\n\
  ├────────┼───────────┼───────────────────────────────────────────────────────┤\n\
@@ -125,6 +127,7 @@ h2_inline void h2_option::parse(int argc, const char** argv)
       case 'p': execute_progress = !execute_progress; break;
       case 'y': copy_paste_json = true; break;
       case 'm': memory_check = !memory_check; break;
+      case 'x': exception_fails = !exception_fails; break;
       case 'l': list_cases = true; break;
       case 'b':
          break_after_fails = 1;

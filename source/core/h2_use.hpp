@@ -13,7 +13,7 @@
 
 #define __H2Case(name, status, Q)                                                                             \
    static h2::h2_case Q(name, status, __FILE__, __LINE__);                                                    \
-   static h2::h2_suite::installer H2PP_UNIQUE(s_installer)(suite_2_0_1_3_0_1_0_2, &Q);                        \
+   static h2::h2_suite::registrar H2PP_UNIQUE(s_registrar)(suite_2_0_1_3_0_1_0_2, &Q);                        \
    if (&Q == case_2_0_1_7_0_3_2_5)                                                                            \
       for (h2::h2_suite::cleaner _1_9_8_0_(suite_2_0_1_3_0_1_0_2); _1_9_8_0_; case_2_0_1_7_0_3_2_5 = nullptr) \
          for (h2::h2_case::cleaner _1_9_8_1_(&Q); _1_9_8_1_;)                                                 \
@@ -27,7 +27,7 @@
    static void QS(h2::h2_suite* suite_2_0_1_3_0_1_0_2, h2::h2_case* case_2_0_1_7_0_3_2_5) \
    {                                                                                      \
       static h2::h2_case c(name, status, __FILE__, __LINE__);                             \
-      static h2::h2_suite::installer i(suite_2_0_1_3_0_1_0_2, &c);                        \
+      static h2::h2_suite::registrar s_registrar(suite_2_0_1_3_0_1_0_2, &c);              \
       if (&c == case_2_0_1_7_0_3_2_5)                                                     \
          for (h2::h2_case::cleaner t(&c); t;)                                             \
             if (::setjmp(c.jump) == 0)                                                    \
@@ -76,7 +76,7 @@
    void Qc(Tx x, Ty y)
 #define H2CASESS(...) __H2CASESS(H2PP_UNIQUE(f_casess), __VA_ARGS__)
 
-#define ___H2Cases_Macro(Qj, Qb, Qx, Ql, i, x) \
+#define ___H2Cases_Macro(Qj, Qb, Ql, Qx, i, x) \
    H2Case(i. x)                                \
    {                                           \
       if (::setjmp(Qj) == 0) {                 \
@@ -88,14 +88,14 @@
    Qb = false;
 #define __H2Cases_Macro(...) ___H2Cases_Macro(__VA_ARGS__)
 #define _H2Cases_Macro(args, i, x) __H2Cases_Macro(H2PP_REMOVE_PARENTHESES(args), i, x)
-#define __H2Cases(Qj, Qb, Qx, Ql, ...)                            \
+#define __H2Cases(Qj, Qb, Ql, Qx, ...)                            \
    jmp_buf Qj;                                                    \
    bool Qb = false;                                               \
    auto Qx = _H2_An_ForEach(__VA_ARGS__);                         \
-   H2PP_FOREACH(, _H2Cases_Macro, (Qj, Qb, Qx, Ql), __VA_ARGS__); \
+   H2PP_FOREACH(, _H2Cases_Macro, (Qj, Qb, Ql, Qx), __VA_ARGS__); \
    Ql:                                                            \
    for (auto x = Qx; Qb; Qb = false, ::longjmp(Qj, 1))
-#define H2Cases(...) __H2Cases(H2PP_UNIQUE(j), H2PP_UNIQUE(b), H2PP_UNIQUE(v), H2PP_UNIQUE(l), __VA_ARGS__)
+#define H2Cases(...) __H2Cases(H2PP_UNIQUE(j), H2PP_UNIQUE(b), H2PP_UNIQUE(l), H2PP_UNIQUE(x), __VA_ARGS__)
 
 #define ___H2Casess_Macro(Qj, Qb, Ql, Qx, Qy, i, j, x, y) \
    H2Case(i.j. x, y)                                      \

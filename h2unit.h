@@ -1,5 +1,5 @@
 ﻿
-/* v5.7 2020-10-11 11:18:11 */
+/* v5.7 2020-10-11 19:18:36 */
 /* https://github.com/lingjf/h2unit */
 /* Apache Licence 2.0 */
 
@@ -558,15 +558,8 @@ struct h2_list {
 // source/utils/h2_misc.hpp
 
 struct h2_once {
-   operator bool()
-   {
-      bool ret = c == 0;
-      c = 1;
-      return ret;
-   }
-
- private:
-   int c = 0;
+   unsigned long c = 0;
+   operator bool() { return !c++; }
 };
 
 struct h2_pattern {
@@ -1020,6 +1013,7 @@ struct h2_option {
    bool only_execute_fails = false;
    bool shuffle_order = false;
    bool memory_check = true;
+   bool exception_fails = false;
    bool list_cases = false;
    int break_after_fails = 0;
    int rounds = 1;
@@ -1142,16 +1136,18 @@ struct h2_memory {
 
 #define __H2BLOCK(Attributes, Qb) for (h2::h2_memory::stack::block Qb(Attributes, __FILE__, __LINE__); Qb;)
 #define H2BLOCK(...) __H2BLOCK(#__VA_ARGS__, H2PP_UNIQUE(t_block))
+// source/exception/h2_exception.hpp
+
+struct h2_exception {
+   static void initialize();
+};
 // source/matcher/h2_matches.hpp
 
 struct h2_matches {
    virtual h2_line expection(bool caseless, bool dont) const = 0;
 };
 
-static inline h2_string DS(bool match)
-{
-   return match ? "should not match" : "";
-}
+static inline h2_string DS(bool match) { return match ? "should not match" : ""; }
 
 static inline h2_line CD(const h2_line& s, bool caseless, bool dont, const char* dsym = "!")
 {
@@ -1163,18 +1159,11 @@ static inline h2_line CD(const h2_line& s, bool caseless, bool dont, const char*
 }
 
 template <typename T>
-inline auto h2_matches_expection(const T& e, bool caseless, bool dont) -> typename std::enable_if<std::is_base_of<h2_matches, T>::value, h2_line>::type
-{
-   return e.expection(caseless, dont);
-}
+inline auto h2_matches_expection(const T& e, bool caseless, bool dont) -> typename std::enable_if<std::is_base_of<h2_matches, T>::value, h2_line>::type { return e.expection(caseless, dont); }
 template <typename T>
-inline auto h2_matches_expection(const T& e, bool caseless, bool dont) -> typename std::enable_if<!std::is_base_of<h2_matches, T>::value, h2_line>::type
-{
-   return CD(h2_representify(e), caseless, dont);
-}
+inline auto h2_matches_expection(const T& e, bool caseless, bool dont) -> typename std::enable_if<!std::is_base_of<h2_matches, T>::value, h2_line>::type { return CD(h2_representify(e), caseless, dont); }
 
 #define H2_MATCHES_T2V2E(t_matchers)                                                                                                                                              \
-                                                                                                                                                                                  \
    template <typename T>                                                                                                                                                          \
    void t2v(h2_vector<h2_matcher<T>>& v_matchers, std::integral_constant<std::size_t, 0>) const {}                                                                                \
    template <typename T, std::size_t I>                                                                                                                                           \
@@ -1185,7 +1174,6 @@ inline auto h2_matches_expection(const T& e, bool caseless, bool dont) -> typena
    }                                                                                                                                                                              \
    template <typename T>                                                                                                                                                          \
    void t2v(h2_vector<h2_matcher<T>>& v_matchers) const { return t2v(v_matchers, std::integral_constant<std::size_t, sizeof...(Matchers)>()); }                                   \
-                                                                                                                                                                                  \
    h2_line t2e(bool caseless, bool dont, std::integral_constant<std::size_t, 0>) const { return {}; }                                                                             \
    template <std::size_t I>                                                                                                                                                       \
    h2_line t2e(bool caseless, bool dont, std::integral_constant<std::size_t, I>) const                                                                                            \
@@ -1222,10 +1210,7 @@ struct h2_polymorphic_matcher : h2_matches {
    explicit h2_polymorphic_matcher(const Matches& _matches) : m(_matches) {}
 
    template <typename T>
-   operator h2_matcher<T>() const
-   {
-      return h2_matcher<T>(new internal_impl<const T&>(m), 0);
-   }
+   operator h2_matcher<T>() const { return h2_matcher<T>(new internal_impl<const T&>(m), 0); }
 
    template <typename T>
    struct internal_impl : h2_matcher_impl<T>, h2_libc {
@@ -1235,10 +1220,7 @@ struct h2_polymorphic_matcher : h2_matches {
       h2_line expection(bool caseless, bool dont) const override { return m.expection(caseless, dont); }
    };
 
-   virtual h2_line expection(bool caseless = false, bool dont = false) const override
-   {
-      return h2_matches_expection(m, caseless, dont);
-   }
+   virtual h2_line expection(bool caseless = false, bool dont = false) const override { return h2_matches_expection(m, caseless, dont); }
 };
 // source/matcher/h2_equation.hpp
 
@@ -2392,8 +2374,6 @@ inline h2_polymorphic_matcher<h2_countof_matches<typename std::decay<const Match
 #define _H2MATCHER_7_1(name, e1, e2, e3, e4, e5, message) H2MATCHER5(name, e1, e2, e3, e4, e5, message)
 #define _H2MATCHER_7(name, e1, e2, e3, e4, e5, t) H2PP_CAT(_H2MATCHER_7_, H2PP_IS_BEGIN_PARENTHESIS(t)) (name, e1, e2, e3, e4, e5, t)
 
-/* clang-format on */
-
 #define H2MATCHER(...) H2PP_VARIADIC_CALL(_H2MATCHER_, __VA_ARGS__)
 // source/matcher/h2_matcher.cpp
 
@@ -2632,21 +2612,21 @@ struct h2_routine;
 
 template <typename Class, typename ReturnType, typename... Args>
 struct h2_routine<Class, ReturnType(Args...)> {
-   ReturnType (*nfp)(Args...) = nullptr; // normal function pointer
+   ReturnType (*fp)(Args...) = nullptr; // normal function pointer
    ReturnType (*mfp)(Class*, Args...) = nullptr; // member function pointer
    h2_shared_ptr<h2_return<ReturnType>> return_value;
 
    h2_routine() {}
    h2_routine(ReturnType r) : return_value(new h2_return<ReturnType>(r)) {}
-   h2_routine(ReturnType (*f)(Args...)) : nfp(f) {}
+   h2_routine(ReturnType (*f)(Args...)) : fp(f) {}
    h2_routine(ReturnType (*f)(Class*, Args...)) : mfp(f) {}
 
    ReturnType operator()(Class* This, Args... args)
    {
       if (mfp) {
          return mfp(This, args...);
-      } else if (nfp) {
-         return nfp(args...);
+      } else if (fp) {
+         return fp(args...);
       } else if (return_value) {
          return return_value->value;
       }
@@ -2654,11 +2634,11 @@ struct h2_routine<Class, ReturnType(Args...)> {
    }
    operator bool()
    {
-      return nfp || mfp || return_value;
+      return fp || mfp || return_value;
    }
    void clear()
    {
-      nfp = nullptr;
+      fp = nullptr;
       mfp = nullptr;
       return_value.reset();
    }
@@ -2666,28 +2646,28 @@ struct h2_routine<Class, ReturnType(Args...)> {
 
 template <typename Class, typename... Args>
 struct h2_routine<Class, void(Args...)> {
-   void (*nfp)(Args...) = nullptr;
+   void (*fp)(Args...) = nullptr;
    void (*mfp)(Class*, Args...) = nullptr;
 
    h2_routine() {}
-   h2_routine(void (*f)(Args...)) : nfp(f) {}
+   h2_routine(void (*f)(Args...)) : fp(f) {}
    h2_routine(void (*f)(Class*, Args...)) : mfp(f) {}
 
    void operator()(Class* This, Args... args)
    {
       if (mfp) {
          mfp(This, args...);
-      } else if (nfp) {
-         nfp(args...);
+      } else if (fp) {
+         fp(args...);
       }
    }
    operator bool()
    {
-      return nfp || mfp;
+      return fp || mfp;
    }
    void clear()
    {
-      nfp = nullptr;
+      fp = nullptr;
       mfp = nullptr;
    }
 };
@@ -2972,7 +2952,7 @@ class h2_mocker<Counter, Class, ReturnType(Args...)> : h2_mockee {
    {
       if (checkin_array.empty()) Any();
       if (std::is_same<std::false_type, Class>::value)
-         routine_array.back().nfp = (ReturnType(*)(Args...))origin_fp;
+         routine_array.back().fp = (ReturnType(*)(Args...))origin_fp;
       else
          routine_array.back().mfp = (ReturnType(*)(Class*, Args...))origin_fp;
       return *this;
@@ -2990,7 +2970,7 @@ class h2_mocker<Counter, Class, ReturnType(Args...)> : h2_mockee {
    {
       if (checkin_array.empty()) Any();
       for (auto& a : routine_array)
-         if (!a) a.nfp = f;
+         if (!a) a.fp = f;
    }
 
    void operator=(ReturnType (*f)(Class*, Args...))
@@ -3134,14 +3114,14 @@ struct h2_case {
    void prev_setup();
    void post_setup() {}
    void prev_cleanup() {}
-   void post_cleanup();
+   void post_cleanup(const h2_string& ex);
 
    void do_fail(h2_fail* fail, bool defer);
 
    struct cleaner : h2_once {
       h2_case* thus;
-      cleaner(h2_case* c);
-      ~cleaner();
+      cleaner(h2_case* c) : thus(c) { thus->post_setup(); }
+      ~cleaner() { thus->prev_cleanup(); }
    };
 };
 // source/core/h2_suite.hpp
@@ -3171,8 +3151,8 @@ struct h2_suite {
    void setup();
    void cleanup();
 
-   struct installer {
-      installer(h2_suite* s, h2_case* c);
+   struct registrar {
+      registrar(h2_suite* s, h2_case* c);
    };
 
    struct cleaner : h2_once {
@@ -3202,7 +3182,7 @@ struct h2_task {
    void shuffle();
    void shadow();
    void enumerate();
-   int execute();
+   void execute();
 };
 
 static inline void h2_stub_g(void* origin_fp, void* substitute_fp, const char* origin_fn, const char* file, int line)
@@ -3362,14 +3342,14 @@ struct h2_report {
 
 #define STUBS(...) H2PP_VARIADIC_CALL(__H3STUB, __VA_ARGS__)
 // source/mock/h2_use.hpp
-/* clang-format off */
 
 #define __H2ARGV(Args, i) H2PP_STR(H2PP_CAT(H2PP_TH, i) Args)
 #define H2ARGV(...) H2PP_REPEAT((, ), __H2ARGV, __VA_ARGS__, H2PP_NARG __VA_ARGS__)
 
-#define __H2MOCK_0(...) H2PP_VARIADIC_CALL(__H2MOCK_0_, __VA_ARGS__) // normal function
-#define __H2MOCK_1(...) H2PP_VARIADIC_CALL(__H2MOCK_1_, __VA_ARGS__) // class member method
+#define __H2MOCK_0(...) H2PP_VARIADIC_CALL(__H2MOCK_0_, __VA_ARGS__)  // normal function
+#define __H2MOCK_1(...) H2PP_VARIADIC_CALL(__H2MOCK_1_, __VA_ARGS__)  // class member method
 
+/* clang-format off */
 //       0th       1th         2th          3th          4th
 // MOCK( Function ,ReturnType ,Arguments  [,Inspect0     ... ] )
 // MOCK( Class    ,Method     ,ReturnType  ,Arguments  [,Inspect0 ... ] )
@@ -3597,7 +3577,7 @@ struct h2_report {
 
 #define __H2Case(name, status, Q)                                                                             \
    static h2::h2_case Q(name, status, __FILE__, __LINE__);                                                    \
-   static h2::h2_suite::installer H2PP_UNIQUE(s_installer)(suite_2_0_1_3_0_1_0_2, &Q);                        \
+   static h2::h2_suite::registrar H2PP_UNIQUE(s_registrar)(suite_2_0_1_3_0_1_0_2, &Q);                        \
    if (&Q == case_2_0_1_7_0_3_2_5)                                                                            \
       for (h2::h2_suite::cleaner _1_9_8_0_(suite_2_0_1_3_0_1_0_2); _1_9_8_0_; case_2_0_1_7_0_3_2_5 = nullptr) \
          for (h2::h2_case::cleaner _1_9_8_1_(&Q); _1_9_8_1_;)                                                 \
@@ -3611,7 +3591,7 @@ struct h2_report {
    static void QS(h2::h2_suite* suite_2_0_1_3_0_1_0_2, h2::h2_case* case_2_0_1_7_0_3_2_5) \
    {                                                                                      \
       static h2::h2_case c(name, status, __FILE__, __LINE__);                             \
-      static h2::h2_suite::installer i(suite_2_0_1_3_0_1_0_2, &c);                        \
+      static h2::h2_suite::registrar s_registrar(suite_2_0_1_3_0_1_0_2, &c);              \
       if (&c == case_2_0_1_7_0_3_2_5)                                                     \
          for (h2::h2_case::cleaner t(&c); t;)                                             \
             if (::setjmp(c.jump) == 0)                                                    \
@@ -3660,7 +3640,7 @@ struct h2_report {
    void Qc(Tx x, Ty y)
 #define H2CASESS(...) __H2CASESS(H2PP_UNIQUE(f_casess), __VA_ARGS__)
 
-#define ___H2Cases_Macro(Qj, Qb, Qx, Ql, i, x) \
+#define ___H2Cases_Macro(Qj, Qb, Ql, Qx, i, x) \
    H2Case(i. x)                                \
    {                                           \
       if (::setjmp(Qj) == 0) {                 \
@@ -3672,14 +3652,14 @@ struct h2_report {
    Qb = false;
 #define __H2Cases_Macro(...) ___H2Cases_Macro(__VA_ARGS__)
 #define _H2Cases_Macro(args, i, x) __H2Cases_Macro(H2PP_REMOVE_PARENTHESES(args), i, x)
-#define __H2Cases(Qj, Qb, Qx, Ql, ...)                            \
+#define __H2Cases(Qj, Qb, Ql, Qx, ...)                            \
    jmp_buf Qj;                                                    \
    bool Qb = false;                                               \
    auto Qx = _H2_An_ForEach(__VA_ARGS__);                         \
-   H2PP_FOREACH(, _H2Cases_Macro, (Qj, Qb, Qx, Ql), __VA_ARGS__); \
+   H2PP_FOREACH(, _H2Cases_Macro, (Qj, Qb, Ql, Qx), __VA_ARGS__); \
    Ql:                                                            \
    for (auto x = Qx; Qb; Qb = false, ::longjmp(Qj, 1))
-#define H2Cases(...) __H2Cases(H2PP_UNIQUE(j), H2PP_UNIQUE(b), H2PP_UNIQUE(v), H2PP_UNIQUE(l), __VA_ARGS__)
+#define H2Cases(...) __H2Cases(H2PP_UNIQUE(j), H2PP_UNIQUE(b), H2PP_UNIQUE(l), H2PP_UNIQUE(x), __VA_ARGS__)
 
 #define ___H2Casess_Macro(Qj, Qb, Ql, Qx, Qy, i, j, x, y) \
    H2Case(i.j. x, y)                                      \
@@ -3990,15 +3970,16 @@ using h2::Pair;
 
 #endif
 
-#include <cassert>  /* assert */
-#include <cctype>   /* tolower, isspace */
-#include <cstdarg>  /* va_list */
-#include <errno.h>  /* strerror */
-#include <iostream> /* cout */
-#include <memory>   /* allocator */
-#include <regex>    /* std::regex */
-#include <signal.h> /* sigaction */
-#include <typeinfo> /* typeid */
+#include <cassert>   /* assert */
+#include <cctype>    /* tolower, isspace */
+#include <cstdarg>   /* va_list */
+#include <errno.h>   /* strerror */
+#include <exception> /* std::exception */
+#include <iostream>  /* std::cout, std::streambuf */
+#include <memory>    /* std::allocator */
+#include <regex>     /* std::regex */
+#include <signal.h>  /* sigaction */
+#include <typeinfo>  /* std::typeid, std::type_info */
 
 #if defined WIN32 || defined __WIN32__ || defined _WIN32 || defined _MSC_VER || defined __MINGW32__
 #   include <winsock2.h> /* socket */
@@ -4012,7 +3993,7 @@ using h2::Pair;
 #   pragma comment(lib, "Shlwapi.lib")
 #else
 #   include <arpa/inet.h>   /* inet_addr, inet_pton */
-#   include <cxxabi.h>      /* demangle */
+#   include <cxxabi.h>      /* abi::__cxa_demangle, abi::__cxa_throw */
 #   include <execinfo.h>    /* backtrace */
 #   include <fcntl.h>       /* fcntl */
 #   include <fnmatch.h>     /* fnmatch */
@@ -4354,14 +4335,8 @@ struct h2_libc_malloc {
       long long size;
       h2_list x;
       buddy(long long _size) : size(_size) {}
-      bool join_right(buddy* b)
-      {
-         return ((char*)this) + size == (char*)b;
-      }
-      bool join_left(buddy* b)
-      {
-         return ((char*)b) + b->size == (char*)this;
-      }
+      bool join_right(buddy* b) { return ((char*)this) + size == (char*)b; }
+      bool join_left(buddy* b) { return ((char*)b) + b->size == (char*)this; }
    };
 
    struct block {
@@ -4979,14 +4954,12 @@ h2_inline void h2_color::prints(const char* style, const char* format, ...)
    h2_sprintf(alloca_str, format);
    h2__color::I().print(alloca_str);
 
-   if (style && strlen(style))
-      h2__color::I().print("\033{reset}");
+   if (style && strlen(style)) h2__color::I().print("\033{reset}");
 }
 
 h2_inline void h2_color::printl(const h2_line& line)
 {
-   for (auto& word : line)
-      h2__color::I().print(word.c_str());
+   for (auto& word : line) h2__color::I().print(word.c_str());
    h2__color::I().print("\n");
 }
 
@@ -5272,9 +5245,7 @@ h2_inline void h2_backtrace::print(int pad) const
 
 // source/json/h2_tinyexpr.cpp
 // TINYEXPR - Tiny recursive descent parser and evaluation engine in C
-//
 // Copyright (c) 2015-2018 Lewis Van Winkle
-//
 // http://CodePlea.com
 
 /* clang-format off */
@@ -6841,8 +6812,7 @@ struct h2_piece : h2_libc {
    {
       h2_fail* fail = nullptr;
       fail = check_snowfield(user_ptr + user_size, page_ptr + page_size * page_count);
-      if (!fail)
-         fail = check_snowfield(page_ptr, user_ptr);
+      if (!fail) fail = check_snowfield(page_ptr, user_ptr);
       return fail;
    }
 
@@ -7465,7 +7435,7 @@ h2_inline h2_memory::stack::block::~block()
 }
 // source/memory/h2_exempt.cpp
 
-struct h2_patch {  // allocate memory inside asymmetrically
+struct h2_exempt_stub {  // allocate memory inside asymmetrically
    static char* asctime(const struct tm* timeptr)
    {
       static char st[256];
@@ -7584,23 +7554,24 @@ h2_inline void h2_exempt::setup()
 {
    static h2_stubs stubs;
 
-   stubs.add((void*)::gmtime, (void*)h2_patch::gmtime, "gmtime", __FILE__, __LINE__);
-   stubs.add((void*)::gmtime_r, (void*)h2_patch::gmtime_r, "gmtime_r", __FILE__, __LINE__);
-   stubs.add((void*)::ctime, (void*)h2_patch::ctime, "ctime", __FILE__, __LINE__);
-   stubs.add((void*)::ctime_r, (void*)h2_patch::ctime_r, "ctime_r", __FILE__, __LINE__);
-   stubs.add((void*)::asctime, (void*)h2_patch::asctime, "asctime", __FILE__, __LINE__);
-   stubs.add((void*)::asctime_r, (void*)h2_patch::asctime_r, "asctime_r", __FILE__, __LINE__);
-   stubs.add((void*)::localtime, (void*)h2_patch::localtime, "localtime", __FILE__, __LINE__);
-   stubs.add((void*)::localtime_r, (void*)h2_patch::localtime_r, "localtime_r", __FILE__, __LINE__);
-   if (O.os == linux) stubs.add((void*)::mktime, (void*)h2_patch::mktime, "mktime", __FILE__, __LINE__);
-   if (O.os == macos) stubs.add((void*)::strtod, (void*)h2_patch::strtod, "strtod", __FILE__, __LINE__);
-   if (O.os == macos) stubs.add((void*)::strtold, (void*)h2_patch::strtold, "strtold", __FILE__, __LINE__);
+   stubs.add((void*)::gmtime, (void*)h2_exempt_stub::gmtime, "gmtime", __FILE__, __LINE__);
+   stubs.add((void*)::gmtime_r, (void*)h2_exempt_stub::gmtime_r, "gmtime_r", __FILE__, __LINE__);
+   stubs.add((void*)::ctime, (void*)h2_exempt_stub::ctime, "ctime", __FILE__, __LINE__);
+   stubs.add((void*)::ctime_r, (void*)h2_exempt_stub::ctime_r, "ctime_r", __FILE__, __LINE__);
+   stubs.add((void*)::asctime, (void*)h2_exempt_stub::asctime, "asctime", __FILE__, __LINE__);
+   stubs.add((void*)::asctime_r, (void*)h2_exempt_stub::asctime_r, "asctime_r", __FILE__, __LINE__);
+   stubs.add((void*)::localtime, (void*)h2_exempt_stub::localtime, "localtime", __FILE__, __LINE__);
+   stubs.add((void*)::localtime_r, (void*)h2_exempt_stub::localtime_r, "localtime_r", __FILE__, __LINE__);
+   if (O.os == linux) stubs.add((void*)::mktime, (void*)h2_exempt_stub::mktime, "mktime", __FILE__, __LINE__);
+   if (O.os == macos) stubs.add((void*)::strtod, (void*)h2_exempt_stub::strtod, "strtod", __FILE__, __LINE__);
+   if (O.os == macos) stubs.add((void*)::strtold, (void*)h2_exempt_stub::strtold, "strtold", __FILE__, __LINE__);
 
    add((void*)::sscanf);
    add((void*)::sprintf);
    add((void*)::vsnprintf);
 #ifdef __APPLE__
    add((void*)::vsnprintf_l);
+   add((void*)abi::__cxa_throw);
 #endif
    add((void*)h2_pattern::regex_match);  // linux is 0xcb size, MAC is 0x100 (gap to next symbol)
 }
@@ -7613,9 +7584,23 @@ h2_inline void h2_exempt::add(void* func)
 h2_inline bool h2_exempt::in(const h2_backtrace& bt)
 {
    h2_list_for_each_entry (p, I().exempts, h2_exemption, x)
-      if (bt.has(p->base, p->size))
-         return true;
+      if (bt.has(p->base, p->size)) return true;
    return false;
+}
+
+// source/exception/h2_exception.cpp
+
+struct h2_exception_stub {
+   static void __cxa_throw(void* thrown_exception, std::type_info* tinfo, void (*dest)(void*))
+   {  // https://itanium-cxx-abi.github.io/cxx-abi/abi-eh.html
+      h2_fail_g(h2_fail::new_normal({"A exception was thrown : ", tinfo->name()}), false);
+   }
+};
+
+h2_inline void h2_exception::initialize()
+{
+   static h2_stubs stubs;
+   if (O.exception_fails) stubs.add((void*)abi::__cxa_throw, (void*)h2_exception_stub::__cxa_throw, "__cxa_throw", __FILE__, __LINE__);
 }
 
 // source/stub/h2_e9.cpp
@@ -7678,18 +7663,9 @@ struct h2_native : h2_libc {
    unsigned char saved[32];
    void* origin_fp;
    int reference_count = 0;
-   h2_native(void* _origin_fp) : origin_fp(_origin_fp)
-   {
-      h2_e9::save(origin_fp, saved);
-   }
-   ~h2_native()
-   {
-      restore();
-   }
-   void restore()
-   {
-      h2_e9::reset(origin_fp, saved);
-   }
+   h2_native(void* _origin_fp) : origin_fp(_origin_fp) { h2_e9::save(origin_fp, saved); }
+   ~h2_native() { restore(); }
+   void restore() { h2_e9::reset(origin_fp, saved); }
 };
 
 struct h2_natives {
@@ -7713,6 +7689,7 @@ struct h2_natives {
       }
       native->reference_count++;
    }
+
    void operator-=(void* origin_fp)
    {
       h2_native* native = get(origin_fp);
@@ -7810,8 +7787,7 @@ h2_inline h2_fail* h2_checkin::check(const char* func, int index, int total, con
 {
    if (is_satisfied() || is_saturated()) return nullptr;
    h2_line t = func + gray("()") + " expected " + delta(expect(), "green") + " but actually " + delta(actual(), "red,bold") + " called";
-   if (1 < total)
-      t += gray(" when ") + h2_numeric::sequence_number(index) + " checkin " + color(expr, "cyan");
+   if (1 < total) t += gray(" when ") + h2_numeric::sequence_number(index) + " checkin " + color(expr, "cyan");
    return h2_fail::new_normal(t, file, lino);
 }
 
@@ -8543,7 +8519,7 @@ h2_inline void h2_case::prev_setup()
    h2_memory::stack::push(file, lino);
 }
 
-h2_inline void h2_case::post_cleanup()
+h2_inline void h2_case::post_cleanup(const h2_string& ex)
 {
    h2_stdio::capture_cancel();
    if (sock) delete sock;
@@ -8551,15 +8527,24 @@ h2_inline void h2_case::post_cleanup()
    stubs.clear();
    h2_fail* fail = mocks.clear(true);
    footprint = h2_memory::stack::footprint();
-   // should memory assert stats into assert count ?
    h2_fail::append_subling(fail, h2_memory::stack::pop());
+   // should memory assert stats into assert count ?
 
-   if (!fail) return;
-   if (status != failed)
+   if (status == failed) {
+      if (fail) delete fail;
+      return;
+   }
+   if (!ex.empty()) {
+      h2_fail::append_subling(fails, h2_fail::new_normal({"Uncaught Exception : ", ex}));
+      if (fail) delete fail;
+      status = failed;
+      return;
+   }
+   if (fail) {
       h2_fail::append_subling(fails, fail);
-   else
-      delete fail;
-   status = failed;
+      status = failed;
+      return;
+   }
 }
 
 h2_inline void h2_case::do_fail(h2_fail* fail, bool defer)
@@ -8568,9 +8553,6 @@ h2_inline void h2_case::do_fail(h2_fail* fail, bool defer)
    h2_fail::append_subling(fails, fail);
    if (!defer) ::longjmp(jump, 1);
 }
-
-h2_inline h2_case::cleaner::cleaner(h2_case* c) : thus(c) { thus->post_setup(); }
-h2_inline h2_case::cleaner::~cleaner() { thus->prev_cleanup(); }
 // source/core/h2_suite.cpp
 
 h2_inline h2_suite::h2_suite(const char* name_, void (*test_code_)(h2_suite*, h2_case*), const char* file_, int lino_)
@@ -8605,12 +8587,23 @@ h2_inline void h2_suite::enumerate()
 
 h2_inline void h2_suite::execute(h2_case* c)
 {
+   h2_string ex;
    c->prev_setup();
-   test_code(this, c); /* include setup(); c->post_setup() and c->prev_cleanup(); cleanup() */
-   c->post_cleanup();
+   try {
+      test_code(this, c); /* include setup(); c->post_setup() and c->prev_cleanup(); cleanup() */
+   } catch (std::exception& e) {
+      ex = e.what();
+   } catch (std::string& m) {
+      ex = m.c_str();
+   } catch (const char* m) {
+      ex = m;
+   } catch (...) {
+      ex = "Unknown exception";
+   }
+   c->post_cleanup(ex);
 }
 
-h2_inline h2_suite::installer::installer(h2_suite* s, h2_case* c)
+h2_inline h2_suite::registrar::registrar(h2_suite* s, h2_case* c)
 {
    static int seq = INT_MAX / 4;
    s->cases.push_back(c->x);
@@ -8717,10 +8710,11 @@ h2_inline void h2_task::enumerate()
    }
 }
 
-h2_inline int h2_task::execute()
+h2_inline void h2_task::execute()
 {
    h2_report::initialize();
    h2_memory::initialize();
+   h2_exception::initialize();
    h2_stdio::initialize();
    h2_dns::initialize();
 
@@ -8765,8 +8759,6 @@ h2_inline int h2_task::execute()
    stubs.clear();
    mocks.clear(false);
    h2_memory::finalize();
-
-   return stats[h2_case::failed];
 }
 
 // source/assert/h2_assert.cpp
@@ -8869,7 +8861,6 @@ h2_inline h2_defer_failure::~h2_defer_failure()
             const char *p, *q;
             for (p = comma - 1; expression <= p && ::isspace(*p);) p--;
             fail->e_expression.assign(expression, (p + 1) - expression);
-
             for (q = comma + 1; ::isspace(*q);) q++;
             fail->a_expression.assign(q, (expression + strlen(expression)) - q);
          } else {
@@ -9905,17 +9896,19 @@ static inline void usage()
  ├────────┼───────────┼───────────────────────────────────────────────────────┤\n\
  │ -o     │           │ Only execute last failed cases                        │\n\
  ├────────┼───────────┼───────────────────────────────────────────────────────┤\n\
- │ -p     │           │ Show execute progressing toggle (default show)        │\n\
+ │ -p     │           │ Hide execute progressing                              │\n\
  ├────────┼───────────┼───────────────────────────────────────────────────────┤\n\
  │ -r[n]  │    [n]    │ Repeat run n rounds (default 1) when no failure       │\n\
  ├────────┼───────────┼───────────────────────────────────────────────────────┤\n\
  │ -c     │           │ Output in black-white color style                     │\n\
  ├────────┼───────────┼───────────────────────────────────────────────────────┤\n\
- │ -f     │           │ Fold simple JSON object or array toggle               │\n\
+ │ -f     │           │ Fold simple JSON object or array                      │\n\
  ├────────┼───────────┼───────────────────────────────────────────────────────┤\n\
  │ -y     │           │ Copy-paste JSON C/C++ source code                     │\n\
  ├────────┼───────────┼───────────────────────────────────────────────────────┤\n\
  │ -m     │           │ Run cases without memory check                        │\n\
+ ├────────┼───────────┼───────────────────────────────────────────────────────┤\n\
+ │ -x     │           │ Throw exception is considered as failure              │\n\
  ├────────┼───────────┼───────────────────────────────────────────────────────┤\n\
  │ -d     │           │ Debug with gdb once failure occurred                  │\n\
  ├────────┼───────────┼───────────────────────────────────────────────────────┤\n\
@@ -10008,6 +10001,7 @@ h2_inline void h2_option::parse(int argc, const char** argv)
       case 'p': execute_progress = !execute_progress; break;
       case 'y': copy_paste_json = true; break;
       case 'm': memory_check = !memory_check; break;
+      case 'x': exception_fails = !exception_fails; break;
       case 'l': list_cases = true; break;
       case 'b':
          break_after_fails = 1;

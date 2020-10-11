@@ -1,14 +1,7 @@
 
 struct h2_once {
-   operator bool()
-   {
-      bool ret = c == 0;
-      c = 1;
-      return ret;
-   }
-
- private:
-   int c = 0;
+   unsigned long c = 0;
+   operator bool() { return !c++; }
 };
 
 struct h2_pattern {

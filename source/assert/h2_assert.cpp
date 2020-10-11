@@ -97,7 +97,6 @@ h2_inline h2_defer_failure::~h2_defer_failure()
             const char *p, *q;
             for (p = comma - 1; expression <= p && ::isspace(*p);) p--;
             fail->e_expression.assign(expression, (p + 1) - expression);
-
             for (q = comma + 1; ::isspace(*q);) q++;
             fail->a_expression.assign(q, (expression + strlen(expression)) - q);
          } else {

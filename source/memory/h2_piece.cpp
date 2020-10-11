@@ -128,8 +128,7 @@ struct h2_piece : h2_libc {
    {
       h2_fail* fail = nullptr;
       fail = check_snowfield(user_ptr + user_size, page_ptr + page_size * page_count);
-      if (!fail)
-         fail = check_snowfield(page_ptr, user_ptr);
+      if (!fail) fail = check_snowfield(page_ptr, user_ptr);
       return fail;
    }
 

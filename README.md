@@ -807,7 +807,15 @@ Writing out of allocated memory area[start, start+size], memory overflow/underfl
 #### 7.6. Use after free Detection
 Read/Write memory which already freed, will be detected.
 
-### 8. Global Setup/Teardown
+### 8. Capture C++ Exception
+*    Uncaught Exception 
+     It will be detected and reported as failure.
+     Unfortunately conflict with `Memory Check` in MacOS, disable `Memory Check` (`-m` option) to enable `Uncaught Exception`, otherwise uncaught exception will cause terminate/crash.
+
+*    Thrown Exception 
+     Any thrown exception can be detected and reported as failure if `-x` option is set.
+
+### 9. Global Setup/Teardown
 *    [`GlobalSetup`](source/core/h2_use.hpp): Invoked before test case
 *    [`GlobalTeardown`](source/core/h2_use.hpp): Invoked after all test case executed
 *    [`GlobalSuiteSetup`](source/core/h2_use.hpp): Invoked before every suite
@@ -825,7 +833,7 @@ GlobalTeardown() {
 ```
 Global Setup/Teardown can define multiple times, all of them will be invoked.
 
-### 9. DNS Hijack
+### 10. DNS Hijack
 [`DNS`](source/h2_unit.hpp)("hostname", "ip1", "ip2", "alias1", "alias2", ...): Set DNS resolve results (getaddrinfo, gethostbyname)
 
 DNS resolve is default controlled, and result is empty.
@@ -839,7 +847,7 @@ CASE(test dns)
 }
 ```
 
-### 10. Socket Hijack
+### 11. Socket Hijack
 *    [`SOCK`](source/h2_unit.hpp)(): Monitor TCP/UDP send/recv, and return sent packets.
 *    [`SOCK`](source/h2_unit.hpp)(packet, size, from=ip:port, to=ip:port]): Inject UDP/TCP packet as received packet.
 If not specified `to`, any of socket can receive the packet.
@@ -860,7 +868,7 @@ CASE(test net)
 }
 ```
 
-### 11. Capture STDOUT/STDERR/syslog
+### 12. Capture STDOUT/STDERR/syslog
 [`COUT`](source/h2_unit.hpp)(): Capture STDOUT STDERR and syslog output (printf(), std::cout<<, ...)
 *    `COUT`(): Toggle(Start/Stop) Capture STDOUT and STDERR
 *    `COUT`(stdout stderr syslog): Start Capture STDOUT STDERR and syslog
@@ -881,8 +889,8 @@ CASE(test printf)
 }
 ```
 
-### 12. Parameterized test
-#### 12.1. Value-Parameterized test
+### 13. Parameterized test
+#### 13.1. Value-Parameterized test
 *    CASES(values...): Automatically generate CASE with each value (access by x)
 *    CASESS(values...): Automatically generate CASE with fullmesh value (access by x, y)
 *    Cases(values...): Automatically generate Case with each value inside of SUITE (access by x)
@@ -923,7 +931,7 @@ SUITE(suite)
 
 ```
 
-#### 12.2. Type-Parameterized test
+#### 13.2. Type-Parameterized test
 *    CASES_T(types...): Automatically generate CASE with each type (access by x)
 *    CASESS_T(types...): Automatically generate CASE with fullmesh type (access by x, y)
 *    Cases_t(types...): NOT implemented, Automatically generate CASE with each type inside of SUITE (access by x)
@@ -993,12 +1001,13 @@ twofiles speed up 2~3 times than onefile.
 *    `-q` Compact output without failure detail
 *    `-l` *list* out suites and cases
 *    `-s` *shuffle* cases and execute in random order
-*    `-b` [n] *breaking* test once failure occurred
+*    `-b` [n] *breaking* test once failure occurred, default n is 1
 *    `-o` *only* execute last failed cases
-*    `-p` show/Hide execute *progressing* (default show)
+*    `-p` Show/hide execute *progressing* (default show)
 *    `-r` [n] repeat run n *rounds* when no failure
-*    `-c` enable/disable *colorful* output, default is enable
-*    `-m` enable/disable *memory* check(leak, overflow, trample, double free, asymmetric free), default is enable
+*    `-c` Disable *colorful* output, black-white output
+*    `-m` Disable *memory* check(leak, overflow, trample, double free, asymmetric free)
+*    `-x` Throw *exception* is considered as failure
 *    `-d/D` *debug* mode, -D for gdb attach but requires password
 *    `-f` *fold* simple json object or array
 *    `-y` *copy-paste* JSON C/C++ source code

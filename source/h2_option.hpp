@@ -28,6 +28,7 @@ struct h2_option {
    bool only_execute_fails = false;
    bool shuffle_order = false;
    bool memory_check = true;
+   bool exception_fails = false;
    bool list_cases = false;
    int break_after_fails = 0;
    int rounds = 1;

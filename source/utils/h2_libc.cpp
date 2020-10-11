@@ -6,14 +6,8 @@ struct h2_libc_malloc {
       long long size;
       h2_list x;
       buddy(long long _size) : size(_size) {}
-      bool join_right(buddy* b)
-      {
-         return ((char*)this) + size == (char*)b;
-      }
-      bool join_left(buddy* b)
-      {
-         return ((char*)b) + b->size == (char*)this;
-      }
+      bool join_right(buddy* b) { return ((char*)this) + size == (char*)b; }
+      bool join_left(buddy* b) { return ((char*)b) + b->size == (char*)this; }
    };
 
    struct block {

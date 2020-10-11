@@ -162,14 +162,12 @@ h2_inline void h2_color::prints(const char* style, const char* format, ...)
    h2_sprintf(alloca_str, format);
    h2__color::I().print(alloca_str);
 
-   if (style && strlen(style))
-      h2__color::I().print("\033{reset}");
+   if (style && strlen(style)) h2__color::I().print("\033{reset}");
 }
 
 h2_inline void h2_color::printl(const h2_line& line)
 {
-   for (auto& word : line)
-      h2__color::I().print(word.c_str());
+   for (auto& word : line) h2__color::I().print(word.c_str());
    h2__color::I().print("\n");
 }
 
