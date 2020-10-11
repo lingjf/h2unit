@@ -59,11 +59,27 @@ SUITE(stdio)
       OK(e, COUT());
    }
 
-   Case(std::cout) /* internal fwrite() called */
+   Case(std::cout)
    {
       COUT();
       const char* e = "std::cout! 42";
       std::cout << "std::cout! " << 42;
+      OK(e, COUT());
+   }
+
+   Case(std::cerr)
+   {
+      COUT();
+      const char* e = "std::cerr! 42";
+      std::cerr << "std::cerr! " << 42;
+      OK(e, COUT());
+   }
+
+   Case(std::clog)
+   {
+      COUT();
+      const char* e = "std::clog! 42";
+      std::clog << "std::clog! " << 42;
       OK(e, COUT());
    }
 

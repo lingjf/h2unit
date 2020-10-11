@@ -874,6 +874,9 @@ CASE(test printf)
    COUT(); // Start Capture
    printf("...");
    std::cout << ...;
+   std::cerr << ...;
+   std::clog << ...;
+   syslog(...);
    OK("...", COUT()); // Stop Capture and return captured string
 }
 ```

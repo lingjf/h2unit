@@ -1,5 +1,5 @@
 ﻿
-/* v5.7 2020-10-07 22:01:33 */
+/* v5.7 2020-10-11 11:18:11 */
 /* https://github.com/lingjf/h2unit */
 /* Apache Licence 2.0 */
 
@@ -8452,8 +8452,19 @@ struct h2__stdio {
       stubs.add((void*)::putc, (void*)fputc, "fputc", __FILE__, __LINE__);
       stubs.add((void*)::fputs, (void*)fputs, "fputs", __FILE__, __LINE__);
       stubs.add((void*)::fwrite, (void*)fwrite, "fwrite", __FILE__, __LINE__);
-      // GCC<=5 cout issue
-      // std::cout.rdbuf(&streambuf);
+#   if defined __GNUC__ && __GNUC__ <= 5
+      struct streambuf : public std::streambuf {
+         FILE* f;
+         int sync() override { return 0; }
+         int overflow(int c) override { return h2__stdio::fputc(c, f); }
+         streambuf(FILE* _f) : f(_f) { setp(nullptr, 0); }
+      };
+      static streambuf sb_out(stdout);
+      static streambuf sb_err(stderr);
+      std::cout.rdbuf(&sb_out); /* internal fwrite() called, but */
+      std::cerr.rdbuf(&sb_err);
+      std::clog.rdbuf(&sb_err); /* print to stderr */
+#   endif
 #endif
 
 #ifndef _WIN32
