@@ -3,20 +3,20 @@ h2_inline void h2_memory::initialize()
 {
    if (O.memory_check && !O.debug) h2_crash::install_segment_fault_handler();
    stack::root();
-   if (O.memory_check) h2_override::I().overrides();
+   if (O.memory_check) h2_wrapper::I().overrides();
    if (O.memory_check) h2_exempt::setup();
 }
 h2_inline void h2_memory::finalize()
 {
-   if (O.memory_check) h2_override::I().restores();
+   if (O.memory_check) h2_wrapper::I().restores();
 }
 h2_inline void h2_memory::overrides()
 {
-   if (O.memory_check) h2_override::I().overrides();
+   if (O.memory_check) h2_wrapper::I().overrides();
 }
 h2_inline void h2_memory::restores()
 {
-   if (O.memory_check) h2_override::I().restores();
+   if (O.memory_check) h2_wrapper::I().restores();
 }
 
 h2_inline void h2_memory::stack::root()

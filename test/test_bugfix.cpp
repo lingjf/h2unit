@@ -65,7 +65,7 @@ CASE(bugfix
 CASE(bugfix
      : parse json very large number)
 {
-   JE("1912000101600571", "1912000101600571");
+   JE("[1912000101600571]", "[1912000101600571]");
 }
 
 CASE(bugfix

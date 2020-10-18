@@ -28,7 +28,10 @@ SUITE(override)
    }
    Case(realloc)
    {
-      free(realloc(NULL, 100));  // act as malloc
+      auto p = realloc(NULL, 100);  // act as malloc
+      OK(NotNull, p);
+      free(p);
+
       BLOCK(limit = 10)
       {
          OK(IsNull, realloc(NULL, 100));

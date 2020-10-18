@@ -58,7 +58,7 @@ def copy_line2(line, f):
 
 def merge_files(inf, outf):
     for line in inf:
-        inc = re.match('#include "(.*[/]*h2_.*\.[ch]{1}pp)"', line)
+        inc = re.match('#\s*include "(.*[/]*h2_.*\.[ch]{1}pp)"', line)
         if inc:
             with open(os.path.join(h2unit_build, '../source/' + inc.group(1)), 'r') as f:
                 outf.write('// source/' + inc.group(1) + '\n')
