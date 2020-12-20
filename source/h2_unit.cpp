@@ -1,5 +1,5 @@
 
-#define H2UNIT_VERSION 5.7
+#define H2UNIT_VERSION 5.8
 
 #include "h2_unit.hpp"
 

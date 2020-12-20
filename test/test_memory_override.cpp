@@ -1,11 +1,9 @@
 #include "../source/h2_unit.cpp"
 
-namespace {
-
-class Foobar {
+class User {
  public:
    char data[100];
-   Foobar(){};
+   User(){};
 };
 
 SUITE(override)
@@ -18,6 +16,7 @@ SUITE(override)
          OK(IsNull, malloc(100));
       }
    }
+
    Case(calloc)
    {
       free(calloc(10, 10));
@@ -26,6 +25,7 @@ SUITE(override)
          OK(IsNull, calloc(10, 10));
       }
    }
+
    Case(realloc)
    {
       auto p = realloc(NULL, 100);  // act as malloc
@@ -37,16 +37,18 @@ SUITE(override)
          OK(IsNull, realloc(NULL, 100));
       }
    }
+
    Case(new)
    {
-      delete new Foobar;
-      delete new (std::nothrow) Foobar;
+      delete new User;
+      delete new (std::nothrow) User;
       BLOCK(limit = 10)
       {
-         OK(IsNull, new Foobar);
-         OK(IsNull, new (std::nothrow) Foobar);
+         OK(IsNull, new User);
+         OK(IsNull, new (std::nothrow) User);
       }
    }
+
    Case(new[])
    {
       delete[] new char[100];
@@ -66,6 +68,7 @@ SUITE(override)
          OK(IsNull, strdup("1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890"));
       }
    }
+
    Case(strndup)
    {
       free(strndup("1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890", 100));
@@ -74,6 +77,7 @@ SUITE(override)
          OK(IsNull, strndup("1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890", 100));
       }
    }
+
 #if defined _POSIX_C_SOURCE && _POSIX_C_SOURCE >= 200112L
    Case(posix_memalign)
    {
@@ -87,6 +91,7 @@ SUITE(override)
       }
    }
 #endif
+
 #if defined _ISOC11_SOURCE
    Case(aligned_alloc)
    {
@@ -110,49 +115,91 @@ SUITE(override)
 #endif
 }
 
-CASE(harmless)
+SUITE(harmless)
 {
    char t[1024];
-   sprintf(t, "%g%g%g", 1.0 / 3.0, 1.0 / 7.0, 1.0 / 13.0);
-   srand(0);
-   rand();
-   close(socket(AF_INET, SOCK_DGRAM, 0));
-   fclose(fopen("/dev/null", "r"));
-   struct timeval tv;
-   struct timezone tz;
-   gettimeofday(&tv, &tz);
-   time_t t3 = time(NULL);
-   struct tm* t4 = gmtime(&t3);
-   struct tm t5;
-   gmtime_r(&t3, &t5);
-   ctime(&t3);
-   ctime_r(&t3, t);
-   asctime(t4);
-   asctime_r(t4, t);
-   mktime(&t5);
-   localtime(&t3);
-   localtime_r(&t3, &t5);
 
-   strtof("12345678.12", NULL);
-   strtod("1912000101600571", NULL);
-   strtold("1912000101600571", NULL);
-   strtol("12345678", NULL, 10);
-   strtoll("1234567890", NULL, 10);
-   strtoul("12345678", NULL, 10);
-   strtoull("1234567890", NULL, 10);
+   Case(time.h)
+   {
+      struct timeval tv;
+      struct timezone tz;
+      gettimeofday(&tv, &tz);
+      time_t t3 = time(NULL);
+      struct tm* t4 = gmtime(&t3);
+      struct tm t5;
+      gmtime_r(&t3, &t5);
+      ctime(&t3);
+      ctime_r(&t3, t);
+      asctime(t4);
+      asctime_r(t4, t);
+      mktime(&t5);
+      localtime(&t3);
+      localtime_r(&t3, &t5);
+      strftime(t, sizeof(t), "%a, %d %b %Y %T %z", t4);
+   }
 
-   strerror(ENOMEM);
-   double t9 = sqrt(42.0);
-   sprintf(t, "%g", t9);
+   Case(string.h)
+   {
+      memchr("abcdefghijklmnopqrstuvwxyz", 'k', 26);
+      memcmp("abc", "def", 3);
 
-   syslog(LOG_DEBUG, "This is test %d", 42);
+      strcoll("abc", "def");
+      strcpy(t, "abc,def");
+      strtok(t, ",");
+      strxfrm(t, "xyz", 3);
+      strerror(ENOMEM);
+   }
 
-   struct addrinfo hints, *res;
-   memset(&hints, 0, sizeof(hints));
-   hints.ai_family = PF_UNSPEC;
-   hints.ai_socktype = SOCK_STREAM;
-   getaddrinfo("localhost", NULL, &hints, &res);
-   freeaddrinfo(res);
+   Case(stdlib.h)
+   {
+      atoi("12345");
+      atol("12345");
+      atof("12345.67");
+      strtof("12345678.12", NULL);
+      strtod("1912000101600571", NULL);
+      strtold("1912000101600571", NULL);
+      strtol("12345678", NULL, 10);
+      strtoll("1234567890", NULL, 10);
+      strtoul("12345678", NULL, 10);
+      strtoull("1234567890", NULL, 10);
+
+      getenv("LANG");
+      system("pwd");
+
+      srand(0);
+      rand();
+      // bsearch();
+      // qsort();
+   }
+
+   Case(stdio.h)
+   {
+      sprintf(t, "%g%g%g", 1.0 / 3.0, 1.0 / 7.0, 1.0 / 13.0);
+      fclose(fopen("/dev/null", "r"));
+   }
+
+   Case(math.h)
+   {
+      auto ret1 = sqrt(42.0);
+   }
+
+   Case(syslog.h)
+   {
+      syslog(LOG_DEBUG, "This is test %d", 42);
+   }
+
+   Case(socket.h)
+   {
+      close(socket(AF_INET, SOCK_DGRAM, 0));
+   }
+
+   Case(netdb.h)
+   {
+      struct addrinfo hints, *res;
+      memset(&hints, 0, sizeof(hints));
+      hints.ai_family = PF_UNSPEC;
+      hints.ai_socktype = SOCK_STREAM;
+      getaddrinfo("localhost", NULL, &hints, &res);
+      freeaddrinfo(res);
+   }
 }
-
-}  // namespace

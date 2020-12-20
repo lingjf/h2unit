@@ -90,9 +90,7 @@ struct h2_exemption : h2_libc {
 
    h2_exemption(void* _base, int _size = 0) : base(_base), size(_size)
    {
-      if (!size) {
-         size = function_size((unsigned char*)base);
-      }
+      if (!size) size = function_size((unsigned char*)base);
    }
 
    int function_size(unsigned char* func)

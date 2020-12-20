@@ -32,9 +32,7 @@ class Rect : public Shape {
    int width, height;
 
  public:
-   Rect(int left, int top, int _width, int _height) : Shape(left, top, "Rect"),
-                                                      width(_width),
-                                                      height(_height)
+   Rect(int left, int top, int _width, int _height) : Shape(left, top, "Rect"), width(_width), height(_height)
    {
    }
 

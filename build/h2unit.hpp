@@ -1,5 +1,5 @@
 ﻿
-/* v5.7 2020-10-18 17:46:20 */
+/* v5.8 2020-12-20 21:22:22 */
 /* https://github.com/lingjf/h2unit */
 /* Apache Licence 2.0 */
 
@@ -497,9 +497,7 @@ struct h2_is_container {
    static std::false_type has_const_iterator(...);
 
    template <typename U>
-   static std::true_type has_begin(typename std::enable_if<
-                                   std::is_same<decltype(static_cast<typename U::const_iterator (U::*)() const>(&U::begin)),
-                                                typename U::const_iterator (U::*)() const>::value>::type*);
+   static std::true_type has_begin(typename std::enable_if<std::is_same<decltype(static_cast<typename U::const_iterator (U::*)() const>(&U::begin)), typename U::const_iterator (U::*)() const>::value>::type*);
    template <typename U>
    static std::false_type has_begin(...);
 
@@ -508,9 +506,7 @@ struct h2_is_container {
    template <typename U>
    static std::false_type has_end(...);
 
-   static constexpr bool value = decltype(has_const_iterator<T>(nullptr))::value &&
-                                 decltype(has_begin<T>(nullptr))::value &&
-                                 decltype(has_end<T>(nullptr))::value;
+   static constexpr bool value = decltype(has_const_iterator<T>(nullptr))::value && decltype(has_begin<T>(nullptr))::value && decltype(has_end<T>(nullptr))::value;
 };
 // source/utils/h2_list.hpp
 
@@ -982,7 +978,7 @@ struct h2_backtrace {
 
 static constexpr unsigned linux = 0x0101;
 static constexpr unsigned macos = 0x0102;
-static constexpr unsigned windows = 0x0200;
+static constexpr unsigned winos = 0x0200;
 
 struct h2_option {
    h2_singleton(h2_option);
@@ -992,7 +988,7 @@ struct h2_option {
 #elif defined __APPLE__
    static constexpr unsigned os = macos;
 #elif defined WIN32 || defined __WIN32__ || defined _WIN32 || defined _MSC_VER || defined __MINGW32__
-   static constexpr unsigned os = windows;
+   static constexpr unsigned os = winos;
 #endif
 
    unsigned terminal_width;
@@ -1326,10 +1322,7 @@ struct h2_matcher_cast_impl<T, h2_matcher<T>> {
 };
 
 template <typename T, typename M>
-inline h2_matcher<T> h2_matcher_cast(const M& from)
-{
-   return h2_matcher_cast_impl<T, M>::cast(from);
-}
+inline h2_matcher<T> h2_matcher_cast(const M& from) { return h2_matcher_cast_impl<T, M>::cast(from); }
 // source/matcher/h2_unary.hpp
 
 struct h2_matches_any : h2_matches {
@@ -2374,16 +2367,10 @@ inline h2_polymorphic_matcher<h2_countof_matches<typename std::decay<const Match
 // source/matcher/h2_matcher.cpp
 
 template <typename T>
-inline h2_matcher<T>::h2_matcher()
-{
-   *this = Any;
-}
+inline h2_matcher<T>::h2_matcher() { *this = Any; }
 
 template <typename T>
-inline h2_matcher<T>::h2_matcher(T value)
-{
-   *this = Eq(value);
-}
+inline h2_matcher<T>::h2_matcher(T value) { *this = Eq(value); }
 // source/stub/h2_fp.hpp
 
 template <typename T>

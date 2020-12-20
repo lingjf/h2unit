@@ -1,6 +1,6 @@
 #include "../source/h2_unit.cpp"
 
-namespace test_stub_mfp {
+namespace {
 
 class Shape {
  public:
@@ -189,4 +189,4 @@ CASE(is static member function)
    OK(!h2::h2_mfp<Shape, int(int)>::is_static_member_function(&Shape::work));
 }
 
-}  // namespace test_stub_mfp
+}  // namespace

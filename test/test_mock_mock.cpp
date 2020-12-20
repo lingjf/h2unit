@@ -6,12 +6,13 @@ int foobar1_bymock(int a)
    return 0;
 }
 }
+
 int foobar2_bymock(int a)
 {
    return 0;
 }
 
-namespace test_mock_mock {
+namespace {
 
 int bar1(int a, const char* b)
 {
@@ -571,4 +572,4 @@ SUITE(UNMOCK)
       OK(0, foobar1_bymock(0));
    }
 }
-}  // namespace test_mock_mock
+}  // namespace

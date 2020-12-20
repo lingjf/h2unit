@@ -1,11 +1,9 @@
 #include "../source/h2_unit.cpp"
 
-namespace {
-
-struct Foobar {
+struct Shared {
    int* a;
-   Foobar(int* _a) : a(_a) { *a = 1; }
-   ~Foobar() { *a = 0; }
+   Shared(int* _a) : a(_a) { *a = 1; }
+   ~Shared() { *a = 0; }
 };
 
 SUITE(shared_ptr)
@@ -39,10 +37,9 @@ SUITE(shared_ptr)
    Case(reset)
    {
       int a = 0;
-      h2::h2_shared_ptr<Foobar> s1(new Foobar(&a));
+      h2::h2_shared_ptr<Shared> s1(new Shared(&a));
       OK(1, a);
       s1.reset();
       OK(0, a);
    }
 }
-}  // namespace

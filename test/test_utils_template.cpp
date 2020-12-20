@@ -12,39 +12,37 @@
 #include <tuple>
 #include <valarray>
 
-namespace {
-
-struct Foo1 {
+struct Tpl1 {
    int a;
    int bar(int) { return 0; }
 };
 
-struct Foo2 {
-   h2::h2_string toString() { return "Foo2"; }
+struct Tpl2 {
+   h2::h2_string toString() { return "Tpl2"; }
 };
 
-struct Foo3 {
+struct Tpl3 {
    int bar(int) { return 0; }
 };
-std::ostream& operator<<(std::ostream& os, Foo3 a)
+std::ostream& operator<<(std::ostream& os, Tpl3 a)
 {
-   return os << "Foo3";
+   return os << "Tpl3";
 }
 
-struct Foo4 {
+struct Tpl4 {
    int bar(int) { return 0; }
 };
-std::ostream& operator<<(std::ostream& os, Foo4& a)
+std::ostream& operator<<(std::ostream& os, Tpl4& a)
 {
-   return os << "Foo4";
+   return os << "Tpl4";
 }
 
-struct Foo5 {
+struct Tpl5 {
    int bar(int) { return 0; }
 };
-std::ostream& operator<<(std::ostream& os, const Foo5& a)
+std::ostream& operator<<(std::ostream& os, const Tpl5& a)
 {
-   return os << "Foo5";
+   return os << "Tpl5";
 }
 
 CASE(nth_type)
@@ -70,9 +68,9 @@ SUITE(sizeof pointee)
       OK(8, h2::h2_sizeof_pointee<unsigned long long*>::value);
    }
 
-   Case(Foo1*)
+   Case(Tpl1*)
    {
-      OK(4, h2::h2_sizeof_pointee<Foo1*>::value);
+      OK(4, h2::h2_sizeof_pointee<Tpl1*>::value);
    }
 
    Case(void*)
@@ -92,11 +90,11 @@ SUITE(stringable)
    {
       OK(h2::h2_is_ostreamable<int>::value);
       OK(!h2::h2_is_ostreamable<std::nullptr_t>::value);
-      OK(!h2::h2_is_ostreamable<Foo1>::value);
-      OK(!h2::h2_is_ostreamable<Foo2>::value);
-      OK(h2::h2_is_ostreamable<Foo3>::value);
-      OK(h2::h2_is_ostreamable<Foo4>::value);
-      OK(h2::h2_is_ostreamable<Foo5>::value);
+      OK(!h2::h2_is_ostreamable<Tpl1>::value);
+      OK(!h2::h2_is_ostreamable<Tpl2>::value);
+      OK(h2::h2_is_ostreamable<Tpl3>::value);
+      OK(h2::h2_is_ostreamable<Tpl4>::value);
+      OK(h2::h2_is_ostreamable<Tpl5>::value);
    }
 
    Case(is_ostreamable ex)
@@ -160,5 +158,3 @@ SUITE(container)
       OK(h2::h2_is_container<h2::h2_string>::value);
    }
 }
-
-}  // namespace

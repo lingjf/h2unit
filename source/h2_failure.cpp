@@ -181,12 +181,8 @@ struct h2_fail_strfind : h2_fail_unexpect {
 
       if (12 < e_value.size() || 12 < a_value.size()) {  // omit short string unified compare layout
          h2_line e_line, a_line;
-         for (size_t i = 0; i < e_value.size(); ++i)
-            fmt_char(e_value[i], true, "", e_line);
-
-         for (size_t i = 0; i < a_value.size(); ++i)
-            fmt_char(a_value[i], true, "", a_line);
-
+         for (size_t i = 0; i < e_value.size(); ++i) fmt_char(e_value[i], true, "", e_line);
+         for (size_t i = 0; i < a_value.size(); ++i) fmt_char(a_value[i], true, "", a_line);
          h2_color::printl(h2_layout::seperate(e_line, a_line, "expect", "actual", O.terminal_width));
       }
    }

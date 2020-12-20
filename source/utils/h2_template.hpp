@@ -66,9 +66,7 @@ struct h2_is_container {
    static std::false_type has_const_iterator(...);
 
    template <typename U>
-   static std::true_type has_begin(typename std::enable_if<
-                                   std::is_same<decltype(static_cast<typename U::const_iterator (U::*)() const>(&U::begin)),
-                                                typename U::const_iterator (U::*)() const>::value>::type*);
+   static std::true_type has_begin(typename std::enable_if<std::is_same<decltype(static_cast<typename U::const_iterator (U::*)() const>(&U::begin)), typename U::const_iterator (U::*)() const>::value>::type*);
    template <typename U>
    static std::false_type has_begin(...);
 
@@ -77,7 +75,5 @@ struct h2_is_container {
    template <typename U>
    static std::false_type has_end(...);
 
-   static constexpr bool value = decltype(has_const_iterator<T>(nullptr))::value &&
-                                 decltype(has_begin<T>(nullptr))::value &&
-                                 decltype(has_end<T>(nullptr))::value;
+   static constexpr bool value = decltype(has_const_iterator<T>(nullptr))::value && decltype(has_begin<T>(nullptr))::value && decltype(has_end<T>(nullptr))::value;
 };

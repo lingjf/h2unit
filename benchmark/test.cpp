@@ -31,6 +31,7 @@ SUITE(b)
    Cleanup()
    {
    }
+
    Case(1)
    {
    }
@@ -49,6 +50,7 @@ SUITE(c)
       OK(1, 1);
       OK("", "");
    }
+
    Case(2)
    {
       OK(Ge(0), 1);
@@ -60,6 +62,7 @@ SUITE(c)
       OK(Je(""), "");
       JE("", "");
    }
+
    Case(3)
    {
       OK(_, 0);
@@ -73,6 +76,7 @@ SUITE(c)
       OK(IsFalse, false);
       OK(IsFalse, true);
    }
+
    Case(4)
    {
       OK(!Not(0), 1);
@@ -81,12 +85,14 @@ SUITE(c)
       OK(NoneOf(_), 1);
       OK(!Eq(1) && Ge(1) || Lt(1), 1);
    }
+
    Case(5)
    {
       BLOCK()
       {
       }
    }
+
    Case(6)
    {
       MOCK(time, time_t, (time_t*), Once()) { return 0; };

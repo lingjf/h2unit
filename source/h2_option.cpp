@@ -57,14 +57,12 @@ struct getopt {
 
    const char* extract_next()
    {
-      ++i;
-      return i < argc ? args[i] : nullptr;
+      return ++i < argc ? args[i] : nullptr;
    }
 
    const char* extract_string()
    {
-      if (i + 1 < argc && args[i + 1] && args[i + 1][0] != '-') return args[++i];
-      return nullptr;
+      return (i + 1 < argc && args[i + 1] && args[i + 1][0] != '-') ? args[++i] : nullptr;
    }
 
    const char next_option()

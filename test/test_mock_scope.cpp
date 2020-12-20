@@ -1,20 +1,18 @@
 #include "../source/h2_unit.cpp"
 
-namespace {
-
-int foobar1(int)
+static int foobar1(int)
 {
    return 1;
 }
-int foobar2(int)
+static int foobar2(int)
 {
    return 2;
 }
-int foobar3(int)
+static int foobar3(int)
 {
    return 3;
 }
-int foobar4(int)
+static int foobar4(int)
 {
    return 4;
 }
@@ -54,5 +52,3 @@ SUITE(stub in shared_code)
       OK(-4, foobar4(0));
    }
 }
-
-}  // namespace

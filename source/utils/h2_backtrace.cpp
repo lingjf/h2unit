@@ -28,34 +28,29 @@ static inline bool addr2line(unsigned long long addr, char* output, size_t len)
 static inline bool backtrace_extract(const char* backtrace_symbol_line, char* module, char* mangled, unsigned long long* offset)
 {
    //MAC: `3   a.out  0x000000010e777f3d _ZN2h24hook6mallocEm + 45
-   if (3 == ::sscanf(backtrace_symbol_line, "%*s%s%*s%s + %llu", module, mangled, offset))
-      return true;
+   if (3 == ::sscanf(backtrace_symbol_line, "%*s%s%*s%s + %llu", module, mangled, offset)) return true;
 
    //Linux: with '-rdynamic' linker option
    //Linux: module_name(mangled_function_name+relative_offset_to_function)[absolute_address]
    //Linux: `./a.out(_ZN2h24task7executeEv+0x131)[0x55aa6bb840ef]
-   if (3 == ::sscanf(backtrace_symbol_line, "%[^(]%*[^_a-zA-Z]%127[^)+]+0x%llx", module, mangled, offset))
-      return true;
+   if (3 == ::sscanf(backtrace_symbol_line, "%[^(]%*[^_a-zA-Z]%127[^)+]+0x%llx", module, mangled, offset)) return true;
 
    mangled[0] = '\0';
 
    //Linux: Ubuntu without '-rdynamic' linker option
    //Linux: module_name(+relative_offset_to_function)[absolute_address]
    //Linux: `./a.out(+0xb1887)[0x560c5ed06887]
-   if (2 == ::sscanf(backtrace_symbol_line, "%[^(]%*[^+]+0x%llx", module, offset))
-      return true;
+   if (2 == ::sscanf(backtrace_symbol_line, "%[^(]%*[^+]+0x%llx", module, offset)) return true;
 
    //Linux: Redhat/CentOS without '-rdynamic' linker option
    //Linux: module_name()[relative_offset_to_module]
    //Linux: `./a.out() [0x40b960]
-   if (2 == ::sscanf(backtrace_symbol_line, "%[^(]%*[^[][0x%llx", module, offset))
-      return true;
+   if (2 == ::sscanf(backtrace_symbol_line, "%[^(]%*[^[][0x%llx", module, offset)) return true;
 
    //Where?
    //Linux: module_name[relative_offset_to_module]
    //Linux: `./a.out[0x4060e7]
-   if (2 == ::sscanf(backtrace_symbol_line, "%[^[][0x%llx", module, offset))
-      return true;
+   if (2 == ::sscanf(backtrace_symbol_line, "%[^[][0x%llx", module, offset)) return true;
 
    return false;
 }

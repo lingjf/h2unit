@@ -31,7 +31,4 @@ struct h2_matcher_cast_impl<T, h2_matcher<T>> {
 };
 
 template <typename T, typename M>
-inline h2_matcher<T> h2_matcher_cast(const M& from)
-{
-   return h2_matcher_cast_impl<T, M>::cast(from);
-}
+inline h2_matcher<T> h2_matcher_cast(const M& from) { return h2_matcher_cast_impl<T, M>::cast(from); }

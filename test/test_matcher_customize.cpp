@@ -1,5 +1,4 @@
 #include "../source/h2_unit.cpp"
-namespace {
 
 H2MATCHER(IsEven, ("is not Even"))
 {
@@ -58,6 +57,7 @@ SUITE(User Defined Matcher)
       OK(!IsEven2, 1);
       OK(!IsEven3, 1);
    }
+
    Case(Divable)
    {
       OK(Divable(3), 6);
@@ -65,18 +65,26 @@ SUITE(User Defined Matcher)
       OK(!Divable(3), 7);
       OK(!Divable2(3), 7);
    }
+
    Case(Between)
    {
       OK(Between(1, 4), 2);
       OK(!Between(1, 4), 5);
    }
+
    Case(InRange)
    {
       OK(InRange(1, 10, 2), 5);
       OK(!InRange(1, 10, 2), 6);
    }
-   Case(InRect) { OK(InRect(1, 10, 2, 7), 0); }
-   Case(InProtocol) { OK(InProtocol(1, 10, 2, 7, 9), 0); }
-}
 
-}  // namespace
+   Case(InRect)
+   {
+      OK(InRect(1, 10, 2, 7), 0);
+   }
+
+   Case(InProtocol)
+   {
+      OK(InProtocol(1, 10, 2, 7, 9), 0);
+   }
+}

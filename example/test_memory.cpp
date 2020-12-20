@@ -24,8 +24,8 @@ extern "C" {
 SUITE(Memory Leak)
 {
    /*
-   * Memory leak detection on Test Case Level
-   */
+    * Memory leak detection on Test Case Level
+    */
    Case(test memory leak ok successful)
    {
       free(malloc(8));
@@ -51,8 +51,8 @@ SUITE(Memory Leak)
    }
 
    /*
-   * Memory leak detection on User-Defined Block Level
-   */
+    * Memory leak detection on User-Defined Block Level
+    */
    Case(test memory leak block failure)
    {
       void *c1, *c2, *c3, *c4;
@@ -77,8 +77,8 @@ SUITE(Memory Leak)
    }
 
    /*
-   * h2unit can modify the total memory resource to make malloc() failed.
-   */
+    * h2unit can modify the total memory resource to make malloc() failed.
+    */
 
    Case(malloc faulty injection successful)
    {
@@ -89,8 +89,8 @@ SUITE(Memory Leak)
    }
 
    /*
-   * h2unit can modify fill of malloc.
-   */
+    * h2unit can modify fill of malloc.
+    */
 
    Case(filled malloc successful)
    {

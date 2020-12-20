@@ -23,13 +23,11 @@ char* h2_natives_tojson(h2::h2_natives& natives, char* b)
    return b;
 }
 
-namespace {
-
-int foobar1(int a, int b)
+int foobar__test_stub_native(int a, int b)
 {
    return 1;
 }
-int STUB_foobar1(int a, int b)
+static int STUB_foobar(int a, int b)
 {
    return -1;
 }
@@ -42,37 +40,35 @@ SUITE(natives)
    Case(init)
    {
       JE("[]", h2_natives_tojson(pool, t1));
-      OK(IsNull, pool.get((void*)foobar1));
+      OK(IsNull, pool.get((void*)foobar__test_stub_native));
    }
 
    Case(add del)
    {
-      pool += ((void*)foobar1);
+      pool += ((void*)foobar__test_stub_native);
       JE("[{'reference_count':1}]", h2_natives_tojson(pool, t1));
-      pool += ((void*)foobar1);
+      pool += ((void*)foobar__test_stub_native);
       JE("[{'reference_count':2}]", h2_natives_tojson(pool, t1));
 
-      auto ret = pool.get((void*)foobar1);
+      auto ret = pool.get((void*)foobar__test_stub_native);
       OK(NotNull, ret);
       JE("{'reference_count':2}", h2_native_tojson(ret, t1));
 
-      pool -= ((void*)foobar1);
+      pool -= ((void*)foobar__test_stub_native);
       JE("[{'reference_count':1}]", h2_natives_tojson(pool, t1));
-      pool -= ((void*)foobar1);
+      pool -= ((void*)foobar__test_stub_native);
       JE("[]", h2_natives_tojson(pool, t1));
    }
 }
 
 CASE(stub temporary restore)
 {
-   OK(1, foobar1(0, 0));
-   STUB(foobar1, STUB_foobar1);
+   OK(1, foobar__test_stub_native(0, 0));
+   STUB(foobar__test_stub_native, STUB_foobar);
    {
-      OK(-1, foobar1(0, 0));
-      h2::h2_stub_temporary_restore t((void*)foobar1);
-      OK(1, foobar1(0, 0));
+      OK(-1, foobar__test_stub_native(0, 0));
+      h2::h2_stub_temporary_restore t((void*)foobar__test_stub_native);
+      OK(1, foobar__test_stub_native(0, 0));
    }
-   OK(-1, foobar1(0, 0));
+   OK(-1, foobar__test_stub_native(0, 0));
 }
-
-}  // namespace

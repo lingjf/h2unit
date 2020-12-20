@@ -1,8 +1,7 @@
 #!/bin/bash
 #coding=utf-8
 
-cd ../build && python concatenate.py
-cd ../benchmark
+python ../build/concatenate.py
 
 t_start1=$(date +%s)
 for a in {1..100}; do

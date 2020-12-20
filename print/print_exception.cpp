@@ -1,6 +1,6 @@
 #include "../build/h2unit.hpp"
 
-class my_exception : public std::exception {
+class a_exception : public std::exception {
    virtual const char* what() const noexcept override
    {
       return "Test Exception";
@@ -9,7 +9,7 @@ class my_exception : public std::exception {
 
 void throw_a_exception()
 {
-   throw my_exception();
+   throw a_exception();
 }
 
 void throw_a_integer()

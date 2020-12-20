@@ -3,7 +3,7 @@
 
 namespace {
 
-time_t STUB_time(time_t* x)
+static time_t STUB_time(time_t* x)
 {
    return 42;
 }
@@ -12,7 +12,7 @@ int foobar1(int a, int b)
 {
    return 1;
 }
-int STUB_foobar1(int a, int b)
+static int STUB_foobar1(int a, int b)
 {
    return -1;
 }
@@ -21,7 +21,7 @@ int foobar2(char* a, ...)
 {
    return 2;
 }
-int STUB_foobar2(char* a, ...)
+static int STUB_foobar2(char* a, ...)
 {
    return -2;
 }

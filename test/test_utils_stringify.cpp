@@ -12,26 +12,24 @@
 #include <tuple>
 #include <valarray>
 
-namespace {
-
-struct Foo1 {
+struct Stringify1 {
    int bar(int) { return 0; }
 };
 
-struct Foo2 {
+struct Stringify2 {
    h2::h2_string tostring() { return "tostring"; }
    h2::h2_string toString() { return "toString"; }
 };
 
-struct Foo3 {
+struct Stringify3 {
    int bar(int) { return 0; }
 };
-std::ostream& operator<<(std::ostream& os, Foo3 a)
+std::ostream& operator<<(std::ostream& os, Stringify3 a)
 {
-   return os << "Foo3";
+   return os << "Stringify3";
 }
 
-struct Foo4 {
+struct Stringify4 {
    std::string tostring() { return "std::string toString()"; }
    h2::h2_string toString() { return "h2::h2_string toString"; }
    std::string Tostring(int) { return "std::string Tostring"; }
@@ -41,19 +39,19 @@ struct Foo4 {
 
 CASE(tostring able)
 {
-   OK(h2::h2_toString_able<Foo2>::value);
+   OK(h2::h2_toString_able<Stringify2>::value);
 
-   OK(h2::h2_tostring_able<Foo4>::value);
-   OK(h2::h2_toString_able<Foo4>::value);
-   OK(!h2::h2_Tostring_able<Foo4>::value);
-   OK(!h2::h2_ToString_able<Foo4>::value);
-   OK(h2::h2_to_string_able<Foo4>::value);
+   OK(h2::h2_tostring_able<Stringify4>::value);
+   OK(h2::h2_toString_able<Stringify4>::value);
+   OK(!h2::h2_Tostring_able<Stringify4>::value);
+   OK(!h2::h2_ToString_able<Stringify4>::value);
+   OK(h2::h2_to_string_able<Stringify4>::value);
 
-   OK(!h2::h2_tostring_able<Foo1>::value);
-   OK(!h2::h2_toString_able<Foo1>::value);
-   OK(!h2::h2_Tostring_able<Foo1>::value);
-   OK(!h2::h2_ToString_able<Foo1>::value);
-   OK(!h2::h2_to_string_able<Foo1>::value);
+   OK(!h2::h2_tostring_able<Stringify1>::value);
+   OK(!h2::h2_toString_able<Stringify1>::value);
+   OK(!h2::h2_Tostring_able<Stringify1>::value);
+   OK(!h2::h2_ToString_able<Stringify1>::value);
+   OK(!h2::h2_to_string_able<Stringify1>::value);
 }
 
 SUITE(stringify simple)
@@ -140,15 +138,15 @@ SUITE(stringify user)
 {
    Case(toString)
    {
-      Foo2 f2;
-      OK("tostring", h2::h2_stringify<Foo2>(f2));
-      OK("tostring", h2::h2_stringify<Foo2>(f2, true));
+      Stringify2 f2;
+      OK("tostring", h2::h2_stringify<Stringify2>(f2));
+      OK("tostring", h2::h2_stringify<Stringify2>(f2, true));
    }
 
    Case(operator<<)
    {
-      Foo3 f3;
-      OK("Foo3", h2::h2_stringify<Foo3>(f3, true));
+      Stringify3 f3;
+      OK("Stringify3", h2::h2_stringify<Stringify3>(f3, true));
    }
 }
 
@@ -650,5 +648,3 @@ SUITE(array with count)
          h2::h2_stringify(a1, 3, true));
    }
 }
-
-}  // namespace

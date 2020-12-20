@@ -5,7 +5,6 @@ struct h2_json_lexical {
       const char *left = start, *right = start + size;
       for (; left < right && *left && ::isspace(*left);) left++;
       for (; left < right - 1 && ::isspace(*(right - 1));) right--;
-
       lexical.push_back(h2_string(right - left, left));
    }
 
@@ -47,7 +46,6 @@ struct h2_json_lexical {
          case st_escape:
             state = stash_state;
             break;
-
          case st_single_quote:
             if ('\'' == *p) {
                new_lexis(lexical, pending, (p + 1) - pending);

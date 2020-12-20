@@ -9,6 +9,7 @@ SUITE(An)
       int n1 = _H2_An(1, 2, 3);
       OK(1, n1);
    }
+
    Case(ForEach)
    {
       int n0 = _H2_An_ForEach();
@@ -18,6 +19,7 @@ SUITE(An)
       int n2 = _H2_An_ForEach((1, 2, 3));
       OK(1, n2);
    }
+
    Case(Fullmesh)
    {
       int nx0 = _H2_An_Fullmeshx();

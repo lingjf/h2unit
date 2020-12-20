@@ -33,12 +33,9 @@ struct h2_wrapper_specific {
    static void replace_malloc_set_zone_name(malloc_zone_t*, const char*) {}
    static unsigned replace_malloc_zone_batch_malloc(malloc_zone_t*, size_t sz, void** results, unsigned num_requested)
    {
-      for (unsigned i = 0; i < num_requested; i++) {
-         results[i] = h2_override::malloc(sz);
-         if (results[i] == nullptr) {
+      for (unsigned i = 0; i < num_requested; i++)
+         if ((results[i] = h2_override::malloc(sz)) == nullptr)
             return i;
-         }
-      }
       return num_requested;
    }
 

@@ -137,6 +137,7 @@ SUITE(memory compares, M32e, deduce content by string)
       const char* a2 = "A1B2C3D4A1B2C3D4";
       OK(M32e(e), a2);
    }
+
    Case(A1B2C3D4A1B2C3D4 explicit length)
    {
       const char* e = "A1B2C3D4A1B2C3D4";

@@ -34,8 +34,8 @@ SUITE(Number compares)
 SUITE(String compares)
 {
    /*
-   * OK can be used to verify Case sensitive String.
-   */
+    * OK can be used to verify Case sensitive String.
+    */
    Case(string equal failure)
    {
       rectangle_t p1 = {0, 0};
@@ -67,10 +67,10 @@ SUITE(String compares)
    }
 
    /*
-   * h2unit WILDCARD/We can be used to verify string by WildCard. support:
-   *  -- ? any one char
-   *  -- * any char(s)
-   */
+    * h2unit WILDCARD/We can be used to verify string by WildCard. support:
+    *  -- ? any one char
+    *  -- * any char(s)
+    */
    Case(wildcard string failure)
    {
       rectangle_t p1 = {0, 0};
@@ -80,9 +80,9 @@ SUITE(String compares)
    }
 
    /*
-   * h2unit REGEX/Re can be used to verify string by Regular express.
-   * http://www.cplusplus.com/reference/regex/ECMAScript/
-   */
+    * h2unit REGEX/Re can be used to verify string by Regular express.
+    * http://www.cplusplus.com/reference/regex/ECMAScript/
+    */
    Case(regex string failure)
    {
       rectangle_t p1 = {0, 0};
@@ -102,8 +102,8 @@ SUITE(String compares)
    }
 
    /*
-   * Case-Less string compare
-   */
+    * Case-Less string compare
+    */
 
    Case(caseless string equal failure)
    {
@@ -133,23 +133,27 @@ SUITE(memory compares)
       OK(M8e(e, sizeof(e)), "abcdefghijklmnopqrstuvwxyz");  // successful
       OK(M8e(e, sizeof(e)), "abcdEfghijklmnopqrsTuvwxyz");  // failure
    }
+
    Case(bits successfull)
    {
       unsigned char a1[] = {0x8E, 0xC8, 0x8E, 0xC8, 0xF8};
       OK(M1e("1000 1110 1100 1000 1000 1110 1100 1000 1111 1"), a1);  // successful
    }
+
    Case(short successfull)
    {
       short e[] = {1, 2, 3, 4, 5, 6, 7, 8, 9};
       short a1[] = {1, 2, 3, 4, 5, 6, 7, 8, 9};
       OK(M16e(e, 9), a1);  // successful
    }
+
    Case(int successfull)
    {
       int e[] = {1, 2, 3, 4, 5, 6, 7, 8, 9};
       int a1[] = {1, 2, 3, 4, 5, 6, 7, 8, 9};
       OK(M32e(e, 9), a1);  // successful
    }
+
    Case(long long successfull)
    {
       long long e[] = {1, 2, 3, 4, 5, 6, 7, 8, 9};
@@ -166,6 +170,7 @@ SUITE(memory compares)
       OK(Me("abcdefghijklmnopqrstuvwxyz"), "abcdefghijklmnopqrstuvwxyz");  // successful
    }
 }
+
 /*
  * h2unit Pointee can be used to verify the data pointer point to.
  */

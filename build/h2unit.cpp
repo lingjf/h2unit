@@ -1,11 +1,11 @@
 ﻿
-/* v5.7 2020-10-18 17:46:20 */
+/* v5.8 2020-12-20 21:22:22 */
 /* https://github.com/lingjf/h2unit */
 /* Apache Licence 2.0 */
 
 #define __H2UNIT_HPP__
 
-#define H2UNIT_VERSION 5.7
+#define H2UNIT_VERSION 5.8
 
 // source/h2_unit.hpp
 
@@ -500,9 +500,7 @@ struct h2_is_container {
    static std::false_type has_const_iterator(...);
 
    template <typename U>
-   static std::true_type has_begin(typename std::enable_if<
-                                   std::is_same<decltype(static_cast<typename U::const_iterator (U::*)() const>(&U::begin)),
-                                                typename U::const_iterator (U::*)() const>::value>::type*);
+   static std::true_type has_begin(typename std::enable_if<std::is_same<decltype(static_cast<typename U::const_iterator (U::*)() const>(&U::begin)), typename U::const_iterator (U::*)() const>::value>::type*);
    template <typename U>
    static std::false_type has_begin(...);
 
@@ -511,9 +509,7 @@ struct h2_is_container {
    template <typename U>
    static std::false_type has_end(...);
 
-   static constexpr bool value = decltype(has_const_iterator<T>(nullptr))::value &&
-                                 decltype(has_begin<T>(nullptr))::value &&
-                                 decltype(has_end<T>(nullptr))::value;
+   static constexpr bool value = decltype(has_const_iterator<T>(nullptr))::value && decltype(has_begin<T>(nullptr))::value && decltype(has_end<T>(nullptr))::value;
 };
 // source/utils/h2_list.hpp
 
@@ -985,7 +981,7 @@ struct h2_backtrace {
 
 static constexpr unsigned linux = 0x0101;
 static constexpr unsigned macos = 0x0102;
-static constexpr unsigned windows = 0x0200;
+static constexpr unsigned winos = 0x0200;
 
 struct h2_option {
    h2_singleton(h2_option);
@@ -995,7 +991,7 @@ struct h2_option {
 #elif defined __APPLE__
    static constexpr unsigned os = macos;
 #elif defined WIN32 || defined __WIN32__ || defined _WIN32 || defined _MSC_VER || defined __MINGW32__
-   static constexpr unsigned os = windows;
+   static constexpr unsigned os = winos;
 #endif
 
    unsigned terminal_width;
@@ -1329,10 +1325,7 @@ struct h2_matcher_cast_impl<T, h2_matcher<T>> {
 };
 
 template <typename T, typename M>
-inline h2_matcher<T> h2_matcher_cast(const M& from)
-{
-   return h2_matcher_cast_impl<T, M>::cast(from);
-}
+inline h2_matcher<T> h2_matcher_cast(const M& from) { return h2_matcher_cast_impl<T, M>::cast(from); }
 // source/matcher/h2_unary.hpp
 
 struct h2_matches_any : h2_matches {
@@ -2377,16 +2370,10 @@ inline h2_polymorphic_matcher<h2_countof_matches<typename std::decay<const Match
 // source/matcher/h2_matcher.cpp
 
 template <typename T>
-inline h2_matcher<T>::h2_matcher()
-{
-   *this = Any;
-}
+inline h2_matcher<T>::h2_matcher() { *this = Any; }
 
 template <typename T>
-inline h2_matcher<T>::h2_matcher(T value)
-{
-   *this = Eq(value);
-}
+inline h2_matcher<T>::h2_matcher(T value) { *this = Eq(value); }
 // source/stub/h2_fp.hpp
 
 template <typename T>
@@ -5137,34 +5124,29 @@ static inline bool addr2line(unsigned long long addr, char* output, size_t len)
 static inline bool backtrace_extract(const char* backtrace_symbol_line, char* module, char* mangled, unsigned long long* offset)
 {
    //MAC: `3   a.out  0x000000010e777f3d _ZN2h24hook6mallocEm + 45
-   if (3 == ::sscanf(backtrace_symbol_line, "%*s%s%*s%s + %llu", module, mangled, offset))
-      return true;
+   if (3 == ::sscanf(backtrace_symbol_line, "%*s%s%*s%s + %llu", module, mangled, offset)) return true;
 
    //Linux: with '-rdynamic' linker option
    //Linux: module_name(mangled_function_name+relative_offset_to_function)[absolute_address]
    //Linux: `./a.out(_ZN2h24task7executeEv+0x131)[0x55aa6bb840ef]
-   if (3 == ::sscanf(backtrace_symbol_line, "%[^(]%*[^_a-zA-Z]%127[^)+]+0x%llx", module, mangled, offset))
-      return true;
+   if (3 == ::sscanf(backtrace_symbol_line, "%[^(]%*[^_a-zA-Z]%127[^)+]+0x%llx", module, mangled, offset)) return true;
 
    mangled[0] = '\0';
 
    //Linux: Ubuntu without '-rdynamic' linker option
    //Linux: module_name(+relative_offset_to_function)[absolute_address]
    //Linux: `./a.out(+0xb1887)[0x560c5ed06887]
-   if (2 == ::sscanf(backtrace_symbol_line, "%[^(]%*[^+]+0x%llx", module, offset))
-      return true;
+   if (2 == ::sscanf(backtrace_symbol_line, "%[^(]%*[^+]+0x%llx", module, offset)) return true;
 
    //Linux: Redhat/CentOS without '-rdynamic' linker option
    //Linux: module_name()[relative_offset_to_module]
    //Linux: `./a.out() [0x40b960]
-   if (2 == ::sscanf(backtrace_symbol_line, "%[^(]%*[^[][0x%llx", module, offset))
-      return true;
+   if (2 == ::sscanf(backtrace_symbol_line, "%[^(]%*[^[][0x%llx", module, offset)) return true;
 
    //Where?
    //Linux: module_name[relative_offset_to_module]
    //Linux: `./a.out[0x4060e7]
-   if (2 == ::sscanf(backtrace_symbol_line, "%[^[][0x%llx", module, offset))
-      return true;
+   if (2 == ::sscanf(backtrace_symbol_line, "%[^[][0x%llx", module, offset)) return true;
 
    return false;
 }
@@ -5945,7 +5927,6 @@ struct h2_json_lexical {
       const char *left = start, *right = start + size;
       for (; left < right && *left && ::isspace(*left);) left++;
       for (; left < right - 1 && ::isspace(*(right - 1));) right--;
-
       lexical.push_back(h2_string(right - left, left));
    }
 
@@ -5987,7 +5968,6 @@ struct h2_json_lexical {
          case st_escape:
             state = stash_state;
             break;
-
          case st_single_quote:
             if ('\'' == *p) {
                new_lexis(lexical, pending, (p + 1) - pending);
@@ -7546,9 +7526,7 @@ struct h2_exemption : h2_libc {
 
    h2_exemption(void* _base, int _size = 0) : base(_base), size(_size)
    {
-      if (!size) {
-         size = function_size((unsigned char*)base);
-      }
+      if (!size) size = function_size((unsigned char*)base);
    }
 
    int function_size(unsigned char* func)
@@ -8650,17 +8628,11 @@ static inline void save_last_order(h2_list& suites)
 static inline void __mark(h2_list& suites, char* suitename, char* casename, int status)
 {
    static int seq = INT_MIN / 4;
-
-   h2_list_for_each_entry (s, suites, h2_suite, x) {
-      if (!strcmp(suitename, s->name)) {
-         h2_list_for_each_entry (c, s->cases, h2_case, x) {
-            if (!strcmp(casename, c->name)) {
-               s->seq = c->seq = ++seq;
-               c->last_status = status;
-            }
-         }
-      }
-   }
+   h2_list_for_each_entry (s, suites, h2_suite, x)
+      if (!strcmp(suitename, s->name))
+         h2_list_for_each_entry (c, s->cases, h2_case, x)
+            if (!strcmp(casename, c->name))
+               s->seq = c->seq = ++seq, c->last_status = status;
 }
 
 static inline int mark_last_order(h2_list& suites)
@@ -8687,12 +8659,12 @@ static inline void drop_last_order()
    ::remove(".last_order");
 }
 
-static int h2_suite_cmp(h2_list* a, h2_list* b)
+static int __suite_cmp(h2_list* a, h2_list* b)
 {
    return h2_list_entry(a, h2_suite, x)->seq - h2_list_entry(b, h2_suite, x)->seq;
 }
 
-static int h2_case_cmp(h2_list* a, h2_list* b)
+static int __case_cmp(h2_list* a, h2_list* b)
 {
    return h2_list_entry(a, h2_case, x)->seq - h2_list_entry(b, h2_case, x)->seq;
 }
@@ -8706,9 +8678,9 @@ h2_inline void h2_task::shuffle()
          h2_list_for_each_entry (c, s->cases, h2_case, x)
             s->seq = c->seq = rand();
 
-   suites.sort(h2_suite_cmp);
+   suites.sort(__suite_cmp);
    h2_list_for_each_entry (s, suites, h2_suite, x)
-      s->cases.sort(h2_case_cmp);
+      s->cases.sort(__case_cmp);
 }
 
 h2_inline void h2_task::shadow()
@@ -8753,9 +8725,7 @@ h2_inline void h2_task::execute()
             current_case = c;
             if (O.filter(s->name, c->name, c->file, c->lino)) c->status = h2_case::filtered;
             h2_report::I().on_case_start(s, c);
-            if (O.only_execute_fails && h2_case::failed != c->last_status) {
-               if (h2_case::initial == c->status) c->status = h2_case::ignored;
-            }
+            if (O.only_execute_fails && h2_case::failed != c->last_status && h2_case::initial == c->status) c->status = h2_case::ignored;
             if (h2_case::initial == c->status && !O.list_cases) {
                for (auto& setup : global_case_setups) setup();
                s->execute(c);
@@ -9174,12 +9144,8 @@ struct h2_fail_strfind : h2_fail_unexpect {
 
       if (12 < e_value.size() || 12 < a_value.size()) {  // omit short string unified compare layout
          h2_line e_line, a_line;
-         for (size_t i = 0; i < e_value.size(); ++i)
-            fmt_char(e_value[i], true, "", e_line);
-
-         for (size_t i = 0; i < a_value.size(); ++i)
-            fmt_char(a_value[i], true, "", a_line);
-
+         for (size_t i = 0; i < e_value.size(); ++i) fmt_char(e_value[i], true, "", e_line);
+         for (size_t i = 0; i < a_value.size(); ++i) fmt_char(a_value[i], true, "", a_line);
          h2_color::printl(h2_layout::seperate(e_line, a_line, "expect", "actual", O.terminal_width));
       }
    }
@@ -9951,14 +9917,12 @@ struct getopt {
 
    const char* extract_next()
    {
-      ++i;
-      return i < argc ? args[i] : nullptr;
+      return ++i < argc ? args[i] : nullptr;
    }
 
    const char* extract_string()
    {
-      if (i + 1 < argc && args[i + 1] && args[i + 1][0] != '-') return args[++i];
-      return nullptr;
+      return (i + 1 < argc && args[i + 1] && args[i + 1][0] != '-') ? args[++i] : nullptr;
    }
 
    const char next_option()

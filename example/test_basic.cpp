@@ -17,15 +17,15 @@ int pv;
 SUITE(Basic Cases)
 {
    /*
-   * This variable is accessible in the test cases belong this unit.
-   */
+    * This variable is accessible in the test cases belong this unit.
+    */
    int uv = 2;
 
    /*
-   * Cleanup() will be executed after every test case belong to this suite.
-   * whatever test case passed or failed.
-   * Typically it is used to release resource.
-   */
+    * Cleanup() will be executed after every test case belong to this suite.
+    * whatever test case passed or failed.
+    * Typically it is used to release resource.
+    */
    Cleanup()
    {
       pv = 0;
@@ -33,8 +33,8 @@ SUITE(Basic Cases)
    }
 
    /*
-   * Case is a unit test case
-   */
+    * Case is a unit test case
+    */
    Case(hello world successful)
    {
       OK(2, sqrt(4));
@@ -65,10 +65,10 @@ SUITE(Second Demo)
       OK(result) << "0 != -0";
    }
 
-  Todo(alive for ever)
-  {
-     OK(false);
-  }
+   Todo(alive for ever)
+   {
+      OK(false);
+   }
 }
 
 /*
