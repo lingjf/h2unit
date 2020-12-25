@@ -1,5 +1,5 @@
 ﻿
-/* v5.8 2020-12-20 21:22:22 */
+/* v5.8 2020-12-26 00:42:02 */
 /* https://github.com/lingjf/h2unit */
 /* Apache Licence 2.0 */
 
@@ -4082,15 +4082,12 @@ h2_inline void h2_list::sort(int (*cmp)(h2_list*, h2_list*))
 }
 // source/utils/h2_misc.cpp
 
-#if defined WIN32 || defined __WIN32__ || defined _WIN32 || defined _MSC_VER || defined __MINGW32__
-static inline char* basename(char* path)
+static inline const char* h2_basename(const char* path)
 {
-   static char t[MAX_PATH + 1];
-   strcpy(t, path);
-   PathRemoveFileSpecA(t);
-   return t;
+   const char* p = strrchr(path, '/');
+   if (!p) p = strrchr(path, '\\');
+   return p ? p + 1 : path;
 }
-#endif
 
 h2_inline bool h2_pattern::regex_match(const char* pattern, const char* subject, bool caseless)
 {
@@ -8905,7 +8902,7 @@ static inline bool under_debug(int pid, const char* path)
    if (!f) return false;
    bool ret = false;
    while (::fgets(t, sizeof(t) - 1, f)) {
-      if (strstr(t, basename((char*)path)) || strstr(t, attach_pid)) {
+      if (strstr(t, h2_basename(path)) || strstr(t, attach_pid)) {
          ret = true;
          break;
       }
@@ -8993,7 +8990,7 @@ h2_inline h2_fail::~h2_fail()
 h2_inline h2_line h2_fail::locate()
 {
    if (file && strlen(file) && lino)
-      return gray(" at ") + h2_string("%s:%d", basename((char*)file), lino);
+      return gray(" at ") + h2_string("%s:%d", h2_basename(file), lino);
    return {};
 }
 
@@ -9573,7 +9570,7 @@ struct h2_report_console : h2_report_impl {
       if (O.list_cases) {
          h2_color::prints("", " %s-%d. ", c->status == h2_case::todo ? "TODO" : "CASE", suite_case_index);
          h2_color::prints("cyan", "%s", c->name);
-         h2_color::prints("", " %s:%d\n", basename((char*)c->file), c->lino);
+         h2_color::prints("", " %s:%d\n", h2_basename(c->file), c->lino);
       }
    }
    void print_title(const char* s, const char* c, const char* file, int lino)
@@ -9588,7 +9585,7 @@ struct h2_report_console : h2_report_impl {
       else
          h2_color::prints("dark gray", "suite");
       h2_color::prints("dark gray", " | ");
-      h2_color::prints("", "%s:%d", basename((char*)file), lino);
+      h2_color::prints("", "%s:%d", h2_basename(file), lino);
    }
    void on_case_endup(h2_suite* s, h2_case* c) override
    {

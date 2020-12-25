@@ -1,13 +1,10 @@
 
-#if defined WIN32 || defined __WIN32__ || defined _WIN32 || defined _MSC_VER || defined __MINGW32__
-static inline char* basename(char* path)
+static inline const char* h2_basename(const char* path)
 {
-   static char t[MAX_PATH + 1];
-   strcpy(t, path);
-   PathRemoveFileSpecA(t);
-   return t;
+   const char* p = strrchr(path, '/');
+   if (!p) p = strrchr(path, '\\');
+   return p ? p + 1 : path;
 }
-#endif
 
 h2_inline bool h2_pattern::regex_match(const char* pattern, const char* subject, bool caseless)
 {

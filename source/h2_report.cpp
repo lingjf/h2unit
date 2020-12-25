@@ -182,7 +182,7 @@ struct h2_report_console : h2_report_impl {
       if (O.list_cases) {
          h2_color::prints("", " %s-%d. ", c->status == h2_case::todo ? "TODO" : "CASE", suite_case_index);
          h2_color::prints("cyan", "%s", c->name);
-         h2_color::prints("", " %s:%d\n", basename((char*)c->file), c->lino);
+         h2_color::prints("", " %s:%d\n", h2_basename(c->file), c->lino);
       }
    }
    void print_title(const char* s, const char* c, const char* file, int lino)
@@ -197,7 +197,7 @@ struct h2_report_console : h2_report_impl {
       else
          h2_color::prints("dark gray", "suite");
       h2_color::prints("dark gray", " | ");
-      h2_color::prints("", "%s:%d", basename((char*)file), lino);
+      h2_color::prints("", "%s:%d", h2_basename(file), lino);
    }
    void on_case_endup(h2_suite* s, h2_case* c) override
    {

@@ -30,7 +30,7 @@ h2_inline h2_fail::~h2_fail()
 h2_inline h2_line h2_fail::locate()
 {
    if (file && strlen(file) && lino)
-      return gray(" at ") + h2_string("%s:%d", basename((char*)file), lino);
+      return gray(" at ") + h2_string("%s:%d", h2_basename(file), lino);
    return {};
 }
 
