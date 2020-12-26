@@ -33,8 +33,10 @@ h2_inline void h2_suite::execute(h2_case* c)
 {
    h2_string ex;
    c->prev_setup();
+   jump_setup.state = h2_jump::st_init;
+   jump_cleanup.state = h2_jump::st_init;
    try {
-      test_code(this, c); /* include setup(); c->post_setup() and c->prev_cleanup(); cleanup() */
+      test_code(this, c); /* include Setup(); c->post_setup() and c->prev_cleanup(); Cleanup() */
    } catch (std::exception& e) {
       ex = e.what();
    } catch (std::string& m) {
@@ -54,8 +56,11 @@ h2_inline h2_suite::registrar::registrar(h2_suite* s, h2_case* c)
    s->seq = c->seq = ++seq;
 }
 
-h2_inline h2_suite::cleaner::cleaner(h2_suite* s) : thus(s) {}
+h2_inline h2_suite::cleaner::cleaner(h2_suite* s) : thus(s)
+{
+   thus->jump_cleanup.state = h2_jump::st_does;
+}
 h2_inline h2_suite::cleaner::~cleaner()
 {
-   if (thus->jumpable) ::longjmp(thus->jump, 1);
+   if (thus->jump_cleanup.has) ::longjmp(thus->jump_cleanup.ctx, 1);
 }

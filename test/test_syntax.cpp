@@ -10,13 +10,30 @@ SUITE(syntax) {}
 
 SUITE(syntax)
 {
+   Setup() {}
+}
+SUITE(syntax)
+{
    Cleanup() {}
+}
+SUITE(syntax)
+{
+   Setup() {}
+   Cleanup() {}
+}
+SUITE(syntax)
+{
+   Cleanup() {}
+   Setup() {}
 }
 
 #define D101 101
 
 SUITE(syntax D101)
 {
+   Setup()
+   {
+   }
    Cleanup()
    {
    }

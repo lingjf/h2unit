@@ -6,18 +6,32 @@
 
 #define H2SUITE(...) __H2SUITE(#__VA_ARGS__, H2PP_UNIQUE(h2_suite_test))
 
-#define H2Cleanup()                                \
-   if (::setjmp(suite_2_0_1_3_0_1_0_2->jump) == 0) \
-      suite_2_0_1_3_0_1_0_2->jumpable = true;      \
-   if (!case_2_0_1_7_0_3_2_5)
+#define H2Setup()                                                          \
+   if (::setjmp(suite_2_0_1_3_0_1_0_2->jump_setup.ctx) == 0)               \
+      suite_2_0_1_3_0_1_0_2->jump_setup.has = true;                        \
+   if (!case_2_0_1_7_0_3_2_5)                                              \
+      if (suite_2_0_1_3_0_1_0_2->jump_setup.state == h2::h2_jump::st_does) \
+         if ((suite_2_0_1_3_0_1_0_2->jump_setup.state = h2::h2_jump::st_done))
 
-#define __H2Case(name, status, Q)                                                                             \
-   static h2::h2_case Q(name, status, __FILE__, __LINE__);                                                    \
-   static h2::h2_suite::registrar H2PP_UNIQUE(s_registrar)(suite_2_0_1_3_0_1_0_2, &Q);                        \
-   if (&Q == case_2_0_1_7_0_3_2_5)                                                                            \
-      for (h2::h2_suite::cleaner _1_9_8_0_(suite_2_0_1_3_0_1_0_2); _1_9_8_0_; case_2_0_1_7_0_3_2_5 = nullptr) \
-         for (h2::h2_case::cleaner _1_9_8_1_(&Q); _1_9_8_1_;)                                                 \
-            if (::setjmp(Q.jump) == 0)
+#define H2Cleanup()                                                          \
+   if (::setjmp(suite_2_0_1_3_0_1_0_2->jump_cleanup.ctx) == 0)               \
+      suite_2_0_1_3_0_1_0_2->jump_cleanup.has = true;                        \
+   if (!case_2_0_1_7_0_3_2_5)                                                \
+      if (suite_2_0_1_3_0_1_0_2->jump_cleanup.state == h2::h2_jump::st_does) \
+         if ((suite_2_0_1_3_0_1_0_2->jump_cleanup.state = h2::h2_jump::st_done))
+
+#define __H2Case(name, status, Q)                                                                                                \
+   static h2::h2_case Q(name, status, __FILE__, __LINE__);                                                                       \
+   static h2::h2_suite::registrar H2PP_UNIQUE(s_registrar)(suite_2_0_1_3_0_1_0_2, &Q);                                           \
+   if (&Q == case_2_0_1_7_0_3_2_5)                                                                                               \
+      if (suite_2_0_1_3_0_1_0_2->jump_setup.has && suite_2_0_1_3_0_1_0_2->jump_setup.state == h2::h2_jump::st_init) {            \
+         suite_2_0_1_3_0_1_0_2->jump_setup.state = h2::h2_jump::st_does;                                                         \
+         ::longjmp(suite_2_0_1_3_0_1_0_2->jump_setup.ctx, 1);                                                                    \
+      } else if (suite_2_0_1_3_0_1_0_2->jump_cleanup.has && suite_2_0_1_3_0_1_0_2->jump_cleanup.state == h2::h2_jump::st_done) { \
+      } else                                                                                                                     \
+         for (h2::h2_suite::cleaner _1_9_8_0_(suite_2_0_1_3_0_1_0_2); _1_9_8_0_; case_2_0_1_7_0_3_2_5 = nullptr)                 \
+            for (h2::h2_case::cleaner _1_9_8_1_(&Q); _1_9_8_1_;)                                                                 \
+               if (::setjmp(Q.jump) == 0)
 
 #define H2Case(...) __H2Case(#__VA_ARGS__, h2::h2_case::initial, H2PP_UNIQUE(s_case))
 #define H2Todo(...) __H2Case(#__VA_ARGS__, h2::h2_case::todo, H2PP_UNIQUE(s_case))

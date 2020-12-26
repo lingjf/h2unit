@@ -153,6 +153,12 @@ namespace h2 {
 #   pragma message("Cleanup conflict, using H2Cleanup instead.")
 #endif
 
+#ifndef Setup
+#   define Setup H2Setup
+#else
+#   pragma message("Setup conflict, using H2Setup instead.")
+#endif
+
 #ifndef OK
 #   define OK H2OK
 #else
