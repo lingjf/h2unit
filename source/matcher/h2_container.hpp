@@ -10,17 +10,17 @@ struct h2_pair_matches : h2_matches {
    {
       using AK = typename std::decay<decltype(a.first)>::type;
       using AV = typename std::decay<decltype(a.second)>::type;
-      h2_fail* fail = nullptr;
-      h2_fail::append_subling(fail, h2_matcher_cast<AK>(k).matches(a.first, 0, caseless, false));
-      h2_fail::append_subling(fail, h2_matcher_cast<AV>(v).matches(a.second, 0, caseless, false));
-      if (!fail == !dont) {
-         if (fail) delete fail;
+      h2_fail* fails = nullptr;
+      h2_fail::append_subling(fails, h2_matcher_cast<AK>(k).matches(a.first, 0, caseless, false));
+      h2_fail::append_subling(fails, h2_matcher_cast<AV>(v).matches(a.second, 0, caseless, false));
+      if (!fails == !dont) {
+         if (fails) delete fails;
          return nullptr;
       }
       if (dont) {
-         fail = h2_fail::new_unexpect(expection(caseless, dont), h2_representify(a));
+         fails = h2_fail::new_unexpect(expection(caseless, dont), h2_representify(a));
       }
-      return fail;
+      return fails;
    }
 
    template <typename A>

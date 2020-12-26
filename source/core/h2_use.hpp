@@ -1,8 +1,8 @@
 
-#define __H2SUITE(name, Q)                                                 \
-   static void Q(h2::h2_suite*, h2::h2_case*);                             \
-   static h2::h2_suite H2PP_UNIQUE(s_suite)(name, &Q, __FILE__, __LINE__); \
-   static void Q(h2::h2_suite* suite_2_0_1_3_0_1_0_2, h2::h2_case* case_2_0_1_7_0_3_2_5)
+#define __H2SUITE(name, h2_suite_test)                                          \
+   static void h2_suite_test(h2::h2_suite*, h2::h2_case*);                      \
+   static h2::h2_suite H2PP_UNIQUE()(name, &h2_suite_test, __FILE__, __LINE__); \
+   static void h2_suite_test(h2::h2_suite* suite_2_0_1_3_0_1_0_2, h2::h2_case* case_2_0_1_7_0_3_2_5)
 
 #define H2SUITE(...) __H2SUITE(#__VA_ARGS__, H2PP_UNIQUE(h2_suite_test))
 
@@ -20,35 +20,35 @@
       if (suite_2_0_1_3_0_1_0_2->jump_cleanup.state == h2::h2_jump::st_does) \
          if ((suite_2_0_1_3_0_1_0_2->jump_cleanup.state = h2::h2_jump::st_done))
 
-#define __H2Case(name, status, Q)                                                                                                \
-   static h2::h2_case Q(name, status, __FILE__, __LINE__);                                                                       \
-   static h2::h2_suite::registrar H2PP_UNIQUE(s_registrar)(suite_2_0_1_3_0_1_0_2, &Q);                                           \
-   if (&Q == case_2_0_1_7_0_3_2_5)                                                                                               \
+#define __H2Case(name, status, c)                                                                                                \
+   static h2::h2_case c(name, status, __FILE__, __LINE__);                                                                       \
+   static h2::h2_suite::registor H2PP_UNIQUE()(suite_2_0_1_3_0_1_0_2, &c);                                                       \
+   if (&c == case_2_0_1_7_0_3_2_5)                                                                                               \
       if (suite_2_0_1_3_0_1_0_2->jump_setup.has && suite_2_0_1_3_0_1_0_2->jump_setup.state == h2::h2_jump::st_init) {            \
          suite_2_0_1_3_0_1_0_2->jump_setup.state = h2::h2_jump::st_does;                                                         \
          ::longjmp(suite_2_0_1_3_0_1_0_2->jump_setup.ctx, 1);                                                                    \
       } else if (suite_2_0_1_3_0_1_0_2->jump_cleanup.has && suite_2_0_1_3_0_1_0_2->jump_cleanup.state == h2::h2_jump::st_done) { \
       } else                                                                                                                     \
          for (h2::h2_suite::cleaner _1_9_8_0_(suite_2_0_1_3_0_1_0_2); _1_9_8_0_; case_2_0_1_7_0_3_2_5 = nullptr)                 \
-            for (h2::h2_case::cleaner _1_9_8_1_(&Q); _1_9_8_1_;)                                                                 \
-               if (::setjmp(Q.jump) == 0)
+            for (h2::h2_case::cleaner _1_9_8_1_(&c); _1_9_8_1_;)                                                                 \
+               if (::setjmp(c.ctx) == 0)
 
 #define H2Case(...) __H2Case(#__VA_ARGS__, h2::h2_case::initial, H2PP_UNIQUE(s_case))
 #define H2Todo(...) __H2Case(#__VA_ARGS__, h2::h2_case::todo, H2PP_UNIQUE(s_case))
 
-#define __H2CASE(name, status, QC, QS)                                                    \
-   static void QC();                                                                      \
-   static void QS(h2::h2_suite* suite_2_0_1_3_0_1_0_2, h2::h2_case* case_2_0_1_7_0_3_2_5) \
-   {                                                                                      \
-      static h2::h2_case c(name, status, __FILE__, __LINE__);                             \
-      static h2::h2_suite::registrar s_registrar(suite_2_0_1_3_0_1_0_2, &c);              \
-      if (&c == case_2_0_1_7_0_3_2_5)                                                     \
-         for (h2::h2_case::cleaner t(&c); t;)                                             \
-            if (::setjmp(c.jump) == 0)                                                    \
-               QC();                                                                      \
-   }                                                                                      \
-   static h2::h2_suite H2PP_UNIQUE(s_suite)("", &QS, __FILE__, __LINE__);                 \
-   static void QC()
+#define __H2CASE(name, status, h2_case_test, h2_suite_test)                                          \
+   static void h2_case_test();                                                                       \
+   static void h2_suite_test(h2::h2_suite* suite_2_0_1_3_0_1_0_2, h2::h2_case* case_2_0_1_7_0_3_2_5) \
+   {                                                                                                 \
+      static h2::h2_case c(name, status, __FILE__, __LINE__);                                        \
+      static h2::h2_suite::registor r(suite_2_0_1_3_0_1_0_2, &c);                                    \
+      if (&c == case_2_0_1_7_0_3_2_5)                                                                \
+         for (h2::h2_case::cleaner t(&c); t;)                                                        \
+            if (::setjmp(c.ctx) == 0)                                                                \
+               h2_case_test();                                                                       \
+   }                                                                                                 \
+   static h2::h2_suite H2PP_UNIQUE(s_suite)("", &h2_suite_test, __FILE__, __LINE__);                 \
+   static void h2_case_test()
 
 #define H2CASE(...) __H2CASE(#__VA_ARGS__, h2::h2_case::initial, H2PP_UNIQUE(h2_case_test), H2PP_UNIQUE(h2_suite_test))
 #define H2TODO(...) __H2CASE(#__VA_ARGS__, h2::h2_case::todo, H2PP_UNIQUE(h2_case_test), H2PP_UNIQUE(h2_suite_test))
@@ -162,7 +162,7 @@
       static struct Q {                                    \
          Q() { h2::h2_task::I().name##s.push_back(name); } \
          static void name();                               \
-      } H2PP_UNIQUE(Global_Callback);                      \
+      } H2PP_UNIQUE();                                     \
    }                                                       \
    void Q::name()
 

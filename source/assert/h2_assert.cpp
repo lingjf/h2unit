@@ -84,30 +84,30 @@ h2_inline h2_defer_failure::h2_defer_failure(const char* e_expression_, const ch
 
 h2_inline h2_defer_failure::~h2_defer_failure()
 {
-   if (fail) {
-      fail->file = file;
-      fail->lino = lino;
-      fail->assert_type = assert_type;
+   if (fails) {
+      fails->file = file;
+      fails->lino = lino;
+      fails->assert_type = assert_type;
       if (!strcmp("OK1", assert_type)) {
-         fail->e_expression = e_expression;
-         fail->a_expression = expression;
+         fails->e_expression = e_expression;
+         fails->a_expression = expression;
       } else if (!strcmp("OK2", assert_type)) {
          const char* comma = find_outer_comma(expression);
          if (comma) {
             const char *p, *q;
             for (p = comma - 1; expression <= p && ::isspace(*p);) p--;
-            fail->e_expression.assign(expression, (p + 1) - expression);
+            fails->e_expression.assign(expression, (p + 1) - expression);
             for (q = comma + 1; ::isspace(*q);) q++;
-            fail->a_expression.assign(q, (expression + strlen(expression)) - q);
+            fails->a_expression.assign(q, (expression + strlen(expression)) - q);
          } else {
-            fail->e_expression = e_expression;
-            fail->a_expression = a_expression;
+            fails->e_expression = e_expression;
+            fails->a_expression = a_expression;
          }
       } else {
-         fail->e_expression = e_expression;
-         fail->a_expression = a_expression;
+         fails->e_expression = e_expression;
+         fails->a_expression = a_expression;
       }
-      fail->user_explain = oss.str().c_str();
-      h2_fail_g(fail, false);
+      fails->user_explain = oss.str().c_str();
+      h2_fail_g(fails, false);
    }
 }

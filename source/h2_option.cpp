@@ -24,7 +24,7 @@ static inline void usage()
  ├────────┼───────────┼───────────────────────────────────────────────────────┤\n\
  │ -p     │           │ Hide execute progressing                              │\n\
  ├────────┼───────────┼───────────────────────────────────────────────────────┤\n\
- │ -r[n]  │    [n]    │ Repeat run n rounds (default 1) when no failure       │\n\
+ │ -r[n]  │    [n]    │ Repeat run n rounds (default 2) when no failure       │\n\
  ├────────┼───────────┼───────────────────────────────────────────────────────┤\n\
  │ -c     │           │ Output in black-white color style                     │\n\
  ├────────┼───────────┼───────────────────────────────────────────────────────┤\n\
@@ -39,12 +39,11 @@ static inline void usage()
  │ -d     │           │ Debug with gdb once failure occurred                  │\n\
  ├────────┼───────────┼───────────────────────────────────────────────────────┤\n\
  │ -j     │  [path]   │ Generate junit report, default path is junit.xml      │\n\
- ├────────┼───────────┼────────────────┬──────────────────────────────────────┤\n\
- │ -i     │ patterns  │ include filter │ case, suite or file name             │\n\
- ├────────┤ separated ├────────────────┤ case-insensitive matches patterns    │\n\
- │ -e     │ by space  │ exclude filter │ default include all, exclude none    │\n\
- └────────┴───────────┴────────────────┴──────────────────────────────────────┘\n\
-\n");
+ ├────────┼───────────┼─────────┬─────────────────────────────────────────────┤\n\
+ │ -i     │           │ include │ Filter case, suite or file by matching      │\n\
+ ├────────┤  patterns ├─────────┤ case-insensitive name with substr/wildcard  │\n\
+ │ -e     │           │ exclude │ patterns which separated by space           │\n\
+ └────────┴───────────┴─────────┴─────────────────────────────────────────────┘\n");
 }
 
 struct getopt {
@@ -132,7 +131,7 @@ h2_inline void h2_option::parse(int argc, const char** argv)
          get.extract_number(break_after_fails);
          break;
       case 'r':
-         rounds = 1;
+         rounds = 2;
          get.extract_number(rounds);
          break;
       case 'd': debug = "gdb new"; break;
@@ -153,6 +152,7 @@ h2_inline void h2_option::parse(int argc, const char** argv)
          exit(0);
       }
    }
+   if (list_cases) memory_check = false;
 }
 
 static inline bool match3(const std::vector<const char*>& patterns, const char* subject)

@@ -106,3 +106,5 @@ with open(os.path.join(project_build_dir, '../source/h2_unit.cpp'), 'r') as f_h2
     merge_files(f_h2_unit_cpp, f_h2unit_cpp)
 f_h2unit_cpp.close()
 convert_utf8_to_utf8bom(h2unit_cpp)
+
+print("Concatenated " + project_version_date)

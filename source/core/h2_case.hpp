@@ -1,12 +1,6 @@
 
 struct h2_case {
-   enum { initial = 0,
-          passed,
-          failed,
-          todo,
-          filtered,
-          ignored,
-          statuss };
+   static constexpr int initial = 0, passed = 1, failed = 2, todo = 3, filtered = 4, ignored = 5, n_st = 6;
 
    const char* name;
    const char* file;
@@ -17,7 +11,7 @@ struct h2_case {
    int status = initial;
    int asserts = 0;
    long long footprint = 0;
-   jmp_buf jump;
+   jmp_buf ctx;
    h2_fail* fails{nullptr};
    h2_stubs stubs;
    h2_mocks mocks;

@@ -48,5 +48,5 @@ h2_inline void h2_case::do_fail(h2_fail* fail, bool defer)
 {
    status = failed;
    h2_fail::append_subling(fails, fail);
-   if (!defer) ::longjmp(jump, 1);
+   if (!defer) ::longjmp(ctx, 1);
 }

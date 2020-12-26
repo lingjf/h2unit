@@ -2,7 +2,7 @@
 struct h2_task {
    h2_singleton(h2_task);
 
-   int stats[h2_case::statuss]{0};
+   int stats[h2_case::n_st]{0};
    int asserts = 0;
    int rounds = 0;
    int last = 0;

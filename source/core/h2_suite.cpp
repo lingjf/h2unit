@@ -49,7 +49,7 @@ h2_inline void h2_suite::execute(h2_case* c)
    c->post_cleanup(ex);
 }
 
-h2_inline h2_suite::registrar::registrar(h2_suite* s, h2_case* c)
+h2_inline h2_suite::registor::registor(h2_suite* s, h2_case* c)
 {
    static int seq = INT_MAX / 4;
    s->cases.push_back(c->x);

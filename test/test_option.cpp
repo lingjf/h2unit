@@ -42,7 +42,7 @@ SUITE(h2_option)
    {
       const char* argv[] = {"./a.out", "-r"};
       c.parse(2, argv);
-      OK(1, c.rounds);
+      OK(2, c.rounds);
    }
 
    Case(rounds - r1)
@@ -52,11 +52,11 @@ SUITE(h2_option)
       OK(1, c.rounds);
    }
 
-   Case(rounds - r 2)
+   Case(rounds - r 4)
    {
-      const char* argv[] = {"./a.out", "-r", "2"};
+      const char* argv[] = {"./a.out", "-r", "4"};
       c.parse(3, argv);
-      OK(2, c.rounds);
+      OK(4, c.rounds);
    }
 
    Case(shuffle memory_check break_after_fails)

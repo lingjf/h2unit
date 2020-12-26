@@ -12,7 +12,7 @@ struct h2_suite {
    int lino;
    h2_list x;
    int seq = 0;
-   int stats[h2_case::statuss]{0};
+   int stats[h2_case::n_st]{0};
    int asserts = 0;
    long long footprint = 0;
    h2_jump jump_setup, jump_cleanup;
@@ -30,8 +30,8 @@ struct h2_suite {
    void setup();
    void cleanup();
 
-   struct registrar {
-      registrar(h2_suite* s, h2_case* c);
+   struct registor {
+      registor(h2_suite* s, h2_case* c);
    };
 
    struct cleaner : h2_once {
