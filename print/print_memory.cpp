@@ -78,3 +78,25 @@ CASE(write after free failure)
 
    p->b = 100;
 }
+
+SUITE(Memory Leak)
+{
+   Case(1 times leak)
+   {
+      int* p = (int*)malloc(10);
+      *p = 0;
+   }
+
+   Case(20 times leak)
+   {
+      for (int i = 0; i < 10; ++i) {
+         int* p = (int*)malloc(10);
+         *p = i;
+      }
+
+      for (int i = 0; i < 10; ++i) {
+         char* p = (char*)malloc(i + 1);
+         *p = i;
+      }
+   }
+}

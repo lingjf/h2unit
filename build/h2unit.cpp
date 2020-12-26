@@ -1,5 +1,5 @@
 ﻿
-/* v5.8 2020-12-26 00:42:02 */
+/* v5.8 2020-12-26 08:37:25 */
 /* https://github.com/lingjf/h2unit */
 /* Apache Licence 2.0 */
 
@@ -1080,7 +1080,7 @@ struct h2_fail : h2_libc {
    static h2_fail* new_strfind(const h2_string& e_value, const h2_string& a_value, const h2_line& expection, const h2_line& explain = {}, const char* file = nullptr, int lino = 0);
    static h2_fail* new_json(const h2_string& e_value, const h2_string& a_value, const h2_line& expection, bool caseless, const h2_line& explain = {}, const char* file = nullptr, int lino = 0);
    static h2_fail* new_memcmp(const unsigned char* e_value, const unsigned char* a_value, int width, int nbits, const h2_string& represent, const h2_line& explain = {}, const char* file = nullptr, int lino = 0);
-   static h2_fail* new_memory_leak(const void* ptr, int size, const h2_backtrace& bt_allocate, const char* where, const char* file, int lino);
+   static h2_fail* new_memory_leak(const void* ptr, int size, const h2_vector<std::pair<int, int>>& sizes, const h2_backtrace& bt_allocate, const char* where, const char* file, int lino);
    static h2_fail* new_double_free(const void* ptr, const h2_backtrace& bt_allocate, const h2_backtrace& bt_release, const h2_backtrace& bt_double_free);
    static h2_fail* new_asymmetric_free(const void* ptr, const char* who_allocate, const char* who_release, const h2_backtrace& bt_allocate, const h2_backtrace& bt_release);
    static h2_fail* new_overflow(const void* ptr, const int size, const void* addr, const char* action, const h2_vector<unsigned char>& spot, const h2_backtrace& bt_allocate, const h2_backtrace& bt_trample, const char* file = nullptr, int lino = 0);
@@ -6792,12 +6792,6 @@ struct h2_piece : h2_libc {
       return fail;
    }
 
-   h2_fail* leak_check(const char* where, const char* file, int lino)
-   {
-      if (free_times) return nullptr;
-      return h2_fail::new_memory_leak(user_ptr, user_size, bt_allocate, where, file, lino);
-   }
-
    h2_fail* violate_check()
    {
       if (!violate_times) return nullptr;
@@ -6864,6 +6858,62 @@ struct h2_piece : h2_libc {
       return page_ptr <= p && p < page_ptr + page_size * (page_count + 1);
    }
 };
+// source/memory/h2_leaky.cpp
+
+struct h2_leaky {
+   struct leak {
+      void* ptr;
+      h2_backtrace bt;
+      h2_vector<std::pair<int, int>> sizes;
+
+      leak(void* _ptr, const h2_backtrace& _bt) : ptr(_ptr), bt(_bt) {}
+
+      h2_vector<std::pair<int, int>>::iterator find(int size)
+      {
+         for (auto it = sizes.begin(); it != sizes.end(); it++)
+            if (it->first == size)
+               return it;
+         return sizes.end();
+      }
+
+      void add(int size)
+      {
+         if (sizes.end() == find(size)) sizes.push_back({size, 0});
+         find(size)->second++;
+      }
+
+      h2_fail* check(const char* where, const char* file, int lino)
+      {
+         int s = 0;
+         for (auto& p : sizes)
+            s += p.first * p.second;
+         return h2_fail::new_memory_leak(ptr, s, sizes, bt, where, file, lino);
+      }
+   };
+
+   h2_vector<leak> leaks;
+
+   h2_vector<leak>::iterator find(const h2_backtrace& bt)
+   {
+      for (auto it = leaks.begin(); it != leaks.end(); it++)
+         if (it->bt == bt)
+            return it;
+      return leaks.end();
+   }
+
+   void add(void* ptr, int size, const h2_backtrace& bt)
+   {
+      if (leaks.end() == find(bt)) leaks.push_back({ptr, bt});
+      find(bt)->add(size);
+   }
+
+   h2_fail* check(const char* where, const char* file, int lino)
+   {
+      h2_fail* fails = nullptr;
+      for (auto& p : leaks) h2_fail::append_subling(fails, p.check(where, file, lino));
+      return fails;
+   }
+};
 // source/memory/h2_block.cpp
 
 struct h2_block : h2_libc {
@@ -6886,13 +6936,18 @@ struct h2_block : h2_libc {
    h2_fail* check()
    {
       h2_list_for_each_entry (p, pieces, h2_piece, x) {
-         h2_fail* fail1 = p->violate_check();
-         if (fail1) return fail1;
-         if (!noleak) {
-            h2_fail* fail2 = p->leak_check(where, file, lino);
-            if (fail2) return fail2;
-         }
+         h2_fail* fail = p->violate_check();
+         if (fail) return fail;
       }
+
+      h2_leaky leaky;
+      h2_list_for_each_entry (p, pieces, h2_piece, x)
+         if (!noleak && !p->free_times)
+            leaky.add(p->user_ptr, p->user_size, p->bt_allocate);
+
+      h2_fail* fails = leaky.check(where, file, lino);
+      if (fails) return fails;
+
       /* why not chain fails in subling? report one fail ignore more for clean.
          when fail, memory may be in used, don't free and keep it for robust */
       h2_list_for_each_entry (p, pieces, h2_piece, x) {
@@ -6924,7 +6979,7 @@ struct h2_block : h2_libc {
          for (int i = 0, j = 0; i < size; ++i, ++j)
             ((unsigned char*)p->user_ptr)[i] = s_filling[j % n_filling];
 
-      pieces.push(p->x);
+      pieces.push_back(p->x);
       return p;
    }
 
@@ -9268,13 +9323,27 @@ struct h2_fail_memory : h2_fail {
 };
 
 struct h2_fail_memory_leak : h2_fail_memory {
+   h2_vector<std::pair<int, int>> sizes;
    const char* where;  // case or block
-   h2_fail_memory_leak(const void* ptr_, int size_, const h2_backtrace& bt_allocate_, const char* where_, const char* file_, int lino_)
-     : h2_fail_memory(ptr_, size_, bt_allocate_, h2_backtrace(), file_, lino_), where(where_) {}
+   h2_fail_memory_leak(const void* ptr_, int size_, const h2_vector<std::pair<int, int>>& sizes_, const h2_backtrace& bt_allocate_, const char* where_, const char* file_, int lino_)
+     : h2_fail_memory(ptr_, size_, bt_allocate_, h2_backtrace(), file_, lino_), sizes(sizes_), where(where_) {}
    void print(int subling_index = 0, int child_index = 0) override
    {
-      h2_line line = h2_stringify(ptr) + color(" memory leak ", "bold,red") + h2_stringify(size).brush("red") + " bytes in " + where + " totally";
-      h2_color::printl(" " + line + locate());
+      h2_line line = h2_stringify(ptr) + color(" memory leak ", "bold,red") + h2_stringify(size).brush("red") + " ";
+      int i = 0, c = 0, n = 3;
+      h2_line l;
+      for (auto& p : sizes) {
+         l += gray(comma_if(i++));
+         if (!O.verbose && n < i) {
+            l += gray("..." + h2_stringify(sizes.size() - n));
+            break;
+         }
+         l += h2_stringify(p.first);
+         if (1 < p.second) l += gray("x") + h2_stringify(p.second);
+         c += p.second;
+      }
+      if (1 < c) line += gray("[") + l + gray("] ");
+      h2_color::printl(" " + line + "bytes in " + where + " totally" + locate());
       h2_color::prints("", "  which allocate at backtrace:\n"), bt_allocate.print(3);
    }
 };
@@ -9365,9 +9434,9 @@ h2_inline h2_fail* h2_fail::new_memcmp(const unsigned char* e_value, const unsig
 {
    return new h2_fail_memcmp(e_value, a_value, width, nbits, represent, explain, file, lino);
 }
-h2_inline h2_fail* h2_fail::new_memory_leak(const void* ptr, int size, const h2_backtrace& bt_allocate, const char* where, const char* file, int lino)
+h2_inline h2_fail* h2_fail::new_memory_leak(const void* ptr, int size, const h2_vector<std::pair<int, int>>& sizes, const h2_backtrace& bt_allocate, const char* where, const char* file, int lino)
 {
-   return new h2_fail_memory_leak(ptr, size, bt_allocate, where, file, lino);
+   return new h2_fail_memory_leak(ptr, size, sizes, bt_allocate, where, file, lino);
 }
 h2_inline h2_fail* h2_fail::new_double_free(const void* ptr, const h2_backtrace& bt_allocate, const h2_backtrace& bt_release, const h2_backtrace& bt_double_free)
 {

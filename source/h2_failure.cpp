@@ -308,13 +308,27 @@ struct h2_fail_memory : h2_fail {
 };
 
 struct h2_fail_memory_leak : h2_fail_memory {
+   h2_vector<std::pair<int, int>> sizes;
    const char* where;  // case or block
-   h2_fail_memory_leak(const void* ptr_, int size_, const h2_backtrace& bt_allocate_, const char* where_, const char* file_, int lino_)
-     : h2_fail_memory(ptr_, size_, bt_allocate_, h2_backtrace(), file_, lino_), where(where_) {}
+   h2_fail_memory_leak(const void* ptr_, int size_, const h2_vector<std::pair<int, int>>& sizes_, const h2_backtrace& bt_allocate_, const char* where_, const char* file_, int lino_)
+     : h2_fail_memory(ptr_, size_, bt_allocate_, h2_backtrace(), file_, lino_), sizes(sizes_), where(where_) {}
    void print(int subling_index = 0, int child_index = 0) override
    {
-      h2_line line = h2_stringify(ptr) + color(" memory leak ", "bold,red") + h2_stringify(size).brush("red") + " bytes in " + where + " totally";
-      h2_color::printl(" " + line + locate());
+      h2_line line = h2_stringify(ptr) + color(" memory leak ", "bold,red") + h2_stringify(size).brush("red") + " ";
+      int i = 0, c = 0, n = 3;
+      h2_line l;
+      for (auto& p : sizes) {
+         l += gray(comma_if(i++));
+         if (!O.verbose && n < i) {
+            l += gray("..." + h2_stringify(sizes.size() - n));
+            break;
+         }
+         l += h2_stringify(p.first);
+         if (1 < p.second) l += gray("x") + h2_stringify(p.second);
+         c += p.second;
+      }
+      if (1 < c) line += gray("[") + l + gray("] ");
+      h2_color::printl(" " + line + "bytes in " + where + " totally" + locate());
       h2_color::prints("", "  which allocate at backtrace:\n"), bt_allocate.print(3);
    }
 };
@@ -405,9 +419,9 @@ h2_inline h2_fail* h2_fail::new_memcmp(const unsigned char* e_value, const unsig
 {
    return new h2_fail_memcmp(e_value, a_value, width, nbits, represent, explain, file, lino);
 }
-h2_inline h2_fail* h2_fail::new_memory_leak(const void* ptr, int size, const h2_backtrace& bt_allocate, const char* where, const char* file, int lino)
+h2_inline h2_fail* h2_fail::new_memory_leak(const void* ptr, int size, const h2_vector<std::pair<int, int>>& sizes, const h2_backtrace& bt_allocate, const char* where, const char* file, int lino)
 {
-   return new h2_fail_memory_leak(ptr, size, bt_allocate, where, file, lino);
+   return new h2_fail_memory_leak(ptr, size, sizes, bt_allocate, where, file, lino);
 }
 h2_inline h2_fail* h2_fail::new_double_free(const void* ptr, const h2_backtrace& bt_allocate, const h2_backtrace& bt_release, const h2_backtrace& bt_double_free)
 {

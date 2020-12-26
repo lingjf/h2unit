@@ -132,12 +132,6 @@ struct h2_piece : h2_libc {
       return fail;
    }
 
-   h2_fail* leak_check(const char* where, const char* file, int lino)
-   {
-      if (free_times) return nullptr;
-      return h2_fail::new_memory_leak(user_ptr, user_size, bt_allocate, where, file, lino);
-   }
-
    h2_fail* violate_check()
    {
       if (!violate_times) return nullptr;

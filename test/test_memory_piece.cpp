@@ -59,6 +59,17 @@ SUITE(piece)
       delete m;
    }
 
+   Case(zero size)
+   {
+      h2::h2_backtrace bt;
+      m = new h2::h2_piece(0, 0, "malloc", bt);
+      OK(NotNull, m);
+      OK(NotNull, m->user_ptr);
+      OK(0, m->user_size);
+      OK(IsNull, m->free("free"));
+      delete m;
+   }
+
    Case(double free)
    {
       h2::h2_backtrace bt;

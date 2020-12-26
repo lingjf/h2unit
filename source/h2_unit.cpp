@@ -87,6 +87,7 @@ namespace h2 {
 #include "matcher/h2_memcmp.cpp"
 
 #include "memory/h2_piece.cpp"
+#include "memory/h2_leaky.cpp"
 #include "memory/h2_block.cpp"
 #include "memory/h2_stack.cpp"
 #include "memory/h2_override.cpp"

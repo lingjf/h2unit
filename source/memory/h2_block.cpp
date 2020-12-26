@@ -19,13 +19,18 @@ struct h2_block : h2_libc {
    h2_fail* check()
    {
       h2_list_for_each_entry (p, pieces, h2_piece, x) {
-         h2_fail* fail1 = p->violate_check();
-         if (fail1) return fail1;
-         if (!noleak) {
-            h2_fail* fail2 = p->leak_check(where, file, lino);
-            if (fail2) return fail2;
-         }
+         h2_fail* fail = p->violate_check();
+         if (fail) return fail;
       }
+
+      h2_leaky leaky;
+      h2_list_for_each_entry (p, pieces, h2_piece, x)
+         if (!noleak && !p->free_times)
+            leaky.add(p->user_ptr, p->user_size, p->bt_allocate);
+
+      h2_fail* fails = leaky.check(where, file, lino);
+      if (fails) return fails;
+
       /* why not chain fails in subling? report one fail ignore more for clean.
          when fail, memory may be in used, don't free and keep it for robust */
       h2_list_for_each_entry (p, pieces, h2_piece, x) {
@@ -57,7 +62,7 @@ struct h2_block : h2_libc {
          for (int i = 0, j = 0; i < size; ++i, ++j)
             ((unsigned char*)p->user_ptr)[i] = s_filling[j % n_filling];
 
-      pieces.push(p->x);
+      pieces.push_back(p->x);
       return p;
    }
 
