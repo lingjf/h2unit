@@ -132,9 +132,8 @@ struct h2_piece : h2_libc {
       return fail;
    }
 
-   h2_fail* violate_check()
+   h2_fail* violate_fail()
    {
-      if (!violate_times) return nullptr;
       if (violate_after_free)
          return h2_fail::new_use_after_free(user_ptr, violate_address, violate_action, bt_allocate, bt_release, violate_backtrace);
       else

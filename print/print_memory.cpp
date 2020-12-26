@@ -51,32 +51,27 @@ SUITE(Ilegal Access)
    Case(memory underflow failure)
    {
       char* p = (char*)malloc(6);
-      memcpy(p - 50, "123", 3);
+      strcpy(p - 50, "underflow");
       free(p);
    }
 
    Case(memory overflow failure)
    {
       char* p = (char*)malloc(6);
-      memcpy(p, "12345678901234567890123456789012345678901234567890", 50);
+      strcpy(p, "________10________20________20________40overflow50");
       free(p);
    }
-}
 
-CASE(read after free failure)
-{
-   A_struct* p = (A_struct*)malloc(sizeof(A_struct));
-   free(p);
+   Case(use after free failure)
+   {
+      A_struct* read_after_free = (A_struct*)malloc(sizeof(A_struct));
+      free(read_after_free);
+      int b = read_after_free->b;
 
-   int b = p->b;
-}
-
-CASE(write after free failure)
-{
-   A_struct* p = (A_struct*)malloc(sizeof(A_struct));
-   free(p);
-
-   p->b = 100;
+      A_struct* write_after_free = (A_struct*)malloc(sizeof(A_struct));
+      free(write_after_free);
+      write_after_free->b = 100;
+   }
 }
 
 SUITE(Memory Leak)

@@ -1,5 +1,5 @@
 ﻿
-/* v5.8 2020-12-26 08:37:25 */
+/* v5.8 2020-12-26 09:23:39 */
 /* https://github.com/lingjf/h2unit */
 /* Apache Licence 2.0 */
 
@@ -6792,9 +6792,8 @@ struct h2_piece : h2_libc {
       return fail;
    }
 
-   h2_fail* violate_check()
+   h2_fail* violate_fail()
    {
-      if (!violate_times) return nullptr;
       if (violate_after_free)
          return h2_fail::new_use_after_free(user_ptr, violate_address, violate_action, bt_allocate, bt_release, violate_backtrace);
       else
@@ -6935,17 +6934,19 @@ struct h2_block : h2_libc {
 
    h2_fail* check()
    {
-      h2_list_for_each_entry (p, pieces, h2_piece, x) {
-         h2_fail* fail = p->violate_check();
-         if (fail) return fail;
-      }
+      h2_fail* fails = nullptr;
+      h2_list_for_each_entry (p, pieces, h2_piece, x)
+         if (p->violate_times)
+            h2_fail::append_subling(fails, p->violate_fail());
+
+      if (fails) return fails;
 
       h2_leaky leaky;
       h2_list_for_each_entry (p, pieces, h2_piece, x)
          if (!noleak && !p->free_times)
             leaky.add(p->user_ptr, p->user_size, p->bt_allocate);
 
-      h2_fail* fails = leaky.check(where, file, lino);
+      fails = leaky.check(where, file, lino);
       if (fails) return fails;
 
       /* why not chain fails in subling? report one fail ignore more for clean.

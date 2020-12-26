@@ -18,17 +18,19 @@ struct h2_block : h2_libc {
 
    h2_fail* check()
    {
-      h2_list_for_each_entry (p, pieces, h2_piece, x) {
-         h2_fail* fail = p->violate_check();
-         if (fail) return fail;
-      }
+      h2_fail* fails = nullptr;
+      h2_list_for_each_entry (p, pieces, h2_piece, x)
+         if (p->violate_times)
+            h2_fail::append_subling(fails, p->violate_fail());
+
+      if (fails) return fails;
 
       h2_leaky leaky;
       h2_list_for_each_entry (p, pieces, h2_piece, x)
          if (!noleak && !p->free_times)
             leaky.add(p->user_ptr, p->user_size, p->bt_allocate);
 
-      h2_fail* fails = leaky.check(where, file, lino);
+      fails = leaky.check(where, file, lino);
       if (fails) return fails;
 
       /* why not chain fails in subling? report one fail ignore more for clean.
