@@ -1,0 +1,91 @@
+name: ci
+
+on: [push]
+
+jobs:
+  example-x86_64-linux-gcc:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: build
+      run: make -C example
+    - name: run
+      run: ./example/a.out
+
+  example-x86-linux-gcc:
+    runs-on: ubuntu-16.04
+    steps:
+    - uses: actions/checkout@v2
+    - name: build
+      run: make -C example
+    - name: run
+      run: ./example/a.out
+
+  print-x86_64-linux-gcc:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: configure
+      run: cd print && cmake .
+    - name: build
+      run: cmake --build print -j 2
+    - name: run
+      run: cd print && ./a.out
+
+  print-x86-linux-gcc:
+    runs-on: ubuntu-16.04
+    steps:
+    - uses: actions/checkout@v2
+    - name: configure
+      run: cd print && cmake .
+    - name: build
+      run: cmake --build print -j 2
+    - name: run
+      run: cd print && ./a.out
+
+  # print-x86_64-linux-clang:
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #   - uses: actions/checkout@v2
+  #   - name: configure
+  #     env:
+  #       CC: clang
+  #       CXX: clang++
+  #     run: cd print && cmake .
+  #   - name: build
+  #     run: cmake --build print -j 2
+  #   - name: run
+  #     run: cd print && ./a.out
+
+  # print-x86_64-macos-clang:
+  #   runs-on: macos-latest
+  #   steps:
+  #   - uses: actions/checkout@v2
+  #   - name: configure
+  #     run: cd print && cmake .
+  #   - name: build
+  #     run: cmake --build print -j 2
+  #   - name: run
+  #     run: cd print && ./a.out
+
+  # print-x86_64-windows-msvc:
+  #   runs-on: windows-latest
+  #   steps:
+  #   - uses: actions/checkout@v2
+  #   - name: configure
+  #     run: cd print && cmake .
+  #   - name: build
+  #     run: cmake --build print -j 2
+  #   - name: run
+  #     run: cd print && ./a.out
+
+  test-x86_64-linux-gcc:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: configure
+      run: cd test && cmake .
+    - name: build
+      run: cmake --build test
+    - name: run
+      run: cd test && ./a.out -cpj
