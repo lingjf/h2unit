@@ -1,7 +1,4 @@
 
-h2_inline h2_case::h2_case(const char* name_, int status_, const char* file_, int lino_)
-  : name(name_), file(file_), lino(lino_), status(status_) {}
-
 h2_inline void h2_case::clear()
 {
    if (fails) delete fails;

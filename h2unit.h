@@ -1,5 +1,5 @@
 ﻿
-/* v5.8 2021-01-02 19:09:25 */
+/* v5.8 2021-01-02 19:50:15 */
 /* https://github.com/lingjf/h2unit */
 /* Apache Licence 2.0 */
 
@@ -3073,12 +3073,12 @@ struct h2_case {
    static constexpr int initial = 0, passed = 1, failed = 2, todo = 3, filtered = 4, ignored = 5, n_st = 6;
 
    const char* name;
+   int status;
    const char* file;
    int lino;
    h2_list x;
    int seq = 0;
    int last_status = initial;
-   int status = initial;
    int asserts = 0;
    long long footprint = 0;
    jmp_buf ctx;
@@ -3088,7 +3088,7 @@ struct h2_case {
    h2_dnses dnses;
    h2_sock* sock{nullptr};
 
-   h2_case(const char* name, int status, const char* file, int lino);
+   h2_case(const char* name_, int status_, const char* file_, int lino_) : name(name_), status(status_), file(file_), lino(lino_) {}
    void clear();
 
    void prev_setup();
@@ -3106,13 +3106,6 @@ struct h2_case {
 };
 // source/core/h2_suite.hpp
 
-struct h2_jump {
-   static constexpr int st_init = 0, st_does = 1, st_done = 2;
-   jmp_buf ctx;
-   bool has = false;
-   int state = st_init;
-};
-
 struct h2_suite {
    const char* name;
    const char* file;
@@ -3122,7 +3115,7 @@ struct h2_suite {
    int stats[h2_case::n_st]{0};
    int asserts = 0;
    long long footprint = 0;
-   h2_jump jump_setup, jump_cleanup;
+   jmp_buf ctx;
    void (*test_code)(h2_suite*, h2_case*);
    h2_list cases;
    h2_stubs stubs;
@@ -3143,7 +3136,7 @@ struct h2_suite {
 
    struct cleaner : h2_once {
       h2_suite* thus;
-      cleaner(h2_suite* s);
+      cleaner(h2_suite* s) : thus(s) {}
       ~cleaner();
    };
 };
@@ -3556,32 +3549,17 @@ struct h2_report {
 
 #define H2SUITE(...) __H2SUITE(#__VA_ARGS__, H2PP_UNIQUE(h2_suite_test))
 
-#define H2Setup()                                                          \
-   if (::setjmp(suite_2_0_1_3_0_1_0_2->jump_setup.ctx) == 0)               \
-      suite_2_0_1_3_0_1_0_2->jump_setup.has = true;                        \
-   if (!case_2_0_1_7_0_3_2_5)                                              \
-      if (suite_2_0_1_3_0_1_0_2->jump_setup.state == h2::h2_jump::st_does) \
-         if ((suite_2_0_1_3_0_1_0_2->jump_setup.state = h2::h2_jump::st_done))
+#define H2Setup() if (case_2_0_1_7_0_3_2_5)
 
-#define H2Cleanup()                                                          \
-   if (::setjmp(suite_2_0_1_3_0_1_0_2->jump_cleanup.ctx) == 0)               \
-      suite_2_0_1_3_0_1_0_2->jump_cleanup.has = true;                        \
-   if (!case_2_0_1_7_0_3_2_5)                                                \
-      if (suite_2_0_1_3_0_1_0_2->jump_cleanup.state == h2::h2_jump::st_does) \
-         if ((suite_2_0_1_3_0_1_0_2->jump_cleanup.state = h2::h2_jump::st_done))
+#define H2Cleanup() if (::setjmp(suite_2_0_1_3_0_1_0_2->ctx))
 
-#define __H2Case(name, status, c)                                                                                                \
-   static h2::h2_case c(name, status, __FILE__, __LINE__);                                                                       \
-   static h2::h2_suite::registor H2PP_UNIQUE()(suite_2_0_1_3_0_1_0_2, &c);                                                       \
-   if (&c == case_2_0_1_7_0_3_2_5)                                                                                               \
-      if (suite_2_0_1_3_0_1_0_2->jump_setup.has && suite_2_0_1_3_0_1_0_2->jump_setup.state == h2::h2_jump::st_init) {            \
-         suite_2_0_1_3_0_1_0_2->jump_setup.state = h2::h2_jump::st_does;                                                         \
-         ::longjmp(suite_2_0_1_3_0_1_0_2->jump_setup.ctx, 1);                                                                    \
-      } else if (suite_2_0_1_3_0_1_0_2->jump_cleanup.has && suite_2_0_1_3_0_1_0_2->jump_cleanup.state == h2::h2_jump::st_done) { \
-      } else                                                                                                                     \
-         for (h2::h2_suite::cleaner _1_9_8_0_(suite_2_0_1_3_0_1_0_2); _1_9_8_0_; case_2_0_1_7_0_3_2_5 = nullptr)                 \
-            for (h2::h2_case::cleaner _1_9_8_1_(&c); _1_9_8_1_;)                                                                 \
-               if (::setjmp(c.ctx) == 0)
+#define __H2Case(name, status, c)                                                                             \
+   static h2::h2_case c(name, status, __FILE__, __LINE__);                                                    \
+   static h2::h2_suite::registor H2PP_UNIQUE()(suite_2_0_1_3_0_1_0_2, &c);                                    \
+   if (&c == case_2_0_1_7_0_3_2_5)                                                                            \
+      for (h2::h2_suite::cleaner _1_9_8_0_(suite_2_0_1_3_0_1_0_2); _1_9_8_0_; case_2_0_1_7_0_3_2_5 = nullptr) \
+         for (h2::h2_case::cleaner _1_9_8_1_(&c); _1_9_8_1_;)                                                 \
+            if (!::setjmp(c.ctx))
 
 #define H2Case(...) __H2Case(#__VA_ARGS__, h2::h2_case::initial, H2PP_UNIQUE(s_case))
 #define H2Todo(...) __H2Case(#__VA_ARGS__, h2::h2_case::todo, H2PP_UNIQUE(s_case))
@@ -3594,7 +3572,7 @@ struct h2_report {
       static h2::h2_suite::registor r(suite_2_0_1_3_0_1_0_2, &c);                                    \
       if (&c == case_2_0_1_7_0_3_2_5)                                                                \
          for (h2::h2_case::cleaner t(&c); t;)                                                        \
-            if (::setjmp(c.ctx) == 0)                                                                \
+            if (!::setjmp(c.ctx))                                                                    \
                h2_case_test();                                                                       \
    }                                                                                                 \
    static h2::h2_suite H2PP_UNIQUE(s_suite)("", &h2_suite_test, __FILE__, __LINE__);                 \
@@ -3643,7 +3621,7 @@ struct h2_report {
 #define ___H2Cases_Macro(Qj, Qb, Ql, Qx, i, x) \
    H2Case(i. x)                                \
    {                                           \
-      if (::setjmp(Qj) == 0) {                 \
+      if (!::setjmp(Qj)) {                     \
          Qx = x;                               \
          Qb = true;                            \
          goto Ql;                              \
@@ -3664,7 +3642,7 @@ struct h2_report {
 #define ___H2Casess_Macro(Qj, Qb, Ql, Qx, Qy, i, j, x, y) \
    H2Case(i.j. x, y)                                      \
    {                                                      \
-      if (::setjmp(Qj) == 0) {                            \
+      if (!::setjmp(Qj)) {                                \
          Qx = x;                                          \
          Qy = y;                                          \
          Qb = true;                                       \
@@ -8573,9 +8551,6 @@ h2_inline void h2_stdio::capture_cancel()
 
 // source/core/h2_case.cpp
 
-h2_inline h2_case::h2_case(const char* name_, int status_, const char* file_, int lino_)
-  : name(name_), file(file_), lino(lino_), status(status_) {}
-
 h2_inline void h2_case::clear()
 {
    if (fails) delete fails;
@@ -8626,9 +8601,9 @@ h2_inline void h2_case::do_fail(h2_fail* fail, bool defer)
 }
 // source/core/h2_suite.cpp
 
-h2_inline h2_suite::h2_suite(const char* name_, void (*test_code_)(h2_suite*, h2_case*), const char* file_, int lino_)
-  : name(name_), file(file_), lino(lino_), test_code(test_code_)
+h2_inline h2_suite::h2_suite(const char* name_, void (*test_code_)(h2_suite*, h2_case*), const char* file_, int lino_) : name(name_), file(file_), lino(lino_), test_code(test_code_)
 {
+   memset(ctx, 0, sizeof(jmp_buf));
    h2_task::I().suites.push_back(x);
 }
 
@@ -8660,8 +8635,6 @@ h2_inline void h2_suite::execute(h2_case* c)
 {
    h2_string ex;
    c->prev_setup();
-   jump_setup.state = h2_jump::st_init;
-   jump_cleanup.state = h2_jump::st_init;
    try {
       test_code(this, c); /* include Setup(); c->post_setup() and c->prev_cleanup(); Cleanup() */
    } catch (std::exception& e) {
@@ -8683,13 +8656,11 @@ h2_inline h2_suite::registor::registor(h2_suite* s, h2_case* c)
    s->seq = c->seq = ++seq;
 }
 
-h2_inline h2_suite::cleaner::cleaner(h2_suite* s) : thus(s)
-{
-   thus->jump_cleanup.state = h2_jump::st_does;
-}
 h2_inline h2_suite::cleaner::~cleaner()
 {
-   if (thus->jump_cleanup.has) ::longjmp(thus->jump_cleanup.ctx, 1);
+   static const jmp_buf zero = {0};
+   if (memcmp((const void*)thus->ctx, (const void*)zero, sizeof(jmp_buf)))
+      ::longjmp(thus->ctx, 1);
 }
 // source/core/h2_task.cpp
 

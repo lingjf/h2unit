@@ -3,12 +3,12 @@ struct h2_case {
    static constexpr int initial = 0, passed = 1, failed = 2, todo = 3, filtered = 4, ignored = 5, n_st = 6;
 
    const char* name;
+   int status;
    const char* file;
    int lino;
    h2_list x;
    int seq = 0;
    int last_status = initial;
-   int status = initial;
    int asserts = 0;
    long long footprint = 0;
    jmp_buf ctx;
@@ -18,7 +18,7 @@ struct h2_case {
    h2_dnses dnses;
    h2_sock* sock{nullptr};
 
-   h2_case(const char* name, int status, const char* file, int lino);
+   h2_case(const char* name_, int status_, const char* file_, int lino_) : name(name_), status(status_), file(file_), lino(lino_) {}
    void clear();
 
    void prev_setup();

@@ -1,7 +1,7 @@
 
-h2_inline h2_suite::h2_suite(const char* name_, void (*test_code_)(h2_suite*, h2_case*), const char* file_, int lino_)
-  : name(name_), file(file_), lino(lino_), test_code(test_code_)
+h2_inline h2_suite::h2_suite(const char* name_, void (*test_code_)(h2_suite*, h2_case*), const char* file_, int lino_) : name(name_), file(file_), lino(lino_), test_code(test_code_)
 {
+   memset(ctx, 0, sizeof(jmp_buf));
    h2_task::I().suites.push_back(x);
 }
 
@@ -33,8 +33,6 @@ h2_inline void h2_suite::execute(h2_case* c)
 {
    h2_string ex;
    c->prev_setup();
-   jump_setup.state = h2_jump::st_init;
-   jump_cleanup.state = h2_jump::st_init;
    try {
       test_code(this, c); /* include Setup(); c->post_setup() and c->prev_cleanup(); Cleanup() */
    } catch (std::exception& e) {
@@ -56,11 +54,9 @@ h2_inline h2_suite::registor::registor(h2_suite* s, h2_case* c)
    s->seq = c->seq = ++seq;
 }
 
-h2_inline h2_suite::cleaner::cleaner(h2_suite* s) : thus(s)
-{
-   thus->jump_cleanup.state = h2_jump::st_does;
-}
 h2_inline h2_suite::cleaner::~cleaner()
 {
-   if (thus->jump_cleanup.has) ::longjmp(thus->jump_cleanup.ctx, 1);
+   static const jmp_buf zero = {0};
+   if (memcmp((const void*)thus->ctx, (const void*)zero, sizeof(jmp_buf)))
+      ::longjmp(thus->ctx, 1);
 }

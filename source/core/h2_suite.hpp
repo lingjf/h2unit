@@ -1,11 +1,4 @@
 
-struct h2_jump {
-   static constexpr int st_init = 0, st_does = 1, st_done = 2;
-   jmp_buf ctx;
-   bool has = false;
-   int state = st_init;
-};
-
 struct h2_suite {
    const char* name;
    const char* file;
@@ -15,7 +8,7 @@ struct h2_suite {
    int stats[h2_case::n_st]{0};
    int asserts = 0;
    long long footprint = 0;
-   h2_jump jump_setup, jump_cleanup;
+   jmp_buf ctx;
    void (*test_code)(h2_suite*, h2_case*);
    h2_list cases;
    h2_stubs stubs;
@@ -36,7 +29,7 @@ struct h2_suite {
 
    struct cleaner : h2_once {
       h2_suite* thus;
-      cleaner(h2_suite* s);
+      cleaner(h2_suite* s) : thus(s) {}
       ~cleaner();
    };
 };
