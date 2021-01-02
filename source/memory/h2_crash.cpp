@@ -8,7 +8,7 @@ struct h2_crash {
       if (piece) {
          piece->violate_forbidden(si->si_addr);
       } else {
-         h2_debug();
+         h2_debug("");
          abort();
       }
    }

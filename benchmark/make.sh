@@ -1,7 +1,7 @@
 #!/bin/bash
 #coding=utf-8
 
-python ../build/concatenate.py
+python ../build/concat.py
 
 t_start1=$(date +%s)
 for a in {1..100}; do

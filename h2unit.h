@@ -1,5 +1,5 @@
 ﻿
-/* v5.8 2021-01-02 19:50:15 */
+/* v5.8 2021-01-02 20:05:00 */
 /* https://github.com/lingjf/h2unit */
 /* Apache Licence 2.0 */
 
@@ -1035,13 +1035,14 @@ struct h2_debugger {
    static void trap();
 };
 
-#define h2_debug(...)                                                                               \
-   do {                                                                                             \
-      if (!O.debug) {                                                                               \
-         h2_color::prints("", "%s %s : %d = %s\n", #__VA_ARGS__, __FILE__, __LINE__, __FUNCTION__); \
-         h2_backtrace bt(0);                                                                        \
-         bt.print(3);                                                                               \
-      }                                                                                             \
+#define h2_debug(...)                                                               \
+   do {                                                                             \
+      if (!O.debug) {                                                               \
+         h2_color::prints("", __VA_ARGS__);                                         \
+         h2_color::prints("", " %s : %d = %s\n", __FILE__, __LINE__, __FUNCTION__); \
+         h2_backtrace bt(0);                                                        \
+         bt.print(3);                                                               \
+      }                                                                             \
    } while (0)
 // source/other/h2_failure.hpp
 
@@ -7040,7 +7041,7 @@ struct h2_stack {
          h2_piece* piece = p->get_piece(ptr);
          if (piece) return p->rel_piece(who, piece);
       }
-      h2_debug("Warning: free %p not found!", ptr);
+      h2_debug("Warning: %s %p not found!", who, ptr);
       return nullptr;
    }
 
@@ -7356,7 +7357,7 @@ struct h2_crash {
       if (piece) {
          piece->violate_forbidden(si->si_addr);
       } else {
-         h2_debug();
+         h2_debug("");
          abort();
       }
    }

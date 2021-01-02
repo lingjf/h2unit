@@ -1,5 +1,5 @@
 ﻿
-/* v5.8 2021-01-02 19:50:15 */
+/* v5.8 2021-01-02 20:05:00 */
 /* https://github.com/lingjf/h2unit */
 /* Apache Licence 2.0 */
 
@@ -3091,7 +3091,7 @@ struct h2_stack {
          h2_piece* piece = p->get_piece(ptr);
          if (piece) return p->rel_piece(who, piece);
       }
-      h2_debug("Warning: free %p not found!", ptr);
+      h2_debug("Warning: %s %p not found!", who, ptr);
       return nullptr;
    }
 
@@ -3407,7 +3407,7 @@ struct h2_crash {
       if (piece) {
          piece->violate_forbidden(si->si_addr);
       } else {
-         h2_debug();
+         h2_debug("");
          abort();
       }
    }

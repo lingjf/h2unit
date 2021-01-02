@@ -35,7 +35,7 @@ struct h2_stack {
          h2_piece* piece = p->get_piece(ptr);
          if (piece) return p->rel_piece(who, piece);
       }
-      h2_debug("Warning: free %p not found!", ptr);
+      h2_debug("Warning: %s %p not found!", who, ptr);
       return nullptr;
    }
 
