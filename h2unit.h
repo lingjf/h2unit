@@ -1,17 +1,16 @@
 ﻿
-/* v5.8 2020-12-26 15:00:00 */
+/* v5.8 2021-01-02 19:09:25 */
 /* https://github.com/lingjf/h2unit */
 /* Apache Licence 2.0 */
 
 #ifndef __H2UNIT_H__
 #define __H2UNIT_H__
 
-#define H2UNIT_VERSION 5.8
-
-// source/h2_unit.hpp
 
 #ifndef __H2_UNIT_HPP__
 #define __H2_UNIT_HPP__
+
+#define H2UNIT_VERSION 5.8
 
 #include <cstdio>      /* printf */
 #include <cstdlib>     /* malloc */
@@ -978,7 +977,7 @@ struct h2_backtrace {
    void print(h2_vector<h2_string>& stacks) const;
    void print(int pad) const;
 };
-// source/h2_option.hpp
+// source/other/h2_option.hpp
 
 static constexpr unsigned linux = 0x0101;
 static constexpr unsigned macos = 0x0102;
@@ -1023,14 +1022,14 @@ struct h2_option {
 };
 
 static const h2_option& O = h2_option::I();  // for pretty
-// source/h2_layout.hpp
+// source/other/h2_layout.hpp
 
 struct h2_layout {
    static h2_lines split(const h2_lines& left_lines, const h2_lines& right_lines, const char* left_title, const char* right_title, int step, char scale, unsigned width);
    static h2_lines unified(const h2_line& up_line, const h2_line& down_line, const char* up_title, const char* down_title, unsigned width);
    static h2_lines seperate(const h2_line& up_line, const h2_line& down_line, const char* up_title, const char* down_title, unsigned width);
 };
-// source/h2_debug.hpp
+// source/other/h2_debug.hpp
 
 struct h2_debugger {
    static void trap();
@@ -1044,7 +1043,7 @@ struct h2_debugger {
          bt.print(3);                                                                               \
       }                                                                                             \
    } while (0)
-// source/h2_failure.hpp
+// source/other/h2_failure.hpp
 
 struct h2_fail : h2_libc {
    h2_fail *subling_next{nullptr}, *child_next{nullptr};
@@ -3262,7 +3261,7 @@ static inline h2_ostringstream& h2_JE(h2_defer_failure* d, h2_string e, h2_strin
    h2_assert_g();
    return d->oss;
 }
-// source/h2_report.hpp
+// source/other/h2_report.hpp
 
 struct h2_report {
    h2_singleton(h2_report);
@@ -8945,7 +8944,7 @@ h2_inline h2_defer_failure::~h2_defer_failure()
    }
 }
 
-// source/h2_debug.cpp
+// source/other/h2_debug.cpp
 
 #if defined __linux__
 #   if defined(__GNUC__) && (defined(__i386) || defined(__x86_64))
@@ -9039,7 +9038,7 @@ h2_inline void h2_debugger::trap()
    h2_raise_trap();
 #endif
 }
-// source/h2_failure.cpp
+// source/other/h2_failure.cpp
 
 h2_inline void h2_fail::append_subling(h2_fail*& fail, h2_fail* n)
 {
@@ -9481,7 +9480,7 @@ h2_inline h2_fail* h2_fail::new_use_after_free(const void* ptr, const void* addr
 {
    return new h2_fail_use_after_free(ptr, addr, action, bt_allocate, bt_release, bt_use);
 }
-// source/h2_report.cpp
+// source/other/h2_report.cpp
 
 struct h2_report_impl {
    h2_list x;
@@ -9822,7 +9821,7 @@ h2_inline void h2_report::on_case_endup(h2_suite* s, h2_case* c)
       p->on_case_endup(s, c);
 }
 
-// source/h2_layout.cpp
+// source/other/h2_layout.cpp
 
 static inline h2_lines line_break(const h2_line& line, unsigned width)
 {
@@ -9950,7 +9949,7 @@ h2_inline h2_lines h2_layout::seperate(const h2_line& up_line, const h2_line& do
    h2_lines lines = prefix_break(up_line, up_title_line, width);
    return lines += prefix_break(down_line, down_title_line, width);
 }
-// source/h2_option.cpp
+// source/other/h2_option.cpp
 
 static inline void usage()
 {

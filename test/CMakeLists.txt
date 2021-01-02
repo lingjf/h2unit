@@ -9,7 +9,7 @@ IF("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
 ENDIF()
 
 ADD_CUSTOM_TARGET(release ALL
-    COMMAND  python ${CMAKE_CURRENT_SOURCE_DIR}/../build/concatenate.py
+    COMMAND  python ${CMAKE_CURRENT_SOURCE_DIR}/../build/concat.py
 )
 
 AUX_SOURCE_DIRECTORY(. SRC_TEST)

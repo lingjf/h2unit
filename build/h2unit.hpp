@@ -1,5 +1,5 @@
 ﻿
-/* v5.8 2020-12-26 15:00:00 */
+/* v5.8 2021-01-02 19:09:25 */
 /* https://github.com/lingjf/h2unit */
 /* Apache Licence 2.0 */
 
@@ -8,6 +8,8 @@
 
 #ifndef __H2_UNIT_HPP__
 #define __H2_UNIT_HPP__
+
+#define H2UNIT_VERSION 5.8
 
 #include <cstdio>      /* printf */
 #include <cstdlib>     /* malloc */
@@ -974,7 +976,7 @@ struct h2_backtrace {
    void print(h2_vector<h2_string>& stacks) const;
    void print(int pad) const;
 };
-// source/h2_option.hpp
+// source/other/h2_option.hpp
 
 static constexpr unsigned linux = 0x0101;
 static constexpr unsigned macos = 0x0102;
@@ -1019,14 +1021,14 @@ struct h2_option {
 };
 
 static const h2_option& O = h2_option::I();  // for pretty
-// source/h2_layout.hpp
+// source/other/h2_layout.hpp
 
 struct h2_layout {
    static h2_lines split(const h2_lines& left_lines, const h2_lines& right_lines, const char* left_title, const char* right_title, int step, char scale, unsigned width);
    static h2_lines unified(const h2_line& up_line, const h2_line& down_line, const char* up_title, const char* down_title, unsigned width);
    static h2_lines seperate(const h2_line& up_line, const h2_line& down_line, const char* up_title, const char* down_title, unsigned width);
 };
-// source/h2_debug.hpp
+// source/other/h2_debug.hpp
 
 struct h2_debugger {
    static void trap();
@@ -1040,7 +1042,7 @@ struct h2_debugger {
          bt.print(3);                                                                               \
       }                                                                                             \
    } while (0)
-// source/h2_failure.hpp
+// source/other/h2_failure.hpp
 
 struct h2_fail : h2_libc {
    h2_fail *subling_next{nullptr}, *child_next{nullptr};
@@ -3258,7 +3260,7 @@ static inline h2_ostringstream& h2_JE(h2_defer_failure* d, h2_string e, h2_strin
    h2_assert_g();
    return d->oss;
 }
-// source/h2_report.hpp
+// source/other/h2_report.hpp
 
 struct h2_report {
    h2_singleton(h2_report);

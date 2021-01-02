@@ -1,6 +1,4 @@
 
-#define H2UNIT_VERSION 5.8
-
 #include "h2_unit.hpp"
 
 #include <cassert>   /* assert */
@@ -125,11 +123,11 @@ namespace h2 {
 
 #include "assert/h2_assert.cpp"
 
-#include "h2_debug.cpp"
-#include "h2_failure.cpp"
-#include "h2_report.cpp"
+#include "other/h2_debug.cpp"
+#include "other/h2_failure.cpp"
+#include "other/h2_report.cpp"
 
-#include "h2_layout.cpp"
-#include "h2_option.cpp"
+#include "other/h2_layout.cpp"
+#include "other/h2_option.cpp"
 
 }  // namespace h2

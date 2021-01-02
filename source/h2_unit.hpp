@@ -2,6 +2,8 @@
 #ifndef __H2_UNIT_HPP__
 #define __H2_UNIT_HPP__
 
+#define H2UNIT_VERSION 5.8
+
 #include <cstdio>      /* printf */
 #include <cstdlib>     /* malloc */
 #include <cstring>     /* strcpy, memcpy */
@@ -74,10 +76,10 @@ namespace h2 {
 #include "utils/h2_color.hpp"          // line
 #include "utils/h2_nm.hpp"             //
 #include "utils/h2_backtrace.hpp"      // line
-#include "h2_option.hpp"               //
-#include "h2_layout.hpp"               //
-#include "h2_debug.hpp"                // option
-#include "h2_failure.hpp"              //
+#include "other/h2_option.hpp"         //
+#include "other/h2_layout.hpp"         //
+#include "other/h2_debug.hpp"          // option
+#include "other/h2_failure.hpp"        //
 #include "json/h2_json.hpp"            //
 #include "memory/h2_exempt.hpp"        //
 #include "memory/h2_memory.hpp"        // failure
@@ -109,7 +111,7 @@ namespace h2 {
 #include "core/h2_suite.hpp"           // case, stub, mock
 #include "core/h2_task.hpp"            // suite, case, failure, stub, mock, option, debug
 #include "assert/h2_assert.hpp"        // failure, matcher
-#include "h2_report.hpp"               // task, suite, case
+#include "other/h2_report.hpp"         // task, suite, case
 }  // namespace h2
 
 #include "stub/h2_use.hpp"
