@@ -815,23 +815,23 @@ Read/Write memory which already freed, will be detected.
 *    Thrown Exception 
      Any thrown exception can be detected and reported as failure if `-x` option is set.
 
-### 9. Global Setup/Teardown
+### 9. Global Setup/Cleanup
 *    [`GlobalSetup`](source/core/h2_use.hpp): Invoked before test case
-*    [`GlobalTeardown`](source/core/h2_use.hpp): Invoked after all test case executed
+*    [`GlobalCleanup`](source/core/h2_use.hpp): Invoked after all test case executed
 *    [`GlobalSuiteSetup`](source/core/h2_use.hpp): Invoked before every suite
-*    [`GlobalSuiteTeardown`](source/core/h2_use.hpp): Invoked after every suite executed
+*    [`GlobalSuiteCleanup`](source/core/h2_use.hpp): Invoked after every suite executed
 *    [`GlobalCaseSetup`](source/core/h2_use.hpp): Invoked before every case
-*    [`GlobalCaseTeardown`](source/core/h2_use.hpp): Invoked after every case executed
+*    [`GlobalCaseCleanup`](source/core/h2_use.hpp): Invoked after every case executed
 ```C++
 GlobalSetup() {
    WSAStartup();
 }
 
-GlobalTeardown() {
+GlobalCleanup() {
    WSACleanup();
 }
 ```
-Global Setup/Teardown can define multiple times, all of them will be invoked.
+Global Setup/Cleanup can define multiple times, all of them will be invoked.
 
 ### 10. DNS Hijack
 [`DNS`](source/h2_unit.hpp)("hostname", "ip1", "ip2", "alias1", "alias2", ...): Set DNS resolve results (getaddrinfo, gethostbyname)

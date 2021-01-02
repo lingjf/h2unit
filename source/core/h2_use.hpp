@@ -7,7 +7,7 @@
 #define H2SUITE(...) __H2SUITE(#__VA_ARGS__, H2PP_UNIQUE(h2_suite_test))
 
 #define H2Setup() if (case_2_0_1_7_0_3_2_5)
-
+#define H2Teardown() if (::setjmp(suite_2_0_1_3_0_1_0_2->ctx))
 #define H2Cleanup() if (::setjmp(suite_2_0_1_3_0_1_0_2->ctx))
 
 #define __H2Case(name, c, todo)                                                                               \
@@ -152,10 +152,10 @@
    void Q::name()
 
 #define H2GlobalSetup() __H2GlobalCallback(global_setup, H2PP_UNIQUE(Global_Setup))
-#define H2GlobalTeardown() __H2GlobalCallback(global_teardown, H2PP_UNIQUE(Global_Teardown))
+#define H2GlobalCleanup() __H2GlobalCallback(global_cleanup, H2PP_UNIQUE(Global_Cleanup))
 
 #define H2GlobalSuiteSetup() __H2GlobalCallback(global_suite_setup, H2PP_UNIQUE(Global_Suite_Setup))
-#define H2GlobalSuiteTeardown() __H2GlobalCallback(global_suite_teardown, H2PP_UNIQUE(Global_Suite_Teardown))
+#define H2GlobalSuiteCleanup() __H2GlobalCallback(global_suite_cleanup, H2PP_UNIQUE(Global_Suite_Cleanup))
 
 #define H2GlobalCaseSetup() __H2GlobalCallback(global_case_setup, H2PP_UNIQUE(Global_Case_Setup))
-#define H2GlobalCaseTeardown() __H2GlobalCallback(global_case_teardown, H2PP_UNIQUE(Global_Case_Teardown))
+#define H2GlobalCaseCleanup() __H2GlobalCallback(global_case_cleanup, H2PP_UNIQUE(Global_Case_Cleanup))

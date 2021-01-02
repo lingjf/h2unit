@@ -56,7 +56,7 @@ GlobalSetup()
    DNS("127.0.0.1");
 }
 
-GlobalTeardown() {}
+GlobalCleanup() {}
 
 SUITE(getaddrinfo)
 {

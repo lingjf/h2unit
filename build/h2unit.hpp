@@ -1,5 +1,5 @@
 ﻿
-/* v5.8 2021-01-02 21:18:50 */
+/* v5.8 2021-01-02 22:07:59 */
 /* https://github.com/lingjf/h2unit */
 /* Apache Licence 2.0 */
 
@@ -3160,9 +3160,9 @@ struct h2_task {
    h2_case* current_case = nullptr;
    h2_stubs stubs;
    h2_mocks mocks;
-   std::vector<void (*)()> global_setups, global_teardowns;
-   std::vector<void (*)()> global_suite_setups, global_suite_teardowns;
-   std::vector<void (*)()> global_case_setups, global_case_teardowns;
+   std::vector<void (*)()> global_setups, global_cleanups;
+   std::vector<void (*)()> global_suite_setups, global_suite_cleanups;
+   std::vector<void (*)()> global_case_setups, global_case_cleanups;
 
    void shuffle();
    void shadow();
@@ -3556,7 +3556,7 @@ struct h2_report {
 #define H2SUITE(...) __H2SUITE(#__VA_ARGS__, H2PP_UNIQUE(h2_suite_test))
 
 #define H2Setup() if (case_2_0_1_7_0_3_2_5)
-
+#define H2Teardown() if (::setjmp(suite_2_0_1_3_0_1_0_2->ctx))
 #define H2Cleanup() if (::setjmp(suite_2_0_1_3_0_1_0_2->ctx))
 
 #define __H2Case(name, c, todo)                                                                               \
@@ -3701,13 +3701,13 @@ struct h2_report {
    void Q::name()
 
 #define H2GlobalSetup() __H2GlobalCallback(global_setup, H2PP_UNIQUE(Global_Setup))
-#define H2GlobalTeardown() __H2GlobalCallback(global_teardown, H2PP_UNIQUE(Global_Teardown))
+#define H2GlobalCleanup() __H2GlobalCallback(global_cleanup, H2PP_UNIQUE(Global_Cleanup))
 
 #define H2GlobalSuiteSetup() __H2GlobalCallback(global_suite_setup, H2PP_UNIQUE(Global_Suite_Setup))
-#define H2GlobalSuiteTeardown() __H2GlobalCallback(global_suite_teardown, H2PP_UNIQUE(Global_Suite_Teardown))
+#define H2GlobalSuiteCleanup() __H2GlobalCallback(global_suite_cleanup, H2PP_UNIQUE(Global_Suite_Cleanup))
 
 #define H2GlobalCaseSetup() __H2GlobalCallback(global_case_setup, H2PP_UNIQUE(Global_Case_Setup))
-#define H2GlobalCaseTeardown() __H2GlobalCallback(global_case_teardown, H2PP_UNIQUE(Global_Case_Teardown))
+#define H2GlobalCaseCleanup() __H2GlobalCallback(global_case_cleanup, H2PP_UNIQUE(Global_Case_Cleanup))
 // source/assert/h2_use.hpp
 
 #define __H2OK(Qt, expression, ...) \
@@ -3810,6 +3810,12 @@ using h2::Pair;
 #   pragma message("Setup conflict, using H2Setup instead.")
 #endif
 
+#ifndef Teardown
+#   define Teardown H2Teardown
+#else
+#   pragma message("Teardown conflict, using H2Teardown instead.")
+#endif
+
 #ifndef OK
 #   define OK H2OK
 #else
@@ -3882,10 +3888,10 @@ using h2::Pair;
 #   pragma message("GlobalSetup conflict, using H2GlobalSetup instead.")
 #endif
 
-#ifndef GlobalTeardown
-#   define GlobalTeardown H2GlobalTeardown
+#ifndef GlobalCleanup
+#   define GlobalCleanup H2GlobalCleanup
 #else
-#   pragma message("GlobalTeardown conflict, using H2GlobalTeardown instead.")
+#   pragma message("GlobalCleanup conflict, using H2GlobalCleanup instead.")
 #endif
 
 #ifndef GlobalSuiteSetup
@@ -3894,10 +3900,10 @@ using h2::Pair;
 #   pragma message("GlobalSuiteSetup conflict, using H2GlobalSuiteSetup instead.")
 #endif
 
-#ifndef GlobalSuiteTeardown
-#   define GlobalSuiteTeardown H2GlobalSuiteTeardown
+#ifndef GlobalSuiteCleanup
+#   define GlobalSuiteCleanup H2GlobalSuiteCleanup
 #else
-#   pragma message("GlobalSuiteTeardown conflict, using H2GlobalSuiteTeardown instead.")
+#   pragma message("GlobalSuiteCleanup conflict, using H2GlobalSuiteCleanup instead.")
 #endif
 
 #ifndef GlobalCaseSetup
@@ -3906,10 +3912,10 @@ using h2::Pair;
 #   pragma message("GlobalCaseSetup conflict, using H2GlobalCaseSetup instead.")
 #endif
 
-#ifndef GlobalCaseTeardown
-#   define GlobalCaseTeardown H2GlobalCaseTeardown
+#ifndef GlobalCaseCleanup
+#   define GlobalCaseCleanup H2GlobalCaseCleanup
 #else
-#   pragma message("GlobalCaseTeardown conflict, using H2GlobalCaseTeardown instead.")
+#   pragma message("GlobalCaseCleanup conflict, using H2GlobalCaseCleanup instead.")
 #endif
 
 #ifndef MATCHER

@@ -161,6 +161,12 @@ namespace h2 {
 #   pragma message("Setup conflict, using H2Setup instead.")
 #endif
 
+#ifndef Teardown
+#   define Teardown H2Teardown
+#else
+#   pragma message("Teardown conflict, using H2Teardown instead.")
+#endif
+
 #ifndef OK
 #   define OK H2OK
 #else
@@ -233,10 +239,10 @@ namespace h2 {
 #   pragma message("GlobalSetup conflict, using H2GlobalSetup instead.")
 #endif
 
-#ifndef GlobalTeardown
-#   define GlobalTeardown H2GlobalTeardown
+#ifndef GlobalCleanup
+#   define GlobalCleanup H2GlobalCleanup
 #else
-#   pragma message("GlobalTeardown conflict, using H2GlobalTeardown instead.")
+#   pragma message("GlobalCleanup conflict, using H2GlobalCleanup instead.")
 #endif
 
 #ifndef GlobalSuiteSetup
@@ -245,10 +251,10 @@ namespace h2 {
 #   pragma message("GlobalSuiteSetup conflict, using H2GlobalSuiteSetup instead.")
 #endif
 
-#ifndef GlobalSuiteTeardown
-#   define GlobalSuiteTeardown H2GlobalSuiteTeardown
+#ifndef GlobalSuiteCleanup
+#   define GlobalSuiteCleanup H2GlobalSuiteCleanup
 #else
-#   pragma message("GlobalSuiteTeardown conflict, using H2GlobalSuiteTeardown instead.")
+#   pragma message("GlobalSuiteCleanup conflict, using H2GlobalSuiteCleanup instead.")
 #endif
 
 #ifndef GlobalCaseSetup
@@ -257,10 +263,10 @@ namespace h2 {
 #   pragma message("GlobalCaseSetup conflict, using H2GlobalCaseSetup instead.")
 #endif
 
-#ifndef GlobalCaseTeardown
-#   define GlobalCaseTeardown H2GlobalCaseTeardown
+#ifndef GlobalCaseCleanup
+#   define GlobalCaseCleanup H2GlobalCaseCleanup
 #else
-#   pragma message("GlobalCaseTeardown conflict, using H2GlobalCaseTeardown instead.")
+#   pragma message("GlobalCaseCleanup conflict, using H2GlobalCaseCleanup instead.")
 #endif
 
 #ifndef MATCHER

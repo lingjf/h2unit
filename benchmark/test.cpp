@@ -3,7 +3,7 @@ GlobalSetup()
 {
 }
 
-GlobalTeardown()
+GlobalCleanup()
 {
 }
 
@@ -11,14 +11,14 @@ GlobalSuiteSetup()
 {
 }
 
-GlobalSuiteTeardown()
+GlobalSuiteCleanup()
 {
 }
 
 GlobalCaseSetup()
 {
 }
-GlobalCaseTeardown()
+GlobalCaseCleanup()
 {
 }
 

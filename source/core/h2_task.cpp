@@ -82,7 +82,7 @@ h2_inline void h2_task::enumerate()
       s->setup();
       s->enumerate();
       s->cleanup();
-      for (auto& teardown : global_suite_teardowns) teardown();
+      for (auto& cleanup : global_suite_cleanups) cleanup();
       int unfiltered = 0;
       h2_list_for_each_entry (c, s->cases, h2_case, x)
          if (!(c->filtered = O.filter(ss(s->name), c->name, c->file, c->lino)))
@@ -125,7 +125,7 @@ h2_inline void h2_task::execute()
                   if (c->status != h2_case::ignored) {
                      for (auto& setup : global_case_setups) setup();
                      s->execute(c);
-                     for (auto& teardown : global_case_teardowns) teardown();
+                     for (auto& cleanup : global_case_cleanups) cleanup();
                   }
                   if (c->status == h2_case::passed) stats.passed++, s->stats.passed++;
                   if (c->status == h2_case::failed) stats.failed++, s->stats.failed++;
@@ -136,14 +136,14 @@ h2_inline void h2_task::execute()
             c->clear();
          }
          s->cleanup();
-         for (auto& teardown : global_suite_teardowns) teardown();
+         for (auto& cleanup : global_suite_cleanups) cleanup();
          h2_report::I().on_suite_endup(s);
          s->clear();
       }
       shadow();
    }
    h2_report::I().on_task_endup(this);
-   for (auto& teardown : global_teardowns) teardown();
+   for (auto& cleanup : global_cleanups) cleanup();
 
    stubs.clear();
    mocks.clear(false);

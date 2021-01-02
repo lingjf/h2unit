@@ -10,9 +10,9 @@ struct h2_task {
    h2_case* current_case = nullptr;
    h2_stubs stubs;
    h2_mocks mocks;
-   std::vector<void (*)()> global_setups, global_teardowns;
-   std::vector<void (*)()> global_suite_setups, global_suite_teardowns;
-   std::vector<void (*)()> global_case_setups, global_case_teardowns;
+   std::vector<void (*)()> global_setups, global_cleanups;
+   std::vector<void (*)()> global_suite_setups, global_suite_cleanups;
+   std::vector<void (*)()> global_case_setups, global_case_cleanups;
 
    void shuffle();
    void shadow();
