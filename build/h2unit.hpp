@@ -1,5 +1,5 @@
 ﻿
-/* v5.8 2021-01-02 20:05:00 */
+/* v5.8 2021-01-02 21:18:50 */
 /* https://github.com/lingjf/h2unit */
 /* Apache Licence 2.0 */
 
@@ -1008,7 +1008,7 @@ struct h2_option {
    bool shuffle_order = false;
    bool memory_check = true;
    bool exception_fails = false;
-   bool list_cases = false;
+   char list_cases = '\0';
    int break_after_fails = 0;
    int rounds = 1;
    char junit[256]{'\0'};
@@ -3070,17 +3070,18 @@ struct h2_stdio {
 // source/core/h2_case.hpp
 
 struct h2_case {
-   static constexpr int initial = 0, passed = 1, failed = 2, todo = 3, filtered = 4, ignored = 5, n_st = 6;
+   static constexpr int initial = 0, passed = 1, failed = 2, ignored = 3;
 
    const char* name;
-   int status;
    const char* file;
    int lino;
-   h2_list x;
-   int seq = 0;
+   bool todo = false, filtered = false;
+   int status = initial;
    int last_status = initial;
+   int seq = 0;
    int asserts = 0;
    long long footprint = 0;
+   h2_list x;
    jmp_buf ctx;
    h2_fail* fails{nullptr};
    h2_stubs stubs;
@@ -3088,7 +3089,7 @@ struct h2_case {
    h2_dnses dnses;
    h2_sock* sock{nullptr};
 
-   h2_case(const char* name_, int status_, const char* file_, int lino_) : name(name_), status(status_), file(file_), lino(lino_) {}
+   h2_case(const char* name_, const char* file_, int lino_, int todo_) : name(name_), file(file_), lino(lino_), todo(todo_) {}
    void clear();
 
    void prev_setup();
@@ -3106,15 +3107,21 @@ struct h2_case {
 };
 // source/core/h2_suite.hpp
 
+struct h2_stats {
+   int passed = 0, failed = 0, todo = 0, filtered = 0, ignored = 0;
+   int asserts = 0;
+   long long footprint = 0;
+   void clear() { passed = 0, failed = 0, todo = 0, filtered = 0, ignored = 0, asserts = 0, footprint = 0; }
+};
+
 struct h2_suite {
    const char* name;
    const char* file;
    int lino;
    h2_list x;
    int seq = 0;
-   int stats[h2_case::n_st]{0};
-   int asserts = 0;
-   long long footprint = 0;
+   h2_stats stats;
+   bool filtered = false;
    jmp_buf ctx;
    void (*test_code)(h2_suite*, h2_case*);
    h2_list cases;
@@ -3145,8 +3152,7 @@ struct h2_suite {
 struct h2_task {
    h2_singleton(h2_task);
 
-   int stats[h2_case::n_st]{0};
-   int asserts = 0;
+   h2_stats stats;
    int rounds = 0;
    int last = 0;
    h2_list suites;
@@ -3199,8 +3205,8 @@ static inline void h2_mock_g(void* mock)
 static inline void h2_assert_g()
 {
    if (h2_task::I().current_case) h2_task::I().current_case->asserts += 1;
-   if (h2_task::I().current_suite) h2_task::I().current_suite->asserts += 1;
-   h2_task::I().asserts += 1;
+   if (h2_task::I().current_suite) h2_task::I().current_suite->stats.asserts += 1;
+   h2_task::I().stats.asserts += 1;
 }
 
 static inline void h2_fail_g(h2_fail* fail, bool defer)
@@ -3553,33 +3559,33 @@ struct h2_report {
 
 #define H2Cleanup() if (::setjmp(suite_2_0_1_3_0_1_0_2->ctx))
 
-#define __H2Case(name, status, c)                                                                             \
-   static h2::h2_case c(name, status, __FILE__, __LINE__);                                                    \
+#define __H2Case(name, c, todo)                                                                               \
+   static h2::h2_case c(name, __FILE__, __LINE__, todo);                                                      \
    static h2::h2_suite::registor H2PP_UNIQUE()(suite_2_0_1_3_0_1_0_2, &c);                                    \
    if (&c == case_2_0_1_7_0_3_2_5)                                                                            \
       for (h2::h2_suite::cleaner _1_9_8_0_(suite_2_0_1_3_0_1_0_2); _1_9_8_0_; case_2_0_1_7_0_3_2_5 = nullptr) \
          for (h2::h2_case::cleaner _1_9_8_1_(&c); _1_9_8_1_;)                                                 \
             if (!::setjmp(c.ctx))
 
-#define H2Case(...) __H2Case(#__VA_ARGS__, h2::h2_case::initial, H2PP_UNIQUE(s_case))
-#define H2Todo(...) __H2Case(#__VA_ARGS__, h2::h2_case::todo, H2PP_UNIQUE(s_case))
+#define H2Case(...) __H2Case(#__VA_ARGS__, H2PP_UNIQUE(s_case), 0)
+#define H2Todo(...) __H2Case(#__VA_ARGS__, H2PP_UNIQUE(s_case), 1)
 
-#define __H2CASE(name, status, h2_case_test, h2_suite_test)                                          \
+#define __H2CASE(name, h2_case_test, h2_suite_test, todo)                                            \
    static void h2_case_test();                                                                       \
    static void h2_suite_test(h2::h2_suite* suite_2_0_1_3_0_1_0_2, h2::h2_case* case_2_0_1_7_0_3_2_5) \
    {                                                                                                 \
-      static h2::h2_case c(name, status, __FILE__, __LINE__);                                        \
+      static h2::h2_case c(name, __FILE__, __LINE__, todo);                                          \
       static h2::h2_suite::registor r(suite_2_0_1_3_0_1_0_2, &c);                                    \
       if (&c == case_2_0_1_7_0_3_2_5)                                                                \
          for (h2::h2_case::cleaner t(&c); t;)                                                        \
             if (!::setjmp(c.ctx))                                                                    \
                h2_case_test();                                                                       \
    }                                                                                                 \
-   static h2::h2_suite H2PP_UNIQUE(s_suite)("", &h2_suite_test, __FILE__, __LINE__);                 \
+   static h2::h2_suite H2PP_UNIQUE(s_suite)(nullptr, &h2_suite_test, __FILE__, __LINE__);            \
    static void h2_case_test()
 
-#define H2CASE(...) __H2CASE(#__VA_ARGS__, h2::h2_case::initial, H2PP_UNIQUE(h2_case_test), H2PP_UNIQUE(h2_suite_test))
-#define H2TODO(...) __H2CASE(#__VA_ARGS__, h2::h2_case::todo, H2PP_UNIQUE(h2_case_test), H2PP_UNIQUE(h2_suite_test))
+#define H2CASE(...) __H2CASE(#__VA_ARGS__, H2PP_UNIQUE(h2_case_test), H2PP_UNIQUE(h2_suite_test), 0)
+#define H2TODO(...) __H2CASE(#__VA_ARGS__, H2PP_UNIQUE(h2_case_test), H2PP_UNIQUE(h2_suite_test), 1)
 
 /* clang-format off */
 

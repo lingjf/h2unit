@@ -1,5 +1,5 @@
 ﻿
-/* v5.8 2021-01-02 20:05:00 */
+/* v5.8 2021-01-02 21:18:50 */
 /* https://github.com/lingjf/h2unit */
 /* Apache Licence 2.0 */
 
@@ -1009,7 +1009,7 @@ struct h2_option {
    bool shuffle_order = false;
    bool memory_check = true;
    bool exception_fails = false;
-   bool list_cases = false;
+   char list_cases = '\0';
    int break_after_fails = 0;
    int rounds = 1;
    char junit[256]{'\0'};
@@ -3071,17 +3071,18 @@ struct h2_stdio {
 // source/core/h2_case.hpp
 
 struct h2_case {
-   static constexpr int initial = 0, passed = 1, failed = 2, todo = 3, filtered = 4, ignored = 5, n_st = 6;
+   static constexpr int initial = 0, passed = 1, failed = 2, ignored = 3;
 
    const char* name;
-   int status;
    const char* file;
    int lino;
-   h2_list x;
-   int seq = 0;
+   bool todo = false, filtered = false;
+   int status = initial;
    int last_status = initial;
+   int seq = 0;
    int asserts = 0;
    long long footprint = 0;
+   h2_list x;
    jmp_buf ctx;
    h2_fail* fails{nullptr};
    h2_stubs stubs;
@@ -3089,7 +3090,7 @@ struct h2_case {
    h2_dnses dnses;
    h2_sock* sock{nullptr};
 
-   h2_case(const char* name_, int status_, const char* file_, int lino_) : name(name_), status(status_), file(file_), lino(lino_) {}
+   h2_case(const char* name_, const char* file_, int lino_, int todo_) : name(name_), file(file_), lino(lino_), todo(todo_) {}
    void clear();
 
    void prev_setup();
@@ -3107,15 +3108,21 @@ struct h2_case {
 };
 // source/core/h2_suite.hpp
 
+struct h2_stats {
+   int passed = 0, failed = 0, todo = 0, filtered = 0, ignored = 0;
+   int asserts = 0;
+   long long footprint = 0;
+   void clear() { passed = 0, failed = 0, todo = 0, filtered = 0, ignored = 0, asserts = 0, footprint = 0; }
+};
+
 struct h2_suite {
    const char* name;
    const char* file;
    int lino;
    h2_list x;
    int seq = 0;
-   int stats[h2_case::n_st]{0};
-   int asserts = 0;
-   long long footprint = 0;
+   h2_stats stats;
+   bool filtered = false;
    jmp_buf ctx;
    void (*test_code)(h2_suite*, h2_case*);
    h2_list cases;
@@ -3146,8 +3153,7 @@ struct h2_suite {
 struct h2_task {
    h2_singleton(h2_task);
 
-   int stats[h2_case::n_st]{0};
-   int asserts = 0;
+   h2_stats stats;
    int rounds = 0;
    int last = 0;
    h2_list suites;
@@ -3200,8 +3206,8 @@ static inline void h2_mock_g(void* mock)
 static inline void h2_assert_g()
 {
    if (h2_task::I().current_case) h2_task::I().current_case->asserts += 1;
-   if (h2_task::I().current_suite) h2_task::I().current_suite->asserts += 1;
-   h2_task::I().asserts += 1;
+   if (h2_task::I().current_suite) h2_task::I().current_suite->stats.asserts += 1;
+   h2_task::I().stats.asserts += 1;
 }
 
 static inline void h2_fail_g(h2_fail* fail, bool defer)
@@ -3554,33 +3560,33 @@ struct h2_report {
 
 #define H2Cleanup() if (::setjmp(suite_2_0_1_3_0_1_0_2->ctx))
 
-#define __H2Case(name, status, c)                                                                             \
-   static h2::h2_case c(name, status, __FILE__, __LINE__);                                                    \
+#define __H2Case(name, c, todo)                                                                               \
+   static h2::h2_case c(name, __FILE__, __LINE__, todo);                                                      \
    static h2::h2_suite::registor H2PP_UNIQUE()(suite_2_0_1_3_0_1_0_2, &c);                                    \
    if (&c == case_2_0_1_7_0_3_2_5)                                                                            \
       for (h2::h2_suite::cleaner _1_9_8_0_(suite_2_0_1_3_0_1_0_2); _1_9_8_0_; case_2_0_1_7_0_3_2_5 = nullptr) \
          for (h2::h2_case::cleaner _1_9_8_1_(&c); _1_9_8_1_;)                                                 \
             if (!::setjmp(c.ctx))
 
-#define H2Case(...) __H2Case(#__VA_ARGS__, h2::h2_case::initial, H2PP_UNIQUE(s_case))
-#define H2Todo(...) __H2Case(#__VA_ARGS__, h2::h2_case::todo, H2PP_UNIQUE(s_case))
+#define H2Case(...) __H2Case(#__VA_ARGS__, H2PP_UNIQUE(s_case), 0)
+#define H2Todo(...) __H2Case(#__VA_ARGS__, H2PP_UNIQUE(s_case), 1)
 
-#define __H2CASE(name, status, h2_case_test, h2_suite_test)                                          \
+#define __H2CASE(name, h2_case_test, h2_suite_test, todo)                                            \
    static void h2_case_test();                                                                       \
    static void h2_suite_test(h2::h2_suite* suite_2_0_1_3_0_1_0_2, h2::h2_case* case_2_0_1_7_0_3_2_5) \
    {                                                                                                 \
-      static h2::h2_case c(name, status, __FILE__, __LINE__);                                        \
+      static h2::h2_case c(name, __FILE__, __LINE__, todo);                                          \
       static h2::h2_suite::registor r(suite_2_0_1_3_0_1_0_2, &c);                                    \
       if (&c == case_2_0_1_7_0_3_2_5)                                                                \
          for (h2::h2_case::cleaner t(&c); t;)                                                        \
             if (!::setjmp(c.ctx))                                                                    \
                h2_case_test();                                                                       \
    }                                                                                                 \
-   static h2::h2_suite H2PP_UNIQUE(s_suite)("", &h2_suite_test, __FILE__, __LINE__);                 \
+   static h2::h2_suite H2PP_UNIQUE(s_suite)(nullptr, &h2_suite_test, __FILE__, __LINE__);            \
    static void h2_case_test()
 
-#define H2CASE(...) __H2CASE(#__VA_ARGS__, h2::h2_case::initial, H2PP_UNIQUE(h2_case_test), H2PP_UNIQUE(h2_suite_test))
-#define H2TODO(...) __H2CASE(#__VA_ARGS__, h2::h2_case::todo, H2PP_UNIQUE(h2_case_test), H2PP_UNIQUE(h2_suite_test))
+#define H2CASE(...) __H2CASE(#__VA_ARGS__, H2PP_UNIQUE(h2_case_test), H2PP_UNIQUE(h2_suite_test), 0)
+#define H2TODO(...) __H2CASE(#__VA_ARGS__, H2PP_UNIQUE(h2_case_test), H2PP_UNIQUE(h2_suite_test), 1)
 
 /* clang-format off */
 
@@ -4179,6 +4185,7 @@ static inline bool h2_in(const char* x, const char* s[], int n = 0)
 }
 
 static inline const char* comma_if(bool a, const char* t = ", ", const char* f = "") { return a ? t : f; };
+static inline const char* ss(const char* a) { return a ? a : ""; };
 
 #define h2_sprintvf(str, fmt, ap)               \
    do {                                         \
@@ -8610,8 +8617,7 @@ h2_inline h2_suite::h2_suite(const char* name_, void (*test_code_)(h2_suite*, h2
 
 h2_inline void h2_suite::clear()
 {
-   asserts = 0;
-   memset(stats, 0, sizeof(stats));
+   stats.clear();
 }
 
 h2_inline void h2_suite::setup()
@@ -8623,7 +8629,7 @@ h2_inline void h2_suite::cleanup()
 {
    stubs.clear();
    mocks.clear(false);
-   footprint = h2_memory::stack::footprint();
+   stats.footprint = h2_memory::stack::footprint();
    h2_memory::stack::pop();
 }
 
@@ -8671,7 +8677,7 @@ static inline void save_last_order(h2_list& suites)
    if (!f) return;
    h2_list_for_each_entry (s, suites, h2_suite, x)
       h2_list_for_each_entry (c, s->cases, h2_case, x)
-         ::fprintf(f, "%s\n%s\n%d\n", s->name, c->name, c->status);
+         ::fprintf(f, "%s\n%s\n%d\n", ss(s->name), c->name, c->status);
    ::fclose(f);
 }
 
@@ -8679,7 +8685,7 @@ static inline void __mark(h2_list& suites, char* suitename, char* casename, int 
 {
    static int seq = INT_MIN / 4;
    h2_list_for_each_entry (s, suites, h2_suite, x)
-      if (!strcmp(suitename, s->name))
+      if (!strcmp(suitename, ss(s->name)))
          h2_list_for_each_entry (c, s->cases, h2_case, x)
             if (!strcmp(casename, c->name))
                s->seq = c->seq = ++seq, c->last_status = status;
@@ -8735,7 +8741,7 @@ h2_inline void h2_task::shuffle()
 
 h2_inline void h2_task::shadow()
 {
-   if (stats[h2_case::failed] == 0)
+   if (stats.failed == 0)
       drop_last_order();
    else if (last == 0)
       save_last_order(suites);
@@ -8749,6 +8755,11 @@ h2_inline void h2_task::enumerate()
       s->enumerate();
       s->cleanup();
       for (auto& teardown : global_suite_teardowns) teardown();
+      int unfiltered = 0;
+      h2_list_for_each_entry (c, s->cases, h2_case, x)
+         if (!(c->filtered = O.filter(ss(s->name), c->name, c->file, c->lino)))
+            unfiltered++;
+      if (unfiltered == 0) s->filtered = O.filter(ss(s->name), "", s->file, s->lino);
    }
 }
 
@@ -8762,8 +8773,9 @@ h2_inline void h2_task::execute()
 
    for (auto& setup : global_setups) setup();
    enumerate();
+
    h2_report::I().on_task_start(this);
-   for (rounds = 0; rounds < O.rounds && !stats[h2::h2_case::failed]; ++rounds) {
+   for (rounds = 0; rounds < O.rounds && !stats.failed; ++rounds) {
       shuffle();
       h2_list_for_each_entry (s, suites, h2_suite, x) {
          current_suite = s;
@@ -8771,19 +8783,28 @@ h2_inline void h2_task::execute()
          for (auto& setup : global_suite_setups) setup();
          s->setup();
          h2_list_for_each_entry (c, s->cases, h2_case, x) {
-            if (0 < O.break_after_fails && O.break_after_fails <= stats[h2_case::failed]) break;
+            if (0 < O.break_after_fails && O.break_after_fails <= stats.failed) break;
             current_case = c;
-            if (O.filter(s->name, c->name, c->file, c->lino)) c->status = h2_case::filtered;
             h2_report::I().on_case_start(s, c);
-            if (O.only_execute_fails && h2_case::failed != c->last_status && h2_case::initial == c->status) c->status = h2_case::ignored;
-            if (h2_case::initial == c->status && !O.list_cases) {
-               for (auto& setup : global_case_setups) setup();
-               s->execute(c);
-               for (auto& teardown : global_case_teardowns) teardown();
+            if (!O.list_cases) {
+               if (c->todo) {
+                  stats.todo++, s->stats.todo++;
+               } else if (c->filtered) {
+                  stats.filtered++, s->stats.filtered++;
+               } else {
+                  if (O.only_execute_fails && c->last_status != h2_case::failed)
+                     c->status = h2_case::ignored;
+                  if (c->status != h2_case::ignored) {
+                     for (auto& setup : global_case_setups) setup();
+                     s->execute(c);
+                     for (auto& teardown : global_case_teardowns) teardown();
+                  }
+                  if (c->status == h2_case::passed) stats.passed++, s->stats.passed++;
+                  if (c->status == h2_case::failed) stats.failed++, s->stats.failed++;
+                  if (c->status == h2_case::ignored) stats.ignored++, s->stats.ignored++;
+               }
             }
             h2_report::I().on_case_endup(s, c);
-            stats[c->status] += 1;
-            s->stats[c->status] += 1;
             c->clear();
          }
          s->cleanup();
@@ -9463,9 +9484,8 @@ struct h2_report_impl {
    virtual void on_task_start(h2_task* t)
    {
       suites = t->suites.count();
-      h2_list_for_each_entry (s, t->suites, h2_suite, x) {
+      h2_list_for_each_entry (s, t->suites, h2_suite, x)
          cases += s->cases.count();
-      }
       task_cost = h2_now();
    }
    virtual void on_task_endup(h2_task* t)
@@ -9490,6 +9510,41 @@ struct h2_report_impl {
    {
       ++task_case_index;
       case_cost = h2_now() - case_cost;
+   }
+};
+
+struct h2_report_list : h2_report_impl {
+   int unfiltered_suite_index = 0, unfiltered_suite_case_index = 0, unfiltered_task_case_index = 0, todo = 0;
+
+   void on_task_endup(h2_task* t) override
+   {
+      h2_report_impl::on_task_endup(t);
+      h2_color::prints("bold,green", "Listing <%d suites, %d cases", unfiltered_suite_index, unfiltered_task_case_index);
+      if (todo) h2_color::prints("bold,green", ", %d todo", todo);
+      if (task_case_index - unfiltered_task_case_index) h2_color::prints("bold,green", ", %d filtered", task_case_index - unfiltered_task_case_index);
+      h2_color::prints("bold,green", ">\n");
+   }
+   void on_suite_start(h2_suite* s) override
+   {
+      h2_report_impl::on_suite_start(s);
+      unfiltered_suite_case_index = 0;
+      if (!s->name) return;  // CASE
+      if ((O.list_cases == 'l' && !s->filtered) || (O.list_cases == 'L' && s->filtered)) {
+         h2_color::prints("dark gray", "SUITE-%d. ", ++unfiltered_suite_index);
+         h2_color::prints("bold,blue", "%s", s->name);
+         h2_color::prints("dark gray", " %s:%d\n", s->file, s->lino);
+      }
+   }
+   void on_case_start(h2_suite* s, h2_case* c) override
+   {
+      h2_report_impl::on_case_start(s, c);
+      if ((O.list_cases == 'l' && !c->filtered) || (O.list_cases == 'L' && c->filtered)) {
+         ++unfiltered_task_case_index, ++unfiltered_suite_case_index;
+         if (c->todo) todo++;
+         h2_color::prints("dark gray", " %s-%d. ", c->todo ? (s->name ? "Todo" : "TODO") : (s->name ? "Case" : "CASE"), unfiltered_suite_case_index);
+         h2_color::prints("cyan", "%s", c->name);
+         h2_color::prints("dark gray", " %s:%d\n", h2_basename(c->file), c->lino);
+      }
    }
 };
 
@@ -9546,49 +9601,41 @@ struct h2_report_console : h2_report_impl {
    void on_task_endup(h2_task* t) override
    {
       h2_report_impl::on_task_endup(t);
-      if (O.list_cases) {
-         h2_color::prints("bold,green", "Listing <%d suites, %d cases, %d todo>\n", suites, cases - t->stats[h2_case::todo], t->stats[h2_case::todo]);
-      } else {
-         print_perfix(false);
-         if (O.verbose)
-            h2_color::prints("", "\n");
-         if (0 < t->stats[h2_case::failed])
-            h2_color::prints("bold,red", "Failure ");
-         else
-            h2_color::prints("bold,green", "Success ");
 
-         if (0 < nonzero_count(t->stats[h2_case::failed], t->stats[h2_case::todo], t->stats[h2_case::filtered], t->stats[h2_case::ignored]))
-            h2_color::prints("dark gray", "(");
+      print_perfix(false);
+      if (O.verbose)
+         h2_color::prints("", "\n");
+      if (0 < t->stats.failed)
+         h2_color::prints("bold,red", "Failure ");
+      else
+         h2_color::prints("bold,green", "Success ");
 
-         int c = 0;
-         comma_status(t->stats[h2_case::passed], "green", "passed", c);
-         if (t->stats[h2_case::failed]) comma_status(t->stats[h2_case::failed], "red", "failed", c);
-         if (t->stats[h2_case::todo]) comma_status(t->stats[h2_case::todo], "yellow", "todo", c);
-         if (t->stats[h2_case::filtered]) comma_status(t->stats[h2_case::filtered], "blue", "filtered", c);
-         if (t->stats[h2_case::ignored]) comma_status(t->stats[h2_case::ignored], "blue", "ignored", c);
-         if (0 < nonzero_count(t->stats[h2_case::failed], t->stats[h2_case::todo], t->stats[h2_case::filtered], t->stats[h2_case::ignored])) {
-            h2_color::prints("dark gray", ")");
-            h2_color::prints("", " %d", cases);
-         }
-         h2_color::prints("", " case%s", 1 < cases ? "s" : "");
-         h2_color::prints("dark gray", ", ");
-         h2_color::prints("", "%d assert%s", t->asserts, 1 < t->asserts ? "s" : "");
-         if (1 < t->rounds) {
-            h2_color::prints("dark gray", ", ");
-            h2_color::prints("", "%d rounds", t->rounds);
-         }
-         h2_color::prints("dark gray", ", ");
-         h2_color::prints("", "%s \n", format_duration(task_cost));
+      if (0 < nonzero_count(t->stats.failed, t->stats.todo, t->stats.filtered, t->stats.ignored))
+         h2_color::prints("dark gray", "(");
+
+      int c = 0;
+      comma_status(t->stats.passed, "green", "passed", c);
+      if (t->stats.failed) comma_status(t->stats.failed, "red", "failed", c);
+      if (t->stats.todo) comma_status(t->stats.todo, "yellow", "todo", c);
+      if (t->stats.filtered) comma_status(t->stats.filtered, "blue", "filtered", c);
+      if (t->stats.ignored) comma_status(t->stats.ignored, "blue", "ignored", c);
+      if (0 < nonzero_count(t->stats.failed, t->stats.todo, t->stats.filtered, t->stats.ignored)) {
+         h2_color::prints("dark gray", ")");
+         h2_color::prints("", " %d", cases);
       }
+      h2_color::prints("", " case%s", 1 < cases ? "s" : "");
+      h2_color::prints("dark gray", ", ");
+      h2_color::prints("", "%d assert%s", t->stats.asserts, 1 < t->stats.asserts ? "s" : "");
+      if (1 < t->rounds) {
+         h2_color::prints("dark gray", ", ");
+         h2_color::prints("", "%d rounds", t->rounds);
+      }
+      h2_color::prints("dark gray", ", ");
+      h2_color::prints("", "%s \n", format_duration(task_cost));
    }
    void on_suite_start(h2_suite* s) override
    {
       h2_report_impl::on_suite_start(s);
-      if (O.list_cases) {
-         h2_color::prints("dark gray", "SUITE-%d. ", ++suite_index);
-         h2_color::prints("bold,blue", "%s", s->name);
-         h2_color::prints("dark gray", " %s:%d\n", s->file, s->lino);
-      }
    }
 
    void on_suite_endup(h2_suite* s) override
@@ -9598,31 +9645,31 @@ struct h2_report_console : h2_report_impl {
       if (O.verbose && O.includes.size() + O.excludes.size() == 0) {
          print_perfix(true);
          h2_color::prints("dark gray", "suite ");
-         h2_color::prints("", "%s", s->name);
-         if (1 < nonzero_count(s->stats[h2_case::passed], s->stats[h2_case::failed], s->stats[h2_case::todo], s->stats[h2_case::filtered], s->stats[h2_case::ignored]))
+         h2_color::prints("", "%s", ss(s->name));
+         if (1 < nonzero_count(s->stats.passed, s->stats.failed, s->stats.todo, s->stats.filtered, s->stats.ignored))
             h2_color::prints("dark gray", " (");
          else
             h2_color::prints("dark gray", " - ");
 
          int c = 0;
-         if (s->stats[h2_case::passed]) comma_status(s->stats[h2_case::passed], "", "passed", c);
-         if (s->stats[h2_case::failed]) comma_status(s->stats[h2_case::failed], "", "failed", c);
-         if (s->stats[h2_case::todo]) comma_status(s->stats[h2_case::todo], "", "todo", c);
-         if (s->stats[h2_case::filtered]) comma_status(s->stats[h2_case::filtered], "", "filtered", c);
-         if (s->stats[h2_case::ignored]) comma_status(s->stats[h2_case::ignored], "", "ignored", c);
+         if (s->stats.passed) comma_status(s->stats.passed, "", "passed", c);
+         if (s->stats.failed) comma_status(s->stats.failed, "", "failed", c);
+         if (s->stats.todo) comma_status(s->stats.todo, "", "todo", c);
+         if (s->stats.filtered) comma_status(s->stats.filtered, "", "filtered", c);
+         if (s->stats.ignored) comma_status(s->stats.ignored, "", "ignored", c);
 
-         if (1 < nonzero_count(s->stats[h2_case::passed], s->stats[h2_case::failed], s->stats[h2_case::todo], s->stats[h2_case::filtered], s->stats[h2_case::ignored]))
+         if (1 < nonzero_count(s->stats.passed, s->stats.failed, s->stats.todo, s->stats.filtered, s->stats.ignored))
             h2_color::prints("dark gray", ")");
          if (0 < s->cases.count())
             h2_color::prints("", " case%s", 1 < s->cases.count() ? "s" : "");
 
-         if (0 < s->asserts) {
+         if (0 < s->stats.asserts) {
             h2_color::prints("dark gray", ", ");
-            h2_color::prints("", "%d assert%s", s->asserts, 1 < s->asserts ? "s" : "");
+            h2_color::prints("", "%d assert%s", s->stats.asserts, 1 < s->stats.asserts ? "s" : "");
          }
-         if (0 < s->footprint) {
+         if (0 < s->stats.footprint) {
             h2_color::prints("dark gray", ", ");
-            h2_color::prints("", "%s", format_volume(s->footprint));
+            h2_color::prints("", "%s", format_volume(s->stats.footprint));
          }
          if (1 < suite_cost) {
             h2_color::prints("dark gray", ", ");
@@ -9634,11 +9681,6 @@ struct h2_report_console : h2_report_impl {
    void on_case_start(h2_suite* s, h2_case* c) override
    {
       h2_report_impl::on_case_start(s, c);
-      if (O.list_cases) {
-         h2_color::prints("dark gray", " %s-%d. ", c->status == h2_case::todo ? "TODO" : "CASE", suite_case_index);
-         h2_color::prints("cyan", "%s", c->name);
-         h2_color::prints("dark gray", " %s:%d\n", h2_basename(c->file), c->lino);
-      }
    }
    void print_title(const char* s, const char* c, const char* file, int lino)
    {
@@ -9646,27 +9688,28 @@ struct h2_report_console : h2_report_impl {
          h2_color::prints("", "%s", c);
       else
          h2_color::prints("dark gray", "case");
-      h2_color::prints("dark gray", " | ");
-      if (strlen(s))
-         h2_color::prints("", "%s", s);
-      else
-         h2_color::prints("dark gray", "suite");
+      if (s) {
+         h2_color::prints("dark gray", " | ");
+         if (strlen(s))
+            h2_color::prints("", "%s", s);
+         else
+            h2_color::prints("dark gray", "   ");
+      }
       h2_color::prints("dark gray", " | ");
       h2_color::prints("", "%s:%d", h2_basename(file), lino);
    }
    void on_case_endup(h2_suite* s, h2_case* c) override
    {
       h2_report_impl::on_case_endup(s, c);
-      if (O.list_cases) return;
-      switch (c->status) {
-      case h2_case::initial: break;
-      case h2_case::todo:
+      if (c->filtered) return;
+      if (c->todo) {
          print_perfix(true);
-         h2_color::prints("yellow", "Todo   ");
+         h2_color::prints("yellow", s->name ? "Todo   " : "TODO   ");
          print_title(s->name, c->name, c->file, c->lino);
          h2_color::prints("", "\n");
-         break;
-      case h2_case::filtered: break;
+         return;
+      }
+      switch (c->status) {
       case h2_case::passed:
          if (O.verbose) {
             print_perfix(true);
@@ -9715,15 +9758,15 @@ struct h2_report_junit : h2_report_impl {
    {
       h2_report_impl::on_suite_start(s);
       if (!f) return;
-      fprintf(f, "<testsuite errors=\"0\" failures=\"%d\" hostname=\"localhost\" name=\"%s\" skipped=\"%d\" tests=\"%d\" time=\"%d\" timestamp=\"%s\">\n", s->stats[h2_case::failed], s->name, s->stats[h2_case::todo] + s->stats[h2_case::filtered], s->cases.count(), 0, "");
+      fprintf(f, "<testsuite errors=\"0\" failures=\"%d\" hostname=\"localhost\" name=\"%s\" skipped=\"%d\" tests=\"%d\" time=\"%d\" timestamp=\"%s\">\n", s->stats.failed, s->name, s->stats.todo + s->stats.filtered, s->cases.count(), 0, "");
    }
    void on_case_endup(h2_suite* s, h2_case* c) override
    {
       h2_report_impl::on_case_endup(s, c);
       if (!f) return;
 
-      static constexpr const char* CSS[] = {"Initial", "Passed", "Failed", "TODO", "Filtered", "Ignored"};
-      fprintf(f, "<testcase classname=\"%s\" name=\"%s\" status=\"%s\" time=\"%.3f\">\n", s->name, c->name, CSS[c->status], case_cost / 1000.0);
+      static constexpr const char* CSS[] = {"Initial", "Passed", "Failed", "Ignored"};
+      fprintf(f, "<testcase classname=\"%s\" name=\"%s\" status=\"%s\" time=\"%.3f\">\n", s->name, c->name, c->todo ? "TODO" : (c->filtered ? "Filtered" : CSS[c->status]), case_cost / 1000.0);
 
       if (c->status == h2_case::failed) {
          fprintf(f, "<failure message=\"%s:%d:", c->file, c->lino);
@@ -9754,12 +9797,17 @@ struct h2_report_tap : h2_report_impl {
 
 h2_inline void h2_report::initialize()
 {
+   static h2_report_list list_report;
    static h2_report_console console_report;
    static h2_report_junit junit_report;
    static h2_report_tap tap_report;
-   I().reports.push_back(console_report.x);
-   if (strlen(O.junit) && !O.list_cases) I().reports.push_back(junit_report.x);
-   if (strlen(O.tap) && !O.list_cases) I().reports.push_back(tap_report.x);
+   if (O.list_cases) {
+      I().reports.push_back(list_report.x);
+   } else {
+      I().reports.push_back(console_report.x);
+      if (strlen(O.junit)) I().reports.push_back(junit_report.x);
+      if (strlen(O.tap)) I().reports.push_back(tap_report.x);
+   }
 }
 
 h2_inline void h2_report::on_task_start(h2_task* t)
@@ -10049,7 +10097,8 @@ h2_inline void h2_option::parse(int argc, const char** argv)
       case 'y': copy_paste_json = true; break;
       case 'm': memory_check = !memory_check; break;
       case 'x': exception_fails = !exception_fails; break;
-      case 'l': list_cases = true; break;
+      case 'l': list_cases = 'l'; break;
+      case 'L': list_cases = 'L'; break;
       case 'b':
          break_after_fails = 1;
          get.extract_number(break_after_fails);

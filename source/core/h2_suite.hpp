@@ -1,13 +1,19 @@
 
+struct h2_stats {
+   int passed = 0, failed = 0, todo = 0, filtered = 0, ignored = 0;
+   int asserts = 0;
+   long long footprint = 0;
+   void clear() { passed = 0, failed = 0, todo = 0, filtered = 0, ignored = 0, asserts = 0, footprint = 0; }
+};
+
 struct h2_suite {
    const char* name;
    const char* file;
    int lino;
    h2_list x;
    int seq = 0;
-   int stats[h2_case::n_st]{0};
-   int asserts = 0;
-   long long footprint = 0;
+   h2_stats stats;
+   bool filtered = false;
    jmp_buf ctx;
    void (*test_code)(h2_suite*, h2_case*);
    h2_list cases;

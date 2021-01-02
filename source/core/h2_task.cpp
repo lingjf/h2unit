@@ -5,7 +5,7 @@ static inline void save_last_order(h2_list& suites)
    if (!f) return;
    h2_list_for_each_entry (s, suites, h2_suite, x)
       h2_list_for_each_entry (c, s->cases, h2_case, x)
-         ::fprintf(f, "%s\n%s\n%d\n", s->name, c->name, c->status);
+         ::fprintf(f, "%s\n%s\n%d\n", ss(s->name), c->name, c->status);
    ::fclose(f);
 }
 
@@ -13,7 +13,7 @@ static inline void __mark(h2_list& suites, char* suitename, char* casename, int 
 {
    static int seq = INT_MIN / 4;
    h2_list_for_each_entry (s, suites, h2_suite, x)
-      if (!strcmp(suitename, s->name))
+      if (!strcmp(suitename, ss(s->name)))
          h2_list_for_each_entry (c, s->cases, h2_case, x)
             if (!strcmp(casename, c->name))
                s->seq = c->seq = ++seq, c->last_status = status;
@@ -69,7 +69,7 @@ h2_inline void h2_task::shuffle()
 
 h2_inline void h2_task::shadow()
 {
-   if (stats[h2_case::failed] == 0)
+   if (stats.failed == 0)
       drop_last_order();
    else if (last == 0)
       save_last_order(suites);
@@ -83,6 +83,11 @@ h2_inline void h2_task::enumerate()
       s->enumerate();
       s->cleanup();
       for (auto& teardown : global_suite_teardowns) teardown();
+      int unfiltered = 0;
+      h2_list_for_each_entry (c, s->cases, h2_case, x)
+         if (!(c->filtered = O.filter(ss(s->name), c->name, c->file, c->lino)))
+            unfiltered++;
+      if (unfiltered == 0) s->filtered = O.filter(ss(s->name), "", s->file, s->lino);
    }
 }
 
@@ -96,8 +101,9 @@ h2_inline void h2_task::execute()
 
    for (auto& setup : global_setups) setup();
    enumerate();
+
    h2_report::I().on_task_start(this);
-   for (rounds = 0; rounds < O.rounds && !stats[h2::h2_case::failed]; ++rounds) {
+   for (rounds = 0; rounds < O.rounds && !stats.failed; ++rounds) {
       shuffle();
       h2_list_for_each_entry (s, suites, h2_suite, x) {
          current_suite = s;
@@ -105,19 +111,28 @@ h2_inline void h2_task::execute()
          for (auto& setup : global_suite_setups) setup();
          s->setup();
          h2_list_for_each_entry (c, s->cases, h2_case, x) {
-            if (0 < O.break_after_fails && O.break_after_fails <= stats[h2_case::failed]) break;
+            if (0 < O.break_after_fails && O.break_after_fails <= stats.failed) break;
             current_case = c;
-            if (O.filter(s->name, c->name, c->file, c->lino)) c->status = h2_case::filtered;
             h2_report::I().on_case_start(s, c);
-            if (O.only_execute_fails && h2_case::failed != c->last_status && h2_case::initial == c->status) c->status = h2_case::ignored;
-            if (h2_case::initial == c->status && !O.list_cases) {
-               for (auto& setup : global_case_setups) setup();
-               s->execute(c);
-               for (auto& teardown : global_case_teardowns) teardown();
+            if (!O.list_cases) {
+               if (c->todo) {
+                  stats.todo++, s->stats.todo++;
+               } else if (c->filtered) {
+                  stats.filtered++, s->stats.filtered++;
+               } else {
+                  if (O.only_execute_fails && c->last_status != h2_case::failed)
+                     c->status = h2_case::ignored;
+                  if (c->status != h2_case::ignored) {
+                     for (auto& setup : global_case_setups) setup();
+                     s->execute(c);
+                     for (auto& teardown : global_case_teardowns) teardown();
+                  }
+                  if (c->status == h2_case::passed) stats.passed++, s->stats.passed++;
+                  if (c->status == h2_case::failed) stats.failed++, s->stats.failed++;
+                  if (c->status == h2_case::ignored) stats.ignored++, s->stats.ignored++;
+               }
             }
             h2_report::I().on_case_endup(s, c);
-            stats[c->status] += 1;
-            s->stats[c->status] += 1;
             c->clear();
          }
          s->cleanup();

@@ -7,8 +7,7 @@ h2_inline h2_suite::h2_suite(const char* name_, void (*test_code_)(h2_suite*, h2
 
 h2_inline void h2_suite::clear()
 {
-   asserts = 0;
-   memset(stats, 0, sizeof(stats));
+   stats.clear();
 }
 
 h2_inline void h2_suite::setup()
@@ -20,7 +19,7 @@ h2_inline void h2_suite::cleanup()
 {
    stubs.clear();
    mocks.clear(false);
-   footprint = h2_memory::stack::footprint();
+   stats.footprint = h2_memory::stack::footprint();
    h2_memory::stack::pop();
 }
 

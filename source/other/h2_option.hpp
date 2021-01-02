@@ -29,7 +29,7 @@ struct h2_option {
    bool shuffle_order = false;
    bool memory_check = true;
    bool exception_fails = false;
-   bool list_cases = false;
+   char list_cases = '\0';
    int break_after_fails = 0;
    int rounds = 1;
    char junit[256]{'\0'};

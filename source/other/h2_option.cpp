@@ -125,7 +125,8 @@ h2_inline void h2_option::parse(int argc, const char** argv)
       case 'y': copy_paste_json = true; break;
       case 'm': memory_check = !memory_check; break;
       case 'x': exception_fails = !exception_fails; break;
-      case 'l': list_cases = true; break;
+      case 'l': list_cases = 'l'; break;
+      case 'L': list_cases = 'L'; break;
       case 'b':
          break_after_fails = 1;
          get.extract_number(break_after_fails);
