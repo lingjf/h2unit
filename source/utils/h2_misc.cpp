@@ -23,12 +23,15 @@ h2_inline bool h2_pattern::wildcard_match(const char* pattern, const char* subje
    const char *scur = subject, *pcur = pattern;
    const char *sstar = nullptr, *pstar = nullptr;
    while (*scur) {
-      if (caseless ? ::tolower(*scur) == ::tolower(*pcur) : *scur == *pcur || *pcur == '?') {
+      if (*pcur == '?') {
          ++scur;
          ++pcur;
       } else if (*pcur == '*') {
          pstar = pcur++;
          sstar = scur;
+      } else if (caseless ? ::tolower(*scur) == ::tolower(*pcur) : *scur == *pcur) {
+         ++scur;
+         ++pcur;
       } else if (pstar) {
          pcur = pstar + 1;
          scur = ++sstar;

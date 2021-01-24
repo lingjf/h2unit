@@ -11,6 +11,11 @@ SUITE(tool)
       OK(!h2::h2_pattern::wildcard_match("hello?world*", ""));
    }
 
+   Case(wildcard bug)
+   {
+      OK(h2::h2_pattern::wildcard_match("a*1", "a*121", true));
+   }
+
    Case(wildcard caseless)
    {
       OK(h2::h2_pattern::wildcard_match("hello?world*", "Hello World", true));
