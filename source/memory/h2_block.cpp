@@ -11,10 +11,10 @@ struct h2_block : h2_libc {
    bool noleak;  // ignore leak check
    const char* where;
    const char* file;
-   int lino;
+   int line;
 
-   h2_block(long long _limit, size_t _align, unsigned char _s_fill[32], int _n_fill, bool _noleak, const char* _where, const char* _file, int _lino)
-     : limit(_limit), align(_align), n_fill(_n_fill), noleak(_noleak), where(_where), file(_file), lino(_lino) { memcpy(s_fill, _s_fill, _n_fill); }
+   h2_block(long long _limit, size_t _align, unsigned char _s_fill[32], int _n_fill, bool _noleak, const char* _where, const char* _file, int _line)
+     : limit(_limit), align(_align), n_fill(_n_fill), noleak(_noleak), where(_where), file(_file), line(_line) { memcpy(s_fill, _s_fill, _n_fill); }
 
    h2_fail* check()
    {
@@ -30,7 +30,7 @@ struct h2_block : h2_libc {
          if (!noleak && !p->free_times)
             leaky.add(p->user_ptr, p->user_size, p->bt_allocate);
 
-      fails = leaky.check(where, file, lino);
+      fails = leaky.check(where, file, line);
       if (fails) return fails;
 
       /* why not chain fails in subling? report one fail ignore more for clean.

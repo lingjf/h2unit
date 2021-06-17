@@ -25,10 +25,8 @@ static inline int mark_last_order(h2_list& suites)
    char suitename[1024], casename[1024], status[32];
    FILE* f = ::fopen(".last_order", "r");
    if (!f) return 0;
-   while (::fgets(suitename, sizeof(suitename), f) &&
-          ::fgets(casename, sizeof(casename), f) &&
-          ::fgets(status, sizeof(status), f)) {
-      suitename[strlen(suitename) - 1] = '\0';  // remove \n in save_last_order
+   while (::fgets(suitename, sizeof(suitename), f) && ::fgets(casename, sizeof(casename), f) && ::fgets(status, sizeof(status), f)) {
+      suitename[strlen(suitename) - 1] = '\0';  /* remove \n in save_last_order */
       casename[strlen(casename) - 1] = '\0';
       status[strlen(status) - 1] = '\0';
       __mark(suites, suitename, casename, atoi(status));
@@ -85,9 +83,9 @@ h2_inline void h2_task::enumerate()
       for (auto& cleanup : global_suite_cleanups) cleanup();
       int unfiltered = 0;
       h2_list_for_each_entry (c, s->cases, h2_case, x)
-         if (!(c->filtered = O.filter(ss(s->name), c->name, c->file, c->lino)))
+         if (!(c->filtered = O.filter(ss(s->name), c->name, c->file, c->line)))
             unfiltered++;
-      if (unfiltered == 0) s->filtered = O.filter(ss(s->name), "", s->file, s->lino);
+      if (unfiltered == 0) s->filtered = O.filter(ss(s->name), "", s->file, s->line);
    }
 }
 

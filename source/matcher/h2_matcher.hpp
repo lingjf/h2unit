@@ -2,7 +2,7 @@
 template <typename T>
 struct h2_matcher_impl : h2_matches {
    virtual h2_fail* matches(T a, int n, bool caseless, bool dont) const = 0;
-   virtual h2_line expection(bool caseless, bool dont) const override { return ""; }
+   virtual h2_row expection(bool caseless, bool dont) const override { return ""; }
    virtual ~h2_matcher_impl() {}
 };
 
@@ -17,7 +17,7 @@ struct h2_matcher : h2_matches {
    h2_matcher& operator=(const h2_matcher&) = default;
    virtual ~h2_matcher() {}
    h2_fail* matches(const T& a, int n = 0, bool caseless = false, bool dont = false) const { return impl->matches(a, n, caseless, dont); }
-   virtual h2_line expection(bool caseless = false, bool dont = false) const { return impl->expection(caseless, dont); };
+   virtual h2_row expection(bool caseless = false, bool dont = false) const { return impl->expection(caseless, dont); };
 };
 
 template <typename Matches>
@@ -33,8 +33,8 @@ struct h2_polymorphic_matcher : h2_matches {
       const Matches m;
       explicit internal_impl(const Matches& _matches) : m(_matches) {}
       h2_fail* matches(T a, int n = 0, bool caseless = false, bool dont = false) const override { return m.matches(a, n, caseless, dont); }
-      h2_line expection(bool caseless, bool dont) const override { return m.expection(caseless, dont); }
+      h2_row expection(bool caseless, bool dont) const override { return m.expection(caseless, dont); }
    };
 
-   virtual h2_line expection(bool caseless = false, bool dont = false) const override { return h2_matches_expection(m, caseless, dont); }
+   virtual h2_row expection(bool caseless = false, bool dont = false) const override { return h2_matches_expection(m, caseless, dont); }
 };

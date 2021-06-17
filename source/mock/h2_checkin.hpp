@@ -7,14 +7,12 @@ struct h2_checkin {
 
    h2_checkin(int _least, int _most, const h2_string& _expr) : least(_least), most(_most), expr(_expr) {}
 
-   void operator++() { call += 1; }
-
    bool insufficient(/*不够*/) const { return call < least; }
    bool is_satisfied(/*满足*/) const { return least <= call && call <= most; }
    bool is_saturated(/*饱和*/) const { return call == most; }
    bool is_excessive(/*过多*/) const { return most < call; }
 
-   h2_fail* check(const char* func, int index, int total, const char* file, int lino);
+   h2_fail* check(const char* func, int index, int total, const char* file, int line);
    const char* actual();
    const char* expect();
 

@@ -1,5 +1,5 @@
 
-h2_inline unsigned h2_line::width(bool ignore_indent) const
+h2_inline unsigned h2_row::width(bool ignore_indent) const
 {
    unsigned w = 0;
    for (auto& word : *this)
@@ -9,19 +9,19 @@ h2_inline unsigned h2_line::width(bool ignore_indent) const
    return w;
 }
 
-h2_inline h2_line& h2_line::indent(int n, const char c)
+h2_inline h2_row& h2_row::indent(int n, const char c)
 {
    insert(begin(), h2_string(n, c));
    return *this;
 }
 
-h2_inline h2_line& h2_line::padding(int n, const char c)
+h2_inline h2_row& h2_row::padding(int n, const char c)
 {
    push_back(h2_string(n, c));
    return *this;
 }
 
-h2_inline h2_line& h2_line::printf(const char* style, const char* format, ...)
+h2_inline h2_row& h2_row::printf(const char* style, const char* format, ...)
 {
    if (style && strlen(style)) push_back("\033{" + h2_string(style) + "}");
    char* alloca_str;
@@ -31,13 +31,13 @@ h2_inline h2_line& h2_line::printf(const char* style, const char* format, ...)
    return *this;
 }
 
-h2_inline h2_line& h2_line::operator+=(const h2_line& line)
+h2_inline h2_row& h2_row::operator+=(const h2_row& row)
 {
-   insert(end(), line.begin(), line.end());
+   insert(end(), row.begin(), row.end());
    return *this;
 }
 
-h2_inline h2_line& h2_line::brush(const char* style)
+h2_inline h2_row& h2_row::brush(const char* style)
 {
    if (style && strlen(style)) {
       insert(begin(), "\033{" + h2_string(style) + "}");
@@ -46,7 +46,7 @@ h2_inline h2_line& h2_line::brush(const char* style)
    return *this;
 }
 
-h2_inline bool h2_line::enclosed(const char c) const
+h2_inline bool h2_row::enclosed(const char c) const
 {
    bool f = false, ff = false, b = false;
    for (auto& word : *this) {
@@ -60,17 +60,17 @@ h2_inline bool h2_line::enclosed(const char c) const
    return f && b;
 }
 
-h2_inline h2_line h2_line::gray_quote() const
+h2_inline h2_row h2_row::gray_quote() const
 {
    if (!enclosed('\"') && !enclosed('\'')) return *this;
 
-   h2_line line;
+   h2_row row;
    unsigned w = width();
    unsigned i = 0;
 
    for (auto& word : *this) {
       if (h2_color::isctrl(word.c_str())) {
-         line.push_back(word);
+         row.push_back(word);
       } else {
          h2_string h, m, t;
          for (auto& c : word) {
@@ -83,34 +83,34 @@ h2_inline h2_line h2_line::gray_quote() const
             }
             ++i;
          }
-         if (h.size()) line += gray(h);
-         if (m.size()) line.push_back(m);
-         if (t.size()) line += gray(t);
+         if (h.size()) row += gray(h);
+         if (m.size()) row.push_back(m);
+         if (t.size()) row += gray(t);
       }
    }
 
-   return line;
+   return row;
 }
 
-h2_inline h2_line h2_line::acronym(int width, int tail) const
+h2_inline h2_row h2_row::acronym(int width, int tail) const
 {
-   h2_line l1;
+   h2_row r1;
    for (auto& word : *this) {
       if (h2_color::isctrl(word.c_str())) {
-         l1.push_back(word);
+         r1.push_back(word);
       } else {
-         l1.push_back(word.escape());
+         r1.push_back(word.escape());
       }
    }
 
-   int l1_width = l1.width();
-   if (l1_width <= width) return l1;
+   int r1_width = r1.width();
+   if (r1_width <= width) return r1;
 
-   h2_line l2;
+   h2_row r2;
    int i = 0;
-   for (auto& word : l1) {
+   for (auto& word : r1) {
       if (h2_color::isctrl(word.c_str())) {
-         l2.push_back(word);
+         r2.push_back(word);
       } else {
          h2_string h, m, t;
          for (auto& c : word) {
@@ -118,21 +118,21 @@ h2_inline h2_line h2_line::acronym(int width, int tail) const
                h.push_back(c);
             } else if (i == width - 3 - tail) {
                m = "...";
-            } else if (l1_width - tail <= i) {
+            } else if (r1_width - tail <= i) {
                t.push_back(c);
             }
             ++i;
          }
-         if (h.size()) l2.push_back(h);
-         if (m.size()) l2 += gray(m);
-         if (t.size()) l2.push_back(t);
+         if (h.size()) r2.push_back(h);
+         if (m.size()) r2 += gray(m);
+         if (t.size()) r2.push_back(t);
       }
    }
 
-   return l2;
+   return r2;
 }
 
-h2_inline h2_string h2_line::string() const
+h2_inline h2_string h2_row::string() const
 {
    h2_string s;
    for (auto& word : *this)
@@ -141,59 +141,59 @@ h2_inline h2_string h2_line::string() const
    return s;
 }
 
-h2_inline void h2_line::samesizify(h2_line& b)
+h2_inline void h2_row::samesizify(h2_row& b)
 {
    int w = width(), b_w = b.width();
    padding(std::max(w, b_w) - w);
    b.padding(std::max(w, b_w) - b_w);
 }
 
-h2_inline h2_lines& h2_lines::operator+=(const h2_lines& lines)
+h2_inline h2_rows& h2_rows::operator+=(const h2_rows& rows)
 {
-   insert(end(), lines.begin(), lines.end());
+   insert(end(), rows.begin(), rows.end());
    return *this;
 }
 
-h2_inline unsigned h2_lines::width() const
+h2_inline unsigned h2_rows::width() const
 {
    unsigned m = 0;
-   for (auto& line : *this)
-      m = std::max(m, line.width());
+   for (auto& row : *this)
+      m = std::max(m, row.width());
    return m;
 }
 
-h2_inline bool h2_lines::foldable(unsigned width)
+h2_inline bool h2_rows::foldable(unsigned width)
 {
    int sum = 0;
-   for (auto& line : *this)
-      for (auto& word : line)
+   for (auto& row : *this)
+      for (auto& word : row)
          if (!word.isspace() && !h2_color::isctrl(word.c_str()))  // ignore indent and \033m controller
             sum += word.size();
 
    return sum < width;
 }
 
-h2_inline h2_line h2_lines::folds()
+h2_inline h2_row h2_rows::folds()
 {
-   h2_line folded_line;
-   for (auto& line : *this)
-      for (auto& word : line)
+   h2_row folded_row;
+   for (auto& row : *this)
+      for (auto& word : row)
          if (!word.isspace())  // drop indent
-            folded_line.push_back(word);
-   return folded_line;
+            folded_row.push_back(word);
+   return folded_row;
 }
 
-h2_inline h2_string h2_lines::string() const
+h2_inline h2_string h2_rows::string() const
 {
    h2_string s;
-   for (auto& line : *this)
-      for (auto& word : line)
+   for (auto& row : *this)
+      for (auto& word : row)
          if (!word.isspace() && !h2_color::isctrl(word.c_str()))
             s += word;
    return s;
 }
 
-h2_inline void h2_lines::sequence(unsigned indent, int start)
+h2_inline void h2_rows::sequence(unsigned indent, int start)
 {
    for (size_t i = 0; i < size(); ++i) {
       at(i) = gray(h2_string("%zu. ", i + start)) + at(i);
@@ -201,9 +201,9 @@ h2_inline void h2_lines::sequence(unsigned indent, int start)
    }
 }
 
-h2_inline void h2_lines::samesizify(h2_lines& b)
+h2_inline void h2_rows::samesizify(h2_rows& b)
 {
    size_t max_y = std::max(size(), b.size());
-   for (size_t i = size(); i < max_y; ++i) push_back(h2_line());
-   for (size_t i = b.size(); i < max_y; ++i) b.push_back(h2_line());
+   for (size_t i = size(); i < max_y; ++i) push_back(h2_row());
+   for (size_t i = b.size(); i < max_y; ++i) b.push_back(h2_row());
 }

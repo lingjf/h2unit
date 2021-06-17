@@ -6,7 +6,7 @@ struct h2_matches_bytecmp : h2_matches {
    const int nbytes;
    explicit h2_matches_bytecmp(const int _width, const void* _e, const bool _isstring, const int _nbytes) : width(_width), e(_e), isstring(_isstring), nbytes(_nbytes) {}
    h2_fail* matches(const void* a, int n, bool caseless, bool dont) const;
-   virtual h2_line expection(bool caseless, bool dont) const override;
+   virtual h2_row expection(bool caseless, bool dont) const override;
 };
 
 struct h2_matches_bitcmp : h2_matches {
@@ -15,7 +15,7 @@ struct h2_matches_bitcmp : h2_matches {
    const int nbits;
    explicit h2_matches_bitcmp(const void* _e, const bool _isstring, const int _nbits) : e(_e), isstring(_isstring), nbits(_nbits) {}
    h2_fail* matches(const void* a, int n, bool caseless, bool dont) const;
-   virtual h2_line expection(bool caseless, bool dont) const override;
+   virtual h2_row expection(bool caseless, bool dont) const override;
 };
 
 template <typename E>
@@ -48,7 +48,7 @@ struct h2_matches_memcmp : h2_matches {
       }
       return fail;
    }
-   virtual h2_line expection(bool caseless, bool dont) const override
+   virtual h2_row expection(bool caseless, bool dont) const override
    {
       return CD("Me()", caseless, dont);
    }

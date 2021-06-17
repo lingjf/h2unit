@@ -21,12 +21,12 @@ struct h2_leaky {
          find(size)->second++;
       }
 
-      h2_fail* check(const char* where, const char* file, int lino)
+      h2_fail* check(const char* where, const char* file, int line)
       {
          int s = 0;
          for (auto& p : sizes)
             s += p.first * p.second;
-         return h2_fail::new_memory_leak(ptr, s, sizes, bt, where, file, lino);
+         return h2_fail::new_memory_leak(ptr, s, sizes, bt, where, file, line);
       }
    };
 
@@ -46,10 +46,10 @@ struct h2_leaky {
       find(bt)->add(size);
    }
 
-   h2_fail* check(const char* where, const char* file, int lino)
+   h2_fail* check(const char* where, const char* file, int line)
    {
       h2_fail* fails = nullptr;
-      for (auto& p : leaks) h2_fail::append_subling(fails, p.check(where, file, lino));
+      for (auto& p : leaks) h2_fail::append_subling(fails, p.check(where, file, line));
       return fails;
    }
 };

@@ -1,21 +1,21 @@
 
-h2_inline h2_lines h2_json::format(const h2_string& json_string)
+h2_inline h2_rows h2_json::format(const h2_string& json_string)
 {
    h2_json_tree tree(json_string.c_str());
    if (tree.illformed) return {tree.serialize()};
-   h2_lines lines = tree.format();
+   h2_rows rows = tree.format();
    if (O.copy_paste_json) {
-      if (!lines.empty()) {
-         lines.front() = "\"" + lines.front();
-         lines.back() = lines.back() + "\"";
+      if (!rows.empty()) {
+         rows.front() = "\"" + rows.front();
+         rows.back() = rows.back() + "\"";
       }
-      unsigned max_width = lines.width();
-      for (size_t i = 0; i < lines.size(); ++i) {
-         lines[i].padding(max_width - lines[i].width() + 3);
-         if (i < lines.size() - 1) lines[i].push_back("\\");
+      unsigned max_width = rows.width();
+      for (size_t i = 0; i < rows.size(); ++i) {
+         rows[i].padding(max_width - rows[i].width() + 3);
+         if (i < rows.size() - 1) rows[i].push_back("\\");
       }
    }
-   return lines;
+   return rows;
 }
 
 h2_inline h2_string h2_json::select(const h2_string& json_string, const h2_string& selector, bool caseless)
@@ -24,9 +24,9 @@ h2_inline h2_string h2_json::select(const h2_string& json_string, const h2_strin
    if (tree.illformed) return json_string;
    h2_json_node* node = tree.select(selector.c_str(), caseless);
    if (!node) return "";
-   h2_lines lines;
-   node->print(lines, O.fold_json, false);
-   return lines.string();
+   h2_rows rows;
+   node->print(rows, O.fold_json, false);
+   return rows.string();
 }
 
 h2_inline int h2_json::match(const h2_string& expect, const h2_string& actual, bool caseless)
@@ -36,7 +36,7 @@ h2_inline int h2_json::match(const h2_string& expect, const h2_string& actual, b
    return h2_json_match::match(&e_tree, &a_tree, caseless) ? 0 : 1;
 }
 
-h2_inline bool h2_json::diff(const h2_string& expect, const h2_string& actual, h2_lines& e_lines, h2_lines& a_lines, bool caseless)
+h2_inline bool h2_json::diff(const h2_string& expect, const h2_string& actual, h2_rows& e_lines, h2_rows& a_lines, bool caseless)
 {
    h2_json_tree e_tree(expect.c_str()), a_tree(actual.c_str());
    if (e_tree.illformed || a_tree.illformed) return false;

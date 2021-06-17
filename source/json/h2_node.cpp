@@ -93,43 +93,43 @@ struct h2_json_node : h2_libc {
 
    h2_string slash_if(bool slash) { return slash ? "\\" : ""; }
 
-   void print(h2_lines& lines, bool fold = false, bool slash = false, int depth = 0, int next = 0)
+   void print(h2_rows& rows, bool fold = false, bool slash = false, int depth = 0, int next = 0)
    {
-      h2_line line;
-      line.indent(depth * 2);
+      h2_row row;
+      row.indent(depth * 2);
       if (key_string.size())
-         line.push_back(slash_if(slash) + "\"" + key_string + slash_if(slash) + "\": ");
+         row.push_back(slash_if(slash) + "\"" + key_string + slash_if(slash) + "\": ");
       if (is_null())
-         line.push_back("null");
+         row.push_back("null");
       else if (is_bool())
-         line.push_back(value_boolean ? "true" : "false");
+         row.push_back(value_boolean ? "true" : "false");
       else if (is_number()) {
          if (value_double - ::floor(value_double) == 0)
-            line.push_back(std::to_string((long long)value_double).c_str());
+            row.push_back(std::to_string((long long)value_double).c_str());
          else
-            line.push_back(std::to_string(value_double).c_str());
+            row.push_back(std::to_string(value_double).c_str());
       } else if (is_string())
-         line.push_back(slash_if(slash) + "\"" + value_string + slash_if(slash) + "\"");
+         row.push_back(slash_if(slash) + "\"" + value_string + slash_if(slash) + "\"");
       else if (is_pattern())
-         line.push_back(slash_if(slash) + "\"/" + value_string + "/" + slash_if(slash) + "\"");
+         row.push_back(slash_if(slash) + "\"/" + value_string + "/" + slash_if(slash) + "\"");
       else if (is_array() || is_object()) {
-         h2_lines children_lines;
+         h2_rows children_rows;
          h2_list_for_each_entry (p, i, children, h2_json_node, x)
-            p->print(children_lines, fold, slash, depth + 1, children.count() - i - 1);
+            p->print(children_rows, fold, slash, depth + 1, children.count() - i - 1);
 
-         line.push_back(is_array() ? "[" : "{");
-         if (fold && children_lines.foldable()) {
-            line += children_lines.folds();
+         row.push_back(is_array() ? "[" : "{");
+         if (fold && children_rows.foldable()) {
+            row += children_rows.folds();
          } else {
-            lines.push_back(line), line.clear();
-            lines += children_lines;
-            line.indent(depth * 2);
+            rows.push_back(row), row.clear();
+            rows += children_rows;
+            row.indent(depth * 2);
          }
-         line.push_back(is_array() ? "]" : "}");
+         row.push_back(is_array() ? "]" : "}");
       }
-      if (line.size()) {
-         if (next) line.push_back(", ");
-         lines.push_back(line), line.clear();
+      if (row.size()) {
+         if (next) row.push_back(", ");
+         rows.push_back(row), row.clear();
       }
    }
 };

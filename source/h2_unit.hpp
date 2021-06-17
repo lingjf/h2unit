@@ -2,7 +2,7 @@
 #ifndef __H2_UNIT_HPP__
 #define __H2_UNIT_HPP__
 
-#define H2UNIT_VERSION 5.8
+#define H2UNIT_VERSION 5.9
 
 #include <cstdio>      /* printf */
 #include <cstdlib>     /* malloc */
@@ -71,11 +71,11 @@ namespace h2 {
 #include "utils/h2_shared_ptr.hpp"     // libc
 #include "utils/h2_allocate.hpp"       // libc
 #include "utils/h2_string.hpp"         // allocate
-#include "utils/h2_line.hpp"           // string
-#include "utils/h2_stringify.hpp"      // string, line
-#include "utils/h2_color.hpp"          // line
+#include "utils/h2_row.hpp"            // string
+#include "utils/h2_stringify.hpp"      // string, row
+#include "utils/h2_color.hpp"          // row
 #include "utils/h2_nm.hpp"             //
-#include "utils/h2_backtrace.hpp"      // line
+#include "utils/h2_backtrace.hpp"      // row
 #include "other/h2_option.hpp"         //
 #include "other/h2_layout.hpp"         //
 #include "other/h2_debug.hpp"          // option

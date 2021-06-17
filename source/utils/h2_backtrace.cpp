@@ -120,10 +120,10 @@ h2_inline void h2_backtrace::print(int pad) const
 {
    h2_vector<h2_string> stacks;
    print(stacks);
-   h2_lines lines;
+   h2_rows rows;
    for (auto& c : stacks)
       if (O.verbose || c.find("h2unit.h:") == h2_string::npos && c.find("h2unit.hpp:") == h2_string::npos && c.find("h2unit.cpp:") == h2_string::npos)
-         lines.push_back(h2_line(c));
-   lines.sequence(pad);
-   h2_color::printl(lines);
+         rows.push_back(h2_row(c));
+   rows.sequence(pad);
+   h2_color::printl(rows);
 }

@@ -38,7 +38,7 @@ struct h2_option {
 
    h2_option();
    void parse(int argc, const char** argv);
-   bool filter(const char* suitename, const char* casename, const char* file, int lino) const;
+   bool filter(const char* suitename, const char* casename, const char* file, int line) const;
 };
 
 static const h2_option& O = h2_option::I();  // for pretty

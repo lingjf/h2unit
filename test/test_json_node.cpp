@@ -197,15 +197,15 @@ SUITE(json node print)
       const char* json = "{\"abc\": 123}";
       h2::h2_json_tree parse(json);
 
-      h2::h2_lines lines;
-      parse.print(lines);
+      h2::h2_rows rows;
+      parse.print(rows);
 
-      OK(3, lines.size());
+      OK(3, rows.size());
       OK(ListOf(
            ListOf("", "{"),
            ListOf("  ", "\"abc\": ", "123"),
            ListOf("", "}")),
-         lines);
+         rows);
    }
 
    Case(print simple fold)
@@ -213,10 +213,10 @@ SUITE(json node print)
       const char* json = "{\"abc\": 123}";
       h2::h2_json_tree parse(json);
 
-      h2::h2_lines lines;
-      parse.print(lines, true);
+      h2::h2_rows rows;
+      parse.print(rows, true);
 
-      OK(1, lines.size());
-      OK(ListOf(ListOf("", "{", "\"abc\": ", "123", "}")), lines);
+      OK(1, rows.size());
+      OK(ListOf(ListOf("", "{", "\"abc\": ", "123", "}")), rows);
    }
 }

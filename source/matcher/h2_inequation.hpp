@@ -10,7 +10,7 @@ struct h2_matches_ge : h2_matches {
       if ((a >= e) == !dont) return nullptr;
       return h2_fail::new_unexpect(expection(caseless, dont), h2_representify(a));
    }
-   virtual h2_line expection(bool, bool dont) const override
+   virtual h2_row expection(bool, bool dont) const override
    {
       return CD("≥" + h2_representify(e), false, dont);
    }
@@ -27,7 +27,7 @@ struct h2_matches_gt : h2_matches {
       if ((a > e) == !dont) return nullptr;
       return h2_fail::new_unexpect(expection(caseless, dont), h2_stringify(a));
    }
-   virtual h2_line expection(bool, bool dont) const override
+   virtual h2_row expection(bool, bool dont) const override
    {
       return CD(">" + h2_stringify(e), false, dont);
    }
@@ -44,7 +44,7 @@ struct h2_matches_le : h2_matches {
       if ((a <= e) == !dont) return nullptr;
       return h2_fail::new_unexpect(expection(caseless, dont), h2_stringify(a));
    }
-   virtual h2_line expection(bool, bool dont) const override
+   virtual h2_row expection(bool, bool dont) const override
    {
       return CD("≤" + h2_stringify(e), false, dont);
    }
@@ -61,7 +61,7 @@ struct h2_matches_lt : h2_matches {
       if ((a < e) == !dont) return nullptr;
       return h2_fail::new_unexpect(expection(caseless, dont), h2_stringify(a));
    }
-   virtual h2_line expection(bool, bool dont) const override
+   virtual h2_row expection(bool, bool dont) const override
    {
       return CD("<" + h2_stringify(e), false, dont);
    }

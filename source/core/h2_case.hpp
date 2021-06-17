@@ -4,10 +4,9 @@ struct h2_case {
 
    const char* name;
    const char* file;
-   int lino;
+   int line;
    bool todo = false, filtered = false;
-   int status = initial;
-   int last_status = initial;
+   int status = initial, last_status = initial;
    int seq = 0;
    int asserts = 0;
    long long footprint = 0;
@@ -19,7 +18,7 @@ struct h2_case {
    h2_dnses dnses;
    h2_sock* sock{nullptr};
 
-   h2_case(const char* name_, const char* file_, int lino_, int todo_) : name(name_), file(file_), lino(lino_), todo(todo_) {}
+   h2_case(const char* name_, const char* file_, int line_, int todo_) : name(name_), file(file_), line(line_), todo(todo_) {}
    void clear();
 
    void prev_setup();

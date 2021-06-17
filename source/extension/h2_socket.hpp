@@ -46,7 +46,7 @@ struct h2_packet_matches : h2_matches {
       return fails;
    }
 
-   virtual h2_line expection(bool, bool) const override { return ""; }
+   virtual h2_row expection(bool, bool) const override { return ""; }
 };
 
 template <typename M1, typename M2, typename M3, typename M4>
@@ -57,8 +57,7 @@ inline h2_polymorphic_matcher<h2_packet_matches<M1, M2, M3, M4>> PktEq(M1 from =
 
 struct h2_socket {
    static h2_packet* start_and_fetch();
-   // from=1.2.3.4:5678, to=4.3.2.1:8765
-   static void inject_received(const void* packet, size_t size, const char* attributes);
+   static void inject_received(const void* packet, size_t size, const char* attributes); // from=1.2.3.4:5678, to=4.3.2.1:8765
 };
 
 /* clang-format off */

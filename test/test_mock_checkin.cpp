@@ -17,7 +17,7 @@ SUITE(checkin)
       OK("never", ci.actual());
       OK(ci.check("", 0, 1, nullptr, 0));
 
-      ++ci;  // call 1 times
+      ++ci.call;  // call 1 times
       OK(!ci.insufficient());
       OK(ci.is_satisfied());
       OK(ci.is_saturated());
@@ -25,7 +25,7 @@ SUITE(checkin)
       OK("1 times", ci.actual());
       OK(IsNull, ci.check("", 0, 1, nullptr, 0));
 
-      ++ci;  // call 2 times
+      ++ci.call;  // call 2 times
       OK(!ci.insufficient());
       OK(!ci.is_satisfied());
       OK(!ci.is_saturated());
@@ -49,7 +49,7 @@ SUITE(checkin)
       OK("never", ci.actual());
       OK(ci.check("", 0, 1, nullptr, 0));
 
-      ++ci;  // call 1 times
+      ++ci.call;  // call 1 times
       OK(ci.insufficient());
       OK(!ci.is_satisfied());
       OK(!ci.is_saturated());
@@ -57,7 +57,7 @@ SUITE(checkin)
       OK("1 times", ci.actual());
       OK(ci.check("", 0, 1, nullptr, 0));
 
-      ++ci;  // call 2 times
+      ++ci.call;  // call 2 times
       OK(!ci.insufficient());
       OK(ci.is_satisfied());
       OK(ci.is_saturated());
@@ -65,7 +65,7 @@ SUITE(checkin)
       OK("2 times", ci.actual());
       OK(IsNull, ci.check("", 0, 1, nullptr, 0));
 
-      ++ci;  // call 3 times
+      ++ci.call;  // call 3 times
       OK(!ci.insufficient());
       OK(!ci.is_satisfied());
       OK(!ci.is_saturated());
@@ -89,7 +89,7 @@ SUITE(checkin)
       OK("never", ci.actual());
       OK(ci.check("", 0, 1, nullptr, 0));
 
-      ++ci;  // call 1 times
+      ++ci.call;  // call 1 times
       OK(ci.insufficient());
       OK(!ci.is_satisfied());
       OK(!ci.is_saturated());
@@ -97,7 +97,7 @@ SUITE(checkin)
       OK("1 times", ci.actual());
       OK(ci.check("", 0, 1, nullptr, 0));
 
-      ++ci;  // call 2 times
+      ++ci.call;  // call 2 times
       OK(ci.insufficient());
       OK(!ci.is_satisfied());
       OK(!ci.is_saturated());
@@ -105,7 +105,7 @@ SUITE(checkin)
       OK("2 times", ci.actual());
       OK(ci.check("", 0, 1, nullptr, 0));
 
-      ++ci;  // call 3 times
+      ++ci.call;  // call 3 times
       OK(!ci.insufficient());
       OK(ci.is_satisfied());
       OK(ci.is_saturated());
@@ -113,7 +113,7 @@ SUITE(checkin)
       OK("3 times", ci.actual());
       OK(IsNull, ci.check("", 0, 1, nullptr, 0));
 
-      ++ci;  // call 4 times
+      ++ci.call;  // call 4 times
       OK(!ci.insufficient());
       OK(!ci.is_satisfied());
       OK(!ci.is_saturated());
@@ -137,7 +137,7 @@ SUITE(checkin)
       OK("never", ci.actual());
       OK(IsNull, ci.check("", 0, 1, nullptr, 0));
 
-      ++ci;  // call 1 times
+      ++ci.call;  // call 1 times
       OK(!ci.insufficient());
       OK(ci.is_satisfied());
       OK(!ci.is_saturated());
@@ -145,7 +145,7 @@ SUITE(checkin)
       OK("1 times", ci.actual());
       OK(IsNull, ci.check("", 0, 1, nullptr, 0));
 
-      ++ci;  // call 2 times
+      ++ci.call;  // call 2 times
       OK(!ci.insufficient());
       OK(ci.is_satisfied());
       OK(!ci.is_saturated());
@@ -169,7 +169,7 @@ SUITE(checkin)
       OK("never", ci.actual());
       OK(ci.check("", 0, 1, nullptr, 0));
 
-      ++ci;  // call 1 times
+      ++ci.call;  // call 1 times
       OK(ci.insufficient());
       OK(!ci.is_satisfied());
       OK(!ci.is_saturated());
@@ -177,7 +177,7 @@ SUITE(checkin)
       OK("1 times", ci.actual());
       OK(ci.check("", 0, 1, nullptr, 0));
 
-      ++ci;  // call 2 times
+      ++ci.call;  // call 2 times
       OK(!ci.insufficient());
       OK(ci.is_satisfied());
       OK(!ci.is_saturated());
@@ -185,7 +185,7 @@ SUITE(checkin)
       OK("2 times", ci.actual());
       OK(IsNull, ci.check("", 0, 1, nullptr, 0));
 
-      ++ci;  // call 3 times
+      ++ci.call;  // call 3 times
       OK(!ci.insufficient());
       OK(ci.is_satisfied());
       OK(!ci.is_saturated());
@@ -209,7 +209,7 @@ SUITE(checkin)
       OK("never", ci.actual());
       OK(IsNull, ci.check("", 0, 1, nullptr, 0));
 
-      ++ci;  // call 1 times
+      ++ci.call;  // call 1 times
       OK(!ci.insufficient());
       OK(ci.is_satisfied());
       OK(!ci.is_saturated());
@@ -217,7 +217,7 @@ SUITE(checkin)
       OK("1 times", ci.actual());
       OK(IsNull, ci.check("", 0, 1, nullptr, 0));
 
-      ++ci;  // call 2 times
+      ++ci.call;  // call 2 times
       OK(!ci.insufficient());
       OK(ci.is_satisfied());
       OK(ci.is_saturated());
@@ -225,7 +225,7 @@ SUITE(checkin)
       OK("2 times", ci.actual());
       OK(IsNull, ci.check("", 0, 1, nullptr, 0));
 
-      ++ci;  // call 3 times
+      ++ci.call;  // call 3 times
       OK(!ci.insufficient());
       OK(!ci.is_satisfied());
       OK(!ci.is_saturated());
@@ -249,7 +249,7 @@ SUITE(checkin)
       OK("never", ci.actual());
       OK(ci.check("", 0, 1, nullptr, 0));
 
-      ++ci;  // call 1 times
+      ++ci.call;  // call 1 times
       OK(ci.insufficient());
       OK(!ci.is_satisfied());
       OK(!ci.is_saturated());
@@ -257,7 +257,7 @@ SUITE(checkin)
       OK("1 times", ci.actual());
       OK(ci.check("", 0, 1, nullptr, 0));
 
-      ++ci;  // call 2 times
+      ++ci.call;  // call 2 times
       OK(!ci.insufficient());
       OK(ci.is_satisfied());
       OK(!ci.is_saturated());
@@ -265,7 +265,7 @@ SUITE(checkin)
       OK("2 times", ci.actual());
       OK(IsNull, ci.check("", 0, 1, nullptr, 0));
 
-      ++ci;  // call 3 times
+      ++ci.call;  // call 3 times
       OK(!ci.insufficient());
       OK(ci.is_satisfied());
       OK(!ci.is_saturated());
@@ -273,7 +273,7 @@ SUITE(checkin)
       OK("3 times", ci.actual());
       OK(IsNull, ci.check("", 0, 1, nullptr, 0));
 
-      ++ci;  // call 4 times
+      ++ci.call;  // call 4 times
       OK(!ci.insufficient());
       OK(ci.is_satisfied());
       OK(ci.is_saturated());
@@ -281,7 +281,7 @@ SUITE(checkin)
       OK("4 times", ci.actual());
       OK(IsNull, ci.check("", 0, 1, nullptr, 0));
 
-      ++ci;  // call 5 times
+      ++ci.call;  // call 5 times
       OK(!ci.insufficient());
       OK(!ci.is_satisfied());
       OK(!ci.is_saturated());

@@ -10,7 +10,7 @@ struct h2_equation : h2_matches {
       if ((a == e) == !dont) return nullptr;
       return h2_fail::new_unexpect(expection(caseless, dont), h2_representify(a));
    }
-   virtual h2_line expection(bool, bool dont) const override
+   virtual h2_row expection(bool, bool dont) const override
    {
       return CD(h2_representify(e), false, dont, "≠");
    }
@@ -29,7 +29,7 @@ struct h2_equation<E, typename std::enable_if<std::is_convertible<E, h2_string>:
 
       return h2_fail::new_strcmp(e, a, caseless, expection(caseless, dont));
    }
-   virtual h2_line expection(bool caseless, bool dont) const override
+   virtual h2_row expection(bool caseless, bool dont) const override
    {
       return CD(h2_representify(e), caseless, dont, "≠");
    }
@@ -60,7 +60,7 @@ struct h2_equation<E, typename std::enable_if<std::is_arithmetic<E>::value>::typ
       if (result == !dont) return nullptr;
       return h2_fail::new_unexpect(expection(caseless, dont), h2_representify(a));
    }
-   virtual h2_line expection(bool, bool dont) const override
+   virtual h2_row expection(bool, bool dont) const override
    {
       return CD(h2_representify(e), false, dont, "≠");
    }

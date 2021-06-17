@@ -7,10 +7,10 @@ struct h2_mockee : h2_libc {
    h2_vector<const char*> argument_type;
    const char* inspects;
    const char* file;
-   int lino;
+   int line;
 
-   h2_line arguments(int seq = -1);
-   h2_line signature();
+   h2_row arguments(int seq = -1);
+   h2_row signature();
 
    h2_vector<h2_checkin> checkin_array;
    int checkin_index = 0;
@@ -71,7 +71,7 @@ class h2_mocker<Counter, Class, ReturnType(Args...)> : h2_mockee {
                   f->explain += gray(" when ") + h2_numeric::sequence_number(i) + " checkin " + color(checkin_array[i].expr, "cyan");
                }
             });
-            h2_fail* fail = h2_fail::new_normal(signature(), file, lino);
+            h2_fail* fail = h2_fail::new_normal(signature(), file, line);
             h2_fail::append_child(fail, fails);
             h2_fail_g(fail, false);
          } else {
@@ -91,10 +91,10 @@ class h2_mocker<Counter, Class, ReturnType(Args...)> : h2_mockee {
          }
       }
       if (checkin_offset != -1) {
-         ++checkin_array[checkin_offset];
+         checkin_array[checkin_offset].call += 1;
       }
       if (checkin_offset == -1) {
-         h2_fail* fail = h2_fail::new_normal(signature(), file, lino);
+         h2_fail* fail = h2_fail::new_normal(signature(), file, line);
          h2_fail* f = h2_fail::new_normal(class_function + h2_representify(at) + color(" unexpectedly", "red,bold") + " called");
          h2_fail::append_child(fail, f);
          h2_fail_g(fail, false);
@@ -119,7 +119,7 @@ class h2_mocker<Counter, Class, ReturnType(Args...)> : h2_mockee {
       return *i;
    }
 
-   static h2_mocker& I(void* origin_fp, const char* return_type, const char* class_function, const h2_vector<const char*>& argument_type, const char* inspects, const char* file, int lino)
+   static h2_mocker& I(void* origin_fp, const char* return_type, const char* class_function, const h2_vector<const char*>& argument_type, const char* inspects, const char* file, int line)
    {
       I().origin_fp = origin_fp;
       I().substitute_fp = std::is_same<std::false_type, Class>::value ? (void*)normal_function_stub : (void*)member_function_stub;
@@ -128,7 +128,7 @@ class h2_mocker<Counter, Class, ReturnType(Args...)> : h2_mockee {
       I().argument_type = argument_type;
       I().inspects = inspects;
       I().file = file;
-      I().lino = lino;
+      I().line = line;
       I().reset();
       I().mock();
       return I();

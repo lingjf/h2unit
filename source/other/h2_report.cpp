@@ -56,7 +56,7 @@ struct h2_report_list : h2_report_impl {
       if ((O.list_cases == 'l' && !s->filtered) || (O.list_cases == 'L' && s->filtered)) {
          h2_color::prints("dark gray", "SUITE-%d. ", ++unfiltered_suite_index);
          h2_color::prints("bold,blue", "%s", s->name);
-         h2_color::prints("dark gray", " %s:%d\n", s->file, s->lino);
+         h2_color::prints("dark gray", " %s:%d\n", s->file, s->line);
       }
    }
    void on_case_start(h2_suite* s, h2_case* c) override
@@ -65,9 +65,9 @@ struct h2_report_list : h2_report_impl {
       if ((O.list_cases == 'l' && !c->filtered) || (O.list_cases == 'L' && c->filtered)) {
          ++unfiltered_task_case_index, ++unfiltered_suite_case_index;
          if (c->todo) todo++;
-         h2_color::prints("dark gray", " %s-%d. ", c->todo ? (s->name ? "Todo" : "TODO") : (s->name ? "Case" : "CASE"), unfiltered_suite_case_index);
+         h2_color::prints("dark gray", "%s-%d. ", c->todo ? (s->name ? " Todo" : "TODO") : (s->name ? " Case" : "CASE"), unfiltered_suite_case_index);
          h2_color::prints("cyan", "%s", c->name);
-         h2_color::prints("dark gray", " %s:%d\n", h2_basename(c->file), c->lino);
+         h2_color::prints("dark gray", " %s:%d\n", h2_basename(c->file), c->line);
       }
    }
 };
@@ -206,7 +206,7 @@ struct h2_report_console : h2_report_impl {
    {
       h2_report_impl::on_case_start(s, c);
    }
-   void print_title(const char* s, const char* c, const char* file, int lino)
+   void print_title(const char* s, const char* c, const char* file, int line)
    {
       if (strlen(c))
          h2_color::prints("", "%s", c);
@@ -220,7 +220,7 @@ struct h2_report_console : h2_report_impl {
             h2_color::prints("dark gray", "   ");
       }
       h2_color::prints("dark gray", " | ");
-      h2_color::prints("", "%s:%d", h2_basename(file), lino);
+      h2_color::prints("", "%s:%d", h2_basename(file), line);
    }
    void on_case_endup(h2_suite* s, h2_case* c) override
    {
@@ -229,7 +229,7 @@ struct h2_report_console : h2_report_impl {
       if (c->todo) {
          print_perfix(true);
          h2_color::prints("yellow", s->name ? "Todo   " : "TODO   ");
-         print_title(s->name, c->name, c->file, c->lino);
+         print_title(s->name, c->name, c->file, c->line);
          h2_color::prints("", "\n");
          return;
       }
@@ -238,7 +238,7 @@ struct h2_report_console : h2_report_impl {
          if (O.verbose) {
             print_perfix(true);
             h2_color::prints("green", "Passed ");
-            print_title(s->name, c->name, c->file, c->lino);
+            print_title(s->name, c->name, c->file, c->line);
             if (0 < c->asserts) {
                h2_color::prints("dark gray", " - ");
                h2_color::prints("", "%d assert%s", c->asserts, 1 < c->asserts ? "s" : "");
@@ -258,7 +258,7 @@ struct h2_report_console : h2_report_impl {
       case h2_case::failed:
          print_perfix(true);
          h2_color::prints("bold,red", "Failed ");
-         print_title(s->name, c->name, c->file, c->lino);
+         print_title(s->name, c->name, c->file, c->line);
          h2_color::prints("", "\n");
          if (O.compact) break;
          if (c->fails) c->fails->foreach([](h2_fail* fail, int subling_index, int child_index) { fail->print(subling_index, child_index); });
@@ -293,7 +293,7 @@ struct h2_report_junit : h2_report_impl {
       fprintf(f, "<testcase classname=\"%s\" name=\"%s\" status=\"%s\" time=\"%.3f\">\n", s->name, c->name, c->todo ? "TODO" : (c->filtered ? "Filtered" : CSS[c->status]), case_cost / 1000.0);
 
       if (c->status == h2_case::failed) {
-         fprintf(f, "<failure message=\"%s:%d:", c->file, c->lino);
+         fprintf(f, "<failure message=\"%s:%d:", c->file, c->line);
          if (c->fails) c->fails->foreach([=](h2_fail* fail, int subling_index, int child_index) {fprintf(f, "{newline}"); fail->print(f); });
          fprintf(f, "\" type=\"AssertionFailedError\"></failure>\n");
       }

@@ -20,25 +20,25 @@ struct h2_json_tree : h2_json_node {
       return node;
    }
 
-   h2_line serialize()
+   h2_row serialize()
    {
-      h2_line line;
+      h2_row row;
       for (size_t j = 0; j < lexical.size(); ++j) {
          if (j == syntax.i)
-            line.printf("yellow,bold,underline", "%s%s ", comma_if(j, " "), lexical[j].c_str());
+            row.printf("yellow,bold,underline", "%s%s ", comma_if(j, " "), lexical[j].c_str());
          else
-            line.push_back(comma_if(j, " ") + lexical[j]);
+            row.push_back(comma_if(j, " ") + lexical[j]);
       }
       if (illformed && lexical.size() <= syntax.i) {
-         line.printf("yellow,bold,underline", " ... ");
+         row.printf("yellow,bold,underline", " ... ");
       }
-      return line;
+      return row;
    }
 
-   h2_lines format()
+   h2_rows format()
    {
-      h2_lines lines;
-      print(lines, O.fold_json, O.copy_paste_json);
-      return lines;
+      h2_rows rows;
+      print(rows, O.fold_json, O.copy_paste_json);
+      return rows;
    }
 };

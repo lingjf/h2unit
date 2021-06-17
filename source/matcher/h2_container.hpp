@@ -29,7 +29,7 @@ struct h2_pair_matches : h2_matches {
       return h2_fail::new_unexpect(expection(caseless, dont), h2_representify(a));
    }
 
-   virtual h2_line expection(bool caseless, bool dont) const override
+   virtual h2_row expection(bool caseless, bool dont) const override
    {
       return CD(gray("(") + h2_matches_expection(k, caseless, dont) + gray(", ") + h2_matches_expection(v, caseless, dont) + gray(")"), false, dont);
    }
@@ -95,7 +95,7 @@ struct h2_listof_matches : h2_matches {
       return fail;
    }
 
-   virtual h2_line expection(bool caseless, bool dont) const override
+   virtual h2_row expection(bool caseless, bool dont) const override
    {
       return CD("ListOf" + gray("(") + t2e(caseless, false) + gray(")"), false, dont);
    }
@@ -170,7 +170,7 @@ struct h2_has_matches : h2_matches {
       return fail;
    }
 
-   virtual h2_line expection(bool caseless, bool dont) const override
+   virtual h2_row expection(bool caseless, bool dont) const override
    {
       return CD("Has" + gray("(") + t2e(caseless, false) + gray(")"), false, dont);
    }
@@ -200,7 +200,7 @@ struct h2_in_matches : h2_matches {
       return h2_fail::new_unexpect(expection(caseless, dont), h2_representify(a), DS(result));
    }
 
-   virtual h2_line expection(bool caseless, bool dont) const override
+   virtual h2_row expection(bool caseless, bool dont) const override
    {
       return CD("In" + gray("(") + t2e(caseless, false) + gray(")"), false, dont);
    }
@@ -232,7 +232,7 @@ struct h2_countof_matches : h2_matches {
       return __matches(count, h2_representify(a), dont);
    }
 
-   h2_fail* __matches(int count, h2_line&& represent, bool dont) const
+   h2_fail* __matches(int count, h2_row&& represent, bool dont) const
    {
       h2_fail* fails = nullptr;
       h2_vector<h2_matcher<int>> v_matchers;
@@ -252,7 +252,7 @@ struct h2_countof_matches : h2_matches {
       return fail;
    }
 
-   virtual h2_line expection(bool, bool dont) const override
+   virtual h2_row expection(bool, bool dont) const override
    {
       return CD("CountOf" + gray("(") + t2e(false, dont) + gray(")"), false, false);
    }

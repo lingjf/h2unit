@@ -2,8 +2,7 @@
 static inline void usage()
 {
    ::printf(" \033[33m╭────────────────────────────────────────────────────────────────────────────╮\033[0m\n");
-   ::printf(" \033[33m│\033[0m                                \033[32mh2unit \033[31m%-9g                            \033[33m│\033[0m\n", H2UNIT_VERSION);
-   ::printf(" \033[33m│\033[0m          Manual: \033[34;4mhttps://github.com/lingjf/h2unit.git\033[0m \033[0;36mREADME.md            \033[33m│\033[0m\n");
+   ::printf(" \033[33m│\033[0m               \033[32mh2unit \033[31m%-5g \033[34;4mhttps://github.com/lingjf/h2unit\033[0m \033[0;36m               \033[33m│\033[0m\n", H2UNIT_VERSION);
    ::printf(" \033[33m╰────────────────────────────────────────────────────────────────────────────╯\033[0m\n");
 
    ::printf("\
@@ -166,10 +165,10 @@ static inline bool match3(const std::vector<const char*>& patterns, const char* 
    return false;
 }
 
-h2_inline bool h2_option::filter(const char* suitename, const char* casename, const char* file, int lino) const
+h2_inline bool h2_option::filter(const char* suitename, const char* casename, const char* file, int line) const
 {
    char filename[1024];
-   sprintf(filename, "%s:%d", file, lino);
+   sprintf(filename, "%s:%d", file, line);
    if (!includes.empty())
       if (!match3(includes, suitename) && !match3(includes, casename) && !match3(includes, filename))
          return true;

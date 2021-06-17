@@ -23,9 +23,9 @@ h2_inline void h2_memory::stack::root()
 {
    h2_stack::I().push(LLONG_MAX / 2, sizeof(void*), nullptr, 0, false, "root", __FILE__, __LINE__);
 }
-h2_inline void h2_memory::stack::push(const char* file, int lino)
+h2_inline void h2_memory::stack::push(const char* file, int line)
 {
-   h2_stack::I().push(LLONG_MAX / 2, sizeof(void*), nullptr, 0, false, "case", file, lino);
+   h2_stack::I().push(LLONG_MAX / 2, sizeof(void*), nullptr, 0, false, "case", file, line);
 }
 h2_inline h2_fail* h2_memory::stack::pop()
 {
@@ -87,7 +87,7 @@ static inline void parse_block_attributes(const char* attributes, long long& n_l
    }
 }
 
-h2_inline h2_memory::stack::block::block(const char* attributes, const char* file, int lino)
+h2_inline h2_memory::stack::block::block(const char* attributes, const char* file, int line)
 {
    long long n_limit;
    int n_align;
@@ -97,7 +97,7 @@ h2_inline h2_memory::stack::block::block(const char* attributes, const char* fil
 
    parse_block_attributes(attributes, n_limit, n_align, s_fill, n_fill, noleak);
 
-   h2_stack::I().push(n_limit, n_align, s_fill, n_fill, noleak, "block", file, lino);
+   h2_stack::I().push(n_limit, n_align, s_fill, n_fill, noleak, "block", file, line);
 }
 
 h2_inline h2_memory::stack::block::~block()

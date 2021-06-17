@@ -66,7 +66,7 @@ namespace h2 {
 #include "utils/h2_numeric.cpp"
 #include "utils/h2_libc.cpp"
 #include "utils/h2_string.cpp"
-#include "utils/h2_line.cpp"
+#include "utils/h2_row.cpp"
 #include "utils/h2_color.cpp"
 #include "utils/h2_nm.cpp"
 #include "utils/h2_backtrace.cpp"
