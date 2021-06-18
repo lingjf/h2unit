@@ -116,6 +116,7 @@ namespace h2 {
 #include "extension/h2_dns.cpp"
 #include "extension/h2_socket.cpp"
 #include "extension/h2_stdio.cpp"
+#include "extension/h2_perf.cpp"
 
 #include "core/h2_case.cpp"
 #include "core/h2_suite.cpp"

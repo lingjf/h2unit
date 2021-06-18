@@ -1,5 +1,5 @@
 ﻿
-/* v5.9 2021-06-17 21:10:07 */
+/* v5.9 2021-06-18 22:02:08 */
 /* https://github.com/lingjf/h2unit */
 /* Apache Licence 2.0 */
 
@@ -3064,6 +3064,18 @@ struct h2_stdio {
 };
 
 #define H2COUT(...) h2::h2_stdio::capture_cout(#__VA_ARGS__)
+// source/extension/h2_perf.hpp
+
+struct h2_perf : h2_once {
+   const char* file;
+   int line;
+   long long ms, start;
+   h2_perf(long long ms, const char* file, int line);
+   ~h2_perf();
+};
+
+#define __H2PF(ms, Qb) for (h2::h2_perf Qb(ms, __FILE__, __LINE__); Qb;)
+#define H2PF(ms) __H2PF(ms, H2PP_UNIQUE(t_pf))
 // source/core/h2_case.hpp
 
 struct h2_case {
@@ -3876,6 +3888,12 @@ using h2::Pair;
 #   define COUT H2COUT
 #else
 #   pragma message("COUT conflict, using H2COUT instead.")
+#endif
+
+#ifndef PF
+#   define PF H2PF
+#else
+#   pragma message("PF conflict, using H2PF instead.")
 #endif
 
 #ifndef GlobalSetup

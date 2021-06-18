@@ -85,3 +85,14 @@ TODO(alive for ever)
 {
    OK(false);
 }
+
+CASE(performance)
+{
+   PF(11)
+   {
+      double a = 1.0;
+      for (int i = 0; i < 100000000; i++) {
+         a = a / 3.0;
+      }
+   }
+}

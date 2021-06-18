@@ -889,8 +889,20 @@ CASE(test printf)
 }
 ```
 
-### 13. Parameterized test
-#### 13.1. Value-Parameterized test
+### 13. Performance benchmark
+[`PF`](source/h2_unit.hpp)(n): Fail if following block cost more then n milliseconds
+
+```C++
+CASE(test performance)
+{
+   PF(11) {
+      do_something();
+   }
+}
+```
+
+### 14. Parameterized test
+#### 14.1. Value-Parameterized test
 *    CASES(values...): Automatically generate CASE with each value (access by x)
 *    CASESS(values...): Automatically generate CASE with fullmesh value (access by x, y)
 *    Cases(values...): Automatically generate Case with each value inside of SUITE (access by x)
@@ -931,7 +943,7 @@ SUITE(suite)
 
 ```
 
-#### 13.2. Type-Parameterized test
+#### 14.2. Type-Parameterized test
 *    CASES_T(types...): Automatically generate CASE with each type (access by x)
 *    CASESS_T(types...): Automatically generate CASE with fullmesh type (access by x, y)
 *    Cases_t(types...): NOT implemented, Automatically generate CASE with each type inside of SUITE (access by x)

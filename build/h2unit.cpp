@@ -1,5 +1,5 @@
 ﻿
-/* v5.9 2021-06-17 21:10:07 */
+/* v5.9 2021-06-18 22:02:08 */
 /* https://github.com/lingjf/h2unit */
 /* Apache Licence 2.0 */
 
@@ -4602,6 +4602,23 @@ h2_inline const char* h2_stdio::capture_cout(const char* type)
 h2_inline void h2_stdio::capture_cancel()
 {
    h2__stdio::I().stop_capture();
+}
+// source/extension/h2_perf.cpp
+
+h2_inline h2_perf::h2_perf(long long ms_, const char* file_, int line_) : file(file_), line(line_), ms(ms_)
+{
+   start = ::clock();
+}
+
+h2_inline h2_perf::~h2_perf()
+{
+   h2_assert_g();
+   long long delta = (::clock() - start) * 1000 / CLOCKS_PER_SEC;
+   if (ms < delta) {
+      h2_row row = "performance expect < ";
+      row.printf("green", "%lld", ms).printf("", " ms, but actually cost ").printf("red", "%lld", delta).printf("", " ms");
+      h2_fail_g(h2_fail::new_normal(row, file, line), false);
+   }
 }
 
 // source/core/h2_case.cpp

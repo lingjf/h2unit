@@ -107,6 +107,7 @@ namespace h2 {
 #include "extension/h2_dns.hpp"        //
 #include "extension/h2_socket.hpp"     // stub, failure, matcher
 #include "extension/h2_stdio.hpp"      //
+#include "extension/h2_perf.hpp"       // failure
 #include "core/h2_case.hpp"            // failure, stub, mock, dns, socket
 #include "core/h2_suite.hpp"           // case, stub, mock
 #include "core/h2_task.hpp"            // suite, case, failure, stub, mock, option, debug
@@ -231,6 +232,12 @@ namespace h2 {
 #   define COUT H2COUT
 #else
 #   pragma message("COUT conflict, using H2COUT instead.")
+#endif
+
+#ifndef PF
+#   define PF H2PF
+#else
+#   pragma message("PF conflict, using H2PF instead.")
 #endif
 
 #ifndef GlobalSetup
