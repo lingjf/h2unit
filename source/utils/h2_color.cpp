@@ -1,6 +1,6 @@
 
-struct h2__color {
-   h2_singleton(h2__color);
+struct h2_colorful {
+   h2_singleton(h2_colorful);
 
    char current[8][32];
    int default_attribute;
@@ -18,7 +18,7 @@ struct h2__color {
 #   define BACKGROUND_BLUE 0
 #endif
 
-   h2__color()
+   h2_colorful()
    {
       memset(current, 0, sizeof(current));
       default_attribute = 0;
@@ -155,20 +155,20 @@ h2_inline void h2_color::prints(const char* style, const char* format, ...)
    if (style && strlen(style)) {
       char t[128];
       sprintf(t, "\033{%s}", style);
-      h2__color::I().print(t);
+      h2_colorful::I().print(t);
    }
 
    char* alloca_str;
    h2_sprintf(alloca_str, format);
-   h2__color::I().print(alloca_str);
+   h2_colorful::I().print(alloca_str);
 
-   if (style && strlen(style)) h2__color::I().print("\033{reset}");
+   if (style && strlen(style)) h2_colorful::I().print("\033{reset}");
 }
 
 h2_inline void h2_color::printl(const h2_row& row)
 {
-   for (auto& word : row) h2__color::I().print(word.c_str());
-   h2__color::I().print("\n");
+   for (auto& word : row) h2_colorful::I().print(word.c_str());
+   h2_colorful::I().print("\n");
 }
 
 h2_inline void h2_color::printl(const h2_rows& rows)

@@ -3,7 +3,7 @@ h2_inline void h2_case::clear()
 {
    if (fails) delete fails;
    fails = nullptr;
-   sock = nullptr;
+   socks = nullptr;
    asserts = 0;
 }
 
@@ -15,7 +15,7 @@ h2_inline void h2_case::prev_setup()
 
 h2_inline void h2_case::post_cleanup(const h2_string& ex)
 {
-   if (sock) delete sock;
+   if (socks) delete socks;
    dnses.clear();
    stubs.clear();
    h2_fail* fail = mocks.clear(true);

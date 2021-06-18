@@ -1,44 +1,44 @@
 #include "../source/h2_unit.cpp"
 
-char* h2__color_tostring(h2::h2__color* color, char* t)
+char* h2_colorful_tostring(h2::h2_colorful* colorful, char* t)
 {
    strcpy(t, "");
-   for (int i = 0; i < sizeof(color->current) / sizeof(color->current[0]); ++i)
-      sprintf(t + strlen(t), "%s,", color->current[i]);
+   for (int i = 0; i < sizeof(colorful->current) / sizeof(colorful->current[0]); ++i)
+      sprintf(t + strlen(t), "%s,", colorful->current[i]);
    return t;
 }
 
-SUITE(h2_color)
+SUITE(h2_colorful)
 {
    char t[1024];
-   h2::h2__color color;
+   h2::h2_colorful colorful;
 
    Case(style2value)
    {
-      OK(0, color.style2value("reset"));
-      OK(31, color.style2value("red"));
+      OK(0, colorful.style2value("reset"));
+      OK(31, colorful.style2value("red"));
    }
 
    Case(parse)
    {
       char c1[1024] = "\033{red}";
-      color.parse(c1);
-      OK("red,,,,,,,,", h2__color_tostring(&color, t));
+      colorful.parse(c1);
+      OK("red,,,,,,,,", h2_colorful_tostring(&colorful, t));
 
       char c2[1024] = "\033{bold}";
-      color.parse(c2);
-      OK("red,bold,,,,,,,", h2__color_tostring(&color, t));
+      colorful.parse(c2);
+      OK("red,bold,,,,,,,", h2_colorful_tostring(&colorful, t));
 
       char c3[1024] = "\033{+bg_green}";
-      color.parse(c3);
-      OK("red,bold,bg_green,,,,,,", h2__color_tostring(&color, t));
+      colorful.parse(c3);
+      OK("red,bold,bg_green,,,,,,", h2_colorful_tostring(&colorful, t));
 
       char c4[1024] = "\033{-bold}";
-      color.parse(c4);
-      OK("red,,bg_green,,,,,,", h2__color_tostring(&color, t));
+      colorful.parse(c4);
+      OK("red,,bg_green,,,,,,", h2_colorful_tostring(&colorful, t));
 
       char c0[1024] = "\033{reset}";
-      color.parse(c0);
-      OK(",,,,,,,,", h2__color_tostring(&color, t));
+      colorful.parse(c0);
+      OK(",,,,,,,,", h2_colorful_tostring(&colorful, t));
    }
 }

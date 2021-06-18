@@ -16,7 +16,7 @@ struct h2_case {
    h2_stubs stubs;
    h2_mocks mocks;
    h2_dnses dnses;
-   h2_sock* sock{nullptr};
+   h2_socks* socks{nullptr};
 
    h2_case(const char* name_, const char* file_, int line_, int todo_) : name(name_), file(file_), line(line_), todo(todo_) {}
    void clear();

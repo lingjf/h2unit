@@ -5,7 +5,7 @@ struct h2_packet : h2_libc {
    h2_packet(const char* from_, const char* to_, const char* data_, size_t size_) : from(from_), to(to_), data(size_, data_){};
 };
 
-struct h2_sock : h2_libc {
+struct h2_socks : h2_libc {
    h2_list x, y;
    h2_stubs stubs;
 
@@ -17,8 +17,8 @@ struct h2_sock : h2_libc {
 
    h2_vector<socket> sockets;
 
-   h2_sock();
-   ~h2_sock();
+   h2_socks();
+   ~h2_socks();
 
    void put_outgoing(const char* from, const char* to, const char* data, size_t size);
    void put_outgoing(int fd, const char* data, size_t size);
@@ -55,12 +55,12 @@ inline h2_polymorphic_matcher<h2_packet_matches<M1, M2, M3, M4>> PktEq(M1 from =
    return h2_polymorphic_matcher<h2_packet_matches<M1, M2, M3, M4>>(h2_packet_matches<M1, M2, M3, M4>(from, to, data, size));
 }
 
-struct h2_socket {
+struct h2_sock {
    static h2_packet* start_and_fetch();
    static void inject_received(const void* packet, size_t size, const char* attributes); // from=1.2.3.4:5678, to=4.3.2.1:8765
 };
 
 /* clang-format off */
-#define __H2SOCK0(_Packet, _Size, ...) h2::h2_socket::inject_received(_Packet, _Size, #__VA_ARGS__)
-#define __H2SOCK1(...) h2::h2_socket::start_and_fetch()
+#define __H2SOCK0(_Packet, _Size, ...) h2::h2_sock::inject_received(_Packet, _Size, #__VA_ARGS__)
+#define __H2SOCK1(...) h2::h2_sock::start_and_fetch()
 #define H2SOCK(...) H2PP_CAT(__H2SOCK, H2PP_IS_EMPTY(__VA_ARGS__)) (__VA_ARGS__)

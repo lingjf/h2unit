@@ -1,12 +1,12 @@
 
-#define __H2OK(Qt, expression, ...) \
-   for (h2::h2_defer_failure Qt("", "", expression, __FILE__, __LINE__); Qt;) h2::h2_OK(&Qt, __VA_ARGS__)
+#define __H2OK(Q, expression, ...) \
+   for (h2::h2_defer_failure Q("", "", expression, __FILE__, __LINE__); Q;) h2::h2_OK(&Q, __VA_ARGS__)
 
-#define __H2JE3(Qt, expect, actual) \
-   for (h2::h2_defer_failure Qt(#expect, #actual, "", __FILE__, __LINE__); Qt;) h2::h2_JE(&Qt, expect, actual, "")
+#define __H2JE3(Q, expect, actual) \
+   for (h2::h2_defer_failure Q(#expect, #actual, "", __FILE__, __LINE__); Q;) h2::h2_JE(&Q, expect, actual, "")
 
-#define __H2JE4(Qt, expect, actual, selector) \
-   for (h2::h2_defer_failure Qt(#expect, #actual, "", __FILE__, __LINE__); Qt;) h2::h2_JE(&Qt, expect, actual, selector)
+#define __H2JE4(Q, expect, actual, selector) \
+   for (h2::h2_defer_failure Q(#expect, #actual, "", __FILE__, __LINE__); Q;) h2::h2_JE(&Q, expect, actual, selector)
 
 #define H2OK(...) __H2OK(H2PP_UNIQUE(t_defer_failure), (#__VA_ARGS__), __VA_ARGS__)
 

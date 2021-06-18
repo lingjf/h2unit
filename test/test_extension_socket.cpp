@@ -15,13 +15,13 @@ SUITE(socket utils)
 
    Case(iport parse)
    {
-      h2::h2__socket::iport_parse("1.2.3.4", &a);
+      h2::h2_socket::iport_parse("1.2.3.4", &a);
       OK(IPeq("1.2.3.4:0"), &a);
    }
 
    Case(iport parse with port)
    {
-      h2::h2__socket::iport_parse("1.2.3.4:9527", &a);
+      h2::h2_socket::iport_parse("1.2.3.4:9527", &a);
       OK(IPeq("1.2.3.4:9527"), &a);
    }
 
@@ -30,7 +30,7 @@ SUITE(socket utils)
       a.sin_family = AF_INET;
       a.sin_addr.s_addr = htonl(INADDR_ANY);
       a.sin_port = htons(9527);
-      OK("0.0.0.0:9527", h2::h2__socket::iport_tostring(&a, t));
+      OK("0.0.0.0:9527", h2::h2_socket::iport_tostring(&a, t));
    }
 
    Case(iport tostring with port)
@@ -38,7 +38,7 @@ SUITE(socket utils)
       a.sin_family = AF_INET;
       a.sin_addr.s_addr = inet_addr("1.2.3.4");
       a.sin_port = htons(9527);
-      OK("1.2.3.4:9527", h2::h2__socket::iport_tostring(&a, t));
+      OK("1.2.3.4:9527", h2::h2_socket::iport_tostring(&a, t));
    }
 
    Case(extract_iport_after_equal = 1.2.3.4 : 4444)

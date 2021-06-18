@@ -1,5 +1,5 @@
 ﻿
-/* v5.9 2021-06-18 23:26:22 */
+/* v5.9 2021-06-19 00:13:20 */
 /* https://github.com/lingjf/h2unit */
 /* Apache Licence 2.0 */
 
@@ -2995,7 +2995,7 @@ struct h2_packet : h2_libc {
    h2_packet(const char* from_, const char* to_, const char* data_, size_t size_) : from(from_), to(to_), data(size_, data_){};
 };
 
-struct h2_sock : h2_libc {
+struct h2_socks : h2_libc {
    h2_list x, y;
    h2_stubs stubs;
 
@@ -3007,8 +3007,8 @@ struct h2_sock : h2_libc {
 
    h2_vector<socket> sockets;
 
-   h2_sock();
-   ~h2_sock();
+   h2_socks();
+   ~h2_socks();
 
    void put_outgoing(const char* from, const char* to, const char* data, size_t size);
    void put_outgoing(int fd, const char* data, size_t size);
@@ -3045,14 +3045,14 @@ inline h2_polymorphic_matcher<h2_packet_matches<M1, M2, M3, M4>> PktEq(M1 from =
    return h2_polymorphic_matcher<h2_packet_matches<M1, M2, M3, M4>>(h2_packet_matches<M1, M2, M3, M4>(from, to, data, size));
 }
 
-struct h2_socket {
+struct h2_sock {
    static h2_packet* start_and_fetch();
    static void inject_received(const void* packet, size_t size, const char* attributes); // from=1.2.3.4:5678, to=4.3.2.1:8765
 };
 
 /* clang-format off */
-#define __H2SOCK0(_Packet, _Size, ...) h2::h2_socket::inject_received(_Packet, _Size, #__VA_ARGS__)
-#define __H2SOCK1(...) h2::h2_socket::start_and_fetch()
+#define __H2SOCK0(_Packet, _Size, ...) h2::h2_sock::inject_received(_Packet, _Size, #__VA_ARGS__)
+#define __H2SOCK1(...) h2::h2_sock::start_and_fetch()
 #define H2SOCK(...) H2PP_CAT(__H2SOCK, H2PP_IS_EMPTY(__VA_ARGS__)) (__VA_ARGS__)
 // source/extension/h2_stdio.hpp
 
@@ -3078,7 +3078,7 @@ struct h2_perf : h2_once {
    ~h2_perf();
 };
 
-#define __H2PF(ms, Qb) for (h2::h2_perf Qb(ms, __FILE__, __LINE__); Qb;)
+#define __H2PF(ms, Q) for (h2::h2_perf Q(ms, __FILE__, __LINE__); Q;)
 #define H2PF(ms) __H2PF(ms, H2PP_UNIQUE(t_pf))
 // source/core/h2_case.hpp
 
@@ -3099,7 +3099,7 @@ struct h2_case {
    h2_stubs stubs;
    h2_mocks mocks;
    h2_dnses dnses;
-   h2_sock* sock{nullptr};
+   h2_socks* socks{nullptr};
 
    h2_case(const char* name_, const char* file_, int line_, int todo_) : name(name_), file(file_), line(line_), todo(todo_) {}
    void clear();
@@ -3722,14 +3722,14 @@ struct h2_report {
 #define H2GlobalCaseCleanup() __H2GlobalCallback(global_case_cleanup, H2PP_UNIQUE(Global_Case_Cleanup))
 // source/assert/h2_use.hpp
 
-#define __H2OK(Qt, expression, ...) \
-   for (h2::h2_defer_failure Qt("", "", expression, __FILE__, __LINE__); Qt;) h2::h2_OK(&Qt, __VA_ARGS__)
+#define __H2OK(Q, expression, ...) \
+   for (h2::h2_defer_failure Q("", "", expression, __FILE__, __LINE__); Q;) h2::h2_OK(&Q, __VA_ARGS__)
 
-#define __H2JE3(Qt, expect, actual) \
-   for (h2::h2_defer_failure Qt(#expect, #actual, "", __FILE__, __LINE__); Qt;) h2::h2_JE(&Qt, expect, actual, "")
+#define __H2JE3(Q, expect, actual) \
+   for (h2::h2_defer_failure Q(#expect, #actual, "", __FILE__, __LINE__); Q;) h2::h2_JE(&Q, expect, actual, "")
 
-#define __H2JE4(Qt, expect, actual, selector) \
-   for (h2::h2_defer_failure Qt(#expect, #actual, "", __FILE__, __LINE__); Qt;) h2::h2_JE(&Qt, expect, actual, selector)
+#define __H2JE4(Q, expect, actual, selector) \
+   for (h2::h2_defer_failure Q(#expect, #actual, "", __FILE__, __LINE__); Q;) h2::h2_JE(&Q, expect, actual, selector)
 
 #define H2OK(...) __H2OK(H2PP_UNIQUE(t_defer_failure), (#__VA_ARGS__), __VA_ARGS__)
 

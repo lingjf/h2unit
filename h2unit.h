@@ -1,5 +1,5 @@
 ﻿
-/* v5.9 2021-06-18 23:26:22 */
+/* v5.9 2021-06-19 00:13:20 */
 /* https://github.com/lingjf/h2unit */
 /* Apache Licence 2.0 */
 
@@ -2996,7 +2996,7 @@ struct h2_packet : h2_libc {
    h2_packet(const char* from_, const char* to_, const char* data_, size_t size_) : from(from_), to(to_), data(size_, data_){};
 };
 
-struct h2_sock : h2_libc {
+struct h2_socks : h2_libc {
    h2_list x, y;
    h2_stubs stubs;
 
@@ -3008,8 +3008,8 @@ struct h2_sock : h2_libc {
 
    h2_vector<socket> sockets;
 
-   h2_sock();
-   ~h2_sock();
+   h2_socks();
+   ~h2_socks();
 
    void put_outgoing(const char* from, const char* to, const char* data, size_t size);
    void put_outgoing(int fd, const char* data, size_t size);
@@ -3046,14 +3046,14 @@ inline h2_polymorphic_matcher<h2_packet_matches<M1, M2, M3, M4>> PktEq(M1 from =
    return h2_polymorphic_matcher<h2_packet_matches<M1, M2, M3, M4>>(h2_packet_matches<M1, M2, M3, M4>(from, to, data, size));
 }
 
-struct h2_socket {
+struct h2_sock {
    static h2_packet* start_and_fetch();
    static void inject_received(const void* packet, size_t size, const char* attributes); // from=1.2.3.4:5678, to=4.3.2.1:8765
 };
 
 /* clang-format off */
-#define __H2SOCK0(_Packet, _Size, ...) h2::h2_socket::inject_received(_Packet, _Size, #__VA_ARGS__)
-#define __H2SOCK1(...) h2::h2_socket::start_and_fetch()
+#define __H2SOCK0(_Packet, _Size, ...) h2::h2_sock::inject_received(_Packet, _Size, #__VA_ARGS__)
+#define __H2SOCK1(...) h2::h2_sock::start_and_fetch()
 #define H2SOCK(...) H2PP_CAT(__H2SOCK, H2PP_IS_EMPTY(__VA_ARGS__)) (__VA_ARGS__)
 // source/extension/h2_stdio.hpp
 
@@ -3079,7 +3079,7 @@ struct h2_perf : h2_once {
    ~h2_perf();
 };
 
-#define __H2PF(ms, Qb) for (h2::h2_perf Qb(ms, __FILE__, __LINE__); Qb;)
+#define __H2PF(ms, Q) for (h2::h2_perf Q(ms, __FILE__, __LINE__); Q;)
 #define H2PF(ms) __H2PF(ms, H2PP_UNIQUE(t_pf))
 // source/core/h2_case.hpp
 
@@ -3100,7 +3100,7 @@ struct h2_case {
    h2_stubs stubs;
    h2_mocks mocks;
    h2_dnses dnses;
-   h2_sock* sock{nullptr};
+   h2_socks* socks{nullptr};
 
    h2_case(const char* name_, const char* file_, int line_, int todo_) : name(name_), file(file_), line(line_), todo(todo_) {}
    void clear();
@@ -3723,14 +3723,14 @@ struct h2_report {
 #define H2GlobalCaseCleanup() __H2GlobalCallback(global_case_cleanup, H2PP_UNIQUE(Global_Case_Cleanup))
 // source/assert/h2_use.hpp
 
-#define __H2OK(Qt, expression, ...) \
-   for (h2::h2_defer_failure Qt("", "", expression, __FILE__, __LINE__); Qt;) h2::h2_OK(&Qt, __VA_ARGS__)
+#define __H2OK(Q, expression, ...) \
+   for (h2::h2_defer_failure Q("", "", expression, __FILE__, __LINE__); Q;) h2::h2_OK(&Q, __VA_ARGS__)
 
-#define __H2JE3(Qt, expect, actual) \
-   for (h2::h2_defer_failure Qt(#expect, #actual, "", __FILE__, __LINE__); Qt;) h2::h2_JE(&Qt, expect, actual, "")
+#define __H2JE3(Q, expect, actual) \
+   for (h2::h2_defer_failure Q(#expect, #actual, "", __FILE__, __LINE__); Q;) h2::h2_JE(&Q, expect, actual, "")
 
-#define __H2JE4(Qt, expect, actual, selector) \
-   for (h2::h2_defer_failure Qt(#expect, #actual, "", __FILE__, __LINE__); Qt;) h2::h2_JE(&Qt, expect, actual, selector)
+#define __H2JE4(Q, expect, actual, selector) \
+   for (h2::h2_defer_failure Q(#expect, #actual, "", __FILE__, __LINE__); Q;) h2::h2_JE(&Q, expect, actual, selector)
 
 #define H2OK(...) __H2OK(H2PP_UNIQUE(t_defer_failure), (#__VA_ARGS__), __VA_ARGS__)
 
@@ -4807,8 +4807,8 @@ h2_inline void h2_rows::samesizify(h2_rows& b)
 }
 // source/utils/h2_color.cpp
 
-struct h2__color {
-   h2_singleton(h2__color);
+struct h2_colorful {
+   h2_singleton(h2_colorful);
 
    char current[8][32];
    int default_attribute;
@@ -4826,7 +4826,7 @@ struct h2__color {
 #   define BACKGROUND_BLUE 0
 #endif
 
-   h2__color()
+   h2_colorful()
    {
       memset(current, 0, sizeof(current));
       default_attribute = 0;
@@ -4963,20 +4963,20 @@ h2_inline void h2_color::prints(const char* style, const char* format, ...)
    if (style && strlen(style)) {
       char t[128];
       sprintf(t, "\033{%s}", style);
-      h2__color::I().print(t);
+      h2_colorful::I().print(t);
    }
 
    char* alloca_str;
    h2_sprintf(alloca_str, format);
-   h2__color::I().print(alloca_str);
+   h2_colorful::I().print(alloca_str);
 
-   if (style && strlen(style)) h2__color::I().print("\033{reset}");
+   if (style && strlen(style)) h2_colorful::I().print("\033{reset}");
 }
 
 h2_inline void h2_color::printl(const h2_row& row)
 {
-   for (auto& word : row) h2__color::I().print(word.c_str());
-   h2__color::I().print("\n");
+   for (auto& word : row) h2_colorful::I().print(word.c_str());
+   h2_colorful::I().print("\n");
 }
 
 h2_inline void h2_color::printl(const h2_rows& rows)
@@ -8119,9 +8119,9 @@ h2_inline void h2_dns::initialize()
 }
 // source/extension/h2_socket.cpp
 
-struct h2__socket {
-   h2_singleton(h2__socket);
-   h2_list socks;
+struct h2_socket {
+   h2_singleton(h2_socket);
+   h2_list sockses;
 
    static bool is_block(int sockfd)
    {
@@ -8204,10 +8204,10 @@ struct h2__socket {
    {
       bool block = is_block(sockfd);
       const char* local = getsockname(sockfd, (char*)alloca(64));
-      h2_sock* sock = h2_list_top_entry(I().socks, h2_sock, y);
+      h2_socks* socks = h2_list_top_entry(I().sockses, h2_socks, y);
 
       do {
-         h2_list_for_each_entry (p, sock->incoming, h2_packet, x) {
+         h2_list_for_each_entry (p, socks->incoming, h2_packet, x) {
             if (h2_pattern::wildcard_match(p->to.c_str(), local)) {
                p->x.out();
                return p;
@@ -8232,10 +8232,10 @@ struct h2__socket {
       struct sockaddr_in a;
       const char* c = getsockname(socket, (char*)alloca(64), &a);
       ::bind(fd, (struct sockaddr*)&a, sizeof(a));
-      h2_sock* sock = h2_list_top_entry(I().socks, h2_sock, y);
-      sock->sockets.push_back({fd, c, tcp->from.c_str()});
+      h2_socks* socks = h2_list_top_entry(I().sockses, h2_socks, y);
+      socks->sockets.push_back({fd, c, tcp->from.c_str()});
       if (tcp->data.size())
-         sock->incoming.push(tcp->x);
+         socks->incoming.push(tcp->x);
       else
          delete tcp;
 
@@ -8244,15 +8244,15 @@ struct h2__socket {
 
    static int connect(int socket, const struct sockaddr* address, socklen_t address_len)
    {
-      h2_sock* sock = h2_list_top_entry(I().socks, h2_sock, y);
-      sock->sockets.push_back({socket, getsockname(socket, (char*)alloca(64)), iport_tostring((struct sockaddr_in*)address, (char*)alloca(64))});
+      h2_socks* socks = h2_list_top_entry(I().sockses, h2_socks, y);
+      socks->sockets.push_back({socket, getsockname(socket, (char*)alloca(64)), iport_tostring((struct sockaddr_in*)address, (char*)alloca(64))});
       h2_packet* tcp = read_incoming(socket);
       if (!tcp) {
          errno = EWOULDBLOCK;
          return -1;
       }
       if (tcp->data.size())
-         sock->incoming.push(tcp->x);
+         socks->incoming.push(tcp->x);
       else
          delete tcp;
       return 0;
@@ -8260,8 +8260,8 @@ struct h2__socket {
 
    static ssize_t send(int socket, const void* buffer, size_t length, int flags)
    {
-      h2_sock* sock = h2_list_top_entry(I().socks, h2_sock, y);
-      if (sock) sock->put_outgoing(socket, (const char*)buffer, length);
+      h2_socks* socks = h2_list_top_entry(I().sockses, h2_socks, y);
+      if (socks) socks->put_outgoing(socket, (const char*)buffer, length);
       return length;
    }
 #ifndef _WIN32
@@ -8272,8 +8272,8 @@ struct h2__socket {
 #endif
    static ssize_t sendto(int socket, const void* buffer, size_t length, int flags, const struct sockaddr* dest_addr, socklen_t dest_len)
    {
-      h2_sock* sock = h2_list_top_entry(I().socks, h2_sock, y);
-      if (sock) sock->put_outgoing(getsockname(socket, (char*)alloca(64)), iport_tostring((struct sockaddr_in*)dest_addr, (char*)alloca(64)), (const char*)buffer, length);
+      h2_socks* socks = h2_list_top_entry(I().sockses, h2_socks, y);
+      if (socks) socks->put_outgoing(getsockname(socket, (char*)alloca(64)), iport_tostring((struct sockaddr_in*)dest_addr, (char*)alloca(64)), (const char*)buffer, length);
       return length;
    }
    static ssize_t recv(int socket, void* buffer, size_t length, int flags)
@@ -8307,34 +8307,34 @@ struct h2__socket {
 #endif
 };
 
-h2_inline h2_sock::h2_sock()
+h2_inline h2_socks::h2_socks()
 {
-   stubs.add((void*)::sendto, (void*)h2__socket::sendto, "sendto", __FILE__, __LINE__);
-   stubs.add((void*)::recvfrom, (void*)h2__socket::recvfrom, "recvfrom", __FILE__, __LINE__);
+   stubs.add((void*)::sendto, (void*)h2_socket::sendto, "sendto", __FILE__, __LINE__);
+   stubs.add((void*)::recvfrom, (void*)h2_socket::recvfrom, "recvfrom", __FILE__, __LINE__);
 #ifndef _WIN32
-   stubs.add((void*)::sendmsg, (void*)h2__socket::sendmsg, "sendmsg", __FILE__, __LINE__);
-   stubs.add((void*)::recvmsg, (void*)h2__socket::recvmsg, "recvmsg", __FILE__, __LINE__);
+   stubs.add((void*)::sendmsg, (void*)h2_socket::sendmsg, "sendmsg", __FILE__, __LINE__);
+   stubs.add((void*)::recvmsg, (void*)h2_socket::recvmsg, "recvmsg", __FILE__, __LINE__);
 #endif
-   stubs.add((void*)::send, (void*)h2__socket::send, "send", __FILE__, __LINE__);
-   stubs.add((void*)::recv, (void*)h2__socket::recv, "recv", __FILE__, __LINE__);
-   stubs.add((void*)::accept, (void*)h2__socket::accept, "accept", __FILE__, __LINE__);
-   stubs.add((void*)::connect, (void*)h2__socket::connect, "connect", __FILE__, __LINE__);
+   stubs.add((void*)::send, (void*)h2_socket::send, "send", __FILE__, __LINE__);
+   stubs.add((void*)::recv, (void*)h2_socket::recv, "recv", __FILE__, __LINE__);
+   stubs.add((void*)::accept, (void*)h2_socket::accept, "accept", __FILE__, __LINE__);
+   stubs.add((void*)::connect, (void*)h2_socket::connect, "connect", __FILE__, __LINE__);
    strcpy(last_to, "0.0.0.0:0");
 }
 
-h2_inline h2_sock::~h2_sock()
+h2_inline h2_socks::~h2_socks()
 {
    x.out(), y.out();
    stubs.clear();
 }
 
-h2_inline void h2_sock::put_outgoing(const char* from, const char* to, const char* data, size_t size)
+h2_inline void h2_socks::put_outgoing(const char* from, const char* to, const char* data, size_t size)
 {
    strcpy(last_to, to);
    outgoing.push_back((new h2_packet(from, to, data, size))->x);
 }
 
-h2_inline void h2_sock::put_outgoing(int fd, const char* data, size_t size)
+h2_inline void h2_socks::put_outgoing(int fd, const char* data, size_t size)
 {
    char from[128] = "", to[128] = "";
    for (auto& t : sockets) {
@@ -8347,21 +8347,21 @@ h2_inline void h2_sock::put_outgoing(int fd, const char* data, size_t size)
    put_outgoing(from, to, data, size);
 }
 
-h2_inline void h2_sock::put_incoming(const char* from, const char* to, const char* data, size_t size)
+h2_inline void h2_socks::put_incoming(const char* from, const char* to, const char* data, size_t size)
 {
    incoming.push_back((new h2_packet(strlen(from) ? from : last_to, to, data, size))->x);
 }
 
-h2_inline h2_packet* h2_socket::start_and_fetch()
+h2_inline h2_packet* h2_sock::start_and_fetch()
 {
    if (!h2_task::I().current_case) return nullptr;
 
-   h2_sock* sock = h2_task::I().current_case->sock;
-   if (!sock) {
-      sock = h2_task::I().current_case->sock = new h2_sock();
-      h2__socket::I().socks.push(sock->y);
+   h2_socks* socks = h2_task::I().current_case->socks;
+   if (!socks) {
+      socks = h2_task::I().current_case->socks = new h2_socks();
+      h2_socket::I().sockses.push(socks->y);
    }
-   return h2_list_pop_entry(sock->outgoing, h2_packet, x);
+   return h2_list_pop_entry(socks->outgoing, h2_packet, x);
 }
 
 static inline void extract_iport_after_equal(const char* s, char* o)
@@ -8392,12 +8392,12 @@ static inline void parse_sock_attributes(const char* attributes, char from[256],
    }
 }
 
-h2_inline void h2_socket::inject_received(const void* packet, size_t size, const char* attributes)
+h2_inline void h2_sock::inject_received(const void* packet, size_t size, const char* attributes)
 {
-   h2_sock* sock = h2_list_top_entry(h2__socket::I().socks, h2_sock, y);
+   h2_socks* socks = h2_list_top_entry(h2_socket::I().sockses, h2_socks, y);
    char from[256], to[256];
    parse_sock_attributes(attributes, from, to);
-   if (sock) sock->put_incoming(from, to, (const char*)packet, size);
+   if (socks) socks->put_incoming(from, to, (const char*)packet, size);
 }
 // source/extension/h2_stdio.cpp
 
@@ -8604,7 +8604,7 @@ h2_inline void h2_case::clear()
 {
    if (fails) delete fails;
    fails = nullptr;
-   sock = nullptr;
+   socks = nullptr;
    asserts = 0;
 }
 
@@ -8616,7 +8616,7 @@ h2_inline void h2_case::prev_setup()
 
 h2_inline void h2_case::post_cleanup(const h2_string& ex)
 {
-   if (sock) delete sock;
+   if (socks) delete socks;
    dnses.clear();
    stubs.clear();
    h2_fail* fail = mocks.clear(true);
