@@ -1,5 +1,5 @@
 ﻿
-/* v5.9 2021-06-18 22:02:08 */
+/* v5.9 2021-06-18 23:26:22 */
 /* https://github.com/lingjf/h2unit */
 /* Apache Licence 2.0 */
 
@@ -3056,14 +3056,18 @@ struct h2_socket {
 #define H2SOCK(...) H2PP_CAT(__H2SOCK, H2PP_IS_EMPTY(__VA_ARGS__)) (__VA_ARGS__)
 // source/extension/h2_stdio.hpp
 
-struct h2_stdio {
-   static void initialize();
-   static size_t capture_length();
-   static const char* capture_cout(const char* type);
-   static void capture_cancel();
+struct h2_cout : h2_once {
+   const char* file;
+   int line;
+   h2_matcher<const char*> m;
+   const char *e, *type;
+   h2_cout(h2_matcher<const char*> m, const char* e, const char* type, const char* file, int line);
+   ~h2_cout();
+   static size_t length();
 };
 
-#define H2COUT(...) h2::h2_stdio::capture_cout(#__VA_ARGS__)
+#define __H2COUT(m, e, type, Q) for (h2::h2_cout Q(m, e, type, __FILE__, __LINE__); Q;)
+#define H2COUT(m, ...) __H2COUT(m, #m, #__VA_ARGS__, H2PP_UNIQUE(t_cout))
 // source/extension/h2_perf.hpp
 
 struct h2_perf : h2_once {

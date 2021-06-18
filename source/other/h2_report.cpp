@@ -76,13 +76,13 @@ struct h2_report_console : h2_report_impl {
    void print_perfix(bool percentage)
    {
       static size_t last = 0;
-      h2_color::prints("", h2_stdio::capture_length() == last ? "\r" : "\n");
+      h2_color::prints("", h2_cout::length() == last ? "\r" : "\n");
       if (percentage && O.execute_progress) {
          h2_color::prints("dark gray", "[");
          h2_color::prints("", "%3d%%", cases ? (int)(task_case_index * 100 / cases) : 100);
          h2_color::prints("dark gray", "] ");
       }
-      last = h2_stdio::capture_length();
+      last = h2_cout::length();
    }
    const char* format_duration(long long ms)
    {

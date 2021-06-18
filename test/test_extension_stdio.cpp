@@ -27,209 +27,225 @@ SUITE(stdio)
 
    Case(printf)
    {
-      COUT();
       const char* e = "printf! 42";
-      ret = printf("printf! %d", 42);
-      OK(strlen(e), ret);
-      OK(e, COUT());
+      COUT(e)
+      {
+         ret = printf("printf! %d", 42);
+         OK(strlen(e), ret);
+      }
    }
 
    Case(putchar)
    {
-      COUT();
-      ret = putchar('C');
-      OK('C', ret);
-      OK("C", COUT());
+      COUT(CaseLess("C"))
+      {
+         ret = putchar('C');
+         OK('C', ret);
+      }
    }
 
    Case(puts)
    {
-      COUT();
-      ret = puts("puts! 42");
-      OK(Gt(0), ret);
-      OK("puts! 42\n", COUT());
+      COUT(Se("puts! 42\n"))
+      {
+         ret = puts("puts! 42");
+         OK(Gt(0), ret);
+      }
    }
 
    Case(vprintf)
    {
-      COUT();
       const char* e = "vprintf! 42";
-      ret = my_printf("vprintf! %d", 42);
-      OK(strlen(e), ret);
-      OK(e, COUT());
+      COUT(e)
+      {
+         ret = my_printf("vprintf! %d", 42);
+         OK(strlen(e), ret);
+      }
    }
 
    Case(std::cout)
    {
-      COUT();
-      const char* e = "std::cout! 42";
-      std::cout << "std::cout! " << 42;
-      OK(e, COUT());
+      COUT("std::cout! 42")
+      {
+         std::cout << "std::cout! " << 42;
+      }
    }
 
    Case(std::cerr)
    {
-      COUT();
-      const char* e = "std::cerr! 42";
-      std::cerr << "std::cerr! " << 42;
-      OK(e, COUT());
+      COUT("std::cerr! 42")
+      {
+         std::cerr << "std::cerr! " << 42;
+      }
    }
 
    Case(std::clog)
    {
-      COUT();
-      const char* e = "std::clog! 42";
-      std::clog << "std::clog! " << 42;
-      OK(e, COUT());
+      COUT("std::clog! 42")
+      {
+         std::clog << "std::clog! " << 42;
+      }
    }
 
    Case(fprintf)
    {
-      COUT();
       const char* e1 = "fprintf stdout! 42";
-      ret = fprintf(stdout, "fprintf stdout! %d", 42);
-      OK(strlen(e1), ret);
-      OK(e1, COUT());
+      COUT(e1)
+      {
+         ret = fprintf(stdout, "fprintf stdout! %d", 42);
+         OK(strlen(e1), ret);
+      }
 
-      COUT();
       const char* e2 = "fprintf stderr! 42";
-      ret = fprintf(stderr, "fprintf stderr! %d", 42);
-      OK(strlen(e2), ret);
-      OK(e2, COUT());
+      COUT(e2)
+      {
+         ret = fprintf(stderr, "fprintf stderr! %d", 42);
+         OK(strlen(e2), ret);
+      }
    }
 
    Case(vfprintf)
    {
-      COUT();
       const char* e1 = "vfprintf stdout! 42";
-      ret = my_fprintf(stdout, "vfprintf stdout! %d", 42);
-      OK(strlen(e1), ret);
-      OK(e1, COUT());
+      COUT(e1)
+      {
+         ret = my_fprintf(stdout, "vfprintf stdout! %d", 42);
+         OK(strlen(e1), ret);
+      }
 
-      COUT();
       const char* e2 = "vfprintf stderr! 42";
-      ret = my_fprintf(stderr, "vfprintf stderr! %d", 42);
-      OK(strlen(e2), ret);
-      OK(e2, COUT());
+      COUT(e2)
+      {
+         ret = my_fprintf(stderr, "vfprintf stderr! %d", 42);
+         OK(strlen(e2), ret);
+      }
    }
 
    Case(fputc)
    {
-      COUT();
-      ret = fputc('C', stdout);
-      OK('C', ret);
-      OK("C", COUT());
+      COUT("C")
+      {
+         ret = fputc('C', stdout);
+         OK('C', ret);
+      }
 
-      COUT();
-      ret = fputc('D', stderr);
-      OK('D', ret);
-      OK("D", COUT());
+      COUT("D")
+      {
+         ret = fputc('D', stderr);
+         OK('D', ret);
+      }
    }
 
    Case(putc)
    {
-      COUT();
-      ret = putc('C', stdout);
-      OK('C', ret);
-      OK("C", COUT());
+      COUT("C")
+      {
+         ret = putc('C', stdout);
+         OK('C', ret);
+      }
 
-      COUT();
-      ret = putc('D', stderr);
-      OK('D', ret);
-      OK("D", COUT());
+      COUT("D")
+      {
+         ret = putc('D', stderr);
+         OK('D', ret);
+      }
    }
 
    Case(fputs)
    {
-      COUT();
-      ret = fputs("fputs stdout! 42", stdout);
-      OK(Gt(0), ret);
-      OK("fputs stdout! 42", COUT());
+      COUT("fputs stdout! 42")
+      {
+         ret = fputs("fputs stdout! 42", stdout);
+         OK(Gt(0), ret);
+      }
 
-      COUT();
-      ret = fputs("fputs stderr! 42", stderr);
-      OK(Gt(0), ret);
-      OK("fputs stderr! 42", COUT());
+      COUT("fputs stderr! 42")
+      {
+         ret = fputs("fputs stderr! 42", stderr);
+         OK(Gt(0), ret);
+      }
    }
 
    Case(fputs only stderr)
    {
-      COUT(stderr);
-      ret = fputs("fputs stdout! 42", stdout);
-      OK(Gt(0), ret);
-      ret = fputs("fputs stderr! 42", stderr);
-      OK(Gt(0), ret);
-      OK("fputs stderr! 42", COUT());
+      COUT("fputs stderr! 42", stderr)
+      {
+         ret = fputs("fputs stdout! 42", stdout);
+         OK(Gt(0), ret);
+         ret = fputs("fputs stderr! 42", stderr);
+         OK(Gt(0), ret);
+      }
    }
 
    Case(fwrite)
    {
-      COUT();
       const char* e1 = "fwrite stdout! 42";
-      ret = fwrite(e1, 1, strlen(e1), stdout);
-      OK(strlen(e1), ret);
-      OK(e1, COUT());
+      COUT(e1)
+      {
+         ret = fwrite(e1, 1, strlen(e1), stdout);
+         OK(strlen(e1), ret);
+      }
 
-      COUT();
       const char* e2 = "fwrite stderr! 42";
-      ret = fwrite(e2, 1, strlen(e2), stderr);
-      OK(strlen(e2), ret);
-      OK(e2, COUT());
+      COUT(e2)
+      {
+         ret = fwrite(e2, 1, strlen(e2), stderr);
+         OK(strlen(e2), ret);
+      }
    }
 
    Case(syslog)
    {
-      COUT();
       const char* e1 = "syslog! 42";
-      syslog(LOG_DEBUG, "syslog! %d", 42);
-      OK(e1, COUT());
+      COUT(e1)
+      {
+         syslog(LOG_DEBUG, "syslog! %d", 42);
+      }
    }
 
    Case(normal file write)
    {
-      COUT();
+      COUT("")
+      {
+         FILE* fp1 = fopen(path, "w");
+         ret = fprintf(fp1, "fprintf! %d", 42);
+         OK(strlen("fprintf! 42"), ret);
+         ret = fputc('A', fp1);
+         OK('A', ret);
+         ret = putc('B', fp1);
+         OK('B', ret);
+         ret = fputs("fputs! 42", fp1);
+         OK(Gt(0), ret);
+         ret = fwrite("fwrite! 42", 1, strlen("fwrite! 42") + 1, fp1);
+         OK(strlen("fwrite! 42") + 1, ret);
+         fclose(fp1);
 
-      FILE* fp1 = fopen(path, "w");
-      ret = fprintf(fp1, "fprintf! %d", 42);
-      OK(strlen("fprintf! 42"), ret);
-      ret = fputc('A', fp1);
-      OK('A', ret);
-      ret = putc('B', fp1);
-      OK('B', ret);
-      ret = fputs("fputs! 42", fp1);
-      OK(Gt(0), ret);
-      ret = fwrite("fwrite! 42", 1, strlen("fwrite! 42") + 1, fp1);
-      OK(strlen("fwrite! 42") + 1, ret);
-      fclose(fp1);
-
-      const char* e = "fprintf! 42ABfputs! 42fwrite! 42";
-      FILE* fp2 = fopen(path, "r");
-      char t[1024] = {'\0'};
-      ret = fread(t, 1, sizeof(t), fp2);
-      OK(e, t);
-      OK(strlen(e) + 1, ret);
-      fclose(fp2);
-
-      OK("", COUT());
+         const char* e = "fprintf! 42ABfputs! 42fwrite! 42";
+         FILE* fp2 = fopen(path, "r");
+         char t[1024] = {'\0'};
+         ret = fread(t, 1, sizeof(t), fp2);
+         OK(e, t);
+         OK(strlen(e) + 1, ret);
+         fclose(fp2);
+      }
    }
 
    Case(normal file vfprintf)
    {
-      COUT();
+      COUT("")
+      {
+         FILE* fp1 = fopen(path, "w");
+         ret = my_fprintf(fp1, "vfprintf! %d", 42);
+         OK(strlen("vfprintf! 42"), ret);
+         fclose(fp1);
 
-      FILE* fp1 = fopen(path, "w");
-      ret = my_fprintf(fp1, "vfprintf! %d", 42);
-      OK(strlen("vfprintf! 42"), ret);
-      fclose(fp1);
-
-      const char* e = "vfprintf! 42";
-      FILE* fp2 = fopen(path, "r");
-      char t[1024] = {'\0'};
-      ret = fread(t, 1, sizeof(t), fp2);
-      OK(t, e);
-      OK(strlen(e), ret);
-      fclose(fp2);
-
-      OK("", COUT());
+         const char* e = "vfprintf! 42";
+         FILE* fp2 = fopen(path, "r");
+         char t[1024] = {'\0'};
+         ret = fread(t, 1, sizeof(t), fp2);
+         OK(t, e);
+         OK(strlen(e), ret);
+         fclose(fp2);
+      }
    }
 }

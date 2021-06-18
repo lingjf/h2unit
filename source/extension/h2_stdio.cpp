@@ -1,6 +1,6 @@
 
-struct h2__stdio {
-   h2_singleton(h2__stdio);
+struct h2_stdio {
+   h2_singleton(h2_stdio);
    h2_stubs stubs;
    h2_string* buffer;
    bool stdout_capturable = false, stderr_capturable = false, syslog_capturable = false;
@@ -93,7 +93,7 @@ struct h2__stdio {
       va_end(a);
    }
 
-   h2__stdio()
+   h2_stdio()
    {
 #ifndef _WIN32
       stubs.add((void*)::write, (void*)write, "write", __FILE__, __LINE__);
@@ -114,7 +114,7 @@ struct h2__stdio {
       struct streambuf : public std::streambuf {
          FILE* f;
          int sync() override { return 0; }
-         int overflow(int c) override { return h2__stdio::fputc(c, f); }
+         int overflow(int c) override { return h2_stdio::fputc(c, f); }
          streambuf(FILE* _f) : f(_f) { setp(nullptr, 0); }
       };
       static streambuf sb_out(stdout);
@@ -131,53 +131,50 @@ struct h2__stdio {
 #endif
    }
 
-   const char* start_capture(bool _stdout, bool _stderr, bool _syslog)
+   static void initialize()
    {
-      capturing = true;
+      ::setbuf(stdout, 0);  // unbuffered
+      I().buffer = new h2_string();
+   }
+
+   void start_capture(bool _stdout, bool _stderr, bool _syslog)
+   {
       stdout_capturable = _stdout;
       stderr_capturable = _stderr;
       syslog_capturable = _syslog;
       buffer->clear();
-      return buffer->c_str();
    }
 
    const char* stop_capture()
    {
-      capturing = false;
       stdout_capturable = stderr_capturable = syslog_capturable = false;
       buffer->push_back('\0');
       return buffer->c_str();
    }
-
-   bool capturing = false;
-   const char* toggle_capture()
-   {
-      if (capturing)
-         return stop_capture();
-      else
-         return start_capture(true, true, true);
-   }
 };
 
-h2_inline void h2_stdio::initialize()
+h2_inline h2_cout::h2_cout(h2_matcher<const char*> m_, const char* e_, const char* type_, const char* file_, int line_) : file(file_), line(line_), m(m_), e(e_), type(type_)
 {
-   ::setbuf(stdout, 0);  // unbuffered
-   h2__stdio::I().buffer = new h2_string();
+   bool all = !strlen(type);
+   h2_stdio::I().start_capture(all || strcasestr(type, "out"), all || strcasestr(type, "err"), all || strcasestr(type, "syslog"));
 }
 
-h2_inline size_t h2_stdio::capture_length()
+h2_inline h2_cout::~h2_cout()
 {
-   return h2__stdio::I().capture_length;
+   h2_assert_g();
+   h2_fail* fail = m.matches(h2_stdio::I().stop_capture(), 0);
+   if (fail) {
+      fail->file = file;
+      fail->line = line;
+      fail->assert_type = "OK2";
+      fail->e_expression = e;
+      fail->a_expression = "";
+      fail->explain = "COUT";
+      h2_fail_g(fail, false);
+   }
 }
 
-h2_inline const char* h2_stdio::capture_cout(const char* type)
+h2_inline size_t h2_cout::length()
 {
-   if (!strlen(type)) return h2__stdio::I().toggle_capture();
-   if (strcasestr(type, "stop")) return h2__stdio::I().stop_capture();
-   return h2__stdio::I().start_capture(strcasestr(type, "out"), strcasestr(type, "err"), strcasestr(type, "syslog"));
-}
-
-h2_inline void h2_stdio::capture_cancel()
-{
-   h2__stdio::I().stop_capture();
+   return h2_stdio::I().capture_length;
 }

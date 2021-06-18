@@ -869,28 +869,23 @@ CASE(test net)
 ```
 
 ### 12. Capture STDOUT/STDERR/syslog
-[`COUT`](source/h2_unit.hpp)(): Capture STDOUT STDERR and syslog output (printf(), std::cout<<, ...)
-*    `COUT`(): Toggle(Start/Stop) Capture STDOUT and STDERR
-*    `COUT`(stdout stderr syslog): Start Capture STDOUT STDERR and syslog
-*    `COUT`(STDOUT): Start Capture STDOUT only
-*    `COUT`(STDerr): Start Capture STDERR only
-*    `COUT`(stop): Stop Capture, and return buffer captured
+[`COUT`](source/h2_unit.hpp)(Matcher, [STDOUT] [stderr] [syslog]){}: Capture STDOUT STDERR and syslog output (printf(), std::cout<<, ...)
 
 ```C++
 CASE(test printf)
 {
-   COUT(); // Start Capture
-   printf("...");
-   std::cout << ...;
-   std::cerr << ...;
-   std::clog << ...;
-   syslog(...);
-   OK("...", COUT()); // Stop Capture and return captured string
+   COUT("abcde") {
+      printf("a");
+      std::cout << "b";
+      std::cerr << "c";
+      std::clog << "d";
+      syslog(LOG_DEBUG, "e");
+   }
 }
 ```
 
 ### 13. Performance benchmark
-[`PF`](source/h2_unit.hpp)(n): Fail if following block cost more then n milliseconds
+[`PF`](source/h2_unit.hpp)(n){}: Fail if following block cost more then n milliseconds
 
 ```C++
 CASE(test performance)

@@ -91,7 +91,7 @@ struct h2_fail_unexpect : h2_fail {
 
       if (!represent.width()) {
          a = h2_row(a_expression).acronym(O.verbose ? 10000 : 30, 3).gray_quote().brush("bold,red");
-      } else if (is_synonym(a_expression, represent.string())) {
+      } else if (is_synonym(a_expression, represent.string()) || !a_expression.length()) {
          a = represent.acronym(O.verbose ? 10000 : 30, 3).brush("bold,red");
       } else {
          a = represent.acronym(O.verbose ? 10000 : 30, 3).brush("bold,red") + gray("<==") + h2_row(a_expression).acronym(O.verbose ? 10000 : 30, 3).gray_quote().brush("cyan");
