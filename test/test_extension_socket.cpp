@@ -91,129 +91,142 @@ SUITE(SOCK)
 
    struct sockaddr_in c;
    socklen_t l;
+   int ret;
 
    char buffer[1024 * 8];
    unsigned char b2[1024];
 
    Case(UDP sendto recvfrom)
    {
-      SOCK();  // Start Hook Socket API
-      int sock = socket(AF_INET, SOCK_DGRAM, 0);
-      bind(sock, (struct sockaddr*)&local, sizeof(local));
+      SOCK() // Start Hook Socket API
+      {
+         int sock = socket(AF_INET, SOCK_DGRAM, 0);
+         ret = bind(sock, (struct sockaddr*)&local, sizeof(local));
+         OK(0, ret);
 
-      int sent = sendto(sock, "1234567890", 10, 0, (struct sockaddr*)&remote, sizeof(remote));
-      OK(10, sent);
-      // Fetch outgoing packet
-      OK(PktEq("0.0.0.0:9527", "1.2.3.4:8888", Me("1234567890", 10), 10), SOCK());
+         int sent = sendto(sock, "1234567890", 10, 0, (struct sockaddr*)&remote, sizeof(remote));
+         OK(10, sent);
+         // Fetch outgoing packet
+         Ptx("0.0.0.0:9527", "1.2.3.4:8888", Me("1234567890", 10), 10);
 
-      // Inject as received packet from 4.3.2.1:4444
-      SOCK("9876543210", 10, from = 4.3.2.1 : 4444);
-      l = sizeof(struct sockaddr);
-      int r1 = recvfrom(sock, (char*)buffer, sizeof(buffer), 0, (struct sockaddr*)&c, &l);
-      OK(10, r1);
-      OK(Me("9876543210", 10), buffer);
-      OK(IPeq("4.3.2.1:4444"), &c);
+         // Inject as received packet from 4.3.2.1:4444
+         Pij("9876543210", 10, from = 4.3.2.1 : 4444);
+         l = sizeof(struct sockaddr);
+         int r1 = recvfrom(sock, (char*)buffer, sizeof(buffer), 0, (struct sockaddr*)&c, &l);
+         OK(10, r1);
+         OK(Me("9876543210", 10), buffer);
+         OK(IPeq("4.3.2.1:4444"), &c);
 
-      SOCK("9876543210", 10);  // Inject as received packet from last peer
-      l = sizeof(struct sockaddr);
-      int r2 = recvfrom(sock, (char*)buffer, sizeof(buffer), 0, (struct sockaddr*)&c, &l);
-      OK(10, r2);
-      OK(Me("9876543210", 10), buffer);
-      OK(IPeq("1.2.3.4:8888"), &c);
+         Pij("9876543210", 10);  // Inject as received packet from last peer
+         l = sizeof(struct sockaddr);
+         int r2 = recvfrom(sock, (char*)buffer, sizeof(buffer), 0, (struct sockaddr*)&c, &l);
+         OK(10, r2);
+         OK(Me("9876543210", 10), buffer);
+         OK(IPeq("1.2.3.4:8888"), &c);
 
-      close(sock);
+         close(sock);
+      }
    }
 
    Case(UDP sendmsg recvmsg)
    {
-      SOCK();
-      int sock = socket(AF_INET, SOCK_DGRAM, 0);
-      bind(sock, (struct sockaddr*)&local, sizeof(local));
+      SOCK()
+      {
+         int sock = socket(AF_INET, SOCK_DGRAM, 0);
+         ret = bind(sock, (struct sockaddr*)&local, sizeof(local));
+         OK(0, ret);
 
-      struct iovec iov1;  /* Data array */
-      struct msghdr msg1; /* Message header */
-      iov1.iov_base = buffer;
-      iov1.iov_len = sizeof(buffer);
-      msg1.msg_name = (void*)&c;
-      msg1.msg_namelen = sizeof(c);
-      msg1.msg_iov = &iov1;
-      msg1.msg_iovlen = 1;
-      msg1.msg_flags = 0;
-      msg1.msg_control = b2;
-      msg1.msg_controllen = sizeof(b2);
+         struct iovec iov1;  /* Data array */
+         struct msghdr msg1; /* Message header */
+         iov1.iov_base = buffer;
+         iov1.iov_len = sizeof(buffer);
+         msg1.msg_name = (void*)&c;
+         msg1.msg_namelen = sizeof(c);
+         msg1.msg_iov = &iov1;
+         msg1.msg_iovlen = 1;
+         msg1.msg_flags = 0;
+         msg1.msg_control = b2;
+         msg1.msg_controllen = sizeof(b2);
 
-      SOCK("9876543210",
-           10,
-           from = "4.3.2.1:4444");  // Inject as received packet from 4.3.2.1:4444
-      ssize_t r1 = recvmsg(sock, &msg1, 0);
-      OK(10, r1);
-      OK(IPeq("4.3.2.1:4444"), &c);
+         Pij("9876543210",
+            10,
+            from = "4.3.2.1:4444");  // Inject as received packet from 4.3.2.1:4444
+         ssize_t r1 = recvmsg(sock, &msg1, 0);
+         OK(10, r1);
+         OK(IPeq("4.3.2.1:4444"), &c);
 
-      struct iovec iov2;  /* Data array */
-      struct msghdr msg2; /* Message header */
-      iov2.iov_base = (void*)"1234567890";
-      iov2.iov_len = 10;
-      msg2.msg_name = (void*)&remote;
-      msg2.msg_namelen = sizeof(remote);
-      msg2.msg_iov = &iov2;
-      msg2.msg_iovlen = 1;
-      msg2.msg_flags = 0;
-      msg2.msg_control = b2;
-      msg2.msg_controllen = sizeof(b2);
-      ssize_t r2 = sendmsg(sock, &msg2, 0);
-      OK(10, r2);
-      OK(PktEq("*:9527", "1.2.3.4:8888", Me("1234567890", 10), 10), SOCK());
+         struct iovec iov2;  /* Data array */
+         struct msghdr msg2; /* Message header */
+         iov2.iov_base = (void*)"1234567890";
+         iov2.iov_len = 10;
+         msg2.msg_name = (void*)&remote;
+         msg2.msg_namelen = sizeof(remote);
+         msg2.msg_iov = &iov2;
+         msg2.msg_iovlen = 1;
+         msg2.msg_flags = 0;
+         msg2.msg_control = b2;
+         msg2.msg_controllen = sizeof(b2);
+         ssize_t r2 = sendmsg(sock, &msg2, 0);
+         OK(10, r2);
+         Ptx("*:9527", "1.2.3.4:8888", Me("1234567890", 10));
 
-      close(sock);
+         close(sock);
+      }
    }
 
    Case(TCP server)
    {
-      SOCK();
-      int sock = socket(AF_INET, SOCK_STREAM, 0);
-      bind(sock, (struct sockaddr*)&local, sizeof(local));
+      SOCK()
+      {
+         int sock = socket(AF_INET, SOCK_STREAM, 0);
+         ret = bind(sock, (struct sockaddr*)&local, sizeof(local));
+         OK(0, ret);
 
-      listen(sock, 10);
+         listen(sock, 10);
 
-      SOCK("", 0, from = "1.2.3.4:8888");  // Inject as Connected Signal from 1.2.3.4:8888
-      l = sizeof(c);
-      int sock2 = accept(sock, (struct sockaddr*)&c, &l);
-      OK(Ge(0), sock2);
-      OK(IPeq("1.2.3.4:8888"), &c);
+         Pij("", 0, from = "1.2.3.4:8888");  // Inject as Connected Signal from 1.2.3.4:8888
+         l = sizeof(c);
+         int sock2 = accept(sock, (struct sockaddr*)&c, &l);
+         OK(Ge(0), sock2);
+         OK(IPeq("1.2.3.4:8888"), &c);
 
-      int sent = send(sock2, "1234567890", 10, 0);
-      OK(10, sent);
-      OK(PktEq("*:9527", "1.2.3.4:8888", Me("1234567890", 10), 10), SOCK());
+         int sent = send(sock2, "1234567890", 10, 0);
+         OK(10, sent);
+         Ptx("*:9527", "1.2.3.4:8888", Me("1234567890", 10), 10);
 
-      SOCK("9876543210",
-           10,
-           from = "1.2.3.4:8888");  // Inject as received packet from 4.3.2.1:8888
-      int r1 = recv(sock2, (char*)buffer, sizeof(buffer), 0);
-      OK(10, r1);
-      OK(Me("9876543210", 10), buffer);
+         Pij("9876543210",
+            10,
+            from = "1.2.3.4:8888");  // Inject as received packet from 4.3.2.1:8888
+         int r1 = recv(sock2, (char*)buffer, sizeof(buffer), 0);
+         OK(10, r1);
+         OK(Me("9876543210", 10), buffer);
 
-      close(sock2);
-      close(sock);
+         close(sock2);
+         close(sock);
+      }
    }
 
    Case(TCP client)
    {
-      SOCK();
-      int sock = socket(AF_INET, SOCK_STREAM, 0);
-      bind(sock, (struct sockaddr*)&local, sizeof(local));
+      SOCK()
+      {
+         int sock = socket(AF_INET, SOCK_STREAM, 0);
+         ret = bind(sock, (struct sockaddr*)&local, sizeof(local));
+         OK(0, ret);
 
-      SOCK("", 0, from = "1.2.3.4:8888");
-      connect(sock, (struct sockaddr*)&remote, sizeof(remote));
+         Pij("", 0, from = "1.2.3.4:8888");
+         connect(sock, (struct sockaddr*)&remote, sizeof(remote));
 
-      int sent = send(sock, "1234567890", 10, 0);
-      OK(10, sent);
-      OK(PktEq("*:9527", "1.2.3.4:8888", Me("1234567890", 10), 10), SOCK());
+         int sent = send(sock, "1234567890", 10, 0);
+         OK(10, sent);
+         Ptx("*:9527", "1.2.3.4:8888", Me("1234567890", 10), 10);
 
-      SOCK("9876543210", 10, from = "1.2.3.4:8888");
-      int r1 = recv(sock, (char*)buffer, sizeof(buffer), 0);
-      OK(10, r1);
-      OK(Me("9876543210", 10), buffer);
+         Pij("9876543210", 10, from = "1.2.3.4:8888");
+         int r1 = recv(sock, (char*)buffer, sizeof(buffer), 0);
+         OK(10, r1);
+         OK(Me("9876543210", 10), buffer);
 
-      close(sock);
+         close(sock);
+      }
    }
 }

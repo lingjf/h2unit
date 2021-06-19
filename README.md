@@ -848,23 +848,27 @@ CASE(test dns)
 ```
 
 ### 11. Socket Hijack
-*    [`SOCK`](source/h2_unit.hpp)(): Monitor TCP/UDP send/recv, and return sent packets.
-*    [`SOCK`](source/h2_unit.hpp)(packet, size, from=ip:port, to=ip:port]): Inject UDP/TCP packet as received packet.
+*    [`SOCK`](source/h2_unit.hpp)(): Monitor TCP/UDP send/recv.
+*    [`Ptx`](source/h2_unit.hpp)(from, to, payload, length): Check sent packet, parameters are all matcher.
+*    [`Pij`](source/h2_unit.hpp)(packet, size, [from=ip:port [, to=ip:port]]): Inject UDP/TCP packet as received packet.
 If not specified `to`, any of socket can receive the packet.
 
 If not specified `from`, the packet is received from where last send to.
 ```C++
 CASE(test net)
 {
-   SOCK(); // Start Hook Socket API
+   SOCK() { // Hook Socket API
+      sendto(fd, "1234567890", 10, 0, (struct sockaddr*)&remote, sizeof(remote));
+      Ptx("*:9527", "1.2.3.4:8888", Me("1234567890", 10), 10); // assert outgoing packet
+      Ptx("*:9527", "1.2.3.4:8888", Me("1234567890", 10)); // ignore payload size check
+      Ptx("*:9527", "1.2.3.4:8888"); // ignore payload and payload size check
 
-   sendto(sock, ...);
-   OK(..., SOCK()); // Fetch outgoing packet
-
-   SOCK(buffer1, 100, from=4.3.2.1:8888, to=*:4444); // Inject as received packet from 4.3.2.1:8888 to local port 4444 socket
-   SOCK(buffer2, 100, from=4.3.2.1:8888); // Inject as received packet from 4.3.2.1:8888 to any local socket
-   SOCK(buffer3, 100); // Inject as received packet from last sendto peer to any local socket
-   recvfrom(sock, ...);
+      Pij(buffer1, 100, from=4.3.2.1:8888, to=*:4444); // Inject as received packet from 4.3.2.1:8888 to local port 4444 socket
+      Pij(buffer2, 100, from=4.3.2.1:8888); // Inject as received packet from 4.3.2.1:8888 to any local socket
+      Pij(buffer3, 100); // Inject as received packet from last sendto peer to any local socket
+      recvfrom(fd, (char*)buffer, sizeof(buffer), 0, (struct sockaddr*)&remote, &length);
+      OK(Me("9876543210", 10), buffer);
+   }
 }
 ```
 

@@ -1,5 +1,5 @@
 ﻿
-/* v5.9 2021-06-19 00:13:20 */
+/* v5.9 2021-06-19 15:03:36 */
 /* https://github.com/lingjf/h2unit */
 /* Apache Licence 2.0 */
 
@@ -2995,65 +2995,55 @@ struct h2_packet : h2_libc {
    h2_packet(const char* from_, const char* to_, const char* data_, size_t size_) : from(from_), to(to_), data(size_, data_){};
 };
 
-struct h2_socks : h2_libc {
-   h2_list x, y;
-   h2_stubs stubs;
+struct h2_sock : h2_once {
+   h2_sock();
+   ~h2_sock();
+   static void clear();
+   static void inject(const void* packet, size_t size, const char* attributes);  // from=1.2.3.4:5678, to=4.3.2.1:8765
+   static h2_packet* fetch();
 
-   struct socket {
-      int fd;
-      h2_string from, to;
-      socket(int fd_, const char* from_, const char* to_) : fd(fd_), from(from_), to(to_) {}
-   };
-
-   h2_vector<socket> sockets;
-
-   h2_socks();
-   ~h2_socks();
-
-   void put_outgoing(const char* from, const char* to, const char* data, size_t size);
-   void put_outgoing(int fd, const char* data, size_t size);
-   void put_incoming(const char* from, const char* to, const char* data, size_t size);
-
-   char last_to[128];
-   h2_list incoming, outgoing;
-};
-
-template <typename M1, typename M2, typename M3, typename M4>
-struct h2_packet_matches : h2_matches {
-   const M1 from;
-   const M2 to;
-   const M3 data;
-   const M4 size;
-   explicit h2_packet_matches(M1 from_, M2 to_, M3 data_, M4 size_) : from(from_), to(to_), data(data_), size(size_) {}
-
-   h2_fail* matches(h2_packet* a, int, bool caseless = false, bool dont = false) const
+   template <typename M1 = h2_polymorphic_matcher<h2_matches_any>, typename M2 = h2_polymorphic_matcher<h2_matches_any>, typename M3 = h2_polymorphic_matcher<h2_matches_any>, typename M4 = h2_polymorphic_matcher<h2_matches_any>>
+   static void check(const char* file, int line, const char* e, M1 from = Any, M2 to = Any, M3 payload = Any, M4 size = Any)
    {
+      h2_assert_g();
+      h2_packet* p = h2_sock::fetch();
       h2_fail* fails = nullptr;
-      h2_fail::append_subling(fails, h2_matcher_cast<const char*>(from).matches(a->from.c_str(), 0, caseless, dont));
-      h2_fail::append_subling(fails, h2_matcher_cast<const char*>(to).matches(a->to.c_str(), 0, caseless, dont));
-      h2_fail::append_subling(fails, h2_matcher_cast<const unsigned char*>(data).matches((unsigned char*)a->data.data(), 0, caseless, dont));
-      h2_fail::append_subling(fails, h2_matcher_cast<const int>(size).matches(a->data.size(), 0, caseless, dont));
-      return fails;
+      h2_fail* fail_from = h2_matcher_cast<const char*>(from).matches(p->from.c_str(), 0, false, false);
+      if (fail_from) {
+         fail_from->explain = "from address";
+         h2_fail::append_subling(fails, fail_from);
+      }
+      h2_fail* fail_to = h2_matcher_cast<const char*>(to).matches(p->to.c_str(), 0, false, false);
+      if (fail_to) {
+         fail_to->explain = "to address";
+         h2_fail::append_subling(fails, fail_to);
+      }
+      h2_fail* fail_payload = h2_matcher_cast<const unsigned char*>(payload).matches((unsigned char*)p->data.data(), 0, false, false);
+      if (fail_payload) {
+         fail_payload->explain = "payload";
+         h2_fail::append_subling(fails, fail_payload);
+      }
+      h2_fail* fail_size = h2_matcher_cast<const int>(size).matches(p->data.size(), 0, false, false);
+      if (fail_size) {
+         fail_size->explain = "payload length";
+         h2_fail::append_subling(fails, fail_size);
+      }
+
+      if (fails) {
+         h2_row r = "Outgoing packet unexpected Ptx(";
+         r.printf("green", "%s", e).printf("", ")");
+         h2_fail* fail = h2_fail::new_normal(r, file, line);
+         h2_fail::append_child(fail, fails);
+         h2_fail_g(fail, false);
+      }
    }
-
-   virtual h2_row expection(bool, bool) const override { return ""; }
 };
 
-template <typename M1, typename M2, typename M3, typename M4>
-inline h2_polymorphic_matcher<h2_packet_matches<M1, M2, M3, M4>> PktEq(M1 from = Any, M2 to = Any, M3 data = Any, M4 size = Any)
-{
-   return h2_polymorphic_matcher<h2_packet_matches<M1, M2, M3, M4>>(h2_packet_matches<M1, M2, M3, M4>(from, to, data, size));
-}
+#define __H2SOCK(Q) for (h2::h2_sock Q; Q;)
+#define H2SOCK(...) __H2SOCK(H2PP_UNIQUE(t_sock))
 
-struct h2_sock {
-   static h2_packet* start_and_fetch();
-   static void inject_received(const void* packet, size_t size, const char* attributes); // from=1.2.3.4:5678, to=4.3.2.1:8765
-};
-
-/* clang-format off */
-#define __H2SOCK0(_Packet, _Size, ...) h2::h2_sock::inject_received(_Packet, _Size, #__VA_ARGS__)
-#define __H2SOCK1(...) h2::h2_sock::start_and_fetch()
-#define H2SOCK(...) H2PP_CAT(__H2SOCK, H2PP_IS_EMPTY(__VA_ARGS__)) (__VA_ARGS__)
+#define Ptx(...) h2::h2_sock::check(__FILE__, __LINE__, #__VA_ARGS__, __VA_ARGS__)
+#define Pij(_Packet, _Size, ...) h2::h2_sock::inject(_Packet, _Size, #__VA_ARGS__)
 // source/extension/h2_stdio.hpp
 
 struct h2_cout : h2_once {
@@ -3099,7 +3089,6 @@ struct h2_case {
    h2_stubs stubs;
    h2_mocks mocks;
    h2_dnses dnses;
-   h2_socks* socks{nullptr};
 
    h2_case(const char* name_, const char* file_, int line_, int todo_) : name(name_), file(file_), line(line_), todo(todo_) {}
    void clear();
