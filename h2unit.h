@@ -1,5 +1,5 @@
 ﻿
-/* v5.9 2021-06-20 14:11:48 */
+/* v5.9 2021-06-20 15:38:55 */
 /* https://github.com/lingjf/h2unit */
 /* Apache Licence 2.0 */
 
@@ -38,7 +38,8 @@
 #   include <alloca.h> /* alloca */
 #endif
 
-#if defined __GNUC__
+#if defined __GNUC__ || defined __clang__
+//clang  #pragma clang diagnostic ignored <==> pragma GCC diagnostic ignored
 #   pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 #   pragma GCC diagnostic ignored "-Wint-to-pointer-cast"
 #   pragma GCC diagnostic ignored "-Wparentheses"
@@ -46,14 +47,6 @@
 #   pragma GCC diagnostic ignored "-Wunused-function"
 #   pragma GCC diagnostic ignored "-Wwrite-strings"
 #   pragma GCC diagnostic ignored "-Wreturn-type"
-#elif defined __clang__
-#   pragma clang diagnostic ignored "-Wdeprecated-declarations"
-#   pragma clang diagnostic ignored "-Wint-to-pointer-cast"
-#   pragma clang diagnostic ignored "-Wparentheses"
-#   pragma clang diagnostic ignored "-Wsign-compare"
-#   pragma clang diagnostic ignored "-Wunused-function"
-#   pragma clang diagnostic ignored "-Wwritable-strings"
-#   pragma clang diagnostic ignored "-Wreturn-type"
 #elif defined WIN32 || defined __WIN32__ || defined _WIN32 || defined _MSC_VER || defined __MINGW32__
 #   pragma warning(disable : 4005)  // macro-redefine
 #   pragma warning(disable : 4018)  // -Wsign-compare
