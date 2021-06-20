@@ -32,7 +32,9 @@ h2_inline bool h2_stubs::add(void* origin_fp, void* substitute_fp, const char* o
    }
    if (!stub) {
       if (!h2_e9::save(origin_fp, nullptr)) {
-         h2_color::prints("yellow", "STUB failed: %s %s:%d\n", origin_fn, file, line);
+         h2_color::prints("yellow", "STUB %s by %s() failed %s:%d\n", origin_fn, O.os == windows ? "VirtualProtect" : "mprotect", file, line);
+         if (O.os == macOS) ::printf("try: "), h2_color::prints("green", "printf '\\x07' | dd of=%s bs=1 seek=160 count=1 conv=notrunc\n", O.path);
+         if (O.os == Linux) ::printf("try: "), h2_color::prints("green", "objcopy --writable-text %s\n", O.path);
          return false;
       }
       stub = new h2_stub(origin_fp);

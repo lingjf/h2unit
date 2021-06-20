@@ -22,7 +22,7 @@ struct h2_override {
    static void* realloc(void* ptr, size_t size)
    {
       h2_piece *old_p = nullptr, *new_p = nullptr;
-      if (size == 0 && O.os == macos) size = 1;
+      if (size == 0 && O.os == macOS) size = 1;
       if (ptr) old_p = h2_stack::I().get_piece(ptr);
       if (size) new_p = h2_stack::I().new_piece("realloc", size, 0, nullptr);
       if (old_p && new_p) memcpy(new_p->user_ptr, old_p->user_ptr, std::min(old_p->user_size, size));

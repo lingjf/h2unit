@@ -568,9 +568,11 @@ A solution is wrapping such argument with parentheses '()'.
 
 ##### 5.5.2. mprotect failure
 
-clang >= version 11, default make code section (__TEXT) max protect (maxprot) `rx`, mprotect() in STUB/MOCK fails.
+macOS (Mojave 10.14.6) macOS (Catalina 10.15.2) and later macOS mprotect fails, because [max_prot](https://stackoverflow.com/questions/60654834/using-mprotect-to-make-text-segment-writable-on-macos).
 
-To fix it, add `-Wl,-segprot,__TEXT,rwx,rwx` in link(ld) option to make maxprot `rwx`. 
+```Shell
+   printf '\x07' | dd of=<executable> bs=1 seek=160 count=1 conv=notrunc
+```
 
 ##### 5.5.3. private member method accessibility
 In order to STUB/MOCK class private member function successfully, `private` token is substituted with `public` using MACRO definition by default.
@@ -848,7 +850,7 @@ CASE(test dns)
 ```
 
 ### 11. Socket Hijack
-*    [`SOCK`](source/h2_unit.hpp)(): Monitor TCP/UDP send/recv.
+*    [`SOCK`](source/h2_unit.hpp)(){}: Monitor TCP/UDP send/recv.
 *    [`Ptx`](source/h2_unit.hpp)(from, to, payload, length): Check sent packet, parameters are all matcher.
 *    [`Pij`](source/h2_unit.hpp)(packet, size, [from=ip:port [, to=ip:port]]): Inject UDP/TCP packet as received packet.
 If not specified `to`, any of socket can receive the packet.

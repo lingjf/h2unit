@@ -1,5 +1,5 @@
 ﻿
-/* v5.9 2021-06-19 15:03:36 */
+/* v5.9 2021-06-20 14:11:48 */
 /* https://github.com/lingjf/h2unit */
 /* Apache Licence 2.0 */
 
@@ -979,19 +979,19 @@ struct h2_backtrace {
 };
 // source/other/h2_option.hpp
 
-static constexpr unsigned linux = 0x0101;
-static constexpr unsigned macos = 0x0102;
-static constexpr unsigned winos = 0x0200;
+static constexpr unsigned Linux = 0x0101;
+static constexpr unsigned macOS = 0x0102;
+static constexpr unsigned windows = 0x0200;
 
 struct h2_option {
    h2_singleton(h2_option);
 
 #if defined linux || defined __linux || defined __linux__
-   static constexpr unsigned os = linux;
+   static constexpr unsigned os = Linux;
 #elif defined __APPLE__
-   static constexpr unsigned os = macos;
+   static constexpr unsigned os = macOS;
 #elif defined WIN32 || defined __WIN32__ || defined _WIN32 || defined _MSC_VER || defined __MINGW32__
-   static constexpr unsigned os = winos;
+   static constexpr unsigned os = windows;
 #endif
 
    unsigned terminal_width;
@@ -4991,7 +4991,7 @@ static inline void nm1(std::map<std::string, unsigned long long>*& symbols)
       if (3 != sscanf(line, "%s %c %s", addr, &type, name)) continue;
       if (strchr("bBcCdDiIuU", type)) continue;  // reject bBcCdDiIuU, accept tTwWsSvV, sS for vtable
       int _ = 0;
-      if (O.os == macos) _ = 1;  // remove prefix '_' in MacOS
+      if (O.os == macOS) _ = 1;  // remove prefix '_' in MacOS
       (*symbols)[name + _] = (unsigned long long)strtoull(addr, nullptr, 16);
    }
    ::pclose(f);
@@ -5013,7 +5013,7 @@ static inline void nm2(h2_list& symbols)
       if (3 != sscanf(line, "%s %c %[^\n]", addr, &type, name)) continue;
       if (strchr("bBcCdDiIuU", type)) continue;
       int _ = 0;
-      if (O.os == macos && !strchr(name, '(')) _ = 1;
+      if (O.os == macOS && !strchr(name, '(')) _ = 1;
       symbols.push_back((new h2_symbol(name + _, (unsigned long long)strtoull(addr, nullptr, 16)))->x);
    }
    ::pclose(f);
@@ -6844,14 +6844,14 @@ struct h2_piece : h2_libc {
          if (h2_in(who_allocate, S[i].a) && h2_in(who_release, S[i].r))
             return nullptr;
 
-      h2_backtrace bt_release(O.os == macos ? 6 : 5);
+      h2_backtrace bt_release(O.os == macOS ? 6 : 5);
       return h2_fail::new_asymmetric_free(user_ptr, who_allocate, who_release, bt_allocate, bt_release);
    }
 
    h2_fail* check_double_free()
    {
       h2_fail* fail = nullptr;
-      h2_backtrace bt(O.os == macos ? 6 : 5);
+      h2_backtrace bt(O.os == macOS ? 6 : 5);
       if (free_times++ == 0)
          bt_release = bt;
       else
@@ -7053,7 +7053,7 @@ struct h2_stack {
 
    h2_piece* new_piece(const char* who, size_t size, size_t alignment, const char* fill)
    {
-      h2_backtrace bt(O.os == macos ? 3 : 2);
+      h2_backtrace bt(O.os == macOS ? 3 : 2);
       h2_block* b = h2_exempt::in(bt) ? h2_list_bottom_entry(blocks, h2_block, x) : h2_list_top_entry(blocks, h2_block, x);
       return b ? b->new_piece(who, size, alignment, fill ? *fill : 0, fill, bt) : nullptr;
    }
@@ -7111,7 +7111,7 @@ struct h2_override {
    static void* realloc(void* ptr, size_t size)
    {
       h2_piece *old_p = nullptr, *new_p = nullptr;
-      if (size == 0 && O.os == macos) size = 1;
+      if (size == 0 && O.os == macOS) size = 1;
       if (ptr) old_p = h2_stack::I().get_piece(ptr);
       if (size) new_p = h2_stack::I().new_piece("realloc", size, 0, nullptr);
       if (old_p && new_p) memcpy(new_p->user_ptr, old_p->user_ptr, std::min(old_p->user_size, size));
@@ -7635,9 +7635,9 @@ h2_inline void h2_exempt::setup()
    stubs.add((void*)::asctime_r, (void*)h2_exempt_stub::asctime_r, "asctime_r", __FILE__, __LINE__);
    stubs.add((void*)::localtime, (void*)h2_exempt_stub::localtime, "localtime", __FILE__, __LINE__);
    stubs.add((void*)::localtime_r, (void*)h2_exempt_stub::localtime_r, "localtime_r", __FILE__, __LINE__);
-   if (O.os == linux) stubs.add((void*)::mktime, (void*)h2_exempt_stub::mktime, "mktime", __FILE__, __LINE__);
-   if (O.os == macos) stubs.add((void*)::strtod, (void*)h2_exempt_stub::strtod, "strtod", __FILE__, __LINE__);
-   if (O.os == macos) stubs.add((void*)::strtold, (void*)h2_exempt_stub::strtold, "strtold", __FILE__, __LINE__);
+   if (O.os == Linux) stubs.add((void*)::mktime, (void*)h2_exempt_stub::mktime, "mktime", __FILE__, __LINE__);
+   if (O.os == macOS) stubs.add((void*)::strtod, (void*)h2_exempt_stub::strtod, "strtod", __FILE__, __LINE__);
+   if (O.os == macOS) stubs.add((void*)::strtold, (void*)h2_exempt_stub::strtold, "strtold", __FILE__, __LINE__);
 
    add((void*)::sscanf);
    add((void*)::sprintf);
@@ -7686,10 +7686,8 @@ struct h2_e9 {
    {
 #if defined WIN32 || defined __WIN32__ || defined _WIN32 || defined _MSC_VER || defined __MINGW32__
       DWORD t;
-      if (!VirtualProtect(origin_fp, sizeof(void*) + 4, PAGE_EXECUTE_READWRITE, &t)) {  // PAGE_EXECUTE_WRITECOPY OR PAGE_WRITECOPY
-         ::printf("STUB failed: VirtualProtect PAGE_EXECUTE_READWRITE %d\n", GetLastError());
+      if (!VirtualProtect(origin_fp, sizeof(void*) + 4, PAGE_EXECUTE_READWRITE, &t))  // PAGE_EXECUTE_WRITECOPY OR PAGE_WRITECOPY
          return false;
-      }
 #else
       /* uintptr_t is favourite, but is optional type in c++ std, using unsigned long long for portable */
       unsigned long long page_size = (unsigned long long)h2_page_size();
@@ -7697,10 +7695,8 @@ struct h2_e9 {
       unsigned long long page_start = origin_start & ~(page_size - 1);
       int page_count = ::ceil((origin_start + size - page_start) / (double)page_size);
 
-      if (mprotect(reinterpret_cast<void*>(page_start), page_count * page_size, PROT_READ | PROT_WRITE | PROT_EXEC) != 0) {
-         h2_color::prints("yellow", "STUB failed: mprotect PROT_READ | PROT_WRITE | PROT_EXEC %s\n", strerror(errno));
+      if (mprotect(reinterpret_cast<void*>(page_start), page_count * page_size, PROT_READ | PROT_WRITE | PROT_EXEC) != 0)
          return false;
-      }
 #endif
       if (saved) memcpy(saved, origin_fp, size);
       return true;
@@ -7809,7 +7805,9 @@ h2_inline bool h2_stubs::add(void* origin_fp, void* substitute_fp, const char* o
    }
    if (!stub) {
       if (!h2_e9::save(origin_fp, nullptr)) {
-         h2_color::prints("yellow", "STUB failed: %s %s:%d\n", origin_fn, file, line);
+         h2_color::prints("yellow", "STUB %s by %s() failed %s:%d\n", origin_fn, O.os == windows ? "VirtualProtect" : "mprotect", file, line);
+         if (O.os == macOS) ::printf("try: "), h2_color::prints("green", "printf '\\x07' | dd of=%s bs=1 seek=160 count=1 conv=notrunc\n", O.path);
+         if (O.os == Linux) ::printf("try: "), h2_color::prints("green", "objcopy --writable-text %s\n", O.path);
          return false;
       }
       stub = new h2_stub(origin_fp);

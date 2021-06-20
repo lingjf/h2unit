@@ -7,10 +7,8 @@ struct h2_e9 {
    {
 #if defined WIN32 || defined __WIN32__ || defined _WIN32 || defined _MSC_VER || defined __MINGW32__
       DWORD t;
-      if (!VirtualProtect(origin_fp, sizeof(void*) + 4, PAGE_EXECUTE_READWRITE, &t)) {  // PAGE_EXECUTE_WRITECOPY OR PAGE_WRITECOPY
-         ::printf("STUB failed: VirtualProtect PAGE_EXECUTE_READWRITE %d\n", GetLastError());
+      if (!VirtualProtect(origin_fp, sizeof(void*) + 4, PAGE_EXECUTE_READWRITE, &t))  // PAGE_EXECUTE_WRITECOPY OR PAGE_WRITECOPY
          return false;
-      }
 #else
       /* uintptr_t is favourite, but is optional type in c++ std, using unsigned long long for portable */
       unsigned long long page_size = (unsigned long long)h2_page_size();
@@ -18,10 +16,8 @@ struct h2_e9 {
       unsigned long long page_start = origin_start & ~(page_size - 1);
       int page_count = ::ceil((origin_start + size - page_start) / (double)page_size);
 
-      if (mprotect(reinterpret_cast<void*>(page_start), page_count * page_size, PROT_READ | PROT_WRITE | PROT_EXEC) != 0) {
-         h2_color::prints("yellow", "STUB failed: mprotect PROT_READ | PROT_WRITE | PROT_EXEC %s\n", strerror(errno));
+      if (mprotect(reinterpret_cast<void*>(page_start), page_count * page_size, PROT_READ | PROT_WRITE | PROT_EXEC) != 0)
          return false;
-      }
 #endif
       if (saved) memcpy(saved, origin_fp, size);
       return true;

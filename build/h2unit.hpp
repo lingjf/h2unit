@@ -1,5 +1,5 @@
 ﻿
-/* v5.9 2021-06-19 15:03:36 */
+/* v5.9 2021-06-20 14:11:48 */
 /* https://github.com/lingjf/h2unit */
 /* Apache Licence 2.0 */
 
@@ -978,19 +978,19 @@ struct h2_backtrace {
 };
 // source/other/h2_option.hpp
 
-static constexpr unsigned linux = 0x0101;
-static constexpr unsigned macos = 0x0102;
-static constexpr unsigned winos = 0x0200;
+static constexpr unsigned Linux = 0x0101;
+static constexpr unsigned macOS = 0x0102;
+static constexpr unsigned windows = 0x0200;
 
 struct h2_option {
    h2_singleton(h2_option);
 
 #if defined linux || defined __linux || defined __linux__
-   static constexpr unsigned os = linux;
+   static constexpr unsigned os = Linux;
 #elif defined __APPLE__
-   static constexpr unsigned os = macos;
+   static constexpr unsigned os = macOS;
 #elif defined WIN32 || defined __WIN32__ || defined _WIN32 || defined _MSC_VER || defined __MINGW32__
-   static constexpr unsigned os = winos;
+   static constexpr unsigned os = windows;
 #endif
 
    unsigned terminal_width;

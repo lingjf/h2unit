@@ -162,14 +162,14 @@ struct h2_piece : h2_libc {
          if (h2_in(who_allocate, S[i].a) && h2_in(who_release, S[i].r))
             return nullptr;
 
-      h2_backtrace bt_release(O.os == macos ? 6 : 5);
+      h2_backtrace bt_release(O.os == macOS ? 6 : 5);
       return h2_fail::new_asymmetric_free(user_ptr, who_allocate, who_release, bt_allocate, bt_release);
    }
 
    h2_fail* check_double_free()
    {
       h2_fail* fail = nullptr;
-      h2_backtrace bt(O.os == macos ? 6 : 5);
+      h2_backtrace bt(O.os == macOS ? 6 : 5);
       if (free_times++ == 0)
          bt_release = bt;
       else
