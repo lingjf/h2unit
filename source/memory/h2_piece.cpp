@@ -23,14 +23,14 @@ struct h2_piece : h2_libc {
    h2_piece(size_t size, size_t alignment, const char* who, h2_backtrace& bt)
      : user_size(size), page_size(h2_page_size()), who_allocate(who), bt_allocate(bt)
    {
-      unsigned alignment_2n = alignment;
+      size_t alignment_2n = alignment;
       if (h2_numeric::not2n(alignment)) alignment_2n = h2_numeric::mask2n(alignment) + 1;
       if (alignment_2n < sizeof(void*)) alignment_2n = sizeof(void*);
 
-      unsigned user_size_plus = (user_size + alignment_2n - 1 + alignment_2n) & ~(alignment_2n - 1);
+      size_t user_size_plus = (user_size + alignment_2n - 1 + alignment_2n) & ~(alignment_2n - 1);
       page_count = ::ceil(user_size_plus / (double)page_size);
 
-#if defined WIN32 || defined __WIN32__ || defined _WIN32 || defined _MSC_VER || defined __MINGW32__
+#if defined _WIN32
       page_ptr = (unsigned char*)VirtualAlloc(NULL, page_size * (page_count + 1), MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
       if (page_ptr == NULL) ::printf("VirtualAlloc failed at %s:%d\n", __FILE__, __LINE__), abort();
 #else
@@ -45,7 +45,7 @@ struct h2_piece : h2_libc {
 
    ~h2_piece()
    {
-#if defined WIN32 || defined __WIN32__ || defined _WIN32 || defined _MSC_VER || defined __MINGW32__
+#if defined _WIN32
       VirtualFree(page_ptr, 0, MEM_DECOMMIT | MEM_RELEASE);
 #else
       ::munmap(page_ptr, page_size * (page_count + 1));
@@ -57,7 +57,7 @@ struct h2_piece : h2_libc {
       if (page) forbidden_page = page;
       if (size) forbidden_size = size;
 
-#if defined WIN32 || defined __WIN32__ || defined _WIN32 || defined _MSC_VER || defined __MINGW32__
+#if defined _WIN32
       DWORD old_permission, new_permission;
       new_permission = PAGE_NOACCESS;
       if (permission & readable)
@@ -142,7 +142,7 @@ struct h2_piece : h2_libc {
 
    h2_fail* check_asymmetric_free(const char* who_release)
    {
-      static const char* free_a[] = {"malloc", "calloc", "realloc", "reallocf", "posix_memalign", "memalign", "aligned_alloc", "valloc", "pvalloc", nullptr};
+      static const char* free_a[] = {"malloc", "calloc", "realloc", "strdup", "reallocf", "posix_memalign", "memalign", "aligned_alloc", "valloc", "pvalloc", nullptr};
       static const char* free_r[] = {"free", nullptr};
       static const char* new_a[] = {"new", "new nothrow", nullptr};
       static const char* new_r[] = {"delete", nullptr};
@@ -162,8 +162,8 @@ struct h2_piece : h2_libc {
          if (h2_in(who_allocate, S[i].a) && h2_in(who_release, S[i].r))
             return nullptr;
 
-      h2_backtrace bt_release(O.os == macOS ? 6 : 5);
-      return h2_fail::new_asymmetric_free(user_ptr, who_allocate, who_release, bt_allocate, bt_release);
+      h2_backtrace bt(O.os == macOS ? 6 : 5);
+      return h2_fail::new_asymmetric_free(user_ptr, who_allocate, who_release, bt_allocate, bt);
    }
 
    h2_fail* check_double_free()

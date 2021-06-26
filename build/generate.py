@@ -26,13 +26,15 @@ def do_join(count, prefix, split):
     return s
 
 def __H2PP_TH(index):
-    return '#define _H2PP_TH{0}('.format(index) + do_join(index + 1, '_', ', ') + ', ...) _{}'.format(index)
+    return '#define __H2PP_TH{0}('.format(index) + do_join(index + 1, '_', ', ') + ', ...) _{}'.format(index)
 
 def H2PP_TH(count):
     for i in range(count):
         print(__H2PP_TH(i))
     for i in range(count):
-        h2pp_th = '#define H2PP_TH{0}(...) _H2PP_TH{0}(__VA_ARGS__, '.format(i) + do_repeat(i, ', ', False, '') + ')'
+        print('#define _H2PP_TH{0}(_Args) H2PP_RESCAN(__H2PP_TH{0} _Args)'.format(i))
+    for i in range(count):
+        h2pp_th = '#define H2PP_TH{0}(...) _H2PP_TH{0}((__VA_ARGS__, '.format(i) + do_repeat(i, ', ', False, '') + '))'
         print(h2pp_th)
 
 print('')
@@ -67,7 +69,8 @@ print(_H2PP_RS('RESCAN3', 8))
 print(_H2PP_RS('RESCAN4', 8))
 
 def __H2PP_0x(N):
-    ns = '__H2PP_{}TH'.format(N)
+    __th = '__H2PP_{}TH'.format(N)
+    _th = '_H2PP_{}TH'.format(N)
     _n = ''
     for i in range(N):
         _n = _n + '_' + str(i) + ', '
@@ -77,13 +80,14 @@ def __H2PP_0x(N):
     nn = ''
     for i in range(N, 0, -1):
         nn = nn + ', ' + str(i)
-    print('#define ' + ns + '(' + _n + '_{}, ...) _{}'.format(N, N))
+    print('#define ' + __th + '(' + _n + '_{}, ...) _{}'.format(N, N))
     print('#ifdef _MSC_VER')
-    print('#   define H2PP_HAS_COMMA(...) H2PP_RESCAN(H2PP_MAKE_CALL(' + ns + ', (__VA_ARGS__' + n1 +', 0)))')
-    print('#   define H2PP_ARG_COUNT(...) H2PP_RESCAN(H2PP_MAKE_CALL(' + ns + ', (__VA_ARGS__' + nn +')))')
+    print('#define '+ _th +'(_Args)  H2PP_RESCAN(' + __th + ' _Args)')
+    print('#define H2PP_HAS_COMMA(...) ' + _th + '((__VA_ARGS__' + n1 +', 0))')
+    print('#define H2PP_ARG_COUNT(...) ' + _th + '((__VA_ARGS__' + nn +'))')
     print('#else')
-    print('#   define H2PP_HAS_COMMA(...) ' + ns + '(__VA_ARGS__' + n1 +', 0)')
-    print('#   define H2PP_ARG_COUNT(...) ' + ns + '(__VA_ARGS__' + nn +')')
+    print('#define H2PP_HAS_COMMA(...) ' + __th + '(__VA_ARGS__' + n1 +', 0)')
+    print('#define H2PP_ARG_COUNT(...) ' + __th + '(__VA_ARGS__' + nn +')')
     print('#endif')
 
 __H2PP_0x(64)

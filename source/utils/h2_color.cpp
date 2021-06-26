@@ -4,7 +4,7 @@ struct h2_colorful {
 
    char current[8][32];
    int default_attribute;
-#if defined WIN32 || defined __WIN32__ || defined _WIN32 || defined _MSC_VER || defined __MINGW32__
+#if defined _WIN32
    HANDLE console_handle;
 #else
 #   define FOREGROUND_INTENSITY 0
@@ -22,7 +22,7 @@ struct h2_colorful {
    {
       memset(current, 0, sizeof(current));
       default_attribute = 0;
-#if defined WIN32 || defined __WIN32__ || defined _WIN32 || defined _MSC_VER || defined __MINGW32__
+#if defined _WIN32
       console_handle = GetStdHandle(STD_OUTPUT_HANDLE);
       CONSOLE_SCREEN_BUFFER_INFO csbi;
       GetConsoleScreenBufferInfo(console_handle, &csbi);
@@ -55,7 +55,7 @@ struct h2_colorful {
 
    void change()
    {
-#if defined WIN32 || defined __WIN32__ || defined _WIN32 || defined _MSC_VER || defined __MINGW32__
+#if defined _WIN32
       SetConsoleTextAttribute(console_handle, style2value("reset"));
       WORD a = 0;
       for (int i = 0; i < sizeof(current) / sizeof(current[0]); ++i)
@@ -140,7 +140,7 @@ struct h2_colorful {
 
       for (int i = 0; i < sizeof(K) / sizeof(K[0]); ++i)
          if (!strcmp(K[i].name, style))
-#if defined WIN32 || defined __WIN32__ || defined _WIN32 || defined _MSC_VER || defined __MINGW32__
+#if defined _WIN32
             return K[i].attribute;
 #else
             return K[i].value;

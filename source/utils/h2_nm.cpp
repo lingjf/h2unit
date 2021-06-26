@@ -1,15 +1,16 @@
 
 static inline void nm1(std::map<std::string, unsigned long long>*& symbols)
 {
+#if !defined _WIN32
    h2_memory::restores();
    char nm[256], line[2048], addr[128], type, name[2048];
    symbols = new std::map<std::string, unsigned long long>();
    sprintf(nm, "nm %s", O.path);
-#if defined __APPLE__
+#   if defined __APPLE__
    sprintf(nm, "nm -U %s", O.path);
-#else
+#   else
    sprintf(nm, "nm --defined-only %s", O.path);
-#endif
+#   endif
    FILE* f = ::popen(nm, "r");
    if (!f) return;
    while (::fgets(line, sizeof(line) - 1, f)) {
@@ -21,17 +22,19 @@ static inline void nm1(std::map<std::string, unsigned long long>*& symbols)
    }
    ::pclose(f);
    h2_memory::overrides();
+#endif
 }
 
 static inline void nm2(h2_list& symbols)
 {
+#if !defined _WIN32
    h2_memory::restores();
    char nm[256], line[2048], addr[128], type, name[2048];
-#if defined __APPLE__
+#   if defined __APPLE__
    sprintf(nm, "nm --demangle -U %s", O.path);
-#else
+#   else
    sprintf(nm, "nm --demangle --defined-only %s", O.path);
-#endif
+#   endif
    FILE* f = ::popen(nm, "r");
    if (!f) return;
    while (::fgets(line, sizeof(line) - 1, f)) {
@@ -43,15 +46,43 @@ static inline void nm2(h2_list& symbols)
    }
    ::pclose(f);
    h2_memory::overrides();
+#endif
+}
+
+h2_inline int h2_nm::get(const char* name, h2_scope res[], int n)
+{
+#if defined _WIN32
+   char buffer[sizeof(SYMBOL_INFO) + 256];
+   SYMBOL_INFO* symbol = (SYMBOL_INFO*)buffer;
+   symbol->SizeOfStruct = sizeof(SYMBOL_INFO);
+   symbol->MaxNameLen = 256;
+   if (!SymFromName(O.hProcess, name, symbol))
+      return 0;
+   res[0].addr = (unsigned long long)symbol->Address;
+   res[0].size = (unsigned long long)symbol->Size;
+   return 1;
+#else
+   return 0;
+#endif
 }
 
 h2_inline unsigned long long h2_nm::get(const char* name)
 {
+#if defined _WIN32
+   char buffer[sizeof(SYMBOL_INFO) + 256];
+   SYMBOL_INFO* symbol = (SYMBOL_INFO*)buffer;
+   symbol->SizeOfStruct = sizeof(SYMBOL_INFO);
+   symbol->MaxNameLen = 256;
+   if (SymFromName(O.hProcess, name, symbol))
+      return (unsigned long long)symbol->Address;
+   return 0;
+#else
    if (!name || strlen(name) == 0) return 0;
    if (!I().symbols_mangled) nm1(I().symbols_mangled);
 
    auto it = I().symbols_mangled->find(name);
    return it != I().symbols_mangled->end() ? it->second : 0ULL;
+#endif
 }
 
 static inline bool strncmp_reverse(const char* a, const char* ae, const char* b, const char* be, int n)  // [a, ae) [b, be)

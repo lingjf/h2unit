@@ -1,5 +1,7 @@
 #include "../source/h2_unit.cpp"
 
+#include "test_types.hpp"
+
 #include <vector>
 #include <deque>
 #include <array>
@@ -34,7 +36,7 @@ struct Stringify4 {
    h2::h2_string toString() { return "h2::h2_string toString"; }
    std::string Tostring(int) { return "std::string Tostring"; }
    int ToString() { return 0; }
-   const char *to_string() { return "const char* to_string"; }
+   const char* to_string() { return "const char* to_string"; }
 };
 
 CASE(tostring able)
@@ -103,6 +105,34 @@ SUITE(stringify simple)
          h2::h2_stringify<char*>(a, true));
    }
 
+   Case(string)
+   {
+      STRING_DECL_LIST;
+
+#define TheCheck(x) OK("h2unit", h2::h2_stringify(x));
+      H2Foreach(TheCheck, STRING_VAR_LIST);
+#undef TheCheck
+   }
+
+   Case(numbers)
+   {
+      NUMBER0_DECL_LIST;
+
+#define TheCheck(x) h2::h2_stringify(x);
+      H2Foreach(TheCheck, NUMBER0_VAR_LIST);
+#undef TheCheck
+   }
+
+   Case(pointers)
+   {
+      PTR_FILL_DECL_LIST;
+      PTR_NULL_DECL_LIST;
+
+// #define TheCheck(x) h2::h2_stringify(x);
+//       H2Foreach(TheCheck, PTR_NULL_VAR_LIST2);
+// #undef TheCheck
+   }
+
    Case(unsigned char*)
    {
       unsigned char a[] = {'h', 'e', 'l', 'l', 'o', 0};
@@ -113,8 +143,8 @@ SUITE(stringify simple)
    Case(void*)
    {
       void* a = (void*)0x12345678;
-      OK("0x12345678", h2::h2_stringify<void*>(a));
-      OK("0x12345678", h2::h2_stringify<void*>(a, true));
+      OK(In("0x12345678", "0000000012345678"), h2::h2_stringify<void*>(a));
+      OK(AnyOf("0x12345678", "0000000012345678"), h2::h2_stringify<void*>(a, true));
    }
 
    Case(nullptr)

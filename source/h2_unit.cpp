@@ -12,16 +12,18 @@
 #include <signal.h>  /* sigaction */
 #include <typeinfo>  /* std::typeid, std::type_info */
 
-#if defined WIN32 || defined __WIN32__ || defined _WIN32 || defined _MSC_VER || defined __MINGW32__
+#if defined _WIN32
 #   include <winsock2.h> /* socket */
 #   include <ws2tcpip.h> /* getaddrinfo */
 #   include <io.h>       /* _wirte */
 #   include <shlwapi.h>  /* PathRemoveFileSpecA, StrStrIA */
+#   include <dbghelp.h>  /* SymFromAddr */
 #   define fileno _fileno
 #   define socklen_t int
 #   define strcasestr StrStrIA
 #   pragma comment(lib, "Ws2_32.lib")
 #   pragma comment(lib, "Shlwapi.lib")
+#   pragma comment(lib, "Dbghelp.lib")
 #else
 #   include <arpa/inet.h>   /* inet_addr, inet_pton */
 #   include <cxxabi.h>      /* abi::__cxa_demangle, abi::__cxa_throw */
@@ -46,18 +48,24 @@
 #   endif
 #endif
 
-#if defined WIN32 || defined __WIN32__ || defined _WIN32 || defined _MSC_VER || defined __MINGW32__
-#   define h2_weak_attribute
-#else
-#   define h2_weak_attribute __attribute__((weak))
-#endif
-
-h2_weak_attribute int main(int argc, const char** argv)
+#if defined _WIN32
+int main(int argc, const char** argv);
+#   if defined __H2UNIT_HPP__ || defined IMPORT_MAIN
+int main(int argc, const char** argv)
 {
    h2::h2_option::I().parse(argc, argv);
    h2::h2_task::I().execute();
    return 0;
 }
+#   endif
+#else
+__attribute__((weak)) int main(int argc, const char** argv)
+{
+   h2::h2_option::I().parse(argc, argv);
+   h2::h2_task::I().execute();
+   return 0;
+}
+#endif
 
 namespace h2 {
 

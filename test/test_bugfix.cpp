@@ -24,6 +24,7 @@ CASE(bugfix
    OK(Eq(2, 0.0001), uv);
 }
 
+#ifndef _WIN32
 CASE(bugfix
      : MOCK return reference)
 {
@@ -31,6 +32,7 @@ CASE(bugfix
    MOCK(foobar, NoDefaultConstructorClass&, (int, NoDefaultConstructorClass&), Once(_, _).Return(x)){};
    foobar(1, x);
 }
+#endif
 
 CASE(bugfix
      : OK(<, >))

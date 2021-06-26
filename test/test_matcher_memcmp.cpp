@@ -5,7 +5,7 @@ SUITE(memory compares, memcmp)
    Case(M8e)
    {
       const unsigned char e1[] = {0xA1, 0xB2, 0xC3, 0xD4, 0xE5};
-      const char* e2 = "\xA1\xB2\xC3\xD4\xE5";
+      const char* e2 = "A1B2C3D4E5";
       const unsigned char a[] = {0xA1, 0xB2, 0xC3, 0xD4, 0xE5};
       OK(M8e(e1, 5), a);
       OK(M8e(e2, 5), a);
@@ -13,11 +13,9 @@ SUITE(memory compares, memcmp)
 
    Case(M16e)
    {
-      short e1[] = {1, 2, 3, 4, 5, 6, 7, 8, 9};
-      const char* e2 = "\x01\x00\x02\x00\x03\x00\x04\x00\x05\x00\x06\x00\x07\x00\x08\x00\x09\x00";
+      short e[] = {1, 2, 3, 4, 5, 6, 7, 8, 9};
       short a[] = {1, 2, 3, 4, 5, 6, 7, 8, 9};
-      OK(M16e(e1, 9), a);
-      OK(M16e(e2, 9), a);
+      OK(M16e(e, 9), a);
    }
 
    Case(M32e)

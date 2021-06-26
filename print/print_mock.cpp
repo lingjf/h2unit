@@ -7,7 +7,7 @@ int foobar(int a, const char* b)
 
 class foo {
  public:
-   virtual int bar(int a, const char* b)
+   int bar(int a, const char* b)
    {
       return 0;
    }
@@ -23,13 +23,13 @@ SUITE(MOCK)
 
    Case(call times)
    {
-      MOCK(foobar, int, (int, const char*), Times(2), Once()){};
+      MOCK(foobar, int, (int, const char*), Times(2), Once()) { return 0; };
       foobar(1, "A");
    }
 
    Case(unexpect call)
    {
-      MOCK(foobar, int, (int, const char*), Times(1).With(1, "A")){};
+      MOCK(foobar, int, (int, const char*), Times(1).With(1, "A")) { return 0; };
       foobar(1, "A");
       foobar(2, "B");
    }
@@ -62,7 +62,7 @@ SUITE(MOCK)
              .With(1, "A")
              .Return(11)
              .Once(1, _)
-             .Return(22)){};
+             .Return(22)) { return 0; };
 
       OK(11, foobar(1, "A"));
       OK(22, foobar(1, "A"));

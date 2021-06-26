@@ -119,6 +119,7 @@ SUITE(mfp)
       OK(2, ((Circle_Go2)p4)(nullptr, 1));
    }
 
+#ifndef _WIN32
    Case(virtual member function)
    {
       void* p1 = h2::h2_mfp<Shape, int(int, int)>::A(&Shape::work);
@@ -175,6 +176,7 @@ SUITE(mfp)
       OK(-1, a.f1());
       OK(2, a.f2());
    }
+#endif
 }
 
 CASE(is static member function)

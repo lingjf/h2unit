@@ -11,17 +11,17 @@ struct h2_libc_malloc {
    };
 
    struct block {
-      long long size;
+      long long bytes;
       block* next = nullptr;
       h2_list buddies;
 
-      block(long long _size) : size(_size)
+      block(long long _bytes) : bytes(_bytes)
       {
-         buddy* b = new ((char*)this + sizeof(block)) buddy(size - sizeof(block));
+         buddy* b = new ((char*)this + sizeof(block)) buddy(bytes - sizeof(block));
          buddies.add_tail(b->x);
       }
 
-      buddy* malloc(long long size)
+      buddy* malloc(const long long size)
       {
          h2_list_for_each_entry (p, buddies, buddy, x) {
             if (size + sizeof(p->size) <= p->size) {
@@ -41,7 +41,7 @@ struct h2_libc_malloc {
 
       bool free(buddy* b)
       {
-         if ((char*)b < (char*)this && (char*)this + size <= (char*)b) return false;
+         if ((char*)b < (char*)this && (char*)this + bytes <= (char*)b) return false;
          h2_list_for_each_entry (p, buddies, buddy, x) {
             if (p->join_right(b)) {
                p->size += b->size;
@@ -71,7 +71,7 @@ struct h2_libc_malloc {
       int page_size = h2_page_size();
       int page_count = ::ceil(size / (double)page_size) + 256;
 
-#if defined WIN32 || defined __WIN32__ || defined _WIN32 || defined _MSC_VER || defined __MINGW32__
+#if defined _WIN32
       PVOID ptr = VirtualAlloc(NULL, page_count * page_size, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
       if (ptr == NULL) ::printf("VirtualAlloc failed at %s:%d\n", __FILE__, __LINE__), abort();
 #else
@@ -136,7 +136,7 @@ h2_inline void h2_libc::free(void* ptr)
 
 h2_inline ssize_t h2_libc::write(int fd, const void* buf, size_t count)
 {
-#if defined WIN32 || defined __WIN32__ || defined _WIN32 || defined _MSC_VER || defined __MINGW32__
+#if defined _WIN32
    return _write(fd, buf, count);
 #else
    return ::syscall(SYS_write, fd, buf, count);

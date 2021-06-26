@@ -9,7 +9,7 @@ struct h2_sock : h2_once {
    h2_sock();
    ~h2_sock();
    static void clear();
-   static void inject(const void* packet, size_t size, const char* attributes);  // from=1.2.3.4:5678, to=4.3.2.1:8765
+   static void inject(const void* packet, size_t size, const char* attributes = "");  // from=1.2.3.4:5678, to=4.3.2.1:8765
    static h2_packet* fetch();
 
    template <typename M1 = h2_polymorphic_matcher<h2_matches_any>, typename M2 = h2_polymorphic_matcher<h2_matches_any>, typename M3 = h2_polymorphic_matcher<h2_matches_any>, typename M4 = h2_polymorphic_matcher<h2_matches_any>>
@@ -52,5 +52,5 @@ struct h2_sock : h2_once {
 #define __H2SOCK(Q) for (h2::h2_sock Q; Q;)
 #define H2SOCK(...) __H2SOCK(H2PP_UNIQUE(t_sock))
 
-#define Ptx(...) h2::h2_sock::check(__FILE__, __LINE__, #__VA_ARGS__, __VA_ARGS__)
-#define Pij(_Packet, _Size, ...) h2::h2_sock::inject(_Packet, _Size, #__VA_ARGS__)
+#define Ptx(...) h2::h2_sock::check(__FILE__, __LINE__, h2::sss(#__VA_ARGS__), __VA_ARGS__)
+#define Pij(_Packet, _Size, ...) h2::h2_sock::inject(_Packet, _Size, h2::sss(#__VA_ARGS__))

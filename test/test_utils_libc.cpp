@@ -7,7 +7,7 @@ char* h2_libc_malloc_tostring(h2::h2_libc_malloc* m, char* s)
    int c1 = 0;
    for (auto* p = m->next; p; p = p->next) {
       sprintf(s + strlen(s), "%s", c1++ ? "," : "");
-      sprintf(s + strlen(s), "{ size : %lld, buddies: [", p->size);
+      sprintf(s + strlen(s), "{ bytes : %lld, buddies: [", p->bytes);
       h2_list_for_each_entry (b, i, p->buddies, h2::h2_libc_malloc::buddy, x) {
          sprintf(s + strlen(s), "%s%lld", i ? "," : "", b->size);
       }
@@ -32,7 +32,7 @@ CASE(libc_malloc)
 
    sprintf(t2, "[                                     \
           {                                           \
-            \"size\": 4096 * 257,                     \
+            \"bytes\": 4096 * 257,                    \
             \"buddies\": [4096 * 257 - %d - (88+8)]   \
           }                                           \
         ]",
@@ -45,7 +45,7 @@ CASE(libc_malloc)
 
    sprintf(t2, "[                                                 \
           {                                                       \
-            \"size\": 4096 * 257,                                 \
+            \"bytes\": 4096 * 257,                                \
             \"buddies\": [4096 * 257 - %d - (88+8) - (1008+8)]    \
           }                                                       \
         ]",
@@ -58,7 +58,7 @@ CASE(libc_malloc)
 
    sprintf(t2, "[                                                          \
           {                                                                \
-            \"size\": 4096 * 257,                                          \
+            \"bytes\": 4096 * 257,                                         \
             \"buddies\": [4096 * 257 - %d - (88+8) - (1008+8) - (208+8)]   \
           }                                                                \
         ]",
@@ -68,7 +68,7 @@ CASE(libc_malloc)
    M.free(p2);
    sprintf(t2, "[                                                                   \
           {                                                                         \
-            \"size\": 4096 * 257,                                                   \
+            \"bytes\": 4096 * 257,                                                  \
             \"buddies\": [4096 * 257 - %d - (88+8) - (1008+8) - (208+8), (1008+8)]  \
           }                                                                         \
         ]",
@@ -78,7 +78,7 @@ CASE(libc_malloc)
    M.free(p1);
    sprintf(t2, "[                                                                            \
           {                                                                                  \
-            \"size\": 4096 * 257,                                                            \
+            \"bytes\": 4096 * 257,                                                           \
             \"buddies\": [4096 * 257 - %d - (88+8) - (1008+8) - (208+8), (1008+8)+(88+8)]    \
           }                                                                                  \
         ]",
@@ -88,13 +88,12 @@ CASE(libc_malloc)
    M.free(p3);
    sprintf(t2, "[                            \
           {                                  \
-            \"size\": 4096 * 257,            \
+            \"bytes\": 4096 * 257,           \
             \"buddies\": [4096 * 257 - %d]   \
           }                                  \
         ]",
            (int)sizeof(h2::h2_libc_malloc::block));
 #endif
-
 }
 
 CASE(libc_malloc repeat)

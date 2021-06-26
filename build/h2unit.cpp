@@ -1,5 +1,5 @@
 ﻿
-/* v5.9 2021-06-20 15:38:55 */
+/* v5.9 2021-06-26 18:18:20 */
 /* https://github.com/lingjf/h2unit */
 /* Apache Licence 2.0 */
 
@@ -16,16 +16,18 @@
 #include <signal.h>  /* sigaction */
 #include <typeinfo>  /* std::typeid, std::type_info */
 
-#if defined WIN32 || defined __WIN32__ || defined _WIN32 || defined _MSC_VER || defined __MINGW32__
+#if defined _WIN32
 #   include <winsock2.h> /* socket */
 #   include <ws2tcpip.h> /* getaddrinfo */
 #   include <io.h>       /* _wirte */
 #   include <shlwapi.h>  /* PathRemoveFileSpecA, StrStrIA */
+#   include <dbghelp.h>  /* SymFromAddr */
 #   define fileno _fileno
 #   define socklen_t int
 #   define strcasestr StrStrIA
 #   pragma comment(lib, "Ws2_32.lib")
 #   pragma comment(lib, "Shlwapi.lib")
+#   pragma comment(lib, "Dbghelp.lib")
 #else
 #   include <arpa/inet.h>   /* inet_addr, inet_pton */
 #   include <cxxabi.h>      /* abi::__cxa_demangle, abi::__cxa_throw */
@@ -50,18 +52,24 @@
 #   endif
 #endif
 
-#if defined WIN32 || defined __WIN32__ || defined _WIN32 || defined _MSC_VER || defined __MINGW32__
-#   define h2_weak_attribute
-#else
-#   define h2_weak_attribute __attribute__((weak))
-#endif
-
-h2_weak_attribute int main(int argc, const char** argv)
+#if defined _WIN32
+int main(int argc, const char** argv);
+#   if defined __H2UNIT_HPP__ || defined IMPORT_MAIN
+int main(int argc, const char** argv)
 {
    h2::h2_option::I().parse(argc, argv);
    h2::h2_task::I().execute();
    return 0;
 }
+#   endif
+#else
+__attribute__((weak)) int main(int argc, const char** argv)
+{
+   h2::h2_option::I().parse(argc, argv);
+   h2::h2_task::I().execute();
+   return 0;
+}
+#endif
 
 namespace h2 {
 
@@ -151,7 +159,7 @@ h2_inline bool h2_pattern::regex_match(const char* pattern, const char* subject,
 
 h2_inline bool h2_pattern::wildcard_match(const char* pattern, const char* subject, bool caseless)
 {
-#if defined WIN32 || defined __WIN32__ || defined _WIN32 || defined _MSC_VER || defined __MINGW32__
+#if defined _WIN32
    const char *scur = subject, *pcur = pattern;
    const char *sstar = nullptr, *pstar = nullptr;
    while (*scur) {
@@ -184,7 +192,7 @@ h2_inline bool h2_pattern::match(const char* pattern, const char* subject, bool 
 
 static inline long long h2_now()
 {
-#if defined WIN32 || defined __WIN32__ || defined _WIN32 || defined _MSC_VER || defined __MINGW32__
+#if defined _WIN32
    return GetTickCount();
 #else
    struct timeval tv;
@@ -195,7 +203,7 @@ static inline long long h2_now()
 
 static inline void h2_sleep(long long milliseconds)
 {
-#if defined WIN32 || defined __WIN32__ || defined _WIN32 || defined _MSC_VER || defined __MINGW32__
+#if defined _WIN32
    Sleep(milliseconds);
 #else
    ::usleep(milliseconds * 1000);
@@ -204,7 +212,7 @@ static inline void h2_sleep(long long milliseconds)
 
 static inline unsigned h2_termimal_width()
 {
-#if defined WIN32 || defined __WIN32__ || defined _WIN32 || defined _MSC_VER || defined __MINGW32__
+#if defined _WIN32
    return 80;
 #else
    struct winsize w;
@@ -215,7 +223,7 @@ static inline unsigned h2_termimal_width()
 
 static inline unsigned h2_page_size()
 {
-#if defined WIN32 || defined __WIN32__ || defined _WIN32 || defined _MSC_VER || defined __MINGW32__
+#if defined _WIN32
    SYSTEM_INFO si;
    GetSystemInfo(&si);
    return (unsigned)si.dwPageSize;
@@ -376,17 +384,17 @@ struct h2_libc_malloc {
    };
 
    struct block {
-      long long size;
+      long long bytes;
       block* next = nullptr;
       h2_list buddies;
 
-      block(long long _size) : size(_size)
+      block(long long _bytes) : bytes(_bytes)
       {
-         buddy* b = new ((char*)this + sizeof(block)) buddy(size - sizeof(block));
+         buddy* b = new ((char*)this + sizeof(block)) buddy(bytes - sizeof(block));
          buddies.add_tail(b->x);
       }
 
-      buddy* malloc(long long size)
+      buddy* malloc(const long long size)
       {
          h2_list_for_each_entry (p, buddies, buddy, x) {
             if (size + sizeof(p->size) <= p->size) {
@@ -406,7 +414,7 @@ struct h2_libc_malloc {
 
       bool free(buddy* b)
       {
-         if ((char*)b < (char*)this && (char*)this + size <= (char*)b) return false;
+         if ((char*)b < (char*)this && (char*)this + bytes <= (char*)b) return false;
          h2_list_for_each_entry (p, buddies, buddy, x) {
             if (p->join_right(b)) {
                p->size += b->size;
@@ -436,7 +444,7 @@ struct h2_libc_malloc {
       int page_size = h2_page_size();
       int page_count = ::ceil(size / (double)page_size) + 256;
 
-#if defined WIN32 || defined __WIN32__ || defined _WIN32 || defined _MSC_VER || defined __MINGW32__
+#if defined _WIN32
       PVOID ptr = VirtualAlloc(NULL, page_count * page_size, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
       if (ptr == NULL) ::printf("VirtualAlloc failed at %s:%d\n", __FILE__, __LINE__), abort();
 #else
@@ -501,7 +509,7 @@ h2_inline void h2_libc::free(void* ptr)
 
 h2_inline ssize_t h2_libc::write(int fd, const void* buf, size_t count)
 {
-#if defined WIN32 || defined __WIN32__ || defined _WIN32 || defined _MSC_VER || defined __MINGW32__
+#if defined _WIN32
    return _write(fd, buf, count);
 #else
    return ::syscall(SYS_write, fd, buf, count);
@@ -832,7 +840,7 @@ struct h2_colorful {
 
    char current[8][32];
    int default_attribute;
-#if defined WIN32 || defined __WIN32__ || defined _WIN32 || defined _MSC_VER || defined __MINGW32__
+#if defined _WIN32
    HANDLE console_handle;
 #else
 #   define FOREGROUND_INTENSITY 0
@@ -850,7 +858,7 @@ struct h2_colorful {
    {
       memset(current, 0, sizeof(current));
       default_attribute = 0;
-#if defined WIN32 || defined __WIN32__ || defined _WIN32 || defined _MSC_VER || defined __MINGW32__
+#if defined _WIN32
       console_handle = GetStdHandle(STD_OUTPUT_HANDLE);
       CONSOLE_SCREEN_BUFFER_INFO csbi;
       GetConsoleScreenBufferInfo(console_handle, &csbi);
@@ -883,7 +891,7 @@ struct h2_colorful {
 
    void change()
    {
-#if defined WIN32 || defined __WIN32__ || defined _WIN32 || defined _MSC_VER || defined __MINGW32__
+#if defined _WIN32
       SetConsoleTextAttribute(console_handle, style2value("reset"));
       WORD a = 0;
       for (int i = 0; i < sizeof(current) / sizeof(current[0]); ++i)
@@ -968,7 +976,7 @@ struct h2_colorful {
 
       for (int i = 0; i < sizeof(K) / sizeof(K[0]); ++i)
          if (!strcmp(K[i].name, style))
-#if defined WIN32 || defined __WIN32__ || defined _WIN32 || defined _MSC_VER || defined __MINGW32__
+#if defined _WIN32
             return K[i].attribute;
 #else
             return K[i].value;
@@ -1007,15 +1015,16 @@ h2_inline void h2_color::printl(const h2_rows& rows)
 
 static inline void nm1(std::map<std::string, unsigned long long>*& symbols)
 {
+#if !defined _WIN32
    h2_memory::restores();
    char nm[256], line[2048], addr[128], type, name[2048];
    symbols = new std::map<std::string, unsigned long long>();
    sprintf(nm, "nm %s", O.path);
-#if defined __APPLE__
+#   if defined __APPLE__
    sprintf(nm, "nm -U %s", O.path);
-#else
+#   else
    sprintf(nm, "nm --defined-only %s", O.path);
-#endif
+#   endif
    FILE* f = ::popen(nm, "r");
    if (!f) return;
    while (::fgets(line, sizeof(line) - 1, f)) {
@@ -1027,17 +1036,19 @@ static inline void nm1(std::map<std::string, unsigned long long>*& symbols)
    }
    ::pclose(f);
    h2_memory::overrides();
+#endif
 }
 
 static inline void nm2(h2_list& symbols)
 {
+#if !defined _WIN32
    h2_memory::restores();
    char nm[256], line[2048], addr[128], type, name[2048];
-#if defined __APPLE__
+#   if defined __APPLE__
    sprintf(nm, "nm --demangle -U %s", O.path);
-#else
+#   else
    sprintf(nm, "nm --demangle --defined-only %s", O.path);
-#endif
+#   endif
    FILE* f = ::popen(nm, "r");
    if (!f) return;
    while (::fgets(line, sizeof(line) - 1, f)) {
@@ -1049,15 +1060,43 @@ static inline void nm2(h2_list& symbols)
    }
    ::pclose(f);
    h2_memory::overrides();
+#endif
+}
+
+h2_inline int h2_nm::get(const char* name, h2_scope res[], int n)
+{
+#if defined _WIN32
+   char buffer[sizeof(SYMBOL_INFO) + 256];
+   SYMBOL_INFO* symbol = (SYMBOL_INFO*)buffer;
+   symbol->SizeOfStruct = sizeof(SYMBOL_INFO);
+   symbol->MaxNameLen = 256;
+   if (!SymFromName(O.hProcess, name, symbol))
+      return 0;
+   res[0].addr = (unsigned long long)symbol->Address;
+   res[0].size = (unsigned long long)symbol->Size;
+   return 1;
+#else
+   return 0;
+#endif
 }
 
 h2_inline unsigned long long h2_nm::get(const char* name)
 {
+#if defined _WIN32
+   char buffer[sizeof(SYMBOL_INFO) + 256];
+   SYMBOL_INFO* symbol = (SYMBOL_INFO*)buffer;
+   symbol->SizeOfStruct = sizeof(SYMBOL_INFO);
+   symbol->MaxNameLen = 256;
+   if (SymFromName(O.hProcess, name, symbol))
+      return (unsigned long long)symbol->Address;
+   return 0;
+#else
    if (!name || strlen(name) == 0) return 0;
    if (!I().symbols_mangled) nm1(I().symbols_mangled);
 
    auto it = I().symbols_mangled->find(name);
    return it != I().symbols_mangled->end() ? it->second : 0ULL;
+#endif
 }
 
 static inline bool strncmp_reverse(const char* a, const char* ae, const char* b, const char* be, int n)  // [a, ae) [b, be)
@@ -1148,20 +1187,21 @@ h2_inline bool h2_nm::in_main(unsigned long long addr)
 static inline bool demangle(const char* mangled, char* demangled, size_t len)
 {
    int status = 0;
-#ifndef _WIN32
+#if !defined _WIN32
    abi::__cxa_demangle(mangled, demangled, &len, &status);
 #endif
    return status == 0;
 }
 
+#if !defined _WIN32
 static inline bool addr2line(unsigned long long addr, char* output, size_t len)
 {
    char t[256];
-#if defined __APPLE__
+#   if defined __APPLE__
    sprintf(t, "atos -o %s 0x%llx", O.path, addr);
-#else
+#   else
    sprintf(t, "addr2line -C -a -s -p -f -e %s -i %llx", O.path, addr);
-#endif
+#   endif
    FILE* f = ::popen(t, "r");
    if (!f) return false;
    output = ::fgets(output, len, f);
@@ -1170,6 +1210,7 @@ static inline bool addr2line(unsigned long long addr, char* output, size_t len)
    for (int i = strlen(output) - 1; 0 <= i && ::isspace(output[i]); --i) output[i] = '\0';  //strip tail
    return true;
 }
+#endif
 
 static inline bool backtrace_extract(const char* backtrace_symbol_line, char* module, char* mangled, unsigned long long* offset)
 {
@@ -1203,18 +1244,20 @@ static inline bool backtrace_extract(const char* backtrace_symbol_line, char* mo
 
 h2_inline h2_backtrace::h2_backtrace(int shift_) : shift(shift_)
 {
-#ifndef _WIN32
    h2_memory::restores();
-   count = ::backtrace(array, sizeof(array) / sizeof(array[0]));
-   h2_memory::overrides();
+#ifdef _WIN32
+   count = CaptureStackBackTrace(0, sizeof(frames) / sizeof(frames[0]), frames, NULL);
+#else
+   count = ::backtrace(frames, sizeof(frames) / sizeof(frames[0]));
 #endif
+   h2_memory::overrides();
 }
 
 h2_inline bool h2_backtrace::operator==(const h2_backtrace& bt)
 {
    if (count != bt.count) return false;
    for (int i = 0; i < count; ++i)
-      if (array[i] != bt.array[i])
+      if (frames[i] != bt.frames[i])
          return false;
    return true;
 }
@@ -1222,16 +1265,35 @@ h2_inline bool h2_backtrace::operator==(const h2_backtrace& bt)
 h2_inline bool h2_backtrace::has(void* func, int size) const
 {
    for (int i = 0; i < count; ++i)
-      if (func <= array[i] && (unsigned char*)array[i] < ((unsigned char*)func) + size)
+      if (func <= frames[i] && (unsigned char*)frames[i] < ((unsigned char*)func) + size)
          return true;
    return false;
 }
 
 h2_inline void h2_backtrace::print(h2_vector<h2_string>& stacks) const
 {
-#ifndef _WIN32
+#ifdef _WIN32
+   for (int i = shift; i < count; ++i) {
+      char buffer[sizeof(SYMBOL_INFO) + 256];
+      SYMBOL_INFO* symbol = (SYMBOL_INFO*)buffer;
+      symbol->SizeOfStruct = sizeof(SYMBOL_INFO);
+      symbol->MaxNameLen = 256;
+      h2_string frame;
+      if (SymFromAddr(O.hProcess, (DWORD64)(frames[i]), 0, symbol))
+         frame.sprintf("%s %p+%lld ", symbol->Name, symbol->Address, (DWORD64)(frames[i]) - (DWORD64)symbol->Address);
+      DWORD dwDisplacement;
+      IMAGEHLP_LINE64 fileline;
+      SymSetOptions(SYMOPT_LOAD_LINES);
+      fileline.SizeOfStruct = sizeof(IMAGEHLP_LINE64);
+      if (SymGetLineFromAddr64(O.hProcess, (DWORD64)(frames[i]), &dwDisplacement, &fileline))
+         frame.sprintf("%s:%d", fileline.FileName, fileline.LineNumber);
+      stacks.push_back(frame);
+      if (!strcmp("main", symbol->Name) || h2_nm::in_main(symbol->Address))
+         break;
+   }
+#else
    h2_memory::restores();
-   char** backtraces = backtrace_symbols(array, count);
+   char** backtraces = backtrace_symbols(frames, count);
    h2_memory::overrides();
 
    for (int i = shift; i < count; ++i) {
@@ -1244,11 +1306,13 @@ h2_inline void h2_backtrace::print(h2_vector<h2_string>& stacks) const
                if (strlen(demangled))
                   p = demangled;
          }
-         address = h2_nm::get(mangled);
-         if (address != ULLONG_MAX)
-            if (addr2line(address + offset, addr2lined, sizeof(addr2lined)))
-               if (strlen(addr2lined))
-                  p = addr2lined;
+         if (O.verbose || O.os != macOS /* for speed atos is slow */) {
+            address = h2_nm::get(mangled);
+            if (address != ULLONG_MAX)
+               if (addr2line(address + offset, addr2lined, sizeof(addr2lined)))
+                  if (strlen(addr2lined))
+                     p = addr2lined;
+         }
       }
       stacks.push_back(p);
 
@@ -1268,8 +1332,7 @@ h2_inline void h2_backtrace::print(int pad) const
    print(stacks);
    h2_rows rows;
    for (auto& c : stacks)
-      if (O.verbose || c.find("h2unit.h:") == h2_string::npos && c.find("h2unit.hpp:") == h2_string::npos && c.find("h2unit.cpp:") == h2_string::npos)
-         rows.push_back(h2_row(c));
+      rows.push_back(c.startswith("h2::") ? gray(c) : h2_row(c));
    rows.sequence(pad);
    h2_color::printl(rows);
 }
@@ -1298,7 +1361,7 @@ struct tinyexpr
             ret = te_eval(n);
             te_free(n);
         } else {
-            ret = (0.0/0.0);
+            ret = (NAN);
         }
         return ret;
     }
@@ -1403,24 +1466,24 @@ struct tinyexpr
     static double pi(void) {return 3.14159265358979323846;}
     static double e(void) {return 2.71828182845904523536;}
     static double fac(double a) {/* simplest version of fac */
-        if (a < 0.0) return (0.0/0.0);
-        if (a > UINT_MAX) return (1.0/0.0);
+        if (a < 0.0) return (NAN);
+        if (a > UINT_MAX) return (NAN);
         unsigned int ua = (unsigned int)(a);
         unsigned long int result = 1, i;
         for (i = 1; i <= ua; i++) {
-            if (i > ULONG_MAX / result) return (1.0/0.0);
+            if (i > ULONG_MAX / result) return (NAN);
             result *= i;
         }
         return (double)result;
     }
     static double ncr(double n, double r) {
-        if (n < 0.0 || r < 0.0 || n < r) return (0.0/0.0);
-        if (n > UINT_MAX || r > UINT_MAX) return (1.0/0.0);
+        if (n < 0.0 || r < 0.0 || n < r) return (NAN);
+        if (n > UINT_MAX || r > UINT_MAX) return (NAN);
         unsigned long int un = (unsigned int)(n), ur = (unsigned int)(r), i;
         unsigned long int result = 1;
         if (ur > un / 2) ur = un - ur;
         for (i = 1; i <= ur; i++) {
-            if (result > ULONG_MAX / (un - ur + i)) return (1.0/0.0);
+            if (result > ULONG_MAX / (un - ur + i)) return (NAN);
             result *= un - ur + i;
             result /= i;
         }
@@ -1651,7 +1714,7 @@ struct tinyexpr
             default:
                 ret = new_expr(0, 0);
                 s->type = TOK_ERROR;
-                ret->value = (0.0/0.0);
+                ret->value = (NAN);
                 break;
         }
 
@@ -1743,7 +1806,7 @@ struct tinyexpr
 #define TE_M(e) te_eval((const te_expr *)n->parameters[e])
 
     static double te_eval(const te_expr *n) {
-        if (!n) return (0.0/0.0);
+        if (!n) return (NAN);
 
         switch(TYPE_MASK(n->type)) {
             case TE_CONSTANT: return n->value;
@@ -1760,7 +1823,7 @@ struct tinyexpr
                     case 5: return TE_F(double, double, double, double, double)(TE_M(0), TE_M(1), TE_M(2), TE_M(3), TE_M(4));
                     case 6: return TE_F(double, double, double, double, double, double)(TE_M(0), TE_M(1), TE_M(2), TE_M(3), TE_M(4), TE_M(5));
                     case 7: return TE_F(double, double, double, double, double, double, double)(TE_M(0), TE_M(1), TE_M(2), TE_M(3), TE_M(4), TE_M(5), TE_M(6));
-                    default: return (0.0/0.0);
+                    default: return (NAN);
                 }
 
             case TE_CLOSURE0: case TE_CLOSURE1: case TE_CLOSURE2: case TE_CLOSURE3:
@@ -1774,10 +1837,10 @@ struct tinyexpr
                     case 5: return TE_F(void*, double, double, double, double, double)(n->parameters[5], TE_M(0), TE_M(1), TE_M(2), TE_M(3), TE_M(4));
                     case 6: return TE_F(void*, double, double, double, double, double, double)(n->parameters[6], TE_M(0), TE_M(1), TE_M(2), TE_M(3), TE_M(4), TE_M(5));
                     case 7: return TE_F(void*, double, double, double, double, double, double, double)(n->parameters[7], TE_M(0), TE_M(1), TE_M(2), TE_M(3), TE_M(4), TE_M(5), TE_M(6));
-                    default: return (0.0/0.0);
+                    default: return (NAN);
                 }
 
-            default: return (0.0/0.0);
+            default: return (NAN);
         }
 
     }
@@ -2736,14 +2799,14 @@ struct h2_piece : h2_libc {
    h2_piece(size_t size, size_t alignment, const char* who, h2_backtrace& bt)
      : user_size(size), page_size(h2_page_size()), who_allocate(who), bt_allocate(bt)
    {
-      unsigned alignment_2n = alignment;
+      size_t alignment_2n = alignment;
       if (h2_numeric::not2n(alignment)) alignment_2n = h2_numeric::mask2n(alignment) + 1;
       if (alignment_2n < sizeof(void*)) alignment_2n = sizeof(void*);
 
-      unsigned user_size_plus = (user_size + alignment_2n - 1 + alignment_2n) & ~(alignment_2n - 1);
+      size_t user_size_plus = (user_size + alignment_2n - 1 + alignment_2n) & ~(alignment_2n - 1);
       page_count = ::ceil(user_size_plus / (double)page_size);
 
-#if defined WIN32 || defined __WIN32__ || defined _WIN32 || defined _MSC_VER || defined __MINGW32__
+#if defined _WIN32
       page_ptr = (unsigned char*)VirtualAlloc(NULL, page_size * (page_count + 1), MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
       if (page_ptr == NULL) ::printf("VirtualAlloc failed at %s:%d\n", __FILE__, __LINE__), abort();
 #else
@@ -2758,7 +2821,7 @@ struct h2_piece : h2_libc {
 
    ~h2_piece()
    {
-#if defined WIN32 || defined __WIN32__ || defined _WIN32 || defined _MSC_VER || defined __MINGW32__
+#if defined _WIN32
       VirtualFree(page_ptr, 0, MEM_DECOMMIT | MEM_RELEASE);
 #else
       ::munmap(page_ptr, page_size * (page_count + 1));
@@ -2770,7 +2833,7 @@ struct h2_piece : h2_libc {
       if (page) forbidden_page = page;
       if (size) forbidden_size = size;
 
-#if defined WIN32 || defined __WIN32__ || defined _WIN32 || defined _MSC_VER || defined __MINGW32__
+#if defined _WIN32
       DWORD old_permission, new_permission;
       new_permission = PAGE_NOACCESS;
       if (permission & readable)
@@ -2855,7 +2918,7 @@ struct h2_piece : h2_libc {
 
    h2_fail* check_asymmetric_free(const char* who_release)
    {
-      static const char* free_a[] = {"malloc", "calloc", "realloc", "reallocf", "posix_memalign", "memalign", "aligned_alloc", "valloc", "pvalloc", nullptr};
+      static const char* free_a[] = {"malloc", "calloc", "realloc", "strdup", "reallocf", "posix_memalign", "memalign", "aligned_alloc", "valloc", "pvalloc", nullptr};
       static const char* free_r[] = {"free", nullptr};
       static const char* new_a[] = {"new", "new nothrow", nullptr};
       static const char* new_r[] = {"delete", nullptr};
@@ -2875,8 +2938,8 @@ struct h2_piece : h2_libc {
          if (h2_in(who_allocate, S[i].a) && h2_in(who_release, S[i].r))
             return nullptr;
 
-      h2_backtrace bt_release(O.os == macOS ? 6 : 5);
-      return h2_fail::new_asymmetric_free(user_ptr, who_allocate, who_release, bt_allocate, bt_release);
+      h2_backtrace bt(O.os == macOS ? 6 : 5);
+      return h2_fail::new_asymmetric_free(user_ptr, who_allocate, who_release, bt_allocate, bt);
    }
 
    h2_fail* check_double_free()
@@ -3095,7 +3158,9 @@ struct h2_stack {
          h2_piece* piece = p->get_piece(ptr);
          if (piece) return p->rel_piece(who, piece);
       }
-      h2_debug("Warning: %s %p not found!", who, ptr);
+      h2_backtrace bt(O.os == macOS ? 3 : 2);
+      if (!h2_exempt::in(bt))
+         h2_debug("Warning: %s %p not found!", who, ptr);
       return nullptr;
    }
 
@@ -3148,6 +3213,13 @@ struct h2_override {
       if (old_p && new_p) memcpy(new_p->user_ptr, old_p->user_ptr, std::min(old_p->user_size, size));
       if (ptr) h2_fail_g(h2_stack::I().rel_piece("free", ptr), false);
       return new_p ? new_p->user_ptr : nullptr;
+   }
+   static char* strdup(char* s)
+   {
+      h2_piece* p = h2_stack::I().new_piece("strdup", strlen(s) + 1, 0, nullptr);
+      char* ret = p ? (char*)p->user_ptr : nullptr;
+      if (ret) strcpy(ret, s);
+      return ret;
    }
    static int posix_memalign(void** memptr, size_t alignment, size_t size)
    {
@@ -3348,13 +3420,10 @@ struct h2_wrapper_specific {
 struct h2_wrapper_specific {
    h2_stubs stubs;
 
-   h2_wrapper_specific()
-   {
-   }
-
    void overrides()
    {
       stubs.add((void*)::_aligned_malloc, (void*)h2_override::_aligned_malloc, "_aligned_malloc", __FILE__, __LINE__);
+      stubs.add((void*)::strdup, (void*)h2_override::strdup, "strdup", __FILE__, __LINE__);
    }
 
    void restores()
@@ -3376,10 +3445,12 @@ struct h2_wrapper {
       stubs.add((void*)::malloc, (void*)h2_override::malloc, "malloc", __FILE__, __LINE__);
       stubs.add((void*)::realloc, (void*)h2_override::realloc, "realloc", __FILE__, __LINE__);
       stubs.add((void*)::calloc, (void*)h2_override::calloc, "calloc", __FILE__, __LINE__);
+#if !defined _WIN32
       // _POSIX_C_SOURCE >= 200112L || _XOPEN_SOURCE >= 600
       stubs.add((void*)::posix_memalign, (void*)h2_override::posix_memalign, "posix_memalign", __FILE__, __LINE__);
-#if defined _ISOC11_SOURCE
+#   if defined _ISOC11_SOURCE
       stubs.add((void*)::aligned_alloc, (void*)h2_override::aligned_alloc, "aligned_alloc", __FILE__, __LINE__);
+#   endif
 #endif
       // deprecated valloc pvalloc memalign
       stubs.add((void*)((void* (*)(std::size_t))::operator new), (void*)((void* (*)(std::size_t))h2_override::operator new), "new", __FILE__, __LINE__);
@@ -3551,11 +3622,14 @@ struct h2_exempt_stub {  // allocate memory inside asymmetrically
 
    static char* asctime_r(const struct tm* timeptr, char* buf)
    {
-      char* ret;
       h2_memory::restores();
-      for (h2::h2_stub_temporary_restore t((void*)::asctime_r); t;) ret = ::asctime_r(timeptr, buf);
+#if defined _WIN32
+      asctime_s(buf, 256, timeptr);
+#else
+      for (h2::h2_stub_temporary_restore t((void*)::asctime_r); t;) buf = ::asctime_r(timeptr, buf);
+#endif
       h2_memory::overrides();
-      return ret;
+      return buf;
    }
 
    static char* ctime(const time_t* clock)
@@ -3583,11 +3657,14 @@ struct h2_exempt_stub {  // allocate memory inside asymmetrically
 
    static struct tm* gmtime_r(const time_t* clock, struct tm* result)
    {
-      struct tm* ret;
       h2_memory::restores();
-      for (h2::h2_stub_temporary_restore t((void*)::gmtime_r); t;) ret = ::gmtime_r(clock, result);
+#if defined _WIN32
+      ::gmtime_s(result, clock);
+#else
+      for (h2::h2_stub_temporary_restore t((void*)::gmtime_r); t;) result = ::gmtime_r(clock, result);
+#endif
       h2_memory::overrides();
-      return ret;
+      return result;
    }
 
    static struct tm* gmtime(const time_t* clock)
@@ -3599,7 +3676,7 @@ struct h2_exempt_stub {  // allocate memory inside asymmetrically
 
    static time_t mktime(struct tm* timeptr)
    {
-      time_t ret;
+      time_t ret = 0;
       h2_memory::restores();
       for (h2::h2_stub_temporary_restore t((void*)::mktime); t;) ret = ::mktime(timeptr);
       h2_memory::overrides();
@@ -3608,7 +3685,7 @@ struct h2_exempt_stub {  // allocate memory inside asymmetrically
 
    static double strtod(const char* nptr, char** endptr)
    {
-      double ret;
+      double ret = 0;
       h2_memory::restores();
       for (h2::h2_stub_temporary_restore t((void*)::strtod); t;) ret = ::strtod(nptr, endptr);
       h2_memory::overrides();
@@ -3617,7 +3694,7 @@ struct h2_exempt_stub {  // allocate memory inside asymmetrically
 
    static long double strtold(const char* nptr, char** endptr)
    {
-      double ret;
+      double ret = 0;
       h2_memory::restores();
       for (h2::h2_stub_temporary_restore t((void*)::strtold); t;) ret = ::strtold(nptr, endptr);
       h2_memory::overrides();
@@ -3659,13 +3736,15 @@ h2_inline void h2_exempt::setup()
    static h2_stubs stubs;
 
    stubs.add((void*)::gmtime, (void*)h2_exempt_stub::gmtime, "gmtime", __FILE__, __LINE__);
-   stubs.add((void*)::gmtime_r, (void*)h2_exempt_stub::gmtime_r, "gmtime_r", __FILE__, __LINE__);
    stubs.add((void*)::ctime, (void*)h2_exempt_stub::ctime, "ctime", __FILE__, __LINE__);
-   stubs.add((void*)::ctime_r, (void*)h2_exempt_stub::ctime_r, "ctime_r", __FILE__, __LINE__);
    stubs.add((void*)::asctime, (void*)h2_exempt_stub::asctime, "asctime", __FILE__, __LINE__);
-   stubs.add((void*)::asctime_r, (void*)h2_exempt_stub::asctime_r, "asctime_r", __FILE__, __LINE__);
    stubs.add((void*)::localtime, (void*)h2_exempt_stub::localtime, "localtime", __FILE__, __LINE__);
+#if !defined _WIN32
+   stubs.add((void*)::gmtime_r, (void*)h2_exempt_stub::gmtime_r, "gmtime_r", __FILE__, __LINE__);
+   stubs.add((void*)::ctime_r, (void*)h2_exempt_stub::ctime_r, "ctime_r", __FILE__, __LINE__);
+   stubs.add((void*)::asctime_r, (void*)h2_exempt_stub::asctime_r, "asctime_r", __FILE__, __LINE__);
    stubs.add((void*)::localtime_r, (void*)h2_exempt_stub::localtime_r, "localtime_r", __FILE__, __LINE__);
+#endif
    if (O.os == Linux) stubs.add((void*)::mktime, (void*)h2_exempt_stub::mktime, "mktime", __FILE__, __LINE__);
    if (O.os == macOS) stubs.add((void*)::strtod, (void*)h2_exempt_stub::strtod, "strtod", __FILE__, __LINE__);
    if (O.os == macOS) stubs.add((void*)::strtold, (void*)h2_exempt_stub::strtold, "strtold", __FILE__, __LINE__);
@@ -3673,6 +3752,12 @@ h2_inline void h2_exempt::setup()
    add((void*)::sscanf);
    add((void*)::sprintf);
    add((void*)::vsnprintf);
+#if defined _WIN32
+   h2_scope s[16];
+   if (h2_nm::get("h2::h2_defer_failure::~h2_defer_failure", s, 1))
+      add((void*)s[0].addr, s[0].size);
+
+#endif
 #ifdef __APPLE__
    add((void*)::vsnprintf_l);
    add((void*)abi::__cxa_throw);
@@ -3680,9 +3765,9 @@ h2_inline void h2_exempt::setup()
    add((void*)h2_pattern::regex_match);  // linux is 0xcb size, MAC is 0x100 (gap to next symbol)
 }
 
-h2_inline void h2_exempt::add(void* func)
+h2_inline void h2_exempt::add(void* func, unsigned long size)
 {
-   I().exempts.push_back((new h2_exemption((void*)func))->x);
+   I().exempts.push_back((new h2_exemption((void*)func, size))->x);
 }
 
 h2_inline bool h2_exempt::in(const h2_backtrace& bt)
@@ -3703,8 +3788,10 @@ struct h2_exception_stub {
 
 h2_inline void h2_exception::initialize()
 {
+#if !defined _WIN32
    static h2_stubs stubs;
    if (O.exception_fails) stubs.add((void*)abi::__cxa_throw, (void*)h2_exception_stub::__cxa_throw, "__cxa_throw", __FILE__, __LINE__);
+#endif
 }
 
 // source/stub/h2_e9.cpp
@@ -3715,7 +3802,7 @@ struct h2_e9 {
 
    static bool save(void* origin_fp, unsigned char* saved)
    {
-#if defined WIN32 || defined __WIN32__ || defined _WIN32 || defined _MSC_VER || defined __MINGW32__
+#if defined _WIN32
       DWORD t;
       if (!VirtualProtect(origin_fp, sizeof(void*) + 4, PAGE_EXECUTE_READWRITE, &t))  // PAGE_EXECUTE_WRITECOPY OR PAGE_WRITECOPY
          return false;
@@ -4142,7 +4229,7 @@ struct h2_socket {
 
    static bool is_block(int sockfd)
    {
-#if defined WIN32 || defined __WIN32__ || defined _WIN32 || defined _MSC_VER || defined __MINGW32__
+#if defined _WIN32
       return true;
 #else
       return !(fcntl(sockfd, F_GETFL) & O_NONBLOCK);
@@ -4150,7 +4237,7 @@ struct h2_socket {
    }
    static bool set_block(int sockfd, bool block)
    {
-#if defined WIN32 || defined __WIN32__ || defined _WIN32 || defined _MSC_VER || defined __MINGW32__
+#if defined _WIN32
       u_long op = block ? 0 : 1;
       if (ioctlsocket(sockfd, FIONBIO, &op) == SOCKET_ERROR) {
          return false;
@@ -4277,17 +4364,6 @@ struct h2_socket {
       I().put_outgoing(socket, (const char*)buffer, length);
       return length;
    }
-#ifndef _WIN32
-   static ssize_t sendmsg(int socket, const struct msghdr* message, int flags)
-   {
-      return sendto(socket, message->msg_iov[0].iov_base, message->msg_iov[0].iov_len, 0, (struct sockaddr*)message->msg_name, message->msg_namelen);
-   }
-#endif
-   static ssize_t sendto(int socket, const void* buffer, size_t length, int flags, const struct sockaddr* dest_addr, socklen_t dest_len)
-   {
-      I().put_outgoing(getsockname(socket, (char*)alloca(64)), iport_tostring((struct sockaddr_in*)dest_addr, (char*)alloca(64)), (const char*)buffer, length);
-      return length;
-   }
    static ssize_t recv(int socket, void* buffer, size_t length, int flags)
    {
       ssize_t ret = 0;
@@ -4297,6 +4373,11 @@ struct h2_socket {
          delete tcp;
       }
       return ret;
+   }
+   static ssize_t sendto(int socket, const void* buffer, size_t length, int flags, const struct sockaddr* dest_addr, socklen_t dest_len)
+   {
+      I().put_outgoing(getsockname(socket, (char*)alloca(64)), iport_tostring((struct sockaddr_in*)dest_addr, (char*)alloca(64)), (const char*)buffer, length);
+      return length;
    }
    static ssize_t recvfrom(int socket, void* buffer, size_t length, int flags, struct sockaddr* address, socklen_t* address_len)
    {
@@ -4311,7 +4392,11 @@ struct h2_socket {
       }
       return ret;
    }
-#ifndef _WIN32
+#if !defined _WIN32
+   static ssize_t sendmsg(int socket, const struct msghdr* message, int flags)
+   {
+      return sendto(socket, message->msg_iov[0].iov_base, message->msg_iov[0].iov_len, 0, (struct sockaddr*)message->msg_name, message->msg_namelen);
+   }
    static ssize_t recvmsg(int socket, struct msghdr* message, int flags)
    {
       return recvfrom(socket, message->msg_iov[0].iov_base, message->msg_iov[0].iov_len, 0, (struct sockaddr*)message->msg_name, &message->msg_namelen);
@@ -4359,7 +4444,7 @@ struct h2_socket {
 
       stubs.add((void*)::sendto, (void*)sendto, "sendto", __FILE__, __LINE__);
       stubs.add((void*)::recvfrom, (void*)recvfrom, "recvfrom", __FILE__, __LINE__);
-#ifndef _WIN32
+#if !defined _WIN32
       stubs.add((void*)::sendmsg, (void*)sendmsg, "sendmsg", __FILE__, __LINE__);
       stubs.add((void*)::recvmsg, (void*)recvmsg, "recvmsg", __FILE__, __LINE__);
 #endif
@@ -4535,9 +4620,12 @@ struct h2_stdio {
 
    h2_stdio()
    {
-#ifndef _WIN32
+#if !defined _WIN32
       stubs.add((void*)::write, (void*)write, "write", __FILE__, __LINE__);
+      stubs.add((void*)::syslog, (void*)syslog, "syslog", __FILE__, __LINE__);
+      stubs.add((void*)::vsyslog, (void*)vsyslog, "vsyslog", __FILE__, __LINE__);
 #endif
+
 #if defined __GNUC__ && __GNUC__ > 5
 #else  // MACOS && WIN32 && GCC<=5
       stubs.add((void*)::printf, (void*)printf, "printf", __FILE__, __LINE__);
@@ -4565,10 +4653,7 @@ struct h2_stdio {
 #   endif
 #endif
 
-#ifndef _WIN32
-      stubs.add((void*)::syslog, (void*)syslog, "syslog", __FILE__, __LINE__);
-      stubs.add((void*)::vsyslog, (void*)vsyslog, "vsyslog", __FILE__, __LINE__);
-#endif
+
    }
 
    static void initialize()
@@ -4735,9 +4820,9 @@ h2_inline void h2_suite::execute(h2_case* c)
 
 h2_inline h2_suite::registor::registor(h2_suite* s, h2_case* c)
 {
-   static int seq = INT_MAX / 4;
+   static int s_auto_increment = INT_MAX / 4;
    s->cases.push_back(c->x);
-   s->seq = c->seq = ++seq;
+   s->seq = c->seq = ++s_auto_increment;
 }
 
 h2_inline h2_suite::cleaner::~cleaner()
@@ -5080,7 +5165,7 @@ static inline char* get_gdb2(char* s, int pid)
 
 h2_inline void h2_debugger::trap()
 {
-#ifndef _WIN32
+#if !defined _WIN32
    int pid = (int)getpid();
    if (!under_debug(pid, O.path)) {
       static h2_once only_one_time;
@@ -6144,8 +6229,10 @@ struct getopt {
 h2_inline h2_option::h2_option()
 {
    terminal_width = h2_termimal_width();
-#if defined WIN32 || defined __WIN32__ || defined _WIN32 || defined _MSC_VER || defined __MINGW32__
-   memory_check = false;
+#if defined _WIN32
+   // memory_check = false;
+   hProcess = GetCurrentProcess();
+   SymInitialize(hProcess, NULL, TRUE);
 #endif
 }
 

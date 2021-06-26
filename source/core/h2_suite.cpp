@@ -48,9 +48,9 @@ h2_inline void h2_suite::execute(h2_case* c)
 
 h2_inline h2_suite::registor::registor(h2_suite* s, h2_case* c)
 {
-   static int seq = INT_MAX / 4;
+   static int s_auto_increment = INT_MAX / 4;
    s->cases.push_back(c->x);
-   s->seq = c->seq = ++seq;
+   s->seq = c->seq = ++s_auto_increment;
 }
 
 h2_inline h2_suite::cleaner::~cleaner()

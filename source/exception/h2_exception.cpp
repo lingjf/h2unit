@@ -8,6 +8,8 @@ struct h2_exception_stub {
 
 h2_inline void h2_exception::initialize()
 {
+#if !defined _WIN32
    static h2_stubs stubs;
    if (O.exception_fails) stubs.add((void*)abi::__cxa_throw, (void*)h2_exception_stub::__cxa_throw, "__cxa_throw", __FILE__, __LINE__);
+#endif
 }

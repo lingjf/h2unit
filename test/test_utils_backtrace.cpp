@@ -41,8 +41,12 @@ SUITE(backtrace)
       OK(2, b2.shift);
       OK(b2 == bt);
    }
+}
 
-#ifdef __APPLE__
+#if !defined _WIN32
+SUITE(demangle)
+{
+#   ifdef __APPLE__
    Case(demangle namespace class member function)
    {
       char mangled[] = "_ZN2h24task7executeEv";
@@ -66,7 +70,7 @@ SUITE(backtrace)
       OK(ret);
       OK("h2::hook::malloc(unsigned long)", demangled);
    }
-#endif
+#   endif
 
    Case(demangle c - function)
    {
@@ -140,3 +144,4 @@ SUITE(backtrace extract)
       OK(0x4060e7, offset);
    }
 }
+#endif

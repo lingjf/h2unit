@@ -13,12 +13,6 @@ SUITE(h2_colorful)
    char t[1024];
    h2::h2_colorful colorful;
 
-   Case(style2value)
-   {
-      OK(0, colorful.style2value("reset"));
-      OK(31, colorful.style2value("red"));
-   }
-
    Case(parse)
    {
       char c1[1024] = "\033{red}";

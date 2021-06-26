@@ -1,5 +1,4 @@
 #include "../source/h2_unit.cpp"
-#include <sys/time.h>
 
 SUITE(parse_block_attributes)
 {

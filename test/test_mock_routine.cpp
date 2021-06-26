@@ -233,15 +233,17 @@ SUITE(action)
       OK("hello", a6.char_value);
    }
 
+#ifndef _WIN32
    Case(normal origin member function)
    {
       void* void_func = h2::h2_mfp<Bar, void(int, char*)>::A(&Bar::void_func);
-
+      OK(NotNull, void_func);
       void* int_func = h2::h2_mfp<Bar, int(int, const char*)>::A(&Bar::int_func);
-
+      OK(NotNull, void_func);
       void* foo_func = h2::h2_mfp<Bar, Foo(int, std::string&)>::A(&Bar::foo_func);
-
+      OK(NotNull, foo_func);
       void* ref_func = h2::h2_mfp<Bar, Foo&(int, Foo&)>::A(&Bar::ref_func);
+      OK(NotNull, ref_func);
 
       h2::h2_routine<Bar, void(int, char*)> f2((void (*)(Bar*, int, char*))void_func);
       f2(nullptr, 1, b);
@@ -260,6 +262,7 @@ SUITE(action)
       OK(1, a8.int_value);
       OK("1", a8.char_value);
    }
+#endif
 }
 
 }  // namespace

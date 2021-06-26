@@ -1,5 +1,5 @@
 ﻿
-/* v5.9 2021-06-20 15:38:55 */
+/* v5.9 2021-06-26 18:18:20 */
 /* https://github.com/lingjf/h2unit */
 /* Apache Licence 2.0 */
 
@@ -26,7 +26,7 @@
 #include <utility>     /* std::forward, std::pair */
 #include <type_traits> /* std::true_type */
 
-#if defined WIN32 || defined __WIN32__ || defined _WIN32 || defined _MSC_VER || defined __MINGW32__
+#if defined _WIN32
 #   define WIN32_LEAN_AND_MEAN /* fix winsock.h winsock2.h conflict */
 #   define NOMINMAX            /* fix std::min/max conflict with windows::min/max */
 #   include <windows.h>
@@ -46,13 +46,8 @@
 #   pragma GCC diagnostic ignored "-Wunused-function"
 #   pragma GCC diagnostic ignored "-Wwrite-strings"
 #   pragma GCC diagnostic ignored "-Wreturn-type"
-#elif defined WIN32 || defined __WIN32__ || defined _WIN32 || defined _MSC_VER || defined __MINGW32__
+#elif defined _WIN32
 #   pragma warning(disable : 4005)  // macro-redefine
-#   pragma warning(disable : 4018)  // -Wsign-compare
-#   pragma warning(disable : 4244)  //
-#   pragma warning(disable : 4819)  // Unicode
-#   define _CRT_SECURE_NO_WARNINGS
-#   define _WINSOCK_DEPRECATED_NO_WARNINGS
 #endif
 
 #if defined __H2UNIT_HPP__
@@ -78,14 +73,13 @@ namespace h2 {
 #define H2PP_EMPTY(...)
 #define H2PP_DEFER(...) __VA_ARGS__ H2PP_EMPTY()
 #define H2PP_RESCAN(_1) _1
-#define H2PP_MAKE_CALL(_Macro, _Args) _Macro _Args
 
-#define _H2PP_2ND(_1, _2, ...) _2
 #ifdef _MSC_VER  // MSVC workaround
-#   define H2PP_IS_PROBE(...) H2PP_MAKE_CALL(_H2PP_2ND, (__VA_ARGS__, 0))
+#   define H2PP_IS_PROBE(...) _H2PP_TH1((__VA_ARGS__, 0))
 #else
-#   define H2PP_IS_PROBE(...) _H2PP_2ND(__VA_ARGS__, 0, )
+#   define H2PP_IS_PROBE(...) __H2PP_TH1(__VA_ARGS__, 0, )
 #endif
+
 #define H2PP_PROBE() ~, 1,
 
 #define H2PP_EVAL(...) _H2PP_EVAL_128(__VA_ARGS__)
@@ -146,14 +140,16 @@ namespace h2 {
 #define _H2PP_NARG_0(...) H2PP_ARG_COUNT(__VA_ARGS__)
 #define _H2PP_NARG_1(...) 0
 
-#define H2PP_VARIADIC_CALL(_Macro, ...) H2PP_CAT2(_Macro, H2PP_NARG(__VA_ARGS__)) (__VA_ARGS__)
+#define H2PP_VARIADIC_CALL(_Macro, ...) H2PP_RESCAN(H2PP_CAT2(_Macro, H2PP_NARG(__VA_ARGS__)) (__VA_ARGS__))
 
-#define H2PP_HEAD(...) H2PP_CAT2(_H2PP_HEAD_, H2PP_IS_EMPTY(__VA_ARGS__)) (__VA_ARGS__)
-#define _H2PP_HEAD_0(_1, ...) _1
+#define H2PP_HEAD(...) H2PP_CAT2(_H2PP_HEAD_, H2PP_IS_EMPTY(__VA_ARGS__)) ((__VA_ARGS__))
+#define _H2PP_HEAD_0(MSVC_Workaround) H2PP_RESCAN(_H2PP_HEAD_0_R MSVC_Workaround)
+#define _H2PP_HEAD_0_R(_1, ...) _1
 #define _H2PP_HEAD_1(...)
 
-#define H2PP_TAIL(...) H2PP_CAT2(_H2PP_TAIL_, H2PP_IS_EMPTY(__VA_ARGS__)) (__VA_ARGS__)
-#define _H2PP_TAIL_0(_1, ...) __VA_ARGS__
+#define H2PP_TAIL(...) H2PP_CAT2(_H2PP_TAIL_, H2PP_IS_EMPTY(__VA_ARGS__)) ((__VA_ARGS__))
+#define _H2PP_TAIL_0(MSVC_Workaround) H2PP_RESCAN(_H2PP_TAIL_0_R MSVC_Workaround)
+#define _H2PP_TAIL_0_R(_1, ...) __VA_ARGS__
 #define _H2PP_TAIL_1(...)
 
 #define H2PP_LAST(...) H2PP_RS1(_H2PP_LAST(__VA_ARGS__))
@@ -182,11 +178,12 @@ namespace h2 {
 #define _H2PP_FOREACH_CALL_MACRO_1(_Split, _Macro, _Args, _i, _x) _Macro(_Args, _i, _x)
 #define _H2PP_FOREACH_CALL_MACRO_0(_Split, _Macro, _Args, _i, _x) H2PP_REMOVE_PARENTHESES_IF(_Split) _Macro(_Args, _i, _x)
 
-#define H2PP_FULLMESH(_Split, _Macro, _Args, t, ...) H2PP_CAT2(_H2PP_FULLMESH_, H2PP_AND(H2PP_IS_BEGIN_PARENTHESIS(t), H2PP_EQ(1, H2PP_NARG(__VA_ARGS__)))) (_Split, _Macro, _Args, t, __VA_ARGS__)
-#define _H2PP_FULLMESH_0 H2PP_FULLMESH1 // Fullmesh(1,2,3) => (1,2,3) x (1,2,3)
-#define _H2PP_FULLMESH_1 H2PP_FULLMESH2 // Fullmesh((1,2,3), (4,5,6)) => (1,2,3) x (4,5,6)
-#define H2PP_FULLMESH1(_Split, _Macro, _Args, ...) H2PP_FULLMESH2(_Split, _Macro, _Args, (__VA_ARGS__), (__VA_ARGS__))
-#define H2PP_FULLMESH2(_Split, _Macro, _Args, _Tuplex, _Tupley) H2PP_RS4(_H2PP_FOREACHx(_Split, _Macro, _Args, 0, _Tupley, H2PP_REMOVE_PARENTHESES(_Tuplex)))
+#define H2PP_FULLMESH(MSVC_Workaround) H2PP_RESCAN(H2PP_FULLMESH_R MSVC_Workaround)
+#define H2PP_FULLMESH_R(_Split, _Macro, _Args, t, ...) H2PP_CAT2(_H2PP_FULLMESH_, H2PP_IS_BEGIN_PARENTHESIS(t)) ((_Split, _Macro, _Args, t, __VA_ARGS__))
+#define _H2PP_FULLMESH_0(MSVC_Workaround) H2PP_RESCAN(_H2PP_FULLMESH1 MSVC_Workaround) // Fullmesh(1,2,3) => (1,2,3) x (1,2,3)
+#define _H2PP_FULLMESH_1(MSVC_Workaround) H2PP_RESCAN(_H2PP_FULLMESH2 MSVC_Workaround) // Fullmesh((1,2,3), (4,5,6)) => (1,2,3) x (4,5,6)
+#define _H2PP_FULLMESH1(_Split, _Macro, _Args, ...) _H2PP_FULLMESH2(_Split, _Macro, _Args, (__VA_ARGS__), (__VA_ARGS__))
+#define _H2PP_FULLMESH2(_Split, _Macro, _Args, _Tuplex, _Tupley) H2PP_RS4(_H2PP_FOREACHx(_Split, _Macro, _Args, 0, _Tupley, H2PP_REMOVE_PARENTHESES(_Tuplex)))
 #define _H2PP_FOREACHx(_Split, _Macro, _Args, _i, _Tupley, ...) H2PP_CAT2(_H2PP_FOREACHx_, H2PP_IS_EMPTY(__VA_ARGS__)) (_Split, _Macro, _Args, _i, _Tupley, __VA_ARGS__)
 #define _H2PP_FOREACHx_1(...)
 #define _H2PP_FOREACHx_0(_Split, _Macro, _Args, _i, _Tupley, ...) _H2PP_FOREACHy(_Split, _Macro, _Args, _i, 0, H2PP_HEAD(__VA_ARGS__), H2PP_REMOVE_PARENTHESES(_Tupley)) H2PP_DEFER(__H2PP_FOREACHx)()(_Split, _Macro, _Args, H2PP_CAT2(H2PP_INC_, _i), _Tupley, H2PP_TAIL(__VA_ARGS__))
@@ -200,6 +197,7 @@ namespace h2 {
 #define _H2PP_FULLMESH_CALL_MACRO_0(_Split, _Macro, _Args, _i, _j, _x, _y) H2PP_REMOVE_PARENTHESES_IF(_Split) _Macro(_Args, _i, _j, _x, _y)
 
 #define H2PP_UNIQUE(...) H2PP_CAT5(__VA_ARGS__, _C, __COUNTER__, L, __LINE__)  // generate unique identifier [with(out) prefix]
+#define H2PP_DEBUG(...) ::printf("%s\n", __VA_ARGS__);
 
 //////// >>>>> generated by build/generate.py
 #define _H2PP_EQ__0__0 H2PP_PROBE()
@@ -235,70 +233,104 @@ namespace h2 {
 #define _H2PP_EQ__30__30 H2PP_PROBE()
 #define _H2PP_EQ__31__31 H2PP_PROBE()
 
-#define _H2PP_TH0(_0, ...) _0
-#define _H2PP_TH1(_0, _1, ...) _1
-#define _H2PP_TH2(_0, _1, _2, ...) _2
-#define _H2PP_TH3(_0, _1, _2, _3, ...) _3
-#define _H2PP_TH4(_0, _1, _2, _3, _4, ...) _4
-#define _H2PP_TH5(_0, _1, _2, _3, _4, _5, ...) _5
-#define _H2PP_TH6(_0, _1, _2, _3, _4, _5, _6, ...) _6
-#define _H2PP_TH7(_0, _1, _2, _3, _4, _5, _6, _7, ...) _7
-#define _H2PP_TH8(_0, _1, _2, _3, _4, _5, _6, _7, _8, ...) _8
-#define _H2PP_TH9(_0, _1, _2, _3, _4, _5, _6, _7, _8, _9, ...) _9
-#define _H2PP_TH10(_0, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, ...) _10
-#define _H2PP_TH11(_0, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, ...) _11
-#define _H2PP_TH12(_0, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, ...) _12
-#define _H2PP_TH13(_0, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, ...) _13
-#define _H2PP_TH14(_0, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, ...) _14
-#define _H2PP_TH15(_0, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, ...) _15
-#define _H2PP_TH16(_0, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, ...) _16
-#define _H2PP_TH17(_0, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, _17, ...) _17
-#define _H2PP_TH18(_0, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, _17, _18, ...) _18
-#define _H2PP_TH19(_0, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, _17, _18, _19, ...) _19
-#define _H2PP_TH20(_0, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, _17, _18, _19, _20, ...) _20
-#define _H2PP_TH21(_0, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, _17, _18, _19, _20, _21, ...) _21
-#define _H2PP_TH22(_0, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, _17, _18, _19, _20, _21, _22, ...) _22
-#define _H2PP_TH23(_0, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, _17, _18, _19, _20, _21, _22, _23, ...) _23
-#define _H2PP_TH24(_0, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, _17, _18, _19, _20, _21, _22, _23, _24, ...) _24
-#define _H2PP_TH25(_0, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, _17, _18, _19, _20, _21, _22, _23, _24, _25, ...) _25
-#define _H2PP_TH26(_0, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, _17, _18, _19, _20, _21, _22, _23, _24, _25, _26, ...) _26
-#define _H2PP_TH27(_0, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, _17, _18, _19, _20, _21, _22, _23, _24, _25, _26, _27, ...) _27
-#define _H2PP_TH28(_0, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, _17, _18, _19, _20, _21, _22, _23, _24, _25, _26, _27, _28, ...) _28
-#define _H2PP_TH29(_0, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, _17, _18, _19, _20, _21, _22, _23, _24, _25, _26, _27, _28, _29, ...) _29
-#define _H2PP_TH30(_0, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, _17, _18, _19, _20, _21, _22, _23, _24, _25, _26, _27, _28, _29, _30, ...) _30
-#define _H2PP_TH31(_0, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, _17, _18, _19, _20, _21, _22, _23, _24, _25, _26, _27, _28, _29, _30, _31, ...) _31
-#define H2PP_TH0(...) _H2PP_TH0(__VA_ARGS__, )
-#define H2PP_TH1(...) _H2PP_TH1(__VA_ARGS__, , )
-#define H2PP_TH2(...) _H2PP_TH2(__VA_ARGS__, , , )
-#define H2PP_TH3(...) _H2PP_TH3(__VA_ARGS__, , , , )
-#define H2PP_TH4(...) _H2PP_TH4(__VA_ARGS__, , , , , )
-#define H2PP_TH5(...) _H2PP_TH5(__VA_ARGS__, , , , , , )
-#define H2PP_TH6(...) _H2PP_TH6(__VA_ARGS__, , , , , , , )
-#define H2PP_TH7(...) _H2PP_TH7(__VA_ARGS__, , , , , , , , )
-#define H2PP_TH8(...) _H2PP_TH8(__VA_ARGS__, , , , , , , , , )
-#define H2PP_TH9(...) _H2PP_TH9(__VA_ARGS__, , , , , , , , , , )
-#define H2PP_TH10(...) _H2PP_TH10(__VA_ARGS__, , , , , , , , , , , )
-#define H2PP_TH11(...) _H2PP_TH11(__VA_ARGS__, , , , , , , , , , , , )
-#define H2PP_TH12(...) _H2PP_TH12(__VA_ARGS__, , , , , , , , , , , , , )
-#define H2PP_TH13(...) _H2PP_TH13(__VA_ARGS__, , , , , , , , , , , , , , )
-#define H2PP_TH14(...) _H2PP_TH14(__VA_ARGS__, , , , , , , , , , , , , , , )
-#define H2PP_TH15(...) _H2PP_TH15(__VA_ARGS__, , , , , , , , , , , , , , , , )
-#define H2PP_TH16(...) _H2PP_TH16(__VA_ARGS__, , , , , , , , , , , , , , , , , )
-#define H2PP_TH17(...) _H2PP_TH17(__VA_ARGS__, , , , , , , , , , , , , , , , , , )
-#define H2PP_TH18(...) _H2PP_TH18(__VA_ARGS__, , , , , , , , , , , , , , , , , , , )
-#define H2PP_TH19(...) _H2PP_TH19(__VA_ARGS__, , , , , , , , , , , , , , , , , , , , )
-#define H2PP_TH20(...) _H2PP_TH20(__VA_ARGS__, , , , , , , , , , , , , , , , , , , , , )
-#define H2PP_TH21(...) _H2PP_TH21(__VA_ARGS__, , , , , , , , , , , , , , , , , , , , , , )
-#define H2PP_TH22(...) _H2PP_TH22(__VA_ARGS__, , , , , , , , , , , , , , , , , , , , , , , )
-#define H2PP_TH23(...) _H2PP_TH23(__VA_ARGS__, , , , , , , , , , , , , , , , , , , , , , , , )
-#define H2PP_TH24(...) _H2PP_TH24(__VA_ARGS__, , , , , , , , , , , , , , , , , , , , , , , , , )
-#define H2PP_TH25(...) _H2PP_TH25(__VA_ARGS__, , , , , , , , , , , , , , , , , , , , , , , , , , )
-#define H2PP_TH26(...) _H2PP_TH26(__VA_ARGS__, , , , , , , , , , , , , , , , , , , , , , , , , , , )
-#define H2PP_TH27(...) _H2PP_TH27(__VA_ARGS__, , , , , , , , , , , , , , , , , , , , , , , , , , , , )
-#define H2PP_TH28(...) _H2PP_TH28(__VA_ARGS__, , , , , , , , , , , , , , , , , , , , , , , , , , , , , )
-#define H2PP_TH29(...) _H2PP_TH29(__VA_ARGS__, , , , , , , , , , , , , , , , , , , , , , , , , , , , , , )
-#define H2PP_TH30(...) _H2PP_TH30(__VA_ARGS__, , , , , , , , , , , , , , , , , , , , , , , , , , , , , , , )
-#define H2PP_TH31(...) _H2PP_TH31(__VA_ARGS__, , , , , , , , , , , , , , , , , , , , , , , , , , , , , , , , )
+#define __H2PP_TH0(_0, ...) _0
+#define __H2PP_TH1(_0, _1, ...) _1
+#define __H2PP_TH2(_0, _1, _2, ...) _2
+#define __H2PP_TH3(_0, _1, _2, _3, ...) _3
+#define __H2PP_TH4(_0, _1, _2, _3, _4, ...) _4
+#define __H2PP_TH5(_0, _1, _2, _3, _4, _5, ...) _5
+#define __H2PP_TH6(_0, _1, _2, _3, _4, _5, _6, ...) _6
+#define __H2PP_TH7(_0, _1, _2, _3, _4, _5, _6, _7, ...) _7
+#define __H2PP_TH8(_0, _1, _2, _3, _4, _5, _6, _7, _8, ...) _8
+#define __H2PP_TH9(_0, _1, _2, _3, _4, _5, _6, _7, _8, _9, ...) _9
+#define __H2PP_TH10(_0, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, ...) _10
+#define __H2PP_TH11(_0, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, ...) _11
+#define __H2PP_TH12(_0, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, ...) _12
+#define __H2PP_TH13(_0, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, ...) _13
+#define __H2PP_TH14(_0, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, ...) _14
+#define __H2PP_TH15(_0, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, ...) _15
+#define __H2PP_TH16(_0, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, ...) _16
+#define __H2PP_TH17(_0, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, _17, ...) _17
+#define __H2PP_TH18(_0, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, _17, _18, ...) _18
+#define __H2PP_TH19(_0, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, _17, _18, _19, ...) _19
+#define __H2PP_TH20(_0, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, _17, _18, _19, _20, ...) _20
+#define __H2PP_TH21(_0, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, _17, _18, _19, _20, _21, ...) _21
+#define __H2PP_TH22(_0, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, _17, _18, _19, _20, _21, _22, ...) _22
+#define __H2PP_TH23(_0, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, _17, _18, _19, _20, _21, _22, _23, ...) _23
+#define __H2PP_TH24(_0, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, _17, _18, _19, _20, _21, _22, _23, _24, ...) _24
+#define __H2PP_TH25(_0, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, _17, _18, _19, _20, _21, _22, _23, _24, _25, ...) _25
+#define __H2PP_TH26(_0, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, _17, _18, _19, _20, _21, _22, _23, _24, _25, _26, ...) _26
+#define __H2PP_TH27(_0, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, _17, _18, _19, _20, _21, _22, _23, _24, _25, _26, _27, ...) _27
+#define __H2PP_TH28(_0, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, _17, _18, _19, _20, _21, _22, _23, _24, _25, _26, _27, _28, ...) _28
+#define __H2PP_TH29(_0, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, _17, _18, _19, _20, _21, _22, _23, _24, _25, _26, _27, _28, _29, ...) _29
+#define __H2PP_TH30(_0, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, _17, _18, _19, _20, _21, _22, _23, _24, _25, _26, _27, _28, _29, _30, ...) _30
+#define __H2PP_TH31(_0, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, _17, _18, _19, _20, _21, _22, _23, _24, _25, _26, _27, _28, _29, _30, _31, ...) _31
+
+#define _H2PP_TH0(MSVC_Workaround) H2PP_RESCAN(__H2PP_TH0 MSVC_Workaround)
+#define _H2PP_TH1(MSVC_Workaround) H2PP_RESCAN(__H2PP_TH1 MSVC_Workaround)
+#define _H2PP_TH2(MSVC_Workaround) H2PP_RESCAN(__H2PP_TH2 MSVC_Workaround)
+#define _H2PP_TH3(MSVC_Workaround) H2PP_RESCAN(__H2PP_TH3 MSVC_Workaround)
+#define _H2PP_TH4(MSVC_Workaround) H2PP_RESCAN(__H2PP_TH4 MSVC_Workaround)
+#define _H2PP_TH5(MSVC_Workaround) H2PP_RESCAN(__H2PP_TH5 MSVC_Workaround)
+#define _H2PP_TH6(MSVC_Workaround) H2PP_RESCAN(__H2PP_TH6 MSVC_Workaround)
+#define _H2PP_TH7(MSVC_Workaround) H2PP_RESCAN(__H2PP_TH7 MSVC_Workaround)
+#define _H2PP_TH8(MSVC_Workaround) H2PP_RESCAN(__H2PP_TH8 MSVC_Workaround)
+#define _H2PP_TH9(MSVC_Workaround) H2PP_RESCAN(__H2PP_TH9 MSVC_Workaround)
+#define _H2PP_TH10(MSVC_Workaround) H2PP_RESCAN(__H2PP_TH10 MSVC_Workaround)
+#define _H2PP_TH11(MSVC_Workaround) H2PP_RESCAN(__H2PP_TH11 MSVC_Workaround)
+#define _H2PP_TH12(MSVC_Workaround) H2PP_RESCAN(__H2PP_TH12 MSVC_Workaround)
+#define _H2PP_TH13(MSVC_Workaround) H2PP_RESCAN(__H2PP_TH13 MSVC_Workaround)
+#define _H2PP_TH14(MSVC_Workaround) H2PP_RESCAN(__H2PP_TH14 MSVC_Workaround)
+#define _H2PP_TH15(MSVC_Workaround) H2PP_RESCAN(__H2PP_TH15 MSVC_Workaround)
+#define _H2PP_TH16(MSVC_Workaround) H2PP_RESCAN(__H2PP_TH16 MSVC_Workaround)
+#define _H2PP_TH17(MSVC_Workaround) H2PP_RESCAN(__H2PP_TH17 MSVC_Workaround)
+#define _H2PP_TH18(MSVC_Workaround) H2PP_RESCAN(__H2PP_TH18 MSVC_Workaround)
+#define _H2PP_TH19(MSVC_Workaround) H2PP_RESCAN(__H2PP_TH19 MSVC_Workaround)
+#define _H2PP_TH20(MSVC_Workaround) H2PP_RESCAN(__H2PP_TH20 MSVC_Workaround)
+#define _H2PP_TH21(MSVC_Workaround) H2PP_RESCAN(__H2PP_TH21 MSVC_Workaround)
+#define _H2PP_TH22(MSVC_Workaround) H2PP_RESCAN(__H2PP_TH22 MSVC_Workaround)
+#define _H2PP_TH23(MSVC_Workaround) H2PP_RESCAN(__H2PP_TH23 MSVC_Workaround)
+#define _H2PP_TH24(MSVC_Workaround) H2PP_RESCAN(__H2PP_TH24 MSVC_Workaround)
+#define _H2PP_TH25(MSVC_Workaround) H2PP_RESCAN(__H2PP_TH25 MSVC_Workaround)
+#define _H2PP_TH26(MSVC_Workaround) H2PP_RESCAN(__H2PP_TH26 MSVC_Workaround)
+#define _H2PP_TH27(MSVC_Workaround) H2PP_RESCAN(__H2PP_TH27 MSVC_Workaround)
+#define _H2PP_TH28(MSVC_Workaround) H2PP_RESCAN(__H2PP_TH28 MSVC_Workaround)
+#define _H2PP_TH29(MSVC_Workaround) H2PP_RESCAN(__H2PP_TH29 MSVC_Workaround)
+#define _H2PP_TH30(MSVC_Workaround) H2PP_RESCAN(__H2PP_TH30 MSVC_Workaround)
+#define _H2PP_TH31(MSVC_Workaround) H2PP_RESCAN(__H2PP_TH31 MSVC_Workaround)
+
+#define H2PP_TH0(...) _H2PP_TH0((__VA_ARGS__, ))
+#define H2PP_TH1(...) _H2PP_TH1((__VA_ARGS__, , ))
+#define H2PP_TH2(...) _H2PP_TH2((__VA_ARGS__, , , ))
+#define H2PP_TH3(...) _H2PP_TH3((__VA_ARGS__, , , , ))
+#define H2PP_TH4(...) _H2PP_TH4((__VA_ARGS__, , , , , ))
+#define H2PP_TH5(...) _H2PP_TH5((__VA_ARGS__, , , , , , ))
+#define H2PP_TH6(...) _H2PP_TH6((__VA_ARGS__, , , , , , , ))
+#define H2PP_TH7(...) _H2PP_TH7((__VA_ARGS__, , , , , , , , ))
+#define H2PP_TH8(...) _H2PP_TH8((__VA_ARGS__, , , , , , , , , ))
+#define H2PP_TH9(...) _H2PP_TH9((__VA_ARGS__, , , , , , , , , , ))
+#define H2PP_TH10(...) _H2PP_TH10((__VA_ARGS__, , , , , , , , , , , ))
+#define H2PP_TH11(...) _H2PP_TH11((__VA_ARGS__, , , , , , , , , , , , ))
+#define H2PP_TH12(...) _H2PP_TH12((__VA_ARGS__, , , , , , , , , , , , , ))
+#define H2PP_TH13(...) _H2PP_TH13((__VA_ARGS__, , , , , , , , , , , , , , ))
+#define H2PP_TH14(...) _H2PP_TH14((__VA_ARGS__, , , , , , , , , , , , , , , ))
+#define H2PP_TH15(...) _H2PP_TH15((__VA_ARGS__, , , , , , , , , , , , , , , , ))
+#define H2PP_TH16(...) _H2PP_TH16((__VA_ARGS__, , , , , , , , , , , , , , , , , ))
+#define H2PP_TH17(...) _H2PP_TH17((__VA_ARGS__, , , , , , , , , , , , , , , , , , ))
+#define H2PP_TH18(...) _H2PP_TH18((__VA_ARGS__, , , , , , , , , , , , , , , , , , , ))
+#define H2PP_TH19(...) _H2PP_TH19((__VA_ARGS__, , , , , , , , , , , , , , , , , , , , ))
+#define H2PP_TH20(...) _H2PP_TH20((__VA_ARGS__, , , , , , , , , , , , , , , , , , , , , ))
+#define H2PP_TH21(...) _H2PP_TH21((__VA_ARGS__, , , , , , , , , , , , , , , , , , , , , , ))
+#define H2PP_TH22(...) _H2PP_TH22((__VA_ARGS__, , , , , , , , , , , , , , , , , , , , , , , ))
+#define H2PP_TH23(...) _H2PP_TH23((__VA_ARGS__, , , , , , , , , , , , , , , , , , , , , , , , ))
+#define H2PP_TH24(...) _H2PP_TH24((__VA_ARGS__, , , , , , , , , , , , , , , , , , , , , , , , , ))
+#define H2PP_TH25(...) _H2PP_TH25((__VA_ARGS__, , , , , , , , , , , , , , , , , , , , , , , , , , ))
+#define H2PP_TH26(...) _H2PP_TH26((__VA_ARGS__, , , , , , , , , , , , , , , , , , , , , , , , , , , ))
+#define H2PP_TH27(...) _H2PP_TH27((__VA_ARGS__, , , , , , , , , , , , , , , , , , , , , , , , , , , , ))
+#define H2PP_TH28(...) _H2PP_TH28((__VA_ARGS__, , , , , , , , , , , , , , , , , , , , , , , , , , , , , ))
+#define H2PP_TH29(...) _H2PP_TH29((__VA_ARGS__, , , , , , , , , , , , , , , , , , , , , , , , , , , , , , ))
+#define H2PP_TH30(...) _H2PP_TH30((__VA_ARGS__, , , , , , , , , , , , , , , , , , , , , , , , , , , , , , , ))
+#define H2PP_TH31(...) _H2PP_TH31((__VA_ARGS__, , , , , , , , , , , , , , , , , , , , , , , , , , , , , , , , ))
 
 #define H2PP_INC_0 1
 #define H2PP_INC_1 2
@@ -415,11 +447,12 @@ namespace h2 {
 
 #define __H2PP_64TH(_0, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, _17, _18, _19, _20, _21, _22, _23, _24, _25, _26, _27, _28, _29, _30, _31, _32, _33, _34, _35, _36, _37, _38, _39, _40, _41, _42, _43, _44, _45, _46, _47, _48, _49, _50, _51, _52, _53, _54, _55, _56, _57, _58, _59, _60, _61, _62, _63, _64, ...) _64
 #ifdef _MSC_VER
-#   define H2PP_HAS_COMMA(...) H2PP_RESCAN(H2PP_MAKE_CALL(__H2PP_64TH, (__VA_ARGS__, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0)))
-#   define H2PP_ARG_COUNT(...) H2PP_RESCAN(H2PP_MAKE_CALL(__H2PP_64TH, (__VA_ARGS__, 64, 63, 62, 61, 60, 59, 58, 57, 56, 55, 54, 53, 52, 51, 50, 49, 48, 47, 46, 45, 44, 43, 42, 41, 40, 39, 38, 37, 36, 35, 34, 33, 32, 31, 30, 29, 28, 27, 26, 25, 24, 23, 22, 21, 20, 19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1)))
+#define _H2PP_64TH(MSVC_Workaround)  H2PP_RESCAN(__H2PP_64TH MSVC_Workaround)
+#define H2PP_HAS_COMMA(...) _H2PP_64TH((__VA_ARGS__, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0))
+#define H2PP_ARG_COUNT(...) _H2PP_64TH((__VA_ARGS__, 64, 63, 62, 61, 60, 59, 58, 57, 56, 55, 54, 53, 52, 51, 50, 49, 48, 47, 46, 45, 44, 43, 42, 41, 40, 39, 38, 37, 36, 35, 34, 33, 32, 31, 30, 29, 28, 27, 26, 25, 24, 23, 22, 21, 20, 19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1))
 #else
-#   define H2PP_HAS_COMMA(...) __H2PP_64TH(__VA_ARGS__, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0)
-#   define H2PP_ARG_COUNT(...) __H2PP_64TH(__VA_ARGS__, 64, 63, 62, 61, 60, 59, 58, 57, 56, 55, 54, 53, 52, 51, 50, 49, 48, 47, 46, 45, 44, 43, 42, 41, 40, 39, 38, 37, 36, 35, 34, 33, 32, 31, 30, 29, 28, 27, 26, 25, 24, 23, 22, 21, 20, 19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1)
+#define H2PP_HAS_COMMA(...) __H2PP_64TH(__VA_ARGS__, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0)
+#define H2PP_ARG_COUNT(...) __H2PP_64TH(__VA_ARGS__, 64, 63, 62, 61, 60, 59, 58, 57, 56, 55, 54, 53, 52, 51, 50, 49, 48, 47, 46, 45, 44, 43, 42, 41, 40, 39, 38, 37, 36, 35, 34, 33, 32, 31, 30, 29, 28, 27, 26, 25, 24, 23, 22, 21, 20, 19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1)
 #endif
 
 //////// <<<<< generated by build/generate.py
@@ -555,6 +588,12 @@ struct h2_pattern {
    static bool match(const char* pattern, const char* subject, bool caseless = false);
 };
 
+// #define M(...) func(#__VA_ARGS__, other)
+// Unix M() ==> func("", other) stringify empty __VA_ARGS__ to "" string
+// Windows M() ==> func(, other) stringify empty __VA_ARGS__ to empty
+// #define M(...) func(sss(#__VA_ARGS__), other)
+static inline const char* sss(const char* a = "") { return a; }
+
 /* clang-format off */
 
 #define h2_singleton(_Class) static _Class& I() { static _Class i; return i; }
@@ -562,7 +601,7 @@ struct h2_pattern {
 #define H2Foreach(_Macro_x, ...) H2PP_FOREACH(, _H2ForeachMacro, (_Macro_x), __VA_ARGS__)
 #define _H2ForeachMacro(_Args, i, x) H2PP_REMOVE_PARENTHESES(_Args)(x)
 
-#define H2Fullmesh(_Macro_x_y, ...) H2PP_FULLMESH(, _H2FullmeshMacro, (_Macro_x_y), __VA_ARGS__)
+#define H2Fullmesh(_Macro_x_y, ...) H2PP_FULLMESH((, _H2FullmeshMacro, (_Macro_x_y), __VA_ARGS__))
 #define _H2FullmeshMacro(_Args, i, j, x, y) H2PP_REMOVE_PARENTHESES(_Args)(x, y)
 // source/utils/h2_numeric.hpp
 
@@ -679,8 +718,6 @@ inline bool operator!=(const h2_allocator<T>&, const h2_allocator<T>&) { return 
 
 template <typename T>
 using h2_vector = std::vector<T, h2_allocator<T>>;
-
-using h2_ostringstream = std::basic_ostringstream<char, std::char_traits<char>, h2_allocator<char>>;
 // source/utils/h2_string.hpp
 
 struct h2_string : public std::basic_string<char, std::char_traits<char>, h2_allocator<char>> {
@@ -779,7 +816,239 @@ struct h2_rows : h2_vector<h2_row> {
    void sequence(unsigned indent = 0, int start = 0);
    void samesizify(h2_rows& b);
 };
+// source/utils/h2_color.hpp
+
+struct h2_color {
+   static void prints(const char* style, const char* format, ...);
+   static void printl(const h2_row& row);
+   static void printl(const h2_rows& rows);
+
+   static bool isctrl(const char* s) { return s[0] == '\033' && s[1] == '{'; };
+};
+// source/utils/h2_nm.hpp
+
+struct h2_symbol {
+   h2_list x;
+   std::string name;
+   unsigned long long addr;
+   h2_symbol(char* _name, unsigned long long _addr) : name(_name), addr(_addr) {}
+};
+
+struct h2_scope {
+   char name[256];
+   unsigned long long addr, size;
+};
+
+struct h2_nm {
+   h2_singleton(h2_nm);
+   std::map<std::string, unsigned long long>* symbols_mangled;
+   h2_list symbols_demangled;
+   h2_nm(){};
+   static unsigned long long get(const char* name);             // by mangled name
+   static int get(const char* name, h2_scope res[], int n);    // by demangled name
+   static int find(const char* name, h2_symbol* res[], int n);  // by demangled name
+   static long long text_offset();
+   static long long vtable_offset();
+   static bool in_main(unsigned long long addr);
+};
+// source/utils/h2_backtrace.hpp
+
+struct h2_backtrace {
+   int count = 0, shift = 0;
+   void* frames[100];
+
+   h2_backtrace() = default;
+   h2_backtrace(int shift_);
+
+   h2_backtrace(const h2_backtrace&) = default;
+   h2_backtrace& operator=(const h2_backtrace&) = default;
+
+   bool operator==(const h2_backtrace&);
+
+   bool has(void* func, int size) const;
+   void print(h2_vector<h2_string>& stacks) const;
+   void print(int pad) const;
+};
+// source/other/h2_option.hpp
+
+static constexpr unsigned Linux = 0x0101;
+static constexpr unsigned macOS = 0x0102;
+static constexpr unsigned windows = 0x0200;
+
+struct h2_option {
+   h2_singleton(h2_option);
+
+#if defined linux || defined __linux || defined __linux__
+   static constexpr unsigned os = Linux;
+#elif defined __APPLE__
+   static constexpr unsigned os = macOS;
+#elif defined _WIN32
+   static constexpr unsigned os = windows;
+   HANDLE hProcess;
+#endif
+
+   unsigned terminal_width;
+
+   char args[256];
+   const char* path;
+   const char* debug = nullptr;
+   bool verbose = false;
+   bool compact = false;
+   bool colorful = true;
+   bool execute_progress = true;
+   bool fold_json = true;
+   bool copy_paste_json = false;
+   bool only_execute_fails = false;
+   bool shuffle_order = false;
+   bool memory_check = true;
+   bool exception_fails = false;
+   char list_cases = '\0';
+   int break_after_fails = 0;
+   int rounds = 1;
+   char junit[256]{'\0'};
+   char tap[256]{'\0'};
+   std::vector<const char*> includes, excludes;
+
+   h2_option();
+   void parse(int argc, const char** argv);
+   bool filter(const char* suitename, const char* casename, const char* file, int line) const;
+};
+
+static const h2_option& O = h2_option::I();  // for pretty
+// source/other/h2_layout.hpp
+
+struct h2_layout {
+   static h2_rows split(const h2_rows& left_rows, const h2_rows& right_rows, const char* left_title, const char* right_title, int step, char scale, unsigned width);
+   static h2_rows unified(const h2_row& up_row, const h2_row& down_row, const char* up_title, const char* down_title, unsigned width);
+   static h2_rows seperate(const h2_row& up_row, const h2_row& down_row, const char* up_title, const char* down_title, unsigned width);
+};
+// source/other/h2_debug.hpp
+
+struct h2_debugger {
+   static void trap();
+};
+
+#define h2_debug(...)                                                               \
+   do {                                                                             \
+      if (!O.debug) {                                                               \
+         h2_color::prints("", __VA_ARGS__);                                         \
+         h2_color::prints("", " %s : %d = %s\n", __FILE__, __LINE__, __FUNCTION__); \
+         h2_backtrace bt____(0);                                                    \
+         bt____.print(3);                                                           \
+      }                                                                             \
+   } while (0)
+// source/other/h2_failure.hpp
+
+struct h2_fail : h2_libc {
+   h2_fail *subling_next{nullptr}, *child_next{nullptr};
+
+   const char* assert_type = "Inner";  // Inner(Mock, AllOf, &&, ||)
+   h2_string e_expression, a_expression;
+   h2_row explain;
+   h2_string user_explain;
+
+   //           expression     expection      represent       value
+   // number     Ge(var)        Ge(5)          5               5
+   // string     We(var)        We("abc")      "abc"           abc
+   // char       We(var)        We('a')        'a'             a
+
+   int seqno = -1;
+   const char* file;
+   int line;
+
+   h2_fail(const h2_row& explain_, const char* file_, int line_) : explain(explain_), file(file_), line(line_) {}
+   virtual ~h2_fail();
+
+   h2_row locate();
+
+   virtual void print(int subling_index = 0, int child_index = 0) {}
+   virtual void print(FILE* fp) {}
+
+   void foreach(std::function<void(h2_fail*, int, int)> cb, int subling_index = 0, int child_index = 0);
+   static void append_subling(h2_fail*& fail, h2_fail* n);
+   static void append_child(h2_fail*& fail, h2_fail* n);
+
+   static h2_fail* new_normal(const h2_row& explain, const char* file = nullptr, int line = 0);
+   static h2_fail* new_unexpect(const h2_row& expection = {}, const h2_row& represent = {}, const h2_row& explain = {}, const char* file = nullptr, int line = 0);
+   static h2_fail* new_strcmp(const h2_string& e_value, const h2_string& a_value, bool caseless, const h2_row& expection, const h2_row& explain = {}, const char* file = nullptr, int line = 0);
+   static h2_fail* new_strfind(const h2_string& e_value, const h2_string& a_value, const h2_row& expection, const h2_row& explain = {}, const char* file = nullptr, int line = 0);
+   static h2_fail* new_json(const h2_string& e_value, const h2_string& a_value, const h2_row& expection, bool caseless, const h2_row& explain = {}, const char* file = nullptr, int line = 0);
+   static h2_fail* new_memcmp(const unsigned char* e_value, const unsigned char* a_value, int width, int nbits, const h2_string& represent, const h2_row& explain = {}, const char* file = nullptr, int line = 0);
+   static h2_fail* new_memory_leak(const void* ptr, int size, const h2_vector<std::pair<int, int>>& sizes, const h2_backtrace& bt_allocate, const char* where, const char* file, int line);
+   static h2_fail* new_double_free(const void* ptr, const h2_backtrace& bt_allocate, const h2_backtrace& bt_release, const h2_backtrace& bt_double_free);
+   static h2_fail* new_asymmetric_free(const void* ptr, const char* who_allocate, const char* who_release, const h2_backtrace& bt_allocate, const h2_backtrace& bt_release);
+   static h2_fail* new_overflow(const void* ptr, const int size, const void* addr, const char* action, const h2_vector<unsigned char>& spot, const h2_backtrace& bt_allocate, const h2_backtrace& bt_trample, const char* file = nullptr, int line = 0);
+   static h2_fail* new_use_after_free(const void* ptr, const void* addr, const char* action, const h2_backtrace& bt_allocate, const h2_backtrace& bt_release, const h2_backtrace& bt_use);
+};
+
+static inline void h2_fail_g(h2_fail*, bool);
+// source/json/h2_json.hpp
+
+struct h2_json {
+   static h2_rows format(const h2_string& json_string);
+   static h2_string select(const h2_string& json_string, const h2_string& selector, bool caseless);
+   // < 0 illformed json; = 0 matched; > 0 unmatched
+   static int match(const h2_string& expect, const h2_string& actual, bool caseless);
+   static bool diff(const h2_string& expect, const h2_string& actual, h2_rows& e_lines, h2_rows& a_lines, bool caseless);
+};
+// source/memory/h2_exempt.hpp
+
+struct h2_exempt {
+   h2_singleton(h2_exempt);
+   h2_list exempts;
+   static void setup();
+   static void add(void* func, unsigned long size = 0);
+   static bool in(const h2_backtrace& bt);
+};
+
+#define H2UNMEM(func) h2::h2_exempt::add((void*)func)
+// source/memory/h2_memory.hpp
+
+struct h2_memory {
+   static void initialize();
+   static void finalize();
+   static void overrides();
+   static void restores();
+
+   struct stack {
+      static void root();
+      static void push(const char* file, int line);
+      static h2_fail* pop();
+      static long long footprint();
+
+      struct block : h2_once {
+         block(const char* attributes, const char* file, int line);
+         ~block();
+      };
+   };
+};
+
+#define __H2BLOCK(Attributes, Qb) for (h2::h2_memory::stack::block Qb(h2::sss(Attributes), __FILE__, __LINE__); Qb;)
+#define H2BLOCK(...) __H2BLOCK(#__VA_ARGS__, H2PP_UNIQUE(t_block))
 // source/utils/h2_stringify.hpp
+
+#if defined _WIN32
+struct h2_oss {
+   h2_string s;
+   h2_string& str() { return s; }
+   template <typename T>
+   h2_oss& operator<<(T a)
+   {
+      char b[1024 * 4];
+      h2_memory::restores();
+      {
+         std::ostringstream oss;
+         oss << std::boolalpha << a;
+         ::snprintf(b, sizeof(b), "%s", oss.str().c_str());
+      }
+      h2_memory::overrides();
+      s += b;
+      return *this;
+   }
+};
+#else
+using h2_oss = std::basic_ostringstream<char, std::char_traits<char>, h2_allocator<char>>;
+#endif
 
 template <typename T, typename = void>
 struct h2_stringify_impl {
@@ -835,16 +1104,15 @@ struct h2_stringify_impl<T, typename std::enable_if<h2_is_ostreamable<T>::value>
    template <typename U>
    static h2_row ostream_print(const U& a, bool represent)
    {
-      h2_ostringstream os;
-      os << std::boolalpha;
-      os << const_cast<U&>(a);
+      h2_oss oss;
+      oss << std::boolalpha << const_cast<U&>(a);
       if (represent) {
          const char* quote = nullptr;
          if (std::is_same<char, U>::value) quote = "'";
          if (std::is_convertible<U, h2_string>::value) quote = "\"";
-         if (quote) return gray(quote) + os.str().c_str() + gray(quote);
+         if (quote) return gray(quote) + oss.str().c_str() + gray(quote);
       }
-      return {os.str().c_str()};
+      return {oss.str().c_str()};
    }
 
    static h2_row ostream_print(unsigned char a, bool represent)
@@ -922,208 +1190,6 @@ inline h2_row h2_representify(const T& a) { return h2_stringify(a, true); }
 
 template <typename T>
 inline h2_row h2_representify(T a, size_t n) { return h2_stringify(a, n, true); }
-// source/utils/h2_color.hpp
-
-struct h2_color {
-   static void prints(const char* style, const char* format, ...);
-   static void printl(const h2_row& row);
-   static void printl(const h2_rows& rows);
-
-   static bool isctrl(const char* s) { return s[0] == '\033' && s[1] == '{'; };
-};
-// source/utils/h2_nm.hpp
-
-struct h2_symbol {
-   h2_list x;
-   std::string name;
-   unsigned long long addr;
-   h2_symbol(char* _name, unsigned long long _addr) : name(_name), addr(_addr) {}
-};
-
-struct h2_nm {
-   h2_singleton(h2_nm);
-   std::map<std::string, unsigned long long> *symbols_mangled;
-   h2_list symbols_demangled;
-   h2_nm(){};
-   static unsigned long long get(const char* name); // by mangled name
-   static int find(const char* name, h2_symbol* res[], int n); // by demangled name
-   static long long text_offset();
-   static long long vtable_offset();
-   static bool in_main(unsigned long long addr);
-};
-// source/utils/h2_backtrace.hpp
-
-struct h2_backtrace {
-   int count = 0, shift = 0;
-   void* array[100];
-
-   h2_backtrace() = default;
-   h2_backtrace(int shift_);
-
-   h2_backtrace(const h2_backtrace&) = default;
-   h2_backtrace& operator=(const h2_backtrace&) = default;
-
-   bool operator==(const h2_backtrace&);
-
-   bool has(void* func, int size) const;
-   void print(h2_vector<h2_string>& stacks) const;
-   void print(int pad) const;
-};
-// source/other/h2_option.hpp
-
-static constexpr unsigned Linux = 0x0101;
-static constexpr unsigned macOS = 0x0102;
-static constexpr unsigned windows = 0x0200;
-
-struct h2_option {
-   h2_singleton(h2_option);
-
-#if defined linux || defined __linux || defined __linux__
-   static constexpr unsigned os = Linux;
-#elif defined __APPLE__
-   static constexpr unsigned os = macOS;
-#elif defined WIN32 || defined __WIN32__ || defined _WIN32 || defined _MSC_VER || defined __MINGW32__
-   static constexpr unsigned os = windows;
-#endif
-
-   unsigned terminal_width;
-
-   char args[256];
-   const char* path;
-   const char* debug = nullptr;
-   bool verbose = false;
-   bool compact = false;
-   bool colorful = true;
-   bool execute_progress = true;
-   bool fold_json = true;
-   bool copy_paste_json = false;
-   bool only_execute_fails = false;
-   bool shuffle_order = false;
-   bool memory_check = true;
-   bool exception_fails = false;
-   char list_cases = '\0';
-   int break_after_fails = 0;
-   int rounds = 1;
-   char junit[256]{'\0'};
-   char tap[256]{'\0'};
-   std::vector<const char*> includes, excludes;
-
-   h2_option();
-   void parse(int argc, const char** argv);
-   bool filter(const char* suitename, const char* casename, const char* file, int line) const;
-};
-
-static const h2_option& O = h2_option::I();  // for pretty
-// source/other/h2_layout.hpp
-
-struct h2_layout {
-   static h2_rows split(const h2_rows& left_rows, const h2_rows& right_rows, const char* left_title, const char* right_title, int step, char scale, unsigned width);
-   static h2_rows unified(const h2_row& up_row, const h2_row& down_row, const char* up_title, const char* down_title, unsigned width);
-   static h2_rows seperate(const h2_row& up_row, const h2_row& down_row, const char* up_title, const char* down_title, unsigned width);
-};
-// source/other/h2_debug.hpp
-
-struct h2_debugger {
-   static void trap();
-};
-
-#define h2_debug(...)                                                               \
-   do {                                                                             \
-      if (!O.debug) {                                                               \
-         h2_color::prints("", __VA_ARGS__);                                         \
-         h2_color::prints("", " %s : %d = %s\n", __FILE__, __LINE__, __FUNCTION__); \
-         h2_backtrace bt(0);                                                        \
-         bt.print(3);                                                               \
-      }                                                                             \
-   } while (0)
-// source/other/h2_failure.hpp
-
-struct h2_fail : h2_libc {
-   h2_fail *subling_next{nullptr}, *child_next{nullptr};
-
-   const char* assert_type = "Inner";  // Inner(Mock, AllOf, &&, ||)
-   h2_string e_expression, a_expression;
-   h2_row explain;
-   h2_string user_explain;
-
-   //           expression     expection      represent       value
-   // number     Ge(var)        Ge(5)          5               5
-   // string     We(var)        We("abc")      "abc"           abc
-   // char       We(var)        We('a')        'a'             a
-
-   int seqno = -1;
-   const char* file;
-   int line;
-
-   h2_fail(const h2_row& explain_, const char* file_, int line_) : explain(explain_), file(file_), line(line_) {}
-   virtual ~h2_fail();
-
-   h2_row locate();
-
-   virtual void print(int subling_index = 0, int child_index = 0) {}
-   virtual void print(FILE* fp) {}
-
-   void foreach(std::function<void(h2_fail*, int, int)> cb, int subling_index = 0, int child_index = 0);
-   static void append_subling(h2_fail*& fail, h2_fail* n);
-   static void append_child(h2_fail*& fail, h2_fail* n);
-
-   static h2_fail* new_normal(const h2_row& explain, const char* file = nullptr, int line = 0);
-   static h2_fail* new_unexpect(const h2_row& expection = {}, const h2_row& represent = {}, const h2_row& explain = {}, const char* file = nullptr, int line = 0);
-   static h2_fail* new_strcmp(const h2_string& e_value, const h2_string& a_value, bool caseless, const h2_row& expection, const h2_row& explain = {}, const char* file = nullptr, int line = 0);
-   static h2_fail* new_strfind(const h2_string& e_value, const h2_string& a_value, const h2_row& expection, const h2_row& explain = {}, const char* file = nullptr, int line = 0);
-   static h2_fail* new_json(const h2_string& e_value, const h2_string& a_value, const h2_row& expection, bool caseless, const h2_row& explain = {}, const char* file = nullptr, int line = 0);
-   static h2_fail* new_memcmp(const unsigned char* e_value, const unsigned char* a_value, int width, int nbits, const h2_string& represent, const h2_row& explain = {}, const char* file = nullptr, int line = 0);
-   static h2_fail* new_memory_leak(const void* ptr, int size, const h2_vector<std::pair<int, int>>& sizes, const h2_backtrace& bt_allocate, const char* where, const char* file, int line);
-   static h2_fail* new_double_free(const void* ptr, const h2_backtrace& bt_allocate, const h2_backtrace& bt_release, const h2_backtrace& bt_double_free);
-   static h2_fail* new_asymmetric_free(const void* ptr, const char* who_allocate, const char* who_release, const h2_backtrace& bt_allocate, const h2_backtrace& bt_release);
-   static h2_fail* new_overflow(const void* ptr, const int size, const void* addr, const char* action, const h2_vector<unsigned char>& spot, const h2_backtrace& bt_allocate, const h2_backtrace& bt_trample, const char* file = nullptr, int line = 0);
-   static h2_fail* new_use_after_free(const void* ptr, const void* addr, const char* action, const h2_backtrace& bt_allocate, const h2_backtrace& bt_release, const h2_backtrace& bt_use);
-};
-
-static inline void h2_fail_g(h2_fail*, bool);
-// source/json/h2_json.hpp
-
-struct h2_json {
-   static h2_rows format(const h2_string& json_string);
-   static h2_string select(const h2_string& json_string, const h2_string& selector, bool caseless);
-   // < 0 illformed json; = 0 matched; > 0 unmatched
-   static int match(const h2_string& expect, const h2_string& actual, bool caseless);
-   static bool diff(const h2_string& expect, const h2_string& actual, h2_rows& e_lines, h2_rows& a_lines, bool caseless);
-};
-// source/memory/h2_exempt.hpp
-
-struct h2_exempt {
-   h2_singleton(h2_exempt);
-   h2_list exempts;
-   static void setup();
-   static void add(void* func);
-   static bool in(const h2_backtrace& bt);
-};
-
-#define H2UNMEM(func) h2::h2_exempt::add((void*)func)
-// source/memory/h2_memory.hpp
-
-struct h2_memory {
-   static void initialize();
-   static void finalize();
-   static void overrides();
-   static void restores();
-
-   struct stack {
-      static void root();
-      static void push(const char* file, int line);
-      static h2_fail* pop();
-      static long long footprint();
-
-      struct block : h2_once {
-         block(const char* attributes, const char* file, int line);
-         ~block();
-      };
-   };
-};
-
-#define __H2BLOCK(Attributes, Qb) for (h2::h2_memory::stack::block Qb(Attributes, __FILE__, __LINE__); Qb;)
-#define H2BLOCK(...) __H2BLOCK(#__VA_ARGS__, H2PP_UNIQUE(t_block))
 // source/exception/h2_exception.hpp
 
 struct h2_exception {
@@ -2224,9 +2290,9 @@ inline h2_polymorphic_matcher<h2_countof_matches<typename std::decay<const Match
       if (__matches(a) == !dont) return nullptr;                                                         \
       if (dont) {                                                                                        \
       } else {                                                                                           \
-         h2::h2_ostringstream osm;                                                                       \
-         osm << std::boolalpha << H2PP_REMOVE_PARENTHESES(message);                                      \
-         fail->user_explain = osm.str().c_str();                                                         \
+         h2::h2_oss t;                                                                                   \
+         t << H2PP_REMOVE_PARENTHESES(message);                                                          \
+         fail->user_explain = t.str().c_str();                                                           \
       }                                                                                                  \
       return fail;                                                                                       \
    }                                                                                                     \
@@ -2374,6 +2440,11 @@ void* h2_fp(T p)
 {
    void* fp = (void*)p;
    if (std::is_convertible<T, h2::h2_string>::value) {
+#if defined _WIN32
+      fp = (void*)h2_nm::get((const char*)p);
+      if (!fp)
+         h2_color::prints("yellow", "\nDon't find %s\n", (const char*)p);
+#else
       h2_symbol* res[100];
       int n = h2_nm::find((const char*)p, res, 100);
       if (n != 1) {
@@ -2387,6 +2458,7 @@ void* h2_fp(T p)
          return nullptr;
       }
       fp = (void*)(res[0]->addr + h2_nm::text_offset());
+#endif
    }
    return fp;
 }
@@ -2992,7 +3064,7 @@ struct h2_sock : h2_once {
    h2_sock();
    ~h2_sock();
    static void clear();
-   static void inject(const void* packet, size_t size, const char* attributes);  // from=1.2.3.4:5678, to=4.3.2.1:8765
+   static void inject(const void* packet, size_t size, const char* attributes = "");  // from=1.2.3.4:5678, to=4.3.2.1:8765
    static h2_packet* fetch();
 
    template <typename M1 = h2_polymorphic_matcher<h2_matches_any>, typename M2 = h2_polymorphic_matcher<h2_matches_any>, typename M3 = h2_polymorphic_matcher<h2_matches_any>, typename M4 = h2_polymorphic_matcher<h2_matches_any>>
@@ -3035,8 +3107,8 @@ struct h2_sock : h2_once {
 #define __H2SOCK(Q) for (h2::h2_sock Q; Q;)
 #define H2SOCK(...) __H2SOCK(H2PP_UNIQUE(t_sock))
 
-#define Ptx(...) h2::h2_sock::check(__FILE__, __LINE__, #__VA_ARGS__, __VA_ARGS__)
-#define Pij(_Packet, _Size, ...) h2::h2_sock::inject(_Packet, _Size, #__VA_ARGS__)
+#define Ptx(...) h2::h2_sock::check(__FILE__, __LINE__, h2::sss(#__VA_ARGS__), __VA_ARGS__)
+#define Pij(_Packet, _Size, ...) h2::h2_sock::inject(_Packet, _Size, h2::sss(#__VA_ARGS__))
 // source/extension/h2_stdio.hpp
 
 struct h2_cout : h2_once {
@@ -3049,7 +3121,7 @@ struct h2_cout : h2_once {
    static size_t length();
 };
 
-#define __H2COUT(m, e, type, Q) for (h2::h2_cout Q(m, e, type, __FILE__, __LINE__); Q;)
+#define __H2COUT(m, e, type, Q) for (h2::h2_cout Q(m, e, h2::sss(type), __FILE__, __LINE__); Q;)
 #define H2COUT(m, ...) __H2COUT(m, #m, #__VA_ARGS__, H2PP_UNIQUE(t_cout))
 // source/extension/h2_perf.hpp
 
@@ -3217,13 +3289,13 @@ struct h2_defer_failure : h2_once {
    const char* file;
    int line;
    h2_fail* fails{nullptr};
-   h2_ostringstream oss;
+   h2_oss oss;
 
    h2_defer_failure(const char* e_expression_, const char* a_expression_, const char* expression_, const char* file_, int line_) : e_expression(e_expression_), a_expression(a_expression_), expression(expression_), file(file_), line(line_) {}
    ~h2_defer_failure();
 };
 
-static inline h2_ostringstream& h2_OK(h2_defer_failure* d, bool a)
+static inline h2_oss& h2_OK(h2_defer_failure* d, bool a)
 {
    d->assert_type = "OK1";
    if (!a) d->fails = h2_fail::new_unexpect("true", "false");
@@ -3232,7 +3304,7 @@ static inline h2_ostringstream& h2_OK(h2_defer_failure* d, bool a)
 }
 
 template <typename E, typename A>
-static inline h2_ostringstream& h2_OK(h2_defer_failure* d, E e, A a, int n = 0)
+static inline h2_oss& h2_OK(h2_defer_failure* d, E e, A a, int n = 0)
 {
    d->assert_type = "OK2";
    h2::h2_matcher<typename h2_decay<A>::type> m = h2::h2_matcher_cast<typename h2_decay<A>::type>((typename h2_decay<E>::type)e);
@@ -3246,7 +3318,7 @@ static inline h2_ostringstream& h2_OK(h2_defer_failure* d, E e, A a, int n = 0)
    return d->oss;
 }
 
-static inline h2_ostringstream& h2_JE(h2_defer_failure* d, h2_string e, h2_string a, h2_string selector)
+static inline h2_oss& h2_JE(h2_defer_failure* d, h2_string e, h2_string a, h2_string selector)
 {
    d->assert_type = "JE";
    h2::h2_matcher<h2_string> m = Je(e, selector);
@@ -3542,9 +3614,9 @@ struct h2_report {
 //////// <<<<< generated by build/generate.py
 // source/core/h2_use.hpp
 
-#define __H2SUITE(name, h2_suite_test)                                          \
-   static void h2_suite_test(h2::h2_suite*, h2::h2_case*);                      \
-   static h2::h2_suite H2PP_UNIQUE()(name, &h2_suite_test, __FILE__, __LINE__); \
+#define __H2SUITE(name, h2_suite_test)                                                   \
+   static void h2_suite_test(h2::h2_suite*, h2::h2_case*);                               \
+   static h2::h2_suite H2PP_UNIQUE()(h2::sss(name), &h2_suite_test, __FILE__, __LINE__); \
    static void h2_suite_test(h2::h2_suite* suite_2_0_1_3_0_1_0_2, h2::h2_case* case_2_0_1_7_0_3_2_5)
 
 #define H2SUITE(...) __H2SUITE(#__VA_ARGS__, H2PP_UNIQUE(h2_suite_test))
@@ -3554,7 +3626,7 @@ struct h2_report {
 #define H2Cleanup() if (::setjmp(suite_2_0_1_3_0_1_0_2->ctx))
 
 #define __H2Case(name, c, todo)                                                                               \
-   static h2::h2_case c(name, __FILE__, __LINE__, todo);                                                      \
+   static h2::h2_case c(h2::sss(name), __FILE__, __LINE__, todo);                                             \
    static h2::h2_suite::registor H2PP_UNIQUE()(suite_2_0_1_3_0_1_0_2, &c);                                    \
    if (&c == case_2_0_1_7_0_3_2_5)                                                                            \
       for (h2::h2_suite::cleaner _1_9_8_0_(suite_2_0_1_3_0_1_0_2); _1_9_8_0_; case_2_0_1_7_0_3_2_5 = nullptr) \
@@ -3568,7 +3640,7 @@ struct h2_report {
    static void h2_case_test();                                                                       \
    static void h2_suite_test(h2::h2_suite* suite_2_0_1_3_0_1_0_2, h2::h2_case* case_2_0_1_7_0_3_2_5) \
    {                                                                                                 \
-      static h2::h2_case c(name, __FILE__, __LINE__, todo);                                          \
+      static h2::h2_case c(h2::sss(name), __FILE__, __LINE__, todo);                                 \
       static h2::h2_suite::registor r(suite_2_0_1_3_0_1_0_2, &c);                                    \
       if (&c == case_2_0_1_7_0_3_2_5)                                                                \
          for (h2::h2_case::cleaner t(&c); t;)                                                        \
@@ -3583,42 +3655,46 @@ struct h2_report {
 
 /* clang-format off */
 
-#define _H2_An(...) H2PP_CAT(_H2_An_, H2PP_IS_EMPTY(__VA_ARGS__)) (__VA_ARGS__)
-#define _H2_An_0(a, ...) a
+#define _H2_An(...) H2PP_CAT(_H2_An_, H2PP_IS_EMPTY(__VA_ARGS__)) ((__VA_ARGS__))
 #define _H2_An_1(...) 0
+#define _H2_An_0(_Args) H2PP_RESCAN(_H2_An_0I _Args)
+#define _H2_An_0I(a, ...) a
 
-#define _H2_An_ForEach(...) H2PP_CAT(_H2_An_ForEach_, H2PP_IS_EMPTY(__VA_ARGS__)) (__VA_ARGS__)
+#define _H2_An_ForEach(...) H2PP_CAT(_H2_An_ForEach_, H2PP_IS_EMPTY(__VA_ARGS__)) ((__VA_ARGS__))
 #define _H2_An_ForEach_1(...) 0
-#define _H2_An_ForEach_0(a, ...) H2PP_CAT(_H2_An_ForEach_0_, H2PP_IS_BEGIN_PARENTHESIS(a))(a)
+#define _H2_An_ForEach_0(_Args) H2PP_RESCAN(_H2_An_ForEach_0I _Args)
+#define _H2_An_ForEach_0I(a, ...) H2PP_CAT(_H2_An_ForEach_0_, H2PP_IS_BEGIN_PARENTHESIS(a))(a)
 #define _H2_An_ForEach_0_0(a) _H2_An(a)
 #define _H2_An_ForEach_0_1(a) _H2_An(H2PP_REMOVE_PARENTHESES(a))
 
 #define _H2_An_Fullmeshx(...) _H2_An_ForEach(H2PP_HEAD(__VA_ARGS__))
 #define _H2_An_Fullmeshy(...) _H2_An_ForEach(H2PP_LAST(__VA_ARGS__))
 
-#define ___H2CASES_Macro(Qc, i, x) CASE(i. x) { Qc(x); }
-#define __H2CASES_Macro(...) ___H2CASES_Macro(__VA_ARGS__)
-#define _H2CASES_Macro(args, i, x) __H2CASES_Macro(H2PP_REMOVE_PARENTHESES(args), i, x)
-#define __H2CASES(Qc, ...)                            \
-   template <typename T>                              \
-   void Qc(T x);                                      \
-   H2PP_FOREACH(, _H2CASES_Macro, (Qc), __VA_ARGS__); \
-   template <typename T>                              \
+#define __H2CASES_Macro4(Qc, i, x) CASE(i. x) { Qc(x); }
+#define __H2CASES_Macro3(_Args) H2PP_RESCAN(__H2CASES_Macro4 _Args)
+#define __H2CASES_Macro2(...) __H2CASES_Macro3((__VA_ARGS__)) 
+#define __H2CASES_Macro1(args, i, x) __H2CASES_Macro2(H2PP_REMOVE_PARENTHESES(args), i, x)
+#define __H2CASES(Qc, ...)                               \
+   template <typename T>                                 \
+   void Qc(T x);                                         \
+   H2PP_FOREACH(, __H2CASES_Macro1, (Qc), __VA_ARGS__);  \
+   template <typename T>                                 \
    void Qc(T x)
 #define H2CASES(...) __H2CASES(H2PP_UNIQUE(f_cases), __VA_ARGS__)
 
-#define ___H2CASESS_Macro(Qc, i, j, x, y) CASE(i.j. x, y) { Qc(x, y); }
-#define __H2CASESS_Macro(...) ___H2CASESS_Macro(__VA_ARGS__)
-#define _H2CASESS_Macro(args, i, j, x, y) __H2CASESS_Macro(H2PP_REMOVE_PARENTHESES(args), i, j, x, y)
-#define __H2CASESS(Qc, ...)                             \
-   template <typename Tx, typename Ty>                  \
-   void Qc(Tx x, Ty y);                                 \
-   H2PP_FULLMESH(, _H2CASESS_Macro, (Qc), __VA_ARGS__); \
-   template <typename Tx, typename Ty>                  \
+#define __H2CASESS_Macro4(Qc, i, j, x, y) CASE(i.j. x, y) { Qc(x, y); }
+#define __H2CASESS_Macro3(_Args) H2PP_RESCAN(__H2CASESS_Macro4 _Args)
+#define __H2CASESS_Macro2(...) __H2CASESS_Macro3((__VA_ARGS__))
+#define __H2CASESS_Macro1(args, i, j, x, y) __H2CASESS_Macro2(H2PP_REMOVE_PARENTHESES(args), i, j, x, y)
+#define __H2CASESS(Qc, ...)                                 \
+   template <typename Tx, typename Ty>                      \
+   void Qc(Tx x, Ty y);                                     \
+   H2PP_FULLMESH((, __H2CASESS_Macro1, (Qc), __VA_ARGS__)); \
+   template <typename Tx, typename Ty>                      \
    void Qc(Tx x, Ty y)
 #define H2CASESS(...) __H2CASESS(H2PP_UNIQUE(f_casess), __VA_ARGS__)
 
-#define ___H2Cases_Macro(Qj, Qb, Ql, Qx, i, x) \
+#define __H2Cases_Macro4(Qj, Qb, Ql, Qx, i, x) \
    H2Case(i. x)                                \
    {                                           \
       if (!::setjmp(Qj)) {                     \
@@ -3628,18 +3704,19 @@ struct h2_report {
       }                                        \
    };                                          \
    Qb = false;
-#define __H2Cases_Macro(...) ___H2Cases_Macro(__VA_ARGS__)
-#define _H2Cases_Macro(args, i, x) __H2Cases_Macro(H2PP_REMOVE_PARENTHESES(args), i, x)
-#define __H2Cases(Qj, Qb, Ql, Qx, ...)                            \
-   jmp_buf Qj;                                                    \
-   bool Qb = false;                                               \
-   auto Qx = _H2_An_ForEach(__VA_ARGS__);                         \
-   H2PP_FOREACH(, _H2Cases_Macro, (Qj, Qb, Ql, Qx), __VA_ARGS__); \
-   Ql:                                                            \
+#define __H2Cases_Macro3(_Args) H2PP_RESCAN(__H2Cases_Macro4 _Args)
+#define __H2Cases_Macro2(...) __H2Cases_Macro3((__VA_ARGS__))
+#define __H2Cases_Macro1(args, i, x) __H2Cases_Macro2(H2PP_REMOVE_PARENTHESES(args), i, x)
+#define __H2Cases(Qj, Qb, Ql, Qx, ...)                               \
+   jmp_buf Qj;                                                       \
+   bool Qb = false;                                                  \
+   auto Qx = _H2_An_ForEach(__VA_ARGS__);                            \
+   H2PP_FOREACH(, __H2Cases_Macro1, (Qj, Qb, Ql, Qx), __VA_ARGS__);  \
+   Ql:                                                               \
    for (auto x = Qx; Qb; Qb = false, ::longjmp(Qj, 1))
 #define H2Cases(...) __H2Cases(H2PP_UNIQUE(j), H2PP_UNIQUE(b), H2PP_UNIQUE(l), H2PP_UNIQUE(x), __VA_ARGS__)
 
-#define ___H2Casess_Macro(Qj, Qb, Ql, Qx, Qy, i, j, x, y) \
+#define __H2Casess_Macro4(Qj, Qb, Ql, Qx, Qy, i, j, x, y) \
    H2Case(i.j. x, y)                                      \
    {                                                      \
       if (!::setjmp(Qj)) {                                \
@@ -3650,38 +3727,41 @@ struct h2_report {
       }                                                   \
    };                                                     \
    Qb = false;
-#define __H2Casess_Macro(...) ___H2Casess_Macro(__VA_ARGS__)
-#define _H2Casess_Macro(args, i, j, x, y) __H2Casess_Macro(H2PP_REMOVE_PARENTHESES(args), i, j, x, y)
-#define __H2Casess(Qj, Qb, Ql, Qx, Qy, ...)                             \
-   jmp_buf Qj;                                                          \
-   bool Qb = false;                                                     \
-   auto Qx = _H2_An_Fullmeshx(__VA_ARGS__);                             \
-   auto Qy = _H2_An_Fullmeshy(__VA_ARGS__);                             \
-   H2PP_FULLMESH(, _H2Casess_Macro, (Qj, Qb, Ql, Qx, Qy), __VA_ARGS__); \
-   Ql:                                                                  \
-   for (auto x = Qx; Qb; ::longjmp(Qj, 1))                              \
+#define __H2Casess_Macro3(_Args) H2PP_RESCAN(__H2Casess_Macro4 _Args)
+#define __H2Casess_Macro2(...) __H2Casess_Macro3((__VA_ARGS__))
+#define __H2Casess_Macro1(args, i, j, x, y) __H2Casess_Macro2(H2PP_REMOVE_PARENTHESES(args), i, j, x, y)
+#define __H2Casess(Qj, Qb, Ql, Qx, Qy, ...)                                   \
+   jmp_buf Qj;                                                                \
+   bool Qb = false;                                                           \
+   auto Qx = _H2_An_Fullmeshx(__VA_ARGS__);                                   \
+   auto Qy = _H2_An_Fullmeshy(__VA_ARGS__);                                   \
+   H2PP_FULLMESH((, __H2Casess_Macro1, (Qj, Qb, Ql, Qx, Qy), __VA_ARGS__));   \
+   Ql:                                                                        \
+   for (auto x = Qx; Qb; ::longjmp(Qj, 1))                                    \
       for (auto y = Qy; Qb; Qb = false)
 #define H2Casess(...) __H2Casess(H2PP_UNIQUE(j), H2PP_UNIQUE(b), H2PP_UNIQUE(l), H2PP_UNIQUE(x), H2PP_UNIQUE(y), __VA_ARGS__)
 
-#define ___H2CASES_T_Macro(Qc, i, x) CASE(i. x) { Qc<x>(); }
-#define __H2CASES_T_Macro(...) ___H2CASES_T_Macro(__VA_ARGS__)
-#define _H2CASES_T_Macro(args, i, x) __H2CASES_T_Macro(H2PP_REMOVE_PARENTHESES(args), i, x)
-#define __H2CASES_T(Qc, ...)                            \
-   template <typename x>                                \
-   void Qc();                                           \
-   H2PP_FOREACH(, _H2CASES_T_Macro, (Qc), __VA_ARGS__); \
-   template <typename x>                                \
+#define __H2CASES_T_Macro4(Qc, i, x) CASE(i. x) { Qc<x>(); }
+#define __H2CASES_T_Macro3(_Args) H2PP_RESCAN(__H2CASES_T_Macro4 _Args)
+#define __H2CASES_T_Macro2(...) __H2CASES_T_Macro3((__VA_ARGS__))
+#define __H2CASES_T_Macro1(args, i, x) __H2CASES_T_Macro2(H2PP_REMOVE_PARENTHESES(args), i, x)
+#define __H2CASES_T(Qc, ...)                                \
+   template <typename x>                                    \
+   void Qc();                                               \
+   H2PP_FOREACH(, __H2CASES_T_Macro1, (Qc), __VA_ARGS__);   \
+   template <typename x>                                    \
    void Qc()
 #define H2CASES_T(...) __H2CASES_T(H2PP_UNIQUE(f_casest), __VA_ARGS__)
 
-#define ___H2CASESS_T_Macro(Qc, i, j, x, y) CASE(i.j. x, y) { Qc<x, y>(); }
-#define __H2CASESS_T_Macro(...) ___H2CASESS_T_Macro(__VA_ARGS__)
-#define _H2CASESS_T_Macro(args, i, j, x, y) __H2CASESS_T_Macro(H2PP_REMOVE_PARENTHESES(args), i, j, x, y)
-#define __H2CASESS_T(Qc, ...)                             \
-   template <typename x, typename y>                      \
-   void Qc();                                             \
-   H2PP_FULLMESH(, _H2CASESS_T_Macro, (Qc), __VA_ARGS__); \
-   template <typename x, typename y>                      \
+#define __H2CASESS_T_Macro4(Qc, i, j, x, y) CASE(i.j. x, y) { Qc<x, y>(); }
+#define __H2CASESS_T_Macro3(_Args) H2PP_RESCAN(__H2CASESS_T_Macro4 _Args)
+#define __H2CASESS_T_Macro2(...) __H2CASESS_T_Macro3((__VA_ARGS__))
+#define __H2CASESS_T_Macro1(args, i, j, x, y) __H2CASESS_T_Macro2(H2PP_REMOVE_PARENTHESES(args), i, j, x, y)
+#define __H2CASESS_T(Qc, ...)                                  \
+   template <typename x, typename y>                           \
+   void Qc();                                                  \
+   H2PP_FULLMESH((, __H2CASESS_T_Macro1, (Qc), __VA_ARGS__));  \
+   template <typename x, typename y>                           \
    void Qc()
 #define H2CASESS_T(...) __H2CASESS_T(H2PP_UNIQUE(f_casesst), __VA_ARGS__)
 
@@ -3744,7 +3824,7 @@ using h2::Substr;
 using h2::StartsWith;
 using h2::EndsWith;
 using h2::CaseLess;
-#ifndef _WIN32
+#if !defined _WIN32
 using h2::operator~;
 #endif
 using h2::Pointee;

@@ -1,4 +1,27 @@
 
+#if defined _WIN32
+struct h2_oss {
+   h2_string s;
+   h2_string& str() { return s; }
+   template <typename T>
+   h2_oss& operator<<(T a)
+   {
+      char b[1024 * 4];
+      h2_memory::restores();
+      {
+         std::ostringstream oss;
+         oss << std::boolalpha << a;
+         ::snprintf(b, sizeof(b), "%s", oss.str().c_str());
+      }
+      h2_memory::overrides();
+      s += b;
+      return *this;
+   }
+};
+#else
+using h2_oss = std::basic_ostringstream<char, std::char_traits<char>, h2_allocator<char>>;
+#endif
+
 template <typename T, typename = void>
 struct h2_stringify_impl {
    static h2_row print(T a, bool represent = false) { return "?"; }
@@ -53,16 +76,15 @@ struct h2_stringify_impl<T, typename std::enable_if<h2_is_ostreamable<T>::value>
    template <typename U>
    static h2_row ostream_print(const U& a, bool represent)
    {
-      h2_ostringstream os;
-      os << std::boolalpha;
-      os << const_cast<U&>(a);
+      h2_oss oss;
+      oss << std::boolalpha << const_cast<U&>(a);
       if (represent) {
          const char* quote = nullptr;
          if (std::is_same<char, U>::value) quote = "'";
          if (std::is_convertible<U, h2_string>::value) quote = "\"";
-         if (quote) return gray(quote) + os.str().c_str() + gray(quote);
+         if (quote) return gray(quote) + oss.str().c_str() + gray(quote);
       }
-      return {os.str().c_str()};
+      return {oss.str().c_str()};
    }
 
    static h2_row ostream_print(unsigned char a, bool represent)

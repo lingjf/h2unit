@@ -39,7 +39,7 @@ using h2::Substr;
 using h2::StartsWith;
 using h2::EndsWith;
 using h2::CaseLess;
-#ifndef _WIN32
+#if !defined _WIN32
 using h2::operator~;
 #endif
 using h2::Pointee;

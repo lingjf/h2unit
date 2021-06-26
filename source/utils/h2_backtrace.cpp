@@ -2,20 +2,21 @@
 static inline bool demangle(const char* mangled, char* demangled, size_t len)
 {
    int status = 0;
-#ifndef _WIN32
+#if !defined _WIN32
    abi::__cxa_demangle(mangled, demangled, &len, &status);
 #endif
    return status == 0;
 }
 
+#if !defined _WIN32
 static inline bool addr2line(unsigned long long addr, char* output, size_t len)
 {
    char t[256];
-#if defined __APPLE__
+#   if defined __APPLE__
    sprintf(t, "atos -o %s 0x%llx", O.path, addr);
-#else
+#   else
    sprintf(t, "addr2line -C -a -s -p -f -e %s -i %llx", O.path, addr);
-#endif
+#   endif
    FILE* f = ::popen(t, "r");
    if (!f) return false;
    output = ::fgets(output, len, f);
@@ -24,6 +25,7 @@ static inline bool addr2line(unsigned long long addr, char* output, size_t len)
    for (int i = strlen(output) - 1; 0 <= i && ::isspace(output[i]); --i) output[i] = '\0';  //strip tail
    return true;
 }
+#endif
 
 static inline bool backtrace_extract(const char* backtrace_symbol_line, char* module, char* mangled, unsigned long long* offset)
 {
@@ -57,18 +59,20 @@ static inline bool backtrace_extract(const char* backtrace_symbol_line, char* mo
 
 h2_inline h2_backtrace::h2_backtrace(int shift_) : shift(shift_)
 {
-#ifndef _WIN32
    h2_memory::restores();
-   count = ::backtrace(array, sizeof(array) / sizeof(array[0]));
-   h2_memory::overrides();
+#ifdef _WIN32
+   count = CaptureStackBackTrace(0, sizeof(frames) / sizeof(frames[0]), frames, NULL);
+#else
+   count = ::backtrace(frames, sizeof(frames) / sizeof(frames[0]));
 #endif
+   h2_memory::overrides();
 }
 
 h2_inline bool h2_backtrace::operator==(const h2_backtrace& bt)
 {
    if (count != bt.count) return false;
    for (int i = 0; i < count; ++i)
-      if (array[i] != bt.array[i])
+      if (frames[i] != bt.frames[i])
          return false;
    return true;
 }
@@ -76,16 +80,35 @@ h2_inline bool h2_backtrace::operator==(const h2_backtrace& bt)
 h2_inline bool h2_backtrace::has(void* func, int size) const
 {
    for (int i = 0; i < count; ++i)
-      if (func <= array[i] && (unsigned char*)array[i] < ((unsigned char*)func) + size)
+      if (func <= frames[i] && (unsigned char*)frames[i] < ((unsigned char*)func) + size)
          return true;
    return false;
 }
 
 h2_inline void h2_backtrace::print(h2_vector<h2_string>& stacks) const
 {
-#ifndef _WIN32
+#ifdef _WIN32
+   for (int i = shift; i < count; ++i) {
+      char buffer[sizeof(SYMBOL_INFO) + 256];
+      SYMBOL_INFO* symbol = (SYMBOL_INFO*)buffer;
+      symbol->SizeOfStruct = sizeof(SYMBOL_INFO);
+      symbol->MaxNameLen = 256;
+      h2_string frame;
+      if (SymFromAddr(O.hProcess, (DWORD64)(frames[i]), 0, symbol))
+         frame.sprintf("%s %p+%lld ", symbol->Name, symbol->Address, (DWORD64)(frames[i]) - (DWORD64)symbol->Address);
+      DWORD dwDisplacement;
+      IMAGEHLP_LINE64 fileline;
+      SymSetOptions(SYMOPT_LOAD_LINES);
+      fileline.SizeOfStruct = sizeof(IMAGEHLP_LINE64);
+      if (SymGetLineFromAddr64(O.hProcess, (DWORD64)(frames[i]), &dwDisplacement, &fileline))
+         frame.sprintf("%s:%d", fileline.FileName, fileline.LineNumber);
+      stacks.push_back(frame);
+      if (!strcmp("main", symbol->Name) || h2_nm::in_main(symbol->Address))
+         break;
+   }
+#else
    h2_memory::restores();
-   char** backtraces = backtrace_symbols(array, count);
+   char** backtraces = backtrace_symbols(frames, count);
    h2_memory::overrides();
 
    for (int i = shift; i < count; ++i) {
@@ -98,11 +121,13 @@ h2_inline void h2_backtrace::print(h2_vector<h2_string>& stacks) const
                if (strlen(demangled))
                   p = demangled;
          }
-         address = h2_nm::get(mangled);
-         if (address != ULLONG_MAX)
-            if (addr2line(address + offset, addr2lined, sizeof(addr2lined)))
-               if (strlen(addr2lined))
-                  p = addr2lined;
+         if (O.verbose || O.os != macOS /* for speed atos is slow */) {
+            address = h2_nm::get(mangled);
+            if (address != ULLONG_MAX)
+               if (addr2line(address + offset, addr2lined, sizeof(addr2lined)))
+                  if (strlen(addr2lined))
+                     p = addr2lined;
+         }
       }
       stacks.push_back(p);
 
@@ -122,8 +147,7 @@ h2_inline void h2_backtrace::print(int pad) const
    print(stacks);
    h2_rows rows;
    for (auto& c : stacks)
-      if (O.verbose || c.find("h2unit.h:") == h2_string::npos && c.find("h2unit.hpp:") == h2_string::npos && c.find("h2unit.cpp:") == h2_string::npos)
-         rows.push_back(h2_row(c));
+      rows.push_back(c.startswith("h2::") ? gray(c) : h2_row(c));
    rows.sequence(pad);
    h2_color::printl(rows);
 }

@@ -69,6 +69,7 @@ SUITE(override)
       }
    }
 
+#if !defined _WIN32
    Case(strndup)
    {
       free(strndup("1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890", 100));
@@ -77,8 +78,7 @@ SUITE(override)
          OK(IsNull, strndup("1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890", 100));
       }
    }
-
-#if defined _POSIX_C_SOURCE && _POSIX_C_SOURCE >= 200112L
+#   if defined _POSIX_C_SOURCE && _POSIX_C_SOURCE >= 200112L
    Case(posix_memalign)
    {
       void* ptr = NULL;
@@ -90,9 +90,9 @@ SUITE(override)
          OK(Not(0), posix_memalign(&ptr, 8, 100));
       }
    }
-#endif
+#   endif
 
-#if defined _ISOC11_SOURCE
+#   if defined _ISOC11_SOURCE
    Case(aligned_alloc)
    {
       free(aligned_alloc(10, 10));
@@ -101,9 +101,9 @@ SUITE(override)
          OK(IsNull, aligned_alloc(10, 100));
       }
    }
-#endif
+#   endif
 
-#if (_XOPEN_SOURCE >= 500) && !(_POSIX_C_SOURCE >= 200112L) || _DEFAULT_SOURCE || _SVID_SOURCE || _BSD_SOURCE
+#   if (_XOPEN_SOURCE >= 500) && !(_POSIX_C_SOURCE >= 200112L) || _DEFAULT_SOURCE || _SVID_SOURCE || _BSD_SOURCE
    Case(valloc)
    {
       free(valloc(100));
@@ -112,8 +112,26 @@ SUITE(override)
          OK(IsNull, valloc(100));
       }
    }
+#   endif
 #endif
 }
+
+#ifdef _WIN32
+GlobalSetup()
+{
+   WORD wVersionRequested;
+   WSADATA wsaData;
+
+   int err;
+   wVersionRequested = MAKEWORD(1, 1);
+   err = WSAStartup(wVersionRequested, &wsaData);
+}
+
+GlobalCleanup()
+{
+   WSACleanup();
+}
+#endif
 
 SUITE(harmless)
 {
@@ -122,19 +140,21 @@ SUITE(harmless)
    Case(time.h)
    {
       struct timeval tv;
-      struct timezone tz;
-      gettimeofday(&tv, &tz);
       time_t t3 = time(NULL);
       struct tm* t4 = gmtime(&t3);
       struct tm t5;
-      gmtime_r(&t3, &t5);
       ctime(&t3);
-      ctime_r(&t3, t);
       asctime(t4);
+#if !defined _WIN32
+      struct timezone tz;
+      gettimeofday(&tv, &tz);
+      ctime_r(&t3, t);
+      gmtime_r(&t3, &t5);
       asctime_r(t4, t);
+      localtime_r(&t3, &t5);
+#endif
       mktime(&t5);
       localtime(&t3);
-      localtime_r(&t3, &t5);
       strftime(t, sizeof(t), "%a, %d %b %Y %T %z", t4);
    }
 
@@ -175,7 +195,7 @@ SUITE(harmless)
    Case(stdio.h)
    {
       sprintf(t, "%g%g%g", 1.0 / 3.0, 1.0 / 7.0, 1.0 / 13.0);
-      fclose(fopen("/dev/null", "r"));
+      fclose(fopen("./CMakeLists.txt", "r"));
    }
 
    Case(math.h)
@@ -183,15 +203,19 @@ SUITE(harmless)
       auto ret1 = sqrt(42.0);
    }
 
+#if !defined _WIN32
    Case(syslog.h)
    {
       syslog(LOG_DEBUG, "This is test %d", 42);
    }
+#endif
 
+#ifndef _WIN32
    Case(socket.h)
    {
       close(socket(AF_INET, SOCK_DGRAM, 0));
    }
+#endif
 
    Case(netdb.h)
    {

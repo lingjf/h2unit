@@ -21,7 +21,7 @@ struct tinyexpr
             ret = te_eval(n);
             te_free(n);
         } else {
-            ret = (0.0/0.0);
+            ret = (NAN);
         }
         return ret;
     }
@@ -126,24 +126,24 @@ struct tinyexpr
     static double pi(void) {return 3.14159265358979323846;}
     static double e(void) {return 2.71828182845904523536;}
     static double fac(double a) {/* simplest version of fac */
-        if (a < 0.0) return (0.0/0.0);
-        if (a > UINT_MAX) return (1.0/0.0);
+        if (a < 0.0) return (NAN);
+        if (a > UINT_MAX) return (NAN);
         unsigned int ua = (unsigned int)(a);
         unsigned long int result = 1, i;
         for (i = 1; i <= ua; i++) {
-            if (i > ULONG_MAX / result) return (1.0/0.0);
+            if (i > ULONG_MAX / result) return (NAN);
             result *= i;
         }
         return (double)result;
     }
     static double ncr(double n, double r) {
-        if (n < 0.0 || r < 0.0 || n < r) return (0.0/0.0);
-        if (n > UINT_MAX || r > UINT_MAX) return (1.0/0.0);
+        if (n < 0.0 || r < 0.0 || n < r) return (NAN);
+        if (n > UINT_MAX || r > UINT_MAX) return (NAN);
         unsigned long int un = (unsigned int)(n), ur = (unsigned int)(r), i;
         unsigned long int result = 1;
         if (ur > un / 2) ur = un - ur;
         for (i = 1; i <= ur; i++) {
-            if (result > ULONG_MAX / (un - ur + i)) return (1.0/0.0);
+            if (result > ULONG_MAX / (un - ur + i)) return (NAN);
             result *= un - ur + i;
             result /= i;
         }
@@ -374,7 +374,7 @@ struct tinyexpr
             default:
                 ret = new_expr(0, 0);
                 s->type = TOK_ERROR;
-                ret->value = (0.0/0.0);
+                ret->value = (NAN);
                 break;
         }
 
@@ -466,7 +466,7 @@ struct tinyexpr
 #define TE_M(e) te_eval((const te_expr *)n->parameters[e])
 
     static double te_eval(const te_expr *n) {
-        if (!n) return (0.0/0.0);
+        if (!n) return (NAN);
 
         switch(TYPE_MASK(n->type)) {
             case TE_CONSTANT: return n->value;
@@ -483,7 +483,7 @@ struct tinyexpr
                     case 5: return TE_F(double, double, double, double, double)(TE_M(0), TE_M(1), TE_M(2), TE_M(3), TE_M(4));
                     case 6: return TE_F(double, double, double, double, double, double)(TE_M(0), TE_M(1), TE_M(2), TE_M(3), TE_M(4), TE_M(5));
                     case 7: return TE_F(double, double, double, double, double, double, double)(TE_M(0), TE_M(1), TE_M(2), TE_M(3), TE_M(4), TE_M(5), TE_M(6));
-                    default: return (0.0/0.0);
+                    default: return (NAN);
                 }
 
             case TE_CLOSURE0: case TE_CLOSURE1: case TE_CLOSURE2: case TE_CLOSURE3:
@@ -497,10 +497,10 @@ struct tinyexpr
                     case 5: return TE_F(void*, double, double, double, double, double)(n->parameters[5], TE_M(0), TE_M(1), TE_M(2), TE_M(3), TE_M(4));
                     case 6: return TE_F(void*, double, double, double, double, double, double)(n->parameters[6], TE_M(0), TE_M(1), TE_M(2), TE_M(3), TE_M(4), TE_M(5));
                     case 7: return TE_F(void*, double, double, double, double, double, double, double)(n->parameters[7], TE_M(0), TE_M(1), TE_M(2), TE_M(3), TE_M(4), TE_M(5), TE_M(6));
-                    default: return (0.0/0.0);
+                    default: return (NAN);
                 }
 
-            default: return (0.0/0.0);
+            default: return (NAN);
         }
 
     }

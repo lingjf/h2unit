@@ -19,7 +19,7 @@ h2_inline bool h2_pattern::regex_match(const char* pattern, const char* subject,
 
 h2_inline bool h2_pattern::wildcard_match(const char* pattern, const char* subject, bool caseless)
 {
-#if defined WIN32 || defined __WIN32__ || defined _WIN32 || defined _MSC_VER || defined __MINGW32__
+#if defined _WIN32
    const char *scur = subject, *pcur = pattern;
    const char *sstar = nullptr, *pstar = nullptr;
    while (*scur) {
@@ -52,7 +52,7 @@ h2_inline bool h2_pattern::match(const char* pattern, const char* subject, bool 
 
 static inline long long h2_now()
 {
-#if defined WIN32 || defined __WIN32__ || defined _WIN32 || defined _MSC_VER || defined __MINGW32__
+#if defined _WIN32
    return GetTickCount();
 #else
    struct timeval tv;
@@ -63,7 +63,7 @@ static inline long long h2_now()
 
 static inline void h2_sleep(long long milliseconds)
 {
-#if defined WIN32 || defined __WIN32__ || defined _WIN32 || defined _MSC_VER || defined __MINGW32__
+#if defined _WIN32
    Sleep(milliseconds);
 #else
    ::usleep(milliseconds * 1000);
@@ -72,7 +72,7 @@ static inline void h2_sleep(long long milliseconds)
 
 static inline unsigned h2_termimal_width()
 {
-#if defined WIN32 || defined __WIN32__ || defined _WIN32 || defined _MSC_VER || defined __MINGW32__
+#if defined _WIN32
    return 80;
 #else
    struct winsize w;
@@ -83,7 +83,7 @@ static inline unsigned h2_termimal_width()
 
 static inline unsigned h2_page_size()
 {
-#if defined WIN32 || defined __WIN32__ || defined _WIN32 || defined _MSC_VER || defined __MINGW32__
+#if defined _WIN32
    SYSTEM_INFO si;
    GetSystemInfo(&si);
    return (unsigned)si.dwPageSize;

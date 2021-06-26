@@ -1,52 +1,10 @@
 #include "../source/h2_unit.cpp"
 
-void* void_ptr = (void*)"0123456789";
-const void* const_void_ptr = (const void*)"0123456789";
-char* char_ptr = (char*)"0123456789";
-const char* const_char_ptr = (const char*)"0123456789";
-int* int_ptr = (int*)"0123456789";
-const int* const_int_ptr = (const int*)"0123456789";
-std::string* stdstring_ptr = (std::string*)"0123456789";
-const std::string* const_stdstring_ptr = (const std::string*)"0123456789";
+#include "test_types.hpp"
 
-void* void_nullptr = nullptr;
-const void* const_void_nullptr = nullptr;
-char* char_nullptr = nullptr;
-const char* const_char_nullptr = nullptr;
-int* int_nullptr = nullptr;
-const int* const_int_nullptr = nullptr;
-std::string* stdstring_nullptr = nullptr;
-const std::string* const_stdstring_nullptr = nullptr;
+PTR_FILL_DECL_LIST;
+PTR_NULL_DECL_LIST;
 
-#define PTR_LIST void_nullptr,       \
-                 const_void_nullptr, \
-                 char_nullptr,       \
-                 const_char_nullptr, \
-                 int_nullptr,        \
-                 const_int_nullptr,  \
-                 stdstring_nullptr,  \
-                 const_stdstring_nullptr
-
-#define FILLPTR_LIST "0123456789",   \
-                     void_ptr,       \
-                     const_void_ptr, \
-                     char_ptr,       \
-                     const_char_ptr, \
-                     int_ptr,        \
-                     const_int_ptr,  \
-                     stdstring_ptr,  \
-                     const_stdstring_ptr
-
-#define NULLPTR_LIST nullptr,                 \
-                     void_nullptr,            \
-                     const_void_nullptr,      \
-                     char_nullptr,            \
-                     const_char_nullptr,      \
-                     int_nullptr,             \
-                     const_int_nullptr,       \
-                     stdstring_nullptr,       \
-                     const_stdstring_nullptr, \
-                     NULL, 0
 
 #define TheCheck(x) static void foobar##x(decltype(x) v){};
 H2Foreach(TheCheck, PTR_LIST);
@@ -57,32 +15,32 @@ SUITE(Pointer)
    Case(OK IsNull)
    {
 #define TheCheck(x) OK(IsNull, x);
-      H2Foreach(TheCheck, NULLPTR_LIST);
+    H2Foreach(TheCheck, PTR_NULL_VALUE_LIST);
 #undef TheCheck
    }
 
    Case(OK NotNull)
    {
-#define TheCheck(x) OK(NotNull, x);
-      H2Foreach(TheCheck, FILLPTR_LIST);
-#undef TheCheck
+   #define TheCheck(x) OK(NotNull, x);
+      H2Foreach(TheCheck, PTR_FILL_VALUE_LIST);
+   #undef TheCheck
    }
 
    Case(OK Me)
    {
-#define TheCheck(x, y) OK(Me(x, 10), y);
-      H2Fullmesh(TheCheck, FILLPTR_LIST);
-#undef TheCheck
+   #define TheCheck(x, y) OK(Me(x, 10), y);
+      H2Fullmesh(TheCheck, PTR_FILL_VALUE_LIST);
+   #undef TheCheck
    }
 
    Case(OK AllOf, AnyOf, NoneOf)
    {
-#define TheCheck(x, y)      \
-   OK(AllOf(_, IsNull), y); \
-   OK(AnyOf(_, IsNull), y); \
-   OK(!!NoneOf(NotNull), y);
-      H2Fullmesh(TheCheck, NULLPTR_LIST);
-#undef TheCheck
+   #define TheCheck(x, y)      \
+      OK(AllOf(_, IsNull), y); \
+      OK(AnyOf(_, IsNull), y); \
+      OK(!!NoneOf(NotNull), y);
+      H2Fullmesh(TheCheck, PTR_NULL_VALUE_LIST);
+   #undef TheCheck
    }
 
    Case(OK Pointee)
@@ -107,17 +65,10 @@ SUITE(Pointer)
 
    Case(MOCK)
    {
-#define TheCheck(x, y)                                      \
-   MOCK(foobar##x, void, (decltype(x)), Once(IsNull)){};    \
-   foobar##x((decltype(x))y);
-      H2Fullmesh(TheCheck, (PTR_LIST), (NULLPTR_LIST));
+#define TheCheck(x, y)                                         \
+         MOCK(foobar##x, void, (decltype(x)), Once(IsNull)){}; \
+         foobar##x((decltype(x))y);
+      H2Fullmesh(TheCheck, (PTR_LIST), (PTR_NULL_VALUE_LIST));
 #undef TheCheck
    }
-}
-
-CASE(Ptr stringify)
-{
-#define TheCheck(x) h2::h2_stringify(x);
-   H2Foreach(TheCheck, FILLPTR_LIST);
-#undef TheCheck
 }

@@ -46,17 +46,30 @@ CASE(H2Foreach)
      OK(6, s);
 }
 
-CASE(H2Fullmesh)
+SUITE(H2Fullmesh)
 {
-   int s = 0;
+   Case(direct)
+   {
+      int s = 0;
 #define FOO(x, y) s += x * y;
-   H2Fullmesh(FOO, 1, 2, 3);
+      H2Fullmesh(FOO, 1, 2, 3);
 #undef FOO
-   OK(1 * 1 + 1 * 2 + 1 * 3 + 2 * 1 + 2 * 2 + 2 * 3 + 3 * 1 + 3 * 2 + 3 * 3, s);
-}
+      OK(1 * 1 + 1 * 2 + 1 * 3 + 2 * 1 + 2 * 2 + 2 * 3 + 3 * 1 + 3 * 2 + 3 * 3, s);
+   }
+
+   Case(macro)
+   {
+#define M123 1,2,3
+      int s = 0;
+#define FOO(x, y) s += x * y;
+      H2Fullmesh(FOO, (M123),(M123));
+#undef FOO
+      OK(1 * 1 + 1 * 2 + 1 * 3 + 2 * 1 + 2 * 2 + 2 * 3 + 3 * 1 + 3 * 2 + 3 * 3, s);
+   }
 
 #define BAR(x, y) \
-   CASE(generator x y) {}
+   Case(generator x y) {}
 
-H2Fullmesh(BAR, (A, B, C), (1, 2, 3))
+   H2Fullmesh(BAR, (A, B, C), (1, 2, 3))
 #undef BAR
+}

@@ -100,8 +100,10 @@ struct getopt {
 h2_inline h2_option::h2_option()
 {
    terminal_width = h2_termimal_width();
-#if defined WIN32 || defined __WIN32__ || defined _WIN32 || defined _MSC_VER || defined __MINGW32__
-   memory_check = false;
+#if defined _WIN32
+   // memory_check = false;
+   hProcess = GetCurrentProcess();
+   SymInitialize(hProcess, NULL, TRUE);
 #endif
 }
 

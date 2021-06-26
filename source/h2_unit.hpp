@@ -19,7 +19,7 @@
 #include <utility>     /* std::forward, std::pair */
 #include <type_traits> /* std::true_type */
 
-#if defined WIN32 || defined __WIN32__ || defined _WIN32 || defined _MSC_VER || defined __MINGW32__
+#if defined _WIN32
 #   define WIN32_LEAN_AND_MEAN /* fix winsock.h winsock2.h conflict */
 #   define NOMINMAX            /* fix std::min/max conflict with windows::min/max */
 #   include <windows.h>
@@ -39,13 +39,8 @@
 #   pragma GCC diagnostic ignored "-Wunused-function"
 #   pragma GCC diagnostic ignored "-Wwrite-strings"
 #   pragma GCC diagnostic ignored "-Wreturn-type"
-#elif defined WIN32 || defined __WIN32__ || defined _WIN32 || defined _MSC_VER || defined __MINGW32__
+#elif defined _WIN32
 #   pragma warning(disable : 4005)  // macro-redefine
-#   pragma warning(disable : 4018)  // -Wsign-compare
-#   pragma warning(disable : 4244)  //
-#   pragma warning(disable : 4819)  // Unicode
-#   define _CRT_SECURE_NO_WARNINGS
-#   define _WINSOCK_DEPRECATED_NO_WARNINGS
 #endif
 
 #if defined __H2UNIT_HPP__
@@ -65,7 +60,6 @@ namespace h2 {
 #include "utils/h2_allocate.hpp"       // libc
 #include "utils/h2_string.hpp"         // allocate
 #include "utils/h2_row.hpp"            // string
-#include "utils/h2_stringify.hpp"      // string, row
 #include "utils/h2_color.hpp"          // row
 #include "utils/h2_nm.hpp"             //
 #include "utils/h2_backtrace.hpp"      // row
@@ -76,6 +70,7 @@ namespace h2 {
 #include "json/h2_json.hpp"            //
 #include "memory/h2_exempt.hpp"        //
 #include "memory/h2_memory.hpp"        // failure
+#include "utils/h2_stringify.hpp"      // string, row, memory
 #include "exception/h2_exception.hpp"  //
 #include "matcher/h2_matches.hpp"      // failure
 #include "matcher/h2_matcher.hpp"      // matches, failure

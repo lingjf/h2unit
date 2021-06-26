@@ -63,6 +63,7 @@ SUITE(stdio)
       }
    }
 
+#ifndef _WIN32
    Case(std::cout)
    {
       COUT("std::cout! 42")
@@ -196,11 +197,13 @@ SUITE(stdio)
 
    Case(syslog)
    {
+#   if !defined _WIN32
       const char* e1 = "syslog! 42";
       COUT(e1)
       {
          syslog(LOG_DEBUG, "syslog! %d", 42);
       }
+#   endif
    }
 
    Case(normal file write)
@@ -248,4 +251,5 @@ SUITE(stdio)
          fclose(fp2);
       }
    }
+#endif
 }

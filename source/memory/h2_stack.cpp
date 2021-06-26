@@ -35,7 +35,9 @@ struct h2_stack {
          h2_piece* piece = p->get_piece(ptr);
          if (piece) return p->rel_piece(who, piece);
       }
-      h2_debug("Warning: %s %p not found!", who, ptr);
+      h2_backtrace bt(O.os == macOS ? 3 : 2);
+      if (!h2_exempt::in(bt))
+         h2_debug("Warning: %s %p not found!", who, ptr);
       return nullptr;
    }
 

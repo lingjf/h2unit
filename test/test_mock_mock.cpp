@@ -27,6 +27,7 @@ void bar3()
 
 int bar16(int _0, int _1, int _2, int _3, int _4, int _5, int _6, int _7, int _8, int _9, int _10, int _11, int _12, int _13, int _14, int _15)
 {
+   return 0;
 }
 
 class Shape {
@@ -111,7 +112,12 @@ SUITE(mock c - function)
 
    Case(any 0)
    {
-      MOCK(bar1, int, (int, const char*), Any(1, "A")){};
+      MOCK(bar1, int, (int, const char*), Any(1, "A"))
+      {
+#ifdef _WIN32
+         return 11;
+#endif
+      };
    }
 
    Case(any 1)
@@ -249,7 +255,12 @@ SUITE(multi line)
              .With(2, "B")
              .Return(22)
              .Twice(3, "C")
-             .Return(33)){};
+             .Return(33))
+      {
+#ifdef _WIN32
+         return 0; /*make msvc happy*/
+#endif
+      };
 
       OK(11, bar1(1, "A"));
       OK(22, bar1(2, "B"));
@@ -261,7 +272,12 @@ SUITE(multi line)
    {
       MOCK(bar1, int, (int, const char*),
            Once(1, "A").Return(11),
-           Twice().With(2, "B").Return(22)){};
+           Twice().With(2, "B").Return(22))
+      {
+#ifdef _WIN32
+         return 0; /*make msvc happy*/
+#endif
+      };
 
       OK(11, bar1(1, "A"));
       OK(22, bar1(2, "B"));
@@ -279,7 +295,12 @@ SUITE(mock greed)
              .With(1, "A")
              .Return(11)
              .Once(1, _)
-             .Return(22)){};
+             .Return(22))
+      {
+#ifdef _WIN32
+         return 0; /*make msvc happy*/
+#endif
+      };
 
       OK(11, bar1(1, "A"));
       OK(11, bar1(1, "A"));
@@ -295,12 +316,19 @@ SUITE(mock greed)
              .With(1, "A")
              .Return(11)
              .Once(1, _)
-             .Return(22)){};
+             .Return(22))
+      {
+#ifdef _WIN32
+         return 0; /*make msvc happy*/
+#endif
+      };
 
       OK(11, bar1(1, "A"));
       OK(22, bar1(1, "A"));
    }
 }
+
+#ifndef _WIN32
 
 SUITE(mock Return)
 {
@@ -572,4 +600,7 @@ SUITE(UNMOCK)
       OK(0, foobar1_bymock(0));
    }
 }
+
+#endif
+
 }  // namespace

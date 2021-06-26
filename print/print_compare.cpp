@@ -30,7 +30,7 @@ SUITE(number compares)
    Case(char)
    {
       char a1 = 'a';
-      OK('b', a1);
+      OK('b', a1) << "char is not same " << 123;
    }
 }
 

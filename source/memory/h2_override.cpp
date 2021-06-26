@@ -29,6 +29,13 @@ struct h2_override {
       if (ptr) h2_fail_g(h2_stack::I().rel_piece("free", ptr), false);
       return new_p ? new_p->user_ptr : nullptr;
    }
+   static char* strdup(char* s)
+   {
+      h2_piece* p = h2_stack::I().new_piece("strdup", strlen(s) + 1, 0, nullptr);
+      char* ret = p ? (char*)p->user_ptr : nullptr;
+      if (ret) strcpy(ret, s);
+      return ret;
+   }
    static int posix_memalign(void** memptr, size_t alignment, size_t size)
    {
       h2_piece* p = h2_stack::I().new_piece("posix_memalign", size, alignment, nullptr);

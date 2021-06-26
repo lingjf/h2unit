@@ -4,7 +4,7 @@ struct h2_socket {
 
    static bool is_block(int sockfd)
    {
-#if defined WIN32 || defined __WIN32__ || defined _WIN32 || defined _MSC_VER || defined __MINGW32__
+#if defined _WIN32
       return true;
 #else
       return !(fcntl(sockfd, F_GETFL) & O_NONBLOCK);
@@ -12,7 +12,7 @@ struct h2_socket {
    }
    static bool set_block(int sockfd, bool block)
    {
-#if defined WIN32 || defined __WIN32__ || defined _WIN32 || defined _MSC_VER || defined __MINGW32__
+#if defined _WIN32
       u_long op = block ? 0 : 1;
       if (ioctlsocket(sockfd, FIONBIO, &op) == SOCKET_ERROR) {
          return false;
@@ -139,17 +139,6 @@ struct h2_socket {
       I().put_outgoing(socket, (const char*)buffer, length);
       return length;
    }
-#ifndef _WIN32
-   static ssize_t sendmsg(int socket, const struct msghdr* message, int flags)
-   {
-      return sendto(socket, message->msg_iov[0].iov_base, message->msg_iov[0].iov_len, 0, (struct sockaddr*)message->msg_name, message->msg_namelen);
-   }
-#endif
-   static ssize_t sendto(int socket, const void* buffer, size_t length, int flags, const struct sockaddr* dest_addr, socklen_t dest_len)
-   {
-      I().put_outgoing(getsockname(socket, (char*)alloca(64)), iport_tostring((struct sockaddr_in*)dest_addr, (char*)alloca(64)), (const char*)buffer, length);
-      return length;
-   }
    static ssize_t recv(int socket, void* buffer, size_t length, int flags)
    {
       ssize_t ret = 0;
@@ -159,6 +148,11 @@ struct h2_socket {
          delete tcp;
       }
       return ret;
+   }
+   static ssize_t sendto(int socket, const void* buffer, size_t length, int flags, const struct sockaddr* dest_addr, socklen_t dest_len)
+   {
+      I().put_outgoing(getsockname(socket, (char*)alloca(64)), iport_tostring((struct sockaddr_in*)dest_addr, (char*)alloca(64)), (const char*)buffer, length);
+      return length;
    }
    static ssize_t recvfrom(int socket, void* buffer, size_t length, int flags, struct sockaddr* address, socklen_t* address_len)
    {
@@ -173,7 +167,11 @@ struct h2_socket {
       }
       return ret;
    }
-#ifndef _WIN32
+#if !defined _WIN32
+   static ssize_t sendmsg(int socket, const struct msghdr* message, int flags)
+   {
+      return sendto(socket, message->msg_iov[0].iov_base, message->msg_iov[0].iov_len, 0, (struct sockaddr*)message->msg_name, message->msg_namelen);
+   }
    static ssize_t recvmsg(int socket, struct msghdr* message, int flags)
    {
       return recvfrom(socket, message->msg_iov[0].iov_base, message->msg_iov[0].iov_len, 0, (struct sockaddr*)message->msg_name, &message->msg_namelen);
@@ -221,7 +219,7 @@ struct h2_socket {
 
       stubs.add((void*)::sendto, (void*)sendto, "sendto", __FILE__, __LINE__);
       stubs.add((void*)::recvfrom, (void*)recvfrom, "recvfrom", __FILE__, __LINE__);
-#ifndef _WIN32
+#if !defined _WIN32
       stubs.add((void*)::sendmsg, (void*)sendmsg, "sendmsg", __FILE__, __LINE__);
       stubs.add((void*)::recvmsg, (void*)recvmsg, "recvmsg", __FILE__, __LINE__);
 #endif

@@ -9,9 +9,9 @@
       if (__matches(a) == !dont) return nullptr;                                                         \
       if (dont) {                                                                                        \
       } else {                                                                                           \
-         h2::h2_ostringstream osm;                                                                       \
-         osm << std::boolalpha << H2PP_REMOVE_PARENTHESES(message);                                      \
-         fail->user_explain = osm.str().c_str();                                                         \
+         h2::h2_oss t;                                                                                   \
+         t << H2PP_REMOVE_PARENTHESES(message);                                                          \
+         fail->user_explain = t.str().c_str();                                                           \
       }                                                                                                  \
       return fail;                                                                                       \
    }                                                                                                     \

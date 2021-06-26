@@ -153,6 +153,7 @@ SUITE(stub member function)
       OK(0, shape.go(111, 111));
    }
 
+#ifndef _WIN32
    Case(virtual member function)
    {
       Shape shape;
@@ -164,6 +165,7 @@ SUITE(stub member function)
       UNSTUB(Shape, work, int, (int a, int b));
       OK(0, shape.work(111, 111));
    }
+#endif
 
    Case(static member function)
    {
@@ -373,6 +375,7 @@ SUITE(STUBS)
       OK(0, shape.go(111, 111));
    }
 
+#ifndef _WIN32
    Case(lambdas virtual member function)
    {
       Shape shape;
@@ -383,6 +386,7 @@ SUITE(STUBS)
       UNSTUB(Shape, work, int, (int a, int b));
       OK(0, shape.work(111, 111));
    }
+#endif
 
    Case(lambdas static member function)
    {
@@ -420,6 +424,7 @@ int STUB_foobar_bystub(int a)
    return -1;
 }
 
+#ifndef _WIN32
 SUITE(stub name)
 {
    Case("foobar1_bystub")
@@ -477,3 +482,4 @@ SUITE(stub name)
       OK(0, ns113::foobar3_bystub(0));
    }
 }
+#endif

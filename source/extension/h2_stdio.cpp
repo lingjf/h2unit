@@ -95,9 +95,12 @@ struct h2_stdio {
 
    h2_stdio()
    {
-#ifndef _WIN32
+#if !defined _WIN32
       stubs.add((void*)::write, (void*)write, "write", __FILE__, __LINE__);
+      stubs.add((void*)::syslog, (void*)syslog, "syslog", __FILE__, __LINE__);
+      stubs.add((void*)::vsyslog, (void*)vsyslog, "vsyslog", __FILE__, __LINE__);
 #endif
+
 #if defined __GNUC__ && __GNUC__ > 5
 #else  // MACOS && WIN32 && GCC<=5
       stubs.add((void*)::printf, (void*)printf, "printf", __FILE__, __LINE__);
@@ -125,10 +128,7 @@ struct h2_stdio {
 #   endif
 #endif
 
-#ifndef _WIN32
-      stubs.add((void*)::syslog, (void*)syslog, "syslog", __FILE__, __LINE__);
-      stubs.add((void*)::vsyslog, (void*)vsyslog, "vsyslog", __FILE__, __LINE__);
-#endif
+
    }
 
    static void initialize()

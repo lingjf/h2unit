@@ -5,7 +5,7 @@ struct h2_e9 {
 
    static bool save(void* origin_fp, unsigned char* saved)
    {
-#if defined WIN32 || defined __WIN32__ || defined _WIN32 || defined _MSC_VER || defined __MINGW32__
+#if defined _WIN32
       DWORD t;
       if (!VirtualProtect(origin_fp, sizeof(void*) + 4, PAGE_EXECUTE_READWRITE, &t))  // PAGE_EXECUTE_WRITECOPY OR PAGE_WRITECOPY
          return false;

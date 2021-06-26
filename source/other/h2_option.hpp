@@ -10,8 +10,9 @@ struct h2_option {
    static constexpr unsigned os = Linux;
 #elif defined __APPLE__
    static constexpr unsigned os = macOS;
-#elif defined WIN32 || defined __WIN32__ || defined _WIN32 || defined _MSC_VER || defined __MINGW32__
+#elif defined _WIN32
    static constexpr unsigned os = windows;
+   HANDLE hProcess;
 #endif
 
    unsigned terminal_width;

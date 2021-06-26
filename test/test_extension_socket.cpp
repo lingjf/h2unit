@@ -77,6 +77,8 @@ SUITE(socket utils)
    }
 }
 
+#ifndef _WIN32
+
 SUITE(SOCK)
 {
    struct sockaddr_in local = {0};
@@ -149,8 +151,8 @@ SUITE(SOCK)
          msg1.msg_controllen = sizeof(b2);
 
          Pij("9876543210",
-            10,
-            from = "4.3.2.1:4444");  // Inject as received packet from 4.3.2.1:4444
+             10,
+             from = "4.3.2.1:4444");  // Inject as received packet from 4.3.2.1:4444
          ssize_t r1 = recvmsg(sock, &msg1, 0);
          OK(10, r1);
          OK(IPeq("4.3.2.1:4444"), &c);
@@ -195,8 +197,8 @@ SUITE(SOCK)
          Ptx("*:9527", "1.2.3.4:8888", Me("1234567890", 10), 10);
 
          Pij("9876543210",
-            10,
-            from = "1.2.3.4:8888");  // Inject as received packet from 4.3.2.1:8888
+             10,
+             from = "1.2.3.4:8888");  // Inject as received packet from 4.3.2.1:8888
          int r1 = recv(sock2, (char*)buffer, sizeof(buffer), 0);
          OK(10, r1);
          OK(Me("9876543210", 10), buffer);
@@ -230,3 +232,4 @@ SUITE(SOCK)
       }
    }
 }
+#endif
