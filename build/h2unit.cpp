@@ -1,5 +1,5 @@
 ﻿
-/* v5.9 2021-06-26 18:18:20 */
+/* v5.9 2021-06-27 21:37:41 */
 /* https://github.com/lingjf/h2unit */
 /* Apache Licence 2.0 */
 
@@ -1011,7 +1011,9 @@ h2_inline void h2_color::printl(const h2_rows& rows)
 {
    for (auto& row : rows) printl(row);
 }
-// source/utils/h2_nm.cpp
+
+// source/ld/h2_nm.cpp
+//https://github.com/JochenKalmbach/StackWalker
 
 static inline void nm1(std::map<std::string, unsigned long long>*& symbols)
 {
@@ -1045,26 +1047,42 @@ static inline void nm2(h2_list& symbols)
    h2_memory::restores();
    char nm[256], line[2048], addr[128], type, name[2048];
 #   if defined __APPLE__
-   sprintf(nm, "nm --demangle -U %s", O.path);
+   sprintf(nm, "nm -f bsd --demangle -U -n %s", O.path);
 #   else
-   sprintf(nm, "nm --demangle --defined-only %s", O.path);
+   sprintf(nm, "nm -f bsd --demangle --defined-only -n %s", O.path);
 #   endif
+   h2_symbol* last = nullptr;
    FILE* f = ::popen(nm, "r");
    if (!f) return;
    while (::fgets(line, sizeof(line) - 1, f)) {
       if (3 != sscanf(line, "%s %c %[^\n]", addr, &type, name)) continue;
       if (strchr("bBcCdDiIuU", type)) continue;
-      int _ = 0;
-      if (O.os == macOS && !strchr(name, '(')) _ = 1;
-      symbols.push_back((new h2_symbol(name + _, (unsigned long long)strtoull(addr, nullptr, 16)))->x);
+      int underscore = 0;
+      if (O.os == macOS && !strchr(name, '(')) underscore = 1;
+      h2_symbol* symbol = new h2_symbol(name + underscore, (unsigned long long)strtoull(addr, nullptr, 16));
+      if (symbol) {
+         symbols.push_back(symbol->x);
+         if (last)
+            last->size = (int)(symbol->offset - last->offset);
+         last = symbol;
+      }
    }
    ::pclose(f);
    h2_memory::overrides();
 #endif
 }
 
-h2_inline int h2_nm::get(const char* name, h2_scope res[], int n)
+static inline bool strncmp_reverse(const char* a, const char* ae, const char* b, const char* be, int n)  // [a, ae) [b, be)
 {
+   if (ae < a + n || be < b + n) return false;
+   return !strncmp(ae - n, be - n, n);
+}
+
+h2_inline int h2_nm::get_by_name(const char* name, h2_symbol* res[], int n)
+{
+   if (!name) return 0;
+   int len = strlen(name);
+   if (len == 0) return 0;
 #if defined _WIN32
    char buffer[sizeof(SYMBOL_INFO) + 256];
    SYMBOL_INFO* symbol = (SYMBOL_INFO*)buffer;
@@ -1072,15 +1090,62 @@ h2_inline int h2_nm::get(const char* name, h2_scope res[], int n)
    symbol->MaxNameLen = 256;
    if (!SymFromName(O.hProcess, name, symbol))
       return 0;
-   res[0].addr = (unsigned long long)symbol->Address;
-   res[0].size = (unsigned long long)symbol->Size;
+   static h2_symbol s_symbol("", 0);
+   s_symbol.offset = (unsigned long long)symbol->Address;
+   s_symbol.size = (int)symbol->Size;
+   res[0] = &s_symbol;
    return 1;
 #else
-   return 0;
+   if (I().symbols_demangled.empty()) nm2(I().symbols_demangled);
+
+   h2_list_for_each_entry (p, I().symbols_demangled, h2_symbol, x) {
+      if (!strcmp(p->name, name)) {
+         res[0] = p;
+         return 1;
+      }
+   }
+   int count = 0;
+   h2_list_for_each_entry (p, I().symbols_demangled, h2_symbol, x) {
+      char* parentheses = strchr(p->name, '(');
+      if (!parentheses) continue;
+      if (!strncmp_reverse(p->name, parentheses, name, name + len, len)) continue;  // compare function name
+      char* func = parentheses - len;
+      if (p->name < func && func[-1] != ':' && func[-2] != ':') continue;  // strip namespace
+      if (count < n) res[count++] = p;
+   }
+   return count;
 #endif
 }
 
-h2_inline unsigned long long h2_nm::get(const char* name)
+h2_inline h2_symbol* h2_nm::get_by_offset(unsigned long long offset)
+{
+#if defined _WIN32
+   char buffer[sizeof(SYMBOL_INFO) + 256];
+   SYMBOL_INFO* symbol = (SYMBOL_INFO*)buffer;
+   symbol->SizeOfStruct = sizeof(SYMBOL_INFO);
+   symbol->MaxNameLen = 256;
+   if (!SymFromAddr(O.hProcess, (DWORD64)(offset), 0, symbol))
+      return nullptr;
+   if (memcmp("ILT+", symbol->Name, 4) == 0) {  // ILT (Incremental Link Table), JMP(e9)
+      offset = (unsigned long long)((unsigned char*)symbol->Address + 5 + *(long*)((unsigned char*)symbol->Address + 1));
+      return get_by_offset(offset);
+   }
+   static h2_symbol s_symbol("", 0);
+   strcpy(s_symbol.name, symbol->Name);
+   s_symbol.offset = (unsigned long long)symbol->Address;
+   s_symbol.size = (int)symbol->Size;
+   return &s_symbol;
+#else
+   // h2_list_for_each_entry (p, I().symbols_demangled, h2_symbol, x) {
+   //    if (offset <= p->offset + p->size) {
+   //       return p;
+   //    }
+   // }
+   return nullptr;
+#endif
+}
+
+h2_inline unsigned long long h2_nm::get_mangled(const char* name)
 {
 #if defined _WIN32
    char buffer[sizeof(SYMBOL_INFO) + 256];
@@ -1098,91 +1163,99 @@ h2_inline unsigned long long h2_nm::get(const char* name)
    return it != I().symbols_mangled->end() ? it->second : 0ULL;
 #endif
 }
+// source/ld/h2_load.cpp
 
-static inline bool strncmp_reverse(const char* a, const char* ae, const char* b, const char* be, int n)  // [a, ae) [b, be)
+
+static inline long long get_load_text_offset()
 {
-   if (ae < a + n || be < b + n) return false;
-   return !strncmp(ae - n, be - n, n);
+   h2_symbol* s[16];
+   if (h2_nm::get_by_name("main", s, 16) == 0) return 0;
+   return (long long)&main - (long long)s[0]->offset;
 }
 
-h2_inline int h2_nm::find(const char* name, h2_symbol* res[], int n)
-{
-   if (!name) return 0;
-   int len = strlen(name);
-   if (len == 0) return 0;
-   if (I().symbols_demangled.empty()) nm2(I().symbols_demangled);
-
-   h2_list_for_each_entry (p, I().symbols_demangled, h2_symbol, x) {
-      if (!strcmp(p->name.c_str(), name)) {
-         res[0] = p;
-         return 1;
-      }
-   }
-
-   int count = 0;
-   h2_list_for_each_entry (p, I().symbols_demangled, h2_symbol, x) {
-      char* parentheses = strchr((char*)p->name.c_str(), '(');
-      if (!parentheses) continue;
-      if (!strncmp_reverse(p->name.c_str(), parentheses, name, name + len, len)) continue;  // compare function name
-      char* func = parentheses - len;
-      if (p->name.c_str() < func && func[-1] != ':' && func[-2] != ':') continue;  // strip namespace
-      if (count < n) res[count++] = p;
-   }
-   return count;
-}
-
-struct h2_offset {
-   h2_offset() {}
-   virtual ~h2_offset() {}
+struct h2_vtable_offset_test {
+   h2_vtable_offset_test() {}
+   virtual ~h2_vtable_offset_test() {}
    virtual void dummy() {}
-
-   static long long vtable_offset()
-   {
-      static long long s = get_vtable_offset();
-      return s;
-   }
-
-   static long long get_vtable_offset()
-   {
-      char vtable_symbol[256];
-      h2_offset t;
-      long long absolute_vtable = (long long)*(void***)&t;
-      sprintf(vtable_symbol, "_ZTV%s", typeid(h2_offset).name());  // mangled for "vtable for h2_offset"
-      long long relative_vtable = (long long)h2_nm::get(vtable_symbol);
-      return absolute_vtable - relative_vtable;
-   }
-
-   static long long text_offset()
-   {
-      static long long s = get_text_offset();
-      return s;
-   }
-
-   static long long get_text_offset()
-   {
-      long long relative_vtable = (long long)h2_nm::get("main");
-      return (long long)&main - relative_vtable;
-   }
 };
 
-h2_inline long long h2_nm::text_offset()
+static inline long long get_load_vtable_offset()
 {
-   return h2_offset::text_offset();
+   char vtable_symbol[256];
+   h2_vtable_offset_test t;
+   long long absolute_vtable = (long long)*(void***)&t;
+   sprintf(vtable_symbol, "_ZTV%s", typeid(h2_vtable_offset_test).name());  // mangled for "vtable for h2::h2_vtable_offset_test"
+   long long relative_vtable = (long long)h2_nm::get_mangled(vtable_symbol);
+   if (relative_vtable == 0)
+      h2_color::prints("yellow", "\nDon't find vtable for h2::h2_vtable_offset_test %s\n", vtable_symbol);
+   return absolute_vtable - relative_vtable;
 }
 
-h2_inline long long h2_nm::vtable_offset()
+h2_inline void* h2_load::vtable_to_addr(unsigned long long offset)
 {
-   return h2_offset::vtable_offset();
+   if (I().vtable_offset == -1) I().vtable_offset = get_load_vtable_offset();
+   return (void*)(offset + I().vtable_offset);
 }
 
-h2_inline bool h2_nm::in_main(unsigned long long addr)
+h2_inline void* h2_load::symbol_to_addr(unsigned long long symbol_offset)
 {
-   static unsigned long long main_addr = get("main");
-   if (main_addr == 0) return false;
+#if defined _WIN32
+   return (void*)symbol_offset;
+#else
+   if (I().text_offset == -1) I().text_offset = get_load_text_offset();
+   return (void*)(symbol_offset + I().text_offset);
+#endif
+}
+
+h2_inline unsigned long long h2_load::addr_to_symbol(void* addr)
+{
+#if defined _WIN32
+   return (unsigned long long)addr;
+#else
+   if (I().text_offset == -1) I().text_offset = get_load_text_offset();
+   return (unsigned long long)addr - I().text_offset;
+#endif
+}
+
+h2_inline void h2_load::backtrace_scope(void*& addr, int& size)
+{
+#if defined __i386__ || defined __x86_64__ || defined _M_IX86 || defined _M_X64
+   unsigned char* p = (unsigned char*)addr;
+
+   // e8/ff15/ff25 call
+   if ((*p == 0xE8) || (*p == 0xFF && (*(p + 1) == 0x15 || *(p + 1) == 0x25))) {
+      size = 16;
+      return;
+   }
+   // e9 jmp
+   if (*p == 0xE9) {
+      addr = (void*)(p + 5 + *(long*)(p + 1));
+      backtrace_scope(addr, size);
+      return;
+   }
+   if (size == 0) {
+      for (unsigned char* q = p + 1;; q++) {
+         // cc      int 3;
+         // 5d c3   pop %ebp; ret;
+         // 5b c3   pop %ebx; ret;
+         // c9 c3   leave; ret;
+         if ((*q == 0xCC) ||
+             (*q == 0xC3 && ((*(q - 1) == 0x5D) || (*(q - 1) == 0x5B) || (*(q - 1) == 0xC9)))) {
+            size = (unsigned long)(q - p);
+            return;
+         }
+      }
+   }
+#endif
+}
+
+h2_inline bool h2_load::in_main(void* addr)
+{
+   unsigned long long main_addr = (unsigned long long)&main;
    /* main() 52~60 bytes code in linux MAC */
-   return main_addr < addr && addr < main_addr + 128;
+   return main_addr < (unsigned long long)addr && (unsigned long long)addr < main_addr + 128;
 }
-// source/utils/h2_backtrace.cpp
+// source/ld/h2_backtrace.cpp
 
 static inline bool demangle(const char* mangled, char* demangled, size_t len)
 {
@@ -1288,7 +1361,7 @@ h2_inline void h2_backtrace::print(h2_vector<h2_string>& stacks) const
       if (SymGetLineFromAddr64(O.hProcess, (DWORD64)(frames[i]), &dwDisplacement, &fileline))
          frame.sprintf("%s:%d", fileline.FileName, fileline.LineNumber);
       stacks.push_back(frame);
-      if (!strcmp("main", symbol->Name) || h2_nm::in_main(symbol->Address))
+      if (!strcmp("main", symbol->Name) || h2_load::in_main(frames[i]))
          break;
    }
 #else
@@ -1306,17 +1379,14 @@ h2_inline void h2_backtrace::print(h2_vector<h2_string>& stacks) const
                if (strlen(demangled))
                   p = demangled;
          }
-         if (O.verbose || O.os != macOS /* for speed atos is slow */) {
-            address = h2_nm::get(mangled);
-            if (address != ULLONG_MAX)
-               if (addr2line(address + offset, addr2lined, sizeof(addr2lined)))
-                  if (strlen(addr2lined))
-                     p = addr2lined;
-         }
+         if (O.verbose || O.os != macOS /* for speed atos is slow */)
+            if (addr2line(h2_load::addr_to_symbol(frames[i]), addr2lined, sizeof(addr2lined)))
+               if (strlen(addr2lined))
+                  p = addr2lined;
       }
       stacks.push_back(p);
 
-      if (!strcmp("main", mangled) || !strcmp("main", demangled) || h2_nm::in_main(address + offset))
+      if (!strcmp("main", mangled) || !strcmp("main", demangled) || h2_load::in_main(frames[i]))
          break;
    }
 
@@ -3709,25 +3779,7 @@ struct h2_exemption : h2_libc {
 
    h2_exemption(void* _base, int _size = 0) : base(_base), size(_size)
    {
-      if (!size) size = function_size((unsigned char*)base);
-   }
-
-   int function_size(unsigned char* func)
-   {
-#if defined __i386__ || defined __x86_64__ || defined _M_IX86 || defined _M_X64
-      // e8/e9/ff15/ff25   call/jmp PLT
-      if (*func == 0xE8 || *func == 0xE9) return 1;
-      if (*func == 0xFF && (*(func + 1) == 0x15 || *(func + 1) == 0x25)) return 2;
-      for (unsigned char* p = func + 1;; p++) {
-         // 5d c3   pop %ebp; ret;
-         // 5b c3   pop %ebx; ret;
-         // c9 c3   leave; ret;
-         if (*p == 0xC3 && ((*(p - 1) == 0x5D) || (*(p - 1) == 0x5B) || (*(p - 1) == 0xC9))) {
-            return p - func;
-         }
-      }
-#endif
-      return 300;
+      h2_load::backtrace_scope(base, size);
    }
 };
 
@@ -3749,24 +3801,45 @@ h2_inline void h2_exempt::setup()
    if (O.os == macOS) stubs.add((void*)::strtod, (void*)h2_exempt_stub::strtod, "strtod", __FILE__, __LINE__);
    if (O.os == macOS) stubs.add((void*)::strtold, (void*)h2_exempt_stub::strtold, "strtold", __FILE__, __LINE__);
 
-   add((void*)::sscanf);
-   add((void*)::sprintf);
-   add((void*)::vsnprintf);
 #if defined _WIN32
-   h2_scope s[16];
-   if (h2_nm::get("h2::h2_defer_failure::~h2_defer_failure", s, 1))
-      add((void*)s[0].addr, s[0].size);
-
+   add_by_name("h2::h2_defer_failure::~h2_defer_failure");
+#else
+#   ifdef __APPLE__
+   add_by_addr((void*)::vsnprintf_l);
+   add_by_addr((void*)abi::__cxa_throw);
+#   endif
+   add_by_addr((void*)::sscanf);
+   add_by_addr((void*)::sprintf);
+   add_by_addr((void*)::vsnprintf);
+   add_by_addr((void*)h2_pattern::regex_match);  // linux is 0xcb size, MAC is 0x100 (gap to next symbol)
 #endif
-#ifdef __APPLE__
-   add((void*)::vsnprintf_l);
-   add((void*)abi::__cxa_throw);
-#endif
-   add((void*)h2_pattern::regex_match);  // linux is 0xcb size, MAC is 0x100 (gap to next symbol)
 }
 
-h2_inline void h2_exempt::add(void* func, unsigned long size)
+h2_inline void h2_exempt::add_by_name(const char* func, int size)
 {
+   h2_symbol* res[16];
+   int n = h2_nm::get_by_name(func, res, 16);
+   if (n == 0) {
+      h2_color::prints("yellow", "\nDon't find %s\n", func);
+   } else if (n > 1) {
+      h2_color::prints("yellow", "\nFind multiple %s :\n", func);
+      for (int i = 0; i < n; ++i)
+         h2_color::prints("yellow", "  %d. %s \n", i + 1, res[i]->name);
+   }
+
+   for (int i = 0; i < n; ++i) {
+      I().exempts.push_back((new h2_exemption(h2_load::symbol_to_addr(res[i]->offset), res[i]->size))->x);
+   }
+}
+
+h2_inline void h2_exempt::add_by_addr(void* func, int size)
+{
+   unsigned long long symbol_offset = h2_load::addr_to_symbol(func);
+   h2_symbol* res = h2_nm::get_by_offset(symbol_offset);
+   if (res) {
+      func = h2_load::symbol_to_addr(res->offset);
+      size = res->size;
+   }
    I().exempts.push_back((new h2_exemption((void*)func, size))->x);
 }
 

@@ -158,9 +158,11 @@ struct h2_mfp<Class, ReturnType(Args...)> {
       if (0 == (long long)object || 1 == (long long)object || 2 == (long long)object) {
          char vtable_symbol[1024];
          sprintf(vtable_symbol, "_ZTV%s", typeid(Class).name());  // mangled for "vtable for Class"
-         unsigned long long relative_vtable = h2_nm::get(vtable_symbol);
+         unsigned long long relative_vtable = h2_nm::get_mangled(vtable_symbol);
          if (relative_vtable) {
-            vtable = (void**)(relative_vtable + h2_nm::vtable_offset());
+            vtable = (void**)h2_load::vtable_to_addr(relative_vtable);
+         } else {
+            h2_color::prints("yellow", "\nDon't find vtable for %s\n", vtable_symbol);
          }
       } else {
          vtable = *(void***)object;

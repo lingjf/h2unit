@@ -115,14 +115,14 @@ struct test_ptr
 };
 
 #define PTR_FILL_DECL_LIST \
-   static void* void_ptr = (void*)"0123456789";                    \
-   static const void* const_void_ptr = (const void*)"0123456789";  \
-   static char* char_ptr = (char*)"0123456789";                    \
-   static const char* const_char_ptr = (const char*)"0123456789";  \
-   static int* int_ptr = (int*)"0123456789";                       \
-   static const int* const_int_ptr = (const int*)"0123456789";     \
-   static test_ptr* test_ptr_ptr = (test_ptr*)"0123456789";        \
-   static const test_ptr* const_test_ptr_ptr = (const test_ptr*)"0123456789";
+   static void* void_ptr = (void*)"h2unit0123456789";                    \
+   static const void* const_void_ptr = (const void*)"h2unit0123456789";  \
+   static char* char_ptr = (char*)"h2unit0123456789";                    \
+   static const char* const_char_ptr = (const char*)"h2unit0123456789";  \
+   static int* int_ptr = (int*)"h2unit0123456789";                       \
+   static const int* const_int_ptr = (const int*)"h2unit0123456789";     \
+   static test_ptr* test_ptr_ptr = (test_ptr*)"h2unit0123456789";        \
+   static const test_ptr* const_test_ptr_ptr = (const test_ptr*)"h2unit0123456789";
 
 #define PTR_NULL_DECL_LIST \
    static void* void_nullptr = nullptr;             \
@@ -145,7 +145,7 @@ struct test_ptr
    const_test_ptr_nullptr
 
 #define PTR_FILL_VALUE_LIST   \
-   "0123456789",              \
+   "h2unit0123456789",              \
    void_ptr,                  \
    const_void_ptr,            \
    char_ptr,                  \

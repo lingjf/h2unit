@@ -51,7 +51,13 @@ SUITE(parse_block_attributes)
    }
 }
 
-void parse_something()
+void parse_something1()
+{
+   static char* buffer = NULL;
+   if (buffer == NULL) { buffer = (char*)malloc(1000); }
+}
+
+void parse_something2()
 {
    static char* buffer = NULL;
    if (buffer == NULL) { buffer = (char*)malloc(1000); }
@@ -69,10 +75,17 @@ SUITE(leak)
       OK("hello world", (char*)p);
    }
 
-   Case(UNMEM)
+   Case(UNMEM by function pointer)
    {
-      UNMEM(parse_something);
+      UNMEM(parse_something1);
 
-      parse_something();
+      parse_something1();
+   }
+
+   Case(UNMEM by function name)
+   {
+      UNMEM("parse_something2");
+
+      parse_something2();
    }
 }

@@ -61,8 +61,9 @@ namespace h2 {
 #include "utils/h2_string.hpp"         // allocate
 #include "utils/h2_row.hpp"            // string
 #include "utils/h2_color.hpp"          // row
-#include "utils/h2_nm.hpp"             //
-#include "utils/h2_backtrace.hpp"      // row
+#include "ld/h2_nm.hpp"                //
+#include "ld/h2_load.hpp"              //
+#include "ld/h2_backtrace.hpp"         // row
 #include "other/h2_option.hpp"         //
 #include "other/h2_layout.hpp"         //
 #include "other/h2_debug.hpp"          // option

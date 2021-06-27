@@ -103,7 +103,7 @@ h2_inline void h2_backtrace::print(h2_vector<h2_string>& stacks) const
       if (SymGetLineFromAddr64(O.hProcess, (DWORD64)(frames[i]), &dwDisplacement, &fileline))
          frame.sprintf("%s:%d", fileline.FileName, fileline.LineNumber);
       stacks.push_back(frame);
-      if (!strcmp("main", symbol->Name) || h2_nm::in_main(symbol->Address))
+      if (!strcmp("main", symbol->Name) || h2_load::in_main(frames[i]))
          break;
    }
 #else
@@ -121,17 +121,14 @@ h2_inline void h2_backtrace::print(h2_vector<h2_string>& stacks) const
                if (strlen(demangled))
                   p = demangled;
          }
-         if (O.verbose || O.os != macOS /* for speed atos is slow */) {
-            address = h2_nm::get(mangled);
-            if (address != ULLONG_MAX)
-               if (addr2line(address + offset, addr2lined, sizeof(addr2lined)))
-                  if (strlen(addr2lined))
-                     p = addr2lined;
-         }
+         if (O.verbose || O.os != macOS /* for speed atos is slow */)
+            if (addr2line(h2_load::addr_to_symbol(frames[i]), addr2lined, sizeof(addr2lined)))
+               if (strlen(addr2lined))
+                  p = addr2lined;
       }
       stacks.push_back(p);
 
-      if (!strcmp("main", mangled) || !strcmp("main", demangled) || h2_nm::in_main(address + offset))
+      if (!strcmp("main", mangled) || !strcmp("main", demangled) || h2_load::in_main(frames[i]))
          break;
    }
 

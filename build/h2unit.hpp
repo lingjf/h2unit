@@ -1,5 +1,5 @@
 ﻿
-/* v5.9 2021-06-26 18:18:20 */
+/* v5.9 2021-06-27 21:37:41 */
 /* https://github.com/lingjf/h2unit */
 /* Apache Licence 2.0 */
 
@@ -825,33 +825,37 @@ struct h2_color {
 
    static bool isctrl(const char* s) { return s[0] == '\033' && s[1] == '{'; };
 };
-// source/utils/h2_nm.hpp
+// source/ld/h2_nm.hpp
 
 struct h2_symbol {
    h2_list x;
-   std::string name;
-   unsigned long long addr;
-   h2_symbol(char* _name, unsigned long long _addr) : name(_name), addr(_addr) {}
-};
-
-struct h2_scope {
-   char name[256];
-   unsigned long long addr, size;
+   char name[128];
+   unsigned long long offset;
+   int size = 0;
+   h2_symbol(char* _name, unsigned long long _offset) : offset(_offset) { strncpy(name, _name, 127); }
 };
 
 struct h2_nm {
    h2_singleton(h2_nm);
    std::map<std::string, unsigned long long>* symbols_mangled;
    h2_list symbols_demangled;
-   h2_nm(){};
-   static unsigned long long get(const char* name);             // by mangled name
-   static int get(const char* name, h2_scope res[], int n);    // by demangled name
-   static int find(const char* name, h2_symbol* res[], int n);  // by demangled name
-   static long long text_offset();
-   static long long vtable_offset();
-   static bool in_main(unsigned long long addr);
+   static int get_by_name(const char* name, h2_symbol* res[], int n);
+   static h2_symbol* get_by_offset(unsigned long long offset);
+   static unsigned long long get_mangled(const char* name);
 };
-// source/utils/h2_backtrace.hpp
+// source/ld/h2_load.hpp
+
+struct h2_load {
+   h2_singleton(h2_load);
+   long long text_offset = -1;
+   long long vtable_offset = -1;
+   static void* symbol_to_addr(unsigned long long symbol_offset);
+   static unsigned long long addr_to_symbol(void* addr);
+   static void* vtable_to_addr(unsigned long long offset);
+   static void backtrace_scope(void* &addr, int &size);
+   static bool in_main(void* addr);
+};
+// source/ld/h2_backtrace.hpp
 
 struct h2_backtrace {
    int count = 0, shift = 0;
@@ -997,11 +1001,17 @@ struct h2_exempt {
    h2_singleton(h2_exempt);
    h2_list exempts;
    static void setup();
-   static void add(void* func, unsigned long size = 0);
+   static void add_by_addr(void* func, int size = 0);
+   static void add_by_name(const char* func, int size = 0);
    static bool in(const h2_backtrace& bt);
 };
 
-#define H2UNMEM(func) h2::h2_exempt::add((void*)func)
+template <typename T>
+inline void h2_unmem(T func) { return h2_exempt::add_by_addr((void*)func); }
+template <>
+inline void h2_unmem(const char* func) { return h2_exempt::add_by_name(func); }
+
+#define H2UNMEM(func) h2::h2_unmem(func)
 // source/memory/h2_memory.hpp
 
 struct h2_memory {
@@ -2440,25 +2450,19 @@ void* h2_fp(T p)
 {
    void* fp = (void*)p;
    if (std::is_convertible<T, h2::h2_string>::value) {
-#if defined _WIN32
-      fp = (void*)h2_nm::get((const char*)p);
-      if (!fp)
-         h2_color::prints("yellow", "\nDon't find %s\n", (const char*)p);
-#else
-      h2_symbol* res[100];
-      int n = h2_nm::find((const char*)p, res, 100);
+      h2_symbol* res[16];
+      int n = h2_nm::get_by_name((const char*)p, res, 16);
       if (n != 1) {
          if (n == 0) {
             h2_color::prints("yellow", "\nDon't find %s\n", (const char*)p);
          } else {
             h2_color::prints("yellow", "\nFind multiple %s :\n", (const char*)p);
             for (int i = 0; i < n; ++i)
-               h2_color::prints("yellow", "  %d. %s \n", i + 1, res[i]->name.c_str());
+               h2_color::prints("yellow", "  %d. %s \n", i + 1, res[i]->name);
          }
          return nullptr;
       }
-      fp = (void*)(res[0]->addr + h2_nm::text_offset());
-#endif
+      fp = h2_load::symbol_to_addr(res[0]->offset);
    }
    return fp;
 }
@@ -2623,9 +2627,11 @@ struct h2_mfp<Class, ReturnType(Args...)> {
       if (0 == (long long)object || 1 == (long long)object || 2 == (long long)object) {
          char vtable_symbol[1024];
          sprintf(vtable_symbol, "_ZTV%s", typeid(Class).name());  // mangled for "vtable for Class"
-         unsigned long long relative_vtable = h2_nm::get(vtable_symbol);
+         unsigned long long relative_vtable = h2_nm::get_mangled(vtable_symbol);
          if (relative_vtable) {
-            vtable = (void**)(relative_vtable + h2_nm::vtable_offset());
+            vtable = (void**)h2_load::vtable_to_addr(relative_vtable);
+         } else {
+            h2_color::prints("yellow", "\nDon't find vtable for %s\n", vtable_symbol);
          }
       } else {
          vtable = *(void***)object;

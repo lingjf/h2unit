@@ -96,25 +96,7 @@ struct h2_exemption : h2_libc {
 
    h2_exemption(void* _base, int _size = 0) : base(_base), size(_size)
    {
-      if (!size) size = function_size((unsigned char*)base);
-   }
-
-   int function_size(unsigned char* func)
-   {
-#if defined __i386__ || defined __x86_64__ || defined _M_IX86 || defined _M_X64
-      // e8/e9/ff15/ff25   call/jmp PLT
-      if (*func == 0xE8 || *func == 0xE9) return 1;
-      if (*func == 0xFF && (*(func + 1) == 0x15 || *(func + 1) == 0x25)) return 2;
-      for (unsigned char* p = func + 1;; p++) {
-         // 5d c3   pop %ebp; ret;
-         // 5b c3   pop %ebx; ret;
-         // c9 c3   leave; ret;
-         if (*p == 0xC3 && ((*(p - 1) == 0x5D) || (*(p - 1) == 0x5B) || (*(p - 1) == 0xC9))) {
-            return p - func;
-         }
-      }
-#endif
-      return 300;
+      h2_load::backtrace_scope(base, size);
    }
 };
 
@@ -136,24 +118,45 @@ h2_inline void h2_exempt::setup()
    if (O.os == macOS) stubs.add((void*)::strtod, (void*)h2_exempt_stub::strtod, "strtod", __FILE__, __LINE__);
    if (O.os == macOS) stubs.add((void*)::strtold, (void*)h2_exempt_stub::strtold, "strtold", __FILE__, __LINE__);
 
-   add((void*)::sscanf);
-   add((void*)::sprintf);
-   add((void*)::vsnprintf);
 #if defined _WIN32
-   h2_scope s[16];
-   if (h2_nm::get("h2::h2_defer_failure::~h2_defer_failure", s, 1))
-      add((void*)s[0].addr, s[0].size);
-
+   add_by_name("h2::h2_defer_failure::~h2_defer_failure");
+#else
+#   ifdef __APPLE__
+   add_by_addr((void*)::vsnprintf_l);
+   add_by_addr((void*)abi::__cxa_throw);
+#   endif
+   add_by_addr((void*)::sscanf);
+   add_by_addr((void*)::sprintf);
+   add_by_addr((void*)::vsnprintf);
+   add_by_addr((void*)h2_pattern::regex_match);  // linux is 0xcb size, MAC is 0x100 (gap to next symbol)
 #endif
-#ifdef __APPLE__
-   add((void*)::vsnprintf_l);
-   add((void*)abi::__cxa_throw);
-#endif
-   add((void*)h2_pattern::regex_match);  // linux is 0xcb size, MAC is 0x100 (gap to next symbol)
 }
 
-h2_inline void h2_exempt::add(void* func, unsigned long size)
+h2_inline void h2_exempt::add_by_name(const char* func, int size)
 {
+   h2_symbol* res[16];
+   int n = h2_nm::get_by_name(func, res, 16);
+   if (n == 0) {
+      h2_color::prints("yellow", "\nDon't find %s\n", func);
+   } else if (n > 1) {
+      h2_color::prints("yellow", "\nFind multiple %s :\n", func);
+      for (int i = 0; i < n; ++i)
+         h2_color::prints("yellow", "  %d. %s \n", i + 1, res[i]->name);
+   }
+
+   for (int i = 0; i < n; ++i) {
+      I().exempts.push_back((new h2_exemption(h2_load::symbol_to_addr(res[i]->offset), res[i]->size))->x);
+   }
+}
+
+h2_inline void h2_exempt::add_by_addr(void* func, int size)
+{
+   unsigned long long symbol_offset = h2_load::addr_to_symbol(func);
+   h2_symbol* res = h2_nm::get_by_offset(symbol_offset);
+   if (res) {
+      func = h2_load::symbol_to_addr(res->offset);
+      size = res->size;
+   }
    I().exempts.push_back((new h2_exemption((void*)func, size))->x);
 }
 

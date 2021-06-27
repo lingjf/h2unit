@@ -28,7 +28,7 @@ SUITE(Pointer)
 
    Case(OK Me)
    {
-   #define TheCheck(x, y) OK(Me(x, 10), y);
+   #define TheCheck(x, y) OK(Me(x, 1), y);
       H2Fullmesh(TheCheck, PTR_FILL_VALUE_LIST);
    #undef TheCheck
    }
