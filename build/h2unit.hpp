@@ -1,5 +1,5 @@
 ﻿
-/* v5.9 2021-06-27 21:37:41 */
+/* v5.10 2021-07-03 13:34:42 */
 /* https://github.com/lingjf/h2unit */
 /* Apache Licence 2.0 */
 
@@ -9,7 +9,7 @@
 #ifndef __H2_UNIT_HPP__
 #define __H2_UNIT_HPP__
 
-#define H2UNIT_VERSION 5.9
+#define H2UNIT_VERSION 5.10
 
 #include <cstdio>      /* printf */
 #include <cstdlib>     /* malloc */
@@ -2469,6 +2469,7 @@ void* h2_fp(T p)
 // source/stub/h2_mfp.hpp
 
 /* clang-format off */
+#if !defined _WIN32
 
 template <typename T, int I> struct h2_constructible_error {
    static T* O(void* m) { return static_cast<T*>(m = (void*)I); }
@@ -2487,7 +2488,7 @@ template <typename, typename> struct h2_constructible7_impl : std::false_type {}
 template <typename, typename> struct h2_constructible8_impl : std::false_type {};
 template <typename, typename> struct h2_constructible9_impl : std::false_type {};
 
-#if (defined(__GNUC__) && __GNUC__ >= 5) || defined __clang__ || defined _WIN32
+#if (defined(__GNUC__) && __GNUC__ >= 5) || defined __clang__
 
 template <typename T>
 struct h2_constructible1_impl<h2_void_t<decltype(T({}))>, T> : std::true_type {
@@ -2583,6 +2584,7 @@ using h2_constructible =
       >::type
    >::type;
 
+#endif
 /* clang-format on */
 
 //  https://itanium-cxx-abi.github.io/cxx-abi/
@@ -2607,20 +2609,26 @@ struct h2_mfp<Class, ReturnType(Args...)> {
       return (void*)f;
    }
 
-   static bool is_virtual_member_function(long long uv)
+   union U {
+      ReturnType (Class::*f)(Args...);
+      void* p;
+      long long v;
+   };
+
+#if defined _WIN32
+   // https://github.com/microsoft/Detours
+   // https://stackoverflow.com/questions/8121320/get-memory-address-of-member-function
+   // https://stackoverflow.com/questions/44618230/in-the-msvc-abi-how-do-i-reliably-find-the-vtable-given-only-a-void
+   static void* A(ReturnType (Class::*f)(Args...))
    {
-      return (uv & 1) && (uv - 1) % sizeof(void*) == 0
-             /* assumption: virtual member count less than 1000 */
-             && (uv - 1) / sizeof(void*) < 1000;
+      U u{f};
+      return u.p;
    }
+#else
 
    static void* A(ReturnType (Class::*f)(Args...))
    {
-      union {
-         ReturnType (Class::*f)(Args...);
-         void* p;
-         long long v;
-      } u{f};
+      U u{f};
       if (!is_virtual_member_function(u.v)) return u.p;
       void** vtable = nullptr;
       Class* object = h2_constructible<Class>::O(alloca(sizeof(Class)));
@@ -2639,6 +2647,14 @@ struct h2_mfp<Class, ReturnType(Args...)> {
       if (!vtable) return nullptr;
       return vtable[(u.v - 1) / sizeof(void*)];
    }
+
+   static bool is_virtual_member_function(long long uv)
+   {
+      return (uv & 1) && (uv - 1) % sizeof(void*) == 0
+             /* assumption: virtual member count less than 1000 */
+             && (uv - 1) / sizeof(void*) < 1000;
+   }
+#endif
 };
 // source/stub/h2_stub.hpp
 

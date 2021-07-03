@@ -328,19 +328,27 @@ SUITE(mock greed)
    }
 }
 
-#ifndef _WIN32
-
 SUITE(mock Return)
 {
    Case(delegate to origin)
    {
-      MOCK(bar1, int, (int, const char*), Once(1, "A").Return()){};
+      MOCK(bar1, int, (int, const char*), Once(1, "A").Return())
+      {
+#ifdef _WIN32
+         return 0; /*make msvc happy*/
+#endif
+      };
       OK(100, bar1(1, "A"));
    }
 
    Case(return uninitialized value)
    {
-      MOCK(bar1, int, (int, const char*), Once(1, "A")){};
+      MOCK(bar1, int, (int, const char*), Once(1, "A"))
+      {
+#ifdef _WIN32
+         return 0; /*make msvc happy*/
+#endif
+      };
       OK(_, bar1(1, "A"));
    }
 }
@@ -451,10 +459,7 @@ SUITE(Mock template)
       int ret = foobar1<int>(0);
       OK(1, ret);
 
-      MOCK(foobar1<int>, int, (int a), Once())
-      {
-         return -1;
-      };
+      MOCK(foobar1<int>, int, (int a), Once()) { return -1; };
       OK(-1, foobar1<int>(0));
    }
 
@@ -507,6 +512,7 @@ SUITE(Mock template)
       OK(-1, (Foo2<int, float>::bar2<int, float>(0, 0)));
    }
 
+#ifndef _WIN32
    Case(return template)
    {
       MOCK((Foo3<int, float>), (bar<int, float>), (std::pair<int, float>), (int, float), Once())
@@ -516,6 +522,7 @@ SUITE(Mock template)
       Foo3<int, float> a1;
       OK(Pair(1, 1), (a1.bar<int, float>(0, 0)));
    }
+#endif
 }
 
 SUITE(omit Checkin)
@@ -600,7 +607,5 @@ SUITE(UNMOCK)
       OK(0, foobar1_bymock(0));
    }
 }
-
-#endif
 
 }  // namespace

@@ -1,5 +1,5 @@
 ﻿
-/* v5.9 2021-06-27 21:37:41 */
+/* v5.10 2021-07-03 13:34:42 */
 /* https://github.com/lingjf/h2unit */
 /* Apache Licence 2.0 */
 
@@ -6204,7 +6204,7 @@ h2_inline h2_rows h2_layout::seperate(const h2_row& up_row, const h2_row& down_r
 static inline void usage()
 {
    ::printf(" \033[33m╭────────────────────────────────────────────────────────────────────────────╮\033[0m\n");
-   ::printf(" \033[33m│\033[0m               \033[32mh2unit \033[31m%-5g \033[34;4mhttps://github.com/lingjf/h2unit\033[0m \033[0;36m               \033[33m│\033[0m\n", H2UNIT_VERSION);
+   ::printf(" \033[33m│\033[0m               \033[32mh2unit \033[31m%-5s \033[34;4mhttps://github.com/lingjf/h2unit\033[0m \033[0;36m               \033[33m│\033[0m\n", H2PP_STR(H2UNIT_VERSION));
    ::printf(" \033[33m╰────────────────────────────────────────────────────────────────────────────╯\033[0m\n");
 
    ::printf("\
@@ -6303,7 +6303,6 @@ h2_inline h2_option::h2_option()
 {
    terminal_width = h2_termimal_width();
 #if defined _WIN32
-   // memory_check = false;
    hProcess = GetCurrentProcess();
    SymInitialize(hProcess, NULL, TRUE);
 #endif
