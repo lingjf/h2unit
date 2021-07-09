@@ -49,6 +49,7 @@ SUITE(override)
       }
    }
 
+#if !(defined __arm__ || defined __arm64__ || defined __aarch64__)
    Case(new[])
    {
       delete[] new char[100];
@@ -59,6 +60,7 @@ SUITE(override)
          OK(IsNull, new (std::nothrow) char[100]);
       }
    }
+#endif
 
    Case(strdup)
    {
@@ -144,7 +146,9 @@ SUITE(harmless)
       struct tm* t4 = gmtime(&t3);
       struct tm t5;
       ctime(&t3);
+#if !(defined __arm__ || defined __arm64__ || defined __aarch64__)
       asctime(t4);
+#endif
 #if !defined _WIN32
       struct timezone tz;
       gettimeofday(&tv, &tz);

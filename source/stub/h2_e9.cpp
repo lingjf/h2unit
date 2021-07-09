@@ -1,7 +1,13 @@
 // https://www.codeproject.com/Articles/25198/Generic-Thunk-with-5-combinations-of-Calling-Conve
 
 struct h2_e9 {
-   static constexpr int size = sizeof(void*) == 8 ? 2 + 8 + 2 : 5;
+#if defined __i386__ || defined _M_IX86
+   static constexpr int size = 1 + 4;
+#elif defined __x86_64__ || defined _M_X64
+   static constexpr int size = 2 + 8 + 2;
+#elif defined __arm__ || defined __arm64__ || defined __aarch64__
+   static constexpr int size = 4 + 4 + 8;
+#endif
 
    static bool save(void* origin_fp, unsigned char* saved)
    {
@@ -38,11 +44,41 @@ struct h2_e9 {
          *(long*)(&C[1]) = delta;
          memcpy(I, C, sizeof(C));
       }
+#elif defined __arm__ || defined __arm64__ || defined __aarch64__
+
+#   pragma pack(push, 1)
+      struct ldr_br_dst {
+         unsigned int ldr;
+         unsigned int br;
+         void* dstfp;
+      };
+      struct b_offset {
+         unsigned int b : 8;
+         unsigned int offset : 24;
+      };
+#   pragma pack(pop)
+      long long offset = (unsigned char*)substitute_fp - I;
+
+      if (1 || offset < -8388607 - 1 || 0x7fffff < offset) {  // signed 2^24
+         struct ldr_br_dst* p = static_cast<ldr_br_dst*>(origin_fp);
+         p->ldr = 0x58000000 | ((8 / 4) << 5) | 17;  // x17 register store dstfp
+         p->br = 0xD61F0000 | (17 << 5);             // jmp x17
+         p->dstfp = substitute_fp;
+      } else {
+         struct b_offset* p = static_cast<b_offset*>(origin_fp);
+         p->b = offset >= 0 ? 0x14 : 0x17;  //b 14 forward 17 backward
+         p->offset = (unsigned long)((offset / 4) & 0xffffff);
+      }
+
+      __builtin___clear_cache((char*)I, (char*)I + size);
 #endif
    }
 
    static void reset(void* origin_fp, unsigned char* saved)
    {
       memcpy(origin_fp, saved, size);
+#if defined __arm__ || defined __arm64__ || defined __aarch64__
+      __builtin___clear_cache(static_cast<char*>(origin_fp), static_cast<char*>(origin_fp) + size);
+#endif
    }
 };

@@ -51,41 +51,41 @@ h2_inline unsigned long long h2_load::addr_to_symbol(void* addr)
 #endif
 }
 
-h2_inline void h2_load::backtrace_scope(void*& addr, int& size)
-{
 #if defined __i386__ || defined __x86_64__ || defined _M_IX86 || defined _M_X64
-   unsigned char* p = (unsigned char*)addr;
 
-   // e8/ff15/ff25 call
-   if ((*p == 0xE8) || (*p == 0xFF && (*(p + 1) == 0x15 || *(p + 1) == 0x25))) {
-      size = 16;
-      return;
-   }
-   // e9 jmp
-   if (*p == 0xE9) {
-      addr = (void*)(p + 5 + *(long*)(p + 1));
-      backtrace_scope(addr, size);
-      return;
-   }
-   if (size == 0) {
-      for (unsigned char* q = p + 1;; q++) {
-         // cc      int 3;
-         // 5d c3   pop %ebp; ret;
-         // 5b c3   pop %ebx; ret;
-         // c9 c3   leave; ret;
-         if ((*q == 0xCC) ||
-             (*q == 0xC3 && ((*(q - 1) == 0x5D) || (*(q - 1) == 0x5B) || (*(q - 1) == 0xC9)))) {
-            size = (unsigned long)(q - p);
-            return;
-         }
-      }
-   }
-#endif
-}
-
-h2_inline bool h2_load::in_main(void* addr)
+static inline void* follow_jmp(void* pc)
 {
-   unsigned long long main_addr = (unsigned long long)&main;
-   /* main() 52~60 bytes code in linux MAC */
-   return main_addr < (unsigned long long)addr && (unsigned long long)addr < main_addr + 128;
+   unsigned char* p = (unsigned char*)pc;
+   if (!p) return NULL;
+
+#   if 0
+   if (p[0] == 0xff && p[1] == 0x25) {  // jmp [imm32]
+      unsigned char* p1 = sizeof(void*) == 8 ? p + 6 + *(long*)(p + 2) : *(unsigned char**)(p + 2);
+      unsigned char* p2 = *(unsigned char**)p1;
+      // ::printf("%p->%p: skipped over import table.\n", p, p2);  // skip over the import vector
+      return follow_jmp(p2);
+   }
+
+   if (p[0] == 0xeb) {  // jmp +imm8
+      unsigned char* p1 = p + 2 + *(char*)(p + 1);
+      // ::printf("%p->%p: skipped over short jump.\n", p, p1);  // skip over a patch jump
+      return follow_jmp(p1);
+   }
+#   endif
+
+   if (p[0] == 0xe9) {  // jmp +imm32
+      unsigned char* p1 = p + 5 + *(long*)(p + 1);
+      // ::printf("%p->%p: skipped over long jump.\n", p, p1);  // skip over a long jump if it is the target of the patch jump.
+      return follow_jmp(p1);
+   }
+   return (void*)p;
 }
+
+#elif defined __arm__ || defined __arm64__ || defined __aarch64__
+
+static inline void* follow_jmp(void* pc)
+{
+   return pc;
+}
+
+#endif

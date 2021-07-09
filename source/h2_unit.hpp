@@ -2,7 +2,7 @@
 #ifndef __H2_UNIT_HPP__
 #define __H2_UNIT_HPP__
 
-#define H2UNIT_VERSION 5.10
+#define H2UNIT_VERSION 5.11
 
 #include <cstdio>      /* printf */
 #include <cstdlib>     /* malloc */

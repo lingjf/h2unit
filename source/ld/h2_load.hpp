@@ -6,6 +6,4 @@ struct h2_load {
    static void* symbol_to_addr(unsigned long long symbol_offset);
    static unsigned long long addr_to_symbol(void* addr);
    static void* vtable_to_addr(unsigned long long offset);
-   static void backtrace_scope(void* &addr, int &size);
-   static bool in_main(void* addr);
 };

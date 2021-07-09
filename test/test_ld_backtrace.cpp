@@ -82,66 +82,61 @@ SUITE(demangle)
       OK(!ret);
    }
 }
+#endif
 
 SUITE(backtrace extract)
 {
-   h2::h2_backtrace bt;
-   char module[256] = "---", mangled[256] = "---";
+   char mangled[256] = "---";
    unsigned long long offset = 0xFFFFEEEE;
 
+#if defined __APPLE__
    Case(MAC backtrace_symbols line)
    {
       const char* p = "3   a.out  0x000000010e777f3d _ZN2h24hook6mallocEm + 45";
-      bool ret = h2::backtrace_extract(p, module, mangled, &offset);
+      bool ret = h2::backtrace_extract(p, mangled, &offset);
 
       OK(ret);
-      OK("a.out", module);
       OK("_ZN2h24hook6mallocEm", mangled);
       OK(45, offset);
    }
+#endif
 
-   Case(Linux with '-rdynamic' linker option)
+#if defined __linux__
+
+   Case("./a.out(_ZN2h24task7executeEv+0x131)[0x55aa6bb840ef]")
    {
       const char* p = "./a.out(_ZN2h24task7executeEv+0x131)[0x55aa6bb840ef]";
-      bool ret = h2::backtrace_extract(p, module, mangled, &offset);
+      bool ret = h2::backtrace_extract(p, mangled, &offset);
 
       OK(ret);
-      OK("./a.out", module);
       OK("_ZN2h24task7executeEv", mangled);
       OK(0x131, offset);
    }
 
-   Case(Ubuntu without '-rdynamic' linker option)
+   Case("./a.out(+0xb1887)[0x560c5ed06887]")
    {
       const char* p = "./a.out(+0xb1887)[0x560c5ed06887]";
-      bool ret = h2::backtrace_extract(p, module, mangled, &offset);
+      bool ret = h2::backtrace_extract(p, mangled, &offset);
 
       OK(ret);
-      OK("./a.out", module);
       OK("", mangled);
       OK(0xb1887, offset);
    }
 
-   Case(Redhat / CentOS without '-rdynamic' linker option)
+   Case("./a.out() [0x40b960]")
    {
       const char* p = "./a.out() [0x40b960]";
-      bool ret = h2::backtrace_extract(p, module, mangled, &offset);
+      bool ret = h2::backtrace_extract(p, mangled, &offset);
 
-      OK(ret);
-      OK("./a.out", module);
-      OK("", mangled);
-      OK(0x40b960, offset);
+      OK(!ret);
    }
 
-   Case(Linux 4)
+   Case("./a.out[0x4060e7]")
    {
       const char* p = "./a.out[0x4060e7]";
-      bool ret = h2::backtrace_extract(p, module, mangled, &offset);
+      bool ret = h2::backtrace_extract(p, mangled, &offset);
 
-      OK(ret);
-      OK("./a.out", module);
-      OK("", mangled);
-      OK(0x4060e7, offset);
+      OK(!ret);
    }
-}
 #endif
+}

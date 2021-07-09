@@ -87,6 +87,7 @@ SUITE(stdio)
          std::clog << "std::clog! " << 42;
       }
    }
+#endif
 
    Case(fprintf)
    {
@@ -197,13 +198,13 @@ SUITE(stdio)
 
    Case(syslog)
    {
-#   if !defined _WIN32
+#if !defined _WIN32
       const char* e1 = "syslog! 42";
       COUT(e1)
       {
          syslog(LOG_DEBUG, "syslog! %d", 42);
       }
-#   endif
+#endif
    }
 
    Case(normal file write)
@@ -251,5 +252,4 @@ SUITE(stdio)
          fclose(fp2);
       }
    }
-#endif
 }

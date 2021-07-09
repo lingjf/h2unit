@@ -127,6 +127,10 @@ using h2_constructible =
 //  For virtual functions, it is 1 plus the virtual table offset (in bytes) of the function.
 //  The least-significant bit therefore discriminates between virtual and non-virtual functions.
 
+struct h2_test_plus {
+   virtual void test() {}
+};
+
 template <typename Class, typename Signature>
 struct h2_mfp;
 
@@ -143,7 +147,6 @@ struct h2_mfp<Class, ReturnType(Args...)> {
    union U {
       ReturnType (Class::*f)(Args...);
       void* p;
-      long long v;
    };
 
 #if defined _WIN32
@@ -160,7 +163,8 @@ struct h2_mfp<Class, ReturnType(Args...)> {
    static void* A(ReturnType (Class::*f)(Args...))
    {
       U u{f};
-      if (!is_virtual_member_function(u.v)) return u.p;
+      unsigned long long v = (unsigned long long)u.p;
+      if (!is_virtual_member_function(v)) return u.p;
       void** vtable = nullptr;
       Class* object = h2_constructible<Class>::O(alloca(sizeof(Class)));
       if (0 == (long long)object || 1 == (long long)object || 2 == (long long)object) {
@@ -176,14 +180,21 @@ struct h2_mfp<Class, ReturnType(Args...)> {
          vtable = *(void***)object;
       }
       if (!vtable) return nullptr;
-      return vtable[(u.v - 1) / sizeof(void*)];
+      return vtable[(v & ~1ULL) / sizeof(void*)];
    }
 
-   static bool is_virtual_member_function(long long uv)
+   static bool is_virtual_member_function(unsigned long long v)
    {
-      return (uv & 1) && (uv - 1) % sizeof(void*) == 0
-             /* assumption: virtual member count less than 1000 */
-             && (uv - 1) / sizeof(void*) < 1000;
+      union {
+         void (h2_test_plus::*f)();
+         void* p;
+      } t{&h2_test_plus::test};
+      if (1 & (unsigned long long)t.p) {
+         return (v & 1) && (v - 1) % sizeof(void*) == 0 && v < 1000 * sizeof(void*);
+         /* assumption: virtual member count less than 1000 */
+      } else {
+         return v % sizeof(void*) == 0 && v < 100 * sizeof(void*);
+      }
    }
 #endif
 };

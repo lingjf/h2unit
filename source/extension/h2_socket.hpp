@@ -17,6 +17,12 @@ struct h2_sock : h2_once {
    {
       h2_assert_g();
       h2_packet* p = h2_sock::fetch();
+      if (!p) {
+         h2_row r = "Outgoing packet miss Ptx(";
+         r.printf("green", "%s", e).printf("", ")");
+         h2_fail_g(h2_fail::new_normal(r, file, line), false);
+         return;
+      }
       h2_fail* fails = nullptr;
       h2_fail* fail_from = h2_matcher_cast<const char*>(from).matches(p->from.c_str(), 0, false, false);
       if (fail_from) {

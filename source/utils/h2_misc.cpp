@@ -9,11 +9,13 @@ static inline const char* h2_basename(const char* path)
 h2_inline bool h2_pattern::regex_match(const char* pattern, const char* subject, bool caseless)
 {
    bool result = false;
+   h2_memory::restores();
    try {  // c++11 support regex; gcc 4.8 start support regex, gcc 5.5 icase works.
       result = std::regex_match(subject, caseless ? std::regex(pattern, std::regex::icase) : std::regex(pattern));
    } catch (const std::regex_error&) {
       result = false;
    }
+   h2_memory::overrides();
    return result;
 }
 

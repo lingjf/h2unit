@@ -150,11 +150,11 @@ SUITE(mfp)
 #if !defined _WIN32
    Case(B)
    {
-      OK(Ge(0x10000), __h2_mfp<Shape, int(int, int)>::B(&Shape::go));
-      OK(IsOdd && Lt(1000 * 8), __h2_mfp<Shape, int(int, int)>::B(&Shape::work));
-      OK(IsOdd && Lt(1000 * 8), __h2_mfp<Color, int(int, int)>::B(&Color::print));
-      OK(IsOdd && Lt(1000 * 8), __h2_mfp<Six, int(int, int)>::B(&Six::work));
-      OK(IsOdd && Lt(1000 * 8), __h2_mfp<Six, int(int, int)>::B(&Six::print));
+      // OK(Ge(0x10000), __h2_mfp<Shape, int(int, int)>::B(&Shape::go));
+      // OK(IsOdd && Lt(1000 * 8), __h2_mfp<Shape, int(int, int)>::B(&Shape::work));
+      // OK(IsOdd && Lt(1000 * 8), __h2_mfp<Color, int(int, int)>::B(&Color::print));
+      // OK(IsOdd && Lt(1000 * 8), __h2_mfp<Six, int(int, int)>::B(&Six::work));
+      // OK(IsOdd && Lt(1000 * 8), __h2_mfp<Six, int(int, int)>::B(&Six::print));
    }
 #endif
 

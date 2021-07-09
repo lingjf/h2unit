@@ -60,7 +60,7 @@ void parse_something1()
 void parse_something2()
 {
    static char* buffer = NULL;
-   if (buffer == NULL) { buffer = (char*)malloc(1000); }
+   if (buffer == NULL) { buffer = (char*)malloc(2000); }
 }
 
 SUITE(leak)

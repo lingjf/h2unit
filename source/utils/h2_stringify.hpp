@@ -1,5 +1,5 @@
 
-#if defined _WIN32
+#if defined _WIN32 || defined __arm__ || defined __arm64__ || defined __aarch64__
 struct h2_oss {
    h2_string s;
    h2_string& str() { return s; }

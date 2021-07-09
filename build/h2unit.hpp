@@ -1,5 +1,5 @@
 ﻿
-/* v5.10 2021-07-03 13:34:42 */
+/* v5.11 2021-07-10 07:57:22 */
 /* https://github.com/lingjf/h2unit */
 /* Apache Licence 2.0 */
 
@@ -9,7 +9,7 @@
 #ifndef __H2_UNIT_HPP__
 #define __H2_UNIT_HPP__
 
-#define H2UNIT_VERSION 5.10
+#define H2UNIT_VERSION 5.11
 
 #include <cstdio>      /* printf */
 #include <cstdlib>     /* malloc */
@@ -852,8 +852,6 @@ struct h2_load {
    static void* symbol_to_addr(unsigned long long symbol_offset);
    static unsigned long long addr_to_symbol(void* addr);
    static void* vtable_to_addr(unsigned long long offset);
-   static void backtrace_scope(void* &addr, int &size);
-   static bool in_main(void* addr);
 };
 // source/ld/h2_backtrace.hpp
 
@@ -869,7 +867,7 @@ struct h2_backtrace {
 
    bool operator==(const h2_backtrace&);
 
-   bool has(void* func, int size) const;
+   bool in(void* fps[]) const;
    void print(h2_vector<h2_string>& stacks) const;
    void print(int pad) const;
 };
@@ -999,10 +997,11 @@ struct h2_json {
 
 struct h2_exempt {
    h2_singleton(h2_exempt);
-   h2_list exempts;
+   void* fps[10000];
+   int nfp = 0;
    static void setup();
-   static void add_by_addr(void* func, int size = 0);
-   static void add_by_name(const char* func, int size = 0);
+   static void add_by_addr(void* func);
+   static void add_by_name(const char* func);
    static bool in(const h2_backtrace& bt);
 };
 
@@ -1037,7 +1036,7 @@ struct h2_memory {
 #define H2BLOCK(...) __H2BLOCK(#__VA_ARGS__, H2PP_UNIQUE(t_block))
 // source/utils/h2_stringify.hpp
 
-#if defined _WIN32
+#if defined _WIN32 || defined __arm__ || defined __arm64__ || defined __aarch64__
 struct h2_oss {
    h2_string s;
    h2_string& str() { return s; }
@@ -2596,6 +2595,10 @@ using h2_constructible =
 //  For virtual functions, it is 1 plus the virtual table offset (in bytes) of the function.
 //  The least-significant bit therefore discriminates between virtual and non-virtual functions.
 
+struct h2_test_plus {
+   virtual void test() {}
+};
+
 template <typename Class, typename Signature>
 struct h2_mfp;
 
@@ -2612,7 +2615,6 @@ struct h2_mfp<Class, ReturnType(Args...)> {
    union U {
       ReturnType (Class::*f)(Args...);
       void* p;
-      long long v;
    };
 
 #if defined _WIN32
@@ -2629,7 +2631,8 @@ struct h2_mfp<Class, ReturnType(Args...)> {
    static void* A(ReturnType (Class::*f)(Args...))
    {
       U u{f};
-      if (!is_virtual_member_function(u.v)) return u.p;
+      unsigned long long v = (unsigned long long)u.p;
+      if (!is_virtual_member_function(v)) return u.p;
       void** vtable = nullptr;
       Class* object = h2_constructible<Class>::O(alloca(sizeof(Class)));
       if (0 == (long long)object || 1 == (long long)object || 2 == (long long)object) {
@@ -2645,14 +2648,21 @@ struct h2_mfp<Class, ReturnType(Args...)> {
          vtable = *(void***)object;
       }
       if (!vtable) return nullptr;
-      return vtable[(u.v - 1) / sizeof(void*)];
+      return vtable[(v & ~1ULL) / sizeof(void*)];
    }
 
-   static bool is_virtual_member_function(long long uv)
+   static bool is_virtual_member_function(unsigned long long v)
    {
-      return (uv & 1) && (uv - 1) % sizeof(void*) == 0
-             /* assumption: virtual member count less than 1000 */
-             && (uv - 1) / sizeof(void*) < 1000;
+      union {
+         void (h2_test_plus::*f)();
+         void* p;
+      } t{&h2_test_plus::test};
+      if (1 & (unsigned long long)t.p) {
+         return (v & 1) && (v - 1) % sizeof(void*) == 0 && v < 1000 * sizeof(void*);
+         /* assumption: virtual member count less than 1000 */
+      } else {
+         return v % sizeof(void*) == 0 && v < 100 * sizeof(void*);
+      }
    }
 #endif
 };
@@ -3094,6 +3104,12 @@ struct h2_sock : h2_once {
    {
       h2_assert_g();
       h2_packet* p = h2_sock::fetch();
+      if (!p) {
+         h2_row r = "Outgoing packet miss Ptx(";
+         r.printf("green", "%s", e).printf("", ")");
+         h2_fail_g(h2_fail::new_normal(r, file, line), false);
+         return;
+      }
       h2_fail* fails = nullptr;
       h2_fail* fail_from = h2_matcher_cast<const char*>(from).matches(p->from.c_str(), 0, false, false);
       if (fail_from) {

@@ -1,7 +1,6 @@
 
 struct h2_stdio {
    h2_singleton(h2_stdio);
-   h2_stubs stubs;
    h2_string* buffer;
    bool stdout_capturable = false, stderr_capturable = false, syslog_capturable = false;
    size_t capture_length = 0;
@@ -93,48 +92,50 @@ struct h2_stdio {
       va_end(a);
    }
 
-   h2_stdio()
-   {
-#if !defined _WIN32
-      stubs.add((void*)::write, (void*)write, "write", __FILE__, __LINE__);
-      stubs.add((void*)::syslog, (void*)syslog, "syslog", __FILE__, __LINE__);
-      stubs.add((void*)::vsyslog, (void*)vsyslog, "vsyslog", __FILE__, __LINE__);
-#endif
-
-#if defined __GNUC__ && __GNUC__ > 5
-#else  // MACOS && WIN32 && GCC<=5
-      stubs.add((void*)::printf, (void*)printf, "printf", __FILE__, __LINE__);
-      stubs.add((void*)::vprintf, (void*)vprintf, "vprintf", __FILE__, __LINE__);
-      stubs.add((void*)::putchar, (void*)putchar, "putchar", __FILE__, __LINE__);
-      stubs.add((void*)::puts, (void*)puts, "puts", __FILE__, __LINE__);
-      stubs.add((void*)::fprintf, (void*)fprintf, "fprintf", __FILE__, __LINE__);
-      stubs.add((void*)::vfprintf, (void*)vfprintf, "vfprintf", __FILE__, __LINE__);
-      stubs.add((void*)::fputc, (void*)fputc, "fputc", __FILE__, __LINE__);
-      stubs.add((void*)::putc, (void*)fputc, "fputc", __FILE__, __LINE__);
-      stubs.add((void*)::fputs, (void*)fputs, "fputs", __FILE__, __LINE__);
-      stubs.add((void*)::fwrite, (void*)fwrite, "fwrite", __FILE__, __LINE__);
-#   if defined __GNUC__ && __GNUC__ <= 5
-      struct streambuf : public std::streambuf {
-         FILE* f;
-         int sync() override { return 0; }
-         int overflow(int c) override { return h2_stdio::fputc(c, f); }
-         streambuf(FILE* _f) : f(_f) { setp(nullptr, 0); }
-      };
-      static streambuf sb_out(stdout);
-      static streambuf sb_err(stderr);
-      std::cout.rdbuf(&sb_out); /* internal fwrite() called, but */
-      std::cerr.rdbuf(&sb_err);
-      std::clog.rdbuf(&sb_err); /* print to stderr */
-#   endif
-#endif
-
-
-   }
+   int test_count = 0;
+   static ssize_t test_write(int fd, const void* buf, size_t count) { return I().test_count += count, count; }
 
    static void initialize()
    {
       ::setbuf(stdout, 0);  // unbuffered
       I().buffer = new h2_string();
+      static h2_stubs stubs;
+
+#if !defined _WIN32
+      stubs.add((void*)::write, (void*)test_write, "write", __FILE__, __LINE__);
+      ::printf("\r"), ::fwrite("\r", 1, 1, stdout);
+      stubs.clear();
+#endif
+      if (I().test_count != 2) {
+         stubs.add((void*)::printf, (void*)printf, "printf", __FILE__, __LINE__);
+         stubs.add((void*)::vprintf, (void*)vprintf, "vprintf", __FILE__, __LINE__);
+         stubs.add((void*)::putchar, (void*)putchar, "putchar", __FILE__, __LINE__);
+         stubs.add((void*)::puts, (void*)puts, "puts", __FILE__, __LINE__);
+         stubs.add((void*)::fprintf, (void*)fprintf, "fprintf", __FILE__, __LINE__);
+         stubs.add((void*)::vfprintf, (void*)vfprintf, "vfprintf", __FILE__, __LINE__);
+         stubs.add((void*)::fputc, (void*)fputc, "fputc", __FILE__, __LINE__);
+         stubs.add((void*)::putc, (void*)fputc, "fputc", __FILE__, __LINE__);
+         stubs.add((void*)::fputs, (void*)fputs, "fputs", __FILE__, __LINE__);
+         stubs.add((void*)::fwrite, (void*)fwrite, "fwrite", __FILE__, __LINE__);
+#if defined __GNUC__
+         struct streambuf : public std::streambuf {
+            FILE* f;
+            int sync() override { return 0; }
+            int overflow(int c) override { return h2_stdio::fputc(c, f); }
+            streambuf(FILE* _f) : f(_f) { setp(nullptr, 0); }
+         };
+         static streambuf sb_out(stdout);
+         static streambuf sb_err(stderr);
+         std::cout.rdbuf(&sb_out); /* internal fwrite() called, but */
+         std::cerr.rdbuf(&sb_err);
+         std::clog.rdbuf(&sb_err); /* print to stderr */
+#endif
+      }
+#if !defined _WIN32
+      stubs.add((void*)::write, (void*)write, "write", __FILE__, __LINE__);
+      stubs.add((void*)::syslog, (void*)syslog, "syslog", __FILE__, __LINE__);
+      stubs.add((void*)::vsyslog, (void*)vsyslog, "vsyslog", __FILE__, __LINE__);
+#endif
    }
 
    void start_capture(bool _stdout, bool _stderr, bool _syslog)

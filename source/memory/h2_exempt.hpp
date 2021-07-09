@@ -1,10 +1,11 @@
 
 struct h2_exempt {
    h2_singleton(h2_exempt);
-   h2_list exempts;
+   void* fps[10000];
+   int nfp = 0;
    static void setup();
-   static void add_by_addr(void* func, int size = 0);
-   static void add_by_name(const char* func, int size = 0);
+   static void add_by_addr(void* func);
+   static void add_by_name(const char* func);
    static bool in(const h2_backtrace& bt);
 };
 

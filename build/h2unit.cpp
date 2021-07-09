@@ -1,5 +1,5 @@
 ﻿
-/* v5.10 2021-07-03 13:34:42 */
+/* v5.11 2021-07-10 07:57:22 */
 /* https://github.com/lingjf/h2unit */
 /* Apache Licence 2.0 */
 
@@ -149,11 +149,13 @@ static inline const char* h2_basename(const char* path)
 h2_inline bool h2_pattern::regex_match(const char* pattern, const char* subject, bool caseless)
 {
    bool result = false;
+   h2_memory::restores();
    try {  // c++11 support regex; gcc 4.8 start support regex, gcc 5.5 icase works.
       result = std::regex_match(subject, caseless ? std::regex(pattern, std::regex::icase) : std::regex(pattern));
    } catch (const std::regex_error&) {
       result = false;
    }
+   h2_memory::overrides();
    return result;
 }
 
@@ -1217,64 +1219,58 @@ h2_inline unsigned long long h2_load::addr_to_symbol(void* addr)
 #endif
 }
 
-h2_inline void h2_load::backtrace_scope(void*& addr, int& size)
-{
 #if defined __i386__ || defined __x86_64__ || defined _M_IX86 || defined _M_X64
-   unsigned char* p = (unsigned char*)addr;
 
-   // e8/ff15/ff25 call
-   if ((*p == 0xE8) || (*p == 0xFF && (*(p + 1) == 0x15 || *(p + 1) == 0x25))) {
-      size = 16;
-      return;
-   }
-   // e9 jmp
-   if (*p == 0xE9) {
-      addr = (void*)(p + 5 + *(long*)(p + 1));
-      backtrace_scope(addr, size);
-      return;
-   }
-   if (size == 0) {
-      for (unsigned char* q = p + 1;; q++) {
-         // cc      int 3;
-         // 5d c3   pop %ebp; ret;
-         // 5b c3   pop %ebx; ret;
-         // c9 c3   leave; ret;
-         if ((*q == 0xCC) ||
-             (*q == 0xC3 && ((*(q - 1) == 0x5D) || (*(q - 1) == 0x5B) || (*(q - 1) == 0xC9)))) {
-            size = (unsigned long)(q - p);
-            return;
-         }
-      }
-   }
-#endif
-}
-
-h2_inline bool h2_load::in_main(void* addr)
+static inline void* follow_jmp(void* pc)
 {
-   unsigned long long main_addr = (unsigned long long)&main;
-   /* main() 52~60 bytes code in linux MAC */
-   return main_addr < (unsigned long long)addr && (unsigned long long)addr < main_addr + 128;
+   unsigned char* p = (unsigned char*)pc;
+   if (!p) return NULL;
+
+#   if 0
+   if (p[0] == 0xff && p[1] == 0x25) {  // jmp [imm32]
+      unsigned char* p1 = sizeof(void*) == 8 ? p + 6 + *(long*)(p + 2) : *(unsigned char**)(p + 2);
+      unsigned char* p2 = *(unsigned char**)p1;
+      // ::printf("%p->%p: skipped over import table.\n", p, p2);  // skip over the import vector
+      return follow_jmp(p2);
+   }
+
+   if (p[0] == 0xeb) {  // jmp +imm8
+      unsigned char* p1 = p + 2 + *(char*)(p + 1);
+      // ::printf("%p->%p: skipped over short jump.\n", p, p1);  // skip over a patch jump
+      return follow_jmp(p1);
+   }
+#   endif
+
+   if (p[0] == 0xe9) {  // jmp +imm32
+      unsigned char* p1 = p + 5 + *(long*)(p + 1);
+      // ::printf("%p->%p: skipped over long jump.\n", p, p1);  // skip over a long jump if it is the target of the patch jump.
+      return follow_jmp(p1);
+   }
+   return (void*)p;
 }
+
+#elif defined __arm__ || defined __arm64__ || defined __aarch64__
+
+static inline void* follow_jmp(void* pc)
+{
+   return pc;
+}
+
+#endif
 // source/ld/h2_backtrace.cpp
 
-static inline bool demangle(const char* mangled, char* demangled, size_t len)
+#if !defined _WIN32
+static inline bool demangle(const char* mangle_name, char* demangle_name, size_t len)
 {
    int status = 0;
-#if !defined _WIN32
-   abi::__cxa_demangle(mangled, demangled, &len, &status);
-#endif
+   abi::__cxa_demangle(mangle_name, demangle_name, &len, &status);
    return status == 0;
 }
 
-#if !defined _WIN32
 static inline bool addr2line(unsigned long long addr, char* output, size_t len)
 {
    char t[256];
-#   if defined __APPLE__
-   sprintf(t, "atos -o %s 0x%llx", O.path, addr);
-#   else
-   sprintf(t, "addr2line -C -a -s -p -f -e %s -i %llx", O.path, addr);
-#   endif
+   sprintf(t, O.os == macOS ? "atos -o %s 0x%llx" : "addr2line -C -a -s -p -f -e %s -i %llx", O.path, addr);
    FILE* f = ::popen(t, "r");
    if (!f) return false;
    output = ::fgets(output, len, f);
@@ -1283,37 +1279,26 @@ static inline bool addr2line(unsigned long long addr, char* output, size_t len)
    for (int i = strlen(output) - 1; 0 <= i && ::isspace(output[i]); --i) output[i] = '\0';  //strip tail
    return true;
 }
-#endif
 
-static inline bool backtrace_extract(const char* backtrace_symbol_line, char* module, char* mangled, unsigned long long* offset)
+static inline bool backtrace_extract(const char* backtrace_line, char* mangle_name, unsigned long long* displacement)
 {
+#   if defined __APPLE__
    //MAC: `3   a.out  0x000000010e777f3d _ZN2h24hook6mallocEm + 45
-   if (3 == ::sscanf(backtrace_symbol_line, "%*s%s%*s%s + %llu", module, mangled, offset)) return true;
-
-   //Linux: with '-rdynamic' linker option
-   //Linux: module_name(mangled_function_name+relative_offset_to_function)[absolute_address]
+   if (2 == ::sscanf(backtrace_line, "%*s%*s%*s%s + %llu", mangle_name, displacement)) return true;
+#   else
+   static unsigned long long v1 = 0, v2 = 0, once = 0;
    //Linux: `./a.out(_ZN2h24task7executeEv+0x131)[0x55aa6bb840ef]
-   if (3 == ::sscanf(backtrace_symbol_line, "%[^(]%*[^_a-zA-Z]%127[^)+]+0x%llx", module, mangled, offset)) return true;
+   if (2 == ::sscanf(backtrace_line, "%*[^(]%*[^_a-zA-Z]%1023[^)+]+0x%llx", mangle_name, displacement)) return (bool)++v2;
 
-   mangled[0] = '\0';
-
-   //Linux: Ubuntu without '-rdynamic' linker option
-   //Linux: module_name(+relative_offset_to_function)[absolute_address]
    //Linux: `./a.out(+0xb1887)[0x560c5ed06887]
-   if (2 == ::sscanf(backtrace_symbol_line, "%[^(]%*[^+]+0x%llx", module, offset)) return true;
+   mangle_name[0] = '\0';
+   if (1 == ::sscanf(backtrace_line, "%*[^(]%*[^+]+0x%llx", displacement)) return (bool)++v1;
 
-   //Linux: Redhat/CentOS without '-rdynamic' linker option
-   //Linux: module_name()[relative_offset_to_module]
-   //Linux: `./a.out() [0x40b960]
-   if (2 == ::sscanf(backtrace_symbol_line, "%[^(]%*[^[][0x%llx", module, offset)) return true;
-
-   //Where?
-   //Linux: module_name[relative_offset_to_module]
-   //Linux: `./a.out[0x4060e7]
-   if (2 == ::sscanf(backtrace_symbol_line, "%[^[][0x%llx", module, offset)) return true;
-
+   if (!v2 && !once++) h2_color::prints("yellow", "\nAdd -rdynamic to linker options\n");
+#   endif
    return false;
 }
+#endif
 
 h2_inline h2_backtrace::h2_backtrace(int shift_) : shift(shift_)
 {
@@ -1335,12 +1320,39 @@ h2_inline bool h2_backtrace::operator==(const h2_backtrace& bt)
    return true;
 }
 
-h2_inline bool h2_backtrace::has(void* func, int size) const
+h2_inline bool h2_backtrace::in(void* fps[]) const
 {
-   for (int i = 0; i < count; ++i)
-      if (func <= frames[i] && (unsigned char*)frames[i] < ((unsigned char*)func) + size)
-         return true;
-   return false;
+   bool ret = false;
+#ifdef _WIN32
+   for (int i = shift; !ret && i < count; ++i) {
+      char buffer[sizeof(SYMBOL_INFO) + 256];
+      SYMBOL_INFO* symbol = (SYMBOL_INFO*)buffer;
+      symbol->SizeOfStruct = sizeof(SYMBOL_INFO);
+      symbol->MaxNameLen = 256;
+      if (SymFromAddr(O.hProcess, (DWORD64)(frames[i]), 0, symbol)) {
+         for (int j = 0; !ret && fps[j]; ++j)
+            if ((unsigned long long)symbol->Address == (unsigned long long)fps[j])
+               ret = true;
+         if (!strcmp("main", symbol->Name)) break;
+      }
+   }
+#else
+   h2_memory::restores();
+   char** backtrace_lines = backtrace_symbols(frames, count);
+   for (int i = shift; !ret && i < count; ++i) {
+      char mangle_name[1024] = "";
+      unsigned long long displacement = 0;
+      if (backtrace_extract(backtrace_lines[i], mangle_name, &displacement)) {
+         for (int j = 0; !ret && fps[j]; ++j)
+            if ((unsigned long long)frames[i] - displacement == (unsigned long long)fps[j])
+               ret = true;
+         if (!strcmp("main", mangle_name)) break;
+      }
+   }
+   free(backtrace_lines);
+   h2_memory::overrides();
+#endif
+   return ret;
 }
 
 h2_inline void h2_backtrace::print(h2_vector<h2_string>& stacks) const
@@ -1361,37 +1373,32 @@ h2_inline void h2_backtrace::print(h2_vector<h2_string>& stacks) const
       if (SymGetLineFromAddr64(O.hProcess, (DWORD64)(frames[i]), &dwDisplacement, &fileline))
          frame.sprintf("%s:%d", fileline.FileName, fileline.LineNumber);
       stacks.push_back(frame);
-      if (!strcmp("main", symbol->Name) || h2_load::in_main(frames[i]))
-         break;
+      if (!strcmp("main", symbol->Name)) break;
    }
 #else
    h2_memory::restores();
-   char** backtraces = backtrace_symbols(frames, count);
+   char** backtrace_lines = backtrace_symbols(frames, count);
    h2_memory::overrides();
 
    for (int i = shift; i < count; ++i) {
-      char *p = backtraces[i], module[256] = "", mangled[256] = "", demangled[256] = "", addr2lined[512] = "";
-      unsigned long long address = 0, offset = 0;
-      if (backtrace_extract(backtraces[i], module, mangled, &offset)) {
-         if (strlen(mangled)) {
-            p = mangled;
-            if (demangle(mangled, demangled, sizeof(demangled)))
-               if (strlen(demangled))
-                  p = demangled;
-         }
-         if (O.verbose || O.os != macOS /* for speed atos is slow */)
-            if (addr2line(h2_load::addr_to_symbol(frames[i]), addr2lined, sizeof(addr2lined)))
-               if (strlen(addr2lined))
-                  p = addr2lined;
-      }
+      char* p = backtrace_lines[i];
+      char mangle_name[1024] = "", demangle_name[1024] = "", symbolic[1024] = "";
+      unsigned long long displacement = 0;
+      if (backtrace_extract(backtrace_lines[i], mangle_name, &displacement))
+         if (strlen(mangle_name))
+            if (demangle(p = mangle_name, demangle_name, sizeof(demangle_name)))
+               if (strlen(demangle_name))
+                  p = demangle_name;
+      if (O.verbose || O.os != macOS /* atos is slow */)
+         if (addr2line(h2_load::addr_to_symbol(frames[i]), symbolic, sizeof(symbolic)))
+            if (strlen(symbolic))
+               p = symbolic;
       stacks.push_back(p);
-
-      if (!strcmp("main", mangled) || !strcmp("main", demangled) || h2_load::in_main(frames[i]))
-         break;
+      if (!strcmp("main", mangle_name)) break;
    }
 
    h2_memory::restores();
-   free(backtraces);
+   free(backtrace_lines);
    h2_memory::overrides();
 #endif
 }
@@ -3218,7 +3225,8 @@ struct h2_stack {
    h2_piece* new_piece(const char* who, size_t size, size_t alignment, const char* fill)
    {
       h2_backtrace bt(O.os == macOS ? 3 : 2);
-      h2_block* b = h2_exempt::in(bt) ? h2_list_bottom_entry(blocks, h2_block, x) : h2_list_top_entry(blocks, h2_block, x);
+
+      h2_block* b = bt.in(h2_exempt::I().fps) ? h2_list_bottom_entry(blocks, h2_block, x) : h2_list_top_entry(blocks, h2_block, x);
       return b ? b->new_piece(who, size, alignment, fill ? *fill : 0, fill, bt) : nullptr;
    }
 
@@ -3229,7 +3237,7 @@ struct h2_stack {
          if (piece) return p->rel_piece(who, piece);
       }
       h2_backtrace bt(O.os == macOS ? 3 : 2);
-      if (!h2_exempt::in(bt))
+      if (!bt.in(h2_exempt::I().fps))
          h2_debug("Warning: %s %p not found!", who, ptr);
       return nullptr;
    }
@@ -3682,104 +3690,32 @@ h2_inline h2_memory::stack::block::~block()
 }
 // source/memory/h2_exempt.cpp
 
+#define H2_TIME_STRING "SUN JAN 1 00:00:00 2012\n"
+
 struct h2_exempt_stub {  // allocate memory inside asymmetrically
-   static char* asctime(const struct tm* timeptr)
-   {
-      static char st[256];
-      asctime_r(timeptr, st);
-      return st;
-   }
-
-   static char* asctime_r(const struct tm* timeptr, char* buf)
-   {
-      h2_memory::restores();
-#if defined _WIN32
-      asctime_s(buf, 256, timeptr);
-#else
-      for (h2::h2_stub_temporary_restore t((void*)::asctime_r); t;) buf = ::asctime_r(timeptr, buf);
-#endif
-      h2_memory::overrides();
-      return buf;
-   }
-
-   static char* ctime(const time_t* clock)
-   {
-      static char st[256];
-      ctime_r(clock, st);
-      return st;
-   }
-
-   static char* ctime_r(const time_t* clock, char* buf)
-   {
-      struct tm t;
-      return asctime_r(gmtime_r(clock, &t), buf);
-   }
-
-   static struct tm* localtime(const time_t* clock)
-   {
-      return gmtime(clock);
-   }
-
-   static struct tm* localtime_r(const time_t* timep, struct tm* result)
-   {
-      return gmtime_r(timep, result);
-   }
+   static time_t mktime(struct tm* timeptr) { return 1325347200; }
+   static char* asctime(const struct tm* timeptr) { return H2_TIME_STRING; }
+   static char* asctime_r(const struct tm* timeptr, char* buf) { return strcpy(buf, H2_TIME_STRING); }
+   static char* ctime(const time_t* clock) { return H2_TIME_STRING; }
+   static char* ctime_r(const time_t* clock, char* buf) { return strcpy(buf, H2_TIME_STRING); }
+   static struct tm* localtime(const time_t* clock) { return gmtime(clock); }
+   static struct tm* localtime_r(const time_t* timep, struct tm* result) { return gmtime_r(timep, result); }
+   static struct tm* gmtime(const time_t* clock) { return gmtime_r(clock, nullptr); }
 
    static struct tm* gmtime_r(const time_t* clock, struct tm* result)
    {
-      h2_memory::restores();
-#if defined _WIN32
-      ::gmtime_s(result, clock);
-#else
-      for (h2::h2_stub_temporary_restore t((void*)::gmtime_r); t;) result = ::gmtime_r(clock, result);
-#endif
-      h2_memory::overrides();
-      return result;
-   }
-
-   static struct tm* gmtime(const time_t* clock)
-   {
       static struct tm st;
-      gmtime_r(clock, &st);
-      return &st;
-   }
-
-   static time_t mktime(struct tm* timeptr)
-   {
-      time_t ret = 0;
-      h2_memory::restores();
-      for (h2::h2_stub_temporary_restore t((void*)::mktime); t;) ret = ::mktime(timeptr);
-      h2_memory::overrides();
-      return ret;
-   }
-
-   static double strtod(const char* nptr, char** endptr)
-   {
-      double ret = 0;
-      h2_memory::restores();
-      for (h2::h2_stub_temporary_restore t((void*)::strtod); t;) ret = ::strtod(nptr, endptr);
-      h2_memory::overrides();
-      return ret;
-   }
-
-   static long double strtold(const char* nptr, char** endptr)
-   {
-      double ret = 0;
-      h2_memory::restores();
-      for (h2::h2_stub_temporary_restore t((void*)::strtold); t;) ret = ::strtold(nptr, endptr);
-      h2_memory::overrides();
-      return ret;
-   }
-};
-
-struct h2_exemption : h2_libc {
-   h2_list x;
-   void* base;
-   int size;
-
-   h2_exemption(void* _base, int _size = 0) : base(_base), size(_size)
-   {
-      h2_load::backtrace_scope(base, size);
+      if (!result) result = &st;
+      memset(result, 0, sizeof(struct tm));
+      result->tm_sec = 0;
+      result->tm_min = 0;
+      result->tm_hour = 0;
+      result->tm_mday = 1;
+      result->tm_mon = 0;
+      result->tm_year = 2012 - 1900;
+      result->tm_wday = 0;
+      result->tm_yday = 0;
+      return result;
    }
 };
 
@@ -3791,63 +3727,45 @@ h2_inline void h2_exempt::setup()
    stubs.add((void*)::ctime, (void*)h2_exempt_stub::ctime, "ctime", __FILE__, __LINE__);
    stubs.add((void*)::asctime, (void*)h2_exempt_stub::asctime, "asctime", __FILE__, __LINE__);
    stubs.add((void*)::localtime, (void*)h2_exempt_stub::localtime, "localtime", __FILE__, __LINE__);
-#if !defined _WIN32
+   stubs.add((void*)::mktime, (void*)h2_exempt_stub::mktime, "mktime", __FILE__, __LINE__);
+
+#if defined _WIN32
+#else
    stubs.add((void*)::gmtime_r, (void*)h2_exempt_stub::gmtime_r, "gmtime_r", __FILE__, __LINE__);
    stubs.add((void*)::ctime_r, (void*)h2_exempt_stub::ctime_r, "ctime_r", __FILE__, __LINE__);
    stubs.add((void*)::asctime_r, (void*)h2_exempt_stub::asctime_r, "asctime_r", __FILE__, __LINE__);
    stubs.add((void*)::localtime_r, (void*)h2_exempt_stub::localtime_r, "localtime_r", __FILE__, __LINE__);
-#endif
-   if (O.os == Linux) stubs.add((void*)::mktime, (void*)h2_exempt_stub::mktime, "mktime", __FILE__, __LINE__);
-   if (O.os == macOS) stubs.add((void*)::strtod, (void*)h2_exempt_stub::strtod, "strtod", __FILE__, __LINE__);
-   if (O.os == macOS) stubs.add((void*)::strtold, (void*)h2_exempt_stub::strtold, "strtold", __FILE__, __LINE__);
-
-#if defined _WIN32
-   add_by_name("h2::h2_defer_failure::~h2_defer_failure");
-#else
-#   ifdef __APPLE__
-   add_by_addr((void*)::vsnprintf_l);
-   add_by_addr((void*)abi::__cxa_throw);
-#   endif
    add_by_addr((void*)::sscanf);
    add_by_addr((void*)::sprintf);
    add_by_addr((void*)::vsnprintf);
-   add_by_addr((void*)h2_pattern::regex_match);  // linux is 0xcb size, MAC is 0x100 (gap to next symbol)
+#   ifdef __APPLE__
+   add_by_addr((void*)::strftime_l);
+   add_by_addr((void*)::strtod_l);
+   add_by_addr((void*)::strtold);
+   add_by_addr((void*)::strtof_l);
+   add_by_addr((void*)abi::__cxa_throw);
+#   endif
 #endif
 }
 
-h2_inline void h2_exempt::add_by_name(const char* func, int size)
+h2_inline void h2_exempt::add_by_name(const char* fn)
 {
    h2_symbol* res[16];
-   int n = h2_nm::get_by_name(func, res, 16);
-   if (n == 0) {
-      h2_color::prints("yellow", "\nDon't find %s\n", func);
-   } else if (n > 1) {
-      h2_color::prints("yellow", "\nFind multiple %s :\n", func);
+   int n = h2_nm::get_by_name(fn, res, 16);
+   if (n != 1) {
+      h2_color::prints("yellow", n ? "\nFind multiple exempt %s :\n" : "\nDon't find exempt %s\n", fn);
       for (int i = 0; i < n; ++i)
          h2_color::prints("yellow", "  %d. %s \n", i + 1, res[i]->name);
    }
 
-   for (int i = 0; i < n; ++i) {
-      I().exempts.push_back((new h2_exemption(h2_load::symbol_to_addr(res[i]->offset), res[i]->size))->x);
-   }
+   for (int i = 0; i < n; ++i)
+      add_by_addr(h2_load::symbol_to_addr(res[i]->offset));
 }
 
-h2_inline void h2_exempt::add_by_addr(void* func, int size)
+h2_inline void h2_exempt::add_by_addr(void* fp)
 {
-   unsigned long long symbol_offset = h2_load::addr_to_symbol(func);
-   h2_symbol* res = h2_nm::get_by_offset(symbol_offset);
-   if (res) {
-      func = h2_load::symbol_to_addr(res->offset);
-      size = res->size;
-   }
-   I().exempts.push_back((new h2_exemption((void*)func, size))->x);
-}
-
-h2_inline bool h2_exempt::in(const h2_backtrace& bt)
-{
-   h2_list_for_each_entry (p, I().exempts, h2_exemption, x)
-      if (bt.has(p->base, p->size)) return true;
-   return false;
+   I().fps[I().nfp++] = follow_jmp(fp);
+   I().fps[I().nfp] = nullptr;
 }
 
 // source/exception/h2_exception.cpp
@@ -3871,7 +3789,13 @@ h2_inline void h2_exception::initialize()
 // https://www.codeproject.com/Articles/25198/Generic-Thunk-with-5-combinations-of-Calling-Conve
 
 struct h2_e9 {
-   static constexpr int size = sizeof(void*) == 8 ? 2 + 8 + 2 : 5;
+#if defined __i386__ || defined _M_IX86
+   static constexpr int size = 1 + 4;
+#elif defined __x86_64__ || defined _M_X64
+   static constexpr int size = 2 + 8 + 2;
+#elif defined __arm__ || defined __arm64__ || defined __aarch64__
+   static constexpr int size = 4 + 4 + 8;
+#endif
 
    static bool save(void* origin_fp, unsigned char* saved)
    {
@@ -3908,12 +3832,42 @@ struct h2_e9 {
          *(long*)(&C[1]) = delta;
          memcpy(I, C, sizeof(C));
       }
+#elif defined __arm__ || defined __arm64__ || defined __aarch64__
+
+#   pragma pack(push, 1)
+      struct ldr_br_dst {
+         unsigned int ldr;
+         unsigned int br;
+         void* dstfp;
+      };
+      struct b_offset {
+         unsigned int b : 8;
+         unsigned int offset : 24;
+      };
+#   pragma pack(pop)
+      long long offset = (unsigned char*)substitute_fp - I;
+
+      if (1 || offset < -8388607 - 1 || 0x7fffff < offset) {  // signed 2^24
+         struct ldr_br_dst* p = static_cast<ldr_br_dst*>(origin_fp);
+         p->ldr = 0x58000000 | ((8 / 4) << 5) | 17;  // x17 register store dstfp
+         p->br = 0xD61F0000 | (17 << 5);             // jmp x17
+         p->dstfp = substitute_fp;
+      } else {
+         struct b_offset* p = static_cast<b_offset*>(origin_fp);
+         p->b = offset >= 0 ? 0x14 : 0x17;  //b 14 forward 17 backward
+         p->offset = (unsigned long)((offset / 4) & 0xffffff);
+      }
+
+      __builtin___clear_cache((char*)I, (char*)I + size);
 #endif
    }
 
    static void reset(void* origin_fp, unsigned char* saved)
    {
       memcpy(origin_fp, saved, size);
+#if defined __arm__ || defined __arm64__ || defined __aarch64__
+      __builtin___clear_cache(static_cast<char*>(origin_fp), static_cast<char*>(origin_fp) + size);
+#endif
    }
 };
 // source/stub/h2_native.cpp
@@ -4599,7 +4553,6 @@ h2_inline h2_sock::~h2_sock()
 
 struct h2_stdio {
    h2_singleton(h2_stdio);
-   h2_stubs stubs;
    h2_string* buffer;
    bool stdout_capturable = false, stderr_capturable = false, syslog_capturable = false;
    size_t capture_length = 0;
@@ -4691,48 +4644,50 @@ struct h2_stdio {
       va_end(a);
    }
 
-   h2_stdio()
-   {
-#if !defined _WIN32
-      stubs.add((void*)::write, (void*)write, "write", __FILE__, __LINE__);
-      stubs.add((void*)::syslog, (void*)syslog, "syslog", __FILE__, __LINE__);
-      stubs.add((void*)::vsyslog, (void*)vsyslog, "vsyslog", __FILE__, __LINE__);
-#endif
-
-#if defined __GNUC__ && __GNUC__ > 5
-#else  // MACOS && WIN32 && GCC<=5
-      stubs.add((void*)::printf, (void*)printf, "printf", __FILE__, __LINE__);
-      stubs.add((void*)::vprintf, (void*)vprintf, "vprintf", __FILE__, __LINE__);
-      stubs.add((void*)::putchar, (void*)putchar, "putchar", __FILE__, __LINE__);
-      stubs.add((void*)::puts, (void*)puts, "puts", __FILE__, __LINE__);
-      stubs.add((void*)::fprintf, (void*)fprintf, "fprintf", __FILE__, __LINE__);
-      stubs.add((void*)::vfprintf, (void*)vfprintf, "vfprintf", __FILE__, __LINE__);
-      stubs.add((void*)::fputc, (void*)fputc, "fputc", __FILE__, __LINE__);
-      stubs.add((void*)::putc, (void*)fputc, "fputc", __FILE__, __LINE__);
-      stubs.add((void*)::fputs, (void*)fputs, "fputs", __FILE__, __LINE__);
-      stubs.add((void*)::fwrite, (void*)fwrite, "fwrite", __FILE__, __LINE__);
-#   if defined __GNUC__ && __GNUC__ <= 5
-      struct streambuf : public std::streambuf {
-         FILE* f;
-         int sync() override { return 0; }
-         int overflow(int c) override { return h2_stdio::fputc(c, f); }
-         streambuf(FILE* _f) : f(_f) { setp(nullptr, 0); }
-      };
-      static streambuf sb_out(stdout);
-      static streambuf sb_err(stderr);
-      std::cout.rdbuf(&sb_out); /* internal fwrite() called, but */
-      std::cerr.rdbuf(&sb_err);
-      std::clog.rdbuf(&sb_err); /* print to stderr */
-#   endif
-#endif
-
-
-   }
+   int test_count = 0;
+   static ssize_t test_write(int fd, const void* buf, size_t count) { return I().test_count += count, count; }
 
    static void initialize()
    {
       ::setbuf(stdout, 0);  // unbuffered
       I().buffer = new h2_string();
+      static h2_stubs stubs;
+
+#if !defined _WIN32
+      stubs.add((void*)::write, (void*)test_write, "write", __FILE__, __LINE__);
+      ::printf("\r"), ::fwrite("\r", 1, 1, stdout);
+      stubs.clear();
+#endif
+      if (I().test_count != 2) {
+         stubs.add((void*)::printf, (void*)printf, "printf", __FILE__, __LINE__);
+         stubs.add((void*)::vprintf, (void*)vprintf, "vprintf", __FILE__, __LINE__);
+         stubs.add((void*)::putchar, (void*)putchar, "putchar", __FILE__, __LINE__);
+         stubs.add((void*)::puts, (void*)puts, "puts", __FILE__, __LINE__);
+         stubs.add((void*)::fprintf, (void*)fprintf, "fprintf", __FILE__, __LINE__);
+         stubs.add((void*)::vfprintf, (void*)vfprintf, "vfprintf", __FILE__, __LINE__);
+         stubs.add((void*)::fputc, (void*)fputc, "fputc", __FILE__, __LINE__);
+         stubs.add((void*)::putc, (void*)fputc, "fputc", __FILE__, __LINE__);
+         stubs.add((void*)::fputs, (void*)fputs, "fputs", __FILE__, __LINE__);
+         stubs.add((void*)::fwrite, (void*)fwrite, "fwrite", __FILE__, __LINE__);
+#if defined __GNUC__
+         struct streambuf : public std::streambuf {
+            FILE* f;
+            int sync() override { return 0; }
+            int overflow(int c) override { return h2_stdio::fputc(c, f); }
+            streambuf(FILE* _f) : f(_f) { setp(nullptr, 0); }
+         };
+         static streambuf sb_out(stdout);
+         static streambuf sb_err(stderr);
+         std::cout.rdbuf(&sb_out); /* internal fwrite() called, but */
+         std::cerr.rdbuf(&sb_err);
+         std::clog.rdbuf(&sb_err); /* print to stderr */
+#endif
+      }
+#if !defined _WIN32
+      stubs.add((void*)::write, (void*)write, "write", __FILE__, __LINE__);
+      stubs.add((void*)::syslog, (void*)syslog, "syslog", __FILE__, __LINE__);
+      stubs.add((void*)::vsyslog, (void*)vsyslog, "vsyslog", __FILE__, __LINE__);
+#endif
    }
 
    void start_capture(bool _stdout, bool _stderr, bool _syslog)

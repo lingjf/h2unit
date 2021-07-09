@@ -11,7 +11,7 @@ struct h2_backtrace {
 
    bool operator==(const h2_backtrace&);
 
-   bool has(void* func, int size) const;
+   bool in(void* fps[]) const;
    void print(h2_vector<h2_string>& stacks) const;
    void print(int pad) const;
 };

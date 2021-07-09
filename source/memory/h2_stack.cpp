@@ -25,7 +25,8 @@ struct h2_stack {
    h2_piece* new_piece(const char* who, size_t size, size_t alignment, const char* fill)
    {
       h2_backtrace bt(O.os == macOS ? 3 : 2);
-      h2_block* b = h2_exempt::in(bt) ? h2_list_bottom_entry(blocks, h2_block, x) : h2_list_top_entry(blocks, h2_block, x);
+
+      h2_block* b = bt.in(h2_exempt::I().fps) ? h2_list_bottom_entry(blocks, h2_block, x) : h2_list_top_entry(blocks, h2_block, x);
       return b ? b->new_piece(who, size, alignment, fill ? *fill : 0, fill, bt) : nullptr;
    }
 
@@ -36,7 +37,7 @@ struct h2_stack {
          if (piece) return p->rel_piece(who, piece);
       }
       h2_backtrace bt(O.os == macOS ? 3 : 2);
-      if (!h2_exempt::in(bt))
+      if (!bt.in(h2_exempt::I().fps))
          h2_debug("Warning: %s %p not found!", who, ptr);
       return nullptr;
    }

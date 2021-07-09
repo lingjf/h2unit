@@ -1,22 +1,16 @@
 
-static inline bool demangle(const char* mangled, char* demangled, size_t len)
+#if !defined _WIN32
+static inline bool demangle(const char* mangle_name, char* demangle_name, size_t len)
 {
    int status = 0;
-#if !defined _WIN32
-   abi::__cxa_demangle(mangled, demangled, &len, &status);
-#endif
+   abi::__cxa_demangle(mangle_name, demangle_name, &len, &status);
    return status == 0;
 }
 
-#if !defined _WIN32
 static inline bool addr2line(unsigned long long addr, char* output, size_t len)
 {
    char t[256];
-#   if defined __APPLE__
-   sprintf(t, "atos -o %s 0x%llx", O.path, addr);
-#   else
-   sprintf(t, "addr2line -C -a -s -p -f -e %s -i %llx", O.path, addr);
-#   endif
+   sprintf(t, O.os == macOS ? "atos -o %s 0x%llx" : "addr2line -C -a -s -p -f -e %s -i %llx", O.path, addr);
    FILE* f = ::popen(t, "r");
    if (!f) return false;
    output = ::fgets(output, len, f);
@@ -25,37 +19,26 @@ static inline bool addr2line(unsigned long long addr, char* output, size_t len)
    for (int i = strlen(output) - 1; 0 <= i && ::isspace(output[i]); --i) output[i] = '\0';  //strip tail
    return true;
 }
-#endif
 
-static inline bool backtrace_extract(const char* backtrace_symbol_line, char* module, char* mangled, unsigned long long* offset)
+static inline bool backtrace_extract(const char* backtrace_line, char* mangle_name, unsigned long long* displacement)
 {
+#   if defined __APPLE__
    //MAC: `3   a.out  0x000000010e777f3d _ZN2h24hook6mallocEm + 45
-   if (3 == ::sscanf(backtrace_symbol_line, "%*s%s%*s%s + %llu", module, mangled, offset)) return true;
-
-   //Linux: with '-rdynamic' linker option
-   //Linux: module_name(mangled_function_name+relative_offset_to_function)[absolute_address]
+   if (2 == ::sscanf(backtrace_line, "%*s%*s%*s%s + %llu", mangle_name, displacement)) return true;
+#   else
+   static unsigned long long v1 = 0, v2 = 0, once = 0;
    //Linux: `./a.out(_ZN2h24task7executeEv+0x131)[0x55aa6bb840ef]
-   if (3 == ::sscanf(backtrace_symbol_line, "%[^(]%*[^_a-zA-Z]%127[^)+]+0x%llx", module, mangled, offset)) return true;
+   if (2 == ::sscanf(backtrace_line, "%*[^(]%*[^_a-zA-Z]%1023[^)+]+0x%llx", mangle_name, displacement)) return (bool)++v2;
 
-   mangled[0] = '\0';
-
-   //Linux: Ubuntu without '-rdynamic' linker option
-   //Linux: module_name(+relative_offset_to_function)[absolute_address]
    //Linux: `./a.out(+0xb1887)[0x560c5ed06887]
-   if (2 == ::sscanf(backtrace_symbol_line, "%[^(]%*[^+]+0x%llx", module, offset)) return true;
+   mangle_name[0] = '\0';
+   if (1 == ::sscanf(backtrace_line, "%*[^(]%*[^+]+0x%llx", displacement)) return (bool)++v1;
 
-   //Linux: Redhat/CentOS without '-rdynamic' linker option
-   //Linux: module_name()[relative_offset_to_module]
-   //Linux: `./a.out() [0x40b960]
-   if (2 == ::sscanf(backtrace_symbol_line, "%[^(]%*[^[][0x%llx", module, offset)) return true;
-
-   //Where?
-   //Linux: module_name[relative_offset_to_module]
-   //Linux: `./a.out[0x4060e7]
-   if (2 == ::sscanf(backtrace_symbol_line, "%[^[][0x%llx", module, offset)) return true;
-
+   if (!v2 && !once++) h2_color::prints("yellow", "\nAdd -rdynamic to linker options\n");
+#   endif
    return false;
 }
+#endif
 
 h2_inline h2_backtrace::h2_backtrace(int shift_) : shift(shift_)
 {
@@ -77,12 +60,39 @@ h2_inline bool h2_backtrace::operator==(const h2_backtrace& bt)
    return true;
 }
 
-h2_inline bool h2_backtrace::has(void* func, int size) const
+h2_inline bool h2_backtrace::in(void* fps[]) const
 {
-   for (int i = 0; i < count; ++i)
-      if (func <= frames[i] && (unsigned char*)frames[i] < ((unsigned char*)func) + size)
-         return true;
-   return false;
+   bool ret = false;
+#ifdef _WIN32
+   for (int i = shift; !ret && i < count; ++i) {
+      char buffer[sizeof(SYMBOL_INFO) + 256];
+      SYMBOL_INFO* symbol = (SYMBOL_INFO*)buffer;
+      symbol->SizeOfStruct = sizeof(SYMBOL_INFO);
+      symbol->MaxNameLen = 256;
+      if (SymFromAddr(O.hProcess, (DWORD64)(frames[i]), 0, symbol)) {
+         for (int j = 0; !ret && fps[j]; ++j)
+            if ((unsigned long long)symbol->Address == (unsigned long long)fps[j])
+               ret = true;
+         if (!strcmp("main", symbol->Name)) break;
+      }
+   }
+#else
+   h2_memory::restores();
+   char** backtrace_lines = backtrace_symbols(frames, count);
+   for (int i = shift; !ret && i < count; ++i) {
+      char mangle_name[1024] = "";
+      unsigned long long displacement = 0;
+      if (backtrace_extract(backtrace_lines[i], mangle_name, &displacement)) {
+         for (int j = 0; !ret && fps[j]; ++j)
+            if ((unsigned long long)frames[i] - displacement == (unsigned long long)fps[j])
+               ret = true;
+         if (!strcmp("main", mangle_name)) break;
+      }
+   }
+   free(backtrace_lines);
+   h2_memory::overrides();
+#endif
+   return ret;
 }
 
 h2_inline void h2_backtrace::print(h2_vector<h2_string>& stacks) const
@@ -103,37 +113,32 @@ h2_inline void h2_backtrace::print(h2_vector<h2_string>& stacks) const
       if (SymGetLineFromAddr64(O.hProcess, (DWORD64)(frames[i]), &dwDisplacement, &fileline))
          frame.sprintf("%s:%d", fileline.FileName, fileline.LineNumber);
       stacks.push_back(frame);
-      if (!strcmp("main", symbol->Name) || h2_load::in_main(frames[i]))
-         break;
+      if (!strcmp("main", symbol->Name)) break;
    }
 #else
    h2_memory::restores();
-   char** backtraces = backtrace_symbols(frames, count);
+   char** backtrace_lines = backtrace_symbols(frames, count);
    h2_memory::overrides();
 
    for (int i = shift; i < count; ++i) {
-      char *p = backtraces[i], module[256] = "", mangled[256] = "", demangled[256] = "", addr2lined[512] = "";
-      unsigned long long address = 0, offset = 0;
-      if (backtrace_extract(backtraces[i], module, mangled, &offset)) {
-         if (strlen(mangled)) {
-            p = mangled;
-            if (demangle(mangled, demangled, sizeof(demangled)))
-               if (strlen(demangled))
-                  p = demangled;
-         }
-         if (O.verbose || O.os != macOS /* for speed atos is slow */)
-            if (addr2line(h2_load::addr_to_symbol(frames[i]), addr2lined, sizeof(addr2lined)))
-               if (strlen(addr2lined))
-                  p = addr2lined;
-      }
+      char* p = backtrace_lines[i];
+      char mangle_name[1024] = "", demangle_name[1024] = "", symbolic[1024] = "";
+      unsigned long long displacement = 0;
+      if (backtrace_extract(backtrace_lines[i], mangle_name, &displacement))
+         if (strlen(mangle_name))
+            if (demangle(p = mangle_name, demangle_name, sizeof(demangle_name)))
+               if (strlen(demangle_name))
+                  p = demangle_name;
+      if (O.verbose || O.os != macOS /* atos is slow */)
+         if (addr2line(h2_load::addr_to_symbol(frames[i]), symbolic, sizeof(symbolic)))
+            if (strlen(symbolic))
+               p = symbolic;
       stacks.push_back(p);
-
-      if (!strcmp("main", mangled) || !strcmp("main", demangled) || h2_load::in_main(frames[i]))
-         break;
+      if (!strcmp("main", mangle_name)) break;
    }
 
    h2_memory::restores();
-   free(backtraces);
+   free(backtrace_lines);
    h2_memory::overrides();
 #endif
 }
