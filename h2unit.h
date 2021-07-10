@@ -1,5 +1,5 @@
 ﻿
-/* v5.11 2021-07-10 15:00:59 */
+/* v5.11 2021-07-10 16:48:48 */
 /* https://github.com/lingjf/h2unit */
 /* Apache Licence 2.0 */
 
@@ -5164,7 +5164,7 @@ h2_inline int h2_nm::get_by_name(const char* name, h2_symbol* res[], int n)
       if (!parentheses) continue;
       if (!strncmp_reverse(p->name, parentheses, name, name + len, len)) continue;  // compare function name
       char* func = parentheses - len;
-      if (p->name < func && func[-1] != ':' && func[-2] != ':') continue;  // strip namespace
+      if (p->name < func && (func[-1] != ':' || func[-2] != ':')) continue;  // strip namespace
       if (count < n) res[count++] = p;
    }
    return count;

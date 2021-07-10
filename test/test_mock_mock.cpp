@@ -409,11 +409,11 @@ SUITE(mock omit checkin)
 
 SUITE(mock by function name)
 {
-   // Case(time)
-   // {
-   //    MOCK("time", time_t, (time_t*), Once()) { return 42; };
-   //    OK(42, time(NULL));
-   // }
+   Todo(time)  // nm undefined time()
+   {
+      MOCK("time", time_t, (time_t*), Once()) { return 42; };
+      OK(42, time(NULL));
+   }
 
    Case(foobar)
    {

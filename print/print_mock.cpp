@@ -77,7 +77,7 @@ static time_t STUB_time(time_t* x)
 
 CASE(no function)
 {
-   STUB("Time", STUB_time);
+   STUB("time", STUB_time);
    OK(42, time(NULL));
 }
 
