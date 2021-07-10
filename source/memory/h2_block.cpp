@@ -81,10 +81,10 @@ struct h2_block : h2_libc {
       return nullptr;
    }
 
-   h2_piece* host_piece(const void* addr)
+   h2_piece* host_piece(const void* ptr)
    {
       h2_list_for_each_entry (p, pieces, h2_piece, x)
-         if (p->in_page_range((const unsigned char*)addr)) return p;
+         if (p->in_page_range((const unsigned char*)ptr)) return p;
       return nullptr;
    }
 };

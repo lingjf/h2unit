@@ -1,10 +1,10 @@
 
-h2_inline bool h2_numeric::not2n(unsigned x)
+static inline bool not2n(unsigned x)
 {
    return x & (x - 1);
 }
 
-h2_inline unsigned h2_numeric::mask2n(unsigned x)
+static inline unsigned mask2n(unsigned x)
 {
    x |= (x >> 1);
    x |= (x >> 2);
@@ -14,29 +14,12 @@ h2_inline unsigned h2_numeric::mask2n(unsigned x)
    return x;
 }
 
-h2_inline int h2_numeric::hex_to_byte(char c)
+static inline int hex_to_byte(char c)
 {
    return '0' <= c && c <= '9' ? c - '0' : ('A' <= c && c <= 'F' ? c - 'A' + 10 : ('a' <= c && c <= 'f' ? c - 'a' + 10 : -1));
 }
 
-h2_inline bool h2_numeric::is_bin_string(const char* s)
-{
-   for (const char* p = s; *p; p++)
-      if (*p != '0' && *p != '1' && !::isspace(*p))
-         return false;
-   return true;
-}
-
-h2_inline bool h2_numeric::is_hex_string(const char* s)
-{
-   if (s[0] == '0' && ::tolower(s[1]) == 'x') return true;
-   for (const char* p = s; *p; p++)
-      if (!::isxdigit(*p) && !::isspace(*p))
-         return false;
-   return true;
-}
-
-h2_inline int h2_numeric::bin_to_bits(const char* bin, unsigned char* bytes)
+static inline int bin_to_bits(const char* bin, unsigned char* bytes)
 {
    memset(bytes, 0, strlen(bin));
    int c = 0;
@@ -50,7 +33,7 @@ h2_inline int h2_numeric::bin_to_bits(const char* bin, unsigned char* bytes)
    return c;
 }
 
-h2_inline int h2_numeric::hex_to_bits(const char* hex, unsigned char* bytes)
+static inline int hex_to_bits(const char* hex, unsigned char* bytes)
 {
    memset(bytes, 0, strlen(hex));
    if (hex[0] == '0' && ::tolower(hex[1]) == 'x') hex += 2;
@@ -67,7 +50,7 @@ h2_inline int h2_numeric::hex_to_bits(const char* hex, unsigned char* bytes)
    return 8 * c / 2;
 }
 
-h2_inline int h2_numeric::hex_to_bytes(const char* hex, unsigned char* bytes)
+static inline int hex_to_bytes(const char* hex, unsigned char* bytes)
 {
    char b;
    int i = 0, c = 0;
@@ -87,12 +70,38 @@ h2_inline int h2_numeric::hex_to_bytes(const char* hex, unsigned char* bytes)
    return c / 2;
 }
 
-h2_inline bool h2_numeric::bits_equal(const unsigned char* b1, const unsigned char* b2, int nbits)
+static inline bool bits_equal(const unsigned char* b1, const unsigned char* b2, int nbits)
 {
    for (int k = 0; k < nbits; ++k) {
       int i = k / 8, j = 7 - k % 8;
       if (((b1[i] >> j) & 1) != ((b2[i] >> j) & 1)) return false;
    }
+   return true;
+}
+
+static inline unsigned number_strlen(unsigned number, int base)
+{
+   unsigned long long _10000000 = 1;
+   for (int i = 1;; ++i) {
+      _10000000 *= base;
+      if (number < _10000000) return i;
+   }
+}
+
+static inline bool is_hex_string(const char* s)
+{
+   if (s[0] == '0' && ::tolower(s[1]) == 'x') return true;
+   for (const char* p = s; *p; p++)
+      if (!::isxdigit(*p) && !::isspace(*p))
+         return false;
+   return true;
+}
+
+h2_inline bool h2_numeric::is_bin_string(const char* s)
+{
+   for (const char* p = s; *p; p++)
+      if (*p != '0' && *p != '1' && !::isspace(*p))
+         return false;
    return true;
 }
 

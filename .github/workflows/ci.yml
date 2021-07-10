@@ -21,6 +21,26 @@ jobs:
     - name: run
       run: ./example/a.out
 
+  example-x86-macos-clang:
+    runs-on: macos-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: build
+      run: make -C example
+    - name: run
+      run: ./example/a.out
+
+  # example-x86_64-windows-msvc:
+  #   runs-on: windows-latest
+  #   steps:
+  #   - uses: actions/checkout@v2
+  #   - name: configure
+  #     run: cd example && cmake .
+  #   - name: build
+  #     run: cmake --build example
+  #   - name: run
+  #     run: cd example && ./Debug/a.out.exe
+
   print-x86_64-linux-gcc:
     runs-on: ubuntu-latest
     steps:
@@ -28,7 +48,7 @@ jobs:
     - name: configure
       run: cd print && cmake .
     - name: build
-      run: cmake --build print -j 2
+      run: cmake --build print
     - name: run
       run: cd print && ./a.out
 
@@ -39,7 +59,18 @@ jobs:
     - name: configure
       run: cd print && cmake .
     - name: build
-      run: cmake --build print -j 2
+      run: cmake --build print
+    - name: run
+      run: cd print && ./a.out -v
+
+  print-x86_64-macos-clang:
+    runs-on: macos-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: configure
+      run: cd print && cmake .
+    - name: build
+      run: cmake --build print
     - name: run
       run: cd print && ./a.out -v
 
@@ -50,7 +81,7 @@ jobs:
     - name: configure
       run: cd print && cmake .
     - name: build
-      run: cmake --build print -j 2
+      run: cmake --build print
     - name: run
       run: cd print && ./Debug/a.out.exe -v
 
@@ -61,7 +92,7 @@ jobs:
     - name: configure
       run: cd test && cmake .
     - name: build
-      run: cmake --build test
+      run: cmake --build test -j 4
     - name: run
       run: cd test && ./a.out -cvj && ./a.out -m -e test_memory_
 
@@ -72,7 +103,7 @@ jobs:
     - name: configure
       run: cd test && cmake .
     - name: build
-      run: cmake --build test
+      run: cmake --build test -j 4
     - name: run
       run: cd test && ./a.out -vj && ./a.out -m -e test_memory_
 
@@ -86,7 +117,7 @@ jobs:
   #       CXX: clang++
   #     run: cd test && cmake .
   #   - name: build
-  #     run: cmake --build test
+  #     run: cmake --build test -j 4
   #   - name: run
   #     run: cd test && objcopy --writable-text a.out && ./a.out -cvj && ./a.out -m -e test_memory_
 
@@ -97,7 +128,7 @@ jobs:
     - name: configure
       run: cd test && cmake .
     - name: build
-      run: cmake --build test
+      run: cmake --build test -j 4
     - name: run
       run: cd test && ./a.out -cvj && ./a.out -m -e test_memory_
 
@@ -108,6 +139,6 @@ jobs:
     - name: configure
       run: cd test && cmake .
     - name: build
-      run: cmake --build test -j 2
+      run: cmake --build test -j 4
     - name: run
       run: cd test && ./Debug/a.out.exe -cv && ./Debug/a.out.exe -m -e test_memory_

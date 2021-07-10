@@ -18,9 +18,9 @@ h2_inline h2_fail* h2_matches_bytecmp::matches(const void* a, int n, bool casele
    bool result = false;
    int _nbytes;
    if (isstring) {
-      if (h2_numeric::is_hex_string((const char*)e)) {
+      if (is_hex_string((const char*)e)) {
          unsigned char* _e = (unsigned char*)alloca(strlen((const char*)e));
-         int max_length = h2_numeric::hex_to_bytes((const char*)e, _e);
+         int max_length = hex_to_bytes((const char*)e, _e);
          _nbytes = nbytes;
          if (nbytes == 0) _nbytes = max_length;
          if (_nbytes <= max_length) {
@@ -54,10 +54,10 @@ h2_inline h2_fail* h2_matches_bitcmp::matches(const void* a, int n, bool caseles
    if (isstring) {
       unsigned char* t = (unsigned char*)alloca(strlen((const char*)e));
       if (h2_numeric::is_bin_string((const char*)e)) {
-         max_length = h2_numeric::bin_to_bits((const char*)e, t);
+         max_length = bin_to_bits((const char*)e, t);
          _e = t;
-      } else if (h2_numeric::is_hex_string((const char*)e)) {
-         max_length = h2_numeric::hex_to_bits((const char*)e, t);
+      } else if (is_hex_string((const char*)e)) {
+         max_length = hex_to_bits((const char*)e, t);
          _e = t;
       } else {
          max_length = strlen((const char*)e) * 8;
@@ -72,7 +72,7 @@ h2_inline h2_fail* h2_matches_bitcmp::matches(const void* a, int n, bool caseles
    if (max_length < _nbits) {
       return h2_fail::new_normal("length too loog");
    }
-   bool result = h2_numeric::bits_equal(_e, (const unsigned char*)a, _nbits);
+   bool result = bits_equal(_e, (const unsigned char*)a, _nbits);
    if (result == !dont) return nullptr;
    return h2_fail::new_memcmp(_e, (const unsigned char*)a, 1, _nbits, h2_stringify(a).string(), "memcmp " + readable_size(1, _nbits));
 }

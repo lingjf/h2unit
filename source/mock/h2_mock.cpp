@@ -23,7 +23,7 @@ h2_inline void h2_mockee::mock()
 {
    x.out();
    h2_mock_g(this);
-   h2_stub_g(origin_fp, substitute_fp, class_function, file, line);
+   h2_stub_g(srcfp, dstfp, class_function, file, line);
 }
 
 h2_inline h2_fail* h2_mockee::times_check()

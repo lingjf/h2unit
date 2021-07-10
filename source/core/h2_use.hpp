@@ -1,7 +1,7 @@
 
 #define __H2SUITE(name, h2_suite_test)                                                   \
    static void h2_suite_test(h2::h2_suite*, h2::h2_case*);                               \
-   static h2::h2_suite H2PP_UNIQUE()(h2::sss(name), &h2_suite_test, __FILE__, __LINE__); \
+   static h2::h2_suite H2PP_UNIQUE()(h2::sdf(name), &h2_suite_test, __FILE__, __LINE__); \
    static void h2_suite_test(h2::h2_suite* suite_2_0_1_3_0_1_0_2, h2::h2_case* case_2_0_1_7_0_3_2_5)
 
 #define H2SUITE(...) __H2SUITE(#__VA_ARGS__, H2PP_UNIQUE(h2_suite_test))
@@ -11,7 +11,7 @@
 #define H2Cleanup() if (::setjmp(suite_2_0_1_3_0_1_0_2->ctx))
 
 #define __H2Case(name, c, todo)                                                                               \
-   static h2::h2_case c(h2::sss(name), __FILE__, __LINE__, todo);                                             \
+   static h2::h2_case c(h2::sdf(name), __FILE__, __LINE__, todo);                                             \
    static h2::h2_suite::registor H2PP_UNIQUE()(suite_2_0_1_3_0_1_0_2, &c);                                    \
    if (&c == case_2_0_1_7_0_3_2_5)                                                                            \
       for (h2::h2_suite::cleaner _1_9_8_0_(suite_2_0_1_3_0_1_0_2); _1_9_8_0_; case_2_0_1_7_0_3_2_5 = nullptr) \
@@ -25,7 +25,7 @@
    static void h2_case_test();                                                                       \
    static void h2_suite_test(h2::h2_suite* suite_2_0_1_3_0_1_0_2, h2::h2_case* case_2_0_1_7_0_3_2_5) \
    {                                                                                                 \
-      static h2::h2_case c(h2::sss(name), __FILE__, __LINE__, todo);                                 \
+      static h2::h2_case c(h2::sdf(name), __FILE__, __LINE__, todo);                                 \
       static h2::h2_suite::registor r(suite_2_0_1_3_0_1_0_2, &c);                                    \
       if (&c == case_2_0_1_7_0_3_2_5)                                                                \
          for (h2::h2_case::cleaner t(&c); t;)                                                        \

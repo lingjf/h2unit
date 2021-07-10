@@ -1,5 +1,5 @@
 ﻿
-/* v5.11 2021-07-10 07:57:22 */
+/* v5.11 2021-07-10 15:00:59 */
 /* https://github.com/lingjf/h2unit */
 /* Apache Licence 2.0 */
 
@@ -592,8 +592,8 @@ struct h2_pattern {
 // #define M(...) func(#__VA_ARGS__, other)
 // Unix M() ==> func("", other) stringify empty __VA_ARGS__ to "" string
 // Windows M() ==> func(, other) stringify empty __VA_ARGS__ to empty
-// #define M(...) func(sss(#__VA_ARGS__), other)
-static inline const char* sss(const char* a = "") { return a; }
+// #define M(...) func(sdf(#__VA_ARGS__), other)
+static inline const char* sdf(const char* a = "") { return a; }
 
 /* clang-format off */
 
@@ -607,20 +607,7 @@ static inline const char* sss(const char* a = "") { return a; }
 // source/utils/h2_numeric.hpp
 
 struct h2_numeric {
-   static bool not2n(unsigned x);
-   static unsigned mask2n(unsigned x);
-
-   static int hex_to_byte(char c);
    static bool is_bin_string(const char* s);
-   static bool is_hex_string(const char* s);
-
-   static int bin_to_bits(const char* bin, unsigned char* bytes);
-
-   static int hex_to_bits(const char* hex, unsigned char* bytes);
-   static int hex_to_bytes(const char* hex, unsigned char* bytes);
-
-   static bool bits_equal(const unsigned char* b1, const unsigned char* b2, int nbits);
-
    static const char* sequence_number(int sequence, int shift = 1);
 };
 // source/utils/h2_libc.hpp
@@ -831,18 +818,18 @@ struct h2_color {
 struct h2_symbol {
    h2_list x;
    char name[128];
-   unsigned long long offset;
+   unsigned long long addr;
    int size = 0;
-   h2_symbol(char* _name, unsigned long long _offset) : offset(_offset) { strncpy(name, _name, 127); }
+   h2_symbol(char* _name, unsigned long long _addr) : addr(_addr) { strncpy(name, _name, 127); }
 };
 
 struct h2_nm {
    h2_singleton(h2_nm);
-   std::map<std::string, unsigned long long>* symbols_mangled;
-   h2_list symbols_demangled;
+   std::map<std::string, unsigned long long>* mangle_symbols;
+   h2_list demangle_symbols;
    static int get_by_name(const char* name, h2_symbol* res[], int n);
-   static h2_symbol* get_by_offset(unsigned long long offset);
-   static unsigned long long get_mangled(const char* name);
+   static h2_symbol* get_by_addr(unsigned long long addr);
+   static unsigned long long get_mangle(const char* name);
 };
 // source/ld/h2_load.hpp
 
@@ -850,9 +837,9 @@ struct h2_load {
    h2_singleton(h2_load);
    long long text_offset = -1;
    long long vtable_offset = -1;
-   static void* symbol_to_addr(unsigned long long symbol_offset);
-   static unsigned long long addr_to_symbol(void* addr);
-   static void* vtable_to_addr(unsigned long long offset);
+   static void* addr_to_ptr(unsigned long long addr);
+   static unsigned long long ptr_to_addr(void* ptr);
+   static void* vtable_to_ptr(unsigned long long addr);
 };
 // source/ld/h2_backtrace.hpp
 
@@ -980,8 +967,8 @@ struct h2_fail : h2_libc {
    static h2_fail* new_memory_leak(const void* ptr, int size, const h2_vector<std::pair<int, int>>& sizes, const h2_backtrace& bt_allocate, const char* where, const char* file, int line);
    static h2_fail* new_double_free(const void* ptr, const h2_backtrace& bt_allocate, const h2_backtrace& bt_release, const h2_backtrace& bt_double_free);
    static h2_fail* new_asymmetric_free(const void* ptr, const char* who_allocate, const char* who_release, const h2_backtrace& bt_allocate, const h2_backtrace& bt_release);
-   static h2_fail* new_overflow(const void* ptr, const int size, const void* addr, const char* action, const h2_vector<unsigned char>& spot, const h2_backtrace& bt_allocate, const h2_backtrace& bt_trample, const char* file = nullptr, int line = 0);
-   static h2_fail* new_use_after_free(const void* ptr, const void* addr, const char* action, const h2_backtrace& bt_allocate, const h2_backtrace& bt_release, const h2_backtrace& bt_use);
+   static h2_fail* new_overflow(const void* ptr, const int size, const void* violate_ptr, const char* action, const h2_vector<unsigned char>& spot, const h2_backtrace& bt_allocate, const h2_backtrace& bt_trample, const char* file = nullptr, int line = 0);
+   static h2_fail* new_use_after_free(const void* ptr, const void* violate_ptr, const char* action, const h2_backtrace& bt_allocate, const h2_backtrace& bt_release, const h2_backtrace& bt_use);
 };
 
 static inline void h2_fail_g(h2_fail*, bool);
@@ -1001,17 +988,16 @@ struct h2_exempt {
    void* fps[10000];
    int nfp = 0;
    static void setup();
-   static void add_by_addr(void* func);
-   static void add_by_name(const char* func);
-   static bool in(const h2_backtrace& bt);
+   static void add_by_fp(void* fp);
+   static void add_by_name(const char* fn);
 };
 
 template <typename T>
-inline void h2_unmem(T func) { return h2_exempt::add_by_addr((void*)func); }
+inline void h2_unmem(T f) { h2_exempt::add_by_fp((void*)f); }
 template <>
-inline void h2_unmem(const char* func) { return h2_exempt::add_by_name(func); }
+inline void h2_unmem(const char* f) { h2_exempt::add_by_name(f); }
 
-#define H2UNMEM(func) h2::h2_unmem(func)
+#define H2UNMEM(f) h2::h2_unmem(f)
 // source/memory/h2_memory.hpp
 
 struct h2_memory {
@@ -1033,7 +1019,7 @@ struct h2_memory {
    };
 };
 
-#define __H2BLOCK(Attributes, Qb) for (h2::h2_memory::stack::block Qb(h2::sss(Attributes), __FILE__, __LINE__); Qb;)
+#define __H2BLOCK(Attributes, Qb) for (h2::h2_memory::stack::block Qb(h2::sdf(Attributes), __FILE__, __LINE__); Qb;)
 #define H2BLOCK(...) __H2BLOCK(#__VA_ARGS__, H2PP_UNIQUE(t_block))
 // source/utils/h2_stringify.hpp
 
@@ -2453,16 +2439,12 @@ void* h2_fp(T p)
       h2_symbol* res[16];
       int n = h2_nm::get_by_name((const char*)p, res, 16);
       if (n != 1) {
-         if (n == 0) {
-            h2_color::prints("yellow", "\nDon't find %s\n", (const char*)p);
-         } else {
-            h2_color::prints("yellow", "\nFind multiple %s :\n", (const char*)p);
-            for (int i = 0; i < n; ++i)
-               h2_color::prints("yellow", "  %d. %s \n", i + 1, res[i]->name);
-         }
+         h2_color::prints("yellow", n ? "\nFind multiple %s :\n" : "\nDon't find %s\n", (const char*)p);
+         for (int i = 0; i < n; ++i)
+            h2_color::prints("yellow", "  %d. %s \n", i + 1, res[i]->name);
          return nullptr;
       }
-      fp = h2_load::symbol_to_addr(res[0]->offset);
+      fp = h2_load::addr_to_ptr(res[0]->addr);
    }
    return fp;
 }
@@ -2638,10 +2620,10 @@ struct h2_mfp<Class, ReturnType(Args...)> {
       Class* object = h2_constructible<Class>::O(alloca(sizeof(Class)));
       if (0 == (long long)object || 1 == (long long)object || 2 == (long long)object) {
          char vtable_symbol[1024];
-         sprintf(vtable_symbol, "_ZTV%s", typeid(Class).name());  // mangled for "vtable for Class"
-         unsigned long long relative_vtable = h2_nm::get_mangled(vtable_symbol);
+         sprintf(vtable_symbol, "_ZTV%s", typeid(Class).name());  // mangle for "vtable for Class"
+         unsigned long long relative_vtable = h2_nm::get_mangle(vtable_symbol);
          if (relative_vtable) {
-            vtable = (void**)h2_load::vtable_to_addr(relative_vtable);
+            vtable = (void**)h2_load::vtable_to_ptr(relative_vtable);
          } else {
             h2_color::prints("yellow", "\nDon't find vtable for %s\n", vtable_symbol);
          }
@@ -2658,7 +2640,7 @@ struct h2_mfp<Class, ReturnType(Args...)> {
          void (h2_test_plus::*f)();
          void* p;
       } t{&h2_test_plus::test};
-      if (1 & (unsigned long long)t.p) {
+      if ((unsigned long long)t.p & 1) {
          return (v & 1) && (v - 1) % sizeof(void*) == 0 && v < 1000 * sizeof(void*);
          /* assumption: virtual member count less than 1000 */
       } else {
@@ -2671,15 +2653,15 @@ struct h2_mfp<Class, ReturnType(Args...)> {
 
 struct h2_stubs {
    h2_list stubs;
-   bool add(void* origin_fp, void* substitute_fp, const char* origin_fn, const char* file, int line);
-   void clear(void* origin_fp);
+   bool add(void* srcfp, void* dstfp, const char* srcfn, const char* file, int line);
+   void clear(void* srcfp);
    void clear();
 };
 
 struct h2_stub_temporary_restore : h2_once {
-   unsigned char saved[32];
-   void* origin_fp;
-   h2_stub_temporary_restore(void* origin_fp);
+   unsigned char saved_opcode[32];
+   void* srcfp;
+   h2_stub_temporary_restore(void* srcfp);
    ~h2_stub_temporary_restore();
 };
 // source/mock/h2_routine.hpp
@@ -2812,7 +2794,7 @@ inline h2_fail* h2_tuple_matches(MatcherTuple& matchers, ArgumentTuple& argument
 
 struct h2_mockee : h2_libc {
    h2_list x;
-   void *origin_fp, *substitute_fp;
+   void *srcfp, *dstfp;
    const char* return_type;
    const char* class_function;
    h2_vector<const char*> argument_type;
@@ -2851,14 +2833,14 @@ class h2_mocker<Counter, Class, ReturnType(Args...)> : h2_mockee {
    static ReturnType normal_function_stub(Args... args)
    {
       int index = I().matches(std::forward<Args>(args)...);
-      h2::h2_stub_temporary_restore t(I().origin_fp);
+      h2::h2_stub_temporary_restore t(I().srcfp);
       return I().routine_array[index](nullptr, std::forward<Args>(args)...);
    }
 
    static ReturnType member_function_stub(Class* This, Args... args)
    {
       int index = I().matches(std::forward<Args>(args)...);
-      h2::h2_stub_temporary_restore t(I().origin_fp);
+      h2::h2_stub_temporary_restore t(I().srcfp);
       return I().routine_array[index](This, std::forward<Args>(args)...);
    }
 
@@ -2869,18 +2851,14 @@ class h2_mocker<Counter, Class, ReturnType(Args...)> : h2_mockee {
       for (int i = checkin_index; i < checkin_array.size(); ++i) {
          h2_fail* fails = h2_tuple_matches(matcher_array[i], at);
          if (fails) {
-            if (checkin_offset != -1) {
-               break;
-            }
+            if (checkin_offset != -1) break;
             if (checkin_array[i].is_satisfied()) { /* try next h2_checkin */
                delete fails;
                continue;
             }
             fails->foreach([this, i](h2_fail* f, int, int) {
                f->explain += gray("on ") + (class_function + arguments(f->seqno));
-               if (1 < checkin_array.size()) {
-                  f->explain += gray(" when ") + h2_numeric::sequence_number(i) + " checkin " + color(checkin_array[i].expr, "cyan");
-               }
+               if (1 < checkin_array.size()) f->explain += gray(" when ") + h2_numeric::sequence_number(i) + " checkin " + color(checkin_array[i].expr, "cyan");
             });
             h2_fail* fail = h2_fail::new_normal(signature(), file, line);
             h2_fail::append_child(fail, fails);
@@ -2888,16 +2866,10 @@ class h2_mocker<Counter, Class, ReturnType(Args...)> : h2_mockee {
          } else {
             checkin_index = i;
             checkin_offset = i;
-            if (checkin_array[i].is_saturated()) {
-               continue;
-            }
-            if (checkin_array[i].insufficient()) {
-               break;
-            }
+            if (checkin_array[i].is_saturated()) continue;
+            if (checkin_array[i].insufficient()) break;
             /* satisfied */
-            if (greed_mode) {
-               break;
-            }
+            if (greed_mode) break;
             /* continue */
          }
       }
@@ -2930,10 +2902,10 @@ class h2_mocker<Counter, Class, ReturnType(Args...)> : h2_mockee {
       return *i;
    }
 
-   static h2_mocker& I(void* origin_fp, const char* return_type, const char* class_function, const h2_vector<const char*>& argument_type, const char* inspects, const char* file, int line)
+   static h2_mocker& I(void* srcfp, const char* return_type, const char* class_function, const h2_vector<const char*>& argument_type, const char* inspects, const char* file, int line)
    {
-      I().origin_fp = origin_fp;
-      I().substitute_fp = std::is_same<std::false_type, Class>::value ? (void*)normal_function_stub : (void*)member_function_stub;
+      I().srcfp = srcfp;
+      I().dstfp = std::is_same<std::false_type, Class>::value ? (void*)normal_function_stub : (void*)member_function_stub;
       I().return_type = return_type;
       I().class_function = class_function;
       I().argument_type = argument_type;
@@ -3034,9 +3006,9 @@ class h2_mocker<Counter, Class, ReturnType(Args...)> : h2_mockee {
    {
       if (checkin_array.empty()) Any();
       if (std::is_same<std::false_type, Class>::value)
-         routine_array.back().fp = (ReturnType(*)(Args...))origin_fp;
+         routine_array.back().fp = (ReturnType(*)(Args...))srcfp;
       else
-         routine_array.back().mfp = (ReturnType(*)(Class*, Args...))origin_fp;
+         routine_array.back().mfp = (ReturnType(*)(Class*, Args...))srcfp;
       return *this;
    }
 
@@ -3146,8 +3118,8 @@ struct h2_sock : h2_once {
 #define __H2SOCK(Q) for (h2::h2_sock Q; Q;)
 #define H2SOCK(...) __H2SOCK(H2PP_UNIQUE(t_sock))
 
-#define Ptx(...) h2::h2_sock::check(__FILE__, __LINE__, h2::sss(#__VA_ARGS__), __VA_ARGS__)
-#define Pij(_Packet, _Size, ...) h2::h2_sock::inject(_Packet, _Size, h2::sss(#__VA_ARGS__))
+#define Ptx(...) h2::h2_sock::check(__FILE__, __LINE__, h2::sdf(#__VA_ARGS__), __VA_ARGS__)
+#define Pij(_Packet, _Size, ...) h2::h2_sock::inject(_Packet, _Size, h2::sdf(#__VA_ARGS__))
 // source/extension/h2_stdio.hpp
 
 struct h2_cout : h2_once {
@@ -3160,7 +3132,7 @@ struct h2_cout : h2_once {
    static size_t length();
 };
 
-#define __H2COUT(m, e, type, Q) for (h2::h2_cout Q(m, e, h2::sss(type), __FILE__, __LINE__); Q;)
+#define __H2COUT(m, e, type, Q) for (h2::h2_cout Q(m, e, h2::sdf(type), __FILE__, __LINE__); Q;)
 #define H2COUT(m, ...) __H2COUT(m, #m, #__VA_ARGS__, H2PP_UNIQUE(t_cout))
 // source/extension/h2_perf.hpp
 
@@ -3275,26 +3247,26 @@ struct h2_task {
    void execute();
 };
 
-static inline void h2_stub_g(void* origin_fp, void* substitute_fp, const char* origin_fn, const char* file, int line)
+static inline void h2_stub_g(void* srcfp, void* dstfp, const char* srcfn, const char* file, int line)
 {
-   if (!origin_fp || !substitute_fp) return;
+   if (!srcfp || !dstfp) return;
    if (h2_task::I().current_case)
-      h2_task::I().current_case->stubs.add(origin_fp, substitute_fp, origin_fn, file, line);
+      h2_task::I().current_case->stubs.add(srcfp, dstfp, srcfn, file, line);
    else if (h2_task::I().current_suite)
-      h2_task::I().current_suite->stubs.add(origin_fp, substitute_fp, origin_fn, file, line);
+      h2_task::I().current_suite->stubs.add(srcfp, dstfp, srcfn, file, line);
    else
-      h2_task::I().stubs.add(origin_fp, substitute_fp, origin_fn, file, line);
+      h2_task::I().stubs.add(srcfp, dstfp, srcfn, file, line);
 }
 
-static inline void h2_unstub_g(void* origin_fp)
+static inline void h2_unstub_g(void* srcfp)
 {
-   if (!origin_fp) return;
+   if (!srcfp) return;
    if (h2_task::I().current_case)
-      h2_task::I().current_case->stubs.clear(origin_fp);
+      h2_task::I().current_case->stubs.clear(srcfp);
    else if (h2_task::I().current_suite)
-      h2_task::I().current_suite->stubs.clear(origin_fp);
+      h2_task::I().current_suite->stubs.clear(srcfp);
    else
-      h2_task::I().stubs.clear(origin_fp);
+      h2_task::I().stubs.clear(srcfp);
 }
 
 static inline void h2_mock_g(void* mock)
@@ -3383,54 +3355,54 @@ struct h2_report {
 
 // source/stub/h2_use.hpp
 
-#define __H2STUB2(Origin, Substitute) h2::h2_stub_g(h2::h2_fp(Origin), (void*)Substitute, #Origin, __FILE__, __LINE__)
-#define __H2STUB4(Function, ReturnType, Arguments, Substitute) h2::h2_stub_g(h2::h2_fp((H2PP_REMOVE_PARENTHESES_IF(ReturnType)(*) Arguments)H2PP_REMOVE_PARENTHESES_IF(Function)), (void*)(Substitute), #Function, __FILE__, __LINE__)
-#define __H2STUB5(Class, Method, ReturnType, Arguments, Substitute) h2::h2_stub_g(h2::h2_mfp<H2PP_REMOVE_PARENTHESES_IF(Class), H2PP_REMOVE_PARENTHESES_IF(ReturnType) Arguments>::A(&H2PP_REMOVE_PARENTHESES_IF(Class)::H2PP_REMOVE_PARENTHESES_IF(Method)), (void*)(Substitute), #Class "::" #Method, __FILE__, __LINE__)
+#define __H2STUB2(Src, Dst) h2::h2_stub_g(h2::h2_fp(Src), (void*)Dst, #Src, __FILE__, __LINE__)
+#define __H2STUB4(Function, ReturnType, Arguments, Dst) h2::h2_stub_g(h2::h2_fp((H2PP_REMOVE_PARENTHESES_IF(ReturnType)(*) Arguments)H2PP_REMOVE_PARENTHESES_IF(Function)), (void*)(Dst), #Function, __FILE__, __LINE__)
+#define __H2STUB5(Class, Method, ReturnType, Arguments, Dst) h2::h2_stub_g(h2::h2_mfp<H2PP_REMOVE_PARENTHESES_IF(Class), H2PP_REMOVE_PARENTHESES_IF(ReturnType) Arguments>::A(&H2PP_REMOVE_PARENTHESES_IF(Class)::H2PP_REMOVE_PARENTHESES_IF(Method)), (void*)(Dst), #Class "::" #Method, __FILE__, __LINE__)
 #define H2STUB(...) H2PP_VARIADIC_CALL(__H2STUB, __VA_ARGS__)
 
-#define __H2UNSTUB1(Origin) h2::h2_unstub_g(h2::h2_fp(Origin))
+#define __H2UNSTUB1(Src) h2::h2_unstub_g(h2::h2_fp(Src))
 #define __H2UNSTUB3(Function, ReturnType, Arguments) h2::h2_unstub_g(h2::h2_fp((H2PP_REMOVE_PARENTHESES_IF(ReturnType)(*) Arguments)H2PP_REMOVE_PARENTHESES_IF(Function)))
 #define __H2UNSTUB4(Class, Method, ReturnType, Arguments) h2::h2_unstub_g(h2::h2_mfp<H2PP_REMOVE_PARENTHESES_IF(Class), H2PP_REMOVE_PARENTHESES_IF(ReturnType) Arguments>::A(&H2PP_REMOVE_PARENTHESES_IF(Class)::H2PP_REMOVE_PARENTHESES_IF(Method)))
 #define H2UNSTUB(...) H2PP_VARIADIC_CALL(__H2UNSTUB, __VA_ARGS__)
 
 ////////////////////////////////////////////////////////////////
 
-#define __H3STUB2(Origin, Substitute) \
-   h2::h2_stub_g(h2::h2_fp(Origin), (void*)Substitute, #Origin, __FILE__, __LINE__)
+#define __H3STUB2(Src, Dst) \
+   h2::h2_stub_g(h2::h2_fp(Src), (void*)Dst, #Src, __FILE__, __LINE__)
 
-#define ____H3STUB3(Function, ReturnType, Arguments, Q)                                             \
-   struct {                                                                                         \
-      void operator=(ReturnType(*substitute_fp) Arguments)                                          \
-      {                                                                                             \
-         h2::h2_stub_g(h2::h2_fp(Function), (void*)(substitute_fp), #Function, __FILE__, __LINE__); \
-      }                                                                                             \
-   } Q;                                                                                             \
+#define ____H3STUB3(Function, ReturnType, Arguments, Q)                                     \
+   struct {                                                                                 \
+      void operator=(ReturnType(*dstfp) Arguments)                                          \
+      {                                                                                     \
+         h2::h2_stub_g(h2::h2_fp(Function), (void*)(dstfp), #Function, __FILE__, __LINE__); \
+      }                                                                                     \
+   } Q;                                                                                     \
    Q = [] Arguments -> ReturnType /* captureless lambda implicit cast to function pointer */
 
 #define __H3STUB3(Function, ReturnType, Arguments) ____H3STUB3(Function, ReturnType, Arguments, H2PP_UNIQUE(t_stub3))
 
-#define __H3STUB40(Class, Method, ReturnType, Arguments, Q)                                                                                                                                                                              \
-   struct {                                                                                                                                                                                                                              \
-      void operator=(ReturnType (*substitute_fp)(H2PP_REMOVE_PARENTHESES_IF(Class) *))                                                                                                                                                   \
-      {                                                                                                                                                                                                                                  \
-         h2::h2_stub_g(h2::h2_mfp<H2PP_REMOVE_PARENTHESES_IF(Class), ReturnType Arguments>::A(&H2PP_REMOVE_PARENTHESES_IF(Class)::H2PP_REMOVE_PARENTHESES_IF(Method)), (void*)(substitute_fp), #Class "::" #Method, __FILE__, __LINE__); \
-      }                                                                                                                                                                                                                                  \
-   } Q;                                                                                                                                                                                                                                  \
+#define __H3STUB40(Class, Method, ReturnType, Arguments, Q)                                                                                                                                                                      \
+   struct {                                                                                                                                                                                                                      \
+      void operator=(ReturnType (*dstfp)(H2PP_REMOVE_PARENTHESES_IF(Class) *))                                                                                                                                                   \
+      {                                                                                                                                                                                                                          \
+         h2::h2_stub_g(h2::h2_mfp<H2PP_REMOVE_PARENTHESES_IF(Class), ReturnType Arguments>::A(&H2PP_REMOVE_PARENTHESES_IF(Class)::H2PP_REMOVE_PARENTHESES_IF(Method)), (void*)(dstfp), #Class "::" #Method, __FILE__, __LINE__); \
+      }                                                                                                                                                                                                                          \
+   } Q;                                                                                                                                                                                                                          \
    Q = [](H2PP_REMOVE_PARENTHESES_IF(Class) * This) -> ReturnType
 
-#define __H3STUB41(Class, Method, ReturnType, Arguments, Q)                                                                                                                                                                              \
-   struct {                                                                                                                                                                                                                              \
-      void operator=(ReturnType (*substitute_fp)(H2PP_REMOVE_PARENTHESES_IF(Class) *, H2PP_REMOVE_PARENTHESES(Arguments)))                                                                                                               \
-      {                                                                                                                                                                                                                                  \
-         h2::h2_stub_g(h2::h2_mfp<H2PP_REMOVE_PARENTHESES_IF(Class), ReturnType Arguments>::A(&H2PP_REMOVE_PARENTHESES_IF(Class)::H2PP_REMOVE_PARENTHESES_IF(Method)), (void*)(substitute_fp), #Class "::" #Method, __FILE__, __LINE__); \
-      }                                                                                                                                                                                                                                  \
-   } Q;                                                                                                                                                                                                                                  \
+#define __H3STUB41(Class, Method, ReturnType, Arguments, Q)                                                                                                                                                                      \
+   struct {                                                                                                                                                                                                                      \
+      void operator=(ReturnType (*dstfp)(H2PP_REMOVE_PARENTHESES_IF(Class) *, H2PP_REMOVE_PARENTHESES(Arguments)))                                                                                                               \
+      {                                                                                                                                                                                                                          \
+         h2::h2_stub_g(h2::h2_mfp<H2PP_REMOVE_PARENTHESES_IF(Class), ReturnType Arguments>::A(&H2PP_REMOVE_PARENTHESES_IF(Class)::H2PP_REMOVE_PARENTHESES_IF(Method)), (void*)(dstfp), #Class "::" #Method, __FILE__, __LINE__); \
+      }                                                                                                                                                                                                                          \
+   } Q;                                                                                                                                                                                                                          \
    Q = [](H2PP_REMOVE_PARENTHESES_IF(Class) * This, H2PP_REMOVE_PARENTHESES(Arguments)) -> ReturnType
 
 #define __H3STUB4(Class, Method, ReturnType, Arguments) \
    H2PP_IF_ELSE(H2PP_IS_EMPTY Arguments, __H3STUB40(Class, Method, ReturnType, Arguments, H2PP_UNIQUE(t_stub40)), __H3STUB41(Class, Method, ReturnType, Arguments, H2PP_UNIQUE(t_stub41)))
 
-#define STUBS(...) H2PP_VARIADIC_CALL(__H3STUB, __VA_ARGS__)
+#define Stub(...) H2PP_VARIADIC_CALL(__H3STUB, __VA_ARGS__)
 // source/mock/h2_use.hpp
 
 #define __H2ARGV(Args, i) H2PP_STR(H2PP_CAT(H2PP_TH, i) Args)
@@ -3655,7 +3627,7 @@ struct h2_report {
 
 #define __H2SUITE(name, h2_suite_test)                                                   \
    static void h2_suite_test(h2::h2_suite*, h2::h2_case*);                               \
-   static h2::h2_suite H2PP_UNIQUE()(h2::sss(name), &h2_suite_test, __FILE__, __LINE__); \
+   static h2::h2_suite H2PP_UNIQUE()(h2::sdf(name), &h2_suite_test, __FILE__, __LINE__); \
    static void h2_suite_test(h2::h2_suite* suite_2_0_1_3_0_1_0_2, h2::h2_case* case_2_0_1_7_0_3_2_5)
 
 #define H2SUITE(...) __H2SUITE(#__VA_ARGS__, H2PP_UNIQUE(h2_suite_test))
@@ -3665,7 +3637,7 @@ struct h2_report {
 #define H2Cleanup() if (::setjmp(suite_2_0_1_3_0_1_0_2->ctx))
 
 #define __H2Case(name, c, todo)                                                                               \
-   static h2::h2_case c(h2::sss(name), __FILE__, __LINE__, todo);                                             \
+   static h2::h2_case c(h2::sdf(name), __FILE__, __LINE__, todo);                                             \
    static h2::h2_suite::registor H2PP_UNIQUE()(suite_2_0_1_3_0_1_0_2, &c);                                    \
    if (&c == case_2_0_1_7_0_3_2_5)                                                                            \
       for (h2::h2_suite::cleaner _1_9_8_0_(suite_2_0_1_3_0_1_0_2); _1_9_8_0_; case_2_0_1_7_0_3_2_5 = nullptr) \
@@ -3679,7 +3651,7 @@ struct h2_report {
    static void h2_case_test();                                                                       \
    static void h2_suite_test(h2::h2_suite* suite_2_0_1_3_0_1_0_2, h2::h2_case* case_2_0_1_7_0_3_2_5) \
    {                                                                                                 \
-      static h2::h2_case c(h2::sss(name), __FILE__, __LINE__, todo);                                 \
+      static h2::h2_case c(h2::sdf(name), __FILE__, __LINE__, todo);                                 \
       static h2::h2_suite::registor r(suite_2_0_1_3_0_1_0_2, &c);                                    \
       if (&c == case_2_0_1_7_0_3_2_5)                                                                \
          for (h2::h2_case::cleaner t(&c); t;)                                                        \
@@ -4343,12 +4315,12 @@ static inline const char* ss(const char* a) { return a ? a : ""; };
    } while (0)
 // source/utils/h2_numeric.cpp
 
-h2_inline bool h2_numeric::not2n(unsigned x)
+static inline bool not2n(unsigned x)
 {
    return x & (x - 1);
 }
 
-h2_inline unsigned h2_numeric::mask2n(unsigned x)
+static inline unsigned mask2n(unsigned x)
 {
    x |= (x >> 1);
    x |= (x >> 2);
@@ -4358,29 +4330,12 @@ h2_inline unsigned h2_numeric::mask2n(unsigned x)
    return x;
 }
 
-h2_inline int h2_numeric::hex_to_byte(char c)
+static inline int hex_to_byte(char c)
 {
    return '0' <= c && c <= '9' ? c - '0' : ('A' <= c && c <= 'F' ? c - 'A' + 10 : ('a' <= c && c <= 'f' ? c - 'a' + 10 : -1));
 }
 
-h2_inline bool h2_numeric::is_bin_string(const char* s)
-{
-   for (const char* p = s; *p; p++)
-      if (*p != '0' && *p != '1' && !::isspace(*p))
-         return false;
-   return true;
-}
-
-h2_inline bool h2_numeric::is_hex_string(const char* s)
-{
-   if (s[0] == '0' && ::tolower(s[1]) == 'x') return true;
-   for (const char* p = s; *p; p++)
-      if (!::isxdigit(*p) && !::isspace(*p))
-         return false;
-   return true;
-}
-
-h2_inline int h2_numeric::bin_to_bits(const char* bin, unsigned char* bytes)
+static inline int bin_to_bits(const char* bin, unsigned char* bytes)
 {
    memset(bytes, 0, strlen(bin));
    int c = 0;
@@ -4394,7 +4349,7 @@ h2_inline int h2_numeric::bin_to_bits(const char* bin, unsigned char* bytes)
    return c;
 }
 
-h2_inline int h2_numeric::hex_to_bits(const char* hex, unsigned char* bytes)
+static inline int hex_to_bits(const char* hex, unsigned char* bytes)
 {
    memset(bytes, 0, strlen(hex));
    if (hex[0] == '0' && ::tolower(hex[1]) == 'x') hex += 2;
@@ -4411,7 +4366,7 @@ h2_inline int h2_numeric::hex_to_bits(const char* hex, unsigned char* bytes)
    return 8 * c / 2;
 }
 
-h2_inline int h2_numeric::hex_to_bytes(const char* hex, unsigned char* bytes)
+static inline int hex_to_bytes(const char* hex, unsigned char* bytes)
 {
    char b;
    int i = 0, c = 0;
@@ -4431,12 +4386,38 @@ h2_inline int h2_numeric::hex_to_bytes(const char* hex, unsigned char* bytes)
    return c / 2;
 }
 
-h2_inline bool h2_numeric::bits_equal(const unsigned char* b1, const unsigned char* b2, int nbits)
+static inline bool bits_equal(const unsigned char* b1, const unsigned char* b2, int nbits)
 {
    for (int k = 0; k < nbits; ++k) {
       int i = k / 8, j = 7 - k % 8;
       if (((b1[i] >> j) & 1) != ((b2[i] >> j) & 1)) return false;
    }
+   return true;
+}
+
+static inline unsigned number_strlen(unsigned number, int base)
+{
+   unsigned long long _10000000 = 1;
+   for (int i = 1;; ++i) {
+      _10000000 *= base;
+      if (number < _10000000) return i;
+   }
+}
+
+static inline bool is_hex_string(const char* s)
+{
+   if (s[0] == '0' && ::tolower(s[1]) == 'x') return true;
+   for (const char* p = s; *p; p++)
+      if (!::isxdigit(*p) && !::isspace(*p))
+         return false;
+   return true;
+}
+
+h2_inline bool h2_numeric::is_bin_string(const char* s)
+{
+   for (const char* p = s; *p; p++)
+      if (*p != '0' && *p != '1' && !::isspace(*p))
+         return false;
    return true;
 }
 
@@ -5097,62 +5078,53 @@ h2_inline void h2_color::printl(const h2_rows& rows)
 // source/ld/h2_nm.cpp
 //https://github.com/JochenKalmbach/StackWalker
 
+#if !defined _WIN32
 static inline void nm1(std::map<std::string, unsigned long long>*& symbols)
 {
-#if !defined _WIN32
    h2_memory::restores();
    char nm[256], line[2048], addr[128], type, name[2048];
    symbols = new std::map<std::string, unsigned long long>();
-   sprintf(nm, "nm %s", O.path);
-#   if defined __APPLE__
-   sprintf(nm, "nm -U %s", O.path);
-#   else
-   sprintf(nm, "nm --defined-only %s", O.path);
-#   endif
+   sprintf(nm, "nm %s %s", O.os == macOS ? "-U" : "--defined-only", O.path);
    FILE* f = ::popen(nm, "r");
-   if (!f) return;
-   while (::fgets(line, sizeof(line) - 1, f)) {
-      if (3 != sscanf(line, "%s %c %s", addr, &type, name)) continue;
-      if (strchr("bBcCdDiIuU", type)) continue;  // reject bBcCdDiIuU, accept tTwWsSvV, sS for vtable
-      int _ = 0;
-      if (O.os == macOS) _ = 1;  // remove prefix '_' in MacOS
-      (*symbols)[name + _] = (unsigned long long)strtoull(addr, nullptr, 16);
+   if (f) {
+      while (::fgets(line, sizeof(line) - 1, f)) {
+         if (3 != sscanf(line, "%s %c %s", addr, &type, name)) continue;
+         if (strchr("bBcCdDiIuU", type)) continue;  // reject bBcCdDiIuU, accept tTwWsSvV, sS for vtable
+         int underscore = 0;
+         if (O.os == macOS) underscore = 1;  // remove prefix '_' in MacOS
+         (*symbols)[name + underscore] = (unsigned long long)strtoull(addr, nullptr, 16);
+      }
+      ::pclose(f);
    }
-   ::pclose(f);
    h2_memory::overrides();
-#endif
 }
 
 static inline void nm2(h2_list& symbols)
 {
-#if !defined _WIN32
    h2_memory::restores();
    char nm[256], line[2048], addr[128], type, name[2048];
-#   if defined __APPLE__
-   sprintf(nm, "nm -f bsd --demangle -U -n %s", O.path);
-#   else
-   sprintf(nm, "nm -f bsd --demangle --defined-only -n %s", O.path);
-#   endif
+   sprintf(nm, "nm -f bsd --demangle %s -n %s", O.os == macOS ? "-U" : "--defined-only", O.path);
    h2_symbol* last = nullptr;
    FILE* f = ::popen(nm, "r");
-   if (!f) return;
-   while (::fgets(line, sizeof(line) - 1, f)) {
-      if (3 != sscanf(line, "%s %c %[^\n]", addr, &type, name)) continue;
-      if (strchr("bBcCdDiIuU", type)) continue;
-      int underscore = 0;
-      if (O.os == macOS && !strchr(name, '(')) underscore = 1;
-      h2_symbol* symbol = new h2_symbol(name + underscore, (unsigned long long)strtoull(addr, nullptr, 16));
-      if (symbol) {
-         symbols.push_back(symbol->x);
-         if (last)
-            last->size = (int)(symbol->offset - last->offset);
-         last = symbol;
+   if (f) {
+      while (::fgets(line, sizeof(line) - 1, f)) {
+         if (3 != sscanf(line, "%s %c %[^\n]", addr, &type, name)) continue;
+         if (strchr("bBcCdDiIuU", type)) continue;
+         int underscore = 0;
+         if (O.os == macOS && !strchr(name, '(')) underscore = 1;
+         h2_symbol* symbol = new h2_symbol(name + underscore, (unsigned long long)strtoull(addr, nullptr, 16));
+         if (symbol) {
+            symbols.push_back(symbol->x);
+            if (last)
+               last->size = (int)(symbol->addr - last->addr);
+            last = symbol;
+         }
       }
+      ::pclose(f);
    }
-   ::pclose(f);
    h2_memory::overrides();
-#endif
 }
+#endif
 
 static inline bool strncmp_reverse(const char* a, const char* ae, const char* b, const char* be, int n)  // [a, ae) [b, be)
 {
@@ -5173,21 +5145,21 @@ h2_inline int h2_nm::get_by_name(const char* name, h2_symbol* res[], int n)
    if (!SymFromName(O.hProcess, name, symbol))
       return 0;
    static h2_symbol s_symbol("", 0);
-   s_symbol.offset = (unsigned long long)symbol->Address;
+   s_symbol.addr = (unsigned long long)symbol->Address;
    s_symbol.size = (int)symbol->Size;
    res[0] = &s_symbol;
    return 1;
 #else
-   if (I().symbols_demangled.empty()) nm2(I().symbols_demangled);
+   if (I().demangle_symbols.empty()) nm2(I().demangle_symbols);
 
-   h2_list_for_each_entry (p, I().symbols_demangled, h2_symbol, x) {
+   h2_list_for_each_entry (p, I().demangle_symbols, h2_symbol, x) {
       if (!strcmp(p->name, name)) {
          res[0] = p;
          return 1;
       }
    }
    int count = 0;
-   h2_list_for_each_entry (p, I().symbols_demangled, h2_symbol, x) {
+   h2_list_for_each_entry (p, I().demangle_symbols, h2_symbol, x) {
       char* parentheses = strchr(p->name, '(');
       if (!parentheses) continue;
       if (!strncmp_reverse(p->name, parentheses, name, name + len, len)) continue;  // compare function name
@@ -5199,35 +5171,29 @@ h2_inline int h2_nm::get_by_name(const char* name, h2_symbol* res[], int n)
 #endif
 }
 
-h2_inline h2_symbol* h2_nm::get_by_offset(unsigned long long offset)
+h2_inline h2_symbol* h2_nm::get_by_addr(unsigned long long addr)
 {
 #if defined _WIN32
    char buffer[sizeof(SYMBOL_INFO) + 256];
    SYMBOL_INFO* symbol = (SYMBOL_INFO*)buffer;
    symbol->SizeOfStruct = sizeof(SYMBOL_INFO);
    symbol->MaxNameLen = 256;
-   if (!SymFromAddr(O.hProcess, (DWORD64)(offset), 0, symbol))
+   if (!SymFromAddr(O.hProcess, (DWORD64)(addr), 0, symbol))
       return nullptr;
-   if (memcmp("ILT+", symbol->Name, 4) == 0) {  // ILT (Incremental Link Table), JMP(e9)
-      offset = (unsigned long long)((unsigned char*)symbol->Address + 5 + *(long*)((unsigned char*)symbol->Address + 1));
-      return get_by_offset(offset);
-   }
    static h2_symbol s_symbol("", 0);
    strcpy(s_symbol.name, symbol->Name);
-   s_symbol.offset = (unsigned long long)symbol->Address;
+   s_symbol.addr = (unsigned long long)symbol->Address;
    s_symbol.size = (int)symbol->Size;
    return &s_symbol;
 #else
-   // h2_list_for_each_entry (p, I().symbols_demangled, h2_symbol, x) {
-   //    if (offset <= p->offset + p->size) {
-   //       return p;
-   //    }
-   // }
+   h2_list_for_each_entry (p, I().demangle_symbols, h2_symbol, x)
+      if (addr <= p->addr + p->size)
+         return p;
    return nullptr;
 #endif
 }
 
-h2_inline unsigned long long h2_nm::get_mangled(const char* name)
+h2_inline unsigned long long h2_nm::get_mangle(const char* name)
 {
 #if defined _WIN32
    char buffer[sizeof(SYMBOL_INFO) + 256];
@@ -5239,10 +5205,10 @@ h2_inline unsigned long long h2_nm::get_mangled(const char* name)
    return 0;
 #else
    if (!name || strlen(name) == 0) return 0;
-   if (!I().symbols_mangled) nm1(I().symbols_mangled);
+   if (!I().mangle_symbols) nm1(I().mangle_symbols);
 
-   auto it = I().symbols_mangled->find(name);
-   return it != I().symbols_mangled->end() ? it->second : 0ULL;
+   auto it = I().mangle_symbols->find(name);
+   return it != I().mangle_symbols->end() ? it->second : 0ULL;
 #endif
 }
 // source/ld/h2_load.cpp
@@ -5252,7 +5218,7 @@ static inline long long get_load_text_offset()
 {
    h2_symbol* s[16];
    if (h2_nm::get_by_name("main", s, 16) == 0) return 0;
-   return (long long)&main - (long long)s[0]->offset;
+   return (long long)&main - (long long)s[0]->addr;
 }
 
 struct h2_vtable_offset_test {
@@ -5267,35 +5233,35 @@ static inline long long get_load_vtable_offset()
    h2_vtable_offset_test t;
    long long absolute_vtable = (long long)*(void***)&t;
    sprintf(vtable_symbol, "_ZTV%s", typeid(h2_vtable_offset_test).name());  // mangled for "vtable for h2::h2_vtable_offset_test"
-   long long relative_vtable = (long long)h2_nm::get_mangled(vtable_symbol);
+   long long relative_vtable = (long long)h2_nm::get_mangle(vtable_symbol);
    if (relative_vtable == 0)
       h2_color::prints("yellow", "\nDon't find vtable for h2::h2_vtable_offset_test %s\n", vtable_symbol);
    return absolute_vtable - relative_vtable;
 }
 
-h2_inline void* h2_load::vtable_to_addr(unsigned long long offset)
+h2_inline void* h2_load::vtable_to_ptr(unsigned long long addr)
 {
    if (I().vtable_offset == -1) I().vtable_offset = get_load_vtable_offset();
-   return (void*)(offset + I().vtable_offset);
+   return (void*)(addr + I().vtable_offset);
 }
 
-h2_inline void* h2_load::symbol_to_addr(unsigned long long symbol_offset)
+h2_inline void* h2_load::addr_to_ptr(unsigned long long addr)
 {
 #if defined _WIN32
-   return (void*)symbol_offset;
+   return (void*)addr;
 #else
    if (I().text_offset == -1) I().text_offset = get_load_text_offset();
-   return (void*)(symbol_offset + I().text_offset);
+   return (void*)(addr + I().text_offset);
 #endif
 }
 
-h2_inline unsigned long long h2_load::addr_to_symbol(void* addr)
+h2_inline unsigned long long h2_load::ptr_to_addr(void* ptr)
 {
 #if defined _WIN32
-   return (unsigned long long)addr;
+   return (unsigned long long)ptr;
 #else
    if (I().text_offset == -1) I().text_offset = get_load_text_offset();
-   return (unsigned long long)addr - I().text_offset;
+   return (unsigned long long)ptr - I().text_offset;
 #endif
 }
 
@@ -5470,7 +5436,7 @@ h2_inline void h2_backtrace::print(h2_vector<h2_string>& stacks) const
                if (strlen(demangle_name))
                   p = demangle_name;
       if (O.verbose || O.os != macOS /* atos is slow */)
-         if (addr2line(h2_load::addr_to_symbol(frames[i]), symbolic, sizeof(symbolic)))
+         if (addr2line(h2_load::ptr_to_addr(frames[i]), symbolic, sizeof(symbolic)))
             if (strlen(symbolic))
                p = symbolic;
       stacks.push_back(p);
@@ -6866,9 +6832,9 @@ h2_inline h2_fail* h2_matches_bytecmp::matches(const void* a, int n, bool casele
    bool result = false;
    int _nbytes;
    if (isstring) {
-      if (h2_numeric::is_hex_string((const char*)e)) {
+      if (is_hex_string((const char*)e)) {
          unsigned char* _e = (unsigned char*)alloca(strlen((const char*)e));
-         int max_length = h2_numeric::hex_to_bytes((const char*)e, _e);
+         int max_length = hex_to_bytes((const char*)e, _e);
          _nbytes = nbytes;
          if (nbytes == 0) _nbytes = max_length;
          if (_nbytes <= max_length) {
@@ -6902,10 +6868,10 @@ h2_inline h2_fail* h2_matches_bitcmp::matches(const void* a, int n, bool caseles
    if (isstring) {
       unsigned char* t = (unsigned char*)alloca(strlen((const char*)e));
       if (h2_numeric::is_bin_string((const char*)e)) {
-         max_length = h2_numeric::bin_to_bits((const char*)e, t);
+         max_length = bin_to_bits((const char*)e, t);
          _e = t;
-      } else if (h2_numeric::is_hex_string((const char*)e)) {
-         max_length = h2_numeric::hex_to_bits((const char*)e, t);
+      } else if (is_hex_string((const char*)e)) {
+         max_length = hex_to_bits((const char*)e, t);
          _e = t;
       } else {
          max_length = strlen((const char*)e) * 8;
@@ -6920,7 +6886,7 @@ h2_inline h2_fail* h2_matches_bitcmp::matches(const void* a, int n, bool caseles
    if (max_length < _nbits) {
       return h2_fail::new_normal("length too loog");
    }
-   bool result = h2_numeric::bits_equal(_e, (const unsigned char*)a, _nbits);
+   bool result = bits_equal(_e, (const unsigned char*)a, _nbits);
    if (result == !dont) return nullptr;
    return h2_fail::new_memcmp(_e, (const unsigned char*)a, 1, _nbits, h2_stringify(a).string(), "memcmp " + readable_size(1, _nbits));
 }
@@ -6948,7 +6914,7 @@ struct h2_piece : h2_libc {
    void* forbidden_page{nullptr};
    size_t forbidden_size = 0;
    int violate_times = 0;
-   void* violate_address{nullptr};
+   void* violate_ptr{nullptr};
    const char* violate_action = "";
    bool violate_after_free = false;
    h2_backtrace violate_backtrace;
@@ -6957,7 +6923,7 @@ struct h2_piece : h2_libc {
      : user_size(size), page_size(h2_page_size()), who_allocate(who), bt_allocate(bt)
    {
       size_t alignment_2n = alignment;
-      if (h2_numeric::not2n(alignment)) alignment_2n = h2_numeric::mask2n(alignment) + 1;
+      if (not2n(alignment)) alignment_2n = mask2n(alignment) + 1;
       if (alignment_2n < sizeof(void*)) alignment_2n = sizeof(void*);
 
       size_t user_size_plus = (user_size + alignment_2n - 1 + alignment_2n) & ~(alignment_2n - 1);
@@ -7010,7 +6976,7 @@ struct h2_piece : h2_libc {
 #endif
    }
 
-   void violate_forbidden(void* addr)
+   void violate_forbidden(void* ptr)
    {
       /* 区分读写犯罪方法(一次或二次进入 segment fault):
          1) 设区域为不可读不可写
@@ -7025,7 +6991,7 @@ struct h2_piece : h2_libc {
       if (!violate_times++) { /* 只记录第一犯罪现场 */
          set_forbidden(readable);
          violate_backtrace = bt;
-         violate_address = addr;
+         violate_ptr = ptr;
          violate_action = "read";
          violate_after_free = 0 < free_times;
       } else {
@@ -7068,9 +7034,9 @@ struct h2_piece : h2_libc {
    h2_fail* violate_fail()
    {
       if (violate_after_free)
-         return h2_fail::new_use_after_free(user_ptr, violate_address, violate_action, bt_allocate, bt_release, violate_backtrace);
+         return h2_fail::new_use_after_free(user_ptr, violate_ptr, violate_action, bt_allocate, bt_release, violate_backtrace);
       else
-         return h2_fail::new_overflow(user_ptr, user_size, violate_address, violate_action, h2_vector<unsigned char>(), bt_allocate, violate_backtrace);
+         return h2_fail::new_overflow(user_ptr, user_size, violate_ptr, violate_action, h2_vector<unsigned char>(), bt_allocate, violate_backtrace);
    }
 
    h2_fail* check_asymmetric_free(const char* who_release)
@@ -7270,10 +7236,10 @@ struct h2_block : h2_libc {
       return nullptr;
    }
 
-   h2_piece* host_piece(const void* addr)
+   h2_piece* host_piece(const void* ptr)
    {
       h2_list_for_each_entry (p, pieces, h2_piece, x)
-         if (p->in_page_range((const unsigned char*)addr)) return p;
+         if (p->in_page_range((const unsigned char*)ptr)) return p;
       return nullptr;
    }
 };
@@ -7331,10 +7297,10 @@ struct h2_stack {
       return nullptr;
    }
 
-   h2_piece* host_piece(const void* addr)
+   h2_piece* host_piece(const void* ptr)
    {
       h2_list_for_each_entry (p, blocks, h2_block, x) {
-         h2_piece* piece = p->host_piece(addr);
+         h2_piece* piece = p->host_piece(ptr);
          if (piece) return piece;
       }
       return nullptr;
@@ -7735,7 +7701,7 @@ static inline void parse_block_attributes(const char* attributes, long long& n_l
          for (p += 1; *p && ::isspace(*p);) p++;  // strip left space
 
          if (p[0] == '0' && ::tolower(p[1]) == 'x') {
-            n_fill = h2_numeric::hex_to_bytes(p + 2, s_fill);
+            n_fill = hex_to_bytes(p + 2, s_fill);
          } else {
             long long v = strtoll(p, (char**)NULL, 10);
             if (v <= 0xFFU)
@@ -7815,15 +7781,15 @@ h2_inline void h2_exempt::setup()
    stubs.add((void*)::ctime_r, (void*)h2_exempt_stub::ctime_r, "ctime_r", __FILE__, __LINE__);
    stubs.add((void*)::asctime_r, (void*)h2_exempt_stub::asctime_r, "asctime_r", __FILE__, __LINE__);
    stubs.add((void*)::localtime_r, (void*)h2_exempt_stub::localtime_r, "localtime_r", __FILE__, __LINE__);
-   add_by_addr((void*)::sscanf);
-   add_by_addr((void*)::sprintf);
-   add_by_addr((void*)::vsnprintf);
+   add_by_fp((void*)::sscanf);
+   add_by_fp((void*)::sprintf);
+   add_by_fp((void*)::vsnprintf);
 #   ifdef __APPLE__
-   add_by_addr((void*)::strftime_l);
-   add_by_addr((void*)::strtod_l);
-   add_by_addr((void*)::strtold);
-   add_by_addr((void*)::strtof_l);
-   add_by_addr((void*)abi::__cxa_throw);
+   add_by_fp((void*)::strftime_l);
+   add_by_fp((void*)::strtod_l);
+   add_by_fp((void*)::strtold);
+   add_by_fp((void*)::strtof_l);
+   add_by_fp((void*)abi::__cxa_throw);
 #   endif
 #endif
 }
@@ -7839,10 +7805,10 @@ h2_inline void h2_exempt::add_by_name(const char* fn)
    }
 
    for (int i = 0; i < n; ++i)
-      add_by_addr(h2_load::symbol_to_addr(res[i]->offset));
+      add_by_fp(h2_load::addr_to_ptr(res[i]->addr));
 }
 
-h2_inline void h2_exempt::add_by_addr(void* fp)
+h2_inline void h2_exempt::add_by_fp(void* fp)
 {
    I().fps[I().nfp++] = follow_jmp(fp);
    I().fps[I().nfp] = nullptr;
@@ -7867,131 +7833,138 @@ h2_inline void h2_exception::initialize()
 
 // source/stub/h2_e9.cpp
 // https://www.codeproject.com/Articles/25198/Generic-Thunk-with-5-combinations-of-Calling-Conve
+// https://github.com/microsoft/Detours/blob/master/src/detours.cpp
 
-struct h2_e9 {
 #if defined __i386__ || defined _M_IX86
-   static constexpr int size = 1 + 4;
+static constexpr int h2_e9_size = 1 + 4;
 #elif defined __x86_64__ || defined _M_X64
-   static constexpr int size = 2 + 8 + 2;
+static constexpr int h2_e9_size = 2 + 8 + 2;
 #elif defined __arm__ || defined __arm64__ || defined __aarch64__
-   static constexpr int size = 4 + 4 + 8;
+static constexpr int h2_e9_size = 4 + 4 + 8;
 #endif
 
-   static bool save(void* origin_fp, unsigned char* saved)
-   {
+static inline bool h2_e9_save(void* srcfp, unsigned char* opcode)
+{
 #if defined _WIN32
-      DWORD t;
-      if (!VirtualProtect(origin_fp, sizeof(void*) + 4, PAGE_EXECUTE_READWRITE, &t))  // PAGE_EXECUTE_WRITECOPY OR PAGE_WRITECOPY
-         return false;
+   DWORD t;
+   if (!VirtualProtect(srcfp, sizeof(void*) + 4, PAGE_EXECUTE_READWRITE, &t))  // PAGE_EXECUTE_WRITECOPY OR PAGE_WRITECOPY
+      return false;
 #else
-      /* uintptr_t is favourite, but is optional type in c++ std, using unsigned long long for portable */
-      unsigned long long page_size = (unsigned long long)h2_page_size();
-      unsigned long long origin_start = reinterpret_cast<unsigned long long>(origin_fp);
-      unsigned long long page_start = origin_start & ~(page_size - 1);
-      int page_count = ::ceil((origin_start + size - page_start) / (double)page_size);
+   /* uintptr_t is favourite, but is optional type in c++ std, using unsigned long long for portable */
+   unsigned long long page_size = (unsigned long long)h2_page_size();
+   unsigned long long srcfp_start = reinterpret_cast<unsigned long long>(srcfp);
+   unsigned long long page_start = srcfp_start & ~(page_size - 1);
+   int page_count = ::ceil((srcfp_start + h2_e9_size - page_start) / (double)page_size);
 
-      if (mprotect(reinterpret_cast<void*>(page_start), page_count * page_size, PROT_READ | PROT_WRITE | PROT_EXEC) != 0)
-         return false;
+   if (mprotect(reinterpret_cast<void*>(page_start), page_count * page_size, PROT_READ | PROT_WRITE | PROT_EXEC) != 0)
+      return false;
 #endif
-      if (saved) memcpy(saved, origin_fp, size);
-      return true;
-   }
+   if (opcode) memcpy(opcode, srcfp, h2_e9_size);
+   return true;
+}
 
-   static void set(void* origin_fp, void* substitute_fp)
-   {
-      unsigned char* I = reinterpret_cast<unsigned char*>(origin_fp);
-      long long delta = (unsigned char*)substitute_fp - (unsigned char*)origin_fp - 5;
+static inline void h2_e9_set(void* srcfp, void* dstfp)
+{
+   unsigned char* I = static_cast<unsigned char*>(srcfp);
 
 #if defined __i386__ || defined __x86_64__ || defined _M_IX86 || defined _M_X64
-      if (delta < INT_MIN || INT_MAX < delta) {  //x86_64 asm("movq $substitute_fp, %rax; jmpq %rax")
-         unsigned char C[] = {0x48, 0xB8, 0, 0, 0, 0, 0, 0, 0, 0, 0xFF, 0xE0};
-         memcpy(C + 2, &substitute_fp, sizeof(void*));
-         memcpy(I, C, sizeof(C));
-      } else {  //i386 asm("jmp offset")
-         unsigned char C[] = {0xE9, 0, 0, 0, 0};
-         *(long*)(&C[1]) = delta;
-         memcpy(I, C, sizeof(C));
-      }
+   long long delta = (unsigned char*)dstfp - I - 5;
+   if (delta < INT_MIN || INT_MAX < delta) {  //x86_64 asm("movq $dstfp, %rax; jmpq %rax")
+      unsigned char C[] = {0x48, 0xB8, 0, 0, 0, 0, 0, 0, 0, 0, 0xFF, 0xE0};
+      memcpy(C + 2, &dstfp, sizeof(void*));
+      memcpy(I, C, sizeof(C));
+   } else {  //i386 asm("jmp offset")
+      unsigned char C[] = {0xE9, 0, 0, 0, 0};
+      *(long*)(&C[1]) = delta;
+      memcpy(I, C, sizeof(C));
+   }
 #elif defined __arm__ || defined __arm64__ || defined __aarch64__
 
 #   pragma pack(push, 1)
-      struct ldr_br_dst {
-         unsigned int ldr;
-         unsigned int br;
-         void* dstfp;
-      };
-      struct b_offset {
-         unsigned int b : 8;
-         unsigned int offset : 24;
-      };
+   struct ldr_br_dst {
+      unsigned int ldr;
+      unsigned int br;
+      void* dstfp;
+   };
+   struct b_offset {
+      unsigned int b : 8;
+      unsigned int offset : 24;
+   };
 #   pragma pack(pop)
-      long long offset = (unsigned char*)substitute_fp - I;
+   long long offset = (unsigned char*)dstfp - I;
 
-      if (1 || offset < -8388607 - 1 || 0x7fffff < offset) {  // signed 2^24
-         struct ldr_br_dst* p = static_cast<ldr_br_dst*>(origin_fp);
-         p->ldr = 0x58000000 | ((8 / 4) << 5) | 17;  // x17 register store dstfp
-         p->br = 0xD61F0000 | (17 << 5);             // jmp x17
-         p->dstfp = substitute_fp;
-      } else {
-         struct b_offset* p = static_cast<b_offset*>(origin_fp);
-         p->b = offset >= 0 ? 0x14 : 0x17;  //b 14 forward 17 backward
-         p->offset = (unsigned long)((offset / 4) & 0xffffff);
-      }
-
-      __builtin___clear_cache((char*)I, (char*)I + size);
-#endif
+   if (1 || offset < -8388607 - 1 || 0x7fffff < offset) {  // signed 2^24
+      struct ldr_br_dst* p = static_cast<ldr_br_dst*>(srcfp);
+      p->ldr = 0x58000000 | ((8 / 4) << 5) | 17;  // x17 register store dstfp
+      p->br = 0xD61F0000 | (17 << 5);             // jmp x17
+      p->dstfp = dstfp;
+   } else {
+      struct b_offset* p = static_cast<b_offset*>(srcfp);
+      p->b = offset >= 0 ? 0x14 : 0x17;  //b 14 forward 17 backward
+      p->offset = (unsigned long)((offset / 4) & 0xffffff);
    }
 
-   static void reset(void* origin_fp, unsigned char* saved)
-   {
-      memcpy(origin_fp, saved, size);
+   __builtin___clear_cache((char*)I, (char*)I + h2_e9_size);
+#endif
+}
+
+static inline void h2_e9_reset(void* srcfp, unsigned char* opcode)
+{
+   memcpy(srcfp, opcode, h2_e9_size);
 #if defined __arm__ || defined __arm64__ || defined __aarch64__
-      __builtin___clear_cache(static_cast<char*>(origin_fp), static_cast<char*>(origin_fp) + size);
+   __builtin___clear_cache(static_cast<char*>(srcfp), static_cast<char*>(srcfp) + h2_e9_size);
 #endif
-   }
-};
-// source/stub/h2_native.cpp
+}
+// source/stub/h2_source.cpp
 
-struct h2_native : h2_libc {
+struct h2_source : h2_libc {
    h2_list x;
-   unsigned char saved[32];
-   void* origin_fp;
+   unsigned char saved_opcode[32];
+   void* source_fp;
    int reference_count = 0;
-   h2_native(void* _origin_fp) : origin_fp(_origin_fp) { h2_e9::save(origin_fp, saved); }
-   ~h2_native() { restore(); }
-   void restore() { h2_e9::reset(origin_fp, saved); }
+   h2_source(void* _source_fp, const char* fn, const char* file, int line) : source_fp(_source_fp)
+   {
+      if (!h2_e9_save(source_fp, saved_opcode)) {
+         h2_color::prints("yellow", "STUB %s by %s() failed %s:%d\n", fn, O.os == windows ? "VirtualProtect" : "mprotect", file, line);
+         if (O.os == macOS) ::printf("try: "), h2_color::prints("green", "printf '\\x07' | dd of=%s bs=1 seek=160 count=1 conv=notrunc\n", O.path);
+         if (O.os == Linux) ::printf("try: "), h2_color::prints("green", "objcopy --writable-text %s\n", O.path);
+      }
+   }
+   ~h2_source() { h2_e9_reset(source_fp, saved_opcode); }
+   void set(void* dstfp) { h2_e9_set(source_fp, dstfp); }
+   void save(unsigned char opcode[32]) { h2_e9_save(source_fp, opcode); }
+   void reset(unsigned char opcode[32]) { h2_e9_reset(source_fp, opcode); }
+   void reset() { h2_e9_reset(source_fp, saved_opcode); }
 };
 
-struct h2_natives {
-   h2_singleton(h2_natives);
-   h2_list natives;
+struct h2_sources {
+   h2_singleton(h2_sources);
+   h2_list sources;
 
-   h2_native* get(void* origin_fp)
+   h2_source* get(void* source_fp)
    {
-      h2_list_for_each_entry (p, natives, h2_native, x)
-         if (p->origin_fp == origin_fp)
+      h2_list_for_each_entry (p, sources, h2_source, x)
+         if (p->source_fp == source_fp)
             return p;
       return nullptr;
    }
 
-   void operator+=(void* origin_fp)
+   h2_source* add(void* source_fp, const char* fn, const char* file, int line)
    {
-      h2_native* native = get(origin_fp);
-      if (!native) {
-         native = new h2_native(origin_fp);
-         natives.push(native->x);
+      h2_source* source = get(source_fp);
+      if (!source) {
+         source = new h2_source(source_fp, fn, file, line);
+         sources.push(source->x);
       }
-      native->reference_count++;
+      source->reference_count++;
+      return source;
    }
 
-   void operator-=(void* origin_fp)
+   void del(h2_source* source)
    {
-      h2_native* native = get(origin_fp);
-      if (native) {
-         if (--native->reference_count == 0) {
-            native->x.out();
-            delete native;
-         }
+      if (source && --source->reference_count == 0) {
+         source->x.out();
+         delete source;
       }
    }
 };
@@ -7999,56 +7972,55 @@ struct h2_natives {
 
 struct h2_stub : h2_libc {
    h2_list x;
-   unsigned char saved[32];
-   void *origin_fp, *substitute_fp;
+   unsigned char saved_opcode[32];
+   void *srcfp, *dstfp;
 
-   h2_stub(void* _origin_fp) : origin_fp(_origin_fp)
+   h2_stub(void* _srcfp, const char* srcfn, const char* file, int line) : srcfp(_srcfp)
    {
-      h2_natives::I() += origin_fp;
-      h2_e9::save(origin_fp, saved);
+      h2_source* source = h2_sources::I().add(srcfp, srcfn, file, line);
+      if (source) source->save(saved_opcode);
    }
    ~h2_stub()
    {
-      h2_e9::reset(origin_fp, saved);
-      h2_natives::I() -= origin_fp;
+      h2_source* source = h2_sources::I().get(srcfp);
+      if (source) {
+         source->reset(saved_opcode);
+         h2_sources::I().del(source);
+      }
    }
-   void stub(void* _substitute_fp)
+   void stub(void* _dstfp)
    {
-      substitute_fp = _substitute_fp;
-      h2_e9::set(origin_fp, substitute_fp);
+      dstfp = _dstfp;
+      h2_source* source = h2_sources::I().get(srcfp);
+      if (source) source->set(dstfp);
    }
 };
 
-h2_inline bool h2_stubs::add(void* origin_fp, void* substitute_fp, const char* origin_fn, const char* file, int line)
+static inline h2_stub* h2_stubs_get(h2_stubs* stubs, void* srcfp)
 {
-   h2_stub* stub = nullptr;
-   h2_list_for_each_entry (p, stubs, h2_stub, x) {
-      if (p->origin_fp == origin_fp) {
-         stub = p;
-         break;
-      }
-   }
+   h2_list_for_each_entry (p, stubs->stubs, h2_stub, x)
+      if (p->srcfp == srcfp)
+         return p;
+   return nullptr;
+}
+
+h2_inline bool h2_stubs::add(void* srcfp, void* dstfp, const char* srcfn, const char* file, int line)
+{
+   h2_stub* stub = h2_stubs_get(this, srcfp);
    if (!stub) {
-      if (!h2_e9::save(origin_fp, nullptr)) {
-         h2_color::prints("yellow", "STUB %s by %s() failed %s:%d\n", origin_fn, O.os == windows ? "VirtualProtect" : "mprotect", file, line);
-         if (O.os == macOS) ::printf("try: "), h2_color::prints("green", "printf '\\x07' | dd of=%s bs=1 seek=160 count=1 conv=notrunc\n", O.path);
-         if (O.os == Linux) ::printf("try: "), h2_color::prints("green", "objcopy --writable-text %s\n", O.path);
-         return false;
-      }
-      stub = new h2_stub(origin_fp);
+      stub = new h2_stub(srcfp, srcfn, file, line);
       stubs.push(stub->x);
    }
-   stub->stub(substitute_fp);
+   stub->stub(dstfp);
    return true;
 }
 
-h2_inline void h2_stubs::clear(void* origin_fp)
+h2_inline void h2_stubs::clear(void* srcfp)
 {
-   h2_list_for_each_entry (p, stubs, h2_stub, x) {
-      if (p->origin_fp == origin_fp) {
-         p->x.out();
-         delete p;
-      }
+   h2_stub* stub = h2_stubs_get(this, srcfp);
+   if (stub) {
+      stub->x.out();
+      delete stub;
    }
 }
 
@@ -8060,21 +8032,19 @@ h2_inline void h2_stubs::clear()
    }
 }
 
-h2_inline h2_stub_temporary_restore::h2_stub_temporary_restore(void* _origin_fp) : origin_fp(_origin_fp)
+h2_inline h2_stub_temporary_restore::h2_stub_temporary_restore(void* _srcfp) : srcfp(_srcfp)
 {
-   h2_native* native = h2_natives::I().get(origin_fp);
-   if (native) {
-      h2_e9::save(origin_fp, saved);
-      native->restore();
+   h2_source* source = h2_sources::I().get(srcfp);
+   if (source) {
+      source->save(saved_opcode);
+      source->reset();
    }
 }
 
 h2_inline h2_stub_temporary_restore::~h2_stub_temporary_restore()
 {
-   h2_native* native = h2_natives::I().get(origin_fp);
-   if (native) {
-      h2_e9::reset(origin_fp, saved);
-   }
+   h2_source* source = h2_sources::I().get(srcfp);
+   if (source) source->reset(saved_opcode);
 }
 
 // source/mock/h2_checkin.cpp
@@ -8142,7 +8112,7 @@ h2_inline void h2_mockee::mock()
 {
    x.out();
    h2_mock_g(this);
-   h2_stub_g(origin_fp, substitute_fp, class_function, file, line);
+   h2_stub_g(srcfp, dstfp, class_function, file, line);
 }
 
 h2_inline h2_fail* h2_mockee::times_check()
@@ -9662,16 +9632,16 @@ struct h2_fail_asymmetric_free : h2_fail_memory {
 };
 
 struct h2_fail_overflow : h2_fail_memory {
-   const void* addr;                    /* 犯罪地点 */
+   const void* violate_ptr;             /* 犯罪地点 */
    const char* action;                  /* 犯罪行为 */
    const h2_vector<unsigned char> spot; /* 犯罪现场 */
    const h2_backtrace bt_trample;       /* 犯罪过程 */
-   h2_fail_overflow(const void* ptr_, const int size_, const void* addr_, const char* action_, const h2_vector<unsigned char>& spot_, const h2_backtrace& bt_allocate_, const h2_backtrace& bt_trample_, const char* file_ = nullptr, int line_ = 0)
-     : h2_fail_memory(ptr_, size_, bt_allocate_, h2_backtrace(), file_, line_), addr(addr_), action(action_), spot(spot_), bt_trample(bt_trample_) {}
+   h2_fail_overflow(const void* ptr_, const int size_, const void* violate_ptr_, const char* action_, const h2_vector<unsigned char>& spot_, const h2_backtrace& bt_allocate_, const h2_backtrace& bt_trample_, const char* file_ = nullptr, int line_ = 0)
+     : h2_fail_memory(ptr_, size_, bt_allocate_, h2_backtrace(), file_, line_), violate_ptr(violate_ptr_), action(action_), spot(spot_), bt_trample(bt_trample_) {}
    void print(int subling_index = 0, int child_index = 0) override
    {
-      int offset = ptr < addr ? (long long)addr - ((long long)ptr + size) : (long long)addr - (long long)ptr;
-      h2_row row = h2_stringify(ptr) + " " + color(h2_string("%+d", offset), "bold,red") + " " + gray("(") + h2_stringify(addr) + gray(")") + " " + color(action, "bold,red") + " " + (offset >= 0 ? "overflow" : "underflow") + " ";
+      int offset = ptr < violate_ptr ? (long long)violate_ptr - ((long long)ptr + size) : (long long)violate_ptr - (long long)ptr;
+      h2_row row = h2_stringify(ptr) + " " + color(h2_string("%+d", offset), "bold,red") + " " + gray("(") + h2_stringify(violate_ptr) + gray(")") + " " + color(action, "bold,red") + " " + (offset >= 0 ? "overflow" : "underflow") + " ";
       for (int i = 0; i < spot.size(); ++i) row.printf("bold,red", "%02X ", spot[i]);
       h2_color::printl(" " + row + locate());
       if (bt_trample.count) h2_color::prints("", "  trampled at backtrace:\n"), bt_trample.print(3);
@@ -9680,14 +9650,14 @@ struct h2_fail_overflow : h2_fail_memory {
 };
 
 struct h2_fail_use_after_free : h2_fail_memory {
-   const void* addr;          /* 犯罪地点 */
+   const void* violate_ptr;   /* 犯罪地点 */
    const char* action;        /* 犯罪行为 */
    const h2_backtrace bt_use; /* 犯罪过程 */
-   h2_fail_use_after_free(const void* ptr_, const void* addr_, const char* action_, const h2_backtrace& bt_allocate_, const h2_backtrace& bt_release_, const h2_backtrace& bt_use_)
-     : h2_fail_memory(ptr_, 0, bt_allocate_, bt_release_), addr(addr_), action(action_), bt_use(bt_use_) {}
+   h2_fail_use_after_free(const void* ptr_, const void* violate_ptr_, const char* action_, const h2_backtrace& bt_allocate_, const h2_backtrace& bt_release_, const h2_backtrace& bt_use_)
+     : h2_fail_memory(ptr_, 0, bt_allocate_, bt_release_), violate_ptr(violate_ptr_), action(action_), bt_use(bt_use_) {}
    void print(int subling_index = 0, int child_index = 0) override
    {
-      h2_row row = h2_stringify(ptr) + " " + color(h2_string("%+d", (long long)addr - (long long)ptr), "bold,red") + " " + gray("(") + h2_stringify(addr) + gray(")") + " " + color(action, "bold,red") + color(" after free", "bold,red");
+      h2_row row = h2_stringify(ptr) + " " + color(h2_string("%+d", (long long)violate_ptr - (long long)ptr), "bold,red") + " " + gray("(") + h2_stringify(violate_ptr) + gray(")") + " " + color(action, "bold,red") + color(" after free", "bold,red");
       h2_color::printl(" " + row + " at backtrace:"), bt_use.print(2);
       h2_color::prints("", "  which allocate at backtrace:\n"), bt_allocate.print(3);
       h2_color::prints("", "  and free at backtrace:\n"), bt_release.print(3);
@@ -9730,13 +9700,13 @@ h2_inline h2_fail* h2_fail::new_asymmetric_free(const void* ptr, const char* who
 {
    return new h2_fail_asymmetric_free(ptr, who_allocate, who_release, bt_allocate, bt_release);
 }
-h2_inline h2_fail* h2_fail::new_overflow(const void* ptr, const int size, const void* addr, const char* action, const h2_vector<unsigned char>& spot, const h2_backtrace& bt_allocate, const h2_backtrace& bt_trample, const char* file, int line)
+h2_inline h2_fail* h2_fail::new_overflow(const void* ptr, const int size, const void* violate_ptr, const char* action, const h2_vector<unsigned char>& spot, const h2_backtrace& bt_allocate, const h2_backtrace& bt_trample, const char* file, int line)
 {
-   return new h2_fail_overflow(ptr, size, addr, action, spot, bt_allocate, bt_trample, file, line);
+   return new h2_fail_overflow(ptr, size, violate_ptr, action, spot, bt_allocate, bt_trample, file, line);
 }
-h2_inline h2_fail* h2_fail::new_use_after_free(const void* ptr, const void* addr, const char* action, const h2_backtrace& bt_allocate, const h2_backtrace& bt_release, const h2_backtrace& bt_use)
+h2_inline h2_fail* h2_fail::new_use_after_free(const void* ptr, const void* violate_ptr, const char* action, const h2_backtrace& bt_allocate, const h2_backtrace& bt_release, const h2_backtrace& bt_use)
 {
-   return new h2_fail_use_after_free(ptr, addr, action, bt_allocate, bt_release, bt_use);
+   return new h2_fail_use_after_free(ptr, violate_ptr, action, bt_allocate, bt_release, bt_use);
 }
 // source/other/h2_report.cpp
 
@@ -10137,14 +10107,6 @@ static inline h2_rows row_break(const h2_row& row, unsigned width)
    return rows;
 }
 
-static inline unsigned int_width(int maximum, char scale)
-{
-   char t1[64], t2[64];
-   sprintf(t1, "%%%c", scale);
-   sprintf(t2, t1, maximum);
-   return strlen(t2);
-}
-
 static inline void rows_merge(h2_rows& rows, const h2_rows& left_rows, const h2_rows& right_rows, unsigned left_width, unsigned right_width, int step, char scale, int seq_width)
 {
    char seq_fmt[32];
@@ -10172,7 +10134,7 @@ static inline void rows_merge(h2_rows& rows, const h2_rows& left_rows, const h2_
 
 h2_inline h2_rows h2_layout::split(const h2_rows& left_rows, const h2_rows& right_rows, const char* left_title, const char* right_title, int step, char scale, unsigned width)
 {
-   unsigned seq_width = int_width(step * std::max(left_rows.size(), right_rows.size()), scale);
+   unsigned seq_width = number_strlen(step * std::max(left_rows.size(), right_rows.size()), scale == 'x' ? 16 : 10);
    unsigned valid_width = width - (seq_width + 1 /* "|" */) - 1 /*|*/ - 4 /* spaces */;
 
    unsigned left_width = std::max(left_rows.width(), 8u); /* at least title width */

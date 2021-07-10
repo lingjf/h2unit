@@ -7,7 +7,7 @@ SET(CMAKE_CXX_STANDARD 11)
 
 IF(NOT CMAKE_SYSTEM_NAME MATCHES "Windows")
     ADD_CUSTOM_TARGET(concat ALL
-        COMMAND  python ${CMAKE_CURRENT_SOURCE_DIR}/../build/concat.py
+        COMMAND python ${CMAKE_CURRENT_SOURCE_DIR}/../build/concat.py
     )
 ENDIF()
 
@@ -15,9 +15,13 @@ AUX_SOURCE_DIRECTORY(. SRC_TEST)
 
 ADD_EXECUTABLE(a.out ../build/h2unit.cpp ${SRC_TEST})
 
+IF(NOT CMAKE_SYSTEM_NAME MATCHES "Windows")
+    ADD_DEPENDENCIES(a.out concat)
+ENDIF()
+
 IF(CMAKE_SYSTEM_NAME MATCHES "Darwin")
     ADD_CUSTOM_TARGET(fixup ALL
-        COMMAND  ${CMAKE_CURRENT_SOURCE_DIR}/../fixup.sh a.out
+        COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/../fixup.sh a.out
         DEPENDS a.out
     )
 ENDIF()

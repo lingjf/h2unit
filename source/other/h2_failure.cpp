@@ -363,16 +363,16 @@ struct h2_fail_asymmetric_free : h2_fail_memory {
 };
 
 struct h2_fail_overflow : h2_fail_memory {
-   const void* addr;                    /* 犯罪地点 */
+   const void* violate_ptr;             /* 犯罪地点 */
    const char* action;                  /* 犯罪行为 */
    const h2_vector<unsigned char> spot; /* 犯罪现场 */
    const h2_backtrace bt_trample;       /* 犯罪过程 */
-   h2_fail_overflow(const void* ptr_, const int size_, const void* addr_, const char* action_, const h2_vector<unsigned char>& spot_, const h2_backtrace& bt_allocate_, const h2_backtrace& bt_trample_, const char* file_ = nullptr, int line_ = 0)
-     : h2_fail_memory(ptr_, size_, bt_allocate_, h2_backtrace(), file_, line_), addr(addr_), action(action_), spot(spot_), bt_trample(bt_trample_) {}
+   h2_fail_overflow(const void* ptr_, const int size_, const void* violate_ptr_, const char* action_, const h2_vector<unsigned char>& spot_, const h2_backtrace& bt_allocate_, const h2_backtrace& bt_trample_, const char* file_ = nullptr, int line_ = 0)
+     : h2_fail_memory(ptr_, size_, bt_allocate_, h2_backtrace(), file_, line_), violate_ptr(violate_ptr_), action(action_), spot(spot_), bt_trample(bt_trample_) {}
    void print(int subling_index = 0, int child_index = 0) override
    {
-      int offset = ptr < addr ? (long long)addr - ((long long)ptr + size) : (long long)addr - (long long)ptr;
-      h2_row row = h2_stringify(ptr) + " " + color(h2_string("%+d", offset), "bold,red") + " " + gray("(") + h2_stringify(addr) + gray(")") + " " + color(action, "bold,red") + " " + (offset >= 0 ? "overflow" : "underflow") + " ";
+      int offset = ptr < violate_ptr ? (long long)violate_ptr - ((long long)ptr + size) : (long long)violate_ptr - (long long)ptr;
+      h2_row row = h2_stringify(ptr) + " " + color(h2_string("%+d", offset), "bold,red") + " " + gray("(") + h2_stringify(violate_ptr) + gray(")") + " " + color(action, "bold,red") + " " + (offset >= 0 ? "overflow" : "underflow") + " ";
       for (int i = 0; i < spot.size(); ++i) row.printf("bold,red", "%02X ", spot[i]);
       h2_color::printl(" " + row + locate());
       if (bt_trample.count) h2_color::prints("", "  trampled at backtrace:\n"), bt_trample.print(3);
@@ -381,14 +381,14 @@ struct h2_fail_overflow : h2_fail_memory {
 };
 
 struct h2_fail_use_after_free : h2_fail_memory {
-   const void* addr;          /* 犯罪地点 */
+   const void* violate_ptr;   /* 犯罪地点 */
    const char* action;        /* 犯罪行为 */
    const h2_backtrace bt_use; /* 犯罪过程 */
-   h2_fail_use_after_free(const void* ptr_, const void* addr_, const char* action_, const h2_backtrace& bt_allocate_, const h2_backtrace& bt_release_, const h2_backtrace& bt_use_)
-     : h2_fail_memory(ptr_, 0, bt_allocate_, bt_release_), addr(addr_), action(action_), bt_use(bt_use_) {}
+   h2_fail_use_after_free(const void* ptr_, const void* violate_ptr_, const char* action_, const h2_backtrace& bt_allocate_, const h2_backtrace& bt_release_, const h2_backtrace& bt_use_)
+     : h2_fail_memory(ptr_, 0, bt_allocate_, bt_release_), violate_ptr(violate_ptr_), action(action_), bt_use(bt_use_) {}
    void print(int subling_index = 0, int child_index = 0) override
    {
-      h2_row row = h2_stringify(ptr) + " " + color(h2_string("%+d", (long long)addr - (long long)ptr), "bold,red") + " " + gray("(") + h2_stringify(addr) + gray(")") + " " + color(action, "bold,red") + color(" after free", "bold,red");
+      h2_row row = h2_stringify(ptr) + " " + color(h2_string("%+d", (long long)violate_ptr - (long long)ptr), "bold,red") + " " + gray("(") + h2_stringify(violate_ptr) + gray(")") + " " + color(action, "bold,red") + color(" after free", "bold,red");
       h2_color::printl(" " + row + " at backtrace:"), bt_use.print(2);
       h2_color::prints("", "  which allocate at backtrace:\n"), bt_allocate.print(3);
       h2_color::prints("", "  and free at backtrace:\n"), bt_release.print(3);
@@ -431,11 +431,11 @@ h2_inline h2_fail* h2_fail::new_asymmetric_free(const void* ptr, const char* who
 {
    return new h2_fail_asymmetric_free(ptr, who_allocate, who_release, bt_allocate, bt_release);
 }
-h2_inline h2_fail* h2_fail::new_overflow(const void* ptr, const int size, const void* addr, const char* action, const h2_vector<unsigned char>& spot, const h2_backtrace& bt_allocate, const h2_backtrace& bt_trample, const char* file, int line)
+h2_inline h2_fail* h2_fail::new_overflow(const void* ptr, const int size, const void* violate_ptr, const char* action, const h2_vector<unsigned char>& spot, const h2_backtrace& bt_allocate, const h2_backtrace& bt_trample, const char* file, int line)
 {
-   return new h2_fail_overflow(ptr, size, addr, action, spot, bt_allocate, bt_trample, file, line);
+   return new h2_fail_overflow(ptr, size, violate_ptr, action, spot, bt_allocate, bt_trample, file, line);
 }
-h2_inline h2_fail* h2_fail::new_use_after_free(const void* ptr, const void* addr, const char* action, const h2_backtrace& bt_allocate, const h2_backtrace& bt_release, const h2_backtrace& bt_use)
+h2_inline h2_fail* h2_fail::new_use_after_free(const void* ptr, const void* violate_ptr, const char* action, const h2_backtrace& bt_allocate, const h2_backtrace& bt_release, const h2_backtrace& bt_use)
 {
-   return new h2_fail_use_after_free(ptr, addr, action, bt_allocate, bt_release, bt_use);
+   return new h2_fail_use_after_free(ptr, violate_ptr, action, bt_allocate, bt_release, bt_use);
 }

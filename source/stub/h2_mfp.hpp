@@ -169,10 +169,10 @@ struct h2_mfp<Class, ReturnType(Args...)> {
       Class* object = h2_constructible<Class>::O(alloca(sizeof(Class)));
       if (0 == (long long)object || 1 == (long long)object || 2 == (long long)object) {
          char vtable_symbol[1024];
-         sprintf(vtable_symbol, "_ZTV%s", typeid(Class).name());  // mangled for "vtable for Class"
-         unsigned long long relative_vtable = h2_nm::get_mangled(vtable_symbol);
+         sprintf(vtable_symbol, "_ZTV%s", typeid(Class).name());  // mangle for "vtable for Class"
+         unsigned long long relative_vtable = h2_nm::get_mangle(vtable_symbol);
          if (relative_vtable) {
-            vtable = (void**)h2_load::vtable_to_addr(relative_vtable);
+            vtable = (void**)h2_load::vtable_to_ptr(relative_vtable);
          } else {
             h2_color::prints("yellow", "\nDon't find vtable for %s\n", vtable_symbol);
          }
@@ -189,7 +189,7 @@ struct h2_mfp<Class, ReturnType(Args...)> {
          void (h2_test_plus::*f)();
          void* p;
       } t{&h2_test_plus::test};
-      if (1 & (unsigned long long)t.p) {
+      if ((unsigned long long)t.p & 1) {
          return (v & 1) && (v - 1) % sizeof(void*) == 0 && v < 1000 * sizeof(void*);
          /* assumption: virtual member count less than 1000 */
       } else {

@@ -1,56 +1,55 @@
 
 struct h2_stub : h2_libc {
    h2_list x;
-   unsigned char saved[32];
-   void *origin_fp, *substitute_fp;
+   unsigned char saved_opcode[32];
+   void *srcfp, *dstfp;
 
-   h2_stub(void* _origin_fp) : origin_fp(_origin_fp)
+   h2_stub(void* _srcfp, const char* srcfn, const char* file, int line) : srcfp(_srcfp)
    {
-      h2_natives::I() += origin_fp;
-      h2_e9::save(origin_fp, saved);
+      h2_source* source = h2_sources::I().add(srcfp, srcfn, file, line);
+      if (source) source->save(saved_opcode);
    }
    ~h2_stub()
    {
-      h2_e9::reset(origin_fp, saved);
-      h2_natives::I() -= origin_fp;
+      h2_source* source = h2_sources::I().get(srcfp);
+      if (source) {
+         source->reset(saved_opcode);
+         h2_sources::I().del(source);
+      }
    }
-   void stub(void* _substitute_fp)
+   void stub(void* _dstfp)
    {
-      substitute_fp = _substitute_fp;
-      h2_e9::set(origin_fp, substitute_fp);
+      dstfp = _dstfp;
+      h2_source* source = h2_sources::I().get(srcfp);
+      if (source) source->set(dstfp);
    }
 };
 
-h2_inline bool h2_stubs::add(void* origin_fp, void* substitute_fp, const char* origin_fn, const char* file, int line)
+static inline h2_stub* h2_stubs_get(h2_stubs* stubs, void* srcfp)
 {
-   h2_stub* stub = nullptr;
-   h2_list_for_each_entry (p, stubs, h2_stub, x) {
-      if (p->origin_fp == origin_fp) {
-         stub = p;
-         break;
-      }
-   }
+   h2_list_for_each_entry (p, stubs->stubs, h2_stub, x)
+      if (p->srcfp == srcfp)
+         return p;
+   return nullptr;
+}
+
+h2_inline bool h2_stubs::add(void* srcfp, void* dstfp, const char* srcfn, const char* file, int line)
+{
+   h2_stub* stub = h2_stubs_get(this, srcfp);
    if (!stub) {
-      if (!h2_e9::save(origin_fp, nullptr)) {
-         h2_color::prints("yellow", "STUB %s by %s() failed %s:%d\n", origin_fn, O.os == windows ? "VirtualProtect" : "mprotect", file, line);
-         if (O.os == macOS) ::printf("try: "), h2_color::prints("green", "printf '\\x07' | dd of=%s bs=1 seek=160 count=1 conv=notrunc\n", O.path);
-         if (O.os == Linux) ::printf("try: "), h2_color::prints("green", "objcopy --writable-text %s\n", O.path);
-         return false;
-      }
-      stub = new h2_stub(origin_fp);
+      stub = new h2_stub(srcfp, srcfn, file, line);
       stubs.push(stub->x);
    }
-   stub->stub(substitute_fp);
+   stub->stub(dstfp);
    return true;
 }
 
-h2_inline void h2_stubs::clear(void* origin_fp)
+h2_inline void h2_stubs::clear(void* srcfp)
 {
-   h2_list_for_each_entry (p, stubs, h2_stub, x) {
-      if (p->origin_fp == origin_fp) {
-         p->x.out();
-         delete p;
-      }
+   h2_stub* stub = h2_stubs_get(this, srcfp);
+   if (stub) {
+      stub->x.out();
+      delete stub;
    }
 }
 
@@ -62,19 +61,17 @@ h2_inline void h2_stubs::clear()
    }
 }
 
-h2_inline h2_stub_temporary_restore::h2_stub_temporary_restore(void* _origin_fp) : origin_fp(_origin_fp)
+h2_inline h2_stub_temporary_restore::h2_stub_temporary_restore(void* _srcfp) : srcfp(_srcfp)
 {
-   h2_native* native = h2_natives::I().get(origin_fp);
-   if (native) {
-      h2_e9::save(origin_fp, saved);
-      native->restore();
+   h2_source* source = h2_sources::I().get(srcfp);
+   if (source) {
+      source->save(saved_opcode);
+      source->reset();
    }
 }
 
 h2_inline h2_stub_temporary_restore::~h2_stub_temporary_restore()
 {
-   h2_native* native = h2_natives::I().get(origin_fp);
-   if (native) {
-      h2_e9::reset(origin_fp, saved);
-   }
+   h2_source* source = h2_sources::I().get(srcfp);
+   if (source) source->reset(saved_opcode);
 }

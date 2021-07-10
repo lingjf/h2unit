@@ -51,10 +51,10 @@ struct h2_stack {
       return nullptr;
    }
 
-   h2_piece* host_piece(const void* addr)
+   h2_piece* host_piece(const void* ptr)
    {
       h2_list_for_each_entry (p, blocks, h2_block, x) {
-         h2_piece* piece = p->host_piece(addr);
+         h2_piece* piece = p->host_piece(ptr);
          if (piece) return piece;
       }
       return nullptr;

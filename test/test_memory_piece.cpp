@@ -15,7 +15,7 @@ char* h2_piece_tojson(h2::h2_piece* piece, char* b)
    l += sprintf(b + l, ",\"snow_flower\": \"%x\"", piece->snow_flower);
    l += sprintf(b + l, ",\"forbidden_page\": \"%p\"", piece->forbidden_page);
    l += sprintf(b + l, ",\"forbidden_size\": %zu", piece->forbidden_size);
-   l += sprintf(b + l, ",\"violate_address\": \"%p\"", piece->violate_address);
+   l += sprintf(b + l, ",\"violate_ptr\": \"%p\"", piece->violate_ptr);
    l += sprintf(b + l, ",\"violate_action\": \"%s\"", piece->violate_action);
    l += sprintf(b + l, ",\"violate_times\": %d", piece->violate_times);
    l += sprintf(b + l, ",\"violate_after_free\": %s", piece->violate_after_free ? "true" : "false");

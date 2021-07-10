@@ -1,7 +1,7 @@
 
 struct h2_mockee : h2_libc {
    h2_list x;
-   void *origin_fp, *substitute_fp;
+   void *srcfp, *dstfp;
    const char* return_type;
    const char* class_function;
    h2_vector<const char*> argument_type;
@@ -40,14 +40,14 @@ class h2_mocker<Counter, Class, ReturnType(Args...)> : h2_mockee {
    static ReturnType normal_function_stub(Args... args)
    {
       int index = I().matches(std::forward<Args>(args)...);
-      h2::h2_stub_temporary_restore t(I().origin_fp);
+      h2::h2_stub_temporary_restore t(I().srcfp);
       return I().routine_array[index](nullptr, std::forward<Args>(args)...);
    }
 
    static ReturnType member_function_stub(Class* This, Args... args)
    {
       int index = I().matches(std::forward<Args>(args)...);
-      h2::h2_stub_temporary_restore t(I().origin_fp);
+      h2::h2_stub_temporary_restore t(I().srcfp);
       return I().routine_array[index](This, std::forward<Args>(args)...);
    }
 
@@ -58,18 +58,14 @@ class h2_mocker<Counter, Class, ReturnType(Args...)> : h2_mockee {
       for (int i = checkin_index; i < checkin_array.size(); ++i) {
          h2_fail* fails = h2_tuple_matches(matcher_array[i], at);
          if (fails) {
-            if (checkin_offset != -1) {
-               break;
-            }
+            if (checkin_offset != -1) break;
             if (checkin_array[i].is_satisfied()) { /* try next h2_checkin */
                delete fails;
                continue;
             }
             fails->foreach([this, i](h2_fail* f, int, int) {
                f->explain += gray("on ") + (class_function + arguments(f->seqno));
-               if (1 < checkin_array.size()) {
-                  f->explain += gray(" when ") + h2_numeric::sequence_number(i) + " checkin " + color(checkin_array[i].expr, "cyan");
-               }
+               if (1 < checkin_array.size()) f->explain += gray(" when ") + h2_numeric::sequence_number(i) + " checkin " + color(checkin_array[i].expr, "cyan");
             });
             h2_fail* fail = h2_fail::new_normal(signature(), file, line);
             h2_fail::append_child(fail, fails);
@@ -77,16 +73,10 @@ class h2_mocker<Counter, Class, ReturnType(Args...)> : h2_mockee {
          } else {
             checkin_index = i;
             checkin_offset = i;
-            if (checkin_array[i].is_saturated()) {
-               continue;
-            }
-            if (checkin_array[i].insufficient()) {
-               break;
-            }
+            if (checkin_array[i].is_saturated()) continue;
+            if (checkin_array[i].insufficient()) break;
             /* satisfied */
-            if (greed_mode) {
-               break;
-            }
+            if (greed_mode) break;
             /* continue */
          }
       }
@@ -119,10 +109,10 @@ class h2_mocker<Counter, Class, ReturnType(Args...)> : h2_mockee {
       return *i;
    }
 
-   static h2_mocker& I(void* origin_fp, const char* return_type, const char* class_function, const h2_vector<const char*>& argument_type, const char* inspects, const char* file, int line)
+   static h2_mocker& I(void* srcfp, const char* return_type, const char* class_function, const h2_vector<const char*>& argument_type, const char* inspects, const char* file, int line)
    {
-      I().origin_fp = origin_fp;
-      I().substitute_fp = std::is_same<std::false_type, Class>::value ? (void*)normal_function_stub : (void*)member_function_stub;
+      I().srcfp = srcfp;
+      I().dstfp = std::is_same<std::false_type, Class>::value ? (void*)normal_function_stub : (void*)member_function_stub;
       I().return_type = return_type;
       I().class_function = class_function;
       I().argument_type = argument_type;
@@ -223,9 +213,9 @@ class h2_mocker<Counter, Class, ReturnType(Args...)> : h2_mockee {
    {
       if (checkin_array.empty()) Any();
       if (std::is_same<std::false_type, Class>::value)
-         routine_array.back().fp = (ReturnType(*)(Args...))origin_fp;
+         routine_array.back().fp = (ReturnType(*)(Args...))srcfp;
       else
-         routine_array.back().mfp = (ReturnType(*)(Class*, Args...))origin_fp;
+         routine_array.back().mfp = (ReturnType(*)(Class*, Args...))srcfp;
       return *this;
    }
 

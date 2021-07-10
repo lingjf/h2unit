@@ -1,13 +1,14 @@
 #include "../build/h2unit.hpp"
+#include <time.h>
 
-int foobar(int a, const char* b)
+int foo(int a, const char* b)
 {
    return 0;
 }
 
-class foo {
+class bar {
  public:
-   int bar(int a, const char* b)
+   int fx(int a, const char* b)
    {
       return 0;
    }
@@ -17,46 +18,46 @@ SUITE(MOCK)
 {
    Case(argument)
    {
-      MOCK(foobar, int, (int, const char*), Once(1, "A")) { return 11; };
-      OK(11, foobar(2, "B"));
+      MOCK(foo, int, (int, const char*), Once(1, "A")) { return 11; };
+      OK(11, foo(2, "B"));
    }
 
    Case(call times)
    {
-      MOCK(foobar, int, (int, const char*), Times(2), Once()) { return 0; };
-      foobar(1, "A");
+      MOCK(foo, int, (int, const char*), Times(2), Once()) { return 0; };
+      foo(1, "A");
    }
 
    Case(unexpect call)
    {
-      MOCK(foobar, int, (int, const char*), Times(1).With(1, "A")) { return 0; };
-      foobar(1, "A");
-      foobar(2, "B");
+      MOCK(foo, int, (int, const char*), Times(1).With(1, "A")) { return 0; };
+      foo(1, "A");
+      foo(2, "B");
    }
 
    Case(c++ class member)
    {
-      MOCK(foo, bar, int, (int, const char*), Once(1, "A")) { return 11; };
+      MOCK(bar, fx, int, (int, const char*), Once(1, "A")) { return 11; };
 
-      foo f;
-      OK(11, f.bar(2, "B"));
+      bar f;
+      OK(11, f.fx(2, "B"));
    }
 
    Case(OK in mock)
    {
-      MOCK(foobar, int, (int a, const char* b), Once())
+      MOCK(foo, int, (int a, const char* b), Once())
       {
          OK(1, a);
          OK("a", b);
          return 11;
       };
 
-      OK(11, foobar(2, "B"));
+      OK(11, foo(2, "B"));
    }
 
    Case(greed true)
    {
-      MOCK(foobar, int, (int, const char*),
+      MOCK(foo, int, (int, const char*),
            greed(true)
              .Between(1, 3)
              .With(1, "A")
@@ -64,33 +65,39 @@ SUITE(MOCK)
              .Once(1, _)
              .Return(22)) { return 0; };
 
-      OK(11, foobar(1, "A"));
-      OK(22, foobar(1, "A"));
+      OK(11, foo(1, "A"));
+      OK(22, foo(1, "A"));
    }
 }
 
-int foobar1_bystub(int a)
+static time_t STUB_time(time_t* x)
+{
+   return 42;
+}
+
+CASE(no function)
+{
+   STUB("Time", STUB_time);
+   OK(42, time(NULL));
+}
+
+int foobar(int a)
 {
    return 0;
 }
 
-int foobar1_bystub(int a, const char* b)
+int foobar(int a, const char* b)
 {
    return 0;
 }
 
-int STUB_foobar_bystub(int a)
+int STUB_foobar(int a)
 {
    return -1;
 }
 
-CASE("foobar0_bystub")
+CASE("foobar")
 {
-   STUB("foobar0_bystub", STUB_foobar_bystub);
-}
-
-CASE("foobar1_bystub")
-{
-   STUB("foobar1_bystub", STUB_foobar_bystub);
-   OK(-1, foobar1_bystub(0));
+   STUB("foobar", STUB_foobar);
+   OK(-1, foobar(0));
 }

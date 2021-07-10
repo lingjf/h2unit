@@ -1,481 +1,296 @@
 #include "../source/h2_unit.cpp"
+#include "test_types.hpp"
 
-namespace {
-
-int foobar(int, const int&)
+static int foobar2_stub(int a, const char* b)
 {
-   return 1;
+   return -22;
 }
 
-namespace ns111 {
-   int foobar(int, const int&)
-   {
-      return 1;
-   }
-}  // namespace ns111
-
-int STUB_foobar(int, const int&)
-{
-   return -1;
-}
-int STUB2_foobar(int, const int&)
-{
-   return -2;
-}
-
-SUITE(stub)
+SUITE(stub function)
 {
    Case(stub simple)
    {
-      OK(1, foobar(0, 1));
+      OK(2, foobar2(0, "1"));
 
-      STUB(foobar, STUB_foobar);
-      OK(-1, foobar(0, 1));
+      STUB(foobar2, foobar2_fake);
+      OK(-2, foobar2(0, "1"));
 
-      UNSTUB(foobar);
-      OK(1, foobar(0, 1));
+      UNSTUB(foobar2);
+      OK(2, foobar2(0, "1"));
    }
 
    Case(stub overwrite)
    {
-      OK(1, foobar(0, 1));
+      OK(2, foobar2(0, "1"));
 
-      STUB(foobar, STUB_foobar);
-      OK(-1, foobar(0, 1));
-      STUB(foobar, STUB2_foobar);
-      OK(-2, foobar(0, 1));
-
-      UNSTUB(foobar);
-      OK(1, foobar(0, 1));
+      STUB(foobar2, foobar2_fake);
+      OK(-2, foobar2(0, "1"));
+      STUB(foobar2, foobar2_stub);
+      OK(-22, foobar2(0, "1"));
    }
 
    Case(stub chained)
    {
-      OK(1, foobar(0, 1));
+      OK(2, foobar2(0, "1"));
 
-      STUB(foobar, STUB_foobar);
-      OK(-1, foobar(0, 1));
+      STUB(foobar2, foobar2_fake);
+      OK(-2, foobar2(0, "1"));
 
-      STUB(STUB_foobar, STUB2_foobar);
-      OK(-2, foobar(0, 1));
-
-      UNSTUB(STUB_foobar);
-      OK(-1, foobar(0, 1));
-
-      UNSTUB(foobar);
-      OK(1, foobar(0, 1));
+      STUB(foobar2_fake, foobar2_stub);
+      OK(-22, foobar2(0, "1"));
    }
 
    Case(stub in namespace)
    {
-      OK(1, ns111::foobar(0, 1));
+      OK(2, test_ns::foobar2(0, "1"));
 
-      STUB(ns111::foobar, STUB_foobar);
-      OK(-1, ns111::foobar(0, 1));
-
-      UNSTUB(ns111::foobar);
-      OK(1, ns111::foobar(0, 1));
+      STUB(test_ns::foobar2, foobar2_fake);
+      OK(-2, test_ns::foobar2(0, "1"));
    }
 }
 
-class Shape {
- private:
-   int x, y;
+SUITE(stub member function){
+  Case(static member function){
+    OK("A.static_f1", B_DerivedClass::static_f1(1));
 
- public:
-   Shape() : x(0), y(0) {}
-
-   int value;
-
-   static int fly(int x, int y) { return 0; }
-
-   int go(int x, int y)
-   {
-      this->x += x;
-      this->y += y;
-      return 0;
-   }
-
-   int go(int xy)
-   {
-      this->x += xy;
-      this->y += xy;
-      return 0;
-   }
-
-   virtual int work(int x, int y)
-   {
-      this->x *= x;
-      this->y *= y;
-      return 0;
-   }
-};
-
-namespace ns112 {
-   class Rect : public Shape {
-    public:
-      int go(int x, int y)
-      {
-         return 0;
-      }
-   };
-}  // namespace ns112
-
-int Shape_go_fake(Shape* shape, int x, int y)
-{
-   return x + y;
-}
-int Shape_work_fake(Shape* shape, int x, int y)
-{
-   return x + y;
-}
-int Shape_fly_fake(int x, int y)
-{
-   return x + y;
+STUB(B_DerivedClass::static_f1, const char*, (int a), B_static_f1_fake);
+OK("-B.static_f1", B_DerivedClass::static_f1(1));
 }
 
-int Rect_go_fake(ns112::Rect* rect, int x, int y)
+Case(myself normal member function)
 {
-   return x + y;
+   B_DerivedClass b;
+   OK("B.normal_f2", b.normal_f2(1, 2));
+
+   STUB(B_DerivedClass, normal_f2, const char*, (int a, int b), B_normal_f2_fake);
+   OK("-B.normal_f2", b.normal_f2(1, 2));
 }
 
-SUITE(stub member function)
+Case(abstract normal member function)
 {
-   Case(normal member function)
-   {
-      Shape shape;
-      OK(0, shape.go(111, 111));
+   B_DerivedClass b;
+   OK("A.normal_f1", b.normal_f1(1));
 
-      STUB(Shape, go, int, (int a, int b), Shape_go_fake);
-      OK(222, shape.go(111, 111));
-
-      UNSTUB(Shape, go, int, (int a, int b));
-      OK(0, shape.go(111, 111));
-   }
-
-   Case(virtual member function)
-   {
-      Shape shape;
-      OK(0, shape.work(111, 111));
-
-      STUB(Shape, work, int, (int a, int b), Shape_work_fake);
-      OK(222, shape.work(111, 111));
-
-      UNSTUB(Shape, work, int, (int a, int b));
-      OK(0, shape.work(111, 111));
-   }
-
-   Case(static member function)
-   {
-      OK(0, Shape::fly(111, 111));
-
-      STUB(Shape::fly, int, (int a, int b), Shape_fly_fake);
-      OK(222, Shape::fly(111, 111));
-
-      UNSTUB(Shape::fly, int, (int a, int b));
-      OK(0, Shape::fly(111, 111));
-   }
-
-   Case(in namespace)
-   {
-      ns112::Rect rect;
-      OK(0, rect.go(111, 111));
-
-      STUB(ns112::Rect, go, int, (int a, int b), Rect_go_fake);
-      OK(222, rect.go(111, 111));
-
-      UNSTUB(ns112::Rect, go, int, (int a, int b));
-      OK(0, rect.go(111, 111));
-   }
+   STUB(A_AbstractClass, normal_f1, const char*, (int a), A_normal_f1_fake);
+   OK("-A.normal_f1", b.normal_f1(1));
 }
 
-template <typename T>
-int foobar1(T a)
+Case(derived normal member function)
 {
-   return 1;
-}
-int STUB_foobar1(int a)
-{
-   return -1;
-}
+   B_DerivedClass b;
+   OK("A.normal_f1", b.normal_f1(1));
 
-template <typename T1, typename T2>
-int foobar2(T1 a, T2 b)
-{
-   return 2;
-}
-int STUB_foobar2(int a, float b)
-{
-   return -2;
+   STUB(B_DerivedClass, normal_f1, const char*, (int a), B_normal_f1_fake);
+   OK("-B.normal_f1", b.normal_f1(1));
 }
 
-template <typename T>
-struct Foo1 {
-   T m = 0;
-   template <typename U>
-   int bar1(U a)
-   {
-      return 1;
-   }
-   static int bar2(T a)
-   {
-      return 2;
-   }
-};
-
-int STUB_Foo1bar1(void* foo1, int a)
+Case(override normal member function)
 {
-   return -1;
+   C_OverrideClass c;
+   OK("C.normal_f1", c.normal_f1(1));
+
+   STUB(C_OverrideClass, normal_f1, const char*, (int a), C_normal_f1_fake);
+   OK("-C.normal_f1", c.normal_f1(1));
 }
 
-int STUB_Foo1bar2(int a)
+#ifndef _WIN32
+Case(myself virtual member function)
 {
-   return -2;
+   B_DerivedClass b;
+   OK("B.virtual_f2", b.virtual_f2(1, 2));
+
+   STUB(B_DerivedClass, virtual_f2, const char*, (int a, int b), B_virtual_f2_fake);
+   OK("-B.virtual_f2", b.virtual_f2(1, 2));
 }
 
-template <typename T1, typename T2>
-struct Foo2 {
-   T1 m1 = 0;
-   T2 m2 = 0;
-
-   template <typename U1, typename U2>
-   int bar1(U1 a, U2 b)
-   {
-      return 1;
-   }
-
-   template <typename U1, typename U2>
-   static int bar2(U1 a, U2 b)
-   {
-      return 2;
-   }
-
-   template <typename U1, typename U2>
-   std::pair<U1, U2> bar3(U1 a, U2 b)
-   {
-      return std::make_pair(a, b);
-   }
-};
-
-int STUB_Foo2bar1(void* foo2, int a, float b)
+Case(abstract virtual member function)
 {
-   return -1;
+   B_DerivedClass b;
+   OK("A.virtual_f1", b.virtual_f1(1));
+
+   STUB(A_AbstractClass, virtual_f1, const char*, (int a), A_virtual_f1_fake);
+   OK("-A.virtual_f1", b.virtual_f1(1));
 }
 
-int STUB_Foo2bar2(int a, float b)
+Case(derived virtual member function)
 {
-   return -2;
+   B_DerivedClass b;
+   OK("A.virtual_f1", b.virtual_f1(1));
+
+   STUB(B_DerivedClass, virtual_f1, const char*, (int a), B_virtual_f1_fake);
+   OK("-B.virtual_f1", b.virtual_f1(1));
 }
 
-std::pair<int, float> STUB_Foo2bar3(void* foo2, int a, float b)
+Case(override virtual member function)
 {
-   return std::make_pair(-3, a + b);
+   C_OverrideClass c;
+   OK("C.virtual_f1", c.virtual_f1(1));
+
+   STUB(C_OverrideClass, virtual_f1, const char*, (int a), C_virtual_f1_fake);
+   OK("-C.virtual_f1", c.virtual_f1(1));
 }
 
-SUITE(stub template)
+Case(in namespace)
+{
+   test_ns::E_NamespaceClass e;
+   OK("A.virtual_f1", e.virtual_f1(1));
+
+   STUB(test_ns::E_NamespaceClass, virtual_f1, const char*, (int a), E_virtual_f1_fake);
+   OK("-E.virtual_f1", e.virtual_f1(1));
+}
+#endif
+}
+
+SUITE(stub template function)
 {
    Case(function 1 typename)
    {
-      OK(1, foobar1<int>(0));
+      OK(4, foobar4<int>(0));
 
-      STUB(foobar1<int>, STUB_foobar1);
-      OK(-1, foobar1<int>(0));
+      STUB(foobar4<int>, foobar4_fake);
+      OK(-4, foobar4<int>(0));
 
-      UNSTUB(foobar1<int>);
-      OK(1, foobar1<int>(0));
+      UNSTUB(foobar4<int>);
+      OK(4, foobar4<int>(0));
    }
 
    Case(function 2 typename)
    {
-      OK(2, foobar2<int, float>(0, 0));
+      OK(5, foobar5<int, float>(0, 0));
 
-      STUB((foobar2<int, float>), STUB_foobar2);
-      OK(-2, (foobar2<int, float>(0, 0)));
-
-      UNSTUB((foobar2<int, float>));
-      OK(2, (foobar2<int, float>(0, 0)));
+      STUB((foobar5<int, float>), foobar5_fake);
+      OK(-5, (foobar5<int, float>(0, 0)));
    }
+}
 
+SUITE(stub template class)
+{
    Case(member function 1 typename)
    {
-      Foo1<int> a1;
-      OK(1, a1.bar1(0));
+      F_TemplateClass<int> f;
+      OK("F.static_f1", f.static_f1(0));
+      OK("F.normal_f1", f.normal_f1(0));
+      OK("F.virtual_f1", f.virtual_f1(0));
 
-      STUB(Foo1<int>, bar1<int>, int, (int a), STUB_Foo1bar1);
-      OK(-1, a1.bar1(0));
-
-      UNSTUB(Foo1<int>, bar1<int>, int, (int a));
-      OK(1, a1.bar1(0));
-   }
-
-   Case(static member function 1 typename)
-   {
-      STUB(Foo1<int>::bar2, int, (int a), STUB_Foo1bar2);
-      OK(-2, Foo1<int>::bar2(0));
-
-      UNSTUB(Foo1<int>::bar2, int, (int a));
-      OK(2, Foo1<int>::bar2(0));
+      STUB(F_TemplateClass<int>::static_f1, const char*, (int a), F_static_f1_fake);
+      OK("-F.static_f1", f.static_f1(0));
+      STUB(F_TemplateClass<int>, normal_f1<int>, const char*, (int a), F_normal_f1_fake);
+      OK("-F.normal_f1", f.normal_f1(0));
+#ifndef _WIN32
+      STUB(F_TemplateClass<int>, virtual_f1, const char*, (int a), F_virtual_f1_fake);
+      OK("-F.virtual_f1", f.virtual_f1(0));
+#endif
    }
 
    Case(member function 2 typename)
    {
-      Foo2<int, float> a1;
-      OK(1, (a1.bar1<int, float>(0, 0)));
+      G_TemplateClass<int, int> g;
+      OK("G.static_f2", (g.static_f2<int, int>(0, 0)));
+      OK("G.normal_f2", (g.normal_f2<int, int>(0, 0)));
+      OK(Pair("G", "virtual_f2"), (g.virtual_f2<int, int>(0, 0)));
 
-      STUB((Foo2<int, float>), (bar1<int, float>), int, (int a, float b), STUB_Foo2bar1);
-      OK(-1, (a1.bar1<int, float>(0, 0)));
-
-      UNSTUB((Foo2<int, float>), (bar1<int, float>), int, (int a, float b));
-      OK(1, (a1.bar1<int, float>(0, 0)));
-   }
-
-   Case(static member function 2 typename)
-   {
-      STUB((Foo2<int, float>::bar2<int, float>), int, (int a, float b), STUB_Foo2bar2);
-      OK(-2, (Foo2<int, float>::bar2<int, float>(0, 0)));
-
-      UNSTUB((Foo2<int, float>::bar2<int, float>), int, (int a, float b));
-      OK(2, (Foo2<int, float>::bar2<int, float>(0, 0)));
-   }
-
-   Case(return template)
-   {
-      Foo2<int, float> a1;
-      OK(Pair(0, 0), (a1.bar3<int, float>(0, 0)));
-
-      STUB((Foo2<int, float>), (bar3<int, float>), (std::pair<int, float>), (int a, float b), STUB_Foo2bar3);
-      OK(Pair(-3, 0), (a1.bar3<int, float>(0, 0)));
-
-      UNSTUB((Foo2<int, float>), (bar3<int, float>), (std::pair<int, float>), (int a, float b));
-      OK(Pair(0, 0), (a1.bar3<int, float>(0, 0)));
+      STUB((G_TemplateClass<int, int>::static_f2<int, int>), const char*, (int a, int b), G_static_f2_fake);
+      OK("-G.static_f2", (g.static_f2<int, int>(0, 0)));
+      STUB((G_TemplateClass<int, int>), (normal_f2<int, int>), const char*, (int a, int b), G_normal_f2_fake);
+      OK("-G.normal_f2", (g.normal_f2<int, int>(0, 0)));
+#ifndef _WIN32
+      STUB((G_TemplateClass<int, int>), (virtual_f2<int, int>), (std::pair<const char*, const char*>), (int a, int b), G_virtual_f2_fake);
+      OK(Pair("-G", "virtual_f2"), (g.virtual_f2<int, int>(0, 0)));
+#endif
+      UNSTUB((G_TemplateClass<int, int>::static_f2<int, int>), const char*, (int a, int b));
+      OK("G.static_f2", (g.static_f2<int, int>(0, 0)));
+      UNSTUB((G_TemplateClass<int, int>), (normal_f2<int, int>), const char*, (int a, int b));
+      OK("G.normal_f2", (g.normal_f2<int, int>(0, 0)));
+#ifndef _WIN32
+      UNSTUB((G_TemplateClass<int, int>), (virtual_f2<int, int>), (std::pair<const char*, const char*>), (int a, int b));
+      OK(Pair("G", "virtual_f2"), (g.virtual_f2<int, int>(0, 0)));
+#endif
    }
 }
 
-SUITE(STUBS)
+SUITE(stub by function name){
+  Case("foobar0"){
+    OK(0, foobar0());
+
+STUB("foobar0", foobar0_fake);
+OK(-1, foobar0());
+
+UNSTUB("foobar0");
+OK(0, foobar0());
+}
+
+Case("test_ns::foobar1")
+{
+   OK(1, test_ns::foobar1(0));
+
+   STUB("test_ns::foobar1", foobar1_fake);
+   OK(-1, test_ns::foobar1(0));
+}
+
+#ifndef _WIN32
+Case("foobar1(int)")
+{
+   OK(1, foobar1(0));
+
+   STUB("foobar1(int)", foobar1_fake);
+   OK(-1, foobar1(0));
+}
+
+Case("test_ns::foobar1(float)")
+{
+   OK(1, test_ns::foobar1(0));
+
+   STUB("test_ns::foobar1(float)", foobar1_fake);
+   OK(-1, test_ns::foobar1(0));
+}
+#endif
+}
+
+SUITE(Stub)
 {
    Case(lambdas normal function)
    {
-      STUBS(foobar, int, (int a, const int& b)) { return a + b; };
-      OK(222, foobar(111, 111));
+      Stub(foobar2, int, (int a, const char* b)) { return -222; };
+      OK(-222, foobar2(1, "2"));
 
-      UNSTUB(foobar, int, (int a, const int& b));
-      OK(1, foobar(111, 111));
+      UNSTUB(foobar2, int, (int a, const char* b));
+      OK(2, foobar2(1, "2"));
    }
 
    Case(lambdas normal member function)
    {
-      Shape shape;
+      B_DerivedClass b;
 
-      STUBS(Shape, go, int, (int a, int b)) { return a + b; };
-      OK(222, shape.go(111, 111));
+      OK("A.normal_f1", b.normal_f1(1));
 
-      UNSTUB(Shape, go, int, (int a, int b));
-      OK(0, shape.go(111, 111));
-   }
+      Stub(B_DerivedClass, normal_f1, const char*, (int a)) { return "-B.normal_f1"; };
+      OK("-B.normal_f1", b.normal_f1(1));
 
-   Case(lambdas virtual member function)
-   {
-      Shape shape;
-
-      STUBS(Shape, work, int, (int a, int b)) { return a + b; };
-      OK(222, shape.work(111, 111));
-
-      UNSTUB(Shape, work, int, (int a, int b));
-      OK(0, shape.work(111, 111));
-   }
-
-   Case(lambdas static member function)
-   {
-      STUBS(Shape::fly, int, (int a, int b)) { return a + b; };
-      OK(222, Shape::fly(111, 111));
-
-      UNSTUB(Shape::fly, int, (int a, int b));
-      OK(0, Shape::fly(111, 111));
-   }
-}
-
-}  // namespace
-
-extern "C" {
-int foobar1_bystub(int a)
-{
-   return 0;
-}
-}
-
-int foobar2_bystub(int a)
-{
-   return 0;
-}
-
-namespace ns113 {
-int foobar3_bystub(int a)
-{
-   return 0;
-}
-}  // namespace ns113
-
-int STUB_foobar_bystub(int a)
-{
-   return -1;
-}
-
-SUITE(stub name)
-{
-   Case("foobar1_bystub")
-   {
-      OK(0, foobar1_bystub(0));
-
-      STUB("foobar1_bystub", STUB_foobar_bystub);
-      OK(-1, foobar1_bystub(0));
-
-      UNSTUB("foobar1_bystub");
-      OK(0, foobar1_bystub(0));
-   }
-
-   Case("foobar2_bystub")
-   {
-      OK(0, foobar2_bystub(0));
-
-      STUB("foobar2_bystub", STUB_foobar_bystub);
-      OK(-1, foobar2_bystub(0));
-
-      UNSTUB("foobar2_bystub");
-      OK(0, foobar2_bystub(0));
-   }
-
-   Case("foobar3_bystub")
-   {
-      OK(0, ns113::foobar3_bystub(0));
-
-      STUB("ns113::foobar3_bystub", STUB_foobar_bystub);
-      OK(-1, ns113::foobar3_bystub(0));
-
-      UNSTUB("ns113::foobar3_bystub");
-      OK(0, ns113::foobar3_bystub(0));
+      UNSTUB(B_DerivedClass, normal_f1, const char*, (int a));
+      OK("A.normal_f1", b.normal_f1(1));
    }
 
 #ifndef _WIN32
-   Case("foobar2_bystub(int)")
+   Case(lambdas virtual member function)
    {
-      OK(0, foobar2_bystub(0));
+      B_DerivedClass b;
 
-      STUB("foobar2_bystub(int)", STUB_foobar_bystub);
-      OK(-1, foobar2_bystub(0));
+      OK("B.virtual_f2", b.virtual_f2(1, 2));
 
-      UNSTUB("foobar2_bystub(int)");
-      OK(0, foobar2_bystub(0));
-   }
+      Stub(B_DerivedClass, virtual_f2, const char*, (int a, int b)) { return "-B.virtual_f1"; };
+      OK("-B.virtual_f1", b.virtual_f2(1, 2));
 
-   Case("ns113::foobar3_bystub(int)")
-   {
-      OK(0, ns113::foobar3_bystub(0));
-
-      STUB("ns113::foobar3_bystub(int)", STUB_foobar_bystub);
-      OK(-1, ns113::foobar3_bystub(0));
-
-      UNSTUB("ns113::foobar3_bystub(int)");
-      OK(0, ns113::foobar3_bystub(0));
+      UNSTUB(B_DerivedClass, virtual_f2, const char*, (int a, int b));
+      OK("A.virtual_f1", b.virtual_f1(1));
    }
 #endif
+
+   Case(lambdas static member function)
+   {
+      Stub(B_DerivedClass::static_f2, const char*, (int a, int b)) { return "-B.static_f2"; };
+      OK("-B.static_f2", B_DerivedClass::static_f2(1, 2));
+
+      UNSTUB(B_DerivedClass::static_f2, const char*, (int a, int b));
+      OK("B.static_f2", B_DerivedClass::static_f2(1, 2));
+   }
 }

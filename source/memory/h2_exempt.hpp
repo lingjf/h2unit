@@ -4,14 +4,13 @@ struct h2_exempt {
    void* fps[10000];
    int nfp = 0;
    static void setup();
-   static void add_by_addr(void* func);
-   static void add_by_name(const char* func);
-   static bool in(const h2_backtrace& bt);
+   static void add_by_fp(void* fp);
+   static void add_by_name(const char* fn);
 };
 
 template <typename T>
-inline void h2_unmem(T func) { return h2_exempt::add_by_addr((void*)func); }
+inline void h2_unmem(T f) { h2_exempt::add_by_fp((void*)f); }
 template <>
-inline void h2_unmem(const char* func) { return h2_exempt::add_by_name(func); }
+inline void h2_unmem(const char* f) { h2_exempt::add_by_name(f); }
 
-#define H2UNMEM(func) h2::h2_unmem(func)
+#define H2UNMEM(f) h2::h2_unmem(f)

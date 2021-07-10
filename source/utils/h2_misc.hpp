@@ -13,8 +13,8 @@ struct h2_pattern {
 // #define M(...) func(#__VA_ARGS__, other)
 // Unix M() ==> func("", other) stringify empty __VA_ARGS__ to "" string
 // Windows M() ==> func(, other) stringify empty __VA_ARGS__ to empty
-// #define M(...) func(sss(#__VA_ARGS__), other)
-static inline const char* sss(const char* a = "") { return a; }
+// #define M(...) func(sdf(#__VA_ARGS__), other)
+static inline const char* sdf(const char* a = "") { return a; }
 
 /* clang-format off */
 

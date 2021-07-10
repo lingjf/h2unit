@@ -116,7 +116,7 @@ namespace h2 {
 #include "exception/h2_exception.cpp"
 
 #include "stub/h2_e9.cpp"
-#include "stub/h2_native.cpp"
+#include "stub/h2_source.cpp"
 #include "stub/h2_stub.cpp"
 
 #include "mock/h2_checkin.cpp"

@@ -77,7 +77,6 @@ ObjCBlockIndentWidth:	4
 ObjCSpaceAfterProperty:	false
 ObjCSpaceBeforeProtocolList:	true
  
- 
 PenaltyBreakBeforeFirstCallParameter:	19
 PenaltyBreakComment:	300
 PenaltyBreakFirstLessLess:	120

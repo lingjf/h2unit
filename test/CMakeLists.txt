@@ -20,18 +20,19 @@ IF(CMAKE_SYSTEM_NAME MATCHES "Windows")
     ADD_DEFINITIONS("-D_WINSOCK_DEPRECATED_NO_WARNINGS")
 ELSE()
     ADD_CUSTOM_TARGET(concat ALL
-        COMMAND  python ${CMAKE_CURRENT_SOURCE_DIR}/../build/concat.py
+        COMMAND python ${CMAKE_CURRENT_SOURCE_DIR}/../build/concat.py
     )
 ENDIF()
 
 
 AUX_SOURCE_DIRECTORY(. SRC_TEST)
+# FILE(GLOB SRC_TEST "test_memory_*.cpp")
 
 ADD_EXECUTABLE(a.out ${SRC_TEST})
 
 IF(CMAKE_SYSTEM_NAME MATCHES "Darwin")
     ADD_CUSTOM_TARGET(fixup ALL
-        COMMAND  ${CMAKE_CURRENT_SOURCE_DIR}/../fixup.sh a.out
+        COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/../fixup.sh a.out
         DEPENDS a.out
     )
 ENDIF()

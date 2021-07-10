@@ -71,7 +71,7 @@ static inline void parse_block_attributes(const char* attributes, long long& n_l
          for (p += 1; *p && ::isspace(*p);) p++;  // strip left space
 
          if (p[0] == '0' && ::tolower(p[1]) == 'x') {
-            n_fill = h2_numeric::hex_to_bytes(p + 2, s_fill);
+            n_fill = hex_to_bytes(p + 2, s_fill);
          } else {
             long long v = strtoll(p, (char**)NULL, 10);
             if (v <= 0xFFU)

@@ -15,7 +15,7 @@ struct h2_piece : h2_libc {
    void* forbidden_page{nullptr};
    size_t forbidden_size = 0;
    int violate_times = 0;
-   void* violate_address{nullptr};
+   void* violate_ptr{nullptr};
    const char* violate_action = "";
    bool violate_after_free = false;
    h2_backtrace violate_backtrace;
@@ -24,7 +24,7 @@ struct h2_piece : h2_libc {
      : user_size(size), page_size(h2_page_size()), who_allocate(who), bt_allocate(bt)
    {
       size_t alignment_2n = alignment;
-      if (h2_numeric::not2n(alignment)) alignment_2n = h2_numeric::mask2n(alignment) + 1;
+      if (not2n(alignment)) alignment_2n = mask2n(alignment) + 1;
       if (alignment_2n < sizeof(void*)) alignment_2n = sizeof(void*);
 
       size_t user_size_plus = (user_size + alignment_2n - 1 + alignment_2n) & ~(alignment_2n - 1);
@@ -77,7 +77,7 @@ struct h2_piece : h2_libc {
 #endif
    }
 
-   void violate_forbidden(void* addr)
+   void violate_forbidden(void* ptr)
    {
       /* 区分读写犯罪方法(一次或二次进入 segment fault):
          1) 设区域为不可读不可写
@@ -92,7 +92,7 @@ struct h2_piece : h2_libc {
       if (!violate_times++) { /* 只记录第一犯罪现场 */
          set_forbidden(readable);
          violate_backtrace = bt;
-         violate_address = addr;
+         violate_ptr = ptr;
          violate_action = "read";
          violate_after_free = 0 < free_times;
       } else {
@@ -135,9 +135,9 @@ struct h2_piece : h2_libc {
    h2_fail* violate_fail()
    {
       if (violate_after_free)
-         return h2_fail::new_use_after_free(user_ptr, violate_address, violate_action, bt_allocate, bt_release, violate_backtrace);
+         return h2_fail::new_use_after_free(user_ptr, violate_ptr, violate_action, bt_allocate, bt_release, violate_backtrace);
       else
-         return h2_fail::new_overflow(user_ptr, user_size, violate_address, violate_action, h2_vector<unsigned char>(), bt_allocate, violate_backtrace);
+         return h2_fail::new_overflow(user_ptr, user_size, violate_ptr, violate_action, h2_vector<unsigned char>(), bt_allocate, violate_backtrace);
    }
 
    h2_fail* check_asymmetric_free(const char* who_release)

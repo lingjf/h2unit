@@ -28,14 +28,6 @@ static inline h2_rows row_break(const h2_row& row, unsigned width)
    return rows;
 }
 
-static inline unsigned int_width(int maximum, char scale)
-{
-   char t1[64], t2[64];
-   sprintf(t1, "%%%c", scale);
-   sprintf(t2, t1, maximum);
-   return strlen(t2);
-}
-
 static inline void rows_merge(h2_rows& rows, const h2_rows& left_rows, const h2_rows& right_rows, unsigned left_width, unsigned right_width, int step, char scale, int seq_width)
 {
    char seq_fmt[32];
@@ -63,7 +55,7 @@ static inline void rows_merge(h2_rows& rows, const h2_rows& left_rows, const h2_
 
 h2_inline h2_rows h2_layout::split(const h2_rows& left_rows, const h2_rows& right_rows, const char* left_title, const char* right_title, int step, char scale, unsigned width)
 {
-   unsigned seq_width = int_width(step * std::max(left_rows.size(), right_rows.size()), scale);
+   unsigned seq_width = number_strlen(step * std::max(left_rows.size(), right_rows.size()), scale == 'x' ? 16 : 10);
    unsigned valid_width = width - (seq_width + 1 /* "|" */) - 1 /*|*/ - 4 /* spaces */;
 
    unsigned left_width = std::max(left_rows.width(), 8u); /* at least title width */

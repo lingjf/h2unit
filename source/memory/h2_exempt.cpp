@@ -44,15 +44,15 @@ h2_inline void h2_exempt::setup()
    stubs.add((void*)::ctime_r, (void*)h2_exempt_stub::ctime_r, "ctime_r", __FILE__, __LINE__);
    stubs.add((void*)::asctime_r, (void*)h2_exempt_stub::asctime_r, "asctime_r", __FILE__, __LINE__);
    stubs.add((void*)::localtime_r, (void*)h2_exempt_stub::localtime_r, "localtime_r", __FILE__, __LINE__);
-   add_by_addr((void*)::sscanf);
-   add_by_addr((void*)::sprintf);
-   add_by_addr((void*)::vsnprintf);
+   add_by_fp((void*)::sscanf);
+   add_by_fp((void*)::sprintf);
+   add_by_fp((void*)::vsnprintf);
 #   ifdef __APPLE__
-   add_by_addr((void*)::strftime_l);
-   add_by_addr((void*)::strtod_l);
-   add_by_addr((void*)::strtold);
-   add_by_addr((void*)::strtof_l);
-   add_by_addr((void*)abi::__cxa_throw);
+   add_by_fp((void*)::strftime_l);
+   add_by_fp((void*)::strtod_l);
+   add_by_fp((void*)::strtold);
+   add_by_fp((void*)::strtof_l);
+   add_by_fp((void*)abi::__cxa_throw);
 #   endif
 #endif
 }
@@ -68,10 +68,10 @@ h2_inline void h2_exempt::add_by_name(const char* fn)
    }
 
    for (int i = 0; i < n; ++i)
-      add_by_addr(h2_load::symbol_to_addr(res[i]->offset));
+      add_by_fp(h2_load::addr_to_ptr(res[i]->addr));
 }
 
-h2_inline void h2_exempt::add_by_addr(void* fp)
+h2_inline void h2_exempt::add_by_fp(void* fp)
 {
    I().fps[I().nfp++] = follow_jmp(fp);
    I().fps[I().nfp] = nullptr;

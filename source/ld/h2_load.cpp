@@ -4,7 +4,7 @@ static inline long long get_load_text_offset()
 {
    h2_symbol* s[16];
    if (h2_nm::get_by_name("main", s, 16) == 0) return 0;
-   return (long long)&main - (long long)s[0]->offset;
+   return (long long)&main - (long long)s[0]->addr;
 }
 
 struct h2_vtable_offset_test {
@@ -19,35 +19,35 @@ static inline long long get_load_vtable_offset()
    h2_vtable_offset_test t;
    long long absolute_vtable = (long long)*(void***)&t;
    sprintf(vtable_symbol, "_ZTV%s", typeid(h2_vtable_offset_test).name());  // mangled for "vtable for h2::h2_vtable_offset_test"
-   long long relative_vtable = (long long)h2_nm::get_mangled(vtable_symbol);
+   long long relative_vtable = (long long)h2_nm::get_mangle(vtable_symbol);
    if (relative_vtable == 0)
       h2_color::prints("yellow", "\nDon't find vtable for h2::h2_vtable_offset_test %s\n", vtable_symbol);
    return absolute_vtable - relative_vtable;
 }
 
-h2_inline void* h2_load::vtable_to_addr(unsigned long long offset)
+h2_inline void* h2_load::vtable_to_ptr(unsigned long long addr)
 {
    if (I().vtable_offset == -1) I().vtable_offset = get_load_vtable_offset();
-   return (void*)(offset + I().vtable_offset);
+   return (void*)(addr + I().vtable_offset);
 }
 
-h2_inline void* h2_load::symbol_to_addr(unsigned long long symbol_offset)
+h2_inline void* h2_load::addr_to_ptr(unsigned long long addr)
 {
 #if defined _WIN32
-   return (void*)symbol_offset;
+   return (void*)addr;
 #else
    if (I().text_offset == -1) I().text_offset = get_load_text_offset();
-   return (void*)(symbol_offset + I().text_offset);
+   return (void*)(addr + I().text_offset);
 #endif
 }
 
-h2_inline unsigned long long h2_load::addr_to_symbol(void* addr)
+h2_inline unsigned long long h2_load::ptr_to_addr(void* ptr)
 {
 #if defined _WIN32
-   return (unsigned long long)addr;
+   return (unsigned long long)ptr;
 #else
    if (I().text_offset == -1) I().text_offset = get_load_text_offset();
-   return (unsigned long long)addr - I().text_offset;
+   return (unsigned long long)ptr - I().text_offset;
 #endif
 }
 

@@ -130,7 +130,7 @@ h2_inline void h2_backtrace::print(h2_vector<h2_string>& stacks) const
                if (strlen(demangle_name))
                   p = demangle_name;
       if (O.verbose || O.os != macOS /* atos is slow */)
-         if (addr2line(h2_load::addr_to_symbol(frames[i]), symbolic, sizeof(symbolic)))
+         if (addr2line(h2_load::ptr_to_addr(frames[i]), symbolic, sizeof(symbolic)))
             if (strlen(symbolic))
                p = symbolic;
       stacks.push_back(p);

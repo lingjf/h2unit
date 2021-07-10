@@ -58,5 +58,5 @@ struct h2_sock : h2_once {
 #define __H2SOCK(Q) for (h2::h2_sock Q; Q;)
 #define H2SOCK(...) __H2SOCK(H2PP_UNIQUE(t_sock))
 
-#define Ptx(...) h2::h2_sock::check(__FILE__, __LINE__, h2::sss(#__VA_ARGS__), __VA_ARGS__)
-#define Pij(_Packet, _Size, ...) h2::h2_sock::inject(_Packet, _Size, h2::sss(#__VA_ARGS__))
+#define Ptx(...) h2::h2_sock::check(__FILE__, __LINE__, h2::sdf(#__VA_ARGS__), __VA_ARGS__)
+#define Pij(_Packet, _Size, ...) h2::h2_sock::inject(_Packet, _Size, h2::sdf(#__VA_ARGS__))

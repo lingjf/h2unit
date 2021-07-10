@@ -1,11 +1,5 @@
 #include "../build/h2unit.hpp"
 
-struct A_struct {
-   char a[100];
-   int b;
-   char c[200];
-};
-
 SUITE(Memory asymmetric allocate and free)
 {
    Case(malloc - delete failure)
@@ -65,13 +59,13 @@ SUITE(Ilegal Access)
 
    Case(use after free failure)
    {
-      A_struct* read_after_free = (A_struct*)malloc(sizeof(A_struct));
+      struct tm* read_after_free = (struct tm*)malloc(sizeof(struct tm));
       free(read_after_free);
-      int b = read_after_free->b;
+      int b = read_after_free->tm_sec;
 
-      A_struct* write_after_free = (A_struct*)malloc(sizeof(A_struct));
+      struct tm* write_after_free = (struct tm*)malloc(sizeof(struct tm));
       free(write_after_free);
-      write_after_free->b = 100;
+      write_after_free->tm_sec = 42;
    }
 #endif
 }

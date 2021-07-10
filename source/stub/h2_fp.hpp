@@ -7,16 +7,12 @@ void* h2_fp(T p)
       h2_symbol* res[16];
       int n = h2_nm::get_by_name((const char*)p, res, 16);
       if (n != 1) {
-         if (n == 0) {
-            h2_color::prints("yellow", "\nDon't find %s\n", (const char*)p);
-         } else {
-            h2_color::prints("yellow", "\nFind multiple %s :\n", (const char*)p);
-            for (int i = 0; i < n; ++i)
-               h2_color::prints("yellow", "  %d. %s \n", i + 1, res[i]->name);
-         }
+         h2_color::prints("yellow", n ? "\nFind multiple %s :\n" : "\nDon't find %s\n", (const char*)p);
+         for (int i = 0; i < n; ++i)
+            h2_color::prints("yellow", "  %d. %s \n", i + 1, res[i]->name);
          return nullptr;
       }
-      fp = h2_load::symbol_to_addr(res[0]->offset);
+      fp = h2_load::addr_to_ptr(res[0]->addr);
    }
    return fp;
 }

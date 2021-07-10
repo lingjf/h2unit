@@ -3,9 +3,9 @@
 *.a
 *.d
 *.so
-*.out
 *.map
 
+a.out
 .last_order
 
 *.su
