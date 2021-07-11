@@ -95,7 +95,8 @@ SUITE(c)
 
    Case(6)
    {
-      MOCK(time, time_t, (time_t*), Once()) { return 0; };
+      MOCK(time, time_t, (time_t*)).Once().Return((time_t)0);
+      MOCKS(time, time_t, (time_t*), Once()) { return 0; };
       STUB(time, time_t, (time_t*), time_fake);
    }
 }

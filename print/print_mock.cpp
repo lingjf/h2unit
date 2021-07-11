@@ -18,26 +18,26 @@ SUITE(MOCK)
 {
    Case(argument)
    {
-      MOCK(foo, int, (int, const char*), Once(1, "A")) { return 11; };
+      MOCK(foo, int, (int, const char*)).Once(1, "A").Return(11);
       OK(11, foo(2, "B"));
    }
 
    Case(call times)
    {
-      MOCK(foo, int, (int, const char*), Times(2), Once()) { return 0; };
+      MOCK(foo, int, (int, const char*)).Times(2).Once().Return(0);
       foo(1, "A");
    }
 
    Case(unexpect call)
    {
-      MOCK(foo, int, (int, const char*), Times(1).With(1, "A")) { return 0; };
+      MOCK(foo, int, (int, const char*)).Times(1).With(1, "A").Return(0);
       foo(1, "A");
       foo(2, "B");
    }
 
    Case(c++ class member)
    {
-      MOCK(bar, fx, int, (int, const char*), Once(1, "A")) { return 11; };
+      MOCK(bar, fx, int, (int, const char*)).Once(1, "A").Return(11);
 
       bar f;
       OK(11, f.fx(2, "B"));
@@ -45,7 +45,7 @@ SUITE(MOCK)
 
    Case(OK in mock)
    {
-      MOCK(foo, int, (int a, const char* b), Once())
+      MOCKS(foo, int, (int a, const char* b), Once())
       {
          OK(1, a);
          OK("a", b);
@@ -57,13 +57,7 @@ SUITE(MOCK)
 
    Case(greed true)
    {
-      MOCK(foo, int, (int, const char*),
-           greed(true)
-             .Between(1, 3)
-             .With(1, "A")
-             .Return(11)
-             .Once(1, _)
-             .Return(22)) { return 0; };
+      MOCK(foo, int, (int, const char*)).greed(true).Between(1, 3).With(1, "A").Return(11).Once(1, _).Return(22);
 
       OK(11, foo(1, "A"));
       OK(22, foo(1, "A"));

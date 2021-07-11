@@ -27,12 +27,8 @@ static void foobar22()
 {
 }
 
-int foobar3(char* a, ...);
-
-static int foobar3_fake(char* a, ...)
-{
-   return -3;
-}
+int foobar3(int a);
+const char* foobar3(const char* a);
 
 template <typename T1>
 int foobar4(T1 a)
@@ -52,6 +48,13 @@ int foobar5(T1 a, T2 b)
 static int foobar5_fake(int a, float b)
 {
    return -5;
+}
+
+int foobar6(char* a, ...);
+
+static int foobar6_fake(char* a, ...)
+{
+   return -6;
 }
 
 static int foobar16(int _0, int _1, int _2, int _3, int _4, int _5, int _6, int _7, int _8, int _9, int _10, int _11, int _12, int _13, int _14, int _15)

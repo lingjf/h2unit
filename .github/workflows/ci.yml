@@ -30,16 +30,16 @@ jobs:
     - name: run
       run: ./example/a.out
 
-  # example-x86_64-windows-msvc:
-  #   runs-on: windows-latest
-  #   steps:
-  #   - uses: actions/checkout@v2
-  #   - name: configure
-  #     run: cd example && cmake .
-  #   - name: build
-  #     run: cmake --build example
-  #   - name: run
-  #     run: cd example && ./Debug/a.out.exe
+  example-x86_64-windows-msvc:
+    runs-on: windows-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: configure
+      run: cd example && cmake .
+    - name: build
+      run: cmake --build example
+    - name: run
+      run: cd example && ./Debug/a.out.exe
 
   print-x86_64-linux-gcc:
     runs-on: ubuntu-latest

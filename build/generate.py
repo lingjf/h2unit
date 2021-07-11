@@ -109,35 +109,35 @@ def inspect_string(n):
         s = s + '#Inspect{0}'.format(i)
     return s
 
-def __H2MOCK_0(count):
+def __H2MOCKS_0(count):
     for i in range(count):
-        k = '#define __H2MOCK_0_{0}(Function, ReturnType, Arguments'.format(i + 3) + do_repeat(i, ', Inspect') + ') '
-        v = 'h2::h2_mocker<__COUNTER__, std::false_type, H2PP_REMOVE_PARENTHESES_IF(ReturnType) Arguments>::I(h2::h2_fp(Function), #ReturnType, #Function, {H2ARGV(Arguments)}, ' + inspect_string(i) + ', __FILE__, __LINE__)' + do_repeat(i, '.Inspect') + ' = [] Arguments -> H2PP_REMOVE_PARENTHESES_IF(ReturnType)'
+        k = '#define __H2MOCKS_0_{0}(Function, ReturnType, Arguments'.format(i + 3) + do_repeat(i, ', Inspect') + ') '
+        v = 'h2::h2_mocker<__COUNTER__, std::false_type, H2PP_REMOVE_PARENTHESES_IF(ReturnType) Arguments>::I(h2::h2_fp<H2PP_REMOVE_PARENTHESES_IF(ReturnType) Arguments>::A(Function), #ReturnType, #Function, {H2ARGV(Arguments)}, ' + inspect_string(i) + ', __FILE__, __LINE__)' + do_repeat(i, '.Inspect') + ' = [] Arguments -> H2PP_REMOVE_PARENTHESES_IF(ReturnType)'
         print(k + v)
 
-def __H2MOCK_1(count):
+def __H2MOCKS_1(count):
     for i in range(count):
-        k = '#define __H2MOCK_1_{0}(Class, Method, ReturnType, Arguments'.format(i + 4) + do_repeat(i, ', Inspect') + ') '
-        v = 'H2PP_CAT(__H2MOCK_1_{0}_, H2PP_IS_EMPTY Arguments)'.format(i + 4) + '(Class, Method, ReturnType, Arguments' + do_repeat(i, ', Inspect') + ')'
+        k = '#define __H2MOCKS_1_{0}(Class, Method, ReturnType, Arguments'.format(i + 4) + do_repeat(i, ', Inspect') + ') '
+        v = 'H2PP_CAT(__H2MOCKS_1_{0}_, H2PP_IS_EMPTY Arguments)'.format(i + 4) + '(Class, Method, ReturnType, Arguments' + do_repeat(i, ', Inspect') + ')'
         print(k + v)
 
-def __H2MOCK_1_(count):
+def __H2MOCKS_1_(count):
     for i in range(count):
         k = '(Class, Method, ReturnType, Arguments' + do_repeat(i, ', Inspect') + ') '
         v = 'h2::h2_mocker<__COUNTER__, H2PP_REMOVE_PARENTHESES_IF(Class), H2PP_REMOVE_PARENTHESES_IF(ReturnType) Arguments>::I(h2::h2_mfp<H2PP_REMOVE_PARENTHESES_IF(Class), H2PP_REMOVE_PARENTHESES_IF(ReturnType) Arguments>::A(&H2PP_REMOVE_PARENTHESES_IF(Class)::H2PP_REMOVE_PARENTHESES_IF(Method)), #ReturnType, #Class "::" #Method, {H2ARGV(Arguments)}, ' + inspect_string(i) + ', __FILE__, __LINE__)' + do_repeat(i, '.Inspect')
-        print('#define __H2MOCK_1_{0}_1'.format(i + 4) + k + v + ' = [](H2PP_REMOVE_PARENTHESES_IF(Class) * This) -> H2PP_REMOVE_PARENTHESES_IF(ReturnType)')
-        print('#define __H2MOCK_1_{0}_0'.format(i + 4) + k + v + ' = [](H2PP_REMOVE_PARENTHESES_IF(Class) * This, H2PP_REMOVE_PARENTHESES(Arguments)) -> H2PP_REMOVE_PARENTHESES_IF(ReturnType)')
+        print('#define __H2MOCKS_1_{0}_1'.format(i + 4) + k + v + ' = [](H2PP_REMOVE_PARENTHESES_IF(Class) * This) -> H2PP_REMOVE_PARENTHESES_IF(ReturnType)')
+        print('#define __H2MOCKS_1_{0}_0'.format(i + 4) + k + v + ' = [](H2PP_REMOVE_PARENTHESES_IF(Class) * This, H2PP_REMOVE_PARENTHESES(Arguments)) -> H2PP_REMOVE_PARENTHESES_IF(ReturnType)')
 
-__H2MOCK_0(32)
-__H2MOCK_1_(32)
-__H2MOCK_1(32)
+__H2MOCKS_0(32)
+__H2MOCKS_1_(32)
+__H2MOCKS_1(32)
 
 print('')
 
 def __H3MOCK_0(count):
     for i in range(count):
         k = '#define __H3MOCK_0_{0}(Function, ReturnType, Arguments'.format(i + 3) + do_repeat(i, ', Inspect') + ') '
-        v = 'h2::h2_mocker<__COUNTER__, std::false_type, H2PP_REMOVE_PARENTHESES_IF(ReturnType) Arguments>::I(h2::h2_fp(Function), #ReturnType, #Function, {H2ARGV(Arguments)}, ' + inspect_string(i) + ', __FILE__, __LINE__)' + do_repeat(i, '.Inspect')
+        v = 'h2::h2_mocker<__COUNTER__, std::false_type, H2PP_REMOVE_PARENTHESES_IF(ReturnType) Arguments>::I(h2::h2_fp<H2PP_REMOVE_PARENTHESES_IF(ReturnType) Arguments>::A(Function), #ReturnType, #Function, {H2ARGV(Arguments)}, ' + inspect_string(i) + ', __FILE__, __LINE__)' + do_repeat(i, '.Inspect')
         print(k + v)
 
 def __H3MOCK_1(count):

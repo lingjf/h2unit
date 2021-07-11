@@ -1,3 +1,8 @@
+
+#ifdef _WIN32
+#   define IMPORT_MAIN
+#endif
+
 #include "../h2unit.h"
 
 /*

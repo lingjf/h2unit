@@ -153,11 +153,7 @@ int foobar(int a, const char* b)
 
 CASE(Any matcher{})
 {
-   MOCK(foobar, int, (int, const char*), Once({}, {}).Return(11)) { 
-#ifdef _WIN32
-   return 11; 
-#endif
-   };
+   MOCK(foobar, int, (int, const char*)).Once({}, {}).Return(11);
    OK(11, foobar(1, "A"));
 }
 

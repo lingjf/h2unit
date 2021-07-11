@@ -100,7 +100,7 @@ SUITE(mfp for normal member function)
    }
 }
 
-#ifndef _WIN32
+#if !defined WIN32
 SUITE(mfp for virtual member function)
 {
    B_DerivedClass b;

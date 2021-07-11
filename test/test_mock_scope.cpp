@@ -19,22 +19,22 @@ static int foo_bar4(int)
 
 GlobalSetup()
 {
-   MOCK(foo_bar1, int, (int), Any()) { return -1; };
+   MOCKS(foo_bar1, int, (int), Any()) { return -1; };
 }
 
 GlobalSuiteSetup()
 {
-   MOCK(foo_bar2, int, (int), Any()) { return -2; };
+   MOCKS(foo_bar2, int, (int), Any()) { return -2; };
 }
 
 GlobalCaseSetup()
 {
-   MOCK(foo_bar3, int, (int), Any()) { return -3; };
+   MOCKS(foo_bar3, int, (int), Any()) { return -3; };
 }
 
 SUITE(stub in shared_code)
 {
-   MOCK(foo_bar4, int, (int), Any()) { return -4; };
+   MOCKS(foo_bar4, int, (int), Any()) { return -4; };
 
    Case(a)
    {

@@ -98,7 +98,7 @@ SUITE(Memory Leak)
       BLOCK(limit = 10000000, fill = 0xABCD)
       {
          char* p = (char*)malloc(8);
-         OK(Me("\xAB\xCD\xAB\xCD"), p);
+         OK(Me("ABCDABCD"), p);
          free(p);
       }
    }
@@ -127,6 +127,7 @@ SUITE(Memory Check)
       rectangle_destroy(p);
    }
 
+#if !defined _WIN32
    Case(use after free failure)
    {
       rectangle_t* p = rectangle_create(1, 2);
@@ -135,4 +136,5 @@ SUITE(Memory Check)
       int height = p->height;
       p->height = height;
    }
+#endif
 }

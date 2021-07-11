@@ -361,14 +361,14 @@ Compare to Dynamic STUB, Dynamic Mock provide a easy way to check call times, in
 /* unit test code */
 CASE(demo dynamic mock function)
 {
-   MOCK(foobar, int, (int a, char * b), Once(1, "A")) { return 11; };
+   MOCK(foobar, int, (int a, char * b)).Once(1, "A").Return(11);
 
    do_something();
 }
 
 CASE(demo dynamic mock class method)
 {
-   MOCK(Foo, bar, int, (int a, char * b), Once(1, "A")) { return 11; };
+   MOCK(Foo, bar, int, (int a, char * b)).Once(1, "A").Return(11);
 
    do_something();
 }
@@ -380,10 +380,7 @@ Expect foobar called with *a* equals *1*, *b* equals *"A"* *1 time* in this case
 ##### 5.1.1. Mock normal function
   
 ```C++
-   MOCK(Function Name, Return Type, (Parameter List) [, Chained Inspection]) {
-      check... ;
-      return... ;
-   };
+   MOCK(Function Name, Return Type, (Parameter List)) [.Chained Inspection];
 ```
 
 including class static member method.
@@ -391,17 +388,17 @@ including class static member method.
 ##### 5.1.2. Mock class member function
   
 ```C++
-   MOCK([Class Name,] Method Name, Return Type, (Parameter List) [, Chained Inspection]) { 
-      check... ;
-      return... ;
-   };
+   MOCK([Class Name,] Method Name, Return Type, (Parameter List)) [.Chained Inspection]; 
 ```
 
 [UNMOCK](source/mock/h2_use.hpp) reset MOCK, recover original function.
 
 MOCK formula:
 ```C++
-   MOCK([Class Name,] Function Name, Return Type, (Parameter List) [, Chained Inspection]) { 
+   MOCK([Class Name,] Function Name, Return Type, (Parameter List)) [.Chained Inspection];
+
+   MOCKS([Class Name,] Function Name, Return Type, (Parameter List) [, Chained Inspection])
+   {  
       ... substitute function body ...
       check... ;
       return... ;
@@ -438,7 +435,7 @@ If checkin not specified, default is `Any`.
 
 #### 5.3. Substitute function
 
-`{ }` following MOCK(...), when `Return` is provided substitute function is ignored.
+`{ }` following MOCKS(...), when `Return` is provided substitute function is ignored.
 
 `This` is dedicated variable of class instance pointr like `this`.
 
@@ -451,9 +448,7 @@ In Substitute function, Can check arguments, return value, and other actions.
 ```C++
 CASE(simple function)
 {
-   MOCK(foobar, int, (int a, char * b), Once(1, "A")) { 
-      return 11; 
-   };
+   MOCK(foobar, int, (int a, char * b)).Once(1, "A").Return(11);
    do_something_with_call_foobar();
 }
 ```
@@ -474,9 +469,7 @@ bool is_equal(char * a, char * b)
 ```C++
 CASE(mock overload function)
 {
-   MOCK(is_equal, bool, (char *, char *)) {
-      return false;
-   };
+   MOCK(is_equal, bool, (char *, char *)).Return(true);
    do_something_with_call_is_equal();
 }
 ```
@@ -486,11 +479,7 @@ CASE(mock overload function)
 ```C++
 CASE(normal member function)
 {
-   MOCK(Foo, bar, int, (int a, char * b)) {
-      OK(1, a);
-      sprintf(b, "return value by argument");
-      return 2;
-   };
+   MOCK(Foo, bar, int, (int a, char * b)).Return(2);
    do_something(Foo);
 }
 ```
@@ -500,11 +489,7 @@ CASE(normal member function)
 ```C++
 CASE(static class member function)
 {
-   MOCK(Foo::bar, int, (int a, char * b)) {
-      OK(1, a);
-      sprintf(b, "return value by argument");
-      return 2;
-   };
+   MOCK(Foo::bar, int, (int a, char * b)).Return(2);
    do_something(Foo);
 }
 ```
@@ -525,33 +510,33 @@ class Foo {
 ```C++
 CASE(template function)
 {
-   MOCK((foobar<int, char*>), int, (int a, char * b)) {
-      OK(1, a);
-      sprintf(b, "return value by argument");
-      return 2;
-   };
+   MOCK((foobar<int, char*>), int, (int a, char * b)).Return(2);
    ...do_something(foobar);
 
-   MOCK((Foo<int, char*>), (bar<float, std::string>), int, (float, std::string)) {
-      OK(1, a);
-      return 2;
-   };
+   MOCKS((Foo<int, char*>), (bar<float, std::string>), int, (float, std::string)).Return(2);
    ...do_something(Foo bar);
 }
 ```
 
 
 ```C++
-MOCK(Foo, bar, int, (int a, char * b), 
-      Once(1, _).Return(11)
+MOCK(Foo, bar, int, (int a, char * b))
+     .Once(1, _).Return(11)
      .Twice(Gt(2), CaseLess("abc")).Return(22)
      .Times(5).With(Not(3)).Return(33)
      .Atleast(2).Th0(4).Th2("xyz")
-     .Any()) {
-       OK(5, a);
-       sprintf(b, This->name);
-       return 44;
-     };
+     .Any().Return(44);
+
+MOCKS(Foo, bar, int, (int a, char * b), 
+       Once(1, _).Return(11)
+      .Twice(Gt(2), CaseLess("abc")).Return(22)
+      .Times(5).With(Not(3)).Return(33)
+      .Atleast(2).Th0(4).Th2("xyz")
+      .Any()) {
+        OK(5, a);
+        sprintf(b, This->name);
+        return 44;
+      };
 ```
 First expect Foo::bar called 1 time, and 1st argument equals 1, any of 2nd, and inject Return value 11; <br>
 then expect Foo::bar called 2 times, and 1st argument geat than 2, 2nd case-insensitive equals "abc", and inject Return value 22; <br>

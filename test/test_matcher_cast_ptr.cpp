@@ -65,8 +65,8 @@ SUITE(Pointer)
 
    Case(MOCK)
    {
-#define TheCheck(x, y)                                         \
-         MOCK(foobar##x, void, (decltype(x)), Once(IsNull)){}; \
+#define TheCheck(x, y)                                      \
+         MOCK(foobar##x, void, (decltype(x))).Once(IsNull); \
          foobar##x((decltype(x))y);
       H2Fullmesh(TheCheck, (PTR_LIST), (PTR_NULL_VALUE_LIST));
 #undef TheCheck

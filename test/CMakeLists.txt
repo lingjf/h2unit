@@ -26,7 +26,7 @@ ENDIF()
 
 
 AUX_SOURCE_DIRECTORY(. SRC_TEST)
-# FILE(GLOB SRC_TEST "test_memory_*.cpp")
+# FILE(GLOB SRC_TEST "test_types.cpp" "test_mock*.cpp")
 
 ADD_EXECUTABLE(a.out ${SRC_TEST})
 

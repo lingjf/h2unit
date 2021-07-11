@@ -175,6 +175,12 @@ namespace h2 {
 #   pragma message("MOCK conflict, using H2MOCK instead.")
 #endif
 
+#ifndef MOCKS
+#   define MOCKS H2MOCKS
+#else
+#   pragma message("MOCKS conflict, using H2MOCKS instead.")
+#endif
+
 #ifndef STUB
 #   define STUB H2STUB
 #else

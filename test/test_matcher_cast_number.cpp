@@ -56,8 +56,8 @@ SUITE(number[integer, float, enum, bool])
 
    Case(MOCK)
    {
-#define TheCheck(x)                                 \
-   MOCK(foo1##x, void, (decltype(x)), Once(x)){};   \
+#define TheCheck(x)                              \
+   MOCK(foo1##x, void, (decltype(x))).Once(x);   \
    foo1##x(x);
       H2Foreach(TheCheck, NUMBER0_VAR_LIST);
 #undef TheCheck

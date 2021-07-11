@@ -1,4 +1,3 @@
-#define IMPORT_MAIN
 
 #include "../source/h2_unit.cpp"
 

@@ -33,12 +33,12 @@ SUITE(stub e9)
 
    Case(variadic parameters function)
    {
-      OK(3, foobar3("", 1, 2, 3));
+      OK(6, foobar6("", 1, 2, 3));
       unsigned char saved[16];
-      bool ret = h2::h2_e9_save((void*)foobar3, saved);
+      bool ret = h2::h2_e9_save((void*)foobar6, saved);
       OK(ret);
-      h2::h2_e9_set((void*)foobar3, (void*)foobar3_fake);
-      OK(-3, foobar3("", 1, 2, 3));
-      h2::h2_e9_reset((void*)foobar3, saved);
+      h2::h2_e9_set((void*)foobar6, (void*)foobar6_fake);
+      OK(-6, foobar6("", 1, 2, 3));
+      h2::h2_e9_reset((void*)foobar6, saved);
    }
 }
