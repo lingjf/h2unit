@@ -21,7 +21,7 @@ SUITE(UNMOCK)
       OK("B.normal_f2", b.normal_f2(1, 2));
    }
 
-#ifndef _WIN32
+#if !defined WIN32
    Case(template class member function)
    {
       F_TemplateClass<int> f;

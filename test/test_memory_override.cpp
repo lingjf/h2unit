@@ -71,7 +71,7 @@ SUITE(override)
       }
    }
 
-#if !defined _WIN32
+#if !defined WIN32
    Case(strndup)
    {
       free(strndup("1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890", 100));
@@ -149,7 +149,7 @@ SUITE(harmless)
 #if !(defined __arm__ || defined __arm64__ || defined __aarch64__)
       asctime(t4);
 #endif
-#if !defined _WIN32
+#if !defined WIN32
       struct timezone tz;
       gettimeofday(&tv, &tz);
       ctime_r(&t3, t);
@@ -207,14 +207,14 @@ SUITE(harmless)
       auto ret1 = sqrt(42.0);
    }
 
-#if !defined _WIN32
+#if !defined WIN32
    Case(syslog.h)
    {
       syslog(LOG_DEBUG, "This is test %d", 42);
    }
 #endif
 
-#ifndef _WIN32
+#if !defined WIN32
    Case(socket.h)
    {
       close(socket(AF_INET, SOCK_DGRAM, 0));

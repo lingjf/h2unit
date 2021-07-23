@@ -43,7 +43,7 @@ SUITE(backtrace)
    }
 }
 
-#if !defined _WIN32
+#if !defined WIN32
 SUITE(demangle)
 {
 #   ifdef __APPLE__

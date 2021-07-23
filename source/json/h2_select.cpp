@@ -57,7 +57,7 @@ struct h2_json_select {
       for (; start <= end && ::isspace(*end);) end--;      //strip right space
       if (start <= end) {
          if (!only_key) {
-            if (strspn(start, "-0123456789") == end - start + 1) {
+            if (strspn(start, "-0123456789") == (size_t)(end - start + 1)) {
                values.push_back({atoi(start), ""});
                return;
             } else if ((*start == '\"' && *end == '\"') || (*start == '\'' && *end == '\'')) {

@@ -25,7 +25,7 @@ SUITE(bugfix)
       OK(Eq(2, 0.0001), uv);
    }
 
-#ifndef _WIN32
+#if !defined WIN32
    Case(MOCK return reference)
    {
       NoDefaultConstructorClass x(1, 1.1);

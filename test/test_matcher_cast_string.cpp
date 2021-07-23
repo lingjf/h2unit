@@ -19,7 +19,7 @@ SUITE(Cast String)
 #undef TheCheck
    }
 
-#ifndef _WIN32
+#if !defined WIN32
    Case(OK)
    {
 #define TheCheck(x, y)   \

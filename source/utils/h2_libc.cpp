@@ -45,7 +45,6 @@ struct h2_libc_malloc {
          h2_list_for_each_entry (p, buddies, buddy, x) {
             if (p->join_right(b)) {
                p->size += b->size;
-               //TODO: join_left with next buddy
                return true;
             }
             if (p->join_left(b)) {
@@ -117,20 +116,13 @@ struct h2_libc_malloc {
 
 h2_inline void* h2_libc::malloc(size_t size)
 {
-   if (!O.memory_check) {
-      return ::malloc(size);
-   }
-
+   if (!O.memory_check) return ::malloc(size);
    return h2_libc_malloc::I().malloc(size + 10);
 }
 
 h2_inline void h2_libc::free(void* ptr)
 {
-   if (!O.memory_check) {
-      ::free(ptr);
-      return;
-   }
-
+   if (!O.memory_check) return ::free(ptr);
    if (ptr) h2_libc_malloc::I().free(ptr);
 }
 

@@ -235,7 +235,7 @@ SUITE(mock member function)
       OK("mocked B.normal_f2", b.normal_f2(1, 2));
    }
 
-#ifndef _WIN32
+#if !defined WIN32
    Case(virtual member function)
    {
       MOCK(B_DerivedClass, virtual_f2, const char*, (int, int)).Once(1, 2).Return("mocked B.virtual_f2");
@@ -289,7 +289,7 @@ SUITE(mock template member function)
       OK("MOCK", f.static_f1(0));
       MOCK(F_TemplateClass<int>, normal_f1<int>, const char*, (int a)).Return("MOCK");
       OK("MOCK", f.normal_f1(0));
-#ifndef _WIN32
+#if !defined WIN32
       MOCK(F_TemplateClass<int>, virtual_f1, const char*, (int a)).Return("MOCK");
       OK("MOCK", f.virtual_f1(0));
 #endif
@@ -306,7 +306,7 @@ SUITE(mock template member function)
       OK("MOCK", (g.static_f2<int, int>(0, 0)));
       MOCK((G_TemplateClass<int, int>), (normal_f2<int, int>), const char*, (int a, int b)).Return("MOCK");
       OK("MOCK", (g.normal_f2<int, int>(0, 0)));
-#ifndef _WIN32
+#if !defined WIN32
       MOCK((G_TemplateClass<int, int>), (virtual_f2<int, int>), (std::pair<const char*, const char*>), (int a, int b)).Return(std::make_pair("MOCK", "MOCK"));
       OK(Pair("MOCK", "MOCK"), (g.virtual_f2<int, int>(0, 0)));
 #endif

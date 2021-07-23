@@ -19,9 +19,8 @@ struct h2_stub : h2_libc {
    }
    void stub(void* _dstfp)
    {
-      dstfp = _dstfp;
       h2_source* source = h2_sources::I().get(srcfp);
-      if (source) source->set(dstfp);
+      if (source) source->set((dstfp = _dstfp));
    }
 };
 

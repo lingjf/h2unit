@@ -1,5 +1,5 @@
 ﻿
-/* v5.11 2021-07-11 09:30:54 */
+/* v5.11 2021-07-24 07:12:01 */
 /* https://github.com/lingjf/h2unit */
 /* Apache Licence 2.0 */
 
@@ -429,7 +429,6 @@ struct h2_libc_malloc {
          h2_list_for_each_entry (p, buddies, buddy, x) {
             if (p->join_right(b)) {
                p->size += b->size;
-               //TODO: join_left with next buddy
                return true;
             }
             if (p->join_left(b)) {
@@ -501,20 +500,13 @@ struct h2_libc_malloc {
 
 h2_inline void* h2_libc::malloc(size_t size)
 {
-   if (!O.memory_check) {
-      return ::malloc(size);
-   }
-
+   if (!O.memory_check) return ::malloc(size);
    return h2_libc_malloc::I().malloc(size + 10);
 }
 
 h2_inline void h2_libc::free(void* ptr)
 {
-   if (!O.memory_check) {
-      ::free(ptr);
-      return;
-   }
-
+   if (!O.memory_check) return ::free(ptr);
    if (ptr) h2_libc_malloc::I().free(ptr);
 }
 
@@ -1211,6 +1203,19 @@ h2_inline unsigned long long h2_load::ptr_to_addr(void* ptr)
    if (I().text_offset == -1) I().text_offset = get_load_text_offset();
    return (unsigned long long)ptr - I().text_offset;
 #endif
+}
+
+h2_inline void* h2_load::get_by_fn(const char* fn)
+{
+   h2_symbol* res[16];
+   int n = h2_nm::get_by_name(fn, res, 16);
+   if (n != 1) {
+      h2_color::prints("yellow", n ? "\nFind multiple %s :\n" : "\nDon't find %s\n", fn);
+      for (int i = 0; i < n; ++i)
+         h2_color::prints("yellow", "  %d. %s \n", i + 1, res[i]->name);
+      return nullptr;
+   }
+   return addr_to_ptr(res[0]->addr);
 }
 
 #if defined __i386__ || defined __x86_64__ || defined _M_IX86 || defined _M_X64
@@ -2389,7 +2394,7 @@ struct h2_json_select {
       for (; start <= end && ::isspace(*end);) end--;      //strip right space
       if (start <= end) {
          if (!only_key) {
-            if (strspn(start, "-0123456789") == end - start + 1) {
+            if (strspn(start, "-0123456789") == (size_t)(end - start + 1)) {
                values.push_back({atoi(start), ""});
                return;
             } else if ((*start == '\"' && *end == '\"') || (*start == '\'' && *end == '\'')) {
@@ -3938,9 +3943,8 @@ struct h2_stub : h2_libc {
    }
    void stub(void* _dstfp)
    {
-      dstfp = _dstfp;
       h2_source* source = h2_sources::I().get(srcfp);
-      if (source) source->set(dstfp);
+      if (source) source->set((dstfp = _dstfp));
    }
 };
 

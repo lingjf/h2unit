@@ -232,7 +232,7 @@ SUITE(mocks template member function)
       OK("MOCK", f.static_f1(0));
       MOCKS(F_TemplateClass<int>, normal_f1<int>, const char*, (int a)) { return "MOCK"; };
       OK("MOCK", f.normal_f1(0));
-#ifndef _WIN32
+#if !defined WIN32
       MOCKS(F_TemplateClass<int>, virtual_f1, const char*, (int a))
       {
          return "MOCK";
@@ -252,7 +252,7 @@ SUITE(mocks template member function)
       OK("MOCK", (g.static_f2<int, int>(0, 0)));
       MOCKS((G_TemplateClass<int, int>), (normal_f2<int, int>), const char*, (int a, int b)) { return "MOCK"; };
       OK("MOCK", (g.normal_f2<int, int>(0, 0)));
-#ifndef _WIN32
+#if !defined WIN32
       MOCKS((G_TemplateClass<int, int>), (virtual_f2<int, int>), (std::pair<const char*, const char*>), (int a, int b))
       {
          return std::make_pair("MOCK", "MOCK");

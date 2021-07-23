@@ -189,12 +189,10 @@ struct h2_mfp<Class, ReturnType(Args...)> {
          void (h2_test_plus::*f)();
          void* p;
       } t{&h2_test_plus::test};
-      if ((unsigned long long)t.p & 1) {
+      if ((unsigned long long)t.p & 1)
          return (v & 1) && (v - 1) % sizeof(void*) == 0 && v < 1000 * sizeof(void*);
-         /* assumption: virtual member count less than 1000 */
-      } else {
+      else
          return v % sizeof(void*) == 0 && v < 100 * sizeof(void*);
-      }
    }
 #endif
 };

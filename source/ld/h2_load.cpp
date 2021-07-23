@@ -51,6 +51,19 @@ h2_inline unsigned long long h2_load::ptr_to_addr(void* ptr)
 #endif
 }
 
+h2_inline void* h2_load::get_by_fn(const char* fn)
+{
+   h2_symbol* res[16];
+   int n = h2_nm::get_by_name(fn, res, 16);
+   if (n != 1) {
+      h2_color::prints("yellow", n ? "\nFind multiple %s :\n" : "\nDon't find %s\n", fn);
+      for (int i = 0; i < n; ++i)
+         h2_color::prints("yellow", "  %d. %s \n", i + 1, res[i]->name);
+      return nullptr;
+   }
+   return addr_to_ptr(res[0]->addr);
+}
+
 #if defined __i386__ || defined __x86_64__ || defined _M_IX86 || defined _M_X64
 
 static inline void* follow_jmp(void* pc)

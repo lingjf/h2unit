@@ -63,7 +63,7 @@ SUITE(stdio)
       }
    }
 
-#ifndef _WIN32
+#if !defined WIN32
    Case(std::cout)
    {
       COUT("std::cout! 42")
@@ -198,7 +198,7 @@ SUITE(stdio)
 
    Case(syslog)
    {
-#if !defined _WIN32
+#if !defined WIN32
       const char* e1 = "syslog! 42";
       COUT(e1)
       {

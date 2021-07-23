@@ -92,7 +92,7 @@ jobs:
     - name: configure
       run: cd test && cmake .
     - name: build
-      run: cmake --build test -j 4
+      run: cmake --build test -j $(cat /proc/cpuinfo| grep "cpu cores"| uniq | awk '{print $NF}')
     - name: run
       run: cd test && ./a.out -cvj && ./a.out -m -e test_memory_
 
@@ -103,7 +103,7 @@ jobs:
     - name: configure
       run: cd test && cmake .
     - name: build
-      run: cmake --build test -j 4
+      run: cmake --build test -j $(cat /proc/cpuinfo| grep "cpu cores"| uniq | awk '{print $NF}')
     - name: run
       run: cd test && ./a.out -vj && ./a.out -m -e test_memory_
 
@@ -117,7 +117,7 @@ jobs:
   #       CXX: clang++
   #     run: cd test && cmake .
   #   - name: build
-  #     run: cmake --build test -j 4
+  #     run: cmake --build test -j $(cat /proc/cpuinfo| grep "cpu cores"| uniq | awk '{print $NF}')
   #   - name: run
   #     run: cd test && objcopy --writable-text a.out && ./a.out -cvj && ./a.out -m -e test_memory_
 
@@ -128,7 +128,7 @@ jobs:
     - name: configure
       run: cd test && cmake .
     - name: build
-      run: cmake --build test -j 4
+      run: cmake --build test -j $(sysctl hw.ncpu | awk '{print $NF}')
     - name: run
       run: cd test && ./a.out -cvj && ./a.out -m -e test_memory_
 
@@ -139,6 +139,6 @@ jobs:
     - name: configure
       run: cd test && cmake .
     - name: build
-      run: cmake --build test -j 4
+      run: cmake --build test -j $env:NUMBER_OF_PROCESSORS
     - name: run
       run: cd test && ./Debug/a.out.exe -cv && ./Debug/a.out.exe -m -e test_memory_

@@ -251,7 +251,7 @@ SUITE(action)
       h2::h2_routine<Bar, int(int, const char*)> f4((int (*)(Bar*, int, const char*))int_func);
       OK(2, f4(&bar, 1, "2"));
 
-#ifndef _WIN32
+#if !defined WIN32
       h2::h2_routine<Bar, Foo(int, std::string&)> f6((Foo (*)(Bar*, int, std::string&))foo_func);
       auto a6 = f6(&bar, 1, d);
       OK(1, a6.int_value);

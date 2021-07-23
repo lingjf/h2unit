@@ -1,5 +1,5 @@
 ﻿
-/* v5.11 2021-07-11 09:30:54 */
+/* v5.11 2021-07-24 07:12:01 */
 /* https://github.com/lingjf/h2unit */
 /* Apache Licence 2.0 */
 
@@ -621,8 +621,7 @@ struct h2_libc {
 // source/utils/h2_shared_ptr.hpp
 
 template <typename T>
-class h2_shared_ptr : h2_libc {
- public:
+struct h2_shared_ptr {
    h2_shared_ptr() = default;
    explicit h2_shared_ptr(T* p) { acquire(p, nullptr); }
    h2_shared_ptr(const h2_shared_ptr& that) { acquire(that.px, that.pn); }
@@ -638,16 +637,10 @@ class h2_shared_ptr : h2_libc {
    T& operator*() const { return *px; }
    T* operator->() const { return px; }
 
- private:
    void acquire(T* p, long* n)
    {
       pn = n;
-      if (p) {
-         if (!pn)
-            pn = new (h2_libc::malloc(sizeof(long))) long(1);
-         else
-            ++*pn;
-      }
+      if (p) pn ? ++*pn : *(pn = (long*)h2_libc::malloc(sizeof(long))) = 1;
       px = p;
    }
    void release()
@@ -839,6 +832,7 @@ struct h2_load {
    static void* addr_to_ptr(unsigned long long addr);
    static unsigned long long ptr_to_addr(void* ptr);
    static void* vtable_to_ptr(unsigned long long addr);
+   static void* get_by_fn(const char* fn);
 };
 // source/ld/h2_backtrace.hpp
 
@@ -2430,42 +2424,19 @@ template <typename T>
 inline h2_matcher<T>::h2_matcher(T value) { *this = Eq(value); }
 // source/stub/h2_fp.hpp
 
-static inline void* get_fp_by_fn(const char* fn)
-{
-   h2_symbol* res[16];
-   int n = h2_nm::get_by_name(fn, res, 16);
-   if (n != 1) {
-      h2_color::prints("yellow", n ? "\nFind multiple %s :\n" : "\nDon't find %s\n", fn);
-      for (int i = 0; i < n; ++i)
-         h2_color::prints("yellow", "  %d. %s \n", i + 1, res[i]->name);
-      return nullptr;
-   }
-   return h2_load::addr_to_ptr(res[0]->addr);
-}
-
 template <typename Signature = void>
 struct h2_fp {
    template <typename T>
-   static void* A(T p)
-   {
-      void* fp = (void*)p;
-      if (std::is_convertible<T, h2::h2_string>::value)
-         fp = get_fp_by_fn((const char*)p);
-      return fp;
-   }
+   static void* A(T fp) { return reinterpret_cast<void*>(fp); }
+   static void* A(const char* fn) { return h2_load::get_by_fn(fn); }
 };
 
 template <typename ReturnType, typename... Args>
 struct h2_fp<ReturnType(Args...)> {
-   static void* A(ReturnType (*f)(Args...))
-   {
-      return (void*)f;
-   }
-   static void* A(const char* f)
-   {
-      return get_fp_by_fn(f);
-   }
-};// source/stub/h2_mfp.hpp
+   static void* A(ReturnType (*fp)(Args...)) { return (void*)fp; }
+   static void* A(const char* fn) { return h2_load::get_by_fn(fn); }
+};
+// source/stub/h2_mfp.hpp
 
 /* clang-format off */
 #if !defined _WIN32
@@ -2657,12 +2628,10 @@ struct h2_mfp<Class, ReturnType(Args...)> {
          void (h2_test_plus::*f)();
          void* p;
       } t{&h2_test_plus::test};
-      if ((unsigned long long)t.p & 1) {
+      if ((unsigned long long)t.p & 1)
          return (v & 1) && (v - 1) % sizeof(void*) == 0 && v < 1000 * sizeof(void*);
-         /* assumption: virtual member count less than 1000 */
-      } else {
+      else
          return v % sizeof(void*) == 0 && v < 100 * sizeof(void*);
-      }
    }
 #endif
 };

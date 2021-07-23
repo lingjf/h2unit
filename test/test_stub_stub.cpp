@@ -178,7 +178,7 @@ SUITE(stub template class)
       OK("-F.static_f1", f.static_f1(0));
       STUB(F_TemplateClass<int>, normal_f1<int>, const char*, (int a), F_normal_f1_fake);
       OK("-F.normal_f1", f.normal_f1(0));
-#ifndef _WIN32
+#if !defined WIN32
       STUB(F_TemplateClass<int>, virtual_f1, const char*, (int a), F_virtual_f1_fake);
       OK("-F.virtual_f1", f.virtual_f1(0));
 #endif
@@ -195,7 +195,7 @@ SUITE(stub template class)
       OK("-G.static_f2", (g.static_f2<int, int>(0, 0)));
       STUB((G_TemplateClass<int, int>), (normal_f2<int, int>), const char*, (int a, int b), G_normal_f2_fake);
       OK("-G.normal_f2", (g.normal_f2<int, int>(0, 0)));
-#ifndef _WIN32
+#if !defined WIN32
       STUB((G_TemplateClass<int, int>), (virtual_f2<int, int>), (std::pair<const char*, const char*>), (int a, int b), G_virtual_f2_fake);
       OK(Pair("-G", "virtual_f2"), (g.virtual_f2<int, int>(0, 0)));
 #endif
@@ -203,7 +203,7 @@ SUITE(stub template class)
       OK("G.static_f2", (g.static_f2<int, int>(0, 0)));
       UNSTUB((G_TemplateClass<int, int>), (normal_f2<int, int>), const char*, (int a, int b));
       OK("G.normal_f2", (g.normal_f2<int, int>(0, 0)));
-#ifndef _WIN32
+#if !defined WIN32
       UNSTUB((G_TemplateClass<int, int>), (virtual_f2<int, int>), (std::pair<const char*, const char*>), (int a, int b));
       OK(Pair("G", "virtual_f2"), (g.virtual_f2<int, int>(0, 0)));
 #endif
@@ -231,7 +231,7 @@ SUITE(stub by function name)
       OK(-1, test_ns::foobar1(0));
    }
 
-#ifndef _WIN32
+#if !defined WIN32
    Case("foobar1(int)")
    {
       OK(1, foobar1(0));

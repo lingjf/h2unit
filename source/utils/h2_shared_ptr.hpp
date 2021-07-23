@@ -1,7 +1,6 @@
 
 template <typename T>
-class h2_shared_ptr : h2_libc {
- public:
+struct h2_shared_ptr {
    h2_shared_ptr() = default;
    explicit h2_shared_ptr(T* p) { acquire(p, nullptr); }
    h2_shared_ptr(const h2_shared_ptr& that) { acquire(that.px, that.pn); }
@@ -17,16 +16,10 @@ class h2_shared_ptr : h2_libc {
    T& operator*() const { return *px; }
    T* operator->() const { return px; }
 
- private:
    void acquire(T* p, long* n)
    {
       pn = n;
-      if (p) {
-         if (!pn)
-            pn = new (h2_libc::malloc(sizeof(long))) long(1);
-         else
-            ++*pn;
-      }
+      if (p) pn ? ++*pn : *(pn = (long*)h2_libc::malloc(sizeof(long))) = 1;
       px = p;
    }
    void release()
