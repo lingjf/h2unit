@@ -204,7 +204,56 @@ SUITE(harmless)
 
    Case(math.h)
    {
-      auto ret1 = sqrt(42.0);
+      auto abs_ret = abs(-42);  // auto labs_ret = labs(-42); auto llabs_ret = llabs(-42);
+      auto fabs_ret = fabs(-42.0);
+
+      auto div_ret = div(42, 42);                // auto ldiv_ret = ldiv(42, 42); auto lldiv_ret = lldiv(42, 42);
+      auto fmod_ret = fmod(2.0, 2.0);            // auto fmodf_ret = fmodf(2.0, 2.0); auto fmodl_ret = fmodl(2.0, 2.0);
+      auto remainder_ret = remainder(2.0, 2.0);  // auto remainderf_ret = remainderf(2.0, 2.0); auto remainderl_ret = remainderl(2.0, 2.0);
+
+      auto nan_ret = nan("1");  // auto nanf_ret = nanf("1"); auto nanl_ret = nanl("1");
+
+      /* Exponential functions */
+      auto exp_ret = exp(2.0);      // auto expf_ret = expf(2.0); auto expl_ret = expl(2.0);
+      auto exp2_ret = exp2(2.0);    // auto exp2f_ret = exp2f(2.0); auto exp2l_ret = exp2l(2.0);
+      auto expm1_ret = expm1(2.0);  // auto expm1f_ret = expm1f(2.0); auto expm1l_ret = expm1l(2.0);
+      auto log_ret = log(2.0);      // auto logf_ret = logf(2.0); auto logl_ret = logl(2.0);
+      auto log2_ret = log2(2.0);    // auto log2f_ret = log2f(2.0); auto log2l_ret = log2l(2.0);
+      auto log10_ret = log10(2.0);  // auto log10f_ret = log10f(2.0); auto log10l_ret = log10l(2.0);
+      auto log1p_ret = log1p(2.0);  // auto log1pf_ret = log1pf(2.0); auto log1pl_ret = log1pl(2.0);
+      auto logb_ret = logb(2.0);    // auto logbf_ret = logbf(2.0); auto logbl_ret = logbl(2.0);
+      auto ilogb_ret = ilogb(2.0);  // auto ilogbf_ret = ilogbf(2.0); auto ilogbl_ret = ilogbl(2.0);
+
+      /* Power functions */
+      auto sqrt_ret = sqrt(42.0);         // auto sqrtf_ret = sqrtf(42.0); auto sqrtl_ret = sqrtl(42.0);
+      auto cbrt_ret = cbrt(42.0);         // auto cbrtf_ret = cbrtf(42.0); auto cbrtl_ret = cbrtl(42.0);
+      auto hypot_ret = hypot(42.0, 1.0);  // auto hypotf_ret = hypotf(42.0, 1.0); auto hypotl_ret = hypotl(42.0, 1.0);
+      auto pow_ret = pow(42.0, 1.0);      // auto powf_ret = powf(42.0, 1.0); auto powl_ret = powl(42.0, 1.0);
+
+      /* Trigonometric functions */
+      auto sin_ret = sin(42.0);           // auto sinf_ret = sinf(42.0); auto sinl_ret = sinl(42.0);
+      auto cos_ret = cos(42.0);           // auto cosf_ret = cosf(42.0); auto cosl_ret = cosl(42.0);
+      auto tan_ret = tan(42.0);           // auto tanf_ret = tanf(42.0); auto tanl_ret = tanl(42.0);
+      auto asin_ret = asin(42.0);         // auto asinf_ret = asinf(42.0); auto asinl_ret = asinl(42.0);
+      auto acos_ret = acos(42.0);         // auto acosf_ret = acosf(42.0); auto acosl_ret = acosl(42.0);
+      auto atan_ret = atan(42.0);         // auto atanf_ret = atanf(42.0); auto atanl_ret = atanl(42.0);
+      auto atan2_ret = atan2(42.0, 2.0);  // auto atan2f_ret = atan2f(42.0, 2.0); auto atan2l_ret = atan2l(42.0, 2.0);
+
+      /* Hyperbolic functions */
+      auto sinh_ret = sinh(3.0);    // auto sinhf_ret = sinhf(3.0); auto sinhl_ret = sinhl(3.0);
+      auto cosh_ret = cosh(3.0);    // auto coshf_ret = coshf(3.0); auto coshl_ret = coshl(3.0);
+      auto tanh_ret = tanh(3.0);    // auto tanhf_ret = tanhf(3.0); auto tanhl_ret = tanhl(3.0);
+      auto asinh_ret = asinh(3.0);  // auto asinhf_ret = asinhf(3.0); auto asinhl_ret = asinhl(3.0);
+      auto acosh_ret = acosh(3.0);  // auto acoshf_ret = acoshf(3.0); auto acoshl_ret = acoshl(3.0);
+      auto atanh_ret = atanh(3.0);  // auto atanhf_ret = atanhf(3.0); auto atanhl_ret = atanhl(3.0);
+
+      /* Nearest integer floating-point operations */
+      auto ceil_ret = ceil(3.0);            // auto ceilf_ret = ceilf(3.0); auto ceill_ret = ceill(3.0);
+      auto floor_ret = floor(3.0);          // auto floorf_ret = floorf(3.0); auto floorl_ret = floorl(3.0);
+      auto trunc_ret = trunc(3.0);          // auto truncf_ret = truncf(3.0); auto truncl_ret = truncl(3.0);
+      auto round_ret = round(3.0);          // auto roundf_ret = roundf(3.0); auto roundl_ret = roundl(3.0);
+      auto nearbyint_ret = nearbyint(3.0);  // auto nearbyintf_ret = nearbyintf(3.0); auto nearbyintl_ret = nearbyintl(3.0);
+      auto rint_ret = rint(3.0);            // auto rintf_ret = rintf(3.0); auto rintl_ret = rintl(3.0);
    }
 
 #if !defined WIN32

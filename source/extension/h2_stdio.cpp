@@ -121,7 +121,7 @@ struct h2_stdio {
          struct streambuf : public std::streambuf {
             FILE* f;
             int sync() override { return 0; }
-            int overflow(int c) override { return h2_stdio::fputc(c, f); }
+            int overflow(int c) override { return (c != EOF) && h2_stdio::fputc(c, f), 0; }
             streambuf(FILE* _f) : f(_f) { setp(nullptr, 0); }
          };
          static streambuf sb_out(stdout);
