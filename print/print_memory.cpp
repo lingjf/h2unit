@@ -42,7 +42,6 @@ SUITE(Ilegal Access)
       free(p);
    }
 
-#if !defined _WIN32
    Case(memory underflow failure)
    {
       char* p = (char*)malloc(6);
@@ -67,7 +66,6 @@ SUITE(Ilegal Access)
       free(write_after_free);
       write_after_free->tm_sec = 42;
    }
-#endif
 }
 
 SUITE(Memory Leak)

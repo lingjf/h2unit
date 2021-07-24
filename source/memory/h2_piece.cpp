@@ -77,6 +77,16 @@ struct h2_piece : h2_libc {
 #endif
    }
 
+#if defined _WIN32
+   void violate_forbidden(void* ptr, const char* type)
+   {
+      h2_backtrace bt(3);
+      set_forbidden(readable | writable);
+      violate_backtrace = bt;
+      violate_ptr = ptr;
+      violate_action = type;
+   }
+#else
    void violate_forbidden(void* ptr)
    {
       /* 区分读写犯罪方法(一次或二次进入 segment fault):
@@ -101,6 +111,7 @@ struct h2_piece : h2_libc {
             violate_action = "write";
       }
    }
+#endif
 
    void mark_snowfield()
    {
