@@ -1,5 +1,5 @@
 ﻿
-/* v5.11 2021-07-24 14:56:32 */
+/* v5.12 2021-07-31 00:33:30 */
 /* https://github.com/lingjf/h2unit */
 /* Apache Licence 2.0 */
 
@@ -1153,7 +1153,6 @@ h2_inline unsigned long long h2_nm::get_mangle(const char* name)
 }
 // source/ld/h2_load.cpp
 
-
 static inline long long get_load_text_offset()
 {
    h2_symbol* s[16];
@@ -1220,39 +1219,94 @@ h2_inline void* h2_load::get_by_fn(const char* fn)
 
 #if defined __i386__ || defined __x86_64__ || defined _M_IX86 || defined _M_X64
 
-static inline void* follow_jmp(void* pc)
+static inline unsigned char* follow_JMP32REL(unsigned char* target)
 {
-   unsigned char* p = (unsigned char*)pc;
-   if (!p) return NULL;
-
-#   if 0
-   if (p[0] == 0xff && p[1] == 0x25) {  // jmp [imm32]
-      unsigned char* p1 = sizeof(void*) == 8 ? p + 6 + *(long*)(p + 2) : *(unsigned char**)(p + 2);
-      unsigned char* p2 = *(unsigned char**)p1;
-      // ::printf("%p->%p: skipped over import table.\n", p, p2);  // skip over the import vector
-      return follow_jmp(p2);
+   int relative_offset;
+   memcpy(reinterpret_cast<void*>(&relative_offset), reinterpret_cast<void*>(target + 1), 4);
+   return target + 5 + relative_offset;
+}
+static inline unsigned char* follow_JMP8REL(unsigned char* target)
+{
+   signed char relative_offset;
+   memcpy(reinterpret_cast<void*>(&relative_offset), reinterpret_cast<void*>(target + 1), 1);
+   return target + 2 + relative_offset;
+}
+static inline unsigned char* follow_JMP32ABS(unsigned char* target)
+{
+   void** new_target_p;
+   if (sizeof(void*) == 8) {  // In 64-bit mode JMPs are RIP-relative, not absolute
+      int target_offset;
+      memcpy(reinterpret_cast<void*>(&target_offset), reinterpret_cast<void*>(target + 2), 4);
+      new_target_p = reinterpret_cast<void**>(target + target_offset + 6);
+   } else {
+      memcpy(&new_target_p, reinterpret_cast<void*>(target + 2), 4);
    }
+   return reinterpret_cast<unsigned char*>(*new_target_p);
+}
 
-   if (p[0] == 0xeb) {  // jmp +imm8
-      unsigned char* p1 = p + 2 + *(char*)(p + 1);
-      // ::printf("%p->%p: skipped over short jump.\n", p, p1);  // skip over a patch jump
-      return follow_jmp(p1);
-   }
-#   endif
-
-   if (p[0] == 0xe9) {  // jmp +imm32
-      unsigned char* p1 = p + 5 + *(long*)(p + 1);
-      // ::printf("%p->%p: skipped over long jump.\n", p, p1);  // skip over a long jump if it is the target of the patch jump.
-      return follow_jmp(p1);
+static inline void* follow_jmp(void* fp, int n = 32)
+{
+   unsigned char* p = (unsigned char*)fp;
+   while (n--) {
+      if (p[0] == 0xE9) {  // ASM_JMP32REL
+         p = follow_JMP32REL(p);
+      } else if (p[0] == 0xEB) {  //ASM_JMP8REL, Visual Studio 7.1 implements new[] as an 8 bit jump to new
+         p = follow_JMP8REL(p);
+      } else if (p[0] == 0xFF && p[1] == 0x25) {  // ASM_JMP32ABS_0 ASM_JMP32ABS_1
+         p = follow_JMP32ABS(p);
+      } else if (sizeof(void*) == 8 && p[0] == 0x48 && p[1] == 0xFF && p[2] == 0x25) {  // in Visual Studio 2012 we're seeing jump like that: rex.W jmpq *0x11d019(%rip)
+         p = follow_JMP32ABS(p + 1);
+      } else {
+         break;
+      }
    }
    return (void*)p;
 }
 
 #elif defined __arm__ || defined __arm64__ || defined __aarch64__
 
-static inline void* follow_jmp(void* pc)
+static inline long long sign_extend(unsigned long long value, unsigned int bits)
 {
-   return pc;
+   const unsigned int left = 64 - bits;
+   const long long m1 = -1;
+   const long long wide = (long long)(value << left);
+   const long long sign = (wide < 0) ? (m1 << left) : 0;
+   return value | sign;
+}
+
+static inline unsigned long fetch_opcode(void* fp, int i = 0)
+{
+   return *(unsigned long*)(((unsigned char*)fp) + i * 4);
+}
+
+static inline void* follow_jmp(void* fp, int n = 32)
+{
+   while (n--) {
+      // (gdb) disassemble /r printf
+      // Dump of assembler code for function printf@plt:
+      //    0x0000000000c1f8a0 <+0>:     90 66 00 b0     adrp    x16, 0x18f0000 <div@got.plt>
+      //    0x0000000000c1f8a4 <+4>:     11 ee 41 f9     ldr     x17, [x16, #984]
+      //    0x0000000000c1f8a8 <+8>:     10 62 0f 91     add     x16, x16, #0x3d8
+      //    0x0000000000c1f8ac <+12>:    20 02 1f d6     br      x17
+      if ((fetch_opcode(fp, 0) & 0x9f00001f) == (0x90000000 | 16)) {                                                     // C6.2.10 ADRP
+         if ((fetch_opcode(fp, 1) & 0xffe003ff) == (0xf9400000 | 16 << 5 | 17)) {                                        // C6.2.101 LDR (immediate)
+            if ((fetch_opcode(fp, 2) & 0xfffffc1f) == 0xd61f0000 || (fetch_opcode(fp, 3) & 0xfffffc1f) == 0xd61f0000) {  // BR X17 0xd61f0000 | 17 << 5
+               unsigned long long low2 = (fetch_opcode(fp, 0) >> 29) & 3;
+               unsigned long long high19 = (fetch_opcode(fp, 0) >> 5) & ~(~0ULL << 19);
+               long long page = sign_extend((high19 << 2) | low2, 21) << 12;
+               unsigned long long offset = ((fetch_opcode(fp, 1) >> 10) & ~(~0ULL << 12)) << 3;
+               unsigned char* target_p = (unsigned char*)((unsigned long long)fp & 0xfffffffffffff000ULL) + page + offset;
+               fp = (void*)*(unsigned char**)target_p;
+            }
+         }
+      } else if ((fetch_opcode(fp, 0) & 0xf8000000) == 0x58000000) {  // LDR X17,[PC+n]
+         if ((fetch_opcode(fp, 1) & 0xfffffc1f) == 0xd61f0000) {      // BR X17
+            unsigned long n = (fetch_opcode(fp, 0) & 0x07ffffe0) >> 3;
+            fp = (void*)*(unsigned long long*)(((unsigned long long)fp) + n);
+         }
+      }
+   }
+   return fp;
 }
 
 #endif
@@ -3005,21 +3059,17 @@ struct h2_piece : h2_libc {
 
    h2_fail* check_asymmetric_free(const char* who_release)
    {
-      static const char* free_a[] = {"malloc", "calloc", "realloc", "strdup", "reallocf", "posix_memalign", "memalign", "aligned_alloc", "valloc", "pvalloc", nullptr};
-      static const char* free_r[] = {"free", nullptr};
-      static const char* new_a[] = {"new", "new nothrow", nullptr};
-      static const char* new_r[] = {"delete", nullptr};
-      static const char* news_a[] = {"new[]", "new[] nothrow", nullptr};
-      static const char* news_r[] = {"delete[]", nullptr};
-      static const char* _aligned_a[] = {"_aligned_malloc", "_aligned_realloc", "_aligned_recalloc", "_aligned_offset_malloc", "_aligned_offset_realloc", "_aligned_offset_recalloc", nullptr};
-      static const char* _aligned_r[] = {"_aligned_free", nullptr};
-      static const char* HeapAlloc_a[] = {"HeapAlloc", nullptr};
-      static const char* HeapFree_r[] = {"HeapFree", nullptr};
-      static const char* VirtualAlloc_a[] = {"VirtualAlloc", nullptr};
-      static const char* VirtualFree_r[] = {"VirtualFree", nullptr};
+      static const char* a1[] = {"malloc", "calloc", "realloc", "strdup", "reallocf", "posix_memalign", "memalign", "aligned_alloc", "valloc", "pvalloc", nullptr};
+      static const char* a2[] = {"free", nullptr};
+      static const char* b1[] = {"new", "new nothrow", nullptr};
+      static const char* b2[] = {"delete", "delete nothrow", nullptr};
+      static const char* c1[] = {"new[]", "new[] nothrow", nullptr};
+      static const char* c2[] = {"delete[]", "delete[] nothrow", nullptr};
+      static const char* d1[] = {"_aligned_malloc", "_aligned_realloc", "_aligned_recalloc", "_aligned_offset_malloc", "_aligned_offset_realloc", "_aligned_offset_recalloc", nullptr};
+      static const char* d2[] = {"_aligned_free", nullptr};
       static struct {
          const char **a, **r;
-      } S[] = {{free_a, free_r}, {new_a, new_r}, {news_a, news_r}, {_aligned_a, _aligned_r}, {HeapAlloc_a, HeapFree_r}, {VirtualAlloc_a, VirtualFree_r}};
+      } S[] = {{a1, a2}, {b1, b2}, {c1, c2}, {d1, d2}};
 
       for (int i = 0; i < sizeof(S) / sizeof(S[0]); ++i)
          if (h2_in(who_allocate, S[i].a) && h2_in(who_release, S[i].r))
@@ -3359,7 +3409,7 @@ struct h2_override {
    }
    static void operator delete(void* ptr, const std::nothrow_t&)
    {
-      if (ptr) h2_fail_g(h2_stack::I().rel_piece("delete", ptr), false);
+      if (ptr) h2_fail_g(h2_stack::I().rel_piece("delete nothrow", ptr), false);
    }
    static void operator delete[](void* ptr)
    {
@@ -3367,12 +3417,11 @@ struct h2_override {
    }
    static void operator delete[](void* ptr, const std::nothrow_t&)
    {
-      if (ptr) h2_fail_g(h2_stack::I().rel_piece("delete[]", ptr), false);
+      if (ptr) h2_fail_g(h2_stack::I().rel_piece("delete[] nothrow", ptr), false);
    }
 };
 #if defined __GLIBC__
 // source/memory/h2_wrapper_linux.cpp
-
 // https://www.gnu.org/savannah-checkouts/gnu/libc/manual/html_node/Hooks-for-Malloc.html
 
 struct h2_wrapper_specific {
@@ -3413,7 +3462,6 @@ struct h2_wrapper_specific {
 #elif defined __APPLE__
 // #   include "memory/h2_wrapper_macos1.cpp"
 // source/memory/h2_wrapper_macos2.cpp
-
 // https://github.com/gperftools/gperftools/blob/master/src/libc_override.h
 
 #if defined(__APPLE__) && defined(MAC_OS_X_VERSION_10_6) && MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_6
@@ -3521,6 +3569,9 @@ struct h2_wrapper_specific {
 };
 #endif
 // source/memory/h2_wrapper.cpp
+// https://github.com/microsoft/mimalloc
+// https://github.com/gperftools/gperftools
+// https://chromium.googlesource.com/chromium/chromium/+/refs/heads/main/tools/memory_watcher/memory_hook.cc
 
 struct h2_wrapper {
    h2_singleton(h2_wrapper);
@@ -3542,13 +3593,13 @@ struct h2_wrapper {
 #endif
       // deprecated valloc pvalloc memalign
       stubs.add((void*)((void* (*)(std::size_t))::operator new), (void*)((void* (*)(std::size_t))h2_override::operator new), "new", __FILE__, __LINE__);
-      stubs.add((void*)((void* (*)(std::size_t, const std::nothrow_t&))::operator new), (void*)((void* (*)(std::size_t, const std::nothrow_t&))h2_override::operator new), "new", __FILE__, __LINE__);
+      stubs.add((void*)((void* (*)(std::size_t, const std::nothrow_t&))::operator new), (void*)((void* (*)(std::size_t, const std::nothrow_t&))h2_override::operator new), "new nothrow", __FILE__, __LINE__);
       stubs.add((void*)((void* (*)(std::size_t))::operator new[]), (void*)((void* (*)(std::size_t))h2_override::operator new[]), "new[]", __FILE__, __LINE__);
-      stubs.add((void*)((void* (*)(std::size_t, const std::nothrow_t&))::operator new[]), (void*)((void* (*)(std::size_t, const std::nothrow_t&))h2_override::operator new[]), "new[]", __FILE__, __LINE__);
+      stubs.add((void*)((void* (*)(std::size_t, const std::nothrow_t&))::operator new[]), (void*)((void* (*)(std::size_t, const std::nothrow_t&))h2_override::operator new[]), "new[] nothrow", __FILE__, __LINE__);
       stubs.add((void*)((void (*)(void*))::operator delete), (void*)((void (*)(void*))h2_override::operator delete), "delete", __FILE__, __LINE__);
-      stubs.add((void*)((void (*)(void*, const std::nothrow_t&))::operator delete), (void*)((void (*)(void*, const std::nothrow_t&))h2_override::operator delete), "delete", __FILE__, __LINE__);
+      stubs.add((void*)((void (*)(void*, const std::nothrow_t&))::operator delete), (void*)((void (*)(void*, const std::nothrow_t&))h2_override::operator delete), "delete nothrow", __FILE__, __LINE__);
       stubs.add((void*)((void (*)(void*))::operator delete[]), (void*)((void (*)(void*))h2_override::operator delete[]), "delete[]", __FILE__, __LINE__);
-      stubs.add((void*)((void (*)(void*, const std::nothrow_t&))::operator delete[]), (void*)((void (*)(void*, const std::nothrow_t&))h2_override::operator delete[]), "delete[]", __FILE__, __LINE__);
+      stubs.add((void*)((void (*)(void*, const std::nothrow_t&))::operator delete[]), (void*)((void (*)(void*, const std::nothrow_t&))h2_override::operator delete[]), "delete[] nothrow", __FILE__, __LINE__);
 
       specific.overrides();
    }
@@ -3765,6 +3816,7 @@ h2_inline void h2_exempt::setup()
    add_by_fp((void*)::sprintf);
    add_by_fp((void*)::vsnprintf);
 #   ifdef __APPLE__
+   add_by_fp((void*)::snprintf);
    add_by_fp((void*)::strftime_l);
    add_by_fp((void*)::strtod_l);
    add_by_fp((void*)::strtold);
@@ -3858,6 +3910,8 @@ static inline void h2_e9_set(void* srcfp, void* dstfp)
       *(long*)(&C[1]) = delta;
       memcpy(I, C, sizeof(C));
    }
+   // ::FlushInstructionCache(O.hProcess, srcfp, h2_e9_size);
+
 #elif defined __arm__ || defined __arm64__ || defined __aarch64__
 
 #   pragma pack(push, 1)
@@ -3891,6 +3945,7 @@ static inline void h2_e9_set(void* srcfp, void* dstfp)
 static inline void h2_e9_reset(void* srcfp, unsigned char* opcode)
 {
    memcpy(srcfp, opcode, h2_e9_size);
+   // ::FlushInstructionCache(O.hProcess, srcfp, h2_e9_size);
 #if defined __arm__ || defined __arm64__ || defined __aarch64__
    __builtin___clear_cache(static_cast<char*>(srcfp), static_cast<char*>(srcfp) + h2_e9_size);
 #endif
@@ -3899,42 +3954,62 @@ static inline void h2_e9_reset(void* srcfp, unsigned char* opcode)
 
 struct h2_source : h2_libc {
    h2_list x;
-   unsigned char saved_opcode[32];
+   unsigned char origin_opcode[32];
    void* source_fp;
    int reference_count = 0;
    h2_source(void* _source_fp, const char* fn, const char* file, int line) : source_fp(_source_fp)
    {
-      if (!h2_e9_save(source_fp, saved_opcode)) {
+      if (!h2_e9_save(source_fp, origin_opcode)) {
          h2_color::prints("yellow", "STUB %s by %s() failed %s:%d\n", fn, O.os == windows ? "VirtualProtect" : "mprotect", file, line);
          if (O.os == macOS) ::printf("try: "), h2_color::prints("green", "printf '\\x07' | dd of=%s bs=1 seek=160 count=1 conv=notrunc\n", O.path);
          if (O.os == Linux) ::printf("try: "), h2_color::prints("green", "objcopy --writable-text %s\n", O.path);
       }
    }
-   ~h2_source() { h2_e9_reset(source_fp, saved_opcode); }
+   ~h2_source() { h2_e9_reset(source_fp, origin_opcode); }
    void set(void* dstfp) { h2_e9_set(source_fp, dstfp); }
    void save(unsigned char opcode[32]) { h2_e9_save(source_fp, opcode); }
    void reset(unsigned char opcode[32]) { h2_e9_reset(source_fp, opcode); }
-   void reset() { h2_e9_reset(source_fp, saved_opcode); }
+   void reset() { h2_e9_reset(source_fp, origin_opcode); }
 };
 
 struct h2_sources {
    h2_singleton(h2_sources);
-   h2_list sources;
+   h2_list __sources;
 
-   h2_source* get(void* source_fp)
+   h2_source* __find(void* fp)
    {
-      h2_list_for_each_entry (p, sources, h2_source, x)
-         if (p->source_fp == source_fp)
+      h2_list_for_each_entry (p, __sources, h2_source, x)
+         if (p->source_fp == fp)
             return p;
       return nullptr;
    }
 
-   h2_source* add(void* source_fp, const char* fn, const char* file, int line)
+   void* __follow(void* fp)
    {
-      h2_source* source = get(source_fp);
+#if defined __arm__ || defined __arm64__ || defined __aarch64__
+#else
+      for (int i = 0; i < 1; ++i) {  // follow PLT(Linux) or IAT(Windows)
+         if (__find(fp)) break;
+         void* next = follow_jmp(fp, 1);
+         if (next == fp) break;
+         fp = next;
+      }
+#endif
+      return fp;
+   }
+
+   h2_source* get(void* fp)
+   {
+      return __find(__follow(fp));
+   }
+
+   h2_source* add(void* fp, const char* fn, const char* file, int line)
+   {
+      void* source_fp = __follow(fp);
+      h2_source* source = __find(source_fp);
       if (!source) {
          source = new h2_source(source_fp, fn, file, line);
-         sources.push(source->x);
+         __sources.push(source->x);
       }
       source->reference_count++;
       return source;
@@ -3954,15 +4029,15 @@ struct h2_stub : h2_libc {
    h2_list x;
    unsigned char saved_opcode[32];
    void *srcfp, *dstfp;
+   h2_source* source;
 
    h2_stub(void* _srcfp, const char* srcfn, const char* file, int line) : srcfp(_srcfp)
    {
-      h2_source* source = h2_sources::I().add(srcfp, srcfn, file, line);
+      source = h2_sources::I().add(srcfp, srcfn, file, line);
       if (source) source->save(saved_opcode);
    }
    ~h2_stub()
    {
-      h2_source* source = h2_sources::I().get(srcfp);
       if (source) {
          source->reset(saved_opcode);
          h2_sources::I().del(source);
@@ -3970,7 +4045,6 @@ struct h2_stub : h2_libc {
    }
    void stub(void* _dstfp)
    {
-      h2_source* source = h2_sources::I().get(srcfp);
       if (source) source->set((dstfp = _dstfp));
    }
 };
@@ -4015,7 +4089,7 @@ h2_inline h2_stub_temporary_restore::h2_stub_temporary_restore(void* _srcfp) : s
 {
    h2_source* source = h2_sources::I().get(srcfp);
    if (source) {
-      source->save(saved_opcode);
+      source->save(current_opcode);
       source->reset();
    }
 }
@@ -4023,7 +4097,7 @@ h2_inline h2_stub_temporary_restore::h2_stub_temporary_restore(void* _srcfp) : s
 h2_inline h2_stub_temporary_restore::~h2_stub_temporary_restore()
 {
    h2_source* source = h2_sources::I().get(srcfp);
-   if (source) source->reset(saved_opcode);
+   if (source) source->reset(current_opcode);
 }
 
 // source/mock/h2_checkin.cpp
@@ -4693,7 +4767,7 @@ struct h2_stdio {
          stubs.add((void*)::putchar, (void*)putchar, "putchar", __FILE__, __LINE__);
          stubs.add((void*)::puts, (void*)puts, "puts", __FILE__, __LINE__);
          stubs.add((void*)::fprintf, (void*)fprintf, "fprintf", __FILE__, __LINE__);
-         stubs.add((void*)::vfprintf, (void*)vfprintf, "vfprintf", __FILE__, __LINE__);
+         // stubs.add((void*)::vfprintf, (void*)vfprintf, "vfprintf", __FILE__, __LINE__);
          stubs.add((void*)::fputc, (void*)fputc, "fputc", __FILE__, __LINE__);
          stubs.add((void*)::putc, (void*)fputc, "fputc", __FILE__, __LINE__);
          stubs.add((void*)::fputs, (void*)fputs, "fputs", __FILE__, __LINE__);

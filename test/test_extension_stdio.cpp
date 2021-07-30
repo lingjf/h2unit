@@ -1,22 +1,5 @@
 #include "../source/h2_unit.cpp"
-
-static int my_printf(const char* fmt, ...)
-{
-   va_list a;
-   va_start(a, fmt);
-   int ret = vprintf(fmt, a);
-   va_end(a);
-   return ret;
-}
-
-static int my_fprintf(FILE* stream, const char* fmt, ...)
-{
-   va_list a;
-   va_start(a, fmt);
-   int ret = vfprintf(stream, fmt, a);
-   va_end(a);
-   return ret;
-}
+#include "test_types.hpp"
 
 SUITE(stdio)
 {
@@ -106,6 +89,7 @@ SUITE(stdio)
       }
    }
 
+#if 0
    Case(vfprintf)
    {
       const char* e1 = "vfprintf stdout! 42";
@@ -122,6 +106,7 @@ SUITE(stdio)
          OK(strlen(e2), ret);
       }
    }
+#endif
 
    Case(fputc)
    {

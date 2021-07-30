@@ -44,6 +44,8 @@ static inline void h2_e9_set(void* srcfp, void* dstfp)
       *(long*)(&C[1]) = delta;
       memcpy(I, C, sizeof(C));
    }
+   // ::FlushInstructionCache(O.hProcess, srcfp, h2_e9_size);
+
 #elif defined __arm__ || defined __arm64__ || defined __aarch64__
 
 #   pragma pack(push, 1)
@@ -77,6 +79,7 @@ static inline void h2_e9_set(void* srcfp, void* dstfp)
 static inline void h2_e9_reset(void* srcfp, unsigned char* opcode)
 {
    memcpy(srcfp, opcode, h2_e9_size);
+   // ::FlushInstructionCache(O.hProcess, srcfp, h2_e9_size);
 #if defined __arm__ || defined __arm64__ || defined __aarch64__
    __builtin___clear_cache(static_cast<char*>(srcfp), static_cast<char*>(srcfp) + h2_e9_size);
 #endif

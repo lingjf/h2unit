@@ -1,4 +1,8 @@
 #include "../source/h2_unit.cpp"
+#include "test_types.hpp"
+#if !defined _WIN32
+#   include <pthread.h>
+#endif
 
 class User {
  public:
@@ -49,7 +53,6 @@ SUITE(override)
       }
    }
 
-#if !(defined __arm__ || defined __arm64__ || defined __aarch64__)
    Case(new[])
    {
       delete[] new char[100];
@@ -60,7 +63,6 @@ SUITE(override)
          OK(IsNull, new (std::nothrow) char[100]);
       }
    }
-#endif
 
    Case(strdup)
    {
@@ -138,6 +140,8 @@ GlobalCleanup()
 SUITE(harmless)
 {
    char t[1024];
+   char* p;
+   int ret;
 
    Case(time.h)
    {
@@ -146,10 +150,8 @@ SUITE(harmless)
       struct tm* t4 = gmtime(&t3);
       struct tm t5;
       ctime(&t3);
-#if !(defined __arm__ || defined __arm64__ || defined __aarch64__)
-      asctime(t4);
-#endif
-#if !defined WIN32
+      asctime(t4);  // deprecated
+#if !defined _WIN32
       struct timezone tz;
       gettimeofday(&tv, &tz);
       ctime_r(&t3, t);
@@ -164,21 +166,41 @@ SUITE(harmless)
 
    Case(string.h)
    {
-      memchr("abcdefghijklmnopqrstuvwxyz", 'k', 26);
-      memcmp("abc", "def", 3);
+      // String manipulation
+      strcpy(t, "h2unit");
+      strncpy(t, "h2unit", 6);
+      strcat(t, "h2unit");
+      strncat(t, "h2unit", 6);
+      strxfrm(t, "h2unit", 6);
 
-      strcoll("abc", "def");
-      strcpy(t, "abc,def");
+      // String examination
+      strlen("h2unit");
+      strcmp(t, "h2unit");
+      strncmp(t, "h2unit", 6);
+      strchr("h2unit", 'u');
+      strrchr("h2unit", 'u');
+      strcoll(t, "h2unit");
+      strspn("h2unit", "h2");
+      strcspn("h2unit", "h2");
+      strstr("h2unit", "h2");
+      strpbrk("h2unit", "h2");
       strtok(t, ",");
-      strxfrm(t, "xyz", 3);
-      strerror(ENOMEM);
-   }
 
-   Case(stdlib.h)
-   {
+      // Miscellaneous
+      strerror(ENOMEM);
+
+      // Memory manipulation
+      memset(t, 0, 10);
+      memcpy(t, "h2unit", 6);
+      memmove(t, "h2unit", 6);
+      memcmp(t, "h2unit", 6);
+      memchr(t, 'u', 10);
+
+      // Numeric conversions
+      atof("12345.67");
       atoi("12345");
       atol("12345");
-      atof("12345.67");
+      atoll("12345");
       strtof("12345678.12", NULL);
       strtod("1912000101600571", NULL);
       strtold("1912000101600571", NULL);
@@ -187,6 +209,17 @@ SUITE(harmless)
       strtoul("12345678", NULL, 10);
       strtoull("1234567890", NULL, 10);
 
+      // Popular extensions
+#if defined WIN32
+      stricmp(t, "h2unit");
+#else
+      strcasecmp(t, "h2unit");
+      strtok_r(t, ",", &p);
+#endif
+   }
+
+   Case(stdlib.h)
+   {
       getenv("LANG");
       system("pwd");
 
@@ -198,9 +231,34 @@ SUITE(harmless)
 
    Case(stdio.h)
    {
-      sprintf(t, "%g%g%g", 1.0 / 3.0, 1.0 / 7.0, 1.0 / 13.0);
-      fclose(fopen("./CMakeLists.txt", "r"));
+      /* Formatted input/output */
+      printf("%g%5s%c", 1.0 / 3.0, " test ", ' ');
+      fprintf(stderr, "%g%5s%c", 1.0 / 3.0, " test ", ' ');
+      sprintf(t, "%g%5s%c", 1.0 / 3.0, " test ", ' ');
+      snprintf(t, 100, "%g%5s%c", 1.0 / 3.0, " test ", ' ');
+      my_printf("%g%5s%c", 1.0 / 3.0, " test ", ' ');           // vprintf
+      my_fprintf(stderr, "%g%5s%c", 1.0 / 3.0, " test ", ' ');  // vfprintf
+      my_sprintf(t, "%g%5s%c", 1.0 / 3.0, " test ", ' ');       // vsprintf
+      my_snprintf(t, 10, "%g%5s%c", 1.0 / 3.0, " test ", ' ');  // vsnprintf
+      perror("perror test");
+
+      sscanf("3   a.out  0x00008a3c foobar + 45", "%*s%*s%*s%s + %d", t, &ret);
+
+      /* Operations on files */
+      fclose(fopen("./_this.dat", "w+"));
+      rename("./_this.dat", "./_that.dat");
+      remove("./_that.dat");
+      // tmpnam("./_dir"); // deprecated
+      fclose(tmpfile());
    }
+
+#if !defined WIN32
+   Case(iostream)
+   {
+      std::ostringstream toss;
+      toss << std::boolalpha << 42;
+   }
+#endif
 
    Case(math.h)
    {
@@ -279,4 +337,42 @@ SUITE(harmless)
       getaddrinfo("localhost", NULL, &hints, &res);
       freeaddrinfo(res);
    }
+
+#if !defined _WIN32
+   Case(pthread.h)
+   {
+      UNMEM(pthread_create);
+      pthread_t tid;
+      int ret = pthread_create(&tid, NULL, my_pthread, NULL);
+      pthread_join(tid, NULL);
+
+      pthread_rwlock_t rwlock;
+      pthread_rwlock_init(&rwlock, NULL);
+      pthread_rwlock_tryrdlock(&rwlock);
+      pthread_rwlock_unlock(&rwlock);
+      pthread_rwlock_trywrlock(&rwlock);
+      pthread_rwlock_unlock(&rwlock);
+      pthread_rwlock_rdlock(&rwlock);
+      pthread_rwlock_unlock(&rwlock);
+      pthread_rwlock_wrlock(&rwlock);
+      pthread_rwlock_unlock(&rwlock);
+      pthread_rwlock_destroy(&rwlock);
+
+      pthread_cond_t cond;
+      pthread_mutex_t mutex;
+      pthread_mutex_init(&mutex, NULL);
+      pthread_mutex_trylock(&mutex);
+      pthread_mutex_unlock(&mutex);
+      pthread_mutex_lock(&mutex);
+      pthread_mutex_unlock(&mutex);
+      pthread_cond_init(&cond, NULL);
+      pthread_cond_broadcast(&cond);
+      pthread_cond_signal(&cond);
+      // pthread_cond_wait(&cond, &mutex);
+      struct timespec ts = {1, 1};
+      pthread_cond_timedwait(&cond, &mutex, &ts);
+      pthread_cond_destroy(&cond);
+      pthread_mutex_destroy(&mutex);
+   }
+#endif
 }

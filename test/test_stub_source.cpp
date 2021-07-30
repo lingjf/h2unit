@@ -16,7 +16,7 @@ char* h2_source_tojson(h2::h2_source* s, char* b)
 char* h2_sources_tojson(h2::h2_sources& a, char* b)
 {
    sprintf(b, "[");
-   h2_list_for_each_entry (p, i, a.sources, h2::h2_source, x) {
+   h2_list_for_each_entry (p, i, a.__sources, h2::h2_source, x) {
       if (i) sprintf(b + strlen(b), ",");
       h2_source_tojson(p, b + strlen(b));
    }

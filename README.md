@@ -1019,3 +1019,8 @@ twofiles speed up 2~3 times than onefile.
 *    Variadic parameter function can't MOCK, use STUB with separate fake function instead
 *    MOCK function arguments up to 16 count
 *    sqrt() in math.h can be STUB/MOCK, because compiler insert sqrtsd ASM instruction directly instead of function call
+
+```Shell
+   LD_BIND_NOW=1 ./a.out 
+   gcc --Wl,z,now
+```

@@ -86,7 +86,7 @@ struct h2_override {
    }
    static void operator delete(void* ptr, const std::nothrow_t&)
    {
-      if (ptr) h2_fail_g(h2_stack::I().rel_piece("delete", ptr), false);
+      if (ptr) h2_fail_g(h2_stack::I().rel_piece("delete nothrow", ptr), false);
    }
    static void operator delete[](void* ptr)
    {
@@ -94,6 +94,6 @@ struct h2_override {
    }
    static void operator delete[](void* ptr, const std::nothrow_t&)
    {
-      if (ptr) h2_fail_g(h2_stack::I().rel_piece("delete[]", ptr), false);
+      if (ptr) h2_fail_g(h2_stack::I().rel_piece("delete[] nothrow", ptr), false);
    }
 };

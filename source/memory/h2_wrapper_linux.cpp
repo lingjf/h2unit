@@ -1,4 +1,3 @@
-
 // https://www.gnu.org/savannah-checkouts/gnu/libc/manual/html_node/Hooks-for-Malloc.html
 
 struct h2_wrapper_specific {

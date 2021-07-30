@@ -48,6 +48,7 @@ h2_inline void h2_exempt::setup()
    add_by_fp((void*)::sprintf);
    add_by_fp((void*)::vsnprintf);
 #   ifdef __APPLE__
+   add_by_fp((void*)::snprintf);
    add_by_fp((void*)::strftime_l);
    add_by_fp((void*)::strtod_l);
    add_by_fp((void*)::strtold);

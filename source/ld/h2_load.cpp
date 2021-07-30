@@ -1,5 +1,4 @@
 
-
 static inline long long get_load_text_offset()
 {
    h2_symbol* s[16];
@@ -66,39 +65,94 @@ h2_inline void* h2_load::get_by_fn(const char* fn)
 
 #if defined __i386__ || defined __x86_64__ || defined _M_IX86 || defined _M_X64
 
-static inline void* follow_jmp(void* pc)
+static inline unsigned char* follow_JMP32REL(unsigned char* target)
 {
-   unsigned char* p = (unsigned char*)pc;
-   if (!p) return NULL;
-
-#   if 0
-   if (p[0] == 0xff && p[1] == 0x25) {  // jmp [imm32]
-      unsigned char* p1 = sizeof(void*) == 8 ? p + 6 + *(long*)(p + 2) : *(unsigned char**)(p + 2);
-      unsigned char* p2 = *(unsigned char**)p1;
-      // ::printf("%p->%p: skipped over import table.\n", p, p2);  // skip over the import vector
-      return follow_jmp(p2);
+   int relative_offset;
+   memcpy(reinterpret_cast<void*>(&relative_offset), reinterpret_cast<void*>(target + 1), 4);
+   return target + 5 + relative_offset;
+}
+static inline unsigned char* follow_JMP8REL(unsigned char* target)
+{
+   signed char relative_offset;
+   memcpy(reinterpret_cast<void*>(&relative_offset), reinterpret_cast<void*>(target + 1), 1);
+   return target + 2 + relative_offset;
+}
+static inline unsigned char* follow_JMP32ABS(unsigned char* target)
+{
+   void** new_target_p;
+   if (sizeof(void*) == 8) {  // In 64-bit mode JMPs are RIP-relative, not absolute
+      int target_offset;
+      memcpy(reinterpret_cast<void*>(&target_offset), reinterpret_cast<void*>(target + 2), 4);
+      new_target_p = reinterpret_cast<void**>(target + target_offset + 6);
+   } else {
+      memcpy(&new_target_p, reinterpret_cast<void*>(target + 2), 4);
    }
+   return reinterpret_cast<unsigned char*>(*new_target_p);
+}
 
-   if (p[0] == 0xeb) {  // jmp +imm8
-      unsigned char* p1 = p + 2 + *(char*)(p + 1);
-      // ::printf("%p->%p: skipped over short jump.\n", p, p1);  // skip over a patch jump
-      return follow_jmp(p1);
-   }
-#   endif
-
-   if (p[0] == 0xe9) {  // jmp +imm32
-      unsigned char* p1 = p + 5 + *(long*)(p + 1);
-      // ::printf("%p->%p: skipped over long jump.\n", p, p1);  // skip over a long jump if it is the target of the patch jump.
-      return follow_jmp(p1);
+static inline void* follow_jmp(void* fp, int n = 32)
+{
+   unsigned char* p = (unsigned char*)fp;
+   while (n--) {
+      if (p[0] == 0xE9) {  // ASM_JMP32REL
+         p = follow_JMP32REL(p);
+      } else if (p[0] == 0xEB) {  //ASM_JMP8REL, Visual Studio 7.1 implements new[] as an 8 bit jump to new
+         p = follow_JMP8REL(p);
+      } else if (p[0] == 0xFF && p[1] == 0x25) {  // ASM_JMP32ABS_0 ASM_JMP32ABS_1
+         p = follow_JMP32ABS(p);
+      } else if (sizeof(void*) == 8 && p[0] == 0x48 && p[1] == 0xFF && p[2] == 0x25) {  // in Visual Studio 2012 we're seeing jump like that: rex.W jmpq *0x11d019(%rip)
+         p = follow_JMP32ABS(p + 1);
+      } else {
+         break;
+      }
    }
    return (void*)p;
 }
 
 #elif defined __arm__ || defined __arm64__ || defined __aarch64__
 
-static inline void* follow_jmp(void* pc)
+static inline long long sign_extend(unsigned long long value, unsigned int bits)
 {
-   return pc;
+   const unsigned int left = 64 - bits;
+   const long long m1 = -1;
+   const long long wide = (long long)(value << left);
+   const long long sign = (wide < 0) ? (m1 << left) : 0;
+   return value | sign;
+}
+
+static inline unsigned long fetch_opcode(void* fp, int i = 0)
+{
+   return *(unsigned long*)(((unsigned char*)fp) + i * 4);
+}
+
+static inline void* follow_jmp(void* fp, int n = 32)
+{
+   while (n--) {
+      // (gdb) disassemble /r printf
+      // Dump of assembler code for function printf@plt:
+      //    0x0000000000c1f8a0 <+0>:     90 66 00 b0     adrp    x16, 0x18f0000 <div@got.plt>
+      //    0x0000000000c1f8a4 <+4>:     11 ee 41 f9     ldr     x17, [x16, #984]
+      //    0x0000000000c1f8a8 <+8>:     10 62 0f 91     add     x16, x16, #0x3d8
+      //    0x0000000000c1f8ac <+12>:    20 02 1f d6     br      x17
+      if ((fetch_opcode(fp, 0) & 0x9f00001f) == (0x90000000 | 16)) {                                                     // C6.2.10 ADRP
+         if ((fetch_opcode(fp, 1) & 0xffe003ff) == (0xf9400000 | 16 << 5 | 17)) {                                        // C6.2.101 LDR (immediate)
+            if ((fetch_opcode(fp, 2) & 0xfffffc1f) == 0xd61f0000 || (fetch_opcode(fp, 3) & 0xfffffc1f) == 0xd61f0000) {  // BR X17 0xd61f0000 | 17 << 5
+               unsigned long long low2 = (fetch_opcode(fp, 0) >> 29) & 3;
+               unsigned long long high19 = (fetch_opcode(fp, 0) >> 5) & ~(~0ULL << 19);
+               long long page = sign_extend((high19 << 2) | low2, 21) << 12;
+               unsigned long long offset = ((fetch_opcode(fp, 1) >> 10) & ~(~0ULL << 12)) << 3;
+               unsigned char* target_p = (unsigned char*)((unsigned long long)fp & 0xfffffffffffff000ULL) + page + offset;
+               fp = (void*)*(unsigned char**)target_p;
+            }
+         }
+      } else if ((fetch_opcode(fp, 0) & 0xf8000000) == 0x58000000) {  // LDR X17,[PC+n]
+         if ((fetch_opcode(fp, 1) & 0xfffffc1f) == 0xd61f0000) {      // BR X17
+            unsigned long n = (fetch_opcode(fp, 0) & 0x07ffffe0) >> 3;
+            fp = (void*)*(unsigned long long*)(((unsigned long long)fp) + n);
+         }
+      }
+   }
+   return fp;
 }
 
 #endif

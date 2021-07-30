@@ -22,13 +22,21 @@ ELSE()
     ADD_CUSTOM_TARGET(concat ALL
         COMMAND python ${CMAKE_CURRENT_SOURCE_DIR}/../build/concat.py
     )
+    SET(CMAKE_CXX_FLAGS "${CAMKE_CXX_FLAGS} -pthread")
 ENDIF()
 
 
 AUX_SOURCE_DIRECTORY(. SRC_TEST)
-# FILE(GLOB SRC_TEST "test_types.cpp" "test_mock*.cpp")
+# FILE(GLOB SRC_TEST "test_types.cpp" "test_memory*.cpp")
 
 ADD_EXECUTABLE(a.out ${SRC_TEST})
+
+
+IF(CMAKE_SYSTEM_NAME MATCHES "Windows")
+    
+ELSE()
+    TARGET_LINK_LIBRARIES(a.out pthread)
+ENDIF()
 
 IF(CMAKE_SYSTEM_NAME MATCHES "Darwin")
     ADD_CUSTOM_TARGET(fixup ALL

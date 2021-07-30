@@ -47,3 +47,44 @@ int foobar2(int a, const char* b)
    return 2;
 }
 }  // namespace test_ns
+
+int my_printf(const char* fmt, ...)
+{
+   va_list a;
+   va_start(a, fmt);
+   int ret = vprintf(fmt, a);
+   va_end(a);
+   return ret;
+}
+
+int my_fprintf(FILE* stream, const char* fmt, ...)
+{
+   va_list a;
+   va_start(a, fmt);
+   int ret = vfprintf(stream, fmt, a);
+   va_end(a);
+   return ret;
+}
+
+int my_sprintf(char* t, const char* fmt, ...)
+{
+   va_list a;
+   va_start(a, fmt);
+   int ret = vsprintf(t, fmt, a);
+   va_end(a);
+   return ret;
+}
+
+int my_snprintf(char* t, int n, const char* fmt, ...)
+{
+   va_list a;
+   va_start(a, fmt);
+   int ret = vsnprintf(t, n, fmt, a);
+   va_end(a);
+   return ret;
+}
+
+void* my_pthread(void *arg)
+{
+   return NULL;
+}

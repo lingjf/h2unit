@@ -2,7 +2,7 @@
 #ifndef __H2_UNIT_HPP__
 #define __H2_UNIT_HPP__
 
-#define H2UNIT_VERSION 5.11
+#define H2UNIT_VERSION 5.12
 
 #include <cstdio>      /* printf */
 #include <cstdlib>     /* malloc */
@@ -23,7 +23,7 @@
 #   define WIN32_LEAN_AND_MEAN /* fix winsock.h winsock2.h conflict */
 #   define NOMINMAX            /* fix std::min/max conflict with windows::min/max */
 #   include <windows.h>
-#   include <malloc.h> /* alloca */
+#   include <malloc.h> /* alloca _msize _expand */
 #   define alloca _alloca
 #   define ssize_t int
 #else

@@ -153,21 +153,17 @@ struct h2_piece : h2_libc {
 
    h2_fail* check_asymmetric_free(const char* who_release)
    {
-      static const char* free_a[] = {"malloc", "calloc", "realloc", "strdup", "reallocf", "posix_memalign", "memalign", "aligned_alloc", "valloc", "pvalloc", nullptr};
-      static const char* free_r[] = {"free", nullptr};
-      static const char* new_a[] = {"new", "new nothrow", nullptr};
-      static const char* new_r[] = {"delete", nullptr};
-      static const char* news_a[] = {"new[]", "new[] nothrow", nullptr};
-      static const char* news_r[] = {"delete[]", nullptr};
-      static const char* _aligned_a[] = {"_aligned_malloc", "_aligned_realloc", "_aligned_recalloc", "_aligned_offset_malloc", "_aligned_offset_realloc", "_aligned_offset_recalloc", nullptr};
-      static const char* _aligned_r[] = {"_aligned_free", nullptr};
-      static const char* HeapAlloc_a[] = {"HeapAlloc", nullptr};
-      static const char* HeapFree_r[] = {"HeapFree", nullptr};
-      static const char* VirtualAlloc_a[] = {"VirtualAlloc", nullptr};
-      static const char* VirtualFree_r[] = {"VirtualFree", nullptr};
+      static const char* a1[] = {"malloc", "calloc", "realloc", "strdup", "reallocf", "posix_memalign", "memalign", "aligned_alloc", "valloc", "pvalloc", nullptr};
+      static const char* a2[] = {"free", nullptr};
+      static const char* b1[] = {"new", "new nothrow", nullptr};
+      static const char* b2[] = {"delete", "delete nothrow", nullptr};
+      static const char* c1[] = {"new[]", "new[] nothrow", nullptr};
+      static const char* c2[] = {"delete[]", "delete[] nothrow", nullptr};
+      static const char* d1[] = {"_aligned_malloc", "_aligned_realloc", "_aligned_recalloc", "_aligned_offset_malloc", "_aligned_offset_realloc", "_aligned_offset_recalloc", nullptr};
+      static const char* d2[] = {"_aligned_free", nullptr};
       static struct {
          const char **a, **r;
-      } S[] = {{free_a, free_r}, {new_a, new_r}, {news_a, news_r}, {_aligned_a, _aligned_r}, {HeapAlloc_a, HeapFree_r}, {VirtualAlloc_a, VirtualFree_r}};
+      } S[] = {{a1, a2}, {b1, b2}, {c1, c2}, {d1, d2}};
 
       for (int i = 0; i < sizeof(S) / sizeof(S[0]); ++i)
          if (h2_in(who_allocate, S[i].a) && h2_in(who_release, S[i].r))

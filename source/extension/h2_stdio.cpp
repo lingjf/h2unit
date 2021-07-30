@@ -112,7 +112,7 @@ struct h2_stdio {
          stubs.add((void*)::putchar, (void*)putchar, "putchar", __FILE__, __LINE__);
          stubs.add((void*)::puts, (void*)puts, "puts", __FILE__, __LINE__);
          stubs.add((void*)::fprintf, (void*)fprintf, "fprintf", __FILE__, __LINE__);
-         stubs.add((void*)::vfprintf, (void*)vfprintf, "vfprintf", __FILE__, __LINE__);
+         // stubs.add((void*)::vfprintf, (void*)vfprintf, "vfprintf", __FILE__, __LINE__);
          stubs.add((void*)::fputc, (void*)fputc, "fputc", __FILE__, __LINE__);
          stubs.add((void*)::putc, (void*)fputc, "fputc", __FILE__, __LINE__);
          stubs.add((void*)::fputs, (void*)fputs, "fputs", __FILE__, __LINE__);

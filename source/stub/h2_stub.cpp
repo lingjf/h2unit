@@ -3,15 +3,15 @@ struct h2_stub : h2_libc {
    h2_list x;
    unsigned char saved_opcode[32];
    void *srcfp, *dstfp;
+   h2_source* source;
 
    h2_stub(void* _srcfp, const char* srcfn, const char* file, int line) : srcfp(_srcfp)
    {
-      h2_source* source = h2_sources::I().add(srcfp, srcfn, file, line);
+      source = h2_sources::I().add(srcfp, srcfn, file, line);
       if (source) source->save(saved_opcode);
    }
    ~h2_stub()
    {
-      h2_source* source = h2_sources::I().get(srcfp);
       if (source) {
          source->reset(saved_opcode);
          h2_sources::I().del(source);
@@ -19,7 +19,6 @@ struct h2_stub : h2_libc {
    }
    void stub(void* _dstfp)
    {
-      h2_source* source = h2_sources::I().get(srcfp);
       if (source) source->set((dstfp = _dstfp));
    }
 };
@@ -64,7 +63,7 @@ h2_inline h2_stub_temporary_restore::h2_stub_temporary_restore(void* _srcfp) : s
 {
    h2_source* source = h2_sources::I().get(srcfp);
    if (source) {
-      source->save(saved_opcode);
+      source->save(current_opcode);
       source->reset();
    }
 }
@@ -72,5 +71,5 @@ h2_inline h2_stub_temporary_restore::h2_stub_temporary_restore(void* _srcfp) : s
 h2_inline h2_stub_temporary_restore::~h2_stub_temporary_restore()
 {
    h2_source* source = h2_sources::I().get(srcfp);
-   if (source) source->reset(saved_opcode);
+   if (source) source->reset(current_opcode);
 }

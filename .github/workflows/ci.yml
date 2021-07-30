@@ -93,8 +93,10 @@ jobs:
       run: cd test && cmake .
     - name: build
       run: cmake --build test -j $(cat /proc/cpuinfo| grep "cpu cores"| uniq | awk '{print $NF}')
-    - name: run
-      run: cd test && ./a.out -cvj && ./a.out -m -e test_memory_
+    - name: run with memory check
+      run: cd test && LD_BIND_NOW=1 ./a.out -cvj
+    - name: run without memory check
+      run: cd test && LD_BIND_NOW=1 ./a.out -m -e test_memory_
 
   test-x86-linux-gcc:
     runs-on: ubuntu-16.04
@@ -104,8 +106,10 @@ jobs:
       run: cd test && cmake .
     - name: build
       run: cmake --build test -j $(cat /proc/cpuinfo| grep "cpu cores"| uniq | awk '{print $NF}')
-    - name: run
-      run: cd test && ./a.out -vj && ./a.out -m -e test_memory_
+    - name: run with memory check
+      run: cd test && LD_BIND_NOW=1 ./a.out -vj
+    - name: run without memory check
+      run: cd test && LD_BIND_NOW=1 ./a.out -m -e test_memory_
 
   # test-x86_64-linux-clang:
   #   runs-on: ubuntu-latest
@@ -129,8 +133,10 @@ jobs:
       run: cd test && cmake .
     - name: build
       run: cmake --build test -j $(sysctl hw.ncpu | awk '{print $NF}')
-    - name: run
-      run: cd test && ./a.out -cvj && ./a.out -m -e test_memory_
+    - name: run with memory check
+      run: cd test && ./a.out -cvj
+    - name: run without memory check
+      run: cd test && ./a.out -m -e test_memory_
 
   test-x86_64-windows-msvc:
     runs-on: windows-latest
@@ -140,5 +146,7 @@ jobs:
       run: cd test && cmake .
     - name: build
       run: cmake --build test -j $env:NUMBER_OF_PROCESSORS
-    - name: run
-      run: cd test && ./Debug/a.out.exe -cv && ./Debug/a.out.exe -m -e test_memory_
+    - name: run with memory check
+      run: cd test && ./Debug/a.out.exe -cv
+    - name: run without memory check
+      run: cd test && ./Debug/a.out.exe -m -e test_memory_
