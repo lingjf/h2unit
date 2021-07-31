@@ -21,7 +21,7 @@ jobs:
     - name: run
       run: ./example/a.out
 
-  example-x86-macos-clang:
+  example-x86_64-macos-clang:
     runs-on: macos-latest
     steps:
     - uses: actions/checkout@v2
@@ -34,10 +34,8 @@ jobs:
     runs-on: windows-latest
     steps:
     - uses: actions/checkout@v2
-    - name: configure
-      run: cd example && cmake .
     - name: build
-      run: cmake --build example
+      run: cd example && cmake . && cmake --build .
     - name: run
       run: cd example && ./Debug/a.out.exe
 
@@ -45,10 +43,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
-    - name: configure
-      run: cd print && cmake .
     - name: build
-      run: cmake --build print
+      run: cd print && cmake . && cmake --build .
     - name: run
       run: cd print && ./a.out
 
@@ -56,97 +52,81 @@ jobs:
     runs-on: ubuntu-16.04
     steps:
     - uses: actions/checkout@v2
-    - name: configure
-      run: cd print && cmake .
     - name: build
-      run: cmake --build print
+      run: cd print && cmake . && cmake --build .
     - name: run
-      run: cd print && ./a.out -v
+      run: cd print && ./a.out
 
   print-x86_64-macos-clang:
     runs-on: macos-latest
     steps:
     - uses: actions/checkout@v2
-    - name: configure
-      run: cd print && cmake .
     - name: build
-      run: cmake --build print
+      run: cd print && cmake . && cmake --build .
     - name: run
-      run: cd print && ./a.out -v
+      run: cd print && ./a.out
 
   print-x86_64-windows-msvc:
     runs-on: windows-latest
     steps:
     - uses: actions/checkout@v2
-    - name: configure
-      run: cd print && cmake .
     - name: build
-      run: cmake --build print
+      run: cd print && cmake . && cmake --build .
     - name: run
-      run: cd print && ./Debug/a.out.exe -v
+      run: cd print && ./Debug/a.out.exe
 
   test-x86_64-linux-gcc:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
-    - name: configure
-      run: cd test && cmake .
     - name: build
-      run: cmake --build test -j $(cat /proc/cpuinfo| grep "cpu cores"| uniq | awk '{print $NF}')
+      run: cd test && cmake . && cmake --build . -j $(cat /proc/cpuinfo| grep "cpu cores"| uniq | awk '{print $NF}')
     - name: run with memory check
       run: cd test && LD_BIND_NOW=1 ./a.out -cvj
     - name: run without memory check
-      run: cd test && LD_BIND_NOW=1 ./a.out -m -e test_memory_
+      run: cd test && LD_BIND_NOW=1 ./a.out -m -v -e test_memory_
 
   test-x86-linux-gcc:
     runs-on: ubuntu-16.04
     steps:
     - uses: actions/checkout@v2
-    - name: configure
-      run: cd test && cmake .
     - name: build
-      run: cmake --build test -j $(cat /proc/cpuinfo| grep "cpu cores"| uniq | awk '{print $NF}')
+      run: cd test && cmake . && cmake --build . -j $(cat /proc/cpuinfo| grep "cpu cores"| uniq | awk '{print $NF}')
     - name: run with memory check
       run: cd test && LD_BIND_NOW=1 ./a.out -vj
     - name: run without memory check
-      run: cd test && LD_BIND_NOW=1 ./a.out -m -e test_memory_
+      run: cd test && LD_BIND_NOW=1 ./a.out -m -v -e test_memory_
 
   # test-x86_64-linux-clang:
   #   runs-on: ubuntu-latest
   #   steps:
   #   - uses: actions/checkout@v2
-  #   - name: configure
+  #   - name: build
   #     env:
   #       CC: clang
   #       CXX: clang++
-  #     run: cd test && cmake .
-  #   - name: build
-  #     run: cmake --build test -j $(cat /proc/cpuinfo| grep "cpu cores"| uniq | awk '{print $NF}')
+  #     run: cd test && cmake . && cmake --build . -j $(cat /proc/cpuinfo| grep "cpu cores"| uniq | awk '{print $NF}')
   #   - name: run
-  #     run: cd test && objcopy --writable-text a.out && ./a.out -cvj && ./a.out -m -e test_memory_
+  #     run: cd test && objcopy --writable-text a.out && ./a.out -cvj && ./a.out -m -v -e test_memory_
 
   test-x86_64-macos-clang:
     runs-on: macos-latest
     steps:
     - uses: actions/checkout@v2
-    - name: configure
-      run: cd test && cmake .
     - name: build
-      run: cmake --build test -j $(sysctl hw.ncpu | awk '{print $NF}')
+      run: cd test && cmake . && cmake --build . -j $(sysctl hw.ncpu | awk '{print $NF}')
     - name: run with memory check
       run: cd test && ./a.out -cvj
     - name: run without memory check
-      run: cd test && ./a.out -m -e test_memory_
+      run: cd test && ./a.out -m -v -e test_memory_
 
   test-x86_64-windows-msvc:
     runs-on: windows-latest
     steps:
     - uses: actions/checkout@v2
-    - name: configure
-      run: cd test && cmake .
     - name: build
-      run: cmake --build test -j $env:NUMBER_OF_PROCESSORS
+      run: cd test && cmake . && cmake --build . -j $env:NUMBER_OF_PROCESSORS
     - name: run with memory check
       run: cd test && ./Debug/a.out.exe -cv
     - name: run without memory check
-      run: cd test && ./Debug/a.out.exe -m -e test_memory_
+      run: cd test && ./Debug/a.out.exe -m -v -e test_memory_

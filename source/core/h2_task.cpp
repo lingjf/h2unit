@@ -26,7 +26,7 @@ static inline int mark_last_order(h2_list& suites)
    FILE* f = ::fopen(".last_order", "r");
    if (!f) return 0;
    while (::fgets(suitename, sizeof(suitename), f) && ::fgets(casename, sizeof(casename), f) && ::fgets(status, sizeof(status), f)) {
-      suitename[strlen(suitename) - 1] = '\0';  /* remove \n in save_last_order */
+      suitename[strlen(suitename) - 1] = '\0'; /* remove \n in save_last_order */
       casename[strlen(casename) - 1] = '\0';
       status[strlen(status) - 1] = '\0';
       __mark(suites, suitename, casename, atoi(status));
@@ -89,7 +89,7 @@ h2_inline void h2_task::enumerate()
    }
 }
 
-h2_inline void h2_task::execute()
+h2_inline int h2_task::execute()
 {
    h2_report::initialize();
    h2_memory::initialize();
@@ -146,4 +146,5 @@ h2_inline void h2_task::execute()
    stubs.clear();
    mocks.clear(false);
    h2_memory::finalize();
+   return O.verbose ? stats.failed : 0;
 }

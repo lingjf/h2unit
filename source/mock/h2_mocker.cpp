@@ -1,5 +1,5 @@
 
-h2_inline h2_row h2_mockee::arguments(int seq)
+h2_inline h2_row h2_mocker_base::arguments(int seq)
 {
    h2_row row;
    row += gray("(");
@@ -14,19 +14,19 @@ h2_inline h2_row h2_mockee::arguments(int seq)
    return row;
 }
 
-h2_inline h2_row h2_mockee::signature()
+h2_inline h2_row h2_mocker_base::signature()
 {
    return "MOCK" + gray("<") + delta(return_type, "cyan") + " " + delta(class_function, "green") + arguments() + gray(", ") + color(inspects, "cyan") + gray(">") + " fails";
 }
 
-h2_inline void h2_mockee::mock()
+h2_inline void h2_mocker_base::mock()
 {
    x.out();
    h2_mock_g(this);
    h2_stub_g(srcfp, dstfp, class_function, file, line);
 }
 
-h2_inline h2_fail* h2_mockee::times_check()
+h2_inline h2_fail* h2_mocker_base::times_check()
 {
    h2_fail* fails = nullptr;
    for (size_t i = 0; i < checkin_array.size(); ++i) {

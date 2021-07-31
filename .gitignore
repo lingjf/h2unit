@@ -1,16 +1,21 @@
+*.out
 *.o
 *.obj
 *.a
+*.lib
 *.d
 *.so
+*.dylib
+*.dll
 *.map
+*.exe
 
-a.out
 .last_order
 
 *.su
 *.idb
 *.pdb
+*.exp
 
 .vscode/
 

@@ -1,0 +1,16 @@
+CMAKE_MINIMUM_REQUIRED(VERSION 3.0)
+
+PROJECT(a_dynamic_library)
+
+SET(CMAKE_BUILD_TYPE Debug)
+
+SET(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ..)
+SET(CMAKE_LIBRARY_OUTPUT_DIRECTORY ..)
+SET(CMAKE_RUNTIME_OUTPUT_DIRECTORY ..)
+
+ADD_LIBRARY(${PROJECT_NAME} SHARED 
+    lib_dynamic.cpp
+    ia32_modrm_map.cpp
+    ia32_opcode_map.cpp
+    mini_disassembler.cpp
+)

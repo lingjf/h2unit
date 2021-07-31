@@ -1,6 +1,8 @@
 CMAKE_MINIMUM_REQUIRED(VERSION 3.0)
 
-PROJECT(h2_unit)
+PROJECT(h2_test)
+
+ADD_SUBDIRECTORY(libs)
 
 SET(CMAKE_BUILD_TYPE Debug)
 SET(CMAKE_CXX_STANDARD 11)
@@ -19,28 +21,24 @@ IF(CMAKE_SYSTEM_NAME MATCHES "Windows")
     ADD_DEFINITIONS("-D_CRT_SECURE_NO_WARNINGS")
     ADD_DEFINITIONS("-D_WINSOCK_DEPRECATED_NO_WARNINGS")
 ELSE()
-    ADD_CUSTOM_TARGET(concat ALL
-        COMMAND python ${CMAKE_CURRENT_SOURCE_DIR}/../build/concat.py
-    )
-    SET(CMAKE_CXX_FLAGS "${CAMKE_CXX_FLAGS} -pthread")
+    ADD_COMPILE_OPTIONS(-Wno-write-strings)
+    ADD_COMPILE_OPTIONS(-Wno-writable-strings)
 ENDIF()
 
+FILE(GLOB SRC_TEST "test_types.cpp" "test_*.cpp")
 
-AUX_SOURCE_DIRECTORY(. SRC_TEST)
-# FILE(GLOB SRC_TEST "test_types.cpp" "test_memory*.cpp")
-
+LINK_DIRECTORIES(libs)
+LINK_LIBRARIES(a_dynamic_library)
 ADD_EXECUTABLE(a.out ${SRC_TEST})
 
-
-IF(CMAKE_SYSTEM_NAME MATCHES "Windows")
-    
-ELSE()
+IF(NOT CMAKE_SYSTEM_NAME MATCHES "Windows")
+    ADD_COMPILE_OPTIONS(-pthread)
     TARGET_LINK_LIBRARIES(a.out pthread)
 ENDIF()
 
 IF(CMAKE_SYSTEM_NAME MATCHES "Darwin")
     ADD_CUSTOM_TARGET(fixup ALL
-        COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/../fixup.sh a.out
+        COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/../h2fix.sh a.out
         DEPENDS a.out
     )
 ENDIF()

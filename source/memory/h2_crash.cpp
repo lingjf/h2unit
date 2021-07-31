@@ -1,7 +1,7 @@
 
 struct h2_crash {
 #if defined _WIN32
-   static LONG UnhandledExceptionFilter(_EXCEPTION_POINTERS* ExceptionInfo)
+   static LONG segment_fault_handler(_EXCEPTION_POINTERS* ExceptionInfo)
    {
       if (ExceptionInfo->ExceptionRecord->ExceptionCode == EXCEPTION_ACCESS_VIOLATION) {
          h2_piece* piece = h2_stack::I().host_piece((const void*)ExceptionInfo->ExceptionRecord->ExceptionInformation[1]);
@@ -16,7 +16,7 @@ struct h2_crash {
 
    static void install_segment_fault_handler()
    {
-      SetUnhandledExceptionFilter(UnhandledExceptionFilter);
+      SetUnhandledExceptionFilter((LPTOP_LEVEL_EXCEPTION_FILTER)segment_fault_handler);
    }
 #else
    // https://www.gnu.org/software/libsigsegv/

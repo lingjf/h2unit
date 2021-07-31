@@ -35,7 +35,8 @@ struct h2_sources {
    {
 #if defined __arm__ || defined __arm64__ || defined __aarch64__
 #else
-      for (int i = 0; i < 1; ++i) {  // follow PLT(Linux) or IAT(Windows)
+
+      for (int i = 0; i < 1; ++i) {  // follow PLT(Linux) or ILT (Incremental Link Table /Windows)
          if (__find(fp)) break;
          void* next = follow_jmp(fp, 1);
          if (next == fp) break;

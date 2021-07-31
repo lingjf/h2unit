@@ -23,7 +23,7 @@
 #   define WIN32_LEAN_AND_MEAN /* fix winsock.h winsock2.h conflict */
 #   define NOMINMAX            /* fix std::min/max conflict with windows::min/max */
 #   include <windows.h>
-#   include <malloc.h> /* alloca _msize _expand */
+#   include <malloc.h> /* _alloca _msize _expand */
 #   define alloca _alloca
 #   define ssize_t int
 #else
@@ -31,13 +31,9 @@
 #endif
 
 #if defined __GNUC__ || defined __clang__
-//clang  #pragma clang diagnostic ignored <==> pragma GCC diagnostic ignored
+// #pragma clang diagnostic ignored === #pragma GCC diagnostic ignored
 #   pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 #   pragma GCC diagnostic ignored "-Wint-to-pointer-cast"
-#   pragma GCC diagnostic ignored "-Wparentheses"
-#   pragma GCC diagnostic ignored "-Wsign-compare"
-#   pragma GCC diagnostic ignored "-Wunused-function"
-#   pragma GCC diagnostic ignored "-Wwrite-strings"
 #   pragma GCC diagnostic ignored "-Wreturn-type"
 #elif defined _WIN32
 #   pragma warning(disable : 4005)  // macro-redefine
@@ -87,12 +83,15 @@ namespace h2 {
 #include "matcher/h2_matcher.cpp"      // matches, matcher, equation
 #include "stub/h2_fp.hpp"              //
 #include "stub/h2_mfp.hpp"             //
+#include "stub/h2_stubs.hpp"           //
+#include "stub/h2_temporary.hpp"       //
 #include "stub/h2_stub.hpp"            //
 #include "mock/h2_routine.hpp"         //
 #include "mock/h2_checkin.hpp"         // failure
 #include "mock/h2_match.hpp"           // failure
-#include "mock/h2_mock.hpp"            // failure, checkin, routine, matcher, stub
+#include "mock/h2_mocker.hpp"          // failure, checkin, routine, matcher, stub
 #include "mock/h2_mocks.hpp"           // failure, checkin
+#include "mock/h2_mock.hpp"            //
 #include "extension/h2_dns.hpp"        //
 #include "extension/h2_socket.hpp"     // stub, failure, matcher
 #include "extension/h2_stdio.hpp"      //
@@ -100,14 +99,10 @@ namespace h2 {
 #include "core/h2_case.hpp"            // failure, stub, mock, dns, socket
 #include "core/h2_suite.hpp"           // case, stub, mock
 #include "core/h2_task.hpp"            // suite, case, failure, stub, mock, option, debug
+#include "core/h2_core.hpp"            //
 #include "assert/h2_assert.hpp"        // failure, matcher
 #include "other/h2_report.hpp"         // task, suite, case
 }  // namespace h2
-
-#include "stub/h2_use.hpp"
-#include "mock/h2_use.hpp"
-#include "core/h2_use.hpp"
-#include "assert/h2_use.hpp"
 
 #ifndef SUITE
 #   define SUITE H2SUITE
@@ -312,6 +307,51 @@ namespace h2 {
 #else
 #   pragma message("CASESS_T conflict, using H2CASESS_T instead.")
 #endif
+
+/* clang-format off */
+using h2::_;
+using h2::Any;
+using h2::IsNull;
+using h2::NotNull;
+using h2::IsTrue;
+using h2::IsFalse;
+using h2::Eq;
+using h2::Nq;
+using h2::Ge;
+using h2::Gt;
+using h2::Le;
+using h2::Lt;
+using h2::Me;
+using h2::M1e;
+using h2::M8e;
+using h2::M16e;
+using h2::M32e;
+using h2::M64e;
+using h2::Re;
+using h2::We;
+using h2::Je;
+using h2::Se;
+using h2::Substr;
+using h2::StartsWith;
+using h2::EndsWith;
+using h2::CaseLess;
+#if !defined _WIN32
+using h2::operator~;
+#endif
+using h2::Pointee;
+using h2::Not;
+using h2::operator!;
+using h2::operator&&;
+using h2::operator||;
+using h2::AllOf;
+using h2::AnyOf;
+using h2::NoneOf;
+using h2::ListOf;
+using h2::CountOf;
+using h2::Have;
+using h2::Has;
+using h2::In;
+using h2::Pair;
 
 #ifndef TEST_C
 #   define private public

@@ -374,4 +374,10 @@ int my_printf(const char* fmt, ...);
 int my_fprintf(FILE* stream, const char* fmt, ...);
 int my_sprintf(char* t, const char* fmt, ...);
 int my_snprintf(char* t, int n, const char* fmt, ...);
-void* my_pthread(void *arg);
+void* my_pthread(void* arg);
+
+class User {
+ public:
+   char data[100];
+   User(){};
+};

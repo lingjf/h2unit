@@ -54,16 +54,14 @@ int main(int argc, const char** argv);
 int main(int argc, const char** argv)
 {
    h2::h2_option::I().parse(argc, argv);
-   h2::h2_task::I().execute();
-   return 0;
+   return h2::h2_task::I().execute();
 }
 #   endif
 #else
 __attribute__((weak)) int main(int argc, const char** argv)
 {
    h2::h2_option::I().parse(argc, argv);
-   h2::h2_task::I().execute();
-   return 0;
+   return h2::h2_task::I().execute();
 }
 #endif
 
@@ -117,10 +115,11 @@ namespace h2 {
 
 #include "stub/h2_e9.cpp"
 #include "stub/h2_source.cpp"
-#include "stub/h2_stub.cpp"
+#include "stub/h2_stubs.cpp"
+#include "stub/h2_temporary.cpp"
 
 #include "mock/h2_checkin.cpp"
-#include "mock/h2_mock.cpp"
+#include "mock/h2_mocker.cpp"
 #include "mock/h2_mocks.cpp"
 
 #include "extension/h2_dns.cpp"

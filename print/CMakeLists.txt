@@ -21,7 +21,7 @@ ENDIF()
 
 IF(CMAKE_SYSTEM_NAME MATCHES "Darwin")
     ADD_CUSTOM_TARGET(fixup ALL
-        COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/../fixup.sh a.out
+        COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/../h2fix.sh a.out
         DEPENDS a.out
     )
 ENDIF()

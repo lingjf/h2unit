@@ -1,5 +1,5 @@
 ﻿
-/* v5.12 2021-07-31 00:33:30 */
+/* v5.12 2021-07-31 08:05:20 */
 /* https://github.com/lingjf/h2unit */
 /* Apache Licence 2.0 */
 
@@ -58,16 +58,14 @@ int main(int argc, const char** argv);
 int main(int argc, const char** argv)
 {
    h2::h2_option::I().parse(argc, argv);
-   h2::h2_task::I().execute();
-   return 0;
+   return h2::h2_task::I().execute();
 }
 #   endif
 #else
 __attribute__((weak)) int main(int argc, const char** argv)
 {
    h2::h2_option::I().parse(argc, argv);
-   h2::h2_task::I().execute();
-   return 0;
+   return h2::h2_task::I().execute();
 }
 #endif
 
@@ -3262,6 +3260,7 @@ struct h2_block : h2_libc {
 struct h2_stack {
    h2_singleton(h2_stack);
    h2_list blocks;
+   bool at_exit = false;
 
    void push(long long limit, size_t align, unsigned char s_fill[32], int n_fill, bool noleak, const char* where, const char* file, int line)
    {
@@ -3296,9 +3295,11 @@ struct h2_stack {
          h2_piece* piece = p->get_piece(ptr);
          if (piece) return p->rel_piece(who, piece);
       }
-      h2_backtrace bt(O.os == macOS ? 3 : 2);
-      if (!bt.in(h2_exempt::I().fps))
-         h2_debug("Warning: %s %p not found!", who, ptr);
+      if (!at_exit) {
+         h2_backtrace bt(O.os == macOS ? 3 : 2);
+         if (!bt.in(h2_exempt::I().fps))
+            h2_debug("Warning: %s %p not found!", who, ptr);
+      }
       return nullptr;
    }
 
@@ -3614,7 +3615,7 @@ struct h2_wrapper {
 
 struct h2_crash {
 #if defined _WIN32
-   static LONG UnhandledExceptionFilter(_EXCEPTION_POINTERS* ExceptionInfo)
+   static LONG segment_fault_handler(_EXCEPTION_POINTERS* ExceptionInfo)
    {
       if (ExceptionInfo->ExceptionRecord->ExceptionCode == EXCEPTION_ACCESS_VIOLATION) {
          h2_piece* piece = h2_stack::I().host_piece((const void*)ExceptionInfo->ExceptionRecord->ExceptionInformation[1]);
@@ -3629,7 +3630,7 @@ struct h2_crash {
 
    static void install_segment_fault_handler()
    {
-      SetUnhandledExceptionFilter(UnhandledExceptionFilter);
+      SetUnhandledExceptionFilter((LPTOP_LEVEL_EXCEPTION_FILTER)segment_fault_handler);
    }
 #else
    // https://www.gnu.org/software/libsigsegv/
@@ -3669,7 +3670,7 @@ h2_inline void h2_memory::initialize()
 }
 h2_inline void h2_memory::finalize()
 {
-   if (O.memory_check) h2_wrapper::I().restores();
+   if (O.memory_check) h2_stack::I().at_exit = true;
 }
 h2_inline void h2_memory::overrides()
 {
@@ -3767,14 +3768,12 @@ h2_inline h2_memory::stack::block::~block()
 }
 // source/memory/h2_exempt.cpp
 
-#define H2_TIME_STRING "SUN JAN 1 00:00:00 2012\n"
-
-struct h2_exempt_stub {  // allocate memory inside asymmetrically
+struct h2_exempt_stub {
    static time_t mktime(struct tm* timeptr) { return 1325347200; }
-   static char* asctime(const struct tm* timeptr) { return H2_TIME_STRING; }
-   static char* asctime_r(const struct tm* timeptr, char* buf) { return strcpy(buf, H2_TIME_STRING); }
-   static char* ctime(const time_t* clock) { return H2_TIME_STRING; }
-   static char* ctime_r(const time_t* clock, char* buf) { return strcpy(buf, H2_TIME_STRING); }
+   static char* asctime(const struct tm* timeptr) { return (char*)"SUN JAN 1 00:00:00 2012\n"; }
+   static char* asctime_r(const struct tm* timeptr, char* buf) { return strcpy(buf, (char*)"SUN JAN 1 00:00:00 2012\n"); }
+   static char* ctime(const time_t* clock) { return (char*)"SUN JAN 1 00:00:00 2012\n"; }
+   static char* ctime_r(const time_t* clock, char* buf) { return strcpy(buf, (char*)"SUN JAN 1 00:00:00 2012\n"); }
    static struct tm* localtime(const time_t* clock) { return gmtime(clock); }
    static struct tm* localtime_r(const time_t* timep, struct tm* result) { return gmtime_r(timep, result); }
    static struct tm* gmtime(const time_t* clock) { return gmtime_r(clock, nullptr); }
@@ -3988,7 +3987,8 @@ struct h2_sources {
    {
 #if defined __arm__ || defined __arm64__ || defined __aarch64__
 #else
-      for (int i = 0; i < 1; ++i) {  // follow PLT(Linux) or IAT(Windows)
+
+      for (int i = 0; i < 1; ++i) {  // follow PLT(Linux) or ILT (Incremental Link Table /Windows)
          if (__find(fp)) break;
          void* next = follow_jmp(fp, 1);
          if (next == fp) break;
@@ -4023,7 +4023,7 @@ struct h2_sources {
       }
    }
 };
-// source/stub/h2_stub.cpp
+// source/stub/h2_stubs.cpp
 
 struct h2_stub : h2_libc {
    h2_list x;
@@ -4084,6 +4084,7 @@ h2_inline void h2_stubs::clear()
       delete p;
    }
 }
+// source/stub/h2_temporary.cpp
 
 h2_inline h2_stub_temporary_restore::h2_stub_temporary_restore(void* _srcfp) : srcfp(_srcfp)
 {
@@ -4139,9 +4140,9 @@ h2_inline const char* h2_checkin::expect()
    }
    return st;
 }
-// source/mock/h2_mock.cpp
+// source/mock/h2_mocker.cpp
 
-h2_inline h2_row h2_mockee::arguments(int seq)
+h2_inline h2_row h2_mocker_base::arguments(int seq)
 {
    h2_row row;
    row += gray("(");
@@ -4156,19 +4157,19 @@ h2_inline h2_row h2_mockee::arguments(int seq)
    return row;
 }
 
-h2_inline h2_row h2_mockee::signature()
+h2_inline h2_row h2_mocker_base::signature()
 {
    return "MOCK" + gray("<") + delta(return_type, "cyan") + " " + delta(class_function, "green") + arguments() + gray(", ") + color(inspects, "cyan") + gray(">") + " fails";
 }
 
-h2_inline void h2_mockee::mock()
+h2_inline void h2_mocker_base::mock()
 {
    x.out();
    h2_mock_g(this);
    h2_stub_g(srcfp, dstfp, class_function, file, line);
 }
 
-h2_inline h2_fail* h2_mockee::times_check()
+h2_inline h2_fail* h2_mocker_base::times_check()
 {
    h2_fail* fails = nullptr;
    for (size_t i = 0; i < checkin_array.size(); ++i) {
@@ -4186,17 +4187,17 @@ h2_inline h2_fail* h2_mockee::times_check()
 
 h2_inline bool h2_mocks::add(void* mock)
 {
-   h2_mockee* mockee = (h2_mockee*)mock;
-   h2_list_for_each_entry (p, mocks, h2_mockee, x)
-      if (p == mockee) return false;
-   mocks.push(mockee->x);
+   h2_mocker_base* mocker = (h2_mocker_base*)mock;
+   h2_list_for_each_entry (p, mocks, h2_mocker_base, x)
+      if (p == mocker) return false;
+   mocks.push(mocker->x);
    return true;
 }
 
 h2_inline h2_fail* h2_mocks::clear(bool check)
 {
    h2_fail* fails = nullptr;
-   h2_list_for_each_entry (p, mocks, h2_mockee, x) {
+   h2_list_for_each_entry (p, mocks, h2_mocker_base, x) {
       if (check) h2_fail::append_subling(fails, p->times_check());
       p->reset();
       p->x.out();
@@ -4991,7 +4992,7 @@ static inline int mark_last_order(h2_list& suites)
    FILE* f = ::fopen(".last_order", "r");
    if (!f) return 0;
    while (::fgets(suitename, sizeof(suitename), f) && ::fgets(casename, sizeof(casename), f) && ::fgets(status, sizeof(status), f)) {
-      suitename[strlen(suitename) - 1] = '\0';  /* remove \n in save_last_order */
+      suitename[strlen(suitename) - 1] = '\0'; /* remove \n in save_last_order */
       casename[strlen(casename) - 1] = '\0';
       status[strlen(status) - 1] = '\0';
       __mark(suites, suitename, casename, atoi(status));
@@ -5054,7 +5055,7 @@ h2_inline void h2_task::enumerate()
    }
 }
 
-h2_inline void h2_task::execute()
+h2_inline int h2_task::execute()
 {
    h2_report::initialize();
    h2_memory::initialize();
@@ -5111,6 +5112,7 @@ h2_inline void h2_task::execute()
    stubs.clear();
    mocks.clear(false);
    h2_memory::finalize();
+   return O.verbose ? stats.failed : 0;
 }
 
 // source/assert/h2_assert.cpp

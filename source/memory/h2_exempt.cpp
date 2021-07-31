@@ -1,12 +1,10 @@
 
-#define H2_TIME_STRING "SUN JAN 1 00:00:00 2012\n"
-
-struct h2_exempt_stub {  // allocate memory inside asymmetrically
+struct h2_exempt_stub {
    static time_t mktime(struct tm* timeptr) { return 1325347200; }
-   static char* asctime(const struct tm* timeptr) { return H2_TIME_STRING; }
-   static char* asctime_r(const struct tm* timeptr, char* buf) { return strcpy(buf, H2_TIME_STRING); }
-   static char* ctime(const time_t* clock) { return H2_TIME_STRING; }
-   static char* ctime_r(const time_t* clock, char* buf) { return strcpy(buf, H2_TIME_STRING); }
+   static char* asctime(const struct tm* timeptr) { return (char*)"SUN JAN 1 00:00:00 2012\n"; }
+   static char* asctime_r(const struct tm* timeptr, char* buf) { return strcpy(buf, (char*)"SUN JAN 1 00:00:00 2012\n"); }
+   static char* ctime(const time_t* clock) { return (char*)"SUN JAN 1 00:00:00 2012\n"; }
+   static char* ctime_r(const time_t* clock, char* buf) { return strcpy(buf, (char*)"SUN JAN 1 00:00:00 2012\n"); }
    static struct tm* localtime(const time_t* clock) { return gmtime(clock); }
    static struct tm* localtime_r(const time_t* timep, struct tm* result) { return gmtime_r(timep, result); }
    static struct tm* gmtime(const time_t* clock) { return gmtime_r(clock, nullptr); }

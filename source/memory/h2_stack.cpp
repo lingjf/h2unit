@@ -2,6 +2,7 @@
 struct h2_stack {
    h2_singleton(h2_stack);
    h2_list blocks;
+   bool at_exit = false;
 
    void push(long long limit, size_t align, unsigned char s_fill[32], int n_fill, bool noleak, const char* where, const char* file, int line)
    {
@@ -36,9 +37,11 @@ struct h2_stack {
          h2_piece* piece = p->get_piece(ptr);
          if (piece) return p->rel_piece(who, piece);
       }
-      h2_backtrace bt(O.os == macOS ? 3 : 2);
-      if (!bt.in(h2_exempt::I().fps))
-         h2_debug("Warning: %s %p not found!", who, ptr);
+      if (!at_exit) {
+         h2_backtrace bt(O.os == macOS ? 3 : 2);
+         if (!bt.in(h2_exempt::I().fps))
+            h2_debug("Warning: %s %p not found!", who, ptr);
+      }
       return nullptr;
    }
 

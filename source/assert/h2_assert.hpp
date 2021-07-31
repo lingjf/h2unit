@@ -42,3 +42,16 @@ static inline h2_oss& h2_JE(h2_defer_failure* d, h2_string e, h2_string a, h2_st
    h2_assert_g();
    return d->oss;
 }
+
+#define __H2OK(Q, expression, ...) \
+   for (h2::h2_defer_failure Q("", "", expression, __FILE__, __LINE__); Q;) h2::h2_OK(&Q, __VA_ARGS__)
+
+#define __H2JE3(Q, expect, actual) \
+   for (h2::h2_defer_failure Q(#expect, #actual, "", __FILE__, __LINE__); Q;) h2::h2_JE(&Q, expect, actual, "")
+
+#define __H2JE4(Q, expect, actual, selector) \
+   for (h2::h2_defer_failure Q(#expect, #actual, "", __FILE__, __LINE__); Q;) h2::h2_JE(&Q, expect, actual, selector)
+
+#define H2OK(...) __H2OK(H2PP_UNIQUE(t_defer_failure), (#__VA_ARGS__), __VA_ARGS__)
+
+#define H2JE(...) H2PP_VARIADIC_CALL(__H2JE, H2PP_UNIQUE(t_defer_failure), __VA_ARGS__)

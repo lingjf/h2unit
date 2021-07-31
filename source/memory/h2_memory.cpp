@@ -8,7 +8,7 @@ h2_inline void h2_memory::initialize()
 }
 h2_inline void h2_memory::finalize()
 {
-   if (O.memory_check) h2_wrapper::I().restores();
+   if (O.memory_check) h2_stack::I().at_exit = true;
 }
 h2_inline void h2_memory::overrides()
 {
