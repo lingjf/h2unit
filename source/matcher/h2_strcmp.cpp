@@ -26,7 +26,7 @@ h2_inline h2_fail* h2_matches_strcmp::matches(const h2_string& a, int n, bool ca
 }
 h2_inline h2_row h2_matches_strcmp::expection(bool caseless, bool dont) const
 {
-   return CD(h2_representify(e), caseless, dont, "≠");
+   return CD(h2_representify(e), caseless, dont, H2_NE);
 }
 
 h2_inline h2_fail* h2_matches_substr::matches(const h2_string& a, int n, bool caseless, bool dont) const
@@ -70,5 +70,5 @@ h2_inline h2_fail* h2_matches_json::matches(const h2_string& a, int, bool casele
 }
 h2_inline h2_row h2_matches_json::expection(bool caseless, bool dont) const
 {
-   return CD(h2_stringify(e), caseless, dont, "≠");
+   return CD(h2_stringify(e), caseless, dont, H2_NE);
 }

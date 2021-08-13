@@ -1,5 +1,5 @@
 ﻿
-/* v5.12 2021-08-14 00:30:50 */
+/* v5.12 2021-08-14 07:58:40 */
 /* https://github.com/lingjf/h2unit */
 /* Apache Licence 2.0 */
 
@@ -33,8 +33,16 @@
 #   include <malloc.h> /* _alloca _msize _expand */
 #   define alloca _alloca
 #   define ssize_t int
+#   define H2_SP "|"
+#   define H2_GE ">="
+#   define H2_LE "<="
+#   define H2_NE "!="
 #else
 #   include <alloca.h> /* alloca */
+#   define H2_SP "│"
+#   define H2_GE "≥"
+#   define H2_LE "≤"
+#   define H2_NE "≠"
 #endif
 
 #if defined __GNUC__ || defined __clang__
@@ -941,7 +949,6 @@ struct h2_color {
    static void prints(const char* style, const char* format, ...);
    static void printl(const h2_row& row);
    static void printl(const h2_rows& rows);
-
    static bool isctrl(const char* s) { return s[0] == '\033' && s[1] == '{'; };
 };
 // source/ld/h2_nm.hpp
@@ -1213,7 +1220,7 @@ struct h2_equation : h2_matches {
    }
    virtual h2_row expection(bool, bool dont) const override
    {
-      return CD(h2_representify(e), false, dont, "≠");
+      return CD(h2_representify(e), false, dont, H2_NE);
    }
 };
 
@@ -1232,7 +1239,7 @@ struct h2_equation<E, typename std::enable_if<std::is_convertible<E, h2_string>:
    }
    virtual h2_row expection(bool caseless, bool dont) const override
    {
-      return CD(h2_representify(e), caseless, dont, "≠");
+      return CD(h2_representify(e), caseless, dont, H2_NE);
    }
 };
 
@@ -1263,7 +1270,7 @@ struct h2_equation<E, typename std::enable_if<std::is_arithmetic<E>::value>::typ
    }
    virtual h2_row expection(bool, bool dont) const override
    {
-      return CD(h2_representify(e), false, dont, "≠");
+      return CD(h2_representify(e), false, dont, H2_NE);
    }
 };
 
@@ -1676,7 +1683,7 @@ struct h2_matches_ge : h2_matches {
    }
    virtual h2_row expection(bool, bool dont) const override
    {
-      return CD("≥" + h2_representify(e), false, dont);
+      return CD(H2_GE + h2_representify(e), false, dont);
    }
 };
 
@@ -1710,7 +1717,7 @@ struct h2_matches_le : h2_matches {
    }
    virtual h2_row expection(bool, bool dont) const override
    {
-      return CD("≤" + h2_stringify(e), false, dont);
+      return CD(H2_LE + h2_stringify(e), false, dont);
    }
 };
 

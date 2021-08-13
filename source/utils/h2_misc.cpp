@@ -72,17 +72,6 @@ static inline void h2_sleep(long long milliseconds)
 #endif
 }
 
-static inline unsigned h2_termimal_width()
-{
-#if defined _WIN32
-   return 80;
-#else
-   struct winsize w;
-   if (-1 == ioctl(STDOUT_FILENO, TIOCGWINSZ, &w)) return 80;
-   return w.ws_col < 16 || 256 < w.ws_col ? 80 : w.ws_col;
-#endif
-}
-
 static inline unsigned h2_page_size()
 {
 #if defined _WIN32

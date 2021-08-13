@@ -31,7 +31,7 @@ static inline h2_rows row_break(const h2_row& row, unsigned width)
 static inline void rows_merge(h2_rows& rows, const h2_rows& left_rows, const h2_rows& right_rows, unsigned left_width, unsigned right_width, int step, char scale, int seq_width)
 {
    char seq_fmt[32];
-   sprintf(seq_fmt, "%%%d%c│ ", seq_width, scale);
+   sprintf(seq_fmt, "%%%d%c" H2_SP " ", seq_width, scale);
    const h2_string left_empty(left_width, ' '), right_empty(right_width, ' ');
    for (size_t i = 0; i < std::max(left_rows.size(), right_rows.size()); ++i) {
       auto left_wrap_rows = row_break(i < left_rows.size() ? left_rows[i] : left_empty, left_width);
@@ -45,7 +45,7 @@ static inline void rows_merge(h2_rows& rows, const h2_rows& left_rows, const h2_
                row.indent(seq_width + 2);
          }
          row += j < left_wrap_rows.size() ? left_wrap_rows[j].brush("reset") : color(left_empty, "reset");
-         row.printf("dark gray", j < left_wrap_rows.size() - 1 ? "\\│ " : " │ ");
+         row.printf("dark gray", j < left_wrap_rows.size() - 1 ? "\\" H2_SP " " : " " H2_SP " ");
          row += j < right_wrap_rows.size() ? right_wrap_rows[j].brush("reset") : color(right_empty, "reset");
          row.printf("dark gray", j < right_wrap_rows.size() - 1 ? "\\" : " ");
          rows.push_back(row);

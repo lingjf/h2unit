@@ -26,8 +26,16 @@
 #   include <malloc.h> /* _alloca _msize _expand */
 #   define alloca _alloca
 #   define ssize_t int
+#   define H2_SP "|"
+#   define H2_GE ">="
+#   define H2_LE "<="
+#   define H2_NE "!="
 #else
 #   include <alloca.h> /* alloca */
+#   define H2_SP "│"
+#   define H2_GE "≥"
+#   define H2_LE "≤"
+#   define H2_NE "≠"
 #endif
 
 #if defined __GNUC__ || defined __clang__

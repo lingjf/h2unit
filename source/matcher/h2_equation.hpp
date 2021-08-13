@@ -12,7 +12,7 @@ struct h2_equation : h2_matches {
    }
    virtual h2_row expection(bool, bool dont) const override
    {
-      return CD(h2_representify(e), false, dont, "≠");
+      return CD(h2_representify(e), false, dont, H2_NE);
    }
 };
 
@@ -31,7 +31,7 @@ struct h2_equation<E, typename std::enable_if<std::is_convertible<E, h2_string>:
    }
    virtual h2_row expection(bool caseless, bool dont) const override
    {
-      return CD(h2_representify(e), caseless, dont, "≠");
+      return CD(h2_representify(e), caseless, dont, H2_NE);
    }
 };
 
@@ -62,7 +62,7 @@ struct h2_equation<E, typename std::enable_if<std::is_arithmetic<E>::value>::typ
    }
    virtual h2_row expection(bool, bool dont) const override
    {
-      return CD(h2_representify(e), false, dont, "≠");
+      return CD(h2_representify(e), false, dont, H2_NE);
    }
 };
 

@@ -9,7 +9,7 @@ SUITE(logic matches)
       h2::h2_not_matches<h2::h2_polymorphic_matcher<h2::h2_equation<int>>> a1(h2::h2_polymorphic_matcher<h2::h2_equation<int>>{h2::h2_equation<int>(65)});
       OK(nullptr != a1.matches(65, 0, false, false));
       OK(nullptr == a1.matches(66, 0, false, false));
-      OK("≠65", a1.expection(false, false).string());
+      OK(H2_NE "65", a1.expection(false, false).string());
 
       h2::h2_not_matches<h2::h2_polymorphic_matcher<h2::h2_matches_null>> a2(h2::h2_polymorphic_matcher<h2::h2_matches_null>{h2::h2_matches_null(false)});
       OK(nullptr != a2.matches(nullptr, 0, false, false));
