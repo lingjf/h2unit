@@ -12,10 +12,10 @@
 #   define LIB_DYNAMIC_EXPORT
 #endif
 
-LIB_DYNAMIC_EXPORT int lib_dynamic_add(int a, int b);
-LIB_DYNAMIC_EXPORT int lib_dynamic_plus(int a);
+extern LIB_DYNAMIC_EXPORT int lib_dynamic_add(int a, int b);
+extern LIB_DYNAMIC_EXPORT int lib_dynamic_plus(int a);
 
-LIB_DYNAMIC_EXPORT void* lib_dynamic_create(int n);
-LIB_DYNAMIC_EXPORT void lib_dynamic_destroy(void* o);
+extern LIB_DYNAMIC_EXPORT void* lib_dynamic_create(int n);
+extern LIB_DYNAMIC_EXPORT void lib_dynamic_destroy(void* o);
 
 #endif

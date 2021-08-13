@@ -1,5 +1,5 @@
 ﻿
-/* v5.12 2021-07-31 08:05:20 */
+/* v5.12 2021-08-14 00:30:50 */
 /* https://github.com/lingjf/h2unit */
 /* Apache Licence 2.0 */
 
@@ -44,6 +44,8 @@
 #   pragma GCC diagnostic ignored "-Wreturn-type"
 #elif defined _WIN32
 #   pragma warning(disable : 4005)  // macro-redefine
+#   pragma warning(disable : 4611)  // setjmp non-portable
+#   pragma warning(disable : 4715)  // not all control paths return a value
 #endif
 
 #if defined __H2UNIT_HPP__
@@ -694,6 +696,8 @@ inline bool operator!=(const h2_allocator<T>&, const h2_allocator<T>&) { return 
 
 template <typename T>
 using h2_vector = std::vector<T, h2_allocator<T>>;
+
+using h2_ostringstream = std::basic_ostringstream<char, std::char_traits<char>, h2_allocator<char>>;
 // source/utils/h2_string.hpp
 
 struct h2_string : public std::basic_string<char, std::char_traits<char>, h2_allocator<char>> {
@@ -792,6 +796,145 @@ struct h2_rows : h2_vector<h2_row> {
    void sequence(unsigned indent = 0, int start = 0);
    void samesizify(h2_rows& b);
 };
+// source/utils/h2_stringify.hpp
+
+template <typename T, typename = void>
+struct h2_stringify_impl {
+   static h2_row print(T a, bool represent = false) { return "?"; }
+};
+
+#define H2_TOSTRING_ABLE(tostring)                                                                            \
+   template <typename T>                                                                                      \
+   struct h2_##tostring##_able {                                                                              \
+      template <typename U>                                                                                   \
+      static auto return_type(U* u) -> decltype(u->tostring());                                               \
+      template <typename U>                                                                                   \
+      static void return_type(...);                                                                           \
+      static constexpr bool value = std::is_convertible<decltype(return_type<T>(nullptr)), h2_string>::value; \
+   };
+
+H2_TOSTRING_ABLE(tostring);
+H2_TOSTRING_ABLE(toString);
+H2_TOSTRING_ABLE(Tostring);
+H2_TOSTRING_ABLE(ToString);
+H2_TOSTRING_ABLE(to_string);
+
+/* tostring() may not be mark const, remove cast const in T a; fix multi-tostring */
+template <typename T>
+struct h2_stringify_impl<T, typename std::enable_if<h2::h2_tostring_able<T>::value || h2::h2_toString_able<T>::value || h2::h2_Tostring_able<T>::value || h2::h2_ToString_able<T>::value || h2::h2_to_string_able<T>::value>::type> {
+   static h2_row print(const T& a, bool represent = false) { return print__tostring(a, represent); }
+   template <typename U>
+   static auto print__tostring(const U& a, bool represent) -> typename std::enable_if<h2::h2_tostring_able<U>::value, h2_row>::type { return const_cast<U&>(a).tostring(); }
+   template <typename U>
+   static auto print__tostring(const U& a, bool represent) -> typename std::enable_if<!h2::h2_tostring_able<U>::value, h2_row>::type { return print__toString(a, represent); }
+   template <typename U>
+   static auto print__toString(const U& a, bool represent) -> typename std::enable_if<h2::h2_toString_able<U>::value, h2_row>::type { return const_cast<U&>(a).toString(); }
+   template <typename U>
+   static auto print__toString(const U& a, bool represent) -> typename std::enable_if<!h2::h2_toString_able<U>::value, h2_row>::type { return print__Tostring(a, represent); }
+   template <typename U>
+   static auto print__Tostring(const U& a, bool represent) -> typename std::enable_if<h2::h2_Tostring_able<U>::value, h2_row>::type { return const_cast<U&>(a).toString(); }
+   template <typename U>
+   static auto print__Tostring(const U& a, bool represent) -> typename std::enable_if<!h2::h2_Tostring_able<U>::value, h2_row>::type { return print__ToString(a, represent); }
+   template <typename U>
+   static auto print__ToString(const U& a, bool represent) -> typename std::enable_if<h2::h2_ToString_able<U>::value, h2_row>::type { return const_cast<U&>(a).ToString(); }
+   template <typename U>
+   static auto print__ToString(const U& a, bool represent) -> typename std::enable_if<!h2::h2_ToString_able<U>::value, h2_row>::type { return print__to_string(a, represent); }
+   template <typename U>
+   static auto print__to_string(const U& a, bool represent) -> typename std::enable_if<h2::h2_to_string_able<U>::value, h2_row>::type { return const_cast<U&>(a).to_string(); }
+   template <typename U>
+   static auto print__to_string(const U& a, bool represent) -> typename std::enable_if<!h2::h2_to_string_able<U>::value, h2_row>::type { return ""; }
+};
+
+template <typename T>
+struct h2_stringify_impl<T, typename std::enable_if<h2_is_ostreamable<T>::value>::type> {
+   static h2_row print(const T& a, bool represent = false) { return ostream_print(a, represent); }
+
+   template <typename U>
+   static h2_row ostream_print(const U& a, bool represent)
+   {
+      h2_ostringstream oss;
+      oss << std::boolalpha << const_cast<U&>(a);
+      if (represent) {
+         const char* quote = nullptr;
+         if (std::is_same<char, U>::value) quote = "'";
+         if (std::is_convertible<U, h2_string>::value) quote = "\"";
+         if (quote) return gray(quote) + oss.str().c_str() + gray(quote);
+      }
+      return {oss.str().c_str()};
+   }
+
+   static h2_row ostream_print(unsigned char a, bool represent)
+   {  // https://en.cppreference.com/w/cpp/string/byte/isprint
+      return ostream_print<unsigned int>(static_cast<unsigned int>(a), represent);
+   }
+};
+
+template <typename K, typename V>
+struct h2_stringify_impl<std::pair<K, V>> {
+   static h2_row print(const std::pair<K, V>& a, bool represent = false)
+   {
+      return gray("(") + h2_stringify_impl<K>::print(a.first, represent) + gray(", ") + h2_stringify_impl<V>::print(a.second, represent) + gray(")");
+   }
+};
+
+template <typename T>
+struct h2_stringify_impl<T, typename std::enable_if<h2_is_container<T>::value && !std::is_convertible<T, h2_string>::value>::type> {
+   static h2_row print(const T& a, bool represent = false)
+   {
+      h2_row row;
+      row += gray("[");
+      for (auto it = a.begin(); it != a.end(); it++) {
+         if (it != a.begin()) row += gray(", ");
+         row += h2_stringify_impl<typename T::value_type>::print(*it, represent);
+      }
+      row += gray("]");
+      return row;
+   }
+};
+
+template <typename... Args>
+struct h2_stringify_impl<std::tuple<Args...>> {
+   static h2_row print(const std::tuple<Args...>& a, bool represent = false)
+   {
+      return gray("(") + tuple_print(a, represent, std::integral_constant<std::size_t, sizeof...(Args)>()) + gray(")");
+   }
+
+   static h2_row tuple_print(const std::tuple<Args...>& a, bool represent, std::integral_constant<std::size_t, 0>) { return {}; }
+   template <std::size_t I>
+   static h2_row tuple_print(const std::tuple<Args...>& a, bool represent, std::integral_constant<std::size_t, I>)
+   {
+      return tuple_print(a, represent, std::integral_constant<std::size_t, I - 1>()) + (1 < I ? gray(", ") : h2_row()) + h2_stringify_impl<typename std::decay<decltype(std::get<I - 1>(a))>::type>::print(std::get<I - 1>(a), represent);
+   }
+};
+
+template <>
+struct h2_stringify_impl<std::nullptr_t> {
+   static h2_row print(std::nullptr_t a, bool represent = false) { return "nullptr"; }
+};
+
+template <typename T>
+inline h2_row h2_stringify(const T& a, bool represent = false) { return h2_stringify_impl<T>::print(a, represent); }
+
+template <typename T>
+inline h2_row h2_stringify(T a, size_t n, bool represent)
+{
+   if (n == 0) return h2_stringify(a, represent);
+
+   h2_row row;
+   row += gray("[");
+   for (size_t i = 0; i < n; ++i) {
+      if (i) row += gray(", ");
+      row += h2_stringify(a[i], represent);
+   }
+   row += gray("]");
+   return row;
+}
+
+template <typename T>
+inline h2_row h2_representify(const T& a) { return h2_stringify(a, true); }
+
+template <typename T>
+inline h2_row h2_representify(T a, size_t n) { return h2_stringify(a, n, true); }
 // source/utils/h2_color.hpp
 
 struct h2_color {
@@ -807,7 +950,6 @@ struct h2_symbol {
    h2_list x;
    char name[128];
    unsigned long long addr;
-   int size = 0;
    h2_symbol(char* _name, unsigned long long _addr) : addr(_addr) { strncpy(name, _name, 127); }
 };
 
@@ -907,12 +1049,12 @@ struct h2_debugger {
    static void trap();
 };
 
-#define h2_debug(...)                                                               \
+#define h2_debug(shift, ...)                                                        \
    do {                                                                             \
       if (!O.debug) {                                                               \
          h2_color::prints("", __VA_ARGS__);                                         \
          h2_color::prints("", " %s : %d = %s\n", __FILE__, __LINE__, __FUNCTION__); \
-         h2_backtrace bt____(0);                                                    \
+         h2_backtrace bt____(shift);                                                \
          bt____.print(3);                                                           \
       }                                                                             \
    } while (0)
@@ -970,211 +1112,6 @@ struct h2_json {
    static int match(const h2_string& expect, const h2_string& actual, bool caseless);
    static bool diff(const h2_string& expect, const h2_string& actual, h2_rows& e_lines, h2_rows& a_lines, bool caseless);
 };
-// source/memory/h2_exempt.hpp
-
-struct h2_exempt {
-   h2_singleton(h2_exempt);
-   void* fps[10000];
-   int nfp = 0;
-   static void setup();
-   static void add_by_fp(void* fp);
-   static void add_by_name(const char* fn);
-};
-
-template <typename T>
-inline void h2_unmem(T f) { h2_exempt::add_by_fp((void*)f); }
-template <>
-inline void h2_unmem(const char* f) { h2_exempt::add_by_name(f); }
-
-#define H2UNMEM(f) h2::h2_unmem(f)
-// source/memory/h2_memory.hpp
-
-struct h2_memory {
-   static void initialize();
-   static void finalize();
-   static void overrides();
-   static void restores();
-
-   struct stack {
-      static void root();
-      static void push(const char* file, int line);
-      static h2_fail* pop();
-      static long long footprint();
-
-      struct block : h2_once {
-         block(const char* attributes, const char* file, int line);
-         ~block();
-      };
-   };
-};
-
-#define __H2BLOCK(Attributes, Qb) for (h2::h2_memory::stack::block Qb(h2::sdf(Attributes), __FILE__, __LINE__); Qb;)
-#define H2BLOCK(...) __H2BLOCK(#__VA_ARGS__, H2PP_UNIQUE(t_block))
-// source/utils/h2_stringify.hpp
-
-#if defined _WIN32 || defined __arm__ || defined __arm64__ || defined __aarch64__
-struct h2_oss {
-   h2_string s;
-   h2_string& str() { return s; }
-   template <typename T>
-   h2_oss& operator<<(T a)
-   {
-      char b[1024 * 4];
-      h2_memory::restores();
-      {
-         std::ostringstream oss;
-         oss << std::boolalpha << a;
-         ::snprintf(b, sizeof(b), "%s", oss.str().c_str());
-      }
-      h2_memory::overrides();
-      s += b;
-      return *this;
-   }
-};
-#else
-using h2_oss = std::basic_ostringstream<char, std::char_traits<char>, h2_allocator<char>>;
-#endif
-
-template <typename T, typename = void>
-struct h2_stringify_impl {
-   static h2_row print(T a, bool represent = false) { return "?"; }
-};
-
-#define H2_TOSTRING_ABLE(tostring)                                                                            \
-   template <typename T>                                                                                      \
-   struct h2_##tostring##_able {                                                                              \
-      template <typename U>                                                                                   \
-      static auto return_type(U* u) -> decltype(u->tostring());                                               \
-      template <typename U>                                                                                   \
-      static void return_type(...);                                                                           \
-      static constexpr bool value = std::is_convertible<decltype(return_type<T>(nullptr)), h2_string>::value; \
-   };
-
-H2_TOSTRING_ABLE(tostring);
-H2_TOSTRING_ABLE(toString);
-H2_TOSTRING_ABLE(Tostring);
-H2_TOSTRING_ABLE(ToString);
-H2_TOSTRING_ABLE(to_string);
-
-/* tostring() may not be mark const, remove cast const in T a; fix multi-tostring */
-template <typename T>
-struct h2_stringify_impl<T, typename std::enable_if<h2::h2_tostring_able<T>::value || h2::h2_toString_able<T>::value || h2::h2_Tostring_able<T>::value || h2::h2_ToString_able<T>::value || h2::h2_to_string_able<T>::value>::type> {
-   static h2_row print(const T& a, bool represent = false) { return print__tostring(a, represent); }
-   template <typename U>
-   static auto print__tostring(const U& a, bool represent) -> typename std::enable_if<h2::h2_tostring_able<U>::value, h2_row>::type { return const_cast<U&>(a).tostring(); }
-   template <typename U>
-   static auto print__tostring(const U& a, bool represent) -> typename std::enable_if<!h2::h2_tostring_able<U>::value, h2_row>::type { return print__toString(a, represent); }
-   template <typename U>
-   static auto print__toString(const U& a, bool represent) -> typename std::enable_if<h2::h2_toString_able<U>::value, h2_row>::type { return const_cast<U&>(a).toString(); }
-   template <typename U>
-   static auto print__toString(const U& a, bool represent) -> typename std::enable_if<!h2::h2_toString_able<U>::value, h2_row>::type { return print__Tostring(a, represent); }
-   template <typename U>
-   static auto print__Tostring(const U& a, bool represent) -> typename std::enable_if<h2::h2_Tostring_able<U>::value, h2_row>::type { return const_cast<U&>(a).toString(); }
-   template <typename U>
-   static auto print__Tostring(const U& a, bool represent) -> typename std::enable_if<!h2::h2_Tostring_able<U>::value, h2_row>::type { return print__ToString(a, represent); }
-   template <typename U>
-   static auto print__ToString(const U& a, bool represent) -> typename std::enable_if<h2::h2_ToString_able<U>::value, h2_row>::type { return const_cast<U&>(a).ToString(); }
-   template <typename U>
-   static auto print__ToString(const U& a, bool represent) -> typename std::enable_if<!h2::h2_ToString_able<U>::value, h2_row>::type { return print__to_string(a, represent); }
-   template <typename U>
-   static auto print__to_string(const U& a, bool represent) -> typename std::enable_if<h2::h2_to_string_able<U>::value, h2_row>::type { return const_cast<U&>(a).to_string(); }
-   template <typename U>
-   static auto print__to_string(const U& a, bool represent) -> typename std::enable_if<!h2::h2_to_string_able<U>::value, h2_row>::type { return ""; }
-};
-
-template <typename T>
-struct h2_stringify_impl<T, typename std::enable_if<h2_is_ostreamable<T>::value>::type> {
-   static h2_row print(const T& a, bool represent = false) { return ostream_print(a, represent); }
-
-   template <typename U>
-   static h2_row ostream_print(const U& a, bool represent)
-   {
-      h2_oss oss;
-      oss << std::boolalpha << const_cast<U&>(a);
-      if (represent) {
-         const char* quote = nullptr;
-         if (std::is_same<char, U>::value) quote = "'";
-         if (std::is_convertible<U, h2_string>::value) quote = "\"";
-         if (quote) return gray(quote) + oss.str().c_str() + gray(quote);
-      }
-      return {oss.str().c_str()};
-   }
-
-   static h2_row ostream_print(unsigned char a, bool represent)
-   {  // https://en.cppreference.com/w/cpp/string/byte/isprint
-      return ostream_print<unsigned int>(static_cast<unsigned int>(a), represent);
-   }
-};
-
-template <typename K, typename V>
-struct h2_stringify_impl<std::pair<K, V>> {
-   static h2_row print(const std::pair<K, V>& a, bool represent = false)
-   {
-      return gray("(") + h2_stringify_impl<K>::print(a.first, represent) + gray(", ") + h2_stringify_impl<V>::print(a.second, represent) + gray(")");
-   }
-};
-
-template <typename T>
-struct h2_stringify_impl<T, typename std::enable_if<h2_is_container<T>::value && !std::is_convertible<T, h2_string>::value>::type> {
-   static h2_row print(const T& a, bool represent = false)
-   {
-      h2_row row;
-      row += gray("[");
-      for (auto it = a.begin(); it != a.end(); it++) {
-         if (it != a.begin()) row += gray(", ");
-         row += h2_stringify_impl<typename T::value_type>::print(*it, represent);
-      }
-      row += gray("]");
-      return row;
-   }
-};
-
-template <typename... Args>
-struct h2_stringify_impl<std::tuple<Args...>> {
-   static h2_row print(const std::tuple<Args...>& a, bool represent = false)
-   {
-      return gray("(") + tuple_print(a, represent, std::integral_constant<std::size_t, sizeof...(Args)>()) + gray(")");
-   }
-
-   static h2_row tuple_print(const std::tuple<Args...>& a, bool represent, std::integral_constant<std::size_t, 0>) { return {}; }
-   template <std::size_t I>
-   static h2_row tuple_print(const std::tuple<Args...>& a, bool represent, std::integral_constant<std::size_t, I>)
-   {
-      return tuple_print(a, represent, std::integral_constant<std::size_t, I - 1>()) + (1 < I ? gray(", ") : h2_row()) + h2_stringify_impl<typename std::decay<decltype(std::get<I - 1>(a))>::type>::print(std::get<I - 1>(a), represent);
-   }
-};
-
-template <>
-struct h2_stringify_impl<std::nullptr_t> {
-   static h2_row print(std::nullptr_t a, bool represent = false) { return "nullptr"; }
-};
-
-template <typename T>
-inline h2_row h2_stringify(const T& a, bool represent = false)
-{
-   return h2_stringify_impl<T>::print(a, represent);
-}
-
-template <typename T>
-inline h2_row h2_stringify(T a, size_t n, bool represent)
-{
-   if (n == 0) return h2_stringify(a, represent);
-
-   h2_row row;
-   row += gray("[");
-   for (size_t i = 0; i < n; ++i) {
-      if (i) row += gray(", ");
-      row += h2_stringify(a[i], represent);
-   }
-   row += gray("]");
-   return row;
-}
-
-template <typename T>
-inline h2_row h2_representify(const T& a) { return h2_stringify(a, true); }
-
-template <typename T>
-inline h2_row h2_representify(T a, size_t n) { return h2_stringify(a, n, true); }
 // source/exception/h2_exception.hpp
 
 struct h2_exception {
@@ -2275,7 +2212,7 @@ inline h2_polymorphic_matcher<h2_countof_matches<typename std::decay<const Match
       if (__matches(a) == !dont) return nullptr;                                                         \
       if (dont) {                                                                                        \
       } else {                                                                                           \
-         h2::h2_oss t;                                                                                   \
+         h2::h2_ostringstream t;                                                                         \
          t << H2PP_REMOVE_PARENTHESES(message);                                                          \
          fail->user_explain = t.str().c_str();                                                           \
       }                                                                                                  \
@@ -2420,16 +2357,27 @@ template <typename T>
 inline h2_matcher<T>::h2_matcher(T value) { *this = Eq(value); }
 // source/stub/h2_fp.hpp
 
+template <typename R = void*, typename T>
+static R h2_un(T fp)
+{
+   union h2_un {
+      T fp;
+      R p;
+   } u;
+   u.fp = fp;
+   return u.p;
+}
+
 template <typename Signature = void>
 struct h2_fp {
    template <typename T>
-   static void* A(T fp) { return reinterpret_cast<void*>(fp); }
+   static void* A(T fp) { return h2_un(fp); }
    static void* A(const char* fn) { return h2_load::get_by_fn(fn); }
 };
 
 template <typename ReturnType, typename... Args>
 struct h2_fp<ReturnType(Args...)> {
-   static void* A(ReturnType (*fp)(Args...)) { return (void*)fp; }
+   static void* A(ReturnType (*fp)(Args...)) { return h2_un(fp); }
    static void* A(const char* fn) { return h2_load::get_by_fn(fn); }
 };
 // source/stub/h2_mfp.hpp
@@ -2574,32 +2522,19 @@ struct h2_mfp<Class, ReturnType(Args...)> {
    static constexpr bool is_static_member_function(ReturnType (*)(Args...)) { return true; }
    static constexpr bool is_static_member_function(ReturnType (Class::*)(Args...)) { return false; }
 
-   static void* A(ReturnType (*f)(Args...))
-   {
-      return (void*)f;
-   }
-
-   union U {
-      ReturnType (Class::*f)(Args...);
-      void* p;
-   };
+   static void* A(ReturnType (*f)(Args...)) { return (void*)f; }
 
 #if defined _WIN32
    // https://github.com/microsoft/Detours
    // https://stackoverflow.com/questions/8121320/get-memory-address-of-member-function
    // https://stackoverflow.com/questions/44618230/in-the-msvc-abi-how-do-i-reliably-find-the-vtable-given-only-a-void
-   static void* A(ReturnType (Class::*f)(Args...))
-   {
-      U u{f};
-      return u.p;
-   }
+   static void* A(ReturnType (Class::*f)(Args...)) { return h2_un(f); }
 #else
 
    static void* A(ReturnType (Class::*f)(Args...))
    {
-      U u{f};
-      unsigned long long v = (unsigned long long)u.p;
-      if (!is_virtual_member_function(v)) return u.p;
+      unsigned long long v = (unsigned long long)h2_un(f);
+      if (!is_virtual_member_function(v)) return (void*)v;
       void** vtable = nullptr;
       Class* object = h2_constructible<Class>::O(alloca(sizeof(Class)));
       if (0 == (long long)object || 1 == (long long)object || 2 == (long long)object) {
@@ -2620,11 +2555,7 @@ struct h2_mfp<Class, ReturnType(Args...)> {
 
    static bool is_virtual_member_function(unsigned long long v)
    {
-      union {
-         void (h2_test_plus::*f)();
-         void* p;
-      } t{&h2_test_plus::test};
-      if ((unsigned long long)t.p & 1)
+      if (h2_un<unsigned long long>(&h2_test_plus::test) & 1)
          return (v & 1) && (v - 1) % sizeof(void*) == 0 && v < 1000 * sizeof(void*);
       else
          return v % sizeof(void*) == 0 && v < 100 * sizeof(void*);
@@ -3238,6 +3169,46 @@ struct h2_mocks {
 #define __H2MOCKS_1_34(Class, Method, ReturnType, Arguments, Inspect0, Inspect1, Inspect2, Inspect3, Inspect4, Inspect5, Inspect6, Inspect7, Inspect8, Inspect9, Inspect10, Inspect11, Inspect12, Inspect13, Inspect14, Inspect15, Inspect16, Inspect17, Inspect18, Inspect19, Inspect20, Inspect21, Inspect22, Inspect23, Inspect24, Inspect25, Inspect26, Inspect27, Inspect28, Inspect29) H2PP_CAT(__H2MOCKS_1_34_, H2PP_IS_EMPTY Arguments)(Class, Method, ReturnType, Arguments, Inspect0, Inspect1, Inspect2, Inspect3, Inspect4, Inspect5, Inspect6, Inspect7, Inspect8, Inspect9, Inspect10, Inspect11, Inspect12, Inspect13, Inspect14, Inspect15, Inspect16, Inspect17, Inspect18, Inspect19, Inspect20, Inspect21, Inspect22, Inspect23, Inspect24, Inspect25, Inspect26, Inspect27, Inspect28, Inspect29)
 #define __H2MOCKS_1_35(Class, Method, ReturnType, Arguments, Inspect0, Inspect1, Inspect2, Inspect3, Inspect4, Inspect5, Inspect6, Inspect7, Inspect8, Inspect9, Inspect10, Inspect11, Inspect12, Inspect13, Inspect14, Inspect15, Inspect16, Inspect17, Inspect18, Inspect19, Inspect20, Inspect21, Inspect22, Inspect23, Inspect24, Inspect25, Inspect26, Inspect27, Inspect28, Inspect29, Inspect30) H2PP_CAT(__H2MOCKS_1_35_, H2PP_IS_EMPTY Arguments)(Class, Method, ReturnType, Arguments, Inspect0, Inspect1, Inspect2, Inspect3, Inspect4, Inspect5, Inspect6, Inspect7, Inspect8, Inspect9, Inspect10, Inspect11, Inspect12, Inspect13, Inspect14, Inspect15, Inspect16, Inspect17, Inspect18, Inspect19, Inspect20, Inspect21, Inspect22, Inspect23, Inspect24, Inspect25, Inspect26, Inspect27, Inspect28, Inspect29, Inspect30)
 //////// <<<<< generated by build/generate.py
+// source/memory/h2_exempt.hpp
+
+struct h2_exempt {
+   h2_singleton(h2_exempt);
+   void* fps[10000];
+   int nfp = 0;
+   static void setup();
+   static void add_by_fp(void* fp);
+   static void add_by_name(const char* fn);
+};
+// source/memory/h2_memory.hpp
+
+struct h2_memory {
+   static void initialize();
+   static void finalize();
+   static void overrides();
+   static void restores();
+
+   struct stack {
+      static void root();
+      static void push(const char* file, int line);
+      static h2_fail* pop();
+      static long long footprint();
+
+      struct block : h2_once {
+         block(const char* attributes, const char* file, int line);
+         ~block();
+      };
+   };
+};
+
+#define __H2BLOCK(Attributes, Qb) for (h2::h2_memory::stack::block Qb(h2::sdf(Attributes), __FILE__, __LINE__); Qb;)
+#define H2BLOCK(...) __H2BLOCK(#__VA_ARGS__, H2PP_UNIQUE(t_block))
+
+template <typename T>
+inline void h2_unmem(T f) { h2_exempt::add_by_fp(h2_un(f)); }
+template <>
+inline void h2_unmem(const char* f) { h2_exempt::add_by_name(f); }
+
+#define H2UNMEM(f) h2::h2_unmem(f)
 // source/extension/h2_dns.hpp
 
 struct h2_dns {
@@ -3665,13 +3636,13 @@ struct h2_defer_failure : h2_once {
    const char* file;
    int line;
    h2_fail* fails{nullptr};
-   h2_oss oss;
+   h2_ostringstream oss;
 
    h2_defer_failure(const char* e_expression_, const char* a_expression_, const char* expression_, const char* file_, int line_) : e_expression(e_expression_), a_expression(a_expression_), expression(expression_), file(file_), line(line_) {}
    ~h2_defer_failure();
 };
 
-static inline h2_oss& h2_OK(h2_defer_failure* d, bool a)
+static inline h2_ostringstream& h2_ok(h2_defer_failure* d, bool a)
 {
    d->assert_type = "OK1";
    if (!a) d->fails = h2_fail::new_unexpect("true", "false");
@@ -3680,7 +3651,7 @@ static inline h2_oss& h2_OK(h2_defer_failure* d, bool a)
 }
 
 template <typename E, typename A>
-static inline h2_oss& h2_OK(h2_defer_failure* d, E e, A a, int n = 0)
+static inline h2_ostringstream& h2_ok(h2_defer_failure* d, E e, A a, int n = 0)
 {
    d->assert_type = "OK2";
    h2::h2_matcher<typename h2_decay<A>::type> m = h2::h2_matcher_cast<typename h2_decay<A>::type>((typename h2_decay<E>::type)e);
@@ -3694,7 +3665,7 @@ static inline h2_oss& h2_OK(h2_defer_failure* d, E e, A a, int n = 0)
    return d->oss;
 }
 
-static inline h2_oss& h2_JE(h2_defer_failure* d, h2_string e, h2_string a, h2_string selector)
+static inline h2_ostringstream& h2_je(h2_defer_failure* d, h2_string e, h2_string a, h2_string selector)
 {
    d->assert_type = "JE";
    h2::h2_matcher<h2_string> m = Je(e, selector);
@@ -3704,13 +3675,13 @@ static inline h2_oss& h2_JE(h2_defer_failure* d, h2_string e, h2_string a, h2_st
 }
 
 #define __H2OK(Q, expression, ...) \
-   for (h2::h2_defer_failure Q("", "", expression, __FILE__, __LINE__); Q;) h2::h2_OK(&Q, __VA_ARGS__)
+   for (h2::h2_defer_failure Q("", "", expression, __FILE__, __LINE__); Q;) h2::h2_ok(&Q, __VA_ARGS__)
 
 #define __H2JE3(Q, expect, actual) \
-   for (h2::h2_defer_failure Q(#expect, #actual, "", __FILE__, __LINE__); Q;) h2::h2_JE(&Q, expect, actual, "")
+   for (h2::h2_defer_failure Q(#expect, #actual, "", __FILE__, __LINE__); Q;) h2::h2_je(&Q, expect, actual, "")
 
 #define __H2JE4(Q, expect, actual, selector) \
-   for (h2::h2_defer_failure Q(#expect, #actual, "", __FILE__, __LINE__); Q;) h2::h2_JE(&Q, expect, actual, selector)
+   for (h2::h2_defer_failure Q(#expect, #actual, "", __FILE__, __LINE__); Q;) h2::h2_je(&Q, expect, actual, selector)
 
 #define H2OK(...) __H2OK(H2PP_UNIQUE(t_defer_failure), (#__VA_ARGS__), __VA_ARGS__)
 

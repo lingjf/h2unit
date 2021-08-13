@@ -3,7 +3,6 @@ struct h2_symbol {
    h2_list x;
    char name[128];
    unsigned long long addr;
-   int size = 0;
    h2_symbol(char* _name, unsigned long long _addr) : addr(_addr) { strncpy(name, _name, 127); }
 };
 

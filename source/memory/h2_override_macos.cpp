@@ -4,7 +4,7 @@
 extern "C" malloc_zone_t* malloc_default_purgeable_zone(void) WEAK_IMPORT_ATTRIBUTE;
 #endif
 
-struct h2_wrapper_specific {
+struct h2_override_platform {
    static size_t mz_size(malloc_zone_t* zone, const void* ptr) { return h2_override::size(ptr); }
    static void* mz_malloc(malloc_zone_t* zone, size_t size) { return h2_override::malloc(size); }
    static void* mz_calloc(malloc_zone_t* zone, size_t num_items, size_t size) { return h2_override::calloc(num_items, size); }
@@ -38,7 +38,7 @@ struct h2_wrapper_specific {
    malloc_introspection_t mi;
    malloc_zone_t mz;
 
-   h2_wrapper_specific()
+   h2_override_platform()
    {
       memset(&mi, 0, sizeof(mi));
       mi.enumerator = &mi_enumerator;
@@ -72,7 +72,7 @@ struct h2_wrapper_specific {
 #endif
    }
 
-   void overrides()
+   void set()
    {
       malloc_zone_register(&mz);
       malloc_zone_t* default_zone = get_default_zone();
@@ -80,7 +80,7 @@ struct h2_wrapper_specific {
       malloc_zone_register(default_zone);
    }
 
-   void restores()
+   void reset()
    {
       malloc_zone_unregister(&mz);
    }

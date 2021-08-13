@@ -1,8 +1,5 @@
 #include "../source/h2_unit.cpp"
 #include "test_types.hpp"
-#if !defined _WIN32
-#   include <pthread.h>
-#endif
 
 SUITE(override)
 {
@@ -76,7 +73,9 @@ SUITE(override)
          OK(IsNull, strndup("1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890", 100));
       }
    }
-#   if defined _POSIX_C_SOURCE && _POSIX_C_SOURCE >= 200112L
+#endif
+
+#if defined _POSIX_C_SOURCE && _POSIX_C_SOURCE >= 200112L
    Case(posix_memalign)
    {
       void* ptr = NULL;
@@ -88,9 +87,9 @@ SUITE(override)
          OK(Not(0), posix_memalign(&ptr, 8, 100));
       }
    }
-#   endif
+#endif
 
-#   if defined _ISOC11_SOURCE
+#if defined _ISOC11_SOURCE
    Case(aligned_alloc)
    {
       free(aligned_alloc(10, 10));
@@ -99,17 +98,5 @@ SUITE(override)
          OK(IsNull, aligned_alloc(10, 100));
       }
    }
-#   endif
-
-#   if (_XOPEN_SOURCE >= 500) && !(_POSIX_C_SOURCE >= 200112L) || _DEFAULT_SOURCE || _SVID_SOURCE || _BSD_SOURCE
-   Case(valloc)
-   {
-      free(valloc(100));
-      BLOCK(limit = 10)
-      {
-         OK(IsNull, valloc(100));
-      }
-   }
-#   endif
 #endif
 }

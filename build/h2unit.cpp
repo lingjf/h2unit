@@ -1,5 +1,5 @@
 ﻿
-/* v5.12 2021-07-31 08:05:20 */
+/* v5.12 2021-08-14 00:30:50 */
 /* https://github.com/lingjf/h2unit */
 /* Apache Licence 2.0 */
 
@@ -1042,7 +1042,6 @@ static inline void nm2(h2_list& symbols)
    h2_memory::restores();
    char nm[256], line[2048], addr[128], type, name[2048];
    sprintf(nm, "nm -f bsd --demangle %s -n %s", O.os == macOS ? "-U" : "--defined-only", O.path);
-   h2_symbol* last = nullptr;
    FILE* f = ::popen(nm, "r");
    if (f) {
       while (::fgets(line, sizeof(line) - 1, f)) {
@@ -1051,12 +1050,7 @@ static inline void nm2(h2_list& symbols)
          int underscore = 0;
          if (O.os == macOS && !strchr(name, '(')) underscore = 1;
          h2_symbol* symbol = new h2_symbol(name + underscore, (unsigned long long)strtoull(addr, nullptr, 16));
-         if (symbol) {
-            symbols.push_back(symbol->x);
-            if (last)
-               last->size = (int)(symbol->addr - last->addr);
-            last = symbol;
-         }
+         if (symbol) symbols.push_back(symbol->x);
       }
       ::pclose(f);
    }
@@ -1084,7 +1078,6 @@ h2_inline int h2_nm::get_by_name(const char* name, h2_symbol* res[], int n)
       return 0;
    static h2_symbol s_symbol("", 0);
    s_symbol.addr = (unsigned long long)symbol->Address;
-   s_symbol.size = (int)symbol->Size;
    res[0] = &s_symbol;
    return 1;
 #else
@@ -1121,12 +1114,8 @@ h2_inline h2_symbol* h2_nm::get_by_addr(unsigned long long addr)
    static h2_symbol s_symbol("", 0);
    strcpy(s_symbol.name, symbol->Name);
    s_symbol.addr = (unsigned long long)symbol->Address;
-   s_symbol.size = (int)symbol->Size;
    return &s_symbol;
 #else
-   h2_list_for_each_entry (p, I().demangle_symbols, h2_symbol, x)
-      if (addr <= p->addr + p->size)
-         return p;
    return nullptr;
 #endif
 }
@@ -2907,7 +2896,6 @@ struct h2_piece : h2_libc {
    h2_list x;
    unsigned char *user_ptr, *page_ptr;
    size_t user_size, page_size, page_count;
-
    // free
    const char* who_allocate;
    h2_backtrace bt_allocate, bt_release;
@@ -2924,8 +2912,7 @@ struct h2_piece : h2_libc {
    bool violate_after_free = false;
    h2_backtrace violate_backtrace;
 
-   h2_piece(size_t size, size_t alignment, const char* who, h2_backtrace& bt)
-     : user_size(size), page_size(h2_page_size()), who_allocate(who), bt_allocate(bt)
+   h2_piece(size_t size, size_t alignment, const char* who, h2_backtrace& bt) : user_size(size), page_size(h2_page_size()), who_allocate(who), bt_allocate(bt)
    {
       size_t alignment_2n = alignment;
       if (not2n(alignment)) alignment_2n = mask2n(alignment) + 1;
@@ -3057,20 +3044,15 @@ struct h2_piece : h2_libc {
 
    h2_fail* check_asymmetric_free(const char* who_release)
    {
-      static const char* a1[] = {"malloc", "calloc", "realloc", "strdup", "reallocf", "posix_memalign", "memalign", "aligned_alloc", "valloc", "pvalloc", nullptr};
+      static const char* a1[] = {"malloc", "calloc", "realloc", "posix_memalign", "aligned_alloc", nullptr};
       static const char* a2[] = {"free", nullptr};
       static const char* b1[] = {"new", "new nothrow", nullptr};
       static const char* b2[] = {"delete", "delete nothrow", nullptr};
       static const char* c1[] = {"new[]", "new[] nothrow", nullptr};
       static const char* c2[] = {"delete[]", "delete[] nothrow", nullptr};
-      static const char* d1[] = {"_aligned_malloc", "_aligned_realloc", "_aligned_recalloc", "_aligned_offset_malloc", "_aligned_offset_realloc", "_aligned_offset_recalloc", nullptr};
-      static const char* d2[] = {"_aligned_free", nullptr};
-      static struct {
-         const char **a, **r;
-      } S[] = {{a1, a2}, {b1, b2}, {c1, c2}, {d1, d2}};
-
-      for (int i = 0; i < sizeof(S) / sizeof(S[0]); ++i)
-         if (h2_in(who_allocate, S[i].a) && h2_in(who_release, S[i].r))
+      static const char** S[] = {a1, a2, b1, b2, c1, c2};
+      for (int i = 0; i < sizeof(S) / sizeof(S[0]); i += 2)
+         if (h2_in(who_allocate, S[i]) && h2_in(who_release, S[i + 1]))
             return nullptr;
 
       h2_backtrace bt(O.os == macOS ? 6 : 5);
@@ -3166,22 +3148,65 @@ struct h2_leaky {
 };
 // source/memory/h2_block.cpp
 
+struct h2_block_attributes {
+   long long limit = LLONG_MAX / 2;
+   int alignment = sizeof(void*);
+   unsigned char s_fill[32];
+   int n_fill = 0;
+   bool noleak = false;
+
+   h2_block_attributes(const char* attributes)
+   {
+      const char* p_noleak = strcasestr(attributes, "noleak");
+      if (p_noleak) noleak = true;
+
+      const char* p_limit = strcasestr(attributes, "limit");
+      if (p_limit) {
+         const char* p = strchr(p_limit, '=');
+         if (p) limit = (long long)strtod(p + 1, nullptr);
+      }
+
+      const char* p_align = strcasestr(attributes, "align");
+      if (p_align) {
+         const char* p = strchr(p_align, '=');
+         if (p) alignment = (int)strtod(p + 1, nullptr);
+      }
+
+      const char* p_fill = strcasestr(attributes, "fill");
+      if (p_fill) {
+         const char* p = strchr(p_fill, '=');
+         if (p) {
+            for (p += 1; *p && ::isspace(*p);) p++;  // strip left space
+
+            if (p[0] == '0' && ::tolower(p[1]) == 'x') {
+               n_fill = hex_to_bytes(p + 2, s_fill);
+            } else {
+               long long v = strtoll(p, (char**)NULL, 10);
+               if (v <= 0xFFU)
+                  n_fill = 1, *((unsigned char*)s_fill) = (unsigned char)v;
+               else if (v <= 0xFFFFU)
+                  n_fill = 2, *((unsigned short*)s_fill) = (unsigned short)v;
+               else if (v <= 0xFFFFFFFFU)
+                  n_fill = 4, *((unsigned int*)s_fill) = (unsigned int)v;
+               else
+                  n_fill = 8, *((unsigned long long*)s_fill) = (unsigned long long)v;
+            }
+         }
+      }
+   }
+};
+
 struct h2_block : h2_libc {
    h2_list x;
    h2_list pieces;
 
+   h2_block_attributes attributes;
    long long footprint = 0, allocated = 0;
-   long long limit;
-   size_t align;
-   unsigned char s_fill[32];
-   int n_fill;
-   bool noleak;  // ignore leak check
    const char* where;
    const char* file;
    int line;
 
-   h2_block(long long _limit, size_t _align, unsigned char _s_fill[32], int _n_fill, bool _noleak, const char* _where, const char* _file, int _line)
-     : limit(_limit), align(_align), n_fill(_n_fill), noleak(_noleak), where(_where), file(_file), line(_line) { memcpy(s_fill, _s_fill, _n_fill); }
+   h2_block(const char* _attributes, const char* _where, const char* _file, int _line) : attributes(_attributes), where(_where), file(_file), line(_line) {}
 
    h2_fail* check()
    {
@@ -3194,7 +3219,7 @@ struct h2_block : h2_libc {
 
       h2_leaky leaky;
       h2_list_for_each_entry (p, pieces, h2_piece, x)
-         if (!noleak && !p->free_times)
+         if (!attributes.noleak && !p->free_times)
             leaky.add(p->user_ptr, p->user_size, p->bt_allocate);
 
       fails = leaky.check(where, file, line);
@@ -3211,25 +3236,25 @@ struct h2_block : h2_libc {
 
    h2_piece* new_piece(const char* who, size_t size, size_t alignment, unsigned char c_fill, bool fill, h2_backtrace& bt)
    {
-      if (limit < allocated + size) return nullptr;
+      if (attributes.limit < allocated + size) return nullptr;
       allocated += size;
       if (footprint < allocated) footprint = allocated;
 
       // allocate action alignment is prior to block level alignment
-      if (alignment == 0) alignment = align;
+      if (alignment == 0) alignment = attributes.alignment;
 
       h2_piece* p = new h2_piece(size, alignment, who, bt);
 
       // allocate action fill is prior to block level fill
-      unsigned char* s_filling = s_fill;
-      int n_filling = n_fill;
+      unsigned char* s_fill = attributes.s_fill;
+      int n_fill = attributes.n_fill;
       if (fill) {
-         s_filling = &c_fill;
-         n_filling = 1;
+         s_fill = &c_fill;
+         n_fill = 1;
       }
-      if (0 < n_filling)
+      if (0 < n_fill)
          for (int i = 0, j = 0; i < size; ++i, ++j)
-            ((unsigned char*)p->user_ptr)[i] = s_filling[j % n_filling];
+            ((unsigned char*)p->user_ptr)[i] = s_fill[j % n_fill];
 
       pieces.push_back(p->x);
       return p;
@@ -3262,9 +3287,9 @@ struct h2_stack {
    h2_list blocks;
    bool at_exit = false;
 
-   void push(long long limit, size_t align, unsigned char s_fill[32], int n_fill, bool noleak, const char* where, const char* file, int line)
+   void push(const char* block_attributes, const char* where, const char* file, int line)
    {
-      h2_block* b = new h2_block(limit, align, s_fill, n_fill, noleak, where, file, line);
+      h2_block* b = new h2_block(block_attributes, where, file, line);
       blocks.push(b->x);
    }
 
@@ -3284,7 +3309,6 @@ struct h2_stack {
    h2_piece* new_piece(const char* who, size_t size, size_t alignment, const char* fill)
    {
       h2_backtrace bt(O.os == macOS ? 3 : 2);
-
       h2_block* b = bt.in(h2_exempt::I().fps) ? h2_list_bottom_entry(blocks, h2_block, x) : h2_list_top_entry(blocks, h2_block, x);
       return b ? b->new_piece(who, size, alignment, fill ? *fill : 0, fill, bt) : nullptr;
    }
@@ -3295,10 +3319,10 @@ struct h2_stack {
          h2_piece* piece = p->get_piece(ptr);
          if (piece) return p->rel_piece(who, piece);
       }
-      if (!at_exit) {
-         h2_backtrace bt(O.os == macOS ? 3 : 2);
+      if (!at_exit && O.os != windows) {
+         h2_backtrace bt;
          if (!bt.in(h2_exempt::I().fps))
-            h2_debug("Warning: %s %p not found!", who, ptr);
+            h2_debug(2, "Warning: %s %p not found!", who, ptr);
       }
       return nullptr;
    }
@@ -3353,13 +3377,6 @@ struct h2_override {
       if (ptr) h2_fail_g(h2_stack::I().rel_piece("free", ptr), false);
       return new_p ? new_p->user_ptr : nullptr;
    }
-   static char* strdup(char* s)
-   {
-      h2_piece* p = h2_stack::I().new_piece("strdup", strlen(s) + 1, 0, nullptr);
-      char* ret = p ? (char*)p->user_ptr : nullptr;
-      if (ret) strcpy(ret, s);
-      return ret;
-   }
    static int posix_memalign(void** memptr, size_t alignment, size_t size)
    {
       h2_piece* p = h2_stack::I().new_piece("posix_memalign", size, alignment, nullptr);
@@ -3368,20 +3385,6 @@ struct h2_override {
    static void* aligned_alloc(size_t alignment, size_t size)
    {
       h2_piece* p = h2_stack::I().new_piece("aligned_alloc", size, alignment, nullptr);
-      return p ? p->user_ptr : nullptr;
-   }
-   static void* _aligned_malloc(size_t size, size_t alignment)
-   {
-      h2_piece* p = h2_stack::I().new_piece("_aligned_malloc", size, alignment, nullptr);
-      return p ? p->user_ptr : nullptr;
-   }
-   static void _aligned_free(void* memblock)
-   {
-      if (memblock) h2_fail_g(h2_stack::I().rel_piece("_aligned_free", memblock), false);
-   }
-   static void* valloc(size_t size)
-   {
-      h2_piece* p = h2_stack::I().new_piece("valloc", size, h2_page_size(), nullptr);
       return p ? p->user_ptr : nullptr;
    }
    static void* operator new(std::size_t size)
@@ -3421,11 +3424,41 @@ struct h2_override {
       if (ptr) h2_fail_g(h2_stack::I().rel_piece("delete[] nothrow", ptr), false);
    }
 };
+// source/memory/h2_override_stdlib.cpp
+
+struct h2_override_stdlib {
+   h2_stubs stubs;
+
+   void set()
+   {
+      stubs.add((void*)::free, (void*)h2_override::free, "free", __FILE__, __LINE__);
+      stubs.add((void*)::malloc, (void*)h2_override::malloc, "malloc", __FILE__, __LINE__);
+      stubs.add((void*)::realloc, (void*)h2_override::realloc, "realloc", __FILE__, __LINE__);
+      stubs.add((void*)::calloc, (void*)h2_override::calloc, "calloc", __FILE__, __LINE__);
+#if defined _POSIX_C_SOURCE && _POSIX_C_SOURCE >= 200112L
+      stubs.add((void*)::posix_memalign, (void*)h2_override::posix_memalign, "posix_memalign", __FILE__, __LINE__);
+#endif
+#if defined _ISOC11_SOURCE
+      stubs.add((void*)::aligned_alloc, (void*)h2_override::aligned_alloc, "aligned_alloc", __FILE__, __LINE__);
+#endif
+      // valloc pvalloc memalign deprecated
+      stubs.add((void*)((void* (*)(std::size_t))::operator new), (void*)((void* (*)(std::size_t))h2_override::operator new), "new", __FILE__, __LINE__);
+      stubs.add((void*)((void* (*)(std::size_t, const std::nothrow_t&))::operator new), (void*)((void* (*)(std::size_t, const std::nothrow_t&))h2_override::operator new), "new nothrow", __FILE__, __LINE__);
+      stubs.add((void*)((void* (*)(std::size_t))::operator new[]), (void*)((void* (*)(std::size_t))h2_override::operator new[]), "new[]", __FILE__, __LINE__);
+      stubs.add((void*)((void* (*)(std::size_t, const std::nothrow_t&))::operator new[]), (void*)((void* (*)(std::size_t, const std::nothrow_t&))h2_override::operator new[]), "new[] nothrow", __FILE__, __LINE__);
+      stubs.add((void*)((void (*)(void*))::operator delete), (void*)((void (*)(void*))h2_override::operator delete), "delete", __FILE__, __LINE__);
+      stubs.add((void*)((void (*)(void*, const std::nothrow_t&))::operator delete), (void*)((void (*)(void*, const std::nothrow_t&))h2_override::operator delete), "delete nothrow", __FILE__, __LINE__);
+      stubs.add((void*)((void (*)(void*))::operator delete[]), (void*)((void (*)(void*))h2_override::operator delete[]), "delete[]", __FILE__, __LINE__);
+      stubs.add((void*)((void (*)(void*, const std::nothrow_t&))::operator delete[]), (void*)((void (*)(void*, const std::nothrow_t&))h2_override::operator delete[]), "delete[] nothrow", __FILE__, __LINE__);
+   }
+
+   void reset() { stubs.clear(); }
+};
 #if defined __GLIBC__
-// source/memory/h2_wrapper_linux.cpp
+// source/memory/h2_override_linux.cpp
 // https://www.gnu.org/savannah-checkouts/gnu/libc/manual/html_node/Hooks-for-Malloc.html
 
-struct h2_wrapper_specific {
+struct h2_override_platform {
    static void free_hook(void* __ptr, const void* caller) { h2_override::free(__ptr); }
    static void* malloc_hook(size_t __size, const void* caller) { return h2_override::malloc(__size); }
    static void* realloc_hook(void* __ptr, size_t __size, const void* caller) { return h2_override::realloc(__ptr, __size); }
@@ -3436,7 +3469,7 @@ struct h2_wrapper_specific {
    void* (*saved__realloc_hook)(void*, size_t, const void*);
    void* (*saved__memalign_hook)(size_t, size_t, const void*);
 
-   h2_wrapper_specific()
+   h2_override_platform()
    {
       saved__free_hook = __free_hook;
       saved__malloc_hook = __malloc_hook;
@@ -3444,7 +3477,7 @@ struct h2_wrapper_specific {
       saved__memalign_hook = __memalign_hook;
    }
 
-   void overrides()
+   void set()
    {
       __free_hook = free_hook;
       __malloc_hook = malloc_hook;
@@ -3452,7 +3485,7 @@ struct h2_wrapper_specific {
       __memalign_hook = memalign_hook;
    }
 
-   void restores()
+   void reset()
    {
       __free_hook = saved__free_hook;
       __malloc_hook = saved__malloc_hook;
@@ -3461,15 +3494,14 @@ struct h2_wrapper_specific {
    }
 };
 #elif defined __APPLE__
-// #   include "memory/h2_wrapper_macos1.cpp"
-// source/memory/h2_wrapper_macos2.cpp
+// source/memory/h2_override_macos.cpp
 // https://github.com/gperftools/gperftools/blob/master/src/libc_override.h
 
 #if defined(__APPLE__) && defined(MAC_OS_X_VERSION_10_6) && MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_6
 extern "C" malloc_zone_t* malloc_default_purgeable_zone(void) WEAK_IMPORT_ATTRIBUTE;
 #endif
 
-struct h2_wrapper_specific {
+struct h2_override_platform {
    static size_t mz_size(malloc_zone_t* zone, const void* ptr) { return h2_override::size(ptr); }
    static void* mz_malloc(malloc_zone_t* zone, size_t size) { return h2_override::malloc(size); }
    static void* mz_calloc(malloc_zone_t* zone, size_t num_items, size_t size) { return h2_override::calloc(num_items, size); }
@@ -3503,7 +3535,7 @@ struct h2_wrapper_specific {
    malloc_introspection_t mi;
    malloc_zone_t mz;
 
-   h2_wrapper_specific()
+   h2_override_platform()
    {
       memset(&mi, 0, sizeof(mi));
       mi.enumerator = &mi_enumerator;
@@ -3537,7 +3569,7 @@ struct h2_wrapper_specific {
 #endif
    }
 
-   void overrides()
+   void set()
    {
       malloc_zone_register(&mz);
       malloc_zone_t* default_zone = get_default_zone();
@@ -3545,72 +3577,63 @@ struct h2_wrapper_specific {
       malloc_zone_register(default_zone);
    }
 
-   void restores()
+   void reset()
    {
       malloc_zone_unregister(&mz);
    }
 };
-// #   include "memory/h2_wrapper_macos3.cpp"
 #elif defined _WIN32
-// source/memory/h2_wrapper_windows.cpp
-
-struct h2_wrapper_specific {
-   h2_stubs stubs;
-
-   void overrides()
-   {
-      stubs.add((void*)::_aligned_malloc, (void*)h2_override::_aligned_malloc, "_aligned_malloc", __FILE__, __LINE__);
-      stubs.add((void*)::strdup, (void*)h2_override::strdup, "strdup", __FILE__, __LINE__);
-   }
-
-   void restores()
-   {
-      stubs.clear();
-   }
-};
-#endif
-// source/memory/h2_wrapper.cpp
+// source/memory/h2_override_windows.cpp
 // https://github.com/microsoft/mimalloc
 // https://github.com/gperftools/gperftools
-// https://chromium.googlesource.com/chromium/chromium/+/refs/heads/main/tools/memory_watcher/memory_hook.cc
 
-struct h2_wrapper {
-   h2_singleton(h2_wrapper);
-   h2_wrapper_specific specific;
+struct h2_override_platform {
    h2_stubs stubs;
 
-   void overrides()
-   {
-      stubs.add((void*)::free, (void*)h2_override::free, "free", __FILE__, __LINE__);
-      stubs.add((void*)::malloc, (void*)h2_override::malloc, "malloc", __FILE__, __LINE__);
-      stubs.add((void*)::realloc, (void*)h2_override::realloc, "realloc", __FILE__, __LINE__);
-      stubs.add((void*)::calloc, (void*)h2_override::calloc, "calloc", __FILE__, __LINE__);
-#if !defined _WIN32
-      // _POSIX_C_SOURCE >= 200112L || _XOPEN_SOURCE >= 600
-      stubs.add((void*)::posix_memalign, (void*)h2_override::posix_memalign, "posix_memalign", __FILE__, __LINE__);
-#   if defined _ISOC11_SOURCE
-      stubs.add((void*)::aligned_alloc, (void*)h2_override::aligned_alloc, "aligned_alloc", __FILE__, __LINE__);
-#   endif
-#endif
-      // deprecated valloc pvalloc memalign
-      stubs.add((void*)((void* (*)(std::size_t))::operator new), (void*)((void* (*)(std::size_t))h2_override::operator new), "new", __FILE__, __LINE__);
-      stubs.add((void*)((void* (*)(std::size_t, const std::nothrow_t&))::operator new), (void*)((void* (*)(std::size_t, const std::nothrow_t&))h2_override::operator new), "new nothrow", __FILE__, __LINE__);
-      stubs.add((void*)((void* (*)(std::size_t))::operator new[]), (void*)((void* (*)(std::size_t))h2_override::operator new[]), "new[]", __FILE__, __LINE__);
-      stubs.add((void*)((void* (*)(std::size_t, const std::nothrow_t&))::operator new[]), (void*)((void* (*)(std::size_t, const std::nothrow_t&))h2_override::operator new[]), "new[] nothrow", __FILE__, __LINE__);
-      stubs.add((void*)((void (*)(void*))::operator delete), (void*)((void (*)(void*))h2_override::operator delete), "delete", __FILE__, __LINE__);
-      stubs.add((void*)((void (*)(void*, const std::nothrow_t&))::operator delete), (void*)((void (*)(void*, const std::nothrow_t&))h2_override::operator delete), "delete nothrow", __FILE__, __LINE__);
-      stubs.add((void*)((void (*)(void*))::operator delete[]), (void*)((void (*)(void*))h2_override::operator delete[]), "delete[]", __FILE__, __LINE__);
-      stubs.add((void*)((void (*)(void*, const std::nothrow_t&))::operator delete[]), (void*)((void (*)(void*, const std::nothrow_t&))h2_override::operator delete[]), "delete[] nothrow", __FILE__, __LINE__);
+   // windows specific free_base, free_dbg called by CRT internal functions or operator delete
+   // windows specific _msize, _expand
+   // A MS CRT "internal" function, implemented using _calloc_impl
+   // obscured: _aligned_offset_malloc, _aligned_realloc, _aligned_recalloc, _aligned_offset_realloc, _aligned_offset_recalloc, _malloca, _freea ,_recalloc
 
-      specific.overrides();
+   static void _free_base(void* ptr) { h2_override::free(ptr); }
+   static void* _expand(void* memblock, size_t size) { return NULL; }
+   // When _DEBUG _CRTDBG_MAP_ALLOC (default undefined) is defined CRT maps all to _*_dbg, bug CRT Debug version enabled.
+   static void _free_dbg(void* userData, int blockType) { h2_override::free(userData); }
+   static void* _malloc_dbg(size_t size, int blockType, const char* filename, int linenumber) { return h2_override::malloc(size); }
+   static void* _realloc_dbg(void* userData, size_t newSize, int blockType, const char* filename, int linenumber) { return h2_override::realloc(userData, newSize); }
+   static void* _calloc_dbg(size_t num, size_t size, int blockType, const char* filename, int linenumber) { return h2_override::calloc(num, size); }
+   static size_t _msize_dbg(void* userData, int blockType) { return h2_override::size(userData); }
+   static void* _expand_dbg(void* userData, size_t newSize, int blockType, const char* filename, int linenumber) { return NULL; }
+
+   static void* _aligned_malloc(size_t size, size_t alignment) { return h2_override::aligned_alloc(size, alignment); }
+   static void _aligned_free(void* memblock) { h2_override::free(memblock); }
+
+   static char* _strdup(char* s)
+   {
+      char* ret = (char*)h2_override::malloc(strlen(s) + 1);
+      return ret && strcpy(ret, s), ret;
    }
 
-   void restores()
+   void set()
    {
-      stubs.clear();
-      specific.restores();
+      stubs.add((void*)::_free_base, (void*)_free_base, "_free_base", __FILE__, __LINE__);
+      stubs.add((void*)::_msize, (void*)h2_override::size, "_msize", __FILE__, __LINE__);
+      stubs.add((void*)::_expand, (void*)_expand, "_expand", __FILE__, __LINE__);
+
+      stubs.add((void*)::_free_dbg, (void*)_free_dbg, "_free_dbg", __FILE__, __LINE__);
+      // stubs.add((void*)::_malloc_dbg, (void*)_malloc_dbg, "_malloc_dbg", __FILE__, __LINE__);
+      // stubs.add((void*)::_realloc_dbg, (void*)_realloc_dbg, "_realloc_dbg", __FILE__, __LINE__);
+      // stubs.add((void*)::_calloc_dbg, (void*)_calloc_dbg, "_calloc_dbg", __FILE__, __LINE__);
+      // stubs.add((void*)::_expand_dbg, (void*)_expand_dbg, "_expand_dbg", __FILE__, __LINE__);
+      //// stubs.add((void*)::_calloc_crt, (void*)h2_override::calloc, "_calloc_crt", __FILE__, __LINE__);
+      stubs.add((void*)::_aligned_malloc, (void*)_aligned_malloc, "_aligned_malloc", __FILE__, __LINE__);
+      stubs.add((void*)::_aligned_free, (void*)_aligned_free, "_aligned_free", __FILE__, __LINE__);
+      stubs.add((void*)::_strdup, (void*)_strdup, "_strdup", __FILE__, __LINE__);  // strdup call to _strdup
    }
+
+   void reset() { stubs.clear(); }
 };
+#endif
 // source/memory/h2_crash.cpp
 
 struct h2_crash {
@@ -3628,7 +3651,7 @@ struct h2_crash {
       return EXCEPTION_EXECUTE_HANDLER;
    }
 
-   static void install_segment_fault_handler()
+   static void install()
    {
       SetUnhandledExceptionFilter((LPTOP_LEVEL_EXCEPTION_FILTER)segment_fault_handler);
    }
@@ -3643,11 +3666,11 @@ struct h2_crash {
             return;
          }
       }
-      h2_debug("");
+      h2_debug(0, "");
       abort();
    }
 
-   static void install_segment_fault_handler()
+   static void install()
    {
       struct sigaction action;
       action.sa_sigaction = segment_fault_handler;
@@ -3661,12 +3684,31 @@ struct h2_crash {
 };
 // source/memory/h2_memory.cpp
 
+struct h2_overrides {
+   h2_singleton(h2_overrides);
+   h2_override_stdlib stdlib;
+   h2_override_platform platform;
+
+   void set()
+   {
+      stdlib.set();
+      platform.set();
+   }
+   void reset()
+   {
+      platform.reset();
+      stdlib.reset();
+   }
+};
+
 h2_inline void h2_memory::initialize()
 {
-   if (O.memory_check && !O.debug) h2_crash::install_segment_fault_handler();
+   if (O.memory_check) {
+      if (!O.debug) h2_crash::install();
+      h2_exempt::setup();
+      h2_overrides::I().set();
+   }
    stack::root();
-   if (O.memory_check) h2_wrapper::I().overrides();
-   if (O.memory_check) h2_exempt::setup();
 }
 h2_inline void h2_memory::finalize()
 {
@@ -3674,20 +3716,20 @@ h2_inline void h2_memory::finalize()
 }
 h2_inline void h2_memory::overrides()
 {
-   if (O.memory_check) h2_wrapper::I().overrides();
+   if (O.memory_check) h2_overrides::I().set();
 }
 h2_inline void h2_memory::restores()
 {
-   if (O.memory_check) h2_wrapper::I().restores();
+   if (O.memory_check) h2_overrides::I().reset();
 }
 
 h2_inline void h2_memory::stack::root()
 {
-   h2_stack::I().push(LLONG_MAX / 2, sizeof(void*), nullptr, 0, false, "root", __FILE__, __LINE__);
+   h2_stack::I().push("", "root", __FILE__, __LINE__);
 }
 h2_inline void h2_memory::stack::push(const char* file, int line)
 {
-   h2_stack::I().push(LLONG_MAX / 2, sizeof(void*), nullptr, 0, false, "case", file, line);
+   h2_stack::I().push("", "case", file, line);
 }
 h2_inline h2_fail* h2_memory::stack::pop()
 {
@@ -3698,70 +3740,10 @@ h2_inline long long h2_memory::stack::footprint()
    return h2_stack::I().top()->footprint;
 }
 
-static inline void parse_block_attributes(const char* attributes, long long& n_limit, int& n_align, unsigned char s_fill[32], int& n_fill, bool& noleak)
-{
-   n_limit = LLONG_MAX / 2;
-   n_align = sizeof(void*);
-   n_fill = 0;
-   noleak = false;
-
-   const char* p_noleak = strcasestr(attributes, "noleak");
-   if (p_noleak) {
-      noleak = true;
-   }
-
-   const char* p_limit = strcasestr(attributes, "limit");
-   if (p_limit) {
-      const char* p = strchr(p_limit, '=');
-      if (p) {
-         n_limit = (long long)strtod(p + 1, nullptr);
-      }
-   }
-
-   const char* p_align = strcasestr(attributes, "align");
-   if (p_align) {
-      const char* p = strchr(p_align, '=');
-      if (p) {
-         n_align = (int)strtod(p + 1, nullptr);
-      }
-   }
-
-   const char* p_fill = strcasestr(attributes, "fill");
-   if (p_fill) {
-      const char* p = strchr(p_fill, '=');
-      if (p) {
-         for (p += 1; *p && ::isspace(*p);) p++;  // strip left space
-
-         if (p[0] == '0' && ::tolower(p[1]) == 'x') {
-            n_fill = hex_to_bytes(p + 2, s_fill);
-         } else {
-            long long v = strtoll(p, (char**)NULL, 10);
-            if (v <= 0xFFU)
-               n_fill = 1, *((unsigned char*)s_fill) = (unsigned char)v;
-            else if (v <= 0xFFFFU)
-               n_fill = 2, *((unsigned short*)s_fill) = (unsigned short)v;
-            else if (v <= 0xFFFFFFFFU)
-               n_fill = 4, *((unsigned int*)s_fill) = (unsigned int)v;
-            else
-               n_fill = 8, *((unsigned long long*)s_fill) = (unsigned long long)v;
-         }
-      }
-   }
-}
-
 h2_inline h2_memory::stack::block::block(const char* attributes, const char* file, int line)
 {
-   long long n_limit;
-   int n_align;
-   unsigned char s_fill[32];
-   int n_fill;
-   bool noleak;
-
-   parse_block_attributes(attributes, n_limit, n_align, s_fill, n_fill, noleak);
-
-   h2_stack::I().push(n_limit, n_align, s_fill, n_fill, noleak, "block", file, line);
+   h2_stack::I().push(attributes, "block", file, line);
 }
-
 h2_inline h2_memory::stack::block::~block()
 {
    h2_fail_g(h2_stack::I().pop(), false);
@@ -3806,6 +3788,14 @@ h2_inline void h2_exempt::setup()
    stubs.add((void*)::mktime, (void*)h2_exempt_stub::mktime, "mktime", __FILE__, __LINE__);
 
 #if defined _WIN32
+   add_by_fp((void*)::_wchdir);
+   add_by_fp((void*)::fopen);
+   add_by_fp((void*)::fclose);
+   add_by_fp((void*)::strftime);
+   add_by_fp((void*)::gmtime_s);
+   add_by_fp((void*)::_gmtime32_s);
+   add_by_fp((void*)::_gmtime64_s);
+   add_by_fp(h2_un(&std::type_info::name));
 #else
    stubs.add((void*)::gmtime_r, (void*)h2_exempt_stub::gmtime_r, "gmtime_r", __FILE__, __LINE__);
    stubs.add((void*)::ctime_r, (void*)h2_exempt_stub::ctime_r, "ctime_r", __FILE__, __LINE__);
@@ -3822,6 +3812,7 @@ h2_inline void h2_exempt::setup()
    add_by_fp((void*)::strtof_l);
    add_by_fp((void*)abi::__cxa_throw);
 #   endif
+   add_by_fp((void*)h2_pattern::regex_match);
 #endif
 }
 

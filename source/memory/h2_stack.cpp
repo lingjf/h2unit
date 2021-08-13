@@ -4,9 +4,9 @@ struct h2_stack {
    h2_list blocks;
    bool at_exit = false;
 
-   void push(long long limit, size_t align, unsigned char s_fill[32], int n_fill, bool noleak, const char* where, const char* file, int line)
+   void push(const char* block_attributes, const char* where, const char* file, int line)
    {
-      h2_block* b = new h2_block(limit, align, s_fill, n_fill, noleak, where, file, line);
+      h2_block* b = new h2_block(block_attributes, where, file, line);
       blocks.push(b->x);
    }
 
@@ -26,7 +26,6 @@ struct h2_stack {
    h2_piece* new_piece(const char* who, size_t size, size_t alignment, const char* fill)
    {
       h2_backtrace bt(O.os == macOS ? 3 : 2);
-
       h2_block* b = bt.in(h2_exempt::I().fps) ? h2_list_bottom_entry(blocks, h2_block, x) : h2_list_top_entry(blocks, h2_block, x);
       return b ? b->new_piece(who, size, alignment, fill ? *fill : 0, fill, bt) : nullptr;
    }
@@ -37,10 +36,10 @@ struct h2_stack {
          h2_piece* piece = p->get_piece(ptr);
          if (piece) return p->rel_piece(who, piece);
       }
-      if (!at_exit) {
-         h2_backtrace bt(O.os == macOS ? 3 : 2);
+      if (!at_exit && O.os != windows) {
+         h2_backtrace bt;
          if (!bt.in(h2_exempt::I().fps))
-            h2_debug("Warning: %s %p not found!", who, ptr);
+            h2_debug(2, "Warning: %s %p not found!", who, ptr);
       }
       return nullptr;
    }

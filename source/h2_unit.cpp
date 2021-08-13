@@ -97,16 +97,14 @@ namespace h2 {
 #include "memory/h2_block.cpp"
 #include "memory/h2_stack.cpp"
 #include "memory/h2_override.cpp"
+#include "memory/h2_override_stdlib.cpp"
 #if defined __GLIBC__
-#   include "memory/h2_wrapper_linux.cpp"
+#   include "memory/h2_override_linux.cpp"
 #elif defined __APPLE__
-// #   include "memory/h2_wrapper_macos1.cpp"
-#   include "memory/h2_wrapper_macos2.cpp"
-// #   include "memory/h2_wrapper_macos3.cpp"
+#   include "memory/h2_override_macos.cpp"
 #elif defined _WIN32
-#   include "memory/h2_wrapper_windows.cpp"
+#   include "memory/h2_override_windows.cpp"
 #endif
-#include "memory/h2_wrapper.cpp"
 #include "memory/h2_crash.cpp"
 #include "memory/h2_memory.cpp"
 #include "memory/h2_exempt.cpp"

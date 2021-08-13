@@ -1,6 +1,6 @@
 // https://www.gnu.org/savannah-checkouts/gnu/libc/manual/html_node/Hooks-for-Malloc.html
 
-struct h2_wrapper_specific {
+struct h2_override_platform {
    static void free_hook(void* __ptr, const void* caller) { h2_override::free(__ptr); }
    static void* malloc_hook(size_t __size, const void* caller) { return h2_override::malloc(__size); }
    static void* realloc_hook(void* __ptr, size_t __size, const void* caller) { return h2_override::realloc(__ptr, __size); }
@@ -11,7 +11,7 @@ struct h2_wrapper_specific {
    void* (*saved__realloc_hook)(void*, size_t, const void*);
    void* (*saved__memalign_hook)(size_t, size_t, const void*);
 
-   h2_wrapper_specific()
+   h2_override_platform()
    {
       saved__free_hook = __free_hook;
       saved__malloc_hook = __malloc_hook;
@@ -19,7 +19,7 @@ struct h2_wrapper_specific {
       saved__memalign_hook = __memalign_hook;
    }
 
-   void overrides()
+   void set()
    {
       __free_hook = free_hook;
       __malloc_hook = malloc_hook;
@@ -27,7 +27,7 @@ struct h2_wrapper_specific {
       __memalign_hook = memalign_hook;
    }
 
-   void restores()
+   void reset()
    {
       __free_hook = saved__free_hook;
       __malloc_hook = saved__malloc_hook;

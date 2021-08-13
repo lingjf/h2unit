@@ -37,6 +37,14 @@ h2_inline void h2_exempt::setup()
    stubs.add((void*)::mktime, (void*)h2_exempt_stub::mktime, "mktime", __FILE__, __LINE__);
 
 #if defined _WIN32
+   add_by_fp((void*)::_wchdir);
+   add_by_fp((void*)::fopen);
+   add_by_fp((void*)::fclose);
+   add_by_fp((void*)::strftime);
+   add_by_fp((void*)::gmtime_s);
+   add_by_fp((void*)::_gmtime32_s);
+   add_by_fp((void*)::_gmtime64_s);
+   add_by_fp(h2_un(&std::type_info::name));
 #else
    stubs.add((void*)::gmtime_r, (void*)h2_exempt_stub::gmtime_r, "gmtime_r", __FILE__, __LINE__);
    stubs.add((void*)::ctime_r, (void*)h2_exempt_stub::ctime_r, "ctime_r", __FILE__, __LINE__);
@@ -53,6 +61,7 @@ h2_inline void h2_exempt::setup()
    add_by_fp((void*)::strtof_l);
    add_by_fp((void*)abi::__cxa_throw);
 #   endif
+   add_by_fp((void*)h2_pattern::regex_match);
 #endif
 }
 

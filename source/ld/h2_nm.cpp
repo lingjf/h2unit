@@ -26,7 +26,6 @@ static inline void nm2(h2_list& symbols)
    h2_memory::restores();
    char nm[256], line[2048], addr[128], type, name[2048];
    sprintf(nm, "nm -f bsd --demangle %s -n %s", O.os == macOS ? "-U" : "--defined-only", O.path);
-   h2_symbol* last = nullptr;
    FILE* f = ::popen(nm, "r");
    if (f) {
       while (::fgets(line, sizeof(line) - 1, f)) {
@@ -35,12 +34,7 @@ static inline void nm2(h2_list& symbols)
          int underscore = 0;
          if (O.os == macOS && !strchr(name, '(')) underscore = 1;
          h2_symbol* symbol = new h2_symbol(name + underscore, (unsigned long long)strtoull(addr, nullptr, 16));
-         if (symbol) {
-            symbols.push_back(symbol->x);
-            if (last)
-               last->size = (int)(symbol->addr - last->addr);
-            last = symbol;
-         }
+         if (symbol) symbols.push_back(symbol->x);
       }
       ::pclose(f);
    }
@@ -68,7 +62,6 @@ h2_inline int h2_nm::get_by_name(const char* name, h2_symbol* res[], int n)
       return 0;
    static h2_symbol s_symbol("", 0);
    s_symbol.addr = (unsigned long long)symbol->Address;
-   s_symbol.size = (int)symbol->Size;
    res[0] = &s_symbol;
    return 1;
 #else
@@ -105,12 +98,8 @@ h2_inline h2_symbol* h2_nm::get_by_addr(unsigned long long addr)
    static h2_symbol s_symbol("", 0);
    strcpy(s_symbol.name, symbol->Name);
    s_symbol.addr = (unsigned long long)symbol->Address;
-   s_symbol.size = (int)symbol->Size;
    return &s_symbol;
 #else
-   h2_list_for_each_entry (p, I().demangle_symbols, h2_symbol, x)
-      if (addr <= p->addr + p->size)
-         return p;
    return nullptr;
 #endif
 }

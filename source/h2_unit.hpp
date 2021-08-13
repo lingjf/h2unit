@@ -37,6 +37,8 @@
 #   pragma GCC diagnostic ignored "-Wreturn-type"
 #elif defined _WIN32
 #   pragma warning(disable : 4005)  // macro-redefine
+#   pragma warning(disable : 4611)  // setjmp non-portable
+#   pragma warning(disable : 4715)  // not all control paths return a value
 #endif
 
 #if defined __H2UNIT_HPP__
@@ -56,6 +58,7 @@ namespace h2 {
 #include "utils/h2_allocate.hpp"       // libc
 #include "utils/h2_string.hpp"         // allocate
 #include "utils/h2_row.hpp"            // string
+#include "utils/h2_stringify.hpp"      // string, row
 #include "utils/h2_color.hpp"          // row
 #include "ld/h2_nm.hpp"                //
 #include "ld/h2_load.hpp"              //
@@ -65,9 +68,6 @@ namespace h2 {
 #include "other/h2_debug.hpp"          // option
 #include "other/h2_failure.hpp"        //
 #include "json/h2_json.hpp"            //
-#include "memory/h2_exempt.hpp"        //
-#include "memory/h2_memory.hpp"        // failure
-#include "utils/h2_stringify.hpp"      // string, row, memory
 #include "exception/h2_exception.hpp"  //
 #include "matcher/h2_matches.hpp"      // failure
 #include "matcher/h2_matcher.hpp"      // matches, failure
@@ -81,17 +81,19 @@ namespace h2 {
 #include "matcher/h2_container.hpp"    // matches, matcher, failure
 #include "matcher/h2_customize.hpp"    // matches, matcher, failure
 #include "matcher/h2_matcher.cpp"      // matches, matcher, equation
-#include "stub/h2_fp.hpp"              //
-#include "stub/h2_mfp.hpp"             //
-#include "stub/h2_stubs.hpp"           //
-#include "stub/h2_temporary.hpp"       //
-#include "stub/h2_stub.hpp"            //
+#include "stub/h2_fp.hpp"              // load
+#include "stub/h2_mfp.hpp"             // nm, load
+#include "stub/h2_stubs.hpp"           // -
+#include "stub/h2_temporary.hpp"       // -
+#include "stub/h2_stub.hpp"            // -
 #include "mock/h2_routine.hpp"         //
 #include "mock/h2_checkin.hpp"         // failure
 #include "mock/h2_match.hpp"           // failure
 #include "mock/h2_mocker.hpp"          // failure, checkin, routine, matcher, stub
 #include "mock/h2_mocks.hpp"           // failure, checkin
 #include "mock/h2_mock.hpp"            //
+#include "memory/h2_exempt.hpp"        // -
+#include "memory/h2_memory.hpp"        // failure, fp
 #include "extension/h2_dns.hpp"        //
 #include "extension/h2_socket.hpp"     // stub, failure, matcher
 #include "extension/h2_stdio.hpp"      //

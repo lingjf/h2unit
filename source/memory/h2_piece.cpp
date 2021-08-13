@@ -3,7 +3,6 @@ struct h2_piece : h2_libc {
    h2_list x;
    unsigned char *user_ptr, *page_ptr;
    size_t user_size, page_size, page_count;
-
    // free
    const char* who_allocate;
    h2_backtrace bt_allocate, bt_release;
@@ -20,8 +19,7 @@ struct h2_piece : h2_libc {
    bool violate_after_free = false;
    h2_backtrace violate_backtrace;
 
-   h2_piece(size_t size, size_t alignment, const char* who, h2_backtrace& bt)
-     : user_size(size), page_size(h2_page_size()), who_allocate(who), bt_allocate(bt)
+   h2_piece(size_t size, size_t alignment, const char* who, h2_backtrace& bt) : user_size(size), page_size(h2_page_size()), who_allocate(who), bt_allocate(bt)
    {
       size_t alignment_2n = alignment;
       if (not2n(alignment)) alignment_2n = mask2n(alignment) + 1;
@@ -153,20 +151,15 @@ struct h2_piece : h2_libc {
 
    h2_fail* check_asymmetric_free(const char* who_release)
    {
-      static const char* a1[] = {"malloc", "calloc", "realloc", "strdup", "reallocf", "posix_memalign", "memalign", "aligned_alloc", "valloc", "pvalloc", nullptr};
+      static const char* a1[] = {"malloc", "calloc", "realloc", "posix_memalign", "aligned_alloc", nullptr};
       static const char* a2[] = {"free", nullptr};
       static const char* b1[] = {"new", "new nothrow", nullptr};
       static const char* b2[] = {"delete", "delete nothrow", nullptr};
       static const char* c1[] = {"new[]", "new[] nothrow", nullptr};
       static const char* c2[] = {"delete[]", "delete[] nothrow", nullptr};
-      static const char* d1[] = {"_aligned_malloc", "_aligned_realloc", "_aligned_recalloc", "_aligned_offset_malloc", "_aligned_offset_realloc", "_aligned_offset_recalloc", nullptr};
-      static const char* d2[] = {"_aligned_free", nullptr};
-      static struct {
-         const char **a, **r;
-      } S[] = {{a1, a2}, {b1, b2}, {c1, c2}, {d1, d2}};
-
-      for (int i = 0; i < sizeof(S) / sizeof(S[0]); ++i)
-         if (h2_in(who_allocate, S[i].a) && h2_in(who_release, S[i].r))
+      static const char** S[] = {a1, a2, b1, b2, c1, c2};
+      for (int i = 0; i < sizeof(S) / sizeof(S[0]); i += 2)
+         if (h2_in(who_allocate, S[i]) && h2_in(who_release, S[i + 1]))
             return nullptr;
 
       h2_backtrace bt(O.os == macOS ? 6 : 5);

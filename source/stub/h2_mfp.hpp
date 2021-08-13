@@ -139,32 +139,19 @@ struct h2_mfp<Class, ReturnType(Args...)> {
    static constexpr bool is_static_member_function(ReturnType (*)(Args...)) { return true; }
    static constexpr bool is_static_member_function(ReturnType (Class::*)(Args...)) { return false; }
 
-   static void* A(ReturnType (*f)(Args...))
-   {
-      return (void*)f;
-   }
-
-   union U {
-      ReturnType (Class::*f)(Args...);
-      void* p;
-   };
+   static void* A(ReturnType (*f)(Args...)) { return (void*)f; }
 
 #if defined _WIN32
    // https://github.com/microsoft/Detours
    // https://stackoverflow.com/questions/8121320/get-memory-address-of-member-function
    // https://stackoverflow.com/questions/44618230/in-the-msvc-abi-how-do-i-reliably-find-the-vtable-given-only-a-void
-   static void* A(ReturnType (Class::*f)(Args...))
-   {
-      U u{f};
-      return u.p;
-   }
+   static void* A(ReturnType (Class::*f)(Args...)) { return h2_un(f); }
 #else
 
    static void* A(ReturnType (Class::*f)(Args...))
    {
-      U u{f};
-      unsigned long long v = (unsigned long long)u.p;
-      if (!is_virtual_member_function(v)) return u.p;
+      unsigned long long v = (unsigned long long)h2_un(f);
+      if (!is_virtual_member_function(v)) return (void*)v;
       void** vtable = nullptr;
       Class* object = h2_constructible<Class>::O(alloca(sizeof(Class)));
       if (0 == (long long)object || 1 == (long long)object || 2 == (long long)object) {
@@ -185,11 +172,7 @@ struct h2_mfp<Class, ReturnType(Args...)> {
 
    static bool is_virtual_member_function(unsigned long long v)
    {
-      union {
-         void (h2_test_plus::*f)();
-         void* p;
-      } t{&h2_test_plus::test};
-      if ((unsigned long long)t.p & 1)
+      if (h2_un<unsigned long long>(&h2_test_plus::test) & 1)
          return (v & 1) && (v - 1) % sizeof(void*) == 0 && v < 1000 * sizeof(void*);
       else
          return v % sizeof(void*) == 0 && v < 100 * sizeof(void*);

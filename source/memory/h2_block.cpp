@@ -1,20 +1,63 @@
 
+struct h2_block_attributes {
+   long long limit = LLONG_MAX / 2;
+   int alignment = sizeof(void*);
+   unsigned char s_fill[32];
+   int n_fill = 0;
+   bool noleak = false;
+
+   h2_block_attributes(const char* attributes)
+   {
+      const char* p_noleak = strcasestr(attributes, "noleak");
+      if (p_noleak) noleak = true;
+
+      const char* p_limit = strcasestr(attributes, "limit");
+      if (p_limit) {
+         const char* p = strchr(p_limit, '=');
+         if (p) limit = (long long)strtod(p + 1, nullptr);
+      }
+
+      const char* p_align = strcasestr(attributes, "align");
+      if (p_align) {
+         const char* p = strchr(p_align, '=');
+         if (p) alignment = (int)strtod(p + 1, nullptr);
+      }
+
+      const char* p_fill = strcasestr(attributes, "fill");
+      if (p_fill) {
+         const char* p = strchr(p_fill, '=');
+         if (p) {
+            for (p += 1; *p && ::isspace(*p);) p++;  // strip left space
+
+            if (p[0] == '0' && ::tolower(p[1]) == 'x') {
+               n_fill = hex_to_bytes(p + 2, s_fill);
+            } else {
+               long long v = strtoll(p, (char**)NULL, 10);
+               if (v <= 0xFFU)
+                  n_fill = 1, *((unsigned char*)s_fill) = (unsigned char)v;
+               else if (v <= 0xFFFFU)
+                  n_fill = 2, *((unsigned short*)s_fill) = (unsigned short)v;
+               else if (v <= 0xFFFFFFFFU)
+                  n_fill = 4, *((unsigned int*)s_fill) = (unsigned int)v;
+               else
+                  n_fill = 8, *((unsigned long long*)s_fill) = (unsigned long long)v;
+            }
+         }
+      }
+   }
+};
+
 struct h2_block : h2_libc {
    h2_list x;
    h2_list pieces;
 
+   h2_block_attributes attributes;
    long long footprint = 0, allocated = 0;
-   long long limit;
-   size_t align;
-   unsigned char s_fill[32];
-   int n_fill;
-   bool noleak;  // ignore leak check
    const char* where;
    const char* file;
    int line;
 
-   h2_block(long long _limit, size_t _align, unsigned char _s_fill[32], int _n_fill, bool _noleak, const char* _where, const char* _file, int _line)
-     : limit(_limit), align(_align), n_fill(_n_fill), noleak(_noleak), where(_where), file(_file), line(_line) { memcpy(s_fill, _s_fill, _n_fill); }
+   h2_block(const char* _attributes, const char* _where, const char* _file, int _line) : attributes(_attributes), where(_where), file(_file), line(_line) {}
 
    h2_fail* check()
    {
@@ -27,7 +70,7 @@ struct h2_block : h2_libc {
 
       h2_leaky leaky;
       h2_list_for_each_entry (p, pieces, h2_piece, x)
-         if (!noleak && !p->free_times)
+         if (!attributes.noleak && !p->free_times)
             leaky.add(p->user_ptr, p->user_size, p->bt_allocate);
 
       fails = leaky.check(where, file, line);
@@ -44,25 +87,25 @@ struct h2_block : h2_libc {
 
    h2_piece* new_piece(const char* who, size_t size, size_t alignment, unsigned char c_fill, bool fill, h2_backtrace& bt)
    {
-      if (limit < allocated + size) return nullptr;
+      if (attributes.limit < allocated + size) return nullptr;
       allocated += size;
       if (footprint < allocated) footprint = allocated;
 
       // allocate action alignment is prior to block level alignment
-      if (alignment == 0) alignment = align;
+      if (alignment == 0) alignment = attributes.alignment;
 
       h2_piece* p = new h2_piece(size, alignment, who, bt);
 
       // allocate action fill is prior to block level fill
-      unsigned char* s_filling = s_fill;
-      int n_filling = n_fill;
+      unsigned char* s_fill = attributes.s_fill;
+      int n_fill = attributes.n_fill;
       if (fill) {
-         s_filling = &c_fill;
-         n_filling = 1;
+         s_fill = &c_fill;
+         n_fill = 1;
       }
-      if (0 < n_filling)
+      if (0 < n_fill)
          for (int i = 0, j = 0; i < size; ++i, ++j)
-            ((unsigned char*)p->user_ptr)[i] = s_filling[j % n_filling];
+            ((unsigned char*)p->user_ptr)[i] = s_fill[j % n_fill];
 
       pieces.push_back(p->x);
       return p;

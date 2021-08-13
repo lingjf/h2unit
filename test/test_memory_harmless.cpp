@@ -136,13 +136,11 @@ SUITE(harmless)
       fclose(tmpfile());
    }
 
-#if !defined WIN32
    Case(iostream)
    {
       std::ostringstream toss;
       toss << std::boolalpha << 42;
    }
-#endif
 
    Case(math.h)
    {
@@ -258,5 +256,53 @@ SUITE(harmless)
       pthread_cond_destroy(&cond);
       pthread_mutex_destroy(&mutex);
    }
+#endif
+}
+
+CASE(dbg)
+{
+#if defined _WIN32
+
+#   if defined _DEBUG
+   ::printf("_DEBUG is defined\n");
+#   else
+   ::printf("_DEBUG is undefined\n");
+#   endif
+
+#   if defined _CRTDBG_MAP_ALLOC
+   ::printf("_CRTDBG_MAP_ALLOC is defined\n");
+   ::printf("when _CRTDBG_MAP_ALLOC is defined : &free=%p &_free_dbg=%p\n", free, _free_dbg);
+   ::printf("when _CRTDBG_MAP_ALLOC is defined : &malloc=%p &_malloc_dbg=%p\n", malloc, _malloc_dbg);
+   ::printf("when _CRTDBG_MAP_ALLOC is defined : &realloc=%p &_realloc_dbg=%p\n", realloc, _realloc_dbg);
+   ::printf("when _CRTDBG_MAP_ALLOC is defined : &calloc=%p &_calloc_dbg=%p\n", calloc, _calloc_dbg);
+
+#      undef _CRTDBG_MAP_ALLOC
+   ::printf("when _CRTDBG_MAP_ALLOC is undefined : &free=%p &_free_dbg=%p\n", free, _free_dbg);
+   ::printf("when _CRTDBG_MAP_ALLOC is undefined : &malloc=%p &_malloc_dbg=%p\n", malloc, _malloc_dbg);
+   ::printf("when _CRTDBG_MAP_ALLOC is undefined : &realloc=%p &_realloc_dbg=%p\n", realloc, _realloc_dbg);
+   ::printf("when _CRTDBG_MAP_ALLOC is undefined : &calloc=%p &_calloc_dbg=%p\n", calloc, _calloc_dbg);
+
+#   else
+   ::printf("_CRTDBG_MAP_ALLOC is undefined\n");
+   ::printf("when _CRTDBG_MAP_ALLOC is undefined : &free=%p &_free_dbg=%p\n", free, _free_dbg);
+   ::printf("when _CRTDBG_MAP_ALLOC is undefined : &malloc=%p &_malloc_dbg=%p\n", malloc, _malloc_dbg);
+   ::printf("when _CRTDBG_MAP_ALLOC is undefined : &realloc=%p &_realloc_dbg=%p\n", realloc, _realloc_dbg);
+   ::printf("when _CRTDBG_MAP_ALLOC is undefined : &calloc=%p &_calloc_dbg=%p\n", calloc, _calloc_dbg);
+
+#      define _CRTDBG_MAP_ALLOC
+   ::printf("when _CRTDBG_MAP_ALLOC is defined : &free=%p &_free_dbg=%p\n", free, _free_dbg);
+   ::printf("when _CRTDBG_MAP_ALLOC is defined : &malloc=%p &_malloc_dbg=%p\n", malloc, _malloc_dbg);
+   ::printf("when _CRTDBG_MAP_ALLOC is defined : &realloc=%p &_realloc_dbg=%p\n", realloc, _realloc_dbg);
+   ::printf("when _CRTDBG_MAP_ALLOC is defined : &calloc=%p &_calloc_dbg=%p\n", calloc, _calloc_dbg);
+#   endif
+
+#else
+
+#   if defined DEBUG
+   ::printf("DEBUG is defined\n");
+#   else
+   ::printf("DEBUG is undefined\n");
+#   endif
+
 #endif
 }

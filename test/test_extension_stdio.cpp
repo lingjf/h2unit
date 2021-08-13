@@ -46,7 +46,6 @@ SUITE(stdio)
       }
    }
 
-#if !defined WIN32
    Case(std::cout)
    {
       COUT("std::cout! 42")
@@ -70,7 +69,6 @@ SUITE(stdio)
          std::clog << "std::clog! " << 42;
       }
    }
-#endif
 
    Case(fprintf)
    {

@@ -1,5 +1,50 @@
 #include "../source/h2_unit.cpp"
 
+SUITE(block attributes)
+{
+   Case("limit=1000, fill=1, align=3")
+   {
+      h2::h2_block_attributes a("limit=1000, fill=1, align=3,noleak");
+
+      OK(1000, a.limit);
+      OK(3, a.alignment);
+      OK(1, a.n_fill);
+      OK(Me("\01", 1), a.s_fill);
+      OK(a.noleak);
+   }
+
+   Case("limit=0x1000, fill=0x55")
+   {
+      h2::h2_block_attributes a("limit =0x1000, fill = 0x55");
+
+      OK(0x1000, a.limit);
+      OK(sizeof(void*), a.alignment);
+      OK(1, a.n_fill);
+      OK(Me("\x55", 1), a.s_fill);
+      OK(!a.noleak);
+   }
+
+   Case("fill=0x5566")
+   {
+      h2::h2_block_attributes a("fill=0x5566");
+
+      OK(Ge(0xFFFFFFFFU), a.limit);
+      OK(sizeof(void*), a.alignment);
+      OK(2, a.n_fill);
+      OK(Me("\x55\x66", 2), a.s_fill);
+      OK(!a.noleak);
+   }
+
+   Case("fill=60000")
+   {
+      h2::h2_block_attributes a("fill=60000");
+
+      OK(2, a.n_fill);
+      OK(Me("\x60\xEA", 2), a.s_fill);
+      OK(!a.noleak);
+   }
+}
+
 SUITE(BLOCK)
 {
    void *c1, *c2, *c3, *c4;

@@ -1,27 +1,4 @@
 
-#if defined _WIN32 || defined __arm__ || defined __arm64__ || defined __aarch64__
-struct h2_oss {
-   h2_string s;
-   h2_string& str() { return s; }
-   template <typename T>
-   h2_oss& operator<<(T a)
-   {
-      char b[1024 * 4];
-      h2_memory::restores();
-      {
-         std::ostringstream oss;
-         oss << std::boolalpha << a;
-         ::snprintf(b, sizeof(b), "%s", oss.str().c_str());
-      }
-      h2_memory::overrides();
-      s += b;
-      return *this;
-   }
-};
-#else
-using h2_oss = std::basic_ostringstream<char, std::char_traits<char>, h2_allocator<char>>;
-#endif
-
 template <typename T, typename = void>
 struct h2_stringify_impl {
    static h2_row print(T a, bool represent = false) { return "?"; }
@@ -76,7 +53,7 @@ struct h2_stringify_impl<T, typename std::enable_if<h2_is_ostreamable<T>::value>
    template <typename U>
    static h2_row ostream_print(const U& a, bool represent)
    {
-      h2_oss oss;
+      h2_ostringstream oss;
       oss << std::boolalpha << const_cast<U&>(a);
       if (represent) {
          const char* quote = nullptr;
@@ -137,10 +114,7 @@ struct h2_stringify_impl<std::nullptr_t> {
 };
 
 template <typename T>
-inline h2_row h2_stringify(const T& a, bool represent = false)
-{
-   return h2_stringify_impl<T>::print(a, represent);
-}
+inline h2_row h2_stringify(const T& a, bool represent = false) { return h2_stringify_impl<T>::print(a, represent); }
 
 template <typename T>
 inline h2_row h2_stringify(T a, size_t n, bool represent)

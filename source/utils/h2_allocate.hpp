@@ -39,3 +39,5 @@ inline bool operator!=(const h2_allocator<T>&, const h2_allocator<T>&) { return 
 
 template <typename T>
 using h2_vector = std::vector<T, h2_allocator<T>>;
+
+using h2_ostringstream = std::basic_ostringstream<char, std::char_traits<char>, h2_allocator<char>>;

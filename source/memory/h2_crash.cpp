@@ -14,7 +14,7 @@ struct h2_crash {
       return EXCEPTION_EXECUTE_HANDLER;
    }
 
-   static void install_segment_fault_handler()
+   static void install()
    {
       SetUnhandledExceptionFilter((LPTOP_LEVEL_EXCEPTION_FILTER)segment_fault_handler);
    }
@@ -29,11 +29,11 @@ struct h2_crash {
             return;
          }
       }
-      h2_debug("");
+      h2_debug(0, "");
       abort();
    }
 
-   static void install_segment_fault_handler()
+   static void install()
    {
       struct sigaction action;
       action.sa_sigaction = segment_fault_handler;
