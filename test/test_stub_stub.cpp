@@ -94,17 +94,11 @@ SUITE(stub member function)
       STUB(C_OverrideClass, normal_f1, const char*, (int a), C_normal_f1_fake);
       OK("-C.normal_f1", c.normal_f1(1));
    }
+}
 
+SUITE(stub virtual member function)
+{
 #if !defined WIN32
-   Case(myself virtual member function)
-   {
-      B_DerivedClass b;
-      OK("B.virtual_f2", b.virtual_f2(1, 2));
-
-      STUB(B_DerivedClass, virtual_f2, const char*, (int a, int b), B_virtual_f2_fake);
-      OK("-B.virtual_f2", b.virtual_f2(1, 2));
-   }
-
    Case(abstract virtual member function)
    {
       B_DerivedClass b;
@@ -112,6 +106,16 @@ SUITE(stub member function)
 
       STUB(A_AbstractClass, virtual_f1, const char*, (int a), A_virtual_f1_fake);
       OK("-A.virtual_f1", b.virtual_f1(1));
+   }
+#endif
+
+   Case(myself virtual member function)
+   {
+      B_DerivedClass b;
+      OK("B.virtual_f2", b.virtual_f2(1, 2));
+
+      STUB(B_DerivedClass, virtual_f2, const char*, (int a, int b), B_virtual_f2_fake);
+      OK("-B.virtual_f2", b.virtual_f2(1, 2));
    }
 
    Case(derived virtual member function)
@@ -140,7 +144,6 @@ SUITE(stub member function)
       STUB(test_ns::E_NamespaceClass, virtual_f1, const char*, (int a), E_virtual_f1_fake);
       OK("-E.virtual_f1", e.virtual_f1(1));
    }
-#endif
 }
 
 SUITE(stub template function)
@@ -178,10 +181,9 @@ SUITE(stub template class)
       OK("-F.static_f1", f.static_f1(0));
       STUB(F_TemplateClass<int>, normal_f1<int>, const char*, (int a), F_normal_f1_fake);
       OK("-F.normal_f1", f.normal_f1(0));
-#if !defined WIN32
+
       STUB(F_TemplateClass<int>, virtual_f1, const char*, (int a), F_virtual_f1_fake);
       OK("-F.virtual_f1", f.virtual_f1(0));
-#endif
    }
 
    Case(member function 2 typename)
@@ -195,7 +197,7 @@ SUITE(stub template class)
       OK("-G.static_f2", (g.static_f2<int, int>(0, 0)));
       STUB((G_TemplateClass<int, int>), (normal_f2<int, int>), const char*, (int a, int b), G_normal_f2_fake);
       OK("-G.normal_f2", (g.normal_f2<int, int>(0, 0)));
-#if !defined WIN32
+#if !defined WIN32  // Windows return Object suck
       STUB((G_TemplateClass<int, int>), (virtual_f2<int, int>), (std::pair<const char*, const char*>), (int a, int b), G_virtual_f2_fake);
       OK(Pair("-G", "virtual_f2"), (g.virtual_f2<int, int>(0, 0)));
 #endif
@@ -203,10 +205,8 @@ SUITE(stub template class)
       OK("G.static_f2", (g.static_f2<int, int>(0, 0)));
       UNSTUB((G_TemplateClass<int, int>), (normal_f2<int, int>), const char*, (int a, int b));
       OK("G.normal_f2", (g.normal_f2<int, int>(0, 0)));
-#if !defined WIN32
       UNSTUB((G_TemplateClass<int, int>), (virtual_f2<int, int>), (std::pair<const char*, const char*>), (int a, int b));
       OK(Pair("G", "virtual_f2"), (g.virtual_f2<int, int>(0, 0)));
-#endif
    }
 }
 

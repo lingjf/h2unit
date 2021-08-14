@@ -235,13 +235,13 @@ SUITE(mock member function)
       OK("mocked B.normal_f2", b.normal_f2(1, 2));
    }
 
-#if !defined WIN32
    Case(virtual member function)
    {
       MOCK(B_DerivedClass, virtual_f2, const char*, (int, int)).Once(1, 2).Return("mocked B.virtual_f2");
       OK("mocked B.virtual_f2", b.virtual_f2(1, 2));
    }
 
+#if !defined WIN32
    Case(no default constructor)
    {
       MOCK(D_NoConstructorClass, virtual_f3, const char*, (int, int, int)).Once().Return("mocked D.virtual_f3");
@@ -289,10 +289,8 @@ SUITE(mock template member function)
       OK("MOCK", f.static_f1(0));
       MOCK(F_TemplateClass<int>, normal_f1<int>, const char*, (int a)).Return("MOCK");
       OK("MOCK", f.normal_f1(0));
-#if !defined WIN32
       MOCK(F_TemplateClass<int>, virtual_f1, const char*, (int a)).Return("MOCK");
       OK("MOCK", f.virtual_f1(0));
-#endif
    }
 
    Case(member function 2 typename)

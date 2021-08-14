@@ -21,7 +21,6 @@ SUITE(UNMOCK)
       OK("B.normal_f2", b.normal_f2(1, 2));
    }
 
-#if !defined WIN32
    Case(template class member function)
    {
       F_TemplateClass<int> f;
@@ -30,7 +29,6 @@ SUITE(UNMOCK)
       UNMOCK(F_TemplateClass<int>, virtual_f1, const char*, (int a));
       OK("F.virtual_f1", f.virtual_f1(0));
    }
-#endif
 
    Case(function name)
    {

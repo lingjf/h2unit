@@ -80,6 +80,6 @@ h2_inline void h2_exempt::add_by_name(const char* fn)
 
 h2_inline void h2_exempt::add_by_fp(void* fp)
 {
-   I().fps[I().nfp++] = follow_jmp(fp);
+   I().fps[I().nfp++] = h2_load::follow_jmp(fp);
    I().fps[I().nfp] = nullptr;
 }

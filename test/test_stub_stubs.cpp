@@ -25,7 +25,6 @@ SUITE(STUBS)
       OK("A.normal_f1", b.normal_f1(1));
    }
 
-#if !defined WIN32
    Case(lambdas virtual member function)
    {
       B_DerivedClass b;
@@ -38,7 +37,6 @@ SUITE(STUBS)
       UNSTUB(B_DerivedClass, virtual_f2, const char*, (int a, int b));
       OK("A.virtual_f1", b.virtual_f1(1));
    }
-#endif
 
    Case(lambdas static member function)
    {

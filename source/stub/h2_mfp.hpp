@@ -1,13 +1,10 @@
 
 /* clang-format off */
-#if !defined _WIN32
+template <typename T> static void h2_destructible(...) {}
+template <typename T> static auto h2_destructible(T* o) -> typename std::enable_if<std::is_destructible<T>::value, void>::type { o->~T(); }
 
-template <typename T, int I> struct h2_constructible_error {
-   static T* O(void* m) { return static_cast<T*>(m = (void*)I); }
-};
-template <typename T> struct h2_constructible0 : std::true_type {
-   static T* O(void* m) { return new (m) T(); }
-};
+template <typename T, int I> struct h2_constructible_error { static T* O(void* m) { return static_cast<T*>(m = (void*)I); } };
+template <typename T> struct h2_constructible0 : std::true_type { static T* O(void* m) { return new (m) T(); } };
 
 template <typename, typename> struct h2_constructible1_impl : std::false_type {};
 template <typename, typename> struct h2_constructible2_impl : std::false_type {};
@@ -19,64 +16,27 @@ template <typename, typename> struct h2_constructible7_impl : std::false_type {}
 template <typename, typename> struct h2_constructible8_impl : std::false_type {};
 template <typename, typename> struct h2_constructible9_impl : std::false_type {};
 
-#if (defined(__GNUC__) && __GNUC__ >= 5) || defined __clang__
-
-template <typename T>
-struct h2_constructible1_impl<h2_void_t<decltype(T({}))>, T> : std::true_type {
-   static T* O(void* m) { return new (m) T({}); }
-};
-
-template <typename T>
-struct h2_constructible2_impl<h2_void_t<decltype(T({}, {}))>, T> : std::true_type {
-   static T* O(void* m) { return new (m) T({}, {}); }
-};
-
-template <typename T>
-struct h2_constructible3_impl<h2_void_t<decltype(T({}, {}, {}))>, T> : std::true_type {
-   static T* O(void* m) { return new (m) T({}, {}, {}); }
-};
-
-template <typename T>
-struct h2_constructible4_impl<h2_void_t<decltype(T({}, {}, {}, {}))>, T> : std::true_type {
-   static T* O(void* m) { return new (m) T({}, {}, {}, {}); }
-};
-
-template <typename T>
-struct h2_constructible5_impl<h2_void_t<decltype(T({}, {}, {}, {}, {}))>, T> : std::true_type {
-   static T* O(void* m) { return new (m) T({}, {}, {}, {}, {}); }
-};
-
-template <typename T>
-struct h2_constructible6_impl<h2_void_t<decltype(T({}, {}, {}, {}, {}, {}))>, T> : std::true_type {
-   static T* O(void* m) { return new (m) T({}, {}, {}, {}, {}, {}); }
-};
-
-template <typename T>
-struct h2_constructible7_impl<h2_void_t<decltype(T({}, {}, {}, {}, {}, {}, {}))>, T> : std::true_type {
-   static T* O(void* m) { return new (m) T({}, {}, {}, {}, {}, {}, {}); }
-};
-
-template <typename T>
-struct h2_constructible8_impl<h2_void_t<decltype(T({}, {}, {}, {}, {}, {}, {}, {}))>, T> : std::true_type {
-   static T* O(void* m) { return new (m) T({}, {}, {}, {}, {}, {}, {}, {}); }
-};
-
-template <typename T>
-struct h2_constructible9_impl<h2_void_t<decltype(T({}, {}, {}, {}, {}, {}, {}, {}, {}))>, T> : std::true_type {
-   static T* O(void* m) { return new (m) T({}, {}, {}, {}, {}, {}, {}, {}, {}); }
-};
-
+#if !(defined(__GNUC__) && __GNUC__ < 5 && !defined(__clang__)) // not gcc4
+template <typename T> struct h2_constructible1_impl<T, decltype(T({}))> : std::true_type { static T* O(void* m) { return new (m) T({}); } };
+template <typename T> struct h2_constructible2_impl<T, decltype(T({}, {}))> : std::true_type { static T* O(void* m) { return new (m) T({}, {}); } };
+template <typename T> struct h2_constructible3_impl<T, decltype(T({}, {}, {}))> : std::true_type { static T* O(void* m) { return new (m) T({}, {}, {}); } };
+template <typename T> struct h2_constructible4_impl<T, decltype(T({}, {}, {}, {}))> : std::true_type { static T* O(void* m) { return new (m) T({}, {}, {}, {}); } };
+template <typename T> struct h2_constructible5_impl<T, decltype(T({}, {}, {}, {}, {}))> : std::true_type { static T* O(void* m) { return new (m) T({}, {}, {}, {}, {}); } };
+template <typename T> struct h2_constructible6_impl<T, decltype(T({}, {}, {}, {}, {}, {}))> : std::true_type { static T* O(void* m) { return new (m) T({}, {}, {}, {}, {}, {}); } };
+template <typename T> struct h2_constructible7_impl<T, decltype(T({}, {}, {}, {}, {}, {}, {}))> : std::true_type { static T* O(void* m) { return new (m) T({}, {}, {}, {}, {}, {}, {}); } };
+template <typename T> struct h2_constructible8_impl<T, decltype(T({}, {}, {}, {}, {}, {}, {}, {}))> : std::true_type { static T* O(void* m) { return new (m) T({}, {}, {}, {}, {}, {}, {}, {}); } };
+template <typename T> struct h2_constructible9_impl<T, decltype(T({}, {}, {}, {}, {}, {}, {}, {}, {}))> : std::true_type { static T* O(void* m) { return new (m) T({}, {}, {}, {}, {}, {}, {}, {}, {}); } };
 #endif
 
-template <typename T> using h2_constructible1 = h2_constructible1_impl<h2_void_t<>, T>;
-template <typename T> using h2_constructible2 = h2_constructible2_impl<h2_void_t<>, T>;
-template <typename T> using h2_constructible3 = h2_constructible3_impl<h2_void_t<>, T>;
-template <typename T> using h2_constructible4 = h2_constructible4_impl<h2_void_t<>, T>;
-template <typename T> using h2_constructible5 = h2_constructible5_impl<h2_void_t<>, T>;
-template <typename T> using h2_constructible6 = h2_constructible6_impl<h2_void_t<>, T>;
-template <typename T> using h2_constructible7 = h2_constructible7_impl<h2_void_t<>, T>;
-template <typename T> using h2_constructible8 = h2_constructible8_impl<h2_void_t<>, T>;
-template <typename T> using h2_constructible9 = h2_constructible9_impl<h2_void_t<>, T>;
+template <typename T> using h2_constructible1 = h2_constructible1_impl<T, T>;
+template <typename T> using h2_constructible2 = h2_constructible2_impl<T, T>;
+template <typename T> using h2_constructible3 = h2_constructible3_impl<T, T>;
+template <typename T> using h2_constructible4 = h2_constructible4_impl<T, T>;
+template <typename T> using h2_constructible5 = h2_constructible5_impl<T, T>;
+template <typename T> using h2_constructible6 = h2_constructible6_impl<T, T>;
+template <typename T> using h2_constructible7 = h2_constructible7_impl<T, T>;
+template <typename T> using h2_constructible8 = h2_constructible8_impl<T, T>;
+template <typename T> using h2_constructible9 = h2_constructible9_impl<T, T>;
 
 template <typename T>
 using h2_constructible = 
@@ -115,21 +75,7 @@ using h2_constructible =
       >::type
    >::type;
 
-#endif
 /* clang-format on */
-
-//  https://itanium-cxx-abi.github.io/cxx-abi/
-
-//  g++ -std=c++11 -fdump-class-hierarchy
-
-//  &Class::Method has separate representations for non-virtual and virtual functions.
-//  For non-virtual functions, it is the address of the function.
-//  For virtual functions, it is 1 plus the virtual table offset (in bytes) of the function.
-//  The least-significant bit therefore discriminates between virtual and non-virtual functions.
-
-struct h2_test_plus {
-   virtual void test() {}
-};
 
 template <typename Class, typename Signature>
 struct h2_mfp;
@@ -143,39 +89,82 @@ struct h2_mfp<Class, ReturnType(Args...)> {
 
 #if defined _WIN32
    // https://github.com/microsoft/Detours
-   // https://stackoverflow.com/questions/8121320/get-memory-address-of-member-function
-   // https://stackoverflow.com/questions/44618230/in-the-msvc-abi-how-do-i-reliably-find-the-vtable-given-only-a-void
-   static void* A(ReturnType (Class::*f)(Args...)) { return h2_un(f); }
-#else
-
+   // &C::f1 ILT+165(??_9C$BAAA) 00007FF7987210AA
+   // &C::f2 ILT+410(??_9C$B7AA) 00007FF79872119F
+   // follow_jmp &C::f1 C::`vcall'{0}' 00007FF798721F2C
+   // follow_jmp &C::f2 C::`vcall'{8}' 00007FF798721F24
    static void* A(ReturnType (Class::*f)(Args...))
    {
-      unsigned long long v = (unsigned long long)h2_un(f);
-      if (!is_virtual_member_function(v)) return (void*)v;
-      void** vtable = nullptr;
+      long offset;
+      if (!is_virtual_member_function(f, offset)) return h2_un<void*>(f);
+
       Class* object = h2_constructible<Class>::O(alloca(sizeof(Class)));
-      if (0 == (long long)object || 1 == (long long)object || 2 == (long long)object) {
-         char vtable_symbol[1024];
-         sprintf(vtable_symbol, "_ZTV%s", typeid(Class).name());  // mangle for "vtable for Class"
-         unsigned long long relative_vtable = h2_nm::get_mangle(vtable_symbol);
-         if (relative_vtable) {
-            vtable = (void**)h2_load::vtable_to_ptr(relative_vtable);
-         } else {
-            h2_color::prints("yellow", "\nDon't find vtable for %s\n", vtable_symbol);
-         }
-      } else {
-         vtable = *(void***)object;
+      if (0 == (unsigned long long)object || 1 == (unsigned long long)object || 2 == (unsigned long long)object) {
+         h2_color::prints("yellow", "\nDon't find vtable for %s, try:\nSTUB/MOCK(Object, Class, Method, ...)\n", typeid(Class).name());
+         return nullptr;
       }
-      if (!vtable) return nullptr;
-      return vtable[(v & ~1ULL) / sizeof(void*)];
+      void* t = get_virtual_member_function(object, offset);
+      h2_destructible<Class>(object);
+      return t;
    }
 
-   static bool is_virtual_member_function(unsigned long long v)
+   static void* get_virtual_member_function(Class* object, long offset)
    {
+      void** vtable = *(void***)object;
+      return vtable[offset / sizeof(void*)];
+   }
+   static bool is_virtual_member_function(ReturnType (Class::*f)(Args...), long& offset)
+   {
+      h2_symbol* symbol = h2_nm::get_by_addr((unsigned long long)h2_load::follow_jmp(h2_un<void*>(f)));
+      if (!symbol) return false;
+      char* p = strstr(symbol->name, "::`vcall'{");
+      if (!p) return false;  // not virtual member function
+      offset = strtol(p + 10, nullptr, 10);
+      return true;
+   }
+#else
+   //  https://itanium-cxx-abi.github.io/cxx-abi/
+   //  &Class::Method has separate representations for non-virtual and virtual functions.
+   //  For non-virtual functions, it is the address of the function.
+   //  For virtual functions, it is 1 plus the virtual table offset (in bytes) of the function.
+   //  The least-significant bit therefore discriminates between virtual and non-virtual functions.
+   static void* A(ReturnType (Class::*f)(Args...))
+   {
+      if (!is_virtual_member_function(f)) return h2_un<void*>(f);
+      Class* object = h2_constructible<Class>::O(alloca(sizeof(Class)));
+      if (2 < (unsigned long long)object) {
+         void* t = get_virtual_member_function(object, f);
+         h2_destructible<Class>(object);
+         return t;
+      }
+      char vtable_symbol[1024];
+      sprintf(vtable_symbol, "_ZTV%s", typeid(Class).name());  // mangle for "vtable for Class"
+      unsigned long long relative_vtable = h2_nm::get_mangle(vtable_symbol);
+      if (!relative_vtable) {
+         h2_color::prints("yellow", "\nDon't find vtable for %s, try:\nSTUB/MOCK(Object, Class, Method, ...)\n", typeid(Class).name());
+         return nullptr;
+      }
+      return get_virtual_member_function((void**)h2_load::vtable_to_ptr(relative_vtable), f);
+   }
+
+   static void* get_virtual_member_function(Class* object, ReturnType (Class::*f)(Args...))
+   {
+      return get_virtual_member_function(*(void***)object, f);
+   }
+   static void* get_virtual_member_function(void** vtable, ReturnType (Class::*f)(Args...))
+   {
+      return vtable[(h2_un<unsigned long long>(f) & ~1ULL) / sizeof(void*)];
+   }
+   static bool is_virtual_member_function(ReturnType (Class::*f)(Args...))
+   {
+      struct h2_test_plus {
+         virtual void test() {}
+      };
+
       if (h2_un<unsigned long long>(&h2_test_plus::test) & 1)
-         return (v & 1) && (v - 1) % sizeof(void*) == 0 && v < 1000 * sizeof(void*);
+         return (h2_un<unsigned long long>(f) & 1) && (h2_un<unsigned long long>(f) - 1) % sizeof(void*) == 0 && h2_un<unsigned long long>(f) < 1000 * sizeof(void*);
       else
-         return v % sizeof(void*) == 0 && v < 100 * sizeof(void*);
+         return h2_un<unsigned long long>(f) % sizeof(void*) == 0 && h2_un<unsigned long long>(f) < 100 * sizeof(void*);
    }
 #endif
 };

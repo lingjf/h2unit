@@ -38,7 +38,7 @@ struct h2_sources {
 
       for (int i = 0; i < 1; ++i) {  // follow PLT(Linux) or ILT (Incremental Link Table /Windows)
          if (__find(fp)) break;
-         void* next = follow_jmp(fp, 1);
+         void* next = h2_load::follow_jmp(fp, 1);
          if (next == fp) break;
          fp = next;
       }

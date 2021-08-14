@@ -1,5 +1,5 @@
 ﻿
-/* v5.12 2021-08-14 21:00:51 */
+/* v5.12 2021-08-15 00:21:54 */
 /* https://github.com/lingjf/h2unit */
 /* Apache Licence 2.0 */
 
@@ -1170,7 +1170,7 @@ static inline unsigned char* follow_JMP32ABS(unsigned char* target)
    return reinterpret_cast<unsigned char*>(*new_target_p);
 }
 
-static inline void* follow_jmp(void* fp, int n = 32)
+h2_inline void* h2_load::follow_jmp(void* fp, int n)
 {
    unsigned char* p = (unsigned char*)fp;
    while (n--) {
@@ -1205,7 +1205,7 @@ static inline unsigned long fetch_opcode(void* fp, int i = 0)
    return *(unsigned long*)(((unsigned char*)fp) + i * 4);
 }
 
-static inline void* follow_jmp(void* fp, int n = 32)
+h2_inline void* h2_load::follow_jmp(void* fp, int n)
 {
    while (n--) {
       // (gdb) disassemble /r printf
@@ -3704,7 +3704,7 @@ h2_inline void h2_exempt::add_by_name(const char* fn)
 
 h2_inline void h2_exempt::add_by_fp(void* fp)
 {
-   I().fps[I().nfp++] = follow_jmp(fp);
+   I().fps[I().nfp++] = h2_load::follow_jmp(fp);
    I().fps[I().nfp] = nullptr;
 }
 
@@ -4011,7 +4011,7 @@ struct h2_sources {
 
       for (int i = 0; i < 1; ++i) {  // follow PLT(Linux) or ILT (Incremental Link Table /Windows)
          if (__find(fp)) break;
-         void* next = follow_jmp(fp, 1);
+         void* next = h2_load::follow_jmp(fp, 1);
          if (next == fp) break;
          fp = next;
       }

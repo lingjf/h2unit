@@ -7,4 +7,5 @@ struct h2_load {
    static unsigned long long ptr_to_addr(void* ptr);
    static void* vtable_to_ptr(unsigned long long addr);
    static void* get_by_fn(const char* fn);
+   static void* follow_jmp(void* fp, int n = 32);
 };

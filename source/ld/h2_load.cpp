@@ -90,7 +90,7 @@ static inline unsigned char* follow_JMP32ABS(unsigned char* target)
    return reinterpret_cast<unsigned char*>(*new_target_p);
 }
 
-static inline void* follow_jmp(void* fp, int n = 32)
+h2_inline void* h2_load::follow_jmp(void* fp, int n)
 {
    unsigned char* p = (unsigned char*)fp;
    while (n--) {
@@ -125,7 +125,7 @@ static inline unsigned long fetch_opcode(void* fp, int i = 0)
    return *(unsigned long*)(((unsigned char*)fp) + i * 4);
 }
 
-static inline void* follow_jmp(void* fp, int n = 32)
+h2_inline void* h2_load::follow_jmp(void* fp, int n)
 {
    while (n--) {
       // (gdb) disassemble /r printf

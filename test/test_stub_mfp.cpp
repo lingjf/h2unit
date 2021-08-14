@@ -100,13 +100,13 @@ SUITE(mfp for normal member function)
    }
 }
 
-#if !defined WIN32
 SUITE(mfp for virtual member function)
 {
    B_DerivedClass b;
    C_OverrideClass c;
    D_NoConstructorClass d(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
 
+#if !defined _WIN32
    Case(abstract class)
    {
       void* A_AbstractClass__virtual_f1 = h2::h2_mfp<A_AbstractClass, const char*(int)>::A(&A_AbstractClass::virtual_f1);
@@ -114,6 +114,7 @@ SUITE(mfp for virtual member function)
       typedef const char* (*A_AbstractClass__virtual_f1_Type)(A_AbstractClass*, int);
       OK("A.virtual_f1", ((A_AbstractClass__virtual_f1_Type)A_AbstractClass__virtual_f1)(nullptr, 1));
    }
+#endif
 
    Case(derived class)
    {
@@ -141,6 +142,7 @@ SUITE(mfp for virtual member function)
       OK("C.virtual_f2", ((C_OverrideClass__virtual_f2_Type)C_OverrideClass__virtual_f2)(&c, 1, 2));
    }
 
+#if !defined _WIN32
    Case(no default constructor class)
    {
       void* D_NoConstructorClass__virtual_f1 = h2::h2_mfp<D_NoConstructorClass, const char*(int)>::A(&D_NoConstructorClass::virtual_f1);
@@ -158,5 +160,5 @@ SUITE(mfp for virtual member function)
       typedef const char* (*D_NoConstructorClass__virtual_f3_Type)(D_NoConstructorClass*, int, int, int);
       OK("D.virtual_f3", ((D_NoConstructorClass__virtual_f3_Type)D_NoConstructorClass__virtual_f3)(&d, 1, 2, 3));
    }
-}
 #endif
+}
