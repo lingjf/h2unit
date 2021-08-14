@@ -17,13 +17,11 @@ void throw_a_integer()
    throw 42;
 }
 
-#ifndef __APPLE__
-
 SUITE(exception)
 {
    Case(integer)
    {
-      throw_a_integer();
+      throw 42;
    }
 
    Case(catched)
@@ -36,8 +34,6 @@ CASE(exception uncaught)
 {
    throw_a_integer();
 }
-
-#endif
 
 CASE(exception)
 {

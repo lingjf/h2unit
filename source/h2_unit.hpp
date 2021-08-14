@@ -74,7 +74,6 @@ namespace h2 {
 #include "ld/h2_backtrace.hpp"         // row
 #include "other/h2_option.hpp"         //
 #include "other/h2_layout.hpp"         //
-#include "other/h2_debug.hpp"          // option
 #include "other/h2_failure.hpp"        //
 #include "json/h2_json.hpp"            //
 #include "matcher/h2_matches.hpp"      // failure
@@ -102,6 +101,7 @@ namespace h2 {
 #include "mock/h2_mock.hpp"            //
 #include "memory/h2_exempt.hpp"        // -
 #include "memory/h2_memory.hpp"        // failure, fp
+#include "exception/h2_debug.hpp"     // option
 #include "extension/h2_dns.hpp"        //
 #include "extension/h2_socket.hpp"     // stub, failure, matcher
 #include "extension/h2_stdio.hpp"      //

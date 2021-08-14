@@ -78,10 +78,13 @@ struct h2_piece : h2_libc {
 #if defined _WIN32
    void violate_forbidden(void* ptr, const char* type)
    {
+      if (!violate_times++) { /* 只记录第一犯罪现场 */
+         violate_backtrace = h2_backtrace::dump(3);
+         violate_ptr = ptr;
+         violate_action = type;
+         violate_after_free = 0 < free_times;
+      }
       set_forbidden(readable | writable);
-      violate_backtrace = h2_backtrace::dump(3);
-      violate_ptr = ptr;
-      violate_action = type;
    }
 #else
    void violate_forbidden(void* ptr)

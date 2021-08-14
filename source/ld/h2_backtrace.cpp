@@ -141,7 +141,7 @@ h2_inline void h2_backtrace::print(int pad) const
    h2_vector<h2_string> stacks;
    print(stacks);
    h2_rows rows;
-   for (auto& c : stacks) rows.push_back(c.startswith("h2::") ? gray(c) : h2_row(c));
+   for (auto& c : stacks) rows.push_back(c.startswith("h2::") || c.contains(": h2::") ? gray(c) : h2_row(c));
    rows.sequence(pad);
    h2_color::printl(rows);
 }

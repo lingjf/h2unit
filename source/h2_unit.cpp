@@ -105,10 +105,11 @@ namespace h2 {
 #elif defined _WIN32
 #   include "memory/h2_override_windows.cpp"
 #endif
-#include "memory/h2_crash.cpp"
 #include "memory/h2_memory.cpp"
 #include "memory/h2_exempt.cpp"
 
+#include "exception/h2_debug.cpp"
+#include "exception/h2_crash.cpp"
 #include "exception/h2_exception.cpp"
 
 #include "stub/h2_e9.cpp"
@@ -131,7 +132,6 @@ namespace h2 {
 
 #include "assert/h2_assert.cpp"
 
-#include "other/h2_debug.cpp"
 #include "other/h2_failure.cpp"
 #include "other/h2_report.cpp"
 

@@ -1,5 +1,5 @@
 ﻿
-/* v5.12 2021-08-14 19:55:19 */
+/* v5.12 2021-08-14 21:00:51 */
 /* https://github.com/lingjf/h2unit */
 /* Apache Licence 2.0 */
 
@@ -1048,20 +1048,6 @@ struct h2_layout {
    static h2_rows unified(const h2_row& up_row, const h2_row& down_row, const char* up_title, const char* down_title, unsigned width);
    static h2_rows seperate(const h2_row& up_row, const h2_row& down_row, const char* up_title, const char* down_title, unsigned width);
 };
-// source/other/h2_debug.hpp
-
-struct h2_debugger {
-   static void trap();
-};
-
-#define h2_debug(shift, ...)                                                        \
-   do {                                                                             \
-      if (!O.debug) {                                                               \
-         h2_color::prints("", __VA_ARGS__);                                         \
-         h2_color::prints("", " %s : %d = %s\n", __FILE__, __LINE__, __FUNCTION__); \
-         h2_backtrace::dump(shift).print(3);                                        \
-      }                                                                             \
-   } while (0)
 // source/other/h2_failure.hpp
 
 struct h2_fail : h2_libc {
@@ -3209,6 +3195,20 @@ template <>
 inline void h2_unmem(const char* f) { h2_exempt::add_by_name(f); }
 
 #define H2UNMEM(f) h2::h2_unmem(f)
+// source/exception/h2_debug.hpp
+
+struct h2_debugger {
+   static void trap();
+};
+
+#define h2_debug(shift, ...)                                                        \
+   do {                                                                             \
+      if (!O.debug) {                                                               \
+         h2_color::prints("", __VA_ARGS__);                                         \
+         h2_color::prints("", " %s : %d = %s\n", __FILE__, __LINE__, __FUNCTION__); \
+         h2_backtrace::dump(shift).print(3);                                        \
+      }                                                                             \
+   } while (0)
 // source/extension/h2_dns.hpp
 
 struct h2_dns {

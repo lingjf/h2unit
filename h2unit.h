@@ -1,5 +1,5 @@
 ﻿
-/* v5.12 2021-08-14 19:55:19 */
+/* v5.12 2021-08-14 21:00:51 */
 /* https://github.com/lingjf/h2unit */
 /* Apache Licence 2.0 */
 
@@ -1049,20 +1049,6 @@ struct h2_layout {
    static h2_rows unified(const h2_row& up_row, const h2_row& down_row, const char* up_title, const char* down_title, unsigned width);
    static h2_rows seperate(const h2_row& up_row, const h2_row& down_row, const char* up_title, const char* down_title, unsigned width);
 };
-// source/other/h2_debug.hpp
-
-struct h2_debugger {
-   static void trap();
-};
-
-#define h2_debug(shift, ...)                                                        \
-   do {                                                                             \
-      if (!O.debug) {                                                               \
-         h2_color::prints("", __VA_ARGS__);                                         \
-         h2_color::prints("", " %s : %d = %s\n", __FILE__, __LINE__, __FUNCTION__); \
-         h2_backtrace::dump(shift).print(3);                                        \
-      }                                                                             \
-   } while (0)
 // source/other/h2_failure.hpp
 
 struct h2_fail : h2_libc {
@@ -3210,6 +3196,20 @@ template <>
 inline void h2_unmem(const char* f) { h2_exempt::add_by_name(f); }
 
 #define H2UNMEM(f) h2::h2_unmem(f)
+// source/exception/h2_debug.hpp
+
+struct h2_debugger {
+   static void trap();
+};
+
+#define h2_debug(shift, ...)                                                        \
+   do {                                                                             \
+      if (!O.debug) {                                                               \
+         h2_color::prints("", __VA_ARGS__);                                         \
+         h2_color::prints("", " %s : %d = %s\n", __FILE__, __LINE__, __FUNCTION__); \
+         h2_backtrace::dump(shift).print(3);                                        \
+      }                                                                             \
+   } while (0)
 // source/extension/h2_dns.hpp
 
 struct h2_dns {
@@ -5332,7 +5332,7 @@ h2_inline void h2_backtrace::print(int pad) const
    h2_vector<h2_string> stacks;
    print(stacks);
    h2_rows rows;
-   for (auto& c : stacks) rows.push_back(c.startswith("h2::") ? gray(c) : h2_row(c));
+   for (auto& c : stacks) rows.push_back(c.startswith("h2::") || c.contains(": h2::") ? gray(c) : h2_row(c));
    rows.sequence(pad);
    h2_color::printl(rows);
 }
@@ -6854,10 +6854,13 @@ struct h2_piece : h2_libc {
 #if defined _WIN32
    void violate_forbidden(void* ptr, const char* type)
    {
+      if (!violate_times++) { /* 只记录第一犯罪现场 */
+         violate_backtrace = h2_backtrace::dump(3);
+         violate_ptr = ptr;
+         violate_action = type;
+         violate_after_free = 0 < free_times;
+      }
       set_forbidden(readable | writable);
-      violate_backtrace = h2_backtrace::dump(3);
-      violate_ptr = ptr;
-      violate_action = type;
    }
 #else
    void violate_forbidden(void* ptr)
@@ -7505,53 +7508,6 @@ struct h2_override_platform {
    void reset() { stubs.clear(); }
 };
 #endif
-// source/memory/h2_crash.cpp
-
-struct h2_crash {
-#if defined _WIN32
-   static LONG segment_fault_handler(_EXCEPTION_POINTERS* ExceptionInfo)
-   {
-      if (ExceptionInfo->ExceptionRecord->ExceptionCode == EXCEPTION_ACCESS_VIOLATION) {
-         h2_piece* piece = h2_stack::I().host_piece((const void*)ExceptionInfo->ExceptionRecord->ExceptionInformation[1]);
-         if (piece) {
-            int operation = ExceptionInfo->ExceptionRecord->ExceptionInformation[0];
-            piece->violate_forbidden((void*)ExceptionInfo->ExceptionRecord->ExceptionInformation[1], operation == 0 ? "read" : (operation == 1 ? "write" : (operation == 8 ? "execute" : "unknown")));
-            return EXCEPTION_CONTINUE_EXECUTION;
-         }
-      }
-      return EXCEPTION_EXECUTE_HANDLER;
-   }
-
-   static void install()
-   {
-      SetUnhandledExceptionFilter((LPTOP_LEVEL_EXCEPTION_FILTER)segment_fault_handler);
-   }
-#else
-   // https://www.gnu.org/software/libsigsegv/
-   static void segment_fault_handler(int sig, siginfo_t* si, void* unused)
-   {
-      // si->si_code == SEGV_ACCERR
-      h2_piece* piece = h2_stack::I().host_piece(si->si_addr);
-      if (piece) {
-         piece->violate_forbidden(si->si_addr);
-         return;
-      }
-      h2_debug(0, "");
-      abort();
-   }
-
-   static void install()
-   {
-      struct sigaction action;
-      action.sa_sigaction = segment_fault_handler;
-      action.sa_flags = SA_SIGINFO;
-      sigemptyset(&action.sa_mask);
-
-      if (sigaction(SIGSEGV, &action, nullptr) == -1) perror("Register SIGSEGV handler failed");
-      if (sigaction(SIGBUS, &action, nullptr) == -1) perror("Register SIGBUS handler failed");
-   }
-#endif
-};
 // source/memory/h2_memory.cpp
 
 struct h2_overrides {
@@ -7574,7 +7530,6 @@ struct h2_overrides {
 h2_inline void h2_memory::initialize()
 {
    if (O.memory_check) {
-      if (!O.debug) h2_crash::install();
       h2_exempt::setup();
       h2_overrides::I().set();
    }
@@ -7705,6 +7660,143 @@ h2_inline void h2_exempt::add_by_fp(void* fp)
    I().fps[I().nfp] = nullptr;
 }
 
+// source/exception/h2_debug.cpp
+
+#if defined __linux__
+#   if defined(__GNUC__) && (defined(__i386) || defined(__x86_64))
+#      define h2_raise_trap() asm volatile("int $3")
+#   else
+#      define h2_raise_trap() raise(SIGTRAP)
+#   endif
+#elif defined __APPLE__
+/* clang-format off */
+#   define h2_raise_trap() __asm__("int $3\n" : :)
+/* clang-format on */
+#endif
+
+#if defined __linux__
+static inline bool under_debug(int, const char*)
+{
+   char t[1024];
+   FILE* f = ::fopen("/proc/self/status", "r");
+   if (!f) return false;
+   bool ret = false;
+   while (::fgets(t, sizeof(t) - 1, f)) {
+      if (strncmp(t, "TracerPid:\t", 11) == 0) {
+         ret = t[11] != '\0' && t[11] != '0';
+         break;
+      }
+   }
+   ::fclose(f);
+   return ret;
+}
+#elif defined __APPLE__
+static inline bool under_debug(int pid, const char* path)
+{
+   char t[1024], attach_pid[64];
+   sprintf(attach_pid, "%d", pid);
+   FILE* f = ::popen("ps -ef | grep lldb | grep -v sudo | grep -v grep", "r");
+   if (!f) return false;
+   bool ret = false;
+   while (::fgets(t, sizeof(t) - 1, f)) {
+      if (strstr(t, h2_basename(path)) || strstr(t, attach_pid)) {
+         ret = true;
+         break;
+      }
+   }
+   ::pclose(f);
+   return false;
+}
+#endif
+
+static inline char* get_gdb1(char* s)
+{
+#if defined __linux__
+   sprintf(s, "gdb --quiet --args %s %s", O.path, O.args);
+#elif defined __APPLE__
+   sprintf(s, "lldb %s -- %s", O.path, O.args);
+#endif
+   return s;
+}
+
+static inline char* get_gdb2(char* s, int pid)
+{
+#if defined __linux__
+   sprintf(s, "sudo gdb --pid=%d", pid);
+#elif defined __APPLE__
+   sprintf(s, "sudo lldb --attach-pid %d", pid);
+#endif
+   return s;
+}
+
+h2_inline void h2_debugger::trap()
+{
+#if !defined _WIN32
+   int pid = (int)getpid();
+   if (!under_debug(pid, O.path)) {
+      static h2_once only_one_time;
+      if (only_one_time) {
+         if (!strcmp("gdb attach", O.debug)) {
+            if (fork() == 0)
+               exit(system(get_gdb2((char*)alloca(512), pid)));
+            else
+               while (!under_debug(pid, O.path)) h2_sleep(100);  // wait for password
+         } else {
+            exit(system(get_gdb1((char*)alloca(512))));
+         }
+      }
+   }
+
+   h2_raise_trap();
+#endif
+}
+// source/exception/h2_crash.cpp
+
+struct h2_crash {
+#if defined _WIN32
+   static LONG segment_fault_handler(_EXCEPTION_POINTERS* ExceptionInfo)
+   {
+      if (ExceptionInfo->ExceptionRecord->ExceptionCode == EXCEPTION_ACCESS_VIOLATION) {
+         h2_piece* piece = h2_stack::I().host_piece((const void*)ExceptionInfo->ExceptionRecord->ExceptionInformation[1]);
+         if (piece) {
+            int operation = ExceptionInfo->ExceptionRecord->ExceptionInformation[0];
+            piece->violate_forbidden((void*)ExceptionInfo->ExceptionRecord->ExceptionInformation[1], operation == 0 ? "read" : (operation == 1 ? "write" : (operation == 8 ? "execute" : "unknown")));
+            return EXCEPTION_CONTINUE_EXECUTION;
+         }
+      }
+      return EXCEPTION_EXECUTE_HANDLER;
+   }
+
+   static void install()
+   {
+      SetUnhandledExceptionFilter((LPTOP_LEVEL_EXCEPTION_FILTER)segment_fault_handler);
+   }
+#else
+   // https://www.gnu.org/software/libsigsegv/
+   static void segment_fault_handler(int sig, siginfo_t* si, void* unused)
+   {
+      // si->si_code == SEGV_ACCERR
+      h2_piece* piece = h2_stack::I().host_piece(si->si_addr);
+      if (piece) {
+         piece->violate_forbidden(si->si_addr);
+         return;
+      }
+      h2_debug(0, "");
+      abort();
+   }
+
+   static void install()
+   {
+      struct sigaction action;
+      action.sa_sigaction = segment_fault_handler;
+      action.sa_flags = SA_SIGINFO;
+      sigemptyset(&action.sa_mask);
+
+      if (sigaction(SIGSEGV, &action, nullptr) == -1) perror("Register SIGSEGV handler failed");
+      if (sigaction(SIGBUS, &action, nullptr) == -1) perror("Register SIGBUS handler failed");
+   }
+#endif
+};
 // source/exception/h2_exception.cpp
 
 struct h2_exception {
@@ -7713,7 +7805,15 @@ struct h2_exception {
    h2_backtrace last_bt;
    char last_type[1024];
 
-#if !defined _WIN32
+#if defined _WIN32
+   static void RaiseException(DWORD dwExceptionCode, DWORD dwExceptionFlags, DWORD nNumberOfArguments, const ULONG_PTR* lpArguments)
+   {
+      I().last_bt = h2_backtrace::dump(1);
+      if (O.exception_fails) h2_fail_g(h2_fail::new_exception("was thrown", "", I().last_bt));
+      h2::h2_stub_temporary_restore t((void*)::RaiseException);
+      ::RaiseException(dwExceptionCode, dwExceptionFlags, nNumberOfArguments, lpArguments);
+   }
+#else
    static void __cxa_throw(void* thrown_exception, std::type_info* ti, void (*dest)(void*))
    {  // https://itanium-cxx-abi.github.io/cxx-abi/abi-eh.html
       I().last_bt = h2_backtrace::dump(1);
@@ -7726,9 +7826,12 @@ struct h2_exception {
 
    static void initialize()
    {
-#if !defined _WIN32
+#if defined _WIN32
+      I().stubs.add((void*)::RaiseException, (void*)RaiseException, "RaiseException", __FILE__, __LINE__);
+#else
       I().stubs.add((void*)abi::__cxa_throw, (void*)__cxa_throw, "__cxa_throw", __FILE__, __LINE__);
 #endif
+      if (!O.debug) h2_crash::install();
    }
 };
 
@@ -9078,96 +9181,6 @@ h2_inline h2_defer_failure::~h2_defer_failure()
    }
 }
 
-// source/other/h2_debug.cpp
-
-#if defined __linux__
-#   if defined(__GNUC__) && (defined(__i386) || defined(__x86_64))
-#      define h2_raise_trap() asm volatile("int $3")
-#   else
-#      define h2_raise_trap() raise(SIGTRAP)
-#   endif
-#elif defined __APPLE__
-/* clang-format off */
-#   define h2_raise_trap() __asm__("int $3\n" : :)
-/* clang-format on */
-#endif
-
-#if defined __linux__
-static inline bool under_debug(int, const char*)
-{
-   char t[1024];
-   FILE* f = ::fopen("/proc/self/status", "r");
-   if (!f) return false;
-   bool ret = false;
-   while (::fgets(t, sizeof(t) - 1, f)) {
-      if (strncmp(t, "TracerPid:\t", 11) == 0) {
-         ret = t[11] != '\0' && t[11] != '0';
-         break;
-      }
-   }
-   ::fclose(f);
-   return ret;
-}
-#elif defined __APPLE__
-static inline bool under_debug(int pid, const char* path)
-{
-   char t[1024], attach_pid[64];
-   sprintf(attach_pid, "%d", pid);
-   FILE* f = ::popen("ps -ef | grep lldb | grep -v sudo | grep -v grep", "r");
-   if (!f) return false;
-   bool ret = false;
-   while (::fgets(t, sizeof(t) - 1, f)) {
-      if (strstr(t, h2_basename(path)) || strstr(t, attach_pid)) {
-         ret = true;
-         break;
-      }
-   }
-   ::pclose(f);
-   return false;
-}
-#endif
-
-static inline char* get_gdb1(char* s)
-{
-#if defined __linux__
-   sprintf(s, "gdb --quiet --args %s %s", O.path, O.args);
-#elif defined __APPLE__
-   sprintf(s, "lldb %s -- %s", O.path, O.args);
-#endif
-   return s;
-}
-
-static inline char* get_gdb2(char* s, int pid)
-{
-#if defined __linux__
-   sprintf(s, "sudo gdb --pid=%d", pid);
-#elif defined __APPLE__
-   sprintf(s, "sudo lldb --attach-pid %d", pid);
-#endif
-   return s;
-}
-
-h2_inline void h2_debugger::trap()
-{
-#if !defined _WIN32
-   int pid = (int)getpid();
-   if (!under_debug(pid, O.path)) {
-      static h2_once only_one_time;
-      if (only_one_time) {
-         if (!strcmp("gdb attach", O.debug)) {
-            if (fork() == 0)
-               exit(system(get_gdb2((char*)alloca(512), pid)));
-            else
-               while (!under_debug(pid, O.path)) h2_sleep(100);  // wait for password
-         } else {
-            exit(system(get_gdb1((char*)alloca(512))));
-         }
-      }
-   }
-
-   h2_raise_trap();
-#endif
-}
 // source/other/h2_failure.cpp
 
 h2_inline void h2_fail::append_subling(h2_fail*& fail, h2_fail* n)

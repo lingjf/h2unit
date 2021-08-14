@@ -19,7 +19,6 @@ struct h2_overrides {
 h2_inline void h2_memory::initialize()
 {
    if (O.memory_check) {
-      if (!O.debug) h2_crash::install();
       h2_exempt::setup();
       h2_overrides::I().set();
    }
