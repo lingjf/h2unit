@@ -83,7 +83,7 @@ SUITE(c)
       OK(AllOf(_), 1);
       OK(AnyOf(_), 1);
       OK(NoneOf(_), 1);
-      OK(!Eq(1) && Ge(1) || Lt(1), 1);
+      OK(!Eq(1) && (Ge(1) || Lt(1)), 1);
    }
 
    Case(5)

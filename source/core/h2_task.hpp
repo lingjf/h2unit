@@ -59,9 +59,9 @@ static inline void h2_assert_g()
    h2_task::I().stats.asserts += 1;
 }
 
-static inline void h2_fail_g(h2_fail* fail, bool defer)
+static inline void h2_fail_g(h2_fail* fail)
 {
    if (!fail) return;
    if (O.debug) h2_debugger::trap();
-   if (h2_task::I().current_case) h2_task::I().current_case->do_fail(fail, defer);
+   if (h2_task::I().current_case) h2_task::I().current_case->do_fail(fail, O.verbose, true);
 }

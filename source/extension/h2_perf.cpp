@@ -11,6 +11,6 @@ h2_inline h2_perf::~h2_perf()
    if (ms < delta) {
       h2_row row = "performance expect < ";
       row.printf("green", "%lld", ms).printf("", " ms, but actually cost ").printf("red", "%lld", delta).printf("", " ms");
-      h2_fail_g(h2_fail::new_normal(row, file, line), false);
+      h2_fail_g(h2_fail::new_normal(row, file, line));
    }
 }

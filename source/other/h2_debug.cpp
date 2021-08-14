@@ -74,16 +74,12 @@ h2_inline void h2_debugger::trap()
       static h2_once only_one_time;
       if (only_one_time) {
          if (!strcmp("gdb attach", O.debug)) {
-            if (fork() == 0) {
-               system(get_gdb2((char*)alloca(256), pid));
-               exit(0);
-            } else {
-               while (!under_debug(pid, O.path))
-                  h2_sleep(100);  // wait for password
-            }
+            if (fork() == 0)
+               exit(system(get_gdb2((char*)alloca(512), pid)));
+            else
+               while (!under_debug(pid, O.path)) h2_sleep(100);  // wait for password
          } else {
-            system(get_gdb1((char*)alloca(256)));
-            exit(0);
+            exit(system(get_gdb1((char*)alloca(512))));
          }
       }
    }

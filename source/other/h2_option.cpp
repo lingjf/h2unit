@@ -101,8 +101,7 @@ h2_inline h2_option::h2_option()
 {
    terminal_width = h2_shell::width();
 #if defined _WIN32
-   hProcess = GetCurrentProcess();
-   SymInitialize(hProcess, NULL, TRUE);
+   SymInitialize(GetCurrentProcess(), NULL, TRUE);
 #endif
 }
 

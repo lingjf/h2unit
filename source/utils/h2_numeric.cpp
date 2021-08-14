@@ -111,9 +111,7 @@ h2_inline const char* h2_numeric::sequence_number(int sequence, int shift)
    static char ss[64];
 
    sequence += shift;
-   if (sequence < sizeof(st) / sizeof(st[0])) {
-      return st[sequence];
-   }
+   if (sequence < sizeof(st) / sizeof(st[0])) return st[sequence];
    sprintf(ss, "%dth", sequence);
    return ss;
 }

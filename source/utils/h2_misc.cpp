@@ -91,7 +91,6 @@ static inline bool h2_in(const char* x, const char* s[], int n = 0)
 }
 
 static inline const char* comma_if(bool a, const char* t = ", ", const char* f = "") { return a ? t : f; };
-static inline const char* ss(const char* a) { return a ? a : ""; };
 
 #define h2_sprintvf(str, fmt, ap)               \
    do {                                         \

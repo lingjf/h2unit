@@ -334,33 +334,10 @@ h2_inline void h2_report::initialize()
    }
 }
 
-h2_inline void h2_report::on_task_start(h2_task* t)
-{
-   h2_list_for_each_entry (p, reports, h2_report_impl, x)
-      p->on_task_start(t);
-}
-h2_inline void h2_report::on_task_endup(h2_task* t)
-{
-   h2_list_for_each_entry (p, reports, h2_report_impl, x)
-      p->on_task_endup(t);
-}
-h2_inline void h2_report::on_suite_start(h2_suite* s)
-{
-   h2_list_for_each_entry (p, reports, h2_report_impl, x)
-      p->on_suite_start(s);
-}
-h2_inline void h2_report::on_suite_endup(h2_suite* s)
-{
-   h2_list_for_each_entry (p, reports, h2_report_impl, x)
-      p->on_suite_endup(s);
-}
-h2_inline void h2_report::on_case_start(h2_suite* s, h2_case* c)
-{
-   h2_list_for_each_entry (p, reports, h2_report_impl, x)
-      p->on_case_start(s, c);
-}
-h2_inline void h2_report::on_case_endup(h2_suite* s, h2_case* c)
-{
-   h2_list_for_each_entry (p, reports, h2_report_impl, x)
-      p->on_case_endup(s, c);
-}
+/* clang-format off */
+h2_inline void h2_report::on_task_start(h2_task* t) { h2_list_for_each_entry (p, reports, h2_report_impl, x) p->on_task_start(t); }
+h2_inline void h2_report::on_task_endup(h2_task* t) { h2_list_for_each_entry (p, reports, h2_report_impl, x) p->on_task_endup(t); }
+h2_inline void h2_report::on_suite_start(h2_suite* s) { h2_list_for_each_entry (p, reports, h2_report_impl, x) p->on_suite_start(s); }
+h2_inline void h2_report::on_suite_endup(h2_suite* s) { h2_list_for_each_entry (p, reports, h2_report_impl, x) p->on_suite_endup(s); }
+h2_inline void h2_report::on_case_start(h2_suite* s, h2_case* c) { h2_list_for_each_entry (p, reports, h2_report_impl, x) p->on_case_start(s, c); }
+h2_inline void h2_report::on_case_endup(h2_suite* s, h2_case* c) { h2_list_for_each_entry (p, reports, h2_report_impl, x) p->on_case_endup(s, c); }

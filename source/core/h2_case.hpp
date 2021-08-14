@@ -23,9 +23,9 @@ struct h2_case {
    void prev_setup();
    void post_setup() {}
    void prev_cleanup() {}
-   void post_cleanup(const h2_string& ex);
+   void post_cleanup();
 
-   void do_fail(h2_fail* fail, bool defer);
+   void do_fail(h2_fail* fail, bool defer, bool append);
 
    struct cleaner : h2_once {
       h2_case* thus;

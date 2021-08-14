@@ -12,10 +12,7 @@ struct h2_option {
    static constexpr unsigned os = macOS;
 #elif defined _WIN32
    static constexpr unsigned os = windows;
-   HANDLE hProcess;
 #endif
-
-   unsigned terminal_width;
 
    char args[256];
    const char* path;
@@ -36,6 +33,7 @@ struct h2_option {
    char junit[256]{'\0'};
    char tap[256]{'\0'};
    std::vector<const char*> includes, excludes;
+   unsigned terminal_width;
 
    h2_option();
    void parse(int argc, const char** argv);

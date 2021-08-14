@@ -20,7 +20,7 @@ struct h2_sock : h2_once {
       if (!p) {
          h2_row r = "Outgoing packet miss Ptx(";
          r.printf("green", "%s", e).printf("", ")");
-         h2_fail_g(h2_fail::new_normal(r, file, line), false);
+         h2_fail_g(h2_fail::new_normal(r, file, line));
          return;
       }
       h2_fail* fails = nullptr;
@@ -50,13 +50,13 @@ struct h2_sock : h2_once {
          r.printf("green", "%s", e).printf("", ")");
          h2_fail* fail = h2_fail::new_normal(r, file, line);
          h2_fail::append_child(fail, fails);
-         h2_fail_g(fail, false);
+         h2_fail_g(fail);
       }
    }
 };
 
 #define __H2SOCK(Q) for (h2::h2_sock Q; Q;)
-#define H2SOCK(...) __H2SOCK(H2PP_UNIQUE(t_sock))
+#define H2SOCK(...) __H2SOCK(H2PP_UNIQUE())
 
-#define Ptx(...) h2::h2_sock::check(__FILE__, __LINE__, h2::sdf(#__VA_ARGS__), __VA_ARGS__)
-#define Pij(_Packet, _Size, ...) h2::h2_sock::inject(_Packet, _Size, h2::sdf(#__VA_ARGS__))
+#define Ptx(...) h2::h2_sock::check(__FILE__, __LINE__, h2::ss(#__VA_ARGS__), __VA_ARGS__)
+#define Pij(_Packet, _Size, ...) h2::h2_sock::inject(_Packet, _Size, h2::ss(#__VA_ARGS__))

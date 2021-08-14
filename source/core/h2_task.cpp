@@ -113,10 +113,10 @@ h2_inline int h2_task::execute()
             current_case = c;
             h2_report::I().on_case_start(s, c);
             if (!O.list_cases) {
-               if (c->todo) {
-                  stats.todo++, s->stats.todo++;
-               } else if (c->filtered) {
+               if (c->filtered) {
                   stats.filtered++, s->stats.filtered++;
+               } else if (c->todo) {
+                  stats.todo++, s->stats.todo++;
                } else {
                   if (O.only_execute_fails && c->last_status != h2_case::failed)
                      c->status = h2_case::ignored;

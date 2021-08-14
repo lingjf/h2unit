@@ -1,5 +1,5 @@
 ﻿
-/* v5.12 2021-08-14 07:58:40 */
+/* v5.12 2021-08-14 19:55:19 */
 /* https://github.com/lingjf/h2unit */
 /* Apache Licence 2.0 */
 
@@ -49,6 +49,7 @@
 // #pragma clang diagnostic ignored === #pragma GCC diagnostic ignored
 #   pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 #   pragma GCC diagnostic ignored "-Wint-to-pointer-cast"
+#   pragma GCC diagnostic ignored "-Wsign-compare"
 #   pragma GCC diagnostic ignored "-Wreturn-type"
 #elif defined _WIN32
 #   pragma warning(disable : 4005)  // macro-redefine
@@ -597,8 +598,8 @@ struct h2_pattern {
 // #define M(...) func(#__VA_ARGS__, other)
 // Unix M() ==> func("", other) stringify empty __VA_ARGS__ to "" string
 // Windows M() ==> func(, other) stringify empty __VA_ARGS__ to empty
-// #define M(...) func(sdf(#__VA_ARGS__), other)
-static inline const char* sdf(const char* a = "") { return a; }
+// #define M(...) func(ss(#__VA_ARGS__), other)
+static inline const char* ss(const char* a = "") { return a ? a : ""; }
 
 /* clang-format off */
 
@@ -985,13 +986,12 @@ struct h2_backtrace {
    int count = 0, shift = 0;
    void* frames[100];
 
-   h2_backtrace() = default;
-   h2_backtrace(int shift_);
-
+   h2_backtrace(int shift_ = 0) : shift(shift_) {}
    h2_backtrace(const h2_backtrace&) = default;
    h2_backtrace& operator=(const h2_backtrace&) = default;
 
    bool operator==(const h2_backtrace&);
+   static h2_backtrace& dump(int shift_);
 
    bool in(void* fps[]) const;
    void print(h2_vector<h2_string>& stacks) const;
@@ -1012,10 +1012,7 @@ struct h2_option {
    static constexpr unsigned os = macOS;
 #elif defined _WIN32
    static constexpr unsigned os = windows;
-   HANDLE hProcess;
 #endif
-
-   unsigned terminal_width;
 
    char args[256];
    const char* path;
@@ -1036,6 +1033,7 @@ struct h2_option {
    char junit[256]{'\0'};
    char tap[256]{'\0'};
    std::vector<const char*> includes, excludes;
+   unsigned terminal_width;
 
    h2_option();
    void parse(int argc, const char** argv);
@@ -1061,8 +1059,7 @@ struct h2_debugger {
       if (!O.debug) {                                                               \
          h2_color::prints("", __VA_ARGS__);                                         \
          h2_color::prints("", " %s : %d = %s\n", __FILE__, __LINE__, __FUNCTION__); \
-         h2_backtrace bt____(shift);                                                \
-         bt____.print(3);                                                           \
+         h2_backtrace::dump(shift).print(3);                                        \
       }                                                                             \
    } while (0)
 // source/other/h2_failure.hpp
@@ -1107,9 +1104,10 @@ struct h2_fail : h2_libc {
    static h2_fail* new_asymmetric_free(const void* ptr, const char* who_allocate, const char* who_release, const h2_backtrace& bt_allocate, const h2_backtrace& bt_release);
    static h2_fail* new_overflow(const void* ptr, const int size, const void* violate_ptr, const char* action, const h2_vector<unsigned char>& spot, const h2_backtrace& bt_allocate, const h2_backtrace& bt_trample, const char* file = nullptr, int line = 0);
    static h2_fail* new_use_after_free(const void* ptr, const void* violate_ptr, const char* action, const h2_backtrace& bt_allocate, const h2_backtrace& bt_release, const h2_backtrace& bt_use);
+   static h2_fail* new_exception(const char* explain, const char* type, const h2_backtrace& bt_throw);
 };
 
-static inline void h2_fail_g(h2_fail*, bool);
+static inline void h2_fail_g(h2_fail*);
 // source/json/h2_json.hpp
 
 struct h2_json {
@@ -1118,11 +1116,6 @@ struct h2_json {
    // < 0 illformed json; = 0 matched; > 0 unmatched
    static int match(const h2_string& expect, const h2_string& actual, bool caseless);
    static bool diff(const h2_string& expect, const h2_string& actual, h2_rows& e_lines, h2_rows& a_lines, bool caseless);
-};
-// source/exception/h2_exception.hpp
-
-struct h2_exception {
-   static void initialize();
 };
 // source/matcher/h2_matches.hpp
 
@@ -2840,7 +2833,7 @@ class h2_mocker<Counter, Class, ReturnType(Args...)> : h2_mocker_base {
             });
             h2_fail* fail = h2_fail::new_normal(signature(), file, line);
             h2_fail::append_child(fail, fails);
-            h2_fail_g(fail, false);
+            h2_fail_g(fail);
          } else {
             checkin_index = i;
             checkin_offset = i;
@@ -2858,7 +2851,7 @@ class h2_mocker<Counter, Class, ReturnType(Args...)> : h2_mocker_base {
          h2_fail* fail = h2_fail::new_normal(signature(), file, line);
          h2_fail* f = h2_fail::new_normal(class_function + h2_representify(at) + color(" unexpectedly", "red,bold") + " called");
          h2_fail::append_child(fail, f);
-         h2_fail_g(fail, false);
+         h2_fail_g(fail);
       }
       return checkin_offset;
    }
@@ -3207,8 +3200,8 @@ struct h2_memory {
    };
 };
 
-#define __H2BLOCK(Attributes, Qb) for (h2::h2_memory::stack::block Qb(h2::sdf(Attributes), __FILE__, __LINE__); Qb;)
-#define H2BLOCK(...) __H2BLOCK(#__VA_ARGS__, H2PP_UNIQUE(t_block))
+#define __H2BLOCK(Attributes, Qb) for (h2::h2_memory::stack::block Qb(h2::ss(Attributes), __FILE__, __LINE__); Qb;)
+#define H2BLOCK(...) __H2BLOCK(#__VA_ARGS__, H2PP_UNIQUE())
 
 template <typename T>
 inline void h2_unmem(T f) { h2_exempt::add_by_fp(h2_un(f)); }
@@ -3253,7 +3246,7 @@ struct h2_sock : h2_once {
       if (!p) {
          h2_row r = "Outgoing packet miss Ptx(";
          r.printf("green", "%s", e).printf("", ")");
-         h2_fail_g(h2_fail::new_normal(r, file, line), false);
+         h2_fail_g(h2_fail::new_normal(r, file, line));
          return;
       }
       h2_fail* fails = nullptr;
@@ -3283,16 +3276,16 @@ struct h2_sock : h2_once {
          r.printf("green", "%s", e).printf("", ")");
          h2_fail* fail = h2_fail::new_normal(r, file, line);
          h2_fail::append_child(fail, fails);
-         h2_fail_g(fail, false);
+         h2_fail_g(fail);
       }
    }
 };
 
 #define __H2SOCK(Q) for (h2::h2_sock Q; Q;)
-#define H2SOCK(...) __H2SOCK(H2PP_UNIQUE(t_sock))
+#define H2SOCK(...) __H2SOCK(H2PP_UNIQUE())
 
-#define Ptx(...) h2::h2_sock::check(__FILE__, __LINE__, h2::sdf(#__VA_ARGS__), __VA_ARGS__)
-#define Pij(_Packet, _Size, ...) h2::h2_sock::inject(_Packet, _Size, h2::sdf(#__VA_ARGS__))
+#define Ptx(...) h2::h2_sock::check(__FILE__, __LINE__, h2::ss(#__VA_ARGS__), __VA_ARGS__)
+#define Pij(_Packet, _Size, ...) h2::h2_sock::inject(_Packet, _Size, h2::ss(#__VA_ARGS__))
 // source/extension/h2_stdio.hpp
 
 struct h2_cout : h2_once {
@@ -3305,8 +3298,8 @@ struct h2_cout : h2_once {
    static size_t length();
 };
 
-#define __H2COUT(m, e, type, Q) for (h2::h2_cout Q(m, e, h2::sdf(type), __FILE__, __LINE__); Q;)
-#define H2COUT(m, ...) __H2COUT(m, #m, #__VA_ARGS__, H2PP_UNIQUE(t_cout))
+#define __H2COUT(m, e, type, Q) for (h2::h2_cout Q(m, e, h2::ss(type), __FILE__, __LINE__); Q;)
+#define H2COUT(m, ...) __H2COUT(m, #m, #__VA_ARGS__, H2PP_UNIQUE())
 // source/extension/h2_perf.hpp
 
 struct h2_perf : h2_once {
@@ -3318,7 +3311,7 @@ struct h2_perf : h2_once {
 };
 
 #define __H2PF(ms, Q) for (h2::h2_perf Q(ms, __FILE__, __LINE__); Q;)
-#define H2PF(ms) __H2PF(ms, H2PP_UNIQUE(t_pf))
+#define H2PF(ms) __H2PF(ms, H2PP_UNIQUE())
 // source/core/h2_case.hpp
 
 struct h2_case {
@@ -3345,9 +3338,9 @@ struct h2_case {
    void prev_setup();
    void post_setup() {}
    void prev_cleanup() {}
-   void post_cleanup(const h2_string& ex);
+   void post_cleanup();
 
-   void do_fail(h2_fail* fail, bool defer);
+   void do_fail(h2_fail* fail, bool defer, bool append);
 
    struct cleaner : h2_once {
       h2_case* thus;
@@ -3459,18 +3452,18 @@ static inline void h2_assert_g()
    h2_task::I().stats.asserts += 1;
 }
 
-static inline void h2_fail_g(h2_fail* fail, bool defer)
+static inline void h2_fail_g(h2_fail* fail)
 {
    if (!fail) return;
    if (O.debug) h2_debugger::trap();
-   if (h2_task::I().current_case) h2_task::I().current_case->do_fail(fail, defer);
+   if (h2_task::I().current_case) h2_task::I().current_case->do_fail(fail, O.verbose, true);
 }
 // source/core/h2_core.hpp
 
-#define __H2SUITE(name, h2_suite_test)                                                   \
-   static void h2_suite_test(h2::h2_suite*, h2::h2_case*);                               \
-   static h2::h2_suite H2PP_UNIQUE()(h2::sdf(name), &h2_suite_test, __FILE__, __LINE__); \
-   static void h2_suite_test(h2::h2_suite* suite_2_0_1_3_0_1_0_2, h2::h2_case* case_2_0_1_7_0_3_2_5)
+#define __H2SUITE(suite_name, suite_test)                                                         \
+   static void suite_test(h2::h2_suite*, h2::h2_case*);                                           \
+   static h2::h2_suite H2PP_UNIQUE(s_suite)(h2::ss(suite_name), &suite_test, __FILE__, __LINE__); \
+   static void suite_test(h2::h2_suite* suite_2_0_1_3_0_1_0_2, h2::h2_case* case_2_0_1_7_0_3_2_5)
 
 #define H2SUITE(...) __H2SUITE(#__VA_ARGS__, H2PP_UNIQUE(h2_suite_test))
 
@@ -3478,36 +3471,35 @@ static inline void h2_fail_g(h2_fail* fail, bool defer)
 #define H2Teardown() if (::setjmp(suite_2_0_1_3_0_1_0_2->ctx))
 #define H2Cleanup() if (::setjmp(suite_2_0_1_3_0_1_0_2->ctx))
 
-#define __H2Case(name, c, todo)                                                                               \
-   static h2::h2_case c(h2::sdf(name), __FILE__, __LINE__, todo);                                             \
-   static h2::h2_suite::registor H2PP_UNIQUE()(suite_2_0_1_3_0_1_0_2, &c);                                    \
-   if (&c == case_2_0_1_7_0_3_2_5)                                                                            \
+#define __H2Case(case_name, case_instance, todo)                                                              \
+   static h2::h2_case case_instance(h2::ss(case_name), __FILE__, __LINE__, todo);                             \
+   static h2::h2_suite::registor H2PP_UNIQUE(s_registor)(suite_2_0_1_3_0_1_0_2, &case_instance);              \
+   if (&case_instance == case_2_0_1_7_0_3_2_5)                                                                \
       for (h2::h2_suite::cleaner _1_9_8_0_(suite_2_0_1_3_0_1_0_2); _1_9_8_0_; case_2_0_1_7_0_3_2_5 = nullptr) \
-         for (h2::h2_case::cleaner _1_9_8_1_(&c); _1_9_8_1_;)                                                 \
-            if (!::setjmp(c.ctx))
+         for (h2::h2_case::cleaner _1_9_8_1_(&case_instance); _1_9_8_1_;)                                     \
+            if (!::setjmp(case_instance.ctx))
 
 #define H2Case(...) __H2Case(#__VA_ARGS__, H2PP_UNIQUE(s_case), 0)
 #define H2Todo(...) __H2Case(#__VA_ARGS__, H2PP_UNIQUE(s_case), 1)
 
-#define __H2CASE(name, h2_case_test, h2_suite_test, todo)                                            \
-   static void h2_case_test();                                                                       \
-   static void h2_suite_test(h2::h2_suite* suite_2_0_1_3_0_1_0_2, h2::h2_case* case_2_0_1_7_0_3_2_5) \
-   {                                                                                                 \
-      static h2::h2_case c(h2::sdf(name), __FILE__, __LINE__, todo);                                 \
-      static h2::h2_suite::registor r(suite_2_0_1_3_0_1_0_2, &c);                                    \
-      if (&c == case_2_0_1_7_0_3_2_5)                                                                \
-         for (h2::h2_case::cleaner t(&c); t;)                                                        \
-            if (!::setjmp(c.ctx))                                                                    \
-               h2_case_test();                                                                       \
-   }                                                                                                 \
-   static h2::h2_suite H2PP_UNIQUE(s_suite)(nullptr, &h2_suite_test, __FILE__, __LINE__);            \
-   static void h2_case_test()
+#define __H2CASE(case_name, case_test, suite_test, todo)                                          \
+   static void case_test();                                                                       \
+   static void suite_test(h2::h2_suite* suite_2_0_1_3_0_1_0_2, h2::h2_case* case_2_0_1_7_0_3_2_5) \
+   {                                                                                              \
+      static h2::h2_case case_instance(h2::ss(case_name), __FILE__, __LINE__, todo);              \
+      static h2::h2_suite::registor suite_registor(suite_2_0_1_3_0_1_0_2, &case_instance);        \
+      if (&case_instance == case_2_0_1_7_0_3_2_5)                                                 \
+         for (h2::h2_case::cleaner case_cleaner(&case_instance); case_cleaner;)                   \
+            if (!::setjmp(case_instance.ctx))                                                     \
+               case_test();                                                                       \
+   }                                                                                              \
+   static h2::h2_suite H2PP_UNIQUE(s_suite)(nullptr, &suite_test, __FILE__, __LINE__);            \
+   static void case_test()
 
 #define H2CASE(...) __H2CASE(#__VA_ARGS__, H2PP_UNIQUE(h2_case_test), H2PP_UNIQUE(h2_suite_test), 0)
 #define H2TODO(...) __H2CASE(#__VA_ARGS__, H2PP_UNIQUE(h2_case_test), H2PP_UNIQUE(h2_suite_test), 1)
 
 /* clang-format off */
-
 #define _H2_An(...) H2PP_CAT(_H2_An_, H2PP_IS_EMPTY(__VA_ARGS__)) ((__VA_ARGS__))
 #define _H2_An_1(...) 0
 #define _H2_An_0(_Args) H2PP_RESCAN(_H2_An_0I _Args)
@@ -3618,23 +3610,23 @@ static inline void h2_fail_g(h2_fail* fail, bool defer)
    void Qc()
 #define H2CASESS_T(...) __H2CASESS_T(H2PP_UNIQUE(f_casesst), __VA_ARGS__)
 
-#define __H2GlobalCallback(name, Q)                        \
-   namespace {                                             \
-      static struct Q {                                    \
-         Q() { h2::h2_task::I().name##s.push_back(name); } \
-         static void name();                               \
-      } H2PP_UNIQUE();                                     \
-   }                                                       \
+#define __H2GlobalCallback(name, Q)                       \
+   namespace {                                            \
+   static struct Q {                                      \
+      Q() { h2::h2_task::I().name##s.push_back(name); }   \
+      static void name();                                 \
+   } H2PP_UNIQUE();                                       \
+   }                                                      \
    void Q::name()
 
-#define H2GlobalSetup() __H2GlobalCallback(global_setup, H2PP_UNIQUE(Global_Setup))
-#define H2GlobalCleanup() __H2GlobalCallback(global_cleanup, H2PP_UNIQUE(Global_Cleanup))
+#define H2GlobalSetup() __H2GlobalCallback(global_setup, H2PP_UNIQUE())
+#define H2GlobalCleanup() __H2GlobalCallback(global_cleanup, H2PP_UNIQUE())
 
-#define H2GlobalSuiteSetup() __H2GlobalCallback(global_suite_setup, H2PP_UNIQUE(Global_Suite_Setup))
-#define H2GlobalSuiteCleanup() __H2GlobalCallback(global_suite_cleanup, H2PP_UNIQUE(Global_Suite_Cleanup))
+#define H2GlobalSuiteSetup() __H2GlobalCallback(global_suite_setup, H2PP_UNIQUE())
+#define H2GlobalSuiteCleanup() __H2GlobalCallback(global_suite_cleanup, H2PP_UNIQUE())
 
-#define H2GlobalCaseSetup() __H2GlobalCallback(global_case_setup, H2PP_UNIQUE(Global_Case_Setup))
-#define H2GlobalCaseCleanup() __H2GlobalCallback(global_case_cleanup, H2PP_UNIQUE(Global_Case_Cleanup))
+#define H2GlobalCaseSetup() __H2GlobalCallback(global_case_setup, H2PP_UNIQUE())
+#define H2GlobalCaseCleanup() __H2GlobalCallback(global_case_cleanup, H2PP_UNIQUE())
 // source/assert/h2_assert.hpp
 
 struct h2_defer_failure : h2_once {
@@ -3690,9 +3682,9 @@ static inline h2_ostringstream& h2_je(h2_defer_failure* d, h2_string e, h2_strin
 #define __H2JE4(Q, expect, actual, selector) \
    for (h2::h2_defer_failure Q(#expect, #actual, "", __FILE__, __LINE__); Q;) h2::h2_je(&Q, expect, actual, selector)
 
-#define H2OK(...) __H2OK(H2PP_UNIQUE(t_defer_failure), (#__VA_ARGS__), __VA_ARGS__)
+#define H2OK(...) __H2OK(H2PP_UNIQUE(), (#__VA_ARGS__), __VA_ARGS__)
 
-#define H2JE(...) H2PP_VARIADIC_CALL(__H2JE, H2PP_UNIQUE(t_defer_failure), __VA_ARGS__)
+#define H2JE(...) H2PP_VARIADIC_CALL(__H2JE, H2PP_UNIQUE(), __VA_ARGS__)
 // source/other/h2_report.hpp
 
 struct h2_report {

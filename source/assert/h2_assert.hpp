@@ -52,6 +52,6 @@ static inline h2_ostringstream& h2_je(h2_defer_failure* d, h2_string e, h2_strin
 #define __H2JE4(Q, expect, actual, selector) \
    for (h2::h2_defer_failure Q(#expect, #actual, "", __FILE__, __LINE__); Q;) h2::h2_je(&Q, expect, actual, selector)
 
-#define H2OK(...) __H2OK(H2PP_UNIQUE(t_defer_failure), (#__VA_ARGS__), __VA_ARGS__)
+#define H2OK(...) __H2OK(H2PP_UNIQUE(), (#__VA_ARGS__), __VA_ARGS__)
 
-#define H2JE(...) H2PP_VARIADIC_CALL(__H2JE, H2PP_UNIQUE(t_defer_failure), __VA_ARGS__)
+#define H2JE(...) H2PP_VARIADIC_CALL(__H2JE, H2PP_UNIQUE(), __VA_ARGS__)

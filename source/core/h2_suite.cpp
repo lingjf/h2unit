@@ -30,20 +30,13 @@ h2_inline void h2_suite::enumerate()
 
 h2_inline void h2_suite::execute(h2_case* c)
 {
-   h2_string ex;
    c->prev_setup();
    try {
       test_code(this, c); /* include Setup(); c->post_setup() and c->prev_cleanup(); Cleanup() */
-   } catch (std::exception& e) {
-      ex = e.what();
-   } catch (std::string& m) {
-      ex = m.c_str();
-   } catch (const char* m) {
-      ex = m;
    } catch (...) {
-      ex = "Unknown Exception";
+      c->do_fail(h2_fail::new_exception("was thrown but uncaught", h2_exception::I().last_type, h2_exception::I().last_bt), true, O.verbose);
    }
-   c->post_cleanup(ex);
+   c->post_cleanup();
 }
 
 h2_inline h2_suite::registor::registor(h2_suite* s, h2_case* c)

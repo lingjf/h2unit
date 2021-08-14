@@ -69,7 +69,7 @@ class h2_mocker<Counter, Class, ReturnType(Args...)> : h2_mocker_base {
             });
             h2_fail* fail = h2_fail::new_normal(signature(), file, line);
             h2_fail::append_child(fail, fails);
-            h2_fail_g(fail, false);
+            h2_fail_g(fail);
          } else {
             checkin_index = i;
             checkin_offset = i;
@@ -87,7 +87,7 @@ class h2_mocker<Counter, Class, ReturnType(Args...)> : h2_mocker_base {
          h2_fail* fail = h2_fail::new_normal(signature(), file, line);
          h2_fail* f = h2_fail::new_normal(class_function + h2_representify(at) + color(" unexpectedly", "red,bold") + " called");
          h2_fail::append_child(fail, f);
-         h2_fail_g(fail, false);
+         h2_fail_g(fail);
       }
       return checkin_offset;
    }

@@ -13,35 +13,23 @@ h2_inline void h2_case::prev_setup()
    h2_memory::stack::push(file, line);
 }
 
-h2_inline void h2_case::post_cleanup(const h2_string& ex)
+h2_inline void h2_case::post_cleanup()
 {
+   footprint = h2_memory::stack::footprint();
    dnses.clear();
    stubs.clear();
-   h2_fail* fail = mocks.clear(true);
-   footprint = h2_memory::stack::footprint();
-   h2_fail::append_subling(fail, h2_memory::stack::pop());
-   // should memory assert stats into assert count ?
-
-   if (status == failed) {
-      if (fail) delete fail;
-      return;
-   }
-   if (!ex.empty()) {
-      h2_fail::append_subling(fails, h2_fail::new_normal({"Uncaught Exception : ", ex}));
-      if (fail) delete fail;
-      status = failed;
-      return;
-   }
-   if (fail) {
-      h2_fail::append_subling(fails, fail);
-      status = failed;
-      return;
-   }
+   do_fail(mocks.clear(true), true, O.verbose);
+   do_fail(h2_memory::stack::pop(), true, O.verbose);
 }
 
-h2_inline void h2_case::do_fail(h2_fail* fail, bool defer)
+h2_inline void h2_case::do_fail(h2_fail* fail, bool defer, bool append)
 {
-   status = failed;
-   h2_fail::append_subling(fails, fail);
-   if (!defer) ::longjmp(ctx, 1);
+   if (fail) {
+      status = failed;
+      if (fails && !append)
+         delete fail;
+      else
+         h2_fail::append_subling(fails, fail);
+      if (!defer) ::longjmp(ctx, 1);
+   }
 }

@@ -105,6 +105,6 @@ h2_inline h2_defer_failure::~h2_defer_failure()
          fails->a_expression = a_expression;
       }
       fails->user_explain = oss.str().c_str();
-      h2_fail_g(fails, false);
+      h2_fail_g(fails);
    }
 }

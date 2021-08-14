@@ -963,29 +963,13 @@ CASESS_T((short,int,long), (char,unsigned,double))  // (short,int,long)x(char,un
       TARGET_COMPILE_OPTIONS(a.out PRIVATE  --coverage) <br>
       TARGET_LINK_OPTIONS(a.out PRIVATE  --coverage)
 
-- Prerequisites lcov is installed.
-- Tool [`h2cov.py`](h2cov.py) generate coverage report.
+- Prerequisites gcovr or lcov is installed.
 
 ```Shell
    make
    ./a.out
-   python h2cov.py "*product*" #Extract files matching PATTERN from FILE
+   gcovr -r . -e 'test_*' --html --html-details -o coverage.html
 ```
-
-## coverage.json
-```JSON
-   {
-      "Lines": { "Total": 33, "Hit": 33, "Coverage": 1.0 },
-      "Functions": { "Total": 8, "Hit": 8, "Coverage": 1.0 },
-      "Branches": { "Total": 8, "Hit": 5, "Coverage": 0.625 }
-   }
-```
-- Line coverage: Lines.Coverage
-- Function coverage: Functions.Coverage
-- Branch coverage: Branches.Coverage
-
-## html report
-coverage/index.html 
 
 # Compile speed
 In order to speed up compile progress, split header-only-single-file [h2unit.h](h2unit.h) into 

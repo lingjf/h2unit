@@ -42,6 +42,7 @@
 // #pragma clang diagnostic ignored === #pragma GCC diagnostic ignored
 #   pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 #   pragma GCC diagnostic ignored "-Wint-to-pointer-cast"
+#   pragma GCC diagnostic ignored "-Wsign-compare"
 #   pragma GCC diagnostic ignored "-Wreturn-type"
 #elif defined _WIN32
 #   pragma warning(disable : 4005)  // macro-redefine
@@ -76,7 +77,6 @@ namespace h2 {
 #include "other/h2_debug.hpp"          // option
 #include "other/h2_failure.hpp"        //
 #include "json/h2_json.hpp"            //
-#include "exception/h2_exception.hpp"  //
 #include "matcher/h2_matches.hpp"      // failure
 #include "matcher/h2_matcher.hpp"      // matches, failure
 #include "matcher/h2_equation.hpp"     // matches

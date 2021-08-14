@@ -78,9 +78,8 @@ struct h2_piece : h2_libc {
 #if defined _WIN32
    void violate_forbidden(void* ptr, const char* type)
    {
-      h2_backtrace bt(3);
       set_forbidden(readable | writable);
-      violate_backtrace = bt;
+      violate_backtrace = h2_backtrace::dump(3);
       violate_ptr = ptr;
       violate_action = type;
    }
@@ -96,7 +95,7 @@ struct h2_piece : h2_libc {
          6) 设区域为可读可写, 修正犯罪为写
          7) 恢复执行代码
        */
-      h2_backtrace bt(3);
+      auto bt = h2_backtrace::dump(4);
       if (!violate_times++) { /* 只记录第一犯罪现场 */
          set_forbidden(readable);
          violate_backtrace = bt;
@@ -161,34 +160,25 @@ struct h2_piece : h2_libc {
       for (int i = 0; i < sizeof(S) / sizeof(S[0]); i += 2)
          if (h2_in(who_allocate, S[i]) && h2_in(who_release, S[i + 1]))
             return nullptr;
-
-      h2_backtrace bt(O.os == macOS ? 6 : 5);
-      return h2_fail::new_asymmetric_free(user_ptr, who_allocate, who_release, bt_allocate, bt);
+      if (bt_allocate.in(h2_exempt::I().fps)) return nullptr;
+      return h2_fail::new_asymmetric_free(user_ptr, who_allocate, who_release, bt_allocate, bt_release);
    }
 
-   h2_fail* check_double_free()
+   h2_fail* check_double_free(h2_backtrace& bt)
    {
-      h2_fail* fail = nullptr;
-      h2_backtrace bt(O.os == macOS ? 6 : 5);
-      if (free_times++ == 0)
+      if (!free_times++) {
          bt_release = bt;
-      else
-         fail = h2_fail::new_double_free(user_ptr, bt_allocate, bt_release, bt);
-      return fail;
+         return nullptr;
+      }
+      return h2_fail::new_double_free(user_ptr, bt_allocate, bt_release, bt);
    }
 
    h2_fail* free(const char* who_release)
    {
-      h2_fail* fail = nullptr;
-      if (!fail)
-         fail = check_double_free();
-      if (!fail)
-         fail = check_asymmetric_free(who_release);
-      if (!fail)
-         fail = check_snowfield();
-
+      h2_fail* fail = check_double_free(h2_backtrace::dump(4));
+      if (!fail) fail = check_asymmetric_free(who_release);
+      if (!fail) fail = check_snowfield();
       if (!fail) set_forbidden(0, page_ptr, page_size * (page_count + 1));
-
       return fail;
    }
 

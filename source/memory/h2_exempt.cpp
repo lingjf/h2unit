@@ -14,14 +14,9 @@ struct h2_exempt_stub {
       static struct tm st;
       if (!result) result = &st;
       memset(result, 0, sizeof(struct tm));
-      result->tm_sec = 0;
-      result->tm_min = 0;
-      result->tm_hour = 0;
+      //// result->tm_sec = 0; result->tm_min = 0; result->tm_hour = 0; result->tm_mon = 0; result->tm_wday = 0; result->tm_yday = 0;
       result->tm_mday = 1;
-      result->tm_mon = 0;
       result->tm_year = 2012 - 1900;
-      result->tm_wday = 0;
-      result->tm_yday = 0;
       return result;
    }
 };
@@ -53,13 +48,17 @@ h2_inline void h2_exempt::setup()
    add_by_fp((void*)::sscanf);
    add_by_fp((void*)::sprintf);
    add_by_fp((void*)::vsnprintf);
-#   ifdef __APPLE__
+   add_by_fp((void*)abi::__cxa_demangle);
+   add_by_fp((void*)abi::__cxa_throw);
+#   if defined __APPLE__
    add_by_fp((void*)::snprintf);
    add_by_fp((void*)::strftime_l);
    add_by_fp((void*)::strtod_l);
    add_by_fp((void*)::strtold);
    add_by_fp((void*)::strtof_l);
-   add_by_fp((void*)abi::__cxa_throw);
+#   endif
+#   if !defined __clang__
+   add_by_fp((void*)::__cxa_allocate_exception);
 #   endif
    add_by_fp((void*)h2_pattern::regex_match);
 #endif

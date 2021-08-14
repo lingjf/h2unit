@@ -31,6 +31,5 @@ Makefile
 # Coverage
 *.gcda
 *.gcno
-*.lcov
 coverage.*
 coverage/

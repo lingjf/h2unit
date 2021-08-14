@@ -171,7 +171,7 @@ h2_inline h2_cout::~h2_cout()
       fail->e_expression = e;
       fail->a_expression = "";
       fail->explain = "COUT";
-      h2_fail_g(fail, false);
+      h2_fail_g(fail);
    }
 }
 

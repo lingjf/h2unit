@@ -2,31 +2,31 @@
 
 SUITE(Memory asymmetric allocate and free)
 {
-   Case(malloc - delete failure)
+   Case(malloc delete failure)
    {
       char* p = (char*)malloc(100);
       delete p;
    }
 
-   Case(malloc - delete[] failure)
+   Case(malloc delete[] failure)
    {
       char* p = (char*)malloc(100);
       delete[] p;
    }
 
-   Case(new - free failure)
+   Case(new free failure)
    {
       char* p = (char*)new char;
       free(p);
    }
 
-   Case(new - delete[] failure)
+   Case(new delete[] failure)
    {
       char* p = (char*)new char;
       delete[] p;
    }
 
-   Case(new[] - free failure)
+   Case(new[] free failure)
    {
       char* p = (char*)new char[100];
       free(p);
@@ -52,7 +52,7 @@ SUITE(Ilegal Access)
    Case(memory overflow failure)
    {
       char* p = (char*)malloc(6);
-      strcpy(p, "________10________20________20________40overflow50");
+      p[32] = 'x';
       free(p);
    }
 

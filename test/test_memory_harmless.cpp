@@ -52,15 +52,15 @@ SUITE(harmless)
    {
       // String manipulation
       strcpy(t, "h2unit");
-      strncpy(t, "h2unit", 6);
+      strncpy(t, "h2unit", 3);
       strcat(t, "h2unit");
-      strncat(t, "h2unit", 6);
-      strxfrm(t, "h2unit", 6);
+      strncat(t, "h2unit", 3);
+      strxfrm(t, "h2unit", 3);
 
       // String examination
       strlen("h2unit");
       strcmp(t, "h2unit");
-      strncmp(t, "h2unit", 6);
+      strncmp(t, "h2unit", 3);
       strchr("h2unit", 'u');
       strrchr("h2unit", 'u');
       strcoll(t, "h2unit");
@@ -75,9 +75,9 @@ SUITE(harmless)
 
       // Memory manipulation
       memset(t, 0, 10);
-      memcpy(t, "h2unit", 6);
-      memmove(t, "h2unit", 6);
-      memcmp(t, "h2unit", 6);
+      memcpy(t, "h2unit", 3);
+      memmove(t, "h2unit", 3);
+      memcmp(t, "h2unit", 3);
       memchr(t, 'u', 10);
 
       // Numeric conversions

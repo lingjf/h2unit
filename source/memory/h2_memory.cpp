@@ -61,5 +61,5 @@ h2_inline h2_memory::stack::block::block(const char* attributes, const char* fil
 }
 h2_inline h2_memory::stack::block::~block()
 {
-   h2_fail_g(h2_stack::I().pop(), false);
+   h2_fail_g(h2_stack::I().pop());
 }

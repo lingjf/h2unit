@@ -18,8 +18,8 @@ struct h2_memory {
    };
 };
 
-#define __H2BLOCK(Attributes, Qb) for (h2::h2_memory::stack::block Qb(h2::sdf(Attributes), __FILE__, __LINE__); Qb;)
-#define H2BLOCK(...) __H2BLOCK(#__VA_ARGS__, H2PP_UNIQUE(t_block))
+#define __H2BLOCK(Attributes, Qb) for (h2::h2_memory::stack::block Qb(h2::ss(Attributes), __FILE__, __LINE__); Qb;)
+#define H2BLOCK(...) __H2BLOCK(#__VA_ARGS__, H2PP_UNIQUE())
 
 template <typename T>
 inline void h2_unmem(T f) { h2_exempt::add_by_fp(h2_un(f)); }

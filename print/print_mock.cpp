@@ -18,13 +18,14 @@ SUITE(MOCK)
 {
    Case(argument)
    {
-      MOCK(foo, int, (int, const char*)).Once(1, "A").Return(11);
       OK(11, foo(2, "B"));
+      MOCK(foo, int, (int, const char*)).Once(1, "A").Return(11);
+      OK(22, foo(2, "B"));
    }
 
    Case(call times)
    {
-      MOCK(foo, int, (int, const char*)).Times(2).Once().Return(0);
+      MOCK(foo, int, (int, const char*)).Times(2).Return(0);
       foo(1, "A");
    }
 
@@ -32,7 +33,7 @@ SUITE(MOCK)
    {
       MOCK(foo, int, (int, const char*)).Times(1).With(1, "A").Return(0);
       foo(1, "A");
-      foo(2, "B");
+      OK(2, foo(2, "B"));
    }
 
    Case(c++ class member)

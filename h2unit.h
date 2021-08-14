@@ -1,5 +1,5 @@
 ﻿
-/* v5.12 2021-08-14 07:58:40 */
+/* v5.12 2021-08-14 19:55:19 */
 /* https://github.com/lingjf/h2unit */
 /* Apache Licence 2.0 */
 
@@ -50,6 +50,7 @@
 // #pragma clang diagnostic ignored === #pragma GCC diagnostic ignored
 #   pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 #   pragma GCC diagnostic ignored "-Wint-to-pointer-cast"
+#   pragma GCC diagnostic ignored "-Wsign-compare"
 #   pragma GCC diagnostic ignored "-Wreturn-type"
 #elif defined _WIN32
 #   pragma warning(disable : 4005)  // macro-redefine
@@ -598,8 +599,8 @@ struct h2_pattern {
 // #define M(...) func(#__VA_ARGS__, other)
 // Unix M() ==> func("", other) stringify empty __VA_ARGS__ to "" string
 // Windows M() ==> func(, other) stringify empty __VA_ARGS__ to empty
-// #define M(...) func(sdf(#__VA_ARGS__), other)
-static inline const char* sdf(const char* a = "") { return a; }
+// #define M(...) func(ss(#__VA_ARGS__), other)
+static inline const char* ss(const char* a = "") { return a ? a : ""; }
 
 /* clang-format off */
 
@@ -986,13 +987,12 @@ struct h2_backtrace {
    int count = 0, shift = 0;
    void* frames[100];
 
-   h2_backtrace() = default;
-   h2_backtrace(int shift_);
-
+   h2_backtrace(int shift_ = 0) : shift(shift_) {}
    h2_backtrace(const h2_backtrace&) = default;
    h2_backtrace& operator=(const h2_backtrace&) = default;
 
    bool operator==(const h2_backtrace&);
+   static h2_backtrace& dump(int shift_);
 
    bool in(void* fps[]) const;
    void print(h2_vector<h2_string>& stacks) const;
@@ -1013,10 +1013,7 @@ struct h2_option {
    static constexpr unsigned os = macOS;
 #elif defined _WIN32
    static constexpr unsigned os = windows;
-   HANDLE hProcess;
 #endif
-
-   unsigned terminal_width;
 
    char args[256];
    const char* path;
@@ -1037,6 +1034,7 @@ struct h2_option {
    char junit[256]{'\0'};
    char tap[256]{'\0'};
    std::vector<const char*> includes, excludes;
+   unsigned terminal_width;
 
    h2_option();
    void parse(int argc, const char** argv);
@@ -1062,8 +1060,7 @@ struct h2_debugger {
       if (!O.debug) {                                                               \
          h2_color::prints("", __VA_ARGS__);                                         \
          h2_color::prints("", " %s : %d = %s\n", __FILE__, __LINE__, __FUNCTION__); \
-         h2_backtrace bt____(shift);                                                \
-         bt____.print(3);                                                           \
+         h2_backtrace::dump(shift).print(3);                                        \
       }                                                                             \
    } while (0)
 // source/other/h2_failure.hpp
@@ -1108,9 +1105,10 @@ struct h2_fail : h2_libc {
    static h2_fail* new_asymmetric_free(const void* ptr, const char* who_allocate, const char* who_release, const h2_backtrace& bt_allocate, const h2_backtrace& bt_release);
    static h2_fail* new_overflow(const void* ptr, const int size, const void* violate_ptr, const char* action, const h2_vector<unsigned char>& spot, const h2_backtrace& bt_allocate, const h2_backtrace& bt_trample, const char* file = nullptr, int line = 0);
    static h2_fail* new_use_after_free(const void* ptr, const void* violate_ptr, const char* action, const h2_backtrace& bt_allocate, const h2_backtrace& bt_release, const h2_backtrace& bt_use);
+   static h2_fail* new_exception(const char* explain, const char* type, const h2_backtrace& bt_throw);
 };
 
-static inline void h2_fail_g(h2_fail*, bool);
+static inline void h2_fail_g(h2_fail*);
 // source/json/h2_json.hpp
 
 struct h2_json {
@@ -1119,11 +1117,6 @@ struct h2_json {
    // < 0 illformed json; = 0 matched; > 0 unmatched
    static int match(const h2_string& expect, const h2_string& actual, bool caseless);
    static bool diff(const h2_string& expect, const h2_string& actual, h2_rows& e_lines, h2_rows& a_lines, bool caseless);
-};
-// source/exception/h2_exception.hpp
-
-struct h2_exception {
-   static void initialize();
 };
 // source/matcher/h2_matches.hpp
 
@@ -2841,7 +2834,7 @@ class h2_mocker<Counter, Class, ReturnType(Args...)> : h2_mocker_base {
             });
             h2_fail* fail = h2_fail::new_normal(signature(), file, line);
             h2_fail::append_child(fail, fails);
-            h2_fail_g(fail, false);
+            h2_fail_g(fail);
          } else {
             checkin_index = i;
             checkin_offset = i;
@@ -2859,7 +2852,7 @@ class h2_mocker<Counter, Class, ReturnType(Args...)> : h2_mocker_base {
          h2_fail* fail = h2_fail::new_normal(signature(), file, line);
          h2_fail* f = h2_fail::new_normal(class_function + h2_representify(at) + color(" unexpectedly", "red,bold") + " called");
          h2_fail::append_child(fail, f);
-         h2_fail_g(fail, false);
+         h2_fail_g(fail);
       }
       return checkin_offset;
    }
@@ -3208,8 +3201,8 @@ struct h2_memory {
    };
 };
 
-#define __H2BLOCK(Attributes, Qb) for (h2::h2_memory::stack::block Qb(h2::sdf(Attributes), __FILE__, __LINE__); Qb;)
-#define H2BLOCK(...) __H2BLOCK(#__VA_ARGS__, H2PP_UNIQUE(t_block))
+#define __H2BLOCK(Attributes, Qb) for (h2::h2_memory::stack::block Qb(h2::ss(Attributes), __FILE__, __LINE__); Qb;)
+#define H2BLOCK(...) __H2BLOCK(#__VA_ARGS__, H2PP_UNIQUE())
 
 template <typename T>
 inline void h2_unmem(T f) { h2_exempt::add_by_fp(h2_un(f)); }
@@ -3254,7 +3247,7 @@ struct h2_sock : h2_once {
       if (!p) {
          h2_row r = "Outgoing packet miss Ptx(";
          r.printf("green", "%s", e).printf("", ")");
-         h2_fail_g(h2_fail::new_normal(r, file, line), false);
+         h2_fail_g(h2_fail::new_normal(r, file, line));
          return;
       }
       h2_fail* fails = nullptr;
@@ -3284,16 +3277,16 @@ struct h2_sock : h2_once {
          r.printf("green", "%s", e).printf("", ")");
          h2_fail* fail = h2_fail::new_normal(r, file, line);
          h2_fail::append_child(fail, fails);
-         h2_fail_g(fail, false);
+         h2_fail_g(fail);
       }
    }
 };
 
 #define __H2SOCK(Q) for (h2::h2_sock Q; Q;)
-#define H2SOCK(...) __H2SOCK(H2PP_UNIQUE(t_sock))
+#define H2SOCK(...) __H2SOCK(H2PP_UNIQUE())
 
-#define Ptx(...) h2::h2_sock::check(__FILE__, __LINE__, h2::sdf(#__VA_ARGS__), __VA_ARGS__)
-#define Pij(_Packet, _Size, ...) h2::h2_sock::inject(_Packet, _Size, h2::sdf(#__VA_ARGS__))
+#define Ptx(...) h2::h2_sock::check(__FILE__, __LINE__, h2::ss(#__VA_ARGS__), __VA_ARGS__)
+#define Pij(_Packet, _Size, ...) h2::h2_sock::inject(_Packet, _Size, h2::ss(#__VA_ARGS__))
 // source/extension/h2_stdio.hpp
 
 struct h2_cout : h2_once {
@@ -3306,8 +3299,8 @@ struct h2_cout : h2_once {
    static size_t length();
 };
 
-#define __H2COUT(m, e, type, Q) for (h2::h2_cout Q(m, e, h2::sdf(type), __FILE__, __LINE__); Q;)
-#define H2COUT(m, ...) __H2COUT(m, #m, #__VA_ARGS__, H2PP_UNIQUE(t_cout))
+#define __H2COUT(m, e, type, Q) for (h2::h2_cout Q(m, e, h2::ss(type), __FILE__, __LINE__); Q;)
+#define H2COUT(m, ...) __H2COUT(m, #m, #__VA_ARGS__, H2PP_UNIQUE())
 // source/extension/h2_perf.hpp
 
 struct h2_perf : h2_once {
@@ -3319,7 +3312,7 @@ struct h2_perf : h2_once {
 };
 
 #define __H2PF(ms, Q) for (h2::h2_perf Q(ms, __FILE__, __LINE__); Q;)
-#define H2PF(ms) __H2PF(ms, H2PP_UNIQUE(t_pf))
+#define H2PF(ms) __H2PF(ms, H2PP_UNIQUE())
 // source/core/h2_case.hpp
 
 struct h2_case {
@@ -3346,9 +3339,9 @@ struct h2_case {
    void prev_setup();
    void post_setup() {}
    void prev_cleanup() {}
-   void post_cleanup(const h2_string& ex);
+   void post_cleanup();
 
-   void do_fail(h2_fail* fail, bool defer);
+   void do_fail(h2_fail* fail, bool defer, bool append);
 
    struct cleaner : h2_once {
       h2_case* thus;
@@ -3460,18 +3453,18 @@ static inline void h2_assert_g()
    h2_task::I().stats.asserts += 1;
 }
 
-static inline void h2_fail_g(h2_fail* fail, bool defer)
+static inline void h2_fail_g(h2_fail* fail)
 {
    if (!fail) return;
    if (O.debug) h2_debugger::trap();
-   if (h2_task::I().current_case) h2_task::I().current_case->do_fail(fail, defer);
+   if (h2_task::I().current_case) h2_task::I().current_case->do_fail(fail, O.verbose, true);
 }
 // source/core/h2_core.hpp
 
-#define __H2SUITE(name, h2_suite_test)                                                   \
-   static void h2_suite_test(h2::h2_suite*, h2::h2_case*);                               \
-   static h2::h2_suite H2PP_UNIQUE()(h2::sdf(name), &h2_suite_test, __FILE__, __LINE__); \
-   static void h2_suite_test(h2::h2_suite* suite_2_0_1_3_0_1_0_2, h2::h2_case* case_2_0_1_7_0_3_2_5)
+#define __H2SUITE(suite_name, suite_test)                                                         \
+   static void suite_test(h2::h2_suite*, h2::h2_case*);                                           \
+   static h2::h2_suite H2PP_UNIQUE(s_suite)(h2::ss(suite_name), &suite_test, __FILE__, __LINE__); \
+   static void suite_test(h2::h2_suite* suite_2_0_1_3_0_1_0_2, h2::h2_case* case_2_0_1_7_0_3_2_5)
 
 #define H2SUITE(...) __H2SUITE(#__VA_ARGS__, H2PP_UNIQUE(h2_suite_test))
 
@@ -3479,36 +3472,35 @@ static inline void h2_fail_g(h2_fail* fail, bool defer)
 #define H2Teardown() if (::setjmp(suite_2_0_1_3_0_1_0_2->ctx))
 #define H2Cleanup() if (::setjmp(suite_2_0_1_3_0_1_0_2->ctx))
 
-#define __H2Case(name, c, todo)                                                                               \
-   static h2::h2_case c(h2::sdf(name), __FILE__, __LINE__, todo);                                             \
-   static h2::h2_suite::registor H2PP_UNIQUE()(suite_2_0_1_3_0_1_0_2, &c);                                    \
-   if (&c == case_2_0_1_7_0_3_2_5)                                                                            \
+#define __H2Case(case_name, case_instance, todo)                                                              \
+   static h2::h2_case case_instance(h2::ss(case_name), __FILE__, __LINE__, todo);                             \
+   static h2::h2_suite::registor H2PP_UNIQUE(s_registor)(suite_2_0_1_3_0_1_0_2, &case_instance);              \
+   if (&case_instance == case_2_0_1_7_0_3_2_5)                                                                \
       for (h2::h2_suite::cleaner _1_9_8_0_(suite_2_0_1_3_0_1_0_2); _1_9_8_0_; case_2_0_1_7_0_3_2_5 = nullptr) \
-         for (h2::h2_case::cleaner _1_9_8_1_(&c); _1_9_8_1_;)                                                 \
-            if (!::setjmp(c.ctx))
+         for (h2::h2_case::cleaner _1_9_8_1_(&case_instance); _1_9_8_1_;)                                     \
+            if (!::setjmp(case_instance.ctx))
 
 #define H2Case(...) __H2Case(#__VA_ARGS__, H2PP_UNIQUE(s_case), 0)
 #define H2Todo(...) __H2Case(#__VA_ARGS__, H2PP_UNIQUE(s_case), 1)
 
-#define __H2CASE(name, h2_case_test, h2_suite_test, todo)                                            \
-   static void h2_case_test();                                                                       \
-   static void h2_suite_test(h2::h2_suite* suite_2_0_1_3_0_1_0_2, h2::h2_case* case_2_0_1_7_0_3_2_5) \
-   {                                                                                                 \
-      static h2::h2_case c(h2::sdf(name), __FILE__, __LINE__, todo);                                 \
-      static h2::h2_suite::registor r(suite_2_0_1_3_0_1_0_2, &c);                                    \
-      if (&c == case_2_0_1_7_0_3_2_5)                                                                \
-         for (h2::h2_case::cleaner t(&c); t;)                                                        \
-            if (!::setjmp(c.ctx))                                                                    \
-               h2_case_test();                                                                       \
-   }                                                                                                 \
-   static h2::h2_suite H2PP_UNIQUE(s_suite)(nullptr, &h2_suite_test, __FILE__, __LINE__);            \
-   static void h2_case_test()
+#define __H2CASE(case_name, case_test, suite_test, todo)                                          \
+   static void case_test();                                                                       \
+   static void suite_test(h2::h2_suite* suite_2_0_1_3_0_1_0_2, h2::h2_case* case_2_0_1_7_0_3_2_5) \
+   {                                                                                              \
+      static h2::h2_case case_instance(h2::ss(case_name), __FILE__, __LINE__, todo);              \
+      static h2::h2_suite::registor suite_registor(suite_2_0_1_3_0_1_0_2, &case_instance);        \
+      if (&case_instance == case_2_0_1_7_0_3_2_5)                                                 \
+         for (h2::h2_case::cleaner case_cleaner(&case_instance); case_cleaner;)                   \
+            if (!::setjmp(case_instance.ctx))                                                     \
+               case_test();                                                                       \
+   }                                                                                              \
+   static h2::h2_suite H2PP_UNIQUE(s_suite)(nullptr, &suite_test, __FILE__, __LINE__);            \
+   static void case_test()
 
 #define H2CASE(...) __H2CASE(#__VA_ARGS__, H2PP_UNIQUE(h2_case_test), H2PP_UNIQUE(h2_suite_test), 0)
 #define H2TODO(...) __H2CASE(#__VA_ARGS__, H2PP_UNIQUE(h2_case_test), H2PP_UNIQUE(h2_suite_test), 1)
 
 /* clang-format off */
-
 #define _H2_An(...) H2PP_CAT(_H2_An_, H2PP_IS_EMPTY(__VA_ARGS__)) ((__VA_ARGS__))
 #define _H2_An_1(...) 0
 #define _H2_An_0(_Args) H2PP_RESCAN(_H2_An_0I _Args)
@@ -3619,23 +3611,23 @@ static inline void h2_fail_g(h2_fail* fail, bool defer)
    void Qc()
 #define H2CASESS_T(...) __H2CASESS_T(H2PP_UNIQUE(f_casesst), __VA_ARGS__)
 
-#define __H2GlobalCallback(name, Q)                        \
-   namespace {                                             \
-      static struct Q {                                    \
-         Q() { h2::h2_task::I().name##s.push_back(name); } \
-         static void name();                               \
-      } H2PP_UNIQUE();                                     \
-   }                                                       \
+#define __H2GlobalCallback(name, Q)                       \
+   namespace {                                            \
+   static struct Q {                                      \
+      Q() { h2::h2_task::I().name##s.push_back(name); }   \
+      static void name();                                 \
+   } H2PP_UNIQUE();                                       \
+   }                                                      \
    void Q::name()
 
-#define H2GlobalSetup() __H2GlobalCallback(global_setup, H2PP_UNIQUE(Global_Setup))
-#define H2GlobalCleanup() __H2GlobalCallback(global_cleanup, H2PP_UNIQUE(Global_Cleanup))
+#define H2GlobalSetup() __H2GlobalCallback(global_setup, H2PP_UNIQUE())
+#define H2GlobalCleanup() __H2GlobalCallback(global_cleanup, H2PP_UNIQUE())
 
-#define H2GlobalSuiteSetup() __H2GlobalCallback(global_suite_setup, H2PP_UNIQUE(Global_Suite_Setup))
-#define H2GlobalSuiteCleanup() __H2GlobalCallback(global_suite_cleanup, H2PP_UNIQUE(Global_Suite_Cleanup))
+#define H2GlobalSuiteSetup() __H2GlobalCallback(global_suite_setup, H2PP_UNIQUE())
+#define H2GlobalSuiteCleanup() __H2GlobalCallback(global_suite_cleanup, H2PP_UNIQUE())
 
-#define H2GlobalCaseSetup() __H2GlobalCallback(global_case_setup, H2PP_UNIQUE(Global_Case_Setup))
-#define H2GlobalCaseCleanup() __H2GlobalCallback(global_case_cleanup, H2PP_UNIQUE(Global_Case_Cleanup))
+#define H2GlobalCaseSetup() __H2GlobalCallback(global_case_setup, H2PP_UNIQUE())
+#define H2GlobalCaseCleanup() __H2GlobalCallback(global_case_cleanup, H2PP_UNIQUE())
 // source/assert/h2_assert.hpp
 
 struct h2_defer_failure : h2_once {
@@ -3691,9 +3683,9 @@ static inline h2_ostringstream& h2_je(h2_defer_failure* d, h2_string e, h2_strin
 #define __H2JE4(Q, expect, actual, selector) \
    for (h2::h2_defer_failure Q(#expect, #actual, "", __FILE__, __LINE__); Q;) h2::h2_je(&Q, expect, actual, selector)
 
-#define H2OK(...) __H2OK(H2PP_UNIQUE(t_defer_failure), (#__VA_ARGS__), __VA_ARGS__)
+#define H2OK(...) __H2OK(H2PP_UNIQUE(), (#__VA_ARGS__), __VA_ARGS__)
 
-#define H2JE(...) H2PP_VARIADIC_CALL(__H2JE, H2PP_UNIQUE(t_defer_failure), __VA_ARGS__)
+#define H2JE(...) H2PP_VARIADIC_CALL(__H2JE, H2PP_UNIQUE(), __VA_ARGS__)
 // source/other/h2_report.hpp
 
 struct h2_report {
@@ -4189,7 +4181,6 @@ static inline bool h2_in(const char* x, const char* s[], int n = 0)
 }
 
 static inline const char* comma_if(bool a, const char* t = ", ", const char* f = "") { return a ? t : f; };
-static inline const char* ss(const char* a) { return a ? a : ""; };
 
 #define h2_sprintvf(str, fmt, ap)               \
    do {                                         \
@@ -4322,9 +4313,7 @@ h2_inline const char* h2_numeric::sequence_number(int sequence, int shift)
    static char ss[64];
 
    sequence += shift;
-   if (sequence < sizeof(st) / sizeof(st[0])) {
-      return st[sequence];
-   }
+   if (sequence < sizeof(st) / sizeof(st[0])) return st[sequence];
    sprintf(ss, "%dth", sequence);
    return ss;
 }
@@ -4979,8 +4968,7 @@ h2_inline int h2_nm::get_by_name(const char* name, h2_symbol* res[], int n)
    SYMBOL_INFO* symbol = (SYMBOL_INFO*)buffer;
    symbol->SizeOfStruct = sizeof(SYMBOL_INFO);
    symbol->MaxNameLen = 256;
-   if (!SymFromName(O.hProcess, name, symbol))
-      return 0;
+   if (!SymFromName(GetCurrentProcess(), name, symbol)) return 0;
    static h2_symbol s_symbol("", 0);
    s_symbol.addr = (unsigned long long)symbol->Address;
    res[0] = &s_symbol;
@@ -5014,8 +5002,7 @@ h2_inline h2_symbol* h2_nm::get_by_addr(unsigned long long addr)
    SYMBOL_INFO* symbol = (SYMBOL_INFO*)buffer;
    symbol->SizeOfStruct = sizeof(SYMBOL_INFO);
    symbol->MaxNameLen = 256;
-   if (!SymFromAddr(O.hProcess, (DWORD64)(addr), 0, symbol))
-      return nullptr;
+   if (!SymFromAddr(GetCurrentProcess(), (DWORD64)(addr), 0, symbol)) return nullptr;
    static h2_symbol s_symbol("", 0);
    strcpy(s_symbol.name, symbol->Name);
    s_symbol.addr = (unsigned long long)symbol->Address;
@@ -5032,9 +5019,8 @@ h2_inline unsigned long long h2_nm::get_mangle(const char* name)
    SYMBOL_INFO* symbol = (SYMBOL_INFO*)buffer;
    symbol->SizeOfStruct = sizeof(SYMBOL_INFO);
    symbol->MaxNameLen = 256;
-   if (SymFromName(O.hProcess, name, symbol))
-      return (unsigned long long)symbol->Address;
-   return 0;
+   if (!SymFromName(GetCurrentProcess(), name, symbol)) return 0;
+   return (unsigned long long)symbol->Address;
 #else
    if (!name || strlen(name) == 0) return 0;
    if (!I().mangle_symbols) nm1(I().mangle_symbols);
@@ -5205,56 +5191,48 @@ static inline void* follow_jmp(void* fp, int n = 32)
 // source/ld/h2_backtrace.cpp
 
 #if !defined _WIN32
-static inline bool demangle(const char* mangle_name, char* demangle_name, size_t len)
+static inline char* demangle(const char* mangle_name, size_t length = 1024, int status = -1)
 {
-   int status = 0;
-   abi::__cxa_demangle(mangle_name, demangle_name, &len, &status);
-   return status == 0;
+   static char demangle_name[1024];
+   if (strlen(mangle_name)) abi::__cxa_demangle(mangle_name, demangle_name, &length, &status);
+   return status == 0 ? demangle_name : (char*)mangle_name;
 }
 
-static inline bool addr2line(unsigned long long addr, char* output, size_t len)
+static inline char* addr2line(unsigned long long addr)
 {
-   char t[256];
-   sprintf(t, O.os == macOS ? "atos -o %s 0x%llx" : "addr2line -C -a -s -p -f -e %s -i %llx", O.path, addr);
-   FILE* f = ::popen(t, "r");
-   if (!f) return false;
-   output = ::fgets(output, len, f);
-   ::pclose(f);
-   if (!output) return false;
-   for (int i = strlen(output) - 1; 0 <= i && ::isspace(output[i]); --i) output[i] = '\0';  //strip tail
-   return true;
+   static char buf[1024];
+   char cmd[256], *ret = nullptr;
+   sprintf(cmd, O.os == macOS ? "atos -o %s 0x%llx" : "addr2line -C -a -s -p -f -e %s -i %llx", O.path, addr);
+   FILE* f = ::popen(cmd, "r");
+   if (f) {
+      ret = ::fgets(buf, sizeof(buf), f);
+      ::pclose(f);
+   }
+   if (!ret) return nullptr;
+   if (O.os == macOS ? !memcmp(buf, "0x", 2) : !!strstr(buf, "??:")) return nullptr;
+   for (int i = strlen(buf) - 1; 0 <= i && ::isspace(buf[i]); --i) buf[i] = '\0';  //strip tail
+   return buf;
 }
 
-static inline bool backtrace_extract(const char* backtrace_line, char* mangle_name, unsigned long long* displacement)
+static inline bool backtrace_extract(const char* line, char* mangle_name, unsigned long long* displacement = nullptr)
 {
+   unsigned long long _t;
 #   if defined __APPLE__
-   //MAC: `3   a.out  0x000000010e777f3d _ZN2h24hook6mallocEm + 45
-   if (2 == ::sscanf(backtrace_line, "%*s%*s%*s%s + %llu", mangle_name, displacement)) return true;
+   //MAC: `3   a.out  0x000000010e777f3d _ZN2h24unit6mallocEm + 45
+   if (2 == ::sscanf(line, "%*s%*s%*s%s + %llu", mangle_name, displacement ? displacement : &_t)) return true;
 #   else
    static unsigned long long v1 = 0, v2 = 0, once = 0;
-   //Linux: `./a.out(_ZN2h24task7executeEv+0x131)[0x55aa6bb840ef]
-   if (2 == ::sscanf(backtrace_line, "%*[^(]%*[^_a-zA-Z]%1023[^)+]+0x%llx", mangle_name, displacement)) return (bool)++v2;
-
+   //Linux: `./a.out(_ZN2h24unit7executeEv+0x131)[0x55aa6bb840ef]
+   if (2 == ::sscanf(line, "%*[^(]%*[^_a-zA-Z]%1023[^)+]+0x%llx", mangle_name, displacement ? displacement : &_t)) return (bool)++v2;
    //Linux: `./a.out(+0xb1887)[0x560c5ed06887]
    mangle_name[0] = '\0';
-   if (1 == ::sscanf(backtrace_line, "%*[^(]%*[^+]+0x%llx", displacement)) return (bool)++v1;
+   if (1 == ::sscanf(line, "%*[^(]%*[^+]+0x%llx", displacement ? displacement : &_t)) return (bool)++v1;
 
    if (!v2 && !once++) h2_color::prints("yellow", "\nAdd -rdynamic to linker options\n");
 #   endif
    return false;
 }
 #endif
-
-h2_inline h2_backtrace::h2_backtrace(int shift_) : shift(shift_)
-{
-   h2_memory::restores();
-#ifdef _WIN32
-   count = CaptureStackBackTrace(0, sizeof(frames) / sizeof(frames[0]), frames, NULL);
-#else
-   count = ::backtrace(frames, sizeof(frames) / sizeof(frames[0]));
-#endif
-   h2_memory::overrides();
-}
 
 h2_inline bool h2_backtrace::operator==(const h2_backtrace& bt)
 {
@@ -5263,6 +5241,20 @@ h2_inline bool h2_backtrace::operator==(const h2_backtrace& bt)
       if (frames[i] != bt.frames[i])
          return false;
    return true;
+}
+
+h2_inline h2_backtrace& h2_backtrace::dump(int shift_)
+{
+   static h2_backtrace s;
+   s.shift = shift_;
+#ifdef _WIN32
+   s.count = CaptureStackBackTrace(0, sizeof(s.frames) / sizeof(s.frames[0]), s.frames, NULL);
+#else
+   h2_memory::restores();
+   s.count = ::backtrace(s.frames, sizeof(s.frames) / sizeof(s.frames[0]));
+   h2_memory::overrides();
+#endif
+   return s;
 }
 
 h2_inline bool h2_backtrace::in(void* fps[]) const
@@ -5274,27 +5266,23 @@ h2_inline bool h2_backtrace::in(void* fps[]) const
       SYMBOL_INFO* symbol = (SYMBOL_INFO*)buffer;
       symbol->SizeOfStruct = sizeof(SYMBOL_INFO);
       symbol->MaxNameLen = 256;
-      if (SymFromAddr(O.hProcess, (DWORD64)(frames[i]), 0, symbol)) {
+      if (SymFromAddr(GetCurrentProcess(), (DWORD64)(frames[i]), 0, symbol))
          for (int j = 0; !ret && fps[j]; ++j)
             if ((unsigned long long)symbol->Address == (unsigned long long)fps[j])
                ret = true;
-         if (!strcmp("main", symbol->Name)) break;
-      }
    }
 #else
    h2_memory::restores();
-   char** backtrace_lines = backtrace_symbols(frames, count);
+   char** symbols = backtrace_symbols(frames, count);
    for (int i = shift; !ret && i < count; ++i) {
-      char mangle_name[1024] = "";
+      char _t[1024];
       unsigned long long displacement = 0;
-      if (backtrace_extract(backtrace_lines[i], mangle_name, &displacement)) {
+      if (backtrace_extract(symbols[i], _t, &displacement))
          for (int j = 0; !ret && fps[j]; ++j)
             if ((unsigned long long)frames[i] - displacement == (unsigned long long)fps[j])
                ret = true;
-         if (!strcmp("main", mangle_name)) break;
-      }
    }
-   free(backtrace_lines);
+   free(symbols);
    h2_memory::overrides();
 #endif
    return ret;
@@ -5309,41 +5297,32 @@ h2_inline void h2_backtrace::print(h2_vector<h2_string>& stacks) const
       symbol->SizeOfStruct = sizeof(SYMBOL_INFO);
       symbol->MaxNameLen = 256;
       h2_string frame;
-      if (SymFromAddr(O.hProcess, (DWORD64)(frames[i]), 0, symbol))
+      if (SymFromAddr(GetCurrentProcess(), (DWORD64)(frames[i]), 0, symbol))
          frame.sprintf("%s %p+%lld ", symbol->Name, symbol->Address, (DWORD64)(frames[i]) - (DWORD64)symbol->Address);
       DWORD dwDisplacement;
       IMAGEHLP_LINE64 fileline;
       SymSetOptions(SYMOPT_LOAD_LINES);
       fileline.SizeOfStruct = sizeof(IMAGEHLP_LINE64);
-      if (SymGetLineFromAddr64(O.hProcess, (DWORD64)(frames[i]), &dwDisplacement, &fileline))
+      if (SymGetLineFromAddr64(GetCurrentProcess(), (DWORD64)(frames[i]), &dwDisplacement, &fileline))
          frame.sprintf("%s:%d", fileline.FileName, fileline.LineNumber);
       stacks.push_back(frame);
       if (!strcmp("main", symbol->Name)) break;
    }
 #else
    h2_memory::restores();
-   char** backtrace_lines = backtrace_symbols(frames, count);
+   char** symbols = backtrace_symbols(frames, count);
    h2_memory::overrides();
-
    for (int i = shift; i < count; ++i) {
-      char* p = backtrace_lines[i];
-      char mangle_name[1024] = "", demangle_name[1024] = "", symbolic[1024] = "";
-      unsigned long long displacement = 0;
-      if (backtrace_extract(backtrace_lines[i], mangle_name, &displacement))
-         if (strlen(mangle_name))
-            if (demangle(p = mangle_name, demangle_name, sizeof(demangle_name)))
-               if (strlen(demangle_name))
-                  p = demangle_name;
-      if (O.verbose || O.os != macOS /* atos is slow */)
-         if (addr2line(h2_load::ptr_to_addr(frames[i]), symbolic, sizeof(symbolic)))
-            if (strlen(symbolic))
-               p = symbolic;
+      char *p = nullptr, mangle_name[1024] = "";
+      backtrace_extract(symbols[i], mangle_name);
+      if (O.verbose || O.os != macOS) p = addr2line(h2_load::ptr_to_addr(frames[i])); /* atos is slow */
+      if (!p) p = demangle(mangle_name);
+      if (!p || !strlen(p)) p = symbols[i];
       stacks.push_back(p);
-      if (!strcmp("main", mangle_name)) break;
+      if (!strcmp("main", mangle_name) || !strcmp("__libc_start_main", mangle_name)) break;
    }
-
    h2_memory::restores();
-   free(backtrace_lines);
+   free(symbols);
    h2_memory::overrides();
 #endif
 }
@@ -5353,8 +5332,7 @@ h2_inline void h2_backtrace::print(int pad) const
    h2_vector<h2_string> stacks;
    print(stacks);
    h2_rows rows;
-   for (auto& c : stacks)
-      rows.push_back(c.startswith("h2::") ? gray(c) : h2_row(c));
+   for (auto& c : stacks) rows.push_back(c.startswith("h2::") ? gray(c) : h2_row(c));
    rows.sequence(pad);
    h2_color::printl(rows);
 }
@@ -6876,9 +6854,8 @@ struct h2_piece : h2_libc {
 #if defined _WIN32
    void violate_forbidden(void* ptr, const char* type)
    {
-      h2_backtrace bt(3);
       set_forbidden(readable | writable);
-      violate_backtrace = bt;
+      violate_backtrace = h2_backtrace::dump(3);
       violate_ptr = ptr;
       violate_action = type;
    }
@@ -6894,7 +6871,7 @@ struct h2_piece : h2_libc {
          6) 设区域为可读可写, 修正犯罪为写
          7) 恢复执行代码
        */
-      h2_backtrace bt(3);
+      auto bt = h2_backtrace::dump(4);
       if (!violate_times++) { /* 只记录第一犯罪现场 */
          set_forbidden(readable);
          violate_backtrace = bt;
@@ -6959,34 +6936,25 @@ struct h2_piece : h2_libc {
       for (int i = 0; i < sizeof(S) / sizeof(S[0]); i += 2)
          if (h2_in(who_allocate, S[i]) && h2_in(who_release, S[i + 1]))
             return nullptr;
-
-      h2_backtrace bt(O.os == macOS ? 6 : 5);
-      return h2_fail::new_asymmetric_free(user_ptr, who_allocate, who_release, bt_allocate, bt);
+      if (bt_allocate.in(h2_exempt::I().fps)) return nullptr;
+      return h2_fail::new_asymmetric_free(user_ptr, who_allocate, who_release, bt_allocate, bt_release);
    }
 
-   h2_fail* check_double_free()
+   h2_fail* check_double_free(h2_backtrace& bt)
    {
-      h2_fail* fail = nullptr;
-      h2_backtrace bt(O.os == macOS ? 6 : 5);
-      if (free_times++ == 0)
+      if (!free_times++) {
          bt_release = bt;
-      else
-         fail = h2_fail::new_double_free(user_ptr, bt_allocate, bt_release, bt);
-      return fail;
+         return nullptr;
+      }
+      return h2_fail::new_double_free(user_ptr, bt_allocate, bt_release, bt);
    }
 
    h2_fail* free(const char* who_release)
    {
-      h2_fail* fail = nullptr;
-      if (!fail)
-         fail = check_double_free();
-      if (!fail)
-         fail = check_asymmetric_free(who_release);
-      if (!fail)
-         fail = check_snowfield();
-
+      h2_fail* fail = check_double_free(h2_backtrace::dump(4));
+      if (!fail) fail = check_asymmetric_free(who_release);
+      if (!fail) fail = check_snowfield();
       if (!fail) set_forbidden(0, page_ptr, page_size * (page_count + 1));
-
       return fail;
    }
 
@@ -7213,7 +7181,7 @@ struct h2_stack {
 
    h2_piece* new_piece(const char* who, size_t size, size_t alignment, const char* fill)
    {
-      h2_backtrace bt(O.os == macOS ? 3 : 2);
+      auto bt = h2_backtrace::dump(2);
       h2_block* b = bt.in(h2_exempt::I().fps) ? h2_list_bottom_entry(blocks, h2_block, x) : h2_list_top_entry(blocks, h2_block, x);
       return b ? b->new_piece(who, size, alignment, fill ? *fill : 0, fill, bt) : nullptr;
    }
@@ -7224,11 +7192,9 @@ struct h2_stack {
          h2_piece* piece = p->get_piece(ptr);
          if (piece) return p->rel_piece(who, piece);
       }
-      if (!at_exit && O.os != windows) {
-         h2_backtrace bt;
-         if (!bt.in(h2_exempt::I().fps))
+      if (!at_exit && O.os != windows)
+         if (!h2_backtrace::dump(1).in(h2_exempt::I().fps))
             h2_debug(2, "Warning: %s %p not found!", who, ptr);
-      }
       return nullptr;
    }
 
@@ -7260,7 +7226,7 @@ struct h2_override {
    }
    static void free(void* ptr)
    {
-      if (ptr) h2_fail_g(h2_stack::I().rel_piece("free", ptr), false);
+      if (ptr) h2_fail_g(h2_stack::I().rel_piece("free", ptr));
    }
    static void* malloc(size_t size)
    {
@@ -7279,7 +7245,7 @@ struct h2_override {
       if (ptr) old_p = h2_stack::I().get_piece(ptr);
       if (size) new_p = h2_stack::I().new_piece("realloc", size, 0, nullptr);
       if (old_p && new_p) memcpy(new_p->user_ptr, old_p->user_ptr, std::min(old_p->user_size, size));
-      if (ptr) h2_fail_g(h2_stack::I().rel_piece("free", ptr), false);
+      if (ptr) h2_fail_g(h2_stack::I().rel_piece("free", ptr));
       return new_p ? new_p->user_ptr : nullptr;
    }
    static int posix_memalign(void** memptr, size_t alignment, size_t size)
@@ -7314,19 +7280,19 @@ struct h2_override {
    }
    static void operator delete(void* ptr)
    {
-      if (ptr) h2_fail_g(h2_stack::I().rel_piece("delete", ptr), false);
+      if (ptr) h2_fail_g(h2_stack::I().rel_piece("delete", ptr));
    }
    static void operator delete(void* ptr, const std::nothrow_t&)
    {
-      if (ptr) h2_fail_g(h2_stack::I().rel_piece("delete nothrow", ptr), false);
+      if (ptr) h2_fail_g(h2_stack::I().rel_piece("delete nothrow", ptr));
    }
    static void operator delete[](void* ptr)
    {
-      if (ptr) h2_fail_g(h2_stack::I().rel_piece("delete[]", ptr), false);
+      if (ptr) h2_fail_g(h2_stack::I().rel_piece("delete[]", ptr));
    }
    static void operator delete[](void* ptr, const std::nothrow_t&)
    {
-      if (ptr) h2_fail_g(h2_stack::I().rel_piece("delete[] nothrow", ptr), false);
+      if (ptr) h2_fail_g(h2_stack::I().rel_piece("delete[] nothrow", ptr));
    }
 };
 // source/memory/h2_override_stdlib.cpp
@@ -7564,12 +7530,11 @@ struct h2_crash {
    // https://www.gnu.org/software/libsigsegv/
    static void segment_fault_handler(int sig, siginfo_t* si, void* unused)
    {
-      if (si->si_code == SEGV_ACCERR) {
-         h2_piece* piece = h2_stack::I().host_piece(si->si_addr);
-         if (piece) {
-            piece->violate_forbidden(si->si_addr);
-            return;
-         }
+      // si->si_code == SEGV_ACCERR
+      h2_piece* piece = h2_stack::I().host_piece(si->si_addr);
+      if (piece) {
+         piece->violate_forbidden(si->si_addr);
+         return;
       }
       h2_debug(0, "");
       abort();
@@ -7651,7 +7616,7 @@ h2_inline h2_memory::stack::block::block(const char* attributes, const char* fil
 }
 h2_inline h2_memory::stack::block::~block()
 {
-   h2_fail_g(h2_stack::I().pop(), false);
+   h2_fail_g(h2_stack::I().pop());
 }
 // source/memory/h2_exempt.cpp
 
@@ -7670,14 +7635,9 @@ struct h2_exempt_stub {
       static struct tm st;
       if (!result) result = &st;
       memset(result, 0, sizeof(struct tm));
-      result->tm_sec = 0;
-      result->tm_min = 0;
-      result->tm_hour = 0;
+      //// result->tm_sec = 0; result->tm_min = 0; result->tm_hour = 0; result->tm_mon = 0; result->tm_wday = 0; result->tm_yday = 0;
       result->tm_mday = 1;
-      result->tm_mon = 0;
       result->tm_year = 2012 - 1900;
-      result->tm_wday = 0;
-      result->tm_yday = 0;
       return result;
    }
 };
@@ -7709,13 +7669,17 @@ h2_inline void h2_exempt::setup()
    add_by_fp((void*)::sscanf);
    add_by_fp((void*)::sprintf);
    add_by_fp((void*)::vsnprintf);
-#   ifdef __APPLE__
+   add_by_fp((void*)abi::__cxa_demangle);
+   add_by_fp((void*)abi::__cxa_throw);
+#   if defined __APPLE__
    add_by_fp((void*)::snprintf);
    add_by_fp((void*)::strftime_l);
    add_by_fp((void*)::strtod_l);
    add_by_fp((void*)::strtold);
    add_by_fp((void*)::strtof_l);
-   add_by_fp((void*)abi::__cxa_throw);
+#   endif
+#   if !defined __clang__
+   add_by_fp((void*)::__cxa_allocate_exception);
 #   endif
    add_by_fp((void*)h2_pattern::regex_match);
 #endif
@@ -7743,20 +7707,30 @@ h2_inline void h2_exempt::add_by_fp(void* fp)
 
 // source/exception/h2_exception.cpp
 
-struct h2_exception_stub {
+struct h2_exception {
+   h2_singleton(h2_exception);
+   h2_stubs stubs;
+   h2_backtrace last_bt;
+   char last_type[1024];
+
+#if !defined _WIN32
    static void __cxa_throw(void* thrown_exception, std::type_info* ti, void (*dest)(void*))
    {  // https://itanium-cxx-abi.github.io/cxx-abi/abi-eh.html
-      h2_fail_g(h2_fail::new_normal({"A exception was thrown : ", ti->name()}), false);
+      I().last_bt = h2_backtrace::dump(1);
+      strcpy(I().last_type, demangle(ti->name()));
+      if (O.exception_fails) h2_fail_g(h2_fail::new_exception("was thrown", I().last_type, I().last_bt));
+      h2::h2_stub_temporary_restore t((void*)abi::__cxa_throw);
+      abi::__cxa_throw(thrown_exception, ti, dest);
+   }
+#endif
+
+   static void initialize()
+   {
+#if !defined _WIN32
+      I().stubs.add((void*)abi::__cxa_throw, (void*)__cxa_throw, "__cxa_throw", __FILE__, __LINE__);
+#endif
    }
 };
-
-h2_inline void h2_exception::initialize()
-{
-#if !defined _WIN32
-   static h2_stubs stubs;
-   if (O.exception_fails) stubs.add((void*)abi::__cxa_throw, (void*)h2_exception_stub::__cxa_throw, "__cxa_throw", __FILE__, __LINE__);
-#endif
-}
 
 // source/stub/h2_e9.cpp
 // https://www.codeproject.com/Articles/25198/Generic-Thunk-with-5-combinations-of-Calling-Conve
@@ -7805,7 +7779,7 @@ static inline void h2_e9_set(void* srcfp, void* dstfp)
       *(long*)(&C[1]) = delta;
       memcpy(I, C, sizeof(C));
    }
-   // ::FlushInstructionCache(O.hProcess, srcfp, h2_e9_size);
+   // ::FlushInstructionCache(GetCurrentProcess(), srcfp, h2_e9_size);
 
 #elif defined __arm__ || defined __arm64__ || defined __aarch64__
 
@@ -7840,7 +7814,7 @@ static inline void h2_e9_set(void* srcfp, void* dstfp)
 static inline void h2_e9_reset(void* srcfp, unsigned char* opcode)
 {
    memcpy(srcfp, opcode, h2_e9_size);
-   // ::FlushInstructionCache(O.hProcess, srcfp, h2_e9_size);
+   // ::FlushInstructionCache(GetCurrentProcess(), srcfp, h2_e9_size);
 #if defined __arm__ || defined __arm64__ || defined __aarch64__
    __builtin___clear_cache(static_cast<char*>(srcfp), static_cast<char*>(srcfp) + h2_e9_size);
 #endif
@@ -8723,7 +8697,7 @@ h2_inline h2_cout::~h2_cout()
       fail->e_expression = e;
       fail->a_expression = "";
       fail->explain = "COUT";
-      h2_fail_g(fail, false);
+      h2_fail_g(fail);
    }
 }
 
@@ -8745,7 +8719,7 @@ h2_inline h2_perf::~h2_perf()
    if (ms < delta) {
       h2_row row = "performance expect < ";
       row.printf("green", "%lld", ms).printf("", " ms, but actually cost ").printf("red", "%lld", delta).printf("", " ms");
-      h2_fail_g(h2_fail::new_normal(row, file, line), false);
+      h2_fail_g(h2_fail::new_normal(row, file, line));
    }
 }
 
@@ -8765,37 +8739,25 @@ h2_inline void h2_case::prev_setup()
    h2_memory::stack::push(file, line);
 }
 
-h2_inline void h2_case::post_cleanup(const h2_string& ex)
+h2_inline void h2_case::post_cleanup()
 {
+   footprint = h2_memory::stack::footprint();
    dnses.clear();
    stubs.clear();
-   h2_fail* fail = mocks.clear(true);
-   footprint = h2_memory::stack::footprint();
-   h2_fail::append_subling(fail, h2_memory::stack::pop());
-   // should memory assert stats into assert count ?
-
-   if (status == failed) {
-      if (fail) delete fail;
-      return;
-   }
-   if (!ex.empty()) {
-      h2_fail::append_subling(fails, h2_fail::new_normal({"Uncaught Exception : ", ex}));
-      if (fail) delete fail;
-      status = failed;
-      return;
-   }
-   if (fail) {
-      h2_fail::append_subling(fails, fail);
-      status = failed;
-      return;
-   }
+   do_fail(mocks.clear(true), true, O.verbose);
+   do_fail(h2_memory::stack::pop(), true, O.verbose);
 }
 
-h2_inline void h2_case::do_fail(h2_fail* fail, bool defer)
+h2_inline void h2_case::do_fail(h2_fail* fail, bool defer, bool append)
 {
-   status = failed;
-   h2_fail::append_subling(fails, fail);
-   if (!defer) ::longjmp(ctx, 1);
+   if (fail) {
+      status = failed;
+      if (fails && !append)
+         delete fail;
+      else
+         h2_fail::append_subling(fails, fail);
+      if (!defer) ::longjmp(ctx, 1);
+   }
 }
 // source/core/h2_suite.cpp
 
@@ -8830,20 +8792,13 @@ h2_inline void h2_suite::enumerate()
 
 h2_inline void h2_suite::execute(h2_case* c)
 {
-   h2_string ex;
    c->prev_setup();
    try {
       test_code(this, c); /* include Setup(); c->post_setup() and c->prev_cleanup(); Cleanup() */
-   } catch (std::exception& e) {
-      ex = e.what();
-   } catch (std::string& m) {
-      ex = m.c_str();
-   } catch (const char* m) {
-      ex = m;
    } catch (...) {
-      ex = "Unknown Exception";
+      c->do_fail(h2_fail::new_exception("was thrown but uncaught", h2_exception::I().last_type, h2_exception::I().last_bt), true, O.verbose);
    }
-   c->post_cleanup(ex);
+   c->post_cleanup();
 }
 
 h2_inline h2_suite::registor::registor(h2_suite* s, h2_case* c)
@@ -8975,10 +8930,10 @@ h2_inline int h2_task::execute()
             current_case = c;
             h2_report::I().on_case_start(s, c);
             if (!O.list_cases) {
-               if (c->todo) {
-                  stats.todo++, s->stats.todo++;
-               } else if (c->filtered) {
+               if (c->filtered) {
                   stats.filtered++, s->stats.filtered++;
+               } else if (c->todo) {
+                  stats.todo++, s->stats.todo++;
                } else {
                   if (O.only_execute_fails && c->last_status != h2_case::failed)
                      c->status = h2_case::ignored;
@@ -9119,7 +9074,7 @@ h2_inline h2_defer_failure::~h2_defer_failure()
          fails->a_expression = a_expression;
       }
       fails->user_explain = oss.str().c_str();
-      h2_fail_g(fails, false);
+      h2_fail_g(fails);
    }
 }
 
@@ -9200,16 +9155,12 @@ h2_inline void h2_debugger::trap()
       static h2_once only_one_time;
       if (only_one_time) {
          if (!strcmp("gdb attach", O.debug)) {
-            if (fork() == 0) {
-               system(get_gdb2((char*)alloca(256), pid));
-               exit(0);
-            } else {
-               while (!under_debug(pid, O.path))
-                  h2_sleep(100);  // wait for password
-            }
+            if (fork() == 0)
+               exit(system(get_gdb2((char*)alloca(512), pid)));
+            else
+               while (!under_debug(pid, O.path)) h2_sleep(100);  // wait for password
          } else {
-            system(get_gdb1((char*)alloca(256)));
-            exit(0);
+            exit(system(get_gdb1((char*)alloca(512))));
          }
       }
    }
@@ -9290,9 +9241,7 @@ static inline bool is_synonym(const h2_string& a, const h2_string& b)
 struct h2_fail_unexpect : h2_fail {
    h2_row expection, represent;
    int c = 0;
-   h2_fail_unexpect(const h2_row& expection_ = {}, const h2_row& represent_ = {}, const h2_row& explain_ = {}, const char* file_ = nullptr, int line_ = 0)
-     : h2_fail(explain_, file_, line_), expection(expection_), represent(represent_) {}
-
+   h2_fail_unexpect(const h2_row& expection_ = {}, const h2_row& represent_ = {}, const h2_row& explain_ = {}, const char* file_ = nullptr, int line_ = 0) : h2_fail(explain_, file_, line_), expection(expection_), represent(represent_) {}
    void print_OK1(h2_row& row)
    {
       h2_row a = h2_row(a_expression).acronym(O.verbose ? 10000 : 30, 3).gray_quote().brush("cyan");
@@ -9366,9 +9315,7 @@ static inline void fmt_char(char c, bool eq, const char* style, h2_row& row)
 struct h2_fail_strcmp : h2_fail_unexpect {
    const bool caseless;
    h2_string e_value, a_value;
-   h2_fail_strcmp(const h2_string& e_value_, const h2_string& a_value_, bool caseless_, const h2_row& expection, const h2_row& explain = {}, const char* file_ = nullptr, int line_ = 0)
-     : h2_fail_unexpect(expection, h2_representify(a_value_), explain, file_, line_), caseless(caseless_), e_value(e_value_), a_value(a_value_) {}
-
+   h2_fail_strcmp(const h2_string& e_value_, const h2_string& a_value_, bool caseless_, const h2_row& expection, const h2_row& explain = {}, const char* file_ = nullptr, int line_ = 0) : h2_fail_unexpect(expection, h2_representify(a_value_), explain, file_, line_), caseless(caseless_), e_value(e_value_), a_value(a_value_) {}
    void print(int subling_index = 0, int child_index = 0) override
    {
       h2_fail_unexpect::print(subling_index, child_index);
@@ -9393,8 +9340,7 @@ struct h2_fail_strcmp : h2_fail_unexpect {
 
 struct h2_fail_strfind : h2_fail_unexpect {
    h2_string e_value, a_value;
-   h2_fail_strfind(const h2_string& e_value_, const h2_string& a_value_, const h2_row& expection, const h2_row& explain, const char* file = nullptr, int line = 0)
-     : h2_fail_unexpect(expection, h2_representify(a_value_), explain, file, line), e_value(e_value_), a_value(a_value_) {}
+   h2_fail_strfind(const h2_string& e_value_, const h2_string& a_value_, const h2_row& expection, const h2_row& explain, const char* file = nullptr, int line = 0) : h2_fail_unexpect(expection, h2_representify(a_value_), explain, file, line), e_value(e_value_), a_value(a_value_) {}
    void print(int subling_index = 0, int child_index = 0) override
    {
       h2_fail_unexpect::print(subling_index, child_index);
@@ -9411,8 +9357,7 @@ struct h2_fail_strfind : h2_fail_unexpect {
 struct h2_fail_json : h2_fail_unexpect {
    h2_string e_value, a_value;
    const bool caseless;
-   h2_fail_json(const h2_string& e_value_, const h2_string& a_value_, const h2_row& expection_, bool caseless_, const h2_row& explain_, const char* file_ = nullptr, int line_ = 0)
-     : h2_fail_unexpect(expection_, a_value_, explain_, file_, line_), e_value(e_value_), a_value(a_value_), caseless(caseless_) {}
+   h2_fail_json(const h2_string& e_value_, const h2_string& a_value_, const h2_row& expection_, bool caseless_, const h2_row& explain_, const char* file_ = nullptr, int line_ = 0) : h2_fail_unexpect(expection_, a_value_, explain_, file_, line_), e_value(e_value_), a_value(a_value_), caseless(caseless_) {}
    void print(int subling_index = 0, int child_index = 0) override
    {
       h2_rows e_rows, a_rows;
@@ -9441,9 +9386,7 @@ struct h2_fail_json : h2_fail_unexpect {
 struct h2_fail_memcmp : h2_fail_unexpect {
    h2_vector<unsigned char> e_value, a_value;
    const int width, nbits;
-   h2_fail_memcmp(const unsigned char* e_value_, const unsigned char* a_value_, int width_, int nbits_, const h2_string& represent_, const h2_row& explain_ = {}, const char* file_ = nullptr, int line_ = 0)
-     : h2_fail_unexpect({}, represent_, explain_, file_, line_), e_value(e_value_, e_value_ + (nbits_ + 7) / 8), a_value(a_value_, a_value_ + (nbits_ + 7) / 8), width(width_), nbits(nbits_) {}
-
+   h2_fail_memcmp(const unsigned char* e_value_, const unsigned char* a_value_, int width_, int nbits_, const h2_string& represent_, const h2_row& explain_ = {}, const char* file_ = nullptr, int line_ = 0) : h2_fail_unexpect({}, represent_, explain_, file_, line_), e_value(e_value_, e_value_ + (nbits_ + 7) / 8), a_value(a_value_, a_value_ + (nbits_ + 7) / 8), width(width_), nbits(nbits_) {}
    void print(int subling_index, int child_index) override
    {
       h2_fail_unexpect::print(subling_index, child_index);
@@ -9522,16 +9465,13 @@ struct h2_fail_memory : h2_fail {
    const void* ptr;
    const int size;
    const h2_backtrace bt_allocate, bt_release;
-
-   h2_fail_memory(const void* ptr_, const int size_, const h2_backtrace& bt_allocate_, const h2_backtrace& bt_release_, const char* file_ = nullptr, int line_ = 0)
-     : h2_fail({}, file_, line_), ptr(ptr_), size(size_), bt_allocate(bt_allocate_), bt_release(bt_release_) {}
+   h2_fail_memory(const void* ptr_, const int size_, const h2_backtrace& bt_allocate_, const h2_backtrace& bt_release_, const char* file_ = nullptr, int line_ = 0) : h2_fail({}, file_, line_), ptr(ptr_), size(size_), bt_allocate(bt_allocate_), bt_release(bt_release_) {}
 };
 
 struct h2_fail_memory_leak : h2_fail_memory {
    h2_vector<std::pair<int, int>> sizes;
    const char* where;  // case or block
-   h2_fail_memory_leak(const void* ptr_, int size_, const h2_vector<std::pair<int, int>>& sizes_, const h2_backtrace& bt_allocate_, const char* where_, const char* file_, int line_)
-     : h2_fail_memory(ptr_, size_, bt_allocate_, h2_backtrace(), file_, line_), sizes(sizes_), where(where_) {}
+   h2_fail_memory_leak(const void* ptr_, int size_, const h2_vector<std::pair<int, int>>& sizes_, const h2_backtrace& bt_allocate_, const char* where_, const char* file_, int line_) : h2_fail_memory(ptr_, size_, bt_allocate_, h2_backtrace(), file_, line_), sizes(sizes_), where(where_) {}
    void print(int subling_index = 0, int child_index = 0) override
    {
       h2_row row = h2_stringify(ptr) + color(" memory leak ", "bold,red") + h2_stringify(size).brush("red") + " ";
@@ -9555,8 +9495,7 @@ struct h2_fail_memory_leak : h2_fail_memory {
 
 struct h2_fail_double_free : h2_fail_memory {
    const h2_backtrace bt_double_free;
-   h2_fail_double_free(const void* ptr_, const h2_backtrace& bt_allocate_, const h2_backtrace& bt_release_, const h2_backtrace& bt_double_free_)
-     : h2_fail_memory(ptr_, 0, bt_allocate_, bt_release_), bt_double_free(bt_double_free_) {}
+   h2_fail_double_free(const void* ptr_, const h2_backtrace& bt_allocate_, const h2_backtrace& bt_release_, const h2_backtrace& bt_double_free_) : h2_fail_memory(ptr_, 0, bt_allocate_, bt_release_), bt_double_free(bt_double_free_) {}
    void print(int subling_index = 0, int child_index = 0) override
    {
       h2_color::prints("", " %p", ptr);
@@ -9569,8 +9508,7 @@ struct h2_fail_double_free : h2_fail_memory {
 
 struct h2_fail_asymmetric_free : h2_fail_memory {
    const char *who_allocate, *who_release;
-   h2_fail_asymmetric_free(const void* ptr_, const char* who_allocate_, const char* who_release_, const h2_backtrace& bt_allocate_, const h2_backtrace& bt_release_)
-     : h2_fail_memory(ptr_, 0, bt_allocate_, bt_release_), who_allocate(who_allocate_), who_release(who_release_) {}
+   h2_fail_asymmetric_free(const void* ptr_, const char* who_allocate_, const char* who_release_, const h2_backtrace& bt_allocate_, const h2_backtrace& bt_release_) : h2_fail_memory(ptr_, 0, bt_allocate_, bt_release_), who_allocate(who_allocate_), who_release(who_release_) {}
    void print(int subling_index = 0, int child_index = 0) override
    {
       h2_color::prints("", " %p allocate with ", ptr);
@@ -9587,8 +9525,7 @@ struct h2_fail_overflow : h2_fail_memory {
    const char* action;                  /* 犯罪行为 */
    const h2_vector<unsigned char> spot; /* 犯罪现场 */
    const h2_backtrace bt_trample;       /* 犯罪过程 */
-   h2_fail_overflow(const void* ptr_, const int size_, const void* violate_ptr_, const char* action_, const h2_vector<unsigned char>& spot_, const h2_backtrace& bt_allocate_, const h2_backtrace& bt_trample_, const char* file_ = nullptr, int line_ = 0)
-     : h2_fail_memory(ptr_, size_, bt_allocate_, h2_backtrace(), file_, line_), violate_ptr(violate_ptr_), action(action_), spot(spot_), bt_trample(bt_trample_) {}
+   h2_fail_overflow(const void* ptr_, const int size_, const void* violate_ptr_, const char* action_, const h2_vector<unsigned char>& spot_, const h2_backtrace& bt_allocate_, const h2_backtrace& bt_trample_, const char* file_ = nullptr, int line_ = 0) : h2_fail_memory(ptr_, size_, bt_allocate_, h2_backtrace(), file_, line_), violate_ptr(violate_ptr_), action(action_), spot(spot_), bt_trample(bt_trample_) {}
    void print(int subling_index = 0, int child_index = 0) override
    {
       int offset = ptr < violate_ptr ? (long long)violate_ptr - ((long long)ptr + size) : (long long)violate_ptr - (long long)ptr;
@@ -9604,8 +9541,7 @@ struct h2_fail_use_after_free : h2_fail_memory {
    const void* violate_ptr;   /* 犯罪地点 */
    const char* action;        /* 犯罪行为 */
    const h2_backtrace bt_use; /* 犯罪过程 */
-   h2_fail_use_after_free(const void* ptr_, const void* violate_ptr_, const char* action_, const h2_backtrace& bt_allocate_, const h2_backtrace& bt_release_, const h2_backtrace& bt_use_)
-     : h2_fail_memory(ptr_, 0, bt_allocate_, bt_release_), violate_ptr(violate_ptr_), action(action_), bt_use(bt_use_) {}
+   h2_fail_use_after_free(const void* ptr_, const void* violate_ptr_, const char* action_, const h2_backtrace& bt_allocate_, const h2_backtrace& bt_release_, const h2_backtrace& bt_use_) : h2_fail_memory(ptr_, 0, bt_allocate_, bt_release_), violate_ptr(violate_ptr_), action(action_), bt_use(bt_use_) {}
    void print(int subling_index = 0, int child_index = 0) override
    {
       h2_row row = h2_stringify(ptr) + " " + color(h2_string("%+d", (long long)violate_ptr - (long long)ptr), "bold,red") + " " + gray("(") + h2_stringify(violate_ptr) + gray(")") + " " + color(action, "bold,red") + color(" after free", "bold,red");
@@ -9615,50 +9551,29 @@ struct h2_fail_use_after_free : h2_fail_memory {
    }
 };
 
-h2_inline h2_fail* h2_fail::new_normal(const h2_row& explain, const char* file, int line)
-{
-   return new h2_fail_normal(explain, file, line);
-}
-h2_inline h2_fail* h2_fail::new_unexpect(const h2_row& expection, const h2_row& represent, const h2_row& explain, const char* file, int line)
-{
-   return new h2_fail_unexpect(expection, represent, explain, file, line);
-}
-h2_inline h2_fail* h2_fail::new_strcmp(const h2_string& e_value, const h2_string& a_value, bool caseless, const h2_row& expection, const h2_row& explain, const char* file, int line)
-{
-   return new h2_fail_strcmp(e_value, a_value, caseless, expection, explain, file, line);
-}
-h2_inline h2_fail* h2_fail::new_strfind(const h2_string& e_value, const h2_string& a_value, const h2_row& expection, const h2_row& explain, const char* file, int line)
-{
-   return new h2_fail_strfind(e_value, a_value, expection, explain, file, line);
-}
-h2_inline h2_fail* h2_fail::new_json(const h2_string& e_value, const h2_string& a_value, const h2_row& expection, bool caseless, const h2_row& explain, const char* file, int line)
-{
-   return new h2_fail_json(e_value, a_value, expection, caseless, explain, file, line);
-}
-h2_inline h2_fail* h2_fail::new_memcmp(const unsigned char* e_value, const unsigned char* a_value, int width, int nbits, const h2_string& represent, const h2_row& explain, const char* file, int line)
-{
-   return new h2_fail_memcmp(e_value, a_value, width, nbits, represent, explain, file, line);
-}
-h2_inline h2_fail* h2_fail::new_memory_leak(const void* ptr, int size, const h2_vector<std::pair<int, int>>& sizes, const h2_backtrace& bt_allocate, const char* where, const char* file, int line)
-{
-   return new h2_fail_memory_leak(ptr, size, sizes, bt_allocate, where, file, line);
-}
-h2_inline h2_fail* h2_fail::new_double_free(const void* ptr, const h2_backtrace& bt_allocate, const h2_backtrace& bt_release, const h2_backtrace& bt_double_free)
-{
-   return new h2_fail_double_free(ptr, bt_allocate, bt_release, bt_double_free);
-}
-h2_inline h2_fail* h2_fail::new_asymmetric_free(const void* ptr, const char* who_allocate, const char* who_release, const h2_backtrace& bt_allocate, const h2_backtrace& bt_release)
-{
-   return new h2_fail_asymmetric_free(ptr, who_allocate, who_release, bt_allocate, bt_release);
-}
-h2_inline h2_fail* h2_fail::new_overflow(const void* ptr, const int size, const void* violate_ptr, const char* action, const h2_vector<unsigned char>& spot, const h2_backtrace& bt_allocate, const h2_backtrace& bt_trample, const char* file, int line)
-{
-   return new h2_fail_overflow(ptr, size, violate_ptr, action, spot, bt_allocate, bt_trample, file, line);
-}
-h2_inline h2_fail* h2_fail::new_use_after_free(const void* ptr, const void* violate_ptr, const char* action, const h2_backtrace& bt_allocate, const h2_backtrace& bt_release, const h2_backtrace& bt_use)
-{
-   return new h2_fail_use_after_free(ptr, violate_ptr, action, bt_allocate, bt_release, bt_use);
-}
+struct h2_fail_exception : h2_fail {
+   const char* type;
+   const h2_backtrace bt_throw;
+   h2_fail_exception(const h2_row& explain_, const char* type_, const h2_backtrace& bt_throw_) : h2_fail(explain_, nullptr, 0), type(type_), bt_throw(bt_throw_) {}
+   void print(int subling_index = 0, int child_index = 0) override
+   {
+      h2_color::printl(" exception " + color(type, "red") + " " + explain + " at backtrace:");
+      bt_throw.print(3);
+   }
+};
+
+h2_inline h2_fail* h2_fail::new_normal(const h2_row& explain, const char* file, int line) { return new h2_fail_normal(explain, file, line); }
+h2_inline h2_fail* h2_fail::new_unexpect(const h2_row& expection, const h2_row& represent, const h2_row& explain, const char* file, int line) { return new h2_fail_unexpect(expection, represent, explain, file, line); }
+h2_inline h2_fail* h2_fail::new_strcmp(const h2_string& e_value, const h2_string& a_value, bool caseless, const h2_row& expection, const h2_row& explain, const char* file, int line) { return new h2_fail_strcmp(e_value, a_value, caseless, expection, explain, file, line); }
+h2_inline h2_fail* h2_fail::new_strfind(const h2_string& e_value, const h2_string& a_value, const h2_row& expection, const h2_row& explain, const char* file, int line) { return new h2_fail_strfind(e_value, a_value, expection, explain, file, line); }
+h2_inline h2_fail* h2_fail::new_json(const h2_string& e_value, const h2_string& a_value, const h2_row& expection, bool caseless, const h2_row& explain, const char* file, int line) { return new h2_fail_json(e_value, a_value, expection, caseless, explain, file, line); }
+h2_inline h2_fail* h2_fail::new_memcmp(const unsigned char* e_value, const unsigned char* a_value, int width, int nbits, const h2_string& represent, const h2_row& explain, const char* file, int line) { return new h2_fail_memcmp(e_value, a_value, width, nbits, represent, explain, file, line); }
+h2_inline h2_fail* h2_fail::new_memory_leak(const void* ptr, int size, const h2_vector<std::pair<int, int>>& sizes, const h2_backtrace& bt_allocate, const char* where, const char* file, int line) { return new h2_fail_memory_leak(ptr, size, sizes, bt_allocate, where, file, line); }
+h2_inline h2_fail* h2_fail::new_double_free(const void* ptr, const h2_backtrace& bt_allocate, const h2_backtrace& bt_release, const h2_backtrace& bt_double_free) { return new h2_fail_double_free(ptr, bt_allocate, bt_release, bt_double_free); }
+h2_inline h2_fail* h2_fail::new_asymmetric_free(const void* ptr, const char* who_allocate, const char* who_release, const h2_backtrace& bt_allocate, const h2_backtrace& bt_release) { return new h2_fail_asymmetric_free(ptr, who_allocate, who_release, bt_allocate, bt_release); }
+h2_inline h2_fail* h2_fail::new_overflow(const void* ptr, const int size, const void* violate_ptr, const char* action, const h2_vector<unsigned char>& spot, const h2_backtrace& bt_allocate, const h2_backtrace& bt_trample, const char* file, int line) { return new h2_fail_overflow(ptr, size, violate_ptr, action, spot, bt_allocate, bt_trample, file, line); }
+h2_inline h2_fail* h2_fail::new_use_after_free(const void* ptr, const void* violate_ptr, const char* action, const h2_backtrace& bt_allocate, const h2_backtrace& bt_release, const h2_backtrace& bt_use) { return new h2_fail_use_after_free(ptr, violate_ptr, action, bt_allocate, bt_release, bt_use); }
+h2_inline h2_fail* h2_fail::new_exception(const char* explain, const char* type, const h2_backtrace& bt_throw) { return new h2_fail_exception(explain, type, bt_throw); }
 // source/other/h2_report.cpp
 
 struct h2_report_impl {
@@ -9996,36 +9911,13 @@ h2_inline void h2_report::initialize()
    }
 }
 
-h2_inline void h2_report::on_task_start(h2_task* t)
-{
-   h2_list_for_each_entry (p, reports, h2_report_impl, x)
-      p->on_task_start(t);
-}
-h2_inline void h2_report::on_task_endup(h2_task* t)
-{
-   h2_list_for_each_entry (p, reports, h2_report_impl, x)
-      p->on_task_endup(t);
-}
-h2_inline void h2_report::on_suite_start(h2_suite* s)
-{
-   h2_list_for_each_entry (p, reports, h2_report_impl, x)
-      p->on_suite_start(s);
-}
-h2_inline void h2_report::on_suite_endup(h2_suite* s)
-{
-   h2_list_for_each_entry (p, reports, h2_report_impl, x)
-      p->on_suite_endup(s);
-}
-h2_inline void h2_report::on_case_start(h2_suite* s, h2_case* c)
-{
-   h2_list_for_each_entry (p, reports, h2_report_impl, x)
-      p->on_case_start(s, c);
-}
-h2_inline void h2_report::on_case_endup(h2_suite* s, h2_case* c)
-{
-   h2_list_for_each_entry (p, reports, h2_report_impl, x)
-      p->on_case_endup(s, c);
-}
+/* clang-format off */
+h2_inline void h2_report::on_task_start(h2_task* t) { h2_list_for_each_entry (p, reports, h2_report_impl, x) p->on_task_start(t); }
+h2_inline void h2_report::on_task_endup(h2_task* t) { h2_list_for_each_entry (p, reports, h2_report_impl, x) p->on_task_endup(t); }
+h2_inline void h2_report::on_suite_start(h2_suite* s) { h2_list_for_each_entry (p, reports, h2_report_impl, x) p->on_suite_start(s); }
+h2_inline void h2_report::on_suite_endup(h2_suite* s) { h2_list_for_each_entry (p, reports, h2_report_impl, x) p->on_suite_endup(s); }
+h2_inline void h2_report::on_case_start(h2_suite* s, h2_case* c) { h2_list_for_each_entry (p, reports, h2_report_impl, x) p->on_case_start(s, c); }
+h2_inline void h2_report::on_case_endup(h2_suite* s, h2_case* c) { h2_list_for_each_entry (p, reports, h2_report_impl, x) p->on_case_endup(s, c); }
 
 // source/other/h2_layout.cpp
 
@@ -10251,8 +10143,7 @@ h2_inline h2_option::h2_option()
 {
    terminal_width = h2_shell::width();
 #if defined _WIN32
-   hProcess = GetCurrentProcess();
-   SymInitialize(hProcess, NULL, TRUE);
+   SymInitialize(GetCurrentProcess(), NULL, TRUE);
 #endif
 }
 

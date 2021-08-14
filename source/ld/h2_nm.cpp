@@ -58,8 +58,7 @@ h2_inline int h2_nm::get_by_name(const char* name, h2_symbol* res[], int n)
    SYMBOL_INFO* symbol = (SYMBOL_INFO*)buffer;
    symbol->SizeOfStruct = sizeof(SYMBOL_INFO);
    symbol->MaxNameLen = 256;
-   if (!SymFromName(O.hProcess, name, symbol))
-      return 0;
+   if (!SymFromName(GetCurrentProcess(), name, symbol)) return 0;
    static h2_symbol s_symbol("", 0);
    s_symbol.addr = (unsigned long long)symbol->Address;
    res[0] = &s_symbol;
@@ -93,8 +92,7 @@ h2_inline h2_symbol* h2_nm::get_by_addr(unsigned long long addr)
    SYMBOL_INFO* symbol = (SYMBOL_INFO*)buffer;
    symbol->SizeOfStruct = sizeof(SYMBOL_INFO);
    symbol->MaxNameLen = 256;
-   if (!SymFromAddr(O.hProcess, (DWORD64)(addr), 0, symbol))
-      return nullptr;
+   if (!SymFromAddr(GetCurrentProcess(), (DWORD64)(addr), 0, symbol)) return nullptr;
    static h2_symbol s_symbol("", 0);
    strcpy(s_symbol.name, symbol->Name);
    s_symbol.addr = (unsigned long long)symbol->Address;
@@ -111,9 +109,8 @@ h2_inline unsigned long long h2_nm::get_mangle(const char* name)
    SYMBOL_INFO* symbol = (SYMBOL_INFO*)buffer;
    symbol->SizeOfStruct = sizeof(SYMBOL_INFO);
    symbol->MaxNameLen = 256;
-   if (SymFromName(O.hProcess, name, symbol))
-      return (unsigned long long)symbol->Address;
-   return 0;
+   if (!SymFromName(GetCurrentProcess(), name, symbol)) return 0;
+   return (unsigned long long)symbol->Address;
 #else
    if (!name || strlen(name) == 0) return 0;
    if (!I().mangle_symbols) nm1(I().mangle_symbols);

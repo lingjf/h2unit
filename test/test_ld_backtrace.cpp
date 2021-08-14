@@ -9,17 +9,9 @@ SUITE(backtrace)
       OK(0, bt.shift);
    }
 
-   Case(constructor 1)
-   {
-      h2::h2_backtrace bt(2);
-      OK(Gt(0), bt.count);
-      OK(2, bt.shift);
-   }
-
    Case(copy constructor)
    {
-      h2::h2_backtrace bt(2);
-
+      auto bt = h2::h2_backtrace::dump(2);
       h2::h2_backtrace b1(bt);
       OK(Gt(0), b1.count);
       OK(2, b1.shift);
@@ -28,7 +20,7 @@ SUITE(backtrace)
 
    Case(assign constructor)
    {
-      h2::h2_backtrace bt(2);
+      auto bt = h2::h2_backtrace::dump(2);
 
       h2::h2_backtrace b1 = bt;
       OK(Gt(0), b1.count);
@@ -46,10 +38,9 @@ SUITE(backtrace)
 #if !defined WIN32
 SUITE(demangle)
 {
-#   ifdef __APPLE__
    Case(demangle namespace class member function)
    {
-      char mangled[] = "_ZN2h24task7executeEv";
+      char mangled[] = "_ZN2h24unit7executeEv";
       char demangled[1024] = "1";
 
       size_t len = sizeof(demangled);
@@ -57,29 +48,21 @@ SUITE(demangle)
       abi::__cxa_demangle(mangled, demangled, &len, &status);
 
       OK(0, status);
-      OK("h2::task::execute()", demangled);
+      OK("h2::unit::execute()", demangled);
    }
 
    Case(demangle namespace class member function one parameter)
    {
-      char mangled[] = "_ZN2h24hook6mallocEm";
-      char demangled[1024] = "2";
-
-      h2::h2_backtrace bt;
-      bool ret = h2::demangle(mangled, demangled, sizeof(demangled));
-      OK(ret);
-      OK("h2::hook::malloc(unsigned long)", demangled);
+      char mangled[] = "_ZN2h24unit6mallocEm";
+      char* demangled = h2::demangle(mangled);
+      OK("h2::unit::malloc(unsigned long)", demangled);
    }
-#   endif
 
    Case(demangle c - function)
    {
       char mangled[] = "malloc";
-      char demangled[1024] = "3";
-
-      h2::h2_backtrace bt;
-      bool ret = h2::demangle(mangled, demangled, sizeof(demangled));
-      OK(!ret);
+      char* demangled = h2::demangle(mangled);
+      OK("malloc", demangled);
    }
 }
 #endif

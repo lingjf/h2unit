@@ -22,12 +22,11 @@ struct h2_crash {
    // https://www.gnu.org/software/libsigsegv/
    static void segment_fault_handler(int sig, siginfo_t* si, void* unused)
    {
-      if (si->si_code == SEGV_ACCERR) {
-         h2_piece* piece = h2_stack::I().host_piece(si->si_addr);
-         if (piece) {
-            piece->violate_forbidden(si->si_addr);
-            return;
-         }
+      // si->si_code == SEGV_ACCERR
+      h2_piece* piece = h2_stack::I().host_piece(si->si_addr);
+      if (piece) {
+         piece->violate_forbidden(si->si_addr);
+         return;
       }
       h2_debug(0, "");
       abort();
