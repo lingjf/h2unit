@@ -4,7 +4,7 @@
 #   include <pthread.h>
 #endif
 
-#ifdef _WIN32
+#if defined _WIN32
 GlobalSetup()
 {
    WORD wVersionRequested;
@@ -34,7 +34,10 @@ SUITE(harmless)
       struct tm* t4 = gmtime(&t3);
       struct tm t5;
       ctime(&t3);
+#if defined __arm__ || defined __arm64__ || defined __aarch64__
+#else
       asctime(t4);  // deprecated
+#endif
 #if !defined _WIN32
       struct timezone tz;
       gettimeofday(&tv, &tz);
@@ -196,19 +199,17 @@ SUITE(harmless)
       auto rint_ret = rint(3.0);            // auto rintf_ret = rintf(3.0); auto rintl_ret = rintl(3.0);
    }
 
-#if !defined WIN32
+#if !defined _WIN32
    Case(syslog.h)
    {
       syslog(LOG_DEBUG, "This is test %d", 42);
    }
 #endif
 
-#if !defined WIN32
    Case(socket.h)
    {
-      close(socket(AF_INET, SOCK_DGRAM, 0));
+      CloseSocket(socket(AF_INET, SOCK_DGRAM, 0));
    }
-#endif
 
    Case(netdb.h)
    {

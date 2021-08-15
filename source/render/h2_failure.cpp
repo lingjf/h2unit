@@ -55,9 +55,9 @@ struct h2_fail_normal : h2_fail {
 
 static inline bool is_synonym(const h2_string& a, const h2_string& b)
 {
-   static const char* s_null[] = {"NULL", "__null", "((void *)0)", "(nil)", "nullptr", "0", "0x0", nullptr};
-   static const char* s_true[] = {"IsTrue", "true", "1", nullptr};
-   static const char* s_false[] = {"IsFalse", "false", "0", nullptr};
+   static const char* s_null[] = {"NULL", "__null", "((void *)0)", "(nil)", "nullptr", "0", "0x0", "00000000", "0000000000000000", nullptr};
+   static const char* s_true[] = {"IsTrue", "true", "TRUE", "True", "1", nullptr};
+   static const char* s_false[] = {"IsFalse", "false", "FALSE", "False", "0", nullptr};
    static const char** S[] = {s_null, s_true, s_false};
 
    if (a == b) return true;
@@ -360,8 +360,8 @@ struct h2_fail_overflow : h2_fail_memory {
       int offset = ptr < violate_ptr ? (long long)violate_ptr - ((long long)ptr + size) : (long long)violate_ptr - (long long)ptr;
       h2_row row = h2_stringify(ptr) + " " + color(h2_string("%+d", offset), "bold,red") + " " + gray("(") + h2_stringify(violate_ptr) + gray(")") + " " + color(action, "bold,red") + " " + (offset >= 0 ? "overflow" : "underflow") + " ";
       for (int i = 0; i < spot.size(); ++i) row.printf("bold,red", "%02X ", spot[i]);
-      h2_color::printl(" " + row + locate());
-      if (bt_trample.count) h2_color::prints("", "  trampled at backtrace:\n"), bt_trample.print(3);
+      h2_color::printl(" " + row + locate() + (bt_trample.count ? " at backtrace:" : ""));
+      if (bt_trample.count) bt_trample.print(3);
       h2_color::prints("", "  which allocate at backtrace:\n"), bt_allocate.print(3);
    }
 };

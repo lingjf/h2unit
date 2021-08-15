@@ -6,59 +6,58 @@ struct h2_return : h2_libc {
    explicit h2_return(ReturnType _value) : value(_value){};
 };
 
-template <typename Class, typename Signature>
+template <typename ClassType, typename Signature>
 struct h2_routine;
 
-template <typename Class, typename ReturnType, typename... Args>
-struct h2_routine<Class, ReturnType(Args...)> {
-   ReturnType (*fp)(Args...) = nullptr; // normal function pointer
-   ReturnType (*mfp)(Class*, Args...) = nullptr; // member function pointer
-   h2_shared_ptr<h2_return<ReturnType>> return_value;
+template <typename ClassType, typename ReturnType, typename... ArgumentTypes>
+struct h2_routine<ClassType, ReturnType(ArgumentTypes...)> {
+   ReturnType (*fp)(ArgumentTypes...) = nullptr;               // normal function pointer
+   ReturnType (*mfp)(ClassType*, ArgumentTypes...) = nullptr;  // member function pointer
+   h2_shared_ptr<h2_return<ReturnType>> ret;
 
    h2_routine() {}
-   h2_routine(ReturnType r) : return_value(new h2_return<ReturnType>(r)) {}
-   h2_routine(ReturnType (*f)(Args...)) : fp(f) {}
-   h2_routine(ReturnType (*f)(Class*, Args...)) : mfp(f) {}
+   h2_routine(ReturnType r) : ret(new h2_return<ReturnType>(r)) {}
+   h2_routine(ReturnType (*f)(ArgumentTypes...)) : fp(f) {}
+   h2_routine(ReturnType (*f)(ClassType*, ArgumentTypes...)) : mfp(f) {}
 
-   ReturnType operator()(Class* This, Args... args)
+   ReturnType operator()(ClassType* This, ArgumentTypes... arguments)
    {
-      if (mfp) {
-         return mfp(This, args...);
-      } else if (fp) {
-         return fp(args...);
-      } else if (return_value) {
-         return return_value->value;
-      }
-      /* return uninitialized value */
+      if (mfp)
+         return mfp(This, arguments...);
+      else if (fp)
+         return fp(arguments...);
+      else if (ret)
+         return ret->value;
+      /* never reach! make compiler happy. return uninitialized value is undefined behaviour, clang illegal instruction. */
+      return ret->value;
    }
    operator bool()
    {
-      return fp || mfp || return_value;
+      return fp || mfp || ret;
    }
    void clear()
    {
       fp = nullptr;
       mfp = nullptr;
-      return_value.reset();
+      ret.reset();
    }
 };
 
-template <typename Class, typename... Args>
-struct h2_routine<Class, void(Args...)> {
-   void (*fp)(Args...) = nullptr;
-   void (*mfp)(Class*, Args...) = nullptr;
+template <typename ClassType, typename... ArgumentTypes>
+struct h2_routine<ClassType, void(ArgumentTypes...)> {
+   void (*fp)(ArgumentTypes...) = nullptr;
+   void (*mfp)(ClassType*, ArgumentTypes...) = nullptr;
 
    h2_routine() {}
-   h2_routine(void (*f)(Args...)) : fp(f) {}
-   h2_routine(void (*f)(Class*, Args...)) : mfp(f) {}
+   h2_routine(void (*f)(ArgumentTypes...)) : fp(f) {}
+   h2_routine(void (*f)(ClassType*, ArgumentTypes...)) : mfp(f) {}
 
-   void operator()(Class* This, Args... args)
+   void operator()(ClassType* This, ArgumentTypes... arguments)
    {
-      if (mfp) {
-         mfp(This, args...);
-      } else if (fp) {
-         fp(args...);
-      }
+      if (mfp)
+         mfp(This, arguments...);
+      else if (fp)
+         fp(arguments...);
    }
    operator bool()
    {

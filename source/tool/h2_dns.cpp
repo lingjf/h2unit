@@ -138,7 +138,7 @@ h2_inline void h2_dns::setaddrinfo(int n, ...)
    va_end(b);
 
    h2_resolver::I().dnses.push(name->y);
-   if (h2_task::I().current_case) h2_task::I().current_case->dnses.add(name->x);
+   if (h2_runner::I().current_case) h2_runner::I().current_case->dnses.add(name->x);
 }
 
 h2_inline void h2_dns::initialize()

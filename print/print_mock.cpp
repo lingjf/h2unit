@@ -96,3 +96,21 @@ CASE("foobar")
    STUB("foobar", STUB_foobar);
    OK(-1, foobar(0));
 }
+
+class CA {
+ public:
+   virtual int fx(int a, const char* b) = 0;
+};
+
+class CB : public CA {
+ public:
+   virtual int fx(int a, const char* b) { return 1; }
+};
+
+CASE(mock abstract class)
+{
+   CB b;
+   CA* a = dynamic_cast<CA*>(&b);
+
+   STUBS(CA, fx, int, (int a, const char* b)) { return -1; };
+}

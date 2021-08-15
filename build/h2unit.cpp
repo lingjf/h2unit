@@ -1,5 +1,5 @@
 ﻿
-/* v5.12 2021-08-15 12:11:36 */
+/* v5.12 2021-08-15 21:50:00 */
 /* https://github.com/lingjf/h2unit */
 /* Apache Licence 2.0 */
 
@@ -58,14 +58,14 @@ int main(int argc, const char** argv);
 int main(int argc, const char** argv)
 {
    h2::h2_option::I().parse(argc, argv);
-   return h2::h2_task::I().execute();
+   return h2::h2_runner::I().execute();
 }
 #   endif
 #else
 __attribute__((weak)) int main(int argc, const char** argv)
 {
    h2::h2_option::I().parse(argc, argv);
-   return h2::h2_task::I().execute();
+   return h2::h2_runner::I().execute();
 }
 #endif
 
@@ -135,118 +135,6 @@ h2_inline void h2_list::sort(int (*cmp)(h2_list*, h2_list*))
       push_back(sorted.pop());
    }
 }
-// source/utils/h2_misc.cpp
-
-static inline const char* h2_basename(const char* path)
-{
-   const char* p = strrchr(path, '/');
-   if (!p) p = strrchr(path, '\\');
-   return p ? p + 1 : path;
-}
-
-h2_inline bool h2_pattern::regex_match(const char* pattern, const char* subject, bool caseless)
-{
-   bool result = false;
-   h2_memory::restores();
-   try {  // c++11 support regex; gcc 4.8 start support regex, gcc 5.5 icase works.
-      result = std::regex_match(subject, caseless ? std::regex(pattern, std::regex::icase) : std::regex(pattern));
-   } catch (const std::regex_error&) {
-      result = false;
-   }
-   h2_memory::overrides();
-   return result;
-}
-
-h2_inline bool h2_pattern::wildcard_match(const char* pattern, const char* subject, bool caseless)
-{
-#if defined _WIN32
-   const char *scur = subject, *pcur = pattern;
-   const char *sstar = nullptr, *pstar = nullptr;
-   while (*scur) {
-      if (*pcur == '?') {
-         ++scur;
-         ++pcur;
-      } else if (*pcur == '*') {
-         pstar = pcur++;
-         sstar = scur;
-      } else if (caseless ? ::tolower(*scur) == ::tolower(*pcur) : *scur == *pcur) {
-         ++scur;
-         ++pcur;
-      } else if (pstar) {
-         pcur = pstar + 1;
-         scur = ++sstar;
-      } else
-         return false;
-   }
-   while (*pcur == '*') ++pcur;
-   return !*pcur;
-#else
-   return !fnmatch(pattern, subject, caseless ? FNM_CASEFOLD : 0);
-#endif
-}
-
-h2_inline bool h2_pattern::match(const char* pattern, const char* subject, bool caseless)
-{
-   return wildcard_match(pattern, subject, caseless) || regex_match(pattern, subject, caseless);
-}
-
-static inline long long h2_now()
-{
-#if defined _WIN32
-   return GetTickCount();
-#else
-   struct timeval tv;
-   gettimeofday(&tv, NULL);
-   return tv.tv_sec * 1000LL + tv.tv_usec / 1000;
-#endif
-}
-
-static inline void h2_sleep(long long milliseconds)
-{
-#if defined _WIN32
-   Sleep(milliseconds);
-#else
-   ::usleep(milliseconds * 1000);
-#endif
-}
-
-static inline unsigned h2_page_size()
-{
-#if defined _WIN32
-   SYSTEM_INFO si;
-   GetSystemInfo(&si);
-   return (unsigned)si.dwPageSize;
-#else
-   return sysconf(_SC_PAGESIZE);
-#endif
-}
-
-static inline bool h2_in(const char* x, const char* s[], int n = 0)
-{
-   for (int i = 0; s[i] && i < (n ? n : 1000); ++i)
-      if (!strcmp(s[i], x)) return true;
-   return false;
-}
-
-static inline const char* comma_if(bool a, const char* t = ", ", const char* f = "") { return a ? t : f; };
-
-#define h2_sprintvf(str, fmt, ap)               \
-   do {                                         \
-      va_list bp;                               \
-      va_copy(bp, ap);                          \
-      int len = vsnprintf(nullptr, 0, fmt, bp); \
-      str = (char*)alloca(len + 1);             \
-      va_end(bp);                               \
-      len = vsnprintf(str, len + 1, fmt, ap);   \
-   } while (0)
-
-#define h2_sprintf(str, fmt)     \
-   do {                          \
-      va_list ap;                \
-      va_start(ap, fmt);         \
-      h2_sprintvf(str, fmt, ap); \
-      va_end(ap);                \
-   } while (0)
 // source/utils/h2_numeric.cpp
 
 static inline bool not2n(unsigned x)
@@ -365,6 +253,186 @@ h2_inline const char* h2_numeric::sequence_number(int sequence, int shift)
    sprintf(ss, "%dth", sequence);
    return ss;
 }
+// source/utils/h2_misc.cpp
+
+static inline const char* h2_basename(const char* path)
+{
+   const char* p = strrchr(path, '/');
+   if (!p) p = strrchr(path, '\\');
+   return p ? p + 1 : path;
+}
+
+h2_inline bool h2_pattern::regex_match(const char* pattern, const char* subject, bool caseless)
+{
+   bool result = false;
+   h2_memory::restores();
+   try {  // c++11 support regex; gcc 4.8 start support regex, gcc 5.5 icase works.
+      result = std::regex_match(subject, caseless ? std::regex(pattern, std::regex::icase) : std::regex(pattern));
+   } catch (const std::regex_error&) {
+      result = false;
+   }
+   h2_memory::overrides();
+   return result;
+}
+
+h2_inline bool h2_pattern::wildcard_match(const char* pattern, const char* subject, bool caseless)
+{
+#if defined _WIN32
+   const char *scur = subject, *pcur = pattern;
+   const char *sstar = nullptr, *pstar = nullptr;
+   while (*scur) {
+      if (*pcur == '?') {
+         ++scur;
+         ++pcur;
+      } else if (*pcur == '*') {
+         pstar = pcur++;
+         sstar = scur;
+      } else if (caseless ? ::tolower(*scur) == ::tolower(*pcur) : *scur == *pcur) {
+         ++scur;
+         ++pcur;
+      } else if (pstar) {
+         pcur = pstar + 1;
+         scur = ++sstar;
+      } else
+         return false;
+   }
+   while (*pcur == '*') ++pcur;
+   return !*pcur;
+#else
+   return !fnmatch(pattern, subject, caseless ? FNM_CASEFOLD : 0);
+#endif
+}
+
+static inline const char* get_key(const char* subject, const char* key)
+{
+   return strcasestr(subject, key);
+}
+static inline const char* get_eq(const char* start)
+{
+   for (; *start && ::isspace(*start);) start++;  //strip left space
+   return *start == '=' ? start : nullptr;
+}
+
+h2_inline const char* h2_extract::has(const char* attributes, const char* key)
+{
+   return strcasestr(attributes, key);
+}
+
+h2_inline bool h2_extract::numeric(const char* attributes, const char* key, double& value)
+{
+   const char* p_key = get_key(attributes, key);
+   if (!p_key) return false;
+   const char* p_eq = get_eq(p_key + strlen(key));
+   if (!p_eq) return false;
+   const char* p_numeric = p_eq + 1;
+   for (; *p_numeric && ::isspace(*p_numeric);) p_numeric++;  //strip left space
+   value = strtod(p_numeric, nullptr);
+   return true;
+}
+
+h2_inline bool h2_extract::iport(const char* attributes, const char* key, char* str)
+{
+   const char* p_key = get_key(attributes, key);
+   if (!p_key) return false;
+   const char* p_eq = get_eq(p_key + strlen(key));
+   if (!p_eq) return false;
+
+   for (const char* p = p_eq + 1; *p; p++) {
+      if (::isdigit(*p) || *p == '.' || *p == ':' || *p == '*' || *p == '?') {
+         *str++ = *p;
+         *str = '\0';
+      } else {
+         if (!(::isspace(*p) || *p == '\"')) break;
+      }
+   }
+   return true;
+}
+
+h2_inline int h2_extract::fill(const char* attributes, const char* key, unsigned char bytes[])
+{
+   const char* p_key = get_key(attributes, key);
+   if (!p_key) return 0;
+   const char* p_eq = get_eq(p_key + strlen(key));
+   if (!p_eq) return 0;
+   const char* p = p_eq + 1;
+   for (; *p && ::isspace(*p);) p++;  // strip left space
+   if (p[0] == '0' && ::tolower(p[1]) == 'x') {
+      return hex_to_bytes(p + 2, bytes);
+   } else {
+      long long v = strtoll(p, nullptr, 10);
+      if (v <= 0xFFU)
+         return *((unsigned char*)bytes) = (unsigned char)v, 1;
+      else if (v <= 0xFFFFU)
+         return *((unsigned short*)bytes) = (unsigned short)v, 2;
+      else if (v <= 0xFFFFFFFFU)
+         return *((unsigned int*)bytes) = (unsigned int)v, 4;
+      else
+         return *((unsigned long long*)bytes) = (unsigned long long)v, 8;
+   }
+}
+
+h2_inline bool h2_pattern::match(const char* pattern, const char* subject, bool caseless)
+{
+   return wildcard_match(pattern, subject, caseless) || regex_match(pattern, subject, caseless);
+}
+
+static inline long long h2_now()
+{
+#if defined _WIN32
+   return GetTickCount();
+#else
+   struct timeval tv;
+   gettimeofday(&tv, NULL);
+   return tv.tv_sec * 1000LL + tv.tv_usec / 1000;
+#endif
+}
+
+static inline void h2_sleep(long long milliseconds)
+{
+#if defined _WIN32
+   Sleep(milliseconds);
+#else
+   ::usleep(milliseconds * 1000);
+#endif
+}
+
+static inline unsigned h2_page_size()
+{
+#if defined _WIN32
+   SYSTEM_INFO si;
+   GetSystemInfo(&si);
+   return (unsigned)si.dwPageSize;
+#else
+   return sysconf(_SC_PAGESIZE);
+#endif
+}
+
+static inline bool h2_in(const char* x, const char* s[], int n = 0)
+{
+   for (int i = 0; s[i] && i < (n ? n : 1000); ++i)
+      if (!strcmp(s[i], x)) return true;
+   return false;
+}
+
+static inline const char* comma_if(bool a, const char* t = ", ", const char* f = "") { return a ? t : f; };
+
+#define h2_sprintvf(str, fmt, ap)               \
+   do {                                         \
+      va_list bp;                               \
+      va_copy(bp, ap);                          \
+      int len = vsnprintf(nullptr, 0, fmt, bp); \
+      str = (char*)alloca(len + 1);             \
+      va_end(bp);                               \
+      len = vsnprintf(str, len + 1, fmt, ap);   \
+   } while (0)
+
+#define h2_sprintf(str, fmt)     \
+   do {                          \
+      va_list ap;                \
+      va_start(ap, fmt);         \
+      h2_sprintvf(str, fmt, ap); \
+      va_end(ap);                \
+   } while (0)
 // source/utils/h2_libc.cpp
 
 struct h2_libc_malloc {
@@ -955,8 +1023,7 @@ h2_inline void h2_color::printl(const h2_rows& rows)
    for (auto& row : rows) printl(row);
 }
 
-// source/ld/h2_nm.cpp
-//https://github.com/JochenKalmbach/StackWalker
+// source/symbol/h2_nm.cpp
 
 #if !defined _WIN32
 static inline void nm1(std::map<std::string, unsigned long long>*& symbols)
@@ -1077,20 +1144,7 @@ h2_inline unsigned long long h2_nm::get_mangle(const char* name)
    return it != I().mangle_symbols->end() ? it->second : 0ULL;
 #endif
 }
-
-h2_inline char* h2_nm::demangle(const char* mangle_name)
-{
-#if defined _WIN32
-   return (char*)mangle_name;
-#else
-   static char demangle_name[1024];
-   size_t length = 1024;
-   int status = -1;
-   if (strlen(mangle_name)) abi::__cxa_demangle(mangle_name, demangle_name, &length, &status);
-   return status == 0 ? demangle_name : (char*)mangle_name;
-#endif
-}
-// source/ld/h2_load.cpp
+// source/symbol/h2_load.cpp
 
 static inline long long get_load_text_offset()
 {
@@ -1099,21 +1153,15 @@ static inline long long get_load_text_offset()
    return (long long)&main - (long long)s[0]->addr;
 }
 
-struct h2_vtable_offset_test {
-   h2_vtable_offset_test() {}
-   virtual ~h2_vtable_offset_test() {}
-   virtual void dummy() {}
-};
-
 static inline long long get_load_vtable_offset()
 {
    char vtable_symbol[256];
-   h2_vtable_offset_test t;
+   h2_vtable_test t;
    long long absolute_vtable = (long long)*(void***)&t;
-   sprintf(vtable_symbol, "_ZTV%s", typeid(h2_vtable_offset_test).name());  // mangled for "vtable for h2::h2_vtable_offset_test"
+   sprintf(vtable_symbol, "_ZTV%s", typeid(h2_vtable_test).name());  // mangled for "vtable for h2::h2_vtable_test"
    long long relative_vtable = (long long)h2_nm::get_mangle(vtable_symbol);
    if (relative_vtable == 0)
-      h2_color::prints("yellow", "\nDon't find vtable for h2::h2_vtable_offset_test %s\n", vtable_symbol);
+      h2_color::prints("yellow", "\nDon't find vtable for h2::h2_vtable_test %s\n", vtable_symbol);
    return absolute_vtable - relative_vtable;
 }
 
@@ -1148,108 +1196,14 @@ h2_inline void* h2_load::get_by_fn(const char* fn)
    h2_symbol* res[16];
    int n = h2_nm::get_by_name(fn, res, 16);
    if (n != 1) {
-      h2_color::prints("yellow", n ? "\nFind multiple %s :\n" : "\nDon't find %s\n", fn);
+      h2_color::printl(color(n ? "Find multiple " : "Don't find ", "yellow") + color(fn, "bold,red"));
       for (int i = 0; i < n; ++i)
-         h2_color::prints("yellow", "  %d. %s \n", i + 1, res[i]->name);
+         h2_color::printl("  " + gray(h2_stringify(i) + ". ") + color(res[i]->name, "yellow"));
       return nullptr;
    }
    return addr_to_ptr(res[0]->addr);
 }
-
-#if defined __i386__ || defined __x86_64__ || defined _M_IX86 || defined _M_X64
-
-static inline unsigned char* follow_JMP32REL(unsigned char* target)
-{
-   int relative_offset;
-   memcpy(reinterpret_cast<void*>(&relative_offset), reinterpret_cast<void*>(target + 1), 4);
-   return target + 5 + relative_offset;
-}
-static inline unsigned char* follow_JMP8REL(unsigned char* target)
-{
-   signed char relative_offset;
-   memcpy(reinterpret_cast<void*>(&relative_offset), reinterpret_cast<void*>(target + 1), 1);
-   return target + 2 + relative_offset;
-}
-static inline unsigned char* follow_JMP32ABS(unsigned char* target)
-{
-   void** new_target_p;
-   if (sizeof(void*) == 8) {  // In 64-bit mode JMPs are RIP-relative, not absolute
-      int target_offset;
-      memcpy(reinterpret_cast<void*>(&target_offset), reinterpret_cast<void*>(target + 2), 4);
-      new_target_p = reinterpret_cast<void**>(target + target_offset + 6);
-   } else {
-      memcpy(&new_target_p, reinterpret_cast<void*>(target + 2), 4);
-   }
-   return reinterpret_cast<unsigned char*>(*new_target_p);
-}
-
-h2_inline void* h2_load::follow_jmp(void* fp, int n)
-{
-   unsigned char* p = (unsigned char*)fp;
-   while (n--) {
-      if (p[0] == 0xE9) {  // ASM_JMP32REL
-         p = follow_JMP32REL(p);
-      } else if (p[0] == 0xEB) {  //ASM_JMP8REL, Visual Studio 7.1 implements new[] as an 8 bit jump to new
-         p = follow_JMP8REL(p);
-      } else if (p[0] == 0xFF && p[1] == 0x25) {  // ASM_JMP32ABS_0 ASM_JMP32ABS_1
-         p = follow_JMP32ABS(p);
-      } else if (sizeof(void*) == 8 && p[0] == 0x48 && p[1] == 0xFF && p[2] == 0x25) {  // in Visual Studio 2012 we're seeing jump like that: rex.W jmpq *0x11d019(%rip)
-         p = follow_JMP32ABS(p + 1);
-      } else {
-         break;
-      }
-   }
-   return (void*)p;
-}
-
-#elif defined __arm__ || defined __arm64__ || defined __aarch64__
-
-static inline long long sign_extend(unsigned long long value, unsigned int bits)
-{
-   const unsigned int left = 64 - bits;
-   const long long m1 = -1;
-   const long long wide = (long long)(value << left);
-   const long long sign = (wide < 0) ? (m1 << left) : 0;
-   return value | sign;
-}
-
-static inline unsigned long fetch_opcode(void* fp, int i = 0)
-{
-   return *(unsigned long*)(((unsigned char*)fp) + i * 4);
-}
-
-h2_inline void* h2_load::follow_jmp(void* fp, int n)
-{
-   while (n--) {
-      // (gdb) disassemble /r printf
-      // Dump of assembler code for function printf@plt:
-      //    0x0000000000c1f8a0 <+0>:     90 66 00 b0     adrp    x16, 0x18f0000 <div@got.plt>
-      //    0x0000000000c1f8a4 <+4>:     11 ee 41 f9     ldr     x17, [x16, #984]
-      //    0x0000000000c1f8a8 <+8>:     10 62 0f 91     add     x16, x16, #0x3d8
-      //    0x0000000000c1f8ac <+12>:    20 02 1f d6     br      x17
-      if ((fetch_opcode(fp, 0) & 0x9f00001f) == (0x90000000 | 16)) {                                                     // C6.2.10 ADRP
-         if ((fetch_opcode(fp, 1) & 0xffe003ff) == (0xf9400000 | 16 << 5 | 17)) {                                        // C6.2.101 LDR (immediate)
-            if ((fetch_opcode(fp, 2) & 0xfffffc1f) == 0xd61f0000 || (fetch_opcode(fp, 3) & 0xfffffc1f) == 0xd61f0000) {  // BR X17 0xd61f0000 | 17 << 5
-               unsigned long long low2 = (fetch_opcode(fp, 0) >> 29) & 3;
-               unsigned long long high19 = (fetch_opcode(fp, 0) >> 5) & ~(~0ULL << 19);
-               long long page = sign_extend((high19 << 2) | low2, 21) << 12;
-               unsigned long long offset = ((fetch_opcode(fp, 1) >> 10) & ~(~0ULL << 12)) << 3;
-               unsigned char* target_p = (unsigned char*)((unsigned long long)fp & 0xfffffffffffff000ULL) + page + offset;
-               fp = (void*)*(unsigned char**)target_p;
-            }
-         }
-      } else if ((fetch_opcode(fp, 0) & 0xf8000000) == 0x58000000) {  // LDR X17,[PC+n]
-         if ((fetch_opcode(fp, 1) & 0xfffffc1f) == 0xd61f0000) {      // BR X17
-            unsigned long n = (fetch_opcode(fp, 0) & 0x07ffffe0) >> 3;
-            fp = (void*)*(unsigned long long*)(((unsigned long long)fp) + n);
-         }
-      }
-   }
-   return fp;
-}
-
-#endif
-// source/ld/h2_backtrace.cpp
+// source/symbol/h2_backtrace.cpp
 
 #if !defined _WIN32
 static inline char* addr2line(unsigned long long addr)
@@ -1367,10 +1321,10 @@ h2_inline void h2_backtrace::print(h2_vector<h2_string>& stacks) const
    char** symbols = backtrace_symbols(frames, count);
    h2_memory::overrides();
    for (int i = shift; i < count; ++i) {
-      char *p = nullptr, mangle_name[1024] = "";
+      char *p = nullptr, mangle_name[1024] = "", demangle_name[1024] = "";
       backtrace_extract(symbols[i], mangle_name);
       if (O.verbose || O.os != macOS) p = addr2line(h2_load::ptr_to_addr(frames[i])); /* atos is slow */
-      if (!p) p = h2_nm::demangle(mangle_name);
+      if (!p) p = h2_cxa::demangle(mangle_name, demangle_name);
       if (!p || !strlen(p)) p = symbols[i];
       stacks.push_back(p);
       if (!strcmp("main", mangle_name) || !strcmp("__libc_start_main", mangle_name)) break;
@@ -1390,6 +1344,112 @@ h2_inline void h2_backtrace::print(int pad) const
    rows.sequence(pad);
    h2_color::printl(rows);
 }
+// source/symbol/h2_cxa.cpp
+
+h2_inline char* h2_cxa::demangle(const char* mangle_name, char* demangle_name, size_t length)
+{
+#if defined _WIN32
+   return (char*)mangle_name;
+#else
+   int status = -1;
+   if (strlen(mangle_name)) abi::__cxa_demangle(mangle_name, demangle_name, &length, &status);
+   return status == 0 ? demangle_name : (char*)mangle_name;
+#endif
+}
+
+#if defined __i386__ || defined __x86_64__ || defined _M_IX86 || defined _M_X64
+
+static inline unsigned char* follow_JMP32REL(unsigned char* target)
+{
+   int relative_offset;
+   memcpy(reinterpret_cast<void*>(&relative_offset), reinterpret_cast<void*>(target + 1), 4);
+   return target + 5 + relative_offset;
+}
+static inline unsigned char* follow_JMP8REL(unsigned char* target)
+{
+   signed char relative_offset;
+   memcpy(reinterpret_cast<void*>(&relative_offset), reinterpret_cast<void*>(target + 1), 1);
+   return target + 2 + relative_offset;
+}
+static inline unsigned char* follow_JMP32ABS(unsigned char* target)
+{
+   void** new_target_p;
+   if (sizeof(void*) == 8) {  // In 64-bit mode JMPs are RIP-relative, not absolute
+      int target_offset;
+      memcpy(reinterpret_cast<void*>(&target_offset), reinterpret_cast<void*>(target + 2), 4);
+      new_target_p = reinterpret_cast<void**>(target + target_offset + 6);
+   } else {
+      memcpy(&new_target_p, reinterpret_cast<void*>(target + 2), 4);
+   }
+   return reinterpret_cast<unsigned char*>(*new_target_p);
+}
+
+h2_inline void* h2_cxa::follow_jmp(void* fp, int n)
+{
+   unsigned char* p = (unsigned char*)fp;
+   while (n--) {
+      if (p[0] == 0xE9) {  // ASM_JMP32REL
+         p = follow_JMP32REL(p);
+      } else if (p[0] == 0xEB) {  //ASM_JMP8REL, Visual Studio 7.1 implements new[] as an 8 bit jump to new
+         p = follow_JMP8REL(p);
+      } else if (p[0] == 0xFF && p[1] == 0x25) {  // ASM_JMP32ABS_0 ASM_JMP32ABS_1
+         p = follow_JMP32ABS(p);
+      } else if (sizeof(void*) == 8 && p[0] == 0x48 && p[1] == 0xFF && p[2] == 0x25) {  // in Visual Studio 2012 we're seeing jump like that: rex.W jmpq *0x11d019(%rip)
+         p = follow_JMP32ABS(p + 1);
+      } else {
+         break;
+      }
+   }
+   return (void*)p;
+}
+
+#elif defined __arm__ || defined __arm64__ || defined __aarch64__
+
+static inline long long sign_extend(unsigned long long value, unsigned int bits)
+{
+   const unsigned int left = 64 - bits;
+   const long long m1 = -1;
+   const long long wide = (long long)(value << left);
+   const long long sign = (wide < 0) ? (m1 << left) : 0;
+   return value | sign;
+}
+
+static inline unsigned long fetch_opcode(void* fp, int i = 0)
+{
+   return *(unsigned long*)(((unsigned char*)fp) + i * 4);
+}
+
+h2_inline void* h2_cxa::follow_jmp(void* fp, int n)
+{
+   while (n--) {
+      // (gdb) disassemble /r printf
+      // Dump of assembler code for function printf@plt:
+      //    0x0000000000c1f8a0 <+0>:     90 66 00 b0     adrp    x16, 0x18f0000 <div@got.plt>
+      //    0x0000000000c1f8a4 <+4>:     11 ee 41 f9     ldr     x17, [x16, #984]
+      //    0x0000000000c1f8a8 <+8>:     10 62 0f 91     add     x16, x16, #0x3d8
+      //    0x0000000000c1f8ac <+12>:    20 02 1f d6     br      x17
+      if ((fetch_opcode(fp, 0) & 0x9f00001f) == (0x90000000 | 16)) {                                                     // C6.2.10 ADRP
+         if ((fetch_opcode(fp, 1) & 0xffe003ff) == (0xf9400000 | 16 << 5 | 17)) {                                        // C6.2.101 LDR (immediate)
+            if ((fetch_opcode(fp, 2) & 0xfffffc1f) == 0xd61f0000 || (fetch_opcode(fp, 3) & 0xfffffc1f) == 0xd61f0000) {  // BR X17 0xd61f0000 | 17 << 5
+               unsigned long long low2 = (fetch_opcode(fp, 0) >> 29) & 3;
+               unsigned long long high19 = (fetch_opcode(fp, 0) >> 5) & ~(~0ULL << 19);
+               long long page = sign_extend((high19 << 2) | low2, 21) << 12;
+               unsigned long long offset = ((fetch_opcode(fp, 1) >> 10) & ~(~0ULL << 12)) << 3;
+               unsigned char* target_p = (unsigned char*)((unsigned long long)fp & 0xfffffffffffff000ULL) + page + offset;
+               fp = (void*)*(unsigned char**)target_p;
+            }
+         }
+      } else if ((fetch_opcode(fp, 0) & 0xf8000000) == 0x58000000) {  // LDR X17,[PC+n]
+         if ((fetch_opcode(fp, 1) & 0xfffffc1f) == 0xd61f0000) {      // BR X17
+            unsigned long n = (fetch_opcode(fp, 0) & 0x07ffffe0) >> 3;
+            fp = (void*)*(unsigned long long*)(((unsigned long long)fp) + n);
+         }
+      }
+   }
+   return fp;
+}
+
+#endif
 
 // source/json/h2_tinyexpr.cpp
 // TINYEXPR - Tiny recursive descent parser and evaluation engine in C
@@ -3087,42 +3147,11 @@ struct h2_block_attributes {
 
    h2_block_attributes(const char* attributes)
    {
-      const char* p_noleak = strcasestr(attributes, "noleak");
-      if (p_noleak) noleak = true;
-
-      const char* p_limit = strcasestr(attributes, "limit");
-      if (p_limit) {
-         const char* p = strchr(p_limit, '=');
-         if (p) limit = (long long)strtod(p + 1, nullptr);
-      }
-
-      const char* p_align = strcasestr(attributes, "align");
-      if (p_align) {
-         const char* p = strchr(p_align, '=');
-         if (p) alignment = (int)strtod(p + 1, nullptr);
-      }
-
-      const char* p_fill = strcasestr(attributes, "fill");
-      if (p_fill) {
-         const char* p = strchr(p_fill, '=');
-         if (p) {
-            for (p += 1; *p && ::isspace(*p);) p++;  // strip left space
-
-            if (p[0] == '0' && ::tolower(p[1]) == 'x') {
-               n_fill = hex_to_bytes(p + 2, s_fill);
-            } else {
-               long long v = strtoll(p, (char**)NULL, 10);
-               if (v <= 0xFFU)
-                  n_fill = 1, *((unsigned char*)s_fill) = (unsigned char)v;
-               else if (v <= 0xFFFFU)
-                  n_fill = 2, *((unsigned short*)s_fill) = (unsigned short)v;
-               else if (v <= 0xFFFFFFFFU)
-                  n_fill = 4, *((unsigned int*)s_fill) = (unsigned int)v;
-               else
-                  n_fill = 8, *((unsigned long long*)s_fill) = (unsigned long long)v;
-            }
-         }
-      }
+      double d;
+      if (h2_extract::has(attributes, "noleak")) noleak = true;
+      if (h2_extract::numeric(attributes, "limit", d)) limit = (long long)d;
+      if (h2_extract::numeric(attributes, "align", d)) alignment = (int)d;
+      n_fill = h2_extract::fill(attributes, "fill", s_fill);
    }
 };
 
@@ -3382,7 +3411,7 @@ struct h2_override_stdlib {
 
    void reset() { stubs.clear(); }
 };
-#if defined __GLIBC__
+#if defined __linux
 // source/memory/h2_override_linux.cpp
 // https://www.gnu.org/savannah-checkouts/gnu/libc/manual/html_node/Hooks-for-Malloc.html
 
@@ -3682,6 +3711,7 @@ h2_inline void h2_exempt::setup()
    add_by_fp((void*)abi::__cxa_throw);
 #   if defined __APPLE__
    add_by_fp((void*)::snprintf);
+   add_by_fp((void*)::snprintf_l);
    add_by_fp((void*)::strftime_l);
    add_by_fp((void*)::strtod_l);
    add_by_fp((void*)::strtold);
@@ -3698,25 +3728,19 @@ h2_inline void h2_exempt::add_by_name(const char* fn)
 {
    h2_symbol* res[16];
    int n = h2_nm::get_by_name(fn, res, 16);
-   if (n != 1) {
-      h2_color::prints("yellow", n ? "\nFind multiple exempt %s :\n" : "\nDon't find exempt %s\n", fn);
-      for (int i = 0; i < n; ++i)
-         h2_color::prints("yellow", "  %d. %s \n", i + 1, res[i]->name);
-   }
-
    for (int i = 0; i < n; ++i)
       add_by_fp(h2_load::addr_to_ptr(res[i]->addr));
 }
 
 h2_inline void h2_exempt::add_by_fp(void* fp)
 {
-   I().fps[I().nfp++] = h2_load::follow_jmp(fp);
+   I().fps[I().nfp++] = h2_cxa::follow_jmp(fp);
    I().fps[I().nfp] = nullptr;
 }
 
 // source/exception/h2_debug.cpp
 
-#if defined __linux__
+#if defined __linux
 #   if defined(__GNUC__) && (defined(__i386) || defined(__x86_64))
 #      define h2_raise_trap() asm volatile("int $3")
 #   else
@@ -3728,7 +3752,7 @@ h2_inline void h2_exempt::add_by_fp(void* fp)
 /* clang-format on */
 #endif
 
-#if defined __linux__
+#if defined __linux
 static inline bool under_debug(int, const char*)
 {
    char t[1024];
@@ -3765,7 +3789,7 @@ static inline bool under_debug(int pid, const char* path)
 
 static inline char* get_gdb1(char* s)
 {
-#if defined __linux__
+#if defined __linux
    sprintf(s, "gdb --quiet --args %s %s", O.path, O.args);
 #elif defined __APPLE__
    sprintf(s, "lldb %s -- %s", O.path, O.args);
@@ -3775,7 +3799,7 @@ static inline char* get_gdb1(char* s)
 
 static inline char* get_gdb2(char* s, int pid)
 {
-#if defined __linux__
+#if defined __linux
    sprintf(s, "sudo gdb --pid=%d", pid);
 #elif defined __APPLE__
    sprintf(s, "sudo lldb --attach-pid %d", pid);
@@ -3871,7 +3895,7 @@ struct h2_exception {
    static void __cxa_throw(void* thrown_exception, std::type_info* ti, void (*dest)(void*))
    {  // https://itanium-cxx-abi.github.io/cxx-abi/abi-eh.html
       I().last_bt = h2_backtrace::dump(1);
-      strcpy(I().last_type, h2_nm::demangle(ti->name()));
+      h2_cxa::demangle(ti->name(), I().last_type);
       if (O.exception_fails) h2_fail_g(h2_fail::new_exception("was thrown", I().last_type, I().last_bt));
       h2::h2_stub_temporary_restore t((void*)abi::__cxa_throw);
       abi::__cxa_throw(thrown_exception, ti, dest);
@@ -4017,7 +4041,7 @@ struct h2_sources {
 
       for (int i = 0; i < 1; ++i) {  // follow PLT(Linux) or ILT (Incremental Link Table /Windows)
          if (__find(fp)) break;
-         void* next = h2_load::follow_jmp(fp, 1);
+         void* next = h2_cxa::follow_jmp(fp, 1);
          if (next == fp) break;
          fp = next;
       }
@@ -4169,7 +4193,7 @@ h2_inline const char* h2_checkin::expect()
 }
 // source/mock/h2_mocker.cpp
 
-h2_inline h2_row h2_mocker_base::arguments(int seq)
+h2_inline h2_row h2_mocker_base::argument(int seq)
 {
    h2_row row;
    row += gray("(");
@@ -4186,7 +4210,7 @@ h2_inline h2_row h2_mocker_base::arguments(int seq)
 
 h2_inline h2_row h2_mocker_base::signature()
 {
-   return "MOCK" + gray("<") + delta(return_type, "cyan") + " " + delta(class_function, "green") + arguments() + gray(">");
+   return "MOCK" + gray("<") + delta(return_type, "cyan") + " " + delta(class_function, "green") + argument() + gray(">");
 }
 
 h2_inline void h2_mocker_base::mock()
@@ -4232,7 +4256,7 @@ h2_inline h2_fail* h2_mocks::clear(bool check)
    return fails;
 }
 
-// source/extension/h2_dns.cpp
+// source/tool/h2_dns.cpp
 
 struct h2_name : h2_libc {
    h2_list x, y;
@@ -4373,14 +4397,14 @@ h2_inline void h2_dns::setaddrinfo(int n, ...)
    va_end(b);
 
    h2_resolver::I().dnses.push(name->y);
-   if (h2_task::I().current_case) h2_task::I().current_case->dnses.add(name->x);
+   if (h2_runner::I().current_case) h2_runner::I().current_case->dnses.add(name->x);
 }
 
 h2_inline void h2_dns::initialize()
 {
    setaddrinfo(1, "127.0.0.1");
 }
-// source/extension/h2_socket.cpp
+// source/tool/h2_socket.cpp
 
 struct h2_socket {
    h2_singleton(h2_socket);
@@ -4625,39 +4649,11 @@ struct h2_socket {
    }
 };
 
-static inline void extract_iport_after_equal(const char* s, char* o)
-{
-   const char* p = strchr(s, '=');
-   if (!p) return;
-   for (p += 1; *p; p++) {
-      if (::isdigit(*p) || *p == '.' || *p == ':' || *p == '*' || *p == '?') {
-         *o++ = *p;
-      } else {
-         if (!(::isspace(*p) || *p == '\"')) return;
-      }
-   }
-}
-
-static inline void parse_sock_attributes(const char* attributes, char from[256], char to[256])
-{
-   memset(from, 0, 256);
-   memset(to, 0, 256);
-   const char* p_from = strcasestr(attributes, "from");
-   if (p_from) {
-      extract_iport_after_equal(p_from + strlen("from"), from);
-   }
-   const char* p_to = strcasestr(attributes, "to");
-   if (p_to) {
-      extract_iport_after_equal(p_to + strlen("to"), to);
-   } else {
-      strcpy(to, "*");
-   }
-}
-
 h2_inline void h2_sock::inject(const void* packet, size_t size, const char* attributes)
 {
-   char from[256], to[256];
-   parse_sock_attributes(attributes, from, to);
+   char from[256] = "", to[256] = "*";
+   h2_extract::iport(attributes, "from", from);
+   h2_extract::iport(attributes, "to", to);
    h2_socket::I().put_incoming(from, to, (const char*)packet, size);
 }
 
@@ -4680,7 +4676,7 @@ h2_inline h2_sock::~h2_sock()
 {
    h2_socket::I().stop();
 }
-// source/extension/h2_stdio.cpp
+// source/tool/h2_stdio.cpp
 
 struct h2_stdio {
    h2_singleton(h2_stdio);
@@ -4840,7 +4836,7 @@ struct h2_stdio {
 h2_inline h2_cout::h2_cout(h2_matcher<const char*> m_, const char* e_, const char* type_, const char* file_, int line_) : file(file_), line(line_), m(m_), e(e_), type(type_)
 {
    bool all = !strlen(type);
-   h2_stdio::I().start_capture(all || strcasestr(type, "out"), all || strcasestr(type, "err"), all || strcasestr(type, "syslog"));
+   h2_stdio::I().start_capture(all || h2_extract::has(type, "out"), all || h2_extract::has(type, "err"), all || h2_extract::has(type, "syslog"));
 }
 
 h2_inline h2_cout::~h2_cout()
@@ -4862,14 +4858,14 @@ h2_inline size_t h2_cout::length()
 {
    return h2_stdio::I().capture_length;
 }
-// source/extension/h2_perf.cpp
+// source/tool/h2_timer.cpp
 
-h2_inline h2_perf::h2_perf(long long ms_, const char* file_, int line_) : file(file_), line(line_), ms(ms_)
+h2_inline h2_timer::h2_timer(long long ms_, const char* file_, int line_) : file(file_), line(line_), ms(ms_)
 {
    start = ::clock();
 }
 
-h2_inline h2_perf::~h2_perf()
+h2_inline h2_timer::~h2_timer()
 {
    h2_assert_g();
    long long delta = (::clock() - start) * 1000 / CLOCKS_PER_SEC;
@@ -4921,7 +4917,7 @@ h2_inline void h2_case::do_fail(h2_fail* fail, bool defer, bool append)
 h2_inline h2_suite::h2_suite(const char* name_, void (*test_code_)(h2_suite*, h2_case*), const char* file_, int line_) : name(name_), file(file_), line(line_), test_code(test_code_)
 {
    memset(ctx, 0, sizeof(jmp_buf));
-   h2_task::I().suites.push_back(x);
+   h2_runner::I().suites.push_back(x);
 }
 
 h2_inline void h2_suite::clear()
@@ -4971,7 +4967,7 @@ h2_inline h2_suite::cleaner::~cleaner()
    if (memcmp((const void*)thus->ctx, (const void*)zero, sizeof(jmp_buf)))
       ::longjmp(thus->ctx, 1);
 }
-// source/core/h2_task.cpp
+// source/core/h2_runner.cpp
 
 static inline void save_last_order(h2_list& suites)
 {
@@ -5025,7 +5021,7 @@ static int __case_cmp(h2_list* a, h2_list* b)
    return h2_list_entry(a, h2_case, x)->seq - h2_list_entry(b, h2_case, x)->seq;
 }
 
-h2_inline void h2_task::shuffle()
+h2_inline void h2_runner::shuffle()
 {
    last = mark_last_order(suites);
    srand(h2_now());
@@ -5039,7 +5035,7 @@ h2_inline void h2_task::shuffle()
       s->cases.sort(__case_cmp);
 }
 
-h2_inline void h2_task::shadow()
+h2_inline void h2_runner::shadow()
 {
    if (stats.failed == 0)
       drop_last_order();
@@ -5047,7 +5043,7 @@ h2_inline void h2_task::shadow()
       save_last_order(suites);
 }
 
-h2_inline void h2_task::enumerate()
+h2_inline void h2_runner::enumerate()
 {
    h2_list_for_each_entry (s, suites, h2_suite, x) {
       for (auto& setup : global_suite_setups) setup();
@@ -5063,7 +5059,7 @@ h2_inline void h2_task::enumerate()
    }
 }
 
-h2_inline int h2_task::execute()
+h2_inline int h2_runner::execute()
 {
    h2_report::initialize();
    h2_memory::initialize();
@@ -5074,7 +5070,7 @@ h2_inline int h2_task::execute()
    for (auto& setup : global_setups) setup();
    enumerate();
 
-   h2_report::I().on_task_start(this);
+   h2_report::I().on_runner_start(this);
    for (rounds = 0; rounds < O.rounds && !stats.failed; ++rounds) {
       shuffle();
       h2_list_for_each_entry (s, suites, h2_suite, x) {
@@ -5114,7 +5110,7 @@ h2_inline int h2_task::execute()
       }
       shadow();
    }
-   h2_report::I().on_task_endup(this);
+   h2_report::I().on_runner_endup(this);
    for (auto& cleanup : global_cleanups) cleanup();
 
    stubs.clear();
@@ -5235,7 +5231,7 @@ h2_inline h2_defer_failure::~h2_defer_failure()
    }
 }
 
-// source/other/h2_failure.cpp
+// source/render/h2_failure.cpp
 
 h2_inline void h2_fail::append_subling(h2_fail*& fail, h2_fail* n)
 {
@@ -5293,9 +5289,9 @@ struct h2_fail_normal : h2_fail {
 
 static inline bool is_synonym(const h2_string& a, const h2_string& b)
 {
-   static const char* s_null[] = {"NULL", "__null", "((void *)0)", "(nil)", "nullptr", "0", "0x0", nullptr};
-   static const char* s_true[] = {"IsTrue", "true", "1", nullptr};
-   static const char* s_false[] = {"IsFalse", "false", "0", nullptr};
+   static const char* s_null[] = {"NULL", "__null", "((void *)0)", "(nil)", "nullptr", "0", "0x0", "00000000", "0000000000000000", nullptr};
+   static const char* s_true[] = {"IsTrue", "true", "TRUE", "True", "1", nullptr};
+   static const char* s_false[] = {"IsFalse", "false", "FALSE", "False", "0", nullptr};
    static const char** S[] = {s_null, s_true, s_false};
 
    if (a == b) return true;
@@ -5598,8 +5594,8 @@ struct h2_fail_overflow : h2_fail_memory {
       int offset = ptr < violate_ptr ? (long long)violate_ptr - ((long long)ptr + size) : (long long)violate_ptr - (long long)ptr;
       h2_row row = h2_stringify(ptr) + " " + color(h2_string("%+d", offset), "bold,red") + " " + gray("(") + h2_stringify(violate_ptr) + gray(")") + " " + color(action, "bold,red") + " " + (offset >= 0 ? "overflow" : "underflow") + " ";
       for (int i = 0; i < spot.size(); ++i) row.printf("bold,red", "%02X ", spot[i]);
-      h2_color::printl(" " + row + locate());
-      if (bt_trample.count) h2_color::prints("", "  trampled at backtrace:\n"), bt_trample.print(3);
+      h2_color::printl(" " + row + locate() + (bt_trample.count ? " at backtrace:" : ""));
+      if (bt_trample.count) bt_trample.print(3);
       h2_color::prints("", "  which allocate at backtrace:\n"), bt_allocate.print(3);
    }
 };
@@ -5641,24 +5637,24 @@ h2_inline h2_fail* h2_fail::new_asymmetric_free(const void* ptr, const char* who
 h2_inline h2_fail* h2_fail::new_overflow(const void* ptr, const int size, const void* violate_ptr, const char* action, const h2_vector<unsigned char>& spot, const h2_backtrace& bt_allocate, const h2_backtrace& bt_trample, const char* file, int line) { return new h2_fail_overflow(ptr, size, violate_ptr, action, spot, bt_allocate, bt_trample, file, line); }
 h2_inline h2_fail* h2_fail::new_use_after_free(const void* ptr, const void* violate_ptr, const char* action, const h2_backtrace& bt_allocate, const h2_backtrace& bt_release, const h2_backtrace& bt_use) { return new h2_fail_use_after_free(ptr, violate_ptr, action, bt_allocate, bt_release, bt_use); }
 h2_inline h2_fail* h2_fail::new_exception(const char* explain, const char* type, const h2_backtrace& bt_throw) { return new h2_fail_exception(explain, type, bt_throw); }
-// source/other/h2_report.cpp
+// source/render/h2_report.cpp
 
 struct h2_report_impl {
    h2_list x;
    int suites = 0, cases = 0;
-   int suite_index = 0, suite_case_index = 0, task_case_index = 0;
-   long long task_cost = 0, suite_cost = 0, case_cost = 0;
+   int suite_index = 0, suite_case_index = 0, runner_case_index = 0;
+   long long runner_cost = 0, suite_cost = 0, case_cost = 0;
 
-   virtual void on_task_start(h2_task* t)
+   virtual void on_runner_start(h2_runner* r)
    {
-      suites = t->suites.count();
-      h2_list_for_each_entry (s, t->suites, h2_suite, x)
+      suites = r->suites.count();
+      h2_list_for_each_entry (s, r->suites, h2_suite, x)
          cases += s->cases.count();
-      task_cost = h2_now();
+      runner_cost = h2_now();
    }
-   virtual void on_task_endup(h2_task* t)
+   virtual void on_runner_endup(h2_runner* r)
    {
-      task_cost = h2_now() - task_cost;
+      runner_cost = h2_now() - runner_cost;
    }
    virtual void on_suite_start(h2_suite* s)
    {
@@ -5676,20 +5672,20 @@ struct h2_report_impl {
    }
    virtual void on_case_endup(h2_suite* s, h2_case* c)
    {
-      ++task_case_index;
+      ++runner_case_index;
       case_cost = h2_now() - case_cost;
    }
 };
 
 struct h2_report_list : h2_report_impl {
-   int unfiltered_suite_index = 0, unfiltered_suite_case_index = 0, unfiltered_task_case_index = 0, todo = 0;
+   int unfiltered_suite_index = 0, unfiltered_suite_case_index = 0, unfiltered_runner_case_index = 0, todo = 0;
 
-   void on_task_endup(h2_task* t) override
+   void on_runner_endup(h2_runner* r) override
    {
-      h2_report_impl::on_task_endup(t);
-      h2_color::prints("bold,green", "Listing <%d suites, %d cases", unfiltered_suite_index, unfiltered_task_case_index);
+      h2_report_impl::on_runner_endup(r);
+      h2_color::prints("bold,green", "Listing <%d suites, %d cases", unfiltered_suite_index, unfiltered_runner_case_index);
       if (todo) h2_color::prints("bold,green", ", %d todo", todo);
-      if (task_case_index - unfiltered_task_case_index) h2_color::prints("bold,green", ", %d filtered", task_case_index - unfiltered_task_case_index);
+      if (runner_case_index - unfiltered_runner_case_index) h2_color::prints("bold,green", ", %d filtered", runner_case_index - unfiltered_runner_case_index);
       h2_color::prints("bold,green", ">\n");
    }
    void on_suite_start(h2_suite* s) override
@@ -5707,7 +5703,7 @@ struct h2_report_list : h2_report_impl {
    {
       h2_report_impl::on_case_start(s, c);
       if ((O.list_cases == 'l' && !c->filtered) || (O.list_cases == 'L' && c->filtered)) {
-         ++unfiltered_task_case_index, ++unfiltered_suite_case_index;
+         ++unfiltered_runner_case_index, ++unfiltered_suite_case_index;
          if (c->todo) todo++;
          h2_color::prints("dark gray", "%s-%d. ", c->todo ? (s->name ? " Todo" : "TODO") : (s->name ? " Case" : "CASE"), unfiltered_suite_case_index);
          h2_color::prints("cyan", "%s", c->name);
@@ -5723,7 +5719,7 @@ struct h2_report_console : h2_report_impl {
       h2_color::prints("", h2_cout::length() == last ? "\r" : "\n");
       if (percentage && O.execute_progress) {
          h2_color::prints("dark gray", "[");
-         h2_color::prints("", "%3d%%", cases ? (int)(task_case_index * 100 / cases) : 100);
+         h2_color::prints("", "%3d%%", cases ? (int)(runner_case_index * 100 / cases) : 100);
          h2_color::prints("dark gray", "] ");
       }
       last = h2_cout::length();
@@ -5766,40 +5762,40 @@ struct h2_report_console : h2_report_impl {
    {
       return !!a1 + !!a2 + !!a3 + !!a4 + !!a5 + !!a6;
    }
-   void on_task_endup(h2_task* t) override
+   void on_runner_endup(h2_runner* r) override
    {
-      h2_report_impl::on_task_endup(t);
+      h2_report_impl::on_runner_endup(r);
 
       print_perfix(false);
       if (O.verbose)
          h2_color::prints("", "\n");
-      if (0 < t->stats.failed)
+      if (0 < r->stats.failed)
          h2_color::prints("bold,red", "Failure ");
       else
          h2_color::prints("bold,green", "Success ");
 
-      if (0 < nonzero_count(t->stats.failed, t->stats.todo, t->stats.filtered, t->stats.ignored))
+      if (0 < nonzero_count(r->stats.failed, r->stats.todo, r->stats.filtered, r->stats.ignored))
          h2_color::prints("dark gray", "(");
 
       int c = 0;
-      comma_status(t->stats.passed, "green", "passed", c);
-      if (t->stats.failed) comma_status(t->stats.failed, "red", "failed", c);
-      if (t->stats.todo) comma_status(t->stats.todo, "yellow", "todo", c);
-      if (t->stats.filtered) comma_status(t->stats.filtered, "blue", "filtered", c);
-      if (t->stats.ignored) comma_status(t->stats.ignored, "blue", "ignored", c);
-      if (0 < nonzero_count(t->stats.failed, t->stats.todo, t->stats.filtered, t->stats.ignored)) {
+      comma_status(r->stats.passed, "green", "passed", c);
+      if (r->stats.failed) comma_status(r->stats.failed, "red", "failed", c);
+      if (r->stats.todo) comma_status(r->stats.todo, "yellow", "todo", c);
+      if (r->stats.filtered) comma_status(r->stats.filtered, "blue", "filtered", c);
+      if (r->stats.ignored) comma_status(r->stats.ignored, "blue", "ignored", c);
+      if (0 < nonzero_count(r->stats.failed, r->stats.todo, r->stats.filtered, r->stats.ignored)) {
          h2_color::prints("dark gray", ")");
          h2_color::prints("", " %d", cases);
       }
       h2_color::prints("", " case%s", 1 < cases ? "s" : "");
       h2_color::prints("dark gray", ", ");
-      h2_color::prints("", "%d assert%s", t->stats.asserts, 1 < t->stats.asserts ? "s" : "");
-      if (1 < t->rounds) {
+      h2_color::prints("", "%d assert%s", r->stats.asserts, 1 < r->stats.asserts ? "s" : "");
+      if (1 < r->rounds) {
          h2_color::prints("dark gray", ", ");
-         h2_color::prints("", "%d rounds", t->rounds);
+         h2_color::prints("", "%d rounds", r->rounds);
       }
       h2_color::prints("dark gray", ", ");
-      h2_color::prints("", "%s \n", format_duration(task_cost));
+      h2_color::prints("", "%s \n", format_duration(runner_cost));
    }
    void on_suite_start(h2_suite* s) override
    {
@@ -5914,9 +5910,9 @@ struct h2_report_console : h2_report_impl {
 
 struct h2_report_junit : h2_report_impl {
    FILE* f;
-   void on_task_start(h2_task* t) override
+   void on_runner_start(h2_runner* r) override
    {
-      h2_report_impl::on_task_start(t);
+      h2_report_impl::on_runner_start(r);
       f = fopen(O.junit, "w");
       if (!f) return;
       fprintf(f, "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n");
@@ -5950,9 +5946,9 @@ struct h2_report_junit : h2_report_impl {
       if (!f) return;
       fprintf(f, "</testsuite>\n");
    }
-   void on_task_endup(h2_task* t) override
+   void on_runner_endup(h2_runner* r) override
    {
-      h2_report_impl::on_task_endup(t);
+      h2_report_impl::on_runner_endup(r);
       if (!f) return;
       fprintf(f, "</testsuites>\n");
       fclose(f);
@@ -5979,14 +5975,14 @@ h2_inline void h2_report::initialize()
 }
 
 /* clang-format off */
-h2_inline void h2_report::on_task_start(h2_task* t) { h2_list_for_each_entry (p, reports, h2_report_impl, x) p->on_task_start(t); }
-h2_inline void h2_report::on_task_endup(h2_task* t) { h2_list_for_each_entry (p, reports, h2_report_impl, x) p->on_task_endup(t); }
+h2_inline void h2_report::on_runner_start(h2_runner* r) { h2_list_for_each_entry (p, reports, h2_report_impl, x) p->on_runner_start(r); }
+h2_inline void h2_report::on_runner_endup(h2_runner* r) { h2_list_for_each_entry (p, reports, h2_report_impl, x) p->on_runner_endup(r); }
 h2_inline void h2_report::on_suite_start(h2_suite* s) { h2_list_for_each_entry (p, reports, h2_report_impl, x) p->on_suite_start(s); }
 h2_inline void h2_report::on_suite_endup(h2_suite* s) { h2_list_for_each_entry (p, reports, h2_report_impl, x) p->on_suite_endup(s); }
 h2_inline void h2_report::on_case_start(h2_suite* s, h2_case* c) { h2_list_for_each_entry (p, reports, h2_report_impl, x) p->on_case_start(s, c); }
 h2_inline void h2_report::on_case_endup(h2_suite* s, h2_case* c) { h2_list_for_each_entry (p, reports, h2_report_impl, x) p->on_case_endup(s, c); }
 
-// source/other/h2_layout.cpp
+// source/render/h2_layout.cpp
 
 static inline h2_rows row_break(const h2_row& row, unsigned width)
 {
@@ -6106,53 +6102,79 @@ h2_inline h2_rows h2_layout::seperate(const h2_row& up_row, const h2_row& down_r
    h2_rows rows = prefix_break(up_row, up_title_row, width);
    return rows += prefix_break(down_row, down_title_row, width);
 }
-// source/other/h2_option.cpp
+// source/render/h2_option.cpp
 
+#if defined _WIN32
 static inline void usage()
 {
-   ::printf(" \033[33m╭────────────────────────────────────────────────────────────────────────────╮\033[0m\n");
-   ::printf(" \033[33m│\033[0m               \033[32mh2unit \033[31m%-5s \033[34;4mhttps://github.com/lingjf/h2unit\033[0m \033[0;36m               \033[33m│\033[0m\n", H2PP_STR(H2UNIT_VERSION));
-   ::printf(" \033[33m╰────────────────────────────────────────────────────────────────────────────╯\033[0m\n");
+   ::printf("\033[33m \033[0m                \033[32mh2unit \033[31m%-5s \033[34;4mhttps://github.com/lingjf/h2unit\033[0m \033[0;36m               \033[33m \033[0m\n", H2PP_STR(H2UNIT_VERSION));
 
-   ::printf("\
- ┌────────┬───────────┬───────────────────────────────────────────────────────┐\n\
- │ Option │ Parameter │ Description                                           │\n\
- ├────────┼───────────┼───────────────────────────────────────────────────────┤\n\
- │ -v     │           │ Verbose output                                        │\n\
- ├────────┼───────────┼───────────────────────────────────────────────────────┤\n\
- │ -q     │           │ Compact output without failure detail                 │\n\
- ├────────┼───────────┼───────────────────────────────────────────────────────┤\n\
- │ -l     │           │ List out suites and cases                             │\n\
- ├────────┼───────────┼───────────────────────────────────────────────────────┤\n\
- │ -s     │           │ Shuffle cases and execute in random order             │\n\
- ├────────┼───────────┼───────────────────────────────────────────────────────┤\n\
- │ -b[n]  │    [n]    │ Breaking test once n (default 1) failures occurred    │\n\
- ├────────┼───────────┼───────────────────────────────────────────────────────┤\n\
- │ -o     │           │ Only execute last failed cases                        │\n\
- ├────────┼───────────┼───────────────────────────────────────────────────────┤\n\
- │ -p     │           │ Hide execute progressing                              │\n\
- ├────────┼───────────┼───────────────────────────────────────────────────────┤\n\
- │ -r[n]  │    [n]    │ Repeat run n rounds (default 2) when no failure       │\n\
- ├────────┼───────────┼───────────────────────────────────────────────────────┤\n\
- │ -c     │           │ Output in black-white color style                     │\n\
- ├────────┼───────────┼───────────────────────────────────────────────────────┤\n\
- │ -f     │           │ Fold simple JSON object or array                      │\n\
- ├────────┼───────────┼───────────────────────────────────────────────────────┤\n\
- │ -y     │           │ Copy-paste JSON C/C++ source code                     │\n\
- ├────────┼───────────┼───────────────────────────────────────────────────────┤\n\
- │ -m     │           │ Run cases without memory check                        │\n\
- ├────────┼───────────┼───────────────────────────────────────────────────────┤\n\
- │ -x     │           │ Throw exception is considered as failure              │\n\
- ├────────┼───────────┼───────────────────────────────────────────────────────┤\n\
- │ -d     │           │ Debug with gdb once failure occurred                  │\n\
- ├────────┼───────────┼───────────────────────────────────────────────────────┤\n\
- │ -j     │  [path]   │ Generate junit report, default path is junit.xml      │\n\
- ├────────┼───────────┼─────────┬─────────────────────────────────────────────┤\n\
- │ -i     │           │ include │ Filter case, suite or file by matching      │\n\
- ├────────┤  patterns ├─────────┤ case-insensitive name with substr/wildcard  │\n\
- │ -e     │           │ exclude │ patterns which separated by space           │\n\
- └────────┴───────────┴─────────┴─────────────────────────────────────────────┘\n");
+   char b[] = "  -v             Verbose output                                                \n"
+              "  -q             Compact output without failure detail                         \n"
+              "  -l             List out suites and cases                                     \n"
+              "  -s             Shuffle cases and execute in random order                     \n"
+              "  -b [n]         Breaking test once n (default 1) failures occurred            \n"
+              "  -o             Only execute last failed cases                                \n"
+              "  -p             Hide execute progressing                                      \n"
+              "  -r [n]         Repeat run n rounds (default 2) when no failure               \n"
+              "  -c             Output in black-white color style                             \n"
+              "  -f             Fold simple JSON object or array                              \n"
+              "  -y             Copy-paste JSON C/C++ source code                             \n"
+              "  -m             Run cases without memory check                                \n"
+              "  -x             Throw exception is considered as failure                      \n"
+              "  -d             Debug with gdb once failure occurred                          \n"
+              "  -j [path]      Generate junit report, default path is junit.xml              \n"
+              "  -i [patterns]  include filter case/suite/file by matching substr/wildcard    \n"
+              "  -e [patterns]  exclude filter case/suite/file by matching substr/wildcard    \n";
+   ::printf("%s", b);
 }
+#else
+static inline void usage()
+{
+   ::printf("\033[33m╭─────────────────────────────────────────────────────────────────────────────╮\033[0m\n");
+   ::printf("\033[33m│\033[0m                \033[32mh2unit \033[31m%-5s \033[34;4mhttps://github.com/lingjf/h2unit\033[0m \033[0;36m               \033[33m│\033[0m\n", H2PP_STR(H2UNIT_VERSION));
+   ::printf("\033[33m╰─────────────────────────────────────────────────────────────────────────────╯\033[0m\n");
+
+   char b[] = "┌────────┬───────────┬────────────────────────────────────────────────────────┐\n"
+              "│ Option │ Parameter │ Description                                            │\n"
+              "├────────┼───────────┼────────────────────────────────────────────────────────┤\n"
+              "│ -v     │           │ Verbose output                                         │\n"
+              "├────────┼───────────┼────────────────────────────────────────────────────────┤\n"
+              "│ -q     │           │ Compact output without failure detail                  │\n"
+              "├────────┼───────────┼────────────────────────────────────────────────────────┤\n"
+              "│ -l     │           │ List out suites and cases                              │\n"
+              "├────────┼───────────┼────────────────────────────────────────────────────────┤\n"
+              "│ -s     │           │ Shuffle cases and execute in random order              │\n"
+              "├────────┼───────────┼────────────────────────────────────────────────────────┤\n"
+              "│ -b[n]  │    [n]    │ Breaking test once n (default 1) failures occurred     │\n"
+              "├────────┼───────────┼────────────────────────────────────────────────────────┤\n"
+              "│ -o     │           │ Only execute last failed cases                         │\n"
+              "├────────┼───────────┼────────────────────────────────────────────────────────┤\n"
+              "│ -p     │           │ Hide execute progressing                               │\n"
+              "├────────┼───────────┼────────────────────────────────────────────────────────┤\n"
+              "│ -r[n]  │    [n]    │ Repeat run n rounds (default 2) when no failure        │\n"
+              "├────────┼───────────┼────────────────────────────────────────────────────────┤\n"
+              "│ -c     │           │ Output in black-white color style                      │\n"
+              "├────────┼───────────┼────────────────────────────────────────────────────────┤\n"
+              "│ -f     │           │ Fold simple JSON object or array                       │\n"
+              "├────────┼───────────┼────────────────────────────────────────────────────────┤\n"
+              "│ -y     │           │ Copy-paste JSON C/C++ source code                      │\n"
+              "├────────┼───────────┼────────────────────────────────────────────────────────┤\n"
+              "│ -m     │           │ Run cases without memory check                         │\n"
+              "├────────┼───────────┼────────────────────────────────────────────────────────┤\n"
+              "│ -x     │           │ Throw exception is considered as failure               │\n"
+              "├────────┼───────────┼────────────────────────────────────────────────────────┤\n"
+              "│ -d     │           │ Debug with gdb once failure occurred                   │\n"
+              "├────────┼───────────┼────────────────────────────────────────────────────────┤\n"
+              "│ -j     │  [path]   │ Generate junit report, default path is junit.xml       │\n"
+              "├────────┼───────────┼─────────┬──────────────────────────────────────────────┤\n"
+              "│ -i     │           │ include │ Filter case, suite or file by matching       │\n"
+              "├────────┤  patterns ├─────────┤ case-insensitive name with substr/wildcard   │\n"
+              "│ -e     │           │ exclude │ patterns which separated by space            │\n"
+              "└────────┴───────────┴─────────┴──────────────────────────────────────────────┘\n";
+   ::printf("%s", b);
+}
+#endif
 
 struct getopt {
    int argc;

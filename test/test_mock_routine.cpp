@@ -1,268 +1,186 @@
 #include "../source/h2_unit.cpp"
+#include "test_types.hpp"
 
-namespace {
+static void void_foobar(int& a)
+{
+   a = 42;
+}
 
-struct Foo {
-   int int_value = 42;
-   char char_value[100];
-   Foo()
+static const int int_foobar(int a, int b)
+{
+   return 42;
+}
+
+static const A_PlainStruct obj_foobar(int a, int b)
+{
+   A_PlainStruct v = {42, 3.14};
+   return v;
+}
+
+static const A_PlainStruct& ref_foobar(int a, int b)
+{
+   static A_PlainStruct v = {42, 3.14};
+   return v;
+}
+
+static void void_class_foobar(B_DerivedClass*, int& a)
+{
+   a = 42;
+}
+
+static int int_class_foobar(B_DerivedClass*, int a, int b)
+{
+   return 42;
+}
+
+static A_PlainStruct obj_class_foobar(B_DerivedClass*, int a, int b)
+{
+   A_PlainStruct v = {42, 3.14};
+   return v;
+}
+
+static A_PlainStruct& ref_class_foobar(B_DerivedClass*, int a, int b)
+{
+   static A_PlainStruct v = {42, 3.14};
+   return v;
+}
+
+SUITE(routine)
+{
+   int a;
+
+   A_PlainStruct a_PlainStruct;
+   a_PlainStruct.a = 42;
+   a_PlainStruct.b = 3.14;
+
+   B_DerivedClass b_DerivedClass;
+
+   Case(normal function bind value)
    {
-      strcpy(char_value, "42");
-   }
-};
+      h2::h2_routine<std::false_type, int(int, const char*)> R1(42);
+      OK(42, R1(nullptr, 1, ""));
 
-static void void_foobar(int a, char* b)
-{
-   sprintf(b, "%d", a);
-}
+      h2::h2_routine<std::false_type, const char*(int, const char*)> R2("h2unit");
+      OK("h2unit", R2(nullptr, 1, ""));
 
-static const int int_foobar(int a, const char* b)
-{
-   return a + strlen(b);
-}
+      h2::h2_routine<std::false_type, std::string(int, const char*)> R3("h2unit");
+      OK("h2unit", R3(nullptr, 1, ""));
 
-static const Foo foo_foobar(int a, std::string& d)
-{
-   Foo foo;
-   foo.int_value = a;
-   strcpy(foo.char_value, d.c_str());
-   return foo;
-}
+      h2::h2_routine<std::false_type, A_PlainStruct(int, const char*)> R4(a_PlainStruct);
+      auto r4 = R4(nullptr, 1, "");
+      OK(42, r4.a);
+      OK(3.14, r4.b);
 
-static const Foo& ref_foobar(int a, Foo& foo)
-{
-   foo.int_value = a;
-   sprintf(foo.char_value, "%d", a);
-   return foo;
-}
+      h2::h2_routine<std::false_type, const A_PlainStruct(int, const char*)> R5(a_PlainStruct);
+      auto r5 = R5(nullptr, 1, "");
+      OK(42, r5.a);
+      OK(3.14, r5.b);
 
-struct Bar {
-   void void_func(int a, char* b)
-   {
-      sprintf(b, "%d", a);
-   }
+      h2::h2_routine<std::false_type, A_PlainStruct&(int, const char*)> R6(a_PlainStruct);
+      auto r6 = R6(nullptr, 1, "");
+      OK(42, r6.a);
+      OK(3.14, r6.b);
 
-   int int_func(int a, const char* b)
-   {
-      return a + strlen(b);
-   }
-
-   Foo foo_func(int a, std::string& d)
-   {
-      Foo foo;
-      foo.int_value = a;
-      strcpy(foo.char_value, d.c_str());
-      return foo;
-   }
-
-   Foo& ref_func(int a, Foo& foo)
-   {
-      foo.int_value = a;
-      sprintf(foo.char_value, "%d", a);
-      return foo;
-   }
-};
-
-static void void_bar_foobar(Bar*, int a, char* b)
-{
-   sprintf(b, "%d", a);
-}
-
-static int int_bar_foobar(Bar*, int a, const char* b)
-{
-   return a + strlen(b);
-}
-
-static Foo foo_bar_foobar(Bar*, int a, std::string& d)
-{
-   Foo foo;
-   foo.int_value = a;
-   strcpy(foo.char_value, d.c_str());
-   return foo;
-}
-
-static Foo& ref_bar_foobar(Bar*, int a, Foo& foo)
-{
-   foo.int_value = a;
-   sprintf(foo.char_value, "%d", a);
-   return foo;
-}
-
-SUITE(action)
-{
-   char b[1024];
-   std::string d = "hello";
-   Foo foo;
-   Bar bar;
-
-   Case(return value)
-   {
-      h2::h2_routine<std::false_type, int(int, const char*)> f3(1234);
-      OK(1234, f3(nullptr, 1, ""));
-
-      h2::h2_routine<Bar, int(int, const char*)> f4(1234);
-      OK(1234, f4(&bar, 1, ""));
-
-      h2::h2_routine<std::false_type, const Foo(int, std::string&)> f5(foo);
-      auto a5 = f5(nullptr, 1, d);
-      OK(42, a5.int_value);
-      OK("42", a5.char_value);
-
-      h2::h2_routine<Bar, const Foo(int, std::string&)> f6(foo);
-      auto a6 = f6(&bar, 1, d);
-      OK(42, a6.int_value);
-      OK("42", a6.char_value);
-
-      h2::h2_routine<std::false_type, const Foo&(int, Foo&)> f7(foo);
-      auto a7 = f7(nullptr, 1, foo);
-      OK(42, a7.int_value);
-      OK("42", a7.char_value);
-
-      h2::h2_routine<Bar, Foo&(int, Foo&)> f8(foo);
-      auto a8 = f8(&bar, 1, foo);
-      OK(42, a8.int_value);
-      OK("42", a8.char_value);
+      h2::h2_routine<std::false_type, const A_PlainStruct&(int, const char*)> R7(a_PlainStruct);
+      auto r7 = R7(nullptr, 1, "");
+      OK(42, r7.a);
+      OK(3.14, r7.b);
    }
 
-   Case(normal function)
+   Case(class member function bind value)
    {
-      h2::h2_routine<std::false_type, void(int, char*)> f1(void_foobar);
-      f1(nullptr, 1, b);
-      OK("1", b);
+      h2::h2_routine<B_DerivedClass, const char*(int, int)> R1("h2unit");
+      OK("h2unit", R1(&b_DerivedClass, 1, 2));
 
-      h2::h2_routine<Bar, void(int, char*)> f2(void_bar_foobar);
-      f2(nullptr, 1, b);
-      OK("1", b);
+      h2::h2_routine<B_DerivedClass, A_PlainStruct(int, int)> R2(a_PlainStruct);
+      auto r2 = R2(&b_DerivedClass, 1, 2);
+      OK(42, r2.a);
+      OK(3.14, r2.b);
 
-      h2::h2_routine<std::false_type, const int(int, const char*)> f3(int_foobar);
-      OK(2, f3(nullptr, 1, "2"));
+      h2::h2_routine<B_DerivedClass, const A_PlainStruct&(int, int)> R3(a_PlainStruct);
+      auto r3 = R3(&b_DerivedClass, 1, 2);
+      OK(42, r3.a);
+      OK(3.14, r3.b);
+   }
 
-      h2::h2_routine<Bar, int(int, const char*)> f4(int_bar_foobar);
-      OK(2, f4(&bar, 1, "2"));
+   Case(normal function bind function)
+   {
+      h2::h2_routine<std::false_type, void(int&)> R1(void_foobar);
+      R1(nullptr, a);
+      OK(42, a);
 
-      h2::h2_routine<std::false_type, const Foo(int, std::string&)> f5(foo_foobar);
-      auto a5 = f5(nullptr, 1, d);
-      OK(1, a5.int_value);
-      OK("hello", a5.char_value);
+      h2::h2_routine<std::false_type, const int(int, int)> R2(int_foobar);
+      OK(42, R2(nullptr, 1, 2));
 
-      h2::h2_routine<Bar, Foo(int, std::string&)> f6(foo_bar_foobar);
-      auto a6 = f6(&bar, 1, d);
-      OK(1, a6.int_value);
-      OK("hello", a6.char_value);
+      h2::h2_routine<std::false_type, const A_PlainStruct(int, int)> R3(obj_foobar);
+      auto r3 = R3(nullptr, 1, 2);
+      OK(42, r3.a);
+      OK(3.14, r3.b);
 
-      h2::h2_routine<std::false_type, const Foo&(int, Foo&)> f7(ref_foobar);
-      auto a7 = f7(nullptr, 1, foo);
-      OK(1, a7.int_value);
-      OK("1", a7.char_value);
+      h2::h2_routine<std::false_type, const A_PlainStruct&(int, int)> R4(ref_foobar);
+      auto r4 = R4(nullptr, 1, 2);
+      OK(42, r4.a);
+      OK(3.14, r4.b);
+   }
 
-      h2::h2_routine<Bar, Foo&(int, Foo&)> f8(ref_bar_foobar);
-      auto a8 = f8(&bar, 1, foo);
-      OK(1, a8.int_value);
-      OK("1", a8.char_value);
+   Case(class member function bind function)
+   {
+      h2::h2_routine<B_DerivedClass, void(int&)> R1(void_class_foobar);
+      R1(&b_DerivedClass, a);
+      OK(42, a);
+
+      h2::h2_routine<B_DerivedClass, int(int, int)> R2(int_class_foobar);
+      OK(42, R2(&b_DerivedClass, 1, 2));
+
+      h2::h2_routine<B_DerivedClass, A_PlainStruct(int, int)> R3(obj_class_foobar);
+      auto r3 = R3(&b_DerivedClass, 1, 2);
+      OK(42, r3.a);
+      OK(3.14, r3.b);
+
+      h2::h2_routine<B_DerivedClass, A_PlainStruct&(int, int)> R4(ref_class_foobar);
+      auto r4 = R4(&b_DerivedClass, 1, 2);
+      OK(42, r4.a);
+      OK(3.14, r4.b);
    }
 
    Case(lambda function)
    {
-      h2::h2_routine<std::false_type, void(int, char*)> f1([](int a, char* b) -> void {
-         sprintf(b, "%d", a);
+      h2::h2_routine<std::false_type, void(int&)> R1([](int& a) -> void {
+         a = 42;
       });
-      f1(nullptr, 1, b);
-      OK("1", b);
+      R1(nullptr, a);
+      OK(42, a);
 
-      h2::h2_routine<Bar, void(int, char*)> f2([](int a, char* b) -> void {
-         sprintf(b, "%d", a);
+      h2::h2_routine<B_DerivedClass, void(int&)> R2([](int& a) -> void {
+         a = 42;
       });
-      f2(&bar, 1, b);
-      OK("1", b);
+      R2(&b_DerivedClass, a);
+      OK(42, a);
 
-      h2::h2_routine<std::false_type, int(int, const char*)> f3([](int a, const char* b) -> int {
-         return a + strlen(b);
+      h2::h2_routine<std::false_type, int(int, const char*)> R3([](int a, const char* b) -> int {
+         return 42;
       });
-      OK(2, f3(nullptr, 1, "2"));
+      OK(42, R3(nullptr, 1, "2"));
 
-      h2::h2_routine<Bar, int(int, const char*)> f4([](int a, const char* b) -> int {
-         return a + strlen(b);
+      h2::h2_routine<B_DerivedClass, int(int, const char*)> R4([](int a, const char* b) -> int {
+         return 42;
       });
-      OK(2, f4(&bar, 1, "2"));
+      OK(42, R4(&b_DerivedClass, 1, "2"));
 
-      h2::h2_routine<std::false_type, const Foo(int, std::string&)> f5([](int a, std::string& d) -> const Foo {
-         Foo foo;
-         foo.int_value = a;
-         strcpy(foo.char_value, d.c_str());
-         return foo;
+      h2::h2_routine<std::false_type, const A_PlainStruct(int, int)> R5([](int a, int d) -> const A_PlainStruct {
+         A_PlainStruct v = {42, 3.14};
+         return v;
       });
-      auto a5 = f5(nullptr, 1, d);
-      OK(1, a5.int_value);
-      OK("hello", a5.char_value);
+      auto r5 = R5(nullptr, 1, 2);
+      OK(42, r5.a);
+      OK(3.14, r5.b);
 
-      h2::h2_routine<Bar, const Foo(int, std::string&)> f6([](int a, std::string& d) -> const Foo {
-         Foo foo;
-         foo.int_value = a;
-         strcpy(foo.char_value, d.c_str());
-         return foo;
+      h2::h2_routine<B_DerivedClass, const A_PlainStruct(int, int)> R6([](int a, int d) -> const A_PlainStruct {
+         A_PlainStruct v = {42, 3.14};
+         return v;
       });
-      auto a6 = f6(&bar, 1, d);
-      OK(1, a6.int_value);
-      OK("hello", a6.char_value);
-   }
-
-   Case(normal origin function)
-   {
-      h2::h2_routine<std::false_type, void(int, char*)> f1(void_foobar);
-      f1(nullptr, 1, b);
-      OK("1", b);
-
-      h2::h2_routine<Bar, void(int, char*)> f2(void_bar_foobar);
-      f2(nullptr, 1, b);
-      OK("1", b);
-
-      h2::h2_routine<std::false_type, const int(int, const char*)> f3(int_foobar);
-      OK(2, f3(nullptr, 1, "2"));
-
-      h2::h2_routine<Bar, int(int, const char*)> f4(int_bar_foobar);
-      OK(2, f4(&bar, 1, "2"));
-
-      h2::h2_routine<std::false_type, const Foo(int, std::string&)> f5(foo_foobar);
-      auto a5 = f5(nullptr, 1, d);
-      OK(1, a5.int_value);
-      OK("hello", a5.char_value);
-
-      h2::h2_routine<Bar, Foo(int, std::string&)> f6(foo_bar_foobar);
-      auto a6 = f6(&bar, 1, d);
-      OK(1, a6.int_value);
-      OK("hello", a6.char_value);
-   }
-
-   Case(normal origin member function)
-   {
-      void* void_func = h2::h2_mfp<Bar, void(int, char*)>::A(&Bar::void_func);
-      OK(NotNull, void_func);
-      void* int_func = h2::h2_mfp<Bar, int(int, const char*)>::A(&Bar::int_func);
-      OK(NotNull, void_func);
-      void* foo_func = h2::h2_mfp<Bar, Foo(int, std::string&)>::A(&Bar::foo_func);
-      OK(NotNull, foo_func);
-      void* ref_func = h2::h2_mfp<Bar, Foo&(int, Foo&)>::A(&Bar::ref_func);
-      OK(NotNull, ref_func);
-
-      h2::h2_routine<Bar, void(int, char*)> f2((void (*)(Bar*, int, char*))void_func);
-      f2(nullptr, 1, b);
-      OK("1", b);
-
-      h2::h2_routine<Bar, int(int, const char*)> f4((int (*)(Bar*, int, const char*))int_func);
-      OK(2, f4(&bar, 1, "2"));
-
-#if !defined WIN32
-      h2::h2_routine<Bar, Foo(int, std::string&)> f6((Foo (*)(Bar*, int, std::string&))foo_func);
-      auto a6 = f6(&bar, 1, d);
-      OK(1, a6.int_value);
-      OK("hello", a6.char_value);
-#endif
-
-      h2::h2_routine<Bar, Foo&(int, Foo&)> f8((Foo & (*)(Bar*, int, Foo&)) ref_func);
-      auto a8 = f8(&bar, 1, foo);
-      OK(1, a8.int_value);
-      OK("1", a8.char_value);
+      auto r6 = R6(&b_DerivedClass, 1, 2);
+      OK(42, r6.a);
+      OK(3.14, r6.b);
    }
 }
-
-}  // namespace

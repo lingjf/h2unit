@@ -4,6 +4,7 @@ void say_something1()
 {
    ::printf("hello world\n");
 }
+
 #if 0
 SUITE(load)
 {

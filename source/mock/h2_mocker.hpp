@@ -3,12 +3,12 @@ struct h2_mocker_base : h2_libc {
    h2_list x;
    void *srcfp, *dstfp;
    const char* class_function;
-   h2_string return_type;
+   char return_type[512];
    h2_vector<h2_string> argument_types;
    const char* file;
    int line;
 
-   h2_row arguments(int seq = -1);
+   h2_row argument(int seq = -1);
    h2_row signature();
 
    h2_vector<h2_checkin> checkin_array;
@@ -21,39 +21,39 @@ struct h2_mocker_base : h2_libc {
 
 namespace {
 
-template <int Counter, typename Class, typename Signature>
+template <int Counter, typename ClassType, typename Signature>
 class h2_mocker;
 
-template <int Counter, typename Class, typename ReturnType, typename... Args>
-class h2_mocker<Counter, Class, ReturnType(Args...)> : h2_mocker_base {
-   using ArgumentTuple = std::tuple<Args...>;
+template <int Counter, typename ClassType, typename ReturnType, typename... ArgumentTypes>
+class h2_mocker<Counter, ClassType, ReturnType(ArgumentTypes...)> : h2_mocker_base {
+   using ArgumentTypeTuple = std::tuple<ArgumentTypes...>;
 
-#define H2_Typedef_Matcher(__, i) h2_matcher<h2_nth_decay<i, Args...>>
+#define H2_Typedef_Matcher(__, i) h2_matcher<h2_nth_decay<i, ArgumentTypes...>>
    using MatcherTuple = std::tuple<H2PP_REPEAT((, ), H2_Typedef_Matcher, , 20)>;
 #undef H2_Typedef_Matcher
 
    h2_vector<MatcherTuple> matcher_array;
-   h2_vector<h2_routine<Class, ReturnType(Args...)>> routine_array;
-   h2_routine<Class, ReturnType(Args...)> original;
+   h2_vector<h2_routine<ClassType, ReturnType(ArgumentTypes...)>> routine_array;
+   h2_routine<ClassType, ReturnType(ArgumentTypes...)> original;
    bool greed_mode = true;
 
-   static ReturnType member_function_stub(Class* This, Args... args)
+   static ReturnType member_function_stub(ClassType* This, ArgumentTypes... arguments)
    {
-      int index = I().matches(std::forward<Args>(args)...);
+      int index = I().matches(std::forward<ArgumentTypes>(arguments)...);
       h2::h2_stub_temporary_restore t(I().srcfp);
       if (index == -1 || !I().routine_array[index])
-         return I().original(This, std::forward<Args>(args)...);
-      return I().routine_array[index](This, std::forward<Args>(args)...);
+         return I().original(This, std::forward<ArgumentTypes>(arguments)...);
+      return I().routine_array[index](This, std::forward<ArgumentTypes>(arguments)...);
    }
 
-   static ReturnType normal_function_stub(Args... args)
+   static ReturnType normal_function_stub(ArgumentTypes... arguments)
    {
-      return member_function_stub(nullptr, std::forward<Args>(args)...);
+      return member_function_stub(nullptr, std::forward<ArgumentTypes>(arguments)...);
    }
 
-   int matches(Args... args)
+   int matches(ArgumentTypes... arguments)
    {
-      ArgumentTuple at = std::forward_as_tuple(std::forward<Args>(args)...);
+      ArgumentTypeTuple at = std::forward_as_tuple(std::forward<ArgumentTypes>(arguments)...);
       int checkin_offset = -1;
       for (int i = checkin_index; i < checkin_array.size(); ++i) {
          h2_fail* fails = h2_tuple_matches(matcher_array[i], at);
@@ -64,7 +64,7 @@ class h2_mocker<Counter, Class, ReturnType(Args...)> : h2_mocker_base {
                continue;
             }
             fails->foreach([this, i](h2_fail* f, int, int) {
-               f->explain += gray("on ") + (class_function + arguments(f->seqno));
+               f->explain += gray("on ") + (class_function + argument(f->seqno));
                if (1 < checkin_array.size()) f->explain += gray(" when ") + h2_numeric::sequence_number(i) + " " + color(checkin_array[i].expr, "cyan");
             });
             h2_fail* fail = h2_fail::new_normal(signature(), file, line);
@@ -107,20 +107,20 @@ class h2_mocker<Counter, Class, ReturnType(Args...)> : h2_mocker_base {
       static h2_mocker* i = nullptr;
       if (!i) {
          i = new h2_mocker();
-         i->return_type = h2_type_name<ReturnType>((char*)alloca(256));
-         h2_tuple_types<ArgumentTuple>(i->argument_types);
+         h2_cxa::type_name<ReturnType>(i->return_type, sizeof(i->return_type));
+         h2_tuple_types<ArgumentTypeTuple>(i->argument_types);
       }
       return *i;
    }
 
    static h2_mocker& I(void* srcfp, const char* class_function, const char* file, int line)
    {
-      if (std::is_same<std::false_type, Class>::value) {
+      if (std::is_same<std::false_type, ClassType>::value) {
          I().dstfp = (void*)normal_function_stub;
-         I().original.fp = (ReturnType(*)(Args...))srcfp;
+         I().original.fp = (ReturnType(*)(ArgumentTypes...))srcfp;
       } else {
          I().dstfp = (void*)member_function_stub;
-         I().original.mfp = (ReturnType(*)(Class*, Args...))srcfp;
+         I().original.mfp = (ReturnType(*)(ClassType*, ArgumentTypes...))srcfp;
       }
       I().srcfp = srcfp;
       I().class_function = class_function;
@@ -137,14 +137,14 @@ class h2_mocker<Counter, Class, ReturnType(Args...)> : h2_mocker_base {
       return *this;
    }
 
-#define H2_Default_Matcher(__, i) h2_matcher<h2_nth_decay<i, Args...>> _##i = {}
-#define H2_Forward_Matcher(__, i) std::forward<h2_matcher<h2_nth_decay<i, Args...>>>(_##i)
+#define H2_Default_Matcher(__, i) h2_matcher<h2_nth_decay<i, ArgumentTypes...>> _##i = {}
+#define H2_Forward_Matcher(__, i) std::forward<h2_matcher<h2_nth_decay<i, ArgumentTypes...>>>(_##i)
 
    h2_mocker& Once(H2PP_REPEAT((, ), H2_Default_Matcher, , 20))
    {
       checkin_array.push_back(h2_checkin::Once());
       matcher_array.push_back(std::forward_as_tuple(H2PP_REPEAT((, ), H2_Forward_Matcher, , 20)));
-      routine_array.push_back(h2_routine<Class, ReturnType(Args...)>());
+      routine_array.push_back(h2_routine<ClassType, ReturnType(ArgumentTypes...)>());
       return *this;
    }
 
@@ -152,7 +152,7 @@ class h2_mocker<Counter, Class, ReturnType(Args...)> : h2_mocker_base {
    {
       checkin_array.push_back(h2_checkin::Twice());
       matcher_array.push_back(std::forward_as_tuple(H2PP_REPEAT((, ), H2_Forward_Matcher, , 20)));
-      routine_array.push_back(h2_routine<Class, ReturnType(Args...)>());
+      routine_array.push_back(h2_routine<ClassType, ReturnType(ArgumentTypes...)>());
       return *this;
    }
 
@@ -160,7 +160,7 @@ class h2_mocker<Counter, Class, ReturnType(Args...)> : h2_mocker_base {
    {
       checkin_array.push_back(h2_checkin::Times(count));
       matcher_array.push_back(std::forward_as_tuple(H2PP_REPEAT((, ), H2_Forward_Matcher, , 20)));
-      routine_array.push_back(h2_routine<Class, ReturnType(Args...)>());
+      routine_array.push_back(h2_routine<ClassType, ReturnType(ArgumentTypes...)>());
       return *this;
    }
 
@@ -168,7 +168,7 @@ class h2_mocker<Counter, Class, ReturnType(Args...)> : h2_mocker_base {
    {
       checkin_array.push_back(h2_checkin::Any());
       matcher_array.push_back(std::forward_as_tuple(H2PP_REPEAT((, ), H2_Forward_Matcher, , 20)));
-      routine_array.push_back(h2_routine<Class, ReturnType(Args...)>());
+      routine_array.push_back(h2_routine<ClassType, ReturnType(ArgumentTypes...)>());
       return *this;
    }
 
@@ -176,7 +176,7 @@ class h2_mocker<Counter, Class, ReturnType(Args...)> : h2_mocker_base {
    {
       checkin_array.push_back(h2_checkin::Atleast(count));
       matcher_array.push_back(std::forward_as_tuple(H2PP_REPEAT((, ), H2_Forward_Matcher, , 20)));
-      routine_array.push_back(h2_routine<Class, ReturnType(Args...)>());
+      routine_array.push_back(h2_routine<ClassType, ReturnType(ArgumentTypes...)>());
       return *this;
    }
 
@@ -184,7 +184,7 @@ class h2_mocker<Counter, Class, ReturnType(Args...)> : h2_mocker_base {
    {
       checkin_array.push_back(h2_checkin::Atmost(count));
       matcher_array.push_back(std::forward_as_tuple(H2PP_REPEAT((, ), H2_Forward_Matcher, , 20)));
-      routine_array.push_back(h2_routine<Class, ReturnType(Args...)>());
+      routine_array.push_back(h2_routine<ClassType, ReturnType(ArgumentTypes...)>());
       return *this;
    }
 
@@ -192,7 +192,7 @@ class h2_mocker<Counter, Class, ReturnType(Args...)> : h2_mocker_base {
    {
       checkin_array.push_back(h2_checkin::Between(left, right));
       matcher_array.push_back(std::forward_as_tuple(H2PP_REPEAT((, ), H2_Forward_Matcher, , 20)));
-      routine_array.push_back(h2_routine<Class, ReturnType(Args...)>());
+      routine_array.push_back(h2_routine<ClassType, ReturnType(ArgumentTypes...)>());
       return *this;
    }
 
@@ -206,17 +206,17 @@ class h2_mocker<Counter, Class, ReturnType(Args...)> : h2_mocker_base {
 #undef H2_Default_Matcher
 #undef H2_Forward_Matcher
 
-#define H2_Th_Matcher(__, i)                                     \
-   h2_mocker& Th##i(h2_matcher<h2_nth_decay<i, Args...>> e = {}) \
-   {                                                             \
-      if (checkin_array.empty()) Any();                          \
-      std::get<i>(matcher_array.back()) = e;                     \
-      return *this;                                              \
+#define H2_Th_Matcher(__, i)                                              \
+   h2_mocker& Th##i(h2_matcher<h2_nth_decay<i, ArgumentTypes...>> e = {}) \
+   {                                                                      \
+      if (checkin_array.empty()) Any();                                   \
+      std::get<i>(matcher_array.back()) = e;                              \
+      return *this;                                                       \
    }
    H2PP_REPEAT(, H2_Th_Matcher, , 20);
 #undef H2_Th_Matcher
 
-   h2_mocker& Return(h2_routine<Class, ReturnType(Args...)> r)
+   h2_mocker& Return(h2_routine<ClassType, ReturnType(ArgumentTypes...)> r)
    {
       if (checkin_array.empty()) Any();
       if (!routine_array.empty()) routine_array.pop_back();
@@ -224,14 +224,14 @@ class h2_mocker<Counter, Class, ReturnType(Args...)> : h2_mocker_base {
       return *this;
    }
 
-   void operator=(ReturnType (*f)(Args...))
+   void operator=(ReturnType (*f)(ArgumentTypes...))
    {
       if (checkin_array.empty()) Any();
       for (auto& a : routine_array)
          if (!a) a.fp = f;
    }
 
-   void operator=(ReturnType (*f)(Class*, Args...))
+   void operator=(ReturnType (*f)(ClassType*, ArgumentTypes...))
    {
       if (checkin_array.empty()) Any();
       for (auto& a : routine_array)

@@ -1,66 +1,13 @@
 
-static inline long long get_load_text_offset()
-{
-   h2_symbol* s[16];
-   if (h2_nm::get_by_name("main", s, 16) == 0) return 0;
-   return (long long)&main - (long long)s[0]->addr;
-}
-
-struct h2_vtable_offset_test {
-   h2_vtable_offset_test() {}
-   virtual ~h2_vtable_offset_test() {}
-   virtual void dummy() {}
-};
-
-static inline long long get_load_vtable_offset()
-{
-   char vtable_symbol[256];
-   h2_vtable_offset_test t;
-   long long absolute_vtable = (long long)*(void***)&t;
-   sprintf(vtable_symbol, "_ZTV%s", typeid(h2_vtable_offset_test).name());  // mangled for "vtable for h2::h2_vtable_offset_test"
-   long long relative_vtable = (long long)h2_nm::get_mangle(vtable_symbol);
-   if (relative_vtable == 0)
-      h2_color::prints("yellow", "\nDon't find vtable for h2::h2_vtable_offset_test %s\n", vtable_symbol);
-   return absolute_vtable - relative_vtable;
-}
-
-h2_inline void* h2_load::vtable_to_ptr(unsigned long long addr)
-{
-   if (I().vtable_offset == -1) I().vtable_offset = get_load_vtable_offset();
-   return (void*)(addr + I().vtable_offset);
-}
-
-h2_inline void* h2_load::addr_to_ptr(unsigned long long addr)
+h2_inline char* h2_cxa::demangle(const char* mangle_name, char* demangle_name, size_t length)
 {
 #if defined _WIN32
-   return (void*)addr;
+   return (char*)mangle_name;
 #else
-   if (I().text_offset == -1) I().text_offset = get_load_text_offset();
-   return (void*)(addr + I().text_offset);
+   int status = -1;
+   if (strlen(mangle_name)) abi::__cxa_demangle(mangle_name, demangle_name, &length, &status);
+   return status == 0 ? demangle_name : (char*)mangle_name;
 #endif
-}
-
-h2_inline unsigned long long h2_load::ptr_to_addr(void* ptr)
-{
-#if defined _WIN32
-   return (unsigned long long)ptr;
-#else
-   if (I().text_offset == -1) I().text_offset = get_load_text_offset();
-   return (unsigned long long)ptr - I().text_offset;
-#endif
-}
-
-h2_inline void* h2_load::get_by_fn(const char* fn)
-{
-   h2_symbol* res[16];
-   int n = h2_nm::get_by_name(fn, res, 16);
-   if (n != 1) {
-      h2_color::prints("yellow", n ? "\nFind multiple %s :\n" : "\nDon't find %s\n", fn);
-      for (int i = 0; i < n; ++i)
-         h2_color::prints("yellow", "  %d. %s \n", i + 1, res[i]->name);
-      return nullptr;
-   }
-   return addr_to_ptr(res[0]->addr);
 }
 
 #if defined __i386__ || defined __x86_64__ || defined _M_IX86 || defined _M_X64
@@ -90,7 +37,7 @@ static inline unsigned char* follow_JMP32ABS(unsigned char* target)
    return reinterpret_cast<unsigned char*>(*new_target_p);
 }
 
-h2_inline void* h2_load::follow_jmp(void* fp, int n)
+h2_inline void* h2_cxa::follow_jmp(void* fp, int n)
 {
    unsigned char* p = (unsigned char*)fp;
    while (n--) {
@@ -125,7 +72,7 @@ static inline unsigned long fetch_opcode(void* fp, int i = 0)
    return *(unsigned long*)(((unsigned char*)fp) + i * 4);
 }
 
-h2_inline void* h2_load::follow_jmp(void* fp, int n)
+h2_inline void* h2_cxa::follow_jmp(void* fp, int n)
 {
    while (n--) {
       // (gdb) disassemble /r printf

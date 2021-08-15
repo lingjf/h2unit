@@ -52,6 +52,7 @@ h2_inline void h2_exempt::setup()
    add_by_fp((void*)abi::__cxa_throw);
 #   if defined __APPLE__
    add_by_fp((void*)::snprintf);
+   add_by_fp((void*)::snprintf_l);
    add_by_fp((void*)::strftime_l);
    add_by_fp((void*)::strtod_l);
    add_by_fp((void*)::strtold);
@@ -68,18 +69,12 @@ h2_inline void h2_exempt::add_by_name(const char* fn)
 {
    h2_symbol* res[16];
    int n = h2_nm::get_by_name(fn, res, 16);
-   if (n != 1) {
-      h2_color::prints("yellow", n ? "\nFind multiple exempt %s :\n" : "\nDon't find exempt %s\n", fn);
-      for (int i = 0; i < n; ++i)
-         h2_color::prints("yellow", "  %d. %s \n", i + 1, res[i]->name);
-   }
-
    for (int i = 0; i < n; ++i)
       add_by_fp(h2_load::addr_to_ptr(res[i]->addr));
 }
 
 h2_inline void h2_exempt::add_by_fp(void* fp)
 {
-   I().fps[I().nfp++] = h2_load::follow_jmp(fp);
+   I().fps[I().nfp++] = h2_cxa::follow_jmp(fp);
    I().fps[I().nfp] = nullptr;
 }

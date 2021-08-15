@@ -157,7 +157,7 @@ struct h2_stdio {
 h2_inline h2_cout::h2_cout(h2_matcher<const char*> m_, const char* e_, const char* type_, const char* file_, int line_) : file(file_), line(line_), m(m_), e(e_), type(type_)
 {
    bool all = !strlen(type);
-   h2_stdio::I().start_capture(all || strcasestr(type, "out"), all || strcasestr(type, "err"), all || strcasestr(type, "syslog"));
+   h2_stdio::I().start_capture(all || h2_extract::has(type, "out"), all || h2_extract::has(type, "err"), all || h2_extract::has(type, "syslog"));
 }
 
 h2_inline h2_cout::~h2_cout()

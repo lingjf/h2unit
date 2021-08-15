@@ -252,7 +252,7 @@ SUITE(mock member function)
    Case(abstract virtual member function with object)
    {
       B_DerivedClass b;
-      OK("A.virtual_f1", b.virtual_f1(1));
+      OK("A.virtual_f1(1)a", b.virtual_f1(1));
       A_AbstractClass* a = dynamic_cast<A_AbstractClass*>(&b);
 
       MOCK(a, A_AbstractClass, virtual_f1, const char*(int)).Once().Return("+A.virtual_f1");
@@ -291,9 +291,9 @@ SUITE(mock template member function)
    Case(member function 1 typename)
    {
       F_TemplateClass<int> f;
-      OK("F.static_f1", f.static_f1(0));
-      OK("F.normal_f1", f.normal_f1(0));
-      OK("F.virtual_f1", f.virtual_f1(0));
+      OK("F.static_f1(1)", f.static_f1(1));
+      OK("F.normal_f1(1)f", f.normal_f1(1));
+      OK("F.virtual_f1(1)f", f.virtual_f1(1));
 
       MOCK(F_TemplateClass<int>::static_f1, const char*(int a)).Return("+F.static_f1");
       OK("+F.static_f1", f.static_f1(0));
@@ -306,17 +306,17 @@ SUITE(mock template member function)
    Case(member function 2 typename)
    {
       G_TemplateClass<int, int> g;
-      OK("G.static_f2", (g.static_f2<int, int>(0, 0)));
-      OK("G.normal_f2", (g.normal_f2<int, int>(0, 0)));
-      OK(Pair("G", "virtual_f2"), (g.virtual_f2<int, int>(0, 0)));
+      OK("G.static_f2(1,2)", (g.static_f2<int, int>(1, 2)));
+      OK("G.normal_f2(1,2)g", (g.normal_f2<int, int>(1, 2)));
+      OK(Pair("G.virtual_f2", 12.7), (g.virtual_f2<int, int>(1, 2)));
 
       MOCK((G_TemplateClass<int, int>::static_f2<int, int>), const char*(int a, int b)).Return("+G.static_f2");
       OK("+G.static_f2", (g.static_f2<int, int>(0, 0)));
       MOCK((G_TemplateClass<int, int>), (normal_f2<int, int>), const char*(int a, int b)).Return("+G.normal_f2");
       OK("+G.normal_f2", (g.normal_f2<int, int>(0, 0)));
-#if !defined WIN32
-      MOCK((G_TemplateClass<int, int>), (virtual_f2<int, int>), (std::pair<const char*, const char*>)(int a, int b)).Return(std::make_pair("+G", "virtual_f2"));
-      OK(Pair("+G", "virtual_f2"), (g.virtual_f2<int, int>(0, 0)));
+#if !defined WIN32 // Suck when member return Object
+      MOCK((G_TemplateClass<int, int>), (virtual_f2<int, int>), (std::pair<const char*, double>)(int a, int b)).Return(std::make_pair("+G.virtual_f2", 0.0));
+      OK(Pair("+G.virtual_f2", 0.0), (g.virtual_f2<int, int>(0, 0)));
 #endif
    }
 }

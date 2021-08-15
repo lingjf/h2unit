@@ -1,4 +1,5 @@
 #include "../source/h2_unit.cpp"
+#include "test_types.hpp"
 
 H2MATCHER(IPeq, expect, ("not equal"))
 {
@@ -40,44 +41,7 @@ SUITE(socket utils)
       a.sin_port = htons(9527);
       OK("1.2.3.4:9527", h2::h2_socket::iport_tostring(&a, t));
    }
-
-   Case(extract_iport_after_equal = 1.2.3.4 : 4444)
-   {
-      char from[64] = {0};
-      h2::extract_iport_after_equal("=1.2.3.4:4444", from);
-      OK("1.2.3.4:4444", from);
-   }
-
-   Case(extract_iport_after_equal = "1.2.3.4:4444")
-   {
-      char from[64] = {0};
-      h2::extract_iport_after_equal(" = \"1.2.3.4:4444\"", from);
-      OK("1.2.3.4:4444", from);
-   }
-
-   Case(extract_iport_after_equal = 1.2.3.4 : 4444, )
-   {
-      char from[64] = {0};
-      h2::extract_iport_after_equal(" = 1.2.3.4 : 4444,", from);
-      OK("1.2.3.4:4444", from);
-   }
-
-   Case(extract_iport_after_equal = 1.2.3.4 : *, )
-   {
-      char from[64] = {0};
-      h2::extract_iport_after_equal(" = 1.2.3.4 : *,", from);
-      OK("1.2.3.4:*", from);
-   }
-
-   Case(extract_iport_after_equal = *: *, )
-   {
-      char from[64] = {0};
-      h2::extract_iport_after_equal(" = 1.2.3.4 : *,", from);
-      OK("*:*", from);
-   }
 }
-
-#if !defined WIN32
 
 SUITE(SOCK)
 {
@@ -126,10 +90,11 @@ SUITE(SOCK)
          OK(Me("9876543210", 10), buffer);
          OK(IPeq("1.2.3.4:8888"), &c);
 
-         close(sock);
+         CloseSocket(sock);
       }
    }
 
+#if !defined _WIN32
    Case(UDP sendmsg recvmsg)
    {
       SOCK()
@@ -172,9 +137,10 @@ SUITE(SOCK)
          OK(10, r2);
          Ptx("*:9527", "1.2.3.4:8888", Me("1234567890", 10));
 
-         close(sock);
+         CloseSocket(sock);
       }
    }
+#endif
 
    Case(TCP server)
    {
@@ -203,8 +169,8 @@ SUITE(SOCK)
          OK(10, r1);
          OK(Me("9876543210", 10), buffer);
 
-         close(sock2);
-         close(sock);
+         CloseSocket(sock2);
+         CloseSocket(sock);
       }
    }
 
@@ -228,8 +194,7 @@ SUITE(SOCK)
          OK(10, r1);
          OK(Me("9876543210", 10), buffer);
 
-         close(sock);
+         CloseSocket(sock);
       }
    }
 }
-#endif

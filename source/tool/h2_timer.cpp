@@ -1,10 +1,10 @@
 
-h2_inline h2_perf::h2_perf(long long ms_, const char* file_, int line_) : file(file_), line(line_), ms(ms_)
+h2_inline h2_timer::h2_timer(long long ms_, const char* file_, int line_) : file(file_), line(line_), ms(ms_)
 {
    start = ::clock();
 }
 
-h2_inline h2_perf::~h2_perf()
+h2_inline h2_timer::~h2_timer()
 {
    h2_assert_g();
    long long delta = (::clock() - start) * 1000 / CLOCKS_PER_SEC;

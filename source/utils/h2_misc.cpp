@@ -47,6 +47,74 @@ h2_inline bool h2_pattern::wildcard_match(const char* pattern, const char* subje
 #endif
 }
 
+static inline const char* get_key(const char* subject, const char* key)
+{
+   return strcasestr(subject, key);
+}
+static inline const char* get_eq(const char* start)
+{
+   for (; *start && ::isspace(*start);) start++;  //strip left space
+   return *start == '=' ? start : nullptr;
+}
+
+h2_inline const char* h2_extract::has(const char* attributes, const char* key)
+{
+   return strcasestr(attributes, key);
+}
+
+h2_inline bool h2_extract::numeric(const char* attributes, const char* key, double& value)
+{
+   const char* p_key = get_key(attributes, key);
+   if (!p_key) return false;
+   const char* p_eq = get_eq(p_key + strlen(key));
+   if (!p_eq) return false;
+   const char* p_numeric = p_eq + 1;
+   for (; *p_numeric && ::isspace(*p_numeric);) p_numeric++;  //strip left space
+   value = strtod(p_numeric, nullptr);
+   return true;
+}
+
+h2_inline bool h2_extract::iport(const char* attributes, const char* key, char* str)
+{
+   const char* p_key = get_key(attributes, key);
+   if (!p_key) return false;
+   const char* p_eq = get_eq(p_key + strlen(key));
+   if (!p_eq) return false;
+
+   for (const char* p = p_eq + 1; *p; p++) {
+      if (::isdigit(*p) || *p == '.' || *p == ':' || *p == '*' || *p == '?') {
+         *str++ = *p;
+         *str = '\0';
+      } else {
+         if (!(::isspace(*p) || *p == '\"')) break;
+      }
+   }
+   return true;
+}
+
+h2_inline int h2_extract::fill(const char* attributes, const char* key, unsigned char bytes[])
+{
+   const char* p_key = get_key(attributes, key);
+   if (!p_key) return 0;
+   const char* p_eq = get_eq(p_key + strlen(key));
+   if (!p_eq) return 0;
+   const char* p = p_eq + 1;
+   for (; *p && ::isspace(*p);) p++;  // strip left space
+   if (p[0] == '0' && ::tolower(p[1]) == 'x') {
+      return hex_to_bytes(p + 2, bytes);
+   } else {
+      long long v = strtoll(p, nullptr, 10);
+      if (v <= 0xFFU)
+         return *((unsigned char*)bytes) = (unsigned char)v, 1;
+      else if (v <= 0xFFFFU)
+         return *((unsigned short*)bytes) = (unsigned short)v, 2;
+      else if (v <= 0xFFFFFFFFU)
+         return *((unsigned int*)bytes) = (unsigned int)v, 4;
+      else
+         return *((unsigned long long*)bytes) = (unsigned long long)v, 8;
+   }
+}
+
 h2_inline bool h2_pattern::match(const char* pattern, const char* subject, bool caseless)
 {
    return wildcard_match(pattern, subject, caseless) || regex_match(pattern, subject, caseless);

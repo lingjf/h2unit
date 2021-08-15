@@ -1,5 +1,5 @@
 
-#if defined __linux__
+#if defined __linux
 #   if defined(__GNUC__) && (defined(__i386) || defined(__x86_64))
 #      define h2_raise_trap() asm volatile("int $3")
 #   else
@@ -11,7 +11,7 @@
 /* clang-format on */
 #endif
 
-#if defined __linux__
+#if defined __linux
 static inline bool under_debug(int, const char*)
 {
    char t[1024];
@@ -48,7 +48,7 @@ static inline bool under_debug(int pid, const char* path)
 
 static inline char* get_gdb1(char* s)
 {
-#if defined __linux__
+#if defined __linux
    sprintf(s, "gdb --quiet --args %s %s", O.path, O.args);
 #elif defined __APPLE__
    sprintf(s, "lldb %s -- %s", O.path, O.args);
@@ -58,7 +58,7 @@ static inline char* get_gdb1(char* s)
 
 static inline char* get_gdb2(char* s, int pid)
 {
-#if defined __linux__
+#if defined __linux
    sprintf(s, "sudo gdb --pid=%d", pid);
 #elif defined __APPLE__
    sprintf(s, "sudo lldb --attach-pid %d", pid);

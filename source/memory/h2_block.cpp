@@ -8,42 +8,11 @@ struct h2_block_attributes {
 
    h2_block_attributes(const char* attributes)
    {
-      const char* p_noleak = strcasestr(attributes, "noleak");
-      if (p_noleak) noleak = true;
-
-      const char* p_limit = strcasestr(attributes, "limit");
-      if (p_limit) {
-         const char* p = strchr(p_limit, '=');
-         if (p) limit = (long long)strtod(p + 1, nullptr);
-      }
-
-      const char* p_align = strcasestr(attributes, "align");
-      if (p_align) {
-         const char* p = strchr(p_align, '=');
-         if (p) alignment = (int)strtod(p + 1, nullptr);
-      }
-
-      const char* p_fill = strcasestr(attributes, "fill");
-      if (p_fill) {
-         const char* p = strchr(p_fill, '=');
-         if (p) {
-            for (p += 1; *p && ::isspace(*p);) p++;  // strip left space
-
-            if (p[0] == '0' && ::tolower(p[1]) == 'x') {
-               n_fill = hex_to_bytes(p + 2, s_fill);
-            } else {
-               long long v = strtoll(p, (char**)NULL, 10);
-               if (v <= 0xFFU)
-                  n_fill = 1, *((unsigned char*)s_fill) = (unsigned char)v;
-               else if (v <= 0xFFFFU)
-                  n_fill = 2, *((unsigned short*)s_fill) = (unsigned short)v;
-               else if (v <= 0xFFFFFFFFU)
-                  n_fill = 4, *((unsigned int*)s_fill) = (unsigned int)v;
-               else
-                  n_fill = 8, *((unsigned long long*)s_fill) = (unsigned long long)v;
-            }
-         }
-      }
+      double d;
+      if (h2_extract::has(attributes, "noleak")) noleak = true;
+      if (h2_extract::numeric(attributes, "limit", d)) limit = (long long)d;
+      if (h2_extract::numeric(attributes, "align", d)) alignment = (int)d;
+      n_fill = h2_extract::fill(attributes, "fill", s_fill);
    }
 };
 

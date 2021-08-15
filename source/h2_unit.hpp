@@ -57,61 +57,62 @@
 #endif
 
 namespace h2 {
-#include "utils/h2_macro.hpp"          //
-#include "utils/h2_template.hpp"       //
-#include "utils/h2_list.hpp"           //
-#include "utils/h2_misc.hpp"           //
-#include "utils/h2_numeric.hpp"        //
-#include "utils/h2_libc.hpp"           // list
-#include "utils/h2_shared_ptr.hpp"     // libc
-#include "utils/h2_allocate.hpp"       // libc
-#include "utils/h2_string.hpp"         // allocate
-#include "utils/h2_row.hpp"            // string
-#include "utils/h2_stringify.hpp"      // string, row
-#include "utils/h2_color.hpp"          // row
-#include "ld/h2_nm.hpp"                //
-#include "ld/h2_load.hpp"              //
-#include "ld/h2_backtrace.hpp"         // row
-#include "other/h2_option.hpp"         //
-#include "other/h2_layout.hpp"         //
-#include "other/h2_failure.hpp"        //
-#include "json/h2_json.hpp"            //
-#include "matcher/h2_matches.hpp"      // failure
-#include "matcher/h2_matcher.hpp"      // matches, failure
-#include "matcher/h2_equation.hpp"     // matches
-#include "matcher/h2_cast.hpp"         // matcher
-#include "matcher/h2_unary.hpp"        // matches, matcher, failure
-#include "matcher/h2_logic.hpp"        // matches, matcher, failure
-#include "matcher/h2_inequation.hpp"   // matches, matcher, failure
-#include "matcher/h2_strcmp.hpp"       // matches, matcher, failure
-#include "matcher/h2_memcmp.hpp"       // matches, matcher, failure
-#include "matcher/h2_container.hpp"    // matches, matcher, failure
-#include "matcher/h2_customize.hpp"    // matches, matcher, failure
-#include "matcher/h2_matcher.cpp"      // matches, matcher, equation
-#include "stub/h2_fp.hpp"              // load
-#include "stub/h2_mfp.hpp"             // nm, load
-#include "stub/h2_stubs.hpp"           // -
-#include "stub/h2_temporary.hpp"       // -
-#include "stub/h2_stub.hpp"            // -
-#include "mock/h2_routine.hpp"         //
-#include "mock/h2_checkin.hpp"         // failure
+#include "utils/h2_macro.hpp"         //
+#include "utils/h2_template.hpp"      //
+#include "utils/h2_list.hpp"          //
+#include "utils/h2_misc.hpp"          //
+#include "utils/h2_numeric.hpp"       //
+#include "utils/h2_libc.hpp"          // list
+#include "utils/h2_shared_ptr.hpp"    // libc
+#include "utils/h2_allocate.hpp"      // libc
+#include "utils/h2_string.hpp"        // allocate
+#include "utils/h2_row.hpp"           // string
+#include "utils/h2_stringify.hpp"     // string, row
+#include "utils/h2_color.hpp"         // row
+#include "symbol/h2_nm.hpp"           //
+#include "symbol/h2_load.hpp"         //
+#include "symbol/h2_backtrace.hpp"    // row
+#include "symbol/h2_cxa.hpp"          //
+#include "render/h2_option.hpp"       //
+#include "render/h2_layout.hpp"       //
+#include "render/h2_failure.hpp"      //
+#include "json/h2_json.hpp"           //
+#include "matcher/h2_matches.hpp"     // failure
+#include "matcher/h2_matcher.hpp"     // matches, failure
+#include "matcher/h2_equation.hpp"    // matches
+#include "matcher/h2_cast.hpp"        // matcher
+#include "matcher/h2_unary.hpp"       // matches, matcher, failure
+#include "matcher/h2_logic.hpp"       // matches, matcher, failure
+#include "matcher/h2_inequation.hpp"  // matches, matcher, failure
+#include "matcher/h2_strcmp.hpp"      // matches, matcher, failure
+#include "matcher/h2_memcmp.hpp"      // matches, matcher, failure
+#include "matcher/h2_container.hpp"   // matches, matcher, failure
+#include "matcher/h2_customize.hpp"   // matches, matcher, failure
+#include "matcher/h2_matcher.cpp"     // matches, matcher, equation
+#include "stub/h2_fp.hpp"             // load
+#include "stub/h2_mfp.hpp"            // nm, load
+#include "stub/h2_stubs.hpp"          // -
+#include "stub/h2_temporary.hpp"      // -
+#include "stub/h2_stub.hpp"           // -
+#include "mock/h2_routine.hpp"        //
+#include "mock/h2_checkin.hpp"        // failure
 #include "mock/h2_tuple.hpp"          // failure
-#include "mock/h2_mocker.hpp"          // failure, checkin, routine, matcher, stub
-#include "mock/h2_mocks.hpp"           // failure, checkin
-#include "mock/h2_mock.hpp"            //
-#include "memory/h2_exempt.hpp"        // -
-#include "memory/h2_memory.hpp"        // failure, fp
+#include "mock/h2_mocker.hpp"         // failure, checkin, routine, matcher, stub
+#include "mock/h2_mocks.hpp"          // failure, checkin
+#include "mock/h2_mock.hpp"           //
+#include "memory/h2_exempt.hpp"       // -
+#include "memory/h2_memory.hpp"       // failure, fp
 #include "exception/h2_debug.hpp"     // option
-#include "extension/h2_dns.hpp"        //
-#include "extension/h2_socket.hpp"     // stub, failure, matcher
-#include "extension/h2_stdio.hpp"      //
-#include "extension/h2_perf.hpp"       // failure
-#include "core/h2_case.hpp"            // failure, stub, mock, dns, socket
-#include "core/h2_suite.hpp"           // case, stub, mock
-#include "core/h2_task.hpp"            // suite, case, failure, stub, mock, option, debug
-#include "core/h2_core.hpp"            //
-#include "assert/h2_assert.hpp"        // failure, matcher
-#include "other/h2_report.hpp"         // task, suite, case
+#include "tool/h2_dns.hpp"            //
+#include "tool/h2_socket.hpp"         // stub, failure, matcher
+#include "tool/h2_stdio.hpp"          //
+#include "tool/h2_timer.hpp"          // failure
+#include "core/h2_case.hpp"           // failure, stub, mock, dns, socket
+#include "core/h2_suite.hpp"          // case, stub, mock
+#include "core/h2_runner.hpp"         // suite, case, failure, stub, mock, option, debug
+#include "core/h2_core.hpp"           //
+#include "assert/h2_assert.hpp"       // failure, matcher
+#include "render/h2_report.hpp"       // runner, suite, case
 }  // namespace h2
 
 #ifndef SUITE

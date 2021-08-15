@@ -1,132 +1,430 @@
-name: ci
+name: 🔨
 
 on: [push]
 
 jobs:
-  example-x86_64-linux-gcc:
+  linux-x86_64-gcc:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
-    - name: build
-      run: make -C example
-    - name: run
-      run: ./example/a.out
+      - uses: actions/checkout@v2
+      - name: check platform
+        run: uname -a && getconf GNU_LIBC_VERSION
+      - name: pre-defined preprocessor macros
+        run: gcc -dM -E - < /dev/null
+      - name: sysroot directory for headers and libraries
+        run: g++ -E -v - < /dev/null
+      - name: build print
+        run: cd print && cmake . && cmake --build .
+      - name: run print
+        run: ./print/a.out -e 'new[] free'
+      - name: show help tips
+        run: ./print/a.out -h
+      - name: list print cases cases
+        run: ./print/a.out -l
+      - name: 🏗️ build test
+        run: cd test && cmake . && cmake --build . -j 2
+      - name: run test without memory check
+        run: cd test && LD_BIND_NOW=1 ./a.out -m -v -e test_memory_
+      - name: ✨ run test with memory check
+        run: cd test && LD_BIND_NOW=1 ./a.out -cvj
+      - name: install coverage tools
+        run: sudo pip3 install git+https://github.com/gcovr/gcovr.git
+      - name: build and run example
+        run: make -C example
+      - name: show coverage report
+        run: python -m json.tool ./example/coverage.json
 
-  example-x86-linux-gcc:
-    runs-on: ubuntu-16.04
-    steps:
-    - uses: actions/checkout@v2
-    - name: build
-      run: make -C example
-    - name: run
-      run: ./example/a.out
-
-  example-x86_64-macos-clang:
+  macos-x86_64-clang:
     runs-on: macos-latest
     steps:
-    - uses: actions/checkout@v2
-    - name: build
-      run: make -C example
-    - name: run
-      run: ./example/a.out
+      - uses: actions/checkout@v2
+      - name: check platform
+        run: uname -a
+      - name: pre-defined preprocessor macros
+        run: clang -dM -E - < /dev/null
+      - name: sysroot directory for headers and libraries
+        run: clang++ -E -v - < /dev/null
+      - name: build print
+        run: cd print && cmake . && cmake --build .
+      - name: run print
+        run: ./print/a.out -e 'new[] free'
+      - name: show help tips
+        run: ./print/a.out -h
+      - name: list print cases
+        run: ./print/a.out -l
+      - name: 🏗️ build test
+        run: cd test && cmake . && cmake --build . -j 2
+      - name: run test without memory check
+        run: cd test && ./a.out -m -v -e test_memory_
+      - name: ✨ run test with memory check
+        run: cd test && ./a.out -cvj
+      - name: install coverage tools
+        run: brew install lcov
+      - name: build and run example
+        run: make lcov -C example
 
-  example-x86_64-windows-msvc:
+  windows-x86_64-msvc:
     runs-on: windows-latest
     steps:
-    - uses: actions/checkout@v2
-    - name: build
-      run: cd example && cmake . && cmake --build .
-    - name: run
-      run: cd example && ./Debug/a.out.exe
+      - uses: actions/checkout@v2
+      - name: build print
+        run: cd print && cmake . && cmake --build .
+      - name: run print
+        run: ./print/Debug/a.out.exe -e 'new[] free'
+      - name: show help tips
+        run: ./print/Debug/a.out.exe -h
+      - name: list print cases
+        run: ./print/Debug/a.out.exe -l
+      - name: 🏗️ build test
+        run: cd test && cmake . && cmake --build . -j $env:NUMBER_OF_PROCESSORS
+      - name: run test without memory check
+        run: cd test && ./Debug/a.out.exe -m -v -e test_memory_
+      - name: ✨ run test with memory check
+        run: cd test && ./Debug/a.out.exe -cv
+      - name: build example
+        run: mkdir build_example && cd build_example && cmake ../example && cmake --build .
+      - name: run example
+        run: ./build_example/Debug/a.out.exe
 
-  print-x86_64-linux-gcc:
+  linux-x86_64-clang:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
-    - name: build
-      run: cd print && cmake . && cmake --build .
-    - name: run
-      run: cd print && ./a.out
+      - uses: actions/checkout@v2
+      - name: check platform
+        run: uname -a && getconf GNU_LIBC_VERSION
+      - name: pre-defined preprocessor macros
+        run: clang -dM -E - < /dev/null
+      - name: sysroot directory for headers and libraries
+        run: clang++ -E -v - < /dev/null
+      - name: build print
+        env:
+          CC: clang
+          CXX: clang++
+        run: |
+          cd print 
+          cmake .
+          cmake --build .
+      - name: run print
+        run: ./print/a.out -e 'new[] free'
+      - name: 🏗️ build test
+        env:
+          CC: clang
+          CXX: clang++
+        run: |
+          cd test 
+          cmake . 
+          cmake --build . -j 2
+      - name: run test without memory check
+        run: |
+          cd test 
+          LD_BIND_NOW=1 ./a.out -m -v -e test_memory_
+      - name: ✨ run test with memory check
+        run: |
+          cd test 
+          LD_BIND_NOW=1 ./a.out -vj
+      - name: build example
+        env:
+          CC: clang
+          CXX: clang++
+        run: |
+          mkdir build_example
+          cd build_example
+          cmake ../example
+          cmake --build .
+      - name: run example
+        run: ./build_example/a.out
 
-  print-x86-linux-gcc:
-    runs-on: ubuntu-16.04
-    steps:
-    - uses: actions/checkout@v2
-    - name: build
-      run: cd print && cmake . && cmake --build .
-    - name: run
-      run: cd print && ./a.out
-
-  print-x86_64-macos-clang:
-    runs-on: macos-latest
-    steps:
-    - uses: actions/checkout@v2
-    - name: build
-      run: cd print && cmake . && cmake --build .
-    - name: run
-      run: cd print && ./a.out
-
-  print-x86_64-windows-msvc:
-    runs-on: windows-latest
-    steps:
-    - uses: actions/checkout@v2
-    - name: build
-      run: cd print && cmake . && cmake --build .
-    - name: run
-      run: cd print && ./Debug/a.out.exe
-
-  test-x86_64-linux-gcc:
+  linux-x86-gcc-m32:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
-    - name: build
-      run: cd test && cmake . && cmake --build . -j $(cat /proc/cpuinfo| grep "cpu cores"| uniq | awk '{print $NF}')
-    - name: run with memory check
-      run: cd test && LD_BIND_NOW=1 ./a.out -cvj
-    - name: run without memory check
-      run: cd test && LD_BIND_NOW=1 ./a.out -m -v -e test_memory_
+      - uses: actions/checkout@v2
+      - name: check platform
+        run: uname -a && getconf GNU_LIBC_VERSION
+      - name: install multilib
+        run: |
+          sudo apt-get update
+          sudo apt-get install gcc-multilib g++-multilib
+      - name: build print
+        run: |
+          cd print
+          cmake -DCMAKE_TOOLCHAIN_FILE=../build/toolchains/x86-linux-gcc-m32.cmake .
+          cmake --build .
+      - name: run print
+        run: ./print/a.out -e 'new[] free'
+      - name: 🏗️ build test
+        run: |
+          cd test
+          cmake -DCMAKE_TOOLCHAIN_FILE=../build/toolchains/x86-linux-gcc-m32.cmake .
+          cmake --build . -j 2
+      - name: run test without memory check
+        run: |
+          cd test
+          LD_BIND_NOW=1 ./a.out -m -v -e test_memory_
+      - name: ✨ run test with memory check
+        run: |
+          cd test
+          LD_BIND_NOW=1 ./a.out -cvj
+      - name: build example
+        run: |
+          mkdir build_example
+          cd build_example
+          cmake -DCMAKE_TOOLCHAIN_FILE=../build/toolchains/x86-linux-gcc-m32.cmake ../example
+          cmake --build .
+      - name: run example
+        run: ./build_example/a.out
 
-  test-x86-linux-gcc:
-    runs-on: ubuntu-16.04
+  linux-x86-clang-m32:
+    runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
-    - name: build
-      run: cd test && cmake . && cmake --build . -j $(cat /proc/cpuinfo| grep "cpu cores"| uniq | awk '{print $NF}')
-    - name: run with memory check
-      run: cd test && LD_BIND_NOW=1 ./a.out -vj
-    - name: run without memory check
-      run: cd test && LD_BIND_NOW=1 ./a.out -m -v -e test_memory_
+      - uses: actions/checkout@v2
+      - name: check platform
+        run: uname -a && getconf GNU_LIBC_VERSION
+      - name: install multilib
+        run: |
+          sudo apt-get update
+          sudo apt-get install gcc-multilib g++-multilib
+      - name: build print
+        env:
+          CC: clang
+          CXX: clang++
+        run: |
+          cd print
+          cmake -DCMAKE_TOOLCHAIN_FILE=../build/toolchains/x86-linux-clang-m32.cmake .
+          cmake --build .
+      - name: run print
+        run: ./print/a.out -e 'new[] free'
+      - name: 🏗️ build test
+        env:
+          CC: clang
+          CXX: clang++
+        run: |
+          cd test
+          cmake -DCMAKE_TOOLCHAIN_FILE=../build/toolchains/x86-linux-clang-m32.cmake .
+          cmake --build . -j 2
+      - name: run test without memory check
+        run: |
+          cd test
+          LD_BIND_NOW=1 ./a.out -m -v -e test_memory_
+      - name: ✨ run test with memory check
+        run: |
+          cd test
+          LD_BIND_NOW=1 ./a.out -cvj
+      - name: build example
+        run: |
+          mkdir build_example
+          cd build_example
+          cmake -DCMAKE_TOOLCHAIN_FILE=../build/toolchains/x86-linux-clang-m32.cmake ../example
+          cmake --build .
+      - name: run example
+        run: ./build_example/a.out
 
-  # test-x86_64-linux-clang:
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #   - uses: actions/checkout@v2
-  #   - name: build
-  #     env:
-  #       CC: clang
-  #       CXX: clang++
-  #     run: cd test && cmake . && cmake --build . -j $(cat /proc/cpuinfo| grep "cpu cores"| uniq | awk '{print $NF}')
-  #   - name: run
-  #     run: cd test && objcopy --writable-text a.out && ./a.out -cvj && ./a.out -m -v -e test_memory_
-
-  test-x86_64-macos-clang:
-    runs-on: macos-latest
+  linux-arm64-gcc:
+    runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
-    - name: build
-      run: cd test && cmake . && cmake --build . -j $(sysctl hw.ncpu | awk '{print $NF}')
-    - name: run with memory check
-      run: cd test && ./a.out -cvj
-    - name: run without memory check
-      run: cd test && ./a.out -m -v -e test_memory_
+      - uses: actions/checkout@v2
+      - name: checkout qemu
+        uses: actions/checkout@v2
+        with:
+          repository: qemu/qemu
+          path: qemu
+          ref: 8746309137ba470d1b2e8f5ce86ac228625db940
+      - name: build and install qemu
+        run: |
+          cd qemu
+          ./configure --target-list=aarch64-linux-user --disable-system
+          make -j 2
+          sudo make install
+      - name: install aarch64-gnu-toolchain
+        run: |
+          sudo apt-get update
+          sudo apt-get install gcc-aarch64-linux-gnu g++-aarch64-linux-gnu
+      - name: check platform
+        run: uname -a && getconf GNU_LIBC_VERSION
+      - name: pre-defined preprocessor macros
+        run: aarch64-linux-gnu-g++ -march=armv8-a -dM -E - < /dev/null
+      - name: sysroot directory for headers and libraries
+        run: aarch64-linux-gnu-g++ -march=armv8-a -E -v - < /dev/null
+      - name: build print
+        run: |
+          cd print 
+          cmake -DCMAKE_TOOLCHAIN_FILE=../build/toolchains/aarch64-linux-gcc.cmake .
+          cmake --build .
+      - name: run print
+        run: qemu-aarch64 -L /usr/aarch64-linux-gnu ./print/a.out -e 'new[] free'
+      - name: 🏗️ build test
+        run: |
+          cd test
+          cmake -DCMAKE_TOOLCHAIN_FILE=../build/toolchains/aarch64-linux-gcc.cmake .
+          cmake --build . -j 2
+      - name: run test without memory check
+        run: |
+          cd test
+          qemu-aarch64 -L /usr/aarch64-linux-gnu -E LD_BIND_NOW=1 ./a.out -m -v -e test_memory_
+      - name: ✨ run test with memory check
+        run: |
+          cd test
+          qemu-aarch64 -L /usr/aarch64-linux-gnu -E LD_BIND_NOW=1 ./a.out -cvj
+      - name: build example
+        run: |
+          mkdir build_example
+          cd build_example
+          cmake -DCMAKE_TOOLCHAIN_FILE=../build/toolchains/aarch64-linux-gcc.cmake ../example
+          cmake --build .
+      - name: run example
+        run: qemu-aarch64 -L /usr/aarch64-linux-gnu ./build_example/a.out
 
-  test-x86_64-windows-msvc:
-    runs-on: windows-latest
+  linux-x86_64-gcc-7:
+    runs-on: ubuntu-18.04
     steps:
-    - uses: actions/checkout@v2
-    - name: build
-      run: cd test && cmake . && cmake --build . -j $env:NUMBER_OF_PROCESSORS
-    - name: run with memory check
-      run: cd test && ./Debug/a.out.exe -cv
-    - name: run without memory check
-      run: cd test && ./Debug/a.out.exe -m -v -e test_memory_
+      - uses: actions/checkout@v2
+      - name: install gcc-7
+        run: |
+          sudo apt-get update
+          sudo apt-get install gcc-7 g++-7
+      - name: check platform
+        run: uname -a && getconf GNU_LIBC_VERSION
+      - name: pre-defined preprocessor macros
+        run: g++-7 -dM -E - < /dev/null
+      - name: sysroot directory for headers and libraries
+        run: g++-7 -E -v - < /dev/null
+      - name: build print
+        env:
+          CC: gcc-7
+          CXX: g++-7
+        run: |
+          cd print
+          cmake .
+          cmake --build .
+      - name: run print
+        run: ./print/a.out -e 'new[] free'
+      - name: 🏗️ build test
+        env:
+          CC: gcc-7
+          CXX: g++-7
+        run: |
+          cd test 
+          cmake . 
+          cmake --build . -j 2
+      - name: run test without memory check
+        run: |
+          cd test 
+          LD_BIND_NOW=1 ./a.out -m -v -e test_memory_
+      - name: ✨ run test with memory check
+        run: |
+          cd test 
+          LD_BIND_NOW=1 ./a.out -cvj
+      - name: build example
+        env:
+          CC: gcc-7
+          CXX: g++-7
+        run: |
+          mkdir build_example
+          cd build_example
+          cmake ../example
+          cmake --build .
+      - name: run example
+        run: ./build_example/a.out
+
+  linux-x86_64-gcc-8:
+    runs-on: ubuntu-18.04
+    steps:
+      - uses: actions/checkout@v2
+      - name: install gcc-8
+        run: |
+          sudo apt-get update
+          sudo apt-get install gcc-8 g++-8
+      - name: check platform
+        run: uname -a && getconf GNU_LIBC_VERSION
+      - name: pre-defined preprocessor macros
+        run: g++-8 -dM -E - < /dev/null
+      - name: sysroot directory for headers and libraries
+        run: g++-8 -E -v - < /dev/null
+      - name: build print
+        env:
+          CC: gcc-8
+          CXX: g++-8
+        run: |
+          cd print
+          cmake .
+          cmake --build .
+      - name: run print
+        run: ./print/a.out -e 'new[] free'
+      - name: 🏗️ build test
+        env:
+          CC: gcc-8
+          CXX: g++-8
+        run: |
+          cd test 
+          cmake . 
+          cmake --build . -j 2
+      - name: run test without memory check
+        run: |
+          cd test 
+          LD_BIND_NOW=1 ./a.out -m -v -e test_memory_
+      - name: ✨ run test with memory check
+        run: |
+          cd test 
+          LD_BIND_NOW=1 ./a.out -cvj
+      - name: build example
+        env:
+          CC: gcc-8
+          CXX: g++-8
+        run: |
+          mkdir build_example
+          cd build_example
+          cmake ../example
+          cmake --build .
+      - name: run example
+        run: ./build_example/a.out
+
+  linux-x86_64-clang-9:
+    runs-on: ubuntu-18.04
+    steps:
+      - uses: actions/checkout@v2
+      - name: install clang-9
+        run: |
+          sudo apt-get update
+          sudo apt-get install clang-9 clang++-9
+      - name: check platform
+        run: uname -a && getconf GNU_LIBC_VERSION
+      - name: pre-defined preprocessor macros
+        run: clang++-9 -dM -E - < /dev/null
+      - name: sysroot directory for headers and libraries
+        run: clang++-9 -E -v - < /dev/null
+      - name: build print
+        env:
+          CC: clang-9
+          CXX: clang++-9
+        run: |
+          cd print
+          cmake .
+          cmake --build .
+      - name: run print
+        run: ./print/a.out -e 'new[] free'
+      - name: 🏗️ build test
+        env:
+          CC: clang-9
+          CXX: clang++-9
+        run: |
+          cd test 
+          cmake . 
+          cmake --build . -j 2
+      - name: run test without memory check
+        run: |
+          cd test 
+          LD_BIND_NOW=1 ./a.out -m -v -e test_memory_
+      - name: ✨ run test with memory check
+        run: |
+          cd test 
+          LD_BIND_NOW=1 ./a.out -cvj
+      - name: build example
+        env:
+          CC: clang-9
+          CXX: clang++-9
+        run: |
+          mkdir build_example
+          cd build_example
+          cmake ../example
+          cmake --build .
+      - name: run example
+        run: ./build_example/a.out

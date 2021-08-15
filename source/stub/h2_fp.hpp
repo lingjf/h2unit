@@ -17,8 +17,8 @@ struct h2_fp {
    static void* A(const char* fn) { return h2_load::get_by_fn(fn); }
 };
 
-template <typename ReturnType, typename... Args>
-struct h2_fp<ReturnType(Args...)> {
-   static void* A(ReturnType (*fp)(Args...)) { return h2_un(fp); }
+template <typename ReturnType, typename... ArgumentTypes>
+struct h2_fp<ReturnType(ArgumentTypes...)> {
+   static void* A(ReturnType (*fp)(ArgumentTypes...)) { return h2_un(fp); }
    static void* A(const char* fn) { return h2_load::get_by_fn(fn); }
 };

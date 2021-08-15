@@ -7,7 +7,7 @@ The special features is :
 ### 1. Header-only Single-file 
 Only need to include *1* *ONE* *一* *いち* source file: [**h2unit.h**](h2unit.h) 
 
-**h2unit.h** contains [`main()`](source/h2_unit.cpp#L56) function, and `main()` will execute test cases.
+**h2unit.h** contains [`main()`](source/h2_unit.cpp#L60) function, and `main()` will execute test cases.
 user no need to write main() anymore.
 
 ### 2. Dynamic MOCK
@@ -15,7 +15,7 @@ user no need to write main() anymore.
 ### 3. JSON Compare
 
 # Example
-Example is the BEST manual document.
+Example is a helpful manual document.
 
 All the code of following features can be found in the [example folder](example/), [test h2unit by h2unit](test/), and it is executable, the result is visable.
 
@@ -23,9 +23,10 @@ All the code of following features can be found in the [example folder](example/
 # Features
 
 ### 1. Test Suite and Test Case
-[`SUITE`](source/h2_unit.hpp) is used to define a Test Suite. [`Case`](source/h2_unit.hpp) is used to define a Test Case inside of Test Suite. <br>
+[`SUITE`](source/core/h2_core.hpp) is used to define a Test Suite. [`Case`](source/core/h2_core.hpp) is used to define a Test Case inside of Test Suite. <br>
 Variables defined in Suite scope are shared by cases which can see them. <br>
-[`Cleanup`](source/h2_unit.hpp) is executed after every test case whatever success or fail. <br>
+[`Setup`](source/core/h2_core.hpp) is executed before every test case. <br>
+[`Cleanup`](source/core/h2_core.hpp) is executed after every test case whatever success or fail. <br>
 Each case is executed separately and begin from first of suite scope, 
    shared variables are initialized, then shared code is executed until case section,
    after test code, Cleanup() is invoked to release resources. <br>
@@ -52,7 +53,7 @@ SUITE(Suite Name)
    shared_code as cleanup;
 }
 ```
-[`CASE`](source/h2_unit.hpp) macro is used to define a standalone test case.
+[`CASE`](source/core/h2_core.hpp) macro is used to define a standalone test case.
 ```C++
 CASE(Case Name)
 {
@@ -70,8 +71,8 @@ All the test cases are registered to a global list automatically (C++ global obj
 It means user should not write extra code to register test cases.
 
 ### 2. Compare
-*    [`OK`](source/h2_unit.hpp)(expr) : check the result of `expr` is true.
-*    [`OK`](source/h2_unit.hpp)(expect, actual) : check the actual value matches with expect value.
+*    [`OK`](source/assert/h2_assert.hpp)(expr) : check the result of `expr` is true.
+*    [`OK`](source/assert/h2_assert.hpp)(expect, actual) : check the actual value matches with expect value.
 
 Add user specified error description by following << operator.
 ```C++
@@ -81,42 +82,42 @@ CASE(Case Name)
 }
 ```
 ### 3. Matcher
-*    [`_`](source/assert/h2_use.hpp) / [`Any`](source/assert/h2_use.hpp) : matches any value 
-*    [`IsNull`](source/assert/h2_use.hpp) : matches if value is null 
-*    [`NotNull`](source/assert/h2_use.hpp) : matches if value is not null 
-*    [`IsTrue`](source/assert/h2_use.hpp) : matches if value is true 
-*    [`IsFalse`](source/assert/h2_use.hpp) : matches if value is false 
-*    [`Eq`](source/assert/h2_use.hpp)(expect [, epsilon]) : matches if value equals expect (one of [strcmp wildcard regex] equals for string compare), float value near equals expect, default epsilon is 0.00001 
-*    [`Nq`](source/assert/h2_use.hpp)(expect) : matches if value not equals expect 
-*    [`Ge`](source/assert/h2_use.hpp)(expect) : matches if value >= expect 
-*    [`Gt`](source/assert/h2_use.hpp)(expect) : matches if value > expect 
-*    [`Le`](source/assert/h2_use.hpp)(expect) : matches if value <= expect 
-*    [`Lt`](source/assert/h2_use.hpp)(expect) : matches if value < expect 
-*    [`Me`](source/assert/h2_use.hpp)(expect, [length]) : matches if memcmp(expect, value, length) == 0 
-     *    [`M1e`](source/assert/h2_use.hpp)(expect, [length]) : bit level memcmp
-     *    [`M8e`](source/assert/h2_use.hpp)(expect, [length]) : byte level memcmp
-     *    [`M16e`](source/assert/h2_use.hpp)(expect, [length]) : int16 level memcmp
-     *    [`M32e`](source/assert/h2_use.hpp)(expect, [length]) : int32 level memcmp
-     *    [`M64e`](source/assert/h2_use.hpp)(expect, [length]) : int64 level memcmp
-*    [`Re`](source/assert/h2_use.hpp)(expect) : matches if value Regex equals expect 
-*    [`We`](source/assert/h2_use.hpp)(expect) : matches if value Wildcard equals expect 
-*    [`Je`](source/assert/h2_use.hpp)(expect) : matches if value JSON equals expect 
-*    [`Se`](source/assert/h2_use.hpp)(expect) : matches if string strictly equals expect as strcmp() 
-*    [`Substr`](source/assert/h2_use.hpp)(expect) : matches if value has substr expect 
-*    [`StartsWith`](source/assert/h2_use.hpp)(expect) : matches if value starts with expect 
-*    [`EndsWith`](source/assert/h2_use.hpp)(expect) : matches if value ends with expect 
-*    [`~`](source/assert/h2_use.hpp) / [`CaseLess`](source/assert/h2_use.hpp)(expect) : make inner matcher case-insensitive, right operator must be Matcher, `~"Hello World"` not works 
-*    [`Pointee`](source/assert/h2_use.hpp)(expect) : matches if point to value equals expect 
-*    [`!`](source/assert/h2_use.hpp) / [`Not`](source/assert/h2_use.hpp)(expect) : matches if not matches inner matcher, right operator must be Matcher, !3 is considered as normal semantics 
-*    [`&&`](source/assert/h2_use.hpp)(expect) : Logical AND of two matchers, left and right operator shoud at least one Matcher 
-*    [`||`](source/assert/h2_use.hpp)(expect) : Logical OR of two matchers 
-*    [`AllOf`](source/assert/h2_use.hpp)(expect...) : matches if value matches all of inner matchers, act as AND logical operator
-*    [`AnyOf`](source/assert/h2_use.hpp)(expect...) : matches if value matches any one of inner matchers, act as OR logical operator
-*    [`NoneOf`](source/assert/h2_use.hpp)(expect...) : matches if value not matches all of inner matchers 
-*    [`ListOf`](source/assert/h2_use.hpp)(expect...) : matches if sequence container(array, vector, ...) item matches inner matchers 
-*    [`CountOf`](source/assert/h2_use.hpp)(expect...) : matches if container(array, vector, ...) item count matches inner matchers 
-*    [`Have`/`Has`](source/assert/h2_use.hpp)(expect ...) : matches if there are items in container(vector, set, map, ...) match every inner matchers
-*    [`In`](source/assert/h2_use.hpp)(expect...) : matches if acutal value matches any of inner matchers 
+*    [`_`](source/h2_unit.hpp#L321) / [`Any`](source/h2_unit.hpp#L321) : matches any value 
+*    [`IsNull`](source/h2_unit.hpp#L321) : matches if value is null 
+*    [`NotNull`](source/h2_unit.hpp#L321) : matches if value is not null 
+*    [`IsTrue`](source/h2_unit.hpp#L321) : matches if value is true 
+*    [`IsFalse`](source/h2_unit.hpp#L321) : matches if value is false 
+*    [`Eq`](source/h2_unit.hpp#L321)(expect [, epsilon]) : matches if value equals expect (one of [strcmp wildcard regex] equals for string compare), float value near equals expect, default epsilon is 0.00001 
+*    [`Nq`](source/h2_unit.hpp#L321)(expect) : matches if value not equals expect 
+*    [`Ge`](source/h2_unit.hpp#L321)(expect) : matches if value >= expect 
+*    [`Gt`](source/h2_unit.hpp#L321)(expect) : matches if value > expect 
+*    [`Le`](source/h2_unit.hpp#L321)(expect) : matches if value <= expect 
+*    [`Lt`](source/h2_unit.hpp#L321)(expect) : matches if value < expect 
+*    [`Me`](source/h2_unit.hpp#L321)(expect, [length]) : matches if memcmp(expect, value, length) == 0 
+     *    [`M1e`](source/h2_unit.hpp#L321)(expect, [length]) : bit level memcmp
+     *    [`M8e`](source/h2_unit.hpp#L321)(expect, [length]) : byte level memcmp
+     *    [`M16e`](source/h2_unit.hpp#L321)(expect, [length]) : int16 level memcmp
+     *    [`M32e`](source/h2_unit.hpp#L321)(expect, [length]) : int32 level memcmp
+     *    [`M64e`](source/h2_unit.hpp#L321)(expect, [length]) : int64 level memcmp
+*    [`Re`](source/h2_unit.hpp#L321)(expect) : matches if value Regex equals expect 
+*    [`We`](source/h2_unit.hpp#L321)(expect) : matches if value Wildcard equals expect 
+*    [`Je`](source/h2_unit.hpp#L321)(expect) : matches if value JSON equals expect 
+*    [`Se`](source/h2_unit.hpp#L321)(expect) : matches if string strictly equals expect as strcmp() 
+*    [`Substr`](source/h2_unit.hpp#L321)(expect) : matches if value has substr expect 
+*    [`StartsWith`](source/h2_unit.hpp#L321)(expect) : matches if value starts with expect 
+*    [`EndsWith`](source/h2_unit.hpp#L321)(expect) : matches if value ends with expect 
+*    [`~`](source/h2_unit.hpp#L321) / [`CaseLess`](source/h2_unit.hpp#L321)(expect) : make inner matcher case-insensitive, right operator must be Matcher, `~"Hello World"` not works 
+*    [`Pointee`](source/h2_unit.hpp#L321)(expect) : matches if point to value equals expect 
+*    [`!`](source/h2_unit.hpp#L321) / [`Not`](source/h2_unit.hpp#L321)(expect) : matches if not matches inner matcher, right operator must be Matcher, !3 is considered as normal semantics 
+*    [`&&`](source/h2_unit.hpp#L321)(expect) : Logical AND of two matchers, left and right operator shoud at least one Matcher 
+*    [`||`](source/h2_unit.hpp#L321)(expect) : Logical OR of two matchers 
+*    [`AllOf`](source/h2_unit.hpp#L321)(expect...) : matches if value matches all of inner matchers, act as AND logical operator
+*    [`AnyOf`](source/h2_unit.hpp#L321)(expect...) : matches if value matches any one of inner matchers, act as OR logical operator
+*    [`NoneOf`](source/h2_unit.hpp#L321)(expect...) : matches if value not matches all of inner matchers 
+*    [`ListOf`](source/h2_unit.hpp#L321)(expect...) : matches if sequence container(array, vector, ...) item matches inner matchers 
+*    [`CountOf`](source/h2_unit.hpp#L321)(expect...) : matches if container(array, vector, ...) item count matches inner matchers 
+*    [`Have`/`Has`](source/h2_unit.hpp#L321)(expect ...) : matches if there are items in container(vector, set, map, ...) match every inner matchers
+*    [`In`](source/h2_unit.hpp#L321)(expect...) : matches if acutal value matches any of inner matchers 
 
 Matcher can be used in OK(expect, actual), for example:
 ```C++
@@ -190,12 +191,12 @@ If length is not specified explicitly, maximal length is used.
 
 ##### 3.1.3. Compare length
 
-*    [`M1e`](source/assert/h2_use.hpp)(expect, [length]) : number of bits.
-*    [`M8e`](source/assert/h2_use.hpp)(expect, [length]) : number of bytes.
-*    [`M16e`](source/assert/h2_use.hpp)(expect, [length]) : number of int16.
-*    [`M32e`](source/assert/h2_use.hpp)(expect, [length]) : number of int32.
-*    [`M64e`](source/assert/h2_use.hpp)(expect, [length]) : number of int64.
-*    [`Me`](source/assert/h2_use.hpp)(expect, [length]) : following deduced type.
+*    [`M1e`](source/h2_unit.hpp#L321)(expect, [length]) : number of bits.
+*    [`M8e`](source/h2_unit.hpp#L321)(expect, [length]) : number of bytes.
+*    [`M16e`](source/h2_unit.hpp#L321)(expect, [length]) : number of int16.
+*    [`M32e`](source/h2_unit.hpp#L321)(expect, [length]) : number of int32.
+*    [`M64e`](source/h2_unit.hpp#L321)(expect, [length]) : number of int64.
+*    [`Me`](source/h2_unit.hpp#L321)(expect, [length]) : following deduced type.
 
 #### 3.2. Array size
 
@@ -270,11 +271,11 @@ void this_is_a_test_case()
 ```
 The most disadvantage of function pointer replacement is changing of product source code. <br>
 Objective of Dynamic STUB is same as function pointer replacement, but it is unnecessary to change product source code. <br> 
-[STUB](source/stub/h2_use.hpp) is easier to use.
+[STUB](source/stub/h2_stub.hpp) is easier to use.
 
-[UNSTUB](source/stub/h2_use.hpp) reset STUB, recover original function.
+[UNSTUB](source/stub/h2_stub.hpp) reset STUB, recover original function.
 
-#### 4.1. raw function substitution
+#### 4.1. Normal function substitution
 
 ```C++
 /* product code */ 
@@ -316,185 +317,74 @@ bool is_equal(char * a, char * b)
 {
    return strcmp(a, b) == 0;
 }
+```
+
+```C++
+/* unit test code */
 bool is_equal_fake(char * a, char * b)
 {
    return stricmp(a, b) == 0;
 }
-```
-
-```C++
 CASE(demo dynamic stub with fake function)
 {
    STUB((bool(*)(char*, char*))is_equal, is_equal_fake);
    do_something_with_call_is_equal();
 }
-```
 
-```C++
-CASE(demo dynamic stub with fake function)
+CASE(demo dynamic stub with fake function 2)
 {
    STUB(is_equal, bool(char*, char*), is_equal_fake);
    do_something_with_call_is_equal();
 }
 ```
 
-The principle of Dynamic STUB is :
+#### 4.3. STUB class member function
 
-Replacing the first several binary code of original function with "JMP" instruction, 
-the result is once calling into original function, it will jump to fake function immediately,
-parameters of original function in stack will be treated as parameters of fake function,
-fake function return to the caller of original function directly.
-
-`STUB()` is used to replace original with fake. All replaced binary code will be restored in default teardown phase.
-
-STUB formula:
+##### 4.3.1. nonstatic or virtual member function
 ```C++
-   STUB([Class Name,] Function Name, Return Type(Parameter List), Substitute Function Name);
-
-   UNSTUB([Class Name,] Function Name, Return Type(Parameter List));
+class Foo {
+   int bar(int a, char * b) { ... }
+}
 ```
-
-### 5. Dynamic MOCK
-Compare to Dynamic STUB, Dynamic Mock provide a easy way to check call times, input arguments and inject return value.
 
 ```C++
 /* unit test code */
-CASE(demo dynamic mock function)
+int Foo_bar_fake(Foo* foo, int a, char * b)
 {
-   MOCK(foobar, int(int a, char * b)).Once(1, "A").Return(11);
-
-   do_something();
+   OK(1, a);
+   sprintf(b, "return value by argument");
+   return 1;
 }
-
-CASE(demo dynamic mock class method)
-{
-   MOCK(Foo, bar, int(int a, char * b)).Once(1, "A").Return(11);
-
-   do_something();
-}
-```
-Expect foobar called with *a* equals *1*, *b* equals *"A"* *1 time* in this case, and make it returns *11*.
-
-#### 5.1. [`MOCK`](source/mock/h2_use.hpp) primitive 
-
-##### 5.1.1. Mock normal function
-  
-```C++
-   MOCK(Function Name, Return Type(Parameter List)) [.Chained Inspection];
-```
-
-including class static member method.
-
-##### 5.1.2. Mock class member function
-  
-```C++
-   MOCK([Class Name,] Method Name, Return Type(Parameter List)) [.Chained Inspection]; 
-```
-
-[UNMOCK](source/mock/h2_use.hpp) reset MOCK, recover original function.
-
-MOCK formula:
-```C++
-   MOCK([Class Name,] Function Name, Return Type(Parameter List)) [.Chained Inspection];
-
-   MOCKS([Class Name,] Function Name, Return Type(Parameter List) , Chained Inspection)
-   {  
-      ... substitute function body ...
-      check... ;
-      return... ;
-   };
-
-   UNMOCK([Class Name,] Function Name, Return Type(Parameter List));
-```
-
-#### 5.2. Chained Inspection
-
-##### 5.2.1. Checkin of call
-
--    `Once`([matcher...]) : Expect called 1 time, and expect arguments match matchers, default match any
--    `Twice`([matcher...]) : Expect called 2 times
--    `Times`(n, [matcher...]) : Expect called n times
--    `Any`([matcher...]) : Expect called any times(include 0 times)
--    `Atleast`(n, [matcher...]) : Expect called atleast n times(>=n)
--    `Atmost`(n, [matcher...]) : Expect called atmost n times(<=n)
--    `Between`(n, m, [matcher...]) : Expect called >=n and <=m times
-
-If checkin not specified, default is `Any`.
-
-`greed`(boolean) : match call in greed mode or not, default is true
-
-##### 5.2.2. Arguments check
-
--    `With`(matcher...) : Expect arguments match matchers
--    `Th0~15`(matcher) : Expect 1st~16th argument match matcher
-
-##### 5.2.3. Return
-
--    `Return`() : Delegate to origin function/method
--    `Return`(value) : Inject return value
-
-#### 5.3. Substitute function
-
-`{ }` following MOCKS(...), when `Return` is provided substitute function is ignored.
-
-`This` is dedicated variable of class instance pointr like `this`.
-
-In Substitute function, Can check arguments, return value, and other actions. 
-
-#### 5.4. MOCK scenarios
-
-##### 5.4.1. normal function
-
-```C++
-CASE(simple function)
-{
-   MOCK(foobar, int(int a, char * b)).Once(1, "A").Return(11);
-   do_something_with_call_foobar();
-}
-```
-
-##### 5.4.2. overload function
-
-```C++
-bool is_equal(double a, double b)
-{
-   return a == b;
-}
-bool is_equal(char * a, char * b)
-{
-   return strcmp(a, b) == 0;
-}
-```
-
-```C++
-CASE(mock overload function)
-{
-   MOCK(is_equal, bool(char *, char *)).Return(true);
-   do_something_with_call_is_equal();
-}
-```
-
-##### 5.4.3. nonstatic or virtual member function
-
-```C++
 CASE(normal member function)
 {
-   MOCK(Foo, bar, int(int a, char * b)).Return(2);
-   do_something(Foo);
+   STUB(Foo, bar, int(int a, char * b), Foo_bar_fake);
+   do_something(Foo::bar);
 }
 ```
 
-##### 5.4.4. static member function
+##### 4.3.2. static member function
+```C++
+class Foo {
+   static int bar(int a, char * b) { ... }
+}
+```
 
 ```C++
+/* unit test code */
+int Foo_bar_fake(int a, char * b)
+{
+   OK(1, a);
+   sprintf(b, "return value by argument");
+   return 1;
+}
 CASE(static class member function)
 {
-   MOCK(Foo::bar, int(int a, char * b)).Return(2);
-   do_something(Foo);
+   STUB(Foo::bar, int(int a, char * b), Foo_bar_fake);
+   do_something(Foo::bar);
 }
 ```
 
-##### 5.4.5. template function or template member function
+##### 4.3.3. template function or template class
 
 ```C++
 template <typename T1, typename T2>
@@ -508,16 +398,187 @@ class Foo {
 ```
 
 ```C++
+/* unit test code */
+int foobar_fake(int a, char * b)
+{
+   OK(1, a);
+   sprintf(b, "return value by argument");
+   return 1;
+}
 CASE(template function)
 {
-   MOCK((foobar<int, char*>), int(int a, char * b)).Return(2);
-   ...do_something(foobar);
-
-   MOCKS((Foo<int, char*>), (bar<float, std::string>), int(float, std::string)).Return(2);
-   ...do_something(Foo bar);
+   STUB((foobar<int, char*>), int(int a, char * b), foobar_fake);
+   ...do_something(foobar<int, char*>);
+}
+int Foo_bar_fake(Foo<int, char*>* foo, float a, std::string b)
+{
+   OK(1, a);
+   OK("str", b);
+   return 1;
+}
+CASE(template class member function)
+{
+   STUB((Foo<int, char*>), (bar<float, std::string>), int(float, std::string), Foo_bar_fake);
+   ...do_something(Foo<int, char*>::bar<float, std::string>);
 }
 ```
 
+##### 4.3.4. Abstract or none default constructor class
+In MSVC, it can't find vtable right now, should provide a class instance (object or pointer)
+
+```C++
+class Foo {
+   int bar(int a, char * b) { ... }
+}
+```
+
+```C++
+/* unit test code */
+int Foo_bar_fake(Foo* foo, int a, char * b)
+{
+   OK(1, a);
+   sprintf(b, "return value by argument");
+   return 1;
+}
+CASE(virtual member function in msvc)
+{
+   Foo foo;
+   STUB(foo, Foo::bar, int(int a, char * b), Foo_bar_fake);
+   do_something(Foo::bar);
+}
+```
+
+#### 4.4. STUB inplace
+With help of lambda, fake_function can following with STUB.
+
+`This` is dedicated variable of class instance pointr like `this`.
+
+```C++
+/* product code */ 
+int foobar(int a, char * b)
+{
+   ......
+}
+```
+
+```C++
+/* unit test code */
+CASE(demo dynamic stub inplace)
+{
+   STUBS(foobar, int, (int a, char* b)) {
+      OK(1, a);
+      sprintf(b, "return value by argument");
+      return 1;
+   }
+
+   do_something();
+}
+```
+
+The principle of Dynamic STUB is :
+
+Replacing the first several binary code of original function with "JMP" instruction, 
+the result is once calling into original function, it will jump to fake function immediately,
+parameters of original function in stack will be treated as parameters of fake function,
+fake function return to the caller of original function directly.
+
+`STUB()` and `STUBS()` is used to replace original with fake. All replaced binary code will be restored in default teardown phase.
+
+STUB formula:
+```Shell
+   STUB([[Class Instance], Class Type,] Function Name, Return Type(Parameter List), Substitute Function Name);
+   UNSTUB([[Class Instance], Class Type,] Function Name, Return Type(Parameter List));
+
+   STUBS([[Class Instance], Class Type,] Function Name, Return Type, (Parameter List)) { ... }
+   UNSTUBS([[Class Instance], Class Type,] Function Name, Return Type, (Parameter List));
+```
+
+### 5. Dynamic MOCK
+Compare to Dynamic STUB, Dynamic MOCK provide a easy way to check call times, input arguments and inject return value.
+
+```C++
+/* unit test code */
+CASE(demo dynamic mock function)
+{
+   MOCK(foobar, int(int a, char * b)).Once(1, "A").Return(11);
+   do_something();
+}
+
+CASE(demo dynamic mock class method)
+{
+   MOCK(Foo, bar, int(int a, char * b)).Once(1, "A").Return(11);
+   do_something();
+}
+```
+Expect foobar called with *a* equals *1*, *b* equals *"A"* *1 time* in this case, and make it returns *11*.
+
+#### 5.1. Chained Inspection
+
+##### 5.1.1. Checkin of call
+
+-    `Once`([matcher...]) : Expect called 1 time, and expect arguments match matchers, default match any
+-    `Twice`([matcher...]) : Expect called 2 times
+-    `Times`(n, [matcher...]) : Expect called n times
+-    `Any`([matcher...]) : Expect called any times(include 0 times)
+-    `Atleast`(n, [matcher...]) : Expect called atleast n times(>=n)
+-    `Atmost`(n, [matcher...]) : Expect called atmost n times(<=n)
+-    `Between`(n, m, [matcher...]) : Expect called >=n and <=m times
+
+If checkin not specified, default is `Any`.
+
+`greed`(boolean) : match call in greed mode or not, default is true
+
+##### 5.1.2. Arguments check
+
+-    `With`(matcher...) : Expect arguments match matchers
+-    `Th0~15`(matcher) : Expect 1st~16th argument match matcher
+
+##### 5.1.3. Return
+
+-    `Return`(value) : Inject return value
+-    without `Return`(...) : Delegate to origin function/method
+
+
+#### 5.2. [`MOCK`](source/mock/h2_mock.hpp) inplace
+
+With help of lambda, fake_function can following with MOCK.
+
+`This` is dedicated variable of class instance pointr like `this`.
+
+```C++
+/* unit test code */
+CASE(demo dynamic stub inplace)
+{
+   MOCKS(Foo, bar, int, (int a, char* b)) {
+      OK(1, a);
+      OK(2, This->m);
+      sprintf(b, "return value by argument");
+      return 1;
+   }
+
+   do_something();
+}
+```
+`{ }` following MOCKS(...), when `Return` is provided substitute function is ignored.
+
+
+#### 5.3. [`MOCK`](source/mock/h2_mock.hpp) primitive 
+
+MOCK formula:
+```Shell
+   MOCK([[Class Instance], Class Type,] Function Name, Return Type(Parameter List)) [.Chained Inspection];
+   UNMOCK([[Class Instance], Class Type,] Function Name, Return Type(Parameter List));
+
+   MOCKS([[Class Instance], Class Type,] Function Name, Return Type, (Parameter List), Chained Inspection)
+   {  
+      ... substitute function body ...
+      check... ;
+      return... ;
+   };
+   UNMOCKS([[Class Instance], Class Type,] Function Name, Return Type, (Parameter List));
+```
+
+In Substitute function, Can check arguments, return value, and other actions. 
 
 ```C++
 MOCK(Foo, bar, int(int a, char * b))
@@ -527,7 +588,7 @@ MOCK(Foo, bar, int(int a, char * b))
      .Atleast(2).Th0(4).Th2("xyz")
      .Any().Return(44);
 
-MOCKS(Foo, bar, int(int a, char * b), 
+MOCKS(Foo, bar, int, (int a, char * b), 
        Once(1, _).Return(11)
       .Twice(Gt(2), CaseLess("abc")).Return(22)
       .Times(5).With(Not(3)).Return(33)
@@ -657,7 +718,7 @@ MOCK(foobar, int(int a, char * b)).Once(1, Je("{
                                               }");
 ```
 
-[`JE`](source/h2_unit.hpp) is abbreviated for OK(Je(expect json), actual json)
+[`JE`](source/assert/h2_assert.hpp) is abbreviated for OK(Je(expect json), actual json)
 
 #### 6.3. math expression is support in JSON, it is evaluated to number when parsing 
 ```C++
@@ -803,12 +864,12 @@ Read/Write memory which already freed, will be detected.
      Any thrown exception can be detected and reported as failure if `-x` option is set.
 
 ### 9. Global Setup/Cleanup
-*    [`GlobalSetup`](source/core/h2_use.hpp): Invoked before test case
-*    [`GlobalCleanup`](source/core/h2_use.hpp): Invoked after all test case executed
-*    [`GlobalSuiteSetup`](source/core/h2_use.hpp): Invoked before every suite
-*    [`GlobalSuiteCleanup`](source/core/h2_use.hpp): Invoked after every suite executed
-*    [`GlobalCaseSetup`](source/core/h2_use.hpp): Invoked before every case
-*    [`GlobalCaseCleanup`](source/core/h2_use.hpp): Invoked after every case executed
+*    [`GlobalSetup`](source/core/h2_core.hpp): Invoked before test case
+*    [`GlobalCleanup`](source/core/h2_core.hpp): Invoked after all test case executed
+*    [`GlobalSuiteSetup`](source/core/h2_core.hpp): Invoked before every suite
+*    [`GlobalSuiteCleanup`](source/core/h2_core.hpp): Invoked after every suite executed
+*    [`GlobalCaseSetup`](source/core/h2_core.hpp): Invoked before every case
+*    [`GlobalCaseCleanup`](source/core/h2_core.hpp): Invoked after every case executed
 ```C++
 GlobalSetup() {
    WSAStartup();
@@ -997,9 +1058,12 @@ twofiles speed up 2~3 times than onefile.
 *    `-i` {pattern} *include* filter, suite name or case name wildcard (?, *) matches, if pattern don't contains ? and *, wildcard change to contains. Default is `*` (include all)
 *    `-e` {pattern} *exclude* filter, default is ` ` (exclude nothing)
 
+# Support platform
+*    Linux GCC 5.5+ (regex support, SFINAE support), clang 7+, x86, x86_64, arm64(aarch64)
+*    macOS 10.14+
+*    Windows Visual Studio 16 2019+
+
 # Limitations
-*    C++11 is required
-*    GCC 5.5+ (regex support, SFINAE support)
 *    Variadic parameter function can't MOCK, use STUB with separate fake function instead
 *    MOCK function arguments up to 16 count
 *    sqrt() in math.h can be STUB/MOCK, because compiler insert sqrtsd ASM instruction directly instead of function call

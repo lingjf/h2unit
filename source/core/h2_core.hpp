@@ -152,7 +152,7 @@
 #define __H2GlobalCallback(name, Q)                       \
    namespace {                                            \
    static struct Q {                                      \
-      Q() { h2::h2_task::I().name##s.push_back(name); }   \
+      Q() { h2::h2_runner::I().name##s.push_back(name); } \
       static void name();                                 \
    } H2PP_UNIQUE();                                       \
    }                                                      \

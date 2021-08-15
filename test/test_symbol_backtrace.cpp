@@ -52,15 +52,15 @@ SUITE(backtrace extract)
    }
 #endif
 
-#if defined __linux__
+#if defined __linux
 
-   Case("./a.out(_ZN2h24task7executeEv+0x131)[0x55aa6bb840ef]")
+   Case("./a.out(_ZN2h26runner7executeEv+0x131)[0x55aa6bb840ef]")
    {
-      const char* p = "./a.out(_ZN2h24task7executeEv+0x131)[0x55aa6bb840ef]";
+      const char* p = "./a.out(_ZN2h26runner7executeEv+0x131)[0x55aa6bb840ef]";
       bool ret = h2::backtrace_extract(p, mangled, &offset);
 
       OK(ret);
-      OK("_ZN2h24task7executeEv", mangled);
+      OK("_ZN2h26runner7executeEv", mangled);
       OK(0x131, offset);
    }
 

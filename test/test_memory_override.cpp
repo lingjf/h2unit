@@ -35,12 +35,12 @@ SUITE(override)
 
    Case(new)
    {
-      delete new User;
-      delete new (std::nothrow) User;
+      delete new A_PlainStruct;
+      delete new (std::nothrow) A_PlainStruct;
       BLOCK(limit = 10)
       {
-         OK(IsNull, new User);
-         OK(IsNull, new (std::nothrow) User);
+         OK(IsNull, new A_PlainStruct);
+         OK(IsNull, new (std::nothrow) A_PlainStruct);
       }
    }
 
@@ -64,7 +64,7 @@ SUITE(override)
       }
    }
 
-#if !defined WIN32
+#if !defined _WIN32
    Case(strndup)
    {
       free(strndup("1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890", 100));

@@ -1,37 +1,35 @@
 #include "../source/h2_unit.cpp"
 
-namespace {
-
-int foo_bar1(int)
+static int foo_bar1(int)
 {
    return 1;
 }
-int foo_bar2(int)
+static int foo_bar2(int)
 {
    return 2;
 }
-int foo_bar3(int)
+static int foo_bar3(int)
 {
    return 3;
 }
-int foo_bar4(int)
+static int foo_bar4(int)
 {
    return 4;
 }
 
-int foo_bar1_fake(int)
+static int foo_bar1_fake(int)
 {
    return -1;
 }
-int foo_bar2_fake(int)
+static int foo_bar2_fake(int)
 {
    return -2;
 }
-int foo_bar3_fake(int)
+static int foo_bar3_fake(int)
 {
    return -3;
 }
-int foo_bar4_fake(int)
+static int foo_bar4_fake(int)
 {
    return -4;
 }
@@ -71,5 +69,3 @@ SUITE(stub in shared_code)
       OK(-4, foo_bar4(0));
    }
 }
-
-}  // namespace

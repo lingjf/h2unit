@@ -5,6 +5,8 @@
 
 #include "../source/h2_unit.cpp"
 
+char buffer[1024];
+
 extern "C" {
 int foobar0()
 {

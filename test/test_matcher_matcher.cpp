@@ -105,8 +105,9 @@ SUITE(Matcher)
       // 65 is A
       OK(nullptr == h2::h2_matcher<int>(Not(65)).matches(11));
       OK(nullptr == h2::h2_matcher<int>(Not(Gt(65))).matches(11));
+#if !defined __clang__
       OK(nullptr == h2::h2_matcher<const char*>(Not(Lt("A"))).matches("B"));
-
+#endif
       OK(nullptr != h2::h2_matcher<int>(Not(65)).matches(65));
    }
 
@@ -145,17 +146,8 @@ SUITE(Matcher)
    }
 }
 
-namespace {
-
-int foobar(int a, const char* b)
-{
-   return 100;
-}
-
 CASE(Any matcher{})
 {
-   MOCK(foobar, int(int, const char*)).Once({}, {}).Return(11);
-   OK(11, foobar(1, "A"));
+   MOCK(foobar2, int(int, const char*)).Once({}, {}).Return(11);
+   OK(11, foobar2(1, "A"));
 }
-
-}  // namespace

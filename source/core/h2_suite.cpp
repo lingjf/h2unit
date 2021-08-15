@@ -2,7 +2,7 @@
 h2_inline h2_suite::h2_suite(const char* name_, void (*test_code_)(h2_suite*, h2_case*), const char* file_, int line_) : name(name_), file(file_), line(line_), test_code(test_code_)
 {
    memset(ctx, 0, sizeof(jmp_buf));
-   h2_task::I().suites.push_back(x);
+   h2_runner::I().suites.push_back(x);
 }
 
 h2_inline void h2_suite::clear()

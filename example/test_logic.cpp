@@ -19,7 +19,7 @@ SUITE(Logic)
 
    Case(&& || !failure)
    {
-      OK(Ge(0) || -1 && Eq(1), 1);  // successful
+      OK(Ge(0) || (-1 && Eq(1)), 1);  // successful
       OK(!(Ge(0) || -1), -2);       // successful
 
       OK(Ge(0) && Eq(-2), -1);  // failure

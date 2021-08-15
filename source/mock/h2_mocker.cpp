@@ -1,5 +1,5 @@
 
-h2_inline h2_row h2_mocker_base::arguments(int seq)
+h2_inline h2_row h2_mocker_base::argument(int seq)
 {
    h2_row row;
    row += gray("(");
@@ -16,7 +16,7 @@ h2_inline h2_row h2_mocker_base::arguments(int seq)
 
 h2_inline h2_row h2_mocker_base::signature()
 {
-   return "MOCK" + gray("<") + delta(return_type, "cyan") + " " + delta(class_function, "green") + arguments() + gray(">");
+   return "MOCK" + gray("<") + delta(return_type, "cyan") + " " + delta(class_function, "green") + argument() + gray(">");
 }
 
 h2_inline void h2_mocker_base::mock()

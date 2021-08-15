@@ -242,39 +242,11 @@ struct h2_socket {
    }
 };
 
-static inline void extract_iport_after_equal(const char* s, char* o)
-{
-   const char* p = strchr(s, '=');
-   if (!p) return;
-   for (p += 1; *p; p++) {
-      if (::isdigit(*p) || *p == '.' || *p == ':' || *p == '*' || *p == '?') {
-         *o++ = *p;
-      } else {
-         if (!(::isspace(*p) || *p == '\"')) return;
-      }
-   }
-}
-
-static inline void parse_sock_attributes(const char* attributes, char from[256], char to[256])
-{
-   memset(from, 0, 256);
-   memset(to, 0, 256);
-   const char* p_from = strcasestr(attributes, "from");
-   if (p_from) {
-      extract_iport_after_equal(p_from + strlen("from"), from);
-   }
-   const char* p_to = strcasestr(attributes, "to");
-   if (p_to) {
-      extract_iport_after_equal(p_to + strlen("to"), to);
-   } else {
-      strcpy(to, "*");
-   }
-}
-
 h2_inline void h2_sock::inject(const void* packet, size_t size, const char* attributes)
 {
-   char from[256], to[256];
-   parse_sock_attributes(attributes, from, to);
+   char from[256] = "", to[256] = "*";
+   h2_extract::iport(attributes, "from", from);
+   h2_extract::iport(attributes, "to", to);
    h2_socket::I().put_incoming(from, to, (const char*)packet, size);
 }
 

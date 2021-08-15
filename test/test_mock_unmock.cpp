@@ -15,10 +15,13 @@ SUITE(UNMOCK)
    Case(normal member function)
    {
       B_DerivedClass b;
-      MOCKS(B_DerivedClass, normal_f2, const char*, (int, int), Once(1, 2)) { return "+B.normal_f2"; };
-      OK("+B.normal_f2", b.normal_f2(1, 2));
+      MOCKS(B_DerivedClass, normal_f2, const char*, (int x, int y), Once(1, 2))
+      {
+         return sprintf(buffer, "*B.normal_f2(%d,%d)%c", x, y, This->b), buffer;
+      };
+      OK("*B.normal_f2(1,2)b", b.normal_f2(1, 2));
       UNMOCKS(B_DerivedClass, normal_f2, const char*, (int, int));
-      OK("B.normal_f2", b.normal_f2(1, 2));
+      OK("B.normal_f2(1,2)b", b.normal_f2(1, 2));
    }
 
    Case(abstract virtual member function with object)
@@ -28,7 +31,7 @@ SUITE(UNMOCK)
       MOCK(a, A_AbstractClass, virtual_f1, const char*(int)).Once().Return("+A.virtual_f1");
       OK("+A.virtual_f1", b.virtual_f1(1));
       UNMOCK(a, A_AbstractClass, virtual_f1, const char*(int));
-      OK("A.virtual_f1", b.virtual_f1(1));
+      OK("A.virtual_f1(1)a", b.virtual_f1(1));
    }
 
    Case(no default constructor with object)
@@ -37,16 +40,19 @@ SUITE(UNMOCK)
       MOCK(d, D_NoConstructorClass, virtual_f3, const char*(int, int, int)).Once().Return("+D.virtual_f3");
       OK("+D.virtual_f3", d.virtual_f3(1, 2, 3));
       UNMOCK(d, D_NoConstructorClass, virtual_f3, const char*(int, int, int));
-      OK("D.virtual_f3", d.virtual_f3(1, 2, 3));
+      OK("D.virtual_f3(1,2,3)d", d.virtual_f3(1, 2, 3));
    }
 
    Case(template class member function)
    {
       F_TemplateClass<int> f;
-      MOCKS(F_TemplateClass<int>, virtual_f1, const char*, (int a), Once()) { return "+F.virtual_f1"; };
-      OK("+F.virtual_f1", f.virtual_f1(0));
+      MOCKS(F_TemplateClass<int>, virtual_f1, const char*, (int x), Once())
+      {
+         return sprintf(buffer, "*F.virtual_f1(%d)%c", x, This->f), buffer;
+      };
+      OK("*F.virtual_f1(1)f", f.virtual_f1(1));
       UNMOCKS(F_TemplateClass<int>, virtual_f1, const char*, (int a));
-      OK("F.virtual_f1", f.virtual_f1(0));
+      OK("F.virtual_f1(1)f", f.virtual_f1(1));
    }
 
    Case(function name)

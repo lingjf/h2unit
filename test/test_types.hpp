@@ -1,4 +1,6 @@
 
+extern char buffer[1024];
+
 extern "C" {
 int foobar0();
 }
@@ -82,138 +84,123 @@ struct B_ClassStruct {
 
 class A_AbstractClass {
  public:
-   int x, y;
+   char a;
 
-   A_AbstractClass() : x(0), y(0) {}
+   A_AbstractClass() : a('a') {}
 
  private:
-   static const char* static_f1(int a) { return "A.static_f1"; }
-   const char* normal_f1(int a) { return "A.normal_f1"; }
-   virtual const char* virtual_f1(int a) { return "A.virtual_f1"; }
+   static const char* static_f1(int x) { return sprintf(buffer, "A.static_f1(%d)", x), buffer; }
+   const char* normal_f1(int x) { return sprintf(buffer, "A.normal_f1(%d)%c", x, a), buffer; }
+   virtual const char* virtual_f1(int x) { return sprintf(buffer, "A.virtual_f1(%d)%c", x, a), buffer; }
    virtual const char* pure_f0() = 0;
 };
 
 class B_DerivedClass : public A_AbstractClass {
  public:
-   B_DerivedClass() {}
+   char b;
+   char* s;
+
+   B_DerivedClass() : b('b') { s = (char*)malloc(11); }
+   ~B_DerivedClass() { free(s); }
 
  private:
-   static const char* static_f2(int a, int b) { return "B.static_f2"; }
-
-   const char* normal_f2(int a, int b) { return "B.normal_f2"; }
-
-   virtual const char* virtual_f2(int a, int b) { return "B.virtual_f2"; }
-
-   virtual const char* pure_f0() { return "B.pure_f0"; }
+   static const char* static_f2(int x, int y) { return sprintf(buffer, "B.static_f2(%d,%d)", x, y), buffer; }
+   const char* normal_f2(int x, int y) { return sprintf(buffer, "B.normal_f2(%d,%d)%c", x, y, b), buffer; }
+   virtual const char* virtual_f2(int x, int y) { return sprintf(buffer, "B.virtual_f2(%d,%d)%c", x, y, b), buffer; }
+   virtual const char* pure_f0() { return sprintf(buffer, "B.pure_f0()%c", b), buffer; }
 };
 
 class C_OverrideClass : public A_AbstractClass {
  public:
-   C_OverrideClass() {}
+   char c;
+   std::string s;
+
+   C_OverrideClass() : c('c'), s(10000, 's') {}
 
  private:
-   static const char* static_f1(int a) { return "C.static_f1"; }
-   static const char* static_f2(int a, int b) { return "C.static_f2"; }
+   static const char* static_f1(int x) { return sprintf(buffer, "C.static_f1(%d)", x), buffer; }
+   static const char* static_f2(int x, int y) { return sprintf(buffer, "C.static_f2(%d,%d)", x, y), buffer; }
 
-   const char* normal_f1(int a) { return "C.normal_f1"; }
-   const char* normal_f2(int a, int b) { return "C.normal_f2"; }
+   const char* normal_f1(int x) { return sprintf(buffer, "C.normal_f1(%d)%c", x, c), buffer; }
+   const char* normal_f2(int x, int y) { return sprintf(buffer, "C.normal_f2(%d,%d)%c", x, y, c), buffer; }
 
-   virtual const char* virtual_f1(int a) { return "C.virtual_f1"; }
-   virtual const char* virtual_f2(int a, int b) { return "C.virtual_f2"; }
+   virtual const char* virtual_f1(int x) { return sprintf(buffer, "C.virtual_f1(%d)%c", x, c), buffer; }
+   virtual const char* virtual_f2(int x, int y) { return sprintf(buffer, "C.virtual_f2(%d,%d)%c", x, y, c), buffer; }
 
-   virtual const char* pure_f0() { return "C.pure_f0"; }
+   virtual const char* pure_f0() { return sprintf(buffer, "C.pure_f0()%c", c), buffer; }
 };
 
 class D_NoConstructorClass : public B_DerivedClass, public C_OverrideClass {
  public:
+   char d;
    D_NoConstructorClass() = delete;
-   D_NoConstructorClass(int, int, int, int, int, int, int, int, int, int, int) {}
+   D_NoConstructorClass(int, int, int, int, int, int, int, int, int, int, int) : d('d') {}
 
  private:
-   static const char* static_f1(int a) { return "D.static_f1"; }
-   static const char* static_f2(int a, int b) { return "D.static_f2"; }
-   static const char* static_f3(int a, int b, int c) { return "D.static_f3"; }
+   static const char* static_f1(int x) { return sprintf(buffer, "D.static_f1(%d)", x), buffer; }
+   static const char* static_f2(int x, int y) { return sprintf(buffer, "D.static_f2(%d,%d)", x, y), buffer; }
 
-   const char* normal_f1(int a) { return "D.normal_f1"; }
-   const char* normal_f2(int a, int b) { return "D.normal_f2"; }
-   const char* normal_f3(int a, int b, int c) { return "D.normal_f3"; }
+   static const char* static_f3(int x, int y, int z) { return sprintf(buffer, "D.static_f3(%d,%d,%d)", x, y, z), buffer; }
 
-   virtual const char* virtual_f1(int a) { return "D.virtual_f1"; }
-   virtual const char* virtual_f2(int a, int b) { return "D.virtual_f2"; }
-   virtual const char* virtual_f3(int a, int b, int c) { return "D.virtual_f3"; }
+   const char* normal_f1(int x) { return sprintf(buffer, "D.normal_f1(%d)%c", x, d), buffer; }
+   const char* normal_f2(int x, int y) { return sprintf(buffer, "D.normal_f2(%d,%d)%c", x, y, d), buffer; }
+   const char* normal_f3(int x, int y, int z) { return sprintf(buffer, "D.normal_f3(%d,%d,%d)%c", x, y, z, d), buffer; }
+
+   virtual const char* virtual_f1(int x) { return sprintf(buffer, "D.virtual_f1(%d)%c", x, d), buffer; }
+   virtual const char* virtual_f2(int x, int y) { return sprintf(buffer, "D.virtual_f2(%d,%d)%c", x, y, d), buffer; }
+   virtual const char* virtual_f3(int x, int y, int z) { return sprintf(buffer, "D.virtual_f3(%d,%d,%d)%c", x, y, z, d), buffer; }
 };
 
 namespace test_ns {
 class E_NamespaceClass : public A_AbstractClass {
  public:
-   E_NamespaceClass() {}
+   char e;
+   E_NamespaceClass() : e('e') {}
 
  private:
-   virtual const char* pure_f0() { return "E.pure_f0"; }
+   virtual const char* pure_f0() { return sprintf(buffer, "E.pure_f0()%c", e), buffer; }
 };
 }  // namespace test_ns
 
-static const char* A_normal_f1_fake(A_AbstractClass* This, int a) { return "-A.normal_f1"; }
-static const char* A_virtual_f1_fake(A_AbstractClass* This, int a) { return "-A.virtual_f1"; }
-static const char* B_static_f1_fake(int a) { return "-B.static_f1"; }
-static const char* B_normal_f1_fake(B_DerivedClass* This, int a) { return "-B.normal_f1"; }
-static const char* B_normal_f2_fake(B_DerivedClass* This, int a, int b) { return "-B.normal_f2"; }
-static const char* B_virtual_f1_fake(B_DerivedClass* This, int a) { return "-B.virtual_f1"; }
-static const char* B_virtual_f2_fake(B_DerivedClass* This, int a, int b) { return "-B.virtual_f2"; }
-static const char* C_normal_f1_fake(C_OverrideClass* This, int a) { return "-C.normal_f1"; }
-static const char* C_virtual_f1_fake(C_OverrideClass* This, int a) { return "-C.virtual_f1"; }
-static const char* D_virtual_f3_fake(D_NoConstructorClass* This, int a, int b, int c) { return "-D.virtual_f3"; }
-static const char* E_virtual_f1_fake(test_ns::E_NamespaceClass* This, int a) { return "-E.virtual_f1"; }
+static const char* A_normal_f1_fake(A_AbstractClass* This, int x) { return sprintf(buffer, "-A.normal_f1(%d)%c", x, This->a), buffer; }
+static const char* A_virtual_f1_fake(A_AbstractClass* This, int x) { return sprintf(buffer, "-A.virtual_f1(%d)%c", x, This->a), buffer; }
+static const char* B_static_f1_fake(int x) { return sprintf(buffer, "-B.static_f1(%d)", x), buffer; }
+static const char* B_normal_f1_fake(B_DerivedClass* This, int x) { return sprintf(buffer, "-B.normal_f1(%d)%c", x, This->b), buffer; }
+static const char* B_normal_f2_fake(B_DerivedClass* This, int x, int y) { return sprintf(buffer, "-B.normal_f2(%d,%d)%c", x, y, This->b), buffer; }
+static const char* B_virtual_f1_fake(B_DerivedClass* This, int x) { return sprintf(buffer, "-B.virtual_f1(%d)%c", x, This->b), buffer; }
+static const char* B_virtual_f2_fake(B_DerivedClass* This, int x, int y) { return sprintf(buffer, "-B.virtual_f2(%d,%d)%c", x, y, This->b), buffer; }
+static const char* C_normal_f1_fake(C_OverrideClass* This, int x) { return sprintf(buffer, "-C.normal_f1(%d)%c", x, This->c), buffer; }
+static const char* C_virtual_f1_fake(C_OverrideClass* This, int x) { return sprintf(buffer, "-C.virtual_f1(%d)%c", x, This->c), buffer; }
+static const char* D_virtual_f3_fake(D_NoConstructorClass* This, int x, int y, int z) { return sprintf(buffer, "-D.virtual_f3(%d,%d,%d)%c", x, y, z, This->d), buffer; }
+static const char* E_virtual_f1_fake(test_ns::E_NamespaceClass* This, int x) { return sprintf(buffer, "-E.virtual_f1(%d)%c", x, This->e), buffer; }
 
 template <typename T>
 struct F_TemplateClass {
-   T m = 0;
-   static const char* static_f1(T a)
-   {
-      return "F.static_f1";
-   }
+   char f = 'f';
+   static const char* static_f1(T x) { return sprintf(buffer, "F.static_f1(%d)", x), buffer; }
    template <typename U>
-   const char* normal_f1(U a)
-   {
-      return "F.normal_f1";
-   }
-   virtual const char* virtual_f1(T a)
-   {
-      return "F.virtual_f1";
-   }
+   const char* normal_f1(U x) { return sprintf(buffer, "F.normal_f1(%d)%c", x, f), buffer; }
+   virtual const char* virtual_f1(T x) { return sprintf(buffer, "F.virtual_f1(%d)%c", x, f), buffer; }
 };
 
 template <typename T1, typename T2>
 struct G_TemplateClass {
-   T1 m1 = 0;
-   T2 m2 = 0;
-
+   char g = 'g';
+   T1 G = 7;
    template <typename U1, typename U2>
-   static const char* static_f2(U1 a, U2 b)
-   {
-      return "G.static_f2";
-   }
-
+   static const char* static_f2(U1 x, U2 y) { return sprintf(buffer, "G.static_f2(%d,%d)", x, y), buffer; }
    template <typename U1, typename U2>
-   const char* normal_f2(U1 a, U2 b)
-   {
-      return "G.normal_f2";
-   }
-
+   const char* normal_f2(U1 x, U2 y) { return sprintf(buffer, "G.normal_f2(%d,%d)%c", x, y, g), buffer; }
    template <typename U1, typename U2>
-   std::pair<const char*, const char*> virtual_f2(U1 a, U2 b)
-   {
-      return std::make_pair("G", "virtual_f2");
-   }
+   std::pair<const char*, double> virtual_f2(U1 x, U2 y) { return std::make_pair("G.virtual_f2", x * 10 + y + G / 10.0); }
 };
 
-static const char* F_static_f1_fake(int a) { return "-F.static_f1"; }
-static const char* F_normal_f1_fake(void* This, int a) { return "-F.normal_f1"; }
-static const char* F_virtual_f1_fake(void* This, int a) { return "-F.virtual_f1"; }
-
-static const char* G_static_f2_fake(int a, int b) { return "-G.static_f2"; }
-static const char* G_normal_f2_fake(void* This, int a, int b) { return "-G.normal_f2"; }
-static std::pair<const char*, const char*> G_virtual_f2_fake(void* This, int a, int b) { return std::make_pair("-G", "virtual_f2"); }
+static const char* F_static_f1_fake(int x) { return sprintf(buffer, "-F.static_f1(%d)", x), buffer; }
+static const char* F_normal_f1_fake(F_TemplateClass<int>* This, int x) { return sprintf(buffer, "-F.normal_f1(%d)%c", x, This->f), buffer; }
+static const char* F_virtual_f1_fake(F_TemplateClass<int>* This, int x) { return sprintf(buffer, "-F.virtual_f1(%d)%c", x, This->f), buffer; }
+static const char* G_static_f2_fake(int x, int y) { return sprintf(buffer, "-G.static_f2(%d,%d)", x, y), buffer; }
+static const char* G_normal_f2_fake(G_TemplateClass<int, int>* This, int x, int y) { return sprintf(buffer, "-G.normal_f2(%d,%d)%c", x, y, This->g), buffer; }
+static std::pair<const char*, double> G_virtual_f2_fake(G_TemplateClass<int, int>* This, int x, int y) { return std::make_pair("-G.virtual_f2", x * 10 + y + This->G / 10.0); }
 
 #define NUMBER0_DECL_LIST                      \
    static char char_0 = 0;                     \
@@ -394,6 +381,11 @@ enum A_Enum { America = 1,
 
 typedef int (*A_FunctionPointer)(int a, int b);
 
+#if defined _WIN32
+#   define CloseSocket closesocket
+#else
+#   define CloseSocket close
+#endif
 
 #if defined _WIN32
 #   define _long_long "__int64"
@@ -410,9 +402,3 @@ typedef int (*A_FunctionPointer)(int a, int b);
 #   define _pointer "*"
 #   define _fptr "*"
 #endif
-
-class User {
- public:
-   char data[100];
-   User(){};
-};

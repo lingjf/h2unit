@@ -6,7 +6,7 @@ static constexpr unsigned windows = 0x0200;
 struct h2_option {
    h2_singleton(h2_option);
 
-#if defined linux || defined __linux || defined __linux__
+#if defined __linux
    static constexpr unsigned os = Linux;
 #elif defined __APPLE__
    static constexpr unsigned os = macOS;

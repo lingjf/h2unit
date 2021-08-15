@@ -10,6 +10,13 @@ struct h2_pattern {
    static bool match(const char* pattern, const char* subject, bool caseless = false);
 };
 
+struct h2_extract {
+   static const char* has(const char* attributes, const char* key);
+   static bool numeric(const char* attributes, const char* key, double &value);
+   static bool iport(const char* attributes, const char* key, char* str);
+   static int fill(const char* attributes, const char* key, unsigned char bytes[]);
+};
+
 // #define M(...) func(#__VA_ARGS__, other)
 // Unix M() ==> func("", other) stringify empty __VA_ARGS__ to "" string
 // Windows M() ==> func(, other) stringify empty __VA_ARGS__ to empty

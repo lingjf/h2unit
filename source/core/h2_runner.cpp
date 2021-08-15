@@ -51,7 +51,7 @@ static int __case_cmp(h2_list* a, h2_list* b)
    return h2_list_entry(a, h2_case, x)->seq - h2_list_entry(b, h2_case, x)->seq;
 }
 
-h2_inline void h2_task::shuffle()
+h2_inline void h2_runner::shuffle()
 {
    last = mark_last_order(suites);
    srand(h2_now());
@@ -65,7 +65,7 @@ h2_inline void h2_task::shuffle()
       s->cases.sort(__case_cmp);
 }
 
-h2_inline void h2_task::shadow()
+h2_inline void h2_runner::shadow()
 {
    if (stats.failed == 0)
       drop_last_order();
@@ -73,7 +73,7 @@ h2_inline void h2_task::shadow()
       save_last_order(suites);
 }
 
-h2_inline void h2_task::enumerate()
+h2_inline void h2_runner::enumerate()
 {
    h2_list_for_each_entry (s, suites, h2_suite, x) {
       for (auto& setup : global_suite_setups) setup();
@@ -89,7 +89,7 @@ h2_inline void h2_task::enumerate()
    }
 }
 
-h2_inline int h2_task::execute()
+h2_inline int h2_runner::execute()
 {
    h2_report::initialize();
    h2_memory::initialize();
@@ -100,7 +100,7 @@ h2_inline int h2_task::execute()
    for (auto& setup : global_setups) setup();
    enumerate();
 
-   h2_report::I().on_task_start(this);
+   h2_report::I().on_runner_start(this);
    for (rounds = 0; rounds < O.rounds && !stats.failed; ++rounds) {
       shuffle();
       h2_list_for_each_entry (s, suites, h2_suite, x) {
@@ -140,7 +140,7 @@ h2_inline int h2_task::execute()
       }
       shadow();
    }
-   h2_report::I().on_task_endup(this);
+   h2_report::I().on_runner_endup(this);
    for (auto& cleanup : global_cleanups) cleanup();
 
    stubs.clear();

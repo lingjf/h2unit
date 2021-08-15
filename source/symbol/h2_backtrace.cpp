@@ -115,10 +115,10 @@ h2_inline void h2_backtrace::print(h2_vector<h2_string>& stacks) const
    char** symbols = backtrace_symbols(frames, count);
    h2_memory::overrides();
    for (int i = shift; i < count; ++i) {
-      char *p = nullptr, mangle_name[1024] = "";
+      char *p = nullptr, mangle_name[1024] = "", demangle_name[1024] = "";
       backtrace_extract(symbols[i], mangle_name);
       if (O.verbose || O.os != macOS) p = addr2line(h2_load::ptr_to_addr(frames[i])); /* atos is slow */
-      if (!p) p = h2_nm::demangle(mangle_name);
+      if (!p) p = h2_cxa::demangle(mangle_name, demangle_name);
       if (!p || !strlen(p)) p = symbols[i];
       stacks.push_back(p);
       if (!strcmp("main", mangle_name) || !strcmp("__libc_start_main", mangle_name)) break;

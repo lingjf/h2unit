@@ -1,7 +1,4 @@
 
-template <typename...>
-using h2_void_t = void;
-
 template <typename U, typename = void>
 struct h2_decay_impl {
    typedef U type;

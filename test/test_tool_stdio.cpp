@@ -179,16 +179,16 @@ SUITE(stdio)
       }
    }
 
+#if !defined _WIN32
    Case(syslog)
    {
-#if !defined WIN32
       const char* e1 = "syslog! 42";
       COUT(e1)
       {
          syslog(LOG_DEBUG, "syslog! %d", 42);
       }
-#endif
    }
+#endif
 
    Case(normal file write)
    {
