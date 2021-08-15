@@ -1,5 +1,5 @@
 ﻿
-/* v5.12 2021-08-15 00:21:54 */
+/* v5.12 2021-08-15 12:11:36 */
 /* https://github.com/lingjf/h2unit */
 /* Apache Licence 2.0 */
 
@@ -1077,6 +1077,19 @@ h2_inline unsigned long long h2_nm::get_mangle(const char* name)
    return it != I().mangle_symbols->end() ? it->second : 0ULL;
 #endif
 }
+
+h2_inline char* h2_nm::demangle(const char* mangle_name)
+{
+#if defined _WIN32
+   return (char*)mangle_name;
+#else
+   static char demangle_name[1024];
+   size_t length = 1024;
+   int status = -1;
+   if (strlen(mangle_name)) abi::__cxa_demangle(mangle_name, demangle_name, &length, &status);
+   return status == 0 ? demangle_name : (char*)mangle_name;
+#endif
+}
 // source/ld/h2_load.cpp
 
 static inline long long get_load_text_offset()
@@ -1239,13 +1252,6 @@ h2_inline void* h2_load::follow_jmp(void* fp, int n)
 // source/ld/h2_backtrace.cpp
 
 #if !defined _WIN32
-static inline char* demangle(const char* mangle_name, size_t length = 1024, int status = -1)
-{
-   static char demangle_name[1024];
-   if (strlen(mangle_name)) abi::__cxa_demangle(mangle_name, demangle_name, &length, &status);
-   return status == 0 ? demangle_name : (char*)mangle_name;
-}
-
 static inline char* addr2line(unsigned long long addr)
 {
    static char buf[1024];
@@ -1364,7 +1370,7 @@ h2_inline void h2_backtrace::print(h2_vector<h2_string>& stacks) const
       char *p = nullptr, mangle_name[1024] = "";
       backtrace_extract(symbols[i], mangle_name);
       if (O.verbose || O.os != macOS) p = addr2line(h2_load::ptr_to_addr(frames[i])); /* atos is slow */
-      if (!p) p = demangle(mangle_name);
+      if (!p) p = h2_nm::demangle(mangle_name);
       if (!p || !strlen(p)) p = symbols[i];
       stacks.push_back(p);
       if (!strcmp("main", mangle_name) || !strcmp("__libc_start_main", mangle_name)) break;
@@ -3865,7 +3871,7 @@ struct h2_exception {
    static void __cxa_throw(void* thrown_exception, std::type_info* ti, void (*dest)(void*))
    {  // https://itanium-cxx-abi.github.io/cxx-abi/abi-eh.html
       I().last_bt = h2_backtrace::dump(1);
-      strcpy(I().last_type, demangle(ti->name()));
+      strcpy(I().last_type, h2_nm::demangle(ti->name()));
       if (O.exception_fails) h2_fail_g(h2_fail::new_exception("was thrown", I().last_type, I().last_bt));
       h2::h2_stub_temporary_restore t((void*)abi::__cxa_throw);
       abi::__cxa_throw(thrown_exception, ti, dest);
@@ -4128,7 +4134,7 @@ h2_inline h2_fail* h2_checkin::check(const char* func, int index, int total, con
 {
    if (is_satisfied() || is_saturated()) return nullptr;
    h2_row t = func + gray("()") + " expected " + delta(expect(), "green") + " but actually " + delta(actual(), "red,bold") + " called";
-   if (1 < total) t += gray(" when ") + h2_numeric::sequence_number(index) + " checkin " + color(expr, "cyan");
+   if (1 < total) t += gray(" when ") + h2_numeric::sequence_number(index) + " " + color(expr, "cyan");
    return h2_fail::new_normal(t, file, line);
 }
 
@@ -4167,12 +4173,12 @@ h2_inline h2_row h2_mocker_base::arguments(int seq)
 {
    h2_row row;
    row += gray("(");
-   for (int i = 0; i < argument_type.size(); ++i) {
+   for (int i = 0; i < argument_types.size(); ++i) {
       if (i) row += gray(", ");
       if (seq == i)
-         row += color(argument_type[i], "red,bold");
+         row += color(argument_types[i], "red,bold");
       else
-         row.push_back(argument_type[i]);
+         row.push_back(argument_types[i]);
    }
    row += gray(")");
    return row;
@@ -4180,7 +4186,7 @@ h2_inline h2_row h2_mocker_base::arguments(int seq)
 
 h2_inline h2_row h2_mocker_base::signature()
 {
-   return "MOCK" + gray("<") + delta(return_type, "cyan") + " " + delta(class_function, "green") + arguments() + gray(", ") + color(inspects, "cyan") + gray(">") + " fails";
+   return "MOCK" + gray("<") + delta(return_type, "cyan") + " " + delta(class_function, "green") + arguments() + gray(">");
 }
 
 h2_inline void h2_mocker_base::mock()

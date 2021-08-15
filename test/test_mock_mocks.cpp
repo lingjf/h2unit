@@ -160,14 +160,14 @@ SUITE(mocks member function)
 
    Case(static member function)
    {
-      MOCKS(B_DerivedClass::static_f2, const char*, (int a, int b), Once(1, 2)) { return "mocked B.static_f2"; };
-      OK("mocked B.static_f2", B_DerivedClass::static_f2(1, 2));
+      MOCKS(B_DerivedClass::static_f2, const char*, (int a, int b), Once(1, 2)) { return "*B.static_f2"; };
+      OK("*B.static_f2", B_DerivedClass::static_f2(1, 2));
    }
 
    Case(normal member function)
    {
-      MOCKS(B_DerivedClass, normal_f2, const char*, (int, int), Once(1, 2)) { return "mocked B.normal_f2"; };
-      OK("mocked B.normal_f2", b.normal_f2(1, 2));
+      MOCKS(B_DerivedClass, normal_f2, const char*, (int, int), Once(1, 2)) { return "*B.normal_f2"; };
+      OK("*B.normal_f2", b.normal_f2(1, 2));
    }
 
    Case(virtual member function)
@@ -175,26 +175,42 @@ SUITE(mocks member function)
       MOCKS(B_DerivedClass, virtual_f2, const char*, (int, int), Once(1, 2))
       {
          OK(This != nullptr);
-         return "mocked B.virtual_f2";
+         return "*B.virtual_f2";
       };
-      OK("mocked B.virtual_f2", b.virtual_f2(1, 2));
+      OK("*B.virtual_f2", b.virtual_f2(1, 2));
    }
 
 #if !defined WIN32
    Case(no default constructor)
    {
-      MOCKS(D_NoConstructorClass, virtual_f3, const char*, (int, int, int), Once()) { return "mocked D.virtual_f3"; };
+      MOCKS(D_NoConstructorClass, virtual_f3, const char*, (int, int, int), Once()) { return "*D.virtual_f3"; };
       D_NoConstructorClass d(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11);
-      OK("mocked D.virtual_f3", d.virtual_f3(1, 2, 3));
+      OK("*D.virtual_f3", d.virtual_f3(1, 2, 3));
    }
 
    Case(abstract class)
    {
-      MOCKS(A_AbstractClass, virtual_f1, const char*, (int), Once()) { return "mocked A.virtual_f1"; };
-
-      OK("mocked A.virtual_f1", b.virtual_f1(1));
+      MOCKS(A_AbstractClass, virtual_f1, const char*, (int), Once()) { return "*A.virtual_f1"; };
+      OK("*A.virtual_f1", b.virtual_f1(1));
    }
 #endif
+
+   Case(abstract virtual member function with object)
+   {
+      B_DerivedClass b;
+      OK("A.virtual_f1", b.virtual_f1(1));
+      A_AbstractClass* a = dynamic_cast<A_AbstractClass*>(&b);
+
+      MOCKS(a, A_AbstractClass, virtual_f1, const char*, (int), Once()) { return "+A.virtual_f1"; };
+      OK("+A.virtual_f1", b.virtual_f1(1));
+   }
+
+   Case(no default constructor with object)
+   {
+      D_NoConstructorClass d(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11);
+      MOCKS(d, D_NoConstructorClass, virtual_f3, const char*, (int, int, int), Once()) { return "*D.virtual_f3"; };
+      OK("*D.virtual_f3", d.virtual_f3(1, 2, 3));
+   }
 }
 
 SUITE(mocks template function)
@@ -225,12 +241,12 @@ SUITE(mocks template member function)
       OK("F.normal_f1", f.normal_f1(0));
       OK("F.virtual_f1", f.virtual_f1(0));
 
-      MOCKS(F_TemplateClass<int>::static_f1, const char*, (int a)) { return "MOCK"; };
-      OK("MOCK", f.static_f1(0));
-      MOCKS(F_TemplateClass<int>, normal_f1<int>, const char*, (int a)) { return "MOCK"; };
-      OK("MOCK", f.normal_f1(0));
-      MOCKS(F_TemplateClass<int>, virtual_f1, const char*, (int a)) { return "MOCK"; };
-      OK("MOCK", f.virtual_f1(0));
+      MOCKS(F_TemplateClass<int>::static_f1, const char*, (int a), Any()) { return "*F.static_f1"; };
+      OK("*F.static_f1", f.static_f1(0));
+      MOCKS(F_TemplateClass<int>, normal_f1<int>, const char*, (int a), Any()) { return "*F.normal_f1"; };
+      OK("*F.normal_f1", f.normal_f1(0));
+      MOCKS(F_TemplateClass<int>, virtual_f1, const char*, (int a), Any()) { return "*F.virtual_f1"; };
+      OK("*F.virtual_f1", f.virtual_f1(0));
    }
 
    Case(member function 2 typename)
@@ -240,16 +256,16 @@ SUITE(mocks template member function)
       OK("G.normal_f2", (g.normal_f2<int, int>(0, 0)));
       OK(Pair("G", "virtual_f2"), (g.virtual_f2<int, int>(0, 0)));
 
-      MOCKS((G_TemplateClass<int, int>::static_f2<int, int>), const char*, (int a, int b)) { return "MOCK"; };
-      OK("MOCK", (g.static_f2<int, int>(0, 0)));
-      MOCKS((G_TemplateClass<int, int>), (normal_f2<int, int>), const char*, (int a, int b)) { return "MOCK"; };
-      OK("MOCK", (g.normal_f2<int, int>(0, 0)));
+      MOCKS((G_TemplateClass<int, int>::static_f2<int, int>), const char*, (int a, int b), Any()) { return "*G.static_f2"; };
+      OK("*G.static_f2", (g.static_f2<int, int>(0, 0)));
+      MOCKS((G_TemplateClass<int, int>), (normal_f2<int, int>), const char*, (int a, int b), Any()) { return "*G.normal_f2"; };
+      OK("*G.normal_f2", (g.normal_f2<int, int>(0, 0)));
 #if !defined WIN32
-      MOCKS((G_TemplateClass<int, int>), (virtual_f2<int, int>), (std::pair<const char*, const char*>), (int a, int b))
+      MOCKS((G_TemplateClass<int, int>), (virtual_f2<int, int>), (std::pair<const char*, const char*>), (int a, int b), Any())
       {
-         return std::make_pair("MOCK", "MOCK");
+         return std::make_pair("*G", "virtual_f2");
       };
-      OK(Pair("MOCK", "MOCK"), (g.virtual_f2<int, int>(0, 0)));
+      OK(Pair("*G", "virtual_f2"), (g.virtual_f2<int, int>(0, 0)));
 #endif
    }
 }
@@ -279,7 +295,7 @@ SUITE(mocks omit checkin)
 
    Case(only None)
    {
-      MOCKS(foobar2, int, (int, const char*)) { return 11; };
+      MOCKS(foobar2, int, (int, const char*), Any()) { return 11; };
       OK(11, foobar2(1, "A"));
       OK(11, foobar2(1, "A"));
    }

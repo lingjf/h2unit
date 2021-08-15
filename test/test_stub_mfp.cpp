@@ -1,6 +1,34 @@
 #include "../source/h2_unit.cpp"
 #include "test_types.hpp"
 
+SUITE(constructible and destructible)
+{
+   Case(constructible)
+   {
+      A_PlainStruct* a_PlainStruct = h2::h2_constructible<A_PlainStruct>::O(alloca(sizeof(A_PlainStruct)));
+      OK(NotNull, a_PlainStruct);
+      h2::h2_destructible<A_PlainStruct>(a_PlainStruct);
+
+      B_ClassStruct* a_ClassStruct = h2::h2_constructible<B_ClassStruct>::O(alloca(sizeof(B_ClassStruct)));
+      OK(NotNull, a_ClassStruct);
+      h2::h2_destructible<B_ClassStruct>(a_ClassStruct);
+
+      A_AbstractClass* a_AbstractClass = h2::h2_constructible<A_AbstractClass>::O(alloca(sizeof(A_AbstractClass)));
+      OK(1, (long long)a_AbstractClass);
+
+      B_DerivedClass* b_DerivedClass = h2::h2_constructible<B_DerivedClass>::O(alloca(sizeof(B_DerivedClass)));
+      OK(NotNull, b_DerivedClass);
+      h2::h2_destructible<B_DerivedClass>(b_DerivedClass);
+
+      C_OverrideClass* c_OverrideClass = h2::h2_constructible<C_OverrideClass>::O(alloca(sizeof(C_OverrideClass)));
+      OK(NotNull, c_OverrideClass);
+      h2::h2_destructible<C_OverrideClass>(c_OverrideClass);
+
+      D_NoConstructorClass* d_NoConstructorClass = h2::h2_constructible<D_NoConstructorClass>::O(alloca(sizeof(D_NoConstructorClass)));
+      OK(2, (long long)d_NoConstructorClass);
+   }
+}
+
 SUITE(mfp for static member function)
 {
    Case(is static member function)
@@ -116,6 +144,15 @@ SUITE(mfp for virtual member function)
    }
 #endif
 
+   Case(abstract class with object)
+   {
+      A_AbstractClass* a = dynamic_cast<A_AbstractClass*>(&b);
+      void* A_AbstractClass__virtual_f1 = h2::h2_mfp<A_AbstractClass, const char*(int)>::B(a, &A_AbstractClass::virtual_f1);
+      OK(NotNull, A_AbstractClass__virtual_f1);
+      typedef const char* (*A_AbstractClass__virtual_f1_Type)(A_AbstractClass*, int);
+      OK("A.virtual_f1", ((A_AbstractClass__virtual_f1_Type)A_AbstractClass__virtual_f1)(nullptr, 1));
+   }
+
    Case(derived class)
    {
       void* B_DerivedClass__virtual_f1 = h2::h2_mfp<B_DerivedClass, const char*(int)>::A(&B_DerivedClass::virtual_f1);
@@ -161,4 +198,22 @@ SUITE(mfp for virtual member function)
       OK("D.virtual_f3", ((D_NoConstructorClass__virtual_f3_Type)D_NoConstructorClass__virtual_f3)(&d, 1, 2, 3));
    }
 #endif
+
+   Case(no default constructor class with object)
+   {
+      void* D_NoConstructorClass__virtual_f1 = h2::h2_mfp<D_NoConstructorClass, const char*(int)>::B(&d, &D_NoConstructorClass::virtual_f1);
+      OK(NotNull, D_NoConstructorClass__virtual_f1);
+      typedef const char* (*D_NoConstructorClass__virtual_f1_Type)(D_NoConstructorClass*, int);
+      OK("D.virtual_f1", ((D_NoConstructorClass__virtual_f1_Type)D_NoConstructorClass__virtual_f1)(&d, 1));
+
+      void* D_NoConstructorClass__virtual_f2 = h2::h2_mfp<D_NoConstructorClass, const char*(int, int)>::B(&d, &D_NoConstructorClass::virtual_f2);
+      OK(NotNull, D_NoConstructorClass__virtual_f2);
+      typedef const char* (*D_NoConstructorClass__virtual_f2_Type)(D_NoConstructorClass*, int, int);
+      OK("D.virtual_f2", ((D_NoConstructorClass__virtual_f2_Type)D_NoConstructorClass__virtual_f2)(&d, 1, 2));
+
+      void* D_NoConstructorClass__virtual_f3 = h2::h2_mfp<D_NoConstructorClass, const char*(int, int, int)>::B(&d, &D_NoConstructorClass::virtual_f3);
+      OK(NotNull, D_NoConstructorClass__virtual_f3);
+      typedef const char* (*D_NoConstructorClass__virtual_f3_Type)(D_NoConstructorClass*, int, int, int);
+      OK("D.virtual_f3", ((D_NoConstructorClass__virtual_f3_Type)D_NoConstructorClass__virtual_f3)(&d, 1, 2, 3));
+   }
 }

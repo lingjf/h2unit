@@ -23,3 +23,17 @@ inline h2_fail* h2_tuple_matches(MatcherTuple& matchers, ArgumentTuple& argument
 {
    return matches(matchers, arguments, std::integral_constant<std::size_t, std::tuple_size<ArgumentTuple>::value>());
 }
+
+template <typename ArgumentTuple>
+void h2_tuple_types(h2_vector<h2_string>& names, std::integral_constant<std::size_t, 0>) {}
+template <typename ArgumentTuple, std::size_t I>
+void h2_tuple_types(h2_vector<h2_string>& names, std::integral_constant<std::size_t, I>)
+{
+   h2_tuple_types<ArgumentTuple>(names, std::integral_constant<std::size_t, I - 1>());
+   names.push_back(h2_type_name<typename std::tuple_element<I - 1, ArgumentTuple>::type>((char*)alloca(256)));
+}
+template <typename ArgumentTuple>
+void h2_tuple_types(h2_vector<h2_string>& names)
+{
+   return h2_tuple_types<ArgumentTuple>(names, std::integral_constant<std::size_t, std::tuple_size<ArgumentTuple>::value>());
+}

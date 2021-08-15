@@ -86,6 +86,7 @@ struct h2_mfp<Class, ReturnType(Args...)> {
    static constexpr bool is_static_member_function(ReturnType (Class::*)(Args...)) { return false; }
 
    static void* A(ReturnType (*f)(Args...)) { return (void*)f; }
+   static void* B(Class* o, ReturnType (*f)(Args...)) { return (void*)f; }
 
 #if defined _WIN32
    // https://github.com/microsoft/Detours
@@ -106,6 +107,12 @@ struct h2_mfp<Class, ReturnType(Args...)> {
       void* t = get_virtual_member_function(object, offset);
       h2_destructible<Class>(object);
       return t;
+   }
+   static void* B(Class* object, ReturnType (Class::*f)(Args...))
+   {
+      long offset;
+      if (!is_virtual_member_function(f, offset)) return h2_un<void*>(f);
+      return get_virtual_member_function(object, offset);
    }
 
    static void* get_virtual_member_function(Class* object, long offset)
@@ -145,6 +152,11 @@ struct h2_mfp<Class, ReturnType(Args...)> {
          return nullptr;
       }
       return get_virtual_member_function((void**)h2_load::vtable_to_ptr(relative_vtable), f);
+   }
+   static void* B(Class* object, ReturnType (Class::*f)(Args...))
+   {
+      if (!is_virtual_member_function(f)) return h2_un<void*>(f);
+      return get_virtual_member_function(*(void***)object, f);
    }
 
    static void* get_virtual_member_function(Class* object, ReturnType (Class::*f)(Args...))

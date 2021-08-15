@@ -13,4 +13,19 @@ struct h2_nm {
    static int get_by_name(const char* name, h2_symbol* res[], int n);
    static h2_symbol* get_by_addr(unsigned long long addr);
    static unsigned long long get_mangle(const char* name);
+   static char* demangle(const char* mangle_name);
 };
+
+template <typename T>
+const char* h2_type_name(char* name)
+{
+   strcpy(name, "");
+   typedef typename std::remove_reference<T>::type U;
+   if (std::is_const<U>::value) strcat(name, "const ");
+   strcat(name, h2_nm::demangle(typeid(U).name()));
+   if (std::is_lvalue_reference<T>::value)
+      strcat(name, "&");
+   else if (std::is_rvalue_reference<T>::value)
+      strcat(name, "&&");
+   return name;
+}

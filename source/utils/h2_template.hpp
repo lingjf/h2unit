@@ -77,3 +77,8 @@ struct h2_is_container {
 
    static constexpr bool value = decltype(has_const_iterator<T>(nullptr))::value && decltype(has_begin<T>(nullptr))::value && decltype(has_end<T>(nullptr))::value;
 };
+
+template <typename T>
+inline T* h2_pointer_if(T& a) { return &a; }
+template <typename T>
+inline T* h2_pointer_if(T* a) { return a; }

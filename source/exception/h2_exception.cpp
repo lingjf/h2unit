@@ -17,7 +17,7 @@ struct h2_exception {
    static void __cxa_throw(void* thrown_exception, std::type_info* ti, void (*dest)(void*))
    {  // https://itanium-cxx-abi.github.io/cxx-abi/abi-eh.html
       I().last_bt = h2_backtrace::dump(1);
-      strcpy(I().last_type, demangle(ti->name()));
+      strcpy(I().last_type, h2_nm::demangle(ti->name()));
       if (O.exception_fails) h2_fail_g(h2_fail::new_exception("was thrown", I().last_type, I().last_bt));
       h2::h2_stub_temporary_restore t((void*)abi::__cxa_throw);
       abi::__cxa_throw(thrown_exception, ti, dest);

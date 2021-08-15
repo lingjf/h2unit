@@ -62,14 +62,14 @@ SUITE(Stub member method)
 {
    Case(normal member function successful)
    {
-      STUB(Rect, move, int, (int x, int y), Rect_move_fake);
+      STUB(Rect, move, int(int x, int y), Rect_move_fake);
       Rect rect(0, 0, 1, 1);
       OK(11, rect.move(1, 2));
    }
 
    Case(virtual member function successful)
    {
-      STUB(Rect, print, const char*, (), Rect_print_fake);
+      STUB(Rect, print, const char*(), Rect_print_fake);
       Rect rect(0, 0, 1, 1);
       OK("Rect(0,0,1,1)", rect.print());
    }

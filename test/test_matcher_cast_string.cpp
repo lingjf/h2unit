@@ -19,7 +19,6 @@ SUITE(Cast String)
 #undef TheCheck
    }
 
-#if !defined WIN32
    Case(OK)
    {
 #define TheCheck(x, y)   \
@@ -33,5 +32,4 @@ SUITE(Cast String)
       H2Fullmesh(TheCheck, STRING_VAR_LIST);
 #undef TheCheck
    }
-#endif
 }

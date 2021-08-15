@@ -1,12 +1,5 @@
 
 #if !defined _WIN32
-static inline char* demangle(const char* mangle_name, size_t length = 1024, int status = -1)
-{
-   static char demangle_name[1024];
-   if (strlen(mangle_name)) abi::__cxa_demangle(mangle_name, demangle_name, &length, &status);
-   return status == 0 ? demangle_name : (char*)mangle_name;
-}
-
 static inline char* addr2line(unsigned long long addr)
 {
    static char buf[1024];
@@ -125,7 +118,7 @@ h2_inline void h2_backtrace::print(h2_vector<h2_string>& stacks) const
       char *p = nullptr, mangle_name[1024] = "";
       backtrace_extract(symbols[i], mangle_name);
       if (O.verbose || O.os != macOS) p = addr2line(h2_load::ptr_to_addr(frames[i])); /* atos is slow */
-      if (!p) p = demangle(mangle_name);
+      if (!p) p = h2_nm::demangle(mangle_name);
       if (!p || !strlen(p)) p = symbols[i];
       stacks.push_back(p);
       if (!strcmp("main", mangle_name) || !strcmp("__libc_start_main", mangle_name)) break;

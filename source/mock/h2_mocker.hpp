@@ -2,10 +2,9 @@
 struct h2_mocker_base : h2_libc {
    h2_list x;
    void *srcfp, *dstfp;
-   const char* return_type;
    const char* class_function;
-   h2_vector<const char*> argument_type;
-   const char* inspects;
+   h2_string return_type;
+   h2_vector<h2_string> argument_types;
    const char* file;
    int line;
 
@@ -35,20 +34,21 @@ class h2_mocker<Counter, Class, ReturnType(Args...)> : h2_mocker_base {
 
    h2_vector<MatcherTuple> matcher_array;
    h2_vector<h2_routine<Class, ReturnType(Args...)>> routine_array;
+   h2_routine<Class, ReturnType(Args...)> original;
    bool greed_mode = true;
-
-   static ReturnType normal_function_stub(Args... args)
-   {
-      int index = I().matches(std::forward<Args>(args)...);
-      h2::h2_stub_temporary_restore t(I().srcfp);
-      return I().routine_array[index](nullptr, std::forward<Args>(args)...);
-   }
 
    static ReturnType member_function_stub(Class* This, Args... args)
    {
       int index = I().matches(std::forward<Args>(args)...);
       h2::h2_stub_temporary_restore t(I().srcfp);
+      if (index == -1 || !I().routine_array[index])
+         return I().original(This, std::forward<Args>(args)...);
       return I().routine_array[index](This, std::forward<Args>(args)...);
+   }
+
+   static ReturnType normal_function_stub(Args... args)
+   {
+      return member_function_stub(nullptr, std::forward<Args>(args)...);
    }
 
    int matches(Args... args)
@@ -65,7 +65,7 @@ class h2_mocker<Counter, Class, ReturnType(Args...)> : h2_mocker_base {
             }
             fails->foreach([this, i](h2_fail* f, int, int) {
                f->explain += gray("on ") + (class_function + arguments(f->seqno));
-               if (1 < checkin_array.size()) f->explain += gray(" when ") + h2_numeric::sequence_number(i) + " checkin " + color(checkin_array[i].expr, "cyan");
+               if (1 < checkin_array.size()) f->explain += gray(" when ") + h2_numeric::sequence_number(i) + " " + color(checkin_array[i].expr, "cyan");
             });
             h2_fail* fail = h2_fail::new_normal(signature(), file, line);
             h2_fail::append_child(fail, fails);
@@ -105,18 +105,25 @@ class h2_mocker<Counter, Class, ReturnType(Args...)> : h2_mocker_base {
    static h2_mocker& I()
    {
       static h2_mocker* i = nullptr;
-      if (!i) i = new h2_mocker();
+      if (!i) {
+         i = new h2_mocker();
+         i->return_type = h2_type_name<ReturnType>((char*)alloca(256));
+         h2_tuple_types<ArgumentTuple>(i->argument_types);
+      }
       return *i;
    }
 
-   static h2_mocker& I(void* srcfp, const char* return_type, const char* class_function, const h2_vector<const char*>& argument_type, const char* inspects, const char* file, int line)
+   static h2_mocker& I(void* srcfp, const char* class_function, const char* file, int line)
    {
+      if (std::is_same<std::false_type, Class>::value) {
+         I().dstfp = (void*)normal_function_stub;
+         I().original.fp = (ReturnType(*)(Args...))srcfp;
+      } else {
+         I().dstfp = (void*)member_function_stub;
+         I().original.mfp = (ReturnType(*)(Class*, Args...))srcfp;
+      }
       I().srcfp = srcfp;
-      I().dstfp = std::is_same<std::false_type, Class>::value ? (void*)normal_function_stub : (void*)member_function_stub;
-      I().return_type = return_type;
       I().class_function = class_function;
-      I().argument_type = argument_type;
-      I().inspects = inspects;
       I().file = file;
       I().line = line;
       I().reset();
@@ -208,16 +215,6 @@ class h2_mocker<Counter, Class, ReturnType(Args...)> : h2_mocker_base {
    }
    H2PP_REPEAT(, H2_Th_Matcher, , 20);
 #undef H2_Th_Matcher
-
-   h2_mocker& Return()
-   {
-      if (checkin_array.empty()) Any();
-      if (std::is_same<std::false_type, Class>::value)
-         routine_array.back().fp = (ReturnType(*)(Args...))srcfp;
-      else
-         routine_array.back().mfp = (ReturnType(*)(Class*, Args...))srcfp;
-      return *this;
-   }
 
    h2_mocker& Return(h2_routine<Class, ReturnType(Args...)> r)
    {

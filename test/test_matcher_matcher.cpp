@@ -1,4 +1,5 @@
 #include "../source/h2_unit.cpp"
+#include "test_types.hpp"
 
 SUITE(Matcher)
 {
@@ -153,7 +154,7 @@ int foobar(int a, const char* b)
 
 CASE(Any matcher{})
 {
-   MOCK(foobar, int, (int, const char*)).Once({}, {}).Return(11);
+   MOCK(foobar, int(int, const char*)).Once({}, {}).Return(11);
    OK(11, foobar(1, "A"));
 }
 

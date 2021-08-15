@@ -3,7 +3,7 @@ h2_inline h2_fail* h2_checkin::check(const char* func, int index, int total, con
 {
    if (is_satisfied() || is_saturated()) return nullptr;
    h2_row t = func + gray("()") + " expected " + delta(expect(), "green") + " but actually " + delta(actual(), "red,bold") + " called";
-   if (1 < total) t += gray(" when ") + h2_numeric::sequence_number(index) + " checkin " + color(expr, "cyan");
+   if (1 < total) t += gray(" when ") + h2_numeric::sequence_number(index) + " " + color(expr, "cyan");
    return h2_fail::new_normal(t, file, line);
 }
 

@@ -38,22 +38,22 @@ int foo_bar4_fake(int)
 
 GlobalSetup()
 {
-   STUB(foo_bar1, int, (int), foo_bar1_fake);
+   STUB(foo_bar1, int(int), foo_bar1_fake);
 }
 
 GlobalSuiteSetup()
 {
-   STUB(foo_bar2, int, (int), foo_bar2_fake);
+   STUB(foo_bar2, int(int), foo_bar2_fake);
 }
 
 GlobalCaseSetup()
 {
-   STUB(foo_bar3, int, (int), foo_bar3_fake);
+   STUB(foo_bar3, int(int), foo_bar3_fake);
 }
 
 SUITE(stub in shared_code)
 {
-   STUB(foo_bar4, int, (int), foo_bar4_fake);
+   STUB(foo_bar4, int(int), foo_bar4_fake);
 
    Case(a)
    {

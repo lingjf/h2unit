@@ -119,3 +119,16 @@ h2_inline unsigned long long h2_nm::get_mangle(const char* name)
    return it != I().mangle_symbols->end() ? it->second : 0ULL;
 #endif
 }
+
+h2_inline char* h2_nm::demangle(const char* mangle_name)
+{
+#if defined _WIN32
+   return (char*)mangle_name;
+#else
+   static char demangle_name[1024];
+   size_t length = 1024;
+   int status = -1;
+   if (strlen(mangle_name)) abi::__cxa_demangle(mangle_name, demangle_name, &length, &status);
+   return status == 0 ? demangle_name : (char*)mangle_name;
+#endif
+}

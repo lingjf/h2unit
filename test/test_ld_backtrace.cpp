@@ -35,38 +35,6 @@ SUITE(backtrace)
    }
 }
 
-#if !defined WIN32
-SUITE(demangle)
-{
-   Case(demangle namespace class member function)
-   {
-      char mangled[] = "_ZN2h24unit7executeEv";
-      char demangled[1024] = "1";
-
-      size_t len = sizeof(demangled);
-      int status = 0;
-      abi::__cxa_demangle(mangled, demangled, &len, &status);
-
-      OK(0, status);
-      OK("h2::unit::execute()", demangled);
-   }
-
-   Case(demangle namespace class member function one parameter)
-   {
-      char mangled[] = "_ZN2h24unit6mallocEm";
-      char* demangled = h2::demangle(mangled);
-      OK("h2::unit::malloc(unsigned long)", demangled);
-   }
-
-   Case(demangle c - function)
-   {
-      char mangled[] = "malloc";
-      char* demangled = h2::demangle(mangled);
-      OK("malloc", demangled);
-   }
-}
-#endif
-
 SUITE(backtrace extract)
 {
    char mangled[256] = "---";

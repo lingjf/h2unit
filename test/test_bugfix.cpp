@@ -25,14 +25,12 @@ SUITE(bugfix)
       OK(Eq(2, 0.0001), uv);
    }
 
-#if !defined WIN32
    Case(MOCK return reference)
    {
       NoDefaultConstructorClass x(1, 1.1);
-      MOCK(foobar, NoDefaultConstructorClass&, (int, NoDefaultConstructorClass&)).Once(_, _).Return(x);
+      MOCK(foobar, NoDefaultConstructorClass & (int, NoDefaultConstructorClass&)).Once(_, _).Return(x);
       foobar(1, x);
    }
-#endif
 
    Case(OK(<, >))
    {
@@ -56,7 +54,7 @@ SUITE(bugfix)
 
    Case(MOCK without matcher cause crash)
    {
-      // MOCK(foobar, int, (int, const char*)).Times(0);
+      // MOCK(foobar, int(int, const char*)).Times(0);
       // foobar(1, "A");
    }
 

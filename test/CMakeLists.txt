@@ -28,6 +28,7 @@ ELSE()
     ADD_COMPILE_OPTIONS(-Wno-unused-value)
     ADD_COMPILE_OPTIONS(-Wno-write-strings)
     ADD_COMPILE_OPTIONS(-Wno-writable-strings)
+    ADD_COMPILE_OPTIONS(-Wno-delete-abstract-non-virtual-dtor)
 ENDIF()
 
 IF(NOT CMAKE_SYSTEM_NAME MATCHES "Windows")

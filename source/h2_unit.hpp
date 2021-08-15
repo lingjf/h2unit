@@ -95,7 +95,7 @@ namespace h2 {
 #include "stub/h2_stub.hpp"            // -
 #include "mock/h2_routine.hpp"         //
 #include "mock/h2_checkin.hpp"         // failure
-#include "mock/h2_match.hpp"           // failure
+#include "mock/h2_tuple.hpp"          // failure
 #include "mock/h2_mocker.hpp"          // failure, checkin, routine, matcher, stub
 #include "mock/h2_mocks.hpp"           // failure, checkin
 #include "mock/h2_mock.hpp"            //
@@ -179,30 +179,28 @@ namespace h2 {
 #else
 #   pragma message("MOCK conflict, using H2MOCK instead.")
 #endif
+#define UNMOCK H2UNSTUB
 
 #ifndef MOCKS
 #   define MOCKS H2MOCKS
 #else
 #   pragma message("MOCKS conflict, using H2MOCKS instead.")
 #endif
+#define UNMOCKS H2UNSTUBS
 
 #ifndef STUB
 #   define STUB H2STUB
 #else
 #   pragma message("STUB conflict, using H2STUB instead.")
 #endif
+#define UNSTUB H2UNSTUB
 
-#ifndef UNSTUB
-#   define UNSTUB H2UNSTUB
+#ifndef STUBS
+#   define STUBS H2STUBS
 #else
-#   pragma message("UNSTUB conflict, using H2UNSTUB instead.")
+#   pragma message("STUBS conflict, using H2STUBS instead.")
 #endif
-
-#ifndef UNMOCK
-#   define UNMOCK H2UNMOCK
-#else
-#   pragma message("UNMOCK conflict, using H2UNMOCK instead.")
-#endif
+#define UNSTUBS H2UNSTUBS
 
 #ifndef BLOCK
 #   define BLOCK H2BLOCK

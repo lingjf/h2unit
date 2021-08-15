@@ -69,6 +69,17 @@ int foobar2(int a, const char* b);
 
 }  // namespace test_ns
 
+struct A_PlainStruct {
+   int a;
+   double b;
+   char c[100];
+};
+
+struct B_ClassStruct {
+   int a;
+   int f(int b) { return a + b; }
+};
+
 class A_AbstractClass {
  public:
    int x, y;
@@ -151,6 +162,7 @@ static const char* B_virtual_f1_fake(B_DerivedClass* This, int a) { return "-B.v
 static const char* B_virtual_f2_fake(B_DerivedClass* This, int a, int b) { return "-B.virtual_f2"; }
 static const char* C_normal_f1_fake(C_OverrideClass* This, int a) { return "-C.normal_f1"; }
 static const char* C_virtual_f1_fake(C_OverrideClass* This, int a) { return "-C.virtual_f1"; }
+static const char* D_virtual_f3_fake(D_NoConstructorClass* This, int a, int b, int c) { return "-D.virtual_f3"; }
 static const char* E_virtual_f1_fake(test_ns::E_NamespaceClass* This, int a) { return "-E.virtual_f1"; }
 
 template <typename T>
@@ -375,6 +387,29 @@ int my_fprintf(FILE* stream, const char* fmt, ...);
 int my_sprintf(char* t, const char* fmt, ...);
 int my_snprintf(char* t, int n, const char* fmt, ...);
 void* my_pthread(void* arg);
+
+enum A_Enum { America = 1,
+              Bazil = 2,
+              China = 3 };
+
+typedef int (*A_FunctionPointer)(int a, int b);
+
+
+#if defined _WIN32
+#   define _long_long "__int64"
+#   define _enum "enum "
+#   define _struct "struct "
+#   define _class "class "
+#   define _pointer " * __ptr64"
+#   define _fptr "__cdecl*"
+#else
+#   define _long_long "long long"
+#   define _enum
+#   define _struct
+#   define _class
+#   define _pointer "*"
+#   define _fptr "*"
+#endif
 
 class User {
  public:
