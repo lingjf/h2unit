@@ -21,7 +21,7 @@ h2_inline bool h2_pattern::regex_match(const char* pattern, const char* subject,
 
 h2_inline bool h2_pattern::wildcard_match(const char* pattern, const char* subject, bool caseless)
 {
-#if defined _WIN32
+#if defined _WIN32 || defined __CYGWIN__
    const char *scur = subject, *pcur = pattern;
    const char *sstar = nullptr, *pstar = nullptr;
    while (*scur) {

@@ -10,7 +10,7 @@ struct h2_option {
    static constexpr unsigned os = Linux;
 #elif defined __APPLE__
    static constexpr unsigned os = macOS;
-#elif defined _WIN32
+#elif defined _WIN32 || defined __CYGWIN__
    static constexpr unsigned os = windows;
 #endif
 

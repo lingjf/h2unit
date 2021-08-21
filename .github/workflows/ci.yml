@@ -4,6 +4,7 @@ on: [push]
 
 jobs:
   linux-x86_64-gcc:
+    name: ✨ linux-x86_64-gcc
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
@@ -13,16 +14,20 @@ jobs:
         run: gcc -dM -E - < /dev/null
       - name: sysroot directory for headers and libraries
         run: g++ -E -v - < /dev/null
+      - name: configure print
+        run: cd print && cmake .
       - name: build print
-        run: cd print && cmake . && cmake --build .
+        run: cd print && cmake --build .
       - name: run print
         run: ./print/a.out -e 'new[] free'
       - name: show help tips
         run: ./print/a.out -h
       - name: list print cases cases
         run: ./print/a.out -l
+      - name: configure test
+        run: cd test && cmake .
       - name: 🏗️ build test
-        run: cd test && cmake . && cmake --build . -j 2
+        run: cd test && cmake --build . -j 2
       - name: run test without memory check
         run: cd test && LD_BIND_NOW=1 ./a.out -m -v -e test_memory_
       - name: ✨ run test with memory check
@@ -35,6 +40,7 @@ jobs:
         run: python -m json.tool ./example/coverage.json
 
   macos-x86_64-clang:
+    name: ✨ macos-x86_64-clang
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v2
@@ -44,16 +50,20 @@ jobs:
         run: clang -dM -E - < /dev/null
       - name: sysroot directory for headers and libraries
         run: clang++ -E -v - < /dev/null
+      - name: configure print
+        run: cd print && cmake .
       - name: build print
-        run: cd print && cmake . && cmake --build .
+        run: cd print && cmake --build .
       - name: run print
         run: ./print/a.out -e 'new[] free'
       - name: show help tips
         run: ./print/a.out -h
       - name: list print cases
         run: ./print/a.out -l
+      - name: configure test
+        run: cd test && cmake .
       - name: 🏗️ build test
-        run: cd test && cmake . && cmake --build . -j 2
+        run: cd test && cmake --build . -j 2
       - name: run test without memory check
         run: cd test && ./a.out -m -v -e test_memory_
       - name: ✨ run test with memory check
@@ -64,27 +74,121 @@ jobs:
         run: make lcov -C example
 
   windows-x86_64-msvc:
+    name: ✨ windows-x86_64-msvc
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v2
+      - name: configure print
+        run: cd print && cmake .
       - name: build print
-        run: cd print && cmake . && cmake --build .
+        run: cd print && cmake --build .
       - name: run print
         run: ./print/Debug/a.out.exe -e 'new[] free'
       - name: show help tips
         run: ./print/Debug/a.out.exe -h
       - name: list print cases
         run: ./print/Debug/a.out.exe -l
+      - name: configure test
+        run: cd test && cmake .
       - name: 🏗️ build test
-        run: cd test && cmake . && cmake --build . -j $env:NUMBER_OF_PROCESSORS
+        run: cd test && cmake --build . -j $env:NUMBER_OF_PROCESSORS
       - name: run test without memory check
         run: cd test && ./Debug/a.out.exe -m -v -e test_memory_
       - name: ✨ run test with memory check
         run: cd test && ./Debug/a.out.exe -cv
+      - name: configure example
+        run: cmake -B ci_example example
       - name: build example
-        run: mkdir build_example && cd build_example && cmake ../example && cmake --build .
+        run: cmake --build ci_example
       - name: run example
-        run: ./build_example/Debug/a.out.exe
+        run: ./ci_example/Debug/a.out.exe
+
+  linux-x86_64:
+    runs-on: ubuntu-18.04
+    env:
+      CC: ${{matrix.cc}}
+      CXX: ${{matrix.cxx}}
+    strategy:
+      matrix:
+        include:
+          - { cc: gcc-7, cxx: g++-7 }
+          - { cc: gcc-8, cxx: g++-8 }
+          - { cc: clang-9, cxx: clang++-9 }
+          - { cc: clang, cxx: clang++ }
+    name: linux-x86_64-${{matrix.cc}}
+    steps:
+      - uses: actions/checkout@v2
+      - name: install ${{matrix.cc}} ${{matrix.cxx}}
+        run: |
+          sudo apt-get update
+          sudo apt-get install -f ${{matrix.cc}} ${{matrix.cxx}}
+        continue-on-error: true
+      - name: check platform
+        run: uname -a && getconf GNU_LIBC_VERSION
+      - name: pre-defined preprocessor macros
+        run: ${{matrix.cc}} -dM -E - < /dev/null
+      - name: sysroot directory for headers and libraries
+        run: ${{matrix.cxx}} -E -v - < /dev/null
+      - name: configure print
+        run: cmake -B ci_print print
+      - name: build print
+        run: cmake --build ci_print
+      - name: run print
+        run: ./ci_print/a.out -e 'new[] free'
+      - name: configure test
+        run: cmake -B ci_test test
+      - name: 🏗️ build test
+        run: cmake --build ci_test -j 2
+      - name: run test without memory check
+        run: LD_BIND_NOW=1 ./ci_test/a.out -m -v -e test_memory_
+      - name: ✨ run test with memory check
+        run: LD_BIND_NOW=1 ./ci_test/a.out -cvj
+      - name: configure example
+        run: cmake -B ci_example example
+      - name: build example
+        run: cmake --build ci_example
+      - name: run example
+        run: ./ci_example/a.out
+
+  linux-x86:
+    runs-on: ubuntu-latest
+    env:
+      CC: ${{matrix.cc}}
+      CXX: ${{matrix.cxx}}
+    strategy:
+      matrix:
+        include:
+          - { cc: gcc, cxx: g++, toolchain: ../build/toolchains/x86-linux-gcc-m32.cmake }
+          - { cc: clang, cxx: clang++, toolchain: ../build/toolchains/x86-linux-clang-m32.cmake }
+    name: linux-x86-${{matrix.cc}}-m32
+    steps:
+      - uses: actions/checkout@v2
+      - name: check platform
+        run: uname -a && getconf GNU_LIBC_VERSION
+      - name: install multilib
+        run: |
+          sudo apt-get update
+          sudo apt-get install gcc-multilib g++-multilib
+      - name: configure print
+        run: cmake -DCMAKE_TOOLCHAIN_FILE=${{matrix.toolchain}} -B ci_print print
+      - name: build print
+        run: cmake --build ci_print
+      - name: run print
+        run: ./ci_print/a.out -e 'new[] free'
+      - name: configure test
+        run: cmake -DCMAKE_TOOLCHAIN_FILE=${{matrix.toolchain}} -B ci_test test
+      - name: 🏗️ build test
+        run: cmake --build ci_test -j 2
+      - name: run test without memory check
+        run: LD_BIND_NOW=1 ./ci_test/a.out -m -v -e test_memory_
+      - name: ✨ run test with memory check
+        run: LD_BIND_NOW=1 ./ci_test/a.out -cvj
+      - name: configure example
+        run: cmake -DCMAKE_TOOLCHAIN_FILE=${{matrix.toolchain}} -B ci_example example
+      - name: build example
+        run: cmake --build ci_example
+      - name: run example
+        run: ./ci_example/a.out
 
   linux-arm64-gcc:
     runs-on: ubuntu-latest
@@ -112,118 +216,65 @@ jobs:
         run: aarch64-linux-gnu-g++ -march=armv8-a -dM -E - < /dev/null
       - name: sysroot directory for headers and libraries
         run: aarch64-linux-gnu-g++ -march=armv8-a -E -v - < /dev/null
+      - name: configure print
+        run: cmake -DCMAKE_TOOLCHAIN_FILE=../build/toolchains/aarch64-linux-gcc.cmake -B ci_print print
       - name: build print
-        run: |
-          cd print 
-          cmake -DCMAKE_TOOLCHAIN_FILE=../build/toolchains/aarch64-linux-gcc.cmake .
-          cmake --build .
+        run: cmake --build ci_print
       - name: run print
-        run: qemu-aarch64 -L /usr/aarch64-linux-gnu ./print/a.out -e 'new[] free'
+        run: qemu-aarch64 -L /usr/aarch64-linux-gnu ./ci_print/a.out -e 'new[] free'
+      - name: configure test
+        run: cmake -DCMAKE_TOOLCHAIN_FILE=../build/toolchains/aarch64-linux-gcc.cmake -B ci_test test
       - name: 🏗️ build test
-        run: |
-          cd test
-          cmake -DCMAKE_TOOLCHAIN_FILE=../build/toolchains/aarch64-linux-gcc.cmake .
-          cmake --build . -j 2
+        run: cmake --build ci_test -j 2
       - name: run test without memory check
-        run: |
-          cd test
-          qemu-aarch64 -L /usr/aarch64-linux-gnu -E LD_BIND_NOW=1 ./a.out -m -v -e test_memory_
+        run: qemu-aarch64 -L /usr/aarch64-linux-gnu -E LD_BIND_NOW=1 ./ci_test/a.out -m -v -e test_memory_
       - name: ✨ run test with memory check
-        run: |
-          cd test
-          qemu-aarch64 -L /usr/aarch64-linux-gnu -E LD_BIND_NOW=1 ./a.out -cvj
+        run: qemu-aarch64 -L /usr/aarch64-linux-gnu -E LD_BIND_NOW=1 ./ci_test/a.out -cvj
+      - name: configure example
+        run: cmake -DCMAKE_TOOLCHAIN_FILE=../build/toolchains/aarch64-linux-gcc.cmake -B ci_example example
       - name: build example
-        run: |
-          mkdir build_example
-          cd build_example
-          cmake -DCMAKE_TOOLCHAIN_FILE=../build/toolchains/aarch64-linux-gcc.cmake ../example
-          cmake --build .
+        run: cmake --build ci_example
       - name: run example
-        run: qemu-aarch64 -L /usr/aarch64-linux-gnu ./build_example/a.out
+        run: qemu-aarch64 -L /usr/aarch64-linux-gnu ./ci_example/a.out
 
-  linux-x86_64:
-    runs-on: ubuntu-18.04
-    env:
-      CC: ${{matrix.cc}}
-      CXX: ${{matrix.cxx}}
-    strategy:
-      matrix:
-        include:
-          - { cc: gcc-7, cxx: g++-7 }
-          - { cc: gcc-8, cxx: g++-8 }
-          - { cc: clang-9, cxx: clang++-9 }
-          - { cc: clang, cxx: clang++ }
-    name: 🚧 linux-x86_64-${{matrix.cc}}
+  cygwin-x86_64-gcc:
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: msys2 {0}
     steps:
       - uses: actions/checkout@v2
-      - name: install ${{matrix.cc}} ${{matrix.cxx}}
-        run: |
-          sudo apt-get update
-          sudo apt-get install ${{matrix.cc}} ${{matrix.cxx}}
-        continue-on-error: true
+      - uses: msys2/setup-msys2@v2
+        with:
+          msystem: msys
+          update: true
+          install: >-
+            base-devel
+            msys2-devel
+            cmake
       - name: check platform
-        run: uname -a && getconf GNU_LIBC_VERSION
+        run: uname -a
       - name: pre-defined preprocessor macros
-        run: ${{matrix.cc}} -dM -E - < /dev/null
+        run: gcc -dM -E - < /dev/null
       - name: sysroot directory for headers and libraries
-        run: ${{matrix.cxx}} -E -v - < /dev/null
+        run: g++ -E -v - < /dev/null
+      - name: configure print
+        run: cmake -B ci_print print
       - name: build print
-        run: |
-          cmake -B ci_print print
-          cmake --build ci_print
+        run: cmake --build ci_print
       - name: run print
         run: ./ci_print/a.out -e 'new[] free'
+      - name: configure test
+        run: cmake -B ci_test test
       - name: 🏗️ build test
-        run: |
-          cmake -B ci_test test
-          cmake --build ci_test -j 2
+        run: cmake --build ci_test -j 2
       - name: run test without memory check
-        run: LD_BIND_NOW=1 ./ci_test/a.out -m -v -e test_memory_
+        run: LD_BIND_NOW=1 ./ci_test/a.out -m -e test_memory_
       - name: ✨ run test with memory check
-        run: LD_BIND_NOW=1 ./ci_test/a.out -cvj
+        run: LD_BIND_NOW=1 ./ci_test/a.out -j
+      - name: configure example
+        run: cmake -B ci_example example
       - name: build example
-        run: |
-          cmake -B ci_example example
-          cmake --build ci_example
-      - name: run example
-        run: ./ci_example/a.out
-
-  linux-x86:
-    runs-on: ubuntu-latest
-    env:
-      CC: ${{matrix.cc}}
-      CXX: ${{matrix.cxx}}
-    strategy:
-      matrix:
-        include:
-          - { cc: gcc, cxx: g++, toolchain: ../build/toolchains/x86-linux-gcc-m32.cmake }
-          - { cc: clang, cxx: clang++, toolchain: ../build/toolchains/x86-linux-clang-m32.cmake }
-    name: 🚧 linux-x86-${{matrix.cc}}-m32
-    steps:
-      - uses: actions/checkout@v2
-      - name: check platform
-        run: uname -a && getconf GNU_LIBC_VERSION
-      - name: install multilib
-        run: |
-          sudo apt-get update
-          sudo apt-get install gcc-multilib g++-multilib
-      - name: build print
-        run: |
-          cmake -DCMAKE_TOOLCHAIN_FILE=${{matrix.toolchain}} -B ci_print print
-          cmake --build ci_print
-      - name: run print
-        run: ./ci_print/a.out -e 'new[] free'
-      - name: 🏗️ build test
-        run: |
-          cmake -DCMAKE_TOOLCHAIN_FILE=${{matrix.toolchain}} -B ci_test test
-          cmake --build ci_test -j 2
-      - name: run test without memory check
-        run: LD_BIND_NOW=1 ./ci_test/a.out -m -v -e test_memory_
-      - name: ✨ run test with memory check
-        run: LD_BIND_NOW=1 ./ci_test/a.out -cvj
-      - name: build example
-        run: |
-          cmake -DCMAKE_TOOLCHAIN_FILE=${{matrix.toolchain}} -B ci_example example
-          cmake --build ci_example
+        run: cmake --build ci_example
       - name: run example
         run: ./ci_example/a.out

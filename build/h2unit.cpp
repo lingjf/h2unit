@@ -1,5 +1,5 @@
 ﻿
-/* v5.13 2021-08-21 09:17:57 */
+/* v5.13 2021-08-21 11:37:28 */
 /* https://github.com/lingjf/h2unit */
 /* Apache Licence 2.0 */
 
@@ -16,34 +16,39 @@
 #include <signal.h>  /* sigaction */
 #include <typeinfo>  /* std::typeid, std::type_info */
 
+#if defined _WIN32 || defined __CYGWIN__
+#   include <windows.h>
+#   include <dbghelp.h> /* CaptureStackBackTrace, SymFromAddr */
+#   include <shlwapi.h> /* StrStrIA */
+#   define strcasestr StrStrIA
+#endif
+
 #if defined _WIN32
 #   include <winsock2.h> /* socket */
 #   include <ws2tcpip.h> /* getaddrinfo */
-#   include <io.h>       /* _wirte */
-#   include <shlwapi.h>  /* PathRemoveFileSpecA, StrStrIA */
-#   include <dbghelp.h>  /* SymFromAddr */
+#   include <io.h>      /* _wirte */
 #   define fileno _fileno
 #   define socklen_t int
-#   define strcasestr StrStrIA
 #   pragma comment(lib, "Ws2_32.lib")
 #   pragma comment(lib, "Shlwapi.lib")
 #   pragma comment(lib, "Dbghelp.lib")
 #else
-#   include <arpa/inet.h>   /* inet_addr, inet_pton */
-#   include <cxxabi.h>      /* abi::__cxa_demangle, abi::__cxa_throw */
-#   include <execinfo.h>    /* backtrace */
-#   include <fcntl.h>       /* fcntl */
-#   include <fnmatch.h>     /* fnmatch */
-#   include <libgen.h>      /* basename */
-#   include <netdb.h>       /* getaddrinfo, gethostbyname */
-#   include <sys/ioctl.h>   /* ioctl */
-#   include <sys/mman.h>    /* mprotect, mmap */
-#   include <sys/socket.h>  /* sockaddr */
-#   include <sys/syscall.h> /* syscall */
-#   include <sys/time.h>    /* gettimeofday */
-#   include <sys/types.h>   /* size_t */
-#   include <syslog.h>      /* syslog, vsyslog */
-#   include <unistd.h>      /* sysconf */
+#   include <arpa/inet.h>  /* inet_addr, inet_pton */
+#   include <cxxabi.h>     /* abi::__cxa_demangle, abi::__cxa_throw */
+#   include <fcntl.h>      /* fcntl */
+#   include <fnmatch.h>    /* fnmatch */
+#   include <libgen.h>     /* basename */
+#   include <netdb.h>      /* getaddrinfo, gethostbyname */
+#   include <sys/ioctl.h>  /* ioctl */
+#   include <sys/mman.h>   /* mprotect, mmap */
+#   include <sys/socket.h> /* sockaddr */
+#   include <sys/time.h>   /* gettimeofday */
+#   include <sys/types.h>  /* size_t */
+#   include <syslog.h>     /* syslog, vsyslog */
+#   include <unistd.h>     /* sysconf */
+#   if !defined __CYGWIN__
+#      include <execinfo.h>    /* backtrace */
+#   endif
 #   if defined __GLIBC__
 #      include <malloc.h> /* __malloc_hook */
 #   elif defined __APPLE__
@@ -58,7 +63,7 @@
 #   define LIBC__write ::write
 #endif
 
-#if defined _WIN32
+#if defined _WIN32 || defined __CYGWIN__
 int main(int argc, const char** argv);
 #   if defined __H2UNIT_HPP__ || defined IMPORT_MAIN
 int main(int argc, const char** argv)
@@ -283,7 +288,7 @@ h2_inline bool h2_pattern::regex_match(const char* pattern, const char* subject,
 
 h2_inline bool h2_pattern::wildcard_match(const char* pattern, const char* subject, bool caseless)
 {
-#if defined _WIN32
+#if defined _WIN32 || defined __CYGWIN__
    const char *scur = subject, *pcur = pattern;
    const char *sstar = nullptr, *pstar = nullptr;
    while (*scur) {
@@ -1239,7 +1244,7 @@ h2_inline h2_backtrace& h2_backtrace::dump(int shift_)
 {
    static h2_backtrace s;
    s.shift = shift_;
-#ifdef _WIN32
+#if defined _WIN32 || defined __CYGWIN__
    s.count = CaptureStackBackTrace(0, sizeof(s.frames) / sizeof(s.frames[0]), s.frames, NULL);
 #else
    h2_memory::restores();
@@ -1252,7 +1257,7 @@ h2_inline h2_backtrace& h2_backtrace::dump(int shift_)
 h2_inline bool h2_backtrace::in(void* fps[]) const
 {
    bool ret = false;
-#ifdef _WIN32
+#if defined _WIN32
    for (int i = shift; !ret && i < count; ++i) {
       char buffer[sizeof(SYMBOL_INFO) + 256];
       SYMBOL_INFO* symbol = (SYMBOL_INFO*)buffer;
@@ -1263,6 +1268,11 @@ h2_inline bool h2_backtrace::in(void* fps[]) const
             if ((unsigned long long)symbol->Address == (unsigned long long)fps[j])
                ret = true;
    }
+#elif defined __CYGWIN__
+   for (int i = shift; !ret && i < count; ++i)
+      for (int j = 0; !ret && fps[j]; ++j)
+         if ((unsigned long long)fps[j] <= (unsigned long long)frames[i] && (unsigned long long)frames[i] < 100 + (unsigned long long)fps[j])
+            ret = true;
 #else
    h2_memory::restores();
    char** symbols = backtrace_symbols(frames, count);
@@ -1282,7 +1292,7 @@ h2_inline bool h2_backtrace::in(void* fps[]) const
 
 h2_inline void h2_backtrace::print(h2_vector<h2_string>& stacks) const
 {
-#ifdef _WIN32
+#if defined _WIN32
    for (int i = shift; i < count; ++i) {
       char buffer[sizeof(SYMBOL_INFO) + 256];
       SYMBOL_INFO* symbol = (SYMBOL_INFO*)buffer;
@@ -1299,6 +1309,12 @@ h2_inline void h2_backtrace::print(h2_vector<h2_string>& stacks) const
          frame.sprintf("%s:%d", fileline.FileName, fileline.LineNumber);
       stacks.push_back(frame);
       if (!strcmp("main", symbol->Name)) break;
+   }
+#elif defined __CYGWIN__
+   for (int i = shift; i < count; ++i) {
+      char* p = nullptr;
+      p = addr2line(h2_load::ptr_to_addr(frames[i]));
+      if (p) stacks.push_back(p);
    }
 #else
    h2_memory::restores();
@@ -3574,6 +3590,30 @@ struct h2_override_platform {
 
    void reset() { stubs.clear(); }
 };
+#else
+// source/memory/h2_override_cygwin.cpp
+
+struct h2_override_platform {
+   h2_stubs stubs;
+
+   static char* strdup(char* s)
+   {
+      char* ret = (char*)h2_override::malloc(strlen(s) + 1);
+      return ret && strcpy(ret, s), ret;
+   }
+   static char* strndup(char* s, size_t n)
+   {
+      char* ret = (char*)h2_override::malloc(n + 1);
+      return ret && strncpy(ret, s, n), ret;
+   }
+
+   void set()
+   {
+      stubs.add((void*)::strdup, (void*)strdup, "strdup", __FILE__, __LINE__);
+      stubs.add((void*)::strndup, (void*)strndup, "strndup", __FILE__, __LINE__);
+   }
+   void reset() { stubs.clear(); }
+};
 #endif
 // source/memory/h2_memory.cpp
 
@@ -3722,7 +3762,7 @@ h2_inline void h2_exempt::add_by_fp(void* fp)
    I().fps[I().nfp] = nullptr;
 }
 
-// source/exception/h2_debug.cpp
+// source/except/h2_debug.cpp
 
 #if defined __linux
 #   if defined(__GNUC__) && (defined(__i386) || defined(__x86_64))
@@ -3793,7 +3833,7 @@ static inline char* get_gdb2(char* s, int pid)
 
 h2_inline void h2_debugger::trap()
 {
-#if !defined _WIN32
+#if defined __linux || defined __APPLE__
    int pid = (int)getpid();
    if (!under_debug(pid, O.path)) {
       static h2_once only_one_time;
@@ -3812,7 +3852,7 @@ h2_inline void h2_debugger::trap()
    h2_raise_trap();
 #endif
 }
-// source/exception/h2_crash.cpp
+// source/except/h2_crash.cpp
 
 struct h2_crash {
 #if defined _WIN32
@@ -3859,7 +3899,7 @@ struct h2_crash {
    }
 #endif
 };
-// source/exception/h2_exception.cpp
+// source/except/h2_exception.cpp
 
 struct h2_exception {
    h2_singleton(h2_exception);
@@ -4224,7 +4264,7 @@ h2_inline h2_fail* h2_mocks::clear(bool check)
    return fails;
 }
 
-// source/tool/h2_dns.cpp
+// source/net/h2_dns.cpp
 
 struct h2_name : h2_libc {
    h2_list x, y;
@@ -4372,7 +4412,7 @@ h2_inline void h2_dns::initialize()
 {
    setaddrinfo(1, "127.0.0.1");
 }
-// source/tool/h2_socket.cpp
+// source/net/h2_socket.cpp
 
 struct h2_socket {
    h2_singleton(h2_socket);
@@ -4644,7 +4684,7 @@ h2_inline h2_sock::~h2_sock()
 {
    h2_socket::I().stop();
 }
-// source/tool/h2_stdio.cpp
+// source/stdio/h2_stdio.cpp
 
 struct h2_stdio {
    h2_singleton(h2_stdio);
@@ -4820,23 +4860,6 @@ h2_inline h2_cout::~h2_cout()
       fail->a_expression = "";
       fail->explain = "COUT";
       h2_fail_g(fail);
-   }
-}
-// source/tool/h2_timer.cpp
-
-h2_inline h2_timer::h2_timer(long long ms_, const char* file_, int line_) : file(file_), line(line_), ms(ms_)
-{
-   start = ::clock();
-}
-
-h2_inline h2_timer::~h2_timer()
-{
-   h2_assert_g();
-   long long delta = (::clock() - start) * 1000 / CLOCKS_PER_SEC;
-   if (ms < delta) {
-      h2_row row = "performance expect < ";
-      row.printf("green", "%lld", ms).printf("", " ms, but actually cost ").printf("red", "%lld", delta).printf("", " ms");
-      h2_fail_g(h2_fail::new_normal(row, file, line));
    }
 }
 
@@ -5192,6 +5215,23 @@ h2_inline h2_defer_failure::~h2_defer_failure()
       }
       fails->user_explain = oss.str().c_str();
       h2_fail_g(fails);
+   }
+}
+// source/assert/h2_timer.cpp
+
+h2_inline h2_timer::h2_timer(long long ms_, const char* file_, int line_) : file(file_), line(line_), ms(ms_)
+{
+   start = ::clock();
+}
+
+h2_inline h2_timer::~h2_timer()
+{
+   h2_assert_g();
+   long long delta = (::clock() - start) * 1000 / CLOCKS_PER_SEC;
+   if (ms < delta) {
+      h2_row row = "performance expect < ";
+      row.printf("green", "%lld", ms).printf("", " ms, but actually cost ").printf("red", "%lld", delta).printf("", " ms");
+      h2_fail_g(h2_fail::new_normal(row, file, line));
    }
 }
 
@@ -5959,7 +5999,6 @@ h2_inline void h2_report::on_suite_start(h2_suite* s) { h2_list_for_each_entry (
 h2_inline void h2_report::on_suite_endup(h2_suite* s) { h2_list_for_each_entry (p, reports, h2_report_impl, x) p->on_suite_endup(s); }
 h2_inline void h2_report::on_case_start(h2_suite* s, h2_case* c) { h2_list_for_each_entry (p, reports, h2_report_impl, x) p->on_case_start(s, c); }
 h2_inline void h2_report::on_case_endup(h2_suite* s, h2_case* c) { h2_list_for_each_entry (p, reports, h2_report_impl, x) p->on_case_endup(s, c); }
-
 // source/render/h2_layout.cpp
 
 static inline h2_rows row_break(const h2_row& row, unsigned width)

@@ -49,7 +49,7 @@ h2_inline h2_backtrace& h2_backtrace::dump(int shift_)
 {
    static h2_backtrace s;
    s.shift = shift_;
-#ifdef _WIN32
+#if defined _WIN32 || defined __CYGWIN__
    s.count = CaptureStackBackTrace(0, sizeof(s.frames) / sizeof(s.frames[0]), s.frames, NULL);
 #else
    h2_memory::restores();
@@ -62,7 +62,7 @@ h2_inline h2_backtrace& h2_backtrace::dump(int shift_)
 h2_inline bool h2_backtrace::in(void* fps[]) const
 {
    bool ret = false;
-#ifdef _WIN32
+#if defined _WIN32
    for (int i = shift; !ret && i < count; ++i) {
       char buffer[sizeof(SYMBOL_INFO) + 256];
       SYMBOL_INFO* symbol = (SYMBOL_INFO*)buffer;
@@ -73,6 +73,11 @@ h2_inline bool h2_backtrace::in(void* fps[]) const
             if ((unsigned long long)symbol->Address == (unsigned long long)fps[j])
                ret = true;
    }
+#elif defined __CYGWIN__
+   for (int i = shift; !ret && i < count; ++i)
+      for (int j = 0; !ret && fps[j]; ++j)
+         if ((unsigned long long)fps[j] <= (unsigned long long)frames[i] && (unsigned long long)frames[i] < 100 + (unsigned long long)fps[j])
+            ret = true;
 #else
    h2_memory::restores();
    char** symbols = backtrace_symbols(frames, count);
@@ -92,7 +97,7 @@ h2_inline bool h2_backtrace::in(void* fps[]) const
 
 h2_inline void h2_backtrace::print(h2_vector<h2_string>& stacks) const
 {
-#ifdef _WIN32
+#if defined _WIN32
    for (int i = shift; i < count; ++i) {
       char buffer[sizeof(SYMBOL_INFO) + 256];
       SYMBOL_INFO* symbol = (SYMBOL_INFO*)buffer;
@@ -109,6 +114,12 @@ h2_inline void h2_backtrace::print(h2_vector<h2_string>& stacks) const
          frame.sprintf("%s:%d", fileline.FileName, fileline.LineNumber);
       stacks.push_back(frame);
       if (!strcmp("main", symbol->Name)) break;
+   }
+#elif defined __CYGWIN__
+   for (int i = shift; i < count; ++i) {
+      char* p = nullptr;
+      p = addr2line(h2_load::ptr_to_addr(frames[i]));
+      if (p) stacks.push_back(p);
    }
 #else
    h2_memory::restores();

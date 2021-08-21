@@ -1,4 +1,5 @@
 #include "../source/h2_unit.cpp"
+#if !defined __CYGWIN__
 
 #include "test_types.hpp"
 
@@ -71,3 +72,4 @@ SUITE(Pointer)
 #undef TheCheck
    }
 }
+#endif

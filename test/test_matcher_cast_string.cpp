@@ -1,4 +1,5 @@
 #include "../source/h2_unit.cpp"
+#if !defined __CYGWIN__
 
 #include "test_types.hpp"
 
@@ -33,3 +34,4 @@ SUITE(Cast String)
 #undef TheCheck
    }
 }
+#endif

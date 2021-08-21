@@ -1,4 +1,5 @@
 #include "../source/h2_unit.cpp"
+#if !defined __CYGWIN__
 
 #include <vector>
 #include <deque>
@@ -110,3 +111,4 @@ SUITE(Sequence containers)
 #undef TheCheck
    }
 }
+#endif

@@ -12,34 +12,39 @@
 #include <signal.h>  /* sigaction */
 #include <typeinfo>  /* std::typeid, std::type_info */
 
+#if defined _WIN32 || defined __CYGWIN__
+#   include <windows.h>
+#   include <dbghelp.h> /* CaptureStackBackTrace, SymFromAddr */
+#   include <shlwapi.h> /* StrStrIA */
+#   define strcasestr StrStrIA
+#endif
+
 #if defined _WIN32
 #   include <winsock2.h> /* socket */
 #   include <ws2tcpip.h> /* getaddrinfo */
-#   include <io.h>       /* _wirte */
-#   include <shlwapi.h>  /* PathRemoveFileSpecA, StrStrIA */
-#   include <dbghelp.h>  /* SymFromAddr */
+#   include <io.h>      /* _wirte */
 #   define fileno _fileno
 #   define socklen_t int
-#   define strcasestr StrStrIA
 #   pragma comment(lib, "Ws2_32.lib")
 #   pragma comment(lib, "Shlwapi.lib")
 #   pragma comment(lib, "Dbghelp.lib")
 #else
-#   include <arpa/inet.h>   /* inet_addr, inet_pton */
-#   include <cxxabi.h>      /* abi::__cxa_demangle, abi::__cxa_throw */
-#   include <execinfo.h>    /* backtrace */
-#   include <fcntl.h>       /* fcntl */
-#   include <fnmatch.h>     /* fnmatch */
-#   include <libgen.h>      /* basename */
-#   include <netdb.h>       /* getaddrinfo, gethostbyname */
-#   include <sys/ioctl.h>   /* ioctl */
-#   include <sys/mman.h>    /* mprotect, mmap */
-#   include <sys/socket.h>  /* sockaddr */
-#   include <sys/syscall.h> /* syscall */
-#   include <sys/time.h>    /* gettimeofday */
-#   include <sys/types.h>   /* size_t */
-#   include <syslog.h>      /* syslog, vsyslog */
-#   include <unistd.h>      /* sysconf */
+#   include <arpa/inet.h>  /* inet_addr, inet_pton */
+#   include <cxxabi.h>     /* abi::__cxa_demangle, abi::__cxa_throw */
+#   include <fcntl.h>      /* fcntl */
+#   include <fnmatch.h>    /* fnmatch */
+#   include <libgen.h>     /* basename */
+#   include <netdb.h>      /* getaddrinfo, gethostbyname */
+#   include <sys/ioctl.h>  /* ioctl */
+#   include <sys/mman.h>   /* mprotect, mmap */
+#   include <sys/socket.h> /* sockaddr */
+#   include <sys/time.h>   /* gettimeofday */
+#   include <sys/types.h>  /* size_t */
+#   include <syslog.h>     /* syslog, vsyslog */
+#   include <unistd.h>     /* sysconf */
+#   if !defined __CYGWIN__
+#      include <execinfo.h>    /* backtrace */
+#   endif
 #   if defined __GLIBC__
 #      include <malloc.h> /* __malloc_hook */
 #   elif defined __APPLE__
@@ -54,7 +59,7 @@
 #   define LIBC__write ::write
 #endif
 
-#if defined _WIN32
+#if defined _WIN32 || defined __CYGWIN__
 int main(int argc, const char** argv);
 #   if defined __H2UNIT_HPP__ || defined IMPORT_MAIN
 int main(int argc, const char** argv)
@@ -111,13 +116,15 @@ namespace h2 {
 #   include "memory/h2_override_macos.cpp"
 #elif defined _WIN32
 #   include "memory/h2_override_windows.cpp"
+#else
+#   include "memory/h2_override_cygwin.cpp"
 #endif
 #include "memory/h2_memory.cpp"
 #include "memory/h2_exempt.cpp"
 
-#include "exception/h2_debug.cpp"
-#include "exception/h2_crash.cpp"
-#include "exception/h2_exception.cpp"
+#include "except/h2_debug.cpp"
+#include "except/h2_crash.cpp"
+#include "except/h2_exception.cpp"
 
 #include "stub/h2_e9.cpp"
 #include "stub/h2_source.cpp"
@@ -128,20 +135,19 @@ namespace h2 {
 #include "mock/h2_mocker.cpp"
 #include "mock/h2_mocks.cpp"
 
-#include "tool/h2_dns.cpp"
-#include "tool/h2_socket.cpp"
-#include "tool/h2_stdio.cpp"
-#include "tool/h2_timer.cpp"
+#include "net/h2_dns.cpp"
+#include "net/h2_socket.cpp"
+#include "stdio/h2_stdio.cpp"
 
 #include "core/h2_case.cpp"
 #include "core/h2_suite.cpp"
 #include "core/h2_runner.cpp"
 
 #include "assert/h2_assert.cpp"
+#include "assert/h2_timer.cpp"
 
 #include "render/h2_failure.cpp"
 #include "render/h2_report.cpp"
-
 #include "render/h2_layout.cpp"
 #include "render/h2_option.cpp"
 

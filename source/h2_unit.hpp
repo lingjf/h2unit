@@ -99,15 +99,15 @@ namespace h2 {
 #include "mock/h2_mock.hpp"           //
 #include "memory/h2_exempt.hpp"       // -
 #include "memory/h2_memory.hpp"       // failure, fp
-#include "exception/h2_debug.hpp"     // option
-#include "tool/h2_dns.hpp"            //
-#include "tool/h2_socket.hpp"         // stub, failure, matcher
-#include "tool/h2_stdio.hpp"          //
-#include "tool/h2_timer.hpp"          // failure
+#include "except/h2_debug.hpp"        // option
+#include "net/h2_dns.hpp"             //
+#include "net/h2_socket.hpp"          // stub, failure, matcher
+#include "stdio/h2_stdio.hpp"         //
 #include "core/h2_case.hpp"           // failure, stub, mock, dns, socket
 #include "core/h2_suite.hpp"          // case, stub, mock
 #include "core/h2_runner.hpp"         // suite, case, failure, stub, mock, option, debug
 #include "core/h2_core.hpp"           //
+#include "assert/h2_timer.hpp"        // failure
 #include "assert/h2_assert.hpp"       // failure, matcher
 #include "render/h2_report.hpp"       // runner, suite, case
 }  // namespace h2

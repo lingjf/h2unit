@@ -97,7 +97,7 @@ SUITE(harmless)
       strtoull("1234567890", NULL, 10);
 
       // Popular extensions
-#if defined WIN32
+#if defined _WIN32
       stricmp(t, "h2unit");
 #else
       strcasecmp(t, "h2unit");

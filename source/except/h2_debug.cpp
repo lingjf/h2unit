@@ -68,7 +68,7 @@ static inline char* get_gdb2(char* s, int pid)
 
 h2_inline void h2_debugger::trap()
 {
-#if !defined _WIN32
+#if defined __linux || defined __APPLE__
    int pid = (int)getpid();
    if (!under_debug(pid, O.path)) {
       static h2_once only_one_time;

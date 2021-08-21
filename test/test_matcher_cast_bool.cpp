@@ -1,4 +1,5 @@
 #include "../source/h2_unit.cpp"
+#if !defined __CYGWIN__
 
 bool bool_true = true;
 const bool const_bool_true = true;
@@ -70,3 +71,4 @@ CASE(Boolean stringify)
    H2Foreach(TheCheck, BOOL_FALSE_LIST);
 #undef TheCheck
 }
+#endif

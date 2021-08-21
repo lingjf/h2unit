@@ -1,4 +1,5 @@
 #include "../source/h2_unit.cpp"
+#if !defined __CYGWIN__
 
 #include "test_types.hpp"
 NUMBER0_DECL_LIST;
@@ -67,3 +68,4 @@ SUITE(number[integer, float, enum, bool])
 #undef TheCheck
    }
 }
+#endif
