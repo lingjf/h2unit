@@ -44,7 +44,7 @@ struct h2_shell {
          if (current[i][0] != '\0')
             sprintf(a + strlen(a), "%d;", style2value(current[i]));
       a[strlen(a) - 1] = 'm';
-      h2_libc::write(1, a, strlen(a));
+      LIBC__write(1, a, strlen(a));
    }
    void parse(const char* style)
    {
@@ -66,7 +66,7 @@ struct h2_shell {
       if (h2_color::isctrl(str)) {
          if (h2_option::I().colorful) I().parse(str), I().change();
       } else {
-         h2_libc::write(fileno(stdout), str, strlen(str));
+         LIBC__write(fileno(stdout), str, strlen(str));
       }
    }
    int style2value(const char* style)

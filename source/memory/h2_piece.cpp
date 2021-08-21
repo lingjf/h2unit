@@ -63,7 +63,7 @@ struct h2_piece : h2_libc {
       if (permission & writable)
          new_permission = PAGE_READWRITE;
       if (!VirtualProtect(forbidden_page, forbidden_size, new_permission, &old_permission))
-         ::printf("VirtualProtect failed %d\n", GetLastError());
+         ::printf("VirtualProtect failed %lu\n", GetLastError());
 #else
       int new_permission = PROT_NONE;
       if (permission & readable)

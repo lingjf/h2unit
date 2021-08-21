@@ -22,7 +22,7 @@ struct h2_memory {
 #define H2BLOCK(...) __H2BLOCK(#__VA_ARGS__, H2PP_UNIQUE())
 
 template <typename T>
-inline void h2_unmem(T f) { h2_exempt::add_by_fp(h2_un(f)); }
+inline void h2_unmem(T f) { h2_exempt::add_by_fp(h2_un<void*>(f)); }
 template <>
 inline void h2_unmem(const char* f) { h2_exempt::add_by_name(f); }
 

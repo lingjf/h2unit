@@ -2,7 +2,7 @@
 #ifndef __H2_UNIT_HPP__
 #define __H2_UNIT_HPP__
 
-#define H2UNIT_VERSION 5.12
+#define H2UNIT_VERSION 5.13
 
 #include <cstdio>      /* printf */
 #include <cstdlib>     /* malloc */
@@ -43,11 +43,9 @@
 #   pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 #   pragma GCC diagnostic ignored "-Wint-to-pointer-cast"
 #   pragma GCC diagnostic ignored "-Wsign-compare"
-#   pragma GCC diagnostic ignored "-Wreturn-type"
 #elif defined _WIN32
 #   pragma warning(disable : 4005)  // macro-redefine
 #   pragma warning(disable : 4611)  // setjmp non-portable
-#   pragma warning(disable : 4715)  // not all control paths return a value
 #endif
 
 #if defined __H2UNIT_HPP__
@@ -89,8 +87,7 @@ namespace h2 {
 #include "matcher/h2_container.hpp"   // matches, matcher, failure
 #include "matcher/h2_customize.hpp"   // matches, matcher, failure
 #include "matcher/h2_matcher.cpp"     // matches, matcher, equation
-#include "stub/h2_fp.hpp"             // load
-#include "stub/h2_mfp.hpp"            // nm, load
+#include "stub/h2_fp.hpp"             // nm, load
 #include "stub/h2_stubs.hpp"          // -
 #include "stub/h2_temporary.hpp"      // -
 #include "stub/h2_stub.hpp"           // -

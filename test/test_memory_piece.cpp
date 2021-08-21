@@ -36,11 +36,9 @@ SUITE(piece)
       m = new h2::h2_piece(100, 8, "malloc", bt);
       JE("{                               \
             'user_size': 100,             \
-            'page_size': 4096,            \
             'page_count': 1,              \
             'who_allocate': 'malloc',     \
-            'free_times': 0 ,             \
-            'forbidden_size': 4096        \
+            'free_times': 0               \
          }",
          h2_piece_tojson(m, t1));
 
@@ -48,11 +46,9 @@ SUITE(piece)
 
       JE("{                               \
             'user_size': 100,             \
-            'page_size': 4096,            \
             'page_count': 1,              \
             'who_allocate': 'malloc',     \
-            'free_times': 1 ,             \
-            'forbidden_size': 4096 * 2    \
+            'free_times': 1               \
          }",
          h2_piece_tojson(m, t1));
 

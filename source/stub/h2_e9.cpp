@@ -5,7 +5,7 @@
 static constexpr int h2_e9_size = 1 + 4;
 #elif defined __x86_64__ || defined _M_X64
 static constexpr int h2_e9_size = 2 + 8 + 2;
-#elif defined __arm__ || defined __arm64__ || defined __aarch64__
+#elif defined __arm64__ || defined __aarch64__
 static constexpr int h2_e9_size = 4 + 4 + 8;
 #endif
 
@@ -13,17 +13,12 @@ static inline bool h2_e9_save(void* srcfp, unsigned char* opcode)
 {
 #if defined _WIN32
    DWORD t;
-   if (!VirtualProtect(srcfp, sizeof(void*) + 4, PAGE_EXECUTE_READWRITE, &t))  // PAGE_EXECUTE_WRITECOPY OR PAGE_WRITECOPY
-      return false;
+   if (!VirtualProtect(srcfp, sizeof(void*) + 4, PAGE_EXECUTE_READWRITE, &t)) return false;  // PAGE_EXECUTE_WRITECOPY OR PAGE_WRITECOPY
 #else
-   /* uintptr_t is favourite, but is optional type in c++ std, using unsigned long long for portable */
-   unsigned long long page_size = (unsigned long long)h2_page_size();
-   unsigned long long srcfp_start = reinterpret_cast<unsigned long long>(srcfp);
-   unsigned long long page_start = srcfp_start & ~(page_size - 1);
-   int page_count = ::ceil((srcfp_start + h2_e9_size - page_start) / (double)page_size);
-
-   if (mprotect(reinterpret_cast<void*>(page_start), page_count * page_size, PROT_READ | PROT_WRITE | PROT_EXEC) != 0)
-      return false;
+   static unsigned long long page_size = (unsigned long long)h2_page_size(); // uintptr_t
+   unsigned long long page_start = reinterpret_cast<unsigned long long>(srcfp) & ~(page_size - 1);
+   int page_count = ::ceil((reinterpret_cast<unsigned long long>(srcfp) + h2_e9_size - page_start) / (double)page_size);
+   if (mprotect(reinterpret_cast<void*>(page_start), page_count * page_size, PROT_READ | PROT_WRITE | PROT_EXEC) != 0) return false;
 #endif
    if (opcode) memcpy(opcode, srcfp, h2_e9_size);
    return true;
@@ -46,7 +41,7 @@ static inline void h2_e9_set(void* srcfp, void* dstfp)
    }
    // ::FlushInstructionCache(GetCurrentProcess(), srcfp, h2_e9_size);
 
-#elif defined __arm__ || defined __arm64__ || defined __aarch64__
+#elif defined __arm64__ || defined __aarch64__
 
 #   pragma pack(push, 1)
    struct ldr_br_dst {
@@ -80,7 +75,7 @@ static inline void h2_e9_reset(void* srcfp, unsigned char* opcode)
 {
    memcpy(srcfp, opcode, h2_e9_size);
    // ::FlushInstructionCache(GetCurrentProcess(), srcfp, h2_e9_size);
-#if defined __arm__ || defined __arm64__ || defined __aarch64__
+#if defined __arm64__ || defined __aarch64__
    __builtin___clear_cache(static_cast<char*>(srcfp), static_cast<char*>(srcfp) + h2_e9_size);
 #endif
 }

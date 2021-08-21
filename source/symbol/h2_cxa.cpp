@@ -56,7 +56,7 @@ h2_inline void* h2_cxa::follow_jmp(void* fp, int n)
    return (void*)p;
 }
 
-#elif defined __arm__ || defined __arm64__ || defined __aarch64__
+#elif defined __arm64__ || defined __aarch64__
 
 static inline long long sign_extend(unsigned long long value, unsigned int bits)
 {

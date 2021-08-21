@@ -6,7 +6,6 @@ struct h2_cout : h2_once {
    const char *e, *type;
    h2_cout(h2_matcher<const char*> m, const char* e, const char* type, const char* file, int line);
    ~h2_cout();
-   static size_t length();
 };
 
 #define __H2COUT(m, e, type, Q) for (h2::h2_cout Q(m, e, h2::ss(type), __FILE__, __LINE__); Q;)

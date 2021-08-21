@@ -39,7 +39,7 @@ h2_inline void h2_exempt::setup()
    add_by_fp((void*)::gmtime_s);
    add_by_fp((void*)::_gmtime32_s);
    add_by_fp((void*)::_gmtime64_s);
-   add_by_fp(h2_un(&std::type_info::name));
+   add_by_fp(h2_un<void*>(&std::type_info::name));
 #else
    stubs.add((void*)::gmtime_r, (void*)h2_exempt_stub::gmtime_r, "gmtime_r", __FILE__, __LINE__);
    stubs.add((void*)::ctime_r, (void*)h2_exempt_stub::ctime_r, "ctime_r", __FILE__, __LINE__);

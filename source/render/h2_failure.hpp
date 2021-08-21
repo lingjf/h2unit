@@ -40,6 +40,7 @@ struct h2_fail : h2_libc {
    static h2_fail* new_overflow(const void* ptr, const int size, const void* violate_ptr, const char* action, const h2_vector<unsigned char>& spot, const h2_backtrace& bt_allocate, const h2_backtrace& bt_trample, const char* file = nullptr, int line = 0);
    static h2_fail* new_use_after_free(const void* ptr, const void* violate_ptr, const char* action, const h2_backtrace& bt_allocate, const h2_backtrace& bt_release, const h2_backtrace& bt_use);
    static h2_fail* new_exception(const char* explain, const char* type, const h2_backtrace& bt_throw);
+   static h2_fail* new_symbol(const h2_string& symbol, const h2_vector<h2_string>& candidates, const h2_row& explain = {}, const char* file = nullptr, int line = 0);
 };
 
 static inline void h2_fail_g(h2_fail*);

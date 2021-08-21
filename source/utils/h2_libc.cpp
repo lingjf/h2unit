@@ -67,18 +67,18 @@ struct h2_libc_malloc {
 
    void batch(long long size)
    {
-      int page_size = h2_page_size();
-      int page_count = ::ceil(size / (double)page_size) + 256;
+      int brk_size = 4 * 1024 * 1024;
+      int brk_count = ::ceil(size / (double)brk_size);
 
 #if defined _WIN32
-      PVOID ptr = VirtualAlloc(NULL, page_count * page_size, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
+      PVOID ptr = VirtualAlloc(NULL, brk_count * brk_size, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
       if (ptr == NULL) ::printf("VirtualAlloc failed at %s:%d\n", __FILE__, __LINE__), abort();
 #else
-      void* ptr = ::mmap(nullptr, page_count * page_size, PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0);
+      void* ptr = ::mmap(nullptr, brk_count * brk_size, PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0);
       if (ptr == MAP_FAILED) h2_color::prints("yellow", "mmap failed at %s:%d\n", __FILE__, __LINE__), abort();
 #endif
 
-      block* p = new (ptr) block(page_count * page_size);
+      block* p = new (ptr) block(brk_count * brk_size);
       p->next = next;
       next = p;
    }
@@ -124,13 +124,4 @@ h2_inline void h2_libc::free(void* ptr)
 {
    if (!O.memory_check) return ::free(ptr);
    if (ptr) h2_libc_malloc::I().free(ptr);
-}
-
-h2_inline ssize_t h2_libc::write(int fd, const void* buf, size_t count)
-{
-#if defined _WIN32
-   return _write(fd, buf, count);
-#else
-   return ::syscall(SYS_write, fd, buf, count);
-#endif
 }

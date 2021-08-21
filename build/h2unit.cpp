@@ -1,5 +1,5 @@
 ﻿
-/* v5.12 2021-08-15 21:50:00 */
+/* v5.13 2021-08-21 09:17:57 */
 /* https://github.com/lingjf/h2unit */
 /* Apache Licence 2.0 */
 
@@ -50,6 +50,12 @@
 #      include <AvailabilityMacros.h>
 #      include <malloc/malloc.h> /* malloc_zone_t */
 #   endif
+#endif
+
+#if defined _WIN32
+#   define LIBC__write ::_write
+#else
+#   define LIBC__write ::write
 #endif
 
 #if defined _WIN32
@@ -503,18 +509,18 @@ struct h2_libc_malloc {
 
    void batch(long long size)
    {
-      int page_size = h2_page_size();
-      int page_count = ::ceil(size / (double)page_size) + 256;
+      int brk_size = 4 * 1024 * 1024;
+      int brk_count = ::ceil(size / (double)brk_size);
 
 #if defined _WIN32
-      PVOID ptr = VirtualAlloc(NULL, page_count * page_size, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
+      PVOID ptr = VirtualAlloc(NULL, brk_count * brk_size, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
       if (ptr == NULL) ::printf("VirtualAlloc failed at %s:%d\n", __FILE__, __LINE__), abort();
 #else
-      void* ptr = ::mmap(nullptr, page_count * page_size, PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0);
+      void* ptr = ::mmap(nullptr, brk_count * brk_size, PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0);
       if (ptr == MAP_FAILED) h2_color::prints("yellow", "mmap failed at %s:%d\n", __FILE__, __LINE__), abort();
 #endif
 
-      block* p = new (ptr) block(page_count * page_size);
+      block* p = new (ptr) block(brk_count * brk_size);
       p->next = next;
       next = p;
    }
@@ -560,15 +566,6 @@ h2_inline void h2_libc::free(void* ptr)
 {
    if (!O.memory_check) return ::free(ptr);
    if (ptr) h2_libc_malloc::I().free(ptr);
-}
-
-h2_inline ssize_t h2_libc::write(int fd, const void* buf, size_t count)
-{
-#if defined _WIN32
-   return _write(fd, buf, count);
-#else
-   return ::syscall(SYS_write, fd, buf, count);
-#endif
 }
 // source/utils/h2_string.cpp
 
@@ -935,7 +932,7 @@ struct h2_shell {
          if (current[i][0] != '\0')
             sprintf(a + strlen(a), "%d;", style2value(current[i]));
       a[strlen(a) - 1] = 'm';
-      h2_libc::write(1, a, strlen(a));
+      LIBC__write(1, a, strlen(a));
    }
    void parse(const char* style)
    {
@@ -957,7 +954,7 @@ struct h2_shell {
       if (h2_color::isctrl(str)) {
          if (h2_option::I().colorful) I().parse(str), I().change();
       } else {
-         h2_libc::write(fileno(stdout), str, strlen(str));
+         LIBC__write(fileno(stdout), str, strlen(str));
       }
    }
    int style2value(const char* style)
@@ -1190,19 +1187,6 @@ h2_inline unsigned long long h2_load::ptr_to_addr(void* ptr)
    return (unsigned long long)ptr - I().text_offset;
 #endif
 }
-
-h2_inline void* h2_load::get_by_fn(const char* fn)
-{
-   h2_symbol* res[16];
-   int n = h2_nm::get_by_name(fn, res, 16);
-   if (n != 1) {
-      h2_color::printl(color(n ? "Find multiple " : "Don't find ", "yellow") + color(fn, "bold,red"));
-      for (int i = 0; i < n; ++i)
-         h2_color::printl("  " + gray(h2_stringify(i) + ". ") + color(res[i]->name, "yellow"));
-      return nullptr;
-   }
-   return addr_to_ptr(res[0]->addr);
-}
 // source/symbol/h2_backtrace.cpp
 
 #if !defined _WIN32
@@ -1403,7 +1387,7 @@ h2_inline void* h2_cxa::follow_jmp(void* fp, int n)
    return (void*)p;
 }
 
-#elif defined __arm__ || defined __arm64__ || defined __aarch64__
+#elif defined __arm64__ || defined __aarch64__
 
 static inline long long sign_extend(unsigned long long value, unsigned int bits)
 {
@@ -2953,7 +2937,7 @@ struct h2_piece : h2_libc {
       if (permission & writable)
          new_permission = PAGE_READWRITE;
       if (!VirtualProtect(forbidden_page, forbidden_size, new_permission, &old_permission))
-         ::printf("VirtualProtect failed %d\n", GetLastError());
+         ::printf("VirtualProtect failed %lu\n", GetLastError());
 #else
       int new_permission = PROT_NONE;
       if (permission & readable)
@@ -3698,7 +3682,7 @@ h2_inline void h2_exempt::setup()
    add_by_fp((void*)::gmtime_s);
    add_by_fp((void*)::_gmtime32_s);
    add_by_fp((void*)::_gmtime64_s);
-   add_by_fp(h2_un(&std::type_info::name));
+   add_by_fp(h2_un<void*>(&std::type_info::name));
 #else
    stubs.add((void*)::gmtime_r, (void*)h2_exempt_stub::gmtime_r, "gmtime_r", __FILE__, __LINE__);
    stubs.add((void*)::ctime_r, (void*)h2_exempt_stub::ctime_r, "ctime_r", __FILE__, __LINE__);
@@ -3921,7 +3905,7 @@ struct h2_exception {
 static constexpr int h2_e9_size = 1 + 4;
 #elif defined __x86_64__ || defined _M_X64
 static constexpr int h2_e9_size = 2 + 8 + 2;
-#elif defined __arm__ || defined __arm64__ || defined __aarch64__
+#elif defined __arm64__ || defined __aarch64__
 static constexpr int h2_e9_size = 4 + 4 + 8;
 #endif
 
@@ -3929,17 +3913,12 @@ static inline bool h2_e9_save(void* srcfp, unsigned char* opcode)
 {
 #if defined _WIN32
    DWORD t;
-   if (!VirtualProtect(srcfp, sizeof(void*) + 4, PAGE_EXECUTE_READWRITE, &t))  // PAGE_EXECUTE_WRITECOPY OR PAGE_WRITECOPY
-      return false;
+   if (!VirtualProtect(srcfp, sizeof(void*) + 4, PAGE_EXECUTE_READWRITE, &t)) return false;  // PAGE_EXECUTE_WRITECOPY OR PAGE_WRITECOPY
 #else
-   /* uintptr_t is favourite, but is optional type in c++ std, using unsigned long long for portable */
-   unsigned long long page_size = (unsigned long long)h2_page_size();
-   unsigned long long srcfp_start = reinterpret_cast<unsigned long long>(srcfp);
-   unsigned long long page_start = srcfp_start & ~(page_size - 1);
-   int page_count = ::ceil((srcfp_start + h2_e9_size - page_start) / (double)page_size);
-
-   if (mprotect(reinterpret_cast<void*>(page_start), page_count * page_size, PROT_READ | PROT_WRITE | PROT_EXEC) != 0)
-      return false;
+   static unsigned long long page_size = (unsigned long long)h2_page_size(); // uintptr_t
+   unsigned long long page_start = reinterpret_cast<unsigned long long>(srcfp) & ~(page_size - 1);
+   int page_count = ::ceil((reinterpret_cast<unsigned long long>(srcfp) + h2_e9_size - page_start) / (double)page_size);
+   if (mprotect(reinterpret_cast<void*>(page_start), page_count * page_size, PROT_READ | PROT_WRITE | PROT_EXEC) != 0) return false;
 #endif
    if (opcode) memcpy(opcode, srcfp, h2_e9_size);
    return true;
@@ -3962,7 +3941,7 @@ static inline void h2_e9_set(void* srcfp, void* dstfp)
    }
    // ::FlushInstructionCache(GetCurrentProcess(), srcfp, h2_e9_size);
 
-#elif defined __arm__ || defined __arm64__ || defined __aarch64__
+#elif defined __arm64__ || defined __aarch64__
 
 #   pragma pack(push, 1)
    struct ldr_br_dst {
@@ -3996,7 +3975,7 @@ static inline void h2_e9_reset(void* srcfp, unsigned char* opcode)
 {
    memcpy(srcfp, opcode, h2_e9_size);
    // ::FlushInstructionCache(GetCurrentProcess(), srcfp, h2_e9_size);
-#if defined __arm__ || defined __arm64__ || defined __aarch64__
+#if defined __arm64__ || defined __aarch64__
    __builtin___clear_cache(static_cast<char*>(srcfp), static_cast<char*>(srcfp) + h2_e9_size);
 #endif
 }
@@ -4024,11 +4003,11 @@ struct h2_source : h2_libc {
 
 struct h2_sources {
    h2_singleton(h2_sources);
-   h2_list __sources;
+   h2_list sources;
 
    h2_source* __find(void* fp)
    {
-      h2_list_for_each_entry (p, __sources, h2_source, x)
+      h2_list_for_each_entry (p, sources, h2_source, x)
          if (p->source_fp == fp)
             return p;
       return nullptr;
@@ -4036,9 +4015,8 @@ struct h2_sources {
 
    void* __follow(void* fp)
    {
-#if defined __arm__ || defined __arm64__ || defined __aarch64__
+#if defined __arm64__ || defined __aarch64__
 #else
-
       for (int i = 0; i < 1; ++i) {  // follow PLT(Linux) or ILT (Incremental Link Table /Windows)
          if (__find(fp)) break;
          void* next = h2_cxa::follow_jmp(fp, 1);
@@ -4049,10 +4027,7 @@ struct h2_sources {
       return fp;
    }
 
-   h2_source* get(void* fp)
-   {
-      return __find(__follow(fp));
-   }
+   h2_source* get(void* fp) { return __find(__follow(fp)); }
 
    h2_source* add(void* fp, const char* fn, const char* file, int line)
    {
@@ -4060,7 +4035,7 @@ struct h2_sources {
       h2_source* source = __find(source_fp);
       if (!source) {
          source = new h2_source(source_fp, fn, file, line);
-         __sources.push(source->x);
+         sources.push(source->x);
       }
       source->reference_count++;
       return source;
@@ -4196,35 +4171,28 @@ h2_inline const char* h2_checkin::expect()
 h2_inline h2_row h2_mocker_base::argument(int seq)
 {
    h2_row row;
-   row += gray("(");
-   for (int i = 0; i < argument_types.size(); ++i) {
-      if (i) row += gray(", ");
-      if (seq == i)
-         row += color(argument_types[i], "red,bold");
-      else
-         row.push_back(argument_types[i]);
-   }
-   row += gray(")");
-   return row;
+   for (int i = 0; i < argument_types.size(); ++i)
+      row += (i ? gray(", ") : "") + color(argument_types[i], seq == i ? "red,bold" : "cyan");
+   return gray("(") + row + gray(")");
 }
 
 h2_inline h2_row h2_mocker_base::signature()
 {
-   return "MOCK" + gray("<") + delta(return_type, "cyan") + " " + delta(class_function, "green") + argument() + gray(">");
+   return "MOCK" + gray("<") + delta(return_type, "cyan") + " " + delta(srcfn, "green") + argument() + gray(">");
 }
 
 h2_inline void h2_mocker_base::mock()
 {
    x.out();
    h2_mock_g(this);
-   h2_stub_g(srcfp, dstfp, class_function, file, line);
+   h2_stub_g(srcfp, dstfp, srcfn, file, line);
 }
 
-h2_inline h2_fail* h2_mocker_base::times_check()
+h2_inline h2_fail* h2_mocker_base::check()
 {
    h2_fail* fails = nullptr;
    for (size_t i = 0; i < checkin_array.size(); ++i) {
-      h2_fail* fail = checkin_array[i].check(class_function, i, checkin_array.size(), nullptr, 0);
+      h2_fail* fail = checkin_array[i].check(srcfn, i, checkin_array.size(), nullptr, 0);
       if (fail) fail->seqno = i;
       h2_fail::append_subling(fails, fail);
       h2_assert_g();
@@ -4249,7 +4217,7 @@ h2_inline h2_fail* h2_mocks::clear(bool check)
 {
    h2_fail* fails = nullptr;
    h2_list_for_each_entry (p, mocks, h2_mocker_base, x) {
-      if (check) h2_fail::append_subling(fails, p->times_check());
+      if (check) h2_fail::append_subling(fails, p->check());
       p->reset();
       p->x.out();
    }
@@ -4686,7 +4654,8 @@ struct h2_stdio {
 
    static ssize_t write(int fd, const void* buf, size_t count)
    {
-      h2_libc::write(fd, buf, count);
+      h2::h2_stub_temporary_restore t((void*)LIBC__write);
+      LIBC__write(fd, buf, count);
       if (fd == fileno(stdout) || fd == fileno(stderr))
          I().capture_length += count;
       if ((I().stdout_capturable && fd == fileno(stdout)) || (I().stderr_capturable && fd == fileno(stderr)))
@@ -4781,7 +4750,7 @@ struct h2_stdio {
       static h2_stubs stubs;
 
 #if !defined _WIN32
-      stubs.add((void*)::write, (void*)test_write, "write", __FILE__, __LINE__);
+      stubs.add((void*)LIBC__write, (void*)test_write, "write", __FILE__, __LINE__);
       ::printf("\r"), ::fwrite("\r", 1, 1, stdout);
       stubs.clear();
 #endif
@@ -4810,8 +4779,8 @@ struct h2_stdio {
          std::clog.rdbuf(&sb_err); /* print to stderr */
 #endif
       }
+      stubs.add((void*)LIBC__write, (void*)write, "write", __FILE__, __LINE__);
 #if !defined _WIN32
-      stubs.add((void*)::write, (void*)write, "write", __FILE__, __LINE__);
       stubs.add((void*)::syslog, (void*)syslog, "syslog", __FILE__, __LINE__);
       stubs.add((void*)::vsyslog, (void*)vsyslog, "vsyslog", __FILE__, __LINE__);
 #endif
@@ -4852,11 +4821,6 @@ h2_inline h2_cout::~h2_cout()
       fail->explain = "COUT";
       h2_fail_g(fail);
    }
-}
-
-h2_inline size_t h2_cout::length()
-{
-   return h2_stdio::I().capture_length;
 }
 // source/tool/h2_timer.cpp
 
@@ -5625,6 +5589,19 @@ struct h2_fail_exception : h2_fail {
    }
 };
 
+struct h2_fail_symbol : h2_fail {
+   const h2_string symbol;
+   const h2_vector<h2_string> candidates;
+   h2_fail_symbol(const h2_string& symbol_, const h2_vector<h2_string>& candidates_, const h2_row& explain_, const char* file, int line) : h2_fail(explain_, nullptr, 0), symbol(symbol_), candidates(candidates_) {}
+   void print(int subling_index = 0, int child_index = 0) override
+   {
+      h2_color::printl(color(candidates.size() ? " Find multiple " : " Not found ", "yellow") + color(symbol, "bold,red"));
+      for (int i = 0; i < candidates.size(); ++i)
+         h2_color::printl("  " + gray(h2_stringify(i) + ". ") + color(candidates[i], "yellow"));
+      if (explain.width()) h2_color::printl(explain);
+   }
+};
+
 h2_inline h2_fail* h2_fail::new_normal(const h2_row& explain, const char* file, int line) { return new h2_fail_normal(explain, file, line); }
 h2_inline h2_fail* h2_fail::new_unexpect(const h2_row& expection, const h2_row& represent, const h2_row& explain, const char* file, int line) { return new h2_fail_unexpect(expection, represent, explain, file, line); }
 h2_inline h2_fail* h2_fail::new_strcmp(const h2_string& e_value, const h2_string& a_value, bool caseless, const h2_row& expection, const h2_row& explain, const char* file, int line) { return new h2_fail_strcmp(e_value, a_value, caseless, expection, explain, file, line); }
@@ -5637,6 +5614,7 @@ h2_inline h2_fail* h2_fail::new_asymmetric_free(const void* ptr, const char* who
 h2_inline h2_fail* h2_fail::new_overflow(const void* ptr, const int size, const void* violate_ptr, const char* action, const h2_vector<unsigned char>& spot, const h2_backtrace& bt_allocate, const h2_backtrace& bt_trample, const char* file, int line) { return new h2_fail_overflow(ptr, size, violate_ptr, action, spot, bt_allocate, bt_trample, file, line); }
 h2_inline h2_fail* h2_fail::new_use_after_free(const void* ptr, const void* violate_ptr, const char* action, const h2_backtrace& bt_allocate, const h2_backtrace& bt_release, const h2_backtrace& bt_use) { return new h2_fail_use_after_free(ptr, violate_ptr, action, bt_allocate, bt_release, bt_use); }
 h2_inline h2_fail* h2_fail::new_exception(const char* explain, const char* type, const h2_backtrace& bt_throw) { return new h2_fail_exception(explain, type, bt_throw); }
+h2_inline h2_fail* h2_fail::new_symbol(const h2_string& symbol, const h2_vector<h2_string>& candidates, const h2_row& explain, const char* file, int line) { return new h2_fail_symbol(symbol, candidates, explain, file, line); };
 // source/render/h2_report.cpp
 
 struct h2_report_impl {
@@ -5715,14 +5693,14 @@ struct h2_report_list : h2_report_impl {
 struct h2_report_console : h2_report_impl {
    void print_perfix(bool percentage)
    {
-      static size_t last = 0;
-      h2_color::prints("", h2_cout::length() == last ? "\r" : "\n");
+      static size_t s_last = 0;
+      h2_color::prints("", s_last == h2_stdio::I().capture_length || h2_stdio::I().buffer->endswith("\n") ? "\r" : "\n");
       if (percentage && O.execute_progress) {
          h2_color::prints("dark gray", "[");
          h2_color::prints("", "%3d%%", cases ? (int)(runner_case_index * 100 / cases) : 100);
          h2_color::prints("dark gray", "] ");
       }
-      last = h2_cout::length();
+      s_last = h2_stdio::I().capture_length;
    }
    const char* format_duration(long long ms)
    {

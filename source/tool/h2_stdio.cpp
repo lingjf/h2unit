@@ -7,7 +7,8 @@ struct h2_stdio {
 
    static ssize_t write(int fd, const void* buf, size_t count)
    {
-      h2_libc::write(fd, buf, count);
+      h2::h2_stub_temporary_restore t((void*)LIBC__write);
+      LIBC__write(fd, buf, count);
       if (fd == fileno(stdout) || fd == fileno(stderr))
          I().capture_length += count;
       if ((I().stdout_capturable && fd == fileno(stdout)) || (I().stderr_capturable && fd == fileno(stderr)))
@@ -102,7 +103,7 @@ struct h2_stdio {
       static h2_stubs stubs;
 
 #if !defined _WIN32
-      stubs.add((void*)::write, (void*)test_write, "write", __FILE__, __LINE__);
+      stubs.add((void*)LIBC__write, (void*)test_write, "write", __FILE__, __LINE__);
       ::printf("\r"), ::fwrite("\r", 1, 1, stdout);
       stubs.clear();
 #endif
@@ -131,8 +132,8 @@ struct h2_stdio {
          std::clog.rdbuf(&sb_err); /* print to stderr */
 #endif
       }
+      stubs.add((void*)LIBC__write, (void*)write, "write", __FILE__, __LINE__);
 #if !defined _WIN32
-      stubs.add((void*)::write, (void*)write, "write", __FILE__, __LINE__);
       stubs.add((void*)::syslog, (void*)syslog, "syslog", __FILE__, __LINE__);
       stubs.add((void*)::vsyslog, (void*)vsyslog, "vsyslog", __FILE__, __LINE__);
 #endif
@@ -173,9 +174,4 @@ h2_inline h2_cout::~h2_cout()
       fail->explain = "COUT";
       h2_fail_g(fail);
    }
-}
-
-h2_inline size_t h2_cout::length()
-{
-   return h2_stdio::I().capture_length;
 }

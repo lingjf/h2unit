@@ -21,11 +21,11 @@ struct h2_source : h2_libc {
 
 struct h2_sources {
    h2_singleton(h2_sources);
-   h2_list __sources;
+   h2_list sources;
 
    h2_source* __find(void* fp)
    {
-      h2_list_for_each_entry (p, __sources, h2_source, x)
+      h2_list_for_each_entry (p, sources, h2_source, x)
          if (p->source_fp == fp)
             return p;
       return nullptr;
@@ -33,9 +33,8 @@ struct h2_sources {
 
    void* __follow(void* fp)
    {
-#if defined __arm__ || defined __arm64__ || defined __aarch64__
+#if defined __arm64__ || defined __aarch64__
 #else
-
       for (int i = 0; i < 1; ++i) {  // follow PLT(Linux) or ILT (Incremental Link Table /Windows)
          if (__find(fp)) break;
          void* next = h2_cxa::follow_jmp(fp, 1);
@@ -46,10 +45,7 @@ struct h2_sources {
       return fp;
    }
 
-   h2_source* get(void* fp)
-   {
-      return __find(__follow(fp));
-   }
+   h2_source* get(void* fp) { return __find(__follow(fp)); }
 
    h2_source* add(void* fp, const char* fn, const char* file, int line)
    {
@@ -57,7 +53,7 @@ struct h2_sources {
       h2_source* source = __find(source_fp);
       if (!source) {
          source = new h2_source(source_fp, fn, file, line);
-         __sources.push(source->x);
+         sources.push(source->x);
       }
       source->reference_count++;
       return source;

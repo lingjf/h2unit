@@ -49,6 +49,12 @@
 #endif
 
 #if defined _WIN32
+#   define LIBC__write ::_write
+#else
+#   define LIBC__write ::write
+#endif
+
+#if defined _WIN32
 int main(int argc, const char** argv);
 #   if defined __H2UNIT_HPP__ || defined IMPORT_MAIN
 int main(int argc, const char** argv)

@@ -1,4 +1,15 @@
 
+template <typename R, typename T>
+static R h2_un(T t)
+{
+   union h2_un {
+      T t;
+      R r;
+   } u;
+   u.t = t;
+   return u.r;
+}
+
 template <typename U, typename = void>
 struct h2_decay_impl {
    typedef U type;
@@ -40,6 +51,11 @@ struct h2_sizeof_pointee<T, typename std::enable_if<std::is_void<typename std::r
 };
 
 template <typename T>
+inline T* h2_pointer_if(T& a) { return &a; }
+template <typename T>
+inline T* h2_pointer_if(T* a) { return a; }
+
+template <typename T>
 struct h2_is_ostreamable {
    template <typename U>
    static auto test(U* u) -> decltype(std::declval<std::ostream&>() << *u, std::true_type());
@@ -74,8 +90,3 @@ struct h2_is_container {
 
    static constexpr bool value = decltype(has_const_iterator<T>(nullptr))::value && decltype(has_begin<T>(nullptr))::value && decltype(has_end<T>(nullptr))::value;
 };
-
-template <typename T>
-inline T* h2_pointer_if(T& a) { return &a; }
-template <typename T>
-inline T* h2_pointer_if(T* a) { return a; }

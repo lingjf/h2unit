@@ -34,8 +34,8 @@ SUITE(libc_malloc)
 
       sprintf(t2, "[                                              \
                      {                                            \
-                        \"bytes\": 4096 * 257,                    \
-                        \"buddies\": [4096 * 257 - %d - (88+8)]   \
+                        \"bytes\": 4*1024*1024,                   \
+                        \"buddies\": [4*1024*1024 - %d - (88+8)]  \
                      }                                            \
                   ]",
               (int)sizeof(h2::h2_libc_malloc::block));
@@ -47,8 +47,8 @@ SUITE(libc_malloc)
 
       sprintf(t2, "[                                                          \
                      {                                                        \
-                        \"bytes\": 4096 * 257,                                \
-                        \"buddies\": [4096 * 257 - %d - (88+8) - (1008+8)]    \
+                        \"bytes\": 4*1024*1024,                               \
+                        \"buddies\": [4*1024*1024 - %d - (88+8) - (1008+8)]   \
                      }                                                        \
                   ]",
               (int)sizeof(h2::h2_libc_malloc::block));
@@ -60,8 +60,8 @@ SUITE(libc_malloc)
 
       sprintf(t2, "[                                                                   \
                      {                                                                 \
-                        \"bytes\": 4096 * 257,                                         \
-                        \"buddies\": [4096 * 257 - %d - (88+8) - (1008+8) - (208+8)]   \
+                        \"bytes\": 4*1024*1024,                                        \
+                        \"buddies\": [4*1024*1024 - %d - (88+8) - (1008+8) - (208+8)]  \
                      }                                                                 \
                   ]",
               (int)sizeof(h2::h2_libc_malloc::block));
@@ -70,8 +70,8 @@ SUITE(libc_malloc)
       M.free(p2);
       sprintf(t2, "[                                                                            \
                      {                                                                          \
-                        \"bytes\": 4096 * 257,                                                  \
-                        \"buddies\": [4096 * 257 - %d - (88+8) - (1008+8) - (208+8), (1008+8)]  \
+                        \"bytes\": 4*1024*1024,                                                 \
+                        \"buddies\": [4*1024*1024 - %d - (88+8) - (1008+8) - (208+8), (1008+8)] \
                      }                                                                          \
                   ]",
               (int)sizeof(h2::h2_libc_malloc::block));
@@ -80,8 +80,8 @@ SUITE(libc_malloc)
       M.free(p1);
       sprintf(t2, "[                                                                                     \
                      {                                                                                   \
-                        \"bytes\": 4096 * 257,                                                           \
-                        \"buddies\": [4096 * 257 - %d - (88+8) - (1008+8) - (208+8), (1008+8)+(88+8)]    \
+                        \"bytes\": 4*1024*1024,                                                          \
+                        \"buddies\": [4*1024*1024 - %d - (88+8) - (1008+8) - (208+8), (1008+8)+(88+8)]   \
                      }                                                                                   \
                   ]",
               (int)sizeof(h2::h2_libc_malloc::block));
@@ -90,8 +90,8 @@ SUITE(libc_malloc)
    M.free(p3);
    sprintf(t2, "[                                     \
                   {                                   \
-                     \"bytes\": 4096 * 257,           \
-                     \"buddies\": [4096 * 257 - %d]   \
+                     \"bytes\": 4*1024*1024,          \
+                     \"buddies\": [4*1024*1024 - %d]  \
                   }                                   \
                ]",
            (int)sizeof(h2::h2_libc_malloc::block));
