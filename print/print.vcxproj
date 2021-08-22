@@ -19,25 +19,20 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="product_c.c" />
-    <ClCompile Include="product_cpp.cpp" />
-    <ClCompile Include="test_basic.cpp" />
-    <ClCompile Include="test_compare.cpp" />
-    <ClCompile Include="test_json.cpp" />
-    <ClCompile Include="test_logic.cpp" />
-    <ClCompile Include="test_memory.cpp" />
-    <ClCompile Include="test_mock.cpp" />
-    <ClCompile Include="test_stub.cpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="product_c.h" />
-    <ClInclude Include="product_cpp.h" />
+    <ClCompile Include="../build/h2unit.cpp" />
+    <ClCompile Include="print_compare.cpp" />
+    <ClCompile Include="print_container.cpp" />
+    <ClCompile Include="print_exception.cpp" />
+    <ClCompile Include="print_json.cpp" />
+    <ClCompile Include="print_logic.cpp" />
+    <ClCompile Include="print_memory.cpp" />
+    <ClCompile Include="print_mock.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>
     <ProjectGuid>{C717EF0A-4007-426F-87B8-3A25C01BA28B}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
-    <RootNamespace>example</RootNamespace>
+    <RootNamespace>print</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />

@@ -11,6 +11,7 @@ struct h2_crash {
             return EXCEPTION_CONTINUE_EXECUTION;
          }
       }
+      h2_debug(0, "");
       return EXCEPTION_EXECUTE_HANDLER;
    }
 

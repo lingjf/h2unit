@@ -43,6 +43,8 @@ SUITE(socket utils)
    }
 }
 
+#if !defined __CYGWIN__
+
 SUITE(SOCK)
 {
    struct sockaddr_in local = {0};
@@ -64,8 +66,10 @@ SUITE(SOCK)
 
    Case(UDP sendto recvfrom)
    {
-      SOCK() // Start Hook Socket API
+      SOCK()  // Start Hook Socket API
       {
+         local.sin_port = htons(9501);
+
          int sock = socket(AF_INET, SOCK_DGRAM, 0);
          ret = bind(sock, (struct sockaddr*)&local, sizeof(local));
          OK(0, ret);
@@ -73,7 +77,7 @@ SUITE(SOCK)
          int sent = sendto(sock, "1234567890", 10, 0, (struct sockaddr*)&remote, sizeof(remote));
          OK(10, sent);
          // Fetch outgoing packet
-         Ptx("0.0.0.0:9527", "1.2.3.4:8888", Me("1234567890", 10), 10);
+         Ptx("0.0.0.0:9501", "1.2.3.4:8888", Me("1234567890", 10), 10);
 
          // Inject as received packet from 4.3.2.1:4444
          Pij("9876543210", 10, from = 4.3.2.1 : 4444);
@@ -99,6 +103,8 @@ SUITE(SOCK)
    {
       SOCK()
       {
+         local.sin_port = htons(9502);
+
          int sock = socket(AF_INET, SOCK_DGRAM, 0);
          ret = bind(sock, (struct sockaddr*)&local, sizeof(local));
          OK(0, ret);
@@ -135,7 +141,7 @@ SUITE(SOCK)
          msg2.msg_controllen = sizeof(b2);
          ssize_t r2 = sendmsg(sock, &msg2, 0);
          OK(10, r2);
-         Ptx("*:9527", "1.2.3.4:8888", Me("1234567890", 10));
+         Ptx("*:9502", "1.2.3.4:8888", Me("1234567890", 10));
 
          CloseSocket(sock);
       }
@@ -146,6 +152,8 @@ SUITE(SOCK)
    {
       SOCK()
       {
+         local.sin_port = htons(9503);
+
          int sock = socket(AF_INET, SOCK_STREAM, 0);
          ret = bind(sock, (struct sockaddr*)&local, sizeof(local));
          OK(0, ret);
@@ -160,7 +168,7 @@ SUITE(SOCK)
 
          int sent = send(sock2, "1234567890", 10, 0);
          OK(10, sent);
-         Ptx("*:9527", "1.2.3.4:8888", Me("1234567890", 10), 10);
+         Ptx("*:9503", "1.2.3.4:8888", Me("1234567890", 10), 10);
 
          Pij("9876543210",
              10,
@@ -178,6 +186,8 @@ SUITE(SOCK)
    {
       SOCK()
       {
+         local.sin_port = htons(9504);
+
          int sock = socket(AF_INET, SOCK_STREAM, 0);
          ret = bind(sock, (struct sockaddr*)&local, sizeof(local));
          OK(0, ret);
@@ -187,7 +197,7 @@ SUITE(SOCK)
 
          int sent = send(sock, "1234567890", 10, 0);
          OK(10, sent);
-         Ptx("*:9527", "1.2.3.4:8888", Me("1234567890", 10), 10);
+         Ptx("*:9504", "1.2.3.4:8888", Me("1234567890", 10), 10);
 
          Pij("9876543210", 10, from = "1.2.3.4:8888");
          int r1 = recv(sock, (char*)buffer, sizeof(buffer), 0);
@@ -198,3 +208,5 @@ SUITE(SOCK)
       }
    }
 }
+
+#endif

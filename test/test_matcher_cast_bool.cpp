@@ -1,5 +1,5 @@
 #include "../source/h2_unit.cpp"
-#if !defined __CYGWIN__
+#if !(defined __CYGWIN__ || defined __MINGW32__ || defined __MINGW64__)
 
 bool bool_true = true;
 const bool const_bool_true = true;

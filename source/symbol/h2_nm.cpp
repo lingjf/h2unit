@@ -1,5 +1,5 @@
 
-#if !defined _WIN32
+#if !defined _MSC_VER
 static inline void nm1(std::map<std::string, unsigned long long>*& symbols)
 {
    h2_memory::restores();
@@ -52,7 +52,7 @@ h2_inline int h2_nm::get_by_name(const char* name, h2_symbol* res[], int n)
    if (!name) return 0;
    int len = strlen(name);
    if (len == 0) return 0;
-#if defined _WIN32
+#if defined _MSC_VER
    char buffer[sizeof(SYMBOL_INFO) + 256];
    SYMBOL_INFO* symbol = (SYMBOL_INFO*)buffer;
    symbol->SizeOfStruct = sizeof(SYMBOL_INFO);
@@ -86,7 +86,7 @@ h2_inline int h2_nm::get_by_name(const char* name, h2_symbol* res[], int n)
 
 h2_inline h2_symbol* h2_nm::get_by_addr(unsigned long long addr)
 {
-#if defined _WIN32
+#if defined _MSC_VER
    char buffer[sizeof(SYMBOL_INFO) + 256];
    SYMBOL_INFO* symbol = (SYMBOL_INFO*)buffer;
    symbol->SizeOfStruct = sizeof(SYMBOL_INFO);
@@ -103,7 +103,7 @@ h2_inline h2_symbol* h2_nm::get_by_addr(unsigned long long addr)
 
 h2_inline unsigned long long h2_nm::get_mangle(const char* name)
 {
-#if defined _WIN32
+#if defined _MSC_VER
    char buffer[sizeof(SYMBOL_INFO) + 256];
    SYMBOL_INFO* symbol = (SYMBOL_INFO*)buffer;
    symbol->SizeOfStruct = sizeof(SYMBOL_INFO);

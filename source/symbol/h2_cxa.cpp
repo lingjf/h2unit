@@ -1,7 +1,7 @@
 
 h2_inline char* h2_cxa::demangle(const char* mangle_name, char* demangle_name, size_t length)
 {
-#if defined _WIN32
+#if defined _MSC_VER
    return (char*)mangle_name;
 #else
    int status = -1;

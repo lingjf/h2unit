@@ -5,7 +5,7 @@ struct h2_exception {
    h2_backtrace last_bt;
    char last_type[1024];
 
-#if defined _WIN32
+#if defined _MSC_VER || defined __MINGW32__ || defined __MINGW64__
    static void RaiseException(DWORD dwExceptionCode, DWORD dwExceptionFlags, DWORD nNumberOfArguments, const ULONG_PTR* lpArguments)
    {
       I().last_bt = h2_backtrace::dump(1);
@@ -26,7 +26,7 @@ struct h2_exception {
 
    static void initialize()
    {
-#if defined _WIN32
+#if defined _MSC_VER || defined __MINGW32__ || defined __MINGW64__
       I().stubs.add((void*)::RaiseException, (void*)RaiseException, "RaiseException", __FILE__, __LINE__);
 #else
       I().stubs.add((void*)abi::__cxa_throw, (void*)__cxa_throw, "__cxa_throw", __FILE__, __LINE__);

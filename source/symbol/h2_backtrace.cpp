@@ -1,10 +1,14 @@
 
-#if !defined _WIN32
+#if !defined _MSC_VER
 static inline char* addr2line(unsigned long long addr)
 {
    static char buf[1024];
    char cmd[256], *ret = nullptr;
-   sprintf(cmd, O.os == macOS ? "atos -o %s 0x%llx" : "addr2line -C -a -s -p -f -e %s -i %llx", O.path, addr);
+#   if defined __APPLE__
+   sprintf(cmd, "atos -o %s 0x%llx", O.path, addr);
+#   else
+   sprintf(cmd, "addr2line -C -a -s -p -f -e %s -i %llx", O.path, addr);
+#   endif
    FILE* f = ::popen(cmd, "r");
    if (f) {
       ret = ::fgets(buf, sizeof(buf), f);
@@ -49,7 +53,7 @@ h2_inline h2_backtrace& h2_backtrace::dump(int shift_)
 {
    static h2_backtrace s;
    s.shift = shift_;
-#if defined _WIN32 || defined __CYGWIN__
+#if defined _MSC_VER || defined __CYGWIN__ || defined __MINGW32__ || defined __MINGW64__
    s.count = CaptureStackBackTrace(0, sizeof(s.frames) / sizeof(s.frames[0]), s.frames, NULL);
 #else
    h2_memory::restores();
@@ -62,7 +66,7 @@ h2_inline h2_backtrace& h2_backtrace::dump(int shift_)
 h2_inline bool h2_backtrace::in(void* fps[]) const
 {
    bool ret = false;
-#if defined _WIN32
+#if defined _MSC_VER
    for (int i = shift; !ret && i < count; ++i) {
       char buffer[sizeof(SYMBOL_INFO) + 256];
       SYMBOL_INFO* symbol = (SYMBOL_INFO*)buffer;
@@ -73,7 +77,7 @@ h2_inline bool h2_backtrace::in(void* fps[]) const
             if ((unsigned long long)symbol->Address == (unsigned long long)fps[j])
                ret = true;
    }
-#elif defined __CYGWIN__
+#elif defined __CYGWIN__ || defined __MINGW32__ || defined __MINGW64__
    for (int i = shift; !ret && i < count; ++i)
       for (int j = 0; !ret && fps[j]; ++j)
          if ((unsigned long long)fps[j] <= (unsigned long long)frames[i] && (unsigned long long)frames[i] < 100 + (unsigned long long)fps[j])
@@ -97,7 +101,7 @@ h2_inline bool h2_backtrace::in(void* fps[]) const
 
 h2_inline void h2_backtrace::print(h2_vector<h2_string>& stacks) const
 {
-#if defined _WIN32
+#if defined _WIN32  // involve MINGW
    for (int i = shift; i < count; ++i) {
       char buffer[sizeof(SYMBOL_INFO) + 256];
       SYMBOL_INFO* symbol = (SYMBOL_INFO*)buffer;

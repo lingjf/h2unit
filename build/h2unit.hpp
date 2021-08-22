@@ -1,5 +1,5 @@
 ﻿
-/* v5.13 2021-08-21 11:37:28 */
+/* v5.13 2021-08-22 22:42:27 */
 /* https://github.com/lingjf/h2unit */
 /* Apache Licence 2.0 */
 
@@ -26,7 +26,7 @@
 #include <utility>     /* std::forward, std::pair */
 #include <type_traits> /* std::true_type */
 
-#if defined _WIN32
+#if defined _MSC_VER
 #   define WIN32_LEAN_AND_MEAN /* fix winsock.h winsock2.h conflict */
 #   define NOMINMAX            /* fix std::min/max conflict with windows::min/max */
 #   include <windows.h>
@@ -38,7 +38,9 @@
 #   define H2_LE "<="
 #   define H2_NE "!="
 #else
-#   include <alloca.h> /* alloca */
+#   if !(defined __MINGW32__ || defined __MINGW64__)
+#      include <alloca.h> /* alloca */
+#   endif
 #   define H2_SP "│"
 #   define H2_GE "≥"
 #   define H2_LE "≤"
@@ -50,7 +52,7 @@
 #   pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 #   pragma GCC diagnostic ignored "-Wint-to-pointer-cast"
 #   pragma GCC diagnostic ignored "-Wsign-compare"
-#elif defined _WIN32
+#elif defined _MSC_VER
 #   pragma warning(disable : 4005)  // macro-redefine
 #   pragma warning(disable : 4611)  // setjmp non-portable
 #endif
@@ -975,7 +977,7 @@ struct h2_symbol {
    h2_list x;
    char name[128];
    unsigned long long addr;
-   h2_symbol(char* _name, unsigned long long _addr) : addr(_addr) { strncpy(name, _name, 127); }
+   h2_symbol(const char* _name, unsigned long long _addr) : addr(_addr) { strncpy(name, _name, 127); }
 };
 
 struct h2_nm {
@@ -2492,7 +2494,7 @@ struct h2_fp<ClassType, ReturnType(ArgumentTypes...)> {
    static void* A(ReturnType (*f)(ArgumentTypes...)) { return (void*)f; }
    static void* B(ClassType* o, ReturnType (*f)(ArgumentTypes...)) { return (void*)f; }
 
-#if defined _WIN32
+#if defined _MSC_VER
    // https://github.com/microsoft/Detours
    // &C::f1 ILT+165(??_9C$BAAA) 00007FF7987210AA
    // &C::f2 ILT+410(??_9C$B7AA) 00007FF79872119F
@@ -3133,6 +3135,19 @@ struct h2_debugger {
          h2_backtrace::dump(shift).print(3);                                        \
       }                                                                             \
    } while (0)
+// source/stdio/h2_stdio.hpp
+
+struct h2_cout : h2_once {
+   const char* file;
+   int line;
+   h2_matcher<const char*> m;
+   const char *e, *type;
+   h2_cout(h2_matcher<const char*> m, const char* e, const char* type, const char* file, int line);
+   ~h2_cout();
+};
+
+#define __H2COUT(m, e, type, Q) for (h2::h2_cout Q(m, e, h2::ss(type), __FILE__, __LINE__); Q;)
+#define H2COUT(m, ...) __H2COUT(m, #m, #__VA_ARGS__, H2PP_UNIQUE())
 // source/net/h2_dns.hpp
 
 struct h2_dns {
@@ -3210,19 +3225,6 @@ struct h2_sock : h2_once {
 
 #define Ptx(...) h2::h2_sock::check(__FILE__, __LINE__, h2::ss(#__VA_ARGS__), __VA_ARGS__)
 #define Pij(_Packet, _Size, ...) h2::h2_sock::inject(_Packet, _Size, h2::ss(#__VA_ARGS__))
-// source/stdio/h2_stdio.hpp
-
-struct h2_cout : h2_once {
-   const char* file;
-   int line;
-   h2_matcher<const char*> m;
-   const char *e, *type;
-   h2_cout(h2_matcher<const char*> m, const char* e, const char* type, const char* file, int line);
-   ~h2_cout();
-};
-
-#define __H2COUT(m, e, type, Q) for (h2::h2_cout Q(m, e, h2::ss(type), __FILE__, __LINE__); Q;)
-#define H2COUT(m, ...) __H2COUT(m, #m, #__VA_ARGS__, H2PP_UNIQUE())
 // source/core/h2_case.hpp
 
 struct h2_case {
@@ -3538,18 +3540,6 @@ static inline void h2_fail_g(h2_fail* fail)
 
 #define H2GlobalCaseSetup() __H2GlobalCallback(global_case_setup, H2PP_UNIQUE())
 #define H2GlobalCaseCleanup() __H2GlobalCallback(global_case_cleanup, H2PP_UNIQUE())
-// source/assert/h2_timer.hpp
-
-struct h2_timer : h2_once {
-   const char* file;
-   int line;
-   long long ms, start;
-   h2_timer(long long ms, const char* file, int line);
-   ~h2_timer();
-};
-
-#define __H2PF(ms, Q) for (h2::h2_timer Q(ms, __FILE__, __LINE__); Q;)
-#define H2PF(ms) __H2PF(ms, H2PP_UNIQUE())
 // source/assert/h2_assert.hpp
 
 struct h2_defer_failure : h2_once {
@@ -3608,6 +3598,18 @@ static inline h2_ostringstream& h2_je(h2_defer_failure* d, h2_string e, h2_strin
 #define H2OK(...) __H2OK(H2PP_UNIQUE(), (#__VA_ARGS__), __VA_ARGS__)
 
 #define H2JE(...) H2PP_VARIADIC_CALL(__H2JE, H2PP_UNIQUE(), __VA_ARGS__)
+// source/assert/h2_timer.hpp
+
+struct h2_timer : h2_once {
+   const char* file;
+   int line;
+   long long ms, start;
+   h2_timer(long long ms, const char* file, int line);
+   ~h2_timer();
+};
+
+#define __H2PF(ms, Q) for (h2::h2_timer Q(ms, __FILE__, __LINE__); Q;)
+#define H2PF(ms) __H2PF(ms, H2PP_UNIQUE())
 // source/render/h2_report.hpp
 
 struct h2_report {

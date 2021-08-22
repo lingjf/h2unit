@@ -98,15 +98,16 @@ SUITE(harmless)
 
       // Popular extensions
 #if defined _WIN32
-      stricmp(t, "h2unit");
+      // stricmp(t, "h2unit");
 #else
-      strcasecmp(t, "h2unit");
+      // strcasecmp(t, "h2unit");
       strtok_r(t, ",", &p);
 #endif
    }
 
    Case(stdlib.h)
    {
+#if !(defined __MINGW32__ || defined __MINGW64__)
       getenv("LANG");
       system("pwd");
 
@@ -114,6 +115,7 @@ SUITE(harmless)
       rand();
       // bsearch();
       // qsort();
+#endif
    }
 
    Case(stdio.h)
@@ -136,7 +138,9 @@ SUITE(harmless)
       rename("./_this.dat", "./_that.dat");
       remove("./_that.dat");
       // tmpnam("./_dir"); // deprecated
+#if !(defined __MINGW32__ || defined __MINGW64__)
       fclose(tmpfile());
+#endif
    }
 
    Case(iostream)
@@ -262,7 +266,7 @@ SUITE(harmless)
 
 CASE(dbg)
 {
-#if defined _WIN32
+#if defined _MSC_VER
 
 #   if defined _DEBUG
    ::printf("_DEBUG is defined\n");
@@ -297,7 +301,9 @@ CASE(dbg)
    ::printf("when _CRTDBG_MAP_ALLOC is defined : &calloc=%p &_calloc_dbg=%p\n", calloc, _calloc_dbg);
 #   endif
 
-#else
+#endif
+
+#if defined __GNUC__
 
 #   if defined DEBUG
    ::printf("DEBUG is defined\n");

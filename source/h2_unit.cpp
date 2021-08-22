@@ -12,6 +12,10 @@
 #include <signal.h>  /* sigaction */
 #include <typeinfo>  /* std::typeid, std::type_info */
 
+#if defined __MINGW32__ || defined __MINGW64__
+#   include <winsock2.h> /* socket */
+#endif
+
 #if defined _WIN32 || defined __CYGWIN__
 #   include <windows.h>
 #   include <dbghelp.h> /* CaptureStackBackTrace, SymFromAddr */
@@ -19,18 +23,23 @@
 #   define strcasestr StrStrIA
 #endif
 
+#if !defined _MSC_VER
+#   include <cxxabi.h> /* abi::__cxa_demangle, abi::__cxa_throw */
+#endif
+
 #if defined _WIN32
 #   include <winsock2.h> /* socket */
 #   include <ws2tcpip.h> /* getaddrinfo */
-#   include <io.h>      /* _wirte */
+#   include <io.h>       /* _wirte */
 #   define fileno _fileno
 #   define socklen_t int
-#   pragma comment(lib, "Ws2_32.lib")
-#   pragma comment(lib, "Shlwapi.lib")
-#   pragma comment(lib, "Dbghelp.lib")
+#   if !(defined __MINGW32__ || defined __MINGW64__)
+#      pragma comment(lib, "Ws2_32.lib")
+#      pragma comment(lib, "Shlwapi.lib")
+#      pragma comment(lib, "Dbghelp.lib")
+#   endif
 #else
 #   include <arpa/inet.h>  /* inet_addr, inet_pton */
-#   include <cxxabi.h>     /* abi::__cxa_demangle, abi::__cxa_throw */
 #   include <fcntl.h>      /* fcntl */
 #   include <fnmatch.h>    /* fnmatch */
 #   include <libgen.h>     /* basename */
@@ -43,7 +52,7 @@
 #   include <syslog.h>     /* syslog, vsyslog */
 #   include <unistd.h>     /* sysconf */
 #   if !defined __CYGWIN__
-#      include <execinfo.h>    /* backtrace */
+#      include <execinfo.h> /* backtrace */
 #   endif
 #   if defined __GLIBC__
 #      include <malloc.h> /* __malloc_hook */
@@ -114,7 +123,7 @@ namespace h2 {
 #   include "memory/h2_override_linux.cpp"
 #elif defined __APPLE__
 #   include "memory/h2_override_macos.cpp"
-#elif defined _WIN32
+#elif defined _MSC_VER
 #   include "memory/h2_override_windows.cpp"
 #else
 #   include "memory/h2_override_cygwin.cpp"
@@ -135,9 +144,9 @@ namespace h2 {
 #include "mock/h2_mocker.cpp"
 #include "mock/h2_mocks.cpp"
 
+#include "stdio/h2_stdio.cpp"
 #include "net/h2_dns.cpp"
 #include "net/h2_socket.cpp"
-#include "stdio/h2_stdio.cpp"
 
 #include "core/h2_case.cpp"
 #include "core/h2_suite.cpp"

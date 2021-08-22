@@ -1,5 +1,5 @@
 #include "../source/h2_unit.cpp"
-#if !defined __CYGWIN__
+#if !(defined __CYGWIN__ || defined __MINGW32__ || defined __MINGW64__)
 
 #include "test_types.hpp"
 

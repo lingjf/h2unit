@@ -107,7 +107,7 @@ struct h2_fp<ClassType, ReturnType(ArgumentTypes...)> {
    static void* A(ReturnType (*f)(ArgumentTypes...)) { return (void*)f; }
    static void* B(ClassType* o, ReturnType (*f)(ArgumentTypes...)) { return (void*)f; }
 
-#if defined _WIN32
+#if defined _MSC_VER
    // https://github.com/microsoft/Detours
    // &C::f1 ILT+165(??_9C$BAAA) 00007FF7987210AA
    // &C::f2 ILT+410(??_9C$B7AA) 00007FF79872119F

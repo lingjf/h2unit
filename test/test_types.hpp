@@ -381,13 +381,13 @@ enum A_Enum { America = 1,
 
 typedef int (*A_FunctionPointer)(int a, int b);
 
-#if defined _WIN32
+#if defined _MSC_VER
 #   define CloseSocket closesocket
 #else
 #   define CloseSocket close
 #endif
 
-#if defined _WIN32
+#if defined _MSC_VER
 #   define _long_long "__int64"
 #   define _enum "enum "
 #   define _struct "struct "

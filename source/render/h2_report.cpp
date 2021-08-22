@@ -75,8 +75,11 @@ struct h2_report_list : h2_report_impl {
 struct h2_report_console : h2_report_impl {
    void print_perfix(bool percentage)
    {
+      // int a = h2_stdio::I().capture_length;
+      // int b = strlen(h2_stdio::I().buffer->c_str());
+      // || h2_stdio::I().buffer->endswith("\n") 
       static size_t s_last = 0;
-      h2_color::prints("", s_last == h2_stdio::I().capture_length || h2_stdio::I().buffer->endswith("\n") ? "\r" : "\n");
+      h2_color::prints("", s_last == h2_stdio::I().capture_length ? "\r" : "\n");
       if (percentage && O.execute_progress) {
          h2_color::prints("dark gray", "[");
          h2_color::prints("", "%3d%%", cases ? (int)(runner_case_index * 100 / cases) : 100);
@@ -199,12 +202,12 @@ struct h2_report_console : h2_report_impl {
             h2_color::prints("dark gray", ", ");
             h2_color::prints("", "%s", format_duration(suite_cost));
          }
-         h2_color::prints("", "\n");
       }
    }
    void on_case_start(h2_suite* s, h2_case* c) override
    {
       h2_report_impl::on_case_start(s, c);
+      print_perfix(true);
    }
    void print_title(const char* s, const char* c, const char* file, int line)
    {
@@ -230,7 +233,6 @@ struct h2_report_console : h2_report_impl {
          print_perfix(true);
          h2_color::prints("yellow", s->name ? "Todo   " : "TODO   ");
          print_title(s->name, c->name, c->file, c->line);
-         h2_color::prints("", "\n");
          return;
       }
       switch (c->status) {
@@ -251,7 +253,6 @@ struct h2_report_console : h2_report_impl {
                h2_color::prints("dark gray", ",");
                h2_color::prints("", " %s", format_duration(case_cost));
             }
-            h2_color::prints("", "\n");
          } else if (!O.debug)
             print_perfix(true);
          break;
@@ -259,10 +260,9 @@ struct h2_report_console : h2_report_impl {
          print_perfix(true);
          h2_color::prints("bold,red", "Failed ");
          print_title(s->name, c->name, c->file, c->line);
-         h2_color::prints("", "\n");
          if (O.compact) break;
-         if (c->fails) c->fails->foreach([](h2_fail* fail, int subling_index, int child_index) { fail->print(subling_index, child_index); });
          h2_color::prints("", "\n");
+         if (c->fails) c->fails->foreach([](h2_fail* fail, int subling_index, int child_index) { fail->print(subling_index, child_index); });
          break;
       }
    }

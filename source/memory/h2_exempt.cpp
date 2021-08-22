@@ -37,6 +37,8 @@ h2_inline void h2_exempt::setup()
    add_by_fp((void*)::fclose);
    add_by_fp((void*)::strftime);
    add_by_fp((void*)::gmtime_s);
+   add_by_fp((void*)::_gmtime32);
+   add_by_fp((void*)::_gmtime64);
    add_by_fp((void*)::_gmtime32_s);
    add_by_fp((void*)::_gmtime64_s);
    add_by_fp(h2_un<void*>(&std::type_info::name));
@@ -48,9 +50,8 @@ h2_inline void h2_exempt::setup()
    add_by_fp((void*)::sscanf);
    add_by_fp((void*)::sprintf);
    add_by_fp((void*)::vsnprintf);
-   add_by_fp((void*)abi::__cxa_demangle);
-   add_by_fp((void*)abi::__cxa_throw);
-#   if defined __APPLE__
+
+#   if defined __APPLE__ && defined __clang__
    add_by_fp((void*)::snprintf);
    add_by_fp((void*)::snprintf_l);
    add_by_fp((void*)::strftime_l);
@@ -58,11 +59,17 @@ h2_inline void h2_exempt::setup()
    add_by_fp((void*)::strtold);
    add_by_fp((void*)::strtof_l);
 #   endif
+#endif
+
+#if defined __GNUC__
+   add_by_fp((void*)abi::__cxa_demangle);
+   add_by_fp((void*)abi::__cxa_throw);
 #   if !defined __clang__
    add_by_fp((void*)::__cxa_allocate_exception);
 #   endif
-   add_by_fp((void*)h2_pattern::regex_match);
 #endif
+
+   add_by_fp((void*)h2_pattern::regex_match);
 }
 
 h2_inline void h2_exempt::add_by_name(const char* fn)

@@ -135,7 +135,7 @@ SUITE(type name)
    }
 }
 
-#if !defined _WIN32
+#if !defined _MSC_VER
 SUITE(demangle)
 {
    Case(demangle namespace class member function)

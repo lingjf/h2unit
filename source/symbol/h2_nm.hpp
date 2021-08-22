@@ -3,7 +3,7 @@ struct h2_symbol {
    h2_list x;
    char name[128];
    unsigned long long addr;
-   h2_symbol(char* _name, unsigned long long _addr) : addr(_addr) { strncpy(name, _name, 127); }
+   h2_symbol(const char* _name, unsigned long long _addr) : addr(_addr) { strncpy(name, _name, 127); }
 };
 
 struct h2_nm {

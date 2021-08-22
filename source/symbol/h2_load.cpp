@@ -26,7 +26,7 @@ h2_inline void* h2_load::vtable_to_ptr(unsigned long long addr)
 
 h2_inline void* h2_load::addr_to_ptr(unsigned long long addr)
 {
-#if defined _WIN32
+#if defined _MSC_VER || defined __CYGWIN__
    return (void*)addr;
 #else
    if (I().text_offset == -1) I().text_offset = get_load_text_offset();
@@ -36,7 +36,7 @@ h2_inline void* h2_load::addr_to_ptr(unsigned long long addr)
 
 h2_inline unsigned long long h2_load::ptr_to_addr(void* ptr)
 {
-#if defined _WIN32
+#if defined _MSC_VER || defined __CYGWIN__
    return (unsigned long long)ptr;
 #else
    if (I().text_offset == -1) I().text_offset = get_load_text_offset();

@@ -19,7 +19,7 @@
 #include <utility>     /* std::forward, std::pair */
 #include <type_traits> /* std::true_type */
 
-#if defined _WIN32
+#if defined _MSC_VER
 #   define WIN32_LEAN_AND_MEAN /* fix winsock.h winsock2.h conflict */
 #   define NOMINMAX            /* fix std::min/max conflict with windows::min/max */
 #   include <windows.h>
@@ -31,7 +31,9 @@
 #   define H2_LE "<="
 #   define H2_NE "!="
 #else
-#   include <alloca.h> /* alloca */
+#   if !(defined __MINGW32__ || defined __MINGW64__)
+#      include <alloca.h> /* alloca */
+#   endif
 #   define H2_SP "│"
 #   define H2_GE "≥"
 #   define H2_LE "≤"
@@ -43,7 +45,7 @@
 #   pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 #   pragma GCC diagnostic ignored "-Wint-to-pointer-cast"
 #   pragma GCC diagnostic ignored "-Wsign-compare"
-#elif defined _WIN32
+#elif defined _MSC_VER
 #   pragma warning(disable : 4005)  // macro-redefine
 #   pragma warning(disable : 4611)  // setjmp non-portable
 #endif
@@ -100,15 +102,15 @@ namespace h2 {
 #include "memory/h2_exempt.hpp"       // -
 #include "memory/h2_memory.hpp"       // failure, fp
 #include "except/h2_debug.hpp"        // option
+#include "stdio/h2_stdio.hpp"         //
 #include "net/h2_dns.hpp"             //
 #include "net/h2_socket.hpp"          // stub, failure, matcher
-#include "stdio/h2_stdio.hpp"         //
 #include "core/h2_case.hpp"           // failure, stub, mock, dns, socket
 #include "core/h2_suite.hpp"          // case, stub, mock
 #include "core/h2_runner.hpp"         // suite, case, failure, stub, mock, option, debug
 #include "core/h2_core.hpp"           //
-#include "assert/h2_timer.hpp"        // failure
 #include "assert/h2_assert.hpp"       // failure, matcher
+#include "assert/h2_timer.hpp"        // failure
 #include "render/h2_report.hpp"       // runner, suite, case
 }  // namespace h2
 
