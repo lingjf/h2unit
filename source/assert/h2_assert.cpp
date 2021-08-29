@@ -1,4 +1,3 @@
-
 static inline const char* find_outer_comma(const char* expression)
 {
    char stack[1024] = {'\0'};

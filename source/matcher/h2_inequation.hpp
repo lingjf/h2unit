@@ -1,8 +1,7 @@
-
 template <typename E>
 struct h2_matches_ge : h2_matches {
    const E e;
-   explicit h2_matches_ge(const E& _e) : e(_e) {}
+   explicit h2_matches_ge(const E& e_) : e(e_) {}
 
    template <typename A>
    h2_fail* matches(const A& a, int, bool caseless, bool dont) const
@@ -19,7 +18,7 @@ struct h2_matches_ge : h2_matches {
 template <typename E>
 struct h2_matches_gt : h2_matches {
    const E e;
-   explicit h2_matches_gt(const E& _e) : e(_e) {}
+   explicit h2_matches_gt(const E& e_) : e(e_) {}
 
    template <typename A>
    h2_fail* matches(const A& a, int, bool caseless, bool dont) const
@@ -36,7 +35,7 @@ struct h2_matches_gt : h2_matches {
 template <typename E>
 struct h2_matches_le : h2_matches {
    const E e;
-   explicit h2_matches_le(const E& _e) : e(_e) {}
+   explicit h2_matches_le(const E& e_) : e(e_) {}
 
    template <typename A>
    h2_fail* matches(const A& a, int, bool caseless, bool dont) const
@@ -53,7 +52,7 @@ struct h2_matches_le : h2_matches {
 template <typename E>
 struct h2_matches_lt : h2_matches {
    const E e;
-   explicit h2_matches_lt(const E& _e) : e(_e) {}
+   explicit h2_matches_lt(const E& e_) : e(e_) {}
 
    template <typename A>
    h2_fail* matches(const A& a, int, bool caseless, bool dont) const

@@ -1,4 +1,3 @@
-
 h2_inline h2_rows h2_json::format(const h2_string& json_string)
 {
    h2_json_tree tree(json_string.c_str());

@@ -1,4 +1,3 @@
-
 struct h2_exempt {
    h2_singleton(h2_exempt);
    void* fps[10000];

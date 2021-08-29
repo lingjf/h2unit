@@ -1,4 +1,3 @@
-
 h2_inline h2_fail* h2_matches_regex::matches(const h2_string& a, int n, bool caseless, bool dont) const
 {
    if (h2_pattern::regex_match(e.c_str(), a.c_str(), caseless) == !dont) return nullptr;

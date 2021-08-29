@@ -1,8 +1,7 @@
-
 template <typename Matcher>
 struct h2_not_matches : h2_matches {
    const Matcher m; /* h2_polymorphic_matcher or immediate value or h2_matches */
-   explicit h2_not_matches(const Matcher& _m) : m(_m) {}
+   explicit h2_not_matches(const Matcher& m_) : m(m_) {}
 
    template <typename A>
    h2_fail* matches(const A& a, int n, bool caseless, bool dont) const
@@ -19,7 +18,7 @@ template <typename Matcher1, typename Matcher2>
 struct h2_and_matches : h2_matches {
    const Matcher1 m1;
    const Matcher2 m2;
-   explicit h2_and_matches(const Matcher1& _m1, const Matcher2& _m2) : m1(_m1), m2(_m2) {}
+   explicit h2_and_matches(const Matcher1& m1_, const Matcher2& m2_) : m1(m1_), m2(m2_) {}
 
    template <typename A>
    h2_fail* matches(const A& a, int n, bool caseless, bool dont) const
@@ -47,7 +46,7 @@ template <typename Matcher1, typename Matcher2>
 struct h2_or_matches : h2_matches {
    const Matcher1 m1;
    const Matcher2 m2;
-   explicit h2_or_matches(const Matcher1& _m1, const Matcher2& _m2) : m1(_m1), m2(_m2) {}
+   explicit h2_or_matches(const Matcher1& m1_, const Matcher2& m2_) : m1(m1_), m2(m2_) {}
 
    template <typename A>
    h2_fail* matches(const A& a, int n, bool caseless, bool dont) const

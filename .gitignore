@@ -10,7 +10,7 @@
 *.map
 *.exe
 
-.last_order
+.previous_order
 
 *.su
 *.idb

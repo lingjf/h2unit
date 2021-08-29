@@ -1,4 +1,3 @@
-
 struct h2_cout : h2_once {
    const char* file;
    int line;
@@ -8,5 +7,5 @@ struct h2_cout : h2_once {
    ~h2_cout();
 };
 
-#define __H2COUT(m, e, type, Q) for (h2::h2_cout Q(m, e, h2::ss(type), __FILE__, __LINE__); Q;)
-#define H2COUT(m, ...) __H2COUT(m, #m, #__VA_ARGS__, H2PP_UNIQUE())
+#define __H2COUT(Matcher_, expression, type, Q) for (h2::h2_cout Q(Matcher_, expression, h2::ss(type), __FILE__, __LINE__); Q;)
+#define H2COUT(Matcher_, ...) __H2COUT(Matcher_, #Matcher_, #__VA_ARGS__, H2PP_UNIQUE())

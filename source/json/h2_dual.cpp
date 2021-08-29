@@ -1,4 +1,3 @@
-
 struct h2_json_dual : h2_libc {  // combine two node into a dual
    bool key_equal = false, match = false;
    int e_type = h2_json_node::t_absent, a_type = h2_json_node::t_absent;

@@ -1,11 +1,10 @@
-
 struct h2_leaky {
    struct leak {
       void* ptr;
       h2_backtrace bt;
       h2_vector<std::pair<int, int>> sizes;
 
-      leak(void* _ptr, const h2_backtrace& _bt) : ptr(_ptr), bt(_bt) {}
+      leak(void* ptr_, const h2_backtrace& bt_) : ptr(ptr_), bt(bt_) {}
 
       h2_vector<std::pair<int, int>>::iterator find(int size)
       {

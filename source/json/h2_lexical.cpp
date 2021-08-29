@@ -1,4 +1,3 @@
-
 struct h2_json_lexical {
    static void new_lexis(h2_vector<h2_string>& lexical, const char* start, int size)
    {

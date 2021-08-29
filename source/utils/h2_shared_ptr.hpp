@@ -1,4 +1,3 @@
-
 template <typename T>
 struct h2_shared_ptr {
    h2_shared_ptr() = default;

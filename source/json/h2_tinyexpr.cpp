@@ -1,9 +1,5 @@
-// TINYEXPR - Tiny recursive descent parser and evaluation engine in C
-// Copyright (c) 2015-2018 Lewis Van Winkle
-// http://CodePlea.com
-
+// TINYEXPR - Tiny recursive descent parser and evaluation engine in C; Copyright (c) 2015-2018 Lewis Van Winkle
 /* clang-format off */
-
 struct tinyexpr
 {
     static int TYPE_MASK(int type) { return type & 0x0000001F; }

@@ -1,4 +1,3 @@
-
 struct h2_backtrace {
    int count = 0, shift = 0;
    void* frames[100];

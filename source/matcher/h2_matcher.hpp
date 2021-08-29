@@ -1,4 +1,3 @@
-
 template <typename T>
 struct h2_matcher_impl : h2_matches {
    virtual h2_fail* matches(T a, int n, bool caseless, bool dont) const = 0;
@@ -23,7 +22,7 @@ struct h2_matcher : h2_matches {
 template <typename Matches>
 struct h2_polymorphic_matcher : h2_matches {
    const Matches m;
-   explicit h2_polymorphic_matcher(const Matches& _matches) : m(_matches) {}
+   explicit h2_polymorphic_matcher(const Matches& m_) : m(m_) {}
 
    template <typename T>
    operator h2_matcher<T>() const { return h2_matcher<T>(new internal_impl<const T&>(m), 0); }
@@ -31,7 +30,7 @@ struct h2_polymorphic_matcher : h2_matches {
    template <typename T>
    struct internal_impl : h2_matcher_impl<T>, h2_libc {
       const Matches m;
-      explicit internal_impl(const Matches& _matches) : m(_matches) {}
+      explicit internal_impl(const Matches& m_) : m(m_) {}
       h2_fail* matches(T a, int n = 0, bool caseless = false, bool dont = false) const override { return m.matches(a, n, caseless, dont); }
       h2_row expection(bool caseless, bool dont) const override { return m.expection(caseless, dont); }
    };

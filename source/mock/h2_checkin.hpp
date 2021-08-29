@@ -1,11 +1,9 @@
-
-/* 考勤 ; 函数被调次数期望 */
-struct h2_checkin {
+struct h2_checkin { /* 考勤 ; 函数被调次数期望 */
    int call = 0;
    const int least, most;
    const h2_string expr;
 
-   h2_checkin(int _least, int _most, const h2_string& _expr) : least(_least), most(_most), expr(_expr) {}
+   h2_checkin(int least_, int most_, const h2_string& expr_) : least(least_), most(most_), expr(expr_) {}
 
    bool insufficient(/*不够*/) const { return call < least; }
    bool is_satisfied(/*满足*/) const { return least <= call && call <= most; }

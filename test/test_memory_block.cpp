@@ -146,4 +146,12 @@ SUITE(BLOCK)
          c1 = malloc(8);
       }
    }
+
+   Case(unmem)
+   {
+      BLOCK(unmem)
+      {
+         c1 = malloc(8);
+      }
+   }
 }

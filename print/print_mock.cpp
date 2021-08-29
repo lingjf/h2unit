@@ -1,5 +1,4 @@
 #include "../build/h2unit.hpp"
-#include <time.h>
 
 int foo(int a, const char* b)
 {

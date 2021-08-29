@@ -1,4 +1,3 @@
-
 struct h2_report {
    h2_singleton(h2_report);
    static void initialize();

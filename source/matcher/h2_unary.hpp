@@ -1,4 +1,3 @@
-
 struct h2_matches_any : h2_matches {
    template <typename A>
    h2_fail* matches(const A& a, int, bool, bool) const { return nullptr; }
@@ -7,7 +6,7 @@ struct h2_matches_any : h2_matches {
 
 struct h2_matches_null : h2_matches {
    const bool reverse;
-   explicit h2_matches_null(bool _reverse) : reverse(_reverse) {}
+   explicit h2_matches_null(bool reverse_) : reverse(reverse_) {}
    template <typename A>
    h2_fail* matches(const A& a, int, bool, bool dont) const
    {
@@ -39,7 +38,7 @@ struct h2_matches_boolean : h2_matches {
 template <typename Matcher>
 struct h2_pointee_matches : h2_matches {
    const Matcher m;
-   explicit h2_pointee_matches(Matcher _m) : m(_m) {}
+   explicit h2_pointee_matches(Matcher m_) : m(m_) {}
 
    template <typename SmartPointer>
    struct PointeeOf {

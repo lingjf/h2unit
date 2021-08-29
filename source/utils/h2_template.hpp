@@ -1,4 +1,3 @@
-
 template <typename R, typename T>
 static R h2_un(T t)
 {

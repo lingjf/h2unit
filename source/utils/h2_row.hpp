@@ -1,4 +1,3 @@
-
 struct h2_row : h2_vector<h2_string> {
    h2_row() {}
    h2_row(const char* a) : h2_vector<h2_string>({a}) {}

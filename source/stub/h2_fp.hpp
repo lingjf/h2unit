@@ -1,4 +1,3 @@
-
 /* clang-format off */
 template <typename T> static void h2_destructible(...) {}
 template <typename T> static auto h2_destructible(T* o) -> typename std::enable_if<std::is_destructible<T>::value && !std::is_abstract<T>::value, void>::type { o->~T(); }

@@ -1,4 +1,3 @@
-
 h2_inline unsigned h2_row::width(bool ignore_indent) const
 {
    unsigned w = 0;

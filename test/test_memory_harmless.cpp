@@ -1,6 +1,8 @@
 #include "../source/h2_unit.cpp"
 #include "test_types.hpp"
+
 #if !defined _WIN32
+#   include <sys/time.h>
 #   include <pthread.h>
 #endif
 
@@ -34,10 +36,9 @@ SUITE(harmless)
       struct tm* t4 = gmtime(&t3);
       struct tm t5;
       ctime(&t3);
-#if defined __arm__ || defined __arm64__ || defined __aarch64__
-#else
-      asctime(t4);  // deprecated
-#endif
+
+      // asctime(t4);  // deprecated, arm64 and openSUSE crash in memory check mode
+
 #if !defined _WIN32
       struct timezone tz;
       gettimeofday(&tv, &tz);
@@ -305,10 +306,10 @@ CASE(dbg)
 
 #if defined __GNUC__
 
-#   if defined DEBUG
-   ::printf("DEBUG is defined\n");
+#   if defined NDEBUG
+   ::printf("NDEBUG is defined\n");
 #   else
-   ::printf("DEBUG is undefined\n");
+   ::printf("NDEBUG is undefined\n");
 #   endif
 
 #endif

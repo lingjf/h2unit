@@ -1,4 +1,3 @@
-
 struct h2_once {
    unsigned long c = 0;
    operator bool() { return !c++; }
@@ -24,8 +23,7 @@ struct h2_extract {
 static inline const char* ss(const char* a = "") { return a ? a : ""; }
 
 /* clang-format off */
-
-#define h2_singleton(_Class) static _Class& I() { static _Class i; return i; }
+#define h2_singleton(Class_) static Class_& I() { static Class_ i; return i; }
 
 #define H2Foreach(_Macro_x, ...) H2PP_FOREACH(, _H2ForeachMacro, (_Macro_x), __VA_ARGS__)
 #define _H2ForeachMacro(_Args, i, x) H2PP_REMOVE_PARENTHESES(_Args)(x)

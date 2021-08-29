@@ -1,4 +1,3 @@
-// https://www.codeproject.com/Articles/25198/Generic-Thunk-with-5-combinations-of-Calling-Conve
 // https://github.com/microsoft/Detours/blob/master/src/detours.cpp
 
 #if defined __i386__ || defined _M_IX86

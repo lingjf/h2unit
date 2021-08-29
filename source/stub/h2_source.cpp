@@ -1,15 +1,14 @@
-
 struct h2_source : h2_libc {
    h2_list x;
    unsigned char origin_opcode[32];
    void* source_fp;
    int reference_count = 0;
-   h2_source(void* _source_fp, const char* fn, const char* file, int line) : source_fp(_source_fp)
+   h2_source(void* source_fp_, const char* fn, const char* file, int line) : source_fp(source_fp_)
    {
       if (!h2_e9_save(source_fp, origin_opcode)) {
-         h2_color::prints("yellow", "STUB %s by %s() failed %s:%d\n", fn, O.os == windows ? "VirtualProtect" : "mprotect", file, line);
-         if (O.os == macOS) ::printf("try: "), h2_color::prints("green", "printf '\\x07' | dd of=%s bs=1 seek=160 count=1 conv=notrunc\n", O.path);
-         if (O.os == Linux) ::printf("try: "), h2_color::prints("green", "objcopy --writable-text %s\n", O.path);
+         h2_color::prints("yellow", "STUB %s by %s() failed %s:%d\n", fn, O.os == 'W' ? "VirtualProtect" : "mprotect", file, line);
+         if (O.os == 'm') ::printf("try: "), h2_color::prints("green", "printf '\\x07' | dd of=%s bs=1 seek=160 count=1 conv=notrunc\n", O.path);
+         if (O.os == 'L') ::printf("try: "), h2_color::prints("green", "objcopy --writable-text %s\n", O.path);
       }
    }
    ~h2_source() { h2_e9_reset(source_fp, origin_opcode); }

@@ -1,4 +1,3 @@
-
 template <typename T, typename M>
 struct h2_matcher_cast_impl {
    static h2_matcher<T> cast(const M& from) { return do_cast(from, std::is_convertible<M, h2_matcher<T>>{}, std::is_convertible<M, T>{}); }

@@ -1,4 +1,3 @@
-
 struct h2_load {
    h2_singleton(h2_load);
    long long text_offset = -1;

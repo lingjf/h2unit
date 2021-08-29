@@ -1,4 +1,3 @@
-
 struct h2_socket {
    h2_singleton(h2_socket);
 

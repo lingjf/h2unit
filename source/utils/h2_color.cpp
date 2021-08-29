@@ -1,18 +1,17 @@
-
 struct h2_shell {
    h2_singleton(h2_shell);
    char current[8][32];
+   unsigned cww;
 
-   h2_shell() { memset(current, 0, sizeof(current)); }
-
-   static unsigned width()
+   h2_shell()
    {
+      memset(current, 0, sizeof(current));
+      cww = 120;
 #if defined _WIN32
-      return 120;  //TODO get PowerShell width
+      //TODO get PowerShell width
 #else
       struct winsize w;
-      if (-1 == ioctl(STDOUT_FILENO, TIOCGWINSZ, &w)) return 120;
-      return w.ws_col < 16 || 256 < w.ws_col ? 120 : w.ws_col;
+      if (-1 != ioctl(STDOUT_FILENO, TIOCGWINSZ, &w)) cww = w.ws_col;
 #endif
    }
 

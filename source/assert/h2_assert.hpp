@@ -1,4 +1,3 @@
-
 struct h2_defer_failure : h2_once {
    const char* assert_type;
    const char *e_expression, *a_expression, *expression;

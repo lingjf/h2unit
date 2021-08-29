@@ -1,4 +1,3 @@
-
 #define __H2SUITE(suite_name, suite_test)                                                         \
    static void suite_test(h2::h2_suite*, h2::h2_case*);                                           \
    static h2::h2_suite H2PP_UNIQUE(s_suite)(h2::ss(suite_name), &suite_test, __FILE__, __LINE__); \
@@ -149,14 +148,14 @@
    void Qc()
 #define H2CASESS_T(...) __H2CASESS_T(H2PP_UNIQUE(f_casesst), __VA_ARGS__)
 
-#define __H2GlobalCallback(name, Q)                       \
-   namespace {                                            \
-   static struct Q {                                      \
-      Q() { h2::h2_runner::I().name##s.push_back(name); } \
-      static void name();                                 \
-   } H2PP_UNIQUE();                                       \
-   }                                                      \
-   void Q::name()
+#define __H2GlobalCallback(Scope, Q)                        \
+   namespace {                                              \
+   static struct Q {                                        \
+      Q() { h2::h2_runner::I().Scope##s.push_back(Scope); } \
+      static void Scope();                                  \
+   } H2PP_UNIQUE();                                         \
+   }                                                        \
+   void Q::Scope()
 
 #define H2GlobalSetup() __H2GlobalCallback(global_setup, H2PP_UNIQUE())
 #define H2GlobalCleanup() __H2GlobalCallback(global_cleanup, H2PP_UNIQUE())

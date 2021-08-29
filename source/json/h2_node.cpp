@@ -1,4 +1,3 @@
-
 struct h2_json_node : h2_libc {
    static constexpr int t_absent = 0;
    static constexpr int t_null = 1;

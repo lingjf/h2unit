@@ -1,4 +1,3 @@
-
 struct h2_cxa {
    static char* demangle(const char* mangle_name, char* demangle_name = (char*)alloca(1024), size_t length = 1024);
    static void* follow_jmp(void* fp, int n = 32);

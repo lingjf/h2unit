@@ -1,4 +1,3 @@
-
 static inline void h2_assert_g();
 
 template <typename MatcherTuple, typename ArgumentTypeTuple, std::size_t I>

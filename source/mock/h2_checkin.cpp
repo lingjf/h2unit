@@ -1,4 +1,3 @@
-
 h2_inline h2_fail* h2_checkin::check(const char* func, int index, int total, const char* file, int line)
 {
    if (is_satisfied() || is_saturated()) return nullptr;

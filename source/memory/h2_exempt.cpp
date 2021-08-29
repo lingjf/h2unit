@@ -1,4 +1,3 @@
-
 struct h2_exempt_stub {
    static time_t mktime(struct tm* timeptr) { return 1325347200; }
    static char* asctime(const struct tm* timeptr) { return (char*)"SUN JAN 1 00:00:00 2012\n"; }

@@ -1,4 +1,3 @@
-
 #if defined __linux
 #   if defined(__GNUC__) && (defined(__i386) || defined(__x86_64))
 #      define h2_raise_trap() asm volatile("int $3")

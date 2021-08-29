@@ -1,11 +1,10 @@
-
 struct h2_libc_malloc {
    h2_singleton(h2_libc_malloc);
 
    struct buddy {
       long long size;
       h2_list x;
-      buddy(long long _size) : size(_size) {}
+      buddy(long long size_) : size(size_) {}
       bool join_right(buddy* b) { return ((char*)this) + size == (char*)b; }
       bool join_left(buddy* b) { return ((char*)b) + b->size == (char*)this; }
    };

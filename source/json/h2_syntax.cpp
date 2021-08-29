@@ -1,4 +1,3 @@
-
 struct h2_json_syntax {
    int i = 0;
    const h2_vector<h2_string>& lexical;

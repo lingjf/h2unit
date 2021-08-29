@@ -1,4 +1,3 @@
-
 h2_inline h2_string& h2_string::sprintf(const char* format, ...)
 {
    char* alloca_str;

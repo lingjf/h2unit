@@ -1,4 +1,3 @@
-
 struct h2_timer : h2_once {
    const char* file;
    int line;

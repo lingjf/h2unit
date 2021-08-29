@@ -1,4 +1,3 @@
-
 inline void add_between(h2_list* thus, h2_list* prev, h2_list* next)
 {
    next->prev = thus;

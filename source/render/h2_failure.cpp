@@ -1,4 +1,3 @@
-
 h2_inline void h2_fail::append_subling(h2_fail*& fail, h2_fail* n)
 {
    if (!fail) {
@@ -73,34 +72,34 @@ struct h2_fail_unexpect : h2_fail {
    h2_fail_unexpect(const h2_row& expection_ = {}, const h2_row& represent_ = {}, const h2_row& explain_ = {}, const char* file_ = nullptr, int line_ = 0) : h2_fail(explain_, file_, line_), expection(expection_), represent(represent_) {}
    void print_OK1(h2_row& row)
    {
-      h2_row a = h2_row(a_expression).acronym(O.verbose ? 10000 : 30, 3).gray_quote().brush("cyan");
+      h2_row a = h2_row(a_expression).acronym(O.verbose >= 2 ? 10000 : 30, 3).gray_quote().brush("cyan");
       row += "OK" + gray("(") + a + gray(")") + " is " + color("false", "bold,red");
    }
    void print_OK2(h2_row& row)
    {
       h2_row e, a;
       if (!expection.width()) {
-         e = h2_row(e_expression).acronym(O.verbose ? 10000 : 30, 3).gray_quote().brush("green");
+         e = h2_row(e_expression).acronym(O.verbose >= 2 ? 10000 : 30, 3).gray_quote().brush("green");
       } else if (is_synonym(e_expression, expection.string())) {
-         e = expection.acronym(O.verbose ? 10000 : 30, 3).brush("green");
+         e = expection.acronym(O.verbose >= 2 ? 10000 : 30, 3).brush("green");
       } else {
-         e = h2_row(e_expression).acronym(O.verbose ? 10000 : 30, 3).gray_quote().brush("cyan") + gray("==>") + expection.acronym(O.verbose ? 10000 : 30, 3).brush("green");
+         e = h2_row(e_expression).acronym(O.verbose >= 2 ? 10000 : 30, 3).gray_quote().brush("cyan") + gray("==>") + expection.acronym(O.verbose ? 10000 : 30, 3).brush("green");
       }
 
       if (!represent.width()) {
-         a = h2_row(a_expression).acronym(O.verbose ? 10000 : 30, 3).gray_quote().brush("bold,red");
+         a = h2_row(a_expression).acronym(O.verbose >= 2 ? 10000 : 30, 3).gray_quote().brush("bold,red");
       } else if (is_synonym(a_expression, represent.string()) || !a_expression.length()) {
-         a = represent.acronym(O.verbose ? 10000 : 30, 3).brush("bold,red");
+         a = represent.acronym(O.verbose >= 2 ? 10000 : 30, 3).brush("bold,red");
       } else {
-         a = represent.acronym(O.verbose ? 10000 : 30, 3).brush("bold,red") + gray("<==") + h2_row(a_expression).acronym(O.verbose ? 10000 : 30, 3).gray_quote().brush("cyan");
+         a = represent.acronym(O.verbose >= 2 ? 10000 : 30, 3).brush("bold,red") + gray("<==") + h2_row(a_expression).acronym(O.verbose ? 10000 : 30, 3).gray_quote().brush("cyan");
       }
 
       row += "OK" + gray("(") + e + ", " + a + gray(")");
    }
    void print_JE(h2_row& row)
    {
-      h2_row e = h2_row(e_expression.unquote('\"').unquote('\'')).acronym(O.verbose ? 10000 : 30, 2).brush("cyan");
-      h2_row a = h2_row(a_expression.unquote('\"').unquote('\'')).acronym(O.verbose ? 10000 : 30, 2).brush("bold,red");
+      h2_row e = h2_row(e_expression.unquote('\"').unquote('\'')).acronym(O.verbose >= 2 ? 10000 : 30, 2).brush("cyan");
+      h2_row a = h2_row(a_expression.unquote('\"').unquote('\'')).acronym(O.verbose >= 2 ? 10000 : 30, 2).brush("bold,red");
       row += "JE" + gray("(") + e + ", " + a + gray(")");
    }
    void print_Inner(h2_row& row)
@@ -108,11 +107,11 @@ struct h2_fail_unexpect : h2_fail {
       if (0 <= seqno) row.printf("dark gray", "%d. ", seqno);
       if (expection.width()) {
          row.printf("", "%sexpect is ", comma_if(c++));
-         row += expection.acronym(O.verbose ? 10000 : 30, 3).brush("green");
+         row += expection.acronym(O.verbose >= 2 ? 10000 : 30, 3).brush("green");
       }
       if (represent.width()) {
          row.printf("", "%sactual is ", comma_if(c++));
-         row += represent.acronym(O.verbose ? 10000 : 30, 3).brush("bold,red");
+         row += represent.acronym(O.verbose >= 2 ? 10000 : 30, 3).brush("bold,red");
       }
    }
 
@@ -162,7 +161,7 @@ struct h2_fail_strcmp : h2_fail_unexpect {
             fmt_char(a_value[i], eq, "red", a_row);
          }
 
-         h2_color::printl(h2_layout::unified(e_row, a_row, "expect", "actual", O.terminal_width));
+         h2_color::printl(h2_layout::unified(e_row, a_row, "expect", "actual", h2_shell::I().cww));
       }
    }
 };
@@ -178,7 +177,7 @@ struct h2_fail_strfind : h2_fail_unexpect {
          h2_row e_row, a_row;
          for (size_t i = 0; i < e_value.size(); ++i) fmt_char(e_value[i], true, "", e_row);
          for (size_t i = 0; i < a_value.size(); ++i) fmt_char(a_value[i], true, "", a_row);
-         h2_color::printl(h2_layout::seperate(e_row, a_row, "expect", "actual", O.terminal_width));
+         h2_color::printl(h2_layout::seperate(e_row, a_row, "expect", "actual", h2_shell::I().cww));
       }
    }
 };
@@ -205,7 +204,7 @@ struct h2_fail_json : h2_fail_unexpect {
          h2_color::prints("red", "> ");
          h2_color::printl(a_rows);
       } else {
-         h2_rows rows = h2_layout::split(e_rows, a_rows, "expect", "actual", 0, 'd', O.terminal_width - 1);
+         h2_rows rows = h2_layout::split(e_rows, a_rows, "expect", "actual", 0, 'd', h2_shell::I().cww - 1);
          for (auto& row : rows) row.indent(1);
          h2_color::printl(rows);
       }
@@ -223,13 +222,13 @@ struct h2_fail_memcmp : h2_fail_unexpect {
       int bytes_per_row = 0;
       switch (width) {
       case 1: print_bits(e_rows, a_rows, bytes_per_row = 4); break;
-      case 8: print_ints<unsigned char>(e_rows, a_rows, bytes_per_row = (O.terminal_width < 108 ? 8 : 16)); break;
+      case 8: print_ints<unsigned char>(e_rows, a_rows, bytes_per_row = (h2_shell::I().cww < 108 ? 8 : 16)); break;
       case 16: print_ints<unsigned short>(e_rows, a_rows, bytes_per_row = 16); break;
       case 32: print_ints<unsigned int>(e_rows, a_rows, bytes_per_row = 16); break;
       case 64: print_ints<unsigned long long>(e_rows, a_rows, bytes_per_row = 16); break;
       default: break;
       }
-      h2_color::printl(h2_layout::split(e_rows, a_rows, "expect", "actual", bytes_per_row * 8 / width, 'x', O.terminal_width));
+      h2_color::printl(h2_layout::split(e_rows, a_rows, "expect", "actual", bytes_per_row * 8 / width, 'x', h2_shell::I().cww));
    }
 
    void print_bits(h2_rows& e_rows, h2_rows& a_rows, int bytes_per_row)
@@ -308,7 +307,7 @@ struct h2_fail_memory_leak : h2_fail_memory {
       h2_row l;
       for (auto& p : sizes) {
          l += gray(comma_if(i++));
-         if (!O.verbose && n < i) {
+         if (O.verbose <= 1 && n < i) {
             l += gray("..." + h2_stringify(sizes.size() - n));
             break;
          }

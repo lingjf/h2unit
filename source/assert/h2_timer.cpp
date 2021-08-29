@@ -1,4 +1,3 @@
-
 h2_inline h2_timer::h2_timer(long long ms_, const char* file_, int line_) : file(file_), line(line_), ms(ms_)
 {
    start = ::clock();

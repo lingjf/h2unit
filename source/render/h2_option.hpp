@@ -1,41 +1,33 @@
-
-static constexpr unsigned Linux = 0x0101;
-static constexpr unsigned macOS = 0x0102;
-static constexpr unsigned windows = 0x0200;
-
 struct h2_option {
    h2_singleton(h2_option);
 
 #if defined __linux
-   static constexpr unsigned os = Linux;
+   static constexpr char os = 'L';
 #elif defined __APPLE__
-   static constexpr unsigned os = macOS;
-#elif defined _WIN32 || defined __CYGWIN__
-   static constexpr unsigned os = windows;
+   static constexpr char os = 'm';
+#elif defined _WIN32 || defined __CYGWIN__ // +MinGW
+   static constexpr char os = 'W';
 #endif
 
    char args[256];
    const char* path;
    const char* debug = nullptr;
-   bool verbose = false;
-   bool compact = false;
    bool colorful = true;
-   bool execute_progress = true;
+   bool percent_progressing = true;
    bool fold_json = true;
    bool copy_paste_json = false;
-   bool only_execute_fails = false;
-   bool shuffle_order = false;
+   bool only_previous_failed = false;
+   bool shuffle_cases = false;
    bool memory_check = true;
-   bool exception_fails = false;
-   char list_cases = '\0';
+   bool exception_as_fail = false;
+   bool list_cases = false;
    int break_after_fails = 0;
-   int rounds = 1;
-   char junit[256]{'\0'};
-   char tap[256]{'\0'};
+   int run_rounds = 1;
+   int verbose = 1;
+   char junit_path[256]{'\0'};
+   char tap_path[256]{'\0'};
    std::vector<const char*> includes, excludes;
-   unsigned terminal_width;
 
-   h2_option();
    void parse(int argc, const char** argv);
    bool filter(const char* suitename, const char* casename, const char* file, int line) const;
 };

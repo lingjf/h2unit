@@ -1,4 +1,3 @@
-
 struct h2_json_select {
    struct value {
       int index;

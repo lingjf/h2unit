@@ -1,4 +1,3 @@
-
 #include "h2_unit.hpp"
 
 #include <cassert>   /* assert */
@@ -10,79 +9,81 @@
 #include <memory>    /* std::allocator */
 #include <regex>     /* std::regex */
 #include <signal.h>  /* sigaction */
+#include <time.h>    /* clock */
 #include <typeinfo>  /* std::typeid, std::type_info */
-
-#if defined __MINGW32__ || defined __MINGW64__
-#   include <winsock2.h> /* socket */
-#endif
-
-#if defined _WIN32 || defined __CYGWIN__
-#   include <windows.h>
-#   include <dbghelp.h> /* CaptureStackBackTrace, SymFromAddr */
-#   include <shlwapi.h> /* StrStrIA */
-#   define strcasestr StrStrIA
-#endif
 
 #if !defined _MSC_VER
 #   include <cxxabi.h> /* abi::__cxa_demangle, abi::__cxa_throw */
 #endif
 
-#if defined _WIN32
+#if defined __linux || defined __APPLE__  // -MSCV -Cygwin -MinGW
+#   include <execinfo.h>                  /* backtrace, backtrace_symbols */
+#endif
+
+#if defined __GLIBC__
+#   include <malloc.h> /* __malloc_hook */
+#endif
+
+#if defined _WIN32     // +MinGW
+#   ifndef NOMINMAX    // MinGW already defined
+#      define NOMINMAX // fix std::min/max conflict with windows::min/max
+#   endif
 #   include <winsock2.h> /* socket */
+#   include <windows.h>
 #   include <ws2tcpip.h> /* getaddrinfo */
-#   include <io.h>       /* _wirte */
+#   include <io.h>       /* _write */
 #   define fileno _fileno
 #   define socklen_t int
-#   if !(defined __MINGW32__ || defined __MINGW64__)
-#      pragma comment(lib, "Ws2_32.lib")
-#      pragma comment(lib, "Shlwapi.lib")
-#      pragma comment(lib, "Dbghelp.lib")
-#   endif
-#else
+#   define ssize_t int
+#endif
+
+#if defined __CYGWIN__
+#   include <windows.h>
+#endif
+
+#if defined _WIN32 || defined __CYGWIN__ // +MinGW
+#   include <dbghelp.h> /* CaptureStackBackTrace, SymFromAddr */
+#   include <shlwapi.h> /* StrStrIA */
+#   define strcasestr StrStrIA
+#endif
+
+#if defined _MSC_VER
+#   pragma comment(lib, "Ws2_32.lib")
+#   pragma comment(lib, "Shlwapi.lib")
+#   pragma comment(lib, "Dbghelp.lib")
+#endif
+
+#if defined __linux || defined __APPLE__ || defined __CYGWIN__
 #   include <arpa/inet.h>  /* inet_addr, inet_pton */
 #   include <fcntl.h>      /* fcntl */
 #   include <fnmatch.h>    /* fnmatch */
-#   include <libgen.h>     /* basename */
 #   include <netdb.h>      /* getaddrinfo, gethostbyname */
 #   include <sys/ioctl.h>  /* ioctl */
 #   include <sys/mman.h>   /* mprotect, mmap */
 #   include <sys/socket.h> /* sockaddr */
-#   include <sys/time.h>   /* gettimeofday */
 #   include <sys/types.h>  /* size_t */
 #   include <syslog.h>     /* syslog, vsyslog */
 #   include <unistd.h>     /* sysconf */
-#   if !defined __CYGWIN__
-#      include <execinfo.h> /* backtrace */
-#   endif
-#   if defined __GLIBC__
-#      include <malloc.h> /* __malloc_hook */
-#   elif defined __APPLE__
-#      include <AvailabilityMacros.h>
-#      include <malloc/malloc.h> /* malloc_zone_t */
-#   endif
 #endif
 
-#if defined _WIN32
+#if defined __APPLE__
+#   include <AvailabilityMacros.h>
+#   include <malloc/malloc.h> /* malloc_zone_t */
+#endif
+
+#if defined _WIN32 // +MinGW
 #   define LIBC__write ::_write
 #else
 #   define LIBC__write ::write
 #endif
 
-#if defined _WIN32 || defined __CYGWIN__
+#if defined _WIN32 || defined __CYGWIN__ // +MinGW
 int main(int argc, const char** argv);
 #   if defined __H2UNIT_HPP__ || defined IMPORT_MAIN
-int main(int argc, const char** argv)
-{
-   h2::h2_option::I().parse(argc, argv);
-   return h2::h2_runner::I().execute();
-}
+int main(int argc, const char** argv) { return h2::h2_runner::I().main(argc, argv); }
 #   endif
 #else
-__attribute__((weak)) int main(int argc, const char** argv)
-{
-   h2::h2_option::I().parse(argc, argv);
-   return h2::h2_runner::I().execute();
-}
+__attribute__((weak)) int main(int argc, const char** argv) { return h2::h2_runner::I().main(argc, argv); }
 #endif
 
 namespace h2 {
@@ -125,7 +126,7 @@ namespace h2 {
 #   include "memory/h2_override_macos.cpp"
 #elif defined _MSC_VER
 #   include "memory/h2_override_windows.cpp"
-#else
+#else // +MinGW
 #   include "memory/h2_override_cygwin.cpp"
 #endif
 #include "memory/h2_memory.cpp"

@@ -1,4 +1,3 @@
-
 struct h2_stdio {
    h2_singleton(h2_stdio);
    h2_string* buffer;
@@ -139,11 +138,11 @@ struct h2_stdio {
 #endif
    }
 
-   void start_capture(bool _stdout, bool _stderr, bool _syslog)
+   void start_capture(bool stdout_capturable_, bool stderr_capturable_, bool syslog_capturable_)
    {
-      stdout_capturable = _stdout;
-      stderr_capturable = _stderr;
-      syslog_capturable = _syslog;
+      stdout_capturable = stdout_capturable_;
+      stderr_capturable = stderr_capturable_;
+      syslog_capturable = syslog_capturable_;
       buffer->clear();
    }
 

@@ -1,75 +1,32 @@
-
-#if defined _WIN32
-static inline void usage()
-{
-   ::printf("\033[33m \033[0m                \033[32mh2unit \033[31m%-5s \033[34;4mhttps://github.com/lingjf/h2unit\033[0m \033[0;36m               \033[33m \033[0m\n", H2PP_STR(H2UNIT_VERSION));
-
-   char b[] = "  -v             Verbose output                                                \n"
-              "  -q             Compact output without failure detail                         \n"
-              "  -l             List out suites and cases                                     \n"
-              "  -s             Shuffle cases and execute in random order                     \n"
-              "  -b [n]         Breaking test once n (default 1) failures occurred            \n"
-              "  -o             Only execute last failed cases                                \n"
-              "  -p             Hide execute progressing                                      \n"
-              "  -r [n]         Repeat run n rounds (default 2) when no failure               \n"
-              "  -c             Output in black-white color style                             \n"
-              "  -f             Fold simple JSON object or array                              \n"
-              "  -y             Copy-paste JSON C/C++ source code                             \n"
-              "  -m             Run cases without memory check                                \n"
-              "  -x             Throw exception is considered as failure                      \n"
-              "  -d             Debug with gdb once failure occurred                          \n"
-              "  -j [path]      Generate junit report, default path is junit.xml              \n"
-              "  -i [patterns]  include filter case/suite/file by matching substr/wildcard    \n"
-              "  -e [patterns]  exclude filter case/suite/file by matching substr/wildcard    \n";
-   ::printf("%s", b);
-}
-#else
 static inline void usage()
 {
    ::printf("\033[33m╭─────────────────────────────────────────────────────────────────────────────╮\033[0m\n");
    ::printf("\033[33m│\033[0m                \033[32mh2unit \033[31m%-5s \033[34;4mhttps://github.com/lingjf/h2unit\033[0m \033[0;36m               \033[33m│\033[0m\n", H2PP_STR(H2UNIT_VERSION));
    ::printf("\033[33m╰─────────────────────────────────────────────────────────────────────────────╯\033[0m\n");
 
-   char b[] = "┌────────┬───────────┬────────────────────────────────────────────────────────┐\n"
-              "│ Option │ Parameter │ Description                                            │\n"
-              "├────────┼───────────┼────────────────────────────────────────────────────────┤\n"
-              "│ -v     │           │ Verbose output                                         │\n"
-              "├────────┼───────────┼────────────────────────────────────────────────────────┤\n"
-              "│ -q     │           │ Compact output without failure detail                  │\n"
-              "├────────┼───────────┼────────────────────────────────────────────────────────┤\n"
-              "│ -l     │           │ List out suites and cases                              │\n"
-              "├────────┼───────────┼────────────────────────────────────────────────────────┤\n"
-              "│ -s     │           │ Shuffle cases and execute in random order              │\n"
-              "├────────┼───────────┼────────────────────────────────────────────────────────┤\n"
-              "│ -b[n]  │    [n]    │ Breaking test once n (default 1) failures occurred     │\n"
-              "├────────┼───────────┼────────────────────────────────────────────────────────┤\n"
-              "│ -o     │           │ Only execute last failed cases                         │\n"
-              "├────────┼───────────┼────────────────────────────────────────────────────────┤\n"
-              "│ -p     │           │ Hide execute progressing                               │\n"
-              "├────────┼───────────┼────────────────────────────────────────────────────────┤\n"
-              "│ -r[n]  │    [n]    │ Repeat run n rounds (default 2) when no failure        │\n"
-              "├────────┼───────────┼────────────────────────────────────────────────────────┤\n"
-              "│ -c     │           │ Output in black-white color style                      │\n"
-              "├────────┼───────────┼────────────────────────────────────────────────────────┤\n"
-              "│ -f     │           │ Fold simple JSON object or array                       │\n"
-              "├────────┼───────────┼────────────────────────────────────────────────────────┤\n"
-              "│ -y     │           │ Copy-paste JSON C/C++ source code                      │\n"
-              "├────────┼───────────┼────────────────────────────────────────────────────────┤\n"
-              "│ -m     │           │ Run cases without memory check                         │\n"
-              "├────────┼───────────┼────────────────────────────────────────────────────────┤\n"
-              "│ -x     │           │ Throw exception is considered as failure               │\n"
-              "├────────┼───────────┼────────────────────────────────────────────────────────┤\n"
-              "│ -d     │           │ Debug with gdb once failure occurred                   │\n"
-              "├────────┼───────────┼────────────────────────────────────────────────────────┤\n"
-              "│ -j     │  [path]   │ Generate junit report, default path is junit.xml       │\n"
-              "├────────┼───────────┼─────────┬──────────────────────────────────────────────┤\n"
-              "│ -i     │           │ include │ Filter case, suite or file by matching       │\n"
-              "├────────┤  patterns ├─────────┤ case-insensitive name with substr/wildcard   │\n"
-              "│ -e     │           │ exclude │ patterns which separated by space            │\n"
-              "└────────┴───────────┴─────────┴──────────────────────────────────────────────┘\n";
+#define H2_USAGE_SP "\033[90m│\033[0m"
+#define H2_USAGE_BR "\033[90m├─────┼───────────┼───────────────────────────────────────────────────────────┤\033[0m\n"
+   char b[] = "\033[90m┌─────┬───────────┬───────────────────────────────────────────────────────────┐\033[0m\n"
+              H2_USAGE_SP " -\033[36ml\033[0m  " H2_USAGE_SP "           " H2_USAGE_SP " \033[36ml\033[0mist out suites and cases                                 " H2_USAGE_SP "\n" H2_USAGE_BR
+              H2_USAGE_SP " -\033[36mm\033[0m  " H2_USAGE_SP "           " H2_USAGE_SP " Test cases without \033[36mm\033[0memory check                           " H2_USAGE_SP "\n" H2_USAGE_BR
+              H2_USAGE_SP " -\033[36ms\033[0m  " H2_USAGE_SP "           " H2_USAGE_SP " \033[36ms\033[0mhuffle cases then test in random order                   " H2_USAGE_SP "\n" H2_USAGE_BR
+              H2_USAGE_SP " -\033[36mb\033[0m  " H2_USAGE_SP "    \033[90m[\033[0mn\033[90m]\033[0m    " H2_USAGE_SP " \033[36mb\033[0mreak test once n (default 1) cases failed                " H2_USAGE_SP "\n" H2_USAGE_BR
+              H2_USAGE_SP " -\033[36mf\033[0m  " H2_USAGE_SP "           " H2_USAGE_SP " Only test previous \033[36mf\033[0mailed cases                           " H2_USAGE_SP "\n" H2_USAGE_BR
+              H2_USAGE_SP " -\033[36mp\033[0m  " H2_USAGE_SP "           " H2_USAGE_SP " Hide test percentage \033[36mp\033[0mrogressing                          " H2_USAGE_SP "\n" H2_USAGE_BR
+              H2_USAGE_SP " -\033[36mr\033[0m  " H2_USAGE_SP "    \033[90m[\033[0mn\033[90m]\033[0m    " H2_USAGE_SP " Repeat test n (default 2) \033[36mr\033[0mounds                          " H2_USAGE_SP "\n" H2_USAGE_BR
+              H2_USAGE_SP " -\033[36mc\033[0m  " H2_USAGE_SP "           " H2_USAGE_SP " Output in black-white \033[36mc\033[0molor style                         " H2_USAGE_SP "\n" H2_USAGE_BR
+              H2_USAGE_SP " -\033[36mF\033[0m  " H2_USAGE_SP "           " H2_USAGE_SP " \033[36mF\033[0mold simple JSON object or array                          " H2_USAGE_SP "\n" H2_USAGE_BR
+              H2_USAGE_SP " -\033[36my\033[0m  " H2_USAGE_SP "           " H2_USAGE_SP " Cop\033[36my\033[0m-paste JSON C/C++ source code                         " H2_USAGE_SP "\n" H2_USAGE_BR
+              H2_USAGE_SP " -\033[36mx\033[0m  " H2_USAGE_SP "           " H2_USAGE_SP " Thrown e\033[36mx\033[0mception is considered as failure                 " H2_USAGE_SP "\n" H2_USAGE_BR
+              H2_USAGE_SP " -\033[36mv\033[0m  " H2_USAGE_SP "    \033[90m[\033[0mn\033[90m]\033[0m    " H2_USAGE_SP " \033[36mv\033[0merbose output, 0:compact 1:normal 2:check all 3:default  " H2_USAGE_SP "\n" H2_USAGE_BR
+              H2_USAGE_SP " -\033[36md\033[0m  " H2_USAGE_SP "           " H2_USAGE_SP " \033[36md\033[0mebug with gdb once failure occurred                      " H2_USAGE_SP "\n" H2_USAGE_BR
+              H2_USAGE_SP " -\033[36mj\033[0m  " H2_USAGE_SP "  \033[90m[\033[0mpath\033[90m]\033[0m   " H2_USAGE_SP " Generate \033[36mj\033[0munit report, default is <executable>.junit.xml  " H2_USAGE_SP "\n"
+              "\033[90m├─────┼───────────┼─────────┬─────────────────────────────────────────────────┤\033[0m\n"
+              H2_USAGE_SP " -\033[36mi\033[0m  " H2_USAGE_SP "  pattern  " H2_USAGE_SP " \033[36mi\033[0mnclude " H2_USAGE_SP " Filter case, suite or file by substr/wildcard   " H2_USAGE_SP "\n"
+              H2_USAGE_SP " -\033[36me\033[0m  " H2_USAGE_SP " \033[90m[\033[0m pattern\033[90m]\033[0m" H2_USAGE_SP " \033[36me\033[0mxclude " H2_USAGE_SP " matching name with patterns case-insensitively  " H2_USAGE_SP "\n"
+              "\033[90m└─────┴───────────┴─────────┴─────────────────────────────────────────────────┘\033[0m\n";
    ::printf("%s", b);
 }
-#endif
 
 struct getopt {
    int argc;
@@ -79,15 +36,8 @@ struct getopt {
 
    getopt(int argc_, const char** args_) : argc(argc_), args(args_) {}
 
-   const char* extract_next()
-   {
-      return ++i < argc ? args[i] : nullptr;
-   }
-
-   const char* extract_string()
-   {
-      return (i + 1 < argc && args[i + 1] && args[i + 1][0] != '-') ? args[++i] : nullptr;
-   }
+   const char* extract_next() { return ++i < argc ? args[i] : nullptr; }
+   const char* extract_string() { return (i + 1 < argc && args[i + 1] && args[i + 1][0] != '-') ? args[++i] : nullptr; }
 
    const char next_option()
    {
@@ -123,14 +73,6 @@ struct getopt {
    }
 };
 
-h2_inline h2_option::h2_option()
-{
-   terminal_width = h2_shell::width();
-#if defined _WIN32
-   SymInitialize(GetCurrentProcess(), NULL, TRUE);
-#endif
-}
-
 h2_inline void h2_option::parse(int argc, const char** argv)
 {
    path = argv[0];
@@ -140,31 +82,23 @@ h2_inline void h2_option::parse(int argc, const char** argv)
    for (const char* t;;) {
       switch (get.next_option()) {
       case '\0': return;
-      case 'v': verbose = true; break;
-      case 'q': compact = !compact; break;
       case 'c': colorful = !colorful; break;
-      case 's': shuffle_order = !shuffle_order; break;
-      case 'o': only_execute_fails = true; break;
-      case 'f': fold_json = !fold_json; break;
-      case 'p': execute_progress = !execute_progress; break;
+      case 's': shuffle_cases = true; break;
+      case 'f': only_previous_failed = true; break;
+      case 'F': fold_json = !fold_json; break;
+      case 'p': percent_progressing = !percent_progressing; break;
       case 'y': copy_paste_json = true; break;
       case 'm': memory_check = !memory_check; break;
-      case 'x': exception_fails = !exception_fails; break;
-      case 'l': list_cases = 'l'; break;
-      case 'L': list_cases = 'L'; break;
-      case 'b':
-         break_after_fails = 1;
-         get.extract_number(break_after_fails);
-         break;
-      case 'r':
-         rounds = 2;
-         get.extract_number(rounds);
-         break;
+      case 'x': exception_as_fail = true; break;
+      case 'l': list_cases = true; break;
+      case 'b': break_after_fails = 1, get.extract_number(break_after_fails); break;
+      case 'r': run_rounds = 2, get.extract_number(run_rounds); break;
+      case 'v': verbose = 9, get.extract_number(verbose); break;
       case 'd': debug = "gdb new"; break;
       case 'D': debug = "gdb attach"; break;
       case 'j':
-         sprintf(junit, "%s.xml", path);
-         if ((t = get.extract_string())) strcpy(junit, t);
+         sprintf(junit_path, "%s.junit.xml", path);
+         if ((t = get.extract_string())) strcpy(junit_path, t);
          break;
       case 'i':
          while ((t = get.extract_string())) includes.push_back(t);

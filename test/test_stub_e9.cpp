@@ -1,6 +1,5 @@
 #include "../source/h2_unit.cpp"
 #include "test_types.hpp"
-#include <time.h>
 
 static time_t STUB_time(time_t* x)
 {

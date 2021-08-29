@@ -1,43 +1,50 @@
-
 #if !defined _MSC_VER
-static inline void nm1(std::map<std::string, unsigned long long>*& symbols)
+static inline void nm_mangle(std::map<std::string, unsigned long long>*& symbols)
 {
-   h2_memory::restores();
+   h2_memory::hook(false);
    char nm[256], line[2048], addr[128], type, name[2048];
    symbols = new std::map<std::string, unsigned long long>();
-   sprintf(nm, "nm %s %s", O.os == macOS ? "-U" : "--defined-only", O.path);
+#if defined __APPLE__
+   sprintf(nm, "nm -U %s", O.path);
+#else
+   sprintf(nm, "nm --defined-only %s", O.path);
+#endif
    FILE* f = ::popen(nm, "r");
    if (f) {
       while (::fgets(line, sizeof(line) - 1, f)) {
          if (3 != sscanf(line, "%s %c %s", addr, &type, name)) continue;
          if (strchr("bBcCdDiIuU", type)) continue;  // reject bBcCdDiIuU, accept tTwWsSvV, sS for vtable
          int underscore = 0;
-         if (O.os == macOS) underscore = 1;  // remove prefix '_' in MacOS
+         if (O.os == 'm') underscore = 1;  // remove prefix '_' in MacOS
          (*symbols)[name + underscore] = (unsigned long long)strtoull(addr, nullptr, 16);
       }
       ::pclose(f);
    }
-   h2_memory::overrides();
+   h2_memory::hook();
 }
 
-static inline void nm2(h2_list& symbols)
+static inline void nm_demangle(h2_list& symbols)
 {
-   h2_memory::restores();
+   h2_memory::hook(false);
    char nm[256], line[2048], addr[128], type, name[2048];
-   sprintf(nm, "nm -f bsd --demangle %s -n %s", O.os == macOS ? "-U" : "--defined-only", O.path);
+#if defined __APPLE__
+   sprintf(nm, "nm -f bsd --demangle -U -n %s", O.path);
+#else
+   sprintf(nm, "nm -f bsd --demangle --defined-only -n %s", O.path);
+#endif
    FILE* f = ::popen(nm, "r");
    if (f) {
       while (::fgets(line, sizeof(line) - 1, f)) {
          if (3 != sscanf(line, "%s %c %[^\n]", addr, &type, name)) continue;
          if (strchr("bBcCdDiIuU", type)) continue;
          int underscore = 0;
-         if (O.os == macOS && !strchr(name, '(')) underscore = 1;
+         if (O.os == 'm' && !strchr(name, '(')) underscore = 1;
          h2_symbol* symbol = new h2_symbol(name + underscore, (unsigned long long)strtoull(addr, nullptr, 16));
          if (symbol) symbols.push_back(symbol->x);
       }
       ::pclose(f);
    }
-   h2_memory::overrides();
+   h2_memory::hook();
 }
 #endif
 
@@ -47,6 +54,12 @@ static inline bool strncmp_reverse(const char* a, const char* ae, const char* b,
    return !strncmp(ae - n, be - n, n);
 }
 
+h2_inline void h2_nm::initialize()
+{
+#if defined _WIN32
+   SymInitialize(GetCurrentProcess(), NULL, TRUE);
+#endif
+}
 h2_inline int h2_nm::get_by_name(const char* name, h2_symbol* res[], int n)
 {
    if (!name) return 0;
@@ -63,7 +76,7 @@ h2_inline int h2_nm::get_by_name(const char* name, h2_symbol* res[], int n)
    res[0] = &s_symbol;
    return 1;
 #else
-   if (I().demangle_symbols.empty()) nm2(I().demangle_symbols);
+   if (I().demangle_symbols.empty()) nm_demangle(I().demangle_symbols);
 
    h2_list_for_each_entry (p, I().demangle_symbols, h2_symbol, x) {
       if (!strcmp(p->name, name)) {
@@ -112,7 +125,7 @@ h2_inline unsigned long long h2_nm::get_mangle(const char* name)
    return (unsigned long long)symbol->Address;
 #else
    if (!name || strlen(name) == 0) return 0;
-   if (!I().mangle_symbols) nm1(I().mangle_symbols);
+   if (!I().mangle_symbols) nm_mangle(I().mangle_symbols);
 
    auto it = I().mangle_symbols->find(name);
    return it != I().mangle_symbols->end() ? it->second : 0ULL;

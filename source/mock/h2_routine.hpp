@@ -1,4 +1,3 @@
-
 template <typename ReturnType>
 struct h2_return : h2_libc {
    ReturnType value;

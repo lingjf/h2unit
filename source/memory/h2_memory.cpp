@@ -1,4 +1,3 @@
-
 struct h2_overrides {
    h2_singleton(h2_overrides);
    h2_override_stdlib stdlib;
@@ -18,23 +17,25 @@ struct h2_overrides {
 
 h2_inline void h2_memory::initialize()
 {
-   if (O.memory_check) {
-      h2_exempt::setup();
-      h2_overrides::I().set();
-   }
+   if (O.memory_check) h2_exempt::setup();
+   hook();
    stack::root();
 }
 h2_inline void h2_memory::finalize()
 {
    if (O.memory_check) h2_stack::I().at_exit = true;
 }
-h2_inline void h2_memory::overrides()
+h2_inline void h2_memory::hook(bool overrides)
 {
-   if (O.memory_check) h2_overrides::I().set();
-}
-h2_inline void h2_memory::restores()
-{
-   if (O.memory_check) h2_overrides::I().reset();
+   static bool s_overrides = false;
+   if (O.memory_check) {
+      if (overrides) {
+         if (!s_overrides) h2_overrides::I().set();
+      } else {
+         if (s_overrides) h2_overrides::I().reset();
+      }
+      s_overrides = overrides;
+   }
 }
 
 h2_inline void h2_memory::stack::root()
@@ -56,9 +57,12 @@ h2_inline long long h2_memory::stack::footprint()
 
 h2_inline h2_memory::stack::block::block(const char* attributes, const char* file, int line)
 {
+   unmem = h2_extract::has(attributes, "unmem");
+   if (unmem) h2_memory::hook(false);
    h2_stack::I().push(attributes, "block", file, line);
 }
 h2_inline h2_memory::stack::block::~block()
 {
    h2_fail_g(h2_stack::I().pop());
+   if (unmem) h2_memory::hook();
 }

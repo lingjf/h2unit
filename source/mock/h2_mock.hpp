@@ -1,4 +1,3 @@
-
 // MOCK(                    Function, Signature )
 // MOCK(         ClassType, Method  , Signature )
 // MOCK( Object, ClassType, Method  , Signature )

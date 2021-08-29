@@ -1,21 +1,20 @@
-
 struct h2_matches_regex : h2_matches {
    const h2_string e;
-   explicit h2_matches_regex(const h2_string& _e) : e(_e) {}
+   explicit h2_matches_regex(const h2_string& e_) : e(e_) {}
    h2_fail* matches(const h2_string& a, int n, bool caseless, bool dont) const;
    virtual h2_row expection(bool caseless, bool dont) const override;
 };
 
 struct h2_matches_wildcard : h2_matches {
    const h2_string e;
-   explicit h2_matches_wildcard(const h2_string& _e) : e(_e) {}
+   explicit h2_matches_wildcard(const h2_string& e_) : e(e_) {}
    h2_fail* matches(const h2_string& a, int n, bool caseless, bool dont) const;
    virtual h2_row expection(bool caseless, bool dont) const override;
 };
 
 struct h2_matches_strcmp : h2_matches {
    const h2_string e;
-   explicit h2_matches_strcmp(const h2_string& _e) : e(_e) {}
+   explicit h2_matches_strcmp(const h2_string& e_) : e(e_) {}
    h2_fail* matches(const h2_string& a, int n, bool caseless, bool dont) const;
    virtual h2_row expection(bool caseless, bool dont) const override;
 };
@@ -44,7 +43,7 @@ struct h2_matches_endswith : h2_matches {
 struct h2_matches_json : h2_matches {
    const h2_string e;
    const h2_string selector;
-   explicit h2_matches_json(const h2_string& _e, const h2_string& _selector) : e(_e), selector(_selector) {}
+   explicit h2_matches_json(const h2_string& e_, const h2_string& selector_) : e(e_), selector(selector_) {}
    h2_fail* matches(const h2_string& a, int, bool caseless, bool dont) const;
    virtual h2_row expection(bool caseless, bool dont) const override;
 };

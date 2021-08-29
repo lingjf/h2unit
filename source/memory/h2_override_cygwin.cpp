@@ -1,4 +1,3 @@
-
 struct h2_override_platform {
    h2_stubs stubs;
 

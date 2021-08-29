@@ -148,6 +148,7 @@ SUITE(SOCK)
    }
 #endif
 
+#if !defined _MSC_VER //TODO
    Case(TCP server)
    {
       SOCK()
@@ -181,6 +182,7 @@ SUITE(SOCK)
          CloseSocket(sock);
       }
    }
+#endif
 
    Case(TCP client)
    {

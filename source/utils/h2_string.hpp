@@ -1,4 +1,3 @@
-
 struct h2_string : public std::basic_string<char, std::char_traits<char>, h2_allocator<char>> {
    h2_string() : basic_string() {}
    h2_string(const h2_string& str) : basic_string(str.c_str()) {}

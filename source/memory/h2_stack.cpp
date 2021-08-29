@@ -1,4 +1,3 @@
-
 struct h2_stack {
    h2_singleton(h2_stack);
    h2_list blocks;
@@ -36,7 +35,7 @@ struct h2_stack {
          h2_piece* piece = p->get_piece(ptr);
          if (piece) return p->rel_piece(who, piece);
       }
-      if (!at_exit && O.os != windows)
+      if (!at_exit && O.os != 'W')
          if (!h2_backtrace::dump(1).in(h2_exempt::I().fps))
             h2_debug(2, "Warning: %s %p not found!", who, ptr);
       return nullptr;

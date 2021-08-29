@@ -1,4 +1,3 @@
-
 struct h2_name : h2_libc {
    h2_list x, y;
    h2_string name;

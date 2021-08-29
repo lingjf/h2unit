@@ -1,4 +1,3 @@
-
 h2_inline bool h2_mocks::add(void* mock)
 {
    h2_mocker_base* mocker = (h2_mocker_base*)mock;

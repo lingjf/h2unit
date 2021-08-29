@@ -1,3 +1,12 @@
+#if defined _MSC_VER
+#   define H2_GE ">="
+#   define H2_LE "<="
+#   define H2_NE "!="
+#else
+#   define H2_GE "≥"
+#   define H2_LE "≤"
+#   define H2_NE "≠"
+#endif
 
 struct h2_matches {
    virtual h2_row expection(bool caseless, bool dont) const = 0;

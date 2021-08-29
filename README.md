@@ -1,3 +1,8 @@
+<a id="top"></a>
+[![Github Releases](https://img.shields.io/github/release/lingjf/h2unit.svg)](https://github.com/catchorg/h2unit/releases)
+[![Selftest status](https://github.com/lingjf/h2unit/actions/workflows/ci.yml/badge.svg)](https://github.com/lingjf/h2unit/actions/workflows/ci.yml)
+
+
 # Introduce
 *H2UNIT* is a unit test framework for C/C++. [https://github.com/lingjf/h2unit](https://github.com/lingjf/h2unit) <br>
 *H2* in name is the chemical symbol of hydrogen. <br>
@@ -843,6 +848,15 @@ CASE(test ignore memory leak)
    }
 }
 ```
+[`BLOCK`](source/h2_unit.hpp) Ignore memory check, in BLOCK.
+```C++
+CASE(test ignore memory leak)
+{
+   BLOCK(numem) {
+      char *p = (char *)malloc(8);
+   }
+}
+```
 
 #### 7.3. Memory overflow
 Writing out of allocated memory area[start, start+size], memory overflow/underflow will be detected. 
@@ -1040,28 +1054,29 @@ twofiles speed up 2~3 times than onefile.
 
 # Execute options
 
-*    `-v` *verbose* output including successfull cases
-*    `-q` Compact output without failure detail
 *    `-l` *list* out suites and cases
-*    `-s` *shuffle* cases and execute in random order
-*    `-b` [n] *breaking* test once failure occurred, default n is 1
-*    `-o` *only* execute last failed cases
-*    `-p` Show/hide execute *progressing* (default show)
-*    `-r` [n] repeat run n *rounds* when no failure
-*    `-c` Disable *colorful* output, black-white output
 *    `-m` Disable *memory* check(leak, overflow, trample, double free, asymmetric free)
-*    `-x` Throw *exception* is considered as failure
+*    `-s` *shuffle* cases then test in random order
+*    `-b` [n] *break* test once n (default 1) cases failed
+*    `-f` Only test previous *failed* cases
+*    `-p` Hide test percentage *progressing*
+*    `-r` [n] repeat run n *rounds*
+*    `-c` Disable *colorful* output, black-white output
+*    `-x` Thrown *exception* is considered as failure
 *    `-d/D` *debug* mode, -D for gdb attach but requires password
-*    `-f` *fold* simple json object or array
+*    `-F` *fold* simple json object or array
 *    `-y` *copy-paste* JSON C/C++ source code
+*    `-v` *verbose* output including successfull cases
 *    `-j` {path} generate *junit* compatible XML output
 *    `-i` {pattern} *include* filter, suite name or case name wildcard (?, *) matches, if pattern don't contains ? and *, wildcard change to contains. Default is `*` (include all)
 *    `-e` {pattern} *exclude* filter, default is ` ` (exclude nothing)
 
 # Support platform
 *    Linux GCC 5.5+ (regex support, SFINAE support), clang 7+, x86, x86_64, arm64(aarch64)
-*    macOS 10.14+
+*    macOS 10.14+, 10.15, 11.05
 *    Windows Visual Studio 16 2019+
+*    Windows Cygwin, MinGW 64, ucrt64, clang64
+*    Windows WSL (Debian, Ubuntu, Kali, openSUSE)
 
 # Limitations
 *    Variadic parameter function can't MOCK, use STUB with separate fake function instead
@@ -1072,3 +1087,4 @@ twofiles speed up 2~3 times than onefile.
    LD_BIND_NOW=1 ./a.out 
    gcc --Wl,z,now
 ```
+

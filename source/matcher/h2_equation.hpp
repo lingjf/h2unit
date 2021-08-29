@@ -1,8 +1,7 @@
-
 template <typename E, typename = void>
 struct h2_equation : h2_matches {
    const E e;
-   explicit h2_equation(const E& _e, const long double = 0) : e(_e) {}
+   explicit h2_equation(const E& e_, const long double = 0) : e(e_) {}
 
    template <typename A>
    h2_fail* matches(const A& a, int, bool caseless, bool dont) const
@@ -19,7 +18,7 @@ struct h2_equation : h2_matches {
 template <typename E>
 struct h2_equation<E, typename std::enable_if<std::is_convertible<E, h2_string>::value>::type> : h2_matches {
    const h2_string e;
-   explicit h2_equation(const E& _e, const long double = 0) : e(h2_string(_e)) {}
+   explicit h2_equation(const E& e_, const long double = 0) : e(h2_string(e_)) {}
 
    h2_fail* matches(const h2_string& a, int, bool caseless, bool dont) const
    {
@@ -39,7 +38,7 @@ template <typename E>
 struct h2_equation<E, typename std::enable_if<std::is_arithmetic<E>::value>::type> : h2_matches {
    const E e;
    const long double epsilon;
-   explicit h2_equation(const E& _e, const long double _epsilon = 0) : e(_e), epsilon(_epsilon) {}
+   explicit h2_equation(const E& e_, const long double epsilon_ = 0) : e(e_), epsilon(epsilon_) {}
 
    template <typename A>
    h2_fail* matches(const A& a, int, bool caseless, bool dont) const

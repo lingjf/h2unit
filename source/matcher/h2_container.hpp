@@ -1,4 +1,3 @@
-
 template <typename EK, typename EV>
 struct h2_pair_matches : h2_matches {
    const EK k;

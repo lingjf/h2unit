@@ -1,4 +1,3 @@
-
 template <typename T, typename = void>
 struct h2_stringify_impl {
    static h2_row print(T a, bool represent = false) { return "?"; }

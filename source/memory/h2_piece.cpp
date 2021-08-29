@@ -1,4 +1,3 @@
-
 struct h2_piece : h2_libc {
    h2_list x;
    unsigned char *user_ptr, *page_ptr;

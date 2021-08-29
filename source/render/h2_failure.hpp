@@ -1,4 +1,3 @@
-
 struct h2_fail : h2_libc {
    h2_fail *subling_next{nullptr}, *child_next{nullptr};
 

@@ -1,4 +1,3 @@
-
 static inline const char* h2_basename(const char* path)
 {
    const char* p = strrchr(path, '/');
@@ -9,13 +8,13 @@ static inline const char* h2_basename(const char* path)
 h2_inline bool h2_pattern::regex_match(const char* pattern, const char* subject, bool caseless)
 {
    bool result = false;
-   h2_memory::restores();
+   h2_memory::hook(false);
    try {  // c++11 support regex; gcc 4.8 start support regex, gcc 5.5 icase works.
       result = std::regex_match(subject, caseless ? std::regex(pattern, std::regex::icase) : std::regex(pattern));
    } catch (const std::regex_error&) {
       result = false;
    }
-   h2_memory::overrides();
+   h2_memory::hook();
    return result;
 }
 
@@ -118,17 +117,6 @@ h2_inline int h2_extract::fill(const char* attributes, const char* key, unsigned
 h2_inline bool h2_pattern::match(const char* pattern, const char* subject, bool caseless)
 {
    return wildcard_match(pattern, subject, caseless) || regex_match(pattern, subject, caseless);
-}
-
-static inline long long h2_now()
-{
-#if defined _WIN32
-   return GetTickCount();
-#else
-   struct timeval tv;
-   gettimeofday(&tv, NULL);
-   return tv.tv_sec * 1000LL + tv.tv_usec / 1000;
-#endif
 }
 
 static inline void h2_sleep(long long milliseconds)

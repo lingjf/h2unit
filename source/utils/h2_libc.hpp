@@ -1,4 +1,3 @@
-
 struct h2_libc {
    static void* malloc(size_t size);
    static void free(void* ptr);

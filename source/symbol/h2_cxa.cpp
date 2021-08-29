@@ -1,4 +1,3 @@
-
 h2_inline char* h2_cxa::demangle(const char* mangle_name, char* demangle_name, size_t length)
 {
 #if defined _MSC_VER

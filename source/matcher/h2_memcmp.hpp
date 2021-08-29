@@ -1,10 +1,9 @@
-
 struct h2_matches_bytecmp : h2_matches {
    const int width;
    const void* e;
    const bool isstring;
    const int nbytes;
-   explicit h2_matches_bytecmp(const int _width, const void* _e, const bool _isstring, const int _nbytes) : width(_width), e(_e), isstring(_isstring), nbytes(_nbytes) {}
+   explicit h2_matches_bytecmp(const int width_, const void* e_, const bool isstring_, const int nbytes_) : width(width_), e(e_), isstring(isstring_), nbytes(nbytes_) {}
    h2_fail* matches(const void* a, int n, bool caseless, bool dont) const;
    virtual h2_row expection(bool caseless, bool dont) const override;
 };
@@ -13,7 +12,7 @@ struct h2_matches_bitcmp : h2_matches {
    const void* e;
    const bool isstring;
    const int nbits;
-   explicit h2_matches_bitcmp(const void* _e, const bool _isstring, const int _nbits) : e(_e), isstring(_isstring), nbits(_nbits) {}
+   explicit h2_matches_bitcmp(const void* e_, const bool isstring_, const int nbits_) : e(e_), isstring(isstring_), nbits(nbits_) {}
    h2_fail* matches(const void* a, int n, bool caseless, bool dont) const;
    virtual h2_row expection(bool caseless, bool dont) const override;
 };
@@ -22,7 +21,7 @@ template <typename E>
 struct h2_matches_memcmp : h2_matches {
    const E e;
    const int length;
-   explicit h2_matches_memcmp(const E _e, const int _length) : e(_e), length(_length) {}
+   explicit h2_matches_memcmp(const E e_, const int length_) : e(e_), length(length_) {}
    h2_fail* matches(const void* a, int n, bool caseless, bool dont) const
    {
       h2_fail* fail = (h2_fail*)1;

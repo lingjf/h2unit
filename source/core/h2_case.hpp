@@ -1,18 +1,15 @@
-
 struct h2_case {
-   static constexpr int initial = 0, passed = 1, failed = 2, ignored = 3;
-
    const char* name;
    const char* file;
    int line;
-   bool todo = false, filtered = false;
-   int status = initial, last_status = initial;
+   bool todo = false, filtered = false, ignored = false;
+   bool failed = false, previous_failed = false;
    int seq = 0;
    int asserts = 0;
    long long footprint = 0;
    h2_list x;
    jmp_buf ctx;
-   h2_fail* fails{nullptr};
+   h2_fail* fails = nullptr;
    h2_stubs stubs;
    h2_mocks mocks;
    h2_dnses dnses;

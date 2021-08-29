@@ -1,4 +1,3 @@
-
 static inline long long get_load_text_offset()
 {
    h2_symbol* s[16];

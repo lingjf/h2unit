@@ -1,4 +1,3 @@
-
 static inline h2_string readable_size(int width, int nbits)
 {
    char t[64];

@@ -1,4 +1,3 @@
-
 #ifndef __H2_UNIT_HPP__
 #define __H2_UNIT_HPP__
 
@@ -20,24 +19,11 @@
 #include <type_traits> /* std::true_type */
 
 #if defined _MSC_VER
-#   define WIN32_LEAN_AND_MEAN /* fix winsock.h winsock2.h conflict */
-#   define NOMINMAX            /* fix std::min/max conflict with windows::min/max */
-#   include <windows.h>
 #   include <malloc.h> /* _alloca _msize _expand */
 #   define alloca _alloca
-#   define ssize_t int
-#   define H2_SP "|"
-#   define H2_GE ">="
-#   define H2_LE "<="
-#   define H2_NE "!="
+#elif defined __MINGW32__ || defined __MINGW64__
 #else
-#   if !(defined __MINGW32__ || defined __MINGW64__)
-#      include <alloca.h> /* alloca */
-#   endif
-#   define H2_SP "│"
-#   define H2_GE "≥"
-#   define H2_LE "≤"
-#   define H2_NE "≠"
+#   include <alloca.h> /* alloca */
 #endif
 
 #if defined __GNUC__ || defined __clang__

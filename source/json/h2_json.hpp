@@ -1,4 +1,3 @@
-
 struct h2_json {
    static h2_rows format(const h2_string& json_string);
    static h2_string select(const h2_string& json_string, const h2_string& selector, bool caseless);

@@ -1,4 +1,3 @@
-
 struct h2_block_attributes {
    long long limit = LLONG_MAX / 2;
    int alignment = sizeof(void*);
@@ -26,7 +25,7 @@ struct h2_block : h2_libc {
    const char* file;
    int line;
 
-   h2_block(const char* _attributes, const char* _where, const char* _file, int _line) : attributes(_attributes), where(_where), file(_file), line(_line) {}
+   h2_block(const char* attributes_, const char* where_, const char* file_, int line_) : attributes(attributes_), where(where_), file(file_), line(line_) {}
 
    h2_fail* check()
    {

@@ -1,4 +1,3 @@
-
 struct h2_dns {
    static void initialize();
    static void setaddrinfo(int count, ...);

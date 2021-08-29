@@ -1,4 +1,3 @@
-
 struct h2_stats {
    int passed = 0, failed = 0, todo = 0, filtered = 0, ignored = 0;
    int asserts = 0;
@@ -24,7 +23,7 @@ struct h2_suite {
    void clear();
 
    void enumerate();
-   void execute(h2_case* c);
+   void test(h2_case* c);
 
    void setup();
    void cleanup();

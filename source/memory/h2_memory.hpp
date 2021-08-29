@@ -1,9 +1,7 @@
-
 struct h2_memory {
    static void initialize();
    static void finalize();
-   static void overrides();
-   static void restores();
+   static void hook(bool overrides = true);
 
    struct stack {
       static void root();
@@ -12,6 +10,7 @@ struct h2_memory {
       static long long footprint();
 
       struct block : h2_once {
+         bool unmem = false;
          block(const char* attributes, const char* file, int line);
          ~block();
       };

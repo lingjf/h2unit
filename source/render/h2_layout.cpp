@@ -1,3 +1,8 @@
+#if defined _MSC_VER
+#   define H2_SP "|"
+#else
+#   define H2_SP "│"
+#endif
 
 static inline h2_rows row_break(const h2_row& row, unsigned width)
 {

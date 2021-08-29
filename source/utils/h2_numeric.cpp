@@ -1,4 +1,3 @@
-
 static inline bool not2n(unsigned x)
 {
    return x & (x - 1);

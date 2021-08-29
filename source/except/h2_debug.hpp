@@ -1,4 +1,3 @@
-
 struct h2_debugger {
    static void trap();
 };

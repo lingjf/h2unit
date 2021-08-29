@@ -1,4 +1,3 @@
-
 #define __Matches_Common(message)                                                                        \
    template <typename A>                                                                                 \
    bool __matches(const A& a) const;                                                                     \

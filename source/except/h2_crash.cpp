@@ -1,4 +1,3 @@
-
 struct h2_crash {
 #if defined _WIN32
    static LONG segment_fault_handler(_EXCEPTION_POINTERS* ExceptionInfo)

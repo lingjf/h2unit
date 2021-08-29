@@ -1,4 +1,3 @@
-
 struct h2_mocks {
    h2_list mocks;
    bool add(void* mock);

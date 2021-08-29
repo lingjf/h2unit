@@ -1,4 +1,3 @@
-
 struct h2_json_tree : h2_json_node {
    h2_vector<h2_string> lexical;
    h2_json_syntax syntax{lexical};

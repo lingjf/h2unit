@@ -1,4 +1,3 @@
-
 struct h2_json_match {
    static bool match_array(h2_json_node* e, h2_json_node* a, bool caseless)
    {

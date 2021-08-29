@@ -1,4 +1,3 @@
-#include <time.h>
 #include "../h2unit.h"
 
 extern "C" {

@@ -1,11 +1,10 @@
-
 struct h2_stub : h2_libc {
    h2_list x;
    unsigned char saved_opcode[32];
    void *srcfp, *dstfp;
    h2_source* source;
 
-   h2_stub(void* _srcfp, const char* srcfn, const char* file, int line) : srcfp(_srcfp)
+   h2_stub(void* srcfp_, const char* srcfn, const char* file, int line) : srcfp(srcfp_)
    {
       source = h2_sources::I().add(srcfp, srcfn, file, line);
       if (source) source->save(saved_opcode);
@@ -17,9 +16,9 @@ struct h2_stub : h2_libc {
          h2_sources::I().del(source);
       }
    }
-   void stub(void* _dstfp)
+   void stub(void* dstfp_)
    {
-      if (source) source->set((dstfp = _dstfp));
+      if (source) source->set((dstfp = dstfp_));
    }
 };
 

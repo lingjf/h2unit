@@ -1,4 +1,3 @@
-
 struct h2_packet : h2_libc {
    h2_list x;
    h2_string from, to, data;
@@ -59,4 +58,4 @@ struct h2_sock : h2_once {
 #define H2SOCK(...) __H2SOCK(H2PP_UNIQUE())
 
 #define Ptx(...) h2::h2_sock::check(__FILE__, __LINE__, h2::ss(#__VA_ARGS__), __VA_ARGS__)
-#define Pij(_Packet, _Size, ...) h2::h2_sock::inject(_Packet, _Size, h2::ss(#__VA_ARGS__))
+#define Pij(Packet_, Size_, ...) h2::h2_sock::inject(Packet_, Size_, h2::ss(#__VA_ARGS__))
