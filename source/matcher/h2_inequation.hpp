@@ -11,7 +11,7 @@ struct h2_matches_ge : h2_matches {
    }
    virtual h2_row expection(bool, bool dont) const override
    {
-      return CD(H2_GE + h2_representify(e), false, dont);
+      return CD("≥" + h2_representify(e), false, dont);
    }
 };
 
@@ -45,7 +45,7 @@ struct h2_matches_le : h2_matches {
    }
    virtual h2_row expection(bool, bool dont) const override
    {
-      return CD(H2_LE + h2_stringify(e), false, dont);
+      return CD("≤" + h2_stringify(e), false, dont);
    }
 };
 

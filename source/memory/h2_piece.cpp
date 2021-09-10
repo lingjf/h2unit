@@ -32,7 +32,7 @@ struct h2_piece : h2_libc {
       if (page_ptr == NULL) ::printf("VirtualAlloc failed at %s:%d\n", __FILE__, __LINE__), abort();
 #else
       page_ptr = (unsigned char*)::mmap(nullptr, page_size * (page_count + 1), PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0);
-      if (page_ptr == MAP_FAILED) h2_color::prints("yellow", "mmap failed at %s:%d\n", __FILE__, __LINE__), abort();
+      if (page_ptr == MAP_FAILED) ::printf("mmap failed at %s:%d\n", __FILE__, __LINE__), abort();
 #endif
 
       user_ptr = page_ptr + page_size * page_count - user_size_plus + alignment;
@@ -62,7 +62,7 @@ struct h2_piece : h2_libc {
       if (permission & writable)
          new_permission = PAGE_READWRITE;
       if (!VirtualProtect(forbidden_page, forbidden_size, new_permission, &old_permission))
-         ::printf("VirtualProtect failed %lu\n", GetLastError());
+         h2_color::prints("yellow", "VirtualProtect failed %lu\n", GetLastError());
 #else
       int new_permission = PROT_NONE;
       if (permission & readable)
@@ -114,7 +114,7 @@ struct h2_piece : h2_libc {
 
    void mark_snowfield()
    {
-      static unsigned char s_snow_flower = 0;
+      static unsigned char s_snow_flower = (unsigned char)::rand();
       snow_flower = ++s_snow_flower;
       memset(page_ptr, snow_flower, user_ptr - page_ptr);
       memset(user_ptr + user_size, snow_flower, (page_ptr + page_size * page_count) - (user_ptr + user_size));

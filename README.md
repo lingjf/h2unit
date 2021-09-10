@@ -1072,9 +1072,9 @@ twofiles speed up 2~3 times than onefile.
 *    `-e` {pattern} *exclude* filter, default is ` ` (exclude nothing)
 
 # Support platform
-*    Linux GCC 5.5+ (regex support, SFINAE support), clang 7+, x86, x86_64, arm64(aarch64)
-*    macOS 10.14+, 10.15, 11.05
-*    Windows Visual Studio 16 2019+
+*    Linux gcc 5.5+ (regex support, SFINAE support), clang 7+, x86, x86_64, arm64(aarch64)
+*    macOS 10.14+ 10.15 11.05, xcode 10.3+
+*    Windows Visual Studio 2019+ 16+ MSVC 14.20+ _MSC_VER 1913+
 *    Windows Cygwin, MinGW 64, ucrt64, clang64
 *    Windows WSL (Debian, Ubuntu, Kali, openSUSE)
 
@@ -1084,7 +1084,4 @@ twofiles speed up 2~3 times than onefile.
 *    sqrt() in math.h can be STUB/MOCK, because compiler insert sqrtsd ASM instruction directly instead of function call
 
 ```Shell
-   LD_BIND_NOW=1 ./a.out 
-   gcc --Wl,z,now
-```
-
+   LD_BIND                                       

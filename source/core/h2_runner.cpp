@@ -51,11 +51,11 @@ struct h2_compare_wrapper {
 h2_inline void h2_runner::shuffle()
 {
    previous = mark_previous_order(suites);
-   srand(::clock());
+   ::srand(::clock());
    if (O.shuffle_cases && previous == 0)
       h2_list_for_each_entry (s, suites, h2_suite, x)
          h2_list_for_each_entry (c, s->cases, h2_case, x)
-            s->seq = c->seq = rand();
+            s->seq = c->seq = ::rand();
 
    suites.sort(h2_compare_wrapper::suite_cmp);
    h2_list_for_each_entry (s, suites, h2_suite, x)
@@ -88,8 +88,11 @@ h2_inline void h2_runner::enumerate()
 
 h2_inline int h2_runner::main(int argc, const char** argv)
 {
+#if defined _MSC_VER
+   SetConsoleOutputCP(65001);  // set console code page to utf-8
+   SymInitialize(GetCurrentProcess(), NULL, TRUE);
+#endif
    h2_option::I().parse(argc, argv);
-   h2_nm::initialize();
    h2_report::initialize();
    h2_memory::initialize();
    h2_exception::initialize();

@@ -2,37 +2,37 @@ struct h2_report_impl {
    h2_list x;
    int suites = 0, cases = 0;
    int suite_index = 0, suite_case_index = 0, runner_case_index = 0;
-   long long runner_cost = 0, suite_cost = 0, case_cost = 0;
+   clock_t runner_cost = 0, suite_cost = 0, case_cost = 0;
 
    virtual void on_runner_start(h2_runner* r)
    {
       suites = r->suites.count();
       h2_list_for_each_entry (s, r->suites, h2_suite, x)
          cases += s->cases.count();
-      runner_cost = (long long)(::clock() * 1000 / CLOCKS_PER_SEC);
+      runner_cost = ::clock();
    }
    virtual void on_runner_endup(h2_runner* r)
    {
-      runner_cost = (long long)(::clock() * 1000 / CLOCKS_PER_SEC) - runner_cost;
+      runner_cost = ::clock() - runner_cost;
    }
    virtual void on_suite_start(h2_suite* s)
    {
       suite_case_index = 0;
-      suite_cost = (long long)(::clock() * 1000 / CLOCKS_PER_SEC);
+      suite_cost = ::clock();
    }
    virtual void on_suite_endup(h2_suite* s)
    {
-      suite_cost = (long long)(::clock() * 1000 / CLOCKS_PER_SEC) - suite_cost;
+      suite_cost = ::clock() - suite_cost;
    }
    virtual void on_case_start(h2_suite* s, h2_case* c)
    {
       ++suite_case_index;
-      case_cost = (long long)(::clock() * 1000 / CLOCKS_PER_SEC);
+      case_cost = ::clock();
    }
    virtual void on_case_endup(h2_suite* s, h2_case* c)
    {
       ++runner_case_index;
-      case_cost = (long long)(::clock() * 1000 / CLOCKS_PER_SEC) - case_cost;
+      case_cost = ::clock() - case_cost;
    }
 };
 
@@ -85,17 +85,18 @@ struct h2_report_console : h2_report_impl {
       }
       s_last = h2_stdio::I().capture_length;
    }
-   const char* format_duration(long long ms)
+   const char* format_duration(clock_t ticks)
    {
+      double ms = ticks * 1000.0 / CLOCKS_PER_SEC;
       static char st[128];
       if (ms < 100)
-         sprintf(st, "%lld milliseconds", ms);
+         sprintf(st, "%d milliseconds", (int)ceil(ms));
       else if (ms < 1000 * 60)
-         sprintf(st, "%.2g seconds", ms / (double)1000.0);
+         sprintf(st, "%.2g seconds", ms / 1000.0);
       else if (ms < 1000 * 60 * 60)
-         sprintf(st, "%.2g minutes", ms / (double)6000.0);
+         sprintf(st, "%.2g minutes", ms / 6000.0);
       else
-         sprintf(st, "%.2g hours", ms / (double)36000.0);
+         sprintf(st, "%.2g hours", ms / 36000.0);
 
       return st;
    }

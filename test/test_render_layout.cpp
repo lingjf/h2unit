@@ -64,7 +64,7 @@ SUITE(h2_layout)
       h2::rows_merge(rows, left, right, 10, 10, 0, 'x', 1);
 
       OK(ListOf(ListOf("\033{reset}", "1", "2", "3", "4", "5", "6", "    ", "\033{reset}",
-                       "\033{dark gray}", " " H2_SP " ", "\033{reset}",
+                       "\033{dark gray}", " │ ", "\033{reset}",
                        "\033{reset}", "1", "2", "3", "4", "5", "     ", "\033{reset}",
                        "\033{dark gray}", " ", "\033{reset}")),
          rows);
@@ -79,11 +79,11 @@ SUITE(h2_layout)
       h2::rows_merge(rows, left, right, 5, 5, 0, 'x', 1);
 
       OK(ListOf(ListOf("\033{reset}", "1", "2", "3", "4", "5", "\033{reset}",
-                       "\033{dark gray}", "\\" H2_SP " ", "\033{reset}",
+                       "\033{dark gray}", "\\│ ", "\033{reset}",
                        "\033{reset}", "1", "2", "3", "4", "5", "\033{reset}",
                        "\033{dark gray}", " ", "\033{reset}"),
                 ListOf("\033{reset}", "6", "    ", "\033{reset}",
-                       "\033{dark gray}", " " H2_SP " ", "\033{reset}",
+                       "\033{dark gray}", " │ ", "\033{reset}",
                        "\033{reset}", "     ", "\033{reset}",
                        "\033{dark gray}", " ", "\033{reset}")),
          rows);

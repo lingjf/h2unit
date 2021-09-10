@@ -1,8 +1,9 @@
 struct h2_timer : h2_once {
    const char* file;
    int line;
-   long long ms, start;
-   h2_timer(long long ms, const char* file, int line);
+   int ms;
+   clock_t start;
+   h2_timer(int ms, const char* file, int line);
    ~h2_timer();
 };
 

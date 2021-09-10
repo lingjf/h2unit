@@ -1,5 +1,5 @@
 #include "../source/h2_unit.cpp"
-#if !(defined __CYGWIN__ || defined __MINGW32__ || defined __MINGW64__)
+#if !(defined __CYGWIN__ || defined __MINGW32__ || defined __MINGW64__ || defined NO_CAST_TESTING)
 
 #include "test_types.hpp"
 
@@ -41,26 +41,6 @@ SUITE(Pointer)
    OK(!!NoneOf(NotNull), y);
       H2Fullmesh(TheCheck, PTR_NULL_VALUE_LIST);
 #undef TheCheck
-   }
-
-   Case(OK Pointee)
-   {
-      char char_value = 'C';
-      char* char_ptr = &char_value;
-      const char* const_char_ptr = &char_value;
-      int int_value = 1;
-      int* int_ptr = &int_value;
-      const int* const_int_ptr = &int_value;
-      std::string stdstring_value = "S";
-      std::string* stdstring_ptr = &stdstring_value;
-      const std::string* const_stdstring_ptr = &stdstring_value;
-
-      OK(Pointee(1), int_ptr);
-      OK(Pointee(1), const_int_ptr);
-      OK(Pointee('C'), char_ptr);
-      OK(Pointee('C'), const_char_ptr);
-      OK(Pointee("S"), stdstring_ptr);
-      OK(Pointee("S"), const_stdstring_ptr);
    }
 
    Case(MOCK)

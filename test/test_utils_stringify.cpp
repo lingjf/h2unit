@@ -76,6 +76,16 @@ SUITE(stringify simple)
       OK(ListOf("true"), h2::h2_stringify<bool>(true, true));
       OK(ListOf("false"), h2::h2_stringify<bool>(false));
       OK(ListOf("false"), h2::h2_stringify<bool>(false, true));
+
+      bool bool_false = false;
+      const bool const_bool_false = false;
+      const bool& const_bool_ref_false = false;
+      bool&& bool_rref_false = false;
+
+      h2::h2_stringify(bool_false);
+      h2::h2_stringify(const_bool_false);
+      h2::h2_stringify(const_bool_ref_false);
+      h2::h2_stringify(bool_rref_false);
    }
 
    Case(long long)

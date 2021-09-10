@@ -1,5 +1,5 @@
 #include "../source/h2_unit.cpp"
-#if !(defined __CYGWIN__ || defined __MINGW32__ || defined __MINGW64__)
+#if !(defined __CYGWIN__ || defined __MINGW32__ || defined __MINGW64__ || defined NO_CAST_TESTING)
 
 #include <vector>
 #include <deque>

@@ -1,6 +1,5 @@
 
 import os
-import sys
 import time
 import re
 
@@ -18,25 +17,6 @@ version_date = '/* v{0} {1} */'.format(read_version(), time.strftime('%Y-%m-%d %
 github_url = '/* https://github.com/lingjf/h2unit */'
 copyright = '/* Apache Licence 2.0 */'
 
-# MSVC support:
-#   UTF-16 little endian with or without byte order mark (BOM)
-#   UTF-16 big endian with or without BOM
-#   UTF-8 with BOM
-# GCC/clang support:
-#   UTF-8 with or without BOM
-
-# minimal common is UTF-8 with BOM
-def convert_utf8_to_utf8bom(filename):
-    f = open(filename, 'r')
-    t = f.read()
-    f.close()
-    with open(filename, 'wb') as f:
-        if sys.version_info.major == 2:
-            f.write(t.decode('utf-8').encode('utf-8-sig'))
-        elif sys.version_info.major == 3:
-            f.write(t.encode('utf-8').decode('utf-8').encode('utf-8-sig'))
-        else:
-            raise Exception('invalid python version')
 
 def copy_line(line, f):
     f.write(line)
@@ -78,7 +58,6 @@ with open(os.path.join(build_dir, '../source/h2_unit.cpp'), 'r') as f_h2_unit_cp
     merge_files(f_h2_unit_cpp, f_h2unit_h, True)
 f_h2unit_h.write('#endif' + '\n')
 f_h2unit_h.close()
-convert_utf8_to_utf8bom(h2unit_h)
 
 f_h2unit_hpp = open(h2unit_hpp, 'w')
 f_h2unit_hpp.write('\n')
@@ -91,7 +70,6 @@ with open(os.path.join(build_dir, '../source/h2_unit.hpp'), 'r') as f_h2_unit_hp
     merge_files(f_h2_unit_hpp, f_h2unit_hpp, False)
 f_h2unit_hpp.write('#endif' + '\n')
 f_h2unit_hpp.close()
-convert_utf8_to_utf8bom(h2unit_hpp)
 
 f_h2unit_cpp = open(h2unit_cpp, 'w')
 f_h2unit_cpp.write('\n')
@@ -101,6 +79,5 @@ f_h2unit_cpp.write(copyright + '\n')
 with open(os.path.join(build_dir, '../source/h2_unit.cpp'), 'r') as f_h2_unit_cpp:
     merge_files(f_h2_unit_cpp, f_h2unit_cpp, False)
 f_h2unit_cpp.close()
-convert_utf8_to_utf8bom(h2unit_cpp)
 
 print('Concatenated ' + version_date)

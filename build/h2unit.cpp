@@ -1,5 +1,5 @@
-﻿
-/* v5.13 2021-08-29 21:13:58 */
+
+/* v5.13 2021-09-11 00:38:28 */
 /* https://github.com/lingjf/h2unit */
 /* Apache Licence 2.0 */
 #include "h2unit.hpp"
@@ -517,7 +517,7 @@ struct h2_libc_malloc {
       if (ptr == NULL) ::printf("VirtualAlloc failed at %s:%d\n", __FILE__, __LINE__), abort();
 #else
       void* ptr = ::mmap(nullptr, brk_count * brk_size, PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0);
-      if (ptr == MAP_FAILED) h2_color::prints("yellow", "mmap failed at %s:%d\n", __FILE__, __LINE__), abort();
+      if (ptr == MAP_FAILED) ::printf("mmap failed at %s:%d\n", __FILE__, __LINE__), abort();
 #endif
 
       block* p = new (ptr) block(brk_count * brk_size);
@@ -897,7 +897,7 @@ struct h2_shell {
       //TODO get PowerShell width
 #else
       struct winsize w;
-      if (-1 != ioctl(STDOUT_FILENO, TIOCGWINSZ, &w)) cww = w.ws_col;
+      if (-1 != ioctl(STDOUT_FILENO, TIOCGWINSZ, &w)) cww = 16 < w.ws_col && w.ws_col <= 120 ? w.ws_col : 120;
 #endif
    }
 
@@ -954,7 +954,7 @@ struct h2_shell {
          LIBC__write(fileno(stdout), str, strlen(str));
       }
    }
-   int style2value(const char* style)
+   int style2value(const char* style)  // https://en.wikipedia.org/wiki/ANSI_escape_code#CSI_sequences
    {
       if (!strcmp(style, "reset")) return 0;
       if (!strcmp(style, "bold")) return 1;
@@ -1024,11 +1024,11 @@ static inline void nm_mangle(std::map<std::string, unsigned long long>*& symbols
    h2_memory::hook(false);
    char nm[256], line[2048], addr[128], type, name[2048];
    symbols = new std::map<std::string, unsigned long long>();
-#if defined __APPLE__
+#   if defined __APPLE__
    sprintf(nm, "nm -U %s", O.path);
-#else
+#   else
    sprintf(nm, "nm --defined-only %s", O.path);
-#endif
+#   endif
    FILE* f = ::popen(nm, "r");
    if (f) {
       while (::fgets(line, sizeof(line) - 1, f)) {
@@ -1047,11 +1047,11 @@ static inline void nm_demangle(h2_list& symbols)
 {
    h2_memory::hook(false);
    char nm[256], line[2048], addr[128], type, name[2048];
-#if defined __APPLE__
+#   if defined __APPLE__
    sprintf(nm, "nm -f bsd --demangle -U -n %s", O.path);
-#else
+#   else
    sprintf(nm, "nm -f bsd --demangle --defined-only -n %s", O.path);
-#endif
+#   endif
    FILE* f = ::popen(nm, "r");
    if (f) {
       while (::fgets(line, sizeof(line) - 1, f)) {
@@ -1074,12 +1074,6 @@ static inline bool strncmp_reverse(const char* a, const char* ae, const char* b,
    return !strncmp(ae - n, be - n, n);
 }
 
-h2_inline void h2_nm::initialize()
-{
-#if defined _WIN32
-   SymInitialize(GetCurrentProcess(), NULL, TRUE);
-#endif
-}
 h2_inline int h2_nm::get_by_name(const char* name, h2_symbol* res[], int n)
 {
    if (!name) return 0;
@@ -2749,7 +2743,7 @@ h2_inline h2_fail* h2_matches_strcmp::matches(const h2_string& a, int n, bool ca
 }
 h2_inline h2_row h2_matches_strcmp::expection(bool caseless, bool dont) const
 {
-   return CD(h2_representify(e), caseless, dont, H2_NE);
+   return CD(h2_representify(e), caseless, dont, "≠");
 }
 
 h2_inline h2_fail* h2_matches_substr::matches(const h2_string& a, int n, bool caseless, bool dont) const
@@ -2793,7 +2787,7 @@ h2_inline h2_fail* h2_matches_json::matches(const h2_string& a, int, bool casele
 }
 h2_inline h2_row h2_matches_json::expection(bool caseless, bool dont) const
 {
-   return CD(h2_stringify(e), caseless, dont, H2_NE);
+   return CD(h2_stringify(e), caseless, dont, "≠");
 }
 // source/matcher/h2_memcmp.cpp
 static inline h2_string readable_size(int width, int nbits)
@@ -2914,7 +2908,7 @@ struct h2_piece : h2_libc {
       if (page_ptr == NULL) ::printf("VirtualAlloc failed at %s:%d\n", __FILE__, __LINE__), abort();
 #else
       page_ptr = (unsigned char*)::mmap(nullptr, page_size * (page_count + 1), PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0);
-      if (page_ptr == MAP_FAILED) h2_color::prints("yellow", "mmap failed at %s:%d\n", __FILE__, __LINE__), abort();
+      if (page_ptr == MAP_FAILED) ::printf("mmap failed at %s:%d\n", __FILE__, __LINE__), abort();
 #endif
 
       user_ptr = page_ptr + page_size * page_count - user_size_plus + alignment;
@@ -2944,7 +2938,7 @@ struct h2_piece : h2_libc {
       if (permission & writable)
          new_permission = PAGE_READWRITE;
       if (!VirtualProtect(forbidden_page, forbidden_size, new_permission, &old_permission))
-         ::printf("VirtualProtect failed %lu\n", GetLastError());
+         h2_color::prints("yellow", "VirtualProtect failed %lu\n", GetLastError());
 #else
       int new_permission = PROT_NONE;
       if (permission & readable)
@@ -2996,7 +2990,7 @@ struct h2_piece : h2_libc {
 
    void mark_snowfield()
    {
-      static unsigned char s_snow_flower = 0;
+      static unsigned char s_snow_flower = (unsigned char)::rand();
       snow_flower = ++s_snow_flower;
       memset(page_ptr, snow_flower, user_ptr - page_ptr);
       memset(user_ptr + user_size, snow_flower, (page_ptr + page_size * page_count) - (user_ptr + user_size));
@@ -4992,11 +4986,11 @@ struct h2_compare_wrapper {
 h2_inline void h2_runner::shuffle()
 {
    previous = mark_previous_order(suites);
-   srand(::clock());
+   ::srand(::clock());
    if (O.shuffle_cases && previous == 0)
       h2_list_for_each_entry (s, suites, h2_suite, x)
          h2_list_for_each_entry (c, s->cases, h2_case, x)
-            s->seq = c->seq = rand();
+            s->seq = c->seq = ::rand();
 
    suites.sort(h2_compare_wrapper::suite_cmp);
    h2_list_for_each_entry (s, suites, h2_suite, x)
@@ -5029,8 +5023,11 @@ h2_inline void h2_runner::enumerate()
 
 h2_inline int h2_runner::main(int argc, const char** argv)
 {
+#if defined _MSC_VER
+   SetConsoleOutputCP(65001);  // set console code page to utf-8
+   SymInitialize(GetCurrentProcess(), NULL, TRUE);
+#endif
    h2_option::I().parse(argc, argv);
-   h2_nm::initialize();
    h2_report::initialize();
    h2_memory::initialize();
    h2_exception::initialize();
@@ -5195,7 +5192,7 @@ h2_inline h2_defer_failure::~h2_defer_failure()
    }
 }
 // source/assert/h2_timer.cpp
-h2_inline h2_timer::h2_timer(long long ms_, const char* file_, int line_) : file(file_), line(line_), ms(ms_)
+h2_inline h2_timer::h2_timer(int ms_, const char* file_, int line_) : file(file_), line(line_), ms(ms_)
 {
    start = ::clock();
 }
@@ -5203,10 +5200,10 @@ h2_inline h2_timer::h2_timer(long long ms_, const char* file_, int line_) : file
 h2_inline h2_timer::~h2_timer()
 {
    h2_assert_g();
-   long long delta = (::clock() - start) * 1000 / CLOCKS_PER_SEC;
+   double delta = (::clock() - start) * 1000.0 / CLOCKS_PER_SEC;
    if (ms < delta) {
       h2_row row = "performance expect < ";
-      row.printf("green", "%lld", ms).printf("", " ms, but actually cost ").printf("red", "%lld", delta).printf("", " ms");
+      row.printf("green", "%d", ms).printf("", " ms, but actually cost ").printf("red", "%d", (int)delta).printf("", " ms");
       h2_fail_g(h2_fail::new_normal(row, file, line));
    }
 }
@@ -5347,11 +5344,13 @@ static inline void fmt_char(char c, bool eq, const char* style, h2_row& row)
 {
    char t_style[32] = "";
    if (!eq) strcpy(t_style, style);
-   if (c == '\n') c = 'n', strcat(t_style, ",inverse");
-   if (c == '\r') c = 'r', strcat(t_style, ",inverse");
-   if (c == '\t') c = 't', strcat(t_style, ",inverse");
-   if (c == '\0') c = ' ', eq || strcat(t_style, ",inverse");
-   row.printf(t_style, "%c", c);
+   switch (c) {
+   case '\n': row.printf(t_style, "␍"); break;
+   case '\r': row.printf(t_style, "␊"); break;
+   case '\t': row.printf(t_style, "␉"); break;
+   case '\0': row.printf(t_style, "␀"); break;
+   default: row.printf(t_style, "%c", c); break;
+   }
 }
 
 struct h2_fail_strcmp : h2_fail_unexpect {
@@ -5635,37 +5634,37 @@ struct h2_report_impl {
    h2_list x;
    int suites = 0, cases = 0;
    int suite_index = 0, suite_case_index = 0, runner_case_index = 0;
-   long long runner_cost = 0, suite_cost = 0, case_cost = 0;
+   clock_t runner_cost = 0, suite_cost = 0, case_cost = 0;
 
    virtual void on_runner_start(h2_runner* r)
    {
       suites = r->suites.count();
       h2_list_for_each_entry (s, r->suites, h2_suite, x)
          cases += s->cases.count();
-      runner_cost = (long long)(::clock() * 1000 / CLOCKS_PER_SEC);
+      runner_cost = ::clock();
    }
    virtual void on_runner_endup(h2_runner* r)
    {
-      runner_cost = (long long)(::clock() * 1000 / CLOCKS_PER_SEC) - runner_cost;
+      runner_cost = ::clock() - runner_cost;
    }
    virtual void on_suite_start(h2_suite* s)
    {
       suite_case_index = 0;
-      suite_cost = (long long)(::clock() * 1000 / CLOCKS_PER_SEC);
+      suite_cost = ::clock();
    }
    virtual void on_suite_endup(h2_suite* s)
    {
-      suite_cost = (long long)(::clock() * 1000 / CLOCKS_PER_SEC) - suite_cost;
+      suite_cost = ::clock() - suite_cost;
    }
    virtual void on_case_start(h2_suite* s, h2_case* c)
    {
       ++suite_case_index;
-      case_cost = (long long)(::clock() * 1000 / CLOCKS_PER_SEC);
+      case_cost = ::clock();
    }
    virtual void on_case_endup(h2_suite* s, h2_case* c)
    {
       ++runner_case_index;
-      case_cost = (long long)(::clock() * 1000 / CLOCKS_PER_SEC) - case_cost;
+      case_cost = ::clock() - case_cost;
    }
 };
 
@@ -5718,17 +5717,18 @@ struct h2_report_console : h2_report_impl {
       }
       s_last = h2_stdio::I().capture_length;
    }
-   const char* format_duration(long long ms)
+   const char* format_duration(clock_t ticks)
    {
+      double ms = ticks * 1000.0 / CLOCKS_PER_SEC;
       static char st[128];
       if (ms < 100)
-         sprintf(st, "%lld milliseconds", ms);
+         sprintf(st, "%d milliseconds", (int)ceil(ms));
       else if (ms < 1000 * 60)
-         sprintf(st, "%.2g seconds", ms / (double)1000.0);
+         sprintf(st, "%.2g seconds", ms / 1000.0);
       else if (ms < 1000 * 60 * 60)
-         sprintf(st, "%.2g minutes", ms / (double)6000.0);
+         sprintf(st, "%.2g minutes", ms / 6000.0);
       else
-         sprintf(st, "%.2g hours", ms / (double)36000.0);
+         sprintf(st, "%.2g hours", ms / 36000.0);
 
       return st;
    }
@@ -5965,12 +5965,6 @@ h2_inline void h2_report::on_suite_endup(h2_suite* s) { h2_list_for_each_entry (
 h2_inline void h2_report::on_case_start(h2_suite* s, h2_case* c) { h2_list_for_each_entry (p, reports, h2_report_impl, x) p->on_case_start(s, c); }
 h2_inline void h2_report::on_case_endup(h2_suite* s, h2_case* c) { h2_list_for_each_entry (p, reports, h2_report_impl, x) p->on_case_endup(s, c); }
 // source/render/h2_layout.cpp
-#if defined _MSC_VER
-#   define H2_SP "|"
-#else
-#   define H2_SP "│"
-#endif
-
 static inline h2_rows row_break(const h2_row& row, unsigned width)
 {
    h2_rows rows;
@@ -6003,7 +5997,7 @@ static inline h2_rows row_break(const h2_row& row, unsigned width)
 static inline void rows_merge(h2_rows& rows, const h2_rows& left_rows, const h2_rows& right_rows, unsigned left_width, unsigned right_width, int step, char scale, int seq_width)
 {
    char seq_fmt[32];
-   sprintf(seq_fmt, "%%%d%c" H2_SP " ", seq_width, scale);
+   sprintf(seq_fmt, "%%%d%c│ ", seq_width, scale);
    const h2_string left_empty(left_width, ' '), right_empty(right_width, ' ');
    for (size_t i = 0; i < std::max(left_rows.size(), right_rows.size()); ++i) {
       auto left_wrap_rows = row_break(i < left_rows.size() ? left_rows[i] : left_empty, left_width);
@@ -6017,7 +6011,7 @@ static inline void rows_merge(h2_rows& rows, const h2_rows& left_rows, const h2_
                row.indent(seq_width + 2);
          }
          row += j < left_wrap_rows.size() ? left_wrap_rows[j].brush("reset") : color(left_empty, "reset");
-         row.printf("dark gray", j < left_wrap_rows.size() - 1 ? "\\" H2_SP " " : " " H2_SP " ");
+         row.printf("dark gray", j < left_wrap_rows.size() - 1 ? "\\│ " : " │ ");
          row += j < right_wrap_rows.size() ? right_wrap_rows[j].brush("reset") : color(right_empty, "reset");
          row.printf("dark gray", j < right_wrap_rows.size() - 1 ? "\\" : " ");
          rows.push_back(row);

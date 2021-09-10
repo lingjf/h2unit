@@ -1,5 +1,5 @@
 #include "../source/h2_unit.cpp"
-#if !(defined __CYGWIN__ || defined __MINGW32__ || defined __MINGW64__)
+#if !(defined __CYGWIN__ || defined __MINGW32__ || defined __MINGW64__ || defined NO_CAST_TESTING)
 
 #include "test_types.hpp"
 
@@ -11,10 +11,10 @@ SUITE(Cast String)
    {
 #define TheCheck(x, y)   \
    OK(x, y);             \
+   OK(Eq(x), y);         \
    OK(CaseLess(x), y);   \
    OK(Substr(x), y);     \
-   OK(Re(x), y);         \
-   OK(AnyOf(x), y);
+   OK(Re(x), y);
 
       H2Fullmesh(TheCheck, STRING_VAR_LIST);
 #undef TheCheck
@@ -22,12 +22,9 @@ SUITE(Cast String)
 
    Case(OK)
    {
-#define TheCheck(x, y)   \
-   OK(Eq(x), y);         \
-   OK(CaseLess(x), y);   \
-   OK(Substr(x), y);     \
-   OK(Re(x), y);         \
-   OK(AllOf(_, x), y);   \
+#define TheCheck(x, y)        \
+   OK(AnyOf(x), y);           \
+   OK(AllOf(_, x), y);        \
    OK(Not(!NoneOf(Nq(x))), y);
 
       H2Fullmesh(TheCheck, STRING_VAR_LIST);

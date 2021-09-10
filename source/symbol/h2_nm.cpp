@@ -4,11 +4,11 @@ static inline void nm_mangle(std::map<std::string, unsigned long long>*& symbols
    h2_memory::hook(false);
    char nm[256], line[2048], addr[128], type, name[2048];
    symbols = new std::map<std::string, unsigned long long>();
-#if defined __APPLE__
+#   if defined __APPLE__
    sprintf(nm, "nm -U %s", O.path);
-#else
+#   else
    sprintf(nm, "nm --defined-only %s", O.path);
-#endif
+#   endif
    FILE* f = ::popen(nm, "r");
    if (f) {
       while (::fgets(line, sizeof(line) - 1, f)) {
@@ -27,11 +27,11 @@ static inline void nm_demangle(h2_list& symbols)
 {
    h2_memory::hook(false);
    char nm[256], line[2048], addr[128], type, name[2048];
-#if defined __APPLE__
+#   if defined __APPLE__
    sprintf(nm, "nm -f bsd --demangle -U -n %s", O.path);
-#else
+#   else
    sprintf(nm, "nm -f bsd --demangle --defined-only -n %s", O.path);
-#endif
+#   endif
    FILE* f = ::popen(nm, "r");
    if (f) {
       while (::fgets(line, sizeof(line) - 1, f)) {
@@ -54,12 +54,6 @@ static inline bool strncmp_reverse(const char* a, const char* ae, const char* b,
    return !strncmp(ae - n, be - n, n);
 }
 
-h2_inline void h2_nm::initialize()
-{
-#if defined _WIN32
-   SymInitialize(GetCurrentProcess(), NULL, TRUE);
-#endif
-}
 h2_inline int h2_nm::get_by_name(const char* name, h2_symbol* res[], int n)
 {
    if (!name) return 0;

@@ -11,7 +11,7 @@ struct h2_shell {
       //TODO get PowerShell width
 #else
       struct winsize w;
-      if (-1 != ioctl(STDOUT_FILENO, TIOCGWINSZ, &w)) cww = w.ws_col;
+      if (-1 != ioctl(STDOUT_FILENO, TIOCGWINSZ, &w)) cww = 16 < w.ws_col && w.ws_col <= 120 ? w.ws_col : 120;
 #endif
    }
 
@@ -68,7 +68,7 @@ struct h2_shell {
          LIBC__write(fileno(stdout), str, strlen(str));
       }
    }
-   int style2value(const char* style)
+   int style2value(const char* style)  // https://en.wikipedia.org/wiki/ANSI_escape_code#CSI_sequences
    {
       if (!strcmp(style, "reset")) return 0;
       if (!strcmp(style, "bold")) return 1;

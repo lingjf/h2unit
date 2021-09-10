@@ -133,11 +133,13 @@ static inline void fmt_char(char c, bool eq, const char* style, h2_row& row)
 {
    char t_style[32] = "";
    if (!eq) strcpy(t_style, style);
-   if (c == '\n') c = 'n', strcat(t_style, ",inverse");
-   if (c == '\r') c = 'r', strcat(t_style, ",inverse");
-   if (c == '\t') c = 't', strcat(t_style, ",inverse");
-   if (c == '\0') c = ' ', eq || strcat(t_style, ",inverse");
-   row.printf(t_style, "%c", c);
+   switch (c) {
+   case '\n': row.printf(t_style, "␍"); break;
+   case '\r': row.printf(t_style, "␊"); break;
+   case '\t': row.printf(t_style, "␉"); break;
+   case '\0': row.printf(t_style, "␀"); break;
+   default: row.printf(t_style, "%c", c); break;
+   }
 }
 
 struct h2_fail_strcmp : h2_fail_unexpect {

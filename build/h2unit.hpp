@@ -1,5 +1,5 @@
-﻿
-/* v5.13 2021-08-29 21:13:58 */
+
+/* v5.13 2021-09-11 00:38:28 */
 /* https://github.com/lingjf/h2unit */
 /* Apache Licence 2.0 */
 
@@ -955,7 +955,6 @@ struct h2_symbol {
 
 struct h2_nm {
    h2_singleton(h2_nm);
-   static void initialize();
    std::map<std::string, unsigned long long>* mangle_symbols;
    h2_list demangle_symbols;
    static int get_by_name(const char* name, h2_symbol* res[], int n);
@@ -1107,16 +1106,6 @@ struct h2_json {
    static bool diff(const h2_string& expect, const h2_string& actual, h2_rows& e_lines, h2_rows& a_lines, bool caseless);
 };
 // source/matcher/h2_matches.hpp
-#if defined _MSC_VER
-#   define H2_GE ">="
-#   define H2_LE "<="
-#   define H2_NE "!="
-#else
-#   define H2_GE "≥"
-#   define H2_LE "≤"
-#   define H2_NE "≠"
-#endif
-
 struct h2_matches {
    virtual h2_row expection(bool caseless, bool dont) const = 0;
 };
@@ -1209,7 +1198,7 @@ struct h2_equation : h2_matches {
    }
    virtual h2_row expection(bool, bool dont) const override
    {
-      return CD(h2_representify(e), false, dont, H2_NE);
+      return CD(h2_representify(e), false, dont, "≠");
    }
 };
 
@@ -1228,7 +1217,7 @@ struct h2_equation<E, typename std::enable_if<std::is_convertible<E, h2_string>:
    }
    virtual h2_row expection(bool caseless, bool dont) const override
    {
-      return CD(h2_representify(e), caseless, dont, H2_NE);
+      return CD(h2_representify(e), caseless, dont, "≠");
    }
 };
 
@@ -1259,7 +1248,13 @@ struct h2_equation<E, typename std::enable_if<std::is_arithmetic<E>::value>::typ
    }
    virtual h2_row expection(bool, bool dont) const override
    {
-      return CD(h2_representify(e), false, dont, H2_NE);
+      h2_row t = h2_representify(e);
+      if (epsilon != 0) {
+         h2_ostringstream oss;
+         oss << "±" << std::fixed << epsilon;
+         t += oss.str().c_str();
+      }
+      return CD(t, false, dont, "≠");
    }
 };
 
@@ -1668,7 +1663,7 @@ struct h2_matches_ge : h2_matches {
    }
    virtual h2_row expection(bool, bool dont) const override
    {
-      return CD(H2_GE + h2_representify(e), false, dont);
+      return CD("≥" + h2_representify(e), false, dont);
    }
 };
 
@@ -1702,7 +1697,7 @@ struct h2_matches_le : h2_matches {
    }
    virtual h2_row expection(bool, bool dont) const override
    {
-      return CD(H2_LE + h2_stringify(e), false, dont);
+      return CD("≤" + h2_stringify(e), false, dont);
    }
 };
 
@@ -3535,8 +3530,9 @@ static inline h2_ostringstream& h2_je(h2_defer_failure* d, h2_string e, h2_strin
 struct h2_timer : h2_once {
    const char* file;
    int line;
-   long long ms, start;
-   h2_timer(long long ms, const char* file, int line);
+   int ms;
+   clock_t start;
+   h2_timer(int ms, const char* file, int line);
    ~h2_timer();
 };
 

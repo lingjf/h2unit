@@ -7,7 +7,6 @@ struct h2_symbol {
 
 struct h2_nm {
    h2_singleton(h2_nm);
-   static void initialize();
    std::map<std::string, unsigned long long>* mangle_symbols;
    h2_list demangle_symbols;
    static int get_by_name(const char* name, h2_symbol* res[], int n);
