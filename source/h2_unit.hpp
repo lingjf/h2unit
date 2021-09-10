@@ -290,6 +290,9 @@ namespace h2 {
 #   pragma message("Casess conflict, using H2Casess instead.")
 #endif
 
+#define Cases_t H2Cases_t
+#define Casess_t H2Casess_t
+
 #ifndef CASES_T
 #   define CASES_T H2CASES_T
 #else
@@ -301,6 +304,13 @@ namespace h2 {
 #else
 #   pragma message("CASESS_T conflict, using H2CASESS_T instead.")
 #endif
+
+#define Todos H2Todos
+#define Todoss H2Todoss
+#define TODOS H2TODOS
+#define TODOSS H2TODOSS
+#define TODOS_T H2TODOS_T
+#define TODOSS_T H2TODOSS_T
 
 /* clang-format off */
 using h2::_;

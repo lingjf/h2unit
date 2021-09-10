@@ -53,12 +53,27 @@ CASES(1, 2, 3)
    OK(Gt(0), x);
 }
 
+TODOS(1, 2, 3)
+{
+   OK(Gt(0), x);
+}
+
 CASESS((1, 2, 3), (4, 5, 6))
 {
    OK(x < y);
 }
 
+TODOSS((1, 2, 3), (4, 5, 6))
+{
+   OK(x < y);
+}
+
 CASESS(1, 2, 3)
+{
+   OK(1 < x + y);
+}
+
+TODOSS(1, 2, 3)
 {
    OK(1 < x + y);
 }
@@ -74,11 +89,24 @@ SUITE(test foreach)
    {
       OK(Gt(0), x);
    }
+
+   Todos(1, 2, 3)
+   {
+      OK(Gt(0), x);
+   }
+
+   // Cases_t(int, long, double)
+   // {
+   // }
 }
 
 SUITE(test fullmesh)
 {
    Casess(1, 2, 3)
+   {
+      OK(Gt(1), x + y);
+   }
+   Todoss(1, 2, 3)
    {
       OK(Gt(1), x + y);
    }
@@ -90,7 +118,20 @@ CASES_T(int, long, double)
    OK(Gt(0), value);
 }
 
+TODOS_T(int, long, double)
+{
+   x value = 1;
+   OK(Gt(0), value);
+}
+
 CASESS_T(int, long, double)
+{
+   x value_x = 1;
+   y value_y = 1;
+   OK(value_x, value_y);
+}
+
+TODOSS_T(int, long, double)
 {
    x value_x = 1;
    y value_y = 1;

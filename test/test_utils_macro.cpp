@@ -378,3 +378,42 @@ SUITE(macro)
       int H2PP_UNIQUE(prefix) = 1;
    }
 }
+
+SUITE(Iterator i j)
+{
+   Case(H2PP_STR)
+   {
+      const char* e[] = {"0.a", "1.b", "2.c"};
+#define Fora(Dummy, i, x) OK(e[i], H2PP_STR(i.x));
+      H2PP_FOREACH(, Fora, (), a, b, c)
+#undef Fora
+   }
+
+   Case(H2PP_UNIQUE)
+   {
+      struct S {
+#define Fora(Dummy, i, x) int H2PP_UNIQUE(x) = i;
+
+         H2PP_FOREACH(, Fora, (), a, b, c)
+#undef Fora
+      } s;
+
+      OK(0, ((int*)(&s))[0]);
+      OK(1, ((int*)(&s))[1]);
+      OK(2, ((int*)(&s))[2]);
+   }
+
+   Case(H2PP_UNIQUE)
+   {
+      struct S {
+#define Fora(Dummy, i, x) int H2PP_UNIQUE(i) = i;
+
+         H2PP_FOREACH(, Fora, (), a, b, c)
+#undef Fora
+      } s;
+
+      OK(0, ((int*)(&s))[0]);
+      OK(1, ((int*)(&s))[1]);
+      OK(2, ((int*)(&s))[2]);
+   }
+}
