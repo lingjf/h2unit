@@ -95,7 +95,7 @@ struct h2_socket {
       return nullptr;
    }
 
-   static int accept(int socket, struct sockaddr* address, socklen_t* address_len)
+   static int h2__stdcall accept(int socket, struct sockaddr* address, socklen_t* address_len)
    {
       h2_packet* tcp = read_incoming(socket);
       if (!tcp) {
@@ -118,7 +118,7 @@ struct h2_socket {
       return fd;
    }
 
-   static int connect(int socket, const struct sockaddr* address, socklen_t address_len)
+   static int h2__stdcall connect(int socket, const struct sockaddr* address, socklen_t address_len)
    {
       I().sockets.push_back({socket, getsockname(socket, (char*)alloca(64)), iport_tostring((struct sockaddr_in*)address, (char*)alloca(64))});
       h2_packet* tcp = read_incoming(socket);
@@ -133,12 +133,12 @@ struct h2_socket {
       return 0;
    }
 
-   static ssize_t send(int socket, const void* buffer, size_t length, int flags)
+   static ssize_t h2__stdcall send(int socket, const void* buffer, size_t length, int flags)
    {
       I().put_outgoing(socket, (const char*)buffer, length);
       return length;
    }
-   static ssize_t recv(int socket, void* buffer, size_t length, int flags)
+   static ssize_t h2__stdcall recv(int socket, void* buffer, size_t length, int flags)
    {
       ssize_t ret = 0;
       h2_packet* tcp = read_incoming(socket);
@@ -148,12 +148,12 @@ struct h2_socket {
       }
       return ret;
    }
-   static ssize_t sendto(int socket, const void* buffer, size_t length, int flags, const struct sockaddr* dest_addr, socklen_t dest_len)
+   static ssize_t h2__stdcall sendto(int socket, const void* buffer, size_t length, int flags, const struct sockaddr* dest_addr, socklen_t dest_len)
    {
       I().put_outgoing(getsockname(socket, (char*)alloca(64)), iport_tostring((struct sockaddr_in*)dest_addr, (char*)alloca(64)), (const char*)buffer, length);
       return length;
    }
-   static ssize_t recvfrom(int socket, void* buffer, size_t length, int flags, struct sockaddr* address, socklen_t* address_len)
+   static ssize_t h2__stdcall recvfrom(int socket, void* buffer, size_t length, int flags, struct sockaddr* address, socklen_t* address_len)
    {
       ssize_t ret = 0;
       h2_packet* udp = read_incoming(socket);
@@ -167,11 +167,11 @@ struct h2_socket {
       return ret;
    }
 #if !defined _WIN32
-   static ssize_t sendmsg(int socket, const struct msghdr* message, int flags)
+   static ssize_t h2__stdcall sendmsg(int socket, const struct msghdr* message, int flags)
    {
       return sendto(socket, message->msg_iov[0].iov_base, message->msg_iov[0].iov_len, 0, (struct sockaddr*)message->msg_name, message->msg_namelen);
    }
-   static ssize_t recvmsg(int socket, struct msghdr* message, int flags)
+   static ssize_t h2__stdcall recvmsg(int socket, struct msghdr* message, int flags)
    {
       return recvfrom(socket, message->msg_iov[0].iov_base, message->msg_iov[0].iov_len, 0, (struct sockaddr*)message->msg_name, &message->msg_namelen);
    }

@@ -77,6 +77,12 @@
 #   define LIBC__write ::write
 #endif
 
+#if defined _MSC_VER
+#   define h2__stdcall __stdcall
+#else
+#   define h2__stdcall
+#endif
+
 #if defined _WIN32 || defined __CYGWIN__ // +MinGW
 int main(int argc, const char** argv);
 #   if defined __H2UNIT_HPP__ || defined IMPORT_MAIN

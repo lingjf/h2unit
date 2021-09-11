@@ -1084,4 +1084,16 @@ twofiles speed up 2~3 times than onefile.
 *    sqrt() in math.h can be STUB/MOCK, because compiler insert sqrtsd ASM instruction directly instead of function call
 
 ```Shell
-   LD_BIND                                       
+   LD_BIND_NOW=1 ./a.out
+   gcc --Wl,z,now
+```
+
+
+
+
+
+
+
+
+
+

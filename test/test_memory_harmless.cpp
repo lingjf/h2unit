@@ -29,6 +29,7 @@ SUITE(harmless)
    char* p;
    int ret;
 
+#if !defined __MINGW32__
    Case(time.h)
    {
       struct timeval tv;
@@ -51,6 +52,7 @@ SUITE(harmless)
       localtime(&t3);
       strftime(t, sizeof(t), "%a, %d %b %Y %T %z", t4);
    }
+#endif
 
    Case(string.h)
    {

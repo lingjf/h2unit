@@ -24,7 +24,7 @@ struct h2_resolver {
       return nullptr;
    }
 
-   static int getaddrinfo(const char* hostname, const char* servname, const struct addrinfo* hints, struct addrinfo** res)
+   static int h2__stdcall getaddrinfo(const char* hostname, const char* servname, const struct addrinfo* hints, struct addrinfo** res)
    {
       h2_name* name = I().find(hostname);
       if (!name) return -1;
@@ -59,9 +59,9 @@ struct h2_resolver {
       return 0;
    }
 
-   static void freeaddrinfo(struct addrinfo* ai) {}
+   static void h2__stdcall freeaddrinfo(struct addrinfo* ai) {}
 
-   static struct hostent* gethostbyname(char* hostname)
+   static struct hostent* h2__stdcall gethostbyname(char* hostname)
    {
       h2_name* name = I().find(hostname);
       if (!name) return nullptr;

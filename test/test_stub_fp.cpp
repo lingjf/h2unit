@@ -1,6 +1,14 @@
 #include "../source/h2_unit.cpp"
 #include "test_types.hpp"
 
+#if defined _MSC_VER && (defined __i386__ || defined _M_IX86)
+#   define TEST__thiscall __thiscall
+#elif defined __MINGW32__
+#   define TEST__thiscall __thiscall
+#else
+#   define TEST__thiscall
+#endif
+
 SUITE(normal fp)
 {
    void* fp;
@@ -125,7 +133,7 @@ SUITE(mfp for normal member function)
    {
       void* A_AbstractClass__normal_f1 = h2::h2_fp<A_AbstractClass, const char*(int)>::A(&A_AbstractClass::normal_f1);
       OK(NotNull, A_AbstractClass__normal_f1);
-      typedef const char* (*A_AbstractClass__normal_f1_Type)(A_AbstractClass*, int);
+      typedef const char*(TEST__thiscall * A_AbstractClass__normal_f1_Type)(A_AbstractClass*, int);
       OK("A.normal_f1(1)a", ((A_AbstractClass__normal_f1_Type)A_AbstractClass__normal_f1)((A_AbstractClass*)&b, 1));
    }
 
@@ -133,12 +141,12 @@ SUITE(mfp for normal member function)
    {
       void* B_DerivedClass__normal_f1 = h2::h2_fp<B_DerivedClass, const char*(int)>::A(&B_DerivedClass::normal_f1);
       OK(NotNull, B_DerivedClass__normal_f1);
-      typedef const char* (*B_DerivedClass__normal_f1_Type)(B_DerivedClass*, int);
+      typedef const char*(TEST__thiscall * B_DerivedClass__normal_f1_Type)(B_DerivedClass*, int);
       OK("A.normal_f1(1)a", ((B_DerivedClass__normal_f1_Type)B_DerivedClass__normal_f1)(&b, 1));
 
       void* B_DerivedClass__normal_f2 = h2::h2_fp<B_DerivedClass, const char*(int, int)>::A(&B_DerivedClass::normal_f2);
       OK(NotNull, B_DerivedClass__normal_f2);
-      typedef const char* (*B_DerivedClass__normal_f2_Type)(B_DerivedClass*, int, int);
+      typedef const char*(TEST__thiscall * B_DerivedClass__normal_f2_Type)(B_DerivedClass*, int, int);
       OK("B.normal_f2(1,2)b", ((B_DerivedClass__normal_f2_Type)B_DerivedClass__normal_f2)(&b, 1, 2));
    }
 
@@ -146,12 +154,12 @@ SUITE(mfp for normal member function)
    {
       void* C_OverrideClass__normal_f1 = h2::h2_fp<C_OverrideClass, const char*(int)>::A(&C_OverrideClass::normal_f1);
       OK(NotNull, C_OverrideClass__normal_f1);
-      typedef const char* (*C_OverrideClass__normal_f1_Type)(C_OverrideClass*, int);
+      typedef const char*(TEST__thiscall * C_OverrideClass__normal_f1_Type)(C_OverrideClass*, int);
       OK("C.normal_f1(1)c", ((C_OverrideClass__normal_f1_Type)C_OverrideClass__normal_f1)(&c, 1));
 
       void* C_OverrideClass__normal_f2 = h2::h2_fp<C_OverrideClass, const char*(int, int)>::A(&C_OverrideClass::normal_f2);
       OK(NotNull, C_OverrideClass__normal_f2);
-      typedef const char* (*C_OverrideClass__normal_f2_Type)(C_OverrideClass*, int, int);
+      typedef const char*(TEST__thiscall * C_OverrideClass__normal_f2_Type)(C_OverrideClass*, int, int);
       OK("C.normal_f2(1,2)c", ((C_OverrideClass__normal_f2_Type)C_OverrideClass__normal_f2)(&c, 1, 2));
    }
 }
@@ -168,7 +176,7 @@ SUITE(mfp for virtual member function)
    {
       void* A_AbstractClass__virtual_f1 = h2::h2_fp<A_AbstractClass, const char*(int)>::A(&A_AbstractClass::virtual_f1);
       OK(NotNull, A_AbstractClass__virtual_f1);
-      typedef const char* (*A_AbstractClass__virtual_f1_Type)(A_AbstractClass*, int);
+      typedef const char*(TEST__thiscall * A_AbstractClass__virtual_f1_Type)(A_AbstractClass*, int);
       OK("A.virtual_f1(1)a", ((A_AbstractClass__virtual_f1_Type)A_AbstractClass__virtual_f1)(a, 1));
    }
 #endif
@@ -177,7 +185,7 @@ SUITE(mfp for virtual member function)
    {
       void* A_AbstractClass__virtual_f1 = h2::h2_fp<A_AbstractClass, const char*(int)>::B(a, &A_AbstractClass::virtual_f1);
       OK(NotNull, A_AbstractClass__virtual_f1);
-      typedef const char* (*A_AbstractClass__virtual_f1_Type)(A_AbstractClass*, int);
+      typedef const char*(TEST__thiscall * A_AbstractClass__virtual_f1_Type)(A_AbstractClass*, int);
       OK("A.virtual_f1(1)a", ((A_AbstractClass__virtual_f1_Type)A_AbstractClass__virtual_f1)(a, 1));
    }
 
@@ -185,12 +193,12 @@ SUITE(mfp for virtual member function)
    {
       void* B_DerivedClass__virtual_f1 = h2::h2_fp<B_DerivedClass, const char*(int)>::A(&B_DerivedClass::virtual_f1);
       OK(NotNull, B_DerivedClass__virtual_f1);
-      typedef const char* (*B_DerivedClass__virtual_f1_Type)(B_DerivedClass*, int);
+      typedef const char*(TEST__thiscall * B_DerivedClass__virtual_f1_Type)(B_DerivedClass*, int);
       OK("A.virtual_f1(1)a", ((B_DerivedClass__virtual_f1_Type)B_DerivedClass__virtual_f1)(&b, 1));
 
       void* B_DerivedClass__virtual_f2 = h2::h2_fp<B_DerivedClass, const char*(int, int)>::A(&B_DerivedClass::virtual_f2);
       OK(NotNull, B_DerivedClass__virtual_f2);
-      typedef const char* (*B_DerivedClass__virtual_f2_Type)(B_DerivedClass*, int, int);
+      typedef const char*(TEST__thiscall * B_DerivedClass__virtual_f2_Type)(B_DerivedClass*, int, int);
       OK("B.virtual_f2(1,2)b", ((B_DerivedClass__virtual_f2_Type)B_DerivedClass__virtual_f2)(&b, 1, 2));
    }
 
@@ -198,12 +206,12 @@ SUITE(mfp for virtual member function)
    {
       void* C_OverrideClass__virtual_f1 = h2::h2_fp<C_OverrideClass, const char*(int)>::A(&C_OverrideClass::virtual_f1);
       OK(NotNull, C_OverrideClass__virtual_f1);
-      typedef const char* (*C_OverrideClass__virtual_f1_Type)(C_OverrideClass*, int);
+      typedef const char*(TEST__thiscall * C_OverrideClass__virtual_f1_Type)(C_OverrideClass*, int);
       OK("C.virtual_f1(1)c", ((C_OverrideClass__virtual_f1_Type)C_OverrideClass__virtual_f1)(&c, 1));
 
       void* C_OverrideClass__virtual_f2 = h2::h2_fp<C_OverrideClass, const char*(int, int)>::A(&C_OverrideClass::virtual_f2);
       OK(NotNull, C_OverrideClass__virtual_f2);
-      typedef const char* (*C_OverrideClass__virtual_f2_Type)(C_OverrideClass*, int, int);
+      typedef const char*(TEST__thiscall * C_OverrideClass__virtual_f2_Type)(C_OverrideClass*, int, int);
       OK("C.virtual_f2(1,2)c", ((C_OverrideClass__virtual_f2_Type)C_OverrideClass__virtual_f2)(&c, 1, 2));
    }
 
@@ -212,17 +220,17 @@ SUITE(mfp for virtual member function)
    {
       void* D_NoConstructorClass__virtual_f1 = h2::h2_fp<D_NoConstructorClass, const char*(int)>::A(&D_NoConstructorClass::virtual_f1);
       OK(NotNull, D_NoConstructorClass__virtual_f1);
-      typedef const char* (*D_NoConstructorClass__virtual_f1_Type)(D_NoConstructorClass*, int);
+      typedef const char*(TEST__thiscall * D_NoConstructorClass__virtual_f1_Type)(D_NoConstructorClass*, int);
       OK("D.virtual_f1(1)d", ((D_NoConstructorClass__virtual_f1_Type)D_NoConstructorClass__virtual_f1)(&d, 1));
 
       void* D_NoConstructorClass__virtual_f2 = h2::h2_fp<D_NoConstructorClass, const char*(int, int)>::A(&D_NoConstructorClass::virtual_f2);
       OK(NotNull, D_NoConstructorClass__virtual_f2);
-      typedef const char* (*D_NoConstructorClass__virtual_f2_Type)(D_NoConstructorClass*, int, int);
+      typedef const char*(TEST__thiscall * D_NoConstructorClass__virtual_f2_Type)(D_NoConstructorClass*, int, int);
       OK("D.virtual_f2(1,2)d", ((D_NoConstructorClass__virtual_f2_Type)D_NoConstructorClass__virtual_f2)(&d, 1, 2));
 
       void* D_NoConstructorClass__virtual_f3 = h2::h2_fp<D_NoConstructorClass, const char*(int, int, int)>::A(&D_NoConstructorClass::virtual_f3);
       OK(NotNull, D_NoConstructorClass__virtual_f3);
-      typedef const char* (*D_NoConstructorClass__virtual_f3_Type)(D_NoConstructorClass*, int, int, int);
+      typedef const char*(TEST__thiscall * D_NoConstructorClass__virtual_f3_Type)(D_NoConstructorClass*, int, int, int);
       OK("D.virtual_f3(1,2,3)d", ((D_NoConstructorClass__virtual_f3_Type)D_NoConstructorClass__virtual_f3)(&d, 1, 2, 3));
    }
 #endif
@@ -231,17 +239,17 @@ SUITE(mfp for virtual member function)
    {
       void* D_NoConstructorClass__virtual_f1 = h2::h2_fp<D_NoConstructorClass, const char*(int)>::B(&d, &D_NoConstructorClass::virtual_f1);
       OK(NotNull, D_NoConstructorClass__virtual_f1);
-      typedef const char* (*D_NoConstructorClass__virtual_f1_Type)(D_NoConstructorClass*, int);
+      typedef const char*(TEST__thiscall * D_NoConstructorClass__virtual_f1_Type)(D_NoConstructorClass*, int);
       OK("D.virtual_f1(1)d", ((D_NoConstructorClass__virtual_f1_Type)D_NoConstructorClass__virtual_f1)(&d, 1));
 
       void* D_NoConstructorClass__virtual_f2 = h2::h2_fp<D_NoConstructorClass, const char*(int, int)>::B(&d, &D_NoConstructorClass::virtual_f2);
       OK(NotNull, D_NoConstructorClass__virtual_f2);
-      typedef const char* (*D_NoConstructorClass__virtual_f2_Type)(D_NoConstructorClass*, int, int);
+      typedef const char*(TEST__thiscall * D_NoConstructorClass__virtual_f2_Type)(D_NoConstructorClass*, int, int);
       OK("D.virtual_f2(1,2)d", ((D_NoConstructorClass__virtual_f2_Type)D_NoConstructorClass__virtual_f2)(&d, 1, 2));
 
       void* D_NoConstructorClass__virtual_f3 = h2::h2_fp<D_NoConstructorClass, const char*(int, int, int)>::B(&d, &D_NoConstructorClass::virtual_f3);
       OK(NotNull, D_NoConstructorClass__virtual_f3);
-      typedef const char* (*D_NoConstructorClass__virtual_f3_Type)(D_NoConstructorClass*, int, int, int);
+      typedef const char*(TEST__thiscall * D_NoConstructorClass__virtual_f3_Type)(D_NoConstructorClass*, int, int, int);
       OK("D.virtual_f3(1,2,3)d", ((D_NoConstructorClass__virtual_f3_Type)D_NoConstructorClass__virtual_f3)(&d, 1, 2, 3));
    }
 }

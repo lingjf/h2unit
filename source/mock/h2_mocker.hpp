@@ -36,7 +36,7 @@ class h2_mocker<Counter, ClassType, ReturnType(ArgumentTypes...)> : h2_mocker_ba
    h2_vector<h2_routine<ClassType, ReturnType(ArgumentTypes...)>> routine_array;
    h2_routine<ClassType, ReturnType(ArgumentTypes...)> original;
 
-   static ReturnType member_function_stub(ClassType* This, ArgumentTypes... arguments)
+   static ReturnType function_stub(ClassType* This, ArgumentTypes... arguments)
    {
       int index = I().matches(std::forward<ArgumentTypes>(arguments)...);
       h2::h2_stub_temporary_restore t(I().srcfp);
@@ -45,10 +45,11 @@ class h2_mocker<Counter, ClassType, ReturnType(ArgumentTypes...)> : h2_mocker_ba
       return I().routine_array[index](This, std::forward<ArgumentTypes>(arguments)...);
    }
 
-   static ReturnType normal_function_stub(ArgumentTypes... arguments)
-   {
-      return member_function_stub(nullptr, std::forward<ArgumentTypes>(arguments)...);
-   }
+   struct member_function_stub {  // wrap for calling conversions
+      ReturnType fx(ArgumentTypes... arguments) { return function_stub((ClassType*)this, std::forward<ArgumentTypes>(arguments)...); }
+   };
+
+   static ReturnType normal_function_stub(ArgumentTypes... arguments) { return function_stub(nullptr, std::forward<ArgumentTypes>(arguments)...); }
 
    int matches(ArgumentTypes... arguments)
    {
@@ -116,7 +117,7 @@ class h2_mocker<Counter, ClassType, ReturnType(ArgumentTypes...)> : h2_mocker_ba
          I().dstfp = (void*)normal_function_stub;
          I().original.fp = (ReturnType(*)(ArgumentTypes...))srcfp;
       } else {
-         I().dstfp = (void*)member_function_stub;
+         I().dstfp = h2::h2_fp<member_function_stub, ReturnType(ArgumentTypes...)>::A(&member_function_stub::fx);
          I().original.mfp = (ReturnType(*)(ClassType*, ArgumentTypes...))srcfp;
       }
       I().srcfp = srcfp;

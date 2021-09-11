@@ -78,6 +78,7 @@ namespace h2 {
 #include "stub/h2_fp.hpp"             // nm, load
 #include "stub/h2_stubs.hpp"          // -
 #include "stub/h2_temporary.hpp"      // -
+#include "stub/h2_stuber.hpp"         // -
 #include "stub/h2_stub.hpp"           // -
 #include "mock/h2_routine.hpp"        //
 #include "mock/h2_checkin.hpp"        // failure

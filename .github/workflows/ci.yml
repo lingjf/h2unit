@@ -139,7 +139,6 @@ jobs:
       - name: build print
         run: cmake --build ci_print
       - name: run print
-        if: ${{matrix.env != 'mingw32'}}
         run: ./ci_print/a.out -e 'new[] free'
       - name: show help tips
         run: ./ci_print/a.out -h
@@ -150,17 +149,14 @@ jobs:
       - name: 🏗️ build test
         run: cmake --build ci_test -j 2 --verbose
       - name: run test without memory check
-        if: ${{matrix.env != 'mingw32'}}
         run: ./ci_test/a.out -s -m -v -e test_memory_
       - name: ✨ run test with memory check
-        if: ${{matrix.env != 'mingw32'}}
         run: ./ci_test/a.out -scpvj
       - name: configure example
         run: cmake -B ci_example example
       - name: build example
         run: cmake --build ci_example
       - name: run example
-        if: ${{matrix.env != 'mingw32'}}
         run: ./ci_example/a.out
 
   wsl:
