@@ -8,6 +8,7 @@ static inline const char* h2_basename(const char* path)
 h2_inline bool h2_pattern::regex_match(const char* pattern, const char* subject, bool caseless)
 {
    bool result = false;
+#if !defined _WIN32 || !defined NDEBUG // Windows regex suck under release version and memory check
    h2_memory::hook(false);
    try {  // c++11 support regex; gcc 4.8 start support regex, gcc 5.5 icase works.
       result = std::regex_match(subject, caseless ? std::regex(pattern, std::regex::icase) : std::regex(pattern));
@@ -15,6 +16,7 @@ h2_inline bool h2_pattern::regex_match(const char* pattern, const char* subject,
       result = false;
    }
    h2_memory::hook();
+#endif
    return result;
 }
 

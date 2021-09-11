@@ -51,8 +51,8 @@ SUITE(Ilegal Access)
 
    Case(memory overflow failure)
    {
-      char* p = (char*)malloc(6);
-      p[32] = 'x';
+      int* p = (int*)malloc(6);
+      p[5] = 32717;
       free(p);
    }
 

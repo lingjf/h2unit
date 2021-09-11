@@ -24,9 +24,9 @@
 #   include <malloc.h> /* __malloc_hook */
 #endif
 
-#if defined _WIN32     // +MinGW
-#   ifndef NOMINMAX    // MinGW already defined
-#      define NOMINMAX // fix std::min/max conflict with windows::min/max
+#if defined _WIN32      // +MinGW
+#   ifndef NOMINMAX     // MinGW already defined
+#      define NOMINMAX  // fix std::min/max conflict with windows::min/max
 #   endif
 #   include <winsock2.h> /* socket */
 #   include <windows.h>
@@ -41,9 +41,9 @@
 #   include <windows.h>
 #endif
 
-#if defined _WIN32 || defined __CYGWIN__ // +MinGW
-#   include <dbghelp.h> /* CaptureStackBackTrace, SymFromAddr */
-#   include <shlwapi.h> /* StrStrIA */
+#if defined _WIN32 || defined __CYGWIN__  // +MinGW
+#   include <dbghelp.h>                   /* CaptureStackBackTrace, SymFromAddr */
+#   include <shlwapi.h>                   /* StrStrIA */
 #   define strcasestr StrStrIA
 #endif
 
@@ -71,7 +71,7 @@
 #   include <malloc/malloc.h> /* malloc_zone_t */
 #endif
 
-#if defined _WIN32 // +MinGW
+#if defined _WIN32  // +MinGW
 #   define LIBC__write ::_write
 #else
 #   define LIBC__write ::write
@@ -83,7 +83,7 @@
 #   define h2__stdcall
 #endif
 
-#if defined _WIN32 || defined __CYGWIN__ // +MinGW
+#if defined _WIN32 || defined __CYGWIN__  // +MinGW
 int main(int argc, const char** argv);
 #   if defined __H2UNIT_HPP__ || defined IMPORT_MAIN
 int main(int argc, const char** argv) { return h2::h2_runner::I().main(argc, argv); }
@@ -132,7 +132,7 @@ namespace h2 {
 #   include "memory/h2_override_macos.cpp"
 #elif defined _MSC_VER
 #   include "memory/h2_override_windows.cpp"
-#else // +MinGW
+#else  // +MinGW
 #   include "memory/h2_override_cygwin.cpp"
 #endif
 #include "memory/h2_memory.cpp"

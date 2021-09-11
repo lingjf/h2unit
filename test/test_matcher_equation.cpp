@@ -25,7 +25,9 @@ SUITE(equation matches)
       h2::h2_equation<double> c4(65.001, 0.0001);
       OK(nullptr != c4.matches(65, 0, false, false));
 
-      h2::h2_equation<char*> d1("abc");
+      // cannot convert argument 1 from 'const char [4]' to 'const char *'
+      // <ConformanceMode>false</ConformanceMode>; /permissive- ==> /permissive
+      h2::h2_equation<char*> d1("abc"); 
       OK(nullptr == d1.matches("abc", 0, false, false));
       h2::h2_equation<h2::h2_string> d2("abc");
       OK(nullptr == d2.matches("abc", 0, false, false));
@@ -35,7 +37,9 @@ SUITE(equation matches)
       h2::h2_equation<char*> d4("*bc");
       OK(nullptr == d4.matches("abc", 0, false, false));
 
+#if !defined _WIN32 || !defined NDEBUG // Windows regex suck under release version and memory check
       h2::h2_equation<char*> d5(".*bc");
       OK(nullptr == d5.matches("abc", 0, false, false));
+#endif
    }
 }

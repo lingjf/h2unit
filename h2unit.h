@@ -1,5 +1,5 @@
 
-/* v5.13 2021-09-11 09:40:29 */
+/* v5.13 2021-09-11 11:51:38 */
 /* https://github.com/lingjf/h2unit */
 /* Apache Licence 2.0 */
 
@@ -3900,9 +3900,9 @@ using h2::Pair;
 #   include <malloc.h> /* __malloc_hook */
 #endif
 
-#if defined _WIN32     // +MinGW
-#   ifndef NOMINMAX    // MinGW already defined
-#      define NOMINMAX // fix std::min/max conflict with windows::min/max
+#if defined _WIN32      // +MinGW
+#   ifndef NOMINMAX     // MinGW already defined
+#      define NOMINMAX  // fix std::min/max conflict with windows::min/max
 #   endif
 #   include <winsock2.h> /* socket */
 #   include <windows.h>
@@ -3917,9 +3917,9 @@ using h2::Pair;
 #   include <windows.h>
 #endif
 
-#if defined _WIN32 || defined __CYGWIN__ // +MinGW
-#   include <dbghelp.h> /* CaptureStackBackTrace, SymFromAddr */
-#   include <shlwapi.h> /* StrStrIA */
+#if defined _WIN32 || defined __CYGWIN__  // +MinGW
+#   include <dbghelp.h>                   /* CaptureStackBackTrace, SymFromAddr */
+#   include <shlwapi.h>                   /* StrStrIA */
 #   define strcasestr StrStrIA
 #endif
 
@@ -3947,7 +3947,7 @@ using h2::Pair;
 #   include <malloc/malloc.h> /* malloc_zone_t */
 #endif
 
-#if defined _WIN32 // +MinGW
+#if defined _WIN32  // +MinGW
 #   define LIBC__write ::_write
 #else
 #   define LIBC__write ::write
@@ -3959,7 +3959,7 @@ using h2::Pair;
 #   define h2__stdcall
 #endif
 
-#if defined _WIN32 || defined __CYGWIN__ // +MinGW
+#if defined _WIN32 || defined __CYGWIN__  // +MinGW
 int main(int argc, const char** argv);
 #   if defined __H2UNIT_HPP__ || defined IMPORT_MAIN
 int main(int argc, const char** argv) { return h2::h2_runner::I().main(argc, argv); }
@@ -4161,6 +4161,7 @@ static inline const char* h2_basename(const char* path)
 h2_inline bool h2_pattern::regex_match(const char* pattern, const char* subject, bool caseless)
 {
    bool result = false;
+#if !defined _WIN32 || !defined NDEBUG // Windows regex suck under release version and memory check
    h2_memory::hook(false);
    try {  // c++11 support regex; gcc 4.8 start support regex, gcc 5.5 icase works.
       result = std::regex_match(subject, caseless ? std::regex(pattern, std::regex::icase) : std::regex(pattern));
@@ -4168,6 +4169,7 @@ h2_inline bool h2_pattern::regex_match(const char* pattern, const char* subject,
       result = false;
    }
    h2_memory::hook();
+#endif
    return result;
 }
 
@@ -4772,7 +4774,14 @@ struct h2_shell {
       memset(current, 0, sizeof(current));
       cww = 120;
 #if defined _WIN32
-      //TODO get PowerShell width
+      CONSOLE_SCREEN_BUFFER_INFO csbi;
+      int columns, rows;
+
+      GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE), &csbi);
+      columns = csbi.srWindow.Right - csbi.srWindow.Left + 1;
+      rows = csbi.srWindow.Bottom - csbi.srWindow.Top + 1;
+
+      cww = 16 < columns ? columns : 120;
 #else
       struct winsize w;
       if (-1 != ioctl(STDOUT_FILENO, TIOCGWINSZ, &w)) cww = 16 < w.ws_col && w.ws_col <= 120 ? w.ws_col : 120;
@@ -7413,20 +7422,22 @@ struct h2_override_platform {
    static void _free_base(void* ptr) { h2_override::free(ptr); }
    static void* _expand(void* memblock, size_t size) { return NULL; }
    // When _DEBUG _CRTDBG_MAP_ALLOC (default undefined) is defined CRT maps all to _*_dbg, bug CRT Debug version enabled.
+#ifndef NDEBUG
    static void _free_dbg(void* userData, int blockType) { h2_override::free(userData); }
    static void* _malloc_dbg(size_t size, int blockType, const char* filename, int linenumber) { return h2_override::malloc(size); }
    static void* _realloc_dbg(void* userData, size_t newSize, int blockType, const char* filename, int linenumber) { return h2_override::realloc(userData, newSize); }
    static void* _calloc_dbg(size_t num, size_t size, int blockType, const char* filename, int linenumber) { return h2_override::calloc(num, size); }
    static size_t _msize_dbg(void* userData, int blockType) { return h2_override::size(userData); }
    static void* _expand_dbg(void* userData, size_t newSize, int blockType, const char* filename, int linenumber) { return NULL; }
-
+#endif
    static void* _aligned_malloc(size_t size, size_t alignment) { return h2_override::aligned_alloc(size, alignment); }
    static void _aligned_free(void* memblock) { h2_override::free(memblock); }
 
    static char* _strdup(char* s)
    {
       char* ret = (char*)h2_override::malloc(strlen(s) + 1);
-      return ret && strcpy(ret, s), ret;
+      if (ret) strcpy(ret, s);
+      return ret;
    }
 
    void set()
@@ -7434,12 +7445,13 @@ struct h2_override_platform {
       stubs.add((void*)::_free_base, (void*)_free_base, "_free_base", __FILE__, __LINE__);
       stubs.add((void*)::_msize, (void*)h2_override::size, "_msize", __FILE__, __LINE__);
       stubs.add((void*)::_expand, (void*)_expand, "_expand", __FILE__, __LINE__);
-
+#ifndef NDEBUG
       stubs.add((void*)::_free_dbg, (void*)_free_dbg, "_free_dbg", __FILE__, __LINE__);
       // stubs.add((void*)::_malloc_dbg, (void*)_malloc_dbg, "_malloc_dbg", __FILE__, __LINE__);
       // stubs.add((void*)::_realloc_dbg, (void*)_realloc_dbg, "_realloc_dbg", __FILE__, __LINE__);
       // stubs.add((void*)::_calloc_dbg, (void*)_calloc_dbg, "_calloc_dbg", __FILE__, __LINE__);
       // stubs.add((void*)::_expand_dbg, (void*)_expand_dbg, "_expand_dbg", __FILE__, __LINE__);
+#endif
       //// stubs.add((void*)::_calloc_crt, (void*)h2_override::calloc, "_calloc_crt", __FILE__, __LINE__);
       stubs.add((void*)::_aligned_malloc, (void*)_aligned_malloc, "_aligned_malloc", __FILE__, __LINE__);
       stubs.add((void*)::_aligned_free, (void*)_aligned_free, "_aligned_free", __FILE__, __LINE__);
@@ -7448,7 +7460,7 @@ struct h2_override_platform {
 
    void reset() { stubs.clear(); }
 };
-#else // +MinGW
+#else  // +MinGW
 // source/memory/h2_override_cygwin.cpp
 struct h2_override_platform {
    h2_stubs stubs;

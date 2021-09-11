@@ -19,20 +19,98 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="../build/h2unit.cpp" />
-    <ClCompile Include="print_compare.cpp" />
-    <ClCompile Include="print_container.cpp" />
-    <ClCompile Include="print_exception.cpp" />
-    <ClCompile Include="print_json.cpp" />
-    <ClCompile Include="print_logic.cpp" />
-    <ClCompile Include="print_memory.cpp" />
-    <ClCompile Include="print_mock.cpp" />
+    <ClCompile Include="test_assert_assert.cpp" />
+    <ClCompile Include="test_assert_primitive.cpp" />
+    <ClCompile Include="test_assert_timer.cpp" />
+    <ClCompile Include="test_bugfix.cpp" />
+    <ClCompile Include="test_core_case.cpp" />
+    <ClCompile Include="test_core_core.cpp" />
+    <ClCompile Include="test_core_runner.cpp" />
+    <ClCompile Include="test_core_suite.cpp" />
+    <ClCompile Include="test_except_exception.cpp" />
+    <ClCompile Include="test_json_dual.cpp" />
+    <ClCompile Include="test_json_example.cpp" />
+    <ClCompile Include="test_json_json.cpp" />
+    <ClCompile Include="test_json_lexical.cpp" />
+    <ClCompile Include="test_json_match.cpp" />
+    <ClCompile Include="test_json_node.cpp" />
+    <ClCompile Include="test_json_select.cpp" />
+    <ClCompile Include="test_json_syntax.cpp" />
+    <ClCompile Include="test_json_tinyexpr.cpp" />
+    <ClCompile Include="test_json_tree.cpp" />
+    <ClCompile Include="test_lib_dynamic.cpp" />
+    <ClCompile Include="test_matcher_cast.cpp" />
+    <ClCompile Include="test_matcher_cast_bool.cpp" />
+    <ClCompile Include="test_matcher_cast_container.cpp" />
+    <ClCompile Include="test_matcher_cast_number.cpp" />
+    <ClCompile Include="test_matcher_cast_ptr.cpp" />
+    <ClCompile Include="test_matcher_cast_string.cpp" />
+    <ClCompile Include="test_matcher_container.cpp" />
+    <ClCompile Include="test_matcher_customize.cpp" />
+    <ClCompile Include="test_matcher_equation.cpp" />
+    <ClCompile Include="test_matcher_inequation.cpp" />
+    <ClCompile Include="test_matcher_logic.cpp" />
+    <ClCompile Include="test_matcher_matcher.cpp" />
+    <ClCompile Include="test_matcher_matches.cpp" />
+    <ClCompile Include="test_matcher_memcmp.cpp" />
+    <ClCompile Include="test_matcher_polymorphic.cpp" />
+    <ClCompile Include="test_matcher_strcmp.cpp" />
+    <ClCompile Include="test_matcher_unary.cpp" />
+    <ClCompile Include="test_memory_block.cpp" />
+    <ClCompile Include="test_memory_harmless.cpp" />
+    <ClCompile Include="test_memory_memory.cpp" />
+    <ClCompile Include="test_memory_override.cpp" />
+    <ClCompile Include="test_memory_piece.cpp" />
+    <ClCompile Include="test_memory_stack.cpp" />
+    <ClCompile Include="test_mock_checkin.cpp" />
+    <ClCompile Include="test_mock_mock.cpp" />
+    <ClCompile Include="test_mock_mocks.cpp" />
+    <ClCompile Include="test_mock_routine.cpp" />
+    <ClCompile Include="test_mock_scope.cpp" />
+    <ClCompile Include="test_mock_tuple.cpp" />
+    <ClCompile Include="test_mock_unmock.cpp" />
+    <ClCompile Include="test_net_dns.cpp" />
+    <ClCompile Include="test_net_socket.cpp" />
+    <ClCompile Include="test_render_failure.cpp" />
+    <ClCompile Include="test_render_layout.cpp" />
+    <ClCompile Include="test_render_option.cpp" />
+    <ClCompile Include="test_stdio_stdio.cpp" />
+    <ClCompile Include="test_stub_e9.cpp" />
+    <ClCompile Include="test_stub_fp.cpp" />
+    <ClCompile Include="test_stub_scope.cpp" />
+    <ClCompile Include="test_stub_source.cpp" />
+    <ClCompile Include="test_stub_stub.cpp" />
+    <ClCompile Include="test_stub_stubs.cpp" />
+    <ClCompile Include="test_stub_temporary.cpp" />
+    <ClCompile Include="test_symbol_backtrace.cpp" />
+    <ClCompile Include="test_symbol_cxa.cpp" />
+    <ClCompile Include="test_symbol_load.cpp" />
+    <ClCompile Include="test_symbol_nm.cpp" />
+    <ClCompile Include="test_syntax.cpp" />
+    <ClCompile Include="test_syntax_dup.cpp" />
+    <ClCompile Include="test_types.cpp" />
+    <ClCompile Include="test_utils_allocate.cpp" />
+    <ClCompile Include="test_utils_color.cpp" />
+    <ClCompile Include="test_utils_libc.cpp" />
+    <ClCompile Include="test_utils_list.cpp" />
+    <ClCompile Include="test_utils_macro.cpp" />
+    <ClCompile Include="test_utils_macro_generated.cpp" />
+    <ClCompile Include="test_utils_misc.cpp" />
+    <ClCompile Include="test_utils_numeric.cpp" />
+    <ClCompile Include="test_utils_row.cpp" />
+    <ClCompile Include="test_utils_shared_ptr.cpp" />
+    <ClCompile Include="test_utils_string.cpp" />
+    <ClCompile Include="test_utils_stringify.cpp" />
+    <ClCompile Include="test_utils_template.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="test_types.hpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>
     <ProjectGuid>{C717EF0A-4007-426F-87B8-3A25C01BA28B}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
-    <RootNamespace>print</RootNamespace>
+    <RootNamespace>test</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
@@ -47,8 +125,7 @@
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <PlatformToolset>v142</PlatformToolset>
-    <WholeProgramOptimization>false</WholeProgramOptimization>
-    <OutDir>.</OutDir>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
@@ -62,8 +139,7 @@
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <PlatformToolset>v142</PlatformToolset>
-    <WholeProgramOptimization>false</WholeProgramOptimization>
-    <OutDir>.</OutDir>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
@@ -102,13 +178,15 @@
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>false</SDLCheck>
-      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;_CRT_SECURE_NO_WARNINGS;_WINSOCK_DEPRECATED_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalOptions>-bigobj %(AdditionalOptions)</AdditionalOptions>
+      <DisableSpecificWarnings>4018;4100;4101;4127;4189;4267;4244;4305;4312;4324;4504;4505;4700;4706;4805;4819;4834;4838;4996</DisableSpecificWarnings>
+      <PreprocessorDefinitions>NO_CAST_TESTING;WIN32;_DEBUG;_CONSOLE;_CRT_SECURE_NO_WARNINGS;_WINSOCK_DEPRECATED_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>false</ConformanceMode>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>Winmm.lib;Ws2_32.lib;Shlwapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>.\a_dynamic_library.lib</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -117,12 +195,15 @@
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>false</SDLCheck>
-      <PreprocessorDefinitions>_DEBUG;_CONSOLE;_CRT_SECURE_NO_WARNINGS;_WINSOCK_DEPRECATED_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalOptions>-bigobj %(AdditionalOptions)</AdditionalOptions>
+      <DisableSpecificWarnings>4018;4100;4101;4127;4189;4267;4244;4305;4312;4324;4504;4505;4700;4706;4805;4819;4834;4838;4996</DisableSpecificWarnings>
+      <PreprocessorDefinitions>NO_CAST_TESTING;_DEBUG;_CONSOLE;_CRT_SECURE_NO_WARNINGS;_WINSOCK_DEPRECATED_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>false</ConformanceMode>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>.\a_dynamic_library.lib</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -132,10 +213,9 @@
       <WarningLevel>Level3</WarningLevel>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <SDLCheck>false</SDLCheck>
-      <AdditionalOptions>/Od %(AdditionalOptions)</AdditionalOptions>
-      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;_CRT_SECURE_NO_WARNINGS;_WINSOCK_DEPRECATED_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <ConformanceMode>false</ConformanceMode>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -152,9 +232,8 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>false</SDLCheck>
-      <AdditionalOptions>/Od %(AdditionalOptions)</AdditionalOptions>
-      <PreprocessorDefinitions>NDEBUG;_CONSOLE;_CRT_SECURE_NO_WARNINGS;_WINSOCK_DEPRECATED_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <ConformanceMode>false</ConformanceMode>
+      <PreprocessorDefinitions>NO_CAST_TESTING;NDEBUG;_CONSOLE;_CRT_SECURE_NO_WARNINGS;_WINSOCK_DEPRECATED_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>

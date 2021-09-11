@@ -392,13 +392,17 @@ typedef int (*A_FunctionPointer)(int a, int b);
 #   define _enum "enum "
 #   define _struct "struct "
 #   define _class "class "
-#   define _pointer " * __ptr64"
-#   define _fptr "__cdecl*"
 #else
 #   define _long_long "long long"
 #   define _enum
 #   define _struct
 #   define _class
+#endif
+
+#if defined _MSC_VER && (defined __x86_64__ || defined _M_X64)
+#   define _pointer " * __ptr64"
+#   define _fptr "__cdecl*"
+#else
 #   define _pointer "*"
 #   define _fptr "*"
 #endif

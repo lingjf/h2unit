@@ -9,30 +9,52 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - name: check platform
-        run: uname -a && getconf GNU_LIBC_VERSION && env
+      - name: uname
+        run: uname -a
+      - name: glibc
+        run: getconf GNU_LIBC_VERSION
+      - name: environment
+        run: env
       - name: pre-defined preprocessor macros
         run: gcc -dM -E - < /dev/null
       - name: sysroot directory for headers and libraries
         run: g++ -E -v - < /dev/null
-      - name: configure print
-        run: cd print && cmake .
-      - name: build print
-        run: cd print && cmake --build .
-      - name: 🔨 run print
-        run: ./print/a.out -e 'new[] free'
-      - name: show help tips
-        run: ./print/a.out -h
-      - name: list print cases
-        run: ./print/a.out -l
-      - name: configure test
-        run: cd test && cmake .
-      - name: 🏗️ build test
-        run: cd test && cmake --build . -j 2 --verbose
-      - name: run test without memory check
-        run: cd test && LD_BIND_NOW=1 ./a.out -s -m -v -e test_memory_
-      - name: ✨ run test with memory check
-        run: cd test && LD_BIND_NOW=1 ./a.out -scpvj
+      - name: configure print/debug
+        run: cmake -DCMAKE_BUILD_TYPE=Debug -B d_print print
+      - name: build print/debug
+        run: cmake --build d_print
+      - name: 🔨 run print/debug
+        run: ./d_print/a.out -e 'new[] free'
+      - name: show print/debug help
+        run: ./d_print/a.out -h
+      - name: list print/debug cases
+        run: ./d_print/a.out -l
+      - name: configure print/release
+        run: cmake -DCMAKE_BUILD_TYPE=Release -B r_print print
+      - name: build print/release
+        run: cmake --build r_print
+      - name: 🔨 run print/release
+        run: ./r_print/a.out -e 'new[] free'
+      - name: show print/release help
+        run: ./r_print/a.out -h
+      - name: list print/release cases
+        run: ./r_print/a.out -l
+      - name: configure test/debug
+        run: cmake -DCMAKE_VERBOSE_MAKEFILE=ON -DCMAKE_BUILD_TYPE=Debug -B d_test test
+      - name: 🏗️ build test/debug
+        run: cmake --build d_test -j2
+      - name: run test/debug without memory check
+        run: cd d_test && LD_BIND_NOW=1 ./a.out -s -m -v -e test_memory_
+      - name: ✨ run test/debug with memory check
+        run: cd d_test && LD_BIND_NOW=1 ./a.out -scpvj
+      - name: configure test/release
+        run: cmake -DCMAKE_VERBOSE_MAKEFILE=ON -DCMAKE_BUILD_TYPE=Release -B r_test test
+      - name: 🏗️ build test/release
+        run: cmake --build r_test -j2
+      - name: run test/release without memory check
+        run: cd r_test && LD_BIND_NOW=1 ./a.out -m -e test_memory_
+      - name: ✨ run test/release with memory check
+        run: cd r_test && LD_BIND_NOW=1 ./a.out -cpj
       - name: install coverage tools
         run: sudo pip3 install git+https://github.com/gcovr/gcovr.git
       - name: build and run example
@@ -45,30 +67,50 @@ jobs:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v2
-      - name: check platform
-        run: uname -a && env
+      - name: uname
+        run: uname -a
+      - name: environment
+        run: env
       - name: pre-defined preprocessor macros
         run: clang -dM -E - < /dev/null
       - name: sysroot directory for headers and libraries
         run: clang++ -E -v - < /dev/null
-      - name: configure print
-        run: cd print && cmake .
-      - name: build print
-        run: cd print && cmake --build .
-      - name: 🔨 run print
-        run: ./print/a.out -e 'new[] free'
-      - name: show help tips
-        run: ./print/a.out -h
-      - name: list print cases
-        run: ./print/a.out -l
-      - name: configure test
-        run: cd test && cmake .
-      - name: 🏗️ build test
-        run: cd test && cmake --build . -j 2 --verbose
-      - name: run test without memory check
-        run: cd test && ./a.out -s -m -v -e test_memory_
-      - name: ✨ run test with memory check
-        run: cd test && ./a.out -scpvj
+      - name: configure print/debug
+        run: cmake -DCMAKE_BUILD_TYPE=Debug -B d_print print
+      - name: build print/debug
+        run: cmake --build d_print
+      - name: 🔨 run print/debug
+        run: ./d_print/a.out -e 'new[] free'
+      - name: show print/debug help
+        run: ./d_print/a.out -h
+      - name: list print/debug cases
+        run: ./d_print/a.out -l
+      - name: configure print/release
+        run: cmake -DCMAKE_BUILD_TYPE=Release -B r_print print
+      - name: build print/release
+        run: cmake --build r_print
+      - name: 🔨 run print/release
+        run: ./r_print/a.out -e 'new[] free'
+      - name: show print/release help
+        run: ./r_print/a.out -h
+      - name: list print/release cases
+        run: ./r_print/a.out -l
+      - name: configure test/debug
+        run: cmake -DCMAKE_VERBOSE_MAKEFILE=ON -DCMAKE_BUILD_TYPE=Debug -B d_test test
+      - name: 🏗️ build test/debug
+        run: cmake --build d_test -j2
+      - name: run test/debug without memory check
+        run: cd d_test && LD_BIND_NOW=1 ./a.out -s -m -v -e test_memory_
+      - name: ✨ run test/debug with memory check
+        run: cd d_test && LD_BIND_NOW=1 ./a.out -scpvj
+      - name: configure test/release
+        run: cmake -DCMAKE_VERBOSE_MAKEFILE=ON -DCMAKE_BUILD_TYPE=Release -B r_test test
+      - name: 🏗️ build test/release
+        run: cmake --build r_test -j2
+      - name: run test/release without memory check
+        run: cd r_test && LD_BIND_NOW=1 ./a.out -s -m -e test_memory_
+      - name: ✨ run test/release with memory check
+        run: cd r_test && LD_BIND_NOW=1 ./a.out -scpj
       - name: install coverage tools
         run: brew install lcov
       - name: build and run example
@@ -79,32 +121,59 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v2
-      - name: check platform
+      - uses: ilammy/msvc-dev-cmd@v1
+      - name: environment
         run: env
-      - name: configure print
-        run: cd print && cmake .
-      - name: build print
-        run: cd print && cmake --build .
-      - name: 🔨 run print
-        run: ./print/Debug/a.out.exe -e 'new[] free'
-      - name: show help tips
-        run: ./print/Debug/a.out.exe -h
-      - name: list print cases
-        run: ./print/Debug/a.out.exe -l
-      - name: configure test
-        run: cd test && cmake .
-      - name: 🏗️ build test
-        run: cd test && cmake --build . -j $env:NUMBER_OF_PROCESSORS --verbose
-      - name: run test without memory check
-        run: cd test && ./Debug/a.out.exe -s -m -v -e test_memory_
-      - name: ✨ run test with memory check
-        run: cd test && ./Debug/a.out.exe -scpvj
+      - name: pre-defined preprocessor macros
+        run: |
+          echo '' > empty.cpp
+          cl /EP /Zc:preprocessor /PD empty.cpp
+      - name: configure print/release
+        run: cmake -DCMAKE_BUILD_TYPE=Release -B r_print print
+      - name: build print/release
+        run: cmake --build r_print --config Release
+      - name: 🔨 run print/release
+        run: ./r_print/Release/a.out.exe -e 'new[] free'
+      - name: show print/release help
+        run: ./r_print/Release/a.out.exe -h
+      - name: list print/release cases
+        run: ./r_print/Release/a.out.exe -l
+      - name: configure print/debug
+        run: cmake -DCMAKE_BUILD_TYPE=Debug -B d_print print
+      - name: build print/debug
+        run: cmake --build d_print --config Debug
+      - name: 🔨 run print/debug
+        run: ./d_print/Debug/a.out.exe -e 'new[] free'
+      - name: show print/debug help
+        run: ./d_print/Debug/a.out.exe -h
+      - name: list print/debug cases
+        run: ./d_print/Debug/a.out.exe -l
+      - name: configure test/debug
+        run: cmake -DCMAKE_VERBOSE_MAKEFILE=ON -B d_test test
+      - name: cat test/debug vcxproj
+        run: cd d_test && cat a.out.vcxproj
+      - name: 🏗️ build test/debug
+        run: cmake --build d_test -j $env:NUMBER_OF_PROCESSORS
+      - name: run test/debug without memory check
+        run: cd d_test && ./a.out.exe -s -m -v -e test_memory_
+      - name: ✨ run test/debug with memory check
+        run: cd d_test && ./a.out.exe -scpvj
+      - name: configure test/release
+        run: cmake -DCMAKE_VERBOSE_MAKEFILE=ON -DCMAKE_BUILD_TYPE=Release -B r_test test
+      - name: cat test/release vcxproj
+        run: cd r_test && cat a.out.vcxproj
+      - name: 🏗️ build test/release
+        run: cmake --build r_test --config Release -j $env:NUMBER_OF_PROCESSORS
+      - name: run test/release without memory check
+        run: cd r_test && ./a.out.exe -m -e test_memory_
+      - name: ✨ run test/release with memory check
+        run: cd r_test && ./a.out.exe -cpj
       - name: configure example
-        run: cmake -B ci_example example
+        run: cmake -B d_example example
       - name: build example
-        run: cmake --build ci_example
+        run: cmake --build d_example
       - name: run example
-        run: ./ci_example/Debug/a.out.exe
+        run: ./d_example/Debug/a.out.exe
 
   msys2:
     runs-on: windows-latest
@@ -135,19 +204,19 @@ jobs:
       - name: sysroot directory for headers and libraries
         run: g++ -E -v - < /dev/null
       - name: configure print
-        run: cmake -B ci_print print
+        run: cmake -DCMAKE_BUILD_TYPE=Release -B ci_print print
       - name: build print
-        run: cmake --build ci_print
-      - name: run print
+        run: cmake --build ci_print -j2
+      - name: 🔨 run print
         run: ./ci_print/a.out -e 'new[] free'
-      - name: show help tips
+      - name: show print help
         run: ./ci_print/a.out -h
       - name: list print cases
         run: ./ci_print/a.out -l
       - name: configure test
-        run: cmake -B ci_test test
+        run: cmake -DCMAKE_VERBOSE_MAKEFILE=ON -DCMAKE_BUILD_TYPE=Debug -B ci_test test
       - name: 🏗️ build test
-        run: cmake --build ci_test -j 2 --verbose
+        run: cmake --build ci_test -j2
       - name: run test without memory check
         run: ./ci_test/a.out -s -m -v -e test_memory_
       - name: ✨ run test with memory check
@@ -155,75 +224,94 @@ jobs:
       - name: configure example
         run: cmake -B ci_example example
       - name: build example
-        run: cmake --build ci_example
+        run: cmake --build ci_example -j2
       - name: run example
         run: ./ci_example/a.out
 
-  wsl:
+  msvc:
+    runs-on: ${{matrix.os}}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-2019, windows-2022]
+    name: ${{matrix.os}}-msvc
+    steps:
+      - uses: actions/checkout@v2
+      - uses: ilammy/msvc-dev-cmd@v1
+      - name: check platform
+        run: env
+      - name: pre-defined preprocessor macros
+        run: |
+          echo '' > empty.cpp
+          cl /EP /Zc:preprocessor /PD empty.cpp
+      - name: configure print
+        run: cd print && cmake -DCMAKE_BUILD_TYPE=Release .
+      - name: build print
+        run: cd print && cmake --build . --config Release
+      - name: 🔨 run print
+        run: ./print/Release/a.out.exe -e 'new[] free'
+      - name: show print help
+        run: ./print/Release/a.out.exe -h
+      - name: list print cases
+        run: ./print/Release/a.out.exe -l
+      - name: configure test
+        run: cd test && cmake -DCMAKE_VERBOSE_MAKEFILE=ON .
+      - name: 🏗️ build test
+        run: cd test && cmake --build . -j $env:NUMBER_OF_PROCESSORS
+      - name: run test without memory check
+        run: cd test && ./a.out.exe -s -m -v -e test_memory_
+      - name: ✨ run test with memory check
+        run: cd test && ./a.out.exe -scpvj
+      - name: configure example
+        run: cmake -B ci_example example
+      - name: build example
+        run: cmake --build ci_example
+      - name: run example
+        run: ./ci_example/Debug/a.out.exe
+
+  msbuild:
     runs-on: windows-latest
     strategy:
       fail-fast: false
       matrix:
-        include: # https://github.com/marketplace/actions/setup-wsl ; https://docs.microsoft.com/en-us/windows/wsl/install-win10
-          - {sys: Ubuntu, env: Ubuntu-20.04, pkg: "gcc g++"}
-          - {sys: Debian, env: Debian, pkg: "gcc g++"}
-          - {sys: Kali, env: kali-linux, pkg: "gcc g++"}
-          - {sys: openSUSE, env: openSUSE-Leap-15.2, pkg: "gcc gcc-c++"}
-    name: windows-wsl-${{matrix.sys}}
-    defaults:
-      run:
-        shell: wsl-bash {0}
+        include:
+          - {os: windows-2019, arch: x86, platform: 'Win32'}
+          - {os: windows-2019, arch: x86_64, platform: 'x64'}
+          - {os: windows-2022, arch: x86, platform: 'Win32'}
+          - {os: windows-2022, arch: x86_64, platform: 'x64'}
+    name: ${{matrix.os}}-msbuild-${{matrix.arch}}
     steps:
       - uses: actions/checkout@v2
-      - uses: Vampire/setup-wsl@v1
-        with:
-          distribution: ${{matrix.env}}
-          additional-packages: make cmake ${{matrix.pkg}}
+      - uses: ilammy/msvc-dev-cmd@v1
       - name: check platform
-        run: uname -a && getconf GNU_LIBC_VERSION && env
+        run: env
       - name: pre-defined preprocessor macros
-        run: gcc -dM -E - < /dev/null
-      - name: sysroot directory for headers and libraries
-        run: g++ -E -v - < /dev/null
-      - name: configure print
-        run: cd print && cmake .
-      - name: build print
-        run: cd print && make -j 2
-      - name: 🔨 run print
-        run: ./print/a.out -e 'new[] free'
-      - name: show help tips
-        run: ./print/a.out -h
-      - name: list print cases
-        run: ./print/a.out -l
-      - name: configure test
-        run: cd test && cmake .
-      - name: 🏗️ build test
-        run: cd test && make -j 2
-      - name: run test without memory check
-        run: cd test && LD_BIND_NOW=1 ./a.out -s -m -v -e test_memory_
-      - name: ✨ run test with memory check
-        if: ${{matrix.sys != 'openSUSE'}} #TODO
-        run: cd test && LD_BIND_NOW=1 ./a.out -scpvj
-      - name: build and run example
-        run: make run -C example -j 2
-
-  windows-msbuild:
-    runs-on: windows-latest
-    steps:
-      - uses: actions/checkout@v2
+        run: |
+          echo '' > empty.cpp
+          cl /EP /Zc:preprocessor /PD empty.cpp
       - uses: microsoft/setup-msbuild@v1.0.2
-      - name: build example
-        run: cd example && msbuild example.vcxproj /p:configuration=Debug
-      # - name: run example
-      #   run: ./example/Debug/example.exe #TODO
       - name: build print
-        run: cd print && msbuild print.vcxproj /p:configuration=Debug
-      # - name: run print
-      #   run: ./print/Debug/print.exe -e 'new[] free' #TODO
-      - name: show help tips
-        run: ./print/Debug/print.exe -h
+        run: cd print && msbuild print.vcxproj /property:Configuration=Debug /property:Platform=${{matrix.platform}}
+      - name: 🔨 run print
+        run: ./print/print.exe -e 'new[] free'
+      - name: show print help
+        run: ./print/print.exe -h
       - name: list print cases
-        run: ./print/Debug/print.exe -l
+        run: ./print/print.exe -l
+      - name: configure a_dynamic_library
+        run: cd test/libs && cmake -A ${{matrix.platform}} .
+      - name: build a_dynamic_library
+        run: cd test/libs && cmake --build .
+      - name: 🏗️ build test
+        run: cd test && msbuild test.vcxproj /property:Configuration=Debug /property:Platform=${{matrix.platform}} -maxcpucount:1
+      - name: run test without memory check
+        run: cd test && ./test.exe -s -m -v -e test_memory_
+      - name: ✨ run test with memory check
+        run: cd test && ./test.exe -scpvj
+      - name: build example
+        run: cd example && msbuild example.vcxproj /property:Configuration=Debug /property:Platform=${{matrix.platform}}
+      - name: run example
+        run: ./example/example.exe
 
   linux-arm64-gcc:
     runs-on: ubuntu-latest
@@ -239,7 +327,7 @@ jobs:
         run: |
           cd qemu
           ./configure --target-list=aarch64-linux-user --disable-system
-          make -j 2
+          make -j2
           sudo make install
       - name: install aarch64-gnu-toolchain
         run: |
@@ -252,15 +340,15 @@ jobs:
       - name: sysroot directory for headers and libraries
         run: aarch64-linux-gnu-g++ -march=armv8-a -E -v - < /dev/null
       - name: configure print
-        run: cmake -DCMAKE_C_COMPILER="aarch64-linux-gnu-gcc" -DCMAKE_CXX_COMPILER="aarch64-linux-gnu-g++" -DCMAKE_C_FLAGS="-march=armv8-a" -DCMAKE_CXX_FLAGS="-march=armv8-a" -B ci_print print
+        run: cmake -DCMAKE_C_COMPILER="aarch64-linux-gnu-gcc" -DCMAKE_CXX_COMPILER="aarch64-linux-gnu-g++" -DCMAKE_C_FLAGS="-march=armv8-a" -DCMAKE_CXX_FLAGS="-march=armv8-a" -DCMAKE_BUILD_TYPE=Release -B ci_print print
       - name: build print
         run: cmake --build ci_print
-      - name: run print
+      - name: 🔨 run print
         run: qemu-aarch64 -L /usr/aarch64-linux-gnu ./ci_print/a.out -e 'new[] free'
       - name: configure test
-        run: cmake -DCMAKE_C_COMPILER="aarch64-linux-gnu-gcc" -DCMAKE_CXX_COMPILER="aarch64-linux-gnu-g++" -DCMAKE_C_FLAGS="-march=armv8-a" -DCMAKE_CXX_FLAGS="-march=armv8-a" -B ci_test test
+        run: cmake -DCMAKE_C_COMPILER="aarch64-linux-gnu-gcc" -DCMAKE_CXX_COMPILER="aarch64-linux-gnu-g++" -DCMAKE_C_FLAGS="-march=armv8-a" -DCMAKE_CXX_FLAGS="-march=armv8-a" -DCMAKE_VERBOSE_MAKEFILE=ON -B ci_test test
       - name: 🏗️ build test
-        run: cmake --build ci_test -j 2 --verbose
+        run: cmake --build ci_test -j2
       - name: run test without memory check
         run: qemu-aarch64 -L /usr/aarch64-linux-gnu -E LD_BIND_NOW=1 ./ci_test/a.out -s -m -v -e test_memory_
       - name: ✨ run test with memory check
@@ -312,15 +400,15 @@ jobs:
       - name: sysroot directory for headers and libraries
         run: ${{matrix.cxx}} -E -v - < /dev/null
       - name: configure print
-        run: cmake -B ci_print print
+        run: cmake -DCMAKE_BUILD_TYPE=Release -B ci_print print
       - name: build print
         run: cmake --build ci_print
-      - name: run print
+      - name: 🔨 run print
         run: ./ci_print/a.out -e 'new[] free'
       - name: configure test
-        run: cmake -B ci_test test
+        run: cmake -DCMAKE_VERBOSE_MAKEFILE=ON -B ci_test test
       - name: 🏗️ build test
-        run: cmake --build ci_test -j 2 --verbose
+        run: cmake --build ci_test -j2
       - name: run test without memory check
         run: LD_BIND_NOW=1 ./ci_test/a.out -s -m -v -e test_memory_
       - name: ✨ run test with memory check
@@ -352,15 +440,15 @@ jobs:
           sudo apt-get update
           sudo apt-get install gcc-multilib g++-multilib
       - name: configure print
-        run: cmake -DCMAKE_C_FLAGS="-m32" -DCMAKE_CXX_FLAGS="-m32" -B ci_print print
+        run: cmake -DCMAKE_C_FLAGS="-m32" -DCMAKE_CXX_FLAGS="-m32" -DCMAKE_BUILD_TYPE=Release -B ci_print print
       - name: build print
         run: cmake --build ci_print
-      - name: run print
+      - name: 🔨 run print
         run: ./ci_print/a.out -e 'new[] free'
       - name: configure test
-        run: cmake -DCMAKE_C_FLAGS="-m32" -DCMAKE_CXX_FLAGS="-m32" -B ci_test test
+        run: cmake -DCMAKE_C_FLAGS="-m32" -DCMAKE_CXX_FLAGS="-m32" -DCMAKE_VERBOSE_MAKEFILE=ON -B ci_test test
       - name: 🏗️ build test
-        run: cmake --build ci_test -j 2 --verbose
+        run: cmake --build ci_test -j2
       - name: run test without memory check
         run: LD_BIND_NOW=1 ./ci_test/a.out -s -m -v -e test_memory_
       - name: ✨ run test with memory check
@@ -372,15 +460,66 @@ jobs:
       - name: run example
         run: ./ci_example/a.out
 
+  wsl:
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include: # https://github.com/marketplace/actions/setup-wsl ; https://docs.microsoft.com/en-us/windows/wsl/install-win10
+          - {sys: Ubuntu, env: Ubuntu-20.04, pkg: "gcc g++"}
+          - {sys: Debian, env: Debian, pkg: "gcc g++"}
+          - {sys: Kali, env: kali-linux, pkg: "gcc g++"}
+          - {sys: openSUSE, env: openSUSE-Leap-15.2, pkg: "gcc gcc-c++"}
+    name: linux-wsl-${{matrix.sys}}
+    defaults:
+      run:
+        shell: wsl-bash {0}
+    steps:
+      - uses: actions/checkout@v2
+      - uses: Vampire/setup-wsl@v1
+        with:
+          distribution: ${{matrix.env}}
+          additional-packages: make cmake ${{matrix.pkg}}
+      - name: check platform
+        run: uname -a && getconf GNU_LIBC_VERSION && env
+      - name: pre-defined preprocessor macros
+        run: gcc -dM -E - < /dev/null
+      - name: sysroot directory for headers and libraries
+        run: g++ -E -v - < /dev/null
+      - name: configure print
+        run: cd print && cmake -DCMAKE_BUILD_TYPE=Release .
+      - name: build print
+        run: cd print && make -j2
+      - name: 🔨 run print
+        run: ./print/a.out -e 'new[] free'
+      - name: show print help
+        run: ./print/a.out -h
+      - name: list print cases
+        run: ./print/a.out -l
+      - name: configure test
+        run: cd test && cmake -DCMAKE_VERBOSE_MAKEFILE=ON .
+      - name: 🏗️ build test
+        run: cd test && make -j2
+      - name: run test without memory check
+        run: cd test && LD_BIND_NOW=1 ./a.out -s -m -v -e test_memory_
+      - name: ✨ run test with memory check
+        if: ${{matrix.sys != 'openSUSE'}} #TODO
+        run: cd test && LD_BIND_NOW=1 ./a.out -scpvj
+      - name: build and run example
+        run: make run -C example -j2
+
   macos-xcode:
     runs-on: ${{matrix.os}}
     strategy:
       fail-fast: false
       matrix:
         include:
+          # - {os: macos-10.13, xcode: '8.3.3'} # deprecated
+          # - {os: macos-10.14, xcode: '9.4.1'} # deprecated
           - {os: macos-10.15, xcode: '10.3'}
-          - {os: macos-10.15, xcode: '11.7'} # macos-11
+          - {os: macos-10.15, xcode: '11.7'}
           - {os: macos-10.15, xcode: '12.4'}
+          - {os: macos-11, xcode: '11.7'}
           - {os: macos-11, xcode: '12.5'}
           - {os: macos-11, xcode: '13.0'}
     name: ${{matrix.os}}-xcode-${{matrix.xcode}}
@@ -396,15 +535,15 @@ jobs:
       - name: sysroot directory for headers and libraries
         run: clang++ -E -v - < /dev/null
       - name: configure print
-        run: cmake -B ci_print print
+        run: cmake -DCMAKE_BUILD_TYPE=Release -B ci_print print
       - name: build print
         run: cmake --build ci_print
-      - name: run print
+      - name: 🔨 run print
         run: ./ci_print/a.out -e 'new[] free'
       - name: configure test
-        run: cmake -B ci_test test
+        run: cmake -DCMAKE_VERBOSE_MAKEFILE=ON -B ci_test test
       - name: 🏗️ build test
-        run: cmake --build ci_test -j 2 --verbose
+        run: cmake --build ci_test -j2
       - name: run test without memory check
         run: LD_BIND_NOW=1 ./ci_test/a.out -s -m -v -e test_memory_
       - name: ✨ run test with memory check

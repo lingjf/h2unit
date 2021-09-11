@@ -153,8 +153,8 @@ SUITE(stringify simple)
    Case(void*)
    {
       void* a = (void*)0x12345678;
-      OK(In("0x12345678", "0000000012345678"), h2::h2_stringify<void*>(a));
-      OK(AnyOf("0x12345678", "0000000012345678"), h2::h2_stringify<void*>(a, true));
+      OK(In("0x12345678", "0000000012345678", "12345678"), h2::h2_stringify<void*>(a));
+      OK(AnyOf("0x12345678", "0000000012345678", "12345678"), h2::h2_stringify<void*>(a, true));
    }
 
    Case(nullptr)

@@ -91,7 +91,7 @@ SUITE(piece)
    {
       h2::h2_backtrace bt;
       m = new h2::h2_piece(100, 8, "malloc", bt);
-      ((unsigned char*)m->user_ptr)[101] = '1';
+      ((unsigned short*)m->user_ptr)[50] = 0xCC33;
       auto fail = m->free("free");
       OK(NotNull, fail);
       OK(typeid(h2::h2_fail_overflow).name(), typeid(*fail).name());
@@ -100,6 +100,7 @@ SUITE(piece)
 
    Case(use after free)
    {
+      // reference to print project
    }
 }
 

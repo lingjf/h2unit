@@ -8,7 +8,14 @@ struct h2_shell {
       memset(current, 0, sizeof(current));
       cww = 120;
 #if defined _WIN32
-      //TODO get PowerShell width
+      CONSOLE_SCREEN_BUFFER_INFO csbi;
+      int columns, rows;
+
+      GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE), &csbi);
+      columns = csbi.srWindow.Right - csbi.srWindow.Left + 1;
+      rows = csbi.srWindow.Bottom - csbi.srWindow.Top + 1;
+
+      cww = 16 < columns ? columns : 120;
 #else
       struct winsize w;
       if (-1 != ioctl(STDOUT_FILENO, TIOCGWINSZ, &w)) cww = 16 < w.ws_col && w.ws_col <= 120 ? w.ws_col : 120;
