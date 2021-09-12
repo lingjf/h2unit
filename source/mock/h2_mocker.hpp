@@ -8,8 +8,8 @@ struct h2_mocker_base : h2_libc {
    int line;
    bool greed_mode = true;
 
-   h2_row argument(int seq, const char* def = "");
-   h2_row signature();
+   h2_sentence argument(int seq, const char* def = "");
+   h2_sentence signature();
 
    h2_vector<h2_checkin> checkin_array;
    int checkin_index = 0;

@@ -190,33 +190,31 @@ SUITE(json node dual)
    }
 }
 
-SUITE(json node print)
+SUITE(json node format)
 {
-   Case(print simple plain)
+   Case(format simple plain)
    {
       const char* json = "{\"abc\": 123}";
       h2::h2_json_tree parse(json);
 
-      h2::h2_rows rows;
-      parse.print(rows);
-
-      OK(3, rows.size());
+      h2::h2_paragraph paragraph;
+      parse.print(paragraph);
+      OK(3, paragraph.size());
       OK(ListOf(
            ListOf("", "{"),
            ListOf("  ", "\"abc\": ", "123"),
            ListOf("", "}")),
-         rows);
+         paragraph);
    }
 
-   Case(print simple fold)
+   Case(format simple fold)
    {
       const char* json = "{\"abc\": 123}";
       h2::h2_json_tree parse(json);
 
-      h2::h2_rows rows;
-      parse.print(rows, true);
-
-      OK(1, rows.size());
-      OK(ListOf(ListOf("", "{", "\"abc\": ", "123", "}")), rows);
+      h2::h2_paragraph paragraph;
+      parse.print(paragraph, true);
+      OK(1, paragraph.size());
+      OK(ListOf(ListOf("", "{", "\"abc\": ", "123", "}")), paragraph);
    }
 }

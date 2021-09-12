@@ -17,8 +17,8 @@ SUITE(json diff)
       const h2::h2_string expect = "123";
       const h2::h2_string actual = "123.0";
 
-      h2::h2_rows e_lines, a_lines;
+      h2::h2_paragraph e_paragraph, a_paragraph;
 
-      h2::h2_json::diff(expect, actual, e_lines, a_lines, false);
+      h2::h2_json::diff(expect, actual, e_paragraph, a_paragraph, false);
    }
 }

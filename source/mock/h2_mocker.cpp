@@ -1,12 +1,12 @@
-h2_inline h2_row h2_mocker_base::argument(int seq, const char* def)
+h2_inline h2_sentence h2_mocker_base::argument(int seq, const char* def)
 {
-   h2_row row;
+   h2_sentence t;
    for (int i = 0; i < argument_types.size(); ++i)
-      row += (i ? gray(", ") : "") + color(argument_types[i], seq == i ? "red,bold" : def);
-   return gray("(") + row + gray(")");
+      t += (i ? gray(", ") : "") + color(argument_types[i], seq == i ? "red,bold" : def);
+   return gray("(") + t + gray(")");
 }
 
-h2_inline h2_row h2_mocker_base::signature()
+h2_inline h2_sentence h2_mocker_base::signature()
 {
    return "MOCK" + gray("<") + delta(return_type, "cyan") + " " + delta(srcfn, "green") + argument(-1, "cyan") + gray(">");
 }

@@ -40,7 +40,7 @@ SUITE(json dual)
 
       OK("(0;object-object;-;-)[(1;atomic-atomic;\"e\"-\"a\";123-456)]", dual_tostr(&dual, t));
 
-      h2::h2_rows e_lines, a_lines;
-      dual.align(e_lines, a_lines);
+      h2::h2_paragraph e_paragraph, a_paragraph;
+      dual.align(e_paragraph, a_paragraph);
    }
 }

@@ -1056,7 +1056,7 @@ twofiles speed up 2~3 times than onefile.
 
 *    `-l` *list* out suites and cases
 *    `-m` Disable *memory* check(leak, overflow, trample, double free, asymmetric free)
-*    `-s` *shuffle* cases then test in random order
+*    `-s` *shuffle* cases then test in random order if no previous fails
 *    `-b` [n] *break* test once n (default 1) cases failed
 *    `-n` Only test previous *failed* cases
 *    `-p` Disable test percentage *progressing*

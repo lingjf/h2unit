@@ -8,7 +8,7 @@ struct h2_not_matches : h2_matches {
    {
       return h2_matcher_cast<A>(m).matches(a, n, caseless, !dont);
    }
-   virtual h2_row expection(bool caseless, bool dont) const override
+   virtual h2_sentence expection(bool caseless, bool dont) const override
    {
       return h2_matches_expection(m, caseless, !dont);
    }
@@ -36,9 +36,9 @@ struct h2_and_matches : h2_matches {
       return fail;
    }
 
-   virtual h2_row expection(bool caseless, bool dont) const override
+   virtual h2_sentence expection(bool caseless, bool dont) const override
    {
-      return CD((dont ? gray("(") : h2_row()) + h2_matches_expection(m1, caseless, false) + " and " + h2_matches_expection(m2, caseless, false) + (dont ? gray(")") : h2_row()), false, dont);
+      return CD((dont ? gray("(") : h2_sentence()) + h2_matches_expection(m1, caseless, false) + " and " + h2_matches_expection(m2, caseless, false) + (dont ? gray(")") : h2_sentence()), false, dont);
    }
 };
 
@@ -68,9 +68,9 @@ struct h2_or_matches : h2_matches {
       return fail;
    }
 
-   virtual h2_row expection(bool caseless, bool dont) const override
+   virtual h2_sentence expection(bool caseless, bool dont) const override
    {
-      return CD((dont ? gray("(") : h2_row()) + h2_matches_expection(m1, caseless, false) + " or " + h2_matches_expection(m2, caseless, false) + (dont ? gray(")") : h2_row()), false, dont);
+      return CD((dont ? gray("(") : h2_sentence()) + h2_matches_expection(m1, caseless, false) + " or " + h2_matches_expection(m2, caseless, false) + (dont ? gray(")") : h2_sentence()), false, dont);
    }
 };
 
@@ -106,7 +106,7 @@ struct h2_allof_matches : h2_matches {
       return fail;
    }
 
-   virtual h2_row expection(bool caseless, bool dont) const override
+   virtual h2_sentence expection(bool caseless, bool dont) const override
    {
       return CD("AllOf" + gray("(") + t2e(caseless, false) + gray(")"), false, dont);
    }
@@ -151,7 +151,7 @@ struct h2_anyof_matches : h2_matches {
       return fail;
    }
 
-   virtual h2_row expection(bool caseless, bool dont) const override
+   virtual h2_sentence expection(bool caseless, bool dont) const override
    {
       return CD("AnyOf" + gray("(") + t2e(caseless, false) + gray(")"), false, dont);
    }
@@ -190,7 +190,7 @@ struct h2_noneof_matches : h2_matches {
       return fail;
    }
 
-   virtual h2_row expection(bool caseless, bool dont) const override
+   virtual h2_sentence expection(bool caseless, bool dont) const override
    {
       return CD("NoneOf" + gray("(") + t2e(caseless, false) + gray(")"), false, dont);
    }

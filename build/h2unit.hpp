@@ -1,5 +1,5 @@
 
-/* v5.13 2021-09-12 13:08:01 */
+/* v5.13 2021-09-12 16:10:20 */
 /* https://github.com/lingjf/h2unit */
 /* Apache Licence 2.0 */
 
@@ -750,60 +750,60 @@ inline h2_string operator+(const h2_string& lhs, const std::string& rhs) { h2_st
 inline h2_string operator+(const std::string& lhs, const h2_string& rhs) { h2_string s(lhs.c_str()); s.append(rhs); return s; }
 inline h2_string operator+(const h2_string& lhs, const char rhs) { h2_string s(lhs); s.push_back(rhs); return s; }
 inline h2_string operator+(const char lhs, const h2_string& rhs) { h2_string s(1, lhs); s.append(rhs); return s; }
-// source/utils/h2_row.hpp
-struct h2_row : h2_vector<h2_string> {
-   h2_row() {}
-   h2_row(const char* a) : h2_vector<h2_string>({a}) {}
-   h2_row(const h2_string& a) : h2_vector<h2_string>({a}) {}
-   h2_row(std::initializer_list<h2_string> il) : h2_vector<h2_string>(il) {}
+// source/utils/h2_sentence.hpp
+struct h2_sentence : h2_vector<h2_string> {
+   h2_sentence() {}
+   h2_sentence(const char* a) : h2_vector<h2_string>({a}) {}
+   h2_sentence(const h2_string& a) : h2_vector<h2_string>({a}) {}
+   h2_sentence(std::initializer_list<h2_string> il) : h2_vector<h2_string>(il) {}
 
    unsigned width(bool ignore_indent = false) const;
-   h2_row& indent(int n, const char c = ' ');
-   h2_row& padding(int n, const char c = ' ');
+   h2_sentence& indent(int n, const char c = ' ');
+   h2_sentence& padding(int n, const char c = ' ');
 
-   h2_row& printf(const char* style, const char* format, ...);
-   h2_row& operator+=(const h2_row& row);
-   h2_row& brush(const char* style);
+   h2_sentence& printf(const char* style, const char* format, ...);
+   h2_sentence& operator+=(const h2_sentence& sentence);
+   h2_sentence& brush(const char* style);
 
    bool enclosed(const char c) const;
-   h2_row gray_quote() const;
-   h2_row acronym(int width = 16, int tail = 0) const;
+   h2_sentence gray_quote() const;
+   h2_sentence acronym(int width = 16, int tail = 0) const;
    h2_string string() const;
 
-   void samesizify(h2_row& b);
+   void samesizify(h2_sentence& b);
 };
 
-inline h2_row operator+(const h2_row& a, const h2_row& b)  // implicit conversion const char* / h2_string
+inline h2_sentence operator+(const h2_sentence& a, const h2_sentence& b)  // implicit conversion const char* / h2_string
 {
-   h2_row row;
-   row.insert(row.end(), a.begin(), a.end());
-   row.insert(row.end(), b.begin(), b.end());
-   return row;
+   h2_sentence sentence;
+   sentence.insert(sentence.end(), a.begin(), a.end());
+   sentence.insert(sentence.end(), b.begin(), b.end());
+   return sentence;
 }
 
-static inline const h2_row color(const h2_row& s, const char* style) { return ("\033{" + h2_string(style) + "}") + s + "\033{reset}"; }
-static inline const h2_row delta(const h2_row& s, const char* style) { return ("\033{+" + h2_string(style) + "}") + s + ("\033{-" + h2_string(style) + "}"); }
-static inline const h2_row gray(const h2_row& s) { return delta(s, "dark gray"); }
+static inline const h2_sentence color(const h2_sentence& sentence, const char* style) { return ("\033{" + h2_string(style) + "}") + sentence + "\033{reset}"; }
+static inline const h2_sentence delta(const h2_sentence& sentence, const char* style) { return ("\033{+" + h2_string(style) + "}") + sentence + ("\033{-" + h2_string(style) + "}"); }
+static inline const h2_sentence gray(const h2_sentence& sentence) { return delta(sentence, "dark gray"); }
+// source/utils/h2_paragraph.hpp
+struct h2_paragraph : h2_vector<h2_sentence> {
+   h2_paragraph() {}
+   h2_paragraph(std::initializer_list<h2_sentence> il) : h2_vector<h2_sentence>(il) {}
 
-struct h2_rows : h2_vector<h2_row> {
-   h2_rows() {}
-   h2_rows(std::initializer_list<h2_row> il) : h2_vector<h2_row>(il) {}
-
-   h2_rows& operator+=(const h2_rows& rows);
+   h2_paragraph& operator+=(const h2_paragraph& paragraph);
 
    unsigned width() const;
    bool foldable(unsigned width = 20);
-   h2_row folds();
+   h2_sentence folds();
 
    h2_string string() const;
 
    void sequence(unsigned indent = 0, int start = 0);
-   void samesizify(h2_rows& b);
+   void samesizify(h2_paragraph& b);
 };
 // source/utils/h2_stringify.hpp
 template <typename T, typename = void>
 struct h2_stringify_impl {
-   static h2_row print(T a, bool represent = false) { return "?"; }
+   static h2_sentence print(T a, bool represent = false) { return "?"; }
 };
 
 #define H2_TOSTRING_ABLE(tostring)                                                                            \
@@ -825,35 +825,35 @@ H2_TOSTRING_ABLE(to_string);
 /* tostring() may not be mark const, remove cast const in T a; fix multi-tostring */
 template <typename T>
 struct h2_stringify_impl<T, typename std::enable_if<h2::h2_tostring_able<T>::value || h2::h2_toString_able<T>::value || h2::h2_Tostring_able<T>::value || h2::h2_ToString_able<T>::value || h2::h2_to_string_able<T>::value>::type> {
-   static h2_row print(const T& a, bool represent = false) { return print__tostring(a, represent); }
+   static h2_sentence print(const T& a, bool represent = false) { return print__tostring(a, represent); }
    template <typename U>
-   static auto print__tostring(const U& a, bool represent) -> typename std::enable_if<h2::h2_tostring_able<U>::value, h2_row>::type { return const_cast<U&>(a).tostring(); }
+   static auto print__tostring(const U& a, bool represent) -> typename std::enable_if<h2::h2_tostring_able<U>::value, h2_sentence>::type { return const_cast<U&>(a).tostring(); }
    template <typename U>
-   static auto print__tostring(const U& a, bool represent) -> typename std::enable_if<!h2::h2_tostring_able<U>::value, h2_row>::type { return print__toString(a, represent); }
+   static auto print__tostring(const U& a, bool represent) -> typename std::enable_if<!h2::h2_tostring_able<U>::value, h2_sentence>::type { return print__toString(a, represent); }
    template <typename U>
-   static auto print__toString(const U& a, bool represent) -> typename std::enable_if<h2::h2_toString_able<U>::value, h2_row>::type { return const_cast<U&>(a).toString(); }
+   static auto print__toString(const U& a, bool represent) -> typename std::enable_if<h2::h2_toString_able<U>::value, h2_sentence>::type { return const_cast<U&>(a).toString(); }
    template <typename U>
-   static auto print__toString(const U& a, bool represent) -> typename std::enable_if<!h2::h2_toString_able<U>::value, h2_row>::type { return print__Tostring(a, represent); }
+   static auto print__toString(const U& a, bool represent) -> typename std::enable_if<!h2::h2_toString_able<U>::value, h2_sentence>::type { return print__Tostring(a, represent); }
    template <typename U>
-   static auto print__Tostring(const U& a, bool represent) -> typename std::enable_if<h2::h2_Tostring_able<U>::value, h2_row>::type { return const_cast<U&>(a).toString(); }
+   static auto print__Tostring(const U& a, bool represent) -> typename std::enable_if<h2::h2_Tostring_able<U>::value, h2_sentence>::type { return const_cast<U&>(a).toString(); }
    template <typename U>
-   static auto print__Tostring(const U& a, bool represent) -> typename std::enable_if<!h2::h2_Tostring_able<U>::value, h2_row>::type { return print__ToString(a, represent); }
+   static auto print__Tostring(const U& a, bool represent) -> typename std::enable_if<!h2::h2_Tostring_able<U>::value, h2_sentence>::type { return print__ToString(a, represent); }
    template <typename U>
-   static auto print__ToString(const U& a, bool represent) -> typename std::enable_if<h2::h2_ToString_able<U>::value, h2_row>::type { return const_cast<U&>(a).ToString(); }
+   static auto print__ToString(const U& a, bool represent) -> typename std::enable_if<h2::h2_ToString_able<U>::value, h2_sentence>::type { return const_cast<U&>(a).ToString(); }
    template <typename U>
-   static auto print__ToString(const U& a, bool represent) -> typename std::enable_if<!h2::h2_ToString_able<U>::value, h2_row>::type { return print__to_string(a, represent); }
+   static auto print__ToString(const U& a, bool represent) -> typename std::enable_if<!h2::h2_ToString_able<U>::value, h2_sentence>::type { return print__to_string(a, represent); }
    template <typename U>
-   static auto print__to_string(const U& a, bool represent) -> typename std::enable_if<h2::h2_to_string_able<U>::value, h2_row>::type { return const_cast<U&>(a).to_string(); }
+   static auto print__to_string(const U& a, bool represent) -> typename std::enable_if<h2::h2_to_string_able<U>::value, h2_sentence>::type { return const_cast<U&>(a).to_string(); }
    template <typename U>
-   static auto print__to_string(const U& a, bool represent) -> typename std::enable_if<!h2::h2_to_string_able<U>::value, h2_row>::type { return ""; }
+   static auto print__to_string(const U& a, bool represent) -> typename std::enable_if<!h2::h2_to_string_able<U>::value, h2_sentence>::type { return ""; }
 };
 
 template <typename T>
 struct h2_stringify_impl<T, typename std::enable_if<h2_is_ostreamable<T>::value>::type> {
-   static h2_row print(const T& a, bool represent = false) { return ostream_print(a, represent); }
+   static h2_sentence print(const T& a, bool represent = false) { return ostream_print(a, represent); }
 
    template <typename U>
-   static h2_row ostream_print(const U& a, bool represent)
+   static h2_sentence ostream_print(const U& a, bool represent)
    {
       h2_ostringstream oss;
       oss << std::boolalpha << const_cast<U&>(a);
@@ -866,7 +866,7 @@ struct h2_stringify_impl<T, typename std::enable_if<h2_is_ostreamable<T>::value>
       return {oss.str().c_str()};
    }
 
-   static h2_row ostream_print(unsigned char a, bool represent)
+   static h2_sentence ostream_print(unsigned char a, bool represent)
    {  // https://en.cppreference.com/w/cpp/string/byte/isprint
       return ostream_print<unsigned int>(static_cast<unsigned int>(a), represent);
    }
@@ -874,7 +874,7 @@ struct h2_stringify_impl<T, typename std::enable_if<h2_is_ostreamable<T>::value>
 
 template <typename K, typename V>
 struct h2_stringify_impl<std::pair<K, V>> {
-   static h2_row print(const std::pair<K, V>& a, bool represent = false)
+   static h2_sentence print(const std::pair<K, V>& a, bool represent = false)
    {
       return gray("(") + h2_stringify_impl<K>::print(a.first, represent) + gray(", ") + h2_stringify_impl<V>::print(a.second, represent) + gray(")");
    }
@@ -882,67 +882,67 @@ struct h2_stringify_impl<std::pair<K, V>> {
 
 template <typename T>
 struct h2_stringify_impl<T, typename std::enable_if<h2_is_container<T>::value && !std::is_convertible<T, h2_string>::value>::type> {
-   static h2_row print(const T& a, bool represent = false)
+   static h2_sentence print(const T& a, bool represent = false)
    {
-      h2_row row;
-      row += gray("[");
+      h2_sentence st;
+      st += gray("[");
       for (auto it = a.begin(); it != a.end(); it++) {
-         if (it != a.begin()) row += gray(", ");
-         row += h2_stringify_impl<typename T::value_type>::print(*it, represent);
+         if (it != a.begin()) st += gray(", ");
+         st += h2_stringify_impl<typename T::value_type>::print(*it, represent);
       }
-      row += gray("]");
-      return row;
+      st += gray("]");
+      return st;
    }
 };
 
 template <typename... Args>
 struct h2_stringify_impl<std::tuple<Args...>> {
-   static h2_row print(const std::tuple<Args...>& a, bool represent = false)
+   static h2_sentence print(const std::tuple<Args...>& a, bool represent = false)
    {
       return gray("(") + tuple_print(a, represent, std::integral_constant<std::size_t, sizeof...(Args)>()) + gray(")");
    }
 
-   static h2_row tuple_print(const std::tuple<Args...>& a, bool represent, std::integral_constant<std::size_t, 0>) { return {}; }
+   static h2_sentence tuple_print(const std::tuple<Args...>& a, bool represent, std::integral_constant<std::size_t, 0>) { return {}; }
    template <std::size_t I>
-   static h2_row tuple_print(const std::tuple<Args...>& a, bool represent, std::integral_constant<std::size_t, I>)
+   static h2_sentence tuple_print(const std::tuple<Args...>& a, bool represent, std::integral_constant<std::size_t, I>)
    {
-      return tuple_print(a, represent, std::integral_constant<std::size_t, I - 1>()) + (1 < I ? gray(", ") : h2_row()) + h2_stringify_impl<typename std::decay<decltype(std::get<I - 1>(a))>::type>::print(std::get<I - 1>(a), represent);
+      return tuple_print(a, represent, std::integral_constant<std::size_t, I - 1>()) + (1 < I ? gray(", ") : h2_sentence()) + h2_stringify_impl<typename std::decay<decltype(std::get<I - 1>(a))>::type>::print(std::get<I - 1>(a), represent);
    }
 };
 
 template <>
 struct h2_stringify_impl<std::nullptr_t> {
-   static h2_row print(std::nullptr_t a, bool represent = false) { return "nullptr"; }
+   static h2_sentence print(std::nullptr_t a, bool represent = false) { return "nullptr"; }
 };
 
 template <typename T>
-inline h2_row h2_stringify(const T& a, bool represent = false) { return h2_stringify_impl<T>::print(a, represent); }
+inline h2_sentence h2_stringify(const T& a, bool represent = false) { return h2_stringify_impl<T>::print(a, represent); }
 
 template <typename T>
-inline h2_row h2_stringify(T a, size_t n, bool represent)
+inline h2_sentence h2_stringify(T a, size_t n, bool represent)
 {
    if (n == 0) return h2_stringify(a, represent);
 
-   h2_row row;
-   row += gray("[");
+   h2_sentence st;
+   st += gray("[");
    for (size_t i = 0; i < n; ++i) {
-      if (i) row += gray(", ");
-      row += h2_stringify(a[i], represent);
+      if (i) st += gray(", ");
+      st += h2_stringify(a[i], represent);
    }
-   row += gray("]");
-   return row;
+   st += gray("]");
+   return st;
 }
 
 template <typename T>
-inline h2_row h2_representify(const T& a) { return h2_stringify(a, true); }
+inline h2_sentence h2_representify(const T& a) { return h2_stringify(a, true); }
 
 template <typename T>
-inline h2_row h2_representify(T a, size_t n) { return h2_stringify(a, n, true); }
+inline h2_sentence h2_representify(T a, size_t n) { return h2_stringify(a, n, true); }
 // source/utils/h2_color.hpp
 struct h2_color {
    static void prints(const char* style, const char* format, ...);
-   static void printl(const h2_row& row, bool cr = true);
-   static void printl(const h2_rows& rows, bool cr = true);
+   static void printl(const h2_sentence& sentence, bool cr = true);
+   static void printl(const h2_paragraph& paragraph, bool cr = true);
    static bool isctrl(const char* s) { return s[0] == '\033' && s[1] == '{'; };
 };
 // source/symbol/h2_nm.hpp
@@ -1047,9 +1047,9 @@ struct h2_option {
 static const h2_option& O = h2_option::I();  // for pretty
 // source/render/h2_layout.hpp
 struct h2_layout {
-   static h2_rows split(const h2_rows& left_rows, const h2_rows& right_rows, const char* left_title, const char* right_title, int step, char scale, unsigned width);
-   static h2_rows unified(const h2_row& up_row, const h2_row& down_row, const char* up_title, const char* down_title, unsigned width);
-   static h2_rows seperate(const h2_row& up_row, const h2_row& down_row, const char* up_title, const char* down_title, unsigned width);
+   static h2_paragraph split(const h2_paragraph& left_paragraph, const h2_paragraph& right_paragraph, const char* left_title, const char* right_title, int step, char scale, unsigned width);
+   static h2_paragraph unified(const h2_sentence& up_sentence, const h2_sentence& down_sentence, const char* up_title, const char* down_title, unsigned width);
+   static h2_paragraph seperate(const h2_sentence& up_sentence, const h2_sentence& down_sentence, const char* up_title, const char* down_title, unsigned width);
 };
 // source/render/h2_failure.hpp
 struct h2_fail : h2_libc {
@@ -1057,7 +1057,7 @@ struct h2_fail : h2_libc {
 
    const char* assert_type = "Inner";  // Inner(Mock, AllOf, &&, ||)
    h2_string e_expression, a_expression;
-   h2_row explain;
+   h2_sentence explain;
    h2_string user_explain;
 
    //           expression     expection      represent       value
@@ -1069,10 +1069,10 @@ struct h2_fail : h2_libc {
    const char* file;
    int line;
 
-   h2_fail(const h2_row& explain_, const char* file_, int line_) : explain(explain_), file(file_), line(line_) {}
+   h2_fail(const h2_sentence& explain_, const char* file_, int line_) : explain(explain_), file(file_), line(line_) {}
    virtual ~h2_fail();
 
-   h2_row locate();
+   h2_sentence locate();
 
    virtual void print(int subling_index = 0, int child_index = 0) {}
    virtual void print(FILE* fp) {}
@@ -1081,74 +1081,74 @@ struct h2_fail : h2_libc {
    static void append_subling(h2_fail*& fail, h2_fail* n);
    static void append_child(h2_fail*& fail, h2_fail* n);
 
-   static h2_fail* new_normal(const h2_row& explain, const char* file = nullptr, int line = 0);
-   static h2_fail* new_unexpect(const h2_row& expection = {}, const h2_row& represent = {}, const h2_row& explain = {}, const char* file = nullptr, int line = 0);
-   static h2_fail* new_strcmp(const h2_string& e_value, const h2_string& a_value, bool caseless, const h2_row& expection, const h2_row& explain = {}, const char* file = nullptr, int line = 0);
-   static h2_fail* new_strfind(const h2_string& e_value, const h2_string& a_value, const h2_row& expection, const h2_row& explain = {}, const char* file = nullptr, int line = 0);
-   static h2_fail* new_json(const h2_string& e_value, const h2_string& a_value, const h2_row& expection, bool caseless, const h2_row& explain = {}, const char* file = nullptr, int line = 0);
-   static h2_fail* new_memcmp(const unsigned char* e_value, const unsigned char* a_value, int width, int nbits, const h2_string& represent, const h2_row& explain = {}, const char* file = nullptr, int line = 0);
+   static h2_fail* new_normal(const h2_sentence& explain, const char* file = nullptr, int line = 0);
+   static h2_fail* new_unexpect(const h2_sentence& expection = {}, const h2_sentence& represent = {}, const h2_sentence& explain = {}, const char* file = nullptr, int line = 0);
+   static h2_fail* new_strcmp(const h2_string& e_value, const h2_string& a_value, bool caseless, const h2_sentence& expection, const h2_sentence& explain = {}, const char* file = nullptr, int line = 0);
+   static h2_fail* new_strfind(const h2_string& e_value, const h2_string& a_value, const h2_sentence& expection, const h2_sentence& explain = {}, const char* file = nullptr, int line = 0);
+   static h2_fail* new_json(const h2_string& e_value, const h2_string& a_value, const h2_sentence& expection, bool caseless, const h2_sentence& explain = {}, const char* file = nullptr, int line = 0);
+   static h2_fail* new_memcmp(const unsigned char* e_value, const unsigned char* a_value, int width, int nbits, const h2_string& represent, const h2_sentence& explain = {}, const char* file = nullptr, int line = 0);
    static h2_fail* new_memory_leak(const void* ptr, int size, const h2_vector<std::pair<int, int>>& sizes, const h2_backtrace& bt_allocate, const char* where, const char* file, int line);
    static h2_fail* new_double_free(const void* ptr, const h2_backtrace& bt_allocate, const h2_backtrace& bt_release, const h2_backtrace& bt_double_free);
    static h2_fail* new_asymmetric_free(const void* ptr, const char* who_allocate, const char* who_release, const h2_backtrace& bt_allocate, const h2_backtrace& bt_release);
    static h2_fail* new_overflow(const void* ptr, const int size, const void* violate_ptr, const char* action, const h2_vector<unsigned char>& spot, const h2_backtrace& bt_allocate, const h2_backtrace& bt_trample, const char* file = nullptr, int line = 0);
    static h2_fail* new_use_after_free(const void* ptr, const void* violate_ptr, const char* action, const h2_backtrace& bt_allocate, const h2_backtrace& bt_release, const h2_backtrace& bt_use);
    static h2_fail* new_exception(const char* explain, const char* type, const h2_backtrace& bt_throw);
-   static h2_fail* new_symbol(const h2_string& symbol, const h2_vector<h2_string>& candidates, const h2_row& explain = {}, const char* file = nullptr, int line = 0);
+   static h2_fail* new_symbol(const h2_string& symbol, const h2_vector<h2_string>& candidates, const h2_sentence& explain = {}, const char* file = nullptr, int line = 0);
 };
 
 static inline void h2_fail_g(h2_fail*);
 // source/json/h2_json.hpp
 struct h2_json {
-   static h2_rows format(const h2_string& json_string);
+   static h2_paragraph format(const h2_string& json_string);
    static h2_string select(const h2_string& json_string, const h2_string& selector, bool caseless);
    // < 0 illformed json; = 0 matched; > 0 unmatched
    static int match(const h2_string& expect, const h2_string& actual, bool caseless);
-   static bool diff(const h2_string& expect, const h2_string& actual, h2_rows& e_lines, h2_rows& a_lines, bool caseless);
+   static bool diff(const h2_string& expect, const h2_string& actual, h2_paragraph& e_paragraph, h2_paragraph& a_paragraph, bool caseless);
 };
 // source/matcher/h2_matches.hpp
 struct h2_matches {
-   virtual h2_row expection(bool caseless, bool dont) const = 0;
+   virtual h2_sentence expection(bool caseless, bool dont) const = 0;
 };
 
 static inline h2_string DS(bool match) { return match ? "should not match" : ""; }
 
-static inline h2_row CD(const h2_row& s, bool caseless, bool dont, const char* dsym = "!")
+static inline h2_sentence CD(const h2_sentence& s, bool caseless, bool dont, const char* dsym = "!")
 {
-   h2_row row;
-   if (dont) row.push_back(dsym);
-   if (caseless) row.push_back("~");
-   row += s;
-   return row;
+   h2_sentence t;
+   if (dont) t.push_back(dsym);
+   if (caseless) t.push_back("~");
+   t += s;
+   return t;
 }
 
 template <typename T>
-inline auto h2_matches_expection(const T& e, bool caseless, bool dont) -> typename std::enable_if<std::is_base_of<h2_matches, T>::value, h2_row>::type { return e.expection(caseless, dont); }
+inline auto h2_matches_expection(const T& e, bool caseless, bool dont) -> typename std::enable_if<std::is_base_of<h2_matches, T>::value, h2_sentence>::type { return e.expection(caseless, dont); }
 template <typename T>
-inline auto h2_matches_expection(const T& e, bool caseless, bool dont) -> typename std::enable_if<!std::is_base_of<h2_matches, T>::value, h2_row>::type { return CD(h2_representify(e), caseless, dont); }
+inline auto h2_matches_expection(const T& e, bool caseless, bool dont) -> typename std::enable_if<!std::is_base_of<h2_matches, T>::value, h2_sentence>::type { return CD(h2_representify(e), caseless, dont); }
 
-#define H2_MATCHES_T2V2E(t_matchers)                                                                                                                                             \
-   template <typename T>                                                                                                                                                         \
-   void t2v(h2_vector<h2_matcher<T>>& v_matchers, std::integral_constant<std::size_t, 0>) const {}                                                                               \
-   template <typename T, std::size_t I>                                                                                                                                          \
-   void t2v(h2_vector<h2_matcher<T>>& v_matchers, std::integral_constant<std::size_t, I>) const                                                                                  \
-   {                                                                                                                                                                             \
-      t2v(v_matchers, std::integral_constant<std::size_t, I - 1>());                                                                                                             \
-      v_matchers.push_back(h2_matcher_cast<T>(std::get<I - 1>(t_matchers)));                                                                                                     \
-   }                                                                                                                                                                             \
-   template <typename T>                                                                                                                                                         \
-   void t2v(h2_vector<h2_matcher<T>>& v_matchers) const { return t2v(v_matchers, std::integral_constant<std::size_t, sizeof...(Matchers)>()); }                                  \
-   h2_row t2e(bool caseless, bool dont, std::integral_constant<std::size_t, 0>) const { return {}; }                                                                             \
-   template <std::size_t I>                                                                                                                                                      \
-   h2_row t2e(bool caseless, bool dont, std::integral_constant<std::size_t, I>) const                                                                                            \
-   {                                                                                                                                                                             \
-      return t2e(caseless, dont, std::integral_constant<size_t, I - 1>()) + (1 < I ? gray(", ") : h2_row()) + h2_matches_expection(std::get<I - 1>(t_matchers), caseless, dont); \
-   }                                                                                                                                                                             \
-   h2_row t2e(bool caseless, bool dont) const { return t2e(caseless, dont, std::integral_constant<std::size_t, sizeof...(Matchers)>()); }
+#define H2_MATCHES_T2V2E(t_matchers)                                                                                                                                                  \
+   template <typename T>                                                                                                                                                              \
+   void t2v(h2_vector<h2_matcher<T>>& v_matchers, std::integral_constant<std::size_t, 0>) const {}                                                                                    \
+   template <typename T, std::size_t I>                                                                                                                                               \
+   void t2v(h2_vector<h2_matcher<T>>& v_matchers, std::integral_constant<std::size_t, I>) const                                                                                       \
+   {                                                                                                                                                                                  \
+      t2v(v_matchers, std::integral_constant<std::size_t, I - 1>());                                                                                                                  \
+      v_matchers.push_back(h2_matcher_cast<T>(std::get<I - 1>(t_matchers)));                                                                                                          \
+   }                                                                                                                                                                                  \
+   template <typename T>                                                                                                                                                              \
+   void t2v(h2_vector<h2_matcher<T>>& v_matchers) const { return t2v(v_matchers, std::integral_constant<std::size_t, sizeof...(Matchers)>()); }                                       \
+   h2_sentence t2e(bool caseless, bool dont, std::integral_constant<std::size_t, 0>) const { return {}; }                                                                             \
+   template <std::size_t I>                                                                                                                                                           \
+   h2_sentence t2e(bool caseless, bool dont, std::integral_constant<std::size_t, I>) const                                                                                            \
+   {                                                                                                                                                                                  \
+      return t2e(caseless, dont, std::integral_constant<size_t, I - 1>()) + (1 < I ? gray(", ") : h2_sentence()) + h2_matches_expection(std::get<I - 1>(t_matchers), caseless, dont); \
+   }                                                                                                                                                                                  \
+   h2_sentence t2e(bool caseless, bool dont) const { return t2e(caseless, dont, std::integral_constant<std::size_t, sizeof...(Matchers)>()); }
 // source/matcher/h2_matcher.hpp
 template <typename T>
 struct h2_matcher_impl : h2_matches {
    virtual h2_fail* matches(T a, int n, bool caseless, bool dont) const = 0;
-   virtual h2_row expection(bool caseless, bool dont) const override { return ""; }
+   virtual h2_sentence expection(bool caseless, bool dont) const override { return ""; }
    virtual ~h2_matcher_impl() {}
 };
 
@@ -1163,7 +1163,7 @@ struct h2_matcher : h2_matches {
    h2_matcher& operator=(const h2_matcher&) = default;
    virtual ~h2_matcher() {}
    h2_fail* matches(const T& a, int n = 0, bool caseless = false, bool dont = false) const { return impl->matches(a, n, caseless, dont); }
-   virtual h2_row expection(bool caseless = false, bool dont = false) const { return impl->expection(caseless, dont); };
+   virtual h2_sentence expection(bool caseless = false, bool dont = false) const { return impl->expection(caseless, dont); };
 };
 
 template <typename Matches>
@@ -1197,10 +1197,10 @@ struct h2_polymorphic_matcher : h2_matches {
       bool caseless, dont;
       explicit internal_impl(const Matches& m_, bool caseless_, bool dont_) : m(m_), caseless(caseless_), dont(dont_) {}
       h2_fail* matches(T a, int n = 0, bool caseless_ = false, bool dont_ = false) const override { return m.matches(a, n, caseless || caseless_, dont != dont_); }
-      h2_row expection(bool caseless_, bool dont_) const override { return m.expection(caseless || caseless_, dont != dont_ /*XOR ^*/); }
+      h2_sentence expection(bool caseless_, bool dont_) const override { return m.expection(caseless || caseless_, dont != dont_ /*XOR ^*/); }
    };
 
-   virtual h2_row expection(bool caseless_ = false, bool dont_ = false) const override { return h2_matches_expection(m, caseless || caseless_, dont != dont_); }
+   virtual h2_sentence expection(bool caseless_ = false, bool dont_ = false) const override { return h2_matches_expection(m, caseless || caseless_, dont != dont_); }
 };
 // source/matcher/h2_equation.hpp
 template <typename E, typename = void>
@@ -1214,7 +1214,7 @@ struct h2_equation : h2_matches {
       if ((a == e) == !dont) return nullptr;
       return h2_fail::new_unexpect(expection(caseless, dont), h2_representify(a));
    }
-   virtual h2_row expection(bool, bool dont) const override
+   virtual h2_sentence expection(bool, bool dont) const override
    {
       return CD(h2_representify(e), false, dont, "≠");
    }
@@ -1230,10 +1230,9 @@ struct h2_equation<E, typename std::enable_if<std::is_convertible<E, h2_string>:
       if (a.equals(e, caseless) == !dont) return nullptr;
       if (h2_pattern::wildcard_match(e.c_str(), a.c_str(), caseless) == !dont) return nullptr;
       if (h2_pattern::regex_match(e.c_str(), a.c_str(), caseless) == !dont) return nullptr;
-
       return h2_fail::new_strcmp(e, a, caseless, expection(caseless, dont));
    }
-   virtual h2_row expection(bool caseless, bool dont) const override
+   virtual h2_sentence expection(bool caseless, bool dont) const override
    {
       return CD(h2_representify(e), caseless, dont, "≠");
    }
@@ -1264,9 +1263,9 @@ struct h2_equation<E, typename std::enable_if<std::is_arithmetic<E>::value>::typ
       if (result == !dont) return nullptr;
       return h2_fail::new_unexpect(expection(caseless, dont), h2_representify(a));
    }
-   virtual h2_row expection(bool, bool dont) const override
+   virtual h2_sentence expection(bool, bool dont) const override
    {
-      h2_row t = h2_representify(e);
+      h2_sentence t = h2_representify(e);
       if (epsilon != 0) {
          h2_ostringstream oss;
          oss << "±" << std::fixed << epsilon;
@@ -1319,7 +1318,7 @@ inline h2_matcher<T> h2_matcher_cast(const M& from) { return h2_matcher_cast_imp
 struct h2_matches_any : h2_matches {
    template <typename A>
    h2_fail* matches(const A& a, int, bool, bool) const { return nullptr; }
-   virtual h2_row expection(bool, bool) const override { return "Any"; }
+   virtual h2_sentence expection(bool, bool) const override { return "Any"; }
 };
 
 struct h2_matches_null : h2_matches {
@@ -1332,7 +1331,7 @@ struct h2_matches_null : h2_matches {
       if ((nullptr == (const void*)a) == !_dont) return nullptr;
       return h2_fail::new_unexpect(expection(false, dont), h2_stringify((const void*)a));
    }
-   virtual h2_row expection(bool, bool dont) const override
+   virtual h2_sentence expection(bool, bool dont) const override
    {
       return (reverse ? !dont : dont) ? "NotNull" : "IsNull";
    }
@@ -1347,7 +1346,7 @@ struct h2_matches_boolean : h2_matches {
       if (((bool)a) == !_dont) return nullptr;
       return h2_fail::new_unexpect(expection(false, dont), a ? "true" : "false");
    }
-   virtual h2_row expection(bool, bool dont) const override
+   virtual h2_sentence expection(bool, bool dont) const override
    {
       return (E ? dont : !dont) ? "false" : "true";
    }
@@ -1374,7 +1373,7 @@ struct h2_pointee_matches : h2_matches {
       typedef typename PointeeOf<Pointer>::type Pointee;
       return h2_matcher_cast<Pointee>(m).matches(*a, 0, caseless, dont);
    }
-   virtual h2_row expection(bool caseless, bool dont) const override
+   virtual h2_sentence expection(bool caseless, bool dont) const override
    {
       return h2_matches_expection(m, caseless, dont);
    }
@@ -1401,7 +1400,7 @@ struct h2_not_matches : h2_matches {
    {
       return h2_matcher_cast<A>(m).matches(a, n, caseless, !dont);
    }
-   virtual h2_row expection(bool caseless, bool dont) const override
+   virtual h2_sentence expection(bool caseless, bool dont) const override
    {
       return h2_matches_expection(m, caseless, !dont);
    }
@@ -1429,9 +1428,9 @@ struct h2_and_matches : h2_matches {
       return fail;
    }
 
-   virtual h2_row expection(bool caseless, bool dont) const override
+   virtual h2_sentence expection(bool caseless, bool dont) const override
    {
-      return CD((dont ? gray("(") : h2_row()) + h2_matches_expection(m1, caseless, false) + " and " + h2_matches_expection(m2, caseless, false) + (dont ? gray(")") : h2_row()), false, dont);
+      return CD((dont ? gray("(") : h2_sentence()) + h2_matches_expection(m1, caseless, false) + " and " + h2_matches_expection(m2, caseless, false) + (dont ? gray(")") : h2_sentence()), false, dont);
    }
 };
 
@@ -1461,9 +1460,9 @@ struct h2_or_matches : h2_matches {
       return fail;
    }
 
-   virtual h2_row expection(bool caseless, bool dont) const override
+   virtual h2_sentence expection(bool caseless, bool dont) const override
    {
-      return CD((dont ? gray("(") : h2_row()) + h2_matches_expection(m1, caseless, false) + " or " + h2_matches_expection(m2, caseless, false) + (dont ? gray(")") : h2_row()), false, dont);
+      return CD((dont ? gray("(") : h2_sentence()) + h2_matches_expection(m1, caseless, false) + " or " + h2_matches_expection(m2, caseless, false) + (dont ? gray(")") : h2_sentence()), false, dont);
    }
 };
 
@@ -1499,7 +1498,7 @@ struct h2_allof_matches : h2_matches {
       return fail;
    }
 
-   virtual h2_row expection(bool caseless, bool dont) const override
+   virtual h2_sentence expection(bool caseless, bool dont) const override
    {
       return CD("AllOf" + gray("(") + t2e(caseless, false) + gray(")"), false, dont);
    }
@@ -1544,7 +1543,7 @@ struct h2_anyof_matches : h2_matches {
       return fail;
    }
 
-   virtual h2_row expection(bool caseless, bool dont) const override
+   virtual h2_sentence expection(bool caseless, bool dont) const override
    {
       return CD("AnyOf" + gray("(") + t2e(caseless, false) + gray(")"), false, dont);
    }
@@ -1583,7 +1582,7 @@ struct h2_noneof_matches : h2_matches {
       return fail;
    }
 
-   virtual h2_row expection(bool caseless, bool dont) const override
+   virtual h2_sentence expection(bool caseless, bool dont) const override
    {
       return CD("NoneOf" + gray("(") + t2e(caseless, false) + gray(")"), false, dont);
    }
@@ -1678,7 +1677,7 @@ struct h2_matches_ge : h2_matches {
       if ((a >= e) == !dont) return nullptr;
       return h2_fail::new_unexpect(expection(caseless, dont), h2_representify(a));
    }
-   virtual h2_row expection(bool, bool dont) const override
+   virtual h2_sentence expection(bool, bool dont) const override
    {
       return CD("≥" + h2_representify(e), false, dont);
    }
@@ -1695,7 +1694,7 @@ struct h2_matches_gt : h2_matches {
       if ((a > e) == !dont) return nullptr;
       return h2_fail::new_unexpect(expection(caseless, dont), h2_stringify(a));
    }
-   virtual h2_row expection(bool, bool dont) const override
+   virtual h2_sentence expection(bool, bool dont) const override
    {
       return CD(">" + h2_stringify(e), false, dont);
    }
@@ -1712,7 +1711,7 @@ struct h2_matches_le : h2_matches {
       if ((a <= e) == !dont) return nullptr;
       return h2_fail::new_unexpect(expection(caseless, dont), h2_stringify(a));
    }
-   virtual h2_row expection(bool, bool dont) const override
+   virtual h2_sentence expection(bool, bool dont) const override
    {
       return CD("≤" + h2_stringify(e), false, dont);
    }
@@ -1729,7 +1728,7 @@ struct h2_matches_lt : h2_matches {
       if ((a < e) == !dont) return nullptr;
       return h2_fail::new_unexpect(expection(caseless, dont), h2_stringify(a));
    }
-   virtual h2_row expection(bool, bool dont) const override
+   virtual h2_sentence expection(bool, bool dont) const override
    {
       return CD("<" + h2_stringify(e), false, dont);
    }
@@ -1751,42 +1750,42 @@ struct h2_matches_regex : h2_matches {
    const h2_string e;
    explicit h2_matches_regex(const h2_string& e_) : e(e_) {}
    h2_fail* matches(const h2_string& a, int n, bool caseless, bool dont) const;
-   virtual h2_row expection(bool caseless, bool dont) const override;
+   virtual h2_sentence expection(bool caseless, bool dont) const override;
 };
 
 struct h2_matches_wildcard : h2_matches {
    const h2_string e;
    explicit h2_matches_wildcard(const h2_string& e_) : e(e_) {}
    h2_fail* matches(const h2_string& a, int n, bool caseless, bool dont) const;
-   virtual h2_row expection(bool caseless, bool dont) const override;
+   virtual h2_sentence expection(bool caseless, bool dont) const override;
 };
 
 struct h2_matches_strcmp : h2_matches {
    const h2_string e;
    explicit h2_matches_strcmp(const h2_string& e_) : e(e_) {}
    h2_fail* matches(const h2_string& a, int n, bool caseless, bool dont) const;
-   virtual h2_row expection(bool caseless, bool dont) const override;
+   virtual h2_sentence expection(bool caseless, bool dont) const override;
 };
 
 struct h2_matches_substr : h2_matches {
    const h2_string substring;
    explicit h2_matches_substr(const h2_string& substring_) : substring(substring_) {}
    h2_fail* matches(const h2_string& a, int n, bool caseless, bool dont) const;
-   virtual h2_row expection(bool caseless, bool dont) const override;
+   virtual h2_sentence expection(bool caseless, bool dont) const override;
 };
 
 struct h2_matches_startswith : h2_matches {
    const h2_string prefix_string;
    explicit h2_matches_startswith(const h2_string& prefix_string_) : prefix_string(prefix_string_) {}
    h2_fail* matches(const h2_string& a, int n, bool caseless, bool dont) const;
-   virtual h2_row expection(bool caseless, bool dont) const override;
+   virtual h2_sentence expection(bool caseless, bool dont) const override;
 };
 
 struct h2_matches_endswith : h2_matches {
    const h2_string suffix_string;
    explicit h2_matches_endswith(const h2_string& suffix_string_) : suffix_string(suffix_string_) {}
    h2_fail* matches(const h2_string& a, int n, bool caseless, bool dont) const;
-   virtual h2_row expection(bool caseless, bool dont) const override;
+   virtual h2_sentence expection(bool caseless, bool dont) const override;
 };
 
 struct h2_matches_json : h2_matches {
@@ -1794,7 +1793,7 @@ struct h2_matches_json : h2_matches {
    const h2_string selector;
    explicit h2_matches_json(const h2_string& e_, const h2_string& selector_) : e(e_), selector(selector_) {}
    h2_fail* matches(const h2_string& a, int, bool caseless, bool dont) const;
-   virtual h2_row expection(bool caseless, bool dont) const override;
+   virtual h2_sentence expection(bool caseless, bool dont) const override;
 };
 
 struct h2_caseless_matches : h2_matches {
@@ -1803,7 +1802,7 @@ struct h2_caseless_matches : h2_matches {
 
    template <typename A>
    h2_fail* matches(const A& a, int n, bool caseless, bool dont) const { return m.matches(a, n, true, dont); }
-   virtual h2_row expection(bool caseless, bool dont) const override { return m.expection(true, dont); }
+   virtual h2_sentence expection(bool caseless, bool dont) const override { return m.expection(true, dont); }
 };
 
 inline h2_polymorphic_matcher<h2_matches_regex> Re(const h2_string& regex_pattern) { return h2_polymorphic_matcher<h2_matches_regex>(h2_matches_regex(regex_pattern)); }
@@ -1824,7 +1823,7 @@ struct h2_matches_bytecmp : h2_matches {
    const int nbytes;
    explicit h2_matches_bytecmp(const int width_, const void* e_, const bool isstring_, const int nbytes_) : width(width_), e(e_), isstring(isstring_), nbytes(nbytes_) {}
    h2_fail* matches(const void* a, int n, bool caseless, bool dont) const;
-   virtual h2_row expection(bool caseless, bool dont) const override;
+   virtual h2_sentence expection(bool caseless, bool dont) const override;
 };
 
 struct h2_matches_bitcmp : h2_matches {
@@ -1833,7 +1832,7 @@ struct h2_matches_bitcmp : h2_matches {
    const int nbits;
    explicit h2_matches_bitcmp(const void* e_, const bool isstring_, const int nbits_) : e(e_), isstring(isstring_), nbits(nbits_) {}
    h2_fail* matches(const void* a, int n, bool caseless, bool dont) const;
-   virtual h2_row expection(bool caseless, bool dont) const override;
+   virtual h2_sentence expection(bool caseless, bool dont) const override;
 };
 
 template <typename E>
@@ -1866,7 +1865,7 @@ struct h2_matches_memcmp : h2_matches {
       }
       return fail;
    }
-   virtual h2_row expection(bool caseless, bool dont) const override
+   virtual h2_sentence expection(bool caseless, bool dont) const override
    {
       return CD("Me()", caseless, dont);
    }
@@ -1933,7 +1932,7 @@ struct h2_pair_matches : h2_matches {
       return h2_fail::new_unexpect(expection(caseless, dont), h2_representify(a));
    }
 
-   virtual h2_row expection(bool caseless, bool dont) const override
+   virtual h2_sentence expection(bool caseless, bool dont) const override
    {
       return CD(gray("(") + h2_matches_expection(k, caseless, dont) + gray(", ") + h2_matches_expection(v, caseless, dont) + gray(")"), false, dont);
    }
@@ -1999,7 +1998,7 @@ struct h2_listof_matches : h2_matches {
       return fail;
    }
 
-   virtual h2_row expection(bool caseless, bool dont) const override
+   virtual h2_sentence expection(bool caseless, bool dont) const override
    {
       return CD("ListOf" + gray("(") + t2e(caseless, false) + gray(")"), false, dont);
    }
@@ -2074,7 +2073,7 @@ struct h2_has_matches : h2_matches {
       return fail;
    }
 
-   virtual h2_row expection(bool caseless, bool dont) const override
+   virtual h2_sentence expection(bool caseless, bool dont) const override
    {
       return CD("Has" + gray("(") + t2e(caseless, false) + gray(")"), false, dont);
    }
@@ -2104,7 +2103,7 @@ struct h2_in_matches : h2_matches {
       return h2_fail::new_unexpect(expection(caseless, dont), h2_representify(a), DS(result));
    }
 
-   virtual h2_row expection(bool caseless, bool dont) const override
+   virtual h2_sentence expection(bool caseless, bool dont) const override
    {
       return CD("In" + gray("(") + t2e(caseless, false) + gray(")"), false, dont);
    }
@@ -2136,7 +2135,7 @@ struct h2_countof_matches : h2_matches {
       return __matches(count, h2_representify(a), dont);
    }
 
-   h2_fail* __matches(int count, h2_row&& represent, bool dont) const
+   h2_fail* __matches(int count, h2_sentence&& represent, bool dont) const
    {
       h2_fail* fails = nullptr;
       h2_vector<h2_matcher<int>> v_matchers;
@@ -2156,7 +2155,7 @@ struct h2_countof_matches : h2_matches {
       return fail;
    }
 
-   virtual h2_row expection(bool, bool dont) const override
+   virtual h2_sentence expection(bool, bool dont) const override
    {
       return CD("CountOf" + gray("(") + t2e(false, dont) + gray(")"), false, false);
    }
@@ -2216,7 +2215,7 @@ inline h2_polymorphic_matcher<h2_countof_matches<typename std::decay<const Match
       }                                                                                                  \
       return fail;                                                                                       \
    }                                                                                                     \
-   virtual h2::h2_row expection(bool, bool) const override { return ""; }
+   virtual h2::h2_sentence expection(bool, bool) const override { return ""; }
 
 #define H2MATCHER0(name, message)                                               \
    struct h2_##name##_matches : h2::h2_matches {                                \
@@ -2790,8 +2789,8 @@ struct h2_mocker_base : h2_libc {
    int line;
    bool greed_mode = true;
 
-   h2_row argument(int seq, const char* def = "");
-   h2_row signature();
+   h2_sentence argument(int seq, const char* def = "");
+   h2_sentence signature();
 
    h2_vector<h2_checkin> checkin_array;
    int checkin_index = 0;
@@ -3143,9 +3142,9 @@ struct h2_sock : h2_once {
       h2_assert_g();
       h2_packet* p = h2_sock::fetch();
       if (!p) {
-         h2_row r = "Outgoing packet miss Ptx(";
-         r.printf("green", "%s", e).printf("", ")");
-         h2_fail_g(h2_fail::new_normal(r, file, line));
+         h2_sentence t = "Outgoing packet miss Ptx(";
+         t.printf("green", "%s", e).printf("", ")");
+         h2_fail_g(h2_fail::new_normal(t, file, line));
          return;
       }
       h2_fail* fails = nullptr;
@@ -3171,9 +3170,9 @@ struct h2_sock : h2_once {
       }
 
       if (fails) {
-         h2_row r = "Outgoing packet unexpected Ptx(";
-         r.printf("green", "%s", e).printf("", ")");
-         h2_fail* fail = h2_fail::new_normal(r, file, line);
+         h2_sentence t = "Outgoing packet unexpected Ptx(";
+         t.printf("green", "%s", e).printf("", ")");
+         h2_fail* fail = h2_fail::new_normal(t, file, line);
          h2_fail::append_child(fail, fails);
          h2_fail_g(fail);
       }

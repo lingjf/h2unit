@@ -4,7 +4,7 @@ struct h2_json_dual : h2_libc {  // combine two node into a dual
    const char *e_class = "blob", *a_class = "blob";
    h2_string e_key, a_key;
    h2_string e_value, a_value;
-   h2_rows e_blob, a_blob;
+   h2_paragraph e_blob, a_blob;
    h2_list children, x;
    h2_json_dual* perent;
    int depth;
@@ -62,75 +62,75 @@ struct h2_json_dual : h2_libc {  // combine two node into a dual
       return false;
    }
 
-   void align(h2_rows& e_rows, h2_rows& a_rows, h2_list* subling = nullptr)
+   void align(h2_paragraph& e_paragraph, h2_paragraph& a_paragraph, h2_list* subling = nullptr)
    {
       if (!strcmp(e_class, "blob")) {
          e_blob.samesizify(a_blob);
-         for (auto& row : e_blob) row.brush("cyan");
-         for (auto& row : a_blob) row.brush("yellow");
+         for (auto& st : e_blob) st.brush("cyan");
+         for (auto& st : a_blob) st.brush("yellow");
 
-         e_rows += e_blob;
-         a_rows += a_blob;
+         e_paragraph += e_blob;
+         a_paragraph += a_blob;
          return;
       }
 
-      h2_row e_row, a_row;
-      e_row.indent(depth * 2);
-      a_row.indent(depth * 2);
+      h2_sentence e_sentence, a_sentence;
+      e_sentence.indent(depth * 2);
+      a_sentence.indent(depth * 2);
 
       if (e_key.size()) {
-         if (!key_equal) e_row.push_back("\033{green}");
-         e_row.push_back(e_key);
-         if (!key_equal) e_row.push_back("\033{reset}");
-         e_row.push_back(": ");
+         if (!key_equal) e_sentence.push_back("\033{green}");
+         e_sentence.push_back(e_key);
+         if (!key_equal) e_sentence.push_back("\033{reset}");
+         e_sentence.push_back(": ");
       }
 
       if (a_key.size()) {
-         if (!key_equal) a_row.push_back("\033{red,bold}");
-         a_row.push_back(a_key);
-         if (!key_equal) a_row.push_back("\033{reset}");
-         a_row.push_back(": ");
+         if (!key_equal) a_sentence.push_back("\033{red,bold}");
+         a_sentence.push_back(a_key);
+         if (!key_equal) a_sentence.push_back("\033{reset}");
+         a_sentence.push_back(": ");
       }
 
       if (!strcmp(e_class, "atomic")) {
          if (e_value.size()) {
-            if (!match) e_row.push_back("\033{green}");
-            e_row.push_back(e_value);
-            if (!match) e_row.push_back("\033{reset}");
+            if (!match) e_sentence.push_back("\033{green}");
+            e_sentence.push_back(e_value);
+            if (!match) e_sentence.push_back("\033{reset}");
          }
          if (a_value.size()) {
-            if (!match) a_row.push_back("\033{red,bold}");
-            a_row.push_back(a_value);
-            if (!match) a_row.push_back("\033{reset}");
+            if (!match) a_sentence.push_back("\033{red,bold}");
+            a_sentence.push_back(a_value);
+            if (!match) a_sentence.push_back("\033{reset}");
          }
       } else if (!strcmp(e_class, "object") || !strcmp(e_class, "array")) {
-         h2_rows e_children_rows, a_children_rows;
+         h2_paragraph e_children_paragraph, a_children_paragraph;
          h2_list_for_each_entry (p, children, h2_json_dual, x)
-            p->align(e_children_rows, a_children_rows, &children);
+            p->align(e_children_paragraph, a_children_paragraph, &children);
 
-         e_row.push_back(strcmp(e_class, "object") ? "[" : "{");
-         a_row.push_back(strcmp(a_class, "object") ? "[" : "{");
-         if (O.fold_json && e_children_rows.foldable() && a_children_rows.foldable()) {
-            e_row += e_children_rows.folds();
-            a_row += a_children_rows.folds();
+         e_sentence.push_back(strcmp(e_class, "object") ? "[" : "{");
+         a_sentence.push_back(strcmp(a_class, "object") ? "[" : "{");
+         if (O.fold_json && e_children_paragraph.foldable() && a_children_paragraph.foldable()) {
+            e_sentence += e_children_paragraph.folds();
+            a_sentence += a_children_paragraph.folds();
          } else {
-            e_rows.push_back(e_row), e_row.clear();
-            e_rows += e_children_rows;
-            e_row.indent(depth * 2);
-            a_rows.push_back(a_row), a_row.clear();
-            a_rows += a_children_rows;
-            a_row.indent(depth * 2);
+            e_paragraph.push_back(e_sentence), e_sentence.clear();
+            e_paragraph += e_children_paragraph;
+            e_sentence.indent(depth * 2);
+            a_paragraph.push_back(a_sentence), a_sentence.clear();
+            a_paragraph += a_children_paragraph;
+            a_sentence.indent(depth * 2);
          }
-         e_row.push_back(strcmp(e_class, "object") ? "]" : "}");
-         a_row.push_back(strcmp(a_class, "object") ? "]" : "}");
+         e_sentence.push_back(strcmp(e_class, "object") ? "]" : "}");
+         a_sentence.push_back(strcmp(a_class, "object") ? "]" : "}");
       }
-      if (e_row.size()) {
-         if (has_next(subling, true)) e_row.push_back(", ");
-         e_rows.push_back(e_row), e_row.clear();
+      if (e_sentence.size()) {
+         if (has_next(subling, true)) e_sentence.push_back(", ");
+         e_paragraph.push_back(e_sentence), e_sentence.clear();
       }
-      if (a_row.size()) {
-         if (has_next(subling, false)) a_row.push_back(", ");
-         a_rows.push_back(a_row), a_row.clear();
+      if (a_sentence.size()) {
+         if (has_next(subling, false)) a_sentence.push_back(", ");
+         a_paragraph.push_back(a_sentence), a_sentence.clear();
       }
    }
 };

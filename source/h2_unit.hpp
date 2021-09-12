@@ -52,12 +52,13 @@ namespace h2 {
 #include "utils/h2_shared_ptr.hpp"    // libc
 #include "utils/h2_allocate.hpp"      // libc
 #include "utils/h2_string.hpp"        // allocate
-#include "utils/h2_row.hpp"           // string
-#include "utils/h2_stringify.hpp"     // string, row
-#include "utils/h2_color.hpp"         // row
+#include "utils/h2_sentence.hpp"      // string
+#include "utils/h2_paragraph.hpp"     // string, sentence
+#include "utils/h2_stringify.hpp"     // string, sentence
+#include "utils/h2_color.hpp"         // sentence
 #include "symbol/h2_nm.hpp"           //
 #include "symbol/h2_load.hpp"         //
-#include "symbol/h2_backtrace.hpp"    // row
+#include "symbol/h2_backtrace.hpp"    // sentence
 #include "symbol/h2_cxa.hpp"          //
 #include "render/h2_option.hpp"       //
 #include "render/h2_layout.hpp"       //

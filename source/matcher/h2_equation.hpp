@@ -9,7 +9,7 @@ struct h2_equation : h2_matches {
       if ((a == e) == !dont) return nullptr;
       return h2_fail::new_unexpect(expection(caseless, dont), h2_representify(a));
    }
-   virtual h2_row expection(bool, bool dont) const override
+   virtual h2_sentence expection(bool, bool dont) const override
    {
       return CD(h2_representify(e), false, dont, "≠");
    }
@@ -25,10 +25,9 @@ struct h2_equation<E, typename std::enable_if<std::is_convertible<E, h2_string>:
       if (a.equals(e, caseless) == !dont) return nullptr;
       if (h2_pattern::wildcard_match(e.c_str(), a.c_str(), caseless) == !dont) return nullptr;
       if (h2_pattern::regex_match(e.c_str(), a.c_str(), caseless) == !dont) return nullptr;
-
       return h2_fail::new_strcmp(e, a, caseless, expection(caseless, dont));
    }
-   virtual h2_row expection(bool caseless, bool dont) const override
+   virtual h2_sentence expection(bool caseless, bool dont) const override
    {
       return CD(h2_representify(e), caseless, dont, "≠");
    }
@@ -59,9 +58,9 @@ struct h2_equation<E, typename std::enable_if<std::is_arithmetic<E>::value>::typ
       if (result == !dont) return nullptr;
       return h2_fail::new_unexpect(expection(caseless, dont), h2_representify(a));
    }
-   virtual h2_row expection(bool, bool dont) const override
+   virtual h2_sentence expection(bool, bool dont) const override
    {
-      h2_row t = h2_representify(e);
+      h2_sentence t = h2_representify(e);
       if (epsilon != 0) {
          h2_ostringstream oss;
          oss << "±" << std::fixed << epsilon;

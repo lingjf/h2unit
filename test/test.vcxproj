@@ -97,7 +97,8 @@
     <ClCompile Include="test_utils_macro_generated.cpp" />
     <ClCompile Include="test_utils_misc.cpp" />
     <ClCompile Include="test_utils_numeric.cpp" />
-    <ClCompile Include="test_utils_row.cpp" />
+    <ClCompile Include="test_utils_sentence.cpp" />
+    <ClCompile Include="test_utils_paragraph.cpp" />
     <ClCompile Include="test_utils_shared_ptr.cpp" />
     <ClCompile Include="test_utils_string.cpp" />
     <ClCompile Include="test_utils_stringify.cpp" />

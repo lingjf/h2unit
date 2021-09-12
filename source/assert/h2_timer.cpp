@@ -8,8 +8,8 @@ h2_inline h2_timer::~h2_timer()
    h2_assert_g();
    double delta = (::clock() - start) * 1000.0 / CLOCKS_PER_SEC;
    if (ms < delta) {
-      h2_row row = "performance expect < ";
-      row.printf("green", "%d", ms).printf("", " ms, but actually cost ").printf("red", "%d", (int)delta).printf("", " ms");
-      h2_fail_g(h2_fail::new_normal(row, file, line));
+      h2_sentence st = "performance expect < ";
+      st.printf("green", "%d", ms).printf("", " ms, but actually cost ").printf("red", "%d", (int)delta).printf("", " ms");
+      h2_fail_g(h2_fail::new_normal(st, file, line));
    }
 }

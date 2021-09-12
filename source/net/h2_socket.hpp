@@ -17,9 +17,9 @@ struct h2_sock : h2_once {
       h2_assert_g();
       h2_packet* p = h2_sock::fetch();
       if (!p) {
-         h2_row r = "Outgoing packet miss Ptx(";
-         r.printf("green", "%s", e).printf("", ")");
-         h2_fail_g(h2_fail::new_normal(r, file, line));
+         h2_sentence t = "Outgoing packet miss Ptx(";
+         t.printf("green", "%s", e).printf("", ")");
+         h2_fail_g(h2_fail::new_normal(t, file, line));
          return;
       }
       h2_fail* fails = nullptr;
@@ -45,9 +45,9 @@ struct h2_sock : h2_once {
       }
 
       if (fails) {
-         h2_row r = "Outgoing packet unexpected Ptx(";
-         r.printf("green", "%s", e).printf("", ")");
-         h2_fail* fail = h2_fail::new_normal(r, file, line);
+         h2_sentence t = "Outgoing packet unexpected Ptx(";
+         t.printf("green", "%s", e).printf("", ")");
+         h2_fail* fail = h2_fail::new_normal(t, file, line);
          h2_fail::append_child(fail, fails);
          h2_fail_g(fail);
       }

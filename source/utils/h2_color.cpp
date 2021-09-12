@@ -18,7 +18,7 @@ struct h2_shell {
       cww = 16 < columns ? columns : 120;
 #else
       struct winsize w;
-      if (-1 != ioctl(STDOUT_FILENO, TIOCGWINSZ, &w)) cww = 16 < w.ws_col && w.ws_col <= 120 ? w.ws_col : 120;
+      if (-1 != ioctl(STDOUT_FILENO, TIOCGWINSZ, &w)) cww = 16 < w.ws_col ? w.ws_col : 120;
 #endif
    }
 
@@ -127,13 +127,13 @@ h2_inline void h2_color::prints(const char* style, const char* format, ...)
    if (style && strlen(style)) h2_shell::I().print("\033{reset}");
 }
 
-h2_inline void h2_color::printl(const h2_row& row, bool cr)
+h2_inline void h2_color::printl(const h2_sentence& sentence, bool cr)
 {
-   for (auto& word : row) h2_shell::I().print(word.c_str());
+   for (auto& word : sentence) h2_shell::I().print(word.c_str());
    if (cr) h2_shell::I().print("\n");
 }
 
-h2_inline void h2_color::printl(const h2_rows& rows, bool cr)
+h2_inline void h2_color::printl(const h2_paragraph& paragraph, bool cr)
 {
-   for (auto& row : rows) printl(row, cr);
+   for (auto& sentence : paragraph) printl(sentence, cr);
 }

@@ -1,5 +1,5 @@
 
-/* v5.13 2021-09-12 13:08:01 */
+/* v5.13 2021-09-12 16:10:20 */
 /* https://github.com/lingjf/h2unit */
 /* Apache Licence 2.0 */
 
@@ -750,60 +750,60 @@ inline h2_string operator+(const h2_string& lhs, const std::string& rhs) { h2_st
 inline h2_string operator+(const std::string& lhs, const h2_string& rhs) { h2_string s(lhs.c_str()); s.append(rhs); return s; }
 inline h2_string operator+(const h2_string& lhs, const char rhs) { h2_string s(lhs); s.push_back(rhs); return s; }
 inline h2_string operator+(const char lhs, const h2_string& rhs) { h2_string s(1, lhs); s.append(rhs); return s; }
-// source/utils/h2_row.hpp
-struct h2_row : h2_vector<h2_string> {
-   h2_row() {}
-   h2_row(const char* a) : h2_vector<h2_string>({a}) {}
-   h2_row(const h2_string& a) : h2_vector<h2_string>({a}) {}
-   h2_row(std::initializer_list<h2_string> il) : h2_vector<h2_string>(il) {}
+// source/utils/h2_sentence.hpp
+struct h2_sentence : h2_vector<h2_string> {
+   h2_sentence() {}
+   h2_sentence(const char* a) : h2_vector<h2_string>({a}) {}
+   h2_sentence(const h2_string& a) : h2_vector<h2_string>({a}) {}
+   h2_sentence(std::initializer_list<h2_string> il) : h2_vector<h2_string>(il) {}
 
    unsigned width(bool ignore_indent = false) const;
-   h2_row& indent(int n, const char c = ' ');
-   h2_row& padding(int n, const char c = ' ');
+   h2_sentence& indent(int n, const char c = ' ');
+   h2_sentence& padding(int n, const char c = ' ');
 
-   h2_row& printf(const char* style, const char* format, ...);
-   h2_row& operator+=(const h2_row& row);
-   h2_row& brush(const char* style);
+   h2_sentence& printf(const char* style, const char* format, ...);
+   h2_sentence& operator+=(const h2_sentence& sentence);
+   h2_sentence& brush(const char* style);
 
    bool enclosed(const char c) const;
-   h2_row gray_quote() const;
-   h2_row acronym(int width = 16, int tail = 0) const;
+   h2_sentence gray_quote() const;
+   h2_sentence acronym(int width = 16, int tail = 0) const;
    h2_string string() const;
 
-   void samesizify(h2_row& b);
+   void samesizify(h2_sentence& b);
 };
 
-inline h2_row operator+(const h2_row& a, const h2_row& b)  // implicit conversion const char* / h2_string
+inline h2_sentence operator+(const h2_sentence& a, const h2_sentence& b)  // implicit conversion const char* / h2_string
 {
-   h2_row row;
-   row.insert(row.end(), a.begin(), a.end());
-   row.insert(row.end(), b.begin(), b.end());
-   return row;
+   h2_sentence sentence;
+   sentence.insert(sentence.end(), a.begin(), a.end());
+   sentence.insert(sentence.end(), b.begin(), b.end());
+   return sentence;
 }
 
-static inline const h2_row color(const h2_row& s, const char* style) { return ("\033{" + h2_string(style) + "}") + s + "\033{reset}"; }
-static inline const h2_row delta(const h2_row& s, const char* style) { return ("\033{+" + h2_string(style) + "}") + s + ("\033{-" + h2_string(style) + "}"); }
-static inline const h2_row gray(const h2_row& s) { return delta(s, "dark gray"); }
+static inline const h2_sentence color(const h2_sentence& sentence, const char* style) { return ("\033{" + h2_string(style) + "}") + sentence + "\033{reset}"; }
+static inline const h2_sentence delta(const h2_sentence& sentence, const char* style) { return ("\033{+" + h2_string(style) + "}") + sentence + ("\033{-" + h2_string(style) + "}"); }
+static inline const h2_sentence gray(const h2_sentence& sentence) { return delta(sentence, "dark gray"); }
+// source/utils/h2_paragraph.hpp
+struct h2_paragraph : h2_vector<h2_sentence> {
+   h2_paragraph() {}
+   h2_paragraph(std::initializer_list<h2_sentence> il) : h2_vector<h2_sentence>(il) {}
 
-struct h2_rows : h2_vector<h2_row> {
-   h2_rows() {}
-   h2_rows(std::initializer_list<h2_row> il) : h2_vector<h2_row>(il) {}
-
-   h2_rows& operator+=(const h2_rows& rows);
+   h2_paragraph& operator+=(const h2_paragraph& paragraph);
 
    unsigned width() const;
    bool foldable(unsigned width = 20);
-   h2_row folds();
+   h2_sentence folds();
 
    h2_string string() const;
 
    void sequence(unsigned indent = 0, int start = 0);
-   void samesizify(h2_rows& b);
+   void samesizify(h2_paragraph& b);
 };
 // source/utils/h2_stringify.hpp
 template <typename T, typename = void>
 struct h2_stringify_impl {
-   static h2_row print(T a, bool represent = false) { return "?"; }
+   static h2_sentence print(T a, bool represent = false) { return "?"; }
 };
 
 #define H2_TOSTRING_ABLE(tostring)                                                                            \
@@ -825,35 +825,35 @@ H2_TOSTRING_ABLE(to_string);
 /* tostring() may not be mark const, remove cast const in T a; fix multi-tostring */
 template <typename T>
 struct h2_stringify_impl<T, typename std::enable_if<h2::h2_tostring_able<T>::value || h2::h2_toString_able<T>::value || h2::h2_Tostring_able<T>::value || h2::h2_ToString_able<T>::value || h2::h2_to_string_able<T>::value>::type> {
-   static h2_row print(const T& a, bool represent = false) { return print__tostring(a, represent); }
+   static h2_sentence print(const T& a, bool represent = false) { return print__tostring(a, represent); }
    template <typename U>
-   static auto print__tostring(const U& a, bool represent) -> typename std::enable_if<h2::h2_tostring_able<U>::value, h2_row>::type { return const_cast<U&>(a).tostring(); }
+   static auto print__tostring(const U& a, bool represent) -> typename std::enable_if<h2::h2_tostring_able<U>::value, h2_sentence>::type { return const_cast<U&>(a).tostring(); }
    template <typename U>
-   static auto print__tostring(const U& a, bool represent) -> typename std::enable_if<!h2::h2_tostring_able<U>::value, h2_row>::type { return print__toString(a, represent); }
+   static auto print__tostring(const U& a, bool represent) -> typename std::enable_if<!h2::h2_tostring_able<U>::value, h2_sentence>::type { return print__toString(a, represent); }
    template <typename U>
-   static auto print__toString(const U& a, bool represent) -> typename std::enable_if<h2::h2_toString_able<U>::value, h2_row>::type { return const_cast<U&>(a).toString(); }
+   static auto print__toString(const U& a, bool represent) -> typename std::enable_if<h2::h2_toString_able<U>::value, h2_sentence>::type { return const_cast<U&>(a).toString(); }
    template <typename U>
-   static auto print__toString(const U& a, bool represent) -> typename std::enable_if<!h2::h2_toString_able<U>::value, h2_row>::type { return print__Tostring(a, represent); }
+   static auto print__toString(const U& a, bool represent) -> typename std::enable_if<!h2::h2_toString_able<U>::value, h2_sentence>::type { return print__Tostring(a, represent); }
    template <typename U>
-   static auto print__Tostring(const U& a, bool represent) -> typename std::enable_if<h2::h2_Tostring_able<U>::value, h2_row>::type { return const_cast<U&>(a).toString(); }
+   static auto print__Tostring(const U& a, bool represent) -> typename std::enable_if<h2::h2_Tostring_able<U>::value, h2_sentence>::type { return const_cast<U&>(a).toString(); }
    template <typename U>
-   static auto print__Tostring(const U& a, bool represent) -> typename std::enable_if<!h2::h2_Tostring_able<U>::value, h2_row>::type { return print__ToString(a, represent); }
+   static auto print__Tostring(const U& a, bool represent) -> typename std::enable_if<!h2::h2_Tostring_able<U>::value, h2_sentence>::type { return print__ToString(a, represent); }
    template <typename U>
-   static auto print__ToString(const U& a, bool represent) -> typename std::enable_if<h2::h2_ToString_able<U>::value, h2_row>::type { return const_cast<U&>(a).ToString(); }
+   static auto print__ToString(const U& a, bool represent) -> typename std::enable_if<h2::h2_ToString_able<U>::value, h2_sentence>::type { return const_cast<U&>(a).ToString(); }
    template <typename U>
-   static auto print__ToString(const U& a, bool represent) -> typename std::enable_if<!h2::h2_ToString_able<U>::value, h2_row>::type { return print__to_string(a, represent); }
+   static auto print__ToString(const U& a, bool represent) -> typename std::enable_if<!h2::h2_ToString_able<U>::value, h2_sentence>::type { return print__to_string(a, represent); }
    template <typename U>
-   static auto print__to_string(const U& a, bool represent) -> typename std::enable_if<h2::h2_to_string_able<U>::value, h2_row>::type { return const_cast<U&>(a).to_string(); }
+   static auto print__to_string(const U& a, bool represent) -> typename std::enable_if<h2::h2_to_string_able<U>::value, h2_sentence>::type { return const_cast<U&>(a).to_string(); }
    template <typename U>
-   static auto print__to_string(const U& a, bool represent) -> typename std::enable_if<!h2::h2_to_string_able<U>::value, h2_row>::type { return ""; }
+   static auto print__to_string(const U& a, bool represent) -> typename std::enable_if<!h2::h2_to_string_able<U>::value, h2_sentence>::type { return ""; }
 };
 
 template <typename T>
 struct h2_stringify_impl<T, typename std::enable_if<h2_is_ostreamable<T>::value>::type> {
-   static h2_row print(const T& a, bool represent = false) { return ostream_print(a, represent); }
+   static h2_sentence print(const T& a, bool represent = false) { return ostream_print(a, represent); }
 
    template <typename U>
-   static h2_row ostream_print(const U& a, bool represent)
+   static h2_sentence ostream_print(const U& a, bool represent)
    {
       h2_ostringstream oss;
       oss << std::boolalpha << const_cast<U&>(a);
@@ -866,7 +866,7 @@ struct h2_stringify_impl<T, typename std::enable_if<h2_is_ostreamable<T>::value>
       return {oss.str().c_str()};
    }
 
-   static h2_row ostream_print(unsigned char a, bool represent)
+   static h2_sentence ostream_print(unsigned char a, bool represent)
    {  // https://en.cppreference.com/w/cpp/string/byte/isprint
       return ostream_print<unsigned int>(static_cast<unsigned int>(a), represent);
    }
@@ -874,7 +874,7 @@ struct h2_stringify_impl<T, typename std::enable_if<h2_is_ostreamable<T>::value>
 
 template <typename K, typename V>
 struct h2_stringify_impl<std::pair<K, V>> {
-   static h2_row print(const std::pair<K, V>& a, bool represent = false)
+   static h2_sentence print(const std::pair<K, V>& a, bool represent = false)
    {
       return gray("(") + h2_stringify_impl<K>::print(a.first, represent) + gray(", ") + h2_stringify_impl<V>::print(a.second, represent) + gray(")");
    }
@@ -882,67 +882,67 @@ struct h2_stringify_impl<std::pair<K, V>> {
 
 template <typename T>
 struct h2_stringify_impl<T, typename std::enable_if<h2_is_container<T>::value && !std::is_convertible<T, h2_string>::value>::type> {
-   static h2_row print(const T& a, bool represent = false)
+   static h2_sentence print(const T& a, bool represent = false)
    {
-      h2_row row;
-      row += gray("[");
+      h2_sentence st;
+      st += gray("[");
       for (auto it = a.begin(); it != a.end(); it++) {
-         if (it != a.begin()) row += gray(", ");
-         row += h2_stringify_impl<typename T::value_type>::print(*it, represent);
+         if (it != a.begin()) st += gray(", ");
+         st += h2_stringify_impl<typename T::value_type>::print(*it, represent);
       }
-      row += gray("]");
-      return row;
+      st += gray("]");
+      return st;
    }
 };
 
 template <typename... Args>
 struct h2_stringify_impl<std::tuple<Args...>> {
-   static h2_row print(const std::tuple<Args...>& a, bool represent = false)
+   static h2_sentence print(const std::tuple<Args...>& a, bool represent = false)
    {
       return gray("(") + tuple_print(a, represent, std::integral_constant<std::size_t, sizeof...(Args)>()) + gray(")");
    }
 
-   static h2_row tuple_print(const std::tuple<Args...>& a, bool represent, std::integral_constant<std::size_t, 0>) { return {}; }
+   static h2_sentence tuple_print(const std::tuple<Args...>& a, bool represent, std::integral_constant<std::size_t, 0>) { return {}; }
    template <std::size_t I>
-   static h2_row tuple_print(const std::tuple<Args...>& a, bool represent, std::integral_constant<std::size_t, I>)
+   static h2_sentence tuple_print(const std::tuple<Args...>& a, bool represent, std::integral_constant<std::size_t, I>)
    {
-      return tuple_print(a, represent, std::integral_constant<std::size_t, I - 1>()) + (1 < I ? gray(", ") : h2_row()) + h2_stringify_impl<typename std::decay<decltype(std::get<I - 1>(a))>::type>::print(std::get<I - 1>(a), represent);
+      return tuple_print(a, represent, std::integral_constant<std::size_t, I - 1>()) + (1 < I ? gray(", ") : h2_sentence()) + h2_stringify_impl<typename std::decay<decltype(std::get<I - 1>(a))>::type>::print(std::get<I - 1>(a), represent);
    }
 };
 
 template <>
 struct h2_stringify_impl<std::nullptr_t> {
-   static h2_row print(std::nullptr_t a, bool represent = false) { return "nullptr"; }
+   static h2_sentence print(std::nullptr_t a, bool represent = false) { return "nullptr"; }
 };
 
 template <typename T>
-inline h2_row h2_stringify(const T& a, bool represent = false) { return h2_stringify_impl<T>::print(a, represent); }
+inline h2_sentence h2_stringify(const T& a, bool represent = false) { return h2_stringify_impl<T>::print(a, represent); }
 
 template <typename T>
-inline h2_row h2_stringify(T a, size_t n, bool represent)
+inline h2_sentence h2_stringify(T a, size_t n, bool represent)
 {
    if (n == 0) return h2_stringify(a, represent);
 
-   h2_row row;
-   row += gray("[");
+   h2_sentence st;
+   st += gray("[");
    for (size_t i = 0; i < n; ++i) {
-      if (i) row += gray(", ");
-      row += h2_stringify(a[i], represent);
+      if (i) st += gray(", ");
+      st += h2_stringify(a[i], represent);
    }
-   row += gray("]");
-   return row;
+   st += gray("]");
+   return st;
 }
 
 template <typename T>
-inline h2_row h2_representify(const T& a) { return h2_stringify(a, true); }
+inline h2_sentence h2_representify(const T& a) { return h2_stringify(a, true); }
 
 template <typename T>
-inline h2_row h2_representify(T a, size_t n) { return h2_stringify(a, n, true); }
+inline h2_sentence h2_representify(T a, size_t n) { return h2_stringify(a, n, true); }
 // source/utils/h2_color.hpp
 struct h2_color {
    static void prints(const char* style, const char* format, ...);
-   static void printl(const h2_row& row, bool cr = true);
-   static void printl(const h2_rows& rows, bool cr = true);
+   static void printl(const h2_sentence& sentence, bool cr = true);
+   static void printl(const h2_paragraph& paragraph, bool cr = true);
    static bool isctrl(const char* s) { return s[0] == '\033' && s[1] == '{'; };
 };
 // source/symbol/h2_nm.hpp
@@ -1047,9 +1047,9 @@ struct h2_option {
 static const h2_option& O = h2_option::I();  // for pretty
 // source/render/h2_layout.hpp
 struct h2_layout {
-   static h2_rows split(const h2_rows& left_rows, const h2_rows& right_rows, const char* left_title, const char* right_title, int step, char scale, unsigned width);
-   static h2_rows unified(const h2_row& up_row, const h2_row& down_row, const char* up_title, const char* down_title, unsigned width);
-   static h2_rows seperate(const h2_row& up_row, const h2_row& down_row, const char* up_title, const char* down_title, unsigned width);
+   static h2_paragraph split(const h2_paragraph& left_paragraph, const h2_paragraph& right_paragraph, const char* left_title, const char* right_title, int step, char scale, unsigned width);
+   static h2_paragraph unified(const h2_sentence& up_sentence, const h2_sentence& down_sentence, const char* up_title, const char* down_title, unsigned width);
+   static h2_paragraph seperate(const h2_sentence& up_sentence, const h2_sentence& down_sentence, const char* up_title, const char* down_title, unsigned width);
 };
 // source/render/h2_failure.hpp
 struct h2_fail : h2_libc {
@@ -1057,7 +1057,7 @@ struct h2_fail : h2_libc {
 
    const char* assert_type = "Inner";  // Inner(Mock, AllOf, &&, ||)
    h2_string e_expression, a_expression;
-   h2_row explain;
+   h2_sentence explain;
    h2_string user_explain;
 
    //           expression     expection      represent       value
@@ -1069,10 +1069,10 @@ struct h2_fail : h2_libc {
    const char* file;
    int line;
 
-   h2_fail(const h2_row& explain_, const char* file_, int line_) : explain(explain_), file(file_), line(line_) {}
+   h2_fail(const h2_sentence& explain_, const char* file_, int line_) : explain(explain_), file(file_), line(line_) {}
    virtual ~h2_fail();
 
-   h2_row locate();
+   h2_sentence locate();
 
    virtual void print(int subling_index = 0, int child_index = 0) {}
    virtual void print(FILE* fp) {}
@@ -1081,74 +1081,74 @@ struct h2_fail : h2_libc {
    static void append_subling(h2_fail*& fail, h2_fail* n);
    static void append_child(h2_fail*& fail, h2_fail* n);
 
-   static h2_fail* new_normal(const h2_row& explain, const char* file = nullptr, int line = 0);
-   static h2_fail* new_unexpect(const h2_row& expection = {}, const h2_row& represent = {}, const h2_row& explain = {}, const char* file = nullptr, int line = 0);
-   static h2_fail* new_strcmp(const h2_string& e_value, const h2_string& a_value, bool caseless, const h2_row& expection, const h2_row& explain = {}, const char* file = nullptr, int line = 0);
-   static h2_fail* new_strfind(const h2_string& e_value, const h2_string& a_value, const h2_row& expection, const h2_row& explain = {}, const char* file = nullptr, int line = 0);
-   static h2_fail* new_json(const h2_string& e_value, const h2_string& a_value, const h2_row& expection, bool caseless, const h2_row& explain = {}, const char* file = nullptr, int line = 0);
-   static h2_fail* new_memcmp(const unsigned char* e_value, const unsigned char* a_value, int width, int nbits, const h2_string& represent, const h2_row& explain = {}, const char* file = nullptr, int line = 0);
+   static h2_fail* new_normal(const h2_sentence& explain, const char* file = nullptr, int line = 0);
+   static h2_fail* new_unexpect(const h2_sentence& expection = {}, const h2_sentence& represent = {}, const h2_sentence& explain = {}, const char* file = nullptr, int line = 0);
+   static h2_fail* new_strcmp(const h2_string& e_value, const h2_string& a_value, bool caseless, const h2_sentence& expection, const h2_sentence& explain = {}, const char* file = nullptr, int line = 0);
+   static h2_fail* new_strfind(const h2_string& e_value, const h2_string& a_value, const h2_sentence& expection, const h2_sentence& explain = {}, const char* file = nullptr, int line = 0);
+   static h2_fail* new_json(const h2_string& e_value, const h2_string& a_value, const h2_sentence& expection, bool caseless, const h2_sentence& explain = {}, const char* file = nullptr, int line = 0);
+   static h2_fail* new_memcmp(const unsigned char* e_value, const unsigned char* a_value, int width, int nbits, const h2_string& represent, const h2_sentence& explain = {}, const char* file = nullptr, int line = 0);
    static h2_fail* new_memory_leak(const void* ptr, int size, const h2_vector<std::pair<int, int>>& sizes, const h2_backtrace& bt_allocate, const char* where, const char* file, int line);
    static h2_fail* new_double_free(const void* ptr, const h2_backtrace& bt_allocate, const h2_backtrace& bt_release, const h2_backtrace& bt_double_free);
    static h2_fail* new_asymmetric_free(const void* ptr, const char* who_allocate, const char* who_release, const h2_backtrace& bt_allocate, const h2_backtrace& bt_release);
    static h2_fail* new_overflow(const void* ptr, const int size, const void* violate_ptr, const char* action, const h2_vector<unsigned char>& spot, const h2_backtrace& bt_allocate, const h2_backtrace& bt_trample, const char* file = nullptr, int line = 0);
    static h2_fail* new_use_after_free(const void* ptr, const void* violate_ptr, const char* action, const h2_backtrace& bt_allocate, const h2_backtrace& bt_release, const h2_backtrace& bt_use);
    static h2_fail* new_exception(const char* explain, const char* type, const h2_backtrace& bt_throw);
-   static h2_fail* new_symbol(const h2_string& symbol, const h2_vector<h2_string>& candidates, const h2_row& explain = {}, const char* file = nullptr, int line = 0);
+   static h2_fail* new_symbol(const h2_string& symbol, const h2_vector<h2_string>& candidates, const h2_sentence& explain = {}, const char* file = nullptr, int line = 0);
 };
 
 static inline void h2_fail_g(h2_fail*);
 // source/json/h2_json.hpp
 struct h2_json {
-   static h2_rows format(const h2_string& json_string);
+   static h2_paragraph format(const h2_string& json_string);
    static h2_string select(const h2_string& json_string, const h2_string& selector, bool caseless);
    // < 0 illformed json; = 0 matched; > 0 unmatched
    static int match(const h2_string& expect, const h2_string& actual, bool caseless);
-   static bool diff(const h2_string& expect, const h2_string& actual, h2_rows& e_lines, h2_rows& a_lines, bool caseless);
+   static bool diff(const h2_string& expect, const h2_string& actual, h2_paragraph& e_paragraph, h2_paragraph& a_paragraph, bool caseless);
 };
 // source/matcher/h2_matches.hpp
 struct h2_matches {
-   virtual h2_row expection(bool caseless, bool dont) const = 0;
+   virtual h2_sentence expection(bool caseless, bool dont) const = 0;
 };
 
 static inline h2_string DS(bool match) { return match ? "should not match" : ""; }
 
-static inline h2_row CD(const h2_row& s, bool caseless, bool dont, const char* dsym = "!")
+static inline h2_sentence CD(const h2_sentence& s, bool caseless, bool dont, const char* dsym = "!")
 {
-   h2_row row;
-   if (dont) row.push_back(dsym);
-   if (caseless) row.push_back("~");
-   row += s;
-   return row;
+   h2_sentence t;
+   if (dont) t.push_back(dsym);
+   if (caseless) t.push_back("~");
+   t += s;
+   return t;
 }
 
 template <typename T>
-inline auto h2_matches_expection(const T& e, bool caseless, bool dont) -> typename std::enable_if<std::is_base_of<h2_matches, T>::value, h2_row>::type { return e.expection(caseless, dont); }
+inline auto h2_matches_expection(const T& e, bool caseless, bool dont) -> typename std::enable_if<std::is_base_of<h2_matches, T>::value, h2_sentence>::type { return e.expection(caseless, dont); }
 template <typename T>
-inline auto h2_matches_expection(const T& e, bool caseless, bool dont) -> typename std::enable_if<!std::is_base_of<h2_matches, T>::value, h2_row>::type { return CD(h2_representify(e), caseless, dont); }
+inline auto h2_matches_expection(const T& e, bool caseless, bool dont) -> typename std::enable_if<!std::is_base_of<h2_matches, T>::value, h2_sentence>::type { return CD(h2_representify(e), caseless, dont); }
 
-#define H2_MATCHES_T2V2E(t_matchers)                                                                                                                                             \
-   template <typename T>                                                                                                                                                         \
-   void t2v(h2_vector<h2_matcher<T>>& v_matchers, std::integral_constant<std::size_t, 0>) const {}                                                                               \
-   template <typename T, std::size_t I>                                                                                                                                          \
-   void t2v(h2_vector<h2_matcher<T>>& v_matchers, std::integral_constant<std::size_t, I>) const                                                                                  \
-   {                                                                                                                                                                             \
-      t2v(v_matchers, std::integral_constant<std::size_t, I - 1>());                                                                                                             \
-      v_matchers.push_back(h2_matcher_cast<T>(std::get<I - 1>(t_matchers)));                                                                                                     \
-   }                                                                                                                                                                             \
-   template <typename T>                                                                                                                                                         \
-   void t2v(h2_vector<h2_matcher<T>>& v_matchers) const { return t2v(v_matchers, std::integral_constant<std::size_t, sizeof...(Matchers)>()); }                                  \
-   h2_row t2e(bool caseless, bool dont, std::integral_constant<std::size_t, 0>) const { return {}; }                                                                             \
-   template <std::size_t I>                                                                                                                                                      \
-   h2_row t2e(bool caseless, bool dont, std::integral_constant<std::size_t, I>) const                                                                                            \
-   {                                                                                                                                                                             \
-      return t2e(caseless, dont, std::integral_constant<size_t, I - 1>()) + (1 < I ? gray(", ") : h2_row()) + h2_matches_expection(std::get<I - 1>(t_matchers), caseless, dont); \
-   }                                                                                                                                                                             \
-   h2_row t2e(bool caseless, bool dont) const { return t2e(caseless, dont, std::integral_constant<std::size_t, sizeof...(Matchers)>()); }
+#define H2_MATCHES_T2V2E(t_matchers)                                                                                                                                                  \
+   template <typename T>                                                                                                                                                              \
+   void t2v(h2_vector<h2_matcher<T>>& v_matchers, std::integral_constant<std::size_t, 0>) const {}                                                                                    \
+   template <typename T, std::size_t I>                                                                                                                                               \
+   void t2v(h2_vector<h2_matcher<T>>& v_matchers, std::integral_constant<std::size_t, I>) const                                                                                       \
+   {                                                                                                                                                                                  \
+      t2v(v_matchers, std::integral_constant<std::size_t, I - 1>());                                                                                                                  \
+      v_matchers.push_back(h2_matcher_cast<T>(std::get<I - 1>(t_matchers)));                                                                                                          \
+   }                                                                                                                                                                                  \
+   template <typename T>                                                                                                                                                              \
+   void t2v(h2_vector<h2_matcher<T>>& v_matchers) const { return t2v(v_matchers, std::integral_constant<std::size_t, sizeof...(Matchers)>()); }                                       \
+   h2_sentence t2e(bool caseless, bool dont, std::integral_constant<std::size_t, 0>) const { return {}; }                                                                             \
+   template <std::size_t I>                                                                                                                                                           \
+   h2_sentence t2e(bool caseless, bool dont, std::integral_constant<std::size_t, I>) const                                                                                            \
+   {                                                                                                                                                                                  \
+      return t2e(caseless, dont, std::integral_constant<size_t, I - 1>()) + (1 < I ? gray(", ") : h2_sentence()) + h2_matches_expection(std::get<I - 1>(t_matchers), caseless, dont); \
+   }                                                                                                                                                                                  \
+   h2_sentence t2e(bool caseless, bool dont) const { return t2e(caseless, dont, std::integral_constant<std::size_t, sizeof...(Matchers)>()); }
 // source/matcher/h2_matcher.hpp
 template <typename T>
 struct h2_matcher_impl : h2_matches {
    virtual h2_fail* matches(T a, int n, bool caseless, bool dont) const = 0;
-   virtual h2_row expection(bool caseless, bool dont) const override { return ""; }
+   virtual h2_sentence expection(bool caseless, bool dont) const override { return ""; }
    virtual ~h2_matcher_impl() {}
 };
 
@@ -1163,7 +1163,7 @@ struct h2_matcher : h2_matches {
    h2_matcher& operator=(const h2_matcher&) = default;
    virtual ~h2_matcher() {}
    h2_fail* matches(const T& a, int n = 0, bool caseless = false, bool dont = false) const { return impl->matches(a, n, caseless, dont); }
-   virtual h2_row expection(bool caseless = false, bool dont = false) const { return impl->expection(caseless, dont); };
+   virtual h2_sentence expection(bool caseless = false, bool dont = false) const { return impl->expection(caseless, dont); };
 };
 
 template <typename Matches>
@@ -1197,10 +1197,10 @@ struct h2_polymorphic_matcher : h2_matches {
       bool caseless, dont;
       explicit internal_impl(const Matches& m_, bool caseless_, bool dont_) : m(m_), caseless(caseless_), dont(dont_) {}
       h2_fail* matches(T a, int n = 0, bool caseless_ = false, bool dont_ = false) const override { return m.matches(a, n, caseless || caseless_, dont != dont_); }
-      h2_row expection(bool caseless_, bool dont_) const override { return m.expection(caseless || caseless_, dont != dont_ /*XOR ^*/); }
+      h2_sentence expection(bool caseless_, bool dont_) const override { return m.expection(caseless || caseless_, dont != dont_ /*XOR ^*/); }
    };
 
-   virtual h2_row expection(bool caseless_ = false, bool dont_ = false) const override { return h2_matches_expection(m, caseless || caseless_, dont != dont_); }
+   virtual h2_sentence expection(bool caseless_ = false, bool dont_ = false) const override { return h2_matches_expection(m, caseless || caseless_, dont != dont_); }
 };
 // source/matcher/h2_equation.hpp
 template <typename E, typename = void>
@@ -1214,7 +1214,7 @@ struct h2_equation : h2_matches {
       if ((a == e) == !dont) return nullptr;
       return h2_fail::new_unexpect(expection(caseless, dont), h2_representify(a));
    }
-   virtual h2_row expection(bool, bool dont) const override
+   virtual h2_sentence expection(bool, bool dont) const override
    {
       return CD(h2_representify(e), false, dont, "≠");
    }
@@ -1230,10 +1230,9 @@ struct h2_equation<E, typename std::enable_if<std::is_convertible<E, h2_string>:
       if (a.equals(e, caseless) == !dont) return nullptr;
       if (h2_pattern::wildcard_match(e.c_str(), a.c_str(), caseless) == !dont) return nullptr;
       if (h2_pattern::regex_match(e.c_str(), a.c_str(), caseless) == !dont) return nullptr;
-
       return h2_fail::new_strcmp(e, a, caseless, expection(caseless, dont));
    }
-   virtual h2_row expection(bool caseless, bool dont) const override
+   virtual h2_sentence expection(bool caseless, bool dont) const override
    {
       return CD(h2_representify(e), caseless, dont, "≠");
    }
@@ -1264,9 +1263,9 @@ struct h2_equation<E, typename std::enable_if<std::is_arithmetic<E>::value>::typ
       if (result == !dont) return nullptr;
       return h2_fail::new_unexpect(expection(caseless, dont), h2_representify(a));
    }
-   virtual h2_row expection(bool, bool dont) const override
+   virtual h2_sentence expection(bool, bool dont) const override
    {
-      h2_row t = h2_representify(e);
+      h2_sentence t = h2_representify(e);
       if (epsilon != 0) {
          h2_ostringstream oss;
          oss << "±" << std::fixed << epsilon;
@@ -1319,7 +1318,7 @@ inline h2_matcher<T> h2_matcher_cast(const M& from) { return h2_matcher_cast_imp
 struct h2_matches_any : h2_matches {
    template <typename A>
    h2_fail* matches(const A& a, int, bool, bool) const { return nullptr; }
-   virtual h2_row expection(bool, bool) const override { return "Any"; }
+   virtual h2_sentence expection(bool, bool) const override { return "Any"; }
 };
 
 struct h2_matches_null : h2_matches {
@@ -1332,7 +1331,7 @@ struct h2_matches_null : h2_matches {
       if ((nullptr == (const void*)a) == !_dont) return nullptr;
       return h2_fail::new_unexpect(expection(false, dont), h2_stringify((const void*)a));
    }
-   virtual h2_row expection(bool, bool dont) const override
+   virtual h2_sentence expection(bool, bool dont) const override
    {
       return (reverse ? !dont : dont) ? "NotNull" : "IsNull";
    }
@@ -1347,7 +1346,7 @@ struct h2_matches_boolean : h2_matches {
       if (((bool)a) == !_dont) return nullptr;
       return h2_fail::new_unexpect(expection(false, dont), a ? "true" : "false");
    }
-   virtual h2_row expection(bool, bool dont) const override
+   virtual h2_sentence expection(bool, bool dont) const override
    {
       return (E ? dont : !dont) ? "false" : "true";
    }
@@ -1374,7 +1373,7 @@ struct h2_pointee_matches : h2_matches {
       typedef typename PointeeOf<Pointer>::type Pointee;
       return h2_matcher_cast<Pointee>(m).matches(*a, 0, caseless, dont);
    }
-   virtual h2_row expection(bool caseless, bool dont) const override
+   virtual h2_sentence expection(bool caseless, bool dont) const override
    {
       return h2_matches_expection(m, caseless, dont);
    }
@@ -1401,7 +1400,7 @@ struct h2_not_matches : h2_matches {
    {
       return h2_matcher_cast<A>(m).matches(a, n, caseless, !dont);
    }
-   virtual h2_row expection(bool caseless, bool dont) const override
+   virtual h2_sentence expection(bool caseless, bool dont) const override
    {
       return h2_matches_expection(m, caseless, !dont);
    }
@@ -1429,9 +1428,9 @@ struct h2_and_matches : h2_matches {
       return fail;
    }
 
-   virtual h2_row expection(bool caseless, bool dont) const override
+   virtual h2_sentence expection(bool caseless, bool dont) const override
    {
-      return CD((dont ? gray("(") : h2_row()) + h2_matches_expection(m1, caseless, false) + " and " + h2_matches_expection(m2, caseless, false) + (dont ? gray(")") : h2_row()), false, dont);
+      return CD((dont ? gray("(") : h2_sentence()) + h2_matches_expection(m1, caseless, false) + " and " + h2_matches_expection(m2, caseless, false) + (dont ? gray(")") : h2_sentence()), false, dont);
    }
 };
 
@@ -1461,9 +1460,9 @@ struct h2_or_matches : h2_matches {
       return fail;
    }
 
-   virtual h2_row expection(bool caseless, bool dont) const override
+   virtual h2_sentence expection(bool caseless, bool dont) const override
    {
-      return CD((dont ? gray("(") : h2_row()) + h2_matches_expection(m1, caseless, false) + " or " + h2_matches_expection(m2, caseless, false) + (dont ? gray(")") : h2_row()), false, dont);
+      return CD((dont ? gray("(") : h2_sentence()) + h2_matches_expection(m1, caseless, false) + " or " + h2_matches_expection(m2, caseless, false) + (dont ? gray(")") : h2_sentence()), false, dont);
    }
 };
 
@@ -1499,7 +1498,7 @@ struct h2_allof_matches : h2_matches {
       return fail;
    }
 
-   virtual h2_row expection(bool caseless, bool dont) const override
+   virtual h2_sentence expection(bool caseless, bool dont) const override
    {
       return CD("AllOf" + gray("(") + t2e(caseless, false) + gray(")"), false, dont);
    }
@@ -1544,7 +1543,7 @@ struct h2_anyof_matches : h2_matches {
       return fail;
    }
 
-   virtual h2_row expection(bool caseless, bool dont) const override
+   virtual h2_sentence expection(bool caseless, bool dont) const override
    {
       return CD("AnyOf" + gray("(") + t2e(caseless, false) + gray(")"), false, dont);
    }
@@ -1583,7 +1582,7 @@ struct h2_noneof_matches : h2_matches {
       return fail;
    }
 
-   virtual h2_row expection(bool caseless, bool dont) const override
+   virtual h2_sentence expection(bool caseless, bool dont) const override
    {
       return CD("NoneOf" + gray("(") + t2e(caseless, false) + gray(")"), false, dont);
    }
@@ -1678,7 +1677,7 @@ struct h2_matches_ge : h2_matches {
       if ((a >= e) == !dont) return nullptr;
       return h2_fail::new_unexpect(expection(caseless, dont), h2_representify(a));
    }
-   virtual h2_row expection(bool, bool dont) const override
+   virtual h2_sentence expection(bool, bool dont) const override
    {
       return CD("≥" + h2_representify(e), false, dont);
    }
@@ -1695,7 +1694,7 @@ struct h2_matches_gt : h2_matches {
       if ((a > e) == !dont) return nullptr;
       return h2_fail::new_unexpect(expection(caseless, dont), h2_stringify(a));
    }
-   virtual h2_row expection(bool, bool dont) const override
+   virtual h2_sentence expection(bool, bool dont) const override
    {
       return CD(">" + h2_stringify(e), false, dont);
    }
@@ -1712,7 +1711,7 @@ struct h2_matches_le : h2_matches {
       if ((a <= e) == !dont) return nullptr;
       return h2_fail::new_unexpect(expection(caseless, dont), h2_stringify(a));
    }
-   virtual h2_row expection(bool, bool dont) const override
+   virtual h2_sentence expection(bool, bool dont) const override
    {
       return CD("≤" + h2_stringify(e), false, dont);
    }
@@ -1729,7 +1728,7 @@ struct h2_matches_lt : h2_matches {
       if ((a < e) == !dont) return nullptr;
       return h2_fail::new_unexpect(expection(caseless, dont), h2_stringify(a));
    }
-   virtual h2_row expection(bool, bool dont) const override
+   virtual h2_sentence expection(bool, bool dont) const override
    {
       return CD("<" + h2_stringify(e), false, dont);
    }
@@ -1751,42 +1750,42 @@ struct h2_matches_regex : h2_matches {
    const h2_string e;
    explicit h2_matches_regex(const h2_string& e_) : e(e_) {}
    h2_fail* matches(const h2_string& a, int n, bool caseless, bool dont) const;
-   virtual h2_row expection(bool caseless, bool dont) const override;
+   virtual h2_sentence expection(bool caseless, bool dont) const override;
 };
 
 struct h2_matches_wildcard : h2_matches {
    const h2_string e;
    explicit h2_matches_wildcard(const h2_string& e_) : e(e_) {}
    h2_fail* matches(const h2_string& a, int n, bool caseless, bool dont) const;
-   virtual h2_row expection(bool caseless, bool dont) const override;
+   virtual h2_sentence expection(bool caseless, bool dont) const override;
 };
 
 struct h2_matches_strcmp : h2_matches {
    const h2_string e;
    explicit h2_matches_strcmp(const h2_string& e_) : e(e_) {}
    h2_fail* matches(const h2_string& a, int n, bool caseless, bool dont) const;
-   virtual h2_row expection(bool caseless, bool dont) const override;
+   virtual h2_sentence expection(bool caseless, bool dont) const override;
 };
 
 struct h2_matches_substr : h2_matches {
    const h2_string substring;
    explicit h2_matches_substr(const h2_string& substring_) : substring(substring_) {}
    h2_fail* matches(const h2_string& a, int n, bool caseless, bool dont) const;
-   virtual h2_row expection(bool caseless, bool dont) const override;
+   virtual h2_sentence expection(bool caseless, bool dont) const override;
 };
 
 struct h2_matches_startswith : h2_matches {
    const h2_string prefix_string;
    explicit h2_matches_startswith(const h2_string& prefix_string_) : prefix_string(prefix_string_) {}
    h2_fail* matches(const h2_string& a, int n, bool caseless, bool dont) const;
-   virtual h2_row expection(bool caseless, bool dont) const override;
+   virtual h2_sentence expection(bool caseless, bool dont) const override;
 };
 
 struct h2_matches_endswith : h2_matches {
    const h2_string suffix_string;
    explicit h2_matches_endswith(const h2_string& suffix_string_) : suffix_string(suffix_string_) {}
    h2_fail* matches(const h2_string& a, int n, bool caseless, bool dont) const;
-   virtual h2_row expection(bool caseless, bool dont) const override;
+   virtual h2_sentence expection(bool caseless, bool dont) const override;
 };
 
 struct h2_matches_json : h2_matches {
@@ -1794,7 +1793,7 @@ struct h2_matches_json : h2_matches {
    const h2_string selector;
    explicit h2_matches_json(const h2_string& e_, const h2_string& selector_) : e(e_), selector(selector_) {}
    h2_fail* matches(const h2_string& a, int, bool caseless, bool dont) const;
-   virtual h2_row expection(bool caseless, bool dont) const override;
+   virtual h2_sentence expection(bool caseless, bool dont) const override;
 };
 
 struct h2_caseless_matches : h2_matches {
@@ -1803,7 +1802,7 @@ struct h2_caseless_matches : h2_matches {
 
    template <typename A>
    h2_fail* matches(const A& a, int n, bool caseless, bool dont) const { return m.matches(a, n, true, dont); }
-   virtual h2_row expection(bool caseless, bool dont) const override { return m.expection(true, dont); }
+   virtual h2_sentence expection(bool caseless, bool dont) const override { return m.expection(true, dont); }
 };
 
 inline h2_polymorphic_matcher<h2_matches_regex> Re(const h2_string& regex_pattern) { return h2_polymorphic_matcher<h2_matches_regex>(h2_matches_regex(regex_pattern)); }
@@ -1824,7 +1823,7 @@ struct h2_matches_bytecmp : h2_matches {
    const int nbytes;
    explicit h2_matches_bytecmp(const int width_, const void* e_, const bool isstring_, const int nbytes_) : width(width_), e(e_), isstring(isstring_), nbytes(nbytes_) {}
    h2_fail* matches(const void* a, int n, bool caseless, bool dont) const;
-   virtual h2_row expection(bool caseless, bool dont) const override;
+   virtual h2_sentence expection(bool caseless, bool dont) const override;
 };
 
 struct h2_matches_bitcmp : h2_matches {
@@ -1833,7 +1832,7 @@ struct h2_matches_bitcmp : h2_matches {
    const int nbits;
    explicit h2_matches_bitcmp(const void* e_, const bool isstring_, const int nbits_) : e(e_), isstring(isstring_), nbits(nbits_) {}
    h2_fail* matches(const void* a, int n, bool caseless, bool dont) const;
-   virtual h2_row expection(bool caseless, bool dont) const override;
+   virtual h2_sentence expection(bool caseless, bool dont) const override;
 };
 
 template <typename E>
@@ -1866,7 +1865,7 @@ struct h2_matches_memcmp : h2_matches {
       }
       return fail;
    }
-   virtual h2_row expection(bool caseless, bool dont) const override
+   virtual h2_sentence expection(bool caseless, bool dont) const override
    {
       return CD("Me()", caseless, dont);
    }
@@ -1933,7 +1932,7 @@ struct h2_pair_matches : h2_matches {
       return h2_fail::new_unexpect(expection(caseless, dont), h2_representify(a));
    }
 
-   virtual h2_row expection(bool caseless, bool dont) const override
+   virtual h2_sentence expection(bool caseless, bool dont) const override
    {
       return CD(gray("(") + h2_matches_expection(k, caseless, dont) + gray(", ") + h2_matches_expection(v, caseless, dont) + gray(")"), false, dont);
    }
@@ -1999,7 +1998,7 @@ struct h2_listof_matches : h2_matches {
       return fail;
    }
 
-   virtual h2_row expection(bool caseless, bool dont) const override
+   virtual h2_sentence expection(bool caseless, bool dont) const override
    {
       return CD("ListOf" + gray("(") + t2e(caseless, false) + gray(")"), false, dont);
    }
@@ -2074,7 +2073,7 @@ struct h2_has_matches : h2_matches {
       return fail;
    }
 
-   virtual h2_row expection(bool caseless, bool dont) const override
+   virtual h2_sentence expection(bool caseless, bool dont) const override
    {
       return CD("Has" + gray("(") + t2e(caseless, false) + gray(")"), false, dont);
    }
@@ -2104,7 +2103,7 @@ struct h2_in_matches : h2_matches {
       return h2_fail::new_unexpect(expection(caseless, dont), h2_representify(a), DS(result));
    }
 
-   virtual h2_row expection(bool caseless, bool dont) const override
+   virtual h2_sentence expection(bool caseless, bool dont) const override
    {
       return CD("In" + gray("(") + t2e(caseless, false) + gray(")"), false, dont);
    }
@@ -2136,7 +2135,7 @@ struct h2_countof_matches : h2_matches {
       return __matches(count, h2_representify(a), dont);
    }
 
-   h2_fail* __matches(int count, h2_row&& represent, bool dont) const
+   h2_fail* __matches(int count, h2_sentence&& represent, bool dont) const
    {
       h2_fail* fails = nullptr;
       h2_vector<h2_matcher<int>> v_matchers;
@@ -2156,7 +2155,7 @@ struct h2_countof_matches : h2_matches {
       return fail;
    }
 
-   virtual h2_row expection(bool, bool dont) const override
+   virtual h2_sentence expection(bool, bool dont) const override
    {
       return CD("CountOf" + gray("(") + t2e(false, dont) + gray(")"), false, false);
    }
@@ -2216,7 +2215,7 @@ inline h2_polymorphic_matcher<h2_countof_matches<typename std::decay<const Match
       }                                                                                                  \
       return fail;                                                                                       \
    }                                                                                                     \
-   virtual h2::h2_row expection(bool, bool) const override { return ""; }
+   virtual h2::h2_sentence expection(bool, bool) const override { return ""; }
 
 #define H2MATCHER0(name, message)                                               \
    struct h2_##name##_matches : h2::h2_matches {                                \
@@ -2790,8 +2789,8 @@ struct h2_mocker_base : h2_libc {
    int line;
    bool greed_mode = true;
 
-   h2_row argument(int seq, const char* def = "");
-   h2_row signature();
+   h2_sentence argument(int seq, const char* def = "");
+   h2_sentence signature();
 
    h2_vector<h2_checkin> checkin_array;
    int checkin_index = 0;
@@ -3143,9 +3142,9 @@ struct h2_sock : h2_once {
       h2_assert_g();
       h2_packet* p = h2_sock::fetch();
       if (!p) {
-         h2_row r = "Outgoing packet miss Ptx(";
-         r.printf("green", "%s", e).printf("", ")");
-         h2_fail_g(h2_fail::new_normal(r, file, line));
+         h2_sentence t = "Outgoing packet miss Ptx(";
+         t.printf("green", "%s", e).printf("", ")");
+         h2_fail_g(h2_fail::new_normal(t, file, line));
          return;
       }
       h2_fail* fails = nullptr;
@@ -3171,9 +3170,9 @@ struct h2_sock : h2_once {
       }
 
       if (fails) {
-         h2_row r = "Outgoing packet unexpected Ptx(";
-         r.printf("green", "%s", e).printf("", ")");
-         h2_fail* fail = h2_fail::new_normal(r, file, line);
+         h2_sentence t = "Outgoing packet unexpected Ptx(";
+         t.printf("green", "%s", e).printf("", ")");
+         h2_fail* fail = h2_fail::new_normal(t, file, line);
          h2_fail::append_child(fail, fails);
          h2_fail_g(fail);
       }
@@ -4568,8 +4567,8 @@ h2_inline h2_string h2_string::center(int width) const
    s.append(right, ' ');
    return s;
 }
-// source/utils/h2_row.cpp
-h2_inline unsigned h2_row::width(bool ignore_indent) const
+// source/utils/h2_sentence.cpp
+h2_inline unsigned h2_sentence::width(bool ignore_indent) const
 {
    unsigned w = 0;
    for (auto& word : *this)
@@ -4579,19 +4578,19 @@ h2_inline unsigned h2_row::width(bool ignore_indent) const
    return w;
 }
 
-h2_inline h2_row& h2_row::indent(int n, const char c)
+h2_inline h2_sentence& h2_sentence::indent(int n, const char c)
 {
    insert(begin(), h2_string(n, c));
    return *this;
 }
 
-h2_inline h2_row& h2_row::padding(int n, const char c)
+h2_inline h2_sentence& h2_sentence::padding(int n, const char c)
 {
    push_back(h2_string(n, c));
    return *this;
 }
 
-h2_inline h2_row& h2_row::printf(const char* style, const char* format, ...)
+h2_inline h2_sentence& h2_sentence::printf(const char* style, const char* format, ...)
 {
    if (style && strlen(style)) push_back("\033{" + h2_string(style) + "}");
    char* alloca_str;
@@ -4601,13 +4600,13 @@ h2_inline h2_row& h2_row::printf(const char* style, const char* format, ...)
    return *this;
 }
 
-h2_inline h2_row& h2_row::operator+=(const h2_row& row)
+h2_inline h2_sentence& h2_sentence::operator+=(const h2_sentence& sentence)
 {
-   insert(end(), row.begin(), row.end());
+   insert(end(), sentence.begin(), sentence.end());
    return *this;
 }
 
-h2_inline h2_row& h2_row::brush(const char* style)
+h2_inline h2_sentence& h2_sentence::brush(const char* style)
 {
    if (style && strlen(style)) {
       insert(begin(), "\033{" + h2_string(style) + "}");
@@ -4616,7 +4615,7 @@ h2_inline h2_row& h2_row::brush(const char* style)
    return *this;
 }
 
-h2_inline bool h2_row::enclosed(const char c) const
+h2_inline bool h2_sentence::enclosed(const char c) const
 {
    bool f = false, ff = false, b = false;
    for (auto& word : *this) {
@@ -4630,17 +4629,17 @@ h2_inline bool h2_row::enclosed(const char c) const
    return f && b;
 }
 
-h2_inline h2_row h2_row::gray_quote() const
+h2_inline h2_sentence h2_sentence::gray_quote() const
 {
    if (!enclosed('\"') && !enclosed('\'')) return *this;
 
-   h2_row row;
+   h2_sentence sentence;
    unsigned w = width();
    unsigned i = 0;
 
    for (auto& word : *this) {
       if (h2_color::isctrl(word.c_str())) {
-         row.push_back(word);
+         sentence.push_back(word);
       } else {
          h2_string h, m, t;
          for (auto& c : word) {
@@ -4653,34 +4652,34 @@ h2_inline h2_row h2_row::gray_quote() const
             }
             ++i;
          }
-         if (h.size()) row += gray(h);
-         if (m.size()) row.push_back(m);
-         if (t.size()) row += gray(t);
+         if (h.size()) sentence += gray(h);
+         if (m.size()) sentence.push_back(m);
+         if (t.size()) sentence += gray(t);
       }
    }
 
-   return row;
+   return sentence;
 }
 
-h2_inline h2_row h2_row::acronym(int width, int tail) const
+h2_inline h2_sentence h2_sentence::acronym(int width, int tail) const
 {
-   h2_row r1;
+   h2_sentence s1;
    for (auto& word : *this) {
       if (h2_color::isctrl(word.c_str())) {
-         r1.push_back(word);
+         s1.push_back(word);
       } else {
-         r1.push_back(word.escape());
+         s1.push_back(word.escape());
       }
    }
 
-   int r1_width = r1.width();
-   if (r1_width <= width) return r1;
+   int r1_width = s1.width();
+   if (r1_width <= width) return s1;
 
-   h2_row r2;
+   h2_sentence s2;
    int i = 0;
-   for (auto& word : r1) {
+   for (auto& word : s1) {
       if (h2_color::isctrl(word.c_str())) {
-         r2.push_back(word);
+         s2.push_back(word);
       } else {
          h2_string h, m, t;
          for (auto& c : word) {
@@ -4693,16 +4692,16 @@ h2_inline h2_row h2_row::acronym(int width, int tail) const
             }
             ++i;
          }
-         if (h.size()) r2.push_back(h);
-         if (m.size()) r2 += gray(m);
-         if (t.size()) r2.push_back(t);
+         if (h.size()) s2.push_back(h);
+         if (m.size()) s2 += gray(m);
+         if (t.size()) s2.push_back(t);
       }
    }
 
-   return r2;
+   return s2;
 }
 
-h2_inline h2_string h2_row::string() const
+h2_inline h2_string h2_sentence::string() const
 {
    h2_string s;
    for (auto& word : *this)
@@ -4711,59 +4710,59 @@ h2_inline h2_string h2_row::string() const
    return s;
 }
 
-h2_inline void h2_row::samesizify(h2_row& b)
+h2_inline void h2_sentence::samesizify(h2_sentence& b)
 {
    int w = width(), b_w = b.width();
    padding(std::max(w, b_w) - w);
    b.padding(std::max(w, b_w) - b_w);
 }
-
-h2_inline h2_rows& h2_rows::operator+=(const h2_rows& rows)
+// source/utils/h2_paragraph.cpp
+h2_inline h2_paragraph& h2_paragraph::operator+=(const h2_paragraph& paragraph)
 {
-   insert(end(), rows.begin(), rows.end());
+   insert(end(), paragraph.begin(), paragraph.end());
    return *this;
 }
 
-h2_inline unsigned h2_rows::width() const
+h2_inline unsigned h2_paragraph::width() const
 {
    unsigned m = 0;
-   for (auto& row : *this)
-      m = std::max(m, row.width());
+   for (auto& sentence : *this)
+      m = std::max(m, sentence.width());
    return m;
 }
 
-h2_inline bool h2_rows::foldable(unsigned width)
+h2_inline bool h2_paragraph::foldable(unsigned width)
 {
    int sum = 0;
-   for (auto& row : *this)
-      for (auto& word : row)
+   for (auto& sentence : *this)
+      for (auto& word : sentence)
          if (!word.isspace() && !h2_color::isctrl(word.c_str()))  // ignore indent and \033m controller
             sum += word.size();
 
    return sum < width;
 }
 
-h2_inline h2_row h2_rows::folds()
+h2_inline h2_sentence h2_paragraph::folds()
 {
-   h2_row folded_row;
-   for (auto& row : *this)
-      for (auto& word : row)
+   h2_sentence folded_sentence;
+   for (auto& sentence : *this)
+      for (auto& word : sentence)
          if (!word.isspace())  // drop indent
-            folded_row.push_back(word);
-   return folded_row;
+            folded_sentence.push_back(word);
+   return folded_sentence;
 }
 
-h2_inline h2_string h2_rows::string() const
+h2_inline h2_string h2_paragraph::string() const
 {
    h2_string s;
-   for (auto& row : *this)
-      for (auto& word : row)
+   for (auto& sentence : *this)
+      for (auto& word : sentence)
          if (!word.isspace() && !h2_color::isctrl(word.c_str()))
             s += word;
    return s;
 }
 
-h2_inline void h2_rows::sequence(unsigned indent, int start)
+h2_inline void h2_paragraph::sequence(unsigned indent, int start)
 {
    for (size_t i = 0; i < size(); ++i) {
       at(i) = gray(h2_string("%zu. ", i + start)) + at(i);
@@ -4771,11 +4770,11 @@ h2_inline void h2_rows::sequence(unsigned indent, int start)
    }
 }
 
-h2_inline void h2_rows::samesizify(h2_rows& b)
+h2_inline void h2_paragraph::samesizify(h2_paragraph& b)
 {
    size_t max_y = std::max(size(), b.size());
-   for (size_t i = size(); i < max_y; ++i) push_back(h2_row());
-   for (size_t i = b.size(); i < max_y; ++i) b.push_back(h2_row());
+   for (size_t i = size(); i < max_y; ++i) push_back(h2_sentence());
+   for (size_t i = b.size(); i < max_y; ++i) b.push_back(h2_sentence());
 }
 // source/utils/h2_color.cpp
 struct h2_shell {
@@ -4798,7 +4797,7 @@ struct h2_shell {
       cww = 16 < columns ? columns : 120;
 #else
       struct winsize w;
-      if (-1 != ioctl(STDOUT_FILENO, TIOCGWINSZ, &w)) cww = 16 < w.ws_col && w.ws_col <= 120 ? w.ws_col : 120;
+      if (-1 != ioctl(STDOUT_FILENO, TIOCGWINSZ, &w)) cww = 16 < w.ws_col ? w.ws_col : 120;
 #endif
    }
 
@@ -4907,15 +4906,15 @@ h2_inline void h2_color::prints(const char* style, const char* format, ...)
    if (style && strlen(style)) h2_shell::I().print("\033{reset}");
 }
 
-h2_inline void h2_color::printl(const h2_row& row, bool cr)
+h2_inline void h2_color::printl(const h2_sentence& sentence, bool cr)
 {
-   for (auto& word : row) h2_shell::I().print(word.c_str());
+   for (auto& word : sentence) h2_shell::I().print(word.c_str());
    if (cr) h2_shell::I().print("\n");
 }
 
-h2_inline void h2_color::printl(const h2_rows& rows, bool cr)
+h2_inline void h2_color::printl(const h2_paragraph& paragraph, bool cr)
 {
-   for (auto& row : rows) printl(row, cr);
+   for (auto& sentence : paragraph) printl(sentence, cr);
 }
 
 // source/symbol/h2_nm.cpp
@@ -5241,10 +5240,10 @@ h2_inline void h2_backtrace::print(int pad) const
 {
    h2_vector<h2_string> stacks;
    print(stacks);
-   h2_rows rows;
-   for (auto& c : stacks) rows.push_back(c.startswith("h2::") || c.contains(": h2::") ? gray(c) : h2_row(c));
-   rows.sequence(pad);
-   h2_color::printl(rows);
+   h2_paragraph paragraph;
+   for (auto& c : stacks) paragraph.push_back(c.startswith("h2::") || c.contains(": h2::") ? gray(c) : h2_sentence(c));
+   paragraph.sequence(pad);
+   h2_color::printl(paragraph);
 }
 // source/symbol/h2_cxa.cpp
 h2_inline char* h2_cxa::demangle(const char* mangle_name, char* demangle_name, size_t length)
@@ -6002,43 +6001,43 @@ struct h2_json_node : h2_libc {
 
    h2_string slash_if(bool slash) { return slash ? "\\" : ""; }
 
-   void print(h2_rows& rows, bool fold = false, bool slash = false, int depth = 0, int next = 0)
+   void print(h2_paragraph& paragraph, bool fold = false, bool slash = false, int depth = 0, int next = 0)
    {
-      h2_row row;
-      row.indent(depth * 2);
+      h2_sentence st;
+      st.indent(depth * 2);
       if (key_string.size())
-         row.push_back(slash_if(slash) + "\"" + key_string + slash_if(slash) + "\": ");
+         st.push_back(slash_if(slash) + "\"" + key_string + slash_if(slash) + "\": ");
       if (is_null())
-         row.push_back("null");
+         st.push_back("null");
       else if (is_bool())
-         row.push_back(value_boolean ? "true" : "false");
+         st.push_back(value_boolean ? "true" : "false");
       else if (is_number()) {
          if (value_double - ::floor(value_double) == 0)
-            row.push_back(std::to_string((long long)value_double).c_str());
+            st.push_back(std::to_string((long long)value_double).c_str());
          else
-            row.push_back(std::to_string(value_double).c_str());
+            st.push_back(std::to_string(value_double).c_str());
       } else if (is_string())
-         row.push_back(slash_if(slash) + "\"" + value_string + slash_if(slash) + "\"");
+         st.push_back(slash_if(slash) + "\"" + value_string + slash_if(slash) + "\"");
       else if (is_pattern())
-         row.push_back(slash_if(slash) + "\"/" + value_string + "/" + slash_if(slash) + "\"");
+         st.push_back(slash_if(slash) + "\"/" + value_string + "/" + slash_if(slash) + "\"");
       else if (is_array() || is_object()) {
-         h2_rows children_rows;
+         h2_paragraph children_paragraph;
          h2_list_for_each_entry (p, i, children, h2_json_node, x)
-            p->print(children_rows, fold, slash, depth + 1, children.count() - i - 1);
+            p->print(children_paragraph, fold, slash, depth + 1, children.count() - i - 1);
 
-         row.push_back(is_array() ? "[" : "{");
-         if (fold && children_rows.foldable()) {
-            row += children_rows.folds();
+         st.push_back(is_array() ? "[" : "{");
+         if (fold && children_paragraph.foldable()) {
+            st += children_paragraph.folds();
          } else {
-            rows.push_back(row), row.clear();
-            rows += children_rows;
-            row.indent(depth * 2);
+            paragraph.push_back(st), st.clear();
+            paragraph += children_paragraph;
+            st.indent(depth * 2);
          }
-         row.push_back(is_array() ? "]" : "}");
+         st.push_back(is_array() ? "]" : "}");
       }
-      if (row.size()) {
-         if (next) row.push_back(", ");
-         rows.push_back(row), row.clear();
+      if (st.size()) {
+         if (next) st.push_back(", ");
+         paragraph.push_back(st), st.clear();
       }
    }
 };
@@ -6358,26 +6357,19 @@ struct h2_json_tree : h2_json_node {
       return node;
    }
 
-   h2_row serialize()
+   h2_sentence serialize()
    {
-      h2_row row;
+      h2_sentence sentence;
       for (size_t j = 0; j < lexical.size(); ++j) {
          if (j == syntax.i)
-            row.printf("yellow,bold,underline", "%s%s ", comma_if(j, " "), lexical[j].c_str());
+            sentence.printf("yellow,bold,underline", "%s%s ", comma_if(j, " "), lexical[j].c_str());
          else
-            row.push_back(comma_if(j, " ") + lexical[j]);
+            sentence.push_back(comma_if(j, " ") + lexical[j]);
       }
       if (illformed && lexical.size() <= syntax.i) {
-         row.printf("yellow,bold,underline", " ... ");
+         sentence.printf("yellow,bold,underline", " ... ");
       }
-      return row;
-   }
-
-   h2_rows format()
-   {
-      h2_rows rows;
-      print(rows, O.fold_json, O.copy_paste_json);
-      return rows;
+      return sentence;
    }
 };
 // source/json/h2_match.cpp
@@ -6439,7 +6431,7 @@ struct h2_json_dual : h2_libc {  // combine two node into a dual
    const char *e_class = "blob", *a_class = "blob";
    h2_string e_key, a_key;
    h2_string e_value, a_value;
-   h2_rows e_blob, a_blob;
+   h2_paragraph e_blob, a_blob;
    h2_list children, x;
    h2_json_dual* perent;
    int depth;
@@ -6497,96 +6489,97 @@ struct h2_json_dual : h2_libc {  // combine two node into a dual
       return false;
    }
 
-   void align(h2_rows& e_rows, h2_rows& a_rows, h2_list* subling = nullptr)
+   void align(h2_paragraph& e_paragraph, h2_paragraph& a_paragraph, h2_list* subling = nullptr)
    {
       if (!strcmp(e_class, "blob")) {
          e_blob.samesizify(a_blob);
-         for (auto& row : e_blob) row.brush("cyan");
-         for (auto& row : a_blob) row.brush("yellow");
+         for (auto& st : e_blob) st.brush("cyan");
+         for (auto& st : a_blob) st.brush("yellow");
 
-         e_rows += e_blob;
-         a_rows += a_blob;
+         e_paragraph += e_blob;
+         a_paragraph += a_blob;
          return;
       }
 
-      h2_row e_row, a_row;
-      e_row.indent(depth * 2);
-      a_row.indent(depth * 2);
+      h2_sentence e_sentence, a_sentence;
+      e_sentence.indent(depth * 2);
+      a_sentence.indent(depth * 2);
 
       if (e_key.size()) {
-         if (!key_equal) e_row.push_back("\033{green}");
-         e_row.push_back(e_key);
-         if (!key_equal) e_row.push_back("\033{reset}");
-         e_row.push_back(": ");
+         if (!key_equal) e_sentence.push_back("\033{green}");
+         e_sentence.push_back(e_key);
+         if (!key_equal) e_sentence.push_back("\033{reset}");
+         e_sentence.push_back(": ");
       }
 
       if (a_key.size()) {
-         if (!key_equal) a_row.push_back("\033{red,bold}");
-         a_row.push_back(a_key);
-         if (!key_equal) a_row.push_back("\033{reset}");
-         a_row.push_back(": ");
+         if (!key_equal) a_sentence.push_back("\033{red,bold}");
+         a_sentence.push_back(a_key);
+         if (!key_equal) a_sentence.push_back("\033{reset}");
+         a_sentence.push_back(": ");
       }
 
       if (!strcmp(e_class, "atomic")) {
          if (e_value.size()) {
-            if (!match) e_row.push_back("\033{green}");
-            e_row.push_back(e_value);
-            if (!match) e_row.push_back("\033{reset}");
+            if (!match) e_sentence.push_back("\033{green}");
+            e_sentence.push_back(e_value);
+            if (!match) e_sentence.push_back("\033{reset}");
          }
          if (a_value.size()) {
-            if (!match) a_row.push_back("\033{red,bold}");
-            a_row.push_back(a_value);
-            if (!match) a_row.push_back("\033{reset}");
+            if (!match) a_sentence.push_back("\033{red,bold}");
+            a_sentence.push_back(a_value);
+            if (!match) a_sentence.push_back("\033{reset}");
          }
       } else if (!strcmp(e_class, "object") || !strcmp(e_class, "array")) {
-         h2_rows e_children_rows, a_children_rows;
+         h2_paragraph e_children_paragraph, a_children_paragraph;
          h2_list_for_each_entry (p, children, h2_json_dual, x)
-            p->align(e_children_rows, a_children_rows, &children);
+            p->align(e_children_paragraph, a_children_paragraph, &children);
 
-         e_row.push_back(strcmp(e_class, "object") ? "[" : "{");
-         a_row.push_back(strcmp(a_class, "object") ? "[" : "{");
-         if (O.fold_json && e_children_rows.foldable() && a_children_rows.foldable()) {
-            e_row += e_children_rows.folds();
-            a_row += a_children_rows.folds();
+         e_sentence.push_back(strcmp(e_class, "object") ? "[" : "{");
+         a_sentence.push_back(strcmp(a_class, "object") ? "[" : "{");
+         if (O.fold_json && e_children_paragraph.foldable() && a_children_paragraph.foldable()) {
+            e_sentence += e_children_paragraph.folds();
+            a_sentence += a_children_paragraph.folds();
          } else {
-            e_rows.push_back(e_row), e_row.clear();
-            e_rows += e_children_rows;
-            e_row.indent(depth * 2);
-            a_rows.push_back(a_row), a_row.clear();
-            a_rows += a_children_rows;
-            a_row.indent(depth * 2);
+            e_paragraph.push_back(e_sentence), e_sentence.clear();
+            e_paragraph += e_children_paragraph;
+            e_sentence.indent(depth * 2);
+            a_paragraph.push_back(a_sentence), a_sentence.clear();
+            a_paragraph += a_children_paragraph;
+            a_sentence.indent(depth * 2);
          }
-         e_row.push_back(strcmp(e_class, "object") ? "]" : "}");
-         a_row.push_back(strcmp(a_class, "object") ? "]" : "}");
+         e_sentence.push_back(strcmp(e_class, "object") ? "]" : "}");
+         a_sentence.push_back(strcmp(a_class, "object") ? "]" : "}");
       }
-      if (e_row.size()) {
-         if (has_next(subling, true)) e_row.push_back(", ");
-         e_rows.push_back(e_row), e_row.clear();
+      if (e_sentence.size()) {
+         if (has_next(subling, true)) e_sentence.push_back(", ");
+         e_paragraph.push_back(e_sentence), e_sentence.clear();
       }
-      if (a_row.size()) {
-         if (has_next(subling, false)) a_row.push_back(", ");
-         a_rows.push_back(a_row), a_row.clear();
+      if (a_sentence.size()) {
+         if (has_next(subling, false)) a_sentence.push_back(", ");
+         a_paragraph.push_back(a_sentence), a_sentence.clear();
       }
    }
 };
 // source/json/h2_json.cpp
-h2_inline h2_rows h2_json::format(const h2_string& json_string)
+h2_inline h2_paragraph h2_json::format(const h2_string& json_string)
 {
    h2_json_tree tree(json_string.c_str());
    if (tree.illformed) return {tree.serialize()};
-   h2_rows rows = tree.format();
+   h2_paragraph paragraph;
+   tree.print(paragraph, O.fold_json, O.copy_paste_json);
    if (O.copy_paste_json) {
-      if (!rows.empty()) {
-         rows.front() = "\"" + rows.front();
-         rows.back() = rows.back() + "\"";
+      if (!paragraph.empty()) {
+         paragraph.front() = "\"" + paragraph.front();
+         paragraph.back() = paragraph.back() + "\"";
       }
-      unsigned max_width = rows.width();
-      for (size_t i = 0; i < rows.size(); ++i) {
-         rows[i].padding(max_width - rows[i].width() + 3);
-         if (i < rows.size() - 1) rows[i].push_back("\\");
+      unsigned max_width = paragraph.width();
+      for (size_t i = 0; i < paragraph.size(); ++i) {
+         paragraph[i].padding(max_width - paragraph[i].width() + 3);
+         if (i < paragraph.size() - 1) paragraph[i].push_back("\\");
       }
    }
-   return rows;
+   return paragraph;
 }
 
 h2_inline h2_string h2_json::select(const h2_string& json_string, const h2_string& selector, bool caseless)
@@ -6595,9 +6588,9 @@ h2_inline h2_string h2_json::select(const h2_string& json_string, const h2_strin
    if (tree.illformed) return json_string;
    h2_json_node* node = tree.select(selector.c_str(), caseless);
    if (!node) return "";
-   h2_rows rows;
-   node->print(rows, O.fold_json, false);
-   return rows.string();
+   h2_paragraph paragraph;
+   node->print(paragraph, O.fold_json, false);
+   return paragraph.string();
 }
 
 h2_inline int h2_json::match(const h2_string& expect, const h2_string& actual, bool caseless)
@@ -6607,12 +6600,12 @@ h2_inline int h2_json::match(const h2_string& expect, const h2_string& actual, b
    return h2_json_match::match(&e_tree, &a_tree, caseless) ? 0 : 1;
 }
 
-h2_inline bool h2_json::diff(const h2_string& expect, const h2_string& actual, h2_rows& e_lines, h2_rows& a_lines, bool caseless)
+h2_inline bool h2_json::diff(const h2_string& expect, const h2_string& actual, h2_paragraph& e_paragraph, h2_paragraph& a_paragraph, bool caseless)
 {
    h2_json_tree e_tree(expect.c_str()), a_tree(actual.c_str());
    if (e_tree.illformed || a_tree.illformed) return false;
    h2_json_dual dual(&e_tree, &a_tree, caseless);
-   dual.align(e_lines, a_lines);
+   dual.align(e_paragraph, a_paragraph);
    return true;
 }
 
@@ -6622,7 +6615,7 @@ h2_inline h2_fail* h2_matches_regex::matches(const h2_string& a, int n, bool cas
    if (h2_pattern::regex_match(e.c_str(), a.c_str(), caseless) == !dont) return nullptr;
    return h2_fail::new_strfind(e, a, expection(caseless, dont));
 }
-h2_inline h2_row h2_matches_regex::expection(bool caseless, bool dont) const
+h2_inline h2_sentence h2_matches_regex::expection(bool caseless, bool dont) const
 {
    return CD("Re" + gray("(") + h2_stringify(e) + gray(")"), caseless, dont);
 }
@@ -6632,7 +6625,7 @@ h2_inline h2_fail* h2_matches_wildcard::matches(const h2_string& a, int n, bool 
    if (h2_pattern::wildcard_match(e.c_str(), a.c_str(), caseless) == !dont) return nullptr;
    return h2_fail::new_strfind(e, a, expection(caseless, dont));
 }
-h2_inline h2_row h2_matches_wildcard::expection(bool caseless, bool dont) const
+h2_inline h2_sentence h2_matches_wildcard::expection(bool caseless, bool dont) const
 {
    return CD("We" + gray("(") + h2_stringify(e) + gray(")"), caseless, dont);
 }
@@ -6642,7 +6635,7 @@ h2_inline h2_fail* h2_matches_strcmp::matches(const h2_string& a, int n, bool ca
    if (a.equals(e, caseless) == !dont) return nullptr;
    return h2_fail::new_strfind(e, a, expection(caseless, dont));
 }
-h2_inline h2_row h2_matches_strcmp::expection(bool caseless, bool dont) const
+h2_inline h2_sentence h2_matches_strcmp::expection(bool caseless, bool dont) const
 {
    return CD(h2_representify(e), caseless, dont, "≠");
 }
@@ -6652,7 +6645,7 @@ h2_inline h2_fail* h2_matches_substr::matches(const h2_string& a, int n, bool ca
    if (a.contains(substring, caseless) == !dont) return nullptr;
    return h2_fail::new_strfind(substring, a, expection(caseless, dont));
 }
-h2_inline h2_row h2_matches_substr::expection(bool caseless, bool dont) const
+h2_inline h2_sentence h2_matches_substr::expection(bool caseless, bool dont) const
 {
    return CD("Substr" + gray("(") + h2_representify(substring) + gray(")"), caseless, dont);
 }
@@ -6662,7 +6655,7 @@ h2_inline h2_fail* h2_matches_startswith::matches(const h2_string& a, int n, boo
    if (a.startswith(prefix_string, caseless) == !dont) return nullptr;
    return h2_fail::new_strfind(prefix_string, a, expection(caseless, dont));
 }
-h2_inline h2_row h2_matches_startswith::expection(bool caseless, bool dont) const
+h2_inline h2_sentence h2_matches_startswith::expection(bool caseless, bool dont) const
 {
    return CD("StartsWith" + gray("(") + h2_representify(prefix_string) + gray(")"), caseless, dont);
 }
@@ -6672,7 +6665,7 @@ h2_inline h2_fail* h2_matches_endswith::matches(const h2_string& a, int n, bool 
    if (a.endswith(suffix_string, caseless) == !dont) return nullptr;
    return h2_fail::new_strfind(suffix_string, a, expection(caseless, dont));
 }
-h2_inline h2_row h2_matches_endswith::expection(bool caseless, bool dont) const
+h2_inline h2_sentence h2_matches_endswith::expection(bool caseless, bool dont) const
 {
    return CD("EndsWith" + gray("(") + h2_representify(suffix_string) + gray(")"), caseless, dont);
 }
@@ -6686,7 +6679,7 @@ h2_inline h2_fail* h2_matches_json::matches(const h2_string& a, int, bool casele
    if ((ret == 0) == !dont) return nullptr;
    return h2_fail::new_json(e, _a, expection(caseless, dont), caseless, DS(dont));
 }
-h2_inline h2_row h2_matches_json::expection(bool caseless, bool dont) const
+h2_inline h2_sentence h2_matches_json::expection(bool caseless, bool dont) const
 {
    return CD(h2_stringify(e), caseless, dont, "≠");
 }
@@ -6734,7 +6727,7 @@ h2_inline h2_fail* h2_matches_bytecmp::matches(const void* a, int n, bool casele
    return h2_fail::new_memcmp((const unsigned char*)e, (const unsigned char*)a, width, _nbytes * 8, h2_stringify(a).string(), "memcmp " + readable_size(width, _nbytes * 8));
 }
 
-h2_inline h2_row h2_matches_bytecmp::expection(bool caseless, bool dont) const
+h2_inline h2_sentence h2_matches_bytecmp::expection(bool caseless, bool dont) const
 {
    return CD("Me()", caseless, dont);
 }
@@ -6769,7 +6762,7 @@ h2_inline h2_fail* h2_matches_bitcmp::matches(const void* a, int n, bool caseles
    return h2_fail::new_memcmp(_e, (const unsigned char*)a, 1, _nbits, h2_stringify(a).string(), "memcmp " + readable_size(1, _nbits));
 }
 
-h2_inline h2_row h2_matches_bitcmp::expection(bool caseless, bool dont) const
+h2_inline h2_sentence h2_matches_bitcmp::expection(bool caseless, bool dont) const
 {
    return CD("Me()", caseless, dont);
 }
@@ -8060,7 +8053,7 @@ h2_inline h2_stub_temporary_restore::~h2_stub_temporary_restore()
 h2_inline h2_fail* h2_checkin::check(const char* func, int index, int total, const char* file, int line)
 {
    if (is_satisfied() || is_saturated()) return nullptr;
-   h2_row t = func + gray("()") + " expected " + delta(expect(), "green") + " but actually " + delta(actual(), "red,bold") + " called";
+   h2_sentence t = func + gray("()") + " expected " + delta(expect(), "green") + " but actually " + delta(actual(), "red,bold") + " called";
    if (1 < total) t += gray(" when ") + h2_numeric::sequence_number(index) + " " + color(expr, "cyan");
    return h2_fail::new_normal(t, file, line);
 }
@@ -8095,15 +8088,15 @@ h2_inline const char* h2_checkin::expect()
    return st;
 }
 // source/mock/h2_mocker.cpp
-h2_inline h2_row h2_mocker_base::argument(int seq, const char* def)
+h2_inline h2_sentence h2_mocker_base::argument(int seq, const char* def)
 {
-   h2_row row;
+   h2_sentence t;
    for (int i = 0; i < argument_types.size(); ++i)
-      row += (i ? gray(", ") : "") + color(argument_types[i], seq == i ? "red,bold" : def);
-   return gray("(") + row + gray(")");
+      t += (i ? gray(", ") : "") + color(argument_types[i], seq == i ? "red,bold" : def);
+   return gray("(") + t + gray(")");
 }
 
-h2_inline h2_row h2_mocker_base::signature()
+h2_inline h2_sentence h2_mocker_base::signature()
 {
    return "MOCK" + gray("<") + delta(return_type, "cyan") + " " + delta(srcfn, "green") + argument(-1, "cyan") + gray(">");
 }
@@ -9108,9 +9101,9 @@ h2_inline h2_timer::~h2_timer()
    h2_assert_g();
    double delta = (::clock() - start) * 1000.0 / CLOCKS_PER_SEC;
    if (ms < delta) {
-      h2_row row = "performance expect < ";
-      row.printf("green", "%d", ms).printf("", " ms, but actually cost ").printf("red", "%d", (int)delta).printf("", " ms");
-      h2_fail_g(h2_fail::new_normal(row, file, line));
+      h2_sentence st = "performance expect < ";
+      st.printf("green", "%d", ms).printf("", " ms, but actually cost ").printf("red", "%d", (int)delta).printf("", " ms");
+      h2_fail_g(h2_fail::new_normal(st, file, line));
    }
 }
 
@@ -9143,7 +9136,7 @@ h2_inline h2_fail::~h2_fail()
    if (subling_next) delete subling_next;
 }
 
-h2_inline h2_row h2_fail::locate()
+h2_inline h2_sentence h2_fail::locate()
 {
    if (file && strlen(file) && line)
       return gray(" at ") + h2_string("%s:%d", h2_basename(file), line);
@@ -9158,14 +9151,14 @@ h2_inline void h2_fail::foreach(std::function<void(h2_fail*, int, int)> cb, int 
 }
 
 struct h2_fail_normal : h2_fail {
-   h2_fail_normal(const h2_row& explain_ = {}, const char* file_ = nullptr, int line_ = 0) : h2_fail(explain_, file_, line_) {}
+   h2_fail_normal(const h2_sentence& explain_ = {}, const char* file_ = nullptr, int line_ = 0) : h2_fail(explain_, file_, line_) {}
    void print(int subling_index = 0, int child_index = 0) override
    {
-      h2_row row;
-      row.indent(child_index * 2 + 1);
-      if (0 <= seqno) row.printf("dark gray", "%d. ", seqno);
-      row += explain;
-      h2_color::printl(row + locate());
+      h2_sentence st;
+      st.indent(child_index * 2 + 1);
+      if (0 <= seqno) st.printf("dark gray", "%d. ", seqno);
+      st += explain;
+      h2_color::printl(st + locate());
    }
 };
 
@@ -9184,119 +9177,119 @@ static inline bool is_synonym(const h2_string& a, const h2_string& b)
 }
 
 struct h2_fail_unexpect : h2_fail {
-   h2_row expection, represent;
+   h2_sentence expection, represent;
    int c = 0;
-   h2_fail_unexpect(const h2_row& expection_ = {}, const h2_row& represent_ = {}, const h2_row& explain_ = {}, const char* file_ = nullptr, int line_ = 0) : h2_fail(explain_, file_, line_), expection(expection_), represent(represent_) {}
-   void print_OK1(h2_row& row)
+   h2_fail_unexpect(const h2_sentence& expection_ = {}, const h2_sentence& represent_ = {}, const h2_sentence& explain_ = {}, const char* file_ = nullptr, int line_ = 0) : h2_fail(explain_, file_, line_), expection(expection_), represent(represent_) {}
+   void print_OK1(h2_sentence& st)
    {
-      h2_row a = h2_row(a_expression).acronym(O.verbose >= 4 ? 10000 : 30, 3).gray_quote().brush("cyan");
-      row += "OK" + gray("(") + a + gray(")") + " is " + color("false", "bold,red");
+      h2_sentence a = h2_sentence(a_expression).acronym(O.verbose >= 4 ? 10000 : 30, 3).gray_quote().brush("cyan");
+      st += "OK" + gray("(") + a + gray(")") + " is " + color("false", "bold,red");
    }
-   void print_OK2(h2_row& row)
+   void print_OK2(h2_sentence& st)
    {
-      h2_row e, a;
+      h2_sentence e, a;
       if (!expection.width()) {
-         e = h2_row(e_expression).acronym(O.verbose >= 4 ? 10000 : 30, 3).gray_quote().brush("green");
+         e = h2_sentence(e_expression).acronym(O.verbose >= 4 ? 10000 : 30, 3).gray_quote().brush("green");
       } else if (is_synonym(e_expression, expection.string())) {
          e = expection.acronym(O.verbose >= 4 ? 10000 : 30, 3).brush("green");
       } else {
-         e = h2_row(e_expression).acronym(O.verbose >= 4 ? 10000 : 30, 3).gray_quote().brush("cyan") + gray("==>") + expection.acronym(O.verbose ? 10000 : 30, 3).brush("green");
+         e = h2_sentence(e_expression).acronym(O.verbose >= 4 ? 10000 : 30, 3).gray_quote().brush("cyan") + gray("==>") + expection.acronym(O.verbose ? 10000 : 30, 3).brush("green");
       }
 
       if (!represent.width()) {
-         a = h2_row(a_expression).acronym(O.verbose >= 4 ? 10000 : 30, 3).gray_quote().brush("bold,red");
+         a = h2_sentence(a_expression).acronym(O.verbose >= 4 ? 10000 : 30, 3).gray_quote().brush("bold,red");
       } else if (is_synonym(a_expression, represent.string()) || !a_expression.length()) {
          a = represent.acronym(O.verbose >= 4 ? 10000 : 30, 3).brush("bold,red");
       } else {
-         a = represent.acronym(O.verbose >= 4 ? 10000 : 30, 3).brush("bold,red") + gray("<==") + h2_row(a_expression).acronym(O.verbose ? 10000 : 30, 3).gray_quote().brush("cyan");
+         a = represent.acronym(O.verbose >= 4 ? 10000 : 30, 3).brush("bold,red") + gray("<==") + h2_sentence(a_expression).acronym(O.verbose ? 10000 : 30, 3).gray_quote().brush("cyan");
       }
 
-      row += "OK" + gray("(") + e + ", " + a + gray(")");
+      st += "OK" + gray("(") + e + ", " + a + gray(")");
    }
-   void print_JE(h2_row& row)
+   void print_JE(h2_sentence& st)
    {
-      h2_row e = h2_row(e_expression.unquote('\"').unquote('\'')).acronym(O.verbose >= 4 ? 10000 : 30, 2).brush("cyan");
-      h2_row a = h2_row(a_expression.unquote('\"').unquote('\'')).acronym(O.verbose >= 4 ? 10000 : 30, 2).brush("bold,red");
-      row += "JE" + gray("(") + e + ", " + a + gray(")");
+      h2_sentence e = h2_sentence(e_expression.unquote('\"').unquote('\'')).acronym(O.verbose >= 4 ? 10000 : 30, 2).brush("cyan");
+      h2_sentence a = h2_sentence(a_expression.unquote('\"').unquote('\'')).acronym(O.verbose >= 4 ? 10000 : 30, 2).brush("bold,red");
+      st += "JE" + gray("(") + e + ", " + a + gray(")");
    }
-   void print_Inner(h2_row& row)
+   void print_Inner(h2_sentence& st)
    {
-      if (0 <= seqno) row.printf("dark gray", "%d. ", seqno);
+      if (0 <= seqno) st.printf("dark gray", "%d. ", seqno);
       if (expection.width()) {
-         row.printf("", "%sexpect is ", comma_if(c++));
-         row += expection.acronym(O.verbose >= 4 ? 10000 : 30, 3).brush("green");
+         st.printf("", "%sexpect is ", comma_if(c++));
+         st += expection.acronym(O.verbose >= 4 ? 10000 : 30, 3).brush("green");
       }
       if (represent.width()) {
-         row.printf("", "%sactual is ", comma_if(c++));
-         row += represent.acronym(O.verbose >= 4 ? 10000 : 30, 3).brush("bold,red");
+         st.printf("", "%sactual is ", comma_if(c++));
+         st += represent.acronym(O.verbose >= 4 ? 10000 : 30, 3).brush("bold,red");
       }
    }
 
    void print(int subling_index = 0, int child_index = 0) override
    {
-      h2_row row;
-      row.indent(child_index * 2 + 1);
-      if (!strcmp("Inner", assert_type)) print_Inner(row);
-      if (!strcmp("OK1", assert_type)) print_OK1(row);
-      if (!strcmp("OK2", assert_type)) print_OK2(row);
-      if (!strcmp("JE", assert_type)) print_JE(row);
-      if (explain.width()) row += comma_if(c++, ", ", " ") + explain;
-      if (user_explain.size()) row += {comma_if(c++, ", ", " "), user_explain};
-      h2_color::printl(row + locate());
+      h2_sentence st;
+      st.indent(child_index * 2 + 1);
+      if (!strcmp("Inner", assert_type)) print_Inner(st);
+      if (!strcmp("OK1", assert_type)) print_OK1(st);
+      if (!strcmp("OK2", assert_type)) print_OK2(st);
+      if (!strcmp("JE", assert_type)) print_JE(st);
+      if (explain.width()) st += comma_if(c++, ", ", " ") + explain;
+      if (user_explain.size()) st += {comma_if(c++, ", ", " "), user_explain};
+      h2_color::printl(st + locate());
    }
 };
 
-static inline void fmt_char(char c, bool eq, const char* style, h2_row& row)
+static inline void fmt_char(char c, bool eq, const char* style, h2_sentence& st)
 {
    char t_style[32] = "";
    if (!eq) strcpy(t_style, style);
    switch (c) {
-   case '\n': row.printf(t_style, "␍"); break;
-   case '\r': row.printf(t_style, "␊"); break;
-   case '\t': row.printf(t_style, "␉"); break;
-   case '\0': row.printf(t_style, "␀"); break;
-   default: row.printf(t_style, "%c", c); break;
+   case '\n': st.printf(t_style, "␍"); break;
+   case '\r': st.printf(t_style, "␊"); break;
+   case '\t': st.printf(t_style, "␉"); break;
+   case '\0': st.printf(t_style, "␀"); break;
+   default: st.printf(t_style, "%c", c); break;
    }
 }
 
 struct h2_fail_strcmp : h2_fail_unexpect {
    const bool caseless;
    h2_string e_value, a_value;
-   h2_fail_strcmp(const h2_string& e_value_, const h2_string& a_value_, bool caseless_, const h2_row& expection, const h2_row& explain = {}, const char* file_ = nullptr, int line_ = 0) : h2_fail_unexpect(expection, h2_representify(a_value_), explain, file_, line_), caseless(caseless_), e_value(e_value_), a_value(a_value_) {}
+   h2_fail_strcmp(const h2_string& e_value_, const h2_string& a_value_, bool caseless_, const h2_sentence& expection, const h2_sentence& explain = {}, const char* file_ = nullptr, int line_ = 0) : h2_fail_unexpect(expection, h2_representify(a_value_), explain, file_, line_), caseless(caseless_), e_value(e_value_), a_value(a_value_) {}
    void print(int subling_index = 0, int child_index = 0) override
    {
       h2_fail_unexpect::print(subling_index, child_index);
 
       if (12 < e_value.size() || 12 < a_value.size()) {  // omit short string unified compare layout
-         h2_row e_row, a_row;
+         h2_sentence e_st, a_st;
          for (size_t i = 0; i < e_value.size(); ++i) {
             char ac = i < a_value.size() ? a_value[i] : ' ';
             bool eq = caseless ? ::tolower(e_value[i]) == ::tolower(ac) : e_value[i] == ac;
-            fmt_char(e_value[i], eq, "green", e_row);
+            fmt_char(e_value[i], eq, "green", e_st);
          }
          for (size_t i = 0; i < a_value.size(); ++i) {
             char ec = i < e_value.size() ? e_value[i] : ' ';
             bool eq = caseless ? ::tolower(a_value[i]) == ::tolower(ec) : a_value[i] == ec;
-            fmt_char(a_value[i], eq, "red", a_row);
+            fmt_char(a_value[i], eq, "red", a_st);
          }
 
-         h2_color::printl(h2_layout::unified(e_row, a_row, "expect", "actual", h2_shell::I().cww));
+         h2_color::printl(h2_layout::unified(e_st, a_st, "expect", "actual", h2_shell::I().cww));
       }
    }
 };
 
 struct h2_fail_strfind : h2_fail_unexpect {
    h2_string e_value, a_value;
-   h2_fail_strfind(const h2_string& e_value_, const h2_string& a_value_, const h2_row& expection, const h2_row& explain, const char* file = nullptr, int line = 0) : h2_fail_unexpect(expection, h2_representify(a_value_), explain, file, line), e_value(e_value_), a_value(a_value_) {}
+   h2_fail_strfind(const h2_string& e_value_, const h2_string& a_value_, const h2_sentence& expection, const h2_sentence& explain, const char* file = nullptr, int line = 0) : h2_fail_unexpect(expection, h2_representify(a_value_), explain, file, line), e_value(e_value_), a_value(a_value_) {}
    void print(int subling_index = 0, int child_index = 0) override
    {
       h2_fail_unexpect::print(subling_index, child_index);
 
       if (12 < e_value.size() || 12 < a_value.size()) {  // omit short string unified compare layout
-         h2_row e_row, a_row;
-         for (size_t i = 0; i < e_value.size(); ++i) fmt_char(e_value[i], true, "", e_row);
-         for (size_t i = 0; i < a_value.size(); ++i) fmt_char(a_value[i], true, "", a_row);
-         h2_color::printl(h2_layout::seperate(e_row, a_row, "expect", "actual", h2_shell::I().cww));
+         h2_sentence e_st, a_st;
+         for (size_t i = 0; i < e_value.size(); ++i) fmt_char(e_value[i], true, "", e_st);
+         for (size_t i = 0; i < a_value.size(); ++i) fmt_char(a_value[i], true, "", a_st);
+         h2_color::printl(h2_layout::seperate(e_st, a_st, "expect", "actual", h2_shell::I().cww));
       }
    }
 };
@@ -9304,28 +9297,28 @@ struct h2_fail_strfind : h2_fail_unexpect {
 struct h2_fail_json : h2_fail_unexpect {
    h2_string e_value, a_value;
    const bool caseless;
-   h2_fail_json(const h2_string& e_value_, const h2_string& a_value_, const h2_row& expection_, bool caseless_, const h2_row& explain_, const char* file_ = nullptr, int line_ = 0) : h2_fail_unexpect(expection_, a_value_, explain_, file_, line_), e_value(e_value_), a_value(a_value_), caseless(caseless_) {}
+   h2_fail_json(const h2_string& e_value_, const h2_string& a_value_, const h2_sentence& expection_, bool caseless_, const h2_sentence& explain_, const char* file_ = nullptr, int line_ = 0) : h2_fail_unexpect(expection_, a_value_, explain_, file_, line_), e_value(e_value_), a_value(a_value_), caseless(caseless_) {}
    void print(int subling_index = 0, int child_index = 0) override
    {
-      h2_rows e_rows, a_rows;
+      h2_paragraph e_paragraph, a_paragraph;
       h2_fail_unexpect::print(subling_index, child_index);
-      if (O.copy_paste_json || !h2_json::diff(e_value, a_value, e_rows, a_rows, caseless)) {
-         e_rows = h2_json::format(e_value);
-         a_rows = h2_json::format(a_value);
-         for (size_t i = 0; i < e_rows.size(); ++i)
-            if (i) e_rows[i].indent(8);
-         for (size_t i = 0; i < a_rows.size(); ++i)
-            if (i) a_rows[i].indent(8);
+      if (O.copy_paste_json || !h2_json::diff(e_value, a_value, e_paragraph, a_paragraph, caseless)) {
+         e_paragraph = h2_json::format(e_value);
+         a_paragraph = h2_json::format(a_value);
+         for (size_t i = 0; i < e_paragraph.size(); ++i)
+            if (i) e_paragraph[i].indent(8);
+         for (size_t i = 0; i < a_paragraph.size(); ++i)
+            if (i) a_paragraph[i].indent(8);
          h2_color::prints("dark gray", "expect");
          h2_color::prints("green", "> ");
-         h2_color::printl(e_rows);
+         h2_color::printl(e_paragraph);
          h2_color::prints("dark gray", "actual");
          h2_color::prints("red", "> ");
-         h2_color::printl(a_rows);
+         h2_color::printl(a_paragraph);
       } else {
-         h2_rows rows = h2_layout::split(e_rows, a_rows, "expect", "actual", 0, 'd', h2_shell::I().cww - 1);
-         for (auto& row : rows) row.indent(1);
-         h2_color::printl(rows);
+         h2_paragraph paragraph = h2_layout::split(e_paragraph, a_paragraph, "expect", "actual", 0, 'd', h2_shell::I().cww - 1);
+         for (auto& st : paragraph) st.indent(1);
+         h2_color::printl(paragraph);
       }
    }
 };
@@ -9333,59 +9326,59 @@ struct h2_fail_json : h2_fail_unexpect {
 struct h2_fail_memcmp : h2_fail_unexpect {
    h2_vector<unsigned char> e_value, a_value;
    const int width, nbits;
-   h2_fail_memcmp(const unsigned char* e_value_, const unsigned char* a_value_, int width_, int nbits_, const h2_string& represent_, const h2_row& explain_ = {}, const char* file_ = nullptr, int line_ = 0) : h2_fail_unexpect({}, represent_, explain_, file_, line_), e_value(e_value_, e_value_ + (nbits_ + 7) / 8), a_value(a_value_, a_value_ + (nbits_ + 7) / 8), width(width_), nbits(nbits_) {}
+   h2_fail_memcmp(const unsigned char* e_value_, const unsigned char* a_value_, int width_, int nbits_, const h2_string& represent_, const h2_sentence& explain_ = {}, const char* file_ = nullptr, int line_ = 0) : h2_fail_unexpect({}, represent_, explain_, file_, line_), e_value(e_value_, e_value_ + (nbits_ + 7) / 8), a_value(a_value_, a_value_ + (nbits_ + 7) / 8), width(width_), nbits(nbits_) {}
    void print(int subling_index, int child_index) override
    {
       h2_fail_unexpect::print(subling_index, child_index);
-      h2_rows e_rows, a_rows;
+      h2_paragraph e_paragraph, a_paragraph;
       int bytes_per_row = 0;
       switch (width) {
-      case 1: print_bits(e_rows, a_rows, bytes_per_row = 4); break;
-      case 8: print_ints<unsigned char>(e_rows, a_rows, bytes_per_row = (h2_shell::I().cww < 108 ? 8 : 16)); break;
-      case 16: print_ints<unsigned short>(e_rows, a_rows, bytes_per_row = 16); break;
-      case 32: print_ints<unsigned int>(e_rows, a_rows, bytes_per_row = 16); break;
-      case 64: print_ints<unsigned long long>(e_rows, a_rows, bytes_per_row = 16); break;
+      case 1: print_bits(e_paragraph, a_paragraph, bytes_per_row = 4); break;
+      case 8: print_ints<unsigned char>(e_paragraph, a_paragraph, bytes_per_row = (h2_shell::I().cww < 108 ? 8 : 16)); break;
+      case 16: print_ints<unsigned short>(e_paragraph, a_paragraph, bytes_per_row = 16); break;
+      case 32: print_ints<unsigned int>(e_paragraph, a_paragraph, bytes_per_row = 16); break;
+      case 64: print_ints<unsigned long long>(e_paragraph, a_paragraph, bytes_per_row = 16); break;
       default: break;
       }
-      h2_color::printl(h2_layout::split(e_rows, a_rows, "expect", "actual", bytes_per_row * 8 / width, 'x', h2_shell::I().cww));
+      h2_color::printl(h2_layout::split(e_paragraph, a_paragraph, "expect", "actual", bytes_per_row * 8 / width, 'x', h2_shell::I().cww));
    }
 
-   void print_bits(h2_rows& e_rows, h2_rows& a_rows, int bytes_per_row)
+   void print_bits(h2_paragraph& e_paragraph, h2_paragraph& a_paragraph, int bytes_per_row)
    {
-      int rows = ::ceil(e_value.size() * 1.0 / bytes_per_row);
-      for (int i = 0; i < rows; ++i) {
-         h2_row e_row, a_row;
+      int sts = ::ceil(e_value.size() * 1.0 / bytes_per_row);
+      for (int i = 0; i < sts; ++i) {
+         h2_sentence e_st, a_st;
          for (int j = 0; j < bytes_per_row; ++j) {
-            if (j) e_row.push_back(" ");
-            if (j) a_row.push_back(" ");
+            if (j) e_st.push_back(" ");
+            if (j) a_st.push_back(" ");
             for (int k = 0; k < 8; ++k) {
                if ((i * bytes_per_row + j) * 8 + k < nbits) {
                   unsigned char e_val = (e_value[i * bytes_per_row + j] >> (7 - k)) & 0x1;
                   unsigned char a_val = (a_value[i * bytes_per_row + j] >> (7 - k)) & 0x1;
                   if (e_val == a_val) {
-                     e_row.push_back(h2_string(e_val ? "1" : "0"));
-                     a_row.push_back(h2_string(a_val ? "1" : "0"));
+                     e_st.push_back(h2_string(e_val ? "1" : "0"));
+                     a_st.push_back(h2_string(a_val ? "1" : "0"));
                   } else {
-                     e_row.printf("green", e_val ? "1" : "0");
-                     a_row.printf("bold,red", a_val ? "1" : "0");
+                     e_st.printf("green", e_val ? "1" : "0");
+                     a_st.printf("bold,red", a_val ? "1" : "0");
                   }
                }
             }
          }
-         e_rows.push_back(e_row);
-         a_rows.push_back(a_row);
+         e_paragraph.push_back(e_st);
+         a_paragraph.push_back(a_st);
       }
    }
 
    template <typename T>
-   void print_ints(h2_rows& e_rows, h2_rows& a_rows, int bytes_per_row)
+   void print_ints(h2_paragraph& e_paragraph, h2_paragraph& a_paragraph, int bytes_per_row)
    {
       char fmt[32];
       sprintf(fmt, "%%s%%0%dX", (int)sizeof(T) * 2);
 
-      int rows = ::ceil(e_value.size() * 1.0 / bytes_per_row);
-      for (int i = 0; i < rows; ++i) {
-         h2_row e_row, a_row;
+      int sts = ::ceil(e_value.size() * 1.0 / bytes_per_row);
+      for (int i = 0; i < sts; ++i) {
+         h2_sentence e_st, a_st;
          for (int j = 0; j < bytes_per_row; j += sizeof(T)) {
             if (i * bytes_per_row + j < e_value.size()) {
                T e_val = *(T*)(e_value.data() + (i * bytes_per_row + j));
@@ -9394,16 +9387,16 @@ struct h2_fail_memcmp : h2_fail_unexpect {
                sprintf(e_str, fmt, j ? (j / sizeof(T) == 8 ? "  " : " ") : "", e_val);
                sprintf(a_str, fmt, j ? (j / sizeof(T) == 8 ? "  " : " ") : "", a_val);
                if (e_val == a_val) {
-                  e_row.push_back(e_str);
-                  a_row.push_back(a_str);
+                  e_st.push_back(e_str);
+                  a_st.push_back(a_str);
                } else {
-                  e_row.printf("green", e_str);
-                  a_row.printf("bold,red", a_str);
+                  e_st.printf("green", e_str);
+                  a_st.printf("bold,red", a_str);
                }
             }
          }
-         e_rows.push_back(e_row);
-         a_rows.push_back(a_row);
+         e_paragraph.push_back(e_st);
+         a_paragraph.push_back(a_st);
       }
    }
 };
@@ -9421,9 +9414,9 @@ struct h2_fail_memory_leak : h2_fail_memory {
    h2_fail_memory_leak(const void* ptr_, int size_, const h2_vector<std::pair<int, int>>& sizes_, const h2_backtrace& bt_allocate_, const char* where_, const char* file_, int line_) : h2_fail_memory(ptr_, size_, bt_allocate_, h2_backtrace(), file_, line_), sizes(sizes_), where(where_) {}
    void print(int subling_index = 0, int child_index = 0) override
    {
-      h2_row row = h2_stringify(ptr) + color(" memory leak ", "bold,red") + h2_stringify(size).brush("red") + " ";
+      h2_sentence st = h2_stringify(ptr) + color(" memory leak ", "bold,red") + h2_stringify(size).brush("red") + " ";
       int i = 0, c = 0, n = 3;
-      h2_row l;
+      h2_sentence l;
       for (auto& p : sizes) {
          l += gray(comma_if(i++));
          if (O.verbose <= 1 && n < i) {
@@ -9434,8 +9427,8 @@ struct h2_fail_memory_leak : h2_fail_memory {
          if (1 < p.second) l += gray("x") + h2_stringify(p.second);
          c += p.second;
       }
-      if (1 < c) row += gray("[") + l + gray("] ");
-      h2_color::printl(" " + row + "bytes in " + where + " totally" + locate());
+      if (1 < c) st += gray("[") + l + gray("] ");
+      h2_color::printl(" " + st + "bytes in " + where + " totally" + locate());
       h2_color::prints("", "  which allocate at backtrace:\n"), bt_allocate.print(3);
    }
 };
@@ -9476,9 +9469,9 @@ struct h2_fail_overflow : h2_fail_memory {
    void print(int subling_index = 0, int child_index = 0) override
    {
       int offset = ptr < violate_ptr ? (long long)violate_ptr - ((long long)ptr + size) : (long long)violate_ptr - (long long)ptr;
-      h2_row row = h2_stringify(ptr) + " " + color(h2_string("%+d", offset), "bold,red") + " " + gray("(") + h2_stringify(violate_ptr) + gray(")") + " " + color(action, "bold,red") + " " + (offset >= 0 ? "overflow" : "underflow") + " ";
-      for (int i = 0; i < spot.size(); ++i) row.printf("bold,red", "%02X ", spot[i]);
-      h2_color::printl(" " + row + locate() + (bt_trample.count ? " at backtrace:" : ""));
+      h2_sentence st = h2_stringify(ptr) + " " + color(h2_string("%+d", offset), "bold,red") + " " + gray("(") + h2_stringify(violate_ptr) + gray(")") + " " + color(action, "bold,red") + " " + (offset >= 0 ? "overflow" : "underflow") + " ";
+      for (int i = 0; i < spot.size(); ++i) st.printf("bold,red", "%02X ", spot[i]);
+      h2_color::printl(" " + st + locate() + (bt_trample.count ? " at backtrace:" : ""));
       if (bt_trample.count) bt_trample.print(3);
       h2_color::prints("", "  which allocate at backtrace:\n"), bt_allocate.print(3);
    }
@@ -9491,8 +9484,8 @@ struct h2_fail_use_after_free : h2_fail_memory {
    h2_fail_use_after_free(const void* ptr_, const void* violate_ptr_, const char* action_, const h2_backtrace& bt_allocate_, const h2_backtrace& bt_release_, const h2_backtrace& bt_use_) : h2_fail_memory(ptr_, 0, bt_allocate_, bt_release_), violate_ptr(violate_ptr_), action(action_), bt_use(bt_use_) {}
    void print(int subling_index = 0, int child_index = 0) override
    {
-      h2_row row = h2_stringify(ptr) + " " + color(h2_string("%+d", (long long)violate_ptr - (long long)ptr), "bold,red") + " " + gray("(") + h2_stringify(violate_ptr) + gray(")") + " " + color(action, "bold,red") + color(" after free", "bold,red");
-      h2_color::printl(" " + row + " at backtrace:"), bt_use.print(2);
+      h2_sentence st = h2_stringify(ptr) + " " + color(h2_string("%+d", (long long)violate_ptr - (long long)ptr), "bold,red") + " " + gray("(") + h2_stringify(violate_ptr) + gray(")") + " " + color(action, "bold,red") + color(" after free", "bold,red");
+      h2_color::printl(" " + st + " at backtrace:"), bt_use.print(2);
       h2_color::prints("", "  which allocate at backtrace:\n"), bt_allocate.print(3);
       h2_color::prints("", "  and free at backtrace:\n"), bt_release.print(3);
    }
@@ -9501,7 +9494,7 @@ struct h2_fail_use_after_free : h2_fail_memory {
 struct h2_fail_exception : h2_fail {
    const char* type;
    const h2_backtrace bt_throw;
-   h2_fail_exception(const h2_row& explain_, const char* type_, const h2_backtrace& bt_throw_) : h2_fail(explain_, nullptr, 0), type(type_), bt_throw(bt_throw_) {}
+   h2_fail_exception(const h2_sentence& explain_, const char* type_, const h2_backtrace& bt_throw_) : h2_fail(explain_, nullptr, 0), type(type_), bt_throw(bt_throw_) {}
    void print(int subling_index = 0, int child_index = 0) override
    {
       h2_color::printl(" exception " + color(type, "red") + " " + explain + " at backtrace:");
@@ -9512,7 +9505,7 @@ struct h2_fail_exception : h2_fail {
 struct h2_fail_symbol : h2_fail {
    const h2_string symbol;
    const h2_vector<h2_string> candidates;
-   h2_fail_symbol(const h2_string& symbol_, const h2_vector<h2_string>& candidates_, const h2_row& explain_, const char* file, int line) : h2_fail(explain_, nullptr, 0), symbol(symbol_), candidates(candidates_) {}
+   h2_fail_symbol(const h2_string& symbol_, const h2_vector<h2_string>& candidates_, const h2_sentence& explain_, const char* file, int line) : h2_fail(explain_, nullptr, 0), symbol(symbol_), candidates(candidates_) {}
    void print(int subling_index = 0, int child_index = 0) override
    {
       h2_color::printl(color(candidates.size() ? " Find multiple " : " Not found ", "yellow") + color(symbol, "bold,red"));
@@ -9522,19 +9515,19 @@ struct h2_fail_symbol : h2_fail {
    }
 };
 
-h2_inline h2_fail* h2_fail::new_normal(const h2_row& explain, const char* file, int line) { return new h2_fail_normal(explain, file, line); }
-h2_inline h2_fail* h2_fail::new_unexpect(const h2_row& expection, const h2_row& represent, const h2_row& explain, const char* file, int line) { return new h2_fail_unexpect(expection, represent, explain, file, line); }
-h2_inline h2_fail* h2_fail::new_strcmp(const h2_string& e_value, const h2_string& a_value, bool caseless, const h2_row& expection, const h2_row& explain, const char* file, int line) { return new h2_fail_strcmp(e_value, a_value, caseless, expection, explain, file, line); }
-h2_inline h2_fail* h2_fail::new_strfind(const h2_string& e_value, const h2_string& a_value, const h2_row& expection, const h2_row& explain, const char* file, int line) { return new h2_fail_strfind(e_value, a_value, expection, explain, file, line); }
-h2_inline h2_fail* h2_fail::new_json(const h2_string& e_value, const h2_string& a_value, const h2_row& expection, bool caseless, const h2_row& explain, const char* file, int line) { return new h2_fail_json(e_value, a_value, expection, caseless, explain, file, line); }
-h2_inline h2_fail* h2_fail::new_memcmp(const unsigned char* e_value, const unsigned char* a_value, int width, int nbits, const h2_string& represent, const h2_row& explain, const char* file, int line) { return new h2_fail_memcmp(e_value, a_value, width, nbits, represent, explain, file, line); }
+h2_inline h2_fail* h2_fail::new_normal(const h2_sentence& explain, const char* file, int line) { return new h2_fail_normal(explain, file, line); }
+h2_inline h2_fail* h2_fail::new_unexpect(const h2_sentence& expection, const h2_sentence& represent, const h2_sentence& explain, const char* file, int line) { return new h2_fail_unexpect(expection, represent, explain, file, line); }
+h2_inline h2_fail* h2_fail::new_strcmp(const h2_string& e_value, const h2_string& a_value, bool caseless, const h2_sentence& expection, const h2_sentence& explain, const char* file, int line) { return new h2_fail_strcmp(e_value, a_value, caseless, expection, explain, file, line); }
+h2_inline h2_fail* h2_fail::new_strfind(const h2_string& e_value, const h2_string& a_value, const h2_sentence& expection, const h2_sentence& explain, const char* file, int line) { return new h2_fail_strfind(e_value, a_value, expection, explain, file, line); }
+h2_inline h2_fail* h2_fail::new_json(const h2_string& e_value, const h2_string& a_value, const h2_sentence& expection, bool caseless, const h2_sentence& explain, const char* file, int line) { return new h2_fail_json(e_value, a_value, expection, caseless, explain, file, line); }
+h2_inline h2_fail* h2_fail::new_memcmp(const unsigned char* e_value, const unsigned char* a_value, int width, int nbits, const h2_string& represent, const h2_sentence& explain, const char* file, int line) { return new h2_fail_memcmp(e_value, a_value, width, nbits, represent, explain, file, line); }
 h2_inline h2_fail* h2_fail::new_memory_leak(const void* ptr, int size, const h2_vector<std::pair<int, int>>& sizes, const h2_backtrace& bt_allocate, const char* where, const char* file, int line) { return new h2_fail_memory_leak(ptr, size, sizes, bt_allocate, where, file, line); }
 h2_inline h2_fail* h2_fail::new_double_free(const void* ptr, const h2_backtrace& bt_allocate, const h2_backtrace& bt_release, const h2_backtrace& bt_double_free) { return new h2_fail_double_free(ptr, bt_allocate, bt_release, bt_double_free); }
 h2_inline h2_fail* h2_fail::new_asymmetric_free(const void* ptr, const char* who_allocate, const char* who_release, const h2_backtrace& bt_allocate, const h2_backtrace& bt_release) { return new h2_fail_asymmetric_free(ptr, who_allocate, who_release, bt_allocate, bt_release); }
 h2_inline h2_fail* h2_fail::new_overflow(const void* ptr, const int size, const void* violate_ptr, const char* action, const h2_vector<unsigned char>& spot, const h2_backtrace& bt_allocate, const h2_backtrace& bt_trample, const char* file, int line) { return new h2_fail_overflow(ptr, size, violate_ptr, action, spot, bt_allocate, bt_trample, file, line); }
 h2_inline h2_fail* h2_fail::new_use_after_free(const void* ptr, const void* violate_ptr, const char* action, const h2_backtrace& bt_allocate, const h2_backtrace& bt_release, const h2_backtrace& bt_use) { return new h2_fail_use_after_free(ptr, violate_ptr, action, bt_allocate, bt_release, bt_use); }
 h2_inline h2_fail* h2_fail::new_exception(const char* explain, const char* type, const h2_backtrace& bt_throw) { return new h2_fail_exception(explain, type, bt_throw); }
-h2_inline h2_fail* h2_fail::new_symbol(const h2_string& symbol, const h2_vector<h2_string>& candidates, const h2_row& explain, const char* file, int line) { return new h2_fail_symbol(symbol, candidates, explain, file, line); };
+h2_inline h2_fail* h2_fail::new_symbol(const h2_string& symbol, const h2_vector<h2_string>& candidates, const h2_sentence& explain, const char* file, int line) { return new h2_fail_symbol(symbol, candidates, explain, file, line); };
 // source/render/h2_report.cpp
 struct h2_report_impl {
    h2_list x;
@@ -9659,9 +9652,9 @@ struct h2_report_console : h2_report_impl {
    {
       return !!a1 + !!a2 + !!a3 + !!a4 + !!a5 + !!a6;
    }
-   h2_row format_title(const char* suite_name, const char* case_name, const char* file, int line)
+   h2_sentence format_title(const char* suite_name, const char* case_name, const char* file, int line)
    {
-      h2_row title;
+      h2_sentence title;
       if (strlen(case_name))
          title.printf("", "%s ", case_name);
       else
@@ -9681,7 +9674,7 @@ struct h2_report_console : h2_report_impl {
       }
       return title;
    }
-   void format_percentage(h2_row& bar)
+   void format_percentage(h2_sentence& bar)
    {
       bar.printf("dark gray", "[");
       bar.printf("", "%3d%%", cases ? (int)(runner_case_index * 100 / cases) : 100);
@@ -9694,7 +9687,7 @@ struct h2_report_console : h2_report_impl {
          ::printf("\33[2K\r"); /* clear line */
       else
          ::printf("\n"); /* user output, new line */
-      h2_row bar;
+      h2_sentence bar;
       if (percentage && O.progressing) format_percentage(bar);
       if (status && status_style) bar.printf(status_style, "%s", status);
       if (s && c) bar += format_title(s->name, c->name, returnable ? nullptr : c->file, c->line);
@@ -9798,7 +9791,7 @@ struct h2_report_console : h2_report_impl {
       } else {  // Passed
          if (O.verbose >= 3) {
             print_bar(true, "green", "Passed ", s, c, false);
-            h2_row ad;
+            h2_sentence ad;
             if (0 < c->asserts) ad.printf("dark gray", ad.width() ? ", " : "").printf("", "%d assert%s", c->asserts, 1 < c->asserts ? "s" : "");
             if (0 < c->footprint) ad.printf("dark gray", ad.width() ? ", " : "").printf("", "%s", format_volume(c->footprint));
             if (0 < case_cost) ad.printf("dark gray", ad.width() ? ", " : "").printf("", "%s", format_duration(case_cost));
@@ -9879,21 +9872,21 @@ h2_inline void h2_report::on_suite_endup(h2_suite* s) { in = true; h2_list_for_e
 h2_inline void h2_report::on_case_start(h2_suite* s, h2_case* c) { in = true; h2_list_for_each_entry (p, reports, h2_report_impl, x) p->on_case_start(s, c); in = false; }
 h2_inline void h2_report::on_case_endup(h2_suite* s, h2_case* c) { in = true; h2_list_for_each_entry (p, reports, h2_report_impl, x) p->on_case_endup(s, c); in = false; }
 // source/render/h2_layout.cpp
-static inline h2_rows row_break(const h2_row& row, unsigned width)
+static inline h2_paragraph sentence_break(const h2_sentence& st, unsigned width)
 {
-   h2_rows rows;
+   h2_paragraph paragraph;
    h2_string current_style;
-   h2_row wrap;
+   h2_sentence wrap;
    unsigned length = 0;
 
-   for (auto& word : row) {
+   for (auto& word : st) {
       if (h2_color::isctrl(word.c_str())) {  // + - style , issue
          wrap.push_back(word);
          current_style = word;
       } else {
          for (auto& c : word) {
             if (width <= length) {  // terminate line as later as possible
-               rows.push_back(wrap);
+               paragraph.push_back(wrap);
                wrap.clear();
                length = 0;
                if (current_style.size()) wrap.push_back(current_style);
@@ -9904,42 +9897,44 @@ static inline h2_rows row_break(const h2_row& row, unsigned width)
       }
    }
    if (length < width) wrap.push_back(h2_string(width - length, ' '));
-   rows.push_back(wrap);
-   return rows;
+   paragraph.push_back(wrap);
+   return paragraph;
 }
 
-static inline void rows_merge(h2_rows& rows, const h2_rows& left_rows, const h2_rows& right_rows, unsigned left_width, unsigned right_width, int step, char scale, int seq_width)
+static inline h2_paragraph sentences_merge(const h2_paragraph& left_paragraph, const h2_paragraph& right_paragraph, unsigned left_width, unsigned right_width, int step, char scale, int seq_width)
 {
+   h2_paragraph paragraph;
    char seq_fmt[32];
    sprintf(seq_fmt, "%%%d%c│ ", seq_width, scale);
    const h2_string left_empty(left_width, ' '), right_empty(right_width, ' ');
-   for (size_t i = 0; i < std::max(left_rows.size(), right_rows.size()); ++i) {
-      auto left_wrap_rows = row_break(i < left_rows.size() ? left_rows[i] : left_empty, left_width);
-      auto right_wrap_rows = row_break(i < right_rows.size() ? right_rows[i] : right_empty, right_width);
-      for (size_t j = 0; j < std::max(left_wrap_rows.size(), right_wrap_rows.size()); ++j) {
-         h2_row row;
+   for (size_t i = 0; i < std::max(left_paragraph.size(), right_paragraph.size()); ++i) {
+      auto left_wrap_sts = sentence_break(i < left_paragraph.size() ? left_paragraph[i] : left_empty, left_width);
+      auto right_wrap_sts = sentence_break(i < right_paragraph.size() ? right_paragraph[i] : right_empty, right_width);
+      for (size_t j = 0; j < std::max(left_wrap_sts.size(), right_wrap_sts.size()); ++j) {
+         h2_sentence st;
          if (step) {
             if (j == 0)
-               row.printf("dark gray", seq_fmt, step * i);
+               st.printf("dark gray", seq_fmt, step * i);
             else
-               row.indent(seq_width + 2);
+               st.indent(seq_width + 2);
          }
-         row += j < left_wrap_rows.size() ? left_wrap_rows[j].brush("reset") : color(left_empty, "reset");
-         row.printf("dark gray", j < left_wrap_rows.size() - 1 ? "\\│ " : " │ ");
-         row += j < right_wrap_rows.size() ? right_wrap_rows[j].brush("reset") : color(right_empty, "reset");
-         row.printf("dark gray", j < right_wrap_rows.size() - 1 ? "\\" : " ");
-         rows.push_back(row);
+         st += j < left_wrap_sts.size() ? left_wrap_sts[j].brush("reset") : color(left_empty, "reset");
+         st.printf("dark gray", j < left_wrap_sts.size() - 1 ? "\\│ " : " │ ");
+         st += j < right_wrap_sts.size() ? right_wrap_sts[j].brush("reset") : color(right_empty, "reset");
+         st.printf("dark gray", j < right_wrap_sts.size() - 1 ? "\\" : " ");
+         paragraph.push_back(st);
       }
    }
+   return paragraph;
 }
 
-h2_inline h2_rows h2_layout::split(const h2_rows& left_rows, const h2_rows& right_rows, const char* left_title, const char* right_title, int step, char scale, unsigned width)
+h2_inline h2_paragraph h2_layout::split(const h2_paragraph& left_paragraph, const h2_paragraph& right_paragraph, const char* left_title, const char* right_title, int step, char scale, unsigned width)
 {
-   unsigned seq_width = number_strlen(step * std::max(left_rows.size(), right_rows.size()), scale == 'x' ? 16 : 10);
+   unsigned seq_width = number_strlen(step * std::max(left_paragraph.size(), right_paragraph.size()), scale == 'x' ? 16 : 10);
    unsigned valid_width = width - (seq_width + 1 /* "|" */) - 1 /*|*/ - 4 /* spaces */;
 
-   unsigned left_width = std::max(left_rows.width(), 8u); /* at least title width */
-   unsigned right_width = std::max(right_rows.width(), 8u);
+   unsigned left_width = std::max(left_paragraph.width(), 8u); /* at least title width */
+   unsigned right_width = std::max(right_paragraph.width(), 8u);
 
    if (left_width < valid_width / 2)
       right_width = std::min(valid_width - left_width, right_width);
@@ -9948,54 +9943,49 @@ h2_inline h2_rows h2_layout::split(const h2_rows& left_rows, const h2_rows& righ
    else
       left_width = right_width = valid_width / 2;
 
-   h2_rows rows;
-   h2_row title_row = {"\033{reset}", "\033{dark gray}", (step ? h2_string(seq_width + 2, ' ') : ""), h2_string(left_title).center(left_width), "   ", h2_string(right_title).center(right_width), "\033{reset}"};
-   rows.push_back(title_row);
+   h2_sentence title = gray((step ? h2_string(seq_width + 2, ' ') : "") + h2_string(left_title).center(left_width)) + "   " + gray(h2_string(right_title).center(right_width));
+   h2_paragraph page = {title};
 
-   rows_merge(rows, left_rows, right_rows, left_width, right_width, step, scale, seq_width);
-   return rows;
+   return page += sentences_merge(left_paragraph, right_paragraph, left_width, right_width, step, scale, seq_width);
 }
 
-h2_inline h2_rows h2_layout::unified(const h2_row& up_row, const h2_row& down_row, const char* up_title, const char* down_title, unsigned width)
+h2_inline h2_paragraph h2_layout::unified(const h2_sentence& up_sentence, const h2_sentence& down_sentence, const char* up_title, const char* down_title, unsigned width)
 {
-   h2_rows rows;
+   h2_paragraph page;
+   h2_sentence up_title_st = gray(up_title) + color("> ", "green");
+   h2_sentence down_title_st = gray(down_title) + color("> ", "red");
 
-   h2_row up_title_row = {"\033{dark gray}", up_title, "\033{green}", "> ", "\033{reset}"};
-   h2_row down_title_row = {"\033{dark gray}", down_title, "\033{red}", "> ", "\033{reset}"};
+   h2_paragraph up_paragraph = sentence_break(up_sentence, width - up_title_st.width());
+   h2_paragraph down_paragraph = sentence_break(down_sentence, width - down_title_st.width());
 
-   h2_rows up_rows = row_break(up_row, width - up_title_row.width());
-   h2_rows down_rows = row_break(down_row, width - down_title_row.width());
-
-   for (size_t i = 0; i < std::max(up_rows.size(), down_rows.size()); ++i) {
-      if (i < up_rows.size())
-         rows.push_back(up_title_row + up_rows[i]);
-      if (i < down_rows.size())
-         rows.push_back(down_title_row + down_rows[i]);
+   for (size_t i = 0; i < std::max(up_paragraph.size(), down_paragraph.size()); ++i) {
+      if (i < up_paragraph.size())
+         page.push_back(up_title_st + up_paragraph[i]);
+      if (i < down_paragraph.size())
+         page.push_back(down_title_st + down_paragraph[i]);
    }
-
-   return rows;
+   return page;
 }
 
-static inline h2_rows prefix_break(const h2_row& row, const h2_row& title, unsigned width)
+static inline h2_paragraph prefix_break(const h2_sentence& st, const h2_sentence& title, unsigned width)
 {
-   h2_rows rows = row_break(row, width - title.width());
+   h2_paragraph paragraph = sentence_break(st, width - title.width());
 
-   for (size_t i = 0; i < rows.size(); ++i) {
+   for (size_t i = 0; i < paragraph.size(); ++i) {
       if (i == 0)
-         rows[i] = title + rows[i];
+         paragraph[i] = title + paragraph[i];
       else
-         rows[i].indent(title.width());
+         paragraph[i].indent(title.width());
    }
-   return rows;
+   return paragraph;
 }
 
-h2_inline h2_rows h2_layout::seperate(const h2_row& up_row, const h2_row& down_row, const char* up_title, const char* down_title, unsigned width)
+h2_inline h2_paragraph h2_layout::seperate(const h2_sentence& up_sentence, const h2_sentence& down_sentence, const char* up_title, const char* down_title, unsigned width)
 {
-   h2_row up_title_row = {"\033{dark gray}", up_title, "\033{green}", "> ", "\033{reset}"};
-   h2_row down_title_row = {"\033{dark gray}", down_title, "\033{red}", "> ", "\033{reset}"};
-
-   h2_rows rows = prefix_break(up_row, up_title_row, width);
-   return rows += prefix_break(down_row, down_title_row, width);
+   h2_sentence up_title_st = gray(up_title) + color("> ", "green");
+   h2_sentence down_title_st = gray(down_title) + color("> ", "red");
+   h2_paragraph page = prefix_break(up_sentence, up_title_st, width);
+   return page += prefix_break(down_sentence, down_title_st, width);
 }
 // source/render/h2_option.cpp
 /* clang-format off */

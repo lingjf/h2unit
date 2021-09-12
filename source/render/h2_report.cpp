@@ -121,9 +121,9 @@ struct h2_report_console : h2_report_impl {
    {
       return !!a1 + !!a2 + !!a3 + !!a4 + !!a5 + !!a6;
    }
-   h2_row format_title(const char* suite_name, const char* case_name, const char* file, int line)
+   h2_sentence format_title(const char* suite_name, const char* case_name, const char* file, int line)
    {
-      h2_row title;
+      h2_sentence title;
       if (strlen(case_name))
          title.printf("", "%s ", case_name);
       else
@@ -143,7 +143,7 @@ struct h2_report_console : h2_report_impl {
       }
       return title;
    }
-   void format_percentage(h2_row& bar)
+   void format_percentage(h2_sentence& bar)
    {
       bar.printf("dark gray", "[");
       bar.printf("", "%3d%%", cases ? (int)(runner_case_index * 100 / cases) : 100);
@@ -156,7 +156,7 @@ struct h2_report_console : h2_report_impl {
          ::printf("\33[2K\r"); /* clear line */
       else
          ::printf("\n"); /* user output, new line */
-      h2_row bar;
+      h2_sentence bar;
       if (percentage && O.progressing) format_percentage(bar);
       if (status && status_style) bar.printf(status_style, "%s", status);
       if (s && c) bar += format_title(s->name, c->name, returnable ? nullptr : c->file, c->line);
@@ -260,7 +260,7 @@ struct h2_report_console : h2_report_impl {
       } else {  // Passed
          if (O.verbose >= 3) {
             print_bar(true, "green", "Passed ", s, c, false);
-            h2_row ad;
+            h2_sentence ad;
             if (0 < c->asserts) ad.printf("dark gray", ad.width() ? ", " : "").printf("", "%d assert%s", c->asserts, 1 < c->asserts ? "s" : "");
             if (0 < c->footprint) ad.printf("dark gray", ad.width() ? ", " : "").printf("", "%s", format_volume(c->footprint));
             if (0 < case_cost) ad.printf("dark gray", ad.width() ? ", " : "").printf("", "%s", format_duration(case_cost));
