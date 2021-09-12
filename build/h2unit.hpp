@@ -1,5 +1,5 @@
 
-/* v5.13 2021-09-11 11:51:38 */
+/* v5.13 2021-09-12 12:15:19 */
 /* https://github.com/lingjf/h2unit */
 /* Apache Licence 2.0 */
 
@@ -941,8 +941,8 @@ inline h2_row h2_representify(T a, size_t n) { return h2_stringify(a, n, true); 
 // source/utils/h2_color.hpp
 struct h2_color {
    static void prints(const char* style, const char* format, ...);
-   static void printl(const h2_row& row);
-   static void printl(const h2_rows& rows);
+   static void printl(const h2_row& row, bool cr = true);
+   static void printl(const h2_rows& rows, bool cr = true);
    static bool isctrl(const char* s) { return s[0] == '\033' && s[1] == '{'; };
 };
 // source/symbol/h2_nm.hpp
@@ -1025,17 +1025,17 @@ struct h2_option {
    const char* path;
    const char* debug = nullptr;
    bool colorful = true;
-   bool percent_progressing = true;
+   bool progressing = true;
    bool fold_json = true;
    bool copy_paste_json = false;
    bool only_previous_failed = false;
    bool shuffle_cases = false;
    bool memory_check = true;
    bool exception_as_fail = false;
-   bool list_cases = false;
+   int list_cases = 0;
    int break_after_fails = 0;
    int run_rounds = 1;
-   int verbose = 1;
+   int verbose = 2;
    char junit_path[256]{'\0'};
    char tap_path[256]{'\0'};
    std::vector<const char*> includes, excludes;
@@ -3309,7 +3309,7 @@ static inline void h2_fail_g(h2_fail* fail)
 {
    if (!fail) return;
    if (O.debug) h2_debugger::trap();
-   if (h2_runner::I().current_case) h2_runner::I().current_case->do_fail(fail, O.verbose >= 2, true);
+   if (h2_runner::I().current_case) h2_runner::I().current_case->do_fail(fail, O.verbose >= 5, true);
 }
 // source/core/h2_core.hpp
 
@@ -3603,6 +3603,8 @@ struct h2_report {
    h2_singleton(h2_report);
    static void initialize();
 
+   bool in = false;
+   long long escape_length = 0;
    h2_list reports;
    void on_runner_start(h2_runner* r);
    void on_runner_endup(h2_runner* r);

@@ -143,5 +143,5 @@ h2_inline int h2_runner::main(int argc, const char** argv)
    stubs.clear();
    mocks.clear(false);
    h2_memory::finalize();
-   return O.verbose >= 3 ? stats.failed : 0;
+   return O.verbose >= 6 ? stats.failed : 0;
 }

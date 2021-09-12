@@ -1058,13 +1058,13 @@ twofiles speed up 2~3 times than onefile.
 *    `-m` Disable *memory* check(leak, overflow, trample, double free, asymmetric free)
 *    `-s` *shuffle* cases then test in random order
 *    `-b` [n] *break* test once n (default 1) cases failed
-*    `-f` Only test previous *failed* cases
-*    `-p` Hide test percentage *progressing*
+*    `-n` Only test previous *failed* cases
+*    `-p` Disable test percentage *progressing*
 *    `-r` [n] repeat run n *rounds*
 *    `-c` Disable *colorful* output, black-white output
 *    `-x` Thrown *exception* is considered as failure
 *    `-d/D` *debug* mode, -D for gdb attach but requires password
-*    `-F` *fold* simple json object or array
+*    `-f` *fold* simple json object or array
 *    `-y` *copy-paste* JSON C/C++ source code
 *    `-v` *verbose* output including successfull cases
 *    `-j` {path} generate *junit* compatible XML output

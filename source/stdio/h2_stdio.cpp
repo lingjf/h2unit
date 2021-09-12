@@ -2,11 +2,13 @@ struct h2_stdio {
    h2_singleton(h2_stdio);
    h2_string* buffer;
    bool stdout_capturable = false, stderr_capturable = false, syslog_capturable = false;
-   size_t capture_length = 0;
+   long long capture_length = 0;
 
    static ssize_t write(int fd, const void* buf, size_t count)
    {
       h2::h2_stub_temporary_restore t((void*)LIBC__write);
+      if ((fd == fileno(stdout) || fd == fileno(stderr)) && h2_report::I().escape_length == I().capture_length && !h2_report::I().in)
+         LIBC__write(fd, "\n", 1); // fall printf/cout into new line from report title
       LIBC__write(fd, buf, count);
       if (fd == fileno(stdout) || fd == fileno(stderr))
          I().capture_length += count;

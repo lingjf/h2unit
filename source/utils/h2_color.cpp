@@ -127,13 +127,13 @@ h2_inline void h2_color::prints(const char* style, const char* format, ...)
    if (style && strlen(style)) h2_shell::I().print("\033{reset}");
 }
 
-h2_inline void h2_color::printl(const h2_row& row)
+h2_inline void h2_color::printl(const h2_row& row, bool cr)
 {
    for (auto& word : row) h2_shell::I().print(word.c_str());
-   h2_shell::I().print("\n");
+   if (cr) h2_shell::I().print("\n");
 }
 
-h2_inline void h2_color::printl(const h2_rows& rows)
+h2_inline void h2_color::printl(const h2_rows& rows, bool cr)
 {
-   for (auto& row : rows) printl(row);
+   for (auto& row : rows) printl(row, cr);
 }

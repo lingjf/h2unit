@@ -62,5 +62,5 @@ static inline void h2_fail_g(h2_fail* fail)
 {
    if (!fail) return;
    if (O.debug) h2_debugger::trap();
-   if (h2_runner::I().current_case) h2_runner::I().current_case->do_fail(fail, O.verbose >= 2, true);
+   if (h2_runner::I().current_case) h2_runner::I().current_case->do_fail(fail, O.verbose >= 5, true);
 }

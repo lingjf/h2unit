@@ -44,7 +44,7 @@ jobs:
       - name: 🏗️ build test/debug
         run: cmake --build d_test -j2
       - name: run test/debug without memory check
-        run: cd d_test && LD_BIND_NOW=1 ./a.out -s -m -v -e test_memory_
+        run: cd d_test && LD_BIND_NOW=1 ./a.out -s -p -m -v -e test_memory_
       - name: ✨ run test/debug with memory check
         run: cd d_test && LD_BIND_NOW=1 ./a.out -scpvj
       - name: configure test/release
@@ -52,9 +52,9 @@ jobs:
       - name: 🏗️ build test/release
         run: cmake --build r_test -j2
       - name: run test/release without memory check
-        run: cd r_test && LD_BIND_NOW=1 ./a.out -m -e test_memory_
+        run: cd r_test && LD_BIND_NOW=1 ./a.out -s -p -m -v -e test_memory_
       - name: ✨ run test/release with memory check
-        run: cd r_test && LD_BIND_NOW=1 ./a.out -cpj
+        run: cd r_test && LD_BIND_NOW=1 ./a.out -scpvj
       - name: install coverage tools
         run: sudo pip3 install git+https://github.com/gcovr/gcovr.git
       - name: build and run example
@@ -100,7 +100,7 @@ jobs:
       - name: 🏗️ build test/debug
         run: cmake --build d_test -j2
       - name: run test/debug without memory check
-        run: cd d_test && LD_BIND_NOW=1 ./a.out -s -m -v -e test_memory_
+        run: cd d_test && LD_BIND_NOW=1 ./a.out -s -p -m -v -e test_memory_
       - name: ✨ run test/debug with memory check
         run: cd d_test && LD_BIND_NOW=1 ./a.out -scpvj
       - name: configure test/release
@@ -108,9 +108,9 @@ jobs:
       - name: 🏗️ build test/release
         run: cmake --build r_test -j2
       - name: run test/release without memory check
-        run: cd r_test && LD_BIND_NOW=1 ./a.out -s -m -e test_memory_
+        run: cd r_test && LD_BIND_NOW=1 ./a.out -s -p -m -v -e test_memory_
       - name: ✨ run test/release with memory check
-        run: cd r_test && LD_BIND_NOW=1 ./a.out -scpj
+        run: cd r_test && LD_BIND_NOW=1 ./a.out -scpvj
       - name: install coverage tools
         run: brew install lcov
       - name: build and run example
@@ -155,7 +155,7 @@ jobs:
       - name: 🏗️ build test/debug
         run: cmake --build d_test -j $env:NUMBER_OF_PROCESSORS
       - name: run test/debug without memory check
-        run: cd d_test && ./a.out.exe -s -m -v -e test_memory_
+        run: cd d_test && ./a.out.exe -s -p -m -v -e test_memory_
       - name: ✨ run test/debug with memory check
         run: cd d_test && ./a.out.exe -scpvj
       - name: configure test/release
@@ -165,9 +165,9 @@ jobs:
       - name: 🏗️ build test/release
         run: cmake --build r_test --config Release -j $env:NUMBER_OF_PROCESSORS
       - name: run test/release without memory check
-        run: cd r_test && ./a.out.exe -m -e test_memory_
+        run: cd r_test && ./a.out.exe -p -m -e test_memory_ # fails
       - name: ✨ run test/release with memory check
-        run: cd r_test && ./a.out.exe -cpj
+        run: cd r_test && ./a.out.exe -cpj # fails
       - name: configure example
         run: cmake -B d_example example
       - name: build example
@@ -218,7 +218,7 @@ jobs:
       - name: 🏗️ build test
         run: cmake --build ci_test -j2
       - name: run test without memory check
-        run: ./ci_test/a.out -s -m -v -e test_memory_
+        run: ./ci_test/a.out -s -p -m -v -e test_memory_
       - name: ✨ run test with memory check
         run: ./ci_test/a.out -scpvj
       - name: configure example
@@ -259,7 +259,7 @@ jobs:
       - name: 🏗️ build test
         run: cd test && cmake --build . -j $env:NUMBER_OF_PROCESSORS
       - name: run test without memory check
-        run: cd test && ./a.out.exe -s -m -v -e test_memory_
+        run: cd test && ./a.out.exe -s -p -m -v -e test_memory_
       - name: ✨ run test with memory check
         run: cd test && ./a.out.exe -scpvj
       - name: configure example
@@ -305,7 +305,7 @@ jobs:
       - name: 🏗️ build test
         run: cd test && msbuild test.vcxproj /property:Configuration=Debug /property:Platform=${{matrix.platform}} -maxcpucount:1
       - name: run test without memory check
-        run: cd test && ./test.exe -s -m -v -e test_memory_
+        run: cd test && ./test.exe -s -p -m -v -e test_memory_
       - name: ✨ run test with memory check
         run: cd test && ./test.exe -scpvj
       - name: build example
@@ -350,7 +350,7 @@ jobs:
       - name: 🏗️ build test
         run: cmake --build ci_test -j2
       - name: run test without memory check
-        run: qemu-aarch64 -L /usr/aarch64-linux-gnu -E LD_BIND_NOW=1 ./ci_test/a.out -s -m -v -e test_memory_
+        run: qemu-aarch64 -L /usr/aarch64-linux-gnu -E LD_BIND_NOW=1 ./ci_test/a.out -s -p -m -v -e test_memory_
       - name: ✨ run test with memory check
         run: qemu-aarch64 -L /usr/aarch64-linux-gnu -E LD_BIND_NOW=1 ./ci_test/a.out -scpvj
       - name: configure example
@@ -410,7 +410,7 @@ jobs:
       - name: 🏗️ build test
         run: cmake --build ci_test -j2
       - name: run test without memory check
-        run: LD_BIND_NOW=1 ./ci_test/a.out -s -m -v -e test_memory_
+        run: LD_BIND_NOW=1 ./ci_test/a.out -s -p -m -v -e test_memory_
       - name: ✨ run test with memory check
         run: LD_BIND_NOW=1 ./ci_test/a.out -scpvj
       - name: configure example
@@ -450,7 +450,7 @@ jobs:
       - name: 🏗️ build test
         run: cmake --build ci_test -j2
       - name: run test without memory check
-        run: LD_BIND_NOW=1 ./ci_test/a.out -s -m -v -e test_memory_
+        run: LD_BIND_NOW=1 ./ci_test/a.out -s -p -m -v -e test_memory_
       - name: ✨ run test with memory check
         run: LD_BIND_NOW=1 ./ci_test/a.out -scpvj
       - name: configure example
@@ -501,7 +501,7 @@ jobs:
       - name: 🏗️ build test
         run: cd test && make -j2
       - name: run test without memory check
-        run: cd test && LD_BIND_NOW=1 ./a.out -s -m -v -e test_memory_
+        run: cd test && LD_BIND_NOW=1 ./a.out -s -p -m -v -e test_memory_
       - name: ✨ run test with memory check
         if: ${{matrix.sys != 'openSUSE'}} #TODO
         run: cd test && LD_BIND_NOW=1 ./a.out -scpvj
@@ -545,6 +545,6 @@ jobs:
       - name: 🏗️ build test
         run: cmake --build ci_test -j2
       - name: run test without memory check
-        run: LD_BIND_NOW=1 ./ci_test/a.out -s -m -v -e test_memory_
+        run: LD_BIND_NOW=1 ./ci_test/a.out -s -p -m -v -e test_memory_
       - name: ✨ run test with memory check
         run: LD_BIND_NOW=1 ./ci_test/a.out -scpvj

@@ -72,34 +72,34 @@ struct h2_fail_unexpect : h2_fail {
    h2_fail_unexpect(const h2_row& expection_ = {}, const h2_row& represent_ = {}, const h2_row& explain_ = {}, const char* file_ = nullptr, int line_ = 0) : h2_fail(explain_, file_, line_), expection(expection_), represent(represent_) {}
    void print_OK1(h2_row& row)
    {
-      h2_row a = h2_row(a_expression).acronym(O.verbose >= 2 ? 10000 : 30, 3).gray_quote().brush("cyan");
+      h2_row a = h2_row(a_expression).acronym(O.verbose >= 4 ? 10000 : 30, 3).gray_quote().brush("cyan");
       row += "OK" + gray("(") + a + gray(")") + " is " + color("false", "bold,red");
    }
    void print_OK2(h2_row& row)
    {
       h2_row e, a;
       if (!expection.width()) {
-         e = h2_row(e_expression).acronym(O.verbose >= 2 ? 10000 : 30, 3).gray_quote().brush("green");
+         e = h2_row(e_expression).acronym(O.verbose >= 4 ? 10000 : 30, 3).gray_quote().brush("green");
       } else if (is_synonym(e_expression, expection.string())) {
-         e = expection.acronym(O.verbose >= 2 ? 10000 : 30, 3).brush("green");
+         e = expection.acronym(O.verbose >= 4 ? 10000 : 30, 3).brush("green");
       } else {
-         e = h2_row(e_expression).acronym(O.verbose >= 2 ? 10000 : 30, 3).gray_quote().brush("cyan") + gray("==>") + expection.acronym(O.verbose ? 10000 : 30, 3).brush("green");
+         e = h2_row(e_expression).acronym(O.verbose >= 4 ? 10000 : 30, 3).gray_quote().brush("cyan") + gray("==>") + expection.acronym(O.verbose ? 10000 : 30, 3).brush("green");
       }
 
       if (!represent.width()) {
-         a = h2_row(a_expression).acronym(O.verbose >= 2 ? 10000 : 30, 3).gray_quote().brush("bold,red");
+         a = h2_row(a_expression).acronym(O.verbose >= 4 ? 10000 : 30, 3).gray_quote().brush("bold,red");
       } else if (is_synonym(a_expression, represent.string()) || !a_expression.length()) {
-         a = represent.acronym(O.verbose >= 2 ? 10000 : 30, 3).brush("bold,red");
+         a = represent.acronym(O.verbose >= 4 ? 10000 : 30, 3).brush("bold,red");
       } else {
-         a = represent.acronym(O.verbose >= 2 ? 10000 : 30, 3).brush("bold,red") + gray("<==") + h2_row(a_expression).acronym(O.verbose ? 10000 : 30, 3).gray_quote().brush("cyan");
+         a = represent.acronym(O.verbose >= 4 ? 10000 : 30, 3).brush("bold,red") + gray("<==") + h2_row(a_expression).acronym(O.verbose ? 10000 : 30, 3).gray_quote().brush("cyan");
       }
 
       row += "OK" + gray("(") + e + ", " + a + gray(")");
    }
    void print_JE(h2_row& row)
    {
-      h2_row e = h2_row(e_expression.unquote('\"').unquote('\'')).acronym(O.verbose >= 2 ? 10000 : 30, 2).brush("cyan");
-      h2_row a = h2_row(a_expression.unquote('\"').unquote('\'')).acronym(O.verbose >= 2 ? 10000 : 30, 2).brush("bold,red");
+      h2_row e = h2_row(e_expression.unquote('\"').unquote('\'')).acronym(O.verbose >= 4 ? 10000 : 30, 2).brush("cyan");
+      h2_row a = h2_row(a_expression.unquote('\"').unquote('\'')).acronym(O.verbose >= 4 ? 10000 : 30, 2).brush("bold,red");
       row += "JE" + gray("(") + e + ", " + a + gray(")");
    }
    void print_Inner(h2_row& row)
@@ -107,11 +107,11 @@ struct h2_fail_unexpect : h2_fail {
       if (0 <= seqno) row.printf("dark gray", "%d. ", seqno);
       if (expection.width()) {
          row.printf("", "%sexpect is ", comma_if(c++));
-         row += expection.acronym(O.verbose >= 2 ? 10000 : 30, 3).brush("green");
+         row += expection.acronym(O.verbose >= 4 ? 10000 : 30, 3).brush("green");
       }
       if (represent.width()) {
          row.printf("", "%sactual is ", comma_if(c++));
-         row += represent.acronym(O.verbose >= 2 ? 10000 : 30, 3).brush("bold,red");
+         row += represent.acronym(O.verbose >= 4 ? 10000 : 30, 3).brush("bold,red");
       }
    }
 

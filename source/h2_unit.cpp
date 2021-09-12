@@ -32,6 +32,7 @@
 #   include <windows.h>
 #   include <ws2tcpip.h> /* getaddrinfo */
 #   include <io.h>       /* _write */
+#   define strcasecmp _stricmp
 #   define fileno _fileno
 #   define socklen_t int
 #   define ssize_t int

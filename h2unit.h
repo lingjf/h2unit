@@ -1,5 +1,5 @@
 
-/* v5.13 2021-09-11 11:51:38 */
+/* v5.13 2021-09-12 12:15:19 */
 /* https://github.com/lingjf/h2unit */
 /* Apache Licence 2.0 */
 
@@ -941,8 +941,8 @@ inline h2_row h2_representify(T a, size_t n) { return h2_stringify(a, n, true); 
 // source/utils/h2_color.hpp
 struct h2_color {
    static void prints(const char* style, const char* format, ...);
-   static void printl(const h2_row& row);
-   static void printl(const h2_rows& rows);
+   static void printl(const h2_row& row, bool cr = true);
+   static void printl(const h2_rows& rows, bool cr = true);
    static bool isctrl(const char* s) { return s[0] == '\033' && s[1] == '{'; };
 };
 // source/symbol/h2_nm.hpp
@@ -1025,17 +1025,17 @@ struct h2_option {
    const char* path;
    const char* debug = nullptr;
    bool colorful = true;
-   bool percent_progressing = true;
+   bool progressing = true;
    bool fold_json = true;
    bool copy_paste_json = false;
    bool only_previous_failed = false;
    bool shuffle_cases = false;
    bool memory_check = true;
    bool exception_as_fail = false;
-   bool list_cases = false;
+   int list_cases = 0;
    int break_after_fails = 0;
    int run_rounds = 1;
-   int verbose = 1;
+   int verbose = 2;
    char junit_path[256]{'\0'};
    char tap_path[256]{'\0'};
    std::vector<const char*> includes, excludes;
@@ -3309,7 +3309,7 @@ static inline void h2_fail_g(h2_fail* fail)
 {
    if (!fail) return;
    if (O.debug) h2_debugger::trap();
-   if (h2_runner::I().current_case) h2_runner::I().current_case->do_fail(fail, O.verbose >= 2, true);
+   if (h2_runner::I().current_case) h2_runner::I().current_case->do_fail(fail, O.verbose >= 5, true);
 }
 // source/core/h2_core.hpp
 
@@ -3603,6 +3603,8 @@ struct h2_report {
    h2_singleton(h2_report);
    static void initialize();
 
+   bool in = false;
+   long long escape_length = 0;
    h2_list reports;
    void on_runner_start(h2_runner* r);
    void on_runner_endup(h2_runner* r);
@@ -3908,6 +3910,7 @@ using h2::Pair;
 #   include <windows.h>
 #   include <ws2tcpip.h> /* getaddrinfo */
 #   include <io.h>       /* _write */
+#   define strcasecmp _stricmp
 #   define fileno _fileno
 #   define socklen_t int
 #   define ssize_t int
@@ -4893,15 +4896,15 @@ h2_inline void h2_color::prints(const char* style, const char* format, ...)
    if (style && strlen(style)) h2_shell::I().print("\033{reset}");
 }
 
-h2_inline void h2_color::printl(const h2_row& row)
+h2_inline void h2_color::printl(const h2_row& row, bool cr)
 {
    for (auto& word : row) h2_shell::I().print(word.c_str());
-   h2_shell::I().print("\n");
+   if (cr) h2_shell::I().print("\n");
 }
 
-h2_inline void h2_color::printl(const h2_rows& rows)
+h2_inline void h2_color::printl(const h2_rows& rows, bool cr)
 {
-   for (auto& row : rows) printl(row);
+   for (auto& row : rows) printl(row, cr);
 }
 
 // source/symbol/h2_nm.cpp
@@ -5211,7 +5214,7 @@ h2_inline void h2_backtrace::print(h2_vector<h2_string>& stacks) const
    for (int i = shift; i < count; ++i) {
       char *p = nullptr, mangle_name[1024] = "", demangle_name[1024] = "";
       backtrace_extract(symbols[i], mangle_name);
-      if (O.verbose >= 2 || O.os != 'm') p = addr2line(h2_load::ptr_to_addr(frames[i])); /* atos is slow */
+      if (O.verbose >= 4 || O.os != 'm') p = addr2line(h2_load::ptr_to_addr(frames[i])); /* atos is slow */
       if (!p) p = h2_cxa::demangle(mangle_name, demangle_name);
       if (!p || !strlen(p)) p = symbols[i];
       stacks.push_back(p);
@@ -8141,11 +8144,13 @@ struct h2_stdio {
    h2_singleton(h2_stdio);
    h2_string* buffer;
    bool stdout_capturable = false, stderr_capturable = false, syslog_capturable = false;
-   size_t capture_length = 0;
+   long long capture_length = 0;
 
    static ssize_t write(int fd, const void* buf, size_t count)
    {
       h2::h2_stub_temporary_restore t((void*)LIBC__write);
+      if ((fd == fileno(stdout) || fd == fileno(stderr)) && h2_report::I().escape_length == I().capture_length && !h2_report::I().in)
+         LIBC__write(fd, "\n", 1); // fall printf/cout into new line from report title
       LIBC__write(fd, buf, count);
       if (fd == fileno(stdout) || fd == fileno(stderr))
          I().capture_length += count;
@@ -8753,8 +8758,8 @@ h2_inline void h2_case::post_cleanup()
    footprint = h2_memory::stack::footprint();
    dnses.clear();
    stubs.clear();
-   do_fail(mocks.clear(true), true, O.verbose >= 2);
-   do_fail(h2_memory::stack::pop(), true, O.verbose >= 2);
+   do_fail(mocks.clear(true), true, O.verbose >= 5);
+   do_fail(h2_memory::stack::pop(), true, O.verbose >= 5);
 }
 
 h2_inline void h2_case::do_fail(h2_fail* fail, bool defer, bool append)
@@ -8804,7 +8809,7 @@ h2_inline void h2_suite::test(h2_case* c)
    try {
       test_code(this, c); /* include Setup(); c->post_setup() and c->prev_cleanup(); Cleanup() */
    } catch (...) {
-      c->do_fail(h2_fail::new_exception("was thrown but uncaught", h2_exception::I().last_type, h2_exception::I().last_bt), true, O.verbose >= 2);
+      c->do_fail(h2_fail::new_exception("was thrown but uncaught", h2_exception::I().last_type, h2_exception::I().last_bt), true, O.verbose >= 5);
    }
    c->post_cleanup();
 }
@@ -8968,7 +8973,7 @@ h2_inline int h2_runner::main(int argc, const char** argv)
    stubs.clear();
    mocks.clear(false);
    h2_memory::finalize();
-   return O.verbose >= 3 ? stats.failed : 0;
+   return O.verbose >= 6 ? stats.failed : 0;
 }
 
 // source/assert/h2_assert.cpp
@@ -9173,34 +9178,34 @@ struct h2_fail_unexpect : h2_fail {
    h2_fail_unexpect(const h2_row& expection_ = {}, const h2_row& represent_ = {}, const h2_row& explain_ = {}, const char* file_ = nullptr, int line_ = 0) : h2_fail(explain_, file_, line_), expection(expection_), represent(represent_) {}
    void print_OK1(h2_row& row)
    {
-      h2_row a = h2_row(a_expression).acronym(O.verbose >= 2 ? 10000 : 30, 3).gray_quote().brush("cyan");
+      h2_row a = h2_row(a_expression).acronym(O.verbose >= 4 ? 10000 : 30, 3).gray_quote().brush("cyan");
       row += "OK" + gray("(") + a + gray(")") + " is " + color("false", "bold,red");
    }
    void print_OK2(h2_row& row)
    {
       h2_row e, a;
       if (!expection.width()) {
-         e = h2_row(e_expression).acronym(O.verbose >= 2 ? 10000 : 30, 3).gray_quote().brush("green");
+         e = h2_row(e_expression).acronym(O.verbose >= 4 ? 10000 : 30, 3).gray_quote().brush("green");
       } else if (is_synonym(e_expression, expection.string())) {
-         e = expection.acronym(O.verbose >= 2 ? 10000 : 30, 3).brush("green");
+         e = expection.acronym(O.verbose >= 4 ? 10000 : 30, 3).brush("green");
       } else {
-         e = h2_row(e_expression).acronym(O.verbose >= 2 ? 10000 : 30, 3).gray_quote().brush("cyan") + gray("==>") + expection.acronym(O.verbose ? 10000 : 30, 3).brush("green");
+         e = h2_row(e_expression).acronym(O.verbose >= 4 ? 10000 : 30, 3).gray_quote().brush("cyan") + gray("==>") + expection.acronym(O.verbose ? 10000 : 30, 3).brush("green");
       }
 
       if (!represent.width()) {
-         a = h2_row(a_expression).acronym(O.verbose >= 2 ? 10000 : 30, 3).gray_quote().brush("bold,red");
+         a = h2_row(a_expression).acronym(O.verbose >= 4 ? 10000 : 30, 3).gray_quote().brush("bold,red");
       } else if (is_synonym(a_expression, represent.string()) || !a_expression.length()) {
-         a = represent.acronym(O.verbose >= 2 ? 10000 : 30, 3).brush("bold,red");
+         a = represent.acronym(O.verbose >= 4 ? 10000 : 30, 3).brush("bold,red");
       } else {
-         a = represent.acronym(O.verbose >= 2 ? 10000 : 30, 3).brush("bold,red") + gray("<==") + h2_row(a_expression).acronym(O.verbose ? 10000 : 30, 3).gray_quote().brush("cyan");
+         a = represent.acronym(O.verbose >= 4 ? 10000 : 30, 3).brush("bold,red") + gray("<==") + h2_row(a_expression).acronym(O.verbose ? 10000 : 30, 3).gray_quote().brush("cyan");
       }
 
       row += "OK" + gray("(") + e + ", " + a + gray(")");
    }
    void print_JE(h2_row& row)
    {
-      h2_row e = h2_row(e_expression.unquote('\"').unquote('\'')).acronym(O.verbose >= 2 ? 10000 : 30, 2).brush("cyan");
-      h2_row a = h2_row(a_expression.unquote('\"').unquote('\'')).acronym(O.verbose >= 2 ? 10000 : 30, 2).brush("bold,red");
+      h2_row e = h2_row(e_expression.unquote('\"').unquote('\'')).acronym(O.verbose >= 4 ? 10000 : 30, 2).brush("cyan");
+      h2_row a = h2_row(a_expression.unquote('\"').unquote('\'')).acronym(O.verbose >= 4 ? 10000 : 30, 2).brush("bold,red");
       row += "JE" + gray("(") + e + ", " + a + gray(")");
    }
    void print_Inner(h2_row& row)
@@ -9208,11 +9213,11 @@ struct h2_fail_unexpect : h2_fail {
       if (0 <= seqno) row.printf("dark gray", "%d. ", seqno);
       if (expection.width()) {
          row.printf("", "%sexpect is ", comma_if(c++));
-         row += expection.acronym(O.verbose >= 2 ? 10000 : 30, 3).brush("green");
+         row += expection.acronym(O.verbose >= 4 ? 10000 : 30, 3).brush("green");
       }
       if (represent.width()) {
          row.printf("", "%sactual is ", comma_if(c++));
-         row += represent.acronym(O.verbose >= 2 ? 10000 : 30, 3).brush("bold,red");
+         row += represent.acronym(O.verbose >= 4 ? 10000 : 30, 3).brush("bold,red");
       }
    }
 
@@ -9559,13 +9564,12 @@ struct h2_report_impl {
 };
 
 struct h2_report_list : h2_report_impl {
-   int unfiltered_suite_index = 0, unfiltered_suite_case_index = 0, unfiltered_runner_case_index = 0, todo = 0;
+   int unfiltered_suite_index = 0, unfiltered_suite_case_index = 0, unfiltered_runner_case_index = 0;
 
    void on_runner_endup(h2_runner* r) override
    {
       h2_report_impl::on_runner_endup(r);
       h2_color::prints("bold,green", "Listing <%d suites, %d cases", unfiltered_suite_index, unfiltered_runner_case_index);
-      if (todo) h2_color::prints("bold,green", ", %d todo", todo);
       if (runner_case_index - unfiltered_runner_case_index) h2_color::prints("bold,green", ", %d filtered", runner_case_index - unfiltered_runner_case_index);
       h2_color::prints("bold,green", ">\n");
    }
@@ -9576,37 +9580,36 @@ struct h2_report_list : h2_report_impl {
       if (!s->name) return;  // CASE
       if (s->filtered) return;
       ++unfiltered_suite_index;
-      h2_color::prints("dark gray", "SUITE-%d. ", unfiltered_suite_index);
-      h2_color::prints("bold,blue", "%s", s->name);
-      h2_color::prints("dark gray", " %s:%d\n", s->file, s->line);
+      if (O.list_cases & 1) {
+         h2_color::prints("dark gray", "SUITE-%d. ", unfiltered_suite_index);
+         h2_color::prints("bold,blue", "%s", s->name);
+         h2_color::prints("dark gray", " %s:%d\n", s->file, s->line);
+      }
    }
    void on_case_start(h2_suite* s, h2_case* c) override
    {
       h2_report_impl::on_case_start(s, c);
       if (s->filtered) return;
-      ++unfiltered_runner_case_index, ++unfiltered_suite_case_index;
-      if (c->todo) todo++;
-      if (s->name)
-         h2_color::prints("dark gray", " %s/%d-%d. ", c->todo ? "Todo" : "Case", unfiltered_suite_case_index, unfiltered_runner_case_index);
-      else
-         h2_color::prints("dark gray", " %s-%d. ", c->todo ? "TODO" : "CASE", unfiltered_runner_case_index);
-      h2_color::prints("cyan", "%s", c->name);
-      h2_color::prints("dark gray", " %s:%d\n", h2_basename(c->file), c->line);
+      const char* type = nullptr;
+      if (c->todo) {
+         if (O.list_cases & 4) type = s->name ? "Todo" : "TODO";
+      } else {
+         if (O.list_cases & 2) type = s->name ? "Case" : "CASE";
+      }
+
+      if (type) {
+         ++unfiltered_runner_case_index, ++unfiltered_suite_case_index;
+         if (O.list_cases & 1)
+            h2_color::prints("dark gray", " %s/%d-%d. ", type, unfiltered_suite_case_index, unfiltered_runner_case_index);
+         else
+            h2_color::prints("dark gray", " %s-%d. ", type, unfiltered_runner_case_index);
+         h2_color::prints("cyan", "%s", c->name);
+         h2_color::prints("dark gray", " %s:%d\n", h2_basename(c->file), c->line);
+      }
    }
 };
 
 struct h2_report_console : h2_report_impl {
-   void print_perfix(bool percentage)
-   {
-      static size_t s_last = 0;
-      h2_color::prints("", s_last == h2_stdio::I().capture_length ? "\r" : "\n");
-      if (percentage && O.percent_progressing) {
-         h2_color::prints("dark gray", "[");
-         h2_color::prints("", "%3d%%", cases ? (int)(runner_case_index * 100 / cases) : 100);
-         h2_color::prints("dark gray", "] ");
-      }
-      s_last = h2_stdio::I().capture_length;
-   }
    const char* format_duration(clock_t ticks)
    {
       double ms = ticks * 1000.0 / CLOCKS_PER_SEC;
@@ -9645,12 +9648,52 @@ struct h2_report_console : h2_report_impl {
    {
       return !!a1 + !!a2 + !!a3 + !!a4 + !!a5 + !!a6;
    }
+   h2_row format_title(const char* suite_name, const char* case_name, const char* file, int line)
+   {
+      h2_row title;
+      if (strlen(case_name))
+         title.printf("", "%s ", case_name);
+      else
+         title.printf("dark gray", "case ");
+      if (suite_name) {
+         title.printf("dark gray", "| ");
+         if (strlen(suite_name))
+            title.printf("", "%s ", suite_name);
+         else
+            title.printf("dark gray", "suite ");
+      }
+      if (file) {
+         title.printf("dark gray", "| ");
+         title.printf("", "%s:%d ", h2_basename(file), line);
+      } else {
+         title = title.acronym(h2_shell::I().cww - 20);
+      }
+      return title;
+   }
+   void format_percentage(h2_row& bar)
+   {
+      bar.printf("dark gray", "[");
+      bar.printf("", "%3d%%", cases ? (int)(runner_case_index * 100 / cases) : 100);
+      bar.printf("dark gray", "] ");
+   }
+   void print_bar(bool percentage, const char* status_style, const char* status, h2_suite* s, h2_case* c, bool returnable)
+   {
+      if (!O.progressing && returnable) return;
+      if (h2_report::I().escape_length == h2_stdio::I().capture_length)
+         ::printf("\33[2K\r"); /* clear line */
+      else
+         ::printf("\n"); /* user output, new line */
+      h2_row bar;
+      if (percentage && O.progressing) format_percentage(bar);
+      if (status && status_style) bar.printf(status_style, "%s", status);
+      if (s && c) bar += format_title(s->name, c->name, returnable ? nullptr : c->file, c->line);
+      h2_color::printl(bar, false);
+      if (returnable) h2_report::I().escape_length = h2_stdio::I().capture_length;
+   }
    void on_runner_endup(h2_runner* r) override
    {
       h2_report_impl::on_runner_endup(r);
-      print_perfix(false);
-      if (O.verbose >= 2)
-         h2_color::prints("", "\n");
+      print_bar(false, nullptr, nullptr, nullptr, nullptr, false);
       if (0 < r->stats.failed)
          h2_color::prints("bold,red", "Failure ");
       else
@@ -9683,12 +9726,11 @@ struct h2_report_console : h2_report_impl {
    {
       h2_report_impl::on_suite_start(s);
    }
-
    void on_suite_endup(h2_suite* s) override
    {
       h2_report_impl::on_suite_endup(s);
-      if (O.verbose >= 2 && O.includes.size() + O.excludes.size() == 0) {
-         print_perfix(true);
+      if (O.verbose >= 4 && O.includes.size() + O.excludes.size() == 0) {
+         print_bar(false, nullptr, nullptr, nullptr, nullptr, false);
          h2_color::prints("dark gray", "suite ");
          h2_color::prints("", "%s", ss(s->name));
          if (1 < nonzero_count(s->stats.passed, s->stats.failed, s->stats.todo, s->stats.filtered, s->stats.ignored))
@@ -9725,61 +9767,32 @@ struct h2_report_console : h2_report_impl {
    void on_case_start(h2_suite* s, h2_case* c) override
    {
       h2_report_impl::on_case_start(s, c);
-      print_perfix(true);
-   }
-   void print_title(const char* s, const char* c, const char* file, int line)
-   {
-      if (strlen(c))
-         h2_color::prints("", "%s", c);
-      else
-         h2_color::prints("dark gray", "case");
-      if (s) {
-         h2_color::prints("dark gray", " | ");
-         if (strlen(s))
-            h2_color::prints("", "%s", s);
-         else
-            h2_color::prints("dark gray", "   ");
-      }
-      h2_color::prints("dark gray", " | ");
-      h2_color::prints("", "%s:%d", h2_basename(file), line);
+      if (c->filtered || c->ignored || c->todo) return;
+      print_bar(true, "light blue", "Testing... ", s, c, true);
    }
    void on_case_endup(h2_suite* s, h2_case* c) override
    {
       h2_report_impl::on_case_endup(s, c);
       if (c->filtered || c->ignored) return;
       if (c->todo) {
-         print_perfix(true);
-         h2_color::prints("yellow", s->name ? "Todo   " : "TODO   ");
-         print_title(s->name, c->name, c->file, c->line);
-         return;
-      }
-      if (c->failed) {
-         print_perfix(true);
-         h2_color::prints("bold,red", "Failed ");
-         print_title(s->name, c->name, c->file, c->line);
+         if (O.verbose >= 3) print_bar(true, "yellow", s->name ? "Todo  " : "TODO  ", s, c, false);
+      } else if (c->failed) {
          if (O.verbose >= 1) {
-            h2_color::prints("", "\n");
-            if (c->fails) c->fails->foreach([](h2_fail* fail, int subling_index, int child_index) { fail->print(subling_index, child_index); });
+            print_bar(true, "bold,red", "Failed ", s, c, false);
+            if (O.verbose >= 2) {
+               h2_color::prints("", "\n");
+               if (c->fails) c->fails->foreach([](h2_fail* fail, int subling_index, int child_index) { fail->print(subling_index, child_index); });
+            }
          }
-      } else {
-         if (O.verbose >= 2) {
-            print_perfix(true);
-            h2_color::prints("green", "Passed ");
-            print_title(s->name, c->name, c->file, c->line);
-            if (0 < c->asserts) {
-               h2_color::prints("dark gray", " - ");
-               h2_color::prints("", "%d assert%s", c->asserts, 1 < c->asserts ? "s" : "");
-            }
-            if (0 < c->footprint) {
-               h2_color::prints("dark gray", ",");
-               h2_color::prints("", " %s", format_volume(c->footprint));
-            }
-            if (1 < case_cost) {
-               h2_color::prints("dark gray", ",");
-               h2_color::prints("", " %s", format_duration(case_cost));
-            }
-         } else if (!O.debug)
-            print_perfix(true);
+      } else {  // Passed
+         if (O.verbose >= 3) {
+            print_bar(true, "green", "Passed ", s, c, false);
+            h2_row ad;
+            if (0 < c->asserts) ad.printf("dark gray", ad.width() ? ", " : "").printf("", "%d assert%s", c->asserts, 1 < c->asserts ? "s" : "");
+            if (0 < c->footprint) ad.printf("dark gray", ad.width() ? ", " : "").printf("", "%s", format_volume(c->footprint));
+            if (0 < case_cost) ad.printf("dark gray", ad.width() ? ", " : "").printf("", "%s", format_duration(case_cost));
+            if (ad.width()) h2_color::printl(gray("- ") + ad, false);
+         }
       }
    }
 };
@@ -9848,12 +9861,12 @@ h2_inline void h2_report::initialize()
 }
 
 /* clang-format off */
-h2_inline void h2_report::on_runner_start(h2_runner* r) { h2_list_for_each_entry (p, reports, h2_report_impl, x) p->on_runner_start(r); }
-h2_inline void h2_report::on_runner_endup(h2_runner* r) { h2_list_for_each_entry (p, reports, h2_report_impl, x) p->on_runner_endup(r); }
-h2_inline void h2_report::on_suite_start(h2_suite* s) { h2_list_for_each_entry (p, reports, h2_report_impl, x) p->on_suite_start(s); }
-h2_inline void h2_report::on_suite_endup(h2_suite* s) { h2_list_for_each_entry (p, reports, h2_report_impl, x) p->on_suite_endup(s); }
-h2_inline void h2_report::on_case_start(h2_suite* s, h2_case* c) { h2_list_for_each_entry (p, reports, h2_report_impl, x) p->on_case_start(s, c); }
-h2_inline void h2_report::on_case_endup(h2_suite* s, h2_case* c) { h2_list_for_each_entry (p, reports, h2_report_impl, x) p->on_case_endup(s, c); }
+h2_inline void h2_report::on_runner_start(h2_runner* r) { in = true; h2_list_for_each_entry (p, reports, h2_report_impl, x) p->on_runner_start(r); in = false; }
+h2_inline void h2_report::on_runner_endup(h2_runner* r) { in = true; h2_list_for_each_entry (p, reports, h2_report_impl, x) p->on_runner_endup(r); in = false; }
+h2_inline void h2_report::on_suite_start(h2_suite* s) { in = true; h2_list_for_each_entry (p, reports, h2_report_impl, x) p->on_suite_start(s); in = false; }
+h2_inline void h2_report::on_suite_endup(h2_suite* s) { in = true; h2_list_for_each_entry (p, reports, h2_report_impl, x) p->on_suite_endup(s); in = false; }
+h2_inline void h2_report::on_case_start(h2_suite* s, h2_case* c) { in = true; h2_list_for_each_entry (p, reports, h2_report_impl, x) p->on_case_start(s, c); in = false; }
+h2_inline void h2_report::on_case_endup(h2_suite* s, h2_case* c) { in = true; h2_list_for_each_entry (p, reports, h2_report_impl, x) p->on_case_endup(s, c); in = false; }
 // source/render/h2_layout.cpp
 static inline h2_rows row_break(const h2_row& row, unsigned width)
 {
@@ -9974,6 +9987,7 @@ h2_inline h2_rows h2_layout::seperate(const h2_row& up_row, const h2_row& down_r
    return rows += prefix_break(down_row, down_title_row, width);
 }
 // source/render/h2_option.cpp
+/* clang-format off */
 static inline void usage()
 {
    ::printf("\033[33m╭─────────────────────────────────────────────────────────────────────────────╮\033[0m\n");
@@ -9983,26 +9997,25 @@ static inline void usage()
 #define H2_USAGE_SP "\033[90m│\033[0m"
 #define H2_USAGE_BR "\033[90m├─────┼───────────┼───────────────────────────────────────────────────────────┤\033[0m\n"
    char b[] = "\033[90m┌─────┬───────────┬───────────────────────────────────────────────────────────┐\033[0m\n"
-              H2_USAGE_SP " -\033[36ml\033[0m  " H2_USAGE_SP "           " H2_USAGE_SP " \033[36ml\033[0mist out suites and cases                                 " H2_USAGE_SP "\n" H2_USAGE_BR
+              H2_USAGE_SP " -\033[36ml\033[0m  " H2_USAGE_SP "  \033[90m[\033[0mtype .\033[90m]\033[0m " H2_USAGE_SP " \033[36ml\033[0mist out suites and cases, type [suite case todo]         " H2_USAGE_SP "\n" H2_USAGE_BR
               H2_USAGE_SP " -\033[36mm\033[0m  " H2_USAGE_SP "           " H2_USAGE_SP " Test cases without \033[36mm\033[0memory check                           " H2_USAGE_SP "\n" H2_USAGE_BR
-              H2_USAGE_SP " -\033[36ms\033[0m  " H2_USAGE_SP "           " H2_USAGE_SP " \033[36ms\033[0mhuffle cases then test in random order                   " H2_USAGE_SP "\n" H2_USAGE_BR
+              H2_USAGE_SP " -\033[36ms\033[0m  " H2_USAGE_SP "           " H2_USAGE_SP " \033[36ms\033[0mhuffle cases, test in random order if no previous fails  " H2_USAGE_SP "\n" H2_USAGE_BR
               H2_USAGE_SP " -\033[36mb\033[0m  " H2_USAGE_SP "    \033[90m[\033[0mn\033[90m]\033[0m    " H2_USAGE_SP " \033[36mb\033[0mreak test once n (default 1) cases failed                " H2_USAGE_SP "\n" H2_USAGE_BR
-              H2_USAGE_SP " -\033[36mf\033[0m  " H2_USAGE_SP "           " H2_USAGE_SP " Only test previous \033[36mf\033[0mailed cases                           " H2_USAGE_SP "\n" H2_USAGE_BR
-              H2_USAGE_SP " -\033[36mp\033[0m  " H2_USAGE_SP "           " H2_USAGE_SP " Hide test percentage \033[36mp\033[0mrogressing                          " H2_USAGE_SP "\n" H2_USAGE_BR
+              H2_USAGE_SP " -\033[36mn\033[0m  " H2_USAGE_SP "           " H2_USAGE_SP " O\033[36mn\033[0mly test previous failed cases                           " H2_USAGE_SP "\n" H2_USAGE_BR
+              H2_USAGE_SP " -\033[36mp\033[0m  " H2_USAGE_SP "           " H2_USAGE_SP " Disable test percentage \033[36mp\033[0mrogressing                       " H2_USAGE_SP "\n" H2_USAGE_BR
               H2_USAGE_SP " -\033[36mr\033[0m  " H2_USAGE_SP "    \033[90m[\033[0mn\033[90m]\033[0m    " H2_USAGE_SP " Repeat test n (default 2) \033[36mr\033[0mounds                          " H2_USAGE_SP "\n" H2_USAGE_BR
               H2_USAGE_SP " -\033[36mc\033[0m  " H2_USAGE_SP "           " H2_USAGE_SP " Output in black-white \033[36mc\033[0molor style                         " H2_USAGE_SP "\n" H2_USAGE_BR
-              H2_USAGE_SP " -\033[36mF\033[0m  " H2_USAGE_SP "           " H2_USAGE_SP " \033[36mF\033[0mold simple JSON object or array                          " H2_USAGE_SP "\n" H2_USAGE_BR
+              H2_USAGE_SP " -\033[36mf\033[0m  " H2_USAGE_SP "    \033[90m[\033[0mn\033[90m]\033[0m    " H2_USAGE_SP " \033[36mf\033[0mold JSON object or array                                 " H2_USAGE_SP "\n" H2_USAGE_BR
               H2_USAGE_SP " -\033[36my\033[0m  " H2_USAGE_SP "           " H2_USAGE_SP " Cop\033[36my\033[0m-paste JSON C/C++ source code                         " H2_USAGE_SP "\n" H2_USAGE_BR
               H2_USAGE_SP " -\033[36mx\033[0m  " H2_USAGE_SP "           " H2_USAGE_SP " Thrown e\033[36mx\033[0mception is considered as failure                 " H2_USAGE_SP "\n" H2_USAGE_BR
-              H2_USAGE_SP " -\033[36mv\033[0m  " H2_USAGE_SP "    \033[90m[\033[0mn\033[90m]\033[0m    " H2_USAGE_SP " \033[36mv\033[0merbose output, 0:compact 1:normal 2:check all 3:default  " H2_USAGE_SP "\n" H2_USAGE_BR
+              H2_USAGE_SP " -\033[36mv\033[0m  " H2_USAGE_SP "    \033[90m[\033[0mn\033[90m]\033[0m    " H2_USAGE_SP " \033[36mv\033[0merbose output, 0:compact 2:normal 4:acronym default:all  " H2_USAGE_SP "\n" H2_USAGE_BR
               H2_USAGE_SP " -\033[36md\033[0m  " H2_USAGE_SP "           " H2_USAGE_SP " \033[36md\033[0mebug with gdb once failure occurred                      " H2_USAGE_SP "\n" H2_USAGE_BR
-              H2_USAGE_SP " -\033[36mj\033[0m  " H2_USAGE_SP "  \033[90m[\033[0mpath\033[90m]\033[0m   " H2_USAGE_SP " Generate \033[36mj\033[0munit report, default is <executable>.junit.xml  " H2_USAGE_SP "\n"
-              "\033[90m├─────┼───────────┼─────────┬─────────────────────────────────────────────────┤\033[0m\n"
-              H2_USAGE_SP " -\033[36mi\033[0m  " H2_USAGE_SP "  pattern  " H2_USAGE_SP " \033[36mi\033[0mnclude " H2_USAGE_SP " Filter case, suite or file by substr/wildcard   " H2_USAGE_SP "\n"
-              H2_USAGE_SP " -\033[36me\033[0m  " H2_USAGE_SP " \033[90m[\033[0m pattern\033[90m]\033[0m" H2_USAGE_SP " \033[36me\033[0mxclude " H2_USAGE_SP " matching name with patterns case-insensitively  " H2_USAGE_SP "\n"
-              "\033[90m└─────┴───────────┴─────────┴─────────────────────────────────────────────────┘\033[0m\n";
+              H2_USAGE_SP " -\033[36mj\033[0m  " H2_USAGE_SP "  \033[90m[\033[0mpath\033[90m]\033[0m   " H2_USAGE_SP " Generate \033[36mj\033[0munit report, default is <executable>.junit.xml  " H2_USAGE_SP "\n" H2_USAGE_BR
+              H2_USAGE_SP " -\033[36mi\033[0m/\033[36me\033[0m" H2_USAGE_SP "\033[90m[\033[0mpattern .\033[90m]\033[0m" H2_USAGE_SP " \033[36mi\033[0mnclude/\033[36me\033[0mxclude case, suite or file by substr/wildcard    " H2_USAGE_SP "\n"
+              "\033[90m└─────┴───────────┴───────────────────────────────────────────────────────────┘\033[0m\n";
    ::printf("%s", b);
 }
+/* clang-format on */
 
 struct getopt {
    int argc;
@@ -10060,15 +10073,22 @@ h2_inline void h2_option::parse(int argc, const char** argv)
       case '\0': return;
       case 'c': colorful = !colorful; break;
       case 's': shuffle_cases = true; break;
-      case 'f': only_previous_failed = true; break;
-      case 'F': fold_json = !fold_json; break;
-      case 'p': percent_progressing = !percent_progressing; break;
+      case 'n': only_previous_failed = true; break;
+      case 'p': progressing = !progressing; break;
       case 'y': copy_paste_json = true; break;
       case 'm': memory_check = !memory_check; break;
       case 'x': exception_as_fail = true; break;
-      case 'l': list_cases = true; break;
+      case 'l':
+         while ((t = get.extract_string())) {
+            if (!strcasecmp("suite", t)) list_cases |= 1;
+            if (!strcasecmp("case", t)) list_cases |= 2;
+            if (!strcasecmp("todo", t)) list_cases |= 4;
+         }
+         if (!list_cases) list_cases = 1 | 2 | 4;
+         break;
       case 'b': break_after_fails = 1, get.extract_number(break_after_fails); break;
       case 'r': run_rounds = 2, get.extract_number(run_rounds); break;
+      case 'f': fold_json = !fold_json; break;
       case 'v': verbose = 9, get.extract_number(verbose); break;
       case 'd': debug = "gdb new"; break;
       case 'D': debug = "gdb attach"; break;

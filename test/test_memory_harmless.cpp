@@ -101,9 +101,9 @@ SUITE(harmless)
 
       // Popular extensions
 #if defined _WIN32
-      // stricmp(t, "h2unit");
+      _stricmp(t, "h2unit");
 #else
-      // strcasecmp(t, "h2unit");
+      strcasecmp(t, "h2unit");
       strtok_r(t, ",", &p);
 #endif
    }
