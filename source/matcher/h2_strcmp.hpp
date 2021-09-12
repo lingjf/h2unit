@@ -67,5 +67,3 @@ inline h2_polymorphic_matcher<h2_matches_json> Je(const h2_string& expect, const
 
 template <typename M>
 inline h2_polymorphic_matcher<h2_caseless_matches> CaseLess(const M& m) { return h2_polymorphic_matcher<h2_caseless_matches>(h2_caseless_matches(h2_matcher<h2_string>(m))); }
-template <typename M>
-inline h2_polymorphic_matcher<h2_caseless_matches> operator~(const M& m) { return CaseLess(m); }

@@ -79,9 +79,16 @@ SUITE(strcmp primitive)
    Case(CaseLess ~)
    {
       // OK(~"AbCd", "abcd");
-      OK(!CaseLess("AbCd"), "cba");
       OK(~Substr("AbCd"), "ABCD");
       OK(~Re("A.*"), "abcdef");
       OK(~We("A*"), "abcdef");
+   }
+
+   Case(CaseLess *)
+   {
+      // OK(*"AbCd", "abcd");
+      OK(*Substr("AbCd"), "ABCD");
+      OK(*Re("A.*"), "abcdef");
+      OK(*We("A*"), "abcdef");
    }
 }

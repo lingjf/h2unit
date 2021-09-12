@@ -316,10 +316,10 @@ namespace h2 {
 /* clang-format off */
 using h2::_;
 using h2::Any;
-using h2::IsNull;
-using h2::NotNull;
-using h2::IsTrue;
-using h2::IsFalse;
+#define IsNull h2::Is_Null()
+#define NotNull h2::Not_Null()
+#define IsTrue h2::Is_True()
+#define IsFalse h2::Is_False()
 using h2::Eq;
 using h2::Nq;
 using h2::Ge;
@@ -340,12 +340,8 @@ using h2::Substr;
 using h2::StartsWith;
 using h2::EndsWith;
 using h2::CaseLess;
-#if !defined _WIN32
-using h2::operator~;
-#endif
 using h2::Pointee;
 using h2::Not;
-using h2::operator!;
 using h2::operator&&;
 using h2::operator||;
 using h2::AllOf;

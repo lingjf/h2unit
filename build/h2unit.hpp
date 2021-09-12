@@ -1,5 +1,5 @@
 
-/* v5.13 2021-09-12 12:15:19 */
+/* v5.13 2021-09-12 13:08:01 */
 /* https://github.com/lingjf/h2unit */
 /* Apache Licence 2.0 */
 
@@ -1169,20 +1169,38 @@ struct h2_matcher : h2_matches {
 template <typename Matches>
 struct h2_polymorphic_matcher : h2_matches {
    const Matches m;
+   bool caseless = false, dont = false;
    explicit h2_polymorphic_matcher(const Matches& m_) : m(m_) {}
+   h2_polymorphic_matcher& operator*()
+   {
+      caseless = true;
+      return *this;
+   }
+   h2_polymorphic_matcher& operator~()
+   {
+      caseless = true;
+      return *this;
+   }
+   h2_polymorphic_matcher& operator!()
+   {
+      dont = !dont;
+      return *this;
+   }
+   h2_polymorphic_matcher& operator()() { return *this; }  // IsTrue/IsTrue() both works
 
    template <typename T>
-   operator h2_matcher<T>() const { return h2_matcher<T>(new internal_impl<const T&>(m), 0); }
+   operator h2_matcher<T>() const { return h2_matcher<T>(new internal_impl<const T&>(m, caseless, dont), 0); }
 
    template <typename T>
    struct internal_impl : h2_matcher_impl<T>, h2_libc {
       const Matches m;
-      explicit internal_impl(const Matches& m_) : m(m_) {}
-      h2_fail* matches(T a, int n = 0, bool caseless = false, bool dont = false) const override { return m.matches(a, n, caseless, dont); }
-      h2_row expection(bool caseless, bool dont) const override { return m.expection(caseless, dont); }
+      bool caseless, dont;
+      explicit internal_impl(const Matches& m_, bool caseless_, bool dont_) : m(m_), caseless(caseless_), dont(dont_) {}
+      h2_fail* matches(T a, int n = 0, bool caseless_ = false, bool dont_ = false) const override { return m.matches(a, n, caseless || caseless_, dont != dont_); }
+      h2_row expection(bool caseless_, bool dont_) const override { return m.expection(caseless || caseless_, dont != dont_ /*XOR ^*/); }
    };
 
-   virtual h2_row expection(bool caseless = false, bool dont = false) const override { return h2_matches_expection(m, caseless, dont); }
+   virtual h2_row expection(bool caseless_ = false, bool dont_ = false) const override { return h2_matches_expection(m, caseless || caseless_, dont != dont_); }
 };
 // source/matcher/h2_equation.hpp
 template <typename E, typename = void>
@@ -1364,10 +1382,11 @@ struct h2_pointee_matches : h2_matches {
 
 const h2_polymorphic_matcher<h2_matches_any> _{h2_matches_any()};
 const h2_polymorphic_matcher<h2_matches_any> Any{h2_matches_any()};
-const h2_polymorphic_matcher<h2_matches_null> IsNull{h2_matches_null(false)};
-const h2_polymorphic_matcher<h2_matches_null> NotNull{h2_matches_null(true)};
-const h2_polymorphic_matcher<h2_matches_boolean<true>> IsTrue{h2_matches_boolean<true>()};
-const h2_polymorphic_matcher<h2_matches_boolean<false>> IsFalse{h2_matches_boolean<false>()};
+
+inline h2_polymorphic_matcher<h2_matches_null> Is_Null() { return h2_polymorphic_matcher<h2_matches_null>(h2_matches_null(false)); }
+inline h2_polymorphic_matcher<h2_matches_null> Not_Null() { return h2_polymorphic_matcher<h2_matches_null>(h2_matches_null(true)); }
+inline h2_polymorphic_matcher<h2_matches_boolean<true>> Is_True() { return h2_polymorphic_matcher<h2_matches_boolean<true>>(h2_matches_boolean<true>()); }
+inline h2_polymorphic_matcher<h2_matches_boolean<false>> Is_False() { return h2_polymorphic_matcher<h2_matches_boolean<false>>(h2_matches_boolean<false>()); }
 
 template <typename M>
 inline h2_polymorphic_matcher<h2_pointee_matches<M>> Pointee(M m) { return h2_polymorphic_matcher<h2_pointee_matches<M>>(h2_pointee_matches<M>(m)); }
@@ -1577,8 +1596,6 @@ inline h2_polymorphic_matcher<h2_not_matches<Matcher>> Not(Matcher m)
 {
    return h2_polymorphic_matcher<h2_not_matches<Matcher>>(h2_not_matches<Matcher>(m));
 }
-template <typename Matches>
-inline h2_polymorphic_matcher<h2_not_matches<h2_polymorphic_matcher<Matches>>> operator!(const h2_polymorphic_matcher<Matches>& m) { return Not(m); }
 
 template <typename... Matchers>
 inline h2_polymorphic_matcher<h2_allof_matches<typename std::decay<const Matchers&>::type...>> AllOf(const Matchers&... matchers)
@@ -1799,8 +1816,6 @@ inline h2_polymorphic_matcher<h2_matches_json> Je(const h2_string& expect, const
 
 template <typename M>
 inline h2_polymorphic_matcher<h2_caseless_matches> CaseLess(const M& m) { return h2_polymorphic_matcher<h2_caseless_matches>(h2_caseless_matches(h2_matcher<h2_string>(m))); }
-template <typename M>
-inline h2_polymorphic_matcher<h2_caseless_matches> operator~(const M& m) { return CaseLess(m); }
 // source/matcher/h2_memcmp.hpp
 struct h2_matches_bytecmp : h2_matches {
    const int width;
@@ -2203,13 +2218,13 @@ inline h2_polymorphic_matcher<h2_countof_matches<typename std::decay<const Match
    }                                                                                                     \
    virtual h2::h2_row expection(bool, bool) const override { return ""; }
 
-#define H2MATCHER0(name, message)                                                     \
-   struct h2_##name##_matches : h2::h2_matches {                                      \
-      explicit h2_##name##_matches() {}                                               \
-      __Matches_Common(message)                                                       \
-   };                                                                                 \
-   const h2::h2_polymorphic_matcher<h2_##name##_matches> name{h2_##name##_matches()}; \
-   template <typename A>                                                              \
+#define H2MATCHER0(name, message)                                               \
+   struct h2_##name##_matches : h2::h2_matches {                                \
+      explicit h2_##name##_matches() {}                                         \
+      __Matches_Common(message)                                                 \
+   };                                                                           \
+   h2::h2_polymorphic_matcher<h2_##name##_matches> name{h2_##name##_matches()}; \
+   template <typename A>                                                        \
    bool h2_##name##_matches::__matches(const A& a) const
 
 #define H2MATCHER1(name, e1, message)                                                           \
@@ -3830,10 +3845,10 @@ struct h2_report {
 /* clang-format off */
 using h2::_;
 using h2::Any;
-using h2::IsNull;
-using h2::NotNull;
-using h2::IsTrue;
-using h2::IsFalse;
+#define IsNull h2::Is_Null()
+#define NotNull h2::Not_Null()
+#define IsTrue h2::Is_True()
+#define IsFalse h2::Is_False()
 using h2::Eq;
 using h2::Nq;
 using h2::Ge;
@@ -3854,12 +3869,8 @@ using h2::Substr;
 using h2::StartsWith;
 using h2::EndsWith;
 using h2::CaseLess;
-#if !defined _WIN32
-using h2::operator~;
-#endif
 using h2::Pointee;
 using h2::Not;
-using h2::operator!;
 using h2::operator&&;
 using h2::operator||;
 using h2::AllOf;

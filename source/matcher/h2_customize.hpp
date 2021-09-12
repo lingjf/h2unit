@@ -16,13 +16,13 @@
    }                                                                                                     \
    virtual h2::h2_row expection(bool, bool) const override { return ""; }
 
-#define H2MATCHER0(name, message)                                                     \
-   struct h2_##name##_matches : h2::h2_matches {                                      \
-      explicit h2_##name##_matches() {}                                               \
-      __Matches_Common(message)                                                       \
-   };                                                                                 \
-   const h2::h2_polymorphic_matcher<h2_##name##_matches> name{h2_##name##_matches()}; \
-   template <typename A>                                                              \
+#define H2MATCHER0(name, message)                                               \
+   struct h2_##name##_matches : h2::h2_matches {                                \
+      explicit h2_##name##_matches() {}                                         \
+      __Matches_Common(message)                                                 \
+   };                                                                           \
+   h2::h2_polymorphic_matcher<h2_##name##_matches> name{h2_##name##_matches()}; \
+   template <typename A>                                                        \
    bool h2_##name##_matches::__matches(const A& a) const
 
 #define H2MATCHER1(name, e1, message)                                                           \

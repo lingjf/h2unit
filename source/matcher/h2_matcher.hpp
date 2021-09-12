@@ -22,18 +22,36 @@ struct h2_matcher : h2_matches {
 template <typename Matches>
 struct h2_polymorphic_matcher : h2_matches {
    const Matches m;
+   bool caseless = false, dont = false;
    explicit h2_polymorphic_matcher(const Matches& m_) : m(m_) {}
+   h2_polymorphic_matcher& operator*()
+   {
+      caseless = true;
+      return *this;
+   }
+   h2_polymorphic_matcher& operator~()
+   {
+      caseless = true;
+      return *this;
+   }
+   h2_polymorphic_matcher& operator!()
+   {
+      dont = !dont;
+      return *this;
+   }
+   h2_polymorphic_matcher& operator()() { return *this; }  // IsTrue/IsTrue() both works
 
    template <typename T>
-   operator h2_matcher<T>() const { return h2_matcher<T>(new internal_impl<const T&>(m), 0); }
+   operator h2_matcher<T>() const { return h2_matcher<T>(new internal_impl<const T&>(m, caseless, dont), 0); }
 
    template <typename T>
    struct internal_impl : h2_matcher_impl<T>, h2_libc {
       const Matches m;
-      explicit internal_impl(const Matches& m_) : m(m_) {}
-      h2_fail* matches(T a, int n = 0, bool caseless = false, bool dont = false) const override { return m.matches(a, n, caseless, dont); }
-      h2_row expection(bool caseless, bool dont) const override { return m.expection(caseless, dont); }
+      bool caseless, dont;
+      explicit internal_impl(const Matches& m_, bool caseless_, bool dont_) : m(m_), caseless(caseless_), dont(dont_) {}
+      h2_fail* matches(T a, int n = 0, bool caseless_ = false, bool dont_ = false) const override { return m.matches(a, n, caseless || caseless_, dont != dont_); }
+      h2_row expection(bool caseless_, bool dont_) const override { return m.expection(caseless || caseless_, dont != dont_ /*XOR ^*/); }
    };
 
-   virtual h2_row expection(bool caseless = false, bool dont = false) const override { return h2_matches_expection(m, caseless, dont); }
+   virtual h2_row expection(bool caseless_ = false, bool dont_ = false) const override { return h2_matches_expection(m, caseless || caseless_, dont != dont_); }
 };

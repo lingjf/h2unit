@@ -15,6 +15,14 @@ SUITE(matches unary)
       OK(nullptr == a.matches(nullptr, 0, false, false));
    }
 
+   Case(OK Any)
+   {
+      OK(_, 0);
+      OK(_, 1);
+      OK(Any, 0);
+      OK(Any, 1);
+   }
+
    Case(Null)
    {
       int int65 = 65;
@@ -33,6 +41,14 @@ SUITE(matches unary)
       OK("IsNull", ee2.expection(false, true));
    }
 
+   Case(OK Null)
+   {
+      OK(IsNull, 0);
+      OK(IsNull(), 0);
+      OK(NotNull, 1234);
+      OK(NotNull(), 1234);
+   }
+
    Case(Boolean)
    {
       h2::h2_matches_boolean<true> istrue;
@@ -46,6 +62,14 @@ SUITE(matches unary)
       OK(nullptr != isfalse.matches(true, 0, false, false));
       OK("false", isfalse.expection(false, false));
       OK("true", isfalse.expection(false, true));
+   }
+
+   Case(OK Boolean)
+   {
+      OK(IsTrue, 1);
+      OK(IsTrue(), 1);
+      OK(IsFalse, 0);
+      OK(IsFalse(), 0);
    }
 
    Case(Pointee)

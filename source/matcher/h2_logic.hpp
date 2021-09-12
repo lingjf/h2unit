@@ -203,8 +203,6 @@ inline h2_polymorphic_matcher<h2_not_matches<Matcher>> Not(Matcher m)
 {
    return h2_polymorphic_matcher<h2_not_matches<Matcher>>(h2_not_matches<Matcher>(m));
 }
-template <typename Matches>
-inline h2_polymorphic_matcher<h2_not_matches<h2_polymorphic_matcher<Matches>>> operator!(const h2_polymorphic_matcher<Matches>& m) { return Not(m); }
 
 template <typename... Matchers>
 inline h2_polymorphic_matcher<h2_allof_matches<typename std::decay<const Matchers&>::type...>> AllOf(const Matchers&... matchers)
