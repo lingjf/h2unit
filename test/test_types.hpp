@@ -406,3 +406,7 @@ typedef int (*A_FunctionPointer)(int a, int b);
 #   define _pointer "*"
 #   define _fptr "*"
 #endif
+
+extern const char* node_type_tostring(const int type);
+extern h2::h2_string node_tojson(h2::h2_json_node* node);
+extern h2::h2_string node_dump(h2::h2_json_node* node);

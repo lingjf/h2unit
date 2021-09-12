@@ -3,12 +3,6 @@ struct h2_once {
    operator bool() { return !c++; }
 };
 
-struct h2_pattern {
-   static bool regex_match(const char* pattern, const char* subject, bool caseless = false);
-   static bool wildcard_match(const char* pattern, const char* subject, bool caseless = false);
-   static bool match(const char* pattern, const char* subject, bool caseless = false);
-};
-
 struct h2_extract {
    static const char* has(const char* attributes, const char* key);
    static bool numeric(const char* attributes, const char* key, double &value);

@@ -46,6 +46,7 @@ namespace h2 {
 #include "utils/h2_macro.hpp"         //
 #include "utils/h2_template.hpp"      //
 #include "utils/h2_list.hpp"          //
+#include "utils/h2_compare.hpp"       //
 #include "utils/h2_misc.hpp"          //
 #include "utils/h2_numeric.hpp"       //
 #include "utils/h2_libc.hpp"          // list

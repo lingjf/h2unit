@@ -1,74 +1,8 @@
 #include "../source/h2_unit.cpp"
-
-static int __node_tojson(h2::h2_json_node* node, char* b)
-{
-   int l = 0;
-
-   if (node->key_string.size()) {
-      l += sprintf(b + l, "\"%s\":", node->key_string.c_str());
-   }
-   if (node->is_null()) {
-      l += sprintf(b + l, "null");
-   }
-   if (node->is_bool()) {
-      l += sprintf(b + l, "%s", node->value_boolean ? "true" : "false");
-   }
-   if (node->is_number()) {
-      l += sprintf(b + l, "%.15g", node->value_double);
-   }
-   if (node->is_string()) {
-      l += sprintf(b + l, "\"%s\"", node->value_string.c_str());
-   }
-   if (node->is_pattern()) {
-      l += sprintf(b + l, "\"/%s/\"", node->value_string.c_str());
-   }
-   if (node->is_array()) {
-      l += sprintf(b + l, "[");
-      h2_list_for_each_entry (p, i, node->children, h2::h2_json_node, x) {
-         if (i)
-            l += sprintf(b + l, ",");
-         l += __node_tojson(p, b + l);
-      }
-      l += sprintf(b + l, "]");
-   }
-   if (node->is_object()) {
-      l += sprintf(b + l, "{");
-      h2_list_for_each_entry (p, i, node->children, h2::h2_json_node, x) {
-         if (i)
-            l += sprintf(b + l, ",");
-         l += __node_tojson(p, b + l);
-      }
-      l += sprintf(b + l, "}");
-   }
-
-   return l;
-}
-
-char* node_tojson(h2::h2_json_node* node, char* b)
-{
-   __node_tojson(node, b);
-   return b;
-}
-
-static const char* node_type_tostring(const int type)
-{
-   switch (type) {
-   case h2::h2_json_node::t_absent: return "absent";
-   case h2::h2_json_node::t_null: return "null";
-   case h2::h2_json_node::t_boolean: return "boolean";
-   case h2::h2_json_node::t_number: return "number";
-   case h2::h2_json_node::t_string: return "string";
-   case h2::h2_json_node::t_pattern: return "pattern";
-   case h2::h2_json_node::t_array: return "array";
-   case h2::h2_json_node::t_object: return "object";
-   }
-   return "?";
-}
+#include "test_types.hpp"
 
 SUITE(json node get)
 {
-   char t2[1024 * 128];
-
    Case(array)
    {
       const char* week = "[\"Sunday\", \"Monday\", \"Tuesday\", \"Wednesday\", \"Thursday\", \"Friday\", \"Saturday\"]";
@@ -101,7 +35,7 @@ SUITE(json node get)
       d[6] = c1.get(6);
       OK("Saturday", d[6]->value_string);
 
-      JE(week, node_tojson(&c1, t2));
+      JE(week, node_dump(&c1));
 
       OK(IsNull, c1.get("ling", false));
 
@@ -160,11 +94,11 @@ SUITE(json node get)
       OK("onMouseUp", c5->key_string);
       OK("sun1.opacity = (sun1.opacity / 100) * 90;", c5->value_string);
 
-      JE(obj, node_tojson(&c, t2));
+      JE(obj, node_dump(&c));
    }
 }
 
-SUITE(json node dual)
+SUITE(json node format)
 {
    Case(simple plain)
    {
@@ -176,16 +110,14 @@ SUITE(json node dual)
       h2::h2_string key;
       h2::h2_string value;
 
-      parse.dual(type, cls, key, value);
+      parse.format(type, key, value);
       OK(h2::h2_json_node::t_object, type);
       OK("", key);
-      OK("object", cls);
       OK("", value);
 
-      parse.get(0)->dual(type, cls, key, value);
+      parse.get(0)->format(type, key, value);
       OK(h2::h2_json_node::t_number, type);
-      OK("\"abc\"", key);
-      OK("atomic", cls);
+      OK("abc", key);
       OK("123", value);
    }
 }
@@ -197,8 +129,8 @@ SUITE(json node format)
       const char* json = "{\"abc\": 123}";
       h2::h2_json_tree parse(json);
 
-      h2::h2_paragraph paragraph;
-      parse.print(paragraph);
+      h2::h2_paragraph paragraph = parse.format(false, false, 2);
+
       OK(3, paragraph.size());
       OK(ListOf(
            ListOf("", "{"),
@@ -212,8 +144,8 @@ SUITE(json node format)
       const char* json = "{\"abc\": 123}";
       h2::h2_json_tree parse(json);
 
-      h2::h2_paragraph paragraph;
-      parse.print(paragraph, true);
+      h2::h2_paragraph paragraph = parse.format(true, false, 2);
+
       OK(1, paragraph.size());
       OK(ListOf(ListOf("", "{", "\"abc\": ", "123", "}")), paragraph);
    }

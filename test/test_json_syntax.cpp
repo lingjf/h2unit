@@ -1,11 +1,8 @@
 #include "../source/h2_unit.cpp"
+#include "test_types.hpp"
 
-extern char* node_tojson(h2::h2_json_node* node, char* b);
-
-SUITE(json syntax simple)
+SUITE(json syntax single)
 {
-   char t1[1024 * 128];
-
    Case(empty)
    {
       const char* json = "";
@@ -14,7 +11,17 @@ SUITE(json syntax simple)
       h2::h2_json_node node;
       h2::h2_json_syntax syntax(lexical);
       OK(syntax.parse(node));
-      OK(h2::h2_json_node::t_absent, node.type);
+      JE("{                         \
+            'type': 'absent',       \
+            'key_string': '',       \
+            'value_string': '',     \
+            'value_double': 0,      \
+            'value_boolean': 0,     \
+            'children':[]           \
+         }",
+         node_tojson(&node));
+
+      OK("", node_dump(&node));
    }
 
    Cases("null", " null ")
@@ -25,9 +32,18 @@ SUITE(json syntax simple)
       h2::h2_json_node node;
       h2::h2_json_syntax syntax(lexical);
       OK(syntax.parse(node));
-      OK(h2::h2_json_node::t_null, node.type);
 
-      OK("null", node_tojson(&node, t1));
+      JE("{                         \
+            'type': 'null',         \
+            'key_string': '',       \
+            'value_string': '',     \
+            'value_double': 0,      \
+            'value_boolean': 0,     \
+            'children':[]           \
+         }",
+         node_tojson(&node));
+
+      OK("null", node_dump(&node));
    }
 
    Cases("true", " true ")
@@ -38,9 +54,18 @@ SUITE(json syntax simple)
       h2::h2_json_node node;
       h2::h2_json_syntax syntax(lexical);
       OK(syntax.parse(node));
-      OK(h2::h2_json_node::t_boolean, node.type);
 
-      OK("true", node_tojson(&node, t1));
+      JE("{                         \
+            'type': 'boolean',      \
+            'key_string': '',       \
+            'value_string': '',     \
+            'value_double': 0,      \
+            'value_boolean': 1,     \
+            'children':[]           \
+         }",
+         node_tojson(&node));
+
+      OK("true", node_dump(&node));
    }
 
    Cases("false", " false ")
@@ -51,9 +76,18 @@ SUITE(json syntax simple)
       h2::h2_json_node node;
       h2::h2_json_syntax syntax(lexical);
       OK(syntax.parse(node));
-      OK(h2::h2_json_node::t_boolean, node.type);
 
-      OK("false", node_tojson(&node, t1));
+      JE("{                         \
+            'type': 'boolean',      \
+            'key_string': '',       \
+            'value_string': '',     \
+            'value_double': 0,      \
+            'value_boolean': 0,     \
+            'children':[]           \
+         }",
+         node_tojson(&node));
+
+      OK("false", node_dump(&node));
    }
 
    Case(pattern)
@@ -64,9 +98,18 @@ SUITE(json syntax simple)
       h2::h2_json_node node;
       h2::h2_json_syntax syntax(lexical);
       OK(syntax.parse(node));
-      OK(h2::h2_json_node::t_pattern, node.type);
 
-      OK("\"/hello/\"", node_tojson(&node, t1));
+      JE("{                         \
+            'type': 'pattern',      \
+            'key_string': '',       \
+            'value_string': 'hello',\
+            'value_double': 0,      \
+            'value_boolean': 0,     \
+            'children':[]           \
+         }",
+         node_tojson(&node));
+
+      OK("\"/hello/\"", node_dump(&node));
    }
 
    Case(double quote)
@@ -77,9 +120,18 @@ SUITE(json syntax simple)
       h2::h2_json_node node;
       h2::h2_json_syntax syntax(lexical);
       OK(syntax.parse(node));
-      OK(h2::h2_json_node::t_string, node.type);
 
-      OK("\"hello\"", node_tojson(&node, t1));
+      JE("{                         \
+            'type': 'string',       \
+            'key_string': '',       \
+            'value_string': 'hello',\
+            'value_double': 0,      \
+            'value_boolean': 0,     \
+            'children':[]           \
+         }",
+         node_tojson(&node));
+
+      OK("\"hello\"", node_dump(&node));
    }
 
    Case(single quote)
@@ -90,9 +142,18 @@ SUITE(json syntax simple)
       h2::h2_json_node node;
       h2::h2_json_syntax syntax(lexical);
       OK(syntax.parse(node));
-      OK(h2::h2_json_node::t_string, node.type);
 
-      OK("\"hello\"", node_tojson(&node, t1));
+      JE("{                         \
+            'type': 'string',       \
+            'key_string': '',       \
+            'value_string': 'hello',\
+            'value_double': 0,      \
+            'value_boolean': 0,     \
+            'children':[]           \
+         }",
+         node_tojson(&node));
+
+      OK("\"hello\"", node_dump(&node));
    }
 
    Case(no quote string)
@@ -103,9 +164,18 @@ SUITE(json syntax simple)
       h2::h2_json_node node;
       h2::h2_json_syntax syntax(lexical);
       OK(syntax.parse(node));
-      OK(h2::h2_json_node::t_string, node.type);
 
-      OK("\"hello world\"", node_tojson(&node, t1));
+      JE("{                               \
+            'type': 'string',             \
+            'key_string': '',             \
+            'value_string': 'hello world',\
+            'value_double': 0,            \
+            'value_boolean': 0,           \
+            'children':[]                 \
+         }",
+         node_tojson(&node));
+
+      OK("\"hello world\"", node_dump(&node));
    }
 
    Case(direct number)
@@ -116,9 +186,18 @@ SUITE(json syntax simple)
       h2::h2_json_node node;
       h2::h2_json_syntax syntax(lexical);
       OK(syntax.parse(node));
-      OK(h2::h2_json_node::t_number, node.type);
 
-      OK("1234", node_tojson(&node, t1));
+      JE("{                         \
+            'type': 'number',       \
+            'key_string': '',       \
+            'value_string': '',     \
+            'value_double': 1234,   \
+            'value_boolean': 0,     \
+            'children':[]           \
+         }",
+         node_tojson(&node));
+
+      OK("1234", node_dump(&node));
    }
 
    Case(math expression number)
@@ -129,25 +208,22 @@ SUITE(json syntax simple)
       h2::h2_json_node node;
       h2::h2_json_syntax syntax(lexical);
       OK(syntax.parse(node));
-      OK(h2::h2_json_node::t_number, node.type);
 
-      OK("3", node_tojson(&node, t1));
-      OK("2 +1", node.value_string);
+      JE("{                         \
+            'type': 'number',       \
+            'key_string': '',       \
+            'value_string': '',     \
+            'value_double': 3,      \
+            'value_boolean': 0,     \
+            'children':[]           \
+         }",
+         node_tojson(&node));
+      OK("3", node_dump(&node));
    }
+}
 
-   Cases("{}", " { } ")
-   {
-      const char* json = x;
-      h2::h2_vector<h2::h2_string> lexical;
-      h2::h2_json_lexical::parse(lexical, json);
-      h2::h2_json_node node;
-      h2::h2_json_syntax syntax(lexical);
-      OK(syntax.parse(node));
-      OK(h2::h2_json_node::t_object, node.type);
-
-      OK("{}", node_tojson(&node, t1));
-   }
-
+SUITE(json syntax array)
+{
    Cases("[]", " [ ]  ")
    {
       const char* json = x;
@@ -156,16 +232,265 @@ SUITE(json syntax simple)
       h2::h2_json_node node;
       h2::h2_json_syntax syntax(lexical);
       OK(syntax.parse(node));
-      OK(h2::h2_json_node::t_array, node.type);
 
-      OK("[]", node_tojson(&node, t1));
+      JE("{                         \
+            'type': 'array',        \
+            'key_string': '',       \
+            'value_string': '',     \
+            'value_double': 0,      \
+            'value_boolean': 0,     \
+            'children':[]           \
+         }",
+         node_tojson(&node));
+
+      OK("[]", node_dump(&node));
+   }
+
+   Case(normal)
+   {
+      const char* json = "[123, \"abc\", true]";
+
+      h2::h2_vector<h2::h2_string> lexical;
+      h2::h2_json_lexical::parse(lexical, json);
+      h2::h2_json_node node;
+      h2::h2_json_syntax syntax(lexical);
+      OK(syntax.parse(node));
+
+      JE("{                               \
+            'type': 'array',              \
+            'key_string': '',             \
+            'value_string': '',           \
+            'value_double': 0,            \
+            'value_boolean': 0,           \
+            'children':[                  \
+                {                         \
+                  'type': 'number',       \
+                  'index': 0,             \
+                  'key_string': '',       \
+                  'value_string': '',     \
+                  'value_double': 123,    \
+                  'value_boolean': 0,     \
+                  'children':[]           \
+               },                         \
+               {                          \
+                  'type': 'string',       \
+                  'index': 1,             \
+                  'key_string': '',       \
+                  'value_string': 'abc',  \
+                  'value_double': 0,      \
+                  'value_boolean': 0,     \
+                  'children':[]           \
+               },                         \
+               {                          \
+                  'type': 'boolean',      \
+                  'index': 2,             \
+                  'key_string': '',       \
+                  'value_string': '',     \
+                  'value_double': 0,      \
+                  'value_boolean': 1,     \
+                  'children':[]           \
+               }                          \
+            ]                             \
+         }",
+         node_tojson(&node));
+
+      JE(json, node_dump(&node));
+   }
+}
+
+SUITE(json syntax object)
+{
+   Cases("{}", " { } ")
+   {
+      const char* json = x;
+      h2::h2_vector<h2::h2_string> lexical;
+      h2::h2_json_lexical::parse(lexical, json);
+      h2::h2_json_node node;
+      h2::h2_json_syntax syntax(lexical);
+      OK(syntax.parse(node));
+
+      JE("{                         \
+            'type': 'object',       \
+            'key_string': '',       \
+            'value_string': '',     \
+            'value_double': 0,      \
+            'value_boolean': 0,     \
+            'children':[]           \
+         }",
+         node_tojson(&node));
+
+      OK("{}", node_dump(&node));
+   }
+
+   Case(normal)
+   {
+      const char* json =
+        "{                          \
+            'name': 'jeff',         \
+            'age': 28,              \
+         }";
+      h2::h2_vector<h2::h2_string> lexical;
+      h2::h2_json_lexical::parse(lexical, json);
+      h2::h2_json_node node;
+      h2::h2_json_syntax syntax(lexical);
+      OK(syntax.parse(node));
+
+      JE("{                               \
+            'type': 'object',             \
+            'key_string': '',             \
+            'value_string': '',           \
+            'value_double': 0,            \
+            'value_boolean': 0,           \
+            'children':[                  \
+                {                         \
+                  'type': 'string',       \
+                  'index': 0,             \
+                  'key_string': 'name',   \
+                  'value_string': 'jeff', \
+                  'value_double': 0,      \
+                  'value_boolean': 0,     \
+                  'children':[]           \
+               },                         \
+               {                          \
+                  'type': 'number',       \
+                  'index': 1,             \
+                  'key_string': 'age',    \
+                  'value_string': '',     \
+                  'value_double': 28,     \
+                  'value_boolean': 0,     \
+                  'children':[]           \
+               }                          \
+            ]                             \
+         }",
+         node_tojson(&node));
+
+      JE(json, node_dump(&node));
+   }
+}
+
+SUITE(json syntax complex)
+{
+   Case(normal)
+   {
+      const char* json =
+        "{                          \
+            'name': 'jeff',         \
+            'age': 28,              \
+            'lang': [               \
+                  'java',           \
+                  {                 \
+                     'python': 3,   \
+                     'c++': 11,     \
+                  },                \
+                  ['lua', null],    \
+             ],                     \
+         }";
+      h2::h2_vector<h2::h2_string> lexical;
+      h2::h2_json_lexical::parse(lexical, json);
+      h2::h2_json_node node;
+      h2::h2_json_syntax syntax(lexical);
+      OK(syntax.parse(node));
+
+      JE("{                                                                                     \
+            'type': 'object',                                                                   \
+            'key_string': '',                                                                   \
+            'value_string': '',                                                                 \
+            'value_double': 0,                                                                  \
+            'value_boolean': 0,                                                                 \
+            'children':[                                                                        \
+                {                                                                               \
+                  'type': 'string',                                                             \
+                  'key_string': 'name',                                                         \
+                  'value_string': 'jeff',                                                       \
+                  'value_double': 0,                                                            \
+                  'value_boolean': 0,                                                           \
+                  'children':[]                                                                 \
+               },                                                                               \
+               {                                                                                \
+                  'type': 'number',                                                             \
+                  'key_string': 'age',                                                          \
+                  'value_string': '',                                                           \
+                  'value_double': 28,                                                           \
+                  'value_boolean': 0,                                                           \
+                  'children':[]                                                                 \
+               },                                                                               \
+               {                                                                                \
+                  'type': 'array',                                                              \
+                  'key_string': 'lang',                                                         \
+                  'value_string': '',                                                           \
+                  'value_double': 0,                                                            \
+                  'value_boolean': 0,                                                           \
+                  'children':[                                                                  \
+                     {                                                                          \
+                        'type': 'string',                                                       \
+                        'key_string': '',                                                       \
+                        'value_string': 'java',                                                 \
+                        'value_double': 0,                                                      \
+                        'value_boolean': 0,                                                     \
+                        'children':[]                                                           \
+                     },                                                                         \
+                     {                                                                          \
+                        'type': 'object',                                                       \
+                        'key_string': '',                                                       \
+                        'value_string': '',                                                     \
+                        'value_double': 0,                                                      \
+                        'value_boolean': 0,                                                     \
+                        'children':[                                                            \
+                           {                                                                    \
+                              'type': 'number',                                                 \
+                              'key_string': 'python',                                           \
+                              'value_string': '',                                               \
+                              'value_double': 3,                                                \
+                              'value_boolean': 0,                                               \
+                              'children':[]                                                     \
+                           },                                                                   \
+                           {                                                                    \
+                              'type': 'number',                                                 \
+                              'key_string': 'c++',                                              \
+                              'value_string': '',                                               \
+                              'value_double': 11,                                               \
+                              'value_boolean': 0,                                               \
+                              'children':[]                                                     \
+                           }                                                                    \
+                        ]                                                                       \
+                     },                                                                         \
+                     {                                                                          \
+                        'type': 'array',                                                       \
+                        'key_string': '',                                                       \
+                        'value_string': '',                                                     \
+                        'value_double': 0,                                                      \
+                        'value_boolean': 0,                                                     \
+                        'children':[                                                            \
+                           {                                                                    \
+                              'type': 'string',                                                 \
+                              'key_string': '',                                                 \
+                              'value_string': 'lua',                                            \
+                              'value_double': 0,                                                \
+                              'value_boolean': 0,                                               \
+                              'children':[]                                                     \
+                           },                                                                   \
+                           {                                                                    \
+                              'type': 'null',                                                   \
+                              'key_string': '',                                                 \
+                              'value_string': '',                                               \
+                              'value_double': 0,                                                \
+                              'value_boolean': 0,                                               \
+                              'children':[]                                                     \
+                           }                                                                    \
+                        ]                                                                       \
+                     }                                                                          \
+                  ]                                                                             \
+               }                                                                                \
+            ]                                                                                   \
+         }",
+         node_tojson(&node));
+
+      JE(json, node_dump(&node));
    }
 }
 
 SUITE(json syntax error)
 {
-   char t1[1024 * 128];
-
    Case(not object closed)
    {
       h2::h2_vector<h2::h2_string> lexical;

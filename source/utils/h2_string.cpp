@@ -97,6 +97,7 @@ h2_inline h2_string h2_string::tolower() const
 
 h2_inline h2_string h2_string::center(int width) const
 {
+   if (width <= size()) return *this;
    int left = (width - size()) / 2, right = width - left - size();
    h2_string s;
    s.append(left, ' ');

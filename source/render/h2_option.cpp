@@ -16,7 +16,7 @@ static inline void usage()
               H2_USAGE_SP " -\033[36mp\033[0m  " H2_USAGE_SP "           " H2_USAGE_SP " Disable test percentage \033[36mp\033[0mrogressing                       " H2_USAGE_SP "\n" H2_USAGE_BR
               H2_USAGE_SP " -\033[36mr\033[0m  " H2_USAGE_SP "    \033[90m[\033[0mn\033[90m]\033[0m    " H2_USAGE_SP " Repeat test n (default 2) \033[36mr\033[0mounds                          " H2_USAGE_SP "\n" H2_USAGE_BR
               H2_USAGE_SP " -\033[36mc\033[0m  " H2_USAGE_SP "           " H2_USAGE_SP " Output in black-white \033[36mc\033[0molor style                         " H2_USAGE_SP "\n" H2_USAGE_BR
-              H2_USAGE_SP " -\033[36mf\033[0m  " H2_USAGE_SP "    \033[90m[\033[0mn\033[90m]\033[0m    " H2_USAGE_SP " \033[36mf\033[0mold JSON object or array                                 " H2_USAGE_SP "\n" H2_USAGE_BR
+              H2_USAGE_SP " -\033[36mf\033[0m  " H2_USAGE_SP "    \033[90m[\033[0mn\033[90m]\033[0m    " H2_USAGE_SP " \033[36mf\033[0mold JSON object or array, more n more folded             " H2_USAGE_SP "\n" H2_USAGE_BR
               H2_USAGE_SP " -\033[36my\033[0m  " H2_USAGE_SP "           " H2_USAGE_SP " Cop\033[36my\033[0m-paste JSON C/C++ source code                         " H2_USAGE_SP "\n" H2_USAGE_BR
               H2_USAGE_SP " -\033[36mx\033[0m  " H2_USAGE_SP "           " H2_USAGE_SP " Thrown e\033[36mx\033[0mception is considered as failure                 " H2_USAGE_SP "\n" H2_USAGE_BR
               H2_USAGE_SP " -\033[36mv\033[0m  " H2_USAGE_SP "    \033[90m[\033[0mn\033[90m]\033[0m    " H2_USAGE_SP " \033[36mv\033[0merbose output, 0:compact 2:normal 4:acronym default:all  " H2_USAGE_SP "\n" H2_USAGE_BR
@@ -86,7 +86,6 @@ h2_inline void h2_option::parse(int argc, const char** argv)
       case 's': shuffle_cases = true; break;
       case 'n': only_previous_failed = true; break;
       case 'p': progressing = !progressing; break;
-      case 'y': copy_paste_json = true; break;
       case 'm': memory_check = !memory_check; break;
       case 'x': exception_as_fail = true; break;
       case 'l':
@@ -99,7 +98,8 @@ h2_inline void h2_option::parse(int argc, const char** argv)
          break;
       case 'b': break_after_fails = 1, get.extract_number(break_after_fails); break;
       case 'r': run_rounds = 2, get.extract_number(run_rounds); break;
-      case 'f': fold_json = !fold_json; break;
+      case 'f': fold_json = 0, get.extract_number(fold_json); break;
+      case 'y': copy_paste_json = 3, get.extract_number(copy_paste_json); break;
       case 'v': verbose = 9, get.extract_number(verbose); break;
       case 'd': debug = "gdb new"; break;
       case 'D': debug = "gdb attach"; break;

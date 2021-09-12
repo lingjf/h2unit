@@ -95,6 +95,7 @@
     <ClCompile Include="test_utils_list.cpp" />
     <ClCompile Include="test_utils_macro.cpp" />
     <ClCompile Include="test_utils_macro_generated.cpp" />
+    <ClCompile Include="test_utils_compare.cpp" />
     <ClCompile Include="test_utils_misc.cpp" />
     <ClCompile Include="test_utils_numeric.cpp" />
     <ClCompile Include="test_utils_sentence.cpp" />

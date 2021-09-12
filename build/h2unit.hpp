@@ -1,5 +1,5 @@
 
-/* v5.13 2021-09-12 16:10:20 */
+/* v5.13 2021-09-12 22:12:20 */
 /* https://github.com/lingjf/h2unit */
 /* Apache Licence 2.0 */
 
@@ -579,16 +579,17 @@ struct h2_list {
    int count() const;
    void sort(int (*cmp)(h2_list*, h2_list*));
 };
-// source/utils/h2_misc.hpp
-struct h2_once {
-   unsigned long c = 0;
-   operator bool() { return !c++; }
-};
+// source/utils/h2_compare.hpp
 
 struct h2_pattern {
    static bool regex_match(const char* pattern, const char* subject, bool caseless = false);
    static bool wildcard_match(const char* pattern, const char* subject, bool caseless = false);
    static bool match(const char* pattern, const char* subject, bool caseless = false);
+};
+// source/utils/h2_misc.hpp
+struct h2_once {
+   unsigned long c = 0;
+   operator bool() { return !c++; }
 };
 
 struct h2_extract {
@@ -1026,8 +1027,6 @@ struct h2_option {
    const char* debug = nullptr;
    bool colorful = true;
    bool progressing = true;
-   bool fold_json = true;
-   bool copy_paste_json = false;
    bool only_previous_failed = false;
    bool shuffle_cases = false;
    bool memory_check = true;
@@ -1035,6 +1034,8 @@ struct h2_option {
    int list_cases = 0;
    int break_after_fails = 0;
    int run_rounds = 1;
+   int fold_json = 9; // 0 unfold, 1 fold simple, 2 fold same, 3 fold peer-miss
+   int copy_paste_json = 0; // 0 no quote, 1 quote by ', 2 quote by ", 3 quote by \"
    int verbose = 2;
    char junit_path[256]{'\0'};
    char tap_path[256]{'\0'};
@@ -1099,7 +1100,7 @@ struct h2_fail : h2_libc {
 static inline void h2_fail_g(h2_fail*);
 // source/json/h2_json.hpp
 struct h2_json {
-   static h2_paragraph format(const h2_string& json_string);
+   static h2_paragraph dump(const h2_string& json_string);
    static h2_string select(const h2_string& json_string, const h2_string& selector, bool caseless);
    // < 0 illformed json; = 0 matched; > 0 unmatched
    static int match(const h2_string& expect, const h2_string& actual, bool caseless);

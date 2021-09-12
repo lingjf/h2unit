@@ -14,8 +14,6 @@ struct h2_option {
    const char* debug = nullptr;
    bool colorful = true;
    bool progressing = true;
-   bool fold_json = true;
-   bool copy_paste_json = false;
    bool only_previous_failed = false;
    bool shuffle_cases = false;
    bool memory_check = true;
@@ -23,6 +21,8 @@ struct h2_option {
    int list_cases = 0;
    int break_after_fails = 0;
    int run_rounds = 1;
+   int fold_json = 9; // 0 unfold, 1 fold simple, 2 fold same, 3 fold peer-miss
+   int copy_paste_json = 0; // 0 no quote, 1 quote by ', 2 quote by ", 3 quote by \"
    int verbose = 2;
    char junit_path[256]{'\0'};
    char tap_path[256]{'\0'};

@@ -97,6 +97,7 @@ namespace h2 {
 
 #include "utils/h2_list.cpp"
 #include "utils/h2_numeric.cpp"
+#include "utils/h2_compare.cpp"
 #include "utils/h2_misc.cpp"
 #include "utils/h2_libc.cpp"
 #include "utils/h2_string.cpp"

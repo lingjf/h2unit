@@ -34,4 +34,8 @@ SUITE(JE Primitive)
       OK(Je("hello world", ".name"), "{'name': \"hello world\", 'age': [18, 20]}");
       OK(Je("18", ".age[0]"), "{'name': \"hello world\", 'age': [18, 20]}");
    }
+   Case(selector empty)
+   {
+      OK(!Je("hello world", ".say"), "{'name': \"hello world\", 'age': [18, 20]}");
+   }
 }

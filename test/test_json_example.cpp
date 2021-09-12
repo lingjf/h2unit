@@ -1,11 +1,8 @@
 #include "../source/h2_unit.cpp"
-
-extern char* node_tojson(h2::h2_json_node* node, char* b);
+#include "test_types.hpp"
 
 SUITE("http://www.json.org/example.html")
 {
-   char t2[1024 * 32];
-
    Case(1)
    {
       const char* j1 =
@@ -33,7 +30,7 @@ SUITE("http://www.json.org/example.html")
 }";
 
       h2::h2_json_tree c1(j1);
-      JE(j1, node_tojson(&c1, t2));
+      JE(j1, node_dump(&c1));
    }
 
    Case(2)
@@ -52,7 +49,7 @@ SUITE("http://www.json.org/example.html")
 }}";
 
       h2::h2_json_tree c2(j2);
-      JE(j2, node_tojson(&c2, t2));
+      JE(j2, node_dump(&c2));
    }
 
    Case(3)
@@ -86,7 +83,7 @@ SUITE("http://www.json.org/example.html")
 }}";
 
       h2::h2_json_tree c3(j3);
-      JE(j3, node_tojson(&c3, t2));
+      JE(j3, node_dump(&c3));
    }
 
    Case(4)
@@ -182,7 +179,7 @@ SUITE("http://www.json.org/example.html")
     \"taglib-location\": \"/WEB-INF/tlds/cofax.tld\"}}}";
 
       h2::h2_json_tree c4(j4);
-      JE(j4, node_tojson(&c4, t2));
+      JE(j4, node_dump(&c4));
    }
 
    Case(5)
@@ -217,7 +214,7 @@ SUITE("http://www.json.org/example.html")
 }}";
 
       h2::h2_json_tree c5(j5);
-      JE(j5, node_tojson(&c5, t2));
+      JE(j5, node_dump(&c5));
    }
 
    Case(6)
@@ -246,7 +243,7 @@ SUITE("http://www.json.org/example.html")
 	 ]";
 
       h2::h2_json_tree c1(j1);
-      JE(j1, node_tojson(&c1, t2));
+      JE(j1, node_dump(&c1));
    }
 
    Case(7)
@@ -259,7 +256,7 @@ SUITE("http://www.json.org/example.html")
 ";
 
       h2::h2_json_tree c2(j2);
-      JE(j2, node_tojson(&c2, t2));
+      JE(j2, node_dump(&c2));
    }
 
    Case(8)

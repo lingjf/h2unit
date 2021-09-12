@@ -1,14 +1,11 @@
 #include "../source/h2_unit.cpp"
-
-extern char* node_tojson(h2::h2_json_node* node, char* b);
+#include "test_types.hpp"
 
 const char* week_json = "[\"Sunday\", \"Monday\", \"Tuesday\", \"Wednesday\", \"Thursday\", \"Friday\", \"Saturday\"]";
 const char* day_json = "{\"am\": [0, 12], \"pm\": {\"afternoon\": 18, \"midnight\": 24}}";
 
 SUITE(json parse)
 {
-   char t2[1024 * 32];
-
    Case(number)
    {
       const char* n1 = "-123.456";
@@ -91,7 +88,7 @@ SUITE(json parse)
       const char* week = "[\"Sunday\", \"Monday\", \"Tuesday\", \"Wednesday\", \"Thursday\", \"Friday\", \"Saturday\"]";
 
       h2::h2_json_tree c1(week);
-      JE(week_json, node_tojson(&c1, t2));
+      JE(week_json, node_dump(&c1));
    }
 
    Case(extend array)
@@ -99,7 +96,7 @@ SUITE(json parse)
       const char* week = "['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']";
 
       h2::h2_json_tree c1(week);
-      JE(week_json, node_tojson(&c1, t2));
+      JE(week_json, node_dump(&c1));
    }
 
    Case(javascript array)
@@ -107,7 +104,7 @@ SUITE(json parse)
       const char* week = "[Sunday, Monday, Tuesday, Wednesday, Thursday, Friday, Saturday]";
 
       h2::h2_json_tree c1(week);
-      JE(week_json, node_tojson(&c1, t2));
+      JE(week_json, node_dump(&c1));
    }
 
    Case(empty object)
@@ -130,7 +127,7 @@ SUITE(json parse)
 
       h2::h2_json_tree c(obj);
 
-      JE(obj, node_tojson(&c, t2));
+      JE(obj, node_dump(&c));
    }
 
    Case(javascript object)
@@ -153,50 +150,55 @@ SUITE(json parse)
             \"token\": null,                                                \
             \"onMouseUp\": \"sun1.opacity = (sun1.opacity / 100) * 90;\"    \
          }",
-         node_tojson(&c, t2));
+         node_dump(&c));
    }
 }
 
 SUITE(select json)
 {
-   char t2[1024 * 32];
    const char* week = "[\"Sunday\", \"Monday\", \"Tuesday\", \"Wednesday\", \"Thursday\", \"Friday\", \"Saturday\"]";
    const char* day = "{\"am\": [0, 12], \"pm\": {\"afternoon\": 18, \"midnight\": 24}}";
 
    Case(all)
    {
       h2::h2_json_tree c1(week);
-      JE(week_json, node_tojson(c1.select("", true), t2));
+      JE(week_json, node_dump(c1.select("", true)));
 
       h2::h2_json_tree c2(day);
-      JE(day_json, node_tojson(c2.select("", true), t2));
+      JE(day_json, node_dump(c2.select("", true)));
    }
 
    Case(.)
    {
       h2::h2_json_tree c2(day);
-      JE("[0, 12]", node_tojson(c2.select(".am", true), t2));
+      JE("[0, 12]", node_dump(c2.select(".am", true)));
    }
 
    Case([])
    {
       h2::h2_json_tree c1(week);
-      JE("Monday", node_tojson(c1.select("[1]", true), t2));
+      JE("Monday", node_dump(c1.select("[1]", true)));
 
       h2::h2_json_tree c2(day);
-      JE("[0, 12]", node_tojson(c2.select("[am]", true), t2));
+      JE("[0, 12]", node_dump(c2.select("[am]", true)));
    }
 
    Case(.[])
    {
       h2::h2_json_tree c2(day);
-      JE("12", node_tojson(c2.select(".am[1]", true), t2));
+      JE("12", node_dump(c2.select(".am[1]", true)));
    }
 
    Case(..)
    {
       h2::h2_json_tree c2(day);
-      JE("18", node_tojson(c2.select(".pm.afternoon", true), t2));
+      JE("18", node_dump(c2.select(".pm.afternoon", true)));
+   }
+
+   Case(not found)
+   {
+      h2::h2_json_tree c2(day);
+      OK(IsNull, c2.select(".ap", true));
    }
 }
 

@@ -1064,7 +1064,7 @@ twofiles speed up 2~3 times than onefile.
 *    `-c` Disable *colorful* output, black-white output
 *    `-x` Thrown *exception* is considered as failure
 *    `-d/D` *debug* mode, -D for gdb attach but requires password
-*    `-f` *fold* simple json object or array
+*    `-f` [n] *fold* json object or array, 0:unfold, 1:fold simple, 2:fold same, 3:fold missing peer
 *    `-y` *copy-paste* JSON C/C++ source code
 *    `-v` *verbose* output including successfull cases
 *    `-j` {path} generate *junit* compatible XML output

@@ -1,5 +1,5 @@
 
-/* v5.13 2021-09-12 16:10:20 */
+/* v5.13 2021-09-12 22:12:20 */
 /* https://github.com/lingjf/h2unit */
 /* Apache Licence 2.0 */
 #include "h2unit.hpp"
@@ -279,18 +279,11 @@ h2_inline const char* h2_numeric::sequence_number(int sequence, int shift)
    sprintf(ss, "%dth", sequence);
    return ss;
 }
-// source/utils/h2_misc.cpp
-static inline const char* h2_basename(const char* path)
-{
-   const char* p = strrchr(path, '/');
-   if (!p) p = strrchr(path, '\\');
-   return p ? p + 1 : path;
-}
-
+// source/utils/h2_compare.cpp
 h2_inline bool h2_pattern::regex_match(const char* pattern, const char* subject, bool caseless)
 {
    bool result = false;
-#if !defined _WIN32 || !defined NDEBUG // Windows regex suck under release version and memory check
+#if !defined _WIN32 || !defined NDEBUG  // Windows regex suck under release version and memory check
    h2_memory::hook(false);
    try {  // c++11 support regex; gcc 4.8 start support regex, gcc 5.5 icase works.
       result = std::regex_match(subject, caseless ? std::regex(pattern, std::regex::icase) : std::regex(pattern));
@@ -328,6 +321,121 @@ h2_inline bool h2_pattern::wildcard_match(const char* pattern, const char* subje
 #else
    return !fnmatch(pattern, subject, caseless ? FNM_CASEFOLD : 0);
 #endif
+}
+
+h2_inline bool h2_pattern::match(const char* pattern, const char* subject, bool caseless)
+{
+   return wildcard_match(pattern, subject, caseless) || regex_match(pattern, subject, caseless);
+}
+
+struct h2_fuzzy {
+   static int levenshtein(const char* s1, const char* s2, int n1, int n2)
+   {
+      h2_vector<unsigned int> col(n2 + 1), prevCol(n2 + 1);
+
+      for (unsigned int i = 0; i < prevCol.size(); i++)
+         prevCol[i] = i;
+      for (unsigned int i = 0; i < n1; i++) {
+         col[0] = i + 1;
+         for (unsigned int j = 0; j < n2; j++)
+            col[j + 1] = std::min(std::min(1 + col[j], 1 + prevCol[1 + j]), prevCol[j] + (s1[i] == s2[j] ? 0 : 1));
+         col.swap(prevCol);
+      }
+
+      return prevCol[n2];
+   }
+   static int LCS(const char* s1, const char* s2, int n1, int n2)
+   {
+      return 1;
+   }
+   static double jaro(const char* s1, const char* s2, int n1, int n2)
+   {
+      if (n1 == 0) return n2 == 0 ? 1.0 : 0.0;
+
+      // max distance between two chars to be considered matching floor() is ommitted due to integer division rules
+      int match_distance = std::max(n1, n2) / 2 - 1;
+
+      // arrays of bools that signify if that char in the matcing string has a match
+      int* s1_matches = (int*)calloc(n1, sizeof(int));
+      int* s2_matches = (int*)calloc(n2, sizeof(int));
+
+      // number of matches and transpositions
+      double matches = 0.0;
+      double transpositions = 0.0;
+
+      // find the matches
+      for (int i = 0; i < n1; i++) {
+         // start and end take into account the match distance
+         int start = std::max(0, i - match_distance);
+         int end = std::min(i + match_distance + 1, n2);
+
+         for (int k = start; k < end; k++) {
+            // if s2 already has a match continue
+            if (s2_matches[k]) continue;
+            // if s1 and s2 are not
+            if (::tolower(s1[i]) != ::tolower(s2[i])) continue;
+            // otherwise assume there is a match
+            s1_matches[i] = 1;
+            s2_matches[k] = 1;
+            matches++;
+            break;
+         }
+      }
+
+      // if there are no matches return 0
+      if (matches == 0) {
+         free(s1_matches);
+         free(s2_matches);
+         return 0.0;
+      }
+
+      // count transpositions
+      int k = 0;
+      for (int i = 0; i < n1; i++) {
+         // if there are no matches in s1 continue
+         if (!s1_matches[i]) continue;
+         // while there is no match in s2 increment k
+         while (!s2_matches[k]) k++;
+         // increment transpositions
+         if (::tolower(s1[i]) != ::tolower(s2[k])) transpositions++;
+         k++;
+      }
+
+      // divide the number of transpositions by two as per the algorithm specs this division is valid because the counted transpositions include both instances of the transposed characters.
+      transpositions /= 2.0;
+
+      free(s1_matches);
+      free(s2_matches);
+
+      return ((matches / n1) + (matches / n2) + ((matches - transpositions) / matches)) / 3.0;
+   }
+
+   static double jaro_winkler(const char* s1, const char* s2, int n1, int n2)
+   {
+      double distance = jaro(s1, s2, n1, n2);
+
+      // finds the number of common terms in the first 3 strings, max 3.
+      int prefix_length = 0;
+      if (n1 != 0 && n2 != 0)
+         while (prefix_length < 3 && ::tolower(*s1++) == ::tolower(*s2++)) prefix_length++;
+
+      // 0.1 is the default scaling factor
+      return distance + prefix_length * 0.1 * (1 - distance);
+   }
+
+   static double likes(const char* s1, const char* s2, bool caseless = false)
+   {
+      const size_t n1 = strlen(s1), n2 = strlen(s2);
+      if (caseless ? strcasecmp(s1, s2) == 0 : strcmp(s1, s2) == 0) return 1;
+      return jaro_winkler(s1, s2, n1, n2);
+   }
+};
+// source/utils/h2_misc.cpp
+static inline const char* h2_basename(const char* path)
+{
+   const char* p = strrchr(path, '/');
+   if (!p) p = strrchr(path, '\\');
+   return p ? p + 1 : path;
 }
 
 static inline const char* get_key(const char* subject, const char* key)
@@ -396,11 +504,6 @@ h2_inline int h2_extract::fill(const char* attributes, const char* key, unsigned
       else
          return *((unsigned long long*)bytes) = (unsigned long long)v, 8;
    }
-}
-
-h2_inline bool h2_pattern::match(const char* pattern, const char* subject, bool caseless)
-{
-   return wildcard_match(pattern, subject, caseless) || regex_match(pattern, subject, caseless);
 }
 
 static inline void h2_sleep(long long milliseconds)
@@ -676,6 +779,7 @@ h2_inline h2_string h2_string::tolower() const
 
 h2_inline h2_string h2_string::center(int width) const
 {
+   if (width <= size()) return *this;
    int left = (width - size()) / 2, right = width - left - size();
    h2_string s;
    s.append(left, ' ');
@@ -2025,21 +2129,23 @@ struct tinyexpr
 // source/json/h2_node.cpp
 struct h2_json_node : h2_libc {
    static constexpr int t_absent = 0;
-   static constexpr int t_null = 1;
-   static constexpr int t_boolean = 2;
-   static constexpr int t_number = 3;
-   static constexpr int t_string = 4;
-   static constexpr int t_pattern = 5;  // regex or wildcard pattern
-   static constexpr int t_array = 6;
-   static constexpr int t_object = 7;
+   static constexpr int t_null = 0x10 + 1;
+   static constexpr int t_boolean = 0x10 + 2;
+   static constexpr int t_number = 0x10 + 3;
+   static constexpr int t_string = 0x10 + 4;
+   static constexpr int t_pattern = 0x10 + 5;  // regex or wildcard pattern
+   static constexpr int t_array = 0x20;
+   static constexpr int t_object = 0x30;
 
    int type = t_absent;
+   int index = 0;
    h2_string key_string;
    h2_string value_string;
    double value_double = 0;
    bool value_boolean = false;
    h2_list children, x; /* array or object */
 
+   h2_json_node(int index_ = 0) : index(index_) {}
    ~h2_json_node()
    {
       h2_list_for_each_entry (p, children, h2_json_node, x) {
@@ -2078,83 +2184,69 @@ struct h2_json_node : h2_libc {
    bool is_array() { return t_array == type; }
    bool is_object() { return t_object == type; }
 
-   void dual(int& _type, const char*& _class, h2_string& _key, h2_string& _value)
+   h2_string quote_if(int quote)
    {
-      if (key_string.size()) _key = "\"" + key_string + "\"";
-      _type = type;
-      switch (type) {
-      case t_null:
-         _class = "atomic";
-         _value = "null";
-         break;
-      case t_boolean:
-         _class = "atomic";
-         _value = value_boolean ? "true" : "false";
-         break;
-      case t_number:
-         _class = "atomic";
-         if (value_double - ::floor(value_double) == 0)
-            _value = std::to_string((long long)value_double).c_str();
-         else
-            _value = std::to_string(value_double).c_str();
-         break;
-      case t_string:
-         _class = "atomic";
-         _value = "\"" + value_string + "\"";
-         break;
-      case t_pattern:
-         _class = "atomic";
-         _value = value_string;
-         break;
-      case t_array:
-         _class = "array";
-         break;
-      case t_object:
-         _class = "object";
-         break;
+      switch (quote) {
+      case 1: return "'";
+      case 2: return "\"";
+      case 3: return "\\\"";
+      default: return "";
       }
    }
 
-   h2_string slash_if(bool slash) { return slash ? "\\" : ""; }
-
-   void print(h2_paragraph& paragraph, bool fold = false, bool slash = false, int depth = 0, int next = 0)
+   h2_string format_value(int quote)
    {
-      h2_sentence st;
-      st.indent(depth * 2);
+      switch (type) {
+      case t_null: return "null";
+      case t_boolean: return value_boolean ? "true" : "false";
+      case t_number: return (value_double - ::floor(value_double) == 0) ? std::to_string((long long)value_double).c_str() : std::to_string(value_double).c_str();
+      case t_string: return quote_if(quote) + value_string + quote_if(quote);
+      case t_pattern: return "/" + value_string + "/";
+      case t_array:
+      case t_object:
+      default: return "";
+      }
+   }
+   void format(int& _type, h2_string& _key, h2_string& _value, int quote = 0)
+   {
+      _type = type;
+      if (key_string.size()) _key = quote_if(quote) + key_string + quote_if(quote);
+      _value = format_value(quote);
+   }
+
+   h2_paragraph format(bool fold, bool acronym = false, int quote = 0, int depth = 0, int next = 0)
+   {
+      h2_paragraph paragraph;
+      h2_sentence sentence;
+      sentence.indent(depth * 2);
       if (key_string.size())
-         st.push_back(slash_if(slash) + "\"" + key_string + slash_if(slash) + "\": ");
-      if (is_null())
-         st.push_back("null");
-      else if (is_bool())
-         st.push_back(value_boolean ? "true" : "false");
-      else if (is_number()) {
-         if (value_double - ::floor(value_double) == 0)
-            st.push_back(std::to_string((long long)value_double).c_str());
-         else
-            st.push_back(std::to_string(value_double).c_str());
-      } else if (is_string())
-         st.push_back(slash_if(slash) + "\"" + value_string + slash_if(slash) + "\"");
-      else if (is_pattern())
-         st.push_back(slash_if(slash) + "\"/" + value_string + "/" + slash_if(slash) + "\"");
-      else if (is_array() || is_object()) {
+         sentence.push_back(quote_if(quote) + key_string + quote_if(quote) + ": ");
+      if (is_array() || is_object()) {
          h2_paragraph children_paragraph;
          h2_list_for_each_entry (p, i, children, h2_json_node, x)
-            p->print(children_paragraph, fold, slash, depth + 1, children.count() - i - 1);
+            children_paragraph += p->format(fold, acronym, quote, depth + 1, children.count() - i - 1);
 
-         st.push_back(is_array() ? "[" : "{");
+         sentence.push_back(is_array() ? "[" : "{");
          if (fold && children_paragraph.foldable()) {
-            st += children_paragraph.folds();
+            sentence += children_paragraph.folds();
          } else {
-            paragraph.push_back(st), st.clear();
-            paragraph += children_paragraph;
-            st.indent(depth * 2);
+            if (fold && acronym) {
+               sentence.push_back(" ... ");
+            } else {
+               paragraph.push_back(sentence), sentence.clear();
+               paragraph += children_paragraph;
+               sentence.indent(depth * 2);
+            }
          }
-         st.push_back(is_array() ? "]" : "}");
+         sentence.push_back(is_array() ? "]" : "}");
+      } else {
+         sentence.push_back(format_value(quote));
       }
-      if (st.size()) {
-         if (next) st.push_back(", ");
-         paragraph.push_back(st), st.clear();
+      if (sentence.size()) {
+         if (next) sentence.push_back(", ");
+         paragraph.push_back(sentence), sentence.clear();
       }
+      return paragraph;
    }
 };
 // source/json/h2_lexical.cpp
@@ -2336,8 +2428,10 @@ struct h2_json_syntax {
       node.value_string = lexical[i++];
       if (interpret_number(node.value_string, node.value_double)) {
          node.type = h2_json_node::t_number;
+         node.value_string = "";
          return true;
       }
+      node.value_double = 0;
       filter_string(node.value_string);
       node.type = h2_json_node::t_string;
       return true;
@@ -2346,8 +2440,9 @@ struct h2_json_syntax {
    bool parse_array(h2_json_node& node)
    {
       if (!requires("[")) return false;
+      int n = 0;
       while (i < lexical.size() && !lexical[i].equals("]")) {
-         h2_json_node* new_node = new h2_json_node();
+         h2_json_node* new_node = new h2_json_node(n++);
          node.children.push_back(new_node->x);
          if (!parse_value(*new_node)) return false;
          if (i < lexical.size() && lexical[i].equals(","))
@@ -2364,8 +2459,9 @@ struct h2_json_syntax {
    bool parse_object(h2_json_node& node)
    {
       if (!requires("{")) return false;
+      int n = 0;
       while (i < lexical.size() && !lexical[i].equals("}")) {
-         h2_json_node* new_node = new h2_json_node();
+         h2_json_node* new_node = new h2_json_node(n++);
          node.children.push_back(new_node->x);
          if (!parse_key(*new_node)) return false;
          if (!requires(":")) return false;
@@ -2469,7 +2565,7 @@ struct h2_json_tree : h2_json_node {
       h2_json_node* node = this;
       for (auto& c : select.values)
          node = c.key.size() ? node->get(c.key, caseless) : node->get(c.index);
-      node->key_string = "";
+      if (node) node->key_string = "";
       return node;
    }
 
@@ -2532,25 +2628,71 @@ struct h2_json_match {
       }
    }
 
-   static h2_json_node* search(const h2_list& haystack, h2_json_node* needle, bool caseless)
+   static bool likes_array(h2_json_node* e, h2_json_node* a)
    {
-      h2_list_for_each_entry (p, haystack, h2_json_node, x)
-         if (match(needle, p, caseless))
-            return p;
-      return nullptr;
+      double score = 0.0, sub_score = 0.0;
+      if (e->size() == a->size()) score += 0.3;
+      h2_list_for_each_entry (p, i, e->children, h2_json_node, x)
+         sub_score += (sub_score * i + likes(p, a->get(i))) / (i + 1);
+      return score + 0.7 * sub_score;
+   }
+   static bool likes_object(h2_json_node* e, h2_json_node* a)
+   {
+      double score = 0.0, sub_score = 0.0;
+      if (e->size() == a->size()) score += 0.3;
+      h2_list_for_each_entry (p, i, e->children, h2_json_node, x)
+         sub_score += (sub_score * i + likes(p, a->get(p->key_string, false))) / (i + 1);
+      return score + 0.7 * sub_score;
+   }
+
+   static double likes(h2_json_node* e, h2_json_node* a)
+   {
+      if (!e || !a) return 0;
+
+      double score = 0.0;
+      if (e->type == h2_json_node::t_array && a->type == h2_json_node::t_array) {
+         score += likes_array(e, a);
+      } else if (e->type == h2_json_node::t_object && a->type == h2_json_node::t_object) {
+         score += likes_object(e, a);
+      } else if (e->type == a->type) {
+         score += h2_fuzzy::likes(e->value_string.c_str(), a->value_string.c_str());
+      } else {
+      }
+      if (e->key_string.size() || a->key_string.size()) {
+         score = score * 0.5 + 0.5 * h2_fuzzy::likes(e->key_string.c_str(), a->key_string.c_str());
+      }
+      return score;
+   }
+
+   static h2_json_node* search(const h2_list& haystack, h2_json_node* needle)
+   {
+      double max_score = 0.0;
+      h2_json_node* straw = nullptr;
+      h2_list_for_each_entry (p, haystack, h2_json_node, x) {
+         double score = likes(needle, p);
+         if (score > max_score) {
+            max_score = score;
+            straw = p;
+         }
+      }
+      return straw;
    }
 };
 // source/json/h2_dual.cpp
 struct h2_json_dual : h2_libc {  // combine two node into a dual
-   bool key_equal = false, match = false;
+   h2_json_dual* perent;
+   int relationship, depth, index = INT_MAX;
+   bool key_equal = false, value_match = false;
    int e_type = h2_json_node::t_absent, a_type = h2_json_node::t_absent;
-   const char *e_class = "blob", *a_class = "blob";
    h2_string e_key, a_key;
    h2_string e_value, a_value;
    h2_paragraph e_blob, a_blob;
    h2_list children, x;
-   h2_json_dual* perent;
-   int depth;
+
+   static int index_cmp(h2_list* a, h2_list* b)
+   {
+      return h2_list_entry(a, h2_json_dual, x)->index - h2_list_entry(b, h2_json_dual, x)->index;
+   }
 
    ~h2_json_dual()
    {
@@ -2560,37 +2702,44 @@ struct h2_json_dual : h2_libc {  // combine two node into a dual
       }
    }
 
-   h2_json_dual(h2_json_node* e, h2_json_node* a, bool caseless, h2_json_dual* perent_ = nullptr) : perent(perent_), depth(perent_ ? perent_->depth + 1 : 0)
+   h2_json_dual(h2_json_node* e, h2_json_node* a, bool caseless, h2_json_dual* perent_ = nullptr, int relationship_ = 0) : perent(perent_), relationship(relationship_), depth(perent_ ? perent_->depth + 1 : 0)
    {
-      match = h2_json_match::match(e, a, caseless);
-      if (e) e->dual(e_type, e_class, e_key, e_value);
-      if (a) a->dual(a_type, a_class, a_key, a_value);
+      if (e) index = e->index;
+      if (e) e->format(e_type, e_key, e_value, 2);
+      if (a) a->format(a_type, a_key, a_value, 2);
       key_equal = e_key.equals(a_key, caseless);
+      value_match = h2_json_match::match(e, a, caseless);
 
-      if (strcmp(e_class, a_class)) {
-         if (e) e->print(e_blob, O.fold_json, false, depth);
-         if (a) a->print(a_blob, O.fold_json, false, depth);
-         e_class = a_class = "blob";
-      } else if (!strcmp("object", e_class)) {
-         h2_list_for_each_entry (_e, e->children, h2_json_node, x) {
-            h2_json_node* _a = a->get(_e->key_string, false);
-            if (!_a) _a = a->get(_e->key_string, caseless);
-            if (!_a) _a = h2_json_match::search(a->children, _e, caseless);
-            if (_a) {
-               children.push_back((new h2_json_dual(_e, _a, caseless, this))->x);
-               _e->x.out();
-               delete _e;
-               _a->x.out();
-               delete _a;
-            }
+      if ((e_type & 0xf0) != (a_type & 0xf0)) {
+         bool acronym = O.fold_json >= 3 && (!(e && a) /* 1 side */ || relationship < 0);
+         if (e) e_blob = e->format(O.fold_json, acronym, 2, depth);
+         if (a) a_blob = a->format(O.fold_json, acronym, 2, depth);
+      } else if (e_type == h2_json_node::t_object) {
+         h2_list_for_each_entry (child_e, e->children, h2_json_node, x) {
+            h2_json_node* child_a = a->get(child_e->key_string, false);
+            if (!child_a && caseless) child_a = a->get(child_e->key_string, true);
+            if (child_a) move_dual(child_e, child_a, caseless);
          }
-
+         h2_list_for_each_entry (child_e, e->children, h2_json_node, x) {
+            h2_json_node* child_a = h2_json_match::search(a->children, child_e);
+            if (child_a) move_dual(child_e, child_a, caseless);
+         }
          for (int i = 0; i < std::max(e->size(), a->size()); ++i)
-            children.push_back((new h2_json_dual(e->get(i), a->get(i), caseless, this))->x);
-      } else if (!strcmp("array", e_class)) {
+            children.push_back((new h2_json_dual(e->get(i), a->get(i), caseless, this, -1))->x);
+         children.sort(index_cmp);
+      } else if (e_type == h2_json_node::t_array) {
          for (int i = 0; i < std::max(e->size(), a->size()); ++i)
             children.push_back((new h2_json_dual(e->get(i), a->get(i), caseless, this))->x);
       }
+   }
+
+   void move_dual(h2_json_node* child_e, h2_json_node* child_a, bool caseless)
+   {
+      children.push_back((new h2_json_dual(child_e, child_a, caseless, this))->x);
+      child_e->x.out();
+      delete child_e;
+      child_a->x.out();
+      delete child_a;
    }
 
    bool has_next(h2_list* subling, bool expect) const
@@ -2607,7 +2756,7 @@ struct h2_json_dual : h2_libc {  // combine two node into a dual
 
    void align(h2_paragraph& e_paragraph, h2_paragraph& a_paragraph, h2_list* subling = nullptr)
    {
-      if (!strcmp(e_class, "blob")) {
+      if (e_blob.size() || a_blob.size()) {
          e_blob.samesizify(a_blob);
          for (auto& st : e_blob) st.brush("cyan");
          for (auto& st : a_blob) st.brush("yellow");
@@ -2635,25 +2784,28 @@ struct h2_json_dual : h2_libc {  // combine two node into a dual
          a_sentence.push_back(": ");
       }
 
-      if (!strcmp(e_class, "atomic")) {
+      if ((e_type & 0xf0) == 0x10) {  // null, boolean, number, string, pattern
          if (e_value.size()) {
-            if (!match) e_sentence.push_back("\033{green}");
+            if (!value_match) e_sentence.push_back("\033{green}");
             e_sentence.push_back(e_value);
-            if (!match) e_sentence.push_back("\033{reset}");
+            if (!value_match) e_sentence.push_back("\033{reset}");
          }
          if (a_value.size()) {
-            if (!match) a_sentence.push_back("\033{red,bold}");
+            if (!value_match) a_sentence.push_back("\033{red,bold}");
             a_sentence.push_back(a_value);
-            if (!match) a_sentence.push_back("\033{reset}");
+            if (!value_match) a_sentence.push_back("\033{reset}");
          }
-      } else if (!strcmp(e_class, "object") || !strcmp(e_class, "array")) {
+      } else if (e_type == h2_json_node::t_object || e_type == h2_json_node::t_array) {
          h2_paragraph e_children_paragraph, a_children_paragraph;
          h2_list_for_each_entry (p, children, h2_json_dual, x)
             p->align(e_children_paragraph, a_children_paragraph, &children);
 
-         e_sentence.push_back(strcmp(e_class, "object") ? "[" : "{");
-         a_sentence.push_back(strcmp(a_class, "object") ? "[" : "{");
-         if (O.fold_json && e_children_paragraph.foldable() && a_children_paragraph.foldable()) {
+         e_sentence.push_back(e_type == h2_json_node::t_object ? "{" : "[");
+         a_sentence.push_back(a_type == h2_json_node::t_object ? "{" : "[");
+         if (((O.fold_json >= 2 && value_match) || (O.fold_json >= 3 && relationship < 0)) && (!e_children_paragraph.foldable() || !a_children_paragraph.foldable())) {
+            e_sentence += e_children_paragraph.foldable() ? e_children_paragraph.folds() : gray(" ... ");
+            a_sentence += a_children_paragraph.foldable() ? a_children_paragraph.folds() : gray(" ... ");
+         } else if (O.fold_json && e_children_paragraph.foldable() && a_children_paragraph.foldable()) {
             e_sentence += e_children_paragraph.folds();
             a_sentence += a_children_paragraph.folds();
          } else {
@@ -2664,8 +2816,8 @@ struct h2_json_dual : h2_libc {  // combine two node into a dual
             a_paragraph += a_children_paragraph;
             a_sentence.indent(depth * 2);
          }
-         e_sentence.push_back(strcmp(e_class, "object") ? "]" : "}");
-         a_sentence.push_back(strcmp(a_class, "object") ? "]" : "}");
+         e_sentence.push_back(e_type == h2_json_node::t_object ? "}" : "]");
+         a_sentence.push_back(a_type == h2_json_node::t_object ? "}" : "]");
       }
       if (e_sentence.size()) {
          if (has_next(subling, true)) e_sentence.push_back(", ");
@@ -2678,12 +2830,11 @@ struct h2_json_dual : h2_libc {  // combine two node into a dual
    }
 };
 // source/json/h2_json.cpp
-h2_inline h2_paragraph h2_json::format(const h2_string& json_string)
+h2_inline h2_paragraph h2_json::dump(const h2_string& json_string)
 {
    h2_json_tree tree(json_string.c_str());
    if (tree.illformed) return {tree.serialize()};
-   h2_paragraph paragraph;
-   tree.print(paragraph, O.fold_json, O.copy_paste_json);
+   h2_paragraph paragraph = tree.format(O.fold_json, false, O.copy_paste_json);
    if (O.copy_paste_json) {
       if (!paragraph.empty()) {
          paragraph.front() = "\"" + paragraph.front();
@@ -2704,9 +2855,7 @@ h2_inline h2_string h2_json::select(const h2_string& json_string, const h2_strin
    if (tree.illformed) return json_string;
    h2_json_node* node = tree.select(selector.c_str(), caseless);
    if (!node) return "";
-   h2_paragraph paragraph;
-   node->print(paragraph, O.fold_json, false);
-   return paragraph.string();
+   return node->format(O.fold_json, false, 2).string();
 }
 
 h2_inline int h2_json::match(const h2_string& expect, const h2_string& actual, bool caseless)
@@ -5296,12 +5445,12 @@ struct h2_fail_unexpect : h2_fail {
    h2_sentence expection, represent;
    int c = 0;
    h2_fail_unexpect(const h2_sentence& expection_ = {}, const h2_sentence& represent_ = {}, const h2_sentence& explain_ = {}, const char* file_ = nullptr, int line_ = 0) : h2_fail(explain_, file_, line_), expection(expection_), represent(represent_) {}
-   void print_OK1(h2_sentence& st)
+   void print_OK1(h2_sentence& sentence)
    {
       h2_sentence a = h2_sentence(a_expression).acronym(O.verbose >= 4 ? 10000 : 30, 3).gray_quote().brush("cyan");
-      st += "OK" + gray("(") + a + gray(")") + " is " + color("false", "bold,red");
+      sentence += "OK" + gray("(") + a + gray(")") + " is " + color("false", "bold,red");
    }
-   void print_OK2(h2_sentence& st)
+   void print_OK2(h2_sentence& sentence)
    {
       h2_sentence e, a;
       if (!expection.width()) {
@@ -5320,51 +5469,51 @@ struct h2_fail_unexpect : h2_fail {
          a = represent.acronym(O.verbose >= 4 ? 10000 : 30, 3).brush("bold,red") + gray("<==") + h2_sentence(a_expression).acronym(O.verbose ? 10000 : 30, 3).gray_quote().brush("cyan");
       }
 
-      st += "OK" + gray("(") + e + ", " + a + gray(")");
+      sentence += "OK" + gray("(") + e + ", " + a + gray(")");
    }
-   void print_JE(h2_sentence& st)
+   void print_JE(h2_sentence& sentence)
    {
       h2_sentence e = h2_sentence(e_expression.unquote('\"').unquote('\'')).acronym(O.verbose >= 4 ? 10000 : 30, 2).brush("cyan");
       h2_sentence a = h2_sentence(a_expression.unquote('\"').unquote('\'')).acronym(O.verbose >= 4 ? 10000 : 30, 2).brush("bold,red");
-      st += "JE" + gray("(") + e + ", " + a + gray(")");
+      sentence += "JE" + gray("(") + e + ", " + a + gray(")");
    }
-   void print_Inner(h2_sentence& st)
+   void print_Inner(h2_sentence& sentence)
    {
-      if (0 <= seqno) st.printf("dark gray", "%d. ", seqno);
+      if (0 <= seqno) sentence.printf("dark gray", "%d. ", seqno);
       if (expection.width()) {
-         st.printf("", "%sexpect is ", comma_if(c++));
-         st += expection.acronym(O.verbose >= 4 ? 10000 : 30, 3).brush("green");
+         sentence.printf("", "%sexpect is ", comma_if(c++));
+         sentence += expection.acronym(O.verbose >= 4 ? 10000 : 30, 3).brush("green");
       }
       if (represent.width()) {
-         st.printf("", "%sactual is ", comma_if(c++));
-         st += represent.acronym(O.verbose >= 4 ? 10000 : 30, 3).brush("bold,red");
+         sentence.printf("", "%sactual is ", comma_if(c++));
+         sentence += represent.acronym(O.verbose >= 4 ? 10000 : 30, 3).brush("bold,red");
       }
    }
 
    void print(int subling_index = 0, int child_index = 0) override
    {
-      h2_sentence st;
-      st.indent(child_index * 2 + 1);
-      if (!strcmp("Inner", assert_type)) print_Inner(st);
-      if (!strcmp("OK1", assert_type)) print_OK1(st);
-      if (!strcmp("OK2", assert_type)) print_OK2(st);
-      if (!strcmp("JE", assert_type)) print_JE(st);
-      if (explain.width()) st += comma_if(c++, ", ", " ") + explain;
-      if (user_explain.size()) st += {comma_if(c++, ", ", " "), user_explain};
-      h2_color::printl(st + locate());
+      h2_sentence sentence;
+      sentence.indent(child_index * 2 + 1);
+      if (!strcmp("Inner", assert_type)) print_Inner(sentence);
+      if (!strcmp("OK1", assert_type)) print_OK1(sentence);
+      if (!strcmp("OK2", assert_type)) print_OK2(sentence);
+      if (!strcmp("JE", assert_type)) print_JE(sentence);
+      if (explain.width()) sentence += comma_if(c++, ", ", " ") + explain;
+      if (user_explain.size()) sentence += {comma_if(c++, ", ", " "), user_explain};
+      h2_color::printl(sentence + locate());
    }
 };
 
-static inline void fmt_char(char c, bool eq, const char* style, h2_sentence& st)
+static inline void fmt_char(char c, bool eq, const char* style, h2_sentence& sentence)
 {
    char t_style[32] = "";
    if (!eq) strcpy(t_style, style);
    switch (c) {
-   case '\n': st.printf(t_style, "␍"); break;
-   case '\r': st.printf(t_style, "␊"); break;
-   case '\t': st.printf(t_style, "␉"); break;
-   case '\0': st.printf(t_style, "␀"); break;
-   default: st.printf(t_style, "%c", c); break;
+   case '\n': sentence.printf(t_style, "␍"); break;
+   case '\r': sentence.printf(t_style, "␊"); break;
+   case '\t': sentence.printf(t_style, "␉"); break;
+   case '\0': sentence.printf(t_style, "␀"); break;
+   default: sentence.printf(t_style, "%c", c); break;
    }
 }
 
@@ -5377,19 +5526,19 @@ struct h2_fail_strcmp : h2_fail_unexpect {
       h2_fail_unexpect::print(subling_index, child_index);
 
       if (12 < e_value.size() || 12 < a_value.size()) {  // omit short string unified compare layout
-         h2_sentence e_st, a_st;
+         h2_sentence e_sentence, a_sentence;
          for (size_t i = 0; i < e_value.size(); ++i) {
             char ac = i < a_value.size() ? a_value[i] : ' ';
             bool eq = caseless ? ::tolower(e_value[i]) == ::tolower(ac) : e_value[i] == ac;
-            fmt_char(e_value[i], eq, "green", e_st);
+            fmt_char(e_value[i], eq, "green", e_sentence);
          }
          for (size_t i = 0; i < a_value.size(); ++i) {
             char ec = i < e_value.size() ? e_value[i] : ' ';
             bool eq = caseless ? ::tolower(a_value[i]) == ::tolower(ec) : a_value[i] == ec;
-            fmt_char(a_value[i], eq, "red", a_st);
+            fmt_char(a_value[i], eq, "red", a_sentence);
          }
 
-         h2_color::printl(h2_layout::unified(e_st, a_st, "expect", "actual", h2_shell::I().cww));
+         h2_color::printl(h2_layout::unified(e_sentence, a_sentence, "expect", "actual", h2_shell::I().cww));
       }
    }
 };
@@ -5402,10 +5551,10 @@ struct h2_fail_strfind : h2_fail_unexpect {
       h2_fail_unexpect::print(subling_index, child_index);
 
       if (12 < e_value.size() || 12 < a_value.size()) {  // omit short string unified compare layout
-         h2_sentence e_st, a_st;
-         for (size_t i = 0; i < e_value.size(); ++i) fmt_char(e_value[i], true, "", e_st);
-         for (size_t i = 0; i < a_value.size(); ++i) fmt_char(a_value[i], true, "", a_st);
-         h2_color::printl(h2_layout::seperate(e_st, a_st, "expect", "actual", h2_shell::I().cww));
+         h2_sentence e_sentence, a_sentence;
+         for (size_t i = 0; i < e_value.size(); ++i) fmt_char(e_value[i], true, "", e_sentence);
+         for (size_t i = 0; i < a_value.size(); ++i) fmt_char(a_value[i], true, "", a_sentence);
+         h2_color::printl(h2_layout::seperate(e_sentence, a_sentence, "expect", "actual", h2_shell::I().cww));
       }
    }
 };
@@ -5419,8 +5568,8 @@ struct h2_fail_json : h2_fail_unexpect {
       h2_paragraph e_paragraph, a_paragraph;
       h2_fail_unexpect::print(subling_index, child_index);
       if (O.copy_paste_json || !h2_json::diff(e_value, a_value, e_paragraph, a_paragraph, caseless)) {
-         e_paragraph = h2_json::format(e_value);
-         a_paragraph = h2_json::format(a_value);
+         e_paragraph = h2_json::dump(e_value);
+         a_paragraph = h2_json::dump(a_value);
          for (size_t i = 0; i < e_paragraph.size(); ++i)
             if (i) e_paragraph[i].indent(8);
          for (size_t i = 0; i < a_paragraph.size(); ++i)
@@ -5433,7 +5582,7 @@ struct h2_fail_json : h2_fail_unexpect {
          h2_color::printl(a_paragraph);
       } else {
          h2_paragraph paragraph = h2_layout::split(e_paragraph, a_paragraph, "expect", "actual", 0, 'd', h2_shell::I().cww - 1);
-         for (auto& st : paragraph) st.indent(1);
+         for (auto& sentence : paragraph) sentence.indent(1);
          h2_color::printl(paragraph);
       }
    }
@@ -5461,28 +5610,27 @@ struct h2_fail_memcmp : h2_fail_unexpect {
 
    void print_bits(h2_paragraph& e_paragraph, h2_paragraph& a_paragraph, int bytes_per_row)
    {
-      int sts = ::ceil(e_value.size() * 1.0 / bytes_per_row);
-      for (int i = 0; i < sts; ++i) {
-         h2_sentence e_st, a_st;
+      for (int i = 0; i < ::ceil(e_value.size() * 1.0 / bytes_per_row); ++i) {
+         h2_sentence e_sentence, a_sentence;
          for (int j = 0; j < bytes_per_row; ++j) {
-            if (j) e_st.push_back(" ");
-            if (j) a_st.push_back(" ");
+            if (j) e_sentence.push_back(" ");
+            if (j) a_sentence.push_back(" ");
             for (int k = 0; k < 8; ++k) {
                if ((i * bytes_per_row + j) * 8 + k < nbits) {
                   unsigned char e_val = (e_value[i * bytes_per_row + j] >> (7 - k)) & 0x1;
                   unsigned char a_val = (a_value[i * bytes_per_row + j] >> (7 - k)) & 0x1;
                   if (e_val == a_val) {
-                     e_st.push_back(h2_string(e_val ? "1" : "0"));
-                     a_st.push_back(h2_string(a_val ? "1" : "0"));
+                     e_sentence.push_back(h2_string(e_val ? "1" : "0"));
+                     a_sentence.push_back(h2_string(a_val ? "1" : "0"));
                   } else {
-                     e_st.printf("green", e_val ? "1" : "0");
-                     a_st.printf("bold,red", a_val ? "1" : "0");
+                     e_sentence.printf("green", e_val ? "1" : "0");
+                     a_sentence.printf("bold,red", a_val ? "1" : "0");
                   }
                }
             }
          }
-         e_paragraph.push_back(e_st);
-         a_paragraph.push_back(a_st);
+         e_paragraph.push_back(e_sentence);
+         a_paragraph.push_back(a_sentence);
       }
    }
 
@@ -5492,9 +5640,8 @@ struct h2_fail_memcmp : h2_fail_unexpect {
       char fmt[32];
       sprintf(fmt, "%%s%%0%dX", (int)sizeof(T) * 2);
 
-      int sts = ::ceil(e_value.size() * 1.0 / bytes_per_row);
-      for (int i = 0; i < sts; ++i) {
-         h2_sentence e_st, a_st;
+      for (int i = 0; i < ::ceil(e_value.size() * 1.0 / bytes_per_row); ++i) {
+         h2_sentence e_sentence, a_sentence;
          for (int j = 0; j < bytes_per_row; j += sizeof(T)) {
             if (i * bytes_per_row + j < e_value.size()) {
                T e_val = *(T*)(e_value.data() + (i * bytes_per_row + j));
@@ -5503,16 +5650,16 @@ struct h2_fail_memcmp : h2_fail_unexpect {
                sprintf(e_str, fmt, j ? (j / sizeof(T) == 8 ? "  " : " ") : "", e_val);
                sprintf(a_str, fmt, j ? (j / sizeof(T) == 8 ? "  " : " ") : "", a_val);
                if (e_val == a_val) {
-                  e_st.push_back(e_str);
-                  a_st.push_back(a_str);
+                  e_sentence.push_back(e_str);
+                  a_sentence.push_back(a_str);
                } else {
-                  e_st.printf("green", e_str);
-                  a_st.printf("bold,red", a_str);
+                  e_sentence.printf("green", e_str);
+                  a_sentence.printf("bold,red", a_str);
                }
             }
          }
-         e_paragraph.push_back(e_st);
-         a_paragraph.push_back(a_st);
+         e_paragraph.push_back(e_sentence);
+         a_paragraph.push_back(a_sentence);
       }
    }
 };
@@ -5585,9 +5732,9 @@ struct h2_fail_overflow : h2_fail_memory {
    void print(int subling_index = 0, int child_index = 0) override
    {
       int offset = ptr < violate_ptr ? (long long)violate_ptr - ((long long)ptr + size) : (long long)violate_ptr - (long long)ptr;
-      h2_sentence st = h2_stringify(ptr) + " " + color(h2_string("%+d", offset), "bold,red") + " " + gray("(") + h2_stringify(violate_ptr) + gray(")") + " " + color(action, "bold,red") + " " + (offset >= 0 ? "overflow" : "underflow") + " ";
-      for (int i = 0; i < spot.size(); ++i) st.printf("bold,red", "%02X ", spot[i]);
-      h2_color::printl(" " + st + locate() + (bt_trample.count ? " at backtrace:" : ""));
+      h2_sentence t = h2_stringify(ptr) + " " + color(h2_string("%+d", offset), "bold,red") + " " + gray("(") + h2_stringify(violate_ptr) + gray(")") + " " + color(action, "bold,red") + " " + (offset >= 0 ? "overflow" : "underflow") + " ";
+      for (int i = 0; i < spot.size(); ++i) t.printf("bold,red", "%02X ", spot[i]);
+      h2_color::printl(" " + t + locate() + (bt_trample.count ? " at backtrace:" : ""));
       if (bt_trample.count) bt_trample.print(3);
       h2_color::prints("", "  which allocate at backtrace:\n"), bt_allocate.print(3);
    }
@@ -5600,8 +5747,8 @@ struct h2_fail_use_after_free : h2_fail_memory {
    h2_fail_use_after_free(const void* ptr_, const void* violate_ptr_, const char* action_, const h2_backtrace& bt_allocate_, const h2_backtrace& bt_release_, const h2_backtrace& bt_use_) : h2_fail_memory(ptr_, 0, bt_allocate_, bt_release_), violate_ptr(violate_ptr_), action(action_), bt_use(bt_use_) {}
    void print(int subling_index = 0, int child_index = 0) override
    {
-      h2_sentence st = h2_stringify(ptr) + " " + color(h2_string("%+d", (long long)violate_ptr - (long long)ptr), "bold,red") + " " + gray("(") + h2_stringify(violate_ptr) + gray(")") + " " + color(action, "bold,red") + color(" after free", "bold,red");
-      h2_color::printl(" " + st + " at backtrace:"), bt_use.print(2);
+      h2_sentence t = h2_stringify(ptr) + " " + color(h2_string("%+d", (long long)violate_ptr - (long long)ptr), "bold,red") + " " + gray("(") + h2_stringify(violate_ptr) + gray(")") + " " + color(action, "bold,red") + color(" after free", "bold,red");
+      h2_color::printl(" " + t + " at backtrace:"), bt_use.print(2);
       h2_color::prints("", "  which allocate at backtrace:\n"), bt_allocate.print(3);
       h2_color::prints("", "  and free at backtrace:\n"), bt_release.print(3);
    }
@@ -6122,7 +6269,7 @@ static inline void usage()
               H2_USAGE_SP " -\033[36mp\033[0m  " H2_USAGE_SP "           " H2_USAGE_SP " Disable test percentage \033[36mp\033[0mrogressing                       " H2_USAGE_SP "\n" H2_USAGE_BR
               H2_USAGE_SP " -\033[36mr\033[0m  " H2_USAGE_SP "    \033[90m[\033[0mn\033[90m]\033[0m    " H2_USAGE_SP " Repeat test n (default 2) \033[36mr\033[0mounds                          " H2_USAGE_SP "\n" H2_USAGE_BR
               H2_USAGE_SP " -\033[36mc\033[0m  " H2_USAGE_SP "           " H2_USAGE_SP " Output in black-white \033[36mc\033[0molor style                         " H2_USAGE_SP "\n" H2_USAGE_BR
-              H2_USAGE_SP " -\033[36mf\033[0m  " H2_USAGE_SP "    \033[90m[\033[0mn\033[90m]\033[0m    " H2_USAGE_SP " \033[36mf\033[0mold JSON object or array                                 " H2_USAGE_SP "\n" H2_USAGE_BR
+              H2_USAGE_SP " -\033[36mf\033[0m  " H2_USAGE_SP "    \033[90m[\033[0mn\033[90m]\033[0m    " H2_USAGE_SP " \033[36mf\033[0mold JSON object or array, more n more folded             " H2_USAGE_SP "\n" H2_USAGE_BR
               H2_USAGE_SP " -\033[36my\033[0m  " H2_USAGE_SP "           " H2_USAGE_SP " Cop\033[36my\033[0m-paste JSON C/C++ source code                         " H2_USAGE_SP "\n" H2_USAGE_BR
               H2_USAGE_SP " -\033[36mx\033[0m  " H2_USAGE_SP "           " H2_USAGE_SP " Thrown e\033[36mx\033[0mception is considered as failure                 " H2_USAGE_SP "\n" H2_USAGE_BR
               H2_USAGE_SP " -\033[36mv\033[0m  " H2_USAGE_SP "    \033[90m[\033[0mn\033[90m]\033[0m    " H2_USAGE_SP " \033[36mv\033[0merbose output, 0:compact 2:normal 4:acronym default:all  " H2_USAGE_SP "\n" H2_USAGE_BR
@@ -6192,7 +6339,6 @@ h2_inline void h2_option::parse(int argc, const char** argv)
       case 's': shuffle_cases = true; break;
       case 'n': only_previous_failed = true; break;
       case 'p': progressing = !progressing; break;
-      case 'y': copy_paste_json = true; break;
       case 'm': memory_check = !memory_check; break;
       case 'x': exception_as_fail = true; break;
       case 'l':
@@ -6205,7 +6351,8 @@ h2_inline void h2_option::parse(int argc, const char** argv)
          break;
       case 'b': break_after_fails = 1, get.extract_number(break_after_fails); break;
       case 'r': run_rounds = 2, get.extract_number(run_rounds); break;
-      case 'f': fold_json = !fold_json; break;
+      case 'f': fold_json = 0, get.extract_number(fold_json); break;
+      case 'y': copy_paste_json = 3, get.extract_number(copy_paste_json); break;
       case 'v': verbose = 9, get.extract_number(verbose); break;
       case 'd': debug = "gdb new"; break;
       case 'D': debug = "gdb attach"; break;

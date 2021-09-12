@@ -1,20 +1,22 @@
 struct h2_json_node : h2_libc {
    static constexpr int t_absent = 0;
-   static constexpr int t_null = 1;
-   static constexpr int t_boolean = 2;
-   static constexpr int t_number = 3;
-   static constexpr int t_string = 4;
-   static constexpr int t_pattern = 5;  // regex or wildcard pattern
-   static constexpr int t_array = 6;
-   static constexpr int t_object = 7;
+   static constexpr int t_null = 0x10 + 1;
+   static constexpr int t_boolean = 0x10 + 2;
+   static constexpr int t_number = 0x10 + 3;
+   static constexpr int t_string = 0x10 + 4;
+   static constexpr int t_pattern = 0x10 + 5;  // regex or wildcard pattern
+   static constexpr int t_array = 0x20;
+   static constexpr int t_object = 0x30;
 
    int type = t_absent;
+   int index = 0;
    h2_string key_string;
    h2_string value_string;
    double value_double = 0;
    bool value_boolean = false;
    h2_list children, x; /* array or object */
 
+   h2_json_node(int index_ = 0) : index(index_) {}
    ~h2_json_node()
    {
       h2_list_for_each_entry (p, children, h2_json_node, x) {
@@ -53,82 +55,68 @@ struct h2_json_node : h2_libc {
    bool is_array() { return t_array == type; }
    bool is_object() { return t_object == type; }
 
-   void dual(int& _type, const char*& _class, h2_string& _key, h2_string& _value)
+   h2_string quote_if(int quote)
    {
-      if (key_string.size()) _key = "\"" + key_string + "\"";
-      _type = type;
-      switch (type) {
-      case t_null:
-         _class = "atomic";
-         _value = "null";
-         break;
-      case t_boolean:
-         _class = "atomic";
-         _value = value_boolean ? "true" : "false";
-         break;
-      case t_number:
-         _class = "atomic";
-         if (value_double - ::floor(value_double) == 0)
-            _value = std::to_string((long long)value_double).c_str();
-         else
-            _value = std::to_string(value_double).c_str();
-         break;
-      case t_string:
-         _class = "atomic";
-         _value = "\"" + value_string + "\"";
-         break;
-      case t_pattern:
-         _class = "atomic";
-         _value = value_string;
-         break;
-      case t_array:
-         _class = "array";
-         break;
-      case t_object:
-         _class = "object";
-         break;
+      switch (quote) {
+      case 1: return "'";
+      case 2: return "\"";
+      case 3: return "\\\"";
+      default: return "";
       }
    }
 
-   h2_string slash_if(bool slash) { return slash ? "\\" : ""; }
-
-   void print(h2_paragraph& paragraph, bool fold = false, bool slash = false, int depth = 0, int next = 0)
+   h2_string format_value(int quote)
    {
-      h2_sentence st;
-      st.indent(depth * 2);
+      switch (type) {
+      case t_null: return "null";
+      case t_boolean: return value_boolean ? "true" : "false";
+      case t_number: return (value_double - ::floor(value_double) == 0) ? std::to_string((long long)value_double).c_str() : std::to_string(value_double).c_str();
+      case t_string: return quote_if(quote) + value_string + quote_if(quote);
+      case t_pattern: return "/" + value_string + "/";
+      case t_array:
+      case t_object:
+      default: return "";
+      }
+   }
+   void format(int& _type, h2_string& _key, h2_string& _value, int quote = 0)
+   {
+      _type = type;
+      if (key_string.size()) _key = quote_if(quote) + key_string + quote_if(quote);
+      _value = format_value(quote);
+   }
+
+   h2_paragraph format(bool fold, bool acronym = false, int quote = 0, int depth = 0, int next = 0)
+   {
+      h2_paragraph paragraph;
+      h2_sentence sentence;
+      sentence.indent(depth * 2);
       if (key_string.size())
-         st.push_back(slash_if(slash) + "\"" + key_string + slash_if(slash) + "\": ");
-      if (is_null())
-         st.push_back("null");
-      else if (is_bool())
-         st.push_back(value_boolean ? "true" : "false");
-      else if (is_number()) {
-         if (value_double - ::floor(value_double) == 0)
-            st.push_back(std::to_string((long long)value_double).c_str());
-         else
-            st.push_back(std::to_string(value_double).c_str());
-      } else if (is_string())
-         st.push_back(slash_if(slash) + "\"" + value_string + slash_if(slash) + "\"");
-      else if (is_pattern())
-         st.push_back(slash_if(slash) + "\"/" + value_string + "/" + slash_if(slash) + "\"");
-      else if (is_array() || is_object()) {
+         sentence.push_back(quote_if(quote) + key_string + quote_if(quote) + ": ");
+      if (is_array() || is_object()) {
          h2_paragraph children_paragraph;
          h2_list_for_each_entry (p, i, children, h2_json_node, x)
-            p->print(children_paragraph, fold, slash, depth + 1, children.count() - i - 1);
+            children_paragraph += p->format(fold, acronym, quote, depth + 1, children.count() - i - 1);
 
-         st.push_back(is_array() ? "[" : "{");
+         sentence.push_back(is_array() ? "[" : "{");
          if (fold && children_paragraph.foldable()) {
-            st += children_paragraph.folds();
+            sentence += children_paragraph.folds();
          } else {
-            paragraph.push_back(st), st.clear();
-            paragraph += children_paragraph;
-            st.indent(depth * 2);
+            if (fold && acronym) {
+               sentence.push_back(" ... ");
+            } else {
+               paragraph.push_back(sentence), sentence.clear();
+               paragraph += children_paragraph;
+               sentence.indent(depth * 2);
+            }
          }
-         st.push_back(is_array() ? "]" : "}");
+         sentence.push_back(is_array() ? "]" : "}");
+      } else {
+         sentence.push_back(format_value(quote));
       }
-      if (st.size()) {
-         if (next) st.push_back(", ");
-         paragraph.push_back(st), st.clear();
+      if (sentence.size()) {
+         if (next) sentence.push_back(", ");
+         paragraph.push_back(sentence), sentence.clear();
       }
+      return paragraph;
    }
 };

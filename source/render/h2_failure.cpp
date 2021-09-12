@@ -70,12 +70,12 @@ struct h2_fail_unexpect : h2_fail {
    h2_sentence expection, represent;
    int c = 0;
    h2_fail_unexpect(const h2_sentence& expection_ = {}, const h2_sentence& represent_ = {}, const h2_sentence& explain_ = {}, const char* file_ = nullptr, int line_ = 0) : h2_fail(explain_, file_, line_), expection(expection_), represent(represent_) {}
-   void print_OK1(h2_sentence& st)
+   void print_OK1(h2_sentence& sentence)
    {
       h2_sentence a = h2_sentence(a_expression).acronym(O.verbose >= 4 ? 10000 : 30, 3).gray_quote().brush("cyan");
-      st += "OK" + gray("(") + a + gray(")") + " is " + color("false", "bold,red");
+      sentence += "OK" + gray("(") + a + gray(")") + " is " + color("false", "bold,red");
    }
-   void print_OK2(h2_sentence& st)
+   void print_OK2(h2_sentence& sentence)
    {
       h2_sentence e, a;
       if (!expection.width()) {
@@ -94,51 +94,51 @@ struct h2_fail_unexpect : h2_fail {
          a = represent.acronym(O.verbose >= 4 ? 10000 : 30, 3).brush("bold,red") + gray("<==") + h2_sentence(a_expression).acronym(O.verbose ? 10000 : 30, 3).gray_quote().brush("cyan");
       }
 
-      st += "OK" + gray("(") + e + ", " + a + gray(")");
+      sentence += "OK" + gray("(") + e + ", " + a + gray(")");
    }
-   void print_JE(h2_sentence& st)
+   void print_JE(h2_sentence& sentence)
    {
       h2_sentence e = h2_sentence(e_expression.unquote('\"').unquote('\'')).acronym(O.verbose >= 4 ? 10000 : 30, 2).brush("cyan");
       h2_sentence a = h2_sentence(a_expression.unquote('\"').unquote('\'')).acronym(O.verbose >= 4 ? 10000 : 30, 2).brush("bold,red");
-      st += "JE" + gray("(") + e + ", " + a + gray(")");
+      sentence += "JE" + gray("(") + e + ", " + a + gray(")");
    }
-   void print_Inner(h2_sentence& st)
+   void print_Inner(h2_sentence& sentence)
    {
-      if (0 <= seqno) st.printf("dark gray", "%d. ", seqno);
+      if (0 <= seqno) sentence.printf("dark gray", "%d. ", seqno);
       if (expection.width()) {
-         st.printf("", "%sexpect is ", comma_if(c++));
-         st += expection.acronym(O.verbose >= 4 ? 10000 : 30, 3).brush("green");
+         sentence.printf("", "%sexpect is ", comma_if(c++));
+         sentence += expection.acronym(O.verbose >= 4 ? 10000 : 30, 3).brush("green");
       }
       if (represent.width()) {
-         st.printf("", "%sactual is ", comma_if(c++));
-         st += represent.acronym(O.verbose >= 4 ? 10000 : 30, 3).brush("bold,red");
+         sentence.printf("", "%sactual is ", comma_if(c++));
+         sentence += represent.acronym(O.verbose >= 4 ? 10000 : 30, 3).brush("bold,red");
       }
    }
 
    void print(int subling_index = 0, int child_index = 0) override
    {
-      h2_sentence st;
-      st.indent(child_index * 2 + 1);
-      if (!strcmp("Inner", assert_type)) print_Inner(st);
-      if (!strcmp("OK1", assert_type)) print_OK1(st);
-      if (!strcmp("OK2", assert_type)) print_OK2(st);
-      if (!strcmp("JE", assert_type)) print_JE(st);
-      if (explain.width()) st += comma_if(c++, ", ", " ") + explain;
-      if (user_explain.size()) st += {comma_if(c++, ", ", " "), user_explain};
-      h2_color::printl(st + locate());
+      h2_sentence sentence;
+      sentence.indent(child_index * 2 + 1);
+      if (!strcmp("Inner", assert_type)) print_Inner(sentence);
+      if (!strcmp("OK1", assert_type)) print_OK1(sentence);
+      if (!strcmp("OK2", assert_type)) print_OK2(sentence);
+      if (!strcmp("JE", assert_type)) print_JE(sentence);
+      if (explain.width()) sentence += comma_if(c++, ", ", " ") + explain;
+      if (user_explain.size()) sentence += {comma_if(c++, ", ", " "), user_explain};
+      h2_color::printl(sentence + locate());
    }
 };
 
-static inline void fmt_char(char c, bool eq, const char* style, h2_sentence& st)
+static inline void fmt_char(char c, bool eq, const char* style, h2_sentence& sentence)
 {
    char t_style[32] = "";
    if (!eq) strcpy(t_style, style);
    switch (c) {
-   case '\n': st.printf(t_style, "␍"); break;
-   case '\r': st.printf(t_style, "␊"); break;
-   case '\t': st.printf(t_style, "␉"); break;
-   case '\0': st.printf(t_style, "␀"); break;
-   default: st.printf(t_style, "%c", c); break;
+   case '\n': sentence.printf(t_style, "␍"); break;
+   case '\r': sentence.printf(t_style, "␊"); break;
+   case '\t': sentence.printf(t_style, "␉"); break;
+   case '\0': sentence.printf(t_style, "␀"); break;
+   default: sentence.printf(t_style, "%c", c); break;
    }
 }
 
@@ -151,19 +151,19 @@ struct h2_fail_strcmp : h2_fail_unexpect {
       h2_fail_unexpect::print(subling_index, child_index);
 
       if (12 < e_value.size() || 12 < a_value.size()) {  // omit short string unified compare layout
-         h2_sentence e_st, a_st;
+         h2_sentence e_sentence, a_sentence;
          for (size_t i = 0; i < e_value.size(); ++i) {
             char ac = i < a_value.size() ? a_value[i] : ' ';
             bool eq = caseless ? ::tolower(e_value[i]) == ::tolower(ac) : e_value[i] == ac;
-            fmt_char(e_value[i], eq, "green", e_st);
+            fmt_char(e_value[i], eq, "green", e_sentence);
          }
          for (size_t i = 0; i < a_value.size(); ++i) {
             char ec = i < e_value.size() ? e_value[i] : ' ';
             bool eq = caseless ? ::tolower(a_value[i]) == ::tolower(ec) : a_value[i] == ec;
-            fmt_char(a_value[i], eq, "red", a_st);
+            fmt_char(a_value[i], eq, "red", a_sentence);
          }
 
-         h2_color::printl(h2_layout::unified(e_st, a_st, "expect", "actual", h2_shell::I().cww));
+         h2_color::printl(h2_layout::unified(e_sentence, a_sentence, "expect", "actual", h2_shell::I().cww));
       }
    }
 };
@@ -176,10 +176,10 @@ struct h2_fail_strfind : h2_fail_unexpect {
       h2_fail_unexpect::print(subling_index, child_index);
 
       if (12 < e_value.size() || 12 < a_value.size()) {  // omit short string unified compare layout
-         h2_sentence e_st, a_st;
-         for (size_t i = 0; i < e_value.size(); ++i) fmt_char(e_value[i], true, "", e_st);
-         for (size_t i = 0; i < a_value.size(); ++i) fmt_char(a_value[i], true, "", a_st);
-         h2_color::printl(h2_layout::seperate(e_st, a_st, "expect", "actual", h2_shell::I().cww));
+         h2_sentence e_sentence, a_sentence;
+         for (size_t i = 0; i < e_value.size(); ++i) fmt_char(e_value[i], true, "", e_sentence);
+         for (size_t i = 0; i < a_value.size(); ++i) fmt_char(a_value[i], true, "", a_sentence);
+         h2_color::printl(h2_layout::seperate(e_sentence, a_sentence, "expect", "actual", h2_shell::I().cww));
       }
    }
 };
@@ -193,8 +193,8 @@ struct h2_fail_json : h2_fail_unexpect {
       h2_paragraph e_paragraph, a_paragraph;
       h2_fail_unexpect::print(subling_index, child_index);
       if (O.copy_paste_json || !h2_json::diff(e_value, a_value, e_paragraph, a_paragraph, caseless)) {
-         e_paragraph = h2_json::format(e_value);
-         a_paragraph = h2_json::format(a_value);
+         e_paragraph = h2_json::dump(e_value);
+         a_paragraph = h2_json::dump(a_value);
          for (size_t i = 0; i < e_paragraph.size(); ++i)
             if (i) e_paragraph[i].indent(8);
          for (size_t i = 0; i < a_paragraph.size(); ++i)
@@ -207,7 +207,7 @@ struct h2_fail_json : h2_fail_unexpect {
          h2_color::printl(a_paragraph);
       } else {
          h2_paragraph paragraph = h2_layout::split(e_paragraph, a_paragraph, "expect", "actual", 0, 'd', h2_shell::I().cww - 1);
-         for (auto& st : paragraph) st.indent(1);
+         for (auto& sentence : paragraph) sentence.indent(1);
          h2_color::printl(paragraph);
       }
    }
@@ -235,28 +235,27 @@ struct h2_fail_memcmp : h2_fail_unexpect {
 
    void print_bits(h2_paragraph& e_paragraph, h2_paragraph& a_paragraph, int bytes_per_row)
    {
-      int sts = ::ceil(e_value.size() * 1.0 / bytes_per_row);
-      for (int i = 0; i < sts; ++i) {
-         h2_sentence e_st, a_st;
+      for (int i = 0; i < ::ceil(e_value.size() * 1.0 / bytes_per_row); ++i) {
+         h2_sentence e_sentence, a_sentence;
          for (int j = 0; j < bytes_per_row; ++j) {
-            if (j) e_st.push_back(" ");
-            if (j) a_st.push_back(" ");
+            if (j) e_sentence.push_back(" ");
+            if (j) a_sentence.push_back(" ");
             for (int k = 0; k < 8; ++k) {
                if ((i * bytes_per_row + j) * 8 + k < nbits) {
                   unsigned char e_val = (e_value[i * bytes_per_row + j] >> (7 - k)) & 0x1;
                   unsigned char a_val = (a_value[i * bytes_per_row + j] >> (7 - k)) & 0x1;
                   if (e_val == a_val) {
-                     e_st.push_back(h2_string(e_val ? "1" : "0"));
-                     a_st.push_back(h2_string(a_val ? "1" : "0"));
+                     e_sentence.push_back(h2_string(e_val ? "1" : "0"));
+                     a_sentence.push_back(h2_string(a_val ? "1" : "0"));
                   } else {
-                     e_st.printf("green", e_val ? "1" : "0");
-                     a_st.printf("bold,red", a_val ? "1" : "0");
+                     e_sentence.printf("green", e_val ? "1" : "0");
+                     a_sentence.printf("bold,red", a_val ? "1" : "0");
                   }
                }
             }
          }
-         e_paragraph.push_back(e_st);
-         a_paragraph.push_back(a_st);
+         e_paragraph.push_back(e_sentence);
+         a_paragraph.push_back(a_sentence);
       }
    }
 
@@ -266,9 +265,8 @@ struct h2_fail_memcmp : h2_fail_unexpect {
       char fmt[32];
       sprintf(fmt, "%%s%%0%dX", (int)sizeof(T) * 2);
 
-      int sts = ::ceil(e_value.size() * 1.0 / bytes_per_row);
-      for (int i = 0; i < sts; ++i) {
-         h2_sentence e_st, a_st;
+      for (int i = 0; i < ::ceil(e_value.size() * 1.0 / bytes_per_row); ++i) {
+         h2_sentence e_sentence, a_sentence;
          for (int j = 0; j < bytes_per_row; j += sizeof(T)) {
             if (i * bytes_per_row + j < e_value.size()) {
                T e_val = *(T*)(e_value.data() + (i * bytes_per_row + j));
@@ -277,16 +275,16 @@ struct h2_fail_memcmp : h2_fail_unexpect {
                sprintf(e_str, fmt, j ? (j / sizeof(T) == 8 ? "  " : " ") : "", e_val);
                sprintf(a_str, fmt, j ? (j / sizeof(T) == 8 ? "  " : " ") : "", a_val);
                if (e_val == a_val) {
-                  e_st.push_back(e_str);
-                  a_st.push_back(a_str);
+                  e_sentence.push_back(e_str);
+                  a_sentence.push_back(a_str);
                } else {
-                  e_st.printf("green", e_str);
-                  a_st.printf("bold,red", a_str);
+                  e_sentence.printf("green", e_str);
+                  a_sentence.printf("bold,red", a_str);
                }
             }
          }
-         e_paragraph.push_back(e_st);
-         a_paragraph.push_back(a_st);
+         e_paragraph.push_back(e_sentence);
+         a_paragraph.push_back(a_sentence);
       }
    }
 };
@@ -359,9 +357,9 @@ struct h2_fail_overflow : h2_fail_memory {
    void print(int subling_index = 0, int child_index = 0) override
    {
       int offset = ptr < violate_ptr ? (long long)violate_ptr - ((long long)ptr + size) : (long long)violate_ptr - (long long)ptr;
-      h2_sentence st = h2_stringify(ptr) + " " + color(h2_string("%+d", offset), "bold,red") + " " + gray("(") + h2_stringify(violate_ptr) + gray(")") + " " + color(action, "bold,red") + " " + (offset >= 0 ? "overflow" : "underflow") + " ";
-      for (int i = 0; i < spot.size(); ++i) st.printf("bold,red", "%02X ", spot[i]);
-      h2_color::printl(" " + st + locate() + (bt_trample.count ? " at backtrace:" : ""));
+      h2_sentence t = h2_stringify(ptr) + " " + color(h2_string("%+d", offset), "bold,red") + " " + gray("(") + h2_stringify(violate_ptr) + gray(")") + " " + color(action, "bold,red") + " " + (offset >= 0 ? "overflow" : "underflow") + " ";
+      for (int i = 0; i < spot.size(); ++i) t.printf("bold,red", "%02X ", spot[i]);
+      h2_color::printl(" " + t + locate() + (bt_trample.count ? " at backtrace:" : ""));
       if (bt_trample.count) bt_trample.print(3);
       h2_color::prints("", "  which allocate at backtrace:\n"), bt_allocate.print(3);
    }
@@ -374,8 +372,8 @@ struct h2_fail_use_after_free : h2_fail_memory {
    h2_fail_use_after_free(const void* ptr_, const void* violate_ptr_, const char* action_, const h2_backtrace& bt_allocate_, const h2_backtrace& bt_release_, const h2_backtrace& bt_use_) : h2_fail_memory(ptr_, 0, bt_allocate_, bt_release_), violate_ptr(violate_ptr_), action(action_), bt_use(bt_use_) {}
    void print(int subling_index = 0, int child_index = 0) override
    {
-      h2_sentence st = h2_stringify(ptr) + " " + color(h2_string("%+d", (long long)violate_ptr - (long long)ptr), "bold,red") + " " + gray("(") + h2_stringify(violate_ptr) + gray(")") + " " + color(action, "bold,red") + color(" after free", "bold,red");
-      h2_color::printl(" " + st + " at backtrace:"), bt_use.print(2);
+      h2_sentence t = h2_stringify(ptr) + " " + color(h2_string("%+d", (long long)violate_ptr - (long long)ptr), "bold,red") + " " + gray("(") + h2_stringify(violate_ptr) + gray(")") + " " + color(action, "bold,red") + color(" after free", "bold,red");
+      h2_color::printl(" " + t + " at backtrace:"), bt_use.print(2);
       h2_color::prints("", "  which allocate at backtrace:\n"), bt_allocate.print(3);
       h2_color::prints("", "  and free at backtrace:\n"), bt_release.print(3);
    }

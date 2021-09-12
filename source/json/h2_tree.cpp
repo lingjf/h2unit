@@ -15,7 +15,7 @@ struct h2_json_tree : h2_json_node {
       h2_json_node* node = this;
       for (auto& c : select.values)
          node = c.key.size() ? node->get(c.key, caseless) : node->get(c.index);
-      node->key_string = "";
+      if (node) node->key_string = "";
       return node;
    }
 

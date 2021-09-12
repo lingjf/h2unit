@@ -174,6 +174,12 @@ SUITE(string)
       OK(" abc  ", h2::h2_string("abc").center(6));
    }
 
+   Case(center abnormal)
+   {
+      OK("", h2::h2_string("").center(0));
+      OK("abc", h2::h2_string("abc").center(2));
+   }
+
    Case(concat)
    {
       h2::h2_string t;
