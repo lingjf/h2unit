@@ -51,9 +51,9 @@ h2_inline void h2_paragraph::sequence(unsigned indent, int start)
    }
 }
 
-h2_inline void h2_paragraph::samesizify(h2_paragraph& b)
+h2_inline void h2_paragraph::samesizify(h2_paragraph& a, h2_paragraph& b)
 {
-   size_t max_y = std::max(size(), b.size());
-   for (size_t i = size(); i < max_y; ++i) push_back(h2_sentence());
-   for (size_t i = b.size(); i < max_y; ++i) b.push_back(h2_sentence());
+   size_t size = std::max(a.size(), b.size());
+   for (size_t i = a.size(); i < size; ++i) a.push_back(h2_sentence());
+   for (size_t i = b.size(); i < size; ++i) b.push_back(h2_sentence());
 }

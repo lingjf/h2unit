@@ -31,43 +31,35 @@ SUITE(pattern match)
 
 SUITE(fuzzy match)
 {
+   Case(edit distance)
+   {
+      OK(0, h2::h2_fuzzy::levenshtein("a", "a", 1, 1, false));
+      OK(1, h2::h2_fuzzy::levenshtein("a", "b", 1, 1, false));
+      OK(2, h2::h2_fuzzy::levenshtein("a", "bc", 1, 2, false));
+      OK(3, h2::h2_fuzzy::levenshtein("abc", "xyz", 3, 3, false));
+   }
+
    Case(absolute match)
    {
-      OK(1, h2::h2_fuzzy::likes("", ""));
-      OK(1, h2::h2_fuzzy::likes("a", "a"));
-      OK(1, h2::h2_fuzzy::likes("ab", "ab"));
-      OK(1, h2::h2_fuzzy::likes("abc", "abc"));
+      OK(1, h2::h2_fuzzy::similarity("", "", false));
+      OK(1, h2::h2_fuzzy::similarity("a", "a", false));
+      OK(1, h2::h2_fuzzy::similarity("ab", "ab", false));
+      OK(1, h2::h2_fuzzy::similarity("abc", "abc", false));
    }
 
    Case(absolute not match)
    {
-      OK(0, h2::h2_fuzzy::likes("a", "b"));
-      OK(0, h2::h2_fuzzy::likes("abc", "xyz"));
+      OK(0, h2::h2_fuzzy::similarity("a", "b", false));
+      OK(0, h2::h2_fuzzy::similarity("abc", "xyz", false));
    }
 
    Case(not match)
    {
-      double abcd_abc1 = h2::h2_fuzzy::likes("abcd", "abc1");
-      double abcd_abce = h2::h2_fuzzy::likes("abcd", "abce");
-      double abcd_ab12 = h2::h2_fuzzy::likes("abcd", "ab12");
-      double abcd_a123 = h2::h2_fuzzy::likes("abcd", "a123");
-      double abcd_1bcd = h2::h2_fuzzy::likes("abcd", "1bcd");
-      double abcd_12cd = h2::h2_fuzzy::likes("abcd", "12cd");
-
-      // OK(-1, abcd_abc1);
-      // OK(-1, abcd_abce);
-      // OK(-1, abcd_ab12);
-      // OK(-1, abcd_a123);
-      // OK(-1, abcd_1bcd);
-      // OK(-1, abcd_12cd);
-      OK(abcd_abc1 == abcd_abce);
-      OK(abcd_ab12 > abcd_a123);
-   }
-
-   Case(edit distance)
-   {
-      OK(1, h2::h2_fuzzy::levenshtein("a", "b", 1, 1));
-      OK(2, h2::h2_fuzzy::levenshtein("a", "bc", 1, 2));
-      OK(3, h2::h2_fuzzy::levenshtein("abc", "xyz", 3, 3));
+      OK(0.75, h2::h2_fuzzy::similarity("abcd", "abc1", false));
+      OK(0.75, h2::h2_fuzzy::similarity("abcd", "abce", false));
+      OK(0.5, h2::h2_fuzzy::similarity("abcd", "ab12", false));
+      OK(0.25, h2::h2_fuzzy::similarity("abcd", "a123", false));
+      OK(0.75, h2::h2_fuzzy::similarity("abcd", "1bcd", false));
+      OK(0.5, h2::h2_fuzzy::similarity("abcd", "12cd", false));
    }
 }

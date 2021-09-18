@@ -1,5 +1,5 @@
 
-/* v5.13 2021-09-12 22:12:20 */
+/* v5.13 2021-09-19 01:11:23 */
 /* https://github.com/lingjf/h2unit */
 /* Apache Licence 2.0 */
 #include "h2unit.hpp"
@@ -329,105 +329,29 @@ h2_inline bool h2_pattern::match(const char* pattern, const char* subject, bool 
 }
 
 struct h2_fuzzy {
-   static int levenshtein(const char* s1, const char* s2, int n1, int n2)
+   static unsigned int levenshtein(const char* s1, const char* s2, int n1, int n2, bool caseless)
    {
       h2_vector<unsigned int> col(n2 + 1), prevCol(n2 + 1);
-
       for (unsigned int i = 0; i < prevCol.size(); i++)
          prevCol[i] = i;
       for (unsigned int i = 0; i < n1; i++) {
          col[0] = i + 1;
-         for (unsigned int j = 0; j < n2; j++)
-            col[j + 1] = std::min(std::min(1 + col[j], 1 + prevCol[1 + j]), prevCol[j] + (s1[i] == s2[j] ? 0 : 1));
+         for (unsigned int j = 0; j < n2; j++) {
+            bool eq = caseless ? ::tolower(s1[i]) == ::tolower(s2[j]) : s1[i] == s2[j];
+            col[j + 1] = std::min(std::min(1 + col[j], 1 + prevCol[1 + j]), prevCol[j] + (eq ? 0 : 1));
+         }
          col.swap(prevCol);
       }
-
       return prevCol[n2];
    }
-   static int LCS(const char* s1, const char* s2, int n1, int n2)
+
+   // 1 absolute match, 0 absolute not match
+   static double similarity(const char* s1, const char* s2, bool caseless)
    {
-      return 1;
-   }
-   static double jaro(const char* s1, const char* s2, int n1, int n2)
-   {
-      if (n1 == 0) return n2 == 0 ? 1.0 : 0.0;
-
-      // max distance between two chars to be considered matching floor() is ommitted due to integer division rules
-      int match_distance = std::max(n1, n2) / 2 - 1;
-
-      // arrays of bools that signify if that char in the matcing string has a match
-      int* s1_matches = (int*)calloc(n1, sizeof(int));
-      int* s2_matches = (int*)calloc(n2, sizeof(int));
-
-      // number of matches and transpositions
-      double matches = 0.0;
-      double transpositions = 0.0;
-
-      // find the matches
-      for (int i = 0; i < n1; i++) {
-         // start and end take into account the match distance
-         int start = std::max(0, i - match_distance);
-         int end = std::min(i + match_distance + 1, n2);
-
-         for (int k = start; k < end; k++) {
-            // if s2 already has a match continue
-            if (s2_matches[k]) continue;
-            // if s1 and s2 are not
-            if (::tolower(s1[i]) != ::tolower(s2[i])) continue;
-            // otherwise assume there is a match
-            s1_matches[i] = 1;
-            s2_matches[k] = 1;
-            matches++;
-            break;
-         }
-      }
-
-      // if there are no matches return 0
-      if (matches == 0) {
-         free(s1_matches);
-         free(s2_matches);
-         return 0.0;
-      }
-
-      // count transpositions
-      int k = 0;
-      for (int i = 0; i < n1; i++) {
-         // if there are no matches in s1 continue
-         if (!s1_matches[i]) continue;
-         // while there is no match in s2 increment k
-         while (!s2_matches[k]) k++;
-         // increment transpositions
-         if (::tolower(s1[i]) != ::tolower(s2[k])) transpositions++;
-         k++;
-      }
-
-      // divide the number of transpositions by two as per the algorithm specs this division is valid because the counted transpositions include both instances of the transposed characters.
-      transpositions /= 2.0;
-
-      free(s1_matches);
-      free(s2_matches);
-
-      return ((matches / n1) + (matches / n2) + ((matches - transpositions) / matches)) / 3.0;
-   }
-
-   static double jaro_winkler(const char* s1, const char* s2, int n1, int n2)
-   {
-      double distance = jaro(s1, s2, n1, n2);
-
-      // finds the number of common terms in the first 3 strings, max 3.
-      int prefix_length = 0;
-      if (n1 != 0 && n2 != 0)
-         while (prefix_length < 3 && ::tolower(*s1++) == ::tolower(*s2++)) prefix_length++;
-
-      // 0.1 is the default scaling factor
-      return distance + prefix_length * 0.1 * (1 - distance);
-   }
-
-   static double likes(const char* s1, const char* s2, bool caseless = false)
-   {
-      const size_t n1 = strlen(s1), n2 = strlen(s2);
-      if (caseless ? strcasecmp(s1, s2) == 0 : strcmp(s1, s2) == 0) return 1;
-      return jaro_winkler(s1, s2, n1, n2);
+      int n1 = strlen(s1), n2 = strlen(s2);
+      if (!n1 && !n2) return 1;
+      double ed = levenshtein(s1, s2, n1, n2, caseless);
+      return 1.0 - ed / ((n1 + n2) * 0.5);
    }
 };
 // source/utils/h2_misc.cpp
@@ -930,11 +854,11 @@ h2_inline h2_string h2_sentence::string() const
    return s;
 }
 
-h2_inline void h2_sentence::samesizify(h2_sentence& b)
+h2_inline void h2_sentence::samesizify(h2_sentence& a, h2_sentence& b)
 {
-   int w = width(), b_w = b.width();
-   padding(std::max(w, b_w) - w);
-   b.padding(std::max(w, b_w) - b_w);
+   int a_w = a.width(), b_w = b.width();
+   a.padding(std::max(a_w, b_w) - a_w);
+   b.padding(std::max(a_w, b_w) - b_w);
 }
 // source/utils/h2_paragraph.cpp
 h2_inline h2_paragraph& h2_paragraph::operator+=(const h2_paragraph& paragraph)
@@ -990,11 +914,11 @@ h2_inline void h2_paragraph::sequence(unsigned indent, int start)
    }
 }
 
-h2_inline void h2_paragraph::samesizify(h2_paragraph& b)
+h2_inline void h2_paragraph::samesizify(h2_paragraph& a, h2_paragraph& b)
 {
-   size_t max_y = std::max(size(), b.size());
-   for (size_t i = size(); i < max_y; ++i) push_back(h2_sentence());
-   for (size_t i = b.size(); i < max_y; ++i) b.push_back(h2_sentence());
+   size_t size = std::max(a.size(), b.size());
+   for (size_t i = a.size(); i < size; ++i) a.push_back(h2_sentence());
+   for (size_t i = b.size(); i < size; ++i) b.push_back(h2_sentence());
 }
 // source/utils/h2_color.cpp
 struct h2_shell {
@@ -2129,13 +2053,13 @@ struct tinyexpr
 // source/json/h2_node.cpp
 struct h2_json_node : h2_libc {
    static constexpr int t_absent = 0;
-   static constexpr int t_null = 0x10 + 1;
-   static constexpr int t_boolean = 0x10 + 2;
-   static constexpr int t_number = 0x10 + 3;
-   static constexpr int t_string = 0x10 + 4;
-   static constexpr int t_pattern = 0x10 + 5;  // regex or wildcard pattern
-   static constexpr int t_array = 0x20;
-   static constexpr int t_object = 0x30;
+   static constexpr int t_null = 1;
+   static constexpr int t_boolean = 2;
+   static constexpr int t_number = 3;
+   static constexpr int t_string = 4;
+   static constexpr int t_pattern = 5;  // regex or wildcard pattern
+   static constexpr int t_array = 6;
+   static constexpr int t_object = 7;
 
    int type = t_absent;
    int index = 0;
@@ -2207,6 +2131,7 @@ struct h2_json_node : h2_libc {
       default: return "";
       }
    }
+
    void format(int& _type, h2_string& _key, h2_string& _value, int quote = 0)
    {
       _type = type;
@@ -2214,7 +2139,7 @@ struct h2_json_node : h2_libc {
       _value = format_value(quote);
    }
 
-   h2_paragraph format(bool fold, bool acronym = false, int quote = 0, int depth = 0, int next = 0)
+   h2_paragraph format(bool fold, int quote = 0, int depth = 0, int next = 0)
    {
       h2_paragraph paragraph;
       h2_sentence sentence;
@@ -2224,19 +2149,14 @@ struct h2_json_node : h2_libc {
       if (is_array() || is_object()) {
          h2_paragraph children_paragraph;
          h2_list_for_each_entry (p, i, children, h2_json_node, x)
-            children_paragraph += p->format(fold, acronym, quote, depth + 1, children.count() - i - 1);
-
+            children_paragraph += p->format(fold, quote, depth + 1, children.count() - i - 1);
          sentence.push_back(is_array() ? "[" : "{");
          if (fold && children_paragraph.foldable()) {
             sentence += children_paragraph.folds();
          } else {
-            if (fold && acronym) {
-               sentence.push_back(" ... ");
-            } else {
-               paragraph.push_back(sentence), sentence.clear();
-               paragraph += children_paragraph;
-               sentence.indent(depth * 2);
-            }
+            paragraph.push_back(sentence), sentence.clear();
+            paragraph += children_paragraph;
+            sentence.indent(depth * 2);
          }
          sentence.push_back(is_array() ? "]" : "}");
       } else {
@@ -2628,48 +2548,48 @@ struct h2_json_match {
       }
    }
 
-   static bool likes_array(h2_json_node* e, h2_json_node* a)
+   static double array_similarity(h2_json_node* e, h2_json_node* a, bool caseless)
    {
       double score = 0.0, sub_score = 0.0;
       if (e->size() == a->size()) score += 0.3;
       h2_list_for_each_entry (p, i, e->children, h2_json_node, x)
-         sub_score += (sub_score * i + likes(p, a->get(i))) / (i + 1);
-      return score + 0.7 * sub_score;
-   }
-   static bool likes_object(h2_json_node* e, h2_json_node* a)
-   {
-      double score = 0.0, sub_score = 0.0;
-      if (e->size() == a->size()) score += 0.3;
-      h2_list_for_each_entry (p, i, e->children, h2_json_node, x)
-         sub_score += (sub_score * i + likes(p, a->get(p->key_string, false))) / (i + 1);
+         sub_score += (sub_score * i + similarity(p, a->get(i), caseless)) / (i + 1);
       return score + 0.7 * sub_score;
    }
 
-   static double likes(h2_json_node* e, h2_json_node* a)
+   static double object_similarity(h2_json_node* e, h2_json_node* a, bool caseless)
+   {
+      double score = 0.0, sub_score = 0.0;
+      if (e->size() == a->size()) score += 0.3;
+      h2_list_for_each_entry (p, i, e->children, h2_json_node, x)
+         sub_score += (sub_score * i + similarity(p, a->get(p->key_string, false), caseless)) / (i + 1);
+      return score + 0.7 * sub_score;
+   }
+
+   static double similarity(h2_json_node* e, h2_json_node* a, bool caseless)
    {
       if (!e || !a) return 0;
-
       double score = 0.0;
       if (e->type == h2_json_node::t_array && a->type == h2_json_node::t_array) {
-         score += likes_array(e, a);
+         score += array_similarity(e, a, caseless);
       } else if (e->type == h2_json_node::t_object && a->type == h2_json_node::t_object) {
-         score += likes_object(e, a);
+         score += object_similarity(e, a, caseless);
       } else if (e->type == a->type) {
-         score += h2_fuzzy::likes(e->value_string.c_str(), a->value_string.c_str());
+         score += h2_fuzzy::similarity(e->value_string.c_str(), a->value_string.c_str(), caseless);
       } else {
       }
       if (e->key_string.size() || a->key_string.size()) {
-         score = score * 0.5 + 0.5 * h2_fuzzy::likes(e->key_string.c_str(), a->key_string.c_str());
+         score = score * 0.5 + 0.5 * h2_fuzzy::similarity(e->key_string.c_str(), a->key_string.c_str(), caseless);
       }
       return score;
    }
 
-   static h2_json_node* search(const h2_list& haystack, h2_json_node* needle)
+   static h2_json_node* search(const h2_list& haystack, h2_json_node* needle, bool caseless)
    {
-      double max_score = 0.0;
+      double max_score = 0.2;
       h2_json_node* straw = nullptr;
       h2_list_for_each_entry (p, haystack, h2_json_node, x) {
-         double score = likes(needle, p);
+         double score = similarity(needle, p, caseless);
          if (score > max_score) {
             max_score = score;
             straw = p;
@@ -2679,14 +2599,13 @@ struct h2_json_match {
    }
 };
 // source/json/h2_dual.cpp
-struct h2_json_dual : h2_libc {  // combine two node into a dual
-   h2_json_dual* perent;
-   int relationship, depth, index = INT_MAX;
+struct h2_json_dual : h2_libc {  // Combine two node into a dual
+   int depth, relationship, index = INT_MAX;
    bool key_equal = false, value_match = false;
+   bool e_last = true, a_last = true;
    int e_type = h2_json_node::t_absent, a_type = h2_json_node::t_absent;
    h2_string e_key, a_key;
    h2_string e_value, a_value;
-   h2_paragraph e_blob, a_blob;
    h2_list children, x;
 
    static int index_cmp(h2_list* a, h2_list* b)
@@ -2702,7 +2621,26 @@ struct h2_json_dual : h2_libc {  // combine two node into a dual
       }
    }
 
-   h2_json_dual(h2_json_node* e, h2_json_node* a, bool caseless, h2_json_dual* perent_ = nullptr, int relationship_ = 0) : perent(perent_), relationship(relationship_), depth(perent_ ? perent_->depth + 1 : 0)
+   void __move_dual(h2_json_node* child_e, h2_json_node* child_a, bool caseless)
+   {
+      children.push_back((new h2_json_dual(child_e, child_a, caseless, depth + 1))->x);
+      child_e->x.out();
+      delete child_e;
+      child_a->x.out();
+      delete child_a;
+   }
+
+   void __mark_last()
+   {
+      int e_count = 0, a_count = 0;
+      for (h2_list* p = children.prev; p != &children; p = p->prev) {
+         h2_json_dual* d = h2_list_entry(p, h2_json_dual, x);
+         if (d->e_type != h2_json_node::t_absent) d->e_last = e_count++ == 0;
+         if (d->a_type != h2_json_node::t_absent) d->a_last = a_count++ == 0;
+      }
+   }
+
+   h2_json_dual(h2_json_node* e, h2_json_node* a, bool caseless, int depth_ = 0, int relationship_ = 0) : depth(depth_), relationship(relationship_)
    {
       if (e) index = e->index;
       if (e) e->format(e_type, e_key, e_value, 2);
@@ -2710,123 +2648,84 @@ struct h2_json_dual : h2_libc {  // combine two node into a dual
       key_equal = e_key.equals(a_key, caseless);
       value_match = h2_json_match::match(e, a, caseless);
 
-      if ((e_type & 0xf0) != (a_type & 0xf0)) {
-         bool acronym = O.fold_json >= 3 && (!(e && a) /* 1 side */ || relationship < 0);
-         if (e) e_blob = e->format(O.fold_json, acronym, 2, depth);
-         if (a) a_blob = a->format(O.fold_json, acronym, 2, depth);
-      } else if (e_type == h2_json_node::t_object) {
-         h2_list_for_each_entry (child_e, e->children, h2_json_node, x) {
-            h2_json_node* child_a = a->get(child_e->key_string, false);
-            if (!child_a && caseless) child_a = a->get(child_e->key_string, true);
-            if (child_a) move_dual(child_e, child_a, caseless);
+      if (e_type == h2_json_node::t_object || a_type == h2_json_node::t_object) {
+         if (e && a) {
+            h2_list_for_each_entry (child_e, e->children, h2_json_node, x) {
+               h2_json_node* child_a = a->get(child_e->key_string, false);
+               if (!child_a && caseless) child_a = a->get(child_e->key_string, true);
+               if (child_a) __move_dual(child_e, child_a, caseless);
+            }
+            h2_list_for_each_entry (child_e, e->children, h2_json_node, x) {
+               h2_json_node* child_a = h2_json_match::search(a->children, child_e, caseless);
+               if (child_a) __move_dual(child_e, child_a, caseless);
+            }
          }
-         h2_list_for_each_entry (child_e, e->children, h2_json_node, x) {
-            h2_json_node* child_a = h2_json_match::search(a->children, child_e);
-            if (child_a) move_dual(child_e, child_a, caseless);
+         for (int i = 0; i < std::max(e ? e->size() : 0, a ? a->size() : 0); ++i) {
+            children.push_back((new h2_json_dual(e ? e->get(i) : nullptr, a ? a->get(i) : nullptr, caseless, depth + 1, -1))->x);
          }
-         for (int i = 0; i < std::max(e->size(), a->size()); ++i)
-            children.push_back((new h2_json_dual(e->get(i), a->get(i), caseless, this, -1))->x);
          children.sort(index_cmp);
-      } else if (e_type == h2_json_node::t_array) {
-         for (int i = 0; i < std::max(e->size(), a->size()); ++i)
-            children.push_back((new h2_json_dual(e->get(i), a->get(i), caseless, this))->x);
+      } else if (e_type == h2_json_node::t_array || a_type == h2_json_node::t_array) {
+         for (int i = 0; i < std::max(e ? e->size() : 0, a ? a->size() : 0); ++i)
+            children.push_back((new h2_json_dual(e ? e->get(i) : nullptr, a ? a->get(i) : nullptr, caseless, depth + 1))->x);
       }
+      __mark_last();
    }
 
-   void move_dual(h2_json_node* child_e, h2_json_node* child_a, bool caseless)
+   const char* __e_style() { return a_type == h2_json_node::t_absent || relationship < 0 ? "light blue" : "green"; }
+   const char* __a_style() { return e_type == h2_json_node::t_absent || relationship < 0 ? "light purple" : "red,bold"; }
+
+   void align(h2_paragraph& e_paragraph, h2_paragraph& a_paragraph)
    {
-      children.push_back((new h2_json_dual(child_e, child_a, caseless, this))->x);
-      child_e->x.out();
-      delete child_e;
-      child_a->x.out();
-      delete child_a;
-   }
-
-   bool has_next(h2_list* subling, bool expect) const
-   {
-      if (subling) {
-         for (h2_list* p = x.next; p != subling; p = p->next) {
-            h2_json_dual* d = h2_list_entry(p, h2_json_dual, x);
-            if ((expect ? d->e_type : d->a_type) != h2_json_node::t_absent)
-               return true;
-         }
-      }
-      return false;
-   }
-
-   void align(h2_paragraph& e_paragraph, h2_paragraph& a_paragraph, h2_list* subling = nullptr)
-   {
-      if (e_blob.size() || a_blob.size()) {
-         e_blob.samesizify(a_blob);
-         for (auto& st : e_blob) st.brush("cyan");
-         for (auto& st : a_blob) st.brush("yellow");
-
-         e_paragraph += e_blob;
-         a_paragraph += a_blob;
-         return;
-      }
-
+      h2_paragraph e_ph, a_ph;
       h2_sentence e_sentence, a_sentence;
       e_sentence.indent(depth * 2);
       a_sentence.indent(depth * 2);
 
-      if (e_key.size()) {
-         if (!key_equal) e_sentence.push_back("\033{green}");
-         e_sentence.push_back(e_key);
-         if (!key_equal) e_sentence.push_back("\033{reset}");
-         e_sentence.push_back(": ");
-      }
+      if (e_type != h2_json_node::t_absent && e_key.size())
+         e_sentence += color(e_key, key_equal ? "" : __e_style()) + ": ";
+      if (a_type != h2_json_node::t_absent && a_key.size())
+         a_sentence += color(a_key, key_equal ? "" : __a_style()) + ": ";
 
-      if (a_key.size()) {
-         if (!key_equal) a_sentence.push_back("\033{red,bold}");
-         a_sentence.push_back(a_key);
-         if (!key_equal) a_sentence.push_back("\033{reset}");
-         a_sentence.push_back(": ");
-      }
+      if (e_type != h2_json_node::t_absent && e_value.size())
+         e_sentence += color(e_value, value_match ? "" : __e_style());
+      if (a_type != h2_json_node::t_absent && a_value.size())
+         a_sentence += color(a_value, value_match ? "" : __a_style());
 
-      if ((e_type & 0xf0) == 0x10) {  // null, boolean, number, string, pattern
-         if (e_value.size()) {
-            if (!value_match) e_sentence.push_back("\033{green}");
-            e_sentence.push_back(e_value);
-            if (!value_match) e_sentence.push_back("\033{reset}");
-         }
-         if (a_value.size()) {
-            if (!value_match) a_sentence.push_back("\033{red,bold}");
-            a_sentence.push_back(a_value);
-            if (!value_match) a_sentence.push_back("\033{reset}");
-         }
-      } else if (e_type == h2_json_node::t_object || e_type == h2_json_node::t_array) {
-         h2_paragraph e_children_paragraph, a_children_paragraph;
-         h2_list_for_each_entry (p, children, h2_json_dual, x)
-            p->align(e_children_paragraph, a_children_paragraph, &children);
+      if (e_type == h2_json_node::t_object || e_type == h2_json_node::t_array) e_sentence.push_back(e_type == h2_json_node::t_object ? "{" : "[");
+      if (a_type == h2_json_node::t_object || a_type == h2_json_node::t_array) a_sentence.push_back(a_type == h2_json_node::t_object ? "{" : "[");
 
-         e_sentence.push_back(e_type == h2_json_node::t_object ? "{" : "[");
-         a_sentence.push_back(a_type == h2_json_node::t_object ? "{" : "[");
-         if (((O.fold_json >= 2 && value_match) || (O.fold_json >= 3 && relationship < 0)) && (!e_children_paragraph.foldable() || !a_children_paragraph.foldable())) {
-            e_sentence += e_children_paragraph.foldable() ? e_children_paragraph.folds() : gray(" ... ");
-            a_sentence += a_children_paragraph.foldable() ? a_children_paragraph.folds() : gray(" ... ");
-         } else if (O.fold_json && e_children_paragraph.foldable() && a_children_paragraph.foldable()) {
-            e_sentence += e_children_paragraph.folds();
-            a_sentence += a_children_paragraph.folds();
-         } else {
-            e_paragraph.push_back(e_sentence), e_sentence.clear();
-            e_paragraph += e_children_paragraph;
+      h2_paragraph e_children_paragraph, a_children_paragraph;
+      h2_list_for_each_entry (p, children, h2_json_dual, x)
+         p->align(e_children_paragraph, a_children_paragraph);
+
+      if ((O.fold_json >= 2 && key_equal && value_match) || (O.fold_json >= 3 && relationship < 0)) {
+         e_sentence += e_children_paragraph.foldable() ? e_children_paragraph.folds() : gray(" ... ");
+         a_sentence += a_children_paragraph.foldable() ? a_children_paragraph.folds() : gray(" ... ");
+      } else if (O.fold_json && e_children_paragraph.foldable() && a_children_paragraph.foldable()) {
+         e_sentence += e_children_paragraph.folds();
+         a_sentence += a_children_paragraph.folds();
+      } else {
+         if (e_type == h2_json_node::t_object || e_type == h2_json_node::t_array) {
+            e_ph.push_back(e_sentence), e_sentence.clear();
+            e_ph += e_children_paragraph;
             e_sentence.indent(depth * 2);
-            a_paragraph.push_back(a_sentence), a_sentence.clear();
-            a_paragraph += a_children_paragraph;
+         }
+         if (a_type == h2_json_node::t_object || a_type == h2_json_node::t_array) {
+            a_ph.push_back(a_sentence), a_sentence.clear();
+            a_ph += a_children_paragraph;
             a_sentence.indent(depth * 2);
          }
-         e_sentence.push_back(e_type == h2_json_node::t_object ? "}" : "]");
-         a_sentence.push_back(a_type == h2_json_node::t_object ? "}" : "]");
       }
-      if (e_sentence.size()) {
-         if (has_next(subling, true)) e_sentence.push_back(", ");
-         e_paragraph.push_back(e_sentence), e_sentence.clear();
-      }
-      if (a_sentence.size()) {
-         if (has_next(subling, false)) a_sentence.push_back(", ");
-         a_paragraph.push_back(a_sentence), a_sentence.clear();
-      }
+      if (e_type == h2_json_node::t_object || e_type == h2_json_node::t_array) e_sentence.push_back(e_type == h2_json_node::t_object ? "}" : "]");
+      if (a_type == h2_json_node::t_object || a_type == h2_json_node::t_array) a_sentence.push_back(a_type == h2_json_node::t_object ? "}" : "]");
+
+      if (e_type != h2_json_node::t_absent && !e_last) e_sentence.push_back(", ");
+      if (a_type != h2_json_node::t_absent && !a_last) a_sentence.push_back(", ");
+      e_ph.push_back(e_sentence);
+      a_ph.push_back(a_sentence);
+      h2_paragraph::samesizify(e_ph, a_ph);
+      e_paragraph += e_ph;
+      a_paragraph += a_ph;
    }
 };
 // source/json/h2_json.cpp
@@ -2834,7 +2733,7 @@ h2_inline h2_paragraph h2_json::dump(const h2_string& json_string)
 {
    h2_json_tree tree(json_string.c_str());
    if (tree.illformed) return {tree.serialize()};
-   h2_paragraph paragraph = tree.format(O.fold_json, false, O.copy_paste_json);
+   h2_paragraph paragraph = tree.format(O.fold_json, O.copy_paste_json);
    if (O.copy_paste_json) {
       if (!paragraph.empty()) {
          paragraph.front() = "\"" + paragraph.front();
@@ -2855,7 +2754,7 @@ h2_inline h2_string h2_json::select(const h2_string& json_string, const h2_strin
    if (tree.illformed) return json_string;
    h2_json_node* node = tree.select(selector.c_str(), caseless);
    if (!node) return "";
-   return node->format(O.fold_json, false, 2).string();
+   return node->format(O.fold_json, 2).string();
 }
 
 h2_inline int h2_json::match(const h2_string& expect, const h2_string& actual, bool caseless)
@@ -5458,7 +5357,7 @@ struct h2_fail_unexpect : h2_fail {
       } else if (is_synonym(e_expression, expection.string())) {
          e = expection.acronym(O.verbose >= 4 ? 10000 : 30, 3).brush("green");
       } else {
-         e = h2_sentence(e_expression).acronym(O.verbose >= 4 ? 10000 : 30, 3).gray_quote().brush("cyan") + gray("==>") + expection.acronym(O.verbose ? 10000 : 30, 3).brush("green");
+         e = h2_sentence(e_expression).acronym(O.verbose >= 4 ? 10000 : 30, 3).gray_quote().brush("cyan") + gray("==>") + expection.acronym(O.verbose >= 4 ? 10000 : 30, 3).brush("green");
       }
 
       if (!represent.width()) {
@@ -5466,7 +5365,7 @@ struct h2_fail_unexpect : h2_fail {
       } else if (is_synonym(a_expression, represent.string()) || !a_expression.length()) {
          a = represent.acronym(O.verbose >= 4 ? 10000 : 30, 3).brush("bold,red");
       } else {
-         a = represent.acronym(O.verbose >= 4 ? 10000 : 30, 3).brush("bold,red") + gray("<==") + h2_sentence(a_expression).acronym(O.verbose ? 10000 : 30, 3).gray_quote().brush("cyan");
+         a = represent.acronym(O.verbose >= 4 ? 10000 : 30, 3).brush("bold,red") + gray("<==") + h2_sentence(a_expression).acronym(O.verbose >= 4 ? 10000 : 30, 3).gray_quote().brush("cyan");
       }
 
       sentence += "OK" + gray("(") + e + ", " + a + gray(")");

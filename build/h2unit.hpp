@@ -1,5 +1,5 @@
 
-/* v5.13 2021-09-12 22:12:20 */
+/* v5.13 2021-09-19 01:11:23 */
 /* https://github.com/lingjf/h2unit */
 /* Apache Licence 2.0 */
 
@@ -771,7 +771,7 @@ struct h2_sentence : h2_vector<h2_string> {
    h2_sentence acronym(int width = 16, int tail = 0) const;
    h2_string string() const;
 
-   void samesizify(h2_sentence& b);
+   static void samesizify(h2_sentence& a, h2_sentence& b);
 };
 
 inline h2_sentence operator+(const h2_sentence& a, const h2_sentence& b)  // implicit conversion const char* / h2_string
@@ -799,7 +799,7 @@ struct h2_paragraph : h2_vector<h2_sentence> {
    h2_string string() const;
 
    void sequence(unsigned indent = 0, int start = 0);
-   void samesizify(h2_paragraph& b);
+   static void samesizify(h2_paragraph& a, h2_paragraph& b);
 };
 // source/utils/h2_stringify.hpp
 template <typename T, typename = void>

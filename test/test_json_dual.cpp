@@ -10,15 +10,14 @@ h2::h2_string dual_tojson(h2::h2_json_dual* dual)
 {
    h2::h2_string out;
    out.sprintf("{");
-   out.sprintf("'relationship': %d,", dual->relationship);
    out.sprintf("'depth': %d,", dual->depth);
+   out.sprintf("'relationship': %d,", dual->relationship);
    out.sprintf("'index': %d,", dual->index);
    out.sprintf("'key_equal': %s,", dual->key_equal ? "true" : "false");
    out.sprintf("'value_match': %s,", dual->value_match ? "true" : "false");
    out.sprintf("'type': ['%s', '%s'],", node_type_tostring(dual->e_type), node_type_tostring(dual->a_type));
    out.sprintf("'key': ['%s', '%s'],", safes(dual->e_key).c_str(), safes(dual->a_key).c_str());
    out.sprintf("'value': ['%s', '%s'],", safes(dual->e_value).c_str(), safes(dual->a_value).c_str());
-   out.sprintf("'blob': [%d, %d],", dual->e_blob.size(), dual->a_blob.size());
    out.sprintf("'children':[");
    h2_list_for_each_entry (p, i, dual->children, h2::h2_json_dual, x) {
       if (i) out.sprintf(",");
@@ -45,26 +44,24 @@ SUITE(json dual)
 
       JE(
         "{                                      \
-          'relationship': 0,                    \
           'depth': 0,                           \
+          'relationship': 0,                    \
           'index': 0,                           \
           'key_equal': true,                    \
           'value_match': false,                 \
           'type': ['object', 'object'],         \
           'key': ['', ''],                      \
           'value': ['', ''],                    \
-          'blob': [0, 0],                       \
           'children': [                         \
             {                                   \
-              'relationship': 0,                \
               'depth': 1,                       \
+              'relationship': 0,                \
               'index': 0,                       \
               'key_equal': false,               \
               'value_match': false,             \
               'type': ['number', 'number'],     \
               'key': [/?e?/, /?a?/],            \
               'value': ['123', '456'],          \
-              'blob': [0, 0],                   \
               'children': []                    \
             }                                   \
           ]                                     \

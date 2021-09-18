@@ -140,9 +140,9 @@ h2_inline h2_string h2_sentence::string() const
    return s;
 }
 
-h2_inline void h2_sentence::samesizify(h2_sentence& b)
+h2_inline void h2_sentence::samesizify(h2_sentence& a, h2_sentence& b)
 {
-   int w = width(), b_w = b.width();
-   padding(std::max(w, b_w) - w);
-   b.padding(std::max(w, b_w) - b_w);
+   int a_w = a.width(), b_w = b.width();
+   a.padding(std::max(a_w, b_w) - a_w);
+   b.padding(std::max(a_w, b_w) - b_w);
 }

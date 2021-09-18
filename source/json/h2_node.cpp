@@ -1,12 +1,12 @@
 struct h2_json_node : h2_libc {
    static constexpr int t_absent = 0;
-   static constexpr int t_null = 0x10 + 1;
-   static constexpr int t_boolean = 0x10 + 2;
-   static constexpr int t_number = 0x10 + 3;
-   static constexpr int t_string = 0x10 + 4;
-   static constexpr int t_pattern = 0x10 + 5;  // regex or wildcard pattern
-   static constexpr int t_array = 0x20;
-   static constexpr int t_object = 0x30;
+   static constexpr int t_null = 1;
+   static constexpr int t_boolean = 2;
+   static constexpr int t_number = 3;
+   static constexpr int t_string = 4;
+   static constexpr int t_pattern = 5;  // regex or wildcard pattern
+   static constexpr int t_array = 6;
+   static constexpr int t_object = 7;
 
    int type = t_absent;
    int index = 0;
@@ -78,6 +78,7 @@ struct h2_json_node : h2_libc {
       default: return "";
       }
    }
+
    void format(int& _type, h2_string& _key, h2_string& _value, int quote = 0)
    {
       _type = type;
@@ -85,7 +86,7 @@ struct h2_json_node : h2_libc {
       _value = format_value(quote);
    }
 
-   h2_paragraph format(bool fold, bool acronym = false, int quote = 0, int depth = 0, int next = 0)
+   h2_paragraph format(bool fold, int quote = 0, int depth = 0, int next = 0)
    {
       h2_paragraph paragraph;
       h2_sentence sentence;
@@ -95,19 +96,14 @@ struct h2_json_node : h2_libc {
       if (is_array() || is_object()) {
          h2_paragraph children_paragraph;
          h2_list_for_each_entry (p, i, children, h2_json_node, x)
-            children_paragraph += p->format(fold, acronym, quote, depth + 1, children.count() - i - 1);
-
+            children_paragraph += p->format(fold, quote, depth + 1, children.count() - i - 1);
          sentence.push_back(is_array() ? "[" : "{");
          if (fold && children_paragraph.foldable()) {
             sentence += children_paragraph.folds();
          } else {
-            if (fold && acronym) {
-               sentence.push_back(" ... ");
-            } else {
-               paragraph.push_back(sentence), sentence.clear();
-               paragraph += children_paragraph;
-               sentence.indent(depth * 2);
-            }
+            paragraph.push_back(sentence), sentence.clear();
+            paragraph += children_paragraph;
+            sentence.indent(depth * 2);
          }
          sentence.push_back(is_array() ? "]" : "}");
       } else {

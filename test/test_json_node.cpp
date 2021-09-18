@@ -129,7 +129,7 @@ SUITE(json node format)
       const char* json = "{\"abc\": 123}";
       h2::h2_json_tree parse(json);
 
-      h2::h2_paragraph paragraph = parse.format(false, false, 2);
+      h2::h2_paragraph paragraph = parse.format(false, 2);
 
       OK(3, paragraph.size());
       OK(ListOf(
@@ -144,7 +144,7 @@ SUITE(json node format)
       const char* json = "{\"abc\": 123}";
       h2::h2_json_tree parse(json);
 
-      h2::h2_paragraph paragraph = parse.format(true, false, 2);
+      h2::h2_paragraph paragraph = parse.format(true, 2);
 
       OK(1, paragraph.size());
       OK(ListOf(ListOf("", "{", "\"abc\": ", "123", "}")), paragraph);

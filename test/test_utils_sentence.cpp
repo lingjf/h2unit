@@ -100,7 +100,7 @@ SUITE(h2_sentence)
    {
       h2::h2_sentence e = {"123", "456"};
       h2::h2_sentence a = {"12345"};
-      e.samesizify(a);
+      h2::h2_sentence::samesizify(e, a);
       OK(e.width() == a.width());
    }
 
@@ -125,7 +125,7 @@ SUITE(h2_sentence)
    {
       h2::h2_paragraph e = {{"123", "456"}, {"1234"}};
       h2::h2_paragraph a = {{"12345"}};
-      e.samesizify(a);
+      h2::h2_paragraph::samesizify(e, a);
       OK(e.size() == a.size());
    }
 }

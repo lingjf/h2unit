@@ -17,7 +17,7 @@ struct h2_sentence : h2_vector<h2_string> {
    h2_sentence acronym(int width = 16, int tail = 0) const;
    h2_string string() const;
 
-   void samesizify(h2_sentence& b);
+   static void samesizify(h2_sentence& a, h2_sentence& b);
 };
 
 inline h2_sentence operator+(const h2_sentence& a, const h2_sentence& b)  // implicit conversion const char* / h2_string

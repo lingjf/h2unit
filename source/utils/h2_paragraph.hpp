@@ -11,5 +11,5 @@ struct h2_paragraph : h2_vector<h2_sentence> {
    h2_string string() const;
 
    void sequence(unsigned indent = 0, int start = 0);
-   void samesizify(h2_paragraph& b);
+   static void samesizify(h2_paragraph& a, h2_paragraph& b);
 };
