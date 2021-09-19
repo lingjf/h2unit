@@ -1,9 +1,9 @@
-static inline h2_paragraph sentence_break(const h2_sentence& st, unsigned width)
+static inline h2_paragraph sentence_break(const h2_sentence& st, size_t width)
 {
    h2_paragraph paragraph;
    h2_string current_style;
    h2_sentence wrap;
-   unsigned length = 0;
+   size_t length = 0;
 
    for (auto& word : st) {
       if (h2_color::isctrl(word.c_str())) {  // + - style , issue
@@ -27,11 +27,11 @@ static inline h2_paragraph sentence_break(const h2_sentence& st, unsigned width)
    return paragraph;
 }
 
-static inline h2_paragraph sentences_merge(const h2_paragraph& left_paragraph, const h2_paragraph& right_paragraph, unsigned left_width, unsigned right_width, int step, char scale, int seq_width)
+static inline h2_paragraph sentences_merge(const h2_paragraph& left_paragraph, const h2_paragraph& right_paragraph, size_t left_width, size_t right_width, int step, char scale, size_t seq_width)
 {
    h2_paragraph paragraph;
    char seq_fmt[32];
-   sprintf(seq_fmt, "%%%d%c│ ", seq_width, scale);
+   sprintf(seq_fmt, "%%%d%c│ ", (int)seq_width, scale);
    const h2_string left_empty(left_width, ' '), right_empty(right_width, ' ');
    for (size_t i = 0; i < std::max(left_paragraph.size(), right_paragraph.size()); ++i) {
       auto left_wrap_sts = sentence_break(i < left_paragraph.size() ? left_paragraph[i] : left_empty, left_width);
@@ -54,13 +54,13 @@ static inline h2_paragraph sentences_merge(const h2_paragraph& left_paragraph, c
    return paragraph;
 }
 
-h2_inline h2_paragraph h2_layout::split(const h2_paragraph& left_paragraph, const h2_paragraph& right_paragraph, const char* left_title, const char* right_title, int step, char scale, unsigned width)
+h2_inline h2_paragraph h2_layout::split(const h2_paragraph& left_paragraph, const h2_paragraph& right_paragraph, const char* left_title, const char* right_title, size_t step, char scale, size_t width)
 {
-   unsigned seq_width = number_strlen(step * std::max(left_paragraph.size(), right_paragraph.size()), scale == 'x' ? 16 : 10);
-   unsigned valid_width = width - (seq_width + 1 /* "|" */) - 1 /*|*/ - 4 /* spaces */;
+   size_t seq_width = number_strlen((unsigned long long)step * std::max(left_paragraph.size(), right_paragraph.size()), scale == 'x' ? 16 : 10);
+   size_t valid_width = width - (seq_width + 1 /* "|" */) - 1 /*|*/ - 4 /* spaces */;
 
-   unsigned left_width = std::max(left_paragraph.width(), 8u); /* at least title width */
-   unsigned right_width = std::max(right_paragraph.width(), 8u);
+   size_t left_width = std::max(left_paragraph.width(), strlen(left_title));
+   size_t right_width = std::max(right_paragraph.width(), strlen(right_title));
 
    if (left_width < valid_width / 2)
       right_width = std::min(valid_width - left_width, right_width);
@@ -75,7 +75,7 @@ h2_inline h2_paragraph h2_layout::split(const h2_paragraph& left_paragraph, cons
    return page += sentences_merge(left_paragraph, right_paragraph, left_width, right_width, step, scale, seq_width);
 }
 
-h2_inline h2_paragraph h2_layout::unified(const h2_sentence& up_sentence, const h2_sentence& down_sentence, const char* up_title, const char* down_title, unsigned width)
+h2_inline h2_paragraph h2_layout::unified(const h2_sentence& up_sentence, const h2_sentence& down_sentence, const char* up_title, const char* down_title, size_t width)
 {
    h2_paragraph page;
    h2_sentence up_title_st = gray(up_title) + color("> ", "green");
@@ -93,7 +93,7 @@ h2_inline h2_paragraph h2_layout::unified(const h2_sentence& up_sentence, const 
    return page;
 }
 
-static inline h2_paragraph prefix_break(const h2_sentence& st, const h2_sentence& title, unsigned width)
+static inline h2_paragraph prefix_break(const h2_sentence& st, const h2_sentence& title, size_t width)
 {
    h2_paragraph paragraph = sentence_break(st, width - title.width());
 
@@ -106,7 +106,7 @@ static inline h2_paragraph prefix_break(const h2_sentence& st, const h2_sentence
    return paragraph;
 }
 
-h2_inline h2_paragraph h2_layout::seperate(const h2_sentence& up_sentence, const h2_sentence& down_sentence, const char* up_title, const char* down_title, unsigned width)
+h2_inline h2_paragraph h2_layout::seperate(const h2_sentence& up_sentence, const h2_sentence& down_sentence, const char* up_title, const char* down_title, size_t width)
 {
    h2_sentence up_title_st = gray(up_title) + color("> ", "green");
    h2_sentence down_title_st = gray(down_title) + color("> ", "red");

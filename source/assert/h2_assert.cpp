@@ -2,8 +2,8 @@ static inline const char* find_outer_comma(const char* expression)
 {
    char stack[1024] = {'\0'};
    int top = 1;
-   int len = strlen(expression);
-   for (int i = 0; i < len; ++i) {
+   size_t len = strlen(expression);
+   for (size_t i = 0; i < len; ++i) {
       switch (expression[i]) {
       case '\\':
          if (expression[i + 1]) ++i;

@@ -1,7 +1,7 @@
 h2_inline h2_sentence h2_mocker_base::argument(int seq, const char* def)
 {
    h2_sentence t;
-   for (int i = 0; i < argument_types.size(); ++i)
+   for (int i = 0; i < (int)argument_types.size(); ++i)
       t += (i ? gray(", ") : "") + color(argument_types[i], seq == i ? "red,bold" : def);
    return gray("(") + t + gray(")");
 }
@@ -23,7 +23,7 @@ h2_inline h2_fail* h2_mocker_base::check()
    h2_fail* fails = nullptr;
    for (size_t i = 0; i < checkin_array.size(); ++i) {
       h2_fail* fail = checkin_array[i].check(srcfn, i, checkin_array.size(), nullptr, 0);
-      if (fail) fail->seqno = i;
+      if (fail) fail->seqno = (int)i;
       h2_fail::append_subling(fails, fail);
       h2_assert_g();
    }

@@ -38,8 +38,8 @@ class Rect : public Shape {
 
    void scale(double x)
    {
-      width *= x;
-      height *= x;
+      width = (int)(width * x);
+      height = (int)(height * x);
    }
 
    const char* print()

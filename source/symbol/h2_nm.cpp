@@ -48,7 +48,7 @@ static inline void nm_demangle(h2_list& symbols)
 }
 #endif
 
-static inline bool strncmp_reverse(const char* a, const char* ae, const char* b, const char* be, int n)  // [a, ae) [b, be)
+static inline bool strncmp_reverse(const char* a, const char* ae, const char* b, const char* be, size_t n)  // [a, ae) [b, be)
 {
    if (ae < a + n || be < b + n) return false;
    return !strncmp(ae - n, be - n, n);
@@ -57,7 +57,7 @@ static inline bool strncmp_reverse(const char* a, const char* ae, const char* b,
 h2_inline int h2_nm::get_by_name(const char* name, h2_symbol* res[], int n)
 {
    if (!name) return 0;
-   int len = strlen(name);
+   size_t len = strlen(name);
    if (len == 0) return 0;
 #if defined _MSC_VER
    char buffer[sizeof(SYMBOL_INFO) + 256];

@@ -238,8 +238,8 @@ struct tinyexpr
                     start = s->next;
                     while ((s->next[0] >= 'a' && s->next[0] <= 'z') || (s->next[0] >= '0' && s->next[0] <= '9') || (s->next[0] == '_')) s->next++;
 
-                    const te_variable *var = find_lookup(s, start, s->next - start);
-                    if (!var) var = find_builtin(start, s->next - start);
+                    const te_variable *var = find_lookup(s, start, (int)(s->next - start));
+                    if (!var) var = find_builtin(start, (int)(s->next - start));
 
                     if (!var) {
                         s->type = TOK_ERROR;
@@ -541,7 +541,7 @@ struct tinyexpr
         if (s.type != TOK_END) {
             te_free(root);
             if (error) {
-                *error = (s.next - s.start);
+                *error = (int)(s.next - s.start);
                 if (*error == 0) *error = 1;
             }
             return 0;

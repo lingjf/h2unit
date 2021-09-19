@@ -1,7 +1,7 @@
 struct h2_shell {
    h2_singleton(h2_shell);
    char current[8][32];
-   unsigned cww;
+   size_t cww;
 
    h2_shell()
    {
@@ -24,21 +24,21 @@ struct h2_shell {
 
    void clear_style()
    {
-      for (int i = 0; i < sizeof(current) / sizeof(current[0]); ++i)
+      for (size_t i = 0; i < sizeof(current) / sizeof(current[0]); ++i)
          current[i][0] = '\0';
    }
-   void push_style(const char* style, int length)
+   void push_style(const char* style, size_t length)
    {
-      for (int i = 0; i < sizeof(current) / sizeof(current[0]); ++i)
+      for (size_t i = 0; i < sizeof(current) / sizeof(current[0]); ++i)
          if (current[i][0] == '\0') {
             strncpy(current[i], style, length);
             current[i][length] = '\0';
             break;
          }
    }
-   void pop_style(const char* style, int length)
+   void pop_style(const char* style, size_t length)
    {
-      for (int i = 0; i < sizeof(current) / sizeof(current[0]); ++i)
+      for (size_t i = 0; i < sizeof(current) / sizeof(current[0]); ++i)
          if (!strncmp(current[i], style, length) && strlen(current[i]) == length)
             current[i][0] = '\0';
    }
@@ -46,7 +46,7 @@ struct h2_shell {
    {
       char a[256];
       sprintf(a, "\033[%d;", style2value("reset"));
-      for (int i = 0; i < sizeof(current) / sizeof(current[0]); ++i)
+      for (size_t i = 0; i < sizeof(current) / sizeof(current[0]); ++i)
          if (current[i][0] != '\0')
             sprintf(a + strlen(a), "%d;", style2value(current[i]));
       a[strlen(a) - 1] = 'm';
@@ -59,7 +59,7 @@ struct h2_shell {
       if (*p == '+' || *p == '-') s = *p++;
 
       for (;;) {
-         int l = strcspn(p, ",}");
+         size_t l = strcspn(p, ",}");
          s == '-' ? pop_style(p, l) : push_style(p, l);
          if (!strncmp("reset", p, l)) clear_style();
          if (*(p + l) == '}' || *(p + l) == '\0') break;

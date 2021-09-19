@@ -1,5 +1,5 @@
 struct h2_json_lexical {
-   static void new_lexis(h2_vector<h2_string>& lexical, const char* start, int size)
+   static void new_lexis(h2_vector<h2_string>& lexical, const char* start, const int size)
    {
       const char *left = start, *right = start + size;
       for (; left < right && *left && ::isspace(*left);) left++;
@@ -47,7 +47,7 @@ struct h2_json_lexical {
             break;
          case st_single_quote:
             if ('\'' == *p) {
-               new_lexis(lexical, pending, (p + 1) - pending);
+               new_lexis(lexical, pending, (int)((p + 1) - pending));
                pending = nullptr;
                state = st_idle;
             } else if ('\\' == *p) {
@@ -56,7 +56,7 @@ struct h2_json_lexical {
             break;
          case st_double_quote:
             if ('\"' == *p) {
-               new_lexis(lexical, pending, (p + 1) - pending);
+               new_lexis(lexical, pending, (int)((p + 1) - pending));
                pending = nullptr;
                state = st_idle;
             } else if ('\\' == *p) {
@@ -65,7 +65,7 @@ struct h2_json_lexical {
             break;
          case st_pattern:
             if ('/' == *p) {
-               new_lexis(lexical, pending, (p + 1) - pending);
+               new_lexis(lexical, pending, (int)((p + 1) - pending));
                pending = nullptr;
                state = st_idle;
             }
@@ -73,7 +73,7 @@ struct h2_json_lexical {
             break;
          case st_normal:
             if (strchr("{:}[,]", *p)) {
-               new_lexis(lexical, pending, p - pending);
+               new_lexis(lexical, pending, (int)(p - pending));
                pending = nullptr;
                new_lexis(lexical, p, 1);
                state = st_idle;
@@ -84,7 +84,7 @@ struct h2_json_lexical {
          }
       }
       if (pending) {
-         new_lexis(lexical, pending, p - pending);
+         new_lexis(lexical, pending, (int)(p - pending));
       }
    }
 };

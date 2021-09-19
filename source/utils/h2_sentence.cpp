@@ -1,6 +1,6 @@
-h2_inline unsigned h2_sentence::width(bool ignore_indent) const
+h2_inline size_t h2_sentence::width(bool ignore_indent) const
 {
-   unsigned w = 0;
+   size_t w = 0;
    for (auto& word : *this)
       if (!h2_color::isctrl(word.c_str()))
          if (!ignore_indent || !word.isspace())
@@ -8,13 +8,13 @@ h2_inline unsigned h2_sentence::width(bool ignore_indent) const
    return w;
 }
 
-h2_inline h2_sentence& h2_sentence::indent(int n, const char c)
+h2_inline h2_sentence& h2_sentence::indent(size_t n, const char c)
 {
    insert(begin(), h2_string(n, c));
    return *this;
 }
 
-h2_inline h2_sentence& h2_sentence::padding(int n, const char c)
+h2_inline h2_sentence& h2_sentence::padding(size_t n, const char c)
 {
    push_back(h2_string(n, c));
    return *this;
@@ -64,8 +64,8 @@ h2_inline h2_sentence h2_sentence::gray_quote() const
    if (!enclosed('\"') && !enclosed('\'')) return *this;
 
    h2_sentence sentence;
-   unsigned w = width();
-   unsigned i = 0;
+   size_t w = width();
+   size_t i = 0;
 
    for (auto& word : *this) {
       if (h2_color::isctrl(word.c_str())) {
@@ -91,7 +91,7 @@ h2_inline h2_sentence h2_sentence::gray_quote() const
    return sentence;
 }
 
-h2_inline h2_sentence h2_sentence::acronym(int width, int tail) const
+h2_inline h2_sentence h2_sentence::acronym(size_t width, size_t tail) const
 {
    h2_sentence s1;
    for (auto& word : *this) {
@@ -102,11 +102,11 @@ h2_inline h2_sentence h2_sentence::acronym(int width, int tail) const
       }
    }
 
-   int r1_width = s1.width();
+   size_t r1_width = s1.width();
    if (r1_width <= width) return s1;
 
    h2_sentence s2;
-   int i = 0;
+   size_t i = 0;
    for (auto& word : s1) {
       if (h2_color::isctrl(word.c_str())) {
          s2.push_back(word);
@@ -142,7 +142,7 @@ h2_inline h2_string h2_sentence::string() const
 
 h2_inline void h2_sentence::samesizify(h2_sentence& a, h2_sentence& b)
 {
-   int a_w = a.width(), b_w = b.width();
+   size_t a_w = a.width(), b_w = b.width();
    a.padding(std::max(a_w, b_w) - a_w);
    b.padding(std::max(a_w, b_w) - b_w);
 }

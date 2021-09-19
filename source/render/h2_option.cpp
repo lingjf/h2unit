@@ -51,7 +51,7 @@ struct getopt {
    void extract_number(int& value)
    {
       if (j) {  // j always not null
-         int l = strspn(j + 1, "0123456789");
+         auto l = strspn(j + 1, "0123456789");
          if (l) {
             value = atoi(j + 1);
             j += l;
@@ -60,7 +60,7 @@ struct getopt {
       }
 
       if (i + 1 < argc) {
-         int l = strlen(args[i + 1]);
+         auto l = strlen(args[i + 1]);
          if (l && strspn(args[i + 1], "0123456789") == l)
             value = atoi(args[++i]);
       }

@@ -1,5 +1,5 @@
 
-/* v5.13 2021-09-19 01:11:23 */
+/* v5.13 2021-09-19 23:02:59 */
 /* https://github.com/lingjf/h2unit */
 /* Apache Licence 2.0 */
 
@@ -37,10 +37,13 @@
 // #pragma clang diagnostic ignored === #pragma GCC diagnostic ignored
 #   pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 #   pragma GCC diagnostic ignored "-Wint-to-pointer-cast"
-#   pragma GCC diagnostic ignored "-Wsign-compare"
 #elif defined _MSC_VER
-#   pragma warning(disable : 4005)  // macro-redefine
+#   pragma warning(disable : 4244)  // conversion possible loss of data
+#   pragma warning(disable : 4267)  // conversion possible loss of data
+#   pragma warning(disable : 4305)  // type cast
+#   pragma warning(disable : 4312)  // type cast
 #   pragma warning(disable : 4611)  // setjmp non-portable
+#   pragma warning(disable : 4996)  // unsafe
 #endif
 
 #if defined __H2UNIT_HPP__
@@ -616,7 +619,7 @@ static inline const char* ss(const char* a = "") { return a ? a : ""; }
 // source/utils/h2_numeric.hpp
 struct h2_numeric {
    static bool is_bin_string(const char* s);
-   static const char* sequence_number(int sequence, int shift = 1);
+   static const char* sequence_number(size_t sequence, int shift = 1);
 };
 // source/utils/h2_libc.hpp
 struct h2_libc {
@@ -740,7 +743,7 @@ struct h2_string : public std::basic_string<char, std::char_traits<char>, h2_all
    h2_string unescape() const;
    h2_string unquote(const char c = '\"') const;
    h2_string tolower() const;
-   h2_string center(int width) const;
+   h2_string center(size_t width) const;
 };
 
 /* clang-format off */
@@ -758,9 +761,9 @@ struct h2_sentence : h2_vector<h2_string> {
    h2_sentence(const h2_string& a) : h2_vector<h2_string>({a}) {}
    h2_sentence(std::initializer_list<h2_string> il) : h2_vector<h2_string>(il) {}
 
-   unsigned width(bool ignore_indent = false) const;
-   h2_sentence& indent(int n, const char c = ' ');
-   h2_sentence& padding(int n, const char c = ' ');
+   size_t width(bool ignore_indent = false) const;
+   h2_sentence& indent(size_t n, const char c = ' ');
+   h2_sentence& padding(size_t n, const char c = ' ');
 
    h2_sentence& printf(const char* style, const char* format, ...);
    h2_sentence& operator+=(const h2_sentence& sentence);
@@ -768,7 +771,7 @@ struct h2_sentence : h2_vector<h2_string> {
 
    bool enclosed(const char c) const;
    h2_sentence gray_quote() const;
-   h2_sentence acronym(int width = 16, int tail = 0) const;
+   h2_sentence acronym(size_t width = 16, size_t tail = 0) const;
    h2_string string() const;
 
    static void samesizify(h2_sentence& a, h2_sentence& b);
@@ -792,8 +795,8 @@ struct h2_paragraph : h2_vector<h2_sentence> {
 
    h2_paragraph& operator+=(const h2_paragraph& paragraph);
 
-   unsigned width() const;
-   bool foldable(unsigned width = 20);
+   size_t width() const;
+   bool foldable(size_t width = 20);
    h2_sentence folds();
 
    h2_string string() const;
@@ -1048,9 +1051,9 @@ struct h2_option {
 static const h2_option& O = h2_option::I();  // for pretty
 // source/render/h2_layout.hpp
 struct h2_layout {
-   static h2_paragraph split(const h2_paragraph& left_paragraph, const h2_paragraph& right_paragraph, const char* left_title, const char* right_title, int step, char scale, unsigned width);
-   static h2_paragraph unified(const h2_sentence& up_sentence, const h2_sentence& down_sentence, const char* up_title, const char* down_title, unsigned width);
-   static h2_paragraph seperate(const h2_sentence& up_sentence, const h2_sentence& down_sentence, const char* up_title, const char* down_title, unsigned width);
+   static h2_paragraph split(const h2_paragraph& left_paragraph, const h2_paragraph& right_paragraph, const char* left_title, const char* right_title, size_t step, char scale, size_t width);
+   static h2_paragraph unified(const h2_sentence& up_sentence, const h2_sentence& down_sentence, const char* up_title, const char* down_title, size_t width);
+   static h2_paragraph seperate(const h2_sentence& up_sentence, const h2_sentence& down_sentence, const char* up_title, const char* down_title, size_t width);
 };
 // source/render/h2_failure.hpp
 struct h2_fail : h2_libc {
@@ -1087,11 +1090,11 @@ struct h2_fail : h2_libc {
    static h2_fail* new_strcmp(const h2_string& e_value, const h2_string& a_value, bool caseless, const h2_sentence& expection, const h2_sentence& explain = {}, const char* file = nullptr, int line = 0);
    static h2_fail* new_strfind(const h2_string& e_value, const h2_string& a_value, const h2_sentence& expection, const h2_sentence& explain = {}, const char* file = nullptr, int line = 0);
    static h2_fail* new_json(const h2_string& e_value, const h2_string& a_value, const h2_sentence& expection, bool caseless, const h2_sentence& explain = {}, const char* file = nullptr, int line = 0);
-   static h2_fail* new_memcmp(const unsigned char* e_value, const unsigned char* a_value, int width, int nbits, const h2_string& represent, const h2_sentence& explain = {}, const char* file = nullptr, int line = 0);
-   static h2_fail* new_memory_leak(const void* ptr, int size, const h2_vector<std::pair<int, int>>& sizes, const h2_backtrace& bt_allocate, const char* where, const char* file, int line);
+   static h2_fail* new_memcmp(const unsigned char* e_value, const unsigned char* a_value, const size_t width, const size_t nbits, const h2_string& represent, const h2_sentence& explain = {}, const char* file = nullptr, int line = 0);
+   static h2_fail* new_memory_leak(const void* ptr, const size_t size, const h2_vector<std::pair<size_t, size_t>>& sizes, const h2_backtrace& bt_allocate, const char* where, const char* file, int line);
    static h2_fail* new_double_free(const void* ptr, const h2_backtrace& bt_allocate, const h2_backtrace& bt_release, const h2_backtrace& bt_double_free);
    static h2_fail* new_asymmetric_free(const void* ptr, const char* who_allocate, const char* who_release, const h2_backtrace& bt_allocate, const h2_backtrace& bt_release);
-   static h2_fail* new_overflow(const void* ptr, const int size, const void* violate_ptr, const char* action, const h2_vector<unsigned char>& spot, const h2_backtrace& bt_allocate, const h2_backtrace& bt_trample, const char* file = nullptr, int line = 0);
+   static h2_fail* new_overflow(const void* ptr, const size_t size, const void* violate_ptr, const char* action, const h2_vector<unsigned char>& spot, const h2_backtrace& bt_allocate, const h2_backtrace& bt_trample, const char* file = nullptr, int line = 0);
    static h2_fail* new_use_after_free(const void* ptr, const void* violate_ptr, const char* action, const h2_backtrace& bt_allocate, const h2_backtrace& bt_release, const h2_backtrace& bt_use);
    static h2_fail* new_exception(const char* explain, const char* type, const h2_backtrace& bt_throw);
    static h2_fail* new_symbol(const h2_string& symbol, const h2_vector<h2_string>& candidates, const h2_sentence& explain = {}, const char* file = nullptr, int line = 0);
@@ -1479,9 +1482,9 @@ struct h2_allof_matches : h2_matches {
       t2v(v_matchers);
 
       h2_fail* fails = nullptr;
-      for (int i = 0; i < v_matchers.size(); ++i) {
+      for (size_t i = 0; i < v_matchers.size(); ++i) {
          h2_fail* fail = v_matchers[i].matches(a, n, caseless, false);  // dont not transfer down
-         if (fail) fail->seqno = i;
+         if (fail) fail->seqno = (int)i;
          h2_fail::append_subling(fails, fail);
       }
 
@@ -1520,13 +1523,13 @@ struct h2_anyof_matches : h2_matches {
 
       int c = 0;
       h2_fail* fails = nullptr;
-      for (int i = 0; i < v_matchers.size(); ++i) {
+      for (size_t i = 0; i < v_matchers.size(); ++i) {
          h2_fail* fail = v_matchers[i].matches(a, n, caseless, false);
          if (!fail) {
             c++;
             break;
          }
-         if (fail) fail->seqno = i;
+         if (fail) fail->seqno = (int)i;
          h2_fail::append_subling(fails, fail);
       }
 
@@ -1564,13 +1567,13 @@ struct h2_noneof_matches : h2_matches {
       t2v(v_matchers);
 
       h2_fail* fails = nullptr;
-      for (int i = 0; i < v_matchers.size(); ++i) {
+      for (size_t i = 0; i < v_matchers.size(); ++i) {
          h2_fail* fail = v_matchers[i].matches(a, n, caseless, false);
          if (fail)
             delete fail;
          else {
             fail = h2_fail::new_normal("should not match " + v_matchers[i].expection(caseless, false).brush("green"));
-            fail->seqno = i;
+            fail->seqno = (int)i;
             h2_fail::append_subling(fails, fail);
          }
       }
@@ -2730,7 +2733,7 @@ struct h2_checkin { /* 考勤 ; 函数被调次数期望 */
    bool is_saturated(/*饱和*/) const { return call == most; }
    bool is_excessive(/*过多*/) const { return most < call; }
 
-   h2_fail* check(const char* func, int index, int total, const char* file, int line);
+   h2_fail* check(const char* func, size_t index, size_t total, const char* file, int line);
    const char* actual();
    const char* expect();
 
@@ -2837,7 +2840,7 @@ class h2_mocker<Counter, ClassType, ReturnType(ArgumentTypes...)> : h2_mocker_ba
    {
       ArgumentTypeTuple at = std::forward_as_tuple(std::forward<ArgumentTypes>(arguments)...);
       int checkin_offset = -1;
-      for (int i = checkin_index; i < checkin_array.size(); ++i) {
+      for (int i = checkin_index; i < (int)checkin_array.size(); ++i) {
          h2_fail* fails = h2_tuple_matches(matcher_array[i], at);
          if (fails) {
             if (checkin_offset != -1) break;

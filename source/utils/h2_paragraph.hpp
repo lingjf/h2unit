@@ -4,8 +4,8 @@ struct h2_paragraph : h2_vector<h2_sentence> {
 
    h2_paragraph& operator+=(const h2_paragraph& paragraph);
 
-   unsigned width() const;
-   bool foldable(unsigned width = 20);
+   size_t width() const;
+   bool foldable(size_t width = 20);
    h2_sentence folds();
 
    h2_string string() const;

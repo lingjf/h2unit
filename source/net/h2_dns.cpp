@@ -35,7 +35,7 @@ struct h2_resolver {
       memset(sockaddrs, 0, sizeof(sockaddrs));
 
       struct addrinfo** pp = res;
-      for (int i = 0; i < name->resolves.size(); ++i) {
+      for (size_t i = 0; i < name->resolves.size(); ++i) {
          struct addrinfo* a = &addrinfos[i];
          struct sockaddr_in* b = &sockaddrs[i];
          if (inet_addr(name->resolves[i].c_str(), b)) {
@@ -80,7 +80,7 @@ struct h2_resolver {
       memset(h_aliases, 0, sizeof(h_aliases));
       memset(h_addr_list, 0, sizeof(h_addr_list));
 
-      for (int i = 0, a = 0, c = 0; i < name->resolves.size(); ++i) {
+      for (size_t i = 0, a = 0, c = 0; i < name->resolves.size(); ++i) {
          struct sockaddr_in* b = &sockaddrs[i];
          if (inet_addr(name->resolves[i].c_str(), b))
             h_addr_list[a++] = (char*)&b->sin_addr;

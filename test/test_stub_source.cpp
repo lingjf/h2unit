@@ -3,9 +3,6 @@
 
 char* h2_source_tojson(h2::h2_source* s, char* b)
 {
-   unsigned char saved[32];
-   void* origin_fp;
-   int reference_count = 0;
    sprintf(b, "{"
               "\"reference_count\": %d"
               "}",

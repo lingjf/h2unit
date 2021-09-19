@@ -86,9 +86,9 @@ struct h2_allof_matches : h2_matches {
       t2v(v_matchers);
 
       h2_fail* fails = nullptr;
-      for (int i = 0; i < v_matchers.size(); ++i) {
+      for (size_t i = 0; i < v_matchers.size(); ++i) {
          h2_fail* fail = v_matchers[i].matches(a, n, caseless, false);  // dont not transfer down
-         if (fail) fail->seqno = i;
+         if (fail) fail->seqno = (int)i;
          h2_fail::append_subling(fails, fail);
       }
 
@@ -127,13 +127,13 @@ struct h2_anyof_matches : h2_matches {
 
       int c = 0;
       h2_fail* fails = nullptr;
-      for (int i = 0; i < v_matchers.size(); ++i) {
+      for (size_t i = 0; i < v_matchers.size(); ++i) {
          h2_fail* fail = v_matchers[i].matches(a, n, caseless, false);
          if (!fail) {
             c++;
             break;
          }
-         if (fail) fail->seqno = i;
+         if (fail) fail->seqno = (int)i;
          h2_fail::append_subling(fails, fail);
       }
 
@@ -171,13 +171,13 @@ struct h2_noneof_matches : h2_matches {
       t2v(v_matchers);
 
       h2_fail* fails = nullptr;
-      for (int i = 0; i < v_matchers.size(); ++i) {
+      for (size_t i = 0; i < v_matchers.size(); ++i) {
          h2_fail* fail = v_matchers[i].matches(a, n, caseless, false);
          if (fail)
             delete fail;
          else {
             fail = h2_fail::new_normal("should not match " + v_matchers[i].expection(caseless, false).brush("green"));
-            fail->seqno = i;
+            fail->seqno = (int)i;
             h2_fail::append_subling(fails, fail);
          }
       }

@@ -1,5 +1,5 @@
 struct h2_block_attributes {
-   long long limit = LLONG_MAX / 2;
+   unsigned long long limit = LLONG_MAX / 2;
    int alignment = sizeof(void*);
    unsigned char s_fill[32];
    int n_fill = 0;
@@ -9,7 +9,7 @@ struct h2_block_attributes {
    {
       double d;
       if (h2_extract::has(attributes, "noleak")) noleak = true;
-      if (h2_extract::numeric(attributes, "limit", d)) limit = (long long)d;
+      if (h2_extract::numeric(attributes, "limit", d)) limit = (unsigned long long)d;
       if (h2_extract::numeric(attributes, "align", d)) alignment = (int)d;
       n_fill = h2_extract::fill(attributes, "fill", s_fill);
    }
@@ -20,7 +20,7 @@ struct h2_block : h2_libc {
    h2_list pieces;
 
    h2_block_attributes attributes;
-   long long footprint = 0, allocated = 0;
+   unsigned long long footprint = 0, allocated = 0;
    const char* where;
    const char* file;
    int line;
@@ -72,7 +72,7 @@ struct h2_block : h2_libc {
          n_fill = 1;
       }
       if (0 < n_fill)
-         for (int i = 0, j = 0; i < size; ++i, ++j)
+         for (size_t i = 0, j = 0; i < size; ++i, ++j)
             ((unsigned char*)p->user_ptr)[i] = s_fill[j % n_fill];
 
       pieces.push_back(p->x);

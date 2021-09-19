@@ -237,7 +237,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [windows-2019, windows-2022]
-    name: ${{matrix.os}}-msvc
+    name: ${{matrix.os}}-cmake
     steps:
       - uses: actions/checkout@v2
       - uses: ilammy/msvc-dev-cmd@v1

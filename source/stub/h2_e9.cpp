@@ -35,7 +35,7 @@ static inline void h2_e9_set(void* srcfp, void* dstfp)
       memcpy(I, C, sizeof(C));
    } else {  //i386 asm("jmp offset")
       unsigned char C[] = {0xE9, 0, 0, 0, 0};
-      *(long*)(&C[1]) = delta;
+      *(long*)(&C[1]) = (long)delta;
       memcpy(I, C, sizeof(C));
    }
    // ::FlushInstructionCache(GetCurrentProcess(), srcfp, h2_e9_size);

@@ -141,7 +141,7 @@ SUITE(numeric)
 SUITE(bits_equal)
 {
    bool ret;
-   int nbits;
+   size_t nbits;
    unsigned char z1[1024];
 
    Case(bits_equal tobytes 10001110)

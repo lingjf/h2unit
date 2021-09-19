@@ -14,14 +14,14 @@ struct h2_stdio {
          I().capture_length += count;
       if ((I().stdout_capturable && fd == fileno(stdout)) || (I().stderr_capturable && fd == fileno(stderr)))
          I().buffer->append((char*)buf, count);
-      return count;
+      return (ssize_t)count;
    }
 
    static int vfprintf(FILE* stream, const char* format, va_list ap)
    {
       char* alloca_str;
       h2_sprintvf(alloca_str, format, ap);
-      return write(fileno(stream), alloca_str, strlen(alloca_str));
+      return (int)write(fileno(stream), alloca_str, strlen(alloca_str));
    }
 
    static int fprintf(FILE* stream, const char* format, ...)
@@ -94,8 +94,8 @@ struct h2_stdio {
       va_end(a);
    }
 
-   int test_count = 0;
-   static ssize_t test_write(int fd, const void* buf, size_t count) { return I().test_count += count, count; }
+   size_t test_count = 0;
+   static ssize_t test_write(int fd, const void* buf, size_t count) { return I().test_count += count, (ssize_t)count; }
 
    static void initialize()
    {

@@ -4,9 +4,9 @@ struct h2_sentence : h2_vector<h2_string> {
    h2_sentence(const h2_string& a) : h2_vector<h2_string>({a}) {}
    h2_sentence(std::initializer_list<h2_string> il) : h2_vector<h2_string>(il) {}
 
-   unsigned width(bool ignore_indent = false) const;
-   h2_sentence& indent(int n, const char c = ' ');
-   h2_sentence& padding(int n, const char c = ' ');
+   size_t width(bool ignore_indent = false) const;
+   h2_sentence& indent(size_t n, const char c = ' ');
+   h2_sentence& padding(size_t n, const char c = ' ');
 
    h2_sentence& printf(const char* style, const char* format, ...);
    h2_sentence& operator+=(const h2_sentence& sentence);
@@ -14,7 +14,7 @@ struct h2_sentence : h2_vector<h2_string> {
 
    bool enclosed(const char c) const;
    h2_sentence gray_quote() const;
-   h2_sentence acronym(int width = 16, int tail = 0) const;
+   h2_sentence acronym(size_t width = 16, size_t tail = 0) const;
    h2_string string() const;
 
    static void samesizify(h2_sentence& a, h2_sentence& b);

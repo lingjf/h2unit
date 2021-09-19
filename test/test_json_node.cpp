@@ -106,7 +106,6 @@ SUITE(json node format)
       h2::h2_json_tree parse(json);
 
       int type;
-      const char* cls;
       h2::h2_string key;
       h2::h2_string value;
 

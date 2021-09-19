@@ -2,11 +2,11 @@ struct h2_leaky {
    struct leak {
       void* ptr;
       h2_backtrace bt;
-      h2_vector<std::pair<int, int>> sizes;
+      h2_vector<std::pair<size_t, size_t>> sizes;
 
       leak(void* ptr_, const h2_backtrace& bt_) : ptr(ptr_), bt(bt_) {}
 
-      h2_vector<std::pair<int, int>>::iterator find(int size)
+      h2_vector<std::pair<size_t, size_t>>::iterator find(size_t size)
       {
          for (auto it = sizes.begin(); it != sizes.end(); it++)
             if (it->first == size)
@@ -14,7 +14,7 @@ struct h2_leaky {
          return sizes.end();
       }
 
-      void add(int size)
+      void add(size_t size)
       {
          if (sizes.end() == find(size)) sizes.push_back({size, 0});
          find(size)->second++;
@@ -22,7 +22,7 @@ struct h2_leaky {
 
       h2_fail* check(const char* where, const char* file, int line)
       {
-         int s = 0;
+         size_t s = 0;
          for (auto& p : sizes)
             s += p.first * p.second;
          return h2_fail::new_memory_leak(ptr, s, sizes, bt, where, file, line);
@@ -39,7 +39,7 @@ struct h2_leaky {
       return leaks.end();
    }
 
-   void add(void* ptr, int size, const h2_backtrace& bt)
+   void add(void* ptr, size_t size, const h2_backtrace& bt)
    {
       if (leaks.end() == find(bt)) leaks.push_back({ptr, bt});
       find(bt)->add(size);

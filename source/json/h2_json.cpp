@@ -8,7 +8,7 @@ h2_inline h2_paragraph h2_json::dump(const h2_string& json_string)
          paragraph.front() = "\"" + paragraph.front();
          paragraph.back() = paragraph.back() + "\"";
       }
-      unsigned max_width = paragraph.width();
+      size_t max_width = paragraph.width();
       for (size_t i = 0; i < paragraph.size(); ++i) {
          paragraph[i].padding(max_width - paragraph[i].width() + 3);
          if (i < paragraph.size() - 1) paragraph[i].push_back("\\");

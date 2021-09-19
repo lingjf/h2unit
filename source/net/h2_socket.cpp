@@ -105,7 +105,7 @@ struct h2_socket {
       iport_parse(tcp->from.c_str(), (struct sockaddr_in*)address);
       *address_len = sizeof(struct sockaddr_in);
 
-      int fd = ::socket(AF_INET, SOCK_STREAM, 0);
+      int fd = (int)::socket(AF_INET, SOCK_STREAM, 0);
       struct sockaddr_in a;
       const char* c = getsockname(socket, (char*)alloca(64), &a);
       ::bind(fd, (struct sockaddr*)&a, sizeof(a));
@@ -136,14 +136,14 @@ struct h2_socket {
    static ssize_t h2__stdcall send(int socket, const void* buffer, size_t length, int flags)
    {
       I().put_outgoing(socket, (const char*)buffer, length);
-      return length;
+      return (ssize_t)length;
    }
    static ssize_t h2__stdcall recv(int socket, void* buffer, size_t length, int flags)
    {
       ssize_t ret = 0;
       h2_packet* tcp = read_incoming(socket);
       if (tcp) {
-         ret = tcp->data.copy((char*)buffer, tcp->data.size(), 0);
+         ret = (ssize_t)tcp->data.copy((char*)buffer, tcp->data.size(), 0);
          delete tcp;
       }
       return ret;
@@ -151,7 +151,7 @@ struct h2_socket {
    static ssize_t h2__stdcall sendto(int socket, const void* buffer, size_t length, int flags, const struct sockaddr* dest_addr, socklen_t dest_len)
    {
       I().put_outgoing(getsockname(socket, (char*)alloca(64)), iport_tostring((struct sockaddr_in*)dest_addr, (char*)alloca(64)), (const char*)buffer, length);
-      return length;
+      return (ssize_t)length;
    }
    static ssize_t h2__stdcall recvfrom(int socket, void* buffer, size_t length, int flags, struct sockaddr* address, socklen_t* address_len)
    {
@@ -159,7 +159,7 @@ struct h2_socket {
       h2_packet* udp = read_incoming(socket);
 
       if (udp) {
-         ret = udp->data.copy((char*)buffer, udp->data.size(), 0);
+         ret = (ssize_t)udp->data.copy((char*)buffer, udp->data.size(), 0);
          iport_parse(udp->from.c_str(), (struct sockaddr_in*)address);
          *address_len = sizeof(struct sockaddr_in);
          delete udp;

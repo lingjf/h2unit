@@ -55,7 +55,7 @@ class h2_mocker<Counter, ClassType, ReturnType(ArgumentTypes...)> : h2_mocker_ba
    {
       ArgumentTypeTuple at = std::forward_as_tuple(std::forward<ArgumentTypes>(arguments)...);
       int checkin_offset = -1;
-      for (int i = checkin_index; i < checkin_array.size(); ++i) {
+      for (int i = checkin_index; i < (int)checkin_array.size(); ++i) {
          h2_fail* fails = h2_tuple_matches(matcher_array[i], at);
          if (fails) {
             if (checkin_offset != -1) break;

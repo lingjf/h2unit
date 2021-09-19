@@ -5,7 +5,7 @@ struct h2_crash {
       if (ExceptionInfo->ExceptionRecord->ExceptionCode == EXCEPTION_ACCESS_VIOLATION) {
          h2_piece* piece = h2_stack::I().host_piece((const void*)ExceptionInfo->ExceptionRecord->ExceptionInformation[1]);
          if (piece) {
-            int operation = ExceptionInfo->ExceptionRecord->ExceptionInformation[0];
+            auto operation = ExceptionInfo->ExceptionRecord->ExceptionInformation[0];
             piece->violate_forbidden((void*)ExceptionInfo->ExceptionRecord->ExceptionInformation[1], operation == 0 ? "read" : (operation == 1 ? "write" : (operation == 8 ? "execute" : "unknown")));
             return EXCEPTION_CONTINUE_EXECUTION;
          }

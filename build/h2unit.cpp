@@ -1,5 +1,5 @@
 
-/* v5.13 2021-09-19 01:11:23 */
+/* v5.13 2021-09-19 23:02:59 */
 /* https://github.com/lingjf/h2unit */
 /* Apache Licence 2.0 */
 #include "h2unit.hpp"
@@ -183,13 +183,13 @@ static inline int hex_to_byte(char c)
    return '0' <= c && c <= '9' ? c - '0' : ('A' <= c && c <= 'F' ? c - 'A' + 10 : ('a' <= c && c <= 'f' ? c - 'a' + 10 : -1));
 }
 
-static inline int bin_to_bits(const char* bin, unsigned char* bytes)
+static inline size_t bin_to_bits(const char* bin, unsigned char* bytes)
 {
    memset(bytes, 0, strlen(bin));
-   int c = 0;
+   size_t c = 0;
    for (const char* p = bin; *p; p++) {
       if (*p == ' ') continue;
-      int i = c / 8, j = 7 - c % 8;
+      size_t i = c / 8, j = 7 - c % 8;
       ++c;
       unsigned char ebit = *p == '1' ? 1 : 0;
       bytes[i] = bytes[i] | (ebit << j);
@@ -197,12 +197,12 @@ static inline int bin_to_bits(const char* bin, unsigned char* bytes)
    return c;
 }
 
-static inline int hex_to_bits(const char* hex, unsigned char* bytes)
+static inline size_t hex_to_bits(const char* hex, unsigned char* bytes)
 {
    memset(bytes, 0, strlen(hex));
    if (hex[0] == '0' && ::tolower(hex[1]) == 'x') hex += 2;
    char b;
-   int c = 0;
+   size_t c = 0;
    for (const char* p = hex; *p; p++) {
       if (::isxdigit(*p)) {
          if (++c % 2 == 0)
@@ -211,13 +211,13 @@ static inline int hex_to_bits(const char* hex, unsigned char* bytes)
             b = *p;
       }
    }
-   return 8 * c / 2;
+   return c * 8 / 2;
 }
 
-static inline int hex_to_bytes(const char* hex, unsigned char* bytes)
+static inline size_t hex_to_bytes(const char* hex, unsigned char* bytes)
 {
    char b;
-   int i = 0, c = 0;
+   size_t i = 0, c = 0;
 
    for (; ::isxdigit(hex[c]);) ++c;
    if (c % 2 == 1) {
@@ -234,19 +234,19 @@ static inline int hex_to_bytes(const char* hex, unsigned char* bytes)
    return c / 2;
 }
 
-static inline bool bits_equal(const unsigned char* b1, const unsigned char* b2, int nbits)
+static inline bool bits_equal(const unsigned char* b1, const unsigned char* b2, size_t nbits)
 {
-   for (int k = 0; k < nbits; ++k) {
-      int i = k / 8, j = 7 - k % 8;
+   for (size_t k = 0; k < nbits; ++k) {
+      size_t i = k / 8, j = 7 - k % 8;
       if (((b1[i] >> j) & 1) != ((b2[i] >> j) & 1)) return false;
    }
    return true;
 }
 
-static inline unsigned number_strlen(unsigned number, int base)
+static inline size_t number_strlen(unsigned long long number, int base)
 {
    unsigned long long _10000000 = 1;
-   for (int i = 1;; ++i) {
+   for (size_t i = 1;; ++i) {
       _10000000 *= base;
       if (number < _10000000) return i;
    }
@@ -269,14 +269,14 @@ h2_inline bool h2_numeric::is_bin_string(const char* s)
    return true;
 }
 
-h2_inline const char* h2_numeric::sequence_number(int sequence, int shift)
+h2_inline const char* h2_numeric::sequence_number(size_t sequence, int shift)
 {
    static const char* st[] = {"0th", "1st", "2nd", "3rd", "4th", "5th", "6th", "7th", "8th", "9th", "10th", "11th", "12th", "13th", "14th", "15th"};
    static char ss[64];
 
    sequence += shift;
    if (sequence < sizeof(st) / sizeof(st[0])) return st[sequence];
-   sprintf(ss, "%dth", sequence);
+   sprintf(ss, "%dth", (int)sequence);
    return ss;
 }
 // source/utils/h2_compare.cpp
@@ -329,14 +329,14 @@ h2_inline bool h2_pattern::match(const char* pattern, const char* subject, bool 
 }
 
 struct h2_fuzzy {
-   static unsigned int levenshtein(const char* s1, const char* s2, int n1, int n2, bool caseless)
+   static size_t levenshtein(const char* s1, const char* s2, size_t n1, size_t n2, bool caseless)
    {
-      h2_vector<unsigned int> col(n2 + 1), prevCol(n2 + 1);
-      for (unsigned int i = 0; i < prevCol.size(); i++)
-         prevCol[i] = i;
-      for (unsigned int i = 0; i < n1; i++) {
+      h2_vector<size_t> col(n2 + 1), prevCol(n2 + 1);
+      for (h2_vector<size_t>::size_type i = 0; i < prevCol.size(); i++)
+         prevCol[i] = (int)i;
+      for (size_t i = 0; i < n1; i++) {
          col[0] = i + 1;
-         for (unsigned int j = 0; j < n2; j++) {
+         for (size_t j = 0; j < n2; j++) {
             bool eq = caseless ? ::tolower(s1[i]) == ::tolower(s2[j]) : s1[i] == s2[j];
             col[j + 1] = std::min(std::min(1 + col[j], 1 + prevCol[1 + j]), prevCol[j] + (eq ? 0 : 1));
          }
@@ -348,10 +348,9 @@ struct h2_fuzzy {
    // 1 absolute match, 0 absolute not match
    static double similarity(const char* s1, const char* s2, bool caseless)
    {
-      int n1 = strlen(s1), n2 = strlen(s2);
+      size_t n1 = strlen(s1), n2 = strlen(s2);
       if (!n1 && !n2) return 1;
-      double ed = levenshtein(s1, s2, n1, n2, caseless);
-      return 1.0 - ed / ((n1 + n2) * 0.5);
+      return 1.0 - levenshtein(s1, s2, n1, n2, caseless) / ((n1 + n2) * 0.5);
    }
 };
 // source/utils/h2_misc.cpp
@@ -416,14 +415,14 @@ h2_inline int h2_extract::fill(const char* attributes, const char* key, unsigned
    const char* p = p_eq + 1;
    for (; *p && ::isspace(*p);) p++;  // strip left space
    if (p[0] == '0' && ::tolower(p[1]) == 'x') {
-      return hex_to_bytes(p + 2, bytes);
+      return (int)hex_to_bytes(p + 2, bytes);
    } else {
-      long long v = strtoll(p, nullptr, 10);
-      if (v <= 0xFFU)
+      unsigned long long v = strtoull(p, nullptr, 10);
+      if (v <= 0xFFULL)
          return *((unsigned char*)bytes) = (unsigned char)v, 1;
-      else if (v <= 0xFFFFU)
+      else if (v <= 0xFFFFULL)
          return *((unsigned short*)bytes) = (unsigned short)v, 2;
-      else if (v <= 0xFFFFFFFFU)
+      else if (v <= 0xFFFFFFFFULL)
          return *((unsigned int*)bytes) = (unsigned int)v, 4;
       else
          return *((unsigned long long*)bytes) = (unsigned long long)v, 8;
@@ -433,7 +432,7 @@ h2_inline int h2_extract::fill(const char* attributes, const char* key, unsigned
 static inline void h2_sleep(long long milliseconds)
 {
 #if defined _WIN32
-   Sleep(milliseconds);
+   Sleep((DWORD)milliseconds);
 #else
    ::usleep(milliseconds * 1000);
 #endif
@@ -481,29 +480,29 @@ struct h2_libc_malloc {
    h2_singleton(h2_libc_malloc);
 
    struct buddy {
-      long long size;
+      unsigned long long size;
       h2_list x;
-      buddy(long long size_) : size(size_) {}
+      buddy(const unsigned long long size_) : size(size_) {}
       bool join_right(buddy* b) { return ((char*)this) + size == (char*)b; }
       bool join_left(buddy* b) { return ((char*)b) + b->size == (char*)this; }
    };
 
    struct block {
-      long long bytes;
+      unsigned long long bytes;
       block* next = nullptr;
       h2_list buddies;
 
-      block(long long _bytes) : bytes(_bytes)
+      block(const unsigned long long bytes_) : bytes(bytes_)
       {
          buddy* b = new ((char*)this + sizeof(block)) buddy(bytes - sizeof(block));
          buddies.add_tail(b->x);
       }
 
-      buddy* malloc(const long long size)
+      buddy* malloc(const unsigned long long size)
       {
          h2_list_for_each_entry (p, buddies, buddy, x) {
             if (size + sizeof(p->size) <= p->size) {
-               long long left = p->size - (size + sizeof(p->size));
+               unsigned long long left = p->size - (size + sizeof(p->size));
                if (sizeof(buddy) + 64 <= left) {  // avoid smash buddy for performance
                   buddy* b = new ((char*)p + left) buddy(size + sizeof(b->size));
                   p->size = left;
@@ -543,10 +542,10 @@ struct h2_libc_malloc {
 
    block* next = nullptr;
 
-   void batch(long long size)
+   void batch(const unsigned long long size)
    {
       int brk_size = 4 * 1024 * 1024;
-      int brk_count = ::ceil(size / (double)brk_size);
+      int brk_count = (int)::ceil(size / (double)brk_size);
 
 #if defined _WIN32
       PVOID ptr = VirtualAlloc(NULL, brk_count * brk_size, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
@@ -561,7 +560,7 @@ struct h2_libc_malloc {
       next = p;
    }
 
-   buddy* alloc(long long size)
+   buddy* alloc(const unsigned long long size)
    {
       for (block* p = next; p; p = p->next) {
          buddy* b = p->malloc(size);
@@ -570,9 +569,9 @@ struct h2_libc_malloc {
       return nullptr;
    }
 
-   void* malloc(size_t size)
+   void* malloc(const size_t size)
    {
-      long long _size = (size + 7) / 8 * 8;
+      unsigned long long _size = (size + 7) / 8 * 8;
       buddy* b = alloc(_size);
       if (!b) {
          batch(_size);
@@ -701,10 +700,10 @@ h2_inline h2_string h2_string::tolower() const
    return s;
 }
 
-h2_inline h2_string h2_string::center(int width) const
+h2_inline h2_string h2_string::center(size_t width) const
 {
    if (width <= size()) return *this;
-   int left = (width - size()) / 2, right = width - left - size();
+   size_t left = (width - size()) / 2, right = width - left - size();
    h2_string s;
    s.append(left, ' ');
    s.append(*this);
@@ -712,9 +711,9 @@ h2_inline h2_string h2_string::center(int width) const
    return s;
 }
 // source/utils/h2_sentence.cpp
-h2_inline unsigned h2_sentence::width(bool ignore_indent) const
+h2_inline size_t h2_sentence::width(bool ignore_indent) const
 {
-   unsigned w = 0;
+   size_t w = 0;
    for (auto& word : *this)
       if (!h2_color::isctrl(word.c_str()))
          if (!ignore_indent || !word.isspace())
@@ -722,13 +721,13 @@ h2_inline unsigned h2_sentence::width(bool ignore_indent) const
    return w;
 }
 
-h2_inline h2_sentence& h2_sentence::indent(int n, const char c)
+h2_inline h2_sentence& h2_sentence::indent(size_t n, const char c)
 {
    insert(begin(), h2_string(n, c));
    return *this;
 }
 
-h2_inline h2_sentence& h2_sentence::padding(int n, const char c)
+h2_inline h2_sentence& h2_sentence::padding(size_t n, const char c)
 {
    push_back(h2_string(n, c));
    return *this;
@@ -778,8 +777,8 @@ h2_inline h2_sentence h2_sentence::gray_quote() const
    if (!enclosed('\"') && !enclosed('\'')) return *this;
 
    h2_sentence sentence;
-   unsigned w = width();
-   unsigned i = 0;
+   size_t w = width();
+   size_t i = 0;
 
    for (auto& word : *this) {
       if (h2_color::isctrl(word.c_str())) {
@@ -805,7 +804,7 @@ h2_inline h2_sentence h2_sentence::gray_quote() const
    return sentence;
 }
 
-h2_inline h2_sentence h2_sentence::acronym(int width, int tail) const
+h2_inline h2_sentence h2_sentence::acronym(size_t width, size_t tail) const
 {
    h2_sentence s1;
    for (auto& word : *this) {
@@ -816,11 +815,11 @@ h2_inline h2_sentence h2_sentence::acronym(int width, int tail) const
       }
    }
 
-   int r1_width = s1.width();
+   size_t r1_width = s1.width();
    if (r1_width <= width) return s1;
 
    h2_sentence s2;
-   int i = 0;
+   size_t i = 0;
    for (auto& word : s1) {
       if (h2_color::isctrl(word.c_str())) {
          s2.push_back(word);
@@ -856,7 +855,7 @@ h2_inline h2_string h2_sentence::string() const
 
 h2_inline void h2_sentence::samesizify(h2_sentence& a, h2_sentence& b)
 {
-   int a_w = a.width(), b_w = b.width();
+   size_t a_w = a.width(), b_w = b.width();
    a.padding(std::max(a_w, b_w) - a_w);
    b.padding(std::max(a_w, b_w) - b_w);
 }
@@ -867,17 +866,17 @@ h2_inline h2_paragraph& h2_paragraph::operator+=(const h2_paragraph& paragraph)
    return *this;
 }
 
-h2_inline unsigned h2_paragraph::width() const
+h2_inline size_t h2_paragraph::width() const
 {
-   unsigned m = 0;
+   size_t m = 0;
    for (auto& sentence : *this)
       m = std::max(m, sentence.width());
    return m;
 }
 
-h2_inline bool h2_paragraph::foldable(unsigned width)
+h2_inline bool h2_paragraph::foldable(size_t width)
 {
-   int sum = 0;
+   size_t sum = 0;
    for (auto& sentence : *this)
       for (auto& word : sentence)
          if (!word.isspace() && !h2_color::isctrl(word.c_str()))  // ignore indent and \033m controller
@@ -924,7 +923,7 @@ h2_inline void h2_paragraph::samesizify(h2_paragraph& a, h2_paragraph& b)
 struct h2_shell {
    h2_singleton(h2_shell);
    char current[8][32];
-   unsigned cww;
+   size_t cww;
 
    h2_shell()
    {
@@ -947,21 +946,21 @@ struct h2_shell {
 
    void clear_style()
    {
-      for (int i = 0; i < sizeof(current) / sizeof(current[0]); ++i)
+      for (size_t i = 0; i < sizeof(current) / sizeof(current[0]); ++i)
          current[i][0] = '\0';
    }
-   void push_style(const char* style, int length)
+   void push_style(const char* style, size_t length)
    {
-      for (int i = 0; i < sizeof(current) / sizeof(current[0]); ++i)
+      for (size_t i = 0; i < sizeof(current) / sizeof(current[0]); ++i)
          if (current[i][0] == '\0') {
             strncpy(current[i], style, length);
             current[i][length] = '\0';
             break;
          }
    }
-   void pop_style(const char* style, int length)
+   void pop_style(const char* style, size_t length)
    {
-      for (int i = 0; i < sizeof(current) / sizeof(current[0]); ++i)
+      for (size_t i = 0; i < sizeof(current) / sizeof(current[0]); ++i)
          if (!strncmp(current[i], style, length) && strlen(current[i]) == length)
             current[i][0] = '\0';
    }
@@ -969,7 +968,7 @@ struct h2_shell {
    {
       char a[256];
       sprintf(a, "\033[%d;", style2value("reset"));
-      for (int i = 0; i < sizeof(current) / sizeof(current[0]); ++i)
+      for (size_t i = 0; i < sizeof(current) / sizeof(current[0]); ++i)
          if (current[i][0] != '\0')
             sprintf(a + strlen(a), "%d;", style2value(current[i]));
       a[strlen(a) - 1] = 'm';
@@ -982,7 +981,7 @@ struct h2_shell {
       if (*p == '+' || *p == '-') s = *p++;
 
       for (;;) {
-         int l = strcspn(p, ",}");
+         size_t l = strcspn(p, ",}");
          s == '-' ? pop_style(p, l) : push_style(p, l);
          if (!strncmp("reset", p, l)) clear_style();
          if (*(p + l) == '}' || *(p + l) == '\0') break;
@@ -1112,7 +1111,7 @@ static inline void nm_demangle(h2_list& symbols)
 }
 #endif
 
-static inline bool strncmp_reverse(const char* a, const char* ae, const char* b, const char* be, int n)  // [a, ae) [b, be)
+static inline bool strncmp_reverse(const char* a, const char* ae, const char* b, const char* be, size_t n)  // [a, ae) [b, be)
 {
    if (ae < a + n || be < b + n) return false;
    return !strncmp(ae - n, be - n, n);
@@ -1121,7 +1120,7 @@ static inline bool strncmp_reverse(const char* a, const char* ae, const char* b,
 h2_inline int h2_nm::get_by_name(const char* name, h2_symbol* res[], int n)
 {
    if (!name) return 0;
-   int len = strlen(name);
+   size_t len = strlen(name);
    if (len == 0) return 0;
 #if defined _MSC_VER
    char buffer[sizeof(SYMBOL_INFO) + 256];
@@ -1736,8 +1735,8 @@ struct tinyexpr
                     start = s->next;
                     while ((s->next[0] >= 'a' && s->next[0] <= 'z') || (s->next[0] >= '0' && s->next[0] <= '9') || (s->next[0] == '_')) s->next++;
 
-                    const te_variable *var = find_lookup(s, start, s->next - start);
-                    if (!var) var = find_builtin(start, s->next - start);
+                    const te_variable *var = find_lookup(s, start, (int)(s->next - start));
+                    if (!var) var = find_builtin(start, (int)(s->next - start));
 
                     if (!var) {
                         s->type = TOK_ERROR;
@@ -2039,7 +2038,7 @@ struct tinyexpr
         if (s.type != TOK_END) {
             te_free(root);
             if (error) {
-                *error = (s.next - s.start);
+                *error = (int)(s.next - s.start);
                 if (*error == 0) *error = 1;
             }
             return 0;
@@ -2171,7 +2170,7 @@ struct h2_json_node : h2_libc {
 };
 // source/json/h2_lexical.cpp
 struct h2_json_lexical {
-   static void new_lexis(h2_vector<h2_string>& lexical, const char* start, int size)
+   static void new_lexis(h2_vector<h2_string>& lexical, const char* start, const int size)
    {
       const char *left = start, *right = start + size;
       for (; left < right && *left && ::isspace(*left);) left++;
@@ -2219,7 +2218,7 @@ struct h2_json_lexical {
             break;
          case st_single_quote:
             if ('\'' == *p) {
-               new_lexis(lexical, pending, (p + 1) - pending);
+               new_lexis(lexical, pending, (int)((p + 1) - pending));
                pending = nullptr;
                state = st_idle;
             } else if ('\\' == *p) {
@@ -2228,7 +2227,7 @@ struct h2_json_lexical {
             break;
          case st_double_quote:
             if ('\"' == *p) {
-               new_lexis(lexical, pending, (p + 1) - pending);
+               new_lexis(lexical, pending, (int)((p + 1) - pending));
                pending = nullptr;
                state = st_idle;
             } else if ('\\' == *p) {
@@ -2237,7 +2236,7 @@ struct h2_json_lexical {
             break;
          case st_pattern:
             if ('/' == *p) {
-               new_lexis(lexical, pending, (p + 1) - pending);
+               new_lexis(lexical, pending, (int)((p + 1) - pending));
                pending = nullptr;
                state = st_idle;
             }
@@ -2245,7 +2244,7 @@ struct h2_json_lexical {
             break;
          case st_normal:
             if (strchr("{:}[,]", *p)) {
-               new_lexis(lexical, pending, p - pending);
+               new_lexis(lexical, pending, (int)(p - pending));
                pending = nullptr;
                new_lexis(lexical, p, 1);
                state = st_idle;
@@ -2256,13 +2255,13 @@ struct h2_json_lexical {
          }
       }
       if (pending) {
-         new_lexis(lexical, pending, p - pending);
+         new_lexis(lexical, pending, (int)(p - pending));
       }
    }
 };
 // source/json/h2_syntax.cpp
 struct h2_json_syntax {
-   int i = 0;
+   size_t i = 0;
    const h2_vector<h2_string>& lexical;
    h2_json_syntax(const h2_vector<h2_string>& _lexical) : lexical(_lexical) {}
 
@@ -2739,7 +2738,7 @@ h2_inline h2_paragraph h2_json::dump(const h2_string& json_string)
          paragraph.front() = "\"" + paragraph.front();
          paragraph.back() = paragraph.back() + "\"";
       }
-      unsigned max_width = paragraph.width();
+      size_t max_width = paragraph.width();
       for (size_t i = 0; i < paragraph.size(); ++i) {
          paragraph[i].padding(max_width - paragraph[i].width() + 3);
          if (i < paragraph.size() - 1) paragraph[i].push_back("\\");
@@ -2848,15 +2847,15 @@ h2_inline h2_sentence h2_matches_json::expection(bool caseless, bool dont) const
    return CD(h2_stringify(e), caseless, dont, "≠");
 }
 // source/matcher/h2_memcmp.cpp
-static inline h2_string readable_size(int width, int nbits)
+static inline h2_string readable_size(size_t width, size_t nbits)
 {
    char t[64];
    switch (width) {
-   case 1: sprintf(t, "%d bit%s", nbits, nbits > 1 ? "s" : ""); break;
-   case 8: sprintf(t, "%d byte%s", nbits / 8, nbits / 8 > 1 ? "s" : ""); break;
-   case 16: sprintf(t, "%d word%s", nbits / 16, nbits / 16 > 1 ? "s" : ""); break;
-   case 32: sprintf(t, "%d dword%s", nbits / 32, nbits / 32 > 1 ? "s" : ""); break;
-   case 64: sprintf(t, "%d qword%s", nbits / 64, nbits / 64 > 1 ? "s" : ""); break;
+   case 1: sprintf(t, "%d bit%s", (int)nbits, nbits > 1 ? "s" : ""); break;
+   case 8: sprintf(t, "%d byte%s", (int)(nbits / 8), nbits / 8 > 1 ? "s" : ""); break;
+   case 16: sprintf(t, "%d word%s", (int)(nbits / 16), nbits / 16 > 1 ? "s" : ""); break;
+   case 32: sprintf(t, "%d dword%s", (int)(nbits / 32), nbits / 32 > 1 ? "s" : ""); break;
+   case 64: sprintf(t, "%d qword%s", (int)(nbits / 64), nbits / 64 > 1 ? "s" : ""); break;
    default: sprintf(t, "?"); break;
    }
    return h2_string(t);
@@ -2865,11 +2864,11 @@ static inline h2_string readable_size(int width, int nbits)
 h2_inline h2_fail* h2_matches_bytecmp::matches(const void* a, int n, bool caseless, bool dont) const
 {
    bool result = false;
-   int _nbytes;
+   size_t _nbytes;
    if (isstring) {
       if (is_hex_string((const char*)e)) {
          unsigned char* _e = (unsigned char*)alloca(strlen((const char*)e));
-         int max_length = hex_to_bytes((const char*)e, _e);
+         size_t max_length = hex_to_bytes((const char*)e, _e);
          _nbytes = nbytes;
          if (nbytes == 0) _nbytes = max_length;
          if (_nbytes <= max_length) {
@@ -2898,7 +2897,7 @@ h2_inline h2_sentence h2_matches_bytecmp::expection(bool caseless, bool dont) co
 
 h2_inline h2_fail* h2_matches_bitcmp::matches(const void* a, int n, bool caseless, bool dont) const
 {
-   int max_length = INT_MAX;
+   size_t max_length = INT_MAX;
    unsigned char* _e = (unsigned char*)e;
    if (isstring) {
       unsigned char* t = (unsigned char*)alloca(strlen((const char*)e));
@@ -2916,7 +2915,7 @@ h2_inline h2_fail* h2_matches_bitcmp::matches(const void* a, int n, bool caseles
          return h2_fail::new_normal("length required");
       }
    }
-   int _nbits = nbits;
+   size_t _nbits = nbits;
    if (nbits == 0) _nbits = max_length;
    if (max_length < _nbits) {
       return h2_fail::new_normal("length too loog");
@@ -2955,11 +2954,11 @@ struct h2_piece : h2_libc {
    h2_piece(size_t size, size_t alignment, const char* who, h2_backtrace& bt) : user_size(size), page_size(h2_page_size()), who_allocate(who), bt_allocate(bt)
    {
       size_t alignment_2n = alignment;
-      if (not2n(alignment)) alignment_2n = mask2n(alignment) + 1;
+      if (not2n((unsigned)alignment)) alignment_2n = (size_t)mask2n((unsigned)alignment) + 1;
       if (alignment_2n < sizeof(void*)) alignment_2n = sizeof(void*);
 
       size_t user_size_plus = (user_size + alignment_2n - 1 + alignment_2n) & ~(alignment_2n - 1);
-      page_count = ::ceil(user_size_plus / (double)page_size);
+      page_count = (size_t)::ceil(user_size_plus / (double)page_size);
 
 #if defined _WIN32
       page_ptr = (unsigned char*)VirtualAlloc(NULL, page_size * (page_count + 1), MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
@@ -3093,7 +3092,7 @@ struct h2_piece : h2_libc {
       static const char* c1[] = {"new[]", "new[] nothrow", nullptr};
       static const char* c2[] = {"delete[]", "delete[] nothrow", nullptr};
       static const char** S[] = {a1, a2, b1, b2, c1, c2};
-      for (int i = 0; i < sizeof(S) / sizeof(S[0]); i += 2)
+      for (size_t i = 0; i < sizeof(S) / sizeof(S[0]); i += 2)
          if (h2_in(who_allocate, S[i]) && h2_in(who_release, S[i + 1]))
             return nullptr;
       if (bt_allocate.in(h2_exempt::I().fps)) return nullptr;
@@ -3128,11 +3127,11 @@ struct h2_leaky {
    struct leak {
       void* ptr;
       h2_backtrace bt;
-      h2_vector<std::pair<int, int>> sizes;
+      h2_vector<std::pair<size_t, size_t>> sizes;
 
       leak(void* ptr_, const h2_backtrace& bt_) : ptr(ptr_), bt(bt_) {}
 
-      h2_vector<std::pair<int, int>>::iterator find(int size)
+      h2_vector<std::pair<size_t, size_t>>::iterator find(size_t size)
       {
          for (auto it = sizes.begin(); it != sizes.end(); it++)
             if (it->first == size)
@@ -3140,7 +3139,7 @@ struct h2_leaky {
          return sizes.end();
       }
 
-      void add(int size)
+      void add(size_t size)
       {
          if (sizes.end() == find(size)) sizes.push_back({size, 0});
          find(size)->second++;
@@ -3148,7 +3147,7 @@ struct h2_leaky {
 
       h2_fail* check(const char* where, const char* file, int line)
       {
-         int s = 0;
+         size_t s = 0;
          for (auto& p : sizes)
             s += p.first * p.second;
          return h2_fail::new_memory_leak(ptr, s, sizes, bt, where, file, line);
@@ -3165,7 +3164,7 @@ struct h2_leaky {
       return leaks.end();
    }
 
-   void add(void* ptr, int size, const h2_backtrace& bt)
+   void add(void* ptr, size_t size, const h2_backtrace& bt)
    {
       if (leaks.end() == find(bt)) leaks.push_back({ptr, bt});
       find(bt)->add(size);
@@ -3180,7 +3179,7 @@ struct h2_leaky {
 };
 // source/memory/h2_block.cpp
 struct h2_block_attributes {
-   long long limit = LLONG_MAX / 2;
+   unsigned long long limit = LLONG_MAX / 2;
    int alignment = sizeof(void*);
    unsigned char s_fill[32];
    int n_fill = 0;
@@ -3190,7 +3189,7 @@ struct h2_block_attributes {
    {
       double d;
       if (h2_extract::has(attributes, "noleak")) noleak = true;
-      if (h2_extract::numeric(attributes, "limit", d)) limit = (long long)d;
+      if (h2_extract::numeric(attributes, "limit", d)) limit = (unsigned long long)d;
       if (h2_extract::numeric(attributes, "align", d)) alignment = (int)d;
       n_fill = h2_extract::fill(attributes, "fill", s_fill);
    }
@@ -3201,7 +3200,7 @@ struct h2_block : h2_libc {
    h2_list pieces;
 
    h2_block_attributes attributes;
-   long long footprint = 0, allocated = 0;
+   unsigned long long footprint = 0, allocated = 0;
    const char* where;
    const char* file;
    int line;
@@ -3253,7 +3252,7 @@ struct h2_block : h2_libc {
          n_fill = 1;
       }
       if (0 < n_fill)
-         for (int i = 0, j = 0; i < size; ++i, ++j)
+         for (size_t i = 0, j = 0; i < size; ++i, ++j)
             ((unsigned char*)p->user_ptr)[i] = s_fill[j % n_fill];
 
       pieces.push_back(p->x);
@@ -3911,7 +3910,7 @@ struct h2_crash {
       if (ExceptionInfo->ExceptionRecord->ExceptionCode == EXCEPTION_ACCESS_VIOLATION) {
          h2_piece* piece = h2_stack::I().host_piece((const void*)ExceptionInfo->ExceptionRecord->ExceptionInformation[1]);
          if (piece) {
-            int operation = ExceptionInfo->ExceptionRecord->ExceptionInformation[0];
+            auto operation = ExceptionInfo->ExceptionRecord->ExceptionInformation[0];
             piece->violate_forbidden((void*)ExceptionInfo->ExceptionRecord->ExceptionInformation[1], operation == 0 ? "read" : (operation == 1 ? "write" : (operation == 8 ? "execute" : "unknown")));
             return EXCEPTION_CONTINUE_EXECUTION;
          }
@@ -4025,7 +4024,7 @@ static inline void h2_e9_set(void* srcfp, void* dstfp)
       memcpy(I, C, sizeof(C));
    } else {  //i386 asm("jmp offset")
       unsigned char C[] = {0xE9, 0, 0, 0, 0};
-      *(long*)(&C[1]) = delta;
+      *(long*)(&C[1]) = (long)delta;
       memcpy(I, C, sizeof(C));
    }
    // ::FlushInstructionCache(GetCurrentProcess(), srcfp, h2_e9_size);
@@ -4214,7 +4213,7 @@ h2_inline h2_stub_temporary_restore::~h2_stub_temporary_restore()
 }
 
 // source/mock/h2_checkin.cpp
-h2_inline h2_fail* h2_checkin::check(const char* func, int index, int total, const char* file, int line)
+h2_inline h2_fail* h2_checkin::check(const char* func, size_t index, size_t total, const char* file, int line)
 {
    if (is_satisfied() || is_saturated()) return nullptr;
    h2_sentence t = func + gray("()") + " expected " + delta(expect(), "green") + " but actually " + delta(actual(), "red,bold") + " called";
@@ -4255,7 +4254,7 @@ h2_inline const char* h2_checkin::expect()
 h2_inline h2_sentence h2_mocker_base::argument(int seq, const char* def)
 {
    h2_sentence t;
-   for (int i = 0; i < argument_types.size(); ++i)
+   for (int i = 0; i < (int)argument_types.size(); ++i)
       t += (i ? gray(", ") : "") + color(argument_types[i], seq == i ? "red,bold" : def);
    return gray("(") + t + gray(")");
 }
@@ -4277,7 +4276,7 @@ h2_inline h2_fail* h2_mocker_base::check()
    h2_fail* fails = nullptr;
    for (size_t i = 0; i < checkin_array.size(); ++i) {
       h2_fail* fail = checkin_array[i].check(srcfn, i, checkin_array.size(), nullptr, 0);
-      if (fail) fail->seqno = i;
+      if (fail) fail->seqno = (int)i;
       h2_fail::append_subling(fails, fail);
       h2_assert_g();
    }
@@ -4324,14 +4323,14 @@ struct h2_stdio {
          I().capture_length += count;
       if ((I().stdout_capturable && fd == fileno(stdout)) || (I().stderr_capturable && fd == fileno(stderr)))
          I().buffer->append((char*)buf, count);
-      return count;
+      return (ssize_t)count;
    }
 
    static int vfprintf(FILE* stream, const char* format, va_list ap)
    {
       char* alloca_str;
       h2_sprintvf(alloca_str, format, ap);
-      return write(fileno(stream), alloca_str, strlen(alloca_str));
+      return (int)write(fileno(stream), alloca_str, strlen(alloca_str));
    }
 
    static int fprintf(FILE* stream, const char* format, ...)
@@ -4404,8 +4403,8 @@ struct h2_stdio {
       va_end(a);
    }
 
-   int test_count = 0;
-   static ssize_t test_write(int fd, const void* buf, size_t count) { return I().test_count += count, count; }
+   size_t test_count = 0;
+   static ssize_t test_write(int fd, const void* buf, size_t count) { return I().test_count += count, (ssize_t)count; }
 
    static void initialize()
    {
@@ -4524,7 +4523,7 @@ struct h2_resolver {
       memset(sockaddrs, 0, sizeof(sockaddrs));
 
       struct addrinfo** pp = res;
-      for (int i = 0; i < name->resolves.size(); ++i) {
+      for (size_t i = 0; i < name->resolves.size(); ++i) {
          struct addrinfo* a = &addrinfos[i];
          struct sockaddr_in* b = &sockaddrs[i];
          if (inet_addr(name->resolves[i].c_str(), b)) {
@@ -4569,7 +4568,7 @@ struct h2_resolver {
       memset(h_aliases, 0, sizeof(h_aliases));
       memset(h_addr_list, 0, sizeof(h_addr_list));
 
-      for (int i = 0, a = 0, c = 0; i < name->resolves.size(); ++i) {
+      for (size_t i = 0, a = 0, c = 0; i < name->resolves.size(); ++i) {
          struct sockaddr_in* b = &sockaddrs[i];
          if (inet_addr(name->resolves[i].c_str(), b))
             h_addr_list[a++] = (char*)&b->sin_addr;
@@ -4741,7 +4740,7 @@ struct h2_socket {
       iport_parse(tcp->from.c_str(), (struct sockaddr_in*)address);
       *address_len = sizeof(struct sockaddr_in);
 
-      int fd = ::socket(AF_INET, SOCK_STREAM, 0);
+      int fd = (int)::socket(AF_INET, SOCK_STREAM, 0);
       struct sockaddr_in a;
       const char* c = getsockname(socket, (char*)alloca(64), &a);
       ::bind(fd, (struct sockaddr*)&a, sizeof(a));
@@ -4772,14 +4771,14 @@ struct h2_socket {
    static ssize_t h2__stdcall send(int socket, const void* buffer, size_t length, int flags)
    {
       I().put_outgoing(socket, (const char*)buffer, length);
-      return length;
+      return (ssize_t)length;
    }
    static ssize_t h2__stdcall recv(int socket, void* buffer, size_t length, int flags)
    {
       ssize_t ret = 0;
       h2_packet* tcp = read_incoming(socket);
       if (tcp) {
-         ret = tcp->data.copy((char*)buffer, tcp->data.size(), 0);
+         ret = (ssize_t)tcp->data.copy((char*)buffer, tcp->data.size(), 0);
          delete tcp;
       }
       return ret;
@@ -4787,7 +4786,7 @@ struct h2_socket {
    static ssize_t h2__stdcall sendto(int socket, const void* buffer, size_t length, int flags, const struct sockaddr* dest_addr, socklen_t dest_len)
    {
       I().put_outgoing(getsockname(socket, (char*)alloca(64)), iport_tostring((struct sockaddr_in*)dest_addr, (char*)alloca(64)), (const char*)buffer, length);
-      return length;
+      return (ssize_t)length;
    }
    static ssize_t h2__stdcall recvfrom(int socket, void* buffer, size_t length, int flags, struct sockaddr* address, socklen_t* address_len)
    {
@@ -4795,7 +4794,7 @@ struct h2_socket {
       h2_packet* udp = read_incoming(socket);
 
       if (udp) {
-         ret = udp->data.copy((char*)buffer, udp->data.size(), 0);
+         ret = (ssize_t)udp->data.copy((char*)buffer, udp->data.size(), 0);
          iport_parse(udp->from.c_str(), (struct sockaddr_in*)address);
          *address_len = sizeof(struct sockaddr_in);
          delete udp;
@@ -5149,8 +5148,8 @@ static inline const char* find_outer_comma(const char* expression)
 {
    char stack[1024] = {'\0'};
    int top = 1;
-   int len = strlen(expression);
-   for (int i = 0; i < len; ++i) {
+   size_t len = strlen(expression);
+   for (size_t i = 0; i < len; ++i) {
       switch (expression[i]) {
       case '\\':
          if (expression[i + 1]) ++i;
@@ -5334,7 +5333,7 @@ static inline bool is_synonym(const h2_string& a, const h2_string& b)
    static const char** S[] = {s_null, s_true, s_false};
 
    if (a == b) return true;
-   for (int i = 0; i < sizeof(S) / sizeof(S[0]); ++i)
+   for (size_t i = 0; i < sizeof(S) / sizeof(S[0]); ++i)
       if (h2_in(a.c_str(), S[i]) && h2_in(b.c_str(), S[i]))
          return true;
    return false;
@@ -5489,13 +5488,13 @@ struct h2_fail_json : h2_fail_unexpect {
 
 struct h2_fail_memcmp : h2_fail_unexpect {
    h2_vector<unsigned char> e_value, a_value;
-   const int width, nbits;
-   h2_fail_memcmp(const unsigned char* e_value_, const unsigned char* a_value_, int width_, int nbits_, const h2_string& represent_, const h2_sentence& explain_ = {}, const char* file_ = nullptr, int line_ = 0) : h2_fail_unexpect({}, represent_, explain_, file_, line_), e_value(e_value_, e_value_ + (nbits_ + 7) / 8), a_value(a_value_, a_value_ + (nbits_ + 7) / 8), width(width_), nbits(nbits_) {}
+   const size_t width, nbits;
+   h2_fail_memcmp(const unsigned char* e_value_, const unsigned char* a_value_, const size_t width_, const size_t nbits_, const h2_string& represent_, const h2_sentence& explain_ = {}, const char* file_ = nullptr, int line_ = 0) : h2_fail_unexpect({}, represent_, explain_, file_, line_), e_value(e_value_, e_value_ + (nbits_ + 7) / 8), a_value(a_value_, a_value_ + (nbits_ + 7) / 8), width(width_), nbits(nbits_) {}
    void print(int subling_index, int child_index) override
    {
       h2_fail_unexpect::print(subling_index, child_index);
       h2_paragraph e_paragraph, a_paragraph;
-      int bytes_per_row = 0;
+      size_t bytes_per_row = 0;
       switch (width) {
       case 1: print_bits(e_paragraph, a_paragraph, bytes_per_row = 4); break;
       case 8: print_ints<unsigned char>(e_paragraph, a_paragraph, bytes_per_row = (h2_shell::I().cww < 108 ? 8 : 16)); break;
@@ -5507,14 +5506,15 @@ struct h2_fail_memcmp : h2_fail_unexpect {
       h2_color::printl(h2_layout::split(e_paragraph, a_paragraph, "expect", "actual", bytes_per_row * 8 / width, 'x', h2_shell::I().cww));
    }
 
-   void print_bits(h2_paragraph& e_paragraph, h2_paragraph& a_paragraph, int bytes_per_row)
+   void print_bits(h2_paragraph& e_paragraph, h2_paragraph& a_paragraph, size_t bytes_per_row)
    {
-      for (int i = 0; i < ::ceil(e_value.size() * 1.0 / bytes_per_row); ++i) {
+      size_t rows = (size_t)::ceil(e_value.size() * 1.0 / bytes_per_row);
+      for (size_t i = 0; i < rows; ++i) {
          h2_sentence e_sentence, a_sentence;
-         for (int j = 0; j < bytes_per_row; ++j) {
+         for (size_t j = 0; j < bytes_per_row; ++j) {
             if (j) e_sentence.push_back(" ");
             if (j) a_sentence.push_back(" ");
-            for (int k = 0; k < 8; ++k) {
+            for (size_t k = 0; k < 8; ++k) {
                if ((i * bytes_per_row + j) * 8 + k < nbits) {
                   unsigned char e_val = (e_value[i * bytes_per_row + j] >> (7 - k)) & 0x1;
                   unsigned char a_val = (a_value[i * bytes_per_row + j] >> (7 - k)) & 0x1;
@@ -5534,14 +5534,15 @@ struct h2_fail_memcmp : h2_fail_unexpect {
    }
 
    template <typename T>
-   void print_ints(h2_paragraph& e_paragraph, h2_paragraph& a_paragraph, int bytes_per_row)
+   void print_ints(h2_paragraph& e_paragraph, h2_paragraph& a_paragraph, size_t bytes_per_row)
    {
       char fmt[32];
       sprintf(fmt, "%%s%%0%dX", (int)sizeof(T) * 2);
 
-      for (int i = 0; i < ::ceil(e_value.size() * 1.0 / bytes_per_row); ++i) {
+      size_t rows = (size_t)::ceil(e_value.size() * 1.0 / bytes_per_row);
+      for (size_t i = 0; i < rows; ++i) {
          h2_sentence e_sentence, a_sentence;
-         for (int j = 0; j < bytes_per_row; j += sizeof(T)) {
+         for (size_t j = 0; j < bytes_per_row; j += sizeof(T)) {
             if (i * bytes_per_row + j < e_value.size()) {
                T e_val = *(T*)(e_value.data() + (i * bytes_per_row + j));
                T a_val = *(T*)(a_value.data() + (i * bytes_per_row + j));
@@ -5565,19 +5566,19 @@ struct h2_fail_memcmp : h2_fail_unexpect {
 
 struct h2_fail_memory : h2_fail {
    const void* ptr;
-   const int size;
+   const size_t size;
    const h2_backtrace bt_allocate, bt_release;
-   h2_fail_memory(const void* ptr_, const int size_, const h2_backtrace& bt_allocate_, const h2_backtrace& bt_release_, const char* file_ = nullptr, int line_ = 0) : h2_fail({}, file_, line_), ptr(ptr_), size(size_), bt_allocate(bt_allocate_), bt_release(bt_release_) {}
+   h2_fail_memory(const void* ptr_, const size_t size_, const h2_backtrace& bt_allocate_, const h2_backtrace& bt_release_, const char* file_ = nullptr, int line_ = 0) : h2_fail({}, file_, line_), ptr(ptr_), size(size_), bt_allocate(bt_allocate_), bt_release(bt_release_) {}
 };
 
 struct h2_fail_memory_leak : h2_fail_memory {
-   h2_vector<std::pair<int, int>> sizes;
+   h2_vector<std::pair<size_t, size_t>> sizes;
    const char* where;  // case or block
-   h2_fail_memory_leak(const void* ptr_, int size_, const h2_vector<std::pair<int, int>>& sizes_, const h2_backtrace& bt_allocate_, const char* where_, const char* file_, int line_) : h2_fail_memory(ptr_, size_, bt_allocate_, h2_backtrace(), file_, line_), sizes(sizes_), where(where_) {}
+   h2_fail_memory_leak(const void* ptr_, const size_t size_, const h2_vector<std::pair<size_t, size_t>>& sizes_, const h2_backtrace& bt_allocate_, const char* where_, const char* file_, int line_) : h2_fail_memory(ptr_, size_, bt_allocate_, h2_backtrace(), file_, line_), sizes(sizes_), where(where_) {}
    void print(int subling_index = 0, int child_index = 0) override
    {
       h2_sentence st = h2_stringify(ptr) + color(" memory leak ", "bold,red") + h2_stringify(size).brush("red") + " ";
-      int i = 0, c = 0, n = 3;
+      size_t i = 0, c = 0, n = 3;
       h2_sentence l;
       for (auto& p : sizes) {
          l += gray(comma_if(i++));
@@ -5627,12 +5628,12 @@ struct h2_fail_overflow : h2_fail_memory {
    const char* action;                  /* 犯罪行为 */
    const h2_vector<unsigned char> spot; /* 犯罪现场 */
    const h2_backtrace bt_trample;       /* 犯罪过程 */
-   h2_fail_overflow(const void* ptr_, const int size_, const void* violate_ptr_, const char* action_, const h2_vector<unsigned char>& spot_, const h2_backtrace& bt_allocate_, const h2_backtrace& bt_trample_, const char* file_ = nullptr, int line_ = 0) : h2_fail_memory(ptr_, size_, bt_allocate_, h2_backtrace(), file_, line_), violate_ptr(violate_ptr_), action(action_), spot(spot_), bt_trample(bt_trample_) {}
+   h2_fail_overflow(const void* ptr_, const size_t size_, const void* violate_ptr_, const char* action_, const h2_vector<unsigned char>& spot_, const h2_backtrace& bt_allocate_, const h2_backtrace& bt_trample_, const char* file_ = nullptr, int line_ = 0) : h2_fail_memory(ptr_, size_, bt_allocate_, h2_backtrace(), file_, line_), violate_ptr(violate_ptr_), action(action_), spot(spot_), bt_trample(bt_trample_) {}
    void print(int subling_index = 0, int child_index = 0) override
    {
-      int offset = ptr < violate_ptr ? (long long)violate_ptr - ((long long)ptr + size) : (long long)violate_ptr - (long long)ptr;
-      h2_sentence t = h2_stringify(ptr) + " " + color(h2_string("%+d", offset), "bold,red") + " " + gray("(") + h2_stringify(violate_ptr) + gray(")") + " " + color(action, "bold,red") + " " + (offset >= 0 ? "overflow" : "underflow") + " ";
-      for (int i = 0; i < spot.size(); ++i) t.printf("bold,red", "%02X ", spot[i]);
+      long long offset = ptr < violate_ptr ? (long long)violate_ptr - ((long long)ptr + size) : (long long)violate_ptr - (long long)ptr;
+      h2_sentence t = h2_stringify(ptr) + " " + color(h2_string("%+d", (int)offset), "bold,red") + " " + gray("(") + h2_stringify(violate_ptr) + gray(")") + " " + color(action, "bold,red") + " " + (offset >= 0 ? "overflow" : "underflow") + " ";
+      for (size_t i = 0; i < spot.size(); ++i) t.printf("bold,red", "%02X ", spot[i]);
       h2_color::printl(" " + t + locate() + (bt_trample.count ? " at backtrace:" : ""));
       if (bt_trample.count) bt_trample.print(3);
       h2_color::prints("", "  which allocate at backtrace:\n"), bt_allocate.print(3);
@@ -5671,7 +5672,7 @@ struct h2_fail_symbol : h2_fail {
    void print(int subling_index = 0, int child_index = 0) override
    {
       h2_color::printl(color(candidates.size() ? " Find multiple " : " Not found ", "yellow") + color(symbol, "bold,red"));
-      for (int i = 0; i < candidates.size(); ++i)
+      for (size_t i = 0; i < candidates.size(); ++i)
          h2_color::printl("  " + gray(h2_stringify(i) + ". ") + color(candidates[i], "yellow"));
       if (explain.width()) h2_color::printl(explain);
    }
@@ -5682,11 +5683,11 @@ h2_inline h2_fail* h2_fail::new_unexpect(const h2_sentence& expection, const h2_
 h2_inline h2_fail* h2_fail::new_strcmp(const h2_string& e_value, const h2_string& a_value, bool caseless, const h2_sentence& expection, const h2_sentence& explain, const char* file, int line) { return new h2_fail_strcmp(e_value, a_value, caseless, expection, explain, file, line); }
 h2_inline h2_fail* h2_fail::new_strfind(const h2_string& e_value, const h2_string& a_value, const h2_sentence& expection, const h2_sentence& explain, const char* file, int line) { return new h2_fail_strfind(e_value, a_value, expection, explain, file, line); }
 h2_inline h2_fail* h2_fail::new_json(const h2_string& e_value, const h2_string& a_value, const h2_sentence& expection, bool caseless, const h2_sentence& explain, const char* file, int line) { return new h2_fail_json(e_value, a_value, expection, caseless, explain, file, line); }
-h2_inline h2_fail* h2_fail::new_memcmp(const unsigned char* e_value, const unsigned char* a_value, int width, int nbits, const h2_string& represent, const h2_sentence& explain, const char* file, int line) { return new h2_fail_memcmp(e_value, a_value, width, nbits, represent, explain, file, line); }
-h2_inline h2_fail* h2_fail::new_memory_leak(const void* ptr, int size, const h2_vector<std::pair<int, int>>& sizes, const h2_backtrace& bt_allocate, const char* where, const char* file, int line) { return new h2_fail_memory_leak(ptr, size, sizes, bt_allocate, where, file, line); }
+h2_inline h2_fail* h2_fail::new_memcmp(const unsigned char* e_value, const unsigned char* a_value, const size_t width, const size_t nbits, const h2_string& represent, const h2_sentence& explain, const char* file, int line) { return new h2_fail_memcmp(e_value, a_value, width, nbits, represent, explain, file, line); }
+h2_inline h2_fail* h2_fail::new_memory_leak(const void* ptr, const size_t size, const h2_vector<std::pair<size_t, size_t>>& sizes, const h2_backtrace& bt_allocate, const char* where, const char* file, int line) { return new h2_fail_memory_leak(ptr, size, sizes, bt_allocate, where, file, line); }
 h2_inline h2_fail* h2_fail::new_double_free(const void* ptr, const h2_backtrace& bt_allocate, const h2_backtrace& bt_release, const h2_backtrace& bt_double_free) { return new h2_fail_double_free(ptr, bt_allocate, bt_release, bt_double_free); }
 h2_inline h2_fail* h2_fail::new_asymmetric_free(const void* ptr, const char* who_allocate, const char* who_release, const h2_backtrace& bt_allocate, const h2_backtrace& bt_release) { return new h2_fail_asymmetric_free(ptr, who_allocate, who_release, bt_allocate, bt_release); }
-h2_inline h2_fail* h2_fail::new_overflow(const void* ptr, const int size, const void* violate_ptr, const char* action, const h2_vector<unsigned char>& spot, const h2_backtrace& bt_allocate, const h2_backtrace& bt_trample, const char* file, int line) { return new h2_fail_overflow(ptr, size, violate_ptr, action, spot, bt_allocate, bt_trample, file, line); }
+h2_inline h2_fail* h2_fail::new_overflow(const void* ptr, const size_t size, const void* violate_ptr, const char* action, const h2_vector<unsigned char>& spot, const h2_backtrace& bt_allocate, const h2_backtrace& bt_trample, const char* file, int line) { return new h2_fail_overflow(ptr, size, violate_ptr, action, spot, bt_allocate, bt_trample, file, line); }
 h2_inline h2_fail* h2_fail::new_use_after_free(const void* ptr, const void* violate_ptr, const char* action, const h2_backtrace& bt_allocate, const h2_backtrace& bt_release, const h2_backtrace& bt_use) { return new h2_fail_use_after_free(ptr, violate_ptr, action, bt_allocate, bt_release, bt_use); }
 h2_inline h2_fail* h2_fail::new_exception(const char* explain, const char* type, const h2_backtrace& bt_throw) { return new h2_fail_exception(explain, type, bt_throw); }
 h2_inline h2_fail* h2_fail::new_symbol(const h2_string& symbol, const h2_vector<h2_string>& candidates, const h2_sentence& explain, const char* file, int line) { return new h2_fail_symbol(symbol, candidates, explain, file, line); };
@@ -6034,12 +6035,12 @@ h2_inline void h2_report::on_suite_endup(h2_suite* s) { in = true; h2_list_for_e
 h2_inline void h2_report::on_case_start(h2_suite* s, h2_case* c) { in = true; h2_list_for_each_entry (p, reports, h2_report_impl, x) p->on_case_start(s, c); in = false; }
 h2_inline void h2_report::on_case_endup(h2_suite* s, h2_case* c) { in = true; h2_list_for_each_entry (p, reports, h2_report_impl, x) p->on_case_endup(s, c); in = false; }
 // source/render/h2_layout.cpp
-static inline h2_paragraph sentence_break(const h2_sentence& st, unsigned width)
+static inline h2_paragraph sentence_break(const h2_sentence& st, size_t width)
 {
    h2_paragraph paragraph;
    h2_string current_style;
    h2_sentence wrap;
-   unsigned length = 0;
+   size_t length = 0;
 
    for (auto& word : st) {
       if (h2_color::isctrl(word.c_str())) {  // + - style , issue
@@ -6063,11 +6064,11 @@ static inline h2_paragraph sentence_break(const h2_sentence& st, unsigned width)
    return paragraph;
 }
 
-static inline h2_paragraph sentences_merge(const h2_paragraph& left_paragraph, const h2_paragraph& right_paragraph, unsigned left_width, unsigned right_width, int step, char scale, int seq_width)
+static inline h2_paragraph sentences_merge(const h2_paragraph& left_paragraph, const h2_paragraph& right_paragraph, size_t left_width, size_t right_width, int step, char scale, size_t seq_width)
 {
    h2_paragraph paragraph;
    char seq_fmt[32];
-   sprintf(seq_fmt, "%%%d%c│ ", seq_width, scale);
+   sprintf(seq_fmt, "%%%d%c│ ", (int)seq_width, scale);
    const h2_string left_empty(left_width, ' '), right_empty(right_width, ' ');
    for (size_t i = 0; i < std::max(left_paragraph.size(), right_paragraph.size()); ++i) {
       auto left_wrap_sts = sentence_break(i < left_paragraph.size() ? left_paragraph[i] : left_empty, left_width);
@@ -6090,13 +6091,13 @@ static inline h2_paragraph sentences_merge(const h2_paragraph& left_paragraph, c
    return paragraph;
 }
 
-h2_inline h2_paragraph h2_layout::split(const h2_paragraph& left_paragraph, const h2_paragraph& right_paragraph, const char* left_title, const char* right_title, int step, char scale, unsigned width)
+h2_inline h2_paragraph h2_layout::split(const h2_paragraph& left_paragraph, const h2_paragraph& right_paragraph, const char* left_title, const char* right_title, size_t step, char scale, size_t width)
 {
-   unsigned seq_width = number_strlen(step * std::max(left_paragraph.size(), right_paragraph.size()), scale == 'x' ? 16 : 10);
-   unsigned valid_width = width - (seq_width + 1 /* "|" */) - 1 /*|*/ - 4 /* spaces */;
+   size_t seq_width = number_strlen((unsigned long long)step * std::max(left_paragraph.size(), right_paragraph.size()), scale == 'x' ? 16 : 10);
+   size_t valid_width = width - (seq_width + 1 /* "|" */) - 1 /*|*/ - 4 /* spaces */;
 
-   unsigned left_width = std::max(left_paragraph.width(), 8u); /* at least title width */
-   unsigned right_width = std::max(right_paragraph.width(), 8u);
+   size_t left_width = std::max(left_paragraph.width(), strlen(left_title));
+   size_t right_width = std::max(right_paragraph.width(), strlen(right_title));
 
    if (left_width < valid_width / 2)
       right_width = std::min(valid_width - left_width, right_width);
@@ -6111,7 +6112,7 @@ h2_inline h2_paragraph h2_layout::split(const h2_paragraph& left_paragraph, cons
    return page += sentences_merge(left_paragraph, right_paragraph, left_width, right_width, step, scale, seq_width);
 }
 
-h2_inline h2_paragraph h2_layout::unified(const h2_sentence& up_sentence, const h2_sentence& down_sentence, const char* up_title, const char* down_title, unsigned width)
+h2_inline h2_paragraph h2_layout::unified(const h2_sentence& up_sentence, const h2_sentence& down_sentence, const char* up_title, const char* down_title, size_t width)
 {
    h2_paragraph page;
    h2_sentence up_title_st = gray(up_title) + color("> ", "green");
@@ -6129,7 +6130,7 @@ h2_inline h2_paragraph h2_layout::unified(const h2_sentence& up_sentence, const 
    return page;
 }
 
-static inline h2_paragraph prefix_break(const h2_sentence& st, const h2_sentence& title, unsigned width)
+static inline h2_paragraph prefix_break(const h2_sentence& st, const h2_sentence& title, size_t width)
 {
    h2_paragraph paragraph = sentence_break(st, width - title.width());
 
@@ -6142,7 +6143,7 @@ static inline h2_paragraph prefix_break(const h2_sentence& st, const h2_sentence
    return paragraph;
 }
 
-h2_inline h2_paragraph h2_layout::seperate(const h2_sentence& up_sentence, const h2_sentence& down_sentence, const char* up_title, const char* down_title, unsigned width)
+h2_inline h2_paragraph h2_layout::seperate(const h2_sentence& up_sentence, const h2_sentence& down_sentence, const char* up_title, const char* down_title, size_t width)
 {
    h2_sentence up_title_st = gray(up_title) + color("> ", "green");
    h2_sentence down_title_st = gray(down_title) + color("> ", "red");
@@ -6203,7 +6204,7 @@ struct getopt {
    void extract_number(int& value)
    {
       if (j) {  // j always not null
-         int l = strspn(j + 1, "0123456789");
+         auto l = strspn(j + 1, "0123456789");
          if (l) {
             value = atoi(j + 1);
             j += l;
@@ -6212,7 +6213,7 @@ struct getopt {
       }
 
       if (i + 1 < argc) {
-         int l = strlen(args[i + 1]);
+         auto l = strlen(args[i + 1]);
          if (l && strspn(args[i + 1], "0123456789") == l)
             value = atoi(args[++i]);
       }

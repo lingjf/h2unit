@@ -4,17 +4,17 @@ h2_inline h2_paragraph& h2_paragraph::operator+=(const h2_paragraph& paragraph)
    return *this;
 }
 
-h2_inline unsigned h2_paragraph::width() const
+h2_inline size_t h2_paragraph::width() const
 {
-   unsigned m = 0;
+   size_t m = 0;
    for (auto& sentence : *this)
       m = std::max(m, sentence.width());
    return m;
 }
 
-h2_inline bool h2_paragraph::foldable(unsigned width)
+h2_inline bool h2_paragraph::foldable(size_t width)
 {
-   int sum = 0;
+   size_t sum = 0;
    for (auto& sentence : *this)
       for (auto& word : sentence)
          if (!word.isspace() && !h2_color::isctrl(word.c_str()))  // ignore indent and \033m controller

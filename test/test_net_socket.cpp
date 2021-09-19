@@ -62,7 +62,6 @@ SUITE(SOCK)
    int ret;
 
    char buffer[1024 * 8];
-   unsigned char b2[1024];
 
    Case(UDP sendto recvfrom)
    {
@@ -98,9 +97,11 @@ SUITE(SOCK)
       }
    }
 
-#if !defined _WIN32
+#   if !defined _WIN32
    Case(UDP sendmsg recvmsg)
    {
+      unsigned char b2[1024];
+
       SOCK()
       {
          local.sin_port = htons(9502);
@@ -146,9 +147,9 @@ SUITE(SOCK)
          CloseSocket(sock);
       }
    }
-#endif
+#   endif
 
-#if !defined _MSC_VER //TODO
+#   if !defined _MSC_VER  //TODO
    Case(TCP server)
    {
       SOCK()
@@ -182,7 +183,7 @@ SUITE(SOCK)
          CloseSocket(sock);
       }
    }
-#endif
+#   endif
 
    Case(TCP client)
    {

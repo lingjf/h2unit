@@ -21,13 +21,13 @@ SUITE(bugfix)
 {
    Case(Eq integer with float)
    {
-      float uv = 2.00001;
+      float uv = 2.00001f;
       OK(Eq(2, 0.0001), uv);
    }
 
    Case(MOCK return reference)
    {
-      NoDefaultConstructorClass x(1, 1.1);
+      NoDefaultConstructorClass x(1, 1.1f);
       MOCK(foobar, NoDefaultConstructorClass & (int, NoDefaultConstructorClass&)).Once(_, _).Return(x);
       foobar(1, x);
    }

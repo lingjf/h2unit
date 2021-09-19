@@ -32,7 +32,7 @@ struct h2_string : public std::basic_string<char, std::char_traits<char>, h2_all
    h2_string unescape() const;
    h2_string unquote(const char c = '\"') const;
    h2_string tolower() const;
-   h2_string center(int width) const;
+   h2_string center(size_t width) const;
 };
 
 /* clang-format off */

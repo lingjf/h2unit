@@ -26,13 +26,11 @@ GlobalCleanup()
 SUITE(harmless)
 {
    char t[1024];
-   char* p;
    int ret;
 
 #if !defined __MINGW32__
    Case(time.h)
    {
-      struct timeval tv;
       time_t t3 = time(NULL);
       struct tm* t4 = gmtime(&t3);
       struct tm t5;
@@ -41,6 +39,7 @@ SUITE(harmless)
       // asctime(t4);  // deprecated, arm64 and openSUSE crash in memory check mode
 
 #   if !defined _WIN32
+      struct timeval tv;
       struct timezone tz;
       gettimeofday(&tv, &tz);
       ctime_r(&t3, t);
@@ -104,6 +103,7 @@ SUITE(harmless)
       _stricmp(t, "h2unit");
 #else
       strcasecmp(t, "h2unit");
+      char* p;
       strtok_r(t, ",", &p);
 #endif
    }

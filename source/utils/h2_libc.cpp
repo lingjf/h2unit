@@ -2,29 +2,29 @@ struct h2_libc_malloc {
    h2_singleton(h2_libc_malloc);
 
    struct buddy {
-      long long size;
+      unsigned long long size;
       h2_list x;
-      buddy(long long size_) : size(size_) {}
+      buddy(const unsigned long long size_) : size(size_) {}
       bool join_right(buddy* b) { return ((char*)this) + size == (char*)b; }
       bool join_left(buddy* b) { return ((char*)b) + b->size == (char*)this; }
    };
 
    struct block {
-      long long bytes;
+      unsigned long long bytes;
       block* next = nullptr;
       h2_list buddies;
 
-      block(long long _bytes) : bytes(_bytes)
+      block(const unsigned long long bytes_) : bytes(bytes_)
       {
          buddy* b = new ((char*)this + sizeof(block)) buddy(bytes - sizeof(block));
          buddies.add_tail(b->x);
       }
 
-      buddy* malloc(const long long size)
+      buddy* malloc(const unsigned long long size)
       {
          h2_list_for_each_entry (p, buddies, buddy, x) {
             if (size + sizeof(p->size) <= p->size) {
-               long long left = p->size - (size + sizeof(p->size));
+               unsigned long long left = p->size - (size + sizeof(p->size));
                if (sizeof(buddy) + 64 <= left) {  // avoid smash buddy for performance
                   buddy* b = new ((char*)p + left) buddy(size + sizeof(b->size));
                   p->size = left;
@@ -64,10 +64,10 @@ struct h2_libc_malloc {
 
    block* next = nullptr;
 
-   void batch(long long size)
+   void batch(const unsigned long long size)
    {
       int brk_size = 4 * 1024 * 1024;
-      int brk_count = ::ceil(size / (double)brk_size);
+      int brk_count = (int)::ceil(size / (double)brk_size);
 
 #if defined _WIN32
       PVOID ptr = VirtualAlloc(NULL, brk_count * brk_size, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
@@ -82,7 +82,7 @@ struct h2_libc_malloc {
       next = p;
    }
 
-   buddy* alloc(long long size)
+   buddy* alloc(const unsigned long long size)
    {
       for (block* p = next; p; p = p->next) {
          buddy* b = p->malloc(size);
@@ -91,9 +91,9 @@ struct h2_libc_malloc {
       return nullptr;
    }
 
-   void* malloc(size_t size)
+   void* malloc(const size_t size)
    {
-      long long _size = (size + 7) / 8 * 8;
+      unsigned long long _size = (size + 7) / 8 * 8;
       buddy* b = alloc(_size);
       if (!b) {
          batch(_size);

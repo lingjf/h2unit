@@ -21,11 +21,11 @@ struct h2_piece : h2_libc {
    h2_piece(size_t size, size_t alignment, const char* who, h2_backtrace& bt) : user_size(size), page_size(h2_page_size()), who_allocate(who), bt_allocate(bt)
    {
       size_t alignment_2n = alignment;
-      if (not2n(alignment)) alignment_2n = mask2n(alignment) + 1;
+      if (not2n((unsigned)alignment)) alignment_2n = (size_t)mask2n((unsigned)alignment) + 1;
       if (alignment_2n < sizeof(void*)) alignment_2n = sizeof(void*);
 
       size_t user_size_plus = (user_size + alignment_2n - 1 + alignment_2n) & ~(alignment_2n - 1);
-      page_count = ::ceil(user_size_plus / (double)page_size);
+      page_count = (size_t)::ceil(user_size_plus / (double)page_size);
 
 #if defined _WIN32
       page_ptr = (unsigned char*)VirtualAlloc(NULL, page_size * (page_count + 1), MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
@@ -159,7 +159,7 @@ struct h2_piece : h2_libc {
       static const char* c1[] = {"new[]", "new[] nothrow", nullptr};
       static const char* c2[] = {"delete[]", "delete[] nothrow", nullptr};
       static const char** S[] = {a1, a2, b1, b2, c1, c2};
-      for (int i = 0; i < sizeof(S) / sizeof(S[0]); i += 2)
+      for (size_t i = 0; i < sizeof(S) / sizeof(S[0]); i += 2)
          if (h2_in(who_allocate, S[i]) && h2_in(who_release, S[i + 1]))
             return nullptr;
       if (bt_allocate.in(h2_exempt::I().fps)) return nullptr;
