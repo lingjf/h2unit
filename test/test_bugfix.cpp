@@ -34,7 +34,7 @@ SUITE(bugfix)
 
    Case(OK(<, >))
    {
-      OK(std::is_convertible<int, long>::value);
+      OK((std::is_convertible<int, long>::value));
    }
 
    Case(OK uint8_t print error)

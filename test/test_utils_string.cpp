@@ -226,20 +226,20 @@ SUITE(string)
    Case(convertable)
    {
       char char_array[128];
-      OK(std::is_convertible<char*, h2::h2_string>::value);
-      OK(std::is_convertible<char*&, h2::h2_string>::value);
-      OK(std::is_convertible<const char*, h2::h2_string>::value);
-      OK(std::is_convertible<char* const, h2::h2_string>::value);
-      OK(std::is_convertible<const char* const, h2::h2_string>::value);
-      OK(std::is_convertible<std::string, h2::h2_string>::value);
-      OK(std::is_convertible<const std::string, h2::h2_string>::value);
-      OK(std::is_convertible<std::string&, h2::h2_string>::value);
-      OK(std::is_convertible<decltype(char_array), h2::h2_string>::value);
-      OK(std::is_convertible<h2::h2_string, h2::h2_string>::value);
+      OK((std::is_convertible<char*, h2::h2_string>::value));
+      OK((std::is_convertible<char*&, h2::h2_string>::value));
+      OK((std::is_convertible<const char*, h2::h2_string>::value));
+      OK((std::is_convertible<char* const, h2::h2_string>::value));
+      OK((std::is_convertible<const char* const, h2::h2_string>::value));
+      OK((std::is_convertible<std::string, h2::h2_string>::value));
+      OK((std::is_convertible<const std::string, h2::h2_string>::value));
+      OK((std::is_convertible<std::string&, h2::h2_string>::value));
+      OK((std::is_convertible<decltype(char_array), h2::h2_string>::value));
+      OK((std::is_convertible<h2::h2_string, h2::h2_string>::value));
 
-      OK(!std::is_convertible<int, h2::h2_string>::value);
-      OK(!std::is_convertible<char, h2::h2_string>::value);
-      OK(!std::is_convertible<unsigned char, h2::h2_string>::value);
-      OK(!std::is_convertible<unsigned char*, h2::h2_string>::value);
+      OK((!std::is_convertible<int, h2::h2_string>::value));
+      OK((!std::is_convertible<char, h2::h2_string>::value));
+      OK((!std::is_convertible<unsigned char, h2::h2_string>::value));
+      OK((!std::is_convertible<unsigned char*, h2::h2_string>::value));
    }
 }
