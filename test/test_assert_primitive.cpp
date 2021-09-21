@@ -39,3 +39,42 @@ SUITE(JE Primitive)
       OK(!Je("hello world", ".say"), "{'name': \"hello world\", 'age': [18, 20]}");
    }
 }
+
+SUITE(Ok Primitive)
+{
+   Case(bool)
+   {
+      Ok(true);
+      Ok(1);
+   }
+
+   Case(compare integer)
+   {
+      Ok(1 == 1);
+      Ok(1 != 2);
+      Ok(1 < 2);
+      Ok(1 <= 2);
+      Ok(1 <= 1);
+      Ok(2 > 1);
+      Ok(2 >= 1);
+      Ok(2 >= 2);
+   }
+
+   Case(compare double)
+   {
+      Ok(1.0 == 1);
+      Ok(1.0 != 2);
+      Ok(1.0 < 2);
+      Ok(1.0 <= 2);
+      Ok(1.0 <= 1);
+      Ok(2.0 > 1);
+      Ok(2.0 >= 1);
+      Ok(2.0 >= 2);
+   }
+
+   Case(compare string)
+   {
+      Ok("abc" == "abc");
+      Ok("abc" != "xyz");
+   }
+}

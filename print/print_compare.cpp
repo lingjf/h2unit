@@ -9,10 +9,15 @@ SUITE(number compares)
       OK(Nq(2015), 2015);
    }
 
-   Case(integer)
+   Case(integer less than)
    {
       int a1 = 2015;
-      OK(Nq(2015), a1);
+      Ok(2017 < a1);
+   }
+
+   Case(vector great/equal than)
+   {
+      Ok(sizeof(std::vector<int>::size_type) > 100);
    }
 
    Case(double)

@@ -19,7 +19,7 @@ struct h2_matcher_cast_impl<T, h2_matcher<U>> {
    struct internal_impl : h2_matcher_impl<T>, h2_libc {
       const h2_matcher<U> from;
       explicit internal_impl(const h2_matcher<U>& from_) : from(from_) {}
-      h2_fail* matches(T a, int n, bool caseless, bool dont) const override { return from.matches(static_cast<U>(a), n, caseless, dont); }
+      h2_fail* matches(T a, int n, bool caseless, bool dont, bool ncop) const override { return from.matches(static_cast<U>(a), n, caseless, dont, ncop); }
       void operator=(internal_impl const&) = delete;
    };
 };

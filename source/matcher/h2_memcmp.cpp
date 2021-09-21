@@ -12,7 +12,7 @@ static inline h2_string readable_size(size_t width, size_t nbits)
    return h2_string(t);
 }
 
-h2_inline h2_fail* h2_matches_bytecmp::matches(const void* a, int n, bool caseless, bool dont) const
+h2_inline h2_fail* h2_matches_bytecmp::matches(const void* a, int n, bool caseless, bool dont, bool ncop) const
 {
    bool result = false;
    size_t _nbytes;
@@ -41,12 +41,12 @@ h2_inline h2_fail* h2_matches_bytecmp::matches(const void* a, int n, bool casele
    return h2_fail::new_memcmp((const unsigned char*)e, (const unsigned char*)a, width, _nbytes * 8, h2_stringify(a).string(), "memcmp " + readable_size(width, _nbytes * 8));
 }
 
-h2_inline h2_sentence h2_matches_bytecmp::expection(bool caseless, bool dont) const
+h2_inline h2_sentence h2_matches_bytecmp::expection(bool caseless, bool dont, bool ncop) const
 {
-   return CD("Me()", caseless, dont);
+   return CD("Me()", caseless, dont, ncop);
 }
 
-h2_inline h2_fail* h2_matches_bitcmp::matches(const void* a, int n, bool caseless, bool dont) const
+h2_inline h2_fail* h2_matches_bitcmp::matches(const void* a, int n, bool caseless, bool dont, bool ncop) const
 {
    size_t max_length = INT_MAX;
    unsigned char* _e = (unsigned char*)e;
@@ -76,7 +76,7 @@ h2_inline h2_fail* h2_matches_bitcmp::matches(const void* a, int n, bool caseles
    return h2_fail::new_memcmp(_e, (const unsigned char*)a, 1, _nbits, h2_stringify(a).string(), "memcmp " + readable_size(1, _nbits));
 }
 
-h2_inline h2_sentence h2_matches_bitcmp::expection(bool caseless, bool dont) const
+h2_inline h2_sentence h2_matches_bitcmp::expection(bool caseless, bool dont, bool ncop) const
 {
-   return CD("Me()", caseless, dont);
+   return CD("Me()", caseless, dont, ncop);
 }

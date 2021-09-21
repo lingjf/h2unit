@@ -1,7 +1,7 @@
 template <typename T>
 struct h2_matcher_impl : h2_matches {
-   virtual h2_fail* matches(T a, int n, bool caseless, bool dont) const = 0;
-   virtual h2_sentence expection(bool caseless, bool dont) const override { return ""; }
+   virtual h2_fail* matches(T a, int n, bool caseless, bool dont, bool ncop) const = 0;
+   virtual h2_sentence expection(bool caseless, bool dont, bool ncop) const override { return ""; }
    virtual ~h2_matcher_impl() {}
 };
 
@@ -15,8 +15,8 @@ struct h2_matcher : h2_matches {
    h2_matcher(const h2_matcher&) = default;
    h2_matcher& operator=(const h2_matcher&) = default;
    virtual ~h2_matcher() {}
-   h2_fail* matches(const T& a, int n = 0, bool caseless = false, bool dont = false) const { return impl->matches(a, n, caseless, dont); }
-   virtual h2_sentence expection(bool caseless = false, bool dont = false) const { return impl->expection(caseless, dont); };
+   h2_fail* matches(const T& a, int n = 0, bool caseless = false, bool dont = false, bool ncop = false) const { return impl->matches(a, n, caseless, dont, ncop); }
+   virtual h2_sentence expection(bool caseless = false, bool dont = false, bool ncop = false) const { return impl->expection(caseless, dont, ncop); };
 };
 
 template <typename Matches>
@@ -49,9 +49,9 @@ struct h2_polymorphic_matcher : h2_matches {
       const Matches m;
       bool caseless, dont;
       explicit internal_impl(const Matches& m_, bool caseless_, bool dont_) : m(m_), caseless(caseless_), dont(dont_) {}
-      h2_fail* matches(T a, int n = 0, bool caseless_ = false, bool dont_ = false) const override { return m.matches(a, n, caseless || caseless_, dont != dont_); }
-      h2_sentence expection(bool caseless_, bool dont_) const override { return m.expection(caseless || caseless_, dont != dont_ /*XOR ^*/); }
+      h2_fail* matches(T a, int n = 0, bool caseless_ = false, bool dont_ = false, bool ncop_ = false) const override { return m.matches(a, n, caseless || caseless_, dont != dont_, ncop_); }
+      h2_sentence expection(bool caseless_, bool dont_, bool ncop_) const override { return m.expection(caseless || caseless_, dont != dont_ /*XOR ^*/, ncop_); }
    };
 
-   virtual h2_sentence expection(bool caseless_ = false, bool dont_ = false) const override { return h2_matches_expection(m, caseless || caseless_, dont != dont_); }
+   virtual h2_sentence expection(bool caseless_ = false, bool dont_ = false, bool ncop_ =false) const override { return h2_matches_expection(m, caseless || caseless_, dont != dont_, ncop_); }
 };

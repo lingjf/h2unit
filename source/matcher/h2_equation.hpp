@@ -4,14 +4,14 @@ struct h2_equation : h2_matches {
    explicit h2_equation(const E& e_, const long double = 0) : e(e_) {}
 
    template <typename A>
-   h2_fail* matches(const A& a, int, bool caseless, bool dont) const
+   h2_fail* matches(const A& a, int, bool caseless, bool dont, bool ncop) const
    {
       if ((a == e) == !dont) return nullptr;
-      return h2_fail::new_unexpect(expection(caseless, dont), h2_representify(a));
+      return h2_fail::new_unexpect(expection(caseless, dont, ncop), h2_representify(a));
    }
-   virtual h2_sentence expection(bool, bool dont) const override
+   virtual h2_sentence expection(bool, bool dont, bool ncop) const override
    {
-      return CD(h2_representify(e), false, dont, "≠");
+      return CD(h2_representify(e), false, dont, ncop, "≠");
    }
 };
 
@@ -20,16 +20,16 @@ struct h2_equation<E, typename std::enable_if<std::is_convertible<E, h2_string>:
    const h2_string e;
    explicit h2_equation(const E& e_, const long double = 0) : e(h2_string(e_)) {}
 
-   h2_fail* matches(const h2_string& a, int, bool caseless, bool dont) const
+   h2_fail* matches(const h2_string& a, int, bool caseless, bool dont, bool ncop) const
    {
       if (a.equals(e, caseless) == !dont) return nullptr;
       if (h2_pattern::wildcard_match(e.c_str(), a.c_str(), caseless) == !dont) return nullptr;
       if (h2_pattern::regex_match(e.c_str(), a.c_str(), caseless) == !dont) return nullptr;
-      return h2_fail::new_strcmp(e, a, caseless, expection(caseless, dont));
+      return h2_fail::new_strcmp(e, a, caseless, expection(caseless, dont, ncop));
    }
-   virtual h2_sentence expection(bool caseless, bool dont) const override
+   virtual h2_sentence expection(bool caseless, bool dont, bool ncop) const override
    {
-      return CD(h2_representify(e), caseless, dont, "≠");
+      return CD(h2_representify(e), caseless, dont, ncop, "≠");
    }
 };
 
@@ -40,7 +40,7 @@ struct h2_equation<E, typename std::enable_if<std::is_arithmetic<E>::value>::typ
    explicit h2_equation(const E& e_, const long double epsilon_ = 0) : e(e_), epsilon(epsilon_) {}
 
    template <typename A>
-   h2_fail* matches(const A& a, int, bool caseless, bool dont) const
+   h2_fail* matches(const A& a, int, bool caseless, bool dont, bool ncop) const
    {
       bool result;
       if (std::is_floating_point<E>::value || std::is_floating_point<A>::value) {
@@ -56,9 +56,9 @@ struct h2_equation<E, typename std::enable_if<std::is_arithmetic<E>::value>::typ
          result = a == e;
       }
       if (result == !dont) return nullptr;
-      return h2_fail::new_unexpect(expection(caseless, dont), h2_representify(a));
+      return h2_fail::new_unexpect(expection(caseless, dont, ncop), h2_representify(a));
    }
-   virtual h2_sentence expection(bool, bool dont) const override
+   virtual h2_sentence expection(bool, bool dont, bool ncop) const override
    {
       h2_sentence t = h2_representify(e);
       if (epsilon != 0) {
@@ -66,7 +66,7 @@ struct h2_equation<E, typename std::enable_if<std::is_arithmetic<E>::value>::typ
          oss << "±" << std::fixed << epsilon;
          t += oss.str().c_str();
       }
-      return CD(t, false, dont, "≠");
+      return CD(t, false, dont, ncop, "≠");
    }
 };
 

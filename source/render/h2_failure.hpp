@@ -2,6 +2,7 @@ struct h2_fail : h2_libc {
    h2_fail *subling_next{nullptr}, *child_next{nullptr};
 
    const char* assert_type = "Inner";  // Inner(Mock, AllOf, &&, ||)
+   const char* assert_op = ",";
    h2_string e_expression, a_expression;
    h2_sentence explain;
    h2_string user_explain;

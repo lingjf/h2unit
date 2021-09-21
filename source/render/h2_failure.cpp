@@ -75,6 +75,7 @@ struct h2_fail_unexpect : h2_fail {
       h2_sentence a = h2_sentence(a_expression).acronym(O.verbose >= 4 ? 10000 : 30, 3).gray_quote().brush("cyan");
       sentence += "OK" + gray("(") + a + gray(")") + " is " + color("false", "bold,red");
    }
+   // https://unicode-table.com/en/sets/arrow-symbols/
    void print_OK2(h2_sentence& sentence)
    {
       h2_sentence e, a;
@@ -94,7 +95,19 @@ struct h2_fail_unexpect : h2_fail {
          a = represent.acronym(O.verbose >= 4 ? 10000 : 30, 3).brush("bold,red") + gray("<==") + h2_sentence(a_expression).acronym(O.verbose >= 4 ? 10000 : 30, 3).gray_quote().brush("cyan");
       }
 
-      sentence += "OK" + gray("(") + e + ", " + a + gray(")");
+      sentence += "OK" + gray("(") + e + " " + assert_op + " " + a + gray(")");
+   }
+   void print_Ok2(h2_sentence& sentence)
+   {
+      h2_sentence e, a;
+      if (!a_expression.startswith(expection.string())) {
+         e = expection.acronym(O.verbose >= 4 ? 10000 : 30, 3).brush("green") + gray("<==");
+      }
+      if (!a_expression.endswith(represent.string())) {
+         a = gray("==>") + represent.acronym(O.verbose >= 4 ? 10000 : 30, 3).brush("bold,red");
+      }
+
+      sentence += "OK" + gray("(") + e + h2_sentence(a_expression).gray_quote().brush("cyan") + a + gray(")");
    }
    void print_JE(h2_sentence& sentence)
    {
@@ -122,6 +135,7 @@ struct h2_fail_unexpect : h2_fail {
       if (!strcmp("Inner", assert_type)) print_Inner(sentence);
       if (!strcmp("OK1", assert_type)) print_OK1(sentence);
       if (!strcmp("OK2", assert_type)) print_OK2(sentence);
+      if (!strcmp("Ok2", assert_type)) print_Ok2(sentence);
       if (!strcmp("JE", assert_type)) print_JE(sentence);
       if (explain.width()) sentence += comma_if(c++, ", ", " ") + explain;
       if (user_explain.size()) sentence += {comma_if(c++, ", ", " "), user_explain};

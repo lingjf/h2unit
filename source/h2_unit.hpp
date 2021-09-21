@@ -154,6 +154,12 @@ namespace h2 {
 #   pragma message("Teardown conflict, using H2Teardown instead.")
 #endif
 
+#ifndef Ok
+#   define Ok H2Ok
+#else
+#   pragma message("Ok conflict, using H2Ok instead.")
+#endif
+
 #ifndef OK
 #   define OK H2OK
 #else

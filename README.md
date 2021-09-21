@@ -78,6 +78,7 @@ It means user should not write extra code to register test cases.
 ### 2. Compare
 *    [`OK`](source/assert/h2_assert.hpp)(expr) : check the result of `expr` is true.
 *    [`OK`](source/assert/h2_assert.hpp)(expect, actual) : check the actual value matches with expect value.
+*    [`Ok`](source/assert/h2_assert.hpp)(expect < <= > >= == != actual) : compare the actual value with expect value, only support six operator(< <= > >= == !=).(lowercase k)
 
 Add user specified error description by following << operator.
 ```C++

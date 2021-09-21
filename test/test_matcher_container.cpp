@@ -21,8 +21,8 @@ SUITE(container matches)
       std::pair<int, double> a1 = std::make_pair(1, 3.14);
       std::pair<int, double> a2 = std::make_pair(2, 3.14);
 
-      OK(IsNull, e1.matches(a1, 0, false, false));
-      OK(NotNull, e1.matches(a2, 0, false, false));
+      OK(IsNull, e1.matches(a1, 0, false, false, false));
+      OK(NotNull, e1.matches(a2, 0, false, false, false));
    }
 
    Case(ListOf)
@@ -36,10 +36,10 @@ SUITE(container matches)
       h2::h2_listof_matches<T1, T1, T1> a(a1_, a2_, a3_);
 
       int b1[] = {1, 2, 3};
-      OK(nullptr == a.matches(b1, 0, false, false));
+      OK(nullptr == a.matches(b1, 0, false, false, false));
 
       std::vector<int> b2 = {1, 2, 3};
-      OK(nullptr == a.matches(b2, 0, false, false));
+      OK(nullptr == a.matches(b2, 0, false, false, false));
    }
 
    Case(In)

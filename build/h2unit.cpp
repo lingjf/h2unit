@@ -1,5 +1,5 @@
 
-/* v5.14 2021-09-21 08:01:06 */
+/* v5.14 2021-09-21 10:41:13 */
 /* https://github.com/lingjf/h2unit */
 /* Apache Licence 2.0 */
 #include "h2unit.hpp"
@@ -2773,78 +2773,78 @@ h2_inline bool h2_json::diff(const h2_string& expect, const h2_string& actual, h
 }
 
 // source/matcher/h2_strcmp.cpp
-h2_inline h2_fail* h2_matches_regex::matches(const h2_string& a, int n, bool caseless, bool dont) const
+h2_inline h2_fail* h2_matches_regex::matches(const h2_string& a, int n, bool caseless, bool dont, bool ncop) const
 {
    if (h2_pattern::regex_match(e.c_str(), a.c_str(), caseless) == !dont) return nullptr;
-   return h2_fail::new_strfind(e, a, expection(caseless, dont));
+   return h2_fail::new_strfind(e, a, expection(caseless, dont, ncop));
 }
-h2_inline h2_sentence h2_matches_regex::expection(bool caseless, bool dont) const
+h2_inline h2_sentence h2_matches_regex::expection(bool caseless, bool dont, bool ncop) const
 {
-   return CD("Re" + gray("(") + h2_stringify(e) + gray(")"), caseless, dont);
+   return CD("Re" + gray("(") + h2_stringify(e) + gray(")"), caseless, dont, ncop);
 }
 
-h2_inline h2_fail* h2_matches_wildcard::matches(const h2_string& a, int n, bool caseless, bool dont) const
+h2_inline h2_fail* h2_matches_wildcard::matches(const h2_string& a, int n, bool caseless, bool dont, bool ncop) const
 {
    if (h2_pattern::wildcard_match(e.c_str(), a.c_str(), caseless) == !dont) return nullptr;
-   return h2_fail::new_strfind(e, a, expection(caseless, dont));
+   return h2_fail::new_strfind(e, a, expection(caseless, dont, ncop));
 }
-h2_inline h2_sentence h2_matches_wildcard::expection(bool caseless, bool dont) const
+h2_inline h2_sentence h2_matches_wildcard::expection(bool caseless, bool dont, bool ncop) const
 {
-   return CD("We" + gray("(") + h2_stringify(e) + gray(")"), caseless, dont);
+   return CD("We" + gray("(") + h2_stringify(e) + gray(")"), caseless, dont, ncop);
 }
 
-h2_inline h2_fail* h2_matches_strcmp::matches(const h2_string& a, int n, bool caseless, bool dont) const
+h2_inline h2_fail* h2_matches_strcmp::matches(const h2_string& a, int n, bool caseless, bool dont, bool ncop) const
 {
    if (a.equals(e, caseless) == !dont) return nullptr;
-   return h2_fail::new_strfind(e, a, expection(caseless, dont));
+   return h2_fail::new_strfind(e, a, expection(caseless, dont, ncop));
 }
-h2_inline h2_sentence h2_matches_strcmp::expection(bool caseless, bool dont) const
+h2_inline h2_sentence h2_matches_strcmp::expection(bool caseless, bool dont, bool ncop) const
 {
-   return CD(h2_representify(e), caseless, dont, "≠");
+   return CD(h2_representify(e), caseless, dont, ncop, "≠");
 }
 
-h2_inline h2_fail* h2_matches_substr::matches(const h2_string& a, int n, bool caseless, bool dont) const
+h2_inline h2_fail* h2_matches_substr::matches(const h2_string& a, int n, bool caseless, bool dont, bool ncop) const
 {
    if (a.contains(substring, caseless) == !dont) return nullptr;
-   return h2_fail::new_strfind(substring, a, expection(caseless, dont));
+   return h2_fail::new_strfind(substring, a, expection(caseless, dont, ncop));
 }
-h2_inline h2_sentence h2_matches_substr::expection(bool caseless, bool dont) const
+h2_inline h2_sentence h2_matches_substr::expection(bool caseless, bool dont, bool ncop) const
 {
-   return CD("Substr" + gray("(") + h2_representify(substring) + gray(")"), caseless, dont);
+   return CD("Substr" + gray("(") + h2_representify(substring) + gray(")"), caseless, dont, ncop);
 }
 
-h2_inline h2_fail* h2_matches_startswith::matches(const h2_string& a, int n, bool caseless, bool dont) const
+h2_inline h2_fail* h2_matches_startswith::matches(const h2_string& a, int n, bool caseless, bool dont, bool ncop) const
 {
    if (a.startswith(prefix_string, caseless) == !dont) return nullptr;
-   return h2_fail::new_strfind(prefix_string, a, expection(caseless, dont));
+   return h2_fail::new_strfind(prefix_string, a, expection(caseless, dont, ncop));
 }
-h2_inline h2_sentence h2_matches_startswith::expection(bool caseless, bool dont) const
+h2_inline h2_sentence h2_matches_startswith::expection(bool caseless, bool dont, bool ncop) const
 {
-   return CD("StartsWith" + gray("(") + h2_representify(prefix_string) + gray(")"), caseless, dont);
+   return CD("StartsWith" + gray("(") + h2_representify(prefix_string) + gray(")"), caseless, dont, ncop);
 }
 
-h2_inline h2_fail* h2_matches_endswith::matches(const h2_string& a, int n, bool caseless, bool dont) const
+h2_inline h2_fail* h2_matches_endswith::matches(const h2_string& a, int n, bool caseless, bool dont, bool ncop) const
 {
    if (a.endswith(suffix_string, caseless) == !dont) return nullptr;
-   return h2_fail::new_strfind(suffix_string, a, expection(caseless, dont));
+   return h2_fail::new_strfind(suffix_string, a, expection(caseless, dont, ncop));
 }
-h2_inline h2_sentence h2_matches_endswith::expection(bool caseless, bool dont) const
+h2_inline h2_sentence h2_matches_endswith::expection(bool caseless, bool dont, bool ncop) const
 {
-   return CD("EndsWith" + gray("(") + h2_representify(suffix_string) + gray(")"), caseless, dont);
+   return CD("EndsWith" + gray("(") + h2_representify(suffix_string) + gray(")"), caseless, dont, ncop);
 }
 
-h2_inline h2_fail* h2_matches_json::matches(const h2_string& a, int, bool caseless, bool dont) const
+h2_inline h2_fail* h2_matches_json::matches(const h2_string& a, int, bool caseless, bool dont, bool ncop) const
 {
    h2_string _a = a;
    if (selector.size()) _a = h2_json::select(a, selector, caseless);
    int ret = h2_json::match(e, _a, caseless);
-   if (ret < 0) return h2_fail::new_json(e, _a, expection(caseless, dont), caseless, "illformed json");
+   if (ret < 0) return h2_fail::new_json(e, _a, expection(caseless, dont, ncop), caseless, "illformed json");
    if ((ret == 0) == !dont) return nullptr;
-   return h2_fail::new_json(e, _a, expection(caseless, dont), caseless, DS(dont));
+   return h2_fail::new_json(e, _a, expection(caseless, dont, ncop), caseless, DS(dont));
 }
-h2_inline h2_sentence h2_matches_json::expection(bool caseless, bool dont) const
+h2_inline h2_sentence h2_matches_json::expection(bool caseless, bool dont, bool ncop) const
 {
-   return CD(h2_stringify(e), caseless, dont, "≠");
+   return CD(h2_stringify(e), caseless, dont, ncop, "≠");
 }
 // source/matcher/h2_memcmp.cpp
 static inline h2_string readable_size(size_t width, size_t nbits)
@@ -2861,7 +2861,7 @@ static inline h2_string readable_size(size_t width, size_t nbits)
    return h2_string(t);
 }
 
-h2_inline h2_fail* h2_matches_bytecmp::matches(const void* a, int n, bool caseless, bool dont) const
+h2_inline h2_fail* h2_matches_bytecmp::matches(const void* a, int n, bool caseless, bool dont, bool ncop) const
 {
    bool result = false;
    size_t _nbytes;
@@ -2890,12 +2890,12 @@ h2_inline h2_fail* h2_matches_bytecmp::matches(const void* a, int n, bool casele
    return h2_fail::new_memcmp((const unsigned char*)e, (const unsigned char*)a, width, _nbytes * 8, h2_stringify(a).string(), "memcmp " + readable_size(width, _nbytes * 8));
 }
 
-h2_inline h2_sentence h2_matches_bytecmp::expection(bool caseless, bool dont) const
+h2_inline h2_sentence h2_matches_bytecmp::expection(bool caseless, bool dont, bool ncop) const
 {
-   return CD("Me()", caseless, dont);
+   return CD("Me()", caseless, dont, ncop);
 }
 
-h2_inline h2_fail* h2_matches_bitcmp::matches(const void* a, int n, bool caseless, bool dont) const
+h2_inline h2_fail* h2_matches_bitcmp::matches(const void* a, int n, bool caseless, bool dont, bool ncop) const
 {
    size_t max_length = INT_MAX;
    unsigned char* _e = (unsigned char*)e;
@@ -2925,9 +2925,9 @@ h2_inline h2_fail* h2_matches_bitcmp::matches(const void* a, int n, bool caseles
    return h2_fail::new_memcmp(_e, (const unsigned char*)a, 1, _nbits, h2_stringify(a).string(), "memcmp " + readable_size(1, _nbits));
 }
 
-h2_inline h2_sentence h2_matches_bitcmp::expection(bool caseless, bool dont) const
+h2_inline h2_sentence h2_matches_bitcmp::expection(bool caseless, bool dont, bool ncop) const
 {
-   return CD("Me()", caseless, dont);
+   return CD("Me()", caseless, dont, ncop);
 }
 
 // source/memory/h2_piece.cpp
@@ -5144,6 +5144,14 @@ h2_inline int h2_runner::main(int argc, const char** argv)
 }
 
 // source/assert/h2_assert.cpp
+static inline const char* find_outer_op(const char* src, const char* op)
+{
+   auto p1 = strstr(src, op);
+   if (!p1) return nullptr;
+   auto p2 = strstr(p1 + 1, op);
+   if (p2) return nullptr;
+   return p1;
+}
 
 h2_inline h2_defer_failure::~h2_defer_failure()
 {
@@ -5151,9 +5159,22 @@ h2_inline h2_defer_failure::~h2_defer_failure()
       fails->file = file;
       fails->line = line;
       fails->assert_type = assert_type;
+      fails->assert_op = assert_op;
       fails->e_expression = e_expression;
       fails->a_expression = a_expression;
       fails->user_explain = oss.str().c_str();
+
+      if (!strcmp("Ok2", assert_type) && strcmp(",", assert_op)) {
+         const char* pop = find_outer_op(a_expression, assert_op);
+         if (pop) {
+            const char *p, *q;
+            for (p = pop - 1; a_expression <= p && ::isspace(*p);) p--;
+            fails->e_expression.assign(a_expression, (p + 1) - a_expression);
+            for (q = pop + strlen(assert_op); ::isspace(*q);) q++;
+            fails->a_expression.assign(q, (a_expression + strlen(a_expression)) - q);
+            fails->assert_type = "OK2";
+         }
+      }
       h2_fail_g(fails);
    }
 }
@@ -5252,6 +5273,7 @@ struct h2_fail_unexpect : h2_fail {
       h2_sentence a = h2_sentence(a_expression).acronym(O.verbose >= 4 ? 10000 : 30, 3).gray_quote().brush("cyan");
       sentence += "OK" + gray("(") + a + gray(")") + " is " + color("false", "bold,red");
    }
+   // https://unicode-table.com/en/sets/arrow-symbols/
    void print_OK2(h2_sentence& sentence)
    {
       h2_sentence e, a;
@@ -5271,7 +5293,19 @@ struct h2_fail_unexpect : h2_fail {
          a = represent.acronym(O.verbose >= 4 ? 10000 : 30, 3).brush("bold,red") + gray("<==") + h2_sentence(a_expression).acronym(O.verbose >= 4 ? 10000 : 30, 3).gray_quote().brush("cyan");
       }
 
-      sentence += "OK" + gray("(") + e + ", " + a + gray(")");
+      sentence += "OK" + gray("(") + e + " " + assert_op + " " + a + gray(")");
+   }
+   void print_Ok2(h2_sentence& sentence)
+   {
+      h2_sentence e, a;
+      if (!a_expression.startswith(expection.string())) {
+         e = expection.acronym(O.verbose >= 4 ? 10000 : 30, 3).brush("green") + gray("<==");
+      }
+      if (!a_expression.endswith(represent.string())) {
+         a = gray("==>") + represent.acronym(O.verbose >= 4 ? 10000 : 30, 3).brush("bold,red");
+      }
+
+      sentence += "OK" + gray("(") + e + h2_sentence(a_expression).gray_quote().brush("cyan") + a + gray(")");
    }
    void print_JE(h2_sentence& sentence)
    {
@@ -5299,6 +5333,7 @@ struct h2_fail_unexpect : h2_fail {
       if (!strcmp("Inner", assert_type)) print_Inner(sentence);
       if (!strcmp("OK1", assert_type)) print_OK1(sentence);
       if (!strcmp("OK2", assert_type)) print_OK2(sentence);
+      if (!strcmp("Ok2", assert_type)) print_Ok2(sentence);
       if (!strcmp("JE", assert_type)) print_JE(sentence);
       if (explain.width()) sentence += comma_if(c++, ", ", " ") + explain;
       if (user_explain.size()) sentence += {comma_if(c++, ", ", " "), user_explain};

@@ -1,51 +1,51 @@
 struct h2_matches_regex : h2_matches {
    const h2_string e;
    explicit h2_matches_regex(const h2_string& e_) : e(e_) {}
-   h2_fail* matches(const h2_string& a, int n, bool caseless, bool dont) const;
-   virtual h2_sentence expection(bool caseless, bool dont) const override;
+   h2_fail* matches(const h2_string& a, int n, bool caseless, bool dont, bool ncop) const;
+   virtual h2_sentence expection(bool caseless, bool dont, bool ncop) const override;
 };
 
 struct h2_matches_wildcard : h2_matches {
    const h2_string e;
    explicit h2_matches_wildcard(const h2_string& e_) : e(e_) {}
-   h2_fail* matches(const h2_string& a, int n, bool caseless, bool dont) const;
-   virtual h2_sentence expection(bool caseless, bool dont) const override;
+   h2_fail* matches(const h2_string& a, int n, bool caseless, bool dont, bool ncop) const;
+   virtual h2_sentence expection(bool caseless, bool dont, bool ncop) const override;
 };
 
 struct h2_matches_strcmp : h2_matches {
    const h2_string e;
    explicit h2_matches_strcmp(const h2_string& e_) : e(e_) {}
-   h2_fail* matches(const h2_string& a, int n, bool caseless, bool dont) const;
-   virtual h2_sentence expection(bool caseless, bool dont) const override;
+   h2_fail* matches(const h2_string& a, int n, bool caseless, bool dont, bool ncop) const;
+   virtual h2_sentence expection(bool caseless, bool dont, bool ncop) const override;
 };
 
 struct h2_matches_substr : h2_matches {
    const h2_string substring;
    explicit h2_matches_substr(const h2_string& substring_) : substring(substring_) {}
-   h2_fail* matches(const h2_string& a, int n, bool caseless, bool dont) const;
-   virtual h2_sentence expection(bool caseless, bool dont) const override;
+   h2_fail* matches(const h2_string& a, int n, bool caseless, bool dont, bool ncop) const;
+   virtual h2_sentence expection(bool caseless, bool dont, bool ncop) const override;
 };
 
 struct h2_matches_startswith : h2_matches {
    const h2_string prefix_string;
    explicit h2_matches_startswith(const h2_string& prefix_string_) : prefix_string(prefix_string_) {}
-   h2_fail* matches(const h2_string& a, int n, bool caseless, bool dont) const;
-   virtual h2_sentence expection(bool caseless, bool dont) const override;
+   h2_fail* matches(const h2_string& a, int n, bool caseless, bool dont, bool ncop) const;
+   virtual h2_sentence expection(bool caseless, bool dont, bool ncop) const override;
 };
 
 struct h2_matches_endswith : h2_matches {
    const h2_string suffix_string;
    explicit h2_matches_endswith(const h2_string& suffix_string_) : suffix_string(suffix_string_) {}
-   h2_fail* matches(const h2_string& a, int n, bool caseless, bool dont) const;
-   virtual h2_sentence expection(bool caseless, bool dont) const override;
+   h2_fail* matches(const h2_string& a, int n, bool caseless, bool dont, bool ncop) const;
+   virtual h2_sentence expection(bool caseless, bool dont, bool ncop) const override;
 };
 
 struct h2_matches_json : h2_matches {
    const h2_string e;
    const h2_string selector;
    explicit h2_matches_json(const h2_string& e_, const h2_string& selector_) : e(e_), selector(selector_) {}
-   h2_fail* matches(const h2_string& a, int, bool caseless, bool dont) const;
-   virtual h2_sentence expection(bool caseless, bool dont) const override;
+   h2_fail* matches(const h2_string& a, int, bool caseless, bool dont, bool ncop) const;
+   virtual h2_sentence expection(bool caseless, bool dont, bool ncop) const override;
 };
 
 struct h2_caseless_matches : h2_matches {
@@ -53,8 +53,8 @@ struct h2_caseless_matches : h2_matches {
    explicit h2_caseless_matches(const h2_matcher<h2_string>& matcher_) : m(matcher_) {}
 
    template <typename A>
-   h2_fail* matches(const A& a, int n, bool caseless, bool dont) const { return m.matches(a, n, true, dont); }
-   virtual h2_sentence expection(bool caseless, bool dont) const override { return m.expection(true, dont); }
+   h2_fail* matches(const A& a, int n, bool caseless, bool dont, bool ncop) const { return m.matches(a, n, true, dont, ncop); }
+   virtual h2_sentence expection(bool caseless, bool dont, bool ncop) const override { return m.expection(true, dont, ncop); }
 };
 
 inline h2_polymorphic_matcher<h2_matches_regex> Re(const h2_string& regex_pattern) { return h2_polymorphic_matcher<h2_matches_regex>(h2_matches_regex(regex_pattern)); }
