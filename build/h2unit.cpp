@@ -1,5 +1,5 @@
 
-/* v5.14 2021-09-21 10:41:13 */
+/* v5.14 2021-09-25 09:37:25 */
 /* https://github.com/lingjf/h2unit */
 /* Apache Licence 2.0 */
 #include "h2unit.hpp"
@@ -1275,7 +1275,7 @@ static inline bool backtrace_extract(const char* line, char* mangle_name, unsign
    return false;
 }
 
-h2_inline bool h2_backtrace::operator==(const h2_backtrace& bt)
+h2_inline bool h2_backtrace::operator==(const h2_backtrace& bt) const
 {
    if (count != bt.count) return false;
    for (int i = 0; i < count; ++i)
@@ -2288,7 +2288,7 @@ struct h2_json_syntax {
       return 0 == err;
    }
 
-   bool requires(const char* s)
+   bool desire(const char* s)
    {
       if (lexical.size() <= i || !lexical[i].equals(s)) return false;
       ++i;
@@ -2358,7 +2358,7 @@ struct h2_json_syntax {
 
    bool parse_array(h2_json_node& node)
    {
-      if (!requires("[")) return false;
+      if (!desire("[")) return false;
       int n = 0;
       while (i < lexical.size() && !lexical[i].equals("]")) {
          h2_json_node* new_node = new h2_json_node(n++);
@@ -2370,20 +2370,20 @@ struct h2_json_syntax {
             break;
       }
 
-      if (!requires("]")) return false;
+      if (!desire("]")) return false;
       node.type = h2_json_node::t_array;
       return true;
    }
 
    bool parse_object(h2_json_node& node)
    {
-      if (!requires("{")) return false;
+      if (!desire("{")) return false;
       int n = 0;
       while (i < lexical.size() && !lexical[i].equals("}")) {
          h2_json_node* new_node = new h2_json_node(n++);
          node.children.push_back(new_node->x);
          if (!parse_key(*new_node)) return false;
-         if (!requires(":")) return false;
+         if (!desire(":")) return false;
          if (!parse_value(*new_node)) return false;
          if (i < lexical.size() && lexical[i].equals(","))
             ++i;
@@ -2391,7 +2391,7 @@ struct h2_json_syntax {
             break;
       }
 
-      if (!requires("}")) return false;
+      if (!desire("}")) return false;
       node.type = h2_json_node::t_object;
       return true;
    }
@@ -5926,7 +5926,7 @@ struct h2_report_junit : h2_report_impl {
       fprintf(f, "<testcase classname=\"%s\" name=\"%s\" status=\"%s\" time=\"%.3f\">\n", s->name, c->name, c->todo ? "TODO" : (c->filtered ? "Filtered" : (c->ignored ? "Ignored" : (c->failed ? "Failed" : "Passed"))), case_cost / 1000.0);
       if (c->failed) {
          fprintf(f, "<failure message=\"%s:%d:", c->file, c->line);
-         if (c->fails) c->fails->foreach([=](h2_fail* fail, int subling_index, int child_index) {fprintf(f, "{newline}"); fail->print(f); });
+         if (c->fails) c->fails->foreach([&](h2_fail* fail, int subling_index, int child_index) {fprintf(f, "{newline}"); fail->print(f); });
          fprintf(f, "\" type=\"AssertionFailedError\"></failure>\n");
       }
       fprintf(f, "<system-out></system-out><system-err></system-err>\n");

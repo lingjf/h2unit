@@ -6,7 +6,7 @@ struct h2_backtrace {
    h2_backtrace(const h2_backtrace&) = default;
    h2_backtrace& operator=(const h2_backtrace&) = default;
 
-   bool operator==(const h2_backtrace&);
+   bool operator==(const h2_backtrace&) const;
    static h2_backtrace& dump(int shift_);
 
    bool in(void* fps[]) const;

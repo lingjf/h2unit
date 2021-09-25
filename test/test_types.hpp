@@ -299,8 +299,8 @@ static std::pair<const char*, double> G_virtual_f2_fake(G_TemplateClass<int, int
 #define STRING_DECL_LIST                             \
    const char* const const_char_const_p1 = "h2unit"; \
    const char* const_char_p1 = "h2unit";             \
-   char* const char_const_p1 = "h2unit";             \
-   char* char_p1 = "h2unit";                         \
+   char* const char_const_p1 = (char* const)"h2unit";\
+   char* char_p1 = (char*)"h2unit";                  \
    char*& char_ref_p1 = char_p1;                     \
    char char_array1[1024] = "h2unit";                \
    const char const_char_array1[1024] = "h2unit";    \

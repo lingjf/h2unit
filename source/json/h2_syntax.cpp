@@ -26,7 +26,7 @@ struct h2_json_syntax {
       return 0 == err;
    }
 
-   bool requires(const char* s)
+   bool desire(const char* s)
    {
       if (lexical.size() <= i || !lexical[i].equals(s)) return false;
       ++i;
@@ -96,7 +96,7 @@ struct h2_json_syntax {
 
    bool parse_array(h2_json_node& node)
    {
-      if (!requires("[")) return false;
+      if (!desire("[")) return false;
       int n = 0;
       while (i < lexical.size() && !lexical[i].equals("]")) {
          h2_json_node* new_node = new h2_json_node(n++);
@@ -108,20 +108,20 @@ struct h2_json_syntax {
             break;
       }
 
-      if (!requires("]")) return false;
+      if (!desire("]")) return false;
       node.type = h2_json_node::t_array;
       return true;
    }
 
    bool parse_object(h2_json_node& node)
    {
-      if (!requires("{")) return false;
+      if (!desire("{")) return false;
       int n = 0;
       while (i < lexical.size() && !lexical[i].equals("}")) {
          h2_json_node* new_node = new h2_json_node(n++);
          node.children.push_back(new_node->x);
          if (!parse_key(*new_node)) return false;
-         if (!requires(":")) return false;
+         if (!desire(":")) return false;
          if (!parse_value(*new_node)) return false;
          if (i < lexical.size() && lexical[i].equals(","))
             ++i;
@@ -129,7 +129,7 @@ struct h2_json_syntax {
             break;
       }
 
-      if (!requires("}")) return false;
+      if (!desire("}")) return false;
       node.type = h2_json_node::t_object;
       return true;
    }

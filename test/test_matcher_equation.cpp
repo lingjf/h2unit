@@ -27,19 +27,19 @@ SUITE(equation matches)
 
       // cannot convert argument 1 from 'const char [4]' to 'const char *'
       // <ConformanceMode>false</ConformanceMode>; /permissive- ==> /permissive
-      h2::h2_equation<char*> d1("abc"); 
-      OK(nullptr == d1.matches("abc", 0, false, false, false));
+      h2::h2_equation<char*> d1((char*)"abc"); 
+      OK(nullptr == d1.matches((char*)"abc", 0, false, false, false));
       h2::h2_equation<h2::h2_string> d2("abc");
       OK(nullptr == d2.matches("abc", 0, false, false, false));
       h2::h2_equation<std::string> d3("abc");
       OK(nullptr == d3.matches("abc", 0, false, false, false));
 
-      h2::h2_equation<char*> d4("*bc");
-      OK(nullptr == d4.matches("abc", 0, false, false, false));
+      h2::h2_equation<char*> d4((char*)"*bc");
+      OK(nullptr == d4.matches((char*)"abc", 0, false, false, false));
 
 #if !defined _WIN32 || !defined NDEBUG // Windows regex suck under release version and memory check
-      h2::h2_equation<char*> d5(".*bc");
-      OK(nullptr == d5.matches("abc", 0, false, false, false));
+      h2::h2_equation<char*> d5((char*)".*bc");
+      OK(nullptr == d5.matches((char*)"abc", 0, false, false, false));
 #endif
    }
 }

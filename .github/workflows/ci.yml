@@ -136,21 +136,21 @@ jobs:
       - name: build print/release
         run: cmake --build release_print --config Release
       - name: 🔨 run print/release
-        run: ./release_print/Release/a.out.exe -e 'new[] free'
+        run: ./release_print/a.out.exe -e 'new[] free'
       - name: show print/release help
-        run: ./release_print/Release/a.out.exe -h
+        run: ./release_print/a.out.exe -h
       - name: list print/release cases
-        run: ./release_print/Release/a.out.exe -l
+        run: ./release_print/a.out.exe -l
       - name: configure print/debug
         run: cmake -DCMAKE_BUILD_TYPE=Debug -B debug_print print
       - name: build print/debug
         run: cmake --build debug_print --config Debug
       - name: 🔨 run print/debug
-        run: ./debug_print/Debug/a.out.exe -e 'new[] free'
+        run: ./debug_print/a.out.exe -e 'new[] free'
       - name: show print/debug help
-        run: ./debug_print/Debug/a.out.exe -h
+        run: ./debug_print/a.out.exe -h
       - name: list print/debug cases
-        run: ./debug_print/Debug/a.out.exe -l
+        run: ./debug_print/a.out.exe -l
       - name: configure test/debug
         run: cmake -DCMAKE_VERBOSE_MAKEFILE=ON -B debug_test test
       - name: cat test/debug vcxproj
@@ -172,11 +172,11 @@ jobs:
       - name: ✨ run test/release with memory check
         run: cd release_test && ./a.out.exe -cpj # fails
       - name: configure example
-        run: cmake -B d_example example
+        run: cmake -B debug_example example
       - name: build example
-        run: cmake --build d_example
+        run: cmake --build debug_example
       - name: run example
-        run: ./d_example/Debug/a.out.exe
+        run: ./debug_example/Debug/a.out.exe
 
   msys2:
     runs-on: windows-latest
@@ -232,12 +232,16 @@ jobs:
         run: ./ci_example/a.out
 
   msvc:
-    runs-on: ${{matrix.os}}
+    runs-on: windows-latest
     strategy:
       fail-fast: false
       matrix:
-        os: [windows-2019, windows-2022]
-    name: ${{matrix.os}}-cmake
+        include:
+          - {arch: "x86(x86_64)", platform: 'Win32'}
+          - {arch: "x86_64", platform: 'x64'}
+          - {arch: "x86(x86_64)", platform: 'Win32'}
+          - {arch: "x86_64", platform: 'x64'}
+    name: windows-${{matrix.arch}}-cmake-${{matrix.platform}}
     steps:
       - uses: actions/checkout@v2
       - uses: ilammy/msvc-dev-cmd@v1
@@ -248,17 +252,17 @@ jobs:
           echo '' > empty.cpp
           cl /EP /Zc:preprocessor /PD empty.cpp
       - name: configure print
-        run: cd print && cmake -DCMAKE_BUILD_TYPE=Release .
+        run: cd print && cmake -DCMAKE_BUILD_TYPE=Release -A ${{matrix.platform}} .
       - name: build print
         run: cd print && cmake --build . --config Release
       - name: 🔨 run print
-        run: ./print/Release/a.out.exe -e 'new[] free'
+        run: ./print/a.out.exe -e 'new[] free'
       - name: show print help
-        run: ./print/Release/a.out.exe -h
+        run: ./print/a.out.exe -h
       - name: list print cases
-        run: ./print/Release/a.out.exe -l
+        run: ./print/a.out.exe -l
       - name: configure test
-        run: cd test && cmake -DCMAKE_VERBOSE_MAKEFILE=ON .
+        run: cd test && cmake -DCMAKE_VERBOSE_MAKEFILE=ON -A ${{matrix.platform}} .
       - name: 🏗️ build test
         run: cd test && cmake --build . -j $env:NUMBER_OF_PROCESSORS
       - name: run test without memory check
@@ -266,7 +270,7 @@ jobs:
       - name: ✨ run test with memory check
         run: cd test && ./a.out.exe -scpvj
       - name: configure example
-        run: cmake -B ci_example example
+        run: cmake -A ${{matrix.platform}} -B ci_example example
       - name: build example
         run: cmake --build ci_example
       - name: run example
@@ -278,11 +282,11 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - {os: windows-2019, arch: x86, platform: 'Win32'}
-          - {os: windows-2019, arch: x86_64, platform: 'x64'}
-          - {os: windows-2022, arch: x86, platform: 'Win32'}
-          - {os: windows-2022, arch: x86_64, platform: 'x64'}
-    name: ${{matrix.os}}-msbuild-${{matrix.arch}}
+          - {arch: "x86(x86_64)", platform: 'Win32'}
+          - {arch: "x86_64", platform: 'x64'}
+          - {arch: "x86(x86_64)", platform: 'Win32'}
+          - {arch: "x86_64", platform: 'x64'}
+    name: windows-${{matrix.arch}}-msbuild-${{matrix.platform}}
     steps:
       - uses: actions/checkout@v2
       - uses: ilammy/msvc-dev-cmd@v1
@@ -316,52 +320,90 @@ jobs:
       - name: run example
         run: ./example/example.exe
 
-  linux-arm64-gcc:
+  linux-qemu:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - {arch: aarch64, cl: gcc-arm64, cc: aarch64-linux-gnu-gcc, cxx: aarch64-linux-gnu-g++, cflag: "-march=armv8-a", pkg: "gcc-aarch64-linux-gnu g++-aarch64-linux-gnu"}
+          - {arch: i386, cl: gcc-m32, cc: gcc, cxx: g++, cflag: "-m32", pkg: "gcc-multilib g++-multilib"}
+          - {arch: i386, cl: clang-m32, cc: clang, cxx: clang++, cflag: "-m32", pkg: "gcc-multilib g++-multilib"}
+    name: linux-${{matrix.arch}}(qemu)-${{matrix.cl}}
     steps:
       - uses: actions/checkout@v2
-      - name: checkout qemu
-        uses: actions/checkout@v2
-        with:
-          repository: qemu/qemu
-          path: qemu
-          ref: 8746309137ba470d1b2e8f5ce86ac228625db940
-      - name: build and install qemu
-        run: |
-          cd qemu
-          ./configure --target-list=aarch64-linux-user --disable-system
-          make -j2
-          sudo make install
-      - name: install aarch64-gnu-toolchain
+      - name: install toolchain and qemu-user
         run: |
           sudo apt-get update
-          sudo apt-get install gcc-aarch64-linux-gnu g++-aarch64-linux-gnu
+          sudo apt-get install qemu-user
+          sudo apt-get install ${{matrix.pkg}}
       - name: check platform
         run: uname -a && getconf GNU_LIBC_VERSION && env
       - name: pre-defined preprocessor macros
-        run: aarch64-linux-gnu-g++ -march=armv8-a -dM -E - < /dev/null
+        run: ${{matrix.cxx}} ${{matrix.cflag}} -dM -E - < /dev/null
       - name: sysroot directory for headers and libraries
-        run: aarch64-linux-gnu-g++ -march=armv8-a -E -v - < /dev/null
+        run: ${{matrix.cxx}} ${{matrix.cflag}} -E -v - < /dev/null
       - name: configure print
-        run: cmake -DCMAKE_C_COMPILER="aarch64-linux-gnu-gcc" -DCMAKE_CXX_COMPILER="aarch64-linux-gnu-g++" -DCMAKE_C_FLAGS="-march=armv8-a" -DCMAKE_CXX_FLAGS="-march=armv8-a" -DCMAKE_BUILD_TYPE=Release -B ci_print print
+        run: cmake -DCMAKE_C_COMPILER="${{matrix.cc}}" -DCMAKE_CXX_COMPILER="${{matrix.cxx}}" -DCMAKE_C_FLAGS="${{matrix.cflag}}" -DCMAKE_CXX_FLAGS="${{matrix.cflag}}" -DCMAKE_BUILD_TYPE=Release -B ci_print print
       - name: build print
         run: cmake --build ci_print
       - name: 🔨 run print
-        run: qemu-aarch64 -L /usr/aarch64-linux-gnu ./ci_print/a.out -e 'new[] free'
+        run: qemu-${{matrix.arch}} -L /usr/${{matrix.arch}}-linux-gnu ./ci_print/a.out -e 'new[] free'
       - name: configure test
-        run: cmake -DCMAKE_C_COMPILER="aarch64-linux-gnu-gcc" -DCMAKE_CXX_COMPILER="aarch64-linux-gnu-g++" -DCMAKE_C_FLAGS="-march=armv8-a" -DCMAKE_CXX_FLAGS="-march=armv8-a" -DCMAKE_VERBOSE_MAKEFILE=ON -B ci_test test
+        run: cmake -DCMAKE_C_COMPILER="${{matrix.cc}}" -DCMAKE_CXX_COMPILER="${{matrix.cxx}}" -DCMAKE_C_FLAGS="${{matrix.cflag}}" -DCMAKE_CXX_FLAGS="${{matrix.cflag}}" -DCMAKE_VERBOSE_MAKEFILE=ON -B ci_test test
       - name: 🏗️ build test
         run: cmake --build ci_test -j2
       - name: run test without memory check
-        run: qemu-aarch64 -L /usr/aarch64-linux-gnu -E LD_BIND_NOW=1 ./ci_test/a.out -s -p -m -v -e test_memory_
+        run: qemu-${{matrix.arch}} -L /usr/${{matrix.arch}}-linux-gnu -E LD_BIND_NOW=1 ./ci_test/a.out -s -p -m -v -e test_memory_
       - name: ✨ run test with memory check
-        run: qemu-aarch64 -L /usr/aarch64-linux-gnu -E LD_BIND_NOW=1 ./ci_test/a.out -scpvj
+        run: qemu-${{matrix.arch}} -L /usr/${{matrix.arch}}-linux-gnu -E LD_BIND_NOW=1 ./ci_test/a.out -scpvj
       - name: configure example
-        run: cmake -DCMAKE_C_COMPILER="aarch64-linux-gnu-gcc" -DCMAKE_CXX_COMPILER="aarch64-linux-gnu-g++" -DCMAKE_C_FLAGS="-march=armv8-a" -DCMAKE_CXX_FLAGS="-march=armv8-a" -B ci_example example
+        run: cmake -DCMAKE_C_COMPILER="${{matrix.cc}}" -DCMAKE_CXX_COMPILER="${{matrix.cxx}}" -DCMAKE_C_FLAGS="${{matrix.cflag}}" -DCMAKE_CXX_FLAGS="${{matrix.cflag}}" -B ci_example example
       - name: build example
         run: cmake --build ci_example
       - name: run example
-        run: qemu-aarch64 -L /usr/aarch64-linux-gnu ./ci_example/a.out
+        run: qemu-${{matrix.arch}} -L /usr/${{matrix.arch}}-linux-gnu ./ci_example/a.out
+
+  linux-m32:
+    runs-on: ubuntu-latest
+    env:
+      CC: ${{matrix.cc}}
+      CXX: ${{matrix.cxx}}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - {cc: gcc, cxx: g++}
+          - {cc: clang, cxx: clang++}
+    name: linux-i386(x86_64)-${{matrix.cc}}-m32
+    steps:
+      - uses: actions/checkout@v2
+      - name: check platform
+        run: uname -a && getconf GNU_LIBC_VERSION && env
+      - name: install multilib
+        run: |
+          sudo apt-get update
+          sudo apt-get install gcc-multilib g++-multilib
+      - name: configure print
+        run: cmake -DCMAKE_C_FLAGS="-m32" -DCMAKE_CXX_FLAGS="-m32" -DCMAKE_BUILD_TYPE=Release -B ci_print print
+      - name: build print
+        run: cmake --build ci_print
+      - name: 🔨 run print
+        run: ./ci_print/a.out -e 'new[] free'
+      - name: configure test
+        run: cmake -DCMAKE_C_FLAGS="-m32" -DCMAKE_CXX_FLAGS="-m32" -DCMAKE_VERBOSE_MAKEFILE=ON -B ci_test test
+      - name: 🏗️ build test
+        run: cmake --build ci_test -j2
+      - name: run test without memory check
+        run: LD_BIND_NOW=1 ./ci_test/a.out -s -p -m -v -e test_memory_
+      - name: ✨ run test with memory check
+        run: LD_BIND_NOW=1 ./ci_test/a.out -scpvj
+      - name: configure example
+        run: cmake -DCMAKE_C_FLAGS="-m32" -DCMAKE_CXX_FLAGS="-m32" -B ci_example example
+      - name: build example
+        run: cmake --build ci_example
+      - name: run example
+        run: ./ci_example/a.out
 
   linux-x86_64:
     runs-on: ${{matrix.os}}
@@ -418,47 +460,6 @@ jobs:
         run: LD_BIND_NOW=1 ./ci_test/a.out -scpvj
       - name: configure example
         run: cmake -B ci_example example
-      - name: build example
-        run: cmake --build ci_example
-      - name: run example
-        run: ./ci_example/a.out
-
-  linux-i386:
-    runs-on: ubuntu-latest
-    env:
-      CC: ${{matrix.cc}}
-      CXX: ${{matrix.cxx}}
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - {cc: gcc, cxx: g++}
-          - {cc: clang, cxx: clang++}
-    name: linux-i386-${{matrix.cc}}-m32
-    steps:
-      - uses: actions/checkout@v2
-      - name: check platform
-        run: uname -a && getconf GNU_LIBC_VERSION && env
-      - name: install multilib
-        run: |
-          sudo apt-get update
-          sudo apt-get install gcc-multilib g++-multilib
-      - name: configure print
-        run: cmake -DCMAKE_C_FLAGS="-m32" -DCMAKE_CXX_FLAGS="-m32" -DCMAKE_BUILD_TYPE=Release -B ci_print print
-      - name: build print
-        run: cmake --build ci_print
-      - name: 🔨 run print
-        run: ./ci_print/a.out -e 'new[] free'
-      - name: configure test
-        run: cmake -DCMAKE_C_FLAGS="-m32" -DCMAKE_CXX_FLAGS="-m32" -DCMAKE_VERBOSE_MAKEFILE=ON -B ci_test test
-      - name: 🏗️ build test
-        run: cmake --build ci_test -j2
-      - name: run test without memory check
-        run: LD_BIND_NOW=1 ./ci_test/a.out -s -p -m -v -e test_memory_
-      - name: ✨ run test with memory check
-        run: LD_BIND_NOW=1 ./ci_test/a.out -scpvj
-      - name: configure example
-        run: cmake -DCMAKE_C_FLAGS="-m32" -DCMAKE_CXX_FLAGS="-m32" -B ci_example example
       - name: build example
         run: cmake --build ci_example
       - name: run example
@@ -552,3 +553,37 @@ jobs:
         run: LD_BIND_NOW=1 ./ci_test/a.out -s -p -m -v -e test_memory_
       - name: ✨ run test with memory check
         run: LD_BIND_NOW=1 ./ci_test/a.out -scpvj
+
+  cpp:
+    runs-on: ${{matrix.os}}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - {os: ubuntu-latest, cpp: 14, sys: gcc-linux}
+          - {os: macos-latest, cpp: 14, sys: clang-macos}
+          - {os: windows-latest, cpp: 14, sys: msvc-windows}
+          - {os: ubuntu-latest, cpp: 17, sys: gcc-linux}
+          - {os: macos-latest, cpp: 17, sys: clang-macos}
+          - {os: windows-latest, cpp: 17, sys: msvc-windows}
+          - {os: ubuntu-latest, cpp: 20, sys: gcc-linux}
+          - {os: macos-latest, cpp: 20, sys: clang-macos}
+          - {os: windows-latest, cpp: 20, sys: msvc-windows}
+          - {os: ubuntu-latest, cpp: 23, sys: gcc-linux}
+          - {os: macos-latest, cpp: 23, sys: clang-macos}
+          - {os: windows-latest, cpp: 23, sys: msvc-windows}
+    name: c++${{matrix.cpp}}-${{matrix.sys}}
+    steps:
+      - uses: actions/checkout@v2
+      - name: configure print
+        run: cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_STANDARD=${{matrix.cpp}} -B ci_print print
+      - name: build print
+        run: cmake --build ci_print --config Release
+      - name: 🔨 run print
+        run: ./ci_print/a.out -e 'new[] free'
+      - name: configure test
+        run: cmake -DCMAKE_VERBOSE_MAKEFILE=ON -DCMAKE_CXX_STANDARD=${{matrix.cpp}} -B ci_test test
+      - name: 🏗️ build test
+        run: cmake --build ci_test -j2
+      - name: ✨ run test
+        run: ./ci_test/a.out -scpvj -e pthread

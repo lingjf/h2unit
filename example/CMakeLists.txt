@@ -11,8 +11,10 @@ ENDIF()
 MESSAGE("Build Type is " ${CMAKE_BUILD_TYPE})
 
 IF(CMAKE_BUILD_TYPE MATCHES "Release") 
-    IF(CMAKE_CXX_COMPILER_ID MATCHES "MSVC") # Disable Optimization
-        ADD_COMPILE_OPTIONS(/Od)
+    IF(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
+        ADD_COMPILE_OPTIONS(/Od) # Disable Optimization
+        # ADD_COMPILE_OPTIONS(/Zi) # Generate PDB
+        # ADD_LINK_OPTIONS(/DEBUG /OPT:REF /OPT:ICF) # Generate PDB
     ELSE()
         ADD_COMPILE_OPTIONS(-g -O0)
     ENDIF()

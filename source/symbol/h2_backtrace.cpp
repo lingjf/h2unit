@@ -39,7 +39,7 @@ static inline bool backtrace_extract(const char* line, char* mangle_name, unsign
    return false;
 }
 
-h2_inline bool h2_backtrace::operator==(const h2_backtrace& bt)
+h2_inline bool h2_backtrace::operator==(const h2_backtrace& bt) const
 {
    if (count != bt.count) return false;
    for (int i = 0; i < count; ++i)

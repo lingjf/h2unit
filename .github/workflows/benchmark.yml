@@ -1,0 +1,31 @@
+name: benchmark
+
+on:
+  push:
+    branches:
+      - 'v*'
+
+jobs:
+
+  msvc:
+    runs-on: ${{matrix.os}}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    name: ${{matrix.os}}-benchmark
+    steps:
+      - uses: actions/checkout@v2
+      - name: configure benchmark 1
+        run: mkdir b1 && cd b1 && cmake -DH2UNIT1=ON ../benchmark
+      - name: configure benchmark 2
+        run: mkdir b2 && cd b2 && cmake -DH2UNIT2=ON ../benchmark
+      - name: build benchmark 1
+        run: cmake --build b1
+      - name: build benchmark 2
+        run: cmake --build b2
+      - name: run benchmark 1
+        run: ./b1/a.out
+      - name: run benchmark 2
+        run: ./b2/a.out
+

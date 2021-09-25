@@ -1,4 +1,12 @@
 
+#if H2UNIT == 1
+#include "../h2unit.h"
+#endif
+
+#if H2UNIT == 2
+#include "../build/h2unit.hpp"
+#endif
+
 GlobalSetup()
 {
 }
@@ -7,96 +15,62 @@ GlobalCleanup()
 {
 }
 
-GlobalSuiteSetup()
+SUITE(normal)
 {
-}
-
-GlobalSuiteCleanup()
-{
-}
-
-GlobalCaseSetup()
-{
-}
-GlobalCaseCleanup()
-{
-}
-
-SUITE(a)
-{
-}
-
-SUITE(b)
-{
-   Cleanup()
-   {
-   }
-
-   Case(1)
-   {
-   }
-   Todo(2)
-   {
-   }
-}
-
-time_t time_fake(time_t*) { return 0; }
-
-SUITE(c)
-{
-   Case(1)
+   Case(case 1)
    {
       OK(true);
-      OK(1, 1);
-      OK("", "");
+      OK("a", "b");
    }
 
-   Case(2)
+   Case(case 2)
    {
       OK(Ge(0), 1);
-      OK(Lt(0), 1);
-      OK(We(""), "");
-      OK(Re(""), "");
-      OK(Re(""), "");
-      OK(Substr(""), "");
-      OK(Je(""), "");
-      JE("", "");
+      OK(Je("{}"), "{}");
    }
 
-   Case(3)
+   Case(case 3)
    {
       OK(_, 0);
-      OK(_, 1);
-      OK(Any, 0);
-      OK(Any, 1);
       OK(IsNull, nullptr);
-      OK(NotNull, NULL);
-      OK(IsTrue, true);
-      OK(IsTrue, false);
-      OK(IsFalse, false);
-      OK(IsFalse, true);
+      OK(IsTrue, true) << "hello user message";
    }
 
-   Case(4)
+   Case(case 4)
    {
-      OK(!Not(0), 1);
-      OK(AllOf(_), 1);
       OK(AnyOf(_), 1);
-      OK(NoneOf(_), 1);
-      OK(!Eq(1) && (Ge(1) || Lt(1)), 1);
    }
 
-   Case(5)
+   Case(case 5)
+   {
+      std::vector<int> a = {1, 2, 3};
+      OK(ListOf(1, 6, 3), a);
+   }
+
+
+   Case(case 6)
    {
       BLOCK()
       {
       }
    }
+}
 
-   Case(6)
-   {
-      MOCK(time, time_t(time_t*)).Once().Return((time_t)0);
-      MOCKS(time, time_t, (time_t*), Once()) { return 0; };
-      STUB(time, time_t(time_t*), time_fake);
-   }
+static int foobar1(int a) { return a + 1; }
+static int foobar2(int a) { return a + 2; }
+static int foobar3(int a) { return a + 3; }
+static int foobar4(int a) { return a + 4; }
+static int foobar_fake(int a) { return 0; }
+
+CASE(stub & mock)
+{
+   MOCK(foobar1, int(int)).Once().Return(0);
+   MOCKS(foobar2, int, (int), Once()) { return 0; };
+   STUB(foobar3, int(int), foobar_fake);
+   STUBS(foobar4, int, (int)) { return 0; };
+
+   foobar1(1);
+   foobar2(1);
+   foobar3(1);
+   foobar4(1);
 }

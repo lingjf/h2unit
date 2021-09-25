@@ -107,7 +107,7 @@ SUITE(stringify simple)
 
    Case(char*)
    {
-      char* a = "hello world";
+      char* a = (char*)"hello world";
       OK("hello world", h2::h2_stringify<char*>(a));
       OK(ListOf("\033{+dark gray}", "\"", "\033{-dark gray}",
                 "hello world",
