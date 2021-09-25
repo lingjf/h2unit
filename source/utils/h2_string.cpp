@@ -59,10 +59,10 @@ h2_inline h2_string h2_string::escape() const
    h2_string s;
    for (auto& c : *this) {
       switch (c) {
-      case '\n': s.append("\\n"); break;
-      case '\r': s.append("\\r"); break;
-      case '\t': s.append("\\t"); break;
-      default: s.push_back(c); break;
+         case '\n': s.append("\\n"); break;
+         case '\r': s.append("\\r"); break;
+         case '\t': s.append("\\t"); break;
+         default: s.push_back(c); break;
       }
    }
    return s;

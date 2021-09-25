@@ -23,64 +23,64 @@ struct h2_json_lexical {
       int state = st_idle, stash_state = st_idle;
       for (p = json_string; *p && json_length--; p++) {
          switch (state) {
-         case st_idle:
-            if (::isspace(*p)) {
-               continue;
-            } else if (strchr("{:}[,]", *p)) {
-               new_lexis(lexical, p, 1);
-            } else {
-               pending = p;
-               state = st_normal;
-               if ('\"' == *p) {
-                  state = st_double_quote;
-               } else if ('\'' == *p) {
-                  state = st_single_quote;
-               } else if ('/' == *p) {
-                  state = st_pattern;
+            case st_idle:
+               if (::isspace(*p)) {
+                  continue;
+               } else if (strchr("{:}[,]", *p)) {
+                  new_lexis(lexical, p, 1);
+               } else {
+                  pending = p;
+                  state = st_normal;
+                  if ('\"' == *p) {
+                     state = st_double_quote;
+                  } else if ('\'' == *p) {
+                     state = st_single_quote;
+                  } else if ('/' == *p) {
+                     state = st_pattern;
+                  } else if ('\\' == *p) {
+                     stash_state = state, state = st_escape;
+                  }
+               }
+               break;
+            case st_escape:
+               state = stash_state;
+               break;
+            case st_single_quote:
+               if ('\'' == *p) {
+                  new_lexis(lexical, pending, (int)((p + 1) - pending));
+                  pending = nullptr;
+                  state = st_idle;
                } else if ('\\' == *p) {
                   stash_state = state, state = st_escape;
                }
-            }
-            break;
-         case st_escape:
-            state = stash_state;
-            break;
-         case st_single_quote:
-            if ('\'' == *p) {
-               new_lexis(lexical, pending, (int)((p + 1) - pending));
-               pending = nullptr;
-               state = st_idle;
-            } else if ('\\' == *p) {
-               stash_state = state, state = st_escape;
-            }
-            break;
-         case st_double_quote:
-            if ('\"' == *p) {
-               new_lexis(lexical, pending, (int)((p + 1) - pending));
-               pending = nullptr;
-               state = st_idle;
-            } else if ('\\' == *p) {
-               stash_state = state, state = st_escape;
-            }
-            break;
-         case st_pattern:
-            if ('/' == *p) {
-               new_lexis(lexical, pending, (int)((p + 1) - pending));
-               pending = nullptr;
-               state = st_idle;
-            }
-            /* no escape char */
-            break;
-         case st_normal:
-            if (strchr("{:}[,]", *p)) {
-               new_lexis(lexical, pending, (int)(p - pending));
-               pending = nullptr;
-               new_lexis(lexical, p, 1);
-               state = st_idle;
-            } else if ('\\' == *p) {
-               stash_state = state, state = st_escape;
-            }
-            break;
+               break;
+            case st_double_quote:
+               if ('\"' == *p) {
+                  new_lexis(lexical, pending, (int)((p + 1) - pending));
+                  pending = nullptr;
+                  state = st_idle;
+               } else if ('\\' == *p) {
+                  stash_state = state, state = st_escape;
+               }
+               break;
+            case st_pattern:
+               if ('/' == *p) {
+                  new_lexis(lexical, pending, (int)((p + 1) - pending));
+                  pending = nullptr;
+                  state = st_idle;
+               }
+               /* no escape char */
+               break;
+            case st_normal:
+               if (strchr("{:}[,]", *p)) {
+                  new_lexis(lexical, pending, (int)(p - pending));
+                  pending = nullptr;
+                  new_lexis(lexical, p, 1);
+                  state = st_idle;
+               } else if ('\\' == *p) {
+                  stash_state = state, state = st_escape;
+               }
+               break;
          }
       }
       if (pending) {

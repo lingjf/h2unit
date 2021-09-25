@@ -15,37 +15,37 @@ struct h2_json_select {
       const char *s = nullptr, *p = selector;
       do {
          switch (state) {
-         case st_idle:
-            if (*p == '.') {
-               state = st_in_dot;
-               s = p + 1;
-            } else if (*p == '[') {
-               state = st_in_bracket;
-               s = p + 1;
-            }
-            break;
-         case st_in_dot:
-            if (*p == '.') {  // end a part
-               if (s < p) add(s, p - 1, true);
-               // restart a new part
-               state = st_in_dot;
-               s = p + 1;
-            } else if (*p == '[') {  // end a part
-               if (s < p) add(s, p - 1, true);
-               // restart a new part
-               state = st_in_bracket;
-               s = p + 1;
-            } else if (*p == '\0') {
-               if (s < p) add(s, p - 1, true);
-               state = st_idle;
-            }
-            break;
-         case st_in_bracket:
-            if (*p == ']') {
-               if (s < p) add(s, p - 1, false);
-               state = st_idle;
-            }
-            break;
+            case st_idle:
+               if (*p == '.') {
+                  state = st_in_dot;
+                  s = p + 1;
+               } else if (*p == '[') {
+                  state = st_in_bracket;
+                  s = p + 1;
+               }
+               break;
+            case st_in_dot:
+               if (*p == '.') {  // end a part
+                  if (s < p) add(s, p - 1, true);
+                  // restart a new part
+                  state = st_in_dot;
+                  s = p + 1;
+               } else if (*p == '[') {  // end a part
+                  if (s < p) add(s, p - 1, true);
+                  // restart a new part
+                  state = st_in_bracket;
+                  s = p + 1;
+               } else if (*p == '\0') {
+                  if (s < p) add(s, p - 1, true);
+                  state = st_idle;
+               }
+               break;
+            case st_in_bracket:
+               if (*p == ']') {
+                  if (s < p) add(s, p - 1, false);
+                  state = st_idle;
+               }
+               break;
          }
       } while (*p++);
    }

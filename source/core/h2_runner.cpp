@@ -72,6 +72,8 @@ h2_inline void h2_runner::shadow()
 
 h2_inline void h2_runner::enumerate()
 {
+   int cases = 0, i = 0;
+   ::printf("enumerating...");
    h2_list_for_each_entry (s, suites, h2_suite, x) {
       for (auto& setup : global_suite_setups) setup();
       s->setup();
@@ -83,7 +85,10 @@ h2_inline void h2_runner::enumerate()
          if (!(c->filtered = O.filter(ss(s->name), c->name, c->file, c->line)))
             unfiltered++;
       if (unfiltered == 0) s->filtered = O.filter(ss(s->name), "", s->file, s->line);
+      cases += s->cases.count();
+      if (10 * i + i * i < cases && i < (int)h2_shell::I().cww - 20) i += ::printf(".");
    }
+   ::printf("\33[2K\r");
 }
 
 h2_inline int h2_runner::main(int argc, const char** argv)
@@ -111,7 +116,7 @@ h2_inline int h2_runner::main(int argc, const char** argv)
          for (auto& setup : global_suite_setups) setup();
          s->setup();
          h2_list_for_each_entry (c, s->cases, h2_case, x) {
-            if ((0 < O.break_after_fails && O.break_after_fails <= stats.failed) || (O.only_previous_failed && !c->previous_failed)) c->ignored = true;
+            if ((0 < O.break_after_fails && O.break_after_fails <= stats.failed) || (O.last_failed && !c->previous_failed)) c->ignored = true;
             if (c->ignored)
                stats.ignored++, s->stats.ignored++;
             else if (c->filtered)

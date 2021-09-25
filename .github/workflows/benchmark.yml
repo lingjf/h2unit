@@ -7,7 +7,7 @@ on:
 
 jobs:
 
-  msvc:
+  benchmark:
     runs-on: ${{matrix.os}}
     strategy:
       fail-fast: false
@@ -16,16 +16,16 @@ jobs:
     name: ${{matrix.os}}-benchmark
     steps:
       - uses: actions/checkout@v2
-      - name: configure benchmark 1
+      - name: configure benchmark h2unit.h
         run: mkdir b1 && cd b1 && cmake -DH2UNIT1=ON ../benchmark
-      - name: configure benchmark 2
+      - name: configure benchmark h2unit.hpp/cpp
         run: mkdir b2 && cd b2 && cmake -DH2UNIT2=ON ../benchmark
-      - name: build benchmark 1
-        run: cmake --build b1
-      - name: build benchmark 2
-        run: cmake --build b2
-      - name: run benchmark 1
+      - name: build benchmark h2unit.h
+        run: cmake --build b1 -j2
+      - name: build benchmark h2unit.hpp/cpp
+        run: cmake --build b2 -j2
+      - name: run benchmark h2unit.h
         run: ./b1/a.out
-      - name: run benchmark 2
+      - name: run benchmark h2unit.hpp/cpp
         run: ./b2/a.out
 

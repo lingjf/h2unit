@@ -14,7 +14,7 @@ struct h2_option {
    const char* debug = nullptr;
    bool colorful = true;
    bool progressing = true;
-   bool only_previous_failed = false;
+   bool last_failed = false;
    bool shuffle_cases = false;
    bool memory_check = true;
    bool exception_as_fail = false;

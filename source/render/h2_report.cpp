@@ -2,37 +2,38 @@ struct h2_report_impl {
    h2_list x;
    int suites = 0, cases = 0;
    int suite_index = 0, suite_case_index = 0, runner_case_index = 0;
-   clock_t runner_cost = 0, suite_cost = 0, case_cost = 0;
+   std::chrono::time_point<std::chrono::system_clock> runner_start, suite_start, case_start;
+   long long runner_cost, suite_cost, case_cost;
 
    virtual void on_runner_start(h2_runner* r)
    {
       suites = r->suites.count();
       h2_list_for_each_entry (s, r->suites, h2_suite, x)
          cases += s->cases.count();
-      runner_cost = ::clock();
+      runner_start = std::chrono::system_clock::now();
    }
    virtual void on_runner_endup(h2_runner* r)
    {
-      runner_cost = ::clock() - runner_cost;
+      runner_cost = (long long)std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::system_clock::now() - runner_start).count();
    }
    virtual void on_suite_start(h2_suite* s)
    {
       suite_case_index = 0;
-      suite_cost = ::clock();
+      suite_start = std::chrono::system_clock::now();
    }
    virtual void on_suite_endup(h2_suite* s)
    {
-      suite_cost = ::clock() - suite_cost;
+      suite_cost = (long long)std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::system_clock::now() - suite_start).count();
    }
    virtual void on_case_start(h2_suite* s, h2_case* c)
    {
       ++suite_case_index;
-      case_cost = ::clock();
+      case_start = std::chrono::system_clock::now();
    }
    virtual void on_case_endup(h2_suite* s, h2_case* c)
    {
       ++runner_case_index;
-      case_cost = ::clock() - case_cost;
+      case_cost = (long long)std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::system_clock::now() - case_start).count();
    }
 };
 
@@ -83,34 +84,6 @@ struct h2_report_list : h2_report_impl {
 };
 
 struct h2_report_console : h2_report_impl {
-   const char* format_duration(clock_t ticks)
-   {
-      double ms = ticks * 1000.0 / CLOCKS_PER_SEC;
-      static char st[128];
-      if (ms < 100)
-         sprintf(st, "%d milliseconds", (int)ceil(ms));
-      else if (ms < 1000 * 60)
-         sprintf(st, "%.2g seconds", ms / 1000.0);
-      else if (ms < 1000 * 60 * 60)
-         sprintf(st, "%.2g minutes", ms / 6000.0);
-      else
-         sprintf(st, "%.2g hours", ms / 36000.0);
-
-      return st;
-   }
-   const char* format_volume(long long footprint)
-   {
-      static char st[128];
-      if (footprint < 1024)
-         sprintf(st, "%lld footprint", footprint);
-      else if (footprint < 1024 * 1024LL)
-         sprintf(st, "%.2gKB footprint", footprint / (double)1024);
-      else if (footprint < 1024 * 1024 * 1024LL)
-         sprintf(st, "%.2gMB footprint", footprint / (double)(1024 * 1024LL));
-      else
-         sprintf(st, "%.2gGB footprint", footprint / (double)(1024 * 1024 * 1024LL));
-      return st;
-   }
    void comma_status(int n, const char* style, const char* name, int& c)
    {
       if (c++) h2_color::prints("dark gray", ", ");
@@ -229,7 +202,7 @@ struct h2_report_console : h2_report_impl {
          }
          if (0 < s->stats.footprint) {
             h2_color::prints("dark gray", ", ");
-            h2_color::prints("", "%s", format_volume(s->stats.footprint));
+            h2_color::prints("", "%s footprint", format_volume(s->stats.footprint));
          }
          if (1 < suite_cost) {
             h2_color::prints("dark gray", ", ");
@@ -262,7 +235,7 @@ struct h2_report_console : h2_report_impl {
             print_bar(true, "green", "Passed ", s, c, false);
             h2_sentence ad;
             if (0 < c->asserts) ad.printf("dark gray", ad.width() ? ", " : "").printf("", "%d assert%s", c->asserts, 1 < c->asserts ? "s" : "");
-            if (0 < c->footprint) ad.printf("dark gray", ad.width() ? ", " : "").printf("", "%s", format_volume(c->footprint));
+            if (0 < c->footprint) ad.printf("dark gray", ad.width() ? ", " : "").printf("", "%s footprint", format_volume(c->footprint));
             if (0 < case_cost) ad.printf("dark gray", ad.width() ? ", " : "").printf("", "%s", format_duration(case_cost));
             if (ad.width()) h2_color::printl(gray("- ") + ad, false);
          }
@@ -333,10 +306,14 @@ h2_inline void h2_report::initialize()
    }
 }
 
+struct in_report {
+   in_report() { h2_report::I().in = true; }
+   ~in_report() { h2_report::I().in = false; }
+};
 /* clang-format off */
-h2_inline void h2_report::on_runner_start(h2_runner* r) { in = true; h2_list_for_each_entry (p, reports, h2_report_impl, x) p->on_runner_start(r); in = false; }
-h2_inline void h2_report::on_runner_endup(h2_runner* r) { in = true; h2_list_for_each_entry (p, reports, h2_report_impl, x) p->on_runner_endup(r); in = false; }
-h2_inline void h2_report::on_suite_start(h2_suite* s) { in = true; h2_list_for_each_entry (p, reports, h2_report_impl, x) p->on_suite_start(s); in = false; }
-h2_inline void h2_report::on_suite_endup(h2_suite* s) { in = true; h2_list_for_each_entry (p, reports, h2_report_impl, x) p->on_suite_endup(s); in = false; }
-h2_inline void h2_report::on_case_start(h2_suite* s, h2_case* c) { in = true; h2_list_for_each_entry (p, reports, h2_report_impl, x) p->on_case_start(s, c); in = false; }
-h2_inline void h2_report::on_case_endup(h2_suite* s, h2_case* c) { in = true; h2_list_for_each_entry (p, reports, h2_report_impl, x) p->on_case_endup(s, c); in = false; }
+h2_inline void h2_report::on_runner_start(h2_runner* r) { in_report t; h2_list_for_each_entry (p, reports, h2_report_impl, x) p->on_runner_start(r); }
+h2_inline void h2_report::on_runner_endup(h2_runner* r) { in_report t; h2_list_for_each_entry (p, reports, h2_report_impl, x) p->on_runner_endup(r); }
+h2_inline void h2_report::on_suite_start(h2_suite* s) { in_report t; h2_list_for_each_entry (p, reports, h2_report_impl, x) p->on_suite_start(s); }
+h2_inline void h2_report::on_suite_endup(h2_suite* s) { in_report t; h2_list_for_each_entry (p, reports, h2_report_impl, x) p->on_suite_endup(s); }
+h2_inline void h2_report::on_case_start(h2_suite* s, h2_case* c) { in_report t; h2_list_for_each_entry (p, reports, h2_report_impl, x) p->on_case_start(s, c); }
+h2_inline void h2_report::on_case_endup(h2_suite* s, h2_case* c) { in_report t; h2_list_for_each_entry (p, reports, h2_report_impl, x) p->on_case_endup(s, c); }

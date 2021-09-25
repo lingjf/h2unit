@@ -2,7 +2,7 @@ struct h2_report {
    h2_singleton(h2_report);
    static void initialize();
 
-   bool in = false;
+   bool in = true;
    long long escape_length = 0;
    h2_list reports;
    void on_runner_start(h2_runner* r);

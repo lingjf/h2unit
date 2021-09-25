@@ -611,73 +611,6 @@ then expect Foo::bar called 5 times, and 1st argument not equals 3, ignore check
 then expect Foo::bar called atleast 2 times, and 1st argument equals 4, 2nd equals "xyz", and inject Return value 44; <br>
 then expect Foo::bar called any times, and 1st argument equals 5, modify 2nd, and inject Return value 44. <br>
 
-#### 5.5. Others
-##### 5.5.1. unprotected commas
-
-C/C++ preprocessor can't parse MACRO arguments which contains comma in '<>' correctly. 
-
-A solution is wrapping such argument with parentheses '()'.
-
-##### 5.5.2. mprotect failure
-
-macOS (Mojave 10.14.6) macOS (Catalina 10.15.2) and later macOS mprotect fails, because [max_prot](https://stackoverflow.com/questions/60654834/using-mprotect-to-make-text-segment-writable-on-macos).
-
-```Shell
-   printf '\x07' | dd of=<executable> bs=1 seek=160 count=1 conv=notrunc
-```
-
-##### 5.5.3. private member method accessibility
-In order to STUB/MOCK class private member function successfully, `private` token is substituted with `public` using MACRO definition by default.
-
-Include `h2unit.h/hpp` before other header files.
-
-If test target is C language project, and `private` is used as normal token, define `TEST_C` in compiler options to prevent above substitution.
-
-```Shell
-   g++ -DTEST_C ...
-```
-
-##### 5.5.4. static function accessibility
-static function is unaccessible outside of source file. In order to STUB/MOCK such function successfully, there are two solutions:
-
-###### 5.5.4.1. solution 1: include source file in test file
-
-```C++
-   // test_module.cpp
-   #include "h2unit.h"
-   #include "module.c/cpp"
-   CASE(a test)
-   {
-      ...
-   }
-```
-
-###### 5.5.4.2. solution 2: STUB/MOCK by function string name
-
-```C++
-   static int a_static_function(char * str) {
-      ...
-   }
-```
-```C++
-   CASE(a test)
-   {
-      STUB("a_static_function", fake_function);
-      MOCK("a_static_function", int(char *)).Once().Return(11);
-   }
-```
-
-If function is overload function, arguments type should specified, i.e. C++ demangled function name.
-
-```C++
-   CASE(a test)
-   {
-      STUB("a_static_function(char*)", fake_function);
-      MOCK("a_static_function(char*)", int(char *)).Once().Return(11);
-   }
-```
-
-  `nm --demangle ./a.out | grep a_static_function` can find out demangled function name.
 
 ### 6. Extended JSON Compare 
 
@@ -1047,30 +980,6 @@ CASESS_T((short,int,long), (char,unsigned,double))  // (short,int,long)x(char,un
    gcovr -r . -e 'test_*' --html --html-details -o coverage.html
 ```
 
-# Compile speed
-In order to speed up compile progress, split header-only-single-file [h2unit.h](h2unit.h) into 
-two files: [h2unit.cpp](build/h2unit.cpp) and [h2unit.hpp](build/h2unit.hpp). Refer to [`print`](print/) for sample usage.
-
-twofiles speed up 2~3 times than onefile.
-
-# Execute options
-
-*    `-l` *list* out suites and cases
-*    `-m` Disable *memory* check(leak, overflow, trample, double free, asymmetric free)
-*    `-s` *shuffle* cases then test in random order if no previous fails
-*    `-b` [n] *break* test once n (default 1) cases failed
-*    `-n` Only test previous *failed* cases
-*    `-p` Disable test percentage *progressing*
-*    `-r` [n] repeat run n *rounds*
-*    `-c` Disable *colorful* output, black-white output
-*    `-x` Thrown *exception* is considered as failure
-*    `-d/D` *debug* mode, -D for gdb attach but requires password
-*    `-f` [n] *fold* json object or array, 0:unfold, 1:fold simple, 2:fold same, 3:fold missing peer
-*    `-y` *copy-paste* JSON C/C++ source code
-*    `-v` *verbose* output including successfull cases
-*    `-j` {path} generate *junit* compatible XML output
-*    `-i` {pattern} *include* filter, suite name or case name wildcard (?, *) matches, if pattern don't contains ? and *, wildcard change to contains. Default is `*` (include all)
-*    `-e` {pattern} *exclude* filter, default is ` ` (exclude nothing)
 
 # Support platform
 *    Linux gcc 5.5+ (regex support, SFINAE support), clang 7+, x86, x86_64, arm64(aarch64)
@@ -1084,10 +993,6 @@ twofiles speed up 2~3 times than onefile.
 *    MOCK function arguments up to 16 count
 *    sqrt() in math.h can be STUB/MOCK, because compiler insert sqrtsd ASM instruction directly instead of function call
 
-```Shell
-   LD_BIND_NOW=1 ./a.out 
-   gcc --Wl,z,now
-```
 
 
 

@@ -1,5 +1,5 @@
 
-/* v5.14 2021-09-25 09:37:25 */
+/* v5.14 2021-09-25 15:07:00 */
 /* https://github.com/lingjf/h2unit */
 /* Apache Licence 2.0 */
 
@@ -1030,7 +1030,7 @@ struct h2_option {
    const char* debug = nullptr;
    bool colorful = true;
    bool progressing = true;
-   bool only_previous_failed = false;
+   bool last_failed = false;
    bool shuffle_cases = false;
    bool memory_check = true;
    bool exception_as_fail = false;
@@ -3671,7 +3671,7 @@ static inline h2_ostringstream& h2_ok12(h2_defer_failure* d, h2_expr2<E, A> ea) 
 struct h2_timer : h2_once {
    const char* file;
    int line;
-   int ms;
+   int cpu_ms;
    clock_t start;
    h2_timer(int ms, const char* file, int line);
    ~h2_timer();
@@ -3684,7 +3684,7 @@ struct h2_report {
    h2_singleton(h2_report);
    static void initialize();
 
-   bool in = false;
+   bool in = true;
    long long escape_length = 0;
    h2_list reports;
    void on_runner_start(h2_runner* r);

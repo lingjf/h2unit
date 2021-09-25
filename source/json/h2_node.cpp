@@ -58,24 +58,24 @@ struct h2_json_node : h2_libc {
    h2_string quote_if(int quote)
    {
       switch (quote) {
-      case 1: return "'";
-      case 2: return "\"";
-      case 3: return "\\\"";
-      default: return "";
+         case 1: return "'";
+         case 2: return "\"";
+         case 3: return "\\\"";
+         default: return "";
       }
    }
 
    h2_string format_value(int quote)
    {
       switch (type) {
-      case t_null: return "null";
-      case t_boolean: return value_boolean ? "true" : "false";
-      case t_number: return (value_double - ::floor(value_double) == 0) ? std::to_string((long long)value_double).c_str() : std::to_string(value_double).c_str();
-      case t_string: return quote_if(quote) + value_string + quote_if(quote);
-      case t_pattern: return "/" + value_string + "/";
-      case t_array:
-      case t_object:
-      default: return "";
+         case t_null: return "null";
+         case t_boolean: return value_boolean ? "true" : "false";
+         case t_number: return (value_double - ::floor(value_double) == 0) ? std::to_string((long long)value_double).c_str() : std::to_string(value_double).c_str();
+         case t_string: return quote_if(quote) + value_string + quote_if(quote);
+         case t_pattern: return "/" + value_string + "/";
+         case t_array:
+         case t_object:
+         default: return "";
       }
    }
 

@@ -94,14 +94,14 @@ void* my_pthread(void* arg)
 const char* node_type_tostring(const int type)
 {
    switch (type) {
-   case h2::h2_json_node::t_absent: return "absent";
-   case h2::h2_json_node::t_null: return "null";
-   case h2::h2_json_node::t_boolean: return "boolean";
-   case h2::h2_json_node::t_number: return "number";
-   case h2::h2_json_node::t_string: return "string";
-   case h2::h2_json_node::t_pattern: return "pattern";
-   case h2::h2_json_node::t_array: return "array";
-   case h2::h2_json_node::t_object: return "object";
+      case h2::h2_json_node::t_absent: return "absent";
+      case h2::h2_json_node::t_null: return "null";
+      case h2::h2_json_node::t_boolean: return "boolean";
+      case h2::h2_json_node::t_number: return "number";
+      case h2::h2_json_node::t_string: return "string";
+      case h2::h2_json_node::t_pattern: return "pattern";
+      case h2::h2_json_node::t_array: return "array";
+      case h2::h2_json_node::t_object: return "object";
    }
    return "?";
 }

@@ -249,3 +249,26 @@ SUITE(number width)
       OK(8, h2::number_strlen(0xFFFFFFFF, 16));
    }
 }
+
+CASE(format_duration)
+{
+   OK("99 milliseconds", h2::format_duration(99));
+   OK("0.8 seconds", h2::format_duration(799));
+   OK("1 second", h2::format_duration(1000));
+   OK("8.2 seconds", h2::format_duration(1000 * 8 + 200));
+   OK("1 minute", h2::format_duration(1000 * 60));
+   OK("1.5 minutes", h2::format_duration(1000 * 60 + 1000 * 30));
+   OK("1 hour", h2::format_duration(1000 * 60 * 60));
+   OK("1.5 hours", h2::format_duration(1000 * 60 * 60 + 1000 * 60 * 30));
+}
+
+CASE(format_volume)
+{
+   OK("101", h2::format_volume(101));
+   OK("1KB", h2::format_volume(1024));
+   OK("1.5KB", h2::format_volume(1024 + 512));
+   OK("1MB", h2::format_volume(1024 * 1024));
+   OK("1.5MB", h2::format_volume(1024 * 1024 + 1024 * 512));
+   OK("1GB", h2::format_volume(1024 * 1024 * 1024));
+   OK("1.5GB", h2::format_volume(1024 * 1024 * 1024 + 1024 * 1024 * 512));
+}

@@ -8,6 +8,7 @@
 #include <iostream>  /* std::cout, std::streambuf */
 #include <memory>    /* std::allocator */
 #include <regex>     /* std::regex */
+#include <chrono>    /* wall time */
 #include <signal.h>  /* sigaction */
 #include <time.h>    /* clock */
 #include <typeinfo>  /* std::typeid, std::type_info */

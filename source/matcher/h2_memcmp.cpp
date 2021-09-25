@@ -2,12 +2,12 @@ static inline h2_string readable_size(size_t width, size_t nbits)
 {
    char t[64];
    switch (width) {
-   case 1: sprintf(t, "%d bit%s", (int)nbits, nbits > 1 ? "s" : ""); break;
-   case 8: sprintf(t, "%d byte%s", (int)(nbits / 8), nbits / 8 > 1 ? "s" : ""); break;
-   case 16: sprintf(t, "%d word%s", (int)(nbits / 16), nbits / 16 > 1 ? "s" : ""); break;
-   case 32: sprintf(t, "%d dword%s", (int)(nbits / 32), nbits / 32 > 1 ? "s" : ""); break;
-   case 64: sprintf(t, "%d qword%s", (int)(nbits / 64), nbits / 64 > 1 ? "s" : ""); break;
-   default: sprintf(t, "?"); break;
+      case 1: sprintf(t, "%d bit%s", (int)nbits, nbits > 1 ? "s" : ""); break;
+      case 8: sprintf(t, "%d byte%s", (int)(nbits / 8), nbits / 8 > 1 ? "s" : ""); break;
+      case 16: sprintf(t, "%d word%s", (int)(nbits / 16), nbits / 16 > 1 ? "s" : ""); break;
+      case 32: sprintf(t, "%d dword%s", (int)(nbits / 32), nbits / 32 > 1 ? "s" : ""); break;
+      case 64: sprintf(t, "%d qword%s", (int)(nbits / 64), nbits / 64 > 1 ? "s" : ""); break;
+      default: sprintf(t, "?"); break;
    }
    return h2_string(t);
 }

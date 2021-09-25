@@ -1,5 +1,5 @@
 
-/* v5.14 2021-09-25 09:37:25 */
+/* v5.14 2021-09-25 15:07:00 */
 /* https://github.com/lingjf/h2unit */
 /* Apache Licence 2.0 */
 #include "h2unit.hpp"
@@ -12,6 +12,7 @@
 #include <iostream>  /* std::cout, std::streambuf */
 #include <memory>    /* std::allocator */
 #include <regex>     /* std::regex */
+#include <chrono>    /* wall time */
 #include <signal.h>  /* sigaction */
 #include <time.h>    /* clock */
 #include <typeinfo>  /* std::typeid, std::type_info */
@@ -278,6 +279,35 @@ h2_inline const char* h2_numeric::sequence_number(size_t sequence, int shift)
    if (sequence < sizeof(st) / sizeof(st[0])) return st[sequence];
    sprintf(ss, "%dth", (int)sequence);
    return ss;
+}
+
+static inline const char* format_duration(long long ms)
+{
+   static char st[128];
+   if (ms < 100)
+      sprintf(st, "%lld milliseconds", ms);
+   else if (ms < 1000 * 60)
+      sprintf(st, "%.2g second%s", ms / 1000.0, ms == 1000 ? "" : "s");
+   else if (ms < 1000 * 60 * 60)
+      sprintf(st, "%.2g minute%s", ms / 60000.0, ms == 60000 ? "" : "s");
+   else
+      sprintf(st, "%.2g hour%s", ms / 3600000.0, ms == 3600000 ? "" : "s");
+
+   return st;
+}
+
+static inline const char* format_volume(long long footprint)
+{
+   static char st[128];
+   if (footprint < 1024LL)
+      sprintf(st, "%lld", footprint);
+   else if (footprint < 1024LL * 1024LL)
+      sprintf(st, "%.2gKB", footprint / 1024.0);
+   else if (footprint < 1024LL * 1024LL * 1024LL)
+      sprintf(st, "%.2gMB", footprint / (1024.0 * 1024.0));
+   else
+      sprintf(st, "%.2gGB", footprint / (1024.0 * 1024.0 * 1024.0));
+   return st;
 }
 // source/utils/h2_compare.cpp
 h2_inline bool h2_pattern::regex_match(const char* pattern, const char* subject, bool caseless)
@@ -664,10 +694,10 @@ h2_inline h2_string h2_string::escape() const
    h2_string s;
    for (auto& c : *this) {
       switch (c) {
-      case '\n': s.append("\\n"); break;
-      case '\r': s.append("\\r"); break;
-      case '\t': s.append("\\t"); break;
-      default: s.push_back(c); break;
+         case '\n': s.append("\\n"); break;
+         case '\r': s.append("\\r"); break;
+         case '\t': s.append("\\t"); break;
+         default: s.push_back(c); break;
       }
    }
    return s;
@@ -2110,24 +2140,24 @@ struct h2_json_node : h2_libc {
    h2_string quote_if(int quote)
    {
       switch (quote) {
-      case 1: return "'";
-      case 2: return "\"";
-      case 3: return "\\\"";
-      default: return "";
+         case 1: return "'";
+         case 2: return "\"";
+         case 3: return "\\\"";
+         default: return "";
       }
    }
 
    h2_string format_value(int quote)
    {
       switch (type) {
-      case t_null: return "null";
-      case t_boolean: return value_boolean ? "true" : "false";
-      case t_number: return (value_double - ::floor(value_double) == 0) ? std::to_string((long long)value_double).c_str() : std::to_string(value_double).c_str();
-      case t_string: return quote_if(quote) + value_string + quote_if(quote);
-      case t_pattern: return "/" + value_string + "/";
-      case t_array:
-      case t_object:
-      default: return "";
+         case t_null: return "null";
+         case t_boolean: return value_boolean ? "true" : "false";
+         case t_number: return (value_double - ::floor(value_double) == 0) ? std::to_string((long long)value_double).c_str() : std::to_string(value_double).c_str();
+         case t_string: return quote_if(quote) + value_string + quote_if(quote);
+         case t_pattern: return "/" + value_string + "/";
+         case t_array:
+         case t_object:
+         default: return "";
       }
    }
 
@@ -2194,64 +2224,64 @@ struct h2_json_lexical {
       int state = st_idle, stash_state = st_idle;
       for (p = json_string; *p && json_length--; p++) {
          switch (state) {
-         case st_idle:
-            if (::isspace(*p)) {
-               continue;
-            } else if (strchr("{:}[,]", *p)) {
-               new_lexis(lexical, p, 1);
-            } else {
-               pending = p;
-               state = st_normal;
-               if ('\"' == *p) {
-                  state = st_double_quote;
-               } else if ('\'' == *p) {
-                  state = st_single_quote;
-               } else if ('/' == *p) {
-                  state = st_pattern;
+            case st_idle:
+               if (::isspace(*p)) {
+                  continue;
+               } else if (strchr("{:}[,]", *p)) {
+                  new_lexis(lexical, p, 1);
+               } else {
+                  pending = p;
+                  state = st_normal;
+                  if ('\"' == *p) {
+                     state = st_double_quote;
+                  } else if ('\'' == *p) {
+                     state = st_single_quote;
+                  } else if ('/' == *p) {
+                     state = st_pattern;
+                  } else if ('\\' == *p) {
+                     stash_state = state, state = st_escape;
+                  }
+               }
+               break;
+            case st_escape:
+               state = stash_state;
+               break;
+            case st_single_quote:
+               if ('\'' == *p) {
+                  new_lexis(lexical, pending, (int)((p + 1) - pending));
+                  pending = nullptr;
+                  state = st_idle;
                } else if ('\\' == *p) {
                   stash_state = state, state = st_escape;
                }
-            }
-            break;
-         case st_escape:
-            state = stash_state;
-            break;
-         case st_single_quote:
-            if ('\'' == *p) {
-               new_lexis(lexical, pending, (int)((p + 1) - pending));
-               pending = nullptr;
-               state = st_idle;
-            } else if ('\\' == *p) {
-               stash_state = state, state = st_escape;
-            }
-            break;
-         case st_double_quote:
-            if ('\"' == *p) {
-               new_lexis(lexical, pending, (int)((p + 1) - pending));
-               pending = nullptr;
-               state = st_idle;
-            } else if ('\\' == *p) {
-               stash_state = state, state = st_escape;
-            }
-            break;
-         case st_pattern:
-            if ('/' == *p) {
-               new_lexis(lexical, pending, (int)((p + 1) - pending));
-               pending = nullptr;
-               state = st_idle;
-            }
-            /* no escape char */
-            break;
-         case st_normal:
-            if (strchr("{:}[,]", *p)) {
-               new_lexis(lexical, pending, (int)(p - pending));
-               pending = nullptr;
-               new_lexis(lexical, p, 1);
-               state = st_idle;
-            } else if ('\\' == *p) {
-               stash_state = state, state = st_escape;
-            }
-            break;
+               break;
+            case st_double_quote:
+               if ('\"' == *p) {
+                  new_lexis(lexical, pending, (int)((p + 1) - pending));
+                  pending = nullptr;
+                  state = st_idle;
+               } else if ('\\' == *p) {
+                  stash_state = state, state = st_escape;
+               }
+               break;
+            case st_pattern:
+               if ('/' == *p) {
+                  new_lexis(lexical, pending, (int)((p + 1) - pending));
+                  pending = nullptr;
+                  state = st_idle;
+               }
+               /* no escape char */
+               break;
+            case st_normal:
+               if (strchr("{:}[,]", *p)) {
+                  new_lexis(lexical, pending, (int)(p - pending));
+                  pending = nullptr;
+                  new_lexis(lexical, p, 1);
+                  state = st_idle;
+               } else if ('\\' == *p) {
+                  stash_state = state, state = st_escape;
+               }
+               break;
          }
       }
       if (pending) {
@@ -2414,37 +2444,37 @@ struct h2_json_select {
       const char *s = nullptr, *p = selector;
       do {
          switch (state) {
-         case st_idle:
-            if (*p == '.') {
-               state = st_in_dot;
-               s = p + 1;
-            } else if (*p == '[') {
-               state = st_in_bracket;
-               s = p + 1;
-            }
-            break;
-         case st_in_dot:
-            if (*p == '.') {  // end a part
-               if (s < p) add(s, p - 1, true);
-               // restart a new part
-               state = st_in_dot;
-               s = p + 1;
-            } else if (*p == '[') {  // end a part
-               if (s < p) add(s, p - 1, true);
-               // restart a new part
-               state = st_in_bracket;
-               s = p + 1;
-            } else if (*p == '\0') {
-               if (s < p) add(s, p - 1, true);
-               state = st_idle;
-            }
-            break;
-         case st_in_bracket:
-            if (*p == ']') {
-               if (s < p) add(s, p - 1, false);
-               state = st_idle;
-            }
-            break;
+            case st_idle:
+               if (*p == '.') {
+                  state = st_in_dot;
+                  s = p + 1;
+               } else if (*p == '[') {
+                  state = st_in_bracket;
+                  s = p + 1;
+               }
+               break;
+            case st_in_dot:
+               if (*p == '.') {  // end a part
+                  if (s < p) add(s, p - 1, true);
+                  // restart a new part
+                  state = st_in_dot;
+                  s = p + 1;
+               } else if (*p == '[') {  // end a part
+                  if (s < p) add(s, p - 1, true);
+                  // restart a new part
+                  state = st_in_bracket;
+                  s = p + 1;
+               } else if (*p == '\0') {
+                  if (s < p) add(s, p - 1, true);
+                  state = st_idle;
+               }
+               break;
+            case st_in_bracket:
+               if (*p == ']') {
+                  if (s < p) add(s, p - 1, false);
+                  state = st_idle;
+               }
+               break;
          }
       } while (*p++);
    }
@@ -2529,21 +2559,21 @@ struct h2_json_match {
    {
       if (!e || !a) return false;
       switch (e->type) {
-      case h2_json_node::t_null:
-         return a->is_null();
-      case h2_json_node::t_boolean:
-         return a->is_bool() && e->value_boolean == a->value_boolean;
-      case h2_json_node::t_number:
-         return a->is_number() && ::fabs(e->value_double - a->value_double) < 0.00001;
-      case h2_json_node::t_string:
-         return a->is_string() && e->value_string.equals(a->value_string, caseless);
-      case h2_json_node::t_pattern:
-         return a->is_string() && h2_pattern::match(e->value_string.c_str(), a->value_string.c_str(), caseless);
-      case h2_json_node::t_array:
-         return a->is_array() && match_array(e, a, caseless);
-      case h2_json_node::t_object:
-         return a->is_object() && match_object(e, a, caseless);
-      default: return false;
+         case h2_json_node::t_null:
+            return a->is_null();
+         case h2_json_node::t_boolean:
+            return a->is_bool() && e->value_boolean == a->value_boolean;
+         case h2_json_node::t_number:
+            return a->is_number() && ::fabs(e->value_double - a->value_double) < 0.00001;
+         case h2_json_node::t_string:
+            return a->is_string() && e->value_string.equals(a->value_string, caseless);
+         case h2_json_node::t_pattern:
+            return a->is_string() && h2_pattern::match(e->value_string.c_str(), a->value_string.c_str(), caseless);
+         case h2_json_node::t_array:
+            return a->is_array() && match_array(e, a, caseless);
+         case h2_json_node::t_object:
+            return a->is_object() && match_object(e, a, caseless);
+         default: return false;
       }
    }
 
@@ -2851,12 +2881,12 @@ static inline h2_string readable_size(size_t width, size_t nbits)
 {
    char t[64];
    switch (width) {
-   case 1: sprintf(t, "%d bit%s", (int)nbits, nbits > 1 ? "s" : ""); break;
-   case 8: sprintf(t, "%d byte%s", (int)(nbits / 8), nbits / 8 > 1 ? "s" : ""); break;
-   case 16: sprintf(t, "%d word%s", (int)(nbits / 16), nbits / 16 > 1 ? "s" : ""); break;
-   case 32: sprintf(t, "%d dword%s", (int)(nbits / 32), nbits / 32 > 1 ? "s" : ""); break;
-   case 64: sprintf(t, "%d qword%s", (int)(nbits / 64), nbits / 64 > 1 ? "s" : ""); break;
-   default: sprintf(t, "?"); break;
+      case 1: sprintf(t, "%d bit%s", (int)nbits, nbits > 1 ? "s" : ""); break;
+      case 8: sprintf(t, "%d byte%s", (int)(nbits / 8), nbits / 8 > 1 ? "s" : ""); break;
+      case 16: sprintf(t, "%d word%s", (int)(nbits / 16), nbits / 16 > 1 ? "s" : ""); break;
+      case 32: sprintf(t, "%d dword%s", (int)(nbits / 32), nbits / 32 > 1 ? "s" : ""); break;
+      case 64: sprintf(t, "%d qword%s", (int)(nbits / 64), nbits / 64 > 1 ? "s" : ""); break;
+      default: sprintf(t, "?"); break;
    }
    return h2_string(t);
 }
@@ -5069,6 +5099,8 @@ h2_inline void h2_runner::shadow()
 
 h2_inline void h2_runner::enumerate()
 {
+   int cases = 0, i = 0;
+   ::printf("enumerating...");
    h2_list_for_each_entry (s, suites, h2_suite, x) {
       for (auto& setup : global_suite_setups) setup();
       s->setup();
@@ -5080,7 +5112,10 @@ h2_inline void h2_runner::enumerate()
          if (!(c->filtered = O.filter(ss(s->name), c->name, c->file, c->line)))
             unfiltered++;
       if (unfiltered == 0) s->filtered = O.filter(ss(s->name), "", s->file, s->line);
+      cases += s->cases.count();
+      if (10 * i + i * i < cases && i < (int)h2_shell::I().cww - 20) i += ::printf(".");
    }
+   ::printf("\33[2K\r");
 }
 
 h2_inline int h2_runner::main(int argc, const char** argv)
@@ -5108,7 +5143,7 @@ h2_inline int h2_runner::main(int argc, const char** argv)
          for (auto& setup : global_suite_setups) setup();
          s->setup();
          h2_list_for_each_entry (c, s->cases, h2_case, x) {
-            if ((0 < O.break_after_fails && O.break_after_fails <= stats.failed) || (O.only_previous_failed && !c->previous_failed)) c->ignored = true;
+            if ((0 < O.break_after_fails && O.break_after_fails <= stats.failed) || (O.last_failed && !c->previous_failed)) c->ignored = true;
             if (c->ignored)
                stats.ignored++, s->stats.ignored++;
             else if (c->filtered)
@@ -5179,7 +5214,7 @@ h2_inline h2_defer_failure::~h2_defer_failure()
    }
 }
 // source/assert/h2_timer.cpp
-h2_inline h2_timer::h2_timer(int ms_, const char* file_, int line_) : file(file_), line(line_), ms(ms_)
+h2_inline h2_timer::h2_timer(int ms_, const char* file_, int line_) : file(file_), line(line_), cpu_ms(ms_)
 {
    start = ::clock();
 }
@@ -5188,9 +5223,9 @@ h2_inline h2_timer::~h2_timer()
 {
    h2_assert_g();
    double delta = (::clock() - start) * 1000.0 / CLOCKS_PER_SEC;
-   if (ms < delta) {
+   if (cpu_ms < delta) {
       h2_sentence st = "performance expect < ";
-      st.printf("green", "%d", ms).printf("", " ms, but actually cost ").printf("red", "%d", (int)delta).printf("", " ms");
+      st.printf("green", "%d", cpu_ms).printf("", " ms, but actually cost ").printf("red", "%d", (int)delta).printf("", " ms");
       h2_fail_g(h2_fail::new_normal(st, file, line));
    }
 }
@@ -5346,11 +5381,11 @@ static inline void fmt_char(char c, bool eq, const char* style, h2_sentence& sen
    char t_style[32] = "";
    if (!eq) strcpy(t_style, style);
    switch (c) {
-   case '\n': sentence.printf(t_style, "␍"); break;
-   case '\r': sentence.printf(t_style, "␊"); break;
-   case '\t': sentence.printf(t_style, "␉"); break;
-   case '\0': sentence.printf(t_style, "␀"); break;
-   default: sentence.printf(t_style, "%c", c); break;
+      case '\n': sentence.printf(t_style, "␍"); break;
+      case '\r': sentence.printf(t_style, "␊"); break;
+      case '\t': sentence.printf(t_style, "␉"); break;
+      case '\0': sentence.printf(t_style, "␀"); break;
+      default: sentence.printf(t_style, "%c", c); break;
    }
 }
 
@@ -5435,12 +5470,12 @@ struct h2_fail_memcmp : h2_fail_unexpect {
       h2_paragraph e_paragraph, a_paragraph;
       size_t bytes_per_row = 0;
       switch (width) {
-      case 1: print_bits(e_paragraph, a_paragraph, bytes_per_row = 4); break;
-      case 8: print_ints<unsigned char>(e_paragraph, a_paragraph, bytes_per_row = (h2_shell::I().cww < 108 ? 8 : 16)); break;
-      case 16: print_ints<unsigned short>(e_paragraph, a_paragraph, bytes_per_row = 16); break;
-      case 32: print_ints<unsigned int>(e_paragraph, a_paragraph, bytes_per_row = 16); break;
-      case 64: print_ints<unsigned long long>(e_paragraph, a_paragraph, bytes_per_row = 16); break;
-      default: break;
+         case 1: print_bits(e_paragraph, a_paragraph, bytes_per_row = 4); break;
+         case 8: print_ints<unsigned char>(e_paragraph, a_paragraph, bytes_per_row = (h2_shell::I().cww < 108 ? 8 : 16)); break;
+         case 16: print_ints<unsigned short>(e_paragraph, a_paragraph, bytes_per_row = 16); break;
+         case 32: print_ints<unsigned int>(e_paragraph, a_paragraph, bytes_per_row = 16); break;
+         case 64: print_ints<unsigned long long>(e_paragraph, a_paragraph, bytes_per_row = 16); break;
+         default: break;
       }
       h2_color::printl(h2_layout::split(e_paragraph, a_paragraph, "expect", "actual", bytes_per_row * 8 / width, 'x', h2_shell::I().cww));
    }
@@ -5635,37 +5670,38 @@ struct h2_report_impl {
    h2_list x;
    int suites = 0, cases = 0;
    int suite_index = 0, suite_case_index = 0, runner_case_index = 0;
-   clock_t runner_cost = 0, suite_cost = 0, case_cost = 0;
+   std::chrono::time_point<std::chrono::system_clock> runner_start, suite_start, case_start;
+   long long runner_cost, suite_cost, case_cost;
 
    virtual void on_runner_start(h2_runner* r)
    {
       suites = r->suites.count();
       h2_list_for_each_entry (s, r->suites, h2_suite, x)
          cases += s->cases.count();
-      runner_cost = ::clock();
+      runner_start = std::chrono::system_clock::now();
    }
    virtual void on_runner_endup(h2_runner* r)
    {
-      runner_cost = ::clock() - runner_cost;
+      runner_cost = (long long)std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::system_clock::now() - runner_start).count();
    }
    virtual void on_suite_start(h2_suite* s)
    {
       suite_case_index = 0;
-      suite_cost = ::clock();
+      suite_start = std::chrono::system_clock::now();
    }
    virtual void on_suite_endup(h2_suite* s)
    {
-      suite_cost = ::clock() - suite_cost;
+      suite_cost = (long long)std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::system_clock::now() - suite_start).count();
    }
    virtual void on_case_start(h2_suite* s, h2_case* c)
    {
       ++suite_case_index;
-      case_cost = ::clock();
+      case_start = std::chrono::system_clock::now();
    }
    virtual void on_case_endup(h2_suite* s, h2_case* c)
    {
       ++runner_case_index;
-      case_cost = ::clock() - case_cost;
+      case_cost = (long long)std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::system_clock::now() - case_start).count();
    }
 };
 
@@ -5716,34 +5752,6 @@ struct h2_report_list : h2_report_impl {
 };
 
 struct h2_report_console : h2_report_impl {
-   const char* format_duration(clock_t ticks)
-   {
-      double ms = ticks * 1000.0 / CLOCKS_PER_SEC;
-      static char st[128];
-      if (ms < 100)
-         sprintf(st, "%d milliseconds", (int)ceil(ms));
-      else if (ms < 1000 * 60)
-         sprintf(st, "%.2g seconds", ms / 1000.0);
-      else if (ms < 1000 * 60 * 60)
-         sprintf(st, "%.2g minutes", ms / 6000.0);
-      else
-         sprintf(st, "%.2g hours", ms / 36000.0);
-
-      return st;
-   }
-   const char* format_volume(long long footprint)
-   {
-      static char st[128];
-      if (footprint < 1024)
-         sprintf(st, "%lld footprint", footprint);
-      else if (footprint < 1024 * 1024LL)
-         sprintf(st, "%.2gKB footprint", footprint / (double)1024);
-      else if (footprint < 1024 * 1024 * 1024LL)
-         sprintf(st, "%.2gMB footprint", footprint / (double)(1024 * 1024LL));
-      else
-         sprintf(st, "%.2gGB footprint", footprint / (double)(1024 * 1024 * 1024LL));
-      return st;
-   }
    void comma_status(int n, const char* style, const char* name, int& c)
    {
       if (c++) h2_color::prints("dark gray", ", ");
@@ -5862,7 +5870,7 @@ struct h2_report_console : h2_report_impl {
          }
          if (0 < s->stats.footprint) {
             h2_color::prints("dark gray", ", ");
-            h2_color::prints("", "%s", format_volume(s->stats.footprint));
+            h2_color::prints("", "%s footprint", format_volume(s->stats.footprint));
          }
          if (1 < suite_cost) {
             h2_color::prints("dark gray", ", ");
@@ -5895,7 +5903,7 @@ struct h2_report_console : h2_report_impl {
             print_bar(true, "green", "Passed ", s, c, false);
             h2_sentence ad;
             if (0 < c->asserts) ad.printf("dark gray", ad.width() ? ", " : "").printf("", "%d assert%s", c->asserts, 1 < c->asserts ? "s" : "");
-            if (0 < c->footprint) ad.printf("dark gray", ad.width() ? ", " : "").printf("", "%s", format_volume(c->footprint));
+            if (0 < c->footprint) ad.printf("dark gray", ad.width() ? ", " : "").printf("", "%s footprint", format_volume(c->footprint));
             if (0 < case_cost) ad.printf("dark gray", ad.width() ? ", " : "").printf("", "%s", format_duration(case_cost));
             if (ad.width()) h2_color::printl(gray("- ") + ad, false);
          }
@@ -5966,13 +5974,17 @@ h2_inline void h2_report::initialize()
    }
 }
 
+struct in_report {
+   in_report() { h2_report::I().in = true; }
+   ~in_report() { h2_report::I().in = false; }
+};
 /* clang-format off */
-h2_inline void h2_report::on_runner_start(h2_runner* r) { in = true; h2_list_for_each_entry (p, reports, h2_report_impl, x) p->on_runner_start(r); in = false; }
-h2_inline void h2_report::on_runner_endup(h2_runner* r) { in = true; h2_list_for_each_entry (p, reports, h2_report_impl, x) p->on_runner_endup(r); in = false; }
-h2_inline void h2_report::on_suite_start(h2_suite* s) { in = true; h2_list_for_each_entry (p, reports, h2_report_impl, x) p->on_suite_start(s); in = false; }
-h2_inline void h2_report::on_suite_endup(h2_suite* s) { in = true; h2_list_for_each_entry (p, reports, h2_report_impl, x) p->on_suite_endup(s); in = false; }
-h2_inline void h2_report::on_case_start(h2_suite* s, h2_case* c) { in = true; h2_list_for_each_entry (p, reports, h2_report_impl, x) p->on_case_start(s, c); in = false; }
-h2_inline void h2_report::on_case_endup(h2_suite* s, h2_case* c) { in = true; h2_list_for_each_entry (p, reports, h2_report_impl, x) p->on_case_endup(s, c); in = false; }
+h2_inline void h2_report::on_runner_start(h2_runner* r) { in_report t; h2_list_for_each_entry (p, reports, h2_report_impl, x) p->on_runner_start(r); }
+h2_inline void h2_report::on_runner_endup(h2_runner* r) { in_report t; h2_list_for_each_entry (p, reports, h2_report_impl, x) p->on_runner_endup(r); }
+h2_inline void h2_report::on_suite_start(h2_suite* s) { in_report t; h2_list_for_each_entry (p, reports, h2_report_impl, x) p->on_suite_start(s); }
+h2_inline void h2_report::on_suite_endup(h2_suite* s) { in_report t; h2_list_for_each_entry (p, reports, h2_report_impl, x) p->on_suite_endup(s); }
+h2_inline void h2_report::on_case_start(h2_suite* s, h2_case* c) { in_report t; h2_list_for_each_entry (p, reports, h2_report_impl, x) p->on_case_start(s, c); }
+h2_inline void h2_report::on_case_endup(h2_suite* s, h2_case* c) { in_report t; h2_list_for_each_entry (p, reports, h2_report_impl, x) p->on_case_endup(s, c); }
 // source/render/h2_layout.cpp
 static inline h2_paragraph sentence_break(const h2_sentence& st, size_t width)
 {
@@ -6093,30 +6105,27 @@ h2_inline h2_paragraph h2_layout::seperate(const h2_sentence& up_sentence, const
 /* clang-format off */
 static inline void usage()
 {
-   ::printf("\033[33m╭─────────────────────────────────────────────────────────────────────────────╮\033[0m\n");
-   ::printf("\033[33m│\033[0m                \033[32mh2unit \033[31m%-5s \033[34;4mhttps://github.com/lingjf/h2unit\033[0m \033[0;36m               \033[33m│\033[0m\n", H2PP_STR(H2UNIT_VERSION));
-   ::printf("\033[33m╰─────────────────────────────────────────────────────────────────────────────╯\033[0m\n");
-
 #define H2_USAGE_SP "\033[90m│\033[0m"
-#define H2_USAGE_BR "\033[90m├─────┼───────────┼───────────────────────────────────────────────────────────┤\033[0m\n"
-   char b[] = "\033[90m┌─────┬───────────┬───────────────────────────────────────────────────────────┐\033[0m\n"
-              H2_USAGE_SP " -\033[36ml\033[0m  " H2_USAGE_SP "  \033[90m[\033[0mtype .\033[90m]\033[0m " H2_USAGE_SP " \033[36ml\033[0mist out suites and cases, type [suite case todo]         " H2_USAGE_SP "\n" H2_USAGE_BR
-              H2_USAGE_SP " -\033[36mm\033[0m  " H2_USAGE_SP "           " H2_USAGE_SP " Test cases without \033[36mm\033[0memory check                           " H2_USAGE_SP "\n" H2_USAGE_BR
-              H2_USAGE_SP " -\033[36ms\033[0m  " H2_USAGE_SP "           " H2_USAGE_SP " \033[36ms\033[0mhuffle cases, test in random order if no previous fails  " H2_USAGE_SP "\n" H2_USAGE_BR
-              H2_USAGE_SP " -\033[36mb\033[0m  " H2_USAGE_SP "    \033[90m[\033[0mn\033[90m]\033[0m    " H2_USAGE_SP " \033[36mb\033[0mreak test once n (default 1) cases failed                " H2_USAGE_SP "\n" H2_USAGE_BR
-              H2_USAGE_SP " -\033[36mn\033[0m  " H2_USAGE_SP "           " H2_USAGE_SP " O\033[36mn\033[0mly test previous failed cases                           " H2_USAGE_SP "\n" H2_USAGE_BR
-              H2_USAGE_SP " -\033[36mp\033[0m  " H2_USAGE_SP "           " H2_USAGE_SP " Disable test percentage \033[36mp\033[0mrogressing                       " H2_USAGE_SP "\n" H2_USAGE_BR
-              H2_USAGE_SP " -\033[36mr\033[0m  " H2_USAGE_SP "    \033[90m[\033[0mn\033[90m]\033[0m    " H2_USAGE_SP " Repeat test n (default 2) \033[36mr\033[0mounds                          " H2_USAGE_SP "\n" H2_USAGE_BR
-              H2_USAGE_SP " -\033[36mc\033[0m  " H2_USAGE_SP "           " H2_USAGE_SP " Output in black-white \033[36mc\033[0molor style                         " H2_USAGE_SP "\n" H2_USAGE_BR
-              H2_USAGE_SP " -\033[36mf\033[0m  " H2_USAGE_SP "    \033[90m[\033[0mn\033[90m]\033[0m    " H2_USAGE_SP " \033[36mf\033[0mold JSON object or array, more n more folded             " H2_USAGE_SP "\n" H2_USAGE_BR
-              H2_USAGE_SP " -\033[36my\033[0m  " H2_USAGE_SP "           " H2_USAGE_SP " Cop\033[36my\033[0m-paste JSON C/C++ source code                         " H2_USAGE_SP "\n" H2_USAGE_BR
-              H2_USAGE_SP " -\033[36mx\033[0m  " H2_USAGE_SP "           " H2_USAGE_SP " Thrown e\033[36mx\033[0mception is considered as failure                 " H2_USAGE_SP "\n" H2_USAGE_BR
-              H2_USAGE_SP " -\033[36mv\033[0m  " H2_USAGE_SP "    \033[90m[\033[0mn\033[90m]\033[0m    " H2_USAGE_SP " \033[36mv\033[0merbose output, 0:compact 2:normal 4:acronym default:all  " H2_USAGE_SP "\n" H2_USAGE_BR
-              H2_USAGE_SP " -\033[36md\033[0m  " H2_USAGE_SP "           " H2_USAGE_SP " \033[36md\033[0mebug with gdb once failure occurred                      " H2_USAGE_SP "\n" H2_USAGE_BR
-              H2_USAGE_SP " -\033[36mj\033[0m  " H2_USAGE_SP "  \033[90m[\033[0mpath\033[90m]\033[0m   " H2_USAGE_SP " Generate \033[36mj\033[0munit report, default is <executable>.junit.xml  " H2_USAGE_SP "\n" H2_USAGE_BR
-              H2_USAGE_SP " -\033[36mi\033[0m/\033[36me\033[0m" H2_USAGE_SP "\033[90m[\033[0mpattern .\033[90m]\033[0m" H2_USAGE_SP " \033[36mi\033[0mnclude/\033[36me\033[0mxclude case, suite or file by substr/wildcard    " H2_USAGE_SP "\n"
-              "\033[90m└─────┴───────────┴───────────────────────────────────────────────────────────┘\033[0m\n";
-   ::printf("%s", b);
+#define H2_USAGE_BR "\033[90m├─────┼───────────┼────────────────────────────────────────────────────────────┤\033[0m\n"
+   char b[] = "\033[90m┌─────┬───────────┬────────────────────────────────────────────────────────────┐\033[0m\n"
+              H2_USAGE_SP " -\033[36ma\033[0m  " H2_USAGE_SP "           " H2_USAGE_SP " \033[36ma\033[0mttend to last failed cases                                " H2_USAGE_SP "\n" H2_USAGE_BR
+              H2_USAGE_SP " -\033[36mb\033[0m  " H2_USAGE_SP "    \033[90m[\033[0mn\033[90m]\033[0m    " H2_USAGE_SP " \033[36mb\033[0mreak test once n (default 1) cases failed                 " H2_USAGE_SP "\n" H2_USAGE_BR
+              H2_USAGE_SP " -\033[36mc\033[0m  " H2_USAGE_SP "           " H2_USAGE_SP " Output in black-white \033[36mc\033[0molor style                          " H2_USAGE_SP "\n" H2_USAGE_BR
+              H2_USAGE_SP " -\033[36md\033[0m  " H2_USAGE_SP "           " H2_USAGE_SP " \033[36md\033[0mebug with gdb once failure occurred                       " H2_USAGE_SP "\n" H2_USAGE_BR
+              H2_USAGE_SP " -\033[36mf\033[0m  " H2_USAGE_SP "    \033[90m[\033[0mn\033[90m]\033[0m    " H2_USAGE_SP " \033[36mf\033[0mold JSON object or array, bigger n more folded            " H2_USAGE_SP "\n" H2_USAGE_BR
+              H2_USAGE_SP " -\033[36mi\033[0m/\033[36me\033[0m" H2_USAGE_SP "\033[90m[\033[0mpattern .\033[90m]\033[0m" H2_USAGE_SP " \033[36mi\033[0mnclude/\033[36me\033[0mxclude case, suite or file by substr/wildcard     " H2_USAGE_SP "\n" H2_USAGE_BR
+              H2_USAGE_SP " -\033[36mj\033[0m  " H2_USAGE_SP "  \033[90m[\033[0mpath\033[90m]\033[0m   " H2_USAGE_SP " Generate \033[36mj\033[0munit report, default is <executable>.junit.xml   " H2_USAGE_SP "\n" H2_USAGE_BR
+              H2_USAGE_SP " -\033[36ml\033[0m  " H2_USAGE_SP "  \033[90m[\033[0mtype .\033[90m]\033[0m " H2_USAGE_SP " \033[36ml\033[0mist out suites and cases, type [suite case todo]          " H2_USAGE_SP "\n" H2_USAGE_BR
+              H2_USAGE_SP " -\033[36mm\033[0m  " H2_USAGE_SP "           " H2_USAGE_SP " Test cases without \033[36mm\033[0memory check                            " H2_USAGE_SP "\n" H2_USAGE_BR
+              H2_USAGE_SP " -\033[36mp\033[0m  " H2_USAGE_SP "           " H2_USAGE_SP " Disable test percentage \033[36mp\033[0mrogressing                        " H2_USAGE_SP "\n" H2_USAGE_BR
+              H2_USAGE_SP " -\033[36mr\033[0m  " H2_USAGE_SP "    \033[90m[\033[0mn\033[90m]\033[0m    " H2_USAGE_SP " Repeat test n (default 2) \033[36mr\033[0mounds                           " H2_USAGE_SP "\n" H2_USAGE_BR
+              H2_USAGE_SP " -\033[36ms\033[0m  " H2_USAGE_SP "           " H2_USAGE_SP " \033[36ms\033[0mhuffle cases then test in random order if no last failed  " H2_USAGE_SP "\n" H2_USAGE_BR
+              H2_USAGE_SP " -\033[36mv\033[0m  " H2_USAGE_SP "    \033[90m[\033[0mn\033[90m]\033[0m    " H2_USAGE_SP " \033[36mv\033[0merbose output, 0:compact 2:normal 4:acronym default:all   " H2_USAGE_SP "\n" H2_USAGE_BR
+              H2_USAGE_SP " -\033[36mx\033[0m  " H2_USAGE_SP "           " H2_USAGE_SP " Thrown e\033[36mx\033[0mception is considered as failure                  " H2_USAGE_SP "\n" H2_USAGE_BR
+              H2_USAGE_SP " -\033[36my\033[0m  " H2_USAGE_SP "    \033[90m[\033[0mn\033[90m]\033[0m    " H2_USAGE_SP " Cop\033[36my\033[0m-paste-able C/C++ source code formatted JSON           " H2_USAGE_SP "\n"
+              "\033[90m└─────┴───────────┴────────────────────────────────────────────────────────────┘\033[0m\n";
+
+   ::printf(" \033[90mhttps://github.com/lingjf/\033[0m\033[32mh2unit\033[0m \033[90mv\033[0m%-5s \n%s", H2PP_STR(H2UNIT_VERSION), b);
 }
 /* clang-format on */
 
@@ -6173,42 +6182,40 @@ h2_inline void h2_option::parse(int argc, const char** argv)
 
    for (const char* t;;) {
       switch (get.next_option()) {
-      case '\0': return;
-      case 'c': colorful = !colorful; break;
-      case 's': shuffle_cases = true; break;
-      case 'n': only_previous_failed = true; break;
-      case 'p': progressing = !progressing; break;
-      case 'm': memory_check = !memory_check; break;
-      case 'x': exception_as_fail = true; break;
-      case 'l':
-         while ((t = get.extract_string())) {
-            if (!strcasecmp("suite", t)) list_cases |= 1;
-            if (!strcasecmp("case", t)) list_cases |= 2;
-            if (!strcasecmp("todo", t)) list_cases |= 4;
-         }
-         if (!list_cases) list_cases = 1 | 2 | 4;
-         break;
-      case 'b': break_after_fails = 1, get.extract_number(break_after_fails); break;
-      case 'r': run_rounds = 2, get.extract_number(run_rounds); break;
-      case 'f': fold_json = 0, get.extract_number(fold_json); break;
-      case 'y': copy_paste_json = 3, get.extract_number(copy_paste_json); break;
-      case 'v': verbose = 9, get.extract_number(verbose); break;
-      case 'd': debug = "gdb new"; break;
-      case 'D': debug = "gdb attach"; break;
-      case 'j':
-         sprintf(junit_path, "%s.junit.xml", path);
-         if ((t = get.extract_string())) strcpy(junit_path, t);
-         break;
-      case 'i':
-         while ((t = get.extract_string())) includes.push_back(t);
-         break;
-      case 'e':
-         while ((t = get.extract_string())) excludes.push_back(t);
-         break;
-      case 'h':
-      case '?':
-         usage();
-         exit(0);
+         case '\0': return;
+         case 'a': last_failed = true; break;
+         case 'b': break_after_fails = 1, get.extract_number(break_after_fails); break;
+         case 'c': colorful = !colorful; break;
+         case 'd': debug = "gdb new"; break;
+         case 'D': debug = "gdb attach"; break;
+         case 'e':
+            while ((t = get.extract_string())) excludes.push_back(t);
+            break;
+         case 'f': fold_json = 0, get.extract_number(fold_json); break;
+         case 'i':
+            while ((t = get.extract_string())) includes.push_back(t);
+            break;
+         case 'j':
+            sprintf(junit_path, "%s.junit.xml", path);
+            if ((t = get.extract_string())) strcpy(junit_path, t);
+            break;
+         case 'l':
+            while ((t = get.extract_string())) {
+               if (!strcasecmp("suite", t)) list_cases |= 1;
+               if (!strcasecmp("case", t)) list_cases |= 2;
+               if (!strcasecmp("todo", t)) list_cases |= 4;
+            }
+            if (!list_cases) list_cases = 1 | 2 | 4;
+            break;
+         case 'm': memory_check = !memory_check; break;
+         case 'p': progressing = !progressing; break;
+         case 'r': run_rounds = 2, get.extract_number(run_rounds); break;
+         case 's': shuffle_cases = true; break;
+         case 'v': verbose = 9, get.extract_number(verbose); break;
+         case 'x': exception_as_fail = true; break;
+         case 'y': copy_paste_json = 3, get.extract_number(copy_paste_json); break;
+         case 'h':
+         case '?': usage(); exit(0);
       }
    }
    if (list_cases) memory_check = false;

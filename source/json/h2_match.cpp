@@ -23,21 +23,21 @@ struct h2_json_match {
    {
       if (!e || !a) return false;
       switch (e->type) {
-      case h2_json_node::t_null:
-         return a->is_null();
-      case h2_json_node::t_boolean:
-         return a->is_bool() && e->value_boolean == a->value_boolean;
-      case h2_json_node::t_number:
-         return a->is_number() && ::fabs(e->value_double - a->value_double) < 0.00001;
-      case h2_json_node::t_string:
-         return a->is_string() && e->value_string.equals(a->value_string, caseless);
-      case h2_json_node::t_pattern:
-         return a->is_string() && h2_pattern::match(e->value_string.c_str(), a->value_string.c_str(), caseless);
-      case h2_json_node::t_array:
-         return a->is_array() && match_array(e, a, caseless);
-      case h2_json_node::t_object:
-         return a->is_object() && match_object(e, a, caseless);
-      default: return false;
+         case h2_json_node::t_null:
+            return a->is_null();
+         case h2_json_node::t_boolean:
+            return a->is_bool() && e->value_boolean == a->value_boolean;
+         case h2_json_node::t_number:
+            return a->is_number() && ::fabs(e->value_double - a->value_double) < 0.00001;
+         case h2_json_node::t_string:
+            return a->is_string() && e->value_string.equals(a->value_string, caseless);
+         case h2_json_node::t_pattern:
+            return a->is_string() && h2_pattern::match(e->value_string.c_str(), a->value_string.c_str(), caseless);
+         case h2_json_node::t_array:
+            return a->is_array() && match_array(e, a, caseless);
+         case h2_json_node::t_object:
+            return a->is_object() && match_object(e, a, caseless);
+         default: return false;
       }
    }
 

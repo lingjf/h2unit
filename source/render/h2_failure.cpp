@@ -148,11 +148,11 @@ static inline void fmt_char(char c, bool eq, const char* style, h2_sentence& sen
    char t_style[32] = "";
    if (!eq) strcpy(t_style, style);
    switch (c) {
-   case '\n': sentence.printf(t_style, "␍"); break;
-   case '\r': sentence.printf(t_style, "␊"); break;
-   case '\t': sentence.printf(t_style, "␉"); break;
-   case '\0': sentence.printf(t_style, "␀"); break;
-   default: sentence.printf(t_style, "%c", c); break;
+      case '\n': sentence.printf(t_style, "␍"); break;
+      case '\r': sentence.printf(t_style, "␊"); break;
+      case '\t': sentence.printf(t_style, "␉"); break;
+      case '\0': sentence.printf(t_style, "␀"); break;
+      default: sentence.printf(t_style, "%c", c); break;
    }
 }
 
@@ -237,12 +237,12 @@ struct h2_fail_memcmp : h2_fail_unexpect {
       h2_paragraph e_paragraph, a_paragraph;
       size_t bytes_per_row = 0;
       switch (width) {
-      case 1: print_bits(e_paragraph, a_paragraph, bytes_per_row = 4); break;
-      case 8: print_ints<unsigned char>(e_paragraph, a_paragraph, bytes_per_row = (h2_shell::I().cww < 108 ? 8 : 16)); break;
-      case 16: print_ints<unsigned short>(e_paragraph, a_paragraph, bytes_per_row = 16); break;
-      case 32: print_ints<unsigned int>(e_paragraph, a_paragraph, bytes_per_row = 16); break;
-      case 64: print_ints<unsigned long long>(e_paragraph, a_paragraph, bytes_per_row = 16); break;
-      default: break;
+         case 1: print_bits(e_paragraph, a_paragraph, bytes_per_row = 4); break;
+         case 8: print_ints<unsigned char>(e_paragraph, a_paragraph, bytes_per_row = (h2_shell::I().cww < 108 ? 8 : 16)); break;
+         case 16: print_ints<unsigned short>(e_paragraph, a_paragraph, bytes_per_row = 16); break;
+         case 32: print_ints<unsigned int>(e_paragraph, a_paragraph, bytes_per_row = 16); break;
+         case 64: print_ints<unsigned long long>(e_paragraph, a_paragraph, bytes_per_row = 16); break;
+         default: break;
       }
       h2_color::printl(h2_layout::split(e_paragraph, a_paragraph, "expect", "actual", bytes_per_row * 8 / width, 'x', h2_shell::I().cww));
    }
