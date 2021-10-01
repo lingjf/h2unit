@@ -27,15 +27,8 @@ const char* s2 = "test"; // OK
 ```
 
 ## private member method accessibility
-In order to STUB/MOCK class private member function successfully, `private` token is substituted with `public` using MACRO definition by default.
 
-Include `h2unit.h/hpp` before other header files.
-
-If test target is C language project, and `private` is used as normal token, define `TEST_C` in compiler options to prevent above substitution.
-
-```Shell
-   g++ -DTEST_C ...
-```
+In order to STUB/MOCK class private member function successfully, `private` `protected` token is substituted with `public` using MACRO definition by default if `h2unit.h/hpp`.
 
 ## static function accessibility
 static function is unaccessible outside of source file. In order to STUB/MOCK such function successfully, there are two solutions:

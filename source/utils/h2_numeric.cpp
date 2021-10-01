@@ -104,7 +104,7 @@ h2_inline bool h2_numeric::is_bin_string(const char* s)
    return true;
 }
 
-h2_inline const char* h2_numeric::sequence_number(size_t sequence, int shift)
+h2_inline const char* h2_numeric::sequence_number(size_t sequence, size_t shift)
 {
    static const char* st[] = {"0th", "1st", "2nd", "3rd", "4th", "5th", "6th", "7th", "8th", "9th", "10th", "11th", "12th", "13th", "14th", "15th"};
    static char ss[64];

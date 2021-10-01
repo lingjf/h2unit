@@ -22,10 +22,9 @@ struct h2_block : h2_libc {
    h2_block_attributes attributes;
    unsigned long long footprint = 0, allocated = 0;
    const char* where;
-   const char* file;
-   int line;
+   h2_sz sz;
 
-   h2_block(const char* attributes_, const char* where_, const char* file_, int line_) : attributes(attributes_), where(where_), file(file_), line(line_) {}
+   h2_block(const char* attributes_, const char* where_, const h2_sz& sz_) : attributes(attributes_), where(where_), sz(sz_) {}
 
    h2_fail* check()
    {
@@ -41,7 +40,7 @@ struct h2_block : h2_libc {
          if (!attributes.noleak && !p->free_times)
             leaky.add(p->user_ptr, p->user_size, p->bt_allocate);
 
-      fails = leaky.check(where, file, line);
+      fails = leaky.check(where, sz);
       if (fails) return fails;
 
       /* why not chain fails in subling? report one fail ignore more for clean.
@@ -85,14 +84,14 @@ struct h2_block : h2_libc {
       return p->free(who);
    }
 
-   h2_piece* get_piece(const void* ptr)
+   h2_piece* get_piece(const void* ptr) const
    {
       h2_list_for_each_entry (p, pieces, h2_piece, x)
          if (p->user_ptr == ptr) return p;
       return nullptr;
    }
 
-   h2_piece* host_piece(const void* ptr)
+   h2_piece* host_piece(const void* ptr) const
    {
       h2_list_for_each_entry (p, pieces, h2_piece, x)
          if (p->in_page_range((const unsigned char*)ptr)) return p;

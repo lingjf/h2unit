@@ -3,7 +3,7 @@ struct h2_runner {
 
    h2_stats stats;
    int rounds = 0;
-   int previous = 0;
+   int last = 0;
    h2_list suites;
    h2_suite* current_suite = nullptr;
    h2_case* current_case = nullptr;
@@ -19,15 +19,15 @@ struct h2_runner {
    int main(int argc, const char** argv);
 };
 
-static inline void h2_stub_g(void* srcfp, void* dstfp, const char* srcfn, const char* file, int line)
+static inline void h2_stub_g(void* srcfp, void* dstfp, const h2_sz& sz)
 {
    if (!srcfp || !dstfp) return;
    if (h2_runner::I().current_case)
-      h2_runner::I().current_case->stubs.add(srcfp, dstfp, srcfn, file, line);
+      h2_runner::I().current_case->stubs.add(srcfp, dstfp, sz);
    else if (h2_runner::I().current_suite)
-      h2_runner::I().current_suite->stubs.add(srcfp, dstfp, srcfn, file, line);
+      h2_runner::I().current_suite->stubs.add(srcfp, dstfp, sz);
    else
-      h2_runner::I().stubs.add(srcfp, dstfp, srcfn, file, line);
+      h2_runner::I().stubs.add(srcfp, dstfp, sz);
 }
 
 static inline void h2_unstub_g(void* srcfp)

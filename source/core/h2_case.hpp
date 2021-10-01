@@ -1,9 +1,8 @@
 struct h2_case {
+   h2_sz sz;
    const char* name;
-   const char* file;
-   int line;
    bool todo = false, filtered = false, ignored = false;
-   bool failed = false, previous_failed = false;
+   bool failed = false, last_failed = false;
    int seq = 0;
    int asserts = 0;
    long long footprint = 0;
@@ -14,7 +13,7 @@ struct h2_case {
    h2_mocks mocks;
    h2_dnses dnses;
 
-   h2_case(const char* name_, const char* file_, int line_, int todo_) : name(name_), file(file_), line(line_), todo(todo_) {}
+   h2_case(const char* name_, int todo_, const h2_sz& sz_) : sz(sz_), name(name_), todo(todo_) {}
    void clear();
 
    void prev_setup();

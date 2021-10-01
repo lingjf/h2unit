@@ -35,7 +35,7 @@ static inline bool under_debug(int pid, const char* path)
    if (!f) return false;
    bool ret = false;
    while (::fgets(t, sizeof(t) - 1, f)) {
-      if (strstr(t, h2_basename(path)) || strstr(t, attach_pid)) {
+      if (strstr(t, h2_sz(path).basefile()) || strstr(t, attach_pid)) {
          ret = true;
          break;
       }

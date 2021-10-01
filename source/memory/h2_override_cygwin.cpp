@@ -14,9 +14,9 @@ struct h2_override_platform {
 
    void set()
    {
-      stubs.add((void*)::strdup, (void*)strdup, "strdup", __FILE__, __LINE__);
+      stubs.add((void*)::strdup, (void*)strdup, {__FILE__, __LINE__, "strdup"});
 #if defined __CYGWIN__
-      stubs.add((void*)::strndup, (void*)strndup, "strndup", __FILE__, __LINE__);
+      stubs.add((void*)::strndup, (void*)strndup, {__FILE__, __LINE__, "strndup"});
 #endif
    }
    void reset() { stubs.clear(); }

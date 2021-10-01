@@ -1,12 +1,11 @@
 struct h2_defer_failure : h2_once {
-   const char* assert_type, *assert_op = ",";
+   const char *assert_type, *assert_op = ",";
    const char *e_expression, *a_expression;
-   const char* file;
-   int line;
+   h2_sz sz;
    h2_fail* fails{nullptr};
    h2_ostringstream oss;
 
-   h2_defer_failure(const char* e_expression_, const char* a_expression_, const char* file_, int line_) : e_expression(e_expression_), a_expression(a_expression_), file(file_), line(line_) {}
+   h2_defer_failure(const char* e_expression_, const char* a_expression_, const h2_sz& sz_) : e_expression(e_expression_), a_expression(a_expression_), sz(sz_) {}
    ~h2_defer_failure();
 };
 
@@ -92,7 +91,7 @@ struct h2_expr1 {
 
 struct h2_expr12 {
    template <typename T>
-   h2_expr1<const T&> operator>(const T& t) { return h2_expr1<const T&>{t}; }
+   h2_expr1<const T&> operator>(const T& t) const { return h2_expr1<const T&>{t}; }
 };
 
 template <typename T>
@@ -100,19 +99,18 @@ static inline h2_ostringstream& h2_ok12(h2_defer_failure* d, h2_expr1<T> a) { re
 template <typename E, typename A>
 static inline h2_ostringstream& h2_ok12(h2_defer_failure* d, h2_expr2<E, A> ea) { return ea.ok(d); }
 
-/* clang-format off */
 #define H2Ok(...) __H2Ok(H2PP_UNIQUE(), (#__VA_ARGS__), __VA_ARGS__)
 #define __H2Ok(Q, expression, ...) \
-   for (h2::h2_defer_failure Q("", expression, __FILE__, __LINE__); Q;) h2::h2_ok12(&Q, h2::h2_expr12() > __VA_ARGS__)
+   for (h2::h2_defer_failure Q("", expression, {__FILE__, __LINE__}); Q;) h2::h2_ok12(&Q, h2::h2_expr12() > __VA_ARGS__)
 
-#define H2OK(_1, ...) H2PP_CAT(__H2OK, H2PP_IS_EMPTY(__VA_ARGS__)) (H2PP_UNIQUE(), #_1, (#__VA_ARGS__), _1, __VA_ARGS__)
+#define H2OK(_1, ...) H2PP_CAT(__H2OK, H2PP_IS_EMPTY(__VA_ARGS__))(H2PP_UNIQUE(), #_1, (#__VA_ARGS__), _1, __VA_ARGS__)
 #define __H2OK1(Q, a_expression, _dummy, actual, ...) \
-   for (h2::h2_defer_failure Q("", a_expression, __FILE__, __LINE__); Q;) h2::h2_ok1(&Q, actual)
+   for (h2::h2_defer_failure Q("", a_expression, {__FILE__, __LINE__}); Q;) h2::h2_ok1(&Q, actual)
 #define __H2OK0(Q, e_expression, a_expression, expect, ...) \
-   for (h2::h2_defer_failure Q(e_expression, a_expression, __FILE__, __LINE__); Q;) h2::h2_ok2(&Q, expect, __VA_ARGS__)
+   for (h2::h2_defer_failure Q(e_expression, a_expression, {__FILE__, __LINE__}); Q;) h2::h2_ok2(&Q, expect, __VA_ARGS__)
 
 #define H2JE(...) H2PP_VARIADIC_CALL(__H2JE, H2PP_UNIQUE(), __VA_ARGS__)
 #define __H2JE3(Q, expect, actual) \
-   for (h2::h2_defer_failure Q(#expect, #actual, __FILE__, __LINE__); Q;) h2::h2_je(&Q, expect, actual, "")
+   for (h2::h2_defer_failure Q(#expect, #actual, {__FILE__, __LINE__}); Q;) h2::h2_je(&Q, expect, actual, "")
 #define __H2JE4(Q, expect, actual, selector) \
-   for (h2::h2_defer_failure Q(#expect, #actual, __FILE__, __LINE__); Q;) h2::h2_je(&Q, expect, actual, selector)
+   for (h2::h2_defer_failure Q(#expect, #actual, {__FILE__, __LINE__}); Q;) h2::h2_je(&Q, expect, actual, selector)

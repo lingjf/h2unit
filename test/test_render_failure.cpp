@@ -56,19 +56,19 @@ SUITE(failure utils)
 
 SUITE(failure)
 {
-   auto fa = new h2::h2_fail({}, "a", 11);
-   auto fb = new h2::h2_fail({}, "b", 12);
-   auto fc = new h2::h2_fail({}, "c", 13);
+   auto fa = new h2::h2_fail({}, {"a", 11});
+   auto fb = new h2::h2_fail({}, {"b", 12});
+   auto fc = new h2::h2_fail({}, {"c", 13});
 
-   auto f1 = new h2::h2_fail({}, "1", 21);
-   auto f2 = new h2::h2_fail({}, "2", 22);
-   auto f3 = new h2::h2_fail({}, "3", 23);
-   auto f4 = new h2::h2_fail({}, "4", 24);
-   auto f5 = new h2::h2_fail({}, "5", 25);
-   auto f6 = new h2::h2_fail({}, "6", 26);
-   auto f7 = new h2::h2_fail({}, "7", 27);
-   auto f8 = new h2::h2_fail({}, "8", 28);
-   auto f9 = new h2::h2_fail({}, "9", 29);
+   auto f1 = new h2::h2_fail({}, {"1", 21});
+   auto f2 = new h2::h2_fail({}, {"2", 22});
+   auto f3 = new h2::h2_fail({}, {"3", 23});
+   auto f4 = new h2::h2_fail({}, {"4", 24});
+   auto f5 = new h2::h2_fail({}, {"5", 25});
+   auto f6 = new h2::h2_fail({}, {"6", 26});
+   auto f7 = new h2::h2_fail({}, {"7", 27});
+   auto f8 = new h2::h2_fail({}, {"8", 28});
+   auto f9 = new h2::h2_fail({}, {"9", 29});
 
    int i = 0;
 
@@ -82,8 +82,8 @@ SUITE(failure)
 
       // Subling ->  fa -> fb -> fc
       const char* e[] = {"a", "b", "c"};
-      H2_H2_FOREACH_FAIL(fail, fails) { OK(e[i++], fail->file); }
-      fails->foreach([&](h2::h2_fail* fail, int subling_index, int child_index) {
+      H2_H2_FOREACH_FAIL(fail, fails) { OK(e[i++], fail->sz.file); }
+      fails->foreach([&](h2::h2_fail* fail, size_t, size_t) {
       });
    }
 
@@ -106,7 +106,7 @@ SUITE(failure)
       //  v
       //  fc
       const char* e[] = {"a", "b", "c"};
-      H2_H2_FOREACH_FAIL(fail, fails) { OK(e[i++], fail->file); }
+      H2_H2_FOREACH_FAIL(fail, fails) { OK(e[i++], fail->sz.file); }
    }
 
    Case(append x y)
@@ -143,6 +143,6 @@ SUITE(failure)
 
       const char* e[] = {"a", "1", "2", "3", "b", "4",
                          "5", "6", "c", "7", "8", "9"};
-      H2_H2_FOREACH_FAIL(fail, fails) { OK(e[i++], fail->file); }
+      H2_H2_FOREACH_FAIL(fail, fails) { OK(e[i++], fail->sz.file); }
    }
 }

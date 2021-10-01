@@ -34,10 +34,10 @@ SUITE(sources)
 
    Case(add del)
    {
-      auto a = pool.add((void*)foobar2, "foobar2", __FILE__, __LINE__);
+      auto a = pool.add((void*)foobar2, {__FILE__, __LINE__, "foobar2"});
       OK(NotNull, a);
       JE("[{'reference_count':1}]", h2_sources_tojson(pool, t1));
-      auto b = pool.add((void*)foobar2, "foobar2", __FILE__, __LINE__);
+      auto b = pool.add((void*)foobar2, {__FILE__, __LINE__, "foobar2"});
       OK(NotNull, b);
       JE("[{'reference_count':2}]", h2_sources_tojson(pool, t1));
 

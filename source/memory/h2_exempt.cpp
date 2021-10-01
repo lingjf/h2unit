@@ -24,11 +24,11 @@ h2_inline void h2_exempt::setup()
 {
    static h2_stubs stubs;
 
-   stubs.add((void*)::gmtime, (void*)h2_exempt_stub::gmtime, "gmtime", __FILE__, __LINE__);
-   stubs.add((void*)::ctime, (void*)h2_exempt_stub::ctime, "ctime", __FILE__, __LINE__);
-   stubs.add((void*)::asctime, (void*)h2_exempt_stub::asctime, "asctime", __FILE__, __LINE__);
-   stubs.add((void*)::localtime, (void*)h2_exempt_stub::localtime, "localtime", __FILE__, __LINE__);
-   stubs.add((void*)::mktime, (void*)h2_exempt_stub::mktime, "mktime", __FILE__, __LINE__);
+   stubs.add((void*)::gmtime, (void*)h2_exempt_stub::gmtime, {__FILE__, __LINE__, "gmtime"});
+   stubs.add((void*)::ctime, (void*)h2_exempt_stub::ctime, {__FILE__, __LINE__, "ctime"});
+   stubs.add((void*)::asctime, (void*)h2_exempt_stub::asctime, {__FILE__, __LINE__, "asctime"});
+   stubs.add((void*)::localtime, (void*)h2_exempt_stub::localtime, {__FILE__, __LINE__, "localtime"});
+   stubs.add((void*)::mktime, (void*)h2_exempt_stub::mktime, {__FILE__, __LINE__, "mktime"});
 
 #if defined _WIN32
    add_by_fp((void*)::_wchdir);
@@ -42,10 +42,10 @@ h2_inline void h2_exempt::setup()
    add_by_fp((void*)::_gmtime64_s);
    add_by_fp(h2_un<void*>(&std::type_info::name));
 #else
-   stubs.add((void*)::gmtime_r, (void*)h2_exempt_stub::gmtime_r, "gmtime_r", __FILE__, __LINE__);
-   stubs.add((void*)::ctime_r, (void*)h2_exempt_stub::ctime_r, "ctime_r", __FILE__, __LINE__);
-   stubs.add((void*)::asctime_r, (void*)h2_exempt_stub::asctime_r, "asctime_r", __FILE__, __LINE__);
-   stubs.add((void*)::localtime_r, (void*)h2_exempt_stub::localtime_r, "localtime_r", __FILE__, __LINE__);
+   stubs.add((void*)::gmtime_r, (void*)h2_exempt_stub::gmtime_r, {__FILE__, __LINE__, "gmtime_r"});
+   stubs.add((void*)::ctime_r, (void*)h2_exempt_stub::ctime_r, {__FILE__, __LINE__, "ctime_r"});
+   stubs.add((void*)::asctime_r, (void*)h2_exempt_stub::asctime_r, {__FILE__, __LINE__, "asctime_r"});
+   stubs.add((void*)::localtime_r, (void*)h2_exempt_stub::localtime_r, {__FILE__, __LINE__, "localtime_r"});
    add_by_fp((void*)::sscanf);
    add_by_fp((void*)::sprintf);
    add_by_fp((void*)::vsnprintf);

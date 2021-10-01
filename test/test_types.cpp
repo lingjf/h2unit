@@ -1,6 +1,6 @@
 
 #if defined _WIN32 || defined __CYGWIN__
-#   define IMPORT_MAIN
+#define IMPORT_MAIN
 #endif
 
 #include "../source/h2_unit.cpp"
@@ -48,7 +48,7 @@ int foobar2(int a, const char* b)
 {
    return 2;
 }
-}  // namespace test_ns
+}
 
 int my_printf(const char* fmt, ...)
 {

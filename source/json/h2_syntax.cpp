@@ -9,7 +9,7 @@ struct h2_json_syntax {
       return lexical.size() <= i;  // nothing more, "{},{}"
    }
 
-   h2_string& filter_string(h2_string& s)
+   h2_string& filter_string(h2_string& s) const
    {
       if (s.enclosed('\"'))
          s = s.unquote('\"');
@@ -19,7 +19,7 @@ struct h2_json_syntax {
       return s;
    }
 
-   bool interpret_number(const h2_string& s, double& value)
+   bool interpret_number(const h2_string& s, double& value) const
    {
       int err = 0;
       value = tinyexpr::te_interp(s.c_str(), &err);

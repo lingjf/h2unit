@@ -216,16 +216,16 @@ struct h2_socket {
    {
       strcpy(last_to, "0.0.0.0:0");
 
-      stubs.add((void*)::sendto, (void*)sendto, "sendto", __FILE__, __LINE__);
-      stubs.add((void*)::recvfrom, (void*)recvfrom, "recvfrom", __FILE__, __LINE__);
+      stubs.add((void*)::sendto, (void*)sendto, {__FILE__, __LINE__, "sendto"});
+      stubs.add((void*)::recvfrom, (void*)recvfrom, {__FILE__, __LINE__, "recvfrom"});
 #if !defined _WIN32
-      stubs.add((void*)::sendmsg, (void*)sendmsg, "sendmsg", __FILE__, __LINE__);
-      stubs.add((void*)::recvmsg, (void*)recvmsg, "recvmsg", __FILE__, __LINE__);
+      stubs.add((void*)::sendmsg, (void*)sendmsg, {__FILE__, __LINE__, "sendmsg"});
+      stubs.add((void*)::recvmsg, (void*)recvmsg, {__FILE__, __LINE__, "recvmsg"});
 #endif
-      stubs.add((void*)::send, (void*)send, "send", __FILE__, __LINE__);
-      stubs.add((void*)::recv, (void*)recv, "recv", __FILE__, __LINE__);
-      stubs.add((void*)::accept, (void*)accept, "accept", __FILE__, __LINE__);
-      stubs.add((void*)::connect, (void*)connect, "connect", __FILE__, __LINE__);
+      stubs.add((void*)::send, (void*)send, {__FILE__, __LINE__, "send"});
+      stubs.add((void*)::recv, (void*)recv, {__FILE__, __LINE__, "recv"});
+      stubs.add((void*)::accept, (void*)accept, {__FILE__, __LINE__, "accept"});
+      stubs.add((void*)::connect, (void*)connect, {__FILE__, __LINE__, "connect"});
    }
    void stop()
    {

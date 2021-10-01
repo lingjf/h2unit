@@ -9,7 +9,7 @@ struct h2_matches_ge : h2_matches {
       if ((a >= e) == !dont) return nullptr;
       return h2_fail::new_unexpect(expection(caseless, dont, ncop), h2_representify(a));
    }
-   virtual h2_sentence expection(bool, bool dont, bool ncop) const override
+   virtual h2_line expection(bool, bool dont, bool ncop) const override
    {
       return CD((ncop ? "" : "≥") + h2_representify(e), false, dont, ncop);
    }
@@ -26,7 +26,7 @@ struct h2_matches_gt : h2_matches {
       if ((a > e) == !dont) return nullptr;
       return h2_fail::new_unexpect(expection(caseless, dont, ncop), h2_stringify(a));
    }
-   virtual h2_sentence expection(bool, bool dont, bool ncop) const override
+   virtual h2_line expection(bool, bool dont, bool ncop) const override
    {
       return CD((ncop ? "" : ">") + h2_stringify(e), false, dont, ncop);
    }
@@ -43,7 +43,7 @@ struct h2_matches_le : h2_matches {
       if ((a <= e) == !dont) return nullptr;
       return h2_fail::new_unexpect(expection(caseless, dont, ncop), h2_stringify(a));
    }
-   virtual h2_sentence expection(bool, bool dont, bool ncop) const override
+   virtual h2_line expection(bool, bool dont, bool ncop) const override
    {
       return CD((ncop ? "" : "≤") + h2_stringify(e), false, dont, ncop);
    }
@@ -60,7 +60,7 @@ struct h2_matches_lt : h2_matches {
       if ((a < e) == !dont) return nullptr;
       return h2_fail::new_unexpect(expection(caseless, dont, ncop), h2_stringify(a));
    }
-   virtual h2_sentence expection(bool, bool dont, bool ncop) const override
+   virtual h2_line expection(bool, bool dont, bool ncop) const override
    {
       return CD((ncop ? "" : "<") + h2_stringify(e), false, dont, ncop);
    }

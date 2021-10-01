@@ -111,6 +111,15 @@ SUITE(list)
          OK(e123[i], p->a);
       }
    }
+
+   Case(reverse)
+   {
+      int i = 0;
+      h2_list_for_each_reverse_entry (p, root123, list_host, link) {
+         OK(e321[i], p->a);
+         ++i;
+      }
+   }
 }
 
 CASE(list sort)

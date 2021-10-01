@@ -93,9 +93,9 @@ struct h2_resolver {
    h2_stubs stubs;
    h2_resolver()
    {
-      stubs.add((void*)::getaddrinfo, (void*)getaddrinfo, "getaddrinfo", __FILE__, __LINE__);
-      stubs.add((void*)::freeaddrinfo, (void*)freeaddrinfo, "freeaddrinfo", __FILE__, __LINE__);
-      stubs.add((void*)::gethostbyname, (void*)gethostbyname, "gethostbyname", __FILE__, __LINE__);
+      stubs.add((void*)::getaddrinfo, (void*)getaddrinfo, {__FILE__, __LINE__, "getaddrinfo"});
+      stubs.add((void*)::freeaddrinfo, (void*)freeaddrinfo, {__FILE__, __LINE__, "freeaddrinfo"});
+      stubs.add((void*)::gethostbyname, (void*)gethostbyname, {__FILE__, __LINE__, "gethostbyname"});
    }
    ~h2_resolver() { stubs.clear(); }
 };

@@ -19,34 +19,35 @@
 #include <type_traits> /* std::true_type */
 
 #if defined _MSC_VER
-#   include <malloc.h> /* _alloca _msize _expand */
-#   define alloca _alloca
+#include <malloc.h> /* _alloca _msize _expand */
+#define alloca _alloca
 #elif defined __MINGW32__ || defined __MINGW64__
 #else
-#   include <alloca.h> /* alloca */
+#include <alloca.h> /* alloca */
 #endif
 
 #if defined __GNUC__ || defined __clang__
 // #pragma clang diagnostic ignored === #pragma GCC diagnostic ignored
-#   pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-#   pragma GCC diagnostic ignored "-Wint-to-pointer-cast"
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+#pragma GCC diagnostic ignored "-Wint-to-pointer-cast"
 #elif defined _MSC_VER
-#   pragma warning(disable : 4244)  // conversion possible loss of data
-#   pragma warning(disable : 4267)  // conversion possible loss of data
-#   pragma warning(disable : 4305)  // type cast
-#   pragma warning(disable : 4312)  // type cast
-#   pragma warning(disable : 4611)  // setjmp non-portable
-#   pragma warning(disable : 4996)  // unsafe
+#pragma warning(disable : 4244)  // conversion possible loss of data
+#pragma warning(disable : 4267)  // conversion possible loss of data
+#pragma warning(disable : 4305)  // type cast
+#pragma warning(disable : 4312)  // type cast
+#pragma warning(disable : 4611)  // setjmp non-portable
+#pragma warning(disable : 4996)  // unsafe
 #endif
 
 #if defined __H2UNIT_HPP__
-#   define h2_inline
+#define h2_inline
 #else
-#   define h2_inline inline
+#define h2_inline inline
 #endif
 
 namespace h2 {
 #include "utils/h2_macro.hpp"         //
+#include "utils/h2_sz.hpp"            //
 #include "utils/h2_template.hpp"      //
 #include "utils/h2_list.hpp"          //
 #include "utils/h2_compare.hpp"       //
@@ -56,13 +57,12 @@ namespace h2 {
 #include "utils/h2_shared_ptr.hpp"    // libc
 #include "utils/h2_allocate.hpp"      // libc
 #include "utils/h2_string.hpp"        // allocate
-#include "utils/h2_sentence.hpp"      // string
-#include "utils/h2_paragraph.hpp"     // string, sentence
-#include "utils/h2_stringify.hpp"     // string, sentence
-#include "utils/h2_color.hpp"         // sentence
+#include "utils/h2_line.hpp"          // string
+#include "utils/h2_stringify.hpp"     // string, line
+#include "utils/h2_color.hpp"         // line
 #include "symbol/h2_nm.hpp"           //
 #include "symbol/h2_load.hpp"         //
-#include "symbol/h2_backtrace.hpp"    // sentence
+#include "symbol/h2_backtrace.hpp"    // line
 #include "symbol/h2_cxa.hpp"          //
 #include "render/h2_option.hpp"       //
 #include "render/h2_layout.hpp"       //
@@ -104,217 +104,217 @@ namespace h2 {
 #include "assert/h2_assert.hpp"       // failure, matcher
 #include "assert/h2_timer.hpp"        // failure
 #include "render/h2_report.hpp"       // runner, suite, case
-}  // namespace h2
+}
 
 #ifndef SUITE
-#   define SUITE H2SUITE
+#define SUITE H2SUITE
 #else
-#   pragma message("SUITE conflict, using H2SUITE instead.")
+#pragma message("SUITE conflict, using H2SUITE instead.")
 #endif
 
 #ifndef CASE
-#   define CASE H2CASE
+#define CASE H2CASE
 #else
-#   pragma message("CASE conflict, using H2CASE instead.")
+#pragma message("CASE conflict, using H2CASE instead.")
 #endif
 
 #ifndef TODO
-#   define TODO H2TODO
+#define TODO H2TODO
 #else
-#   pragma message("TODO conflict, using H2TODO instead.")
+#pragma message("TODO conflict, using H2TODO instead.")
 #endif
 
 #ifndef Case
-#   define Case H2Case
+#define Case H2Case
 #else
-#   pragma message("Case conflict, using H2Case instead.")
+#pragma message("Case conflict, using H2Case instead.")
 #endif
 
 #ifndef Todo
-#   define Todo H2Todo
+#define Todo H2Todo
 #else
-#   pragma message("Todo conflict, using H2Todo instead.")
+#pragma message("Todo conflict, using H2Todo instead.")
 #endif
 
 #ifndef Cleanup
-#   define Cleanup H2Cleanup
+#define Cleanup H2Cleanup
 #else
-#   pragma message("Cleanup conflict, using H2Cleanup instead.")
+#pragma message("Cleanup conflict, using H2Cleanup instead.")
 #endif
 
 #ifndef Setup
-#   define Setup H2Setup
+#define Setup H2Setup
 #else
-#   pragma message("Setup conflict, using H2Setup instead.")
+#pragma message("Setup conflict, using H2Setup instead.")
 #endif
 
 #ifndef Teardown
-#   define Teardown H2Teardown
+#define Teardown H2Teardown
 #else
-#   pragma message("Teardown conflict, using H2Teardown instead.")
+#pragma message("Teardown conflict, using H2Teardown instead.")
 #endif
 
 #ifndef Ok
-#   define Ok H2Ok
+#define Ok H2Ok
 #else
-#   pragma message("Ok conflict, using H2Ok instead.")
+#pragma message("Ok conflict, using H2Ok instead.")
 #endif
 
 #ifndef OK
-#   define OK H2OK
+#define OK H2OK
 #else
-#   pragma message("OK conflict, using H2OK instead.")
+#pragma message("OK conflict, using H2OK instead.")
 #endif
 
 #ifndef JE
-#   define JE H2JE
+#define JE H2JE
 #else
-#   pragma message("JE conflict, using H2JE instead.")
+#pragma message("JE conflict, using H2JE instead.")
 #endif
 
 #ifndef MOCK
-#   define MOCK H2MOCK
+#define MOCK H2MOCK
 #else
-#   pragma message("MOCK conflict, using H2MOCK instead.")
+#pragma message("MOCK conflict, using H2MOCK instead.")
 #endif
 #define UNMOCK H2UNSTUB
 
 #ifndef MOCKS
-#   define MOCKS H2MOCKS
+#define MOCKS H2MOCKS
 #else
-#   pragma message("MOCKS conflict, using H2MOCKS instead.")
+#pragma message("MOCKS conflict, using H2MOCKS instead.")
 #endif
 #define UNMOCKS H2UNSTUBS
 
 #ifndef STUB
-#   define STUB H2STUB
+#define STUB H2STUB
 #else
-#   pragma message("STUB conflict, using H2STUB instead.")
+#pragma message("STUB conflict, using H2STUB instead.")
 #endif
 #define UNSTUB H2UNSTUB
 
 #ifndef STUBS
-#   define STUBS H2STUBS
+#define STUBS H2STUBS
 #else
-#   pragma message("STUBS conflict, using H2STUBS instead.")
+#pragma message("STUBS conflict, using H2STUBS instead.")
 #endif
 #define UNSTUBS H2UNSTUBS
 
 #ifndef BLOCK
-#   define BLOCK H2BLOCK
+#define BLOCK H2BLOCK
 #else
-#   pragma message("BLOCK conflict, using H2BLOCK instead.")
+#pragma message("BLOCK conflict, using H2BLOCK instead.")
 #endif
 
 #ifndef UNMEM
-#   define UNMEM H2UNMEM
+#define UNMEM H2UNMEM
 #else
-#   pragma message("UNMEM conflict, using H2UNMEM instead.")
+#pragma message("UNMEM conflict, using H2UNMEM instead.")
 #endif
 
 #ifndef DNS
-#   define DNS H2DNS
+#define DNS H2DNS
 #else
-#   pragma message("DNS conflict, using H2DNS instead.")
+#pragma message("DNS conflict, using H2DNS instead.")
 #endif
 
 #ifndef SOCK
-#   define SOCK H2SOCK
+#define SOCK H2SOCK
 #else
-#   pragma message("SOCK conflict, using H2SOCK instead.")
+#pragma message("SOCK conflict, using H2SOCK instead.")
 #endif
 
 #ifndef COUT
-#   define COUT H2COUT
+#define COUT H2COUT
 #else
-#   pragma message("COUT conflict, using H2COUT instead.")
+#pragma message("COUT conflict, using H2COUT instead.")
 #endif
 
 #ifndef PF
-#   define PF H2PF
+#define PF H2PF
 #else
-#   pragma message("PF conflict, using H2PF instead.")
+#pragma message("PF conflict, using H2PF instead.")
 #endif
 
 #ifndef GlobalSetup
-#   define GlobalSetup H2GlobalSetup
+#define GlobalSetup H2GlobalSetup
 #else
-#   pragma message("GlobalSetup conflict, using H2GlobalSetup instead.")
+#pragma message("GlobalSetup conflict, using H2GlobalSetup instead.")
 #endif
 
 #ifndef GlobalCleanup
-#   define GlobalCleanup H2GlobalCleanup
+#define GlobalCleanup H2GlobalCleanup
 #else
-#   pragma message("GlobalCleanup conflict, using H2GlobalCleanup instead.")
+#pragma message("GlobalCleanup conflict, using H2GlobalCleanup instead.")
 #endif
 
 #ifndef GlobalSuiteSetup
-#   define GlobalSuiteSetup H2GlobalSuiteSetup
+#define GlobalSuiteSetup H2GlobalSuiteSetup
 #else
-#   pragma message("GlobalSuiteSetup conflict, using H2GlobalSuiteSetup instead.")
+#pragma message("GlobalSuiteSetup conflict, using H2GlobalSuiteSetup instead.")
 #endif
 
 #ifndef GlobalSuiteCleanup
-#   define GlobalSuiteCleanup H2GlobalSuiteCleanup
+#define GlobalSuiteCleanup H2GlobalSuiteCleanup
 #else
-#   pragma message("GlobalSuiteCleanup conflict, using H2GlobalSuiteCleanup instead.")
+#pragma message("GlobalSuiteCleanup conflict, using H2GlobalSuiteCleanup instead.")
 #endif
 
 #ifndef GlobalCaseSetup
-#   define GlobalCaseSetup H2GlobalCaseSetup
+#define GlobalCaseSetup H2GlobalCaseSetup
 #else
-#   pragma message("GlobalCaseSetup conflict, using H2GlobalCaseSetup instead.")
+#pragma message("GlobalCaseSetup conflict, using H2GlobalCaseSetup instead.")
 #endif
 
 #ifndef GlobalCaseCleanup
-#   define GlobalCaseCleanup H2GlobalCaseCleanup
+#define GlobalCaseCleanup H2GlobalCaseCleanup
 #else
-#   pragma message("GlobalCaseCleanup conflict, using H2GlobalCaseCleanup instead.")
+#pragma message("GlobalCaseCleanup conflict, using H2GlobalCaseCleanup instead.")
 #endif
 
 #ifndef MATCHER
-#   define MATCHER H2MATCHER
+#define MATCHER H2MATCHER
 #else
-#   pragma message("MATCHER conflict, using H2MATCHER instead.")
+#pragma message("MATCHER conflict, using H2MATCHER instead.")
 #endif
 
 #ifndef CASES
-#   define CASES H2CASES
+#define CASES H2CASES
 #else
-#   pragma message("CASES conflict, using H2CASES instead.")
+#pragma message("CASES conflict, using H2CASES instead.")
 #endif
 
 #ifndef CASESS
-#   define CASESS H2CASESS
+#define CASESS H2CASESS
 #else
-#   pragma message("CASESS conflict, using H2CASESS instead.")
+#pragma message("CASESS conflict, using H2CASESS instead.")
 #endif
 
 #ifndef Cases
-#   define Cases H2Cases
+#define Cases H2Cases
 #else
-#   pragma message("Cases conflict, using H2Cases instead.")
+#pragma message("Cases conflict, using H2Cases instead.")
 #endif
 
 #ifndef Casess
-#   define Casess H2Casess
+#define Casess H2Casess
 #else
-#   pragma message("Casess conflict, using H2Casess instead.")
+#pragma message("Casess conflict, using H2Casess instead.")
 #endif
 
 #define Cases_t H2Cases_t
 #define Casess_t H2Casess_t
 
 #ifndef CASES_T
-#   define CASES_T H2CASES_T
+#define CASES_T H2CASES_T
 #else
-#   pragma message("CASES_T conflict, using H2CASES_T instead.")
+#pragma message("CASES_T conflict, using H2CASES_T instead.")
 #endif
 
 #ifndef CASESS_T
-#   define CASESS_T H2CASESS_T
+#define CASESS_T H2CASESS_T
 #else
-#   pragma message("CASESS_T conflict, using H2CASESS_T instead.")
+#pragma message("CASESS_T conflict, using H2CASESS_T instead.")
 #endif
 
 #define Todos H2Todos
@@ -324,7 +324,6 @@ namespace h2 {
 #define TODOS_T H2TODOS_T
 #define TODOSS_T H2TODOSS_T
 
-/* clang-format off */
 using h2::_;
 using h2::Any;
 #define IsNull h2::Is_Null()
@@ -365,8 +364,9 @@ using h2::Has;
 using h2::In;
 using h2::Pair;
 
-#ifndef TEST_C
-#   define private public
+#ifdef __cplusplus
+#define private public
+#define protected public
 #endif
 
 #endif

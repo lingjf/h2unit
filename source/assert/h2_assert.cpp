@@ -10,8 +10,7 @@ static inline const char* find_outer_op(const char* src, const char* op)
 h2_inline h2_defer_failure::~h2_defer_failure()
 {
    if (fails) {
-      fails->file = file;
-      fails->line = line;
+      fails->sz = sz;
       fails->assert_type = assert_type;
       fails->assert_op = assert_op;
       fails->e_expression = e_expression;

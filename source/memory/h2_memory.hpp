@@ -5,19 +5,19 @@ struct h2_memory {
 
    struct stack {
       static void root();
-      static void push(const char* file, int line);
+      static void push(const h2_sz& sz);
       static h2_fail* pop();
       static long long footprint();
 
       struct block : h2_once {
          bool unmem = false;
-         block(const char* attributes, const char* file, int line);
+         block(const char* attributes, const h2_sz& sz);
          ~block();
       };
    };
 };
 
-#define __H2BLOCK(Attributes, Qb) for (h2::h2_memory::stack::block Qb(h2::ss(Attributes), __FILE__, __LINE__); Qb;)
+#define __H2BLOCK(Attributes, Qb) for (h2::h2_memory::stack::block Qb(h2::ss(Attributes), {__FILE__, __LINE__}); Qb;)
 #define H2BLOCK(...) __H2BLOCK(#__VA_ARGS__, H2PP_UNIQUE())
 
 template <typename T>

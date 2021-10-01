@@ -40,11 +40,11 @@ h2_inline void h2_memory::hook(bool overrides)
 
 h2_inline void h2_memory::stack::root()
 {
-   h2_stack::I().push("", "root", __FILE__, __LINE__);
+   h2_stack::I().push("", "root", {__FILE__, __LINE__});
 }
-h2_inline void h2_memory::stack::push(const char* file, int line)
+h2_inline void h2_memory::stack::push(const h2_sz& sz)
 {
-   h2_stack::I().push("", "case", file, line);
+   h2_stack::I().push("", "case", sz);
 }
 h2_inline h2_fail* h2_memory::stack::pop()
 {
@@ -55,11 +55,11 @@ h2_inline long long h2_memory::stack::footprint()
    return h2_stack::I().top()->footprint;
 }
 
-h2_inline h2_memory::stack::block::block(const char* attributes, const char* file, int line)
+h2_inline h2_memory::stack::block::block(const char* attributes, const h2_sz& sz)
 {
    unmem = h2_extract::has(attributes, "unmem");
    if (unmem) h2_memory::hook(false);
-   h2_stack::I().push(attributes, "block", file, line);
+   h2_stack::I().push(attributes, "block", sz);
 }
 h2_inline h2_memory::stack::block::~block()
 {

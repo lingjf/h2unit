@@ -19,18 +19,18 @@ struct h2_json_tree : h2_json_node {
       return node;
    }
 
-   h2_sentence serialize()
+   h2_line serialize() const
    {
-      h2_sentence sentence;
+      h2_line line;
       for (size_t j = 0; j < lexical.size(); ++j) {
          if (j == syntax.i)
-            sentence.printf("yellow,bold,underline", "%s%s ", comma_if(j, " "), lexical[j].c_str());
+            line.printf("yellow,bold,underline", "%s%s ", comma_if(j, " "), lexical[j].c_str());
          else
-            sentence.push_back(comma_if(j, " ") + lexical[j]);
+            line.push_back(comma_if(j, " ") + lexical[j]);
       }
       if (illformed && lexical.size() <= syntax.i) {
-         sentence.printf("yellow,bold,underline", " ... ");
+         line.printf("yellow,bold,underline", " ... ");
       }
-      return sentence;
+      return line;
    }
 };

@@ -32,20 +32,20 @@ struct h2_override_platform {
 
    void set()
    {
-      stubs.add((void*)::_free_base, (void*)_free_base, "_free_base", __FILE__, __LINE__);
-      stubs.add((void*)::_msize, (void*)h2_override::size, "_msize", __FILE__, __LINE__);
-      stubs.add((void*)::_expand, (void*)_expand, "_expand", __FILE__, __LINE__);
+      stubs.add((void*)::_free_base, (void*)_free_base, {__FILE__, __LINE__, "_free_base"});
+      stubs.add((void*)::_msize, (void*)h2_override::size, {__FILE__, __LINE__, "_msize"});
+      stubs.add((void*)::_expand, (void*)_expand, {__FILE__, __LINE__, "_expand"});
 #ifndef NDEBUG
-      stubs.add((void*)::_free_dbg, (void*)_free_dbg, "_free_dbg", __FILE__, __LINE__);
-      // stubs.add((void*)::_malloc_dbg, (void*)_malloc_dbg, "_malloc_dbg", __FILE__, __LINE__);
-      // stubs.add((void*)::_realloc_dbg, (void*)_realloc_dbg, "_realloc_dbg", __FILE__, __LINE__);
-      // stubs.add((void*)::_calloc_dbg, (void*)_calloc_dbg, "_calloc_dbg", __FILE__, __LINE__);
-      // stubs.add((void*)::_expand_dbg, (void*)_expand_dbg, "_expand_dbg", __FILE__, __LINE__);
+      stubs.add((void*)::_free_dbg, (void*)_free_dbg, {__FILE__, __LINE__, "_free_dbg"});
+      // stubs.add((void*)::_malloc_dbg, (void*)_malloc_dbg, {__FILE__, __LINE__, "_malloc_dbg"});
+      // stubs.add((void*)::_realloc_dbg, (void*)_realloc_dbg, {__FILE__, __LINE__, "_realloc_dbg"});
+      // stubs.add((void*)::_calloc_dbg, (void*)_calloc_dbg, {__FILE__, __LINE__, "_calloc_dbg"});
+      // stubs.add((void*)::_expand_dbg, (void*)_expand_dbg, {__FILE__, __LINE__, "_expand_dbg"});
 #endif
-      //// stubs.add((void*)::_calloc_crt, (void*)h2_override::calloc, "_calloc_crt", __FILE__, __LINE__);
-      stubs.add((void*)::_aligned_malloc, (void*)_aligned_malloc, "_aligned_malloc", __FILE__, __LINE__);
-      stubs.add((void*)::_aligned_free, (void*)_aligned_free, "_aligned_free", __FILE__, __LINE__);
-      stubs.add((void*)::_strdup, (void*)_strdup, "_strdup", __FILE__, __LINE__);  // strdup call to _strdup
+      //// stubs.add((void*)::_calloc_crt, (void*)h2_override::calloc, {__FILE__, __LINE__, "_calloc_crt"});
+      stubs.add((void*)::_aligned_malloc, (void*)_aligned_malloc, {__FILE__, __LINE__, "_aligned_malloc"});
+      stubs.add((void*)::_aligned_free, (void*)_aligned_free, {__FILE__, __LINE__, "_aligned_free"});
+      stubs.add((void*)::_strdup, (void*)_strdup, {__FILE__, __LINE__, "_strdup"});  // strdup call to _strdup
    }
 
    void reset() { stubs.clear(); }

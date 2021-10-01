@@ -66,8 +66,8 @@ struct h2_libc_malloc {
 
    void batch(const unsigned long long size)
    {
-      int brk_size = 4 * 1024 * 1024;
-      int brk_count = (int)::ceil(size / (double)brk_size);
+      size_t brk_size = 4 * 1024 * 1024;
+      size_t brk_count = (size_t)::ceil(size / (double)brk_size);
 
 #if defined _WIN32
       PVOID ptr = VirtualAlloc(NULL, brk_count * brk_size, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);

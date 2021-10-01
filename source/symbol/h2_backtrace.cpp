@@ -143,12 +143,12 @@ h2_inline void h2_backtrace::print(h2_vector<h2_string>& stacks) const
 #endif
 }
 
-h2_inline void h2_backtrace::print(int pad) const
+h2_inline void h2_backtrace::print(size_t pad) const
 {
    h2_vector<h2_string> stacks;
    print(stacks);
-   h2_paragraph paragraph;
-   for (auto& c : stacks) paragraph.push_back(c.startswith("h2::") || c.contains(": h2::") ? gray(c) : h2_sentence(c));
-   paragraph.sequence(pad);
-   h2_color::printl(paragraph);
+   h2_lines lines;
+   for (auto& c : stacks) lines.push_back(c.startswith("h2::") || c.contains(": h2::") ? gray(c) : h2_line(c));
+   lines.sequence(pad);
+   h2_color::printl(lines);
 }

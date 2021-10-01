@@ -1,12 +1,12 @@
-h2_inline h2_fail* h2_checkin::check(const char* func, size_t index, size_t total, const char* file, int line)
+h2_inline h2_fail* h2_checkin::check(size_t index, size_t total, const h2_sz& sz) const
 {
    if (is_satisfied() || is_saturated()) return nullptr;
-   h2_sentence t = func + gray("()") + " expected " + delta(expect(), "green") + " but actually " + delta(actual(), "red,bold") + " called";
+   h2_line t = sz.func + gray("()") + " expected " + delta(expect(), "green") + " but actually " + delta(actual(), "red,bold") + " called";
    if (1 < total) t += gray(" when ") + h2_numeric::sequence_number(index) + " " + color(expr, "cyan");
-   return h2_fail::new_normal(t, file, line);
+   return h2_fail::new_normal(t, {nullptr, 0});
 }
 
-h2_inline const char* h2_checkin::actual()
+h2_inline const char* h2_checkin::actual() const
 {
    static char st[64];
    if (call > 0)
@@ -16,7 +16,7 @@ h2_inline const char* h2_checkin::actual()
    return st;
 }
 
-h2_inline const char* h2_checkin::expect()
+h2_inline const char* h2_checkin::expect() const
 {
    static char st[128];
    if (least == 0) {

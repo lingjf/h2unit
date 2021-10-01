@@ -30,7 +30,7 @@ struct h2_routine<ClassType, ReturnType(ArgumentTypes...)> {
       /* never reach! make compiler happy. return uninitialized value is undefined behaviour, clang illegal instruction. */
       return ret->value;
    }
-   operator bool()
+   operator bool() const
    {
       return fp || mfp || ret;
    }
@@ -58,7 +58,7 @@ struct h2_routine<ClassType, void(ArgumentTypes...)> {
       else if (fp)
          fp(arguments...);
    }
-   operator bool()
+   operator bool() const
    {
       return fp || mfp;
    }

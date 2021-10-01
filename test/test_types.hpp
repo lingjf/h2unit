@@ -69,7 +69,7 @@ int foobar1(float a);
 
 int foobar2(int a, const char* b);
 
-}  // namespace test_ns
+}
 
 struct A_PlainStruct {
    int a;
@@ -160,7 +160,7 @@ class E_NamespaceClass : public A_AbstractClass {
  private:
    virtual const char* pure_f0() { return sprintf(buffer, "E.pure_f0()%c", e), buffer; }
 };
-}  // namespace test_ns
+}
 
 static const char* A_normal_f1_fake(A_AbstractClass* This, int x) { return sprintf(buffer, "-A.normal_f1(%d)%c", x, This->a), buffer; }
 static const char* A_virtual_f1_fake(A_AbstractClass* This, int x) { return sprintf(buffer, "-A.virtual_f1(%d)%c", x, This->a), buffer; }

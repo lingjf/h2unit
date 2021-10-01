@@ -26,9 +26,9 @@ struct h2_exception {
    static void initialize()
    {
 #if defined _MSC_VER || defined __MINGW32__ || defined __MINGW64__
-      I().stubs.add((void*)::RaiseException, (void*)RaiseException, "RaiseException", __FILE__, __LINE__);
+      I().stubs.add((void*)::RaiseException, (void*)RaiseException, {__FILE__, __LINE__, "RaiseException"});
 #else
-      I().stubs.add((void*)abi::__cxa_throw, (void*)__cxa_throw, "__cxa_throw", __FILE__, __LINE__);
+      I().stubs.add((void*)abi::__cxa_throw, (void*)__cxa_throw, {__FILE__, __LINE__, "__cxa_throw"});
 #endif
       if (!O.debug) h2_crash::install();
    }

@@ -68,7 +68,7 @@ SUITE(json dual)
         }",
         dual_tojson(&dual));
 
-      h2::h2_paragraph e_paragraph, a_paragraph;
-      dual.align(e_paragraph, a_paragraph);
+      h2::h2_lines e_lines, a_lines;
+      dual.align(e_lines, a_lines);
    }
 }

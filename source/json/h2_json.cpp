@@ -1,20 +1,20 @@
-h2_inline h2_paragraph h2_json::dump(const h2_string& json_string)
+h2_inline h2_lines h2_json::dump(const h2_string& json_string)
 {
    h2_json_tree tree(json_string.c_str());
    if (tree.illformed) return {tree.serialize()};
-   h2_paragraph paragraph = tree.format(O.fold_json, O.copy_paste_json);
+   h2_lines lines = tree.format(O.fold_json, O.copy_paste_json);
    if (O.copy_paste_json) {
-      if (!paragraph.empty()) {
-         paragraph.front() = "\"" + paragraph.front();
-         paragraph.back() = paragraph.back() + "\"";
+      if (!lines.empty()) {
+         lines.front() = "\"" + lines.front();
+         lines.back() = lines.back() + "\"";
       }
-      size_t max_width = paragraph.width();
-      for (size_t i = 0; i < paragraph.size(); ++i) {
-         paragraph[i].padding(max_width - paragraph[i].width() + 3);
-         if (i < paragraph.size() - 1) paragraph[i].push_back("\\");
+      size_t max_width = lines.width();
+      for (size_t i = 0; i < lines.size(); ++i) {
+         lines[i].padding(max_width - lines[i].width() + 3);
+         if (i < lines.size() - 1) lines[i].push_back("\\");
       }
    }
-   return paragraph;
+   return lines;
 }
 
 h2_inline h2_string h2_json::select(const h2_string& json_string, const h2_string& selector, bool caseless)
@@ -33,11 +33,11 @@ h2_inline int h2_json::match(const h2_string& expect, const h2_string& actual, b
    return h2_json_match::match(&e_tree, &a_tree, caseless) ? 0 : 1;
 }
 
-h2_inline bool h2_json::diff(const h2_string& expect, const h2_string& actual, h2_paragraph& e_paragraph, h2_paragraph& a_paragraph, bool caseless)
+h2_inline bool h2_json::diff(const h2_string& expect, const h2_string& actual, h2_lines& e_lines, h2_lines& a_lines, bool caseless)
 {
    h2_json_tree e_tree(expect.c_str()), a_tree(actual.c_str());
    if (e_tree.illformed || a_tree.illformed) return false;
    h2_json_dual dual(&e_tree, &a_tree, caseless);
-   dual.align(e_paragraph, a_paragraph);
+   dual.align(e_lines, a_lines);
    return true;
 }

@@ -10,9 +10,9 @@ struct h2_checkin { /* 考勤 ; 函数被调次数期望 */
    bool is_saturated(/*饱和*/) const { return call == most; }
    bool is_excessive(/*过多*/) const { return most < call; }
 
-   h2_fail* check(const char* func, size_t index, size_t total, const char* file, int line);
-   const char* actual();
-   const char* expect();
+   h2_fail* check(size_t index, size_t total, const h2_sz& sz) const;
+   const char* actual() const;
+   const char* expect() const;
 
    static h2_checkin Once() { return h2_checkin(1, 1, "Once"); }
    static h2_checkin Twice() { return h2_checkin(2, 2, "Twice"); }

@@ -11,5 +11,5 @@ struct h2_backtrace {
 
    bool in(void* fps[]) const;
    void print(h2_vector<h2_string>& stacks) const;
-   void print(int pad) const;
+   void print(size_t pad) const;
 };

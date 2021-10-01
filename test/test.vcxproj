@@ -98,8 +98,8 @@
     <ClCompile Include="test_utils_compare.cpp" />
     <ClCompile Include="test_utils_misc.cpp" />
     <ClCompile Include="test_utils_numeric.cpp" />
-    <ClCompile Include="test_utils_sentence.cpp" />
-    <ClCompile Include="test_utils_paragraph.cpp" />
+    <ClCompile Include="test_utils_line.cpp" />
+    <ClCompile Include="test_utils_lines.cpp" />
     <ClCompile Include="test_utils_shared_ptr.cpp" />
     <ClCompile Include="test_utils_string.cpp" />
     <ClCompile Include="test_utils_stringify.cpp" />

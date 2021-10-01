@@ -1,8 +1,8 @@
-static inline void drop_previous_order() { ::remove(".previous_order"); }
+static inline void drop_last_order() { ::remove(".last_order"); }
 
-static inline void save_previous_order(h2_list& suites)
+static inline void save_last_order(h2_list& suites)
 {
-   FILE* f = ::fopen(".previous_order", "w");
+   FILE* f = ::fopen(".last_order", "w");
    if (!f) return;
    h2_list_for_each_entry (s, suites, h2_suite, x)
       h2_list_for_each_entry (c, s->cases, h2_case, x)
@@ -17,17 +17,17 @@ static inline void __mark(h2_list& suites, char* suitename, char* casename, bool
       if (!strcmp(suitename, ss(s->name)))
          h2_list_for_each_entry (c, s->cases, h2_case, x)
             if (!strcmp(casename, c->name))
-               s->seq = c->seq = ++seq, c->previous_failed = failed;
+               s->seq = c->seq = ++seq, c->last_failed = failed;
 }
 
-static inline int mark_previous_order(h2_list& suites)
+static inline int mark_last_order(h2_list& suites)
 {
    int count = 0;
    char suitename[1024], casename[1024], failed[32];
-   FILE* f = ::fopen(".previous_order", "r");
+   FILE* f = ::fopen(".last_order", "r");
    if (!f) return 0;
    while (::fgets(suitename, sizeof(suitename), f) && ::fgets(casename, sizeof(casename), f) && ::fgets(failed, sizeof(failed), f)) {
-      suitename[strlen(suitename) - 1] = '\0'; /* remove \n in save_previous_order */
+      suitename[strlen(suitename) - 1] = '\0'; /* remove \n in save_last_order */
       casename[strlen(casename) - 1] = '\0';
       failed[strlen(failed) - 1] = '\0';
       __mark(suites, suitename, casename, !!atoi(failed));
@@ -50,9 +50,9 @@ struct h2_compare_wrapper {
 
 h2_inline void h2_runner::shuffle()
 {
-   previous = mark_previous_order(suites);
+   last = mark_last_order(suites);
    ::srand(::clock());
-   if (O.shuffle_cases && previous == 0)
+   if (O.shuffle_cases && last == 0)
       h2_list_for_each_entry (s, suites, h2_suite, x)
          h2_list_for_each_entry (c, s->cases, h2_case, x)
             s->seq = c->seq = ::rand();
@@ -65,9 +65,9 @@ h2_inline void h2_runner::shuffle()
 h2_inline void h2_runner::shadow()
 {
    if (stats.failed == 0)
-      drop_previous_order();
-   else if (previous == 0)
-      save_previous_order(suites);
+      drop_last_order();
+   else if (last == 0)
+      save_last_order(suites);
 }
 
 h2_inline void h2_runner::enumerate()
@@ -82,9 +82,9 @@ h2_inline void h2_runner::enumerate()
       for (auto& cleanup : global_suite_cleanups) cleanup();
       int unfiltered = 0;
       h2_list_for_each_entry (c, s->cases, h2_case, x)
-         if (!(c->filtered = O.filter(ss(s->name), c->name, c->file, c->line)))
+         if (!(c->filtered = O.filter(ss(s->name), c->name, c->sz.file, c->sz.line)))
             unfiltered++;
-      if (unfiltered == 0) s->filtered = O.filter(ss(s->name), "", s->file, s->line);
+      if (unfiltered == 0) s->filtered = O.filter(ss(s->name), "", s->sz.file, s->sz.line);
       cases += s->cases.count();
       if (10 * i + i * i < cases && i < (int)h2_shell::I().cww - 20) i += ::printf(".");
    }
@@ -116,7 +116,7 @@ h2_inline int h2_runner::main(int argc, const char** argv)
          for (auto& setup : global_suite_setups) setup();
          s->setup();
          h2_list_for_each_entry (c, s->cases, h2_case, x) {
-            if ((0 < O.break_after_fails && O.break_after_fails <= stats.failed) || (O.last_failed && !c->previous_failed)) c->ignored = true;
+            if ((0 < O.break_after_fails && O.break_after_fails <= stats.failed) || (O.last_failed && !c->last_failed)) c->ignored = true;
             if (c->ignored)
                stats.ignored++, s->stats.ignored++;
             else if (c->filtered)

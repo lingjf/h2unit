@@ -2,7 +2,6 @@ struct h2_report_impl {
    h2_list x;
    int suites = 0, cases = 0;
    int suite_index = 0, suite_case_index = 0, runner_case_index = 0;
-   std::chrono::time_point<std::chrono::system_clock> runner_start, suite_start, case_start;
    long long runner_cost, suite_cost, case_cost;
 
    virtual void on_runner_start(h2_runner* r)
@@ -10,30 +9,30 @@ struct h2_report_impl {
       suites = r->suites.count();
       h2_list_for_each_entry (s, r->suites, h2_suite, x)
          cases += s->cases.count();
-      runner_start = std::chrono::system_clock::now();
+      runner_cost = h2_now();
    }
    virtual void on_runner_endup(h2_runner* r)
    {
-      runner_cost = (long long)std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::system_clock::now() - runner_start).count();
+      runner_cost = h2_now() - runner_cost;
    }
    virtual void on_suite_start(h2_suite* s)
    {
       suite_case_index = 0;
-      suite_start = std::chrono::system_clock::now();
+      suite_cost = h2_now();
    }
    virtual void on_suite_endup(h2_suite* s)
    {
-      suite_cost = (long long)std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::system_clock::now() - suite_start).count();
+      suite_cost = h2_now() - suite_cost;
    }
    virtual void on_case_start(h2_suite* s, h2_case* c)
    {
       ++suite_case_index;
-      case_start = std::chrono::system_clock::now();
+      case_cost = h2_now();
    }
    virtual void on_case_endup(h2_suite* s, h2_case* c)
    {
       ++runner_case_index;
-      case_cost = (long long)std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::system_clock::now() - case_start).count();
+      case_cost = h2_now() - case_cost;
    }
 };
 
@@ -57,7 +56,7 @@ struct h2_report_list : h2_report_impl {
       if (O.list_cases & 1) {
          h2_color::prints("dark gray", "SUITE-%d. ", unfiltered_suite_index);
          h2_color::prints("bold,blue", "%s", s->name);
-         h2_color::prints("dark gray", " %s:%d\n", s->file, s->line);
+         h2_color::prints("dark gray", " %s:%d\n", s->sz.file, s->sz.line);
       }
    }
    void on_case_start(h2_suite* s, h2_case* c) override
@@ -78,7 +77,7 @@ struct h2_report_list : h2_report_impl {
          else
             h2_color::prints("dark gray", " %s-%d. ", type, unfiltered_runner_case_index);
          h2_color::prints("cyan", "%s", c->name);
-         h2_color::prints("dark gray", " %s:%d\n", h2_basename(c->file), c->line);
+         h2_color::prints("dark gray", " %s:%d\n", c->sz.basefile(), c->sz.line);
       }
    }
 };
@@ -94,29 +93,30 @@ struct h2_report_console : h2_report_impl {
    {
       return !!a1 + !!a2 + !!a3 + !!a4 + !!a5 + !!a6;
    }
-   h2_sentence format_title(const char* suite_name, const char* case_name, const char* file, int line)
+   h2_line format_title(const char* suite_name, const char* case_name, const char* file, int line)
    {
-      h2_sentence title;
+      h2_line title;
+      title.printf("dark gray", "┊ ");
       if (strlen(case_name))
          title.printf("", "%s ", case_name);
       else
          title.printf("dark gray", "case ");
       if (suite_name) {
-         title.printf("dark gray", "| ");
+         title.printf("dark gray", "┊ ");
          if (strlen(suite_name))
             title.printf("", "%s ", suite_name);
          else
             title.printf("dark gray", "suite ");
       }
       if (file) {
-         title.printf("dark gray", "| ");
-         title.printf("", "%s:%d ", h2_basename(file), line);
+         title.printf("dark gray", "┊ ");
+         title.printf("", "%s:%d ", file, line);
       } else {
          title = title.acronym(h2_shell::I().cww - 20);
       }
       return title;
    }
-   void format_percentage(h2_sentence& bar)
+   void format_percentage(h2_line& bar)
    {
       bar.printf("dark gray", "[");
       bar.printf("", "%3d%%", cases ? (int)(runner_case_index * 100 / cases) : 100);
@@ -129,10 +129,10 @@ struct h2_report_console : h2_report_impl {
          ::printf("\33[2K\r"); /* clear line */
       else
          ::printf("\n"); /* user output, new line */
-      h2_sentence bar;
+      h2_line bar;
       if (percentage && O.progressing) format_percentage(bar);
       if (status && status_style) bar.printf(status_style, "%s", status);
-      if (s && c) bar += format_title(s->name, c->name, returnable ? nullptr : c->file, c->line);
+      if (s && c) bar += format_title(s->name, c->name, returnable ? nullptr : c->sz.basefile(), c->sz.line);
       h2_color::printl(bar, false);
       if (returnable) h2_report::I().escape_length = h2_stdio::I().capture_length;
    }
@@ -227,13 +227,13 @@ struct h2_report_console : h2_report_impl {
             print_bar(true, "bold,red", "Failed ", s, c, false);
             if (O.verbose >= 2) {
                h2_color::prints("", "\n");
-               if (c->fails) c->fails->foreach([](h2_fail* fail, int subling_index, int child_index) { fail->print(subling_index, child_index); });
+               if (c->fails) c->fails->foreach([](h2_fail* fail, size_t si, size_t ci) { fail->print(si, ci); });
             }
          }
       } else {  // Passed
          if (O.verbose >= 3) {
             print_bar(true, "green", "Passed ", s, c, false);
-            h2_sentence ad;
+            h2_line ad;
             if (0 < c->asserts) ad.printf("dark gray", ad.width() ? ", " : "").printf("", "%d assert%s", c->asserts, 1 < c->asserts ? "s" : "");
             if (0 < c->footprint) ad.printf("dark gray", ad.width() ? ", " : "").printf("", "%s footprint", format_volume(c->footprint));
             if (0 < case_cost) ad.printf("dark gray", ad.width() ? ", " : "").printf("", "%s", format_duration(case_cost));
@@ -265,8 +265,8 @@ struct h2_report_junit : h2_report_impl {
       if (!f) return;
       fprintf(f, "<testcase classname=\"%s\" name=\"%s\" status=\"%s\" time=\"%.3f\">\n", s->name, c->name, c->todo ? "TODO" : (c->filtered ? "Filtered" : (c->ignored ? "Ignored" : (c->failed ? "Failed" : "Passed"))), case_cost / 1000.0);
       if (c->failed) {
-         fprintf(f, "<failure message=\"%s:%d:", c->file, c->line);
-         if (c->fails) c->fails->foreach([&](h2_fail* fail, int subling_index, int child_index) {fprintf(f, "{newline}"); fail->print(f); });
+         fprintf(f, "<failure message=\"%s:%d:", c->sz.file, c->sz.line);
+         if (c->fails) c->fails->foreach([&](h2_fail* fail, size_t si, size_t ci) {fprintf(f, "{newline}"); fail->print(f); });
          fprintf(f, "\" type=\"AssertionFailedError\"></failure>\n");
       }
       fprintf(f, "<system-out></system-out><system-err></system-err>\n");

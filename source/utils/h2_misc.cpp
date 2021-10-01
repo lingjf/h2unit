@@ -1,10 +1,3 @@
-static inline const char* h2_basename(const char* path)
-{
-   const char* p = strrchr(path, '/');
-   if (!p) p = strrchr(path, '\\');
-   return p ? p + 1 : path;
-}
-
 static inline const char* get_key(const char* subject, const char* key)
 {
    return strcasestr(subject, key);
@@ -71,6 +64,17 @@ h2_inline int h2_extract::fill(const char* attributes, const char* key, unsigned
       else
          return *((unsigned long long*)bytes) = (unsigned long long)v, 8;
    }
+}
+
+static inline long long h2_now()
+{
+#if defined _WIN32
+   return GetTickCount();
+#else
+   struct timeval tv;
+   gettimeofday(&tv, NULL);
+   return tv.tv_sec * 1000LL + tv.tv_usec / 1000;
+#endif
 }
 
 static inline void h2_sleep(long long milliseconds)

@@ -10,7 +10,7 @@ h2_inline void h2_case::clear()
 h2_inline void h2_case::prev_setup()
 {
    failed = false;
-   h2_memory::stack::push(file, line);
+   h2_memory::stack::push(sz);
 }
 
 h2_inline void h2_case::post_cleanup()

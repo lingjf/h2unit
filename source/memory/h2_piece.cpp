@@ -184,7 +184,7 @@ struct h2_piece : h2_libc {
       return fail;
    }
 
-   bool in_page_range(const unsigned char* p)
+   bool in_page_range(const unsigned char* p) const
    {
       return page_ptr <= p && p < page_ptr + page_size * (page_count + 1);
    }
