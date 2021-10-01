@@ -143,19 +143,6 @@ struct h2_fail_unexpect : h2_fail {
    }
 };
 
-static inline h2_line fmt_char(h2_string& c, bool eq, h2_string p, const char* style)
-{
-   h2_string c1 = c.escape(true), p1 = p.escape(true);
-   if (c1.width() < p1.width()) c1.append("   ", p1.width() - c1.width());
-   if (eq) return c1;
-   return color(c1, style);
-}
-
-static inline h2_string get_char(h2_vector<h2_string>& chars, size_t i)
-{
-   return i < chars.size() ? chars[i] : (i == chars.size() ? "\0" : "");
-}
-
 struct h2_fail_strcmp : h2_fail_unexpect {
    const bool caseless;
    h2_string e_value, a_value;
@@ -167,15 +154,11 @@ struct h2_fail_strcmp : h2_fail_unexpect {
       if (16 < e_value.width() || 16 < a_value.width()) {
          h2_line e_line, a_line;
          h2_vector<h2_string> e_chars = e_value.disperse(), a_chars = a_value.disperse();
-         for (size_t i = 0; i < e_chars.size(); ++i) {
-            h2_string ac = get_char(a_chars, i);
-            e_line += fmt_char(e_chars[i], e_chars[i].equals(ac, caseless), ac, "green");
-         }
-         for (size_t i = 0; i < a_chars.size(); ++i) {
-            h2_string ec = get_char(e_chars, i);
-            a_line += fmt_char(a_chars[i], a_chars[i].equals(ec, caseless), ec, "red");
-         }
-
+         auto lcs = h2_LCS(e_chars, a_chars, caseless).lcs();
+         for (size_t i = 0; i < lcs.first.size(); i++)
+            e_line += lcs.first[i] ? h2_line(e_chars[i].escape()) : color(e_chars[i].escape(), "green");
+         for (size_t i = 0; i < lcs.second.size(); i++)
+            a_line += lcs.second[i] ? h2_line(a_chars[i].escape()) : color(a_chars[i].escape(), "red");
          h2_color::printl(h2_layout::unified(e_line, a_line, "expect", "actual", h2_shell::I().cww));
       }
    }
@@ -188,8 +171,8 @@ struct h2_fail_strfind : h2_fail_unexpect {
    {
       h2_fail_unexpect::print(si, ci);
 
-      if (16 < e_value.width() || 16 < a_value.width()) {  // omit short string unified compare layout
-         h2_line e_line = e_value.escape(true), a_line = a_value.escape(true);
+      if (16 < e_value.width() || 16 < a_value.width()) {
+         h2_line e_line = e_value.escape(), a_line = a_value.escape();
          h2_color::printl(h2_layout::seperate(e_line, a_line, "expect", "actual", h2_shell::I().cww));
       }
    }

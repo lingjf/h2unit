@@ -1,5 +1,5 @@
 
-/* v5.14 2021-10-01 20:05:15 */
+/* v5.14 2021-10-01 23:22:06 */
 /* https://github.com/lingjf/h2unit */
 /* Apache Licence 2.0 */
 
@@ -550,7 +550,7 @@ struct h2_list {
    int count() const;
    void sort(int (*cmp)(h2_list*, h2_list*));
 };
-// source/utils/h2_compare.hpp
+// source/utils/h2_pattern.hpp
 
 struct h2_pattern {
    static bool regex_match(const char* pattern, const char* subject, bool caseless = false);

@@ -1,5 +1,5 @@
 
-/* v5.14 2021-10-01 20:05:15 */
+/* v5.14 2021-10-01 23:22:06 */
 /* https://github.com/lingjf/h2unit */
 /* Apache Licence 2.0 */
 #include "h2unit.hpp"
@@ -321,7 +321,7 @@ static inline const char* format_volume(long long footprint)
       sprintf(st, "%.2gGB", footprint / (1024.0 * 1024.0 * 1024.0));
    return st;
 }
-// source/utils/h2_compare.cpp
+// source/utils/h2_pattern.cpp
 h2_inline bool h2_pattern::regex_match(const char* pattern, const char* subject, bool caseless)
 {
    bool result = false;
@@ -369,6 +369,7 @@ h2_inline bool h2_pattern::match(const char* pattern, const char* subject, bool 
 {
    return wildcard_match(pattern, subject, caseless) || regex_match(pattern, subject, caseless);
 }
+// source/utils/h2_diff.cpp
 
 struct h2_fuzzy {
    static size_t levenshtein(const char* s1, const char* s2, size_t n1, size_t n2, bool caseless)
@@ -393,6 +394,74 @@ struct h2_fuzzy {
       size_t n1 = strlen(s1), n2 = strlen(s2);
       if (!n1 && !n2) return 1;
       return 1.0 - levenshtein(s1, s2, n1, n2, caseless) / ((n1 + n2) * 0.5);
+   }
+};
+
+// https://en.wikipedia.org/wiki/Longest_common_subsequence_problem
+struct h2_LCS {
+   h2_vector<h2_string> s1, s2;
+   bool caseless;
+   h2_vector<h2_vector<int>> c, d, p;
+
+   h2_LCS(h2_vector<h2_string> s1_, h2_vector<h2_string> s2_, bool caseless_ = false) : s1(s1_), s2(s2_), caseless(caseless_) {}
+
+   void LCS_table()
+   {
+      for (size_t i = 0; i < s1.size() + 1; i++) {
+         c.push_back(h2_vector<int>(s2.size() + 1));
+         d.push_back(h2_vector<int>(s2.size() + 1));
+         p.push_back(h2_vector<int>(s2.size() + 1));
+      }
+
+      for (size_t i = 0; i < s1.size() + 1; i++) c[i][0] = 0;
+      for (size_t i = 0; i < s2.size() + 1; i++) c[0][i] = 0;
+
+      for (size_t i = 1; i < s1.size() + 1; i++) {
+         for (size_t j = 1; j < s2.size() + 1; j++) {
+            if (s1[i - 1].equals(s2[j - 1], caseless)) {
+               c[i][j] = c[i - 1][j - 1] + 1;
+               d[i][j] = 1030; // 10:30 upper left
+            } else if (c[i - 1][j] > c[i][j - 1]) {
+               c[i][j] = c[i - 1][j];
+               d[i][j] = 900; // 9:30 left
+            } else {
+               c[i][j] = c[i][j - 1];
+               d[i][j] = 1200; // 12:00 upper
+            }
+         }
+      }
+   }
+
+   void LCS_traceback(size_t i, size_t j)
+   {
+      if (i == 0 || j == 0) return;
+      if (d[i][j] == 1030) { // 10:30
+         p[i][j] = 1;
+         LCS_traceback(i - 1, j - 1);
+      } else if (d[i][j] == 900) { // 9:00
+         LCS_traceback(i - 1, j);
+      } else { // 1200 12:00
+         LCS_traceback(i, j - 1);
+      }
+   }
+
+   std::pair<h2_vector<int>, h2_vector<int>> lcs()
+   {
+      LCS_table();
+      LCS_traceback(s1.size(), s2.size());
+
+      h2_vector<int> l1(s1.size()), l2(s2.size());
+      for (size_t i = 1; i < s1.size() + 1; i++) {
+         l1[i - 1] = 0;
+         for (size_t j = 1; j < s2.size() + 1; j++)
+            if (p[i][j]) l1[i - 1] = 1;
+      }
+      for (size_t j = 1; j < s2.size() + 1; j++) {
+         l2[j - 1] = 0;
+         for (size_t i = 1; i < s1.size() + 1; i++)
+            if (p[i][j]) l2[j - 1] = 1;
+      }
+      return {l1, l2};
    }
 };
 // source/utils/h2_misc.cpp
@@ -5405,19 +5474,6 @@ struct h2_fail_unexpect : h2_fail {
    }
 };
 
-static inline h2_line fmt_char(h2_string& c, bool eq, h2_string p, const char* style)
-{
-   h2_string c1 = c.escape(true), p1 = p.escape(true);
-   if (c1.width() < p1.width()) c1.append("   ", p1.width() - c1.width());
-   if (eq) return c1;
-   return color(c1, style);
-}
-
-static inline h2_string get_char(h2_vector<h2_string>& chars, size_t i)
-{
-   return i < chars.size() ? chars[i] : (i == chars.size() ? "\0" : "");
-}
-
 struct h2_fail_strcmp : h2_fail_unexpect {
    const bool caseless;
    h2_string e_value, a_value;
@@ -5429,15 +5485,11 @@ struct h2_fail_strcmp : h2_fail_unexpect {
       if (16 < e_value.width() || 16 < a_value.width()) {
          h2_line e_line, a_line;
          h2_vector<h2_string> e_chars = e_value.disperse(), a_chars = a_value.disperse();
-         for (size_t i = 0; i < e_chars.size(); ++i) {
-            h2_string ac = get_char(a_chars, i);
-            e_line += fmt_char(e_chars[i], e_chars[i].equals(ac, caseless), ac, "green");
-         }
-         for (size_t i = 0; i < a_chars.size(); ++i) {
-            h2_string ec = get_char(e_chars, i);
-            a_line += fmt_char(a_chars[i], a_chars[i].equals(ec, caseless), ec, "red");
-         }
-
+         auto lcs = h2_LCS(e_chars, a_chars, caseless).lcs();
+         for (size_t i = 0; i < lcs.first.size(); i++)
+            e_line += lcs.first[i] ? h2_line(e_chars[i].escape()) : color(e_chars[i].escape(), "green");
+         for (size_t i = 0; i < lcs.second.size(); i++)
+            a_line += lcs.second[i] ? h2_line(a_chars[i].escape()) : color(a_chars[i].escape(), "red");
          h2_color::printl(h2_layout::unified(e_line, a_line, "expect", "actual", h2_shell::I().cww));
       }
    }
@@ -5450,8 +5502,8 @@ struct h2_fail_strfind : h2_fail_unexpect {
    {
       h2_fail_unexpect::print(si, ci);
 
-      if (16 < e_value.width() || 16 < a_value.width()) {  // omit short string unified compare layout
-         h2_line e_line = e_value.escape(true), a_line = a_value.escape(true);
+      if (16 < e_value.width() || 16 < a_value.width()) {
+         h2_line e_line = e_value.escape(), a_line = a_value.escape();
          h2_color::printl(h2_layout::seperate(e_line, a_line, "expect", "actual", h2_shell::I().cww));
       }
    }

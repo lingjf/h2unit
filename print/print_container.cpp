@@ -26,7 +26,7 @@ SUITE(ListOf)
       OK(!ListOf(1, 2, 3), a);
    }
 
-   Case(C / C++ native array)
+   Case(C/C++ native array)
    {
       int a1[] = {1, 2, 3};
       OK(ListOf(1, 7, 3), a1);
@@ -53,13 +53,13 @@ SUITE(Has)
       OK(!Has(2), a);
    }
 
-   Case(C / C++ generic array)
+   Case(C/C++ generic array)
    {
       int a1[] = {1, 2, 3};
       OK(Has(1, 4), a1);
    }
 
-   Case(C / C++ generic array sepecified size)
+   Case(C/C++ generic array sepecified size)
    {
       int a1[] = {1, 2, 3};
       OK(Has(1, 4), a1, 3);

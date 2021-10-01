@@ -43,22 +43,16 @@ SUITE(string compares)
 {
    Case(unprintable characters)
    {
-      const char* a1 = "a752a5eeX24a北京9f899\t3e48ce81b77b200b212b23c2402c2Y1ddc4260\na608cf32"
-                       "8a2133386477eb7a6595889372674Zcb9223419a7a0224fe7af2866944197ee4ab18e"
-                       "3cae8507bb306a284fz";
-
-      OK("a752a5eee24a上海9f899\r3e48ce81b77b200b212b23c2402c221ddc4260\na608cf32"
-         "8a2133386477eb7a65958893726741cb9223419a7a0224fe7af2866944197ee4ab18e"
-         "3cae8507bb306a284f",
-         a1);
+      const char* a1 = "hello the world 北京 welcone you\n!";
+      OK("hello world 上海 welcome you!", a1);
    }
 
    Case(Chinese characters)
    {
-      OK(Substr("兰溪"), "中国\n浙江省\t杭州市余杭区");
+      OK(Substr("兰溪"), "中国\n浙江省\t杭州市\r余杭区");
    }
 
-   Case(caseless not )
+   Case(caseless not)
    {
       OK(!~(Se("Hello World") && Substr("Hello") || Re(".*World")), "hello world");
       OK(!~AllOf("Hello World", Substr("Hello"), Re(".*World")), "hello world");
