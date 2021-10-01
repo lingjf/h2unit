@@ -1,5 +1,5 @@
 
-/* v5.14 2021-10-01 08:32:20 */
+/* v5.14 2021-10-01 17:01:38 */
 /* https://github.com/lingjf/h2unit */
 /* Apache Licence 2.0 */
 
@@ -79,10 +79,6 @@ namespace h2 {
 #define H2PP_PROBE() ~, 1,
 
 #define H2PP_EVAL(...) _H2PP_EVAL_128(__VA_ARGS__)
-#define H2PP_RS1(...) _H2PP_RESCAN1_128(__VA_ARGS__)
-#define H2PP_RS2(...) _H2PP_RESCAN2_128(__VA_ARGS__)
-#define H2PP_RS3(...) _H2PP_RESCAN3_128(__VA_ARGS__)
-#define H2PP_RS4(...) _H2PP_RESCAN4_128(__VA_ARGS__)
 
 #define H2PP_EQ(_1, _2) H2PP_IS_PROBE(H2PP_CAT5(_H2PP_EQ, __, _1, __, _2))
 
@@ -148,7 +144,7 @@ namespace h2 {
 #define _H2PP_TAIL_0_R(_1, ...) __VA_ARGS__
 #define _H2PP_TAIL_1(...)
 
-#define H2PP_LAST(...) H2PP_RS1(_H2PP_LAST(__VA_ARGS__))
+#define H2PP_LAST(...) H2PP_EVAL(_H2PP_LAST(__VA_ARGS__))
 #define _H2PP_LAST(...) H2PP_CAT2(_H2PP_LAST_, H2PP_IS_EMPTY(__VA_ARGS__)) (__VA_ARGS__) //is empty?
 #define _H2PP_LAST_1(...) // 0 argument
 #define _H2PP_LAST_0(...) H2PP_CAT2(_H2PP_LAST_0_, H2PP_EQ(1, H2PP_NARG(__VA_ARGS__))) (__VA_ARGS__) // at least 1 argument, one and only one?
@@ -156,7 +152,7 @@ namespace h2 {
 #define _H2PP_LAST_0_0(...) H2PP_DEFER(__H2PP_LAST)()(H2PP_TAIL(__VA_ARGS__)) // shift first, and again
 #define __H2PP_LAST() _H2PP_LAST_0
 
-#define H2PP_REPEAT(_Split, _Macro, _Args, _Count) H2PP_RS2(_H2PP_REPEAT(_Split, _Macro, _Args, _Count))
+#define H2PP_REPEAT(_Split, _Macro, _Args, _Count) H2PP_EVAL(_H2PP_REPEAT(_Split, _Macro, _Args, _Count))
 #define _H2PP_REPEAT(_Split, _Macro, _Args, _Count) H2PP_CAT2(_H2PP_REPEAT_, H2PP_BOOL(_Count)) (_Split, _Macro, _Args, _Count)
 #define _H2PP_REPEAT_0(...)
 #define _H2PP_REPEAT_1(_Split, _Macro, _Args, _Count) H2PP_DEFER(__H2PP_REPEAT)()(_Split, _Macro, _Args, H2PP_CAT2(H2PP_DEC_, _Count)) _H2PP_REPEAT_CALL_MACRO(_Split, _Macro, _Args, H2PP_CAT2(H2PP_DEC_, _Count))
@@ -165,7 +161,7 @@ namespace h2 {
 #define _H2PP_REPEAT_CALL_MACRO_1(_Split, _Macro, _Args, _i) _Macro(_Args, _i)
 #define _H2PP_REPEAT_CALL_MACRO_0(_Split, _Macro, _Args, _i) H2PP_REMOVE_PARENTHESES_IF(_Split) _Macro(_Args, _i)
 
-#define H2PP_FOREACH(_Split, _Macro, _Args, ...) H2PP_RS3(_H2PP_FOREACH(_Split, _Macro, _Args, 0, __VA_ARGS__))
+#define H2PP_FOREACH(_Split, _Macro, _Args, ...) H2PP_EVAL(_H2PP_FOREACH(_Split, _Macro, _Args, 0, __VA_ARGS__))
 #define _H2PP_FOREACH(_Split, _Macro, _Args, _i, ...) H2PP_CAT2(_H2PP_FOREACH_, H2PP_IS_EMPTY(__VA_ARGS__)) (_Split, _Macro, _Args, _i, __VA_ARGS__)
 #define _H2PP_FOREACH_1(...)
 #define _H2PP_FOREACH_0(_Split, _Macro, _Args, _i, ...) _H2PP_FOREACH_CALL_MACRO(_Split, _Macro, _Args, _i, H2PP_HEAD(__VA_ARGS__)) H2PP_DEFER(__H2PP_FOREACH)()(_Split, _Macro, _Args, H2PP_CAT2(H2PP_INC_, _i), H2PP_TAIL(__VA_ARGS__))
@@ -179,7 +175,7 @@ namespace h2 {
 #define _H2PP_FULLMESH_0(MSVC_Workaround) H2PP_RESCAN(_H2PP_FULLMESH1 MSVC_Workaround) // Fullmesh(1,2,3) => (1,2,3) x (1,2,3)
 #define _H2PP_FULLMESH_1(MSVC_Workaround) H2PP_RESCAN(_H2PP_FULLMESH2 MSVC_Workaround) // Fullmesh((1,2,3), (4,5,6)) => (1,2,3) x (4,5,6)
 #define _H2PP_FULLMESH1(_Split, _Macro, _Args, ...) _H2PP_FULLMESH2(_Split, _Macro, _Args, (__VA_ARGS__), (__VA_ARGS__))
-#define _H2PP_FULLMESH2(_Split, _Macro, _Args, _Tuplex, _Tupley) H2PP_RS4(_H2PP_FOREACHx(_Split, _Macro, _Args, 0, _Tupley, H2PP_REMOVE_PARENTHESES(_Tuplex)))
+#define _H2PP_FULLMESH2(_Split, _Macro, _Args, _Tuplex, _Tupley) H2PP_EVAL(_H2PP_FOREACHx(_Split, _Macro, _Args, 0, _Tupley, H2PP_REMOVE_PARENTHESES(_Tuplex)))
 #define _H2PP_FOREACHx(_Split, _Macro, _Args, _i, _Tupley, ...) H2PP_CAT2(_H2PP_FOREACHx_, H2PP_IS_EMPTY(__VA_ARGS__)) (_Split, _Macro, _Args, _i, _Tupley, __VA_ARGS__)
 #define _H2PP_FOREACHx_1(...)
 #define _H2PP_FOREACHx_0(_Split, _Macro, _Args, _i, _Tupley, ...) _H2PP_FOREACHy(_Split, _Macro, _Args, _i, 0, H2PP_HEAD(__VA_ARGS__), H2PP_REMOVE_PARENTHESES(_Tupley)) H2PP_DEFER(__H2PP_FOREACHx)()(_Split, _Macro, _Args, H2PP_CAT2(H2PP_INC_, _i), _Tupley, H2PP_TAIL(__VA_ARGS__))
@@ -393,9 +389,6 @@ namespace h2 {
 #define H2PP_DEC_31 30
 #define H2PP_DEC_32 31
 
-#define _H2PP_EVAL_1024(...) _H2PP_EVAL_512(_H2PP_EVAL_512(__VA_ARGS__))
-#define _H2PP_EVAL_512(...) _H2PP_EVAL_256(_H2PP_EVAL_256(__VA_ARGS__))
-#define _H2PP_EVAL_256(...) _H2PP_EVAL_128(_H2PP_EVAL_128(__VA_ARGS__))
 #define _H2PP_EVAL_128(...) _H2PP_EVAL_64(_H2PP_EVAL_64(__VA_ARGS__))
 #define _H2PP_EVAL_64(...) _H2PP_EVAL_32(_H2PP_EVAL_32(__VA_ARGS__))
 #define _H2PP_EVAL_32(...) _H2PP_EVAL_16(_H2PP_EVAL_16(__VA_ARGS__))
@@ -404,42 +397,6 @@ namespace h2 {
 #define _H2PP_EVAL_4(...) _H2PP_EVAL_2(_H2PP_EVAL_2(__VA_ARGS__))
 #define _H2PP_EVAL_2(...) _H2PP_EVAL_1(_H2PP_EVAL_1(__VA_ARGS__))
 #define _H2PP_EVAL_1(...) __VA_ARGS__
-
-#define _H2PP_RESCAN1_128(...) _H2PP_RESCAN1_64(_H2PP_RESCAN1_64(__VA_ARGS__))
-#define _H2PP_RESCAN1_64(...) _H2PP_RESCAN1_32(_H2PP_RESCAN1_32(__VA_ARGS__))
-#define _H2PP_RESCAN1_32(...) _H2PP_RESCAN1_16(_H2PP_RESCAN1_16(__VA_ARGS__))
-#define _H2PP_RESCAN1_16(...) _H2PP_RESCAN1_8(_H2PP_RESCAN1_8(__VA_ARGS__))
-#define _H2PP_RESCAN1_8(...) _H2PP_RESCAN1_4(_H2PP_RESCAN1_4(__VA_ARGS__))
-#define _H2PP_RESCAN1_4(...) _H2PP_RESCAN1_2(_H2PP_RESCAN1_2(__VA_ARGS__))
-#define _H2PP_RESCAN1_2(...) _H2PP_RESCAN1_1(_H2PP_RESCAN1_1(__VA_ARGS__))
-#define _H2PP_RESCAN1_1(...) __VA_ARGS__
-
-#define _H2PP_RESCAN2_128(...) _H2PP_RESCAN2_64(_H2PP_RESCAN2_64(__VA_ARGS__))
-#define _H2PP_RESCAN2_64(...) _H2PP_RESCAN2_32(_H2PP_RESCAN2_32(__VA_ARGS__))
-#define _H2PP_RESCAN2_32(...) _H2PP_RESCAN2_16(_H2PP_RESCAN2_16(__VA_ARGS__))
-#define _H2PP_RESCAN2_16(...) _H2PP_RESCAN2_8(_H2PP_RESCAN2_8(__VA_ARGS__))
-#define _H2PP_RESCAN2_8(...) _H2PP_RESCAN2_4(_H2PP_RESCAN2_4(__VA_ARGS__))
-#define _H2PP_RESCAN2_4(...) _H2PP_RESCAN2_2(_H2PP_RESCAN2_2(__VA_ARGS__))
-#define _H2PP_RESCAN2_2(...) _H2PP_RESCAN2_1(_H2PP_RESCAN2_1(__VA_ARGS__))
-#define _H2PP_RESCAN2_1(...) __VA_ARGS__
-
-#define _H2PP_RESCAN3_128(...) _H2PP_RESCAN3_64(_H2PP_RESCAN3_64(__VA_ARGS__))
-#define _H2PP_RESCAN3_64(...) _H2PP_RESCAN3_32(_H2PP_RESCAN3_32(__VA_ARGS__))
-#define _H2PP_RESCAN3_32(...) _H2PP_RESCAN3_16(_H2PP_RESCAN3_16(__VA_ARGS__))
-#define _H2PP_RESCAN3_16(...) _H2PP_RESCAN3_8(_H2PP_RESCAN3_8(__VA_ARGS__))
-#define _H2PP_RESCAN3_8(...) _H2PP_RESCAN3_4(_H2PP_RESCAN3_4(__VA_ARGS__))
-#define _H2PP_RESCAN3_4(...) _H2PP_RESCAN3_2(_H2PP_RESCAN3_2(__VA_ARGS__))
-#define _H2PP_RESCAN3_2(...) _H2PP_RESCAN3_1(_H2PP_RESCAN3_1(__VA_ARGS__))
-#define _H2PP_RESCAN3_1(...) __VA_ARGS__
-
-#define _H2PP_RESCAN4_128(...) _H2PP_RESCAN4_64(_H2PP_RESCAN4_64(__VA_ARGS__))
-#define _H2PP_RESCAN4_64(...) _H2PP_RESCAN4_32(_H2PP_RESCAN4_32(__VA_ARGS__))
-#define _H2PP_RESCAN4_32(...) _H2PP_RESCAN4_16(_H2PP_RESCAN4_16(__VA_ARGS__))
-#define _H2PP_RESCAN4_16(...) _H2PP_RESCAN4_8(_H2PP_RESCAN4_8(__VA_ARGS__))
-#define _H2PP_RESCAN4_8(...) _H2PP_RESCAN4_4(_H2PP_RESCAN4_4(__VA_ARGS__))
-#define _H2PP_RESCAN4_4(...) _H2PP_RESCAN4_2(_H2PP_RESCAN4_2(__VA_ARGS__))
-#define _H2PP_RESCAN4_2(...) _H2PP_RESCAN4_1(_H2PP_RESCAN4_1(__VA_ARGS__))
-#define _H2PP_RESCAN4_1(...) __VA_ARGS__
 
 #define __H2PP_64TH(_0, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, _17, _18, _19, _20, _21, _22, _23, _24, _25, _26, _27, _28, _29, _30, _31, _32, _33, _34, _35, _36, _37, _38, _39, _40, _41, _42, _43, _44, _45, _46, _47, _48, _49, _50, _51, _52, _53, _54, _55, _56, _57, _58, _59, _60, _61, _62, _63, _64, ...) _64
 #ifdef _MSC_VER
@@ -3692,223 +3649,184 @@ struct h2_report {
 };
 }
 
-#ifndef SUITE
+#ifndef H2_NO_SUITE
 #define SUITE H2SUITE
-#else
-#pragma message("SUITE conflict, using H2SUITE instead.")
 #endif
 
-#ifndef CASE
+#ifndef H2_NO_CASE
 #define CASE H2CASE
-#else
-#pragma message("CASE conflict, using H2CASE instead.")
 #endif
 
-#ifndef TODO
+#ifndef H2_NO_TODO
 #define TODO H2TODO
-#else
-#pragma message("TODO conflict, using H2TODO instead.")
 #endif
 
-#ifndef Case
+#ifndef H2_NO_Case
 #define Case H2Case
-#else
-#pragma message("Case conflict, using H2Case instead.")
 #endif
 
-#ifndef Todo
+#ifndef H2_NO_Todo
 #define Todo H2Todo
-#else
-#pragma message("Todo conflict, using H2Todo instead.")
 #endif
 
-#ifndef Cleanup
+#ifndef H2_NO_Cleanup
 #define Cleanup H2Cleanup
-#else
-#pragma message("Cleanup conflict, using H2Cleanup instead.")
 #endif
 
-#ifndef Setup
+#ifndef H2_NO_Setup
 #define Setup H2Setup
-#else
-#pragma message("Setup conflict, using H2Setup instead.")
 #endif
 
-#ifndef Teardown
+#ifndef H2_NO_Teardown
 #define Teardown H2Teardown
-#else
-#pragma message("Teardown conflict, using H2Teardown instead.")
 #endif
 
-#ifndef Ok
+#ifndef H2_NO_Ok
 #define Ok H2Ok
-#else
-#pragma message("Ok conflict, using H2Ok instead.")
 #endif
 
-#ifndef OK
+#ifndef H2_NO_OK
 #define OK H2OK
-#else
-#pragma message("OK conflict, using H2OK instead.")
 #endif
 
-#ifndef JE
+#ifndef H2_NO_JE
 #define JE H2JE
-#else
-#pragma message("JE conflict, using H2JE instead.")
 #endif
 
-#ifndef MOCK
+#ifndef H2_NO_MOCK
 #define MOCK H2MOCK
-#else
-#pragma message("MOCK conflict, using H2MOCK instead.")
 #endif
+
+#ifndef H2_NO_UNMOCK
 #define UNMOCK H2UNSTUB
+#endif
 
-#ifndef MOCKS
+#ifndef H2_NO_MOCKS
 #define MOCKS H2MOCKS
-#else
-#pragma message("MOCKS conflict, using H2MOCKS instead.")
 #endif
+
+#ifndef H2_NO_UNMOCKS
 #define UNMOCKS H2UNSTUBS
+#endif
 
-#ifndef STUB
+#ifndef H2_NO_STUB
 #define STUB H2STUB
-#else
-#pragma message("STUB conflict, using H2STUB instead.")
 #endif
+
+#ifndef H2_NO_UNSTUB
 #define UNSTUB H2UNSTUB
+#endif
 
-#ifndef STUBS
+#ifndef H2_NO_STUBS
 #define STUBS H2STUBS
-#else
-#pragma message("STUBS conflict, using H2STUBS instead.")
 #endif
+
+#ifndef H2_NO_UNSTUBS
 #define UNSTUBS H2UNSTUBS
+#endif
 
-#ifndef BLOCK
+#ifndef H2_NO_BLOCK
 #define BLOCK H2BLOCK
-#else
-#pragma message("BLOCK conflict, using H2BLOCK instead.")
 #endif
 
-#ifndef UNMEM
+#ifndef H2_NO_UNMEM
 #define UNMEM H2UNMEM
-#else
-#pragma message("UNMEM conflict, using H2UNMEM instead.")
 #endif
 
-#ifndef DNS
+#ifndef H2_NO_DNS
 #define DNS H2DNS
-#else
-#pragma message("DNS conflict, using H2DNS instead.")
 #endif
 
-#ifndef SOCK
+#ifndef H2_NO_SOCK
 #define SOCK H2SOCK
-#else
-#pragma message("SOCK conflict, using H2SOCK instead.")
 #endif
 
-#ifndef COUT
+#ifndef H2_NO_COUT
 #define COUT H2COUT
-#else
-#pragma message("COUT conflict, using H2COUT instead.")
 #endif
 
-#ifndef PF
+#ifndef H2_NO_PF
 #define PF H2PF
-#else
-#pragma message("PF conflict, using H2PF instead.")
 #endif
 
-#ifndef GlobalSetup
+#ifndef H2_NO_GlobalSetup
 #define GlobalSetup H2GlobalSetup
-#else
-#pragma message("GlobalSetup conflict, using H2GlobalSetup instead.")
 #endif
 
-#ifndef GlobalCleanup
+#ifndef H2_NO_GlobalCleanup
 #define GlobalCleanup H2GlobalCleanup
-#else
-#pragma message("GlobalCleanup conflict, using H2GlobalCleanup instead.")
 #endif
 
-#ifndef GlobalSuiteSetup
+#ifndef H2_NO_GlobalSuiteSetup
 #define GlobalSuiteSetup H2GlobalSuiteSetup
-#else
-#pragma message("GlobalSuiteSetup conflict, using H2GlobalSuiteSetup instead.")
 #endif
 
-#ifndef GlobalSuiteCleanup
+#ifndef H2_NO_GlobalSuiteCleanup
 #define GlobalSuiteCleanup H2GlobalSuiteCleanup
-#else
-#pragma message("GlobalSuiteCleanup conflict, using H2GlobalSuiteCleanup instead.")
 #endif
 
-#ifndef GlobalCaseSetup
+#ifndef H2_NO_GlobalCaseSetup
 #define GlobalCaseSetup H2GlobalCaseSetup
-#else
-#pragma message("GlobalCaseSetup conflict, using H2GlobalCaseSetup instead.")
 #endif
 
-#ifndef GlobalCaseCleanup
+#ifndef H2_NO_GlobalCaseCleanup
 #define GlobalCaseCleanup H2GlobalCaseCleanup
-#else
-#pragma message("GlobalCaseCleanup conflict, using H2GlobalCaseCleanup instead.")
 #endif
 
-#ifndef MATCHER
+#ifndef H2_NO_MATCHER
 #define MATCHER H2MATCHER
-#else
-#pragma message("MATCHER conflict, using H2MATCHER instead.")
 #endif
 
-#ifndef CASES
+#ifndef H2_NO_CASES
 #define CASES H2CASES
-#else
-#pragma message("CASES conflict, using H2CASES instead.")
 #endif
 
-#ifndef CASESS
+#ifndef H2_NO_CASESS
 #define CASESS H2CASESS
-#else
-#pragma message("CASESS conflict, using H2CASESS instead.")
 #endif
 
-#ifndef Cases
+#ifndef H2_NO_Cases
 #define Cases H2Cases
-#else
-#pragma message("Cases conflict, using H2Cases instead.")
 #endif
 
-#ifndef Casess
+#ifndef H2_NO_Casess
 #define Casess H2Casess
-#else
-#pragma message("Casess conflict, using H2Casess instead.")
 #endif
 
 #define Cases_t H2Cases_t
 #define Casess_t H2Casess_t
 
-#ifndef CASES_T
+#ifndef H2_NO_CASES_T
 #define CASES_T H2CASES_T
-#else
-#pragma message("CASES_T conflict, using H2CASES_T instead.")
 #endif
 
-#ifndef CASESS_T
+#ifndef H2_NO_CASESS_T
 #define CASESS_T H2CASESS_T
-#else
-#pragma message("CASESS_T conflict, using H2CASESS_T instead.")
 #endif
 
+#ifndef H2_NO_Todos
 #define Todos H2Todos
+#endif
+
+#ifndef H2_NO_Todoss
 #define Todoss H2Todoss
+#endif
+
+#ifndef H2_NO_TODOS
 #define TODOS H2TODOS
+#endif
+
+#ifndef H2_NO_TODOSS
 #define TODOSS H2TODOSS
+#endif
+
+#ifndef H2_NO_TODOS_T
 #define TODOS_T H2TODOS_T
+#endif
+
+#ifndef H2_NO_TODOSS_T
 #define TODOSS_T H2TODOSS_T
+#endif
 
 using h2::_;
 using h2::Any;

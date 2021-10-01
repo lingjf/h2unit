@@ -26,6 +26,10 @@ char* s1 = "test"; // Warning
 const char* s2 = "test"; // OK
 ```
 
+## macro conflict
+
+If product code already defined SUITE Case..., define H2_NO_SUITE and using H2SUITE instead.
+
 ## private member method accessibility
 
 In order to STUB/MOCK class private member function successfully, `private` `protected` token is substituted with `public` using MACRO definition by default if `h2unit.h/hpp`.
