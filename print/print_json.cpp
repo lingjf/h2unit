@@ -15,8 +15,7 @@ SUITE(json)
                'rectangle',               \
                'triangle',                \
                'square',                  \
-               'point',                   \
-               'line'                     \
+               'ちょくせん'                 \
             ],                            \
             'score': 100                  \
         }";
@@ -30,10 +29,9 @@ SUITE(json)
             names : [                     \
                'circle',                  \
                'rectangle',               \
-               'triangle',                \
+               '三角形',                   \
                'square',                  \
-               'point',                   \
-               'line'                     \
+               'きょくせん'                 \
             ]                             \
          }",
          json);

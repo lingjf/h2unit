@@ -1,5 +1,5 @@
 
-/* v5.14 2021-10-01 17:01:38 */
+/* v5.14 2021-10-01 20:05:15 */
 /* https://github.com/lingjf/h2unit */
 /* Apache Licence 2.0 */
 
@@ -699,6 +699,7 @@ struct h2_string : public std::basic_string<char, std::char_traits<char>, h2_all
    h2_string& sprintf(const char* format, ...);
    h2_string& replace_all(const char* from, const char* to);
 
+   size_t width(size_t columns = 2) const;
    bool equals(const h2_string& str, bool caseless = false) const;
    bool contains(const h2_string& substr, bool caseless = false) const;
    bool startswith(const h2_string& prefix, bool caseless = false) const;
@@ -707,11 +708,12 @@ struct h2_string : public std::basic_string<char, std::char_traits<char>, h2_all
    bool isspace() const;
    bool enclosed(const char c = '\"') const;
 
-   h2_string escape() const;
+   h2_string escape(bool utf8 = false) const;
    h2_string unescape() const;
    h2_string unquote(const char c = '\"') const;
    h2_string tolower() const;
    h2_string center(size_t width) const;
+   h2_vector<h2_string> disperse() const;
 };
 
 /* clang-format off */
@@ -4520,6 +4522,14 @@ h2_inline void h2_libc::free(void* ptr)
    if (ptr) h2_libc_malloc::I().free(ptr);
 }
 // source/utils/h2_string.cpp
+static inline size_t utf8len(const char* s)
+{
+   if (0xf0 == (0xf8 & *(const unsigned char*)s)) return 4;  // 4-byte utf8 code point (began with 0b11110xxx)
+   if (0xe0 == (0xf0 & *(const unsigned char*)s)) return 3;  // 3-byte utf8 code point (began with 0b1110xxxx)
+   if (0xc0 == (0xe0 & *(const unsigned char*)s)) return 2;  // 2-byte utf8 code point (began with 0b110xxxxx)
+   return 1;                                                 // 1-byte ascii (began with 0b0xxxxxxx)
+}
+
 h2_inline h2_string& h2_string::sprintf(const char* format, ...)
 {
    char* alloca_str;
@@ -4536,6 +4546,16 @@ h2_inline h2_string& h2_string::replace_all(const char* from, const char* to)
       start_pos += to_length;  // where 'to' is a substring of 'from'
    }
    return *this;
+}
+
+h2_inline size_t h2_string::width(size_t columns) const
+{
+   size_t w = 0, n = 0;
+   for (const char* p = c_str(); *p != '\0'; p += n) {
+      n = utf8len(p);
+      w += (n == 1 ? 1 : columns);
+   }
+   return w;
 }
 
 h2_inline bool h2_string::equals(const h2_string& str, bool caseless) const
@@ -4576,14 +4596,15 @@ h2_inline bool h2_string::enclosed(const char c) const
    return front() == c && back() == c;
 }
 
-h2_inline h2_string h2_string::escape() const
+h2_inline h2_string h2_string::escape(bool utf8) const
 {
    h2_string s;
    for (auto& c : *this) {
       switch (c) {
-         case '\n': s.append("\\n"); break;
-         case '\r': s.append("\\r"); break;
-         case '\t': s.append("\\t"); break;
+         case '\n': s.append(utf8 ? "␍" : "\\n"); break;
+         case '\r': s.append(utf8 ? "␊" : "\\r"); break;
+         case '\t': s.append(utf8 ? "␉" : "\\t"); break;
+         case '\0': s.append(utf8 ? "␀" : "\0"); break;
          default: s.push_back(c); break;
       }
    }
@@ -4627,6 +4648,17 @@ h2_inline h2_string h2_string::center(size_t width) const
    s.append(right, ' ');
    return s;
 }
+
+h2_inline h2_vector<h2_string> h2_string::disperse() const
+{
+   h2_vector<h2_string> chars;
+   for (const char* p = c_str(); *p != '\0';) {
+      auto n = utf8len(p);
+      chars.push_back(h2_string(n, p));
+      p += n;
+   }
+   return chars;
+}
 // source/utils/h2_line.cpp
 h2_inline size_t h2_line::width(bool ignore_indent) const
 {
@@ -4634,19 +4666,19 @@ h2_inline size_t h2_line::width(bool ignore_indent) const
    for (auto& word : *this)
       if (!h2_color::isctrl(word.c_str()))
          if (!ignore_indent || !word.isspace())
-            w += word.size();
+            w += word.width();
    return w;
 }
 
 h2_inline h2_line& h2_line::indent(size_t n, const char c)
 {
-   insert(begin(), h2_string(n, c));
+   if (n) insert(begin(), h2_string(n, c));
    return *this;
 }
 
 h2_inline h2_line& h2_line::padding(size_t n, const char c)
 {
-   push_back(h2_string(n, c));
+   if (n) push_back(h2_string(n, c));
    return *this;
 }
 
@@ -4702,15 +4734,15 @@ h2_inline h2_line h2_line::gray_quote() const
          continue;
       }
       h2_string h, m, t;
-      for (auto& c : word) {
+      for (auto& c : word.disperse()) {
          if (i == 0) {
-            h.push_back(c);
+            h.append(c.c_str());
          } else if (i == w - 1) {
-            t.push_back(c);
+            t.append(c.c_str());
          } else {
-            m.push_back(c);
+            m.append(c.c_str());
          }
-         ++i;
+         i += c.width();
       }
       if (h.size()) line += gray(h);
       if (m.size()) line.push_back(m);
@@ -4739,15 +4771,15 @@ h2_inline h2_line h2_line::acronym(size_t width, size_t tail) const
          continue;
       }
       h2_string h, m, t;
-      for (auto& c : word) {
+      for (auto& c : word.disperse()) {
          if (i < width - 3 - tail) {
-            h.push_back(c);
+            h.append(c.c_str());
          } else if (i == width - 3 - tail) {
             m = "...";
          } else if (line1_width - tail <= i) {
-            t.push_back(c);
+            t.append(c.c_str());
          }
-         ++i;
+         i += c.width();
       }
       if (h.size()) line2.push_back(h);
       if (m.size()) line2 += gray(m);
@@ -9161,10 +9193,10 @@ static inline bool is_synonym(const h2_string& a, const h2_string& b)
    static const char* s_true[] = {"IsTrue", "true", "TRUE", "True", "1", nullptr};
    static const char* s_false[] = {"IsFalse", "false", "FALSE", "False", "0", nullptr};
    static const char** S[] = {s_null, s_true, s_false};
-
-   if (a == b) return true;
+   h2_string a1 = a.escape(), b1 = b.escape();
+   if (a1 == b1) return true;
    for (size_t i = 0; i < sizeof(S) / sizeof(S[0]); ++i)
-      if (h2_in(a.c_str(), S[i]) && h2_in(b.c_str(), S[i]))
+      if (h2_in(a1.c_str(), S[i]) && h2_in(b1.c_str(), S[i]))
          return true;
    return false;
 }
@@ -9246,17 +9278,17 @@ struct h2_fail_unexpect : h2_fail {
    }
 };
 
-static inline void fmt_char(char c, bool eq, const char* style, h2_line& line)
+static inline h2_line fmt_char(h2_string& c, bool eq, h2_string p, const char* style)
 {
-   char t_style[32] = "";
-   if (!eq) strcpy(t_style, style);
-   switch (c) {
-      case '\n': line.printf(t_style, "␍"); break;
-      case '\r': line.printf(t_style, "␊"); break;
-      case '\t': line.printf(t_style, "␉"); break;
-      case '\0': line.printf(t_style, "␀"); break;
-      default: line.printf(t_style, "%c", c); break;
-   }
+   h2_string c1 = c.escape(true), p1 = p.escape(true);
+   if (c1.width() < p1.width()) c1.append("   ", p1.width() - c1.width());
+   if (eq) return c1;
+   return color(c1, style);
+}
+
+static inline h2_string get_char(h2_vector<h2_string>& chars, size_t i)
+{
+   return i < chars.size() ? chars[i] : (i == chars.size() ? "\0" : "");
 }
 
 struct h2_fail_strcmp : h2_fail_unexpect {
@@ -9267,17 +9299,16 @@ struct h2_fail_strcmp : h2_fail_unexpect {
    {
       h2_fail_unexpect::print(si, ci);
 
-      if (12 < e_value.size() || 12 < a_value.size()) {  // omit short string unified compare layout
+      if (16 < e_value.width() || 16 < a_value.width()) {
          h2_line e_line, a_line;
-         for (size_t i = 0; i < e_value.size(); ++i) {
-            char ac = i < a_value.size() ? a_value[i] : ' ';
-            bool eq = caseless ? ::tolower(e_value[i]) == ::tolower(ac) : e_value[i] == ac;
-            fmt_char(e_value[i], eq, "green", e_line);
+         h2_vector<h2_string> e_chars = e_value.disperse(), a_chars = a_value.disperse();
+         for (size_t i = 0; i < e_chars.size(); ++i) {
+            h2_string ac = get_char(a_chars, i);
+            e_line += fmt_char(e_chars[i], e_chars[i].equals(ac, caseless), ac, "green");
          }
-         for (size_t i = 0; i < a_value.size(); ++i) {
-            char ec = i < e_value.size() ? e_value[i] : ' ';
-            bool eq = caseless ? ::tolower(a_value[i]) == ::tolower(ec) : a_value[i] == ec;
-            fmt_char(a_value[i], eq, "red", a_line);
+         for (size_t i = 0; i < a_chars.size(); ++i) {
+            h2_string ec = get_char(e_chars, i);
+            a_line += fmt_char(a_chars[i], a_chars[i].equals(ec, caseless), ec, "red");
          }
 
          h2_color::printl(h2_layout::unified(e_line, a_line, "expect", "actual", h2_shell::I().cww));
@@ -9292,10 +9323,8 @@ struct h2_fail_strfind : h2_fail_unexpect {
    {
       h2_fail_unexpect::print(si, ci);
 
-      if (12 < e_value.size() || 12 < a_value.size()) {  // omit short string unified compare layout
-         h2_line e_line, a_line;
-         for (size_t i = 0; i < e_value.size(); ++i) fmt_char(e_value[i], true, "", e_line);
-         for (size_t i = 0; i < a_value.size(); ++i) fmt_char(a_value[i], true, "", a_line);
+      if (16 < e_value.width() || 16 < a_value.width()) {  // omit short string unified compare layout
+         h2_line e_line = e_value.escape(true), a_line = a_value.escape(true);
          h2_color::printl(h2_layout::seperate(e_line, a_line, "expect", "actual", h2_shell::I().cww));
       }
    }
@@ -9861,27 +9890,23 @@ static inline h2_lines line_break(const h2_line& line, size_t width)
    h2_lines lines;
    h2_string current_style;
    h2_line wrap;
-   size_t length = 0;
 
    for (auto& word : line) {
       if (h2_color::isctrl(word.c_str())) {  // + - style , issue
          wrap.push_back(word);
          current_style = word;
-      } else {
-         for (auto& c : word) {
-            if (width <= length) {  // terminate line as later as possible
-               lines.push_back(wrap);
-               wrap.clear();
-               length = 0;
-               if (current_style.size()) wrap.push_back(current_style);
-            }
-            wrap.push_back(h2_string(1, c));
-            ++length;
+         continue;
+      }
+      for (auto& c : word.disperse()) {
+         if (width < wrap.width() + c.width()) {
+            lines.push_back(wrap.padding(width - wrap.width()));
+            wrap.clear();
+            if (current_style.size()) wrap.push_back(current_style);
          }
+         wrap.push_back(c);
       }
    }
-   if (length < width) wrap.push_back(h2_string(width - length, ' '));
-   lines.push_back(wrap);
+   lines.push_back(wrap.padding(width - wrap.width()));
    return lines;
 }
 
@@ -9943,10 +9968,8 @@ h2_inline h2_lines h2_layout::unified(const h2_line& up_line, const h2_line& dow
    h2_lines down_lines = line_break(down_line, width - down_title_line.width());
 
    for (size_t i = 0; i < std::max(up_lines.size(), down_lines.size()); ++i) {
-      if (i < up_lines.size())
-         lines.push_back(up_title_line + up_lines[i]);
-      if (i < down_lines.size())
-         lines.push_back(down_title_line + down_lines[i]);
+      if (i < up_lines.size()) lines.push_back(up_title_line + up_lines[i]);
+      if (i < down_lines.size()) lines.push_back(down_title_line + down_lines[i]);
    }
    return lines;
 }

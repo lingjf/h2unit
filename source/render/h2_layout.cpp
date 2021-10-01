@@ -3,27 +3,23 @@ static inline h2_lines line_break(const h2_line& line, size_t width)
    h2_lines lines;
    h2_string current_style;
    h2_line wrap;
-   size_t length = 0;
 
    for (auto& word : line) {
       if (h2_color::isctrl(word.c_str())) {  // + - style , issue
          wrap.push_back(word);
          current_style = word;
-      } else {
-         for (auto& c : word) {
-            if (width <= length) {  // terminate line as later as possible
-               lines.push_back(wrap);
-               wrap.clear();
-               length = 0;
-               if (current_style.size()) wrap.push_back(current_style);
-            }
-            wrap.push_back(h2_string(1, c));
-            ++length;
+         continue;
+      }
+      for (auto& c : word.disperse()) {
+         if (width < wrap.width() + c.width()) {
+            lines.push_back(wrap.padding(width - wrap.width()));
+            wrap.clear();
+            if (current_style.size()) wrap.push_back(current_style);
          }
+         wrap.push_back(c);
       }
    }
-   if (length < width) wrap.push_back(h2_string(width - length, ' '));
-   lines.push_back(wrap);
+   lines.push_back(wrap.padding(width - wrap.width()));
    return lines;
 }
 
@@ -85,10 +81,8 @@ h2_inline h2_lines h2_layout::unified(const h2_line& up_line, const h2_line& dow
    h2_lines down_lines = line_break(down_line, width - down_title_line.width());
 
    for (size_t i = 0; i < std::max(up_lines.size(), down_lines.size()); ++i) {
-      if (i < up_lines.size())
-         lines.push_back(up_title_line + up_lines[i]);
-      if (i < down_lines.size())
-         lines.push_back(down_title_line + down_lines[i]);
+      if (i < up_lines.size()) lines.push_back(up_title_line + up_lines[i]);
+      if (i < down_lines.size()) lines.push_back(down_title_line + down_lines[i]);
    }
    return lines;
 }

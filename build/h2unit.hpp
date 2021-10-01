@@ -1,5 +1,5 @@
 
-/* v5.14 2021-10-01 17:01:38 */
+/* v5.14 2021-10-01 20:05:15 */
 /* https://github.com/lingjf/h2unit */
 /* Apache Licence 2.0 */
 
@@ -699,6 +699,7 @@ struct h2_string : public std::basic_string<char, std::char_traits<char>, h2_all
    h2_string& sprintf(const char* format, ...);
    h2_string& replace_all(const char* from, const char* to);
 
+   size_t width(size_t columns = 2) const;
    bool equals(const h2_string& str, bool caseless = false) const;
    bool contains(const h2_string& substr, bool caseless = false) const;
    bool startswith(const h2_string& prefix, bool caseless = false) const;
@@ -707,11 +708,12 @@ struct h2_string : public std::basic_string<char, std::char_traits<char>, h2_all
    bool isspace() const;
    bool enclosed(const char c = '\"') const;
 
-   h2_string escape() const;
+   h2_string escape(bool utf8 = false) const;
    h2_string unescape() const;
    h2_string unquote(const char c = '\"') const;
    h2_string tolower() const;
    h2_string center(size_t width) const;
+   h2_vector<h2_string> disperse() const;
 };
 
 /* clang-format off */

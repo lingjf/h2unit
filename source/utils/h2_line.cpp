@@ -4,19 +4,19 @@ h2_inline size_t h2_line::width(bool ignore_indent) const
    for (auto& word : *this)
       if (!h2_color::isctrl(word.c_str()))
          if (!ignore_indent || !word.isspace())
-            w += word.size();
+            w += word.width();
    return w;
 }
 
 h2_inline h2_line& h2_line::indent(size_t n, const char c)
 {
-   insert(begin(), h2_string(n, c));
+   if (n) insert(begin(), h2_string(n, c));
    return *this;
 }
 
 h2_inline h2_line& h2_line::padding(size_t n, const char c)
 {
-   push_back(h2_string(n, c));
+   if (n) push_back(h2_string(n, c));
    return *this;
 }
 
@@ -72,15 +72,15 @@ h2_inline h2_line h2_line::gray_quote() const
          continue;
       }
       h2_string h, m, t;
-      for (auto& c : word) {
+      for (auto& c : word.disperse()) {
          if (i == 0) {
-            h.push_back(c);
+            h.append(c.c_str());
          } else if (i == w - 1) {
-            t.push_back(c);
+            t.append(c.c_str());
          } else {
-            m.push_back(c);
+            m.append(c.c_str());
          }
-         ++i;
+         i += c.width();
       }
       if (h.size()) line += gray(h);
       if (m.size()) line.push_back(m);
@@ -109,15 +109,15 @@ h2_inline h2_line h2_line::acronym(size_t width, size_t tail) const
          continue;
       }
       h2_string h, m, t;
-      for (auto& c : word) {
+      for (auto& c : word.disperse()) {
          if (i < width - 3 - tail) {
-            h.push_back(c);
+            h.append(c.c_str());
          } else if (i == width - 3 - tail) {
             m = "...";
          } else if (line1_width - tail <= i) {
-            t.push_back(c);
+            t.append(c.c_str());
          }
-         ++i;
+         i += c.width();
       }
       if (h.size()) line2.push_back(h);
       if (m.size()) line2 += gray(m);

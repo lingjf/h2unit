@@ -132,9 +132,9 @@ SUITE(json node format)
 
       OK(3, lines.size());
       OK(ListOf(
-           ListOf("", "{"),
+           ListOf("{"),
            ListOf("  ", "\"abc\": ", "123"),
-           ListOf("", "}")),
+           ListOf("}")),
          lines);
    }
 
@@ -146,6 +146,6 @@ SUITE(json node format)
       h2::h2_lines lines = parse.format(true, 2);
 
       OK(1, lines.size());
-      OK(ListOf(ListOf("", "{", "\"abc\": ", "123", "}")), lines);
+      OK(ListOf(ListOf("{", "\"abc\": ", "123", "}")), lines);
    }
 }

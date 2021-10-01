@@ -58,10 +58,10 @@ static inline bool is_synonym(const h2_string& a, const h2_string& b)
    static const char* s_true[] = {"IsTrue", "true", "TRUE", "True", "1", nullptr};
    static const char* s_false[] = {"IsFalse", "false", "FALSE", "False", "0", nullptr};
    static const char** S[] = {s_null, s_true, s_false};
-
-   if (a == b) return true;
+   h2_string a1 = a.escape(), b1 = b.escape();
+   if (a1 == b1) return true;
    for (size_t i = 0; i < sizeof(S) / sizeof(S[0]); ++i)
-      if (h2_in(a.c_str(), S[i]) && h2_in(b.c_str(), S[i]))
+      if (h2_in(a1.c_str(), S[i]) && h2_in(b1.c_str(), S[i]))
          return true;
    return false;
 }
@@ -143,17 +143,17 @@ struct h2_fail_unexpect : h2_fail {
    }
 };
 
-static inline void fmt_char(char c, bool eq, const char* style, h2_line& line)
+static inline h2_line fmt_char(h2_string& c, bool eq, h2_string p, const char* style)
 {
-   char t_style[32] = "";
-   if (!eq) strcpy(t_style, style);
-   switch (c) {
-      case '\n': line.printf(t_style, "␍"); break;
-      case '\r': line.printf(t_style, "␊"); break;
-      case '\t': line.printf(t_style, "␉"); break;
-      case '\0': line.printf(t_style, "␀"); break;
-      default: line.printf(t_style, "%c", c); break;
-   }
+   h2_string c1 = c.escape(true), p1 = p.escape(true);
+   if (c1.width() < p1.width()) c1.append("   ", p1.width() - c1.width());
+   if (eq) return c1;
+   return color(c1, style);
+}
+
+static inline h2_string get_char(h2_vector<h2_string>& chars, size_t i)
+{
+   return i < chars.size() ? chars[i] : (i == chars.size() ? "\0" : "");
 }
 
 struct h2_fail_strcmp : h2_fail_unexpect {
@@ -164,17 +164,16 @@ struct h2_fail_strcmp : h2_fail_unexpect {
    {
       h2_fail_unexpect::print(si, ci);
 
-      if (12 < e_value.size() || 12 < a_value.size()) {  // omit short string unified compare layout
+      if (16 < e_value.width() || 16 < a_value.width()) {
          h2_line e_line, a_line;
-         for (size_t i = 0; i < e_value.size(); ++i) {
-            char ac = i < a_value.size() ? a_value[i] : ' ';
-            bool eq = caseless ? ::tolower(e_value[i]) == ::tolower(ac) : e_value[i] == ac;
-            fmt_char(e_value[i], eq, "green", e_line);
+         h2_vector<h2_string> e_chars = e_value.disperse(), a_chars = a_value.disperse();
+         for (size_t i = 0; i < e_chars.size(); ++i) {
+            h2_string ac = get_char(a_chars, i);
+            e_line += fmt_char(e_chars[i], e_chars[i].equals(ac, caseless), ac, "green");
          }
-         for (size_t i = 0; i < a_value.size(); ++i) {
-            char ec = i < e_value.size() ? e_value[i] : ' ';
-            bool eq = caseless ? ::tolower(a_value[i]) == ::tolower(ec) : a_value[i] == ec;
-            fmt_char(a_value[i], eq, "red", a_line);
+         for (size_t i = 0; i < a_chars.size(); ++i) {
+            h2_string ec = get_char(e_chars, i);
+            a_line += fmt_char(a_chars[i], a_chars[i].equals(ec, caseless), ec, "red");
          }
 
          h2_color::printl(h2_layout::unified(e_line, a_line, "expect", "actual", h2_shell::I().cww));
@@ -189,10 +188,8 @@ struct h2_fail_strfind : h2_fail_unexpect {
    {
       h2_fail_unexpect::print(si, ci);
 
-      if (12 < e_value.size() || 12 < a_value.size()) {  // omit short string unified compare layout
-         h2_line e_line, a_line;
-         for (size_t i = 0; i < e_value.size(); ++i) fmt_char(e_value[i], true, "", e_line);
-         for (size_t i = 0; i < a_value.size(); ++i) fmt_char(a_value[i], true, "", a_line);
+      if (16 < e_value.width() || 16 < a_value.width()) {  // omit short string unified compare layout
+         h2_line e_line = e_value.escape(true), a_line = a_value.escape(true);
          h2_color::printl(h2_layout::seperate(e_line, a_line, "expect", "actual", h2_shell::I().cww));
       }
    }

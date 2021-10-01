@@ -1,5 +1,49 @@
 #include "../source/h2_unit.cpp"
 
+SUITE(utf8len)
+{
+   Case(ascii)
+   {
+      OK(1, h2::utf8len("a"));
+      OK(1, h2::utf8len("ab"));
+   }
+
+   Case(Chinese)
+   {
+      OK(3, h2::utf8len("中"));
+      OK(3, h2::utf8len("中国"));
+   }
+
+   Case(japanese)
+   {
+      OK(3, h2::utf8len("い"));
+      OK(3, h2::utf8len("いち"));
+   }
+}
+
+SUITE(string constructor)
+{
+   Case(n char)
+   {
+      h2::h2_string a0(0, 'a');
+      OK("", a0);
+      h2::h2_string a1(1, 'a');
+      OK("a", a1);
+      h2::h2_string a2(2, 'a');
+      OK("aa", a2);
+   }
+
+   Case(n string)
+   {
+      h2::h2_string a0(0, "ab");
+      OK("", a0);
+      h2::h2_string a1(1, "ab");
+      OK("a", a1);
+      h2::h2_string a2(2, "ab");
+      OK("ab", a2);
+   }
+}
+
 SUITE(string assign)
 {
    Case(init with std_string)
@@ -30,6 +74,26 @@ SUITE(string assign)
 
 SUITE(string)
 {
+   Case(width)
+   {
+      h2::h2_string a0 = "";
+      OK(0, a0.width());
+      h2::h2_string a1 = "a";
+      OK(1, a1.width());
+      h2::h2_string a2 = "ab";
+      OK(2, a2.width());
+
+      h2::h2_string C1 = "中";
+      OK(2, C1.width());
+      h2::h2_string C2 = "中国";
+      OK(4, C2.width());
+
+      h2::h2_string j1 = "い";
+      OK(2, j1.width());
+      h2::h2_string j2 = "いち";
+      OK(4, j2.width());
+   }
+
    Case(equals)
    {
       h2::h2_string a = "Hello World";
@@ -221,6 +285,26 @@ SUITE(string)
       t.append("\0world\0", 7);
       OK(Me("hello\0world\0", 12), t.data());
       OK(12, t.length());
+   }
+
+   Case(disperse)
+   {
+      h2::h2_string a0 = "";
+      OK(ListOf(), a0.disperse());
+      h2::h2_string a1 = "a";
+      OK(ListOf("a"), a1.disperse());
+      h2::h2_string a2 = "ab";
+      OK(ListOf("a", "b"), a2.disperse());
+
+      h2::h2_string C1 = "中";
+      OK(ListOf("中"), C1.disperse());
+      h2::h2_string C2 = "中国";
+      OK(ListOf("中", "国"), C2.disperse());
+
+      h2::h2_string j1 = "い";
+      OK(ListOf("い"), j1.disperse());
+      h2::h2_string j2 = "いち";
+      OK(ListOf("い", "ち"), j2.disperse());
    }
 
    Case(convertable)
