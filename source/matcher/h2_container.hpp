@@ -16,10 +16,9 @@ struct h2_pair_matches : h2_matches {
          if (fails) delete fails;
          return nullptr;
       }
-      if (dont) {
-         fails = h2_fail::new_unexpect(expection(caseless, dont, ncop), h2_representify(a));
-      }
-      return fails;
+      h2_fail* fail = h2_fail::new_unexpect(expection(caseless, dont, ncop), h2_representify(a));
+      h2_fail::append_child(fail, fails);
+      return fail;
    }
 
    template <typename A>

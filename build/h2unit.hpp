@@ -1,5 +1,5 @@
 
-/* v5.14 2021-10-01 23:22:06 */
+/* v5.14 2021-10-03 08:19:34 */
 /* https://github.com/lingjf/h2unit */
 /* Apache Licence 2.0 */
 
@@ -1896,10 +1896,9 @@ struct h2_pair_matches : h2_matches {
          if (fails) delete fails;
          return nullptr;
       }
-      if (dont) {
-         fails = h2_fail::new_unexpect(expection(caseless, dont, ncop), h2_representify(a));
-      }
-      return fails;
+      h2_fail* fail = h2_fail::new_unexpect(expection(caseless, dont, ncop), h2_representify(a));
+      h2_fail::append_child(fail, fails);
+      return fail;
    }
 
    template <typename A>
