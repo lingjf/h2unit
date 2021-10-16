@@ -89,14 +89,14 @@ SUITE(Sequence containers)
 
    Case(OK Has for list)
    {
-#define TheCheck(x) OK(Has(1, 3), x);
+#define TheCheck(x) OK(Has(1), x);
       H2Foreach(TheCheck, HAS_FOR_LIST);
 #undef TheCheck
    }
 
    Case(OK Has for map)
    {
-#define TheCheck(x) OK(Has(Pair(1, 111), Pair(3, 333)), x);
+#define TheCheck(x) OK(Has(Pair(3, 333)), x);
       H2Foreach(TheCheck, HAS_FOR_MAP);
 #undef TheCheck
    }
@@ -106,7 +106,7 @@ SUITE(Sequence containers)
 #define TheCheck(x) OK(AllOf(ListOf(1, 2, 3), _), x);
       H2Foreach(TheCheck, LISTOF_FOR_LIST);
 #undef TheCheck
-#define TheCheck(x) OK(AllOf(Has(1, 2, 3), _), x);
+#define TheCheck(x) OK(AllOf(Has(2), _), x);
       H2Foreach(TheCheck, HAS_FOR_LIST);
 #undef TheCheck
    }

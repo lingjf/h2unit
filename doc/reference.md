@@ -408,8 +408,7 @@ CASE(case name)
 *    [`NoneOf`](../source/h2_unit.hpp#L321)(expect...) : matches if value not matches all of inner matchers 
 *    [`ListOf`](../source/h2_unit.hpp#L321)(expect...) : matches if sequence container(array, vector, ...) item matches inner matchers 
 *    [`CountOf`](../source/h2_unit.hpp#L321)(expect...) : matches if container(array, vector, ...) item count matches inner matchers 
-*    [`Have`/`Has`](../source/h2_unit.hpp#L321)(expect ...) : matches if there are items in container(vector, set, map, ...) match every inner matchers
-*    [`In`](../source/h2_unit.hpp#L321)(expect...) : matches if acutal value matches any of inner matchers 
+*    [`Has`](../source/h2_unit.hpp#L321)(expect ...) : matches if there are items in container(vector, set, map, ...) match every inner matchers
 
 
 Matcher can be used in OK(expect, actual), for example:

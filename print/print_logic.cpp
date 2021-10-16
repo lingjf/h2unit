@@ -58,3 +58,17 @@ SUITE(Logic)
       OK(NoneOf("Rect(0, 1)", EndsWith("R(1, 2)")), "Rect(0, 1)");
    }
 }
+
+SUITE(In)
+{
+   Case(In)
+   {
+      OK(AnyOf(1, Le(2), Pair(2, 3)), 5);
+   }
+
+   Case(In)
+   {
+      std::pair<int, std::string> a1 = std::make_pair(9, std::string("nine"));
+      OK(AnyOf(Pair(1, "one"), Pair(2, "two")), a1);
+   }
+}

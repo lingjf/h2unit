@@ -27,7 +27,7 @@ static inline h2_lines lines_merge(const h2_lines& left_lines, const h2_lines& r
 {
    h2_lines lines;
    char seq_fmt[32];
-   sprintf(seq_fmt, "%%%d%c│ ", (int)seq_width, scale);
+   sprintf(seq_fmt, "%%%d%c┊ ", (int)seq_width, scale);
    const h2_string left_empty(left_width, ' '), right_empty(right_width, ' ');
    for (size_t i = 0; i < std::max(left_lines.size(), right_lines.size()); ++i) {
       auto left_wrap_lines = line_break(i < left_lines.size() ? left_lines[i] : left_empty, left_width);

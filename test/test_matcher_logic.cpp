@@ -99,3 +99,16 @@ SUITE(logic primitive)
       OK(!(Ge(0) || -1), -2);
    }
 }
+
+SUITE(In primitive)
+{
+   Case(native)
+   {
+      OK(AnyOf(1, 2, 3), 2);
+   }
+
+   Case(Ge)
+   {
+      OK(AnyOf(1, Ge(2), Pair(2, 3)), 2);
+   }
+}

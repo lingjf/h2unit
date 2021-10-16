@@ -571,7 +571,7 @@ jobs:
           - {os: windows-latest, cpp: 20, sys: msvc-windows}
           - {os: ubuntu-latest, cpp: 23, sys: gcc-linux}
           - {os: macos-latest, cpp: 23, sys: clang-macos}
-          # - {os: windows-latest, cpp: 23, sys: msvc-windows}
+          - {os: windows-latest, cpp: 23, sys: msvc-windows}
     name: c++${{matrix.cpp}}-${{matrix.sys}}
     steps:
       - uses: actions/checkout@v2
