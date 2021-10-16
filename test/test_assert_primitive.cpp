@@ -40,41 +40,35 @@ SUITE(JE Primitive)
    }
 }
 
-SUITE(Ok Primitive)
+SUITE(CP Primitive)
 {
-   Case(bool)
-   {
-      Ok(true);
-      Ok(1);
-   }
-
    Case(compare integer)
    {
-      Ok(1 == 1);
-      Ok(1 != 2);
-      Ok(1 < 2);
-      Ok(1 <= 2);
-      Ok(1 <= 1);
-      Ok(2 > 1);
-      Ok(2 >= 1);
-      Ok(2 >= 2);
+      CP(1 == 1);
+      CP(1 != 2);
+      CP(1 < 2);
+      CP(1 <= 2);
+      CP(1 <= 1);
+      CP(2 > 1);
+      CP(2 >= 1);
+      CP(2 >= 2);
    }
 
    Case(compare double)
    {
-      Ok(1.0 == 1);
-      Ok(1.0 != 2);
-      Ok(1.0 < 2);
-      Ok(1.0 <= 2);
-      Ok(1.0 <= 1);
-      Ok(2.0 > 1);
-      Ok(2.0 >= 1);
-      Ok(2.0 >= 2);
+      CP(1.0 == 1);
+      CP(1.0 != 2);
+      CP(1.0 < 2);
+      CP(1.0 <= 2);
+      CP(1.0 <= 1);
+      CP(2.0 > 1);
+      CP(2.0 >= 1);
+      CP(2.0 >= 2);
    }
 
    Case(compare string)
    {
-      Ok("abc" == "abc");
-      Ok("abc" != "xyz");
+      CP("abc" == "abc");
+      CP("abc" != "xyz");
    }
 }

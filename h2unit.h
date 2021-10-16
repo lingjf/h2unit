@@ -1,5 +1,5 @@
 
-/* v5.14 2021-10-03 08:19:34 */
+/* v5.14 2021-10-16 08:11:06 */
 /* https://github.com/lingjf/h2unit */
 /* Apache Licence 2.0 */
 
@@ -3510,7 +3510,7 @@ struct h2_defer_failure : h2_once {
    const char *assert_type, *assert_op = ",";
    const char *e_expression, *a_expression;
    h2_sz sz;
-   h2_fail* fails{nullptr};
+   h2_fail* fails = nullptr;
    h2_ostringstream oss;
 
    h2_defer_failure(const char* e_expression_, const char* a_expression_, const h2_sz& sz_) : e_expression(e_expression_), a_expression(a_expression_), sz(sz_) {}
@@ -3520,7 +3520,7 @@ struct h2_defer_failure : h2_once {
 template <typename E, typename A>
 static inline h2_ostringstream& h2_ok2(h2_defer_failure* d, E e, A a, int n = 0)
 {
-   d->assert_type = "OK2";
+   d->assert_type = "OK";
    h2::h2_matcher<typename h2_decay<A>::type> m = h2::h2_matcher_cast<typename h2_decay<A>::type>((typename h2_decay<E>::type)e);
    h2_fail* fail = m.matches((typename h2_decay<A>::type)a, n);
    d->fails = fail;
@@ -3550,66 +3550,54 @@ static inline h2_ostringstream& h2_je(h2_defer_failure* d, h2_string e, h2_strin
 }
 
 template <typename M, typename A>
-struct h2_expr2 {
+struct h2_2cp {
    M m;
    A a;
    const char* op;
-   h2_expr2(M m_, A a_, const char* op_) : m(m_), a(a_), op(op_) {}
-   h2_ostringstream& ok(h2_defer_failure* d)
-   {
-      d->assert_type = "Ok2";
-      d->assert_op = op;
-      h2_fail* fail = h2::h2_matcher_cast<A>(m).matches(a, 0, false, false, true);
-      d->fails = fail;
-      if (fail && fail->subling_next) {
-         d->fails = h2_fail::new_unexpect();
-         h2_fail::append_child(d->fails, fail);
-      }
-      h2_assert_g();
-      return d->oss;
-   }
+   h2_2cp(M m_, A a_, const char* op_) : m(m_), a(a_), op(op_) {}
 };
 
 template <typename T, typename E = typename h2_decay<T>::type>
-struct h2_expr1 {
+struct h2_1cp {
    T t;
-   explicit h2_expr1(T t_) : t(t_) {}
+   explicit h2_1cp(T t_) : t(t_) {}
    template <typename U, typename A = typename h2_decay<U>::type>
-   h2_expr2<decltype(Eq((E)t)), A> operator==(const U& u) const { return {Eq((E)t), (A)u, "=="}; }
+   h2_2cp<decltype(Eq((E)t)), A> operator==(const U& u) const { return {Eq((E)t), (A)u, "=="}; }
    template <typename U, typename A = typename h2_decay<U>::type>
-   h2_expr2<decltype(Nq((E)t)), A> operator!=(const U& u) const { return {Nq((E)t), (A)u, "!="}; }
+   h2_2cp<decltype(Nq((E)t)), A> operator!=(const U& u) const { return {Nq((E)t), (A)u, "!="}; }
    template <typename U, typename A = typename h2_decay<U>::type>
-   h2_expr2<decltype(Lt((E)t)), A> operator>(const U& u) const { return {Lt((E)t), (A)u, ">"}; }
+   h2_2cp<decltype(Lt((E)t)), A> operator>(const U& u) const { return {Lt((E)t), (A)u, ">"}; }
    template <typename U, typename A = typename h2_decay<U>::type>
-   h2_expr2<decltype(Gt((E)t)), A> operator<(const U& u) const { return {Gt((E)t), (A)u, "<"}; }
+   h2_2cp<decltype(Gt((E)t)), A> operator<(const U& u) const { return {Gt((E)t), (A)u, "<"}; }
    template <typename U, typename A = typename h2_decay<U>::type>
-   h2_expr2<decltype(Le((E)t)), A> operator>=(const U& u) const { return {Le((E)t), (A)u, ">="}; }
+   h2_2cp<decltype(Le((E)t)), A> operator>=(const U& u) const { return {Le((E)t), (A)u, ">="}; }
    template <typename U, typename A = typename h2_decay<U>::type>
-   h2_expr2<decltype(Ge((E)t)), A> operator<=(const U& u) const { return {Ge((E)t), (A)u, "<="}; }
-
-   template <typename dummy>
-   struct false_type {
-      static constexpr bool value = false;
-   };
-   template <typename U>
-   void operator&&(const U& u) const { static_assert(false_type<U>::value, "&& is not supported inside Ok, wrap the expression inside parentheses, or using OK instead of Ok"); }
-   template <typename U>
-   void operator||(const U& u) const { static_assert(false_type<U>::value, "|| is not supported inside Ok, wrap the expression inside parentheses, or using OK instead of Ok"); }
+   h2_2cp<decltype(Ge((E)t)), A> operator<=(const U& u) const { return {Ge((E)t), (A)u, "<="}; }
 };
 
-struct h2_expr12 {
+struct h2_0cp {
    template <typename T>
-   h2_expr1<const T&> operator>(const T& t) const { return h2_expr1<const T&>{t}; }
+   h2_1cp<const T&> operator>(const T& t) const { return h2_1cp<const T&>{t}; }
 };
 
-template <typename T>
-static inline h2_ostringstream& h2_ok12(h2_defer_failure* d, h2_expr1<T> a) { return h2_ok1(d, static_cast<bool>(a.t)); }
 template <typename E, typename A>
-static inline h2_ostringstream& h2_ok12(h2_defer_failure* d, h2_expr2<E, A> ea) { return ea.ok(d); }
+static inline h2_ostringstream& h2_cp(h2_defer_failure* d, h2_2cp<E, A> c)
+{
+   d->assert_type = "CP";
+   d->assert_op = c.op;
+   h2_fail* fail = h2::h2_matcher_cast<A>(c.m).matches(c.a, 0, false, false, true);
+   d->fails = fail;
+   if (fail && fail->subling_next) {
+      d->fails = h2_fail::new_unexpect();
+      h2_fail::append_child(d->fails, fail);
+   }
+   h2_assert_g();
+   return d->oss;
+}
 
-#define H2Ok(...) __H2Ok(H2PP_UNIQUE(), (#__VA_ARGS__), __VA_ARGS__)
-#define __H2Ok(Q, expression, ...) \
-   for (h2::h2_defer_failure Q("", expression, {__FILE__, __LINE__}); Q;) h2::h2_ok12(&Q, h2::h2_expr12() > __VA_ARGS__)
+#define H2CP(...) __H2CP(H2PP_UNIQUE(), (#__VA_ARGS__), __VA_ARGS__)
+#define __H2CP(Q, expression, ...) \
+   for (h2::h2_defer_failure Q("", expression, {__FILE__, __LINE__}); Q;) h2::h2_cp(&Q, h2::h2_0cp() > __VA_ARGS__)
 
 #define H2OK(_1, ...) H2PP_CAT(__H2OK, H2PP_IS_EMPTY(__VA_ARGS__))(H2PP_UNIQUE(), #_1, (#__VA_ARGS__), _1, __VA_ARGS__)
 #define __H2OK1(Q, a_expression, _dummy, actual, ...) \
@@ -3682,8 +3670,8 @@ struct h2_report {
 #define Teardown H2Teardown
 #endif
 
-#ifndef H2_NO_Ok
-#define Ok H2Ok
+#ifndef H2_NO_CP
+#define CP H2CP
 #endif
 
 #ifndef H2_NO_OK
@@ -4616,7 +4604,7 @@ h2_inline h2_string& h2_string::replace_all(const char* from, const char* to)
    return *this;
 }
 
-h2_inline size_t h2_string::width(size_t columns) const
+h2_inline size_t h2_string::width(size_t columns) const // wcwidth()/wcswidth() 
 {
    size_t w = 0, n = 0;
    for (const char* p = c_str(); *p != '\0'; p += n) {
@@ -8482,7 +8470,7 @@ h2_inline h2_cout::~h2_cout()
    h2_fail* fail = m.matches(h2_stdio::I().stop_capture(), 0);
    if (fail) {
       fail->sz = sz;
-      fail->assert_type = "OK2";
+      fail->assert_type = "OK";
       fail->e_expression = e;
       fail->a_expression = "";
       fail->explain = "COUT";
@@ -9151,13 +9139,30 @@ h2_inline int h2_runner::main(int argc, const char** argv)
    return O.verbose >= 6 ? stats.failed : 0;
 }
 // source/assert/h2_assert.cpp
-static inline const char* find_outer_op(const char* src, const char* op)
+static inline const char* find_op(const char* src, const char* op)
 {
-   auto p1 = strstr(src, op);
-   if (!p1) return nullptr;
-   auto p2 = strstr(p1 + 1, op);
-   if (p2) return nullptr;
-   return p1;
+   bool quote = false;
+   if (strlen(op) == 2) {
+      for (const char* p = src; *p; p++) {
+         if (*p == '\"') quote = !quote;
+         if (!quote && !strncmp(op, p, 2)) return p;
+      }
+   } else {
+      int stacks = 0;
+      if (*op == '>')
+         for (const char* p = src; *p; p++) {
+            if (*p == '\"') quote = !quote;
+            if (!quote && *p == '<') ++stacks;
+            if (!quote && *p == '>' && 0 == stacks--) return p;
+         }
+      if (*op == '<')
+         for (const char* p = src + strlen(src); src <= p; p--) {
+            if (*p == '\"') quote = !quote;
+            if (!quote && *p == '>') ++stacks;
+            if (!quote && *p == '<' && 0 == stacks--) return p;
+         }
+   }
+   return nullptr;
 }
 
 h2_inline h2_defer_failure::~h2_defer_failure()
@@ -9170,15 +9175,14 @@ h2_inline h2_defer_failure::~h2_defer_failure()
       fails->a_expression = a_expression;
       fails->user_explain = oss.str().c_str();
 
-      if (!strcmp("Ok2", assert_type) && strcmp(",", assert_op)) {
-         const char* pop = find_outer_op(a_expression, assert_op);
-         if (pop) {
+      if (!strcmp("CP", assert_type) && strcmp(",", assert_op)) {
+         const char* p_op = find_op(a_expression, assert_op);
+         if (p_op) {
             const char *p, *q;
-            for (p = pop - 1; a_expression <= p && ::isspace(*p);) p--;
+            for (p = p_op - 1; a_expression <= p && ::isspace(*p);) p--;
             fails->e_expression.assign(a_expression, (p + 1) - a_expression);
-            for (q = pop + strlen(assert_op); ::isspace(*q);) q++;
+            for (q = p_op + strlen(assert_op); ::isspace(*q);) q++;
             fails->a_expression.assign(q, (a_expression + strlen(a_expression)) - q);
-            fails->assert_type = "OK2";
          }
       }
       h2_fail_g(fails);
@@ -9278,8 +9282,7 @@ struct h2_fail_unexpect : h2_fail {
       h2_line a = h2_line(a_expression).acronym(O.verbose >= 4 ? 10000 : 30, 3).gray_quote().brush("cyan");
       line += "OK" + gray("(") + a + gray(")") + " is " + color("false", "bold,red");
    }
-   // https://unicode-table.com/en/sets/arrow-symbols/
-   void print_OK2(h2_line& line)
+   void print_OK2_CP(h2_line& line, const char* assert_type)
    {
       h2_line e, a;
       if (!expection.width()) {
@@ -9288,7 +9291,7 @@ struct h2_fail_unexpect : h2_fail {
          e = expection.acronym(O.verbose >= 4 ? 10000 : 30, 3).brush("green");
       } else {
          e = h2_line(e_expression).acronym(O.verbose >= 4 ? 10000 : 30, 3).gray_quote().brush("cyan") + gray("==>") + expection.acronym(O.verbose >= 4 ? 10000 : 30, 3).brush("green");
-      }
+      }  // https://unicode-table.com/en/sets/arrow-symbols/
 
       if (!represent.width()) {
          a = h2_line(a_expression).acronym(O.verbose >= 4 ? 10000 : 30, 3).gray_quote().brush("bold,red");
@@ -9298,19 +9301,7 @@ struct h2_fail_unexpect : h2_fail {
          a = represent.acronym(O.verbose >= 4 ? 10000 : 30, 3).brush("bold,red") + gray("<==") + h2_line(a_expression).acronym(O.verbose >= 4 ? 10000 : 30, 3).gray_quote().brush("cyan");
       }
 
-      line += "OK" + gray("(") + e + " " + assert_op + " " + a + gray(")");
-   }
-   void print_Ok2(h2_line& line)
-   {
-      h2_line e, a;
-      if (!a_expression.startswith(expection.string())) {
-         e = expection.acronym(O.verbose >= 4 ? 10000 : 30, 3).brush("green") + gray("<==");
-      }
-      if (!a_expression.endswith(represent.string())) {
-         a = gray("==>") + represent.acronym(O.verbose >= 4 ? 10000 : 30, 3).brush("bold,red");
-      }
-
-      line += "OK" + gray("(") + e + h2_line(a_expression).gray_quote().brush("cyan") + a + gray(")");
+      line += assert_type + gray("(") + e + " " + assert_op + " " + a + gray(")");
    }
    void print_JE(h2_line& line)
    {
@@ -9337,8 +9328,7 @@ struct h2_fail_unexpect : h2_fail {
       line.indent(ci * 2 + 1);
       if (!strcmp("Inner", assert_type)) print_Inner(line);
       if (!strcmp("OK1", assert_type)) print_OK1(line);
-      if (!strcmp("OK2", assert_type)) print_OK2(line);
-      if (!strcmp("Ok2", assert_type)) print_Ok2(line);
+      if (!strcmp("OK", assert_type) || !strcmp("CP", assert_type)) print_OK2_CP(line, assert_type);
       if (!strcmp("JE", assert_type)) print_JE(line);
       if (explain.width()) line += comma_if(c++, ", ", " ") + explain;
       if (user_explain.size()) line += {comma_if(c++, ", ", " "), user_explain};

@@ -1,5 +1,7 @@
 #include "../build/h2unit.hpp"
 
+#if !defined __MINGW32__
+
 class a_exception : public std::exception {
    virtual const char* what() const noexcept override
    {
@@ -42,3 +44,6 @@ CASE(exception)
    } catch (...) {
    }
 }
+
+#endif
+

@@ -168,7 +168,7 @@ h2_inline h2_cout::~h2_cout()
    h2_fail* fail = m.matches(h2_stdio::I().stop_capture(), 0);
    if (fail) {
       fail->sz = sz;
-      fail->assert_type = "OK2";
+      fail->assert_type = "OK";
       fail->e_expression = e;
       fail->a_expression = "";
       fail->explain = "COUT";

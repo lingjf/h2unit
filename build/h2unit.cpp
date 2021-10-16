@@ -1,5 +1,5 @@
 
-/* v5.14 2021-10-03 08:19:34 */
+/* v5.14 2021-10-16 08:11:06 */
 /* https://github.com/lingjf/h2unit */
 /* Apache Licence 2.0 */
 #include "h2unit.hpp"
@@ -744,7 +744,7 @@ h2_inline h2_string& h2_string::replace_all(const char* from, const char* to)
    return *this;
 }
 
-h2_inline size_t h2_string::width(size_t columns) const
+h2_inline size_t h2_string::width(size_t columns) const // wcwidth()/wcswidth() 
 {
    size_t w = 0, n = 0;
    for (const char* p = c_str(); *p != '\0'; p += n) {
@@ -4610,7 +4610,7 @@ h2_inline h2_cout::~h2_cout()
    h2_fail* fail = m.matches(h2_stdio::I().stop_capture(), 0);
    if (fail) {
       fail->sz = sz;
-      fail->assert_type = "OK2";
+      fail->assert_type = "OK";
       fail->e_expression = e;
       fail->a_expression = "";
       fail->explain = "COUT";
@@ -5279,13 +5279,30 @@ h2_inline int h2_runner::main(int argc, const char** argv)
    return O.verbose >= 6 ? stats.failed : 0;
 }
 // source/assert/h2_assert.cpp
-static inline const char* find_outer_op(const char* src, const char* op)
+static inline const char* find_op(const char* src, const char* op)
 {
-   auto p1 = strstr(src, op);
-   if (!p1) return nullptr;
-   auto p2 = strstr(p1 + 1, op);
-   if (p2) return nullptr;
-   return p1;
+   bool quote = false;
+   if (strlen(op) == 2) {
+      for (const char* p = src; *p; p++) {
+         if (*p == '\"') quote = !quote;
+         if (!quote && !strncmp(op, p, 2)) return p;
+      }
+   } else {
+      int stacks = 0;
+      if (*op == '>')
+         for (const char* p = src; *p; p++) {
+            if (*p == '\"') quote = !quote;
+            if (!quote && *p == '<') ++stacks;
+            if (!quote && *p == '>' && 0 == stacks--) return p;
+         }
+      if (*op == '<')
+         for (const char* p = src + strlen(src); src <= p; p--) {
+            if (*p == '\"') quote = !quote;
+            if (!quote && *p == '>') ++stacks;
+            if (!quote && *p == '<' && 0 == stacks--) return p;
+         }
+   }
+   return nullptr;
 }
 
 h2_inline h2_defer_failure::~h2_defer_failure()
@@ -5298,15 +5315,14 @@ h2_inline h2_defer_failure::~h2_defer_failure()
       fails->a_expression = a_expression;
       fails->user_explain = oss.str().c_str();
 
-      if (!strcmp("Ok2", assert_type) && strcmp(",", assert_op)) {
-         const char* pop = find_outer_op(a_expression, assert_op);
-         if (pop) {
+      if (!strcmp("CP", assert_type) && strcmp(",", assert_op)) {
+         const char* p_op = find_op(a_expression, assert_op);
+         if (p_op) {
             const char *p, *q;
-            for (p = pop - 1; a_expression <= p && ::isspace(*p);) p--;
+            for (p = p_op - 1; a_expression <= p && ::isspace(*p);) p--;
             fails->e_expression.assign(a_expression, (p + 1) - a_expression);
-            for (q = pop + strlen(assert_op); ::isspace(*q);) q++;
+            for (q = p_op + strlen(assert_op); ::isspace(*q);) q++;
             fails->a_expression.assign(q, (a_expression + strlen(a_expression)) - q);
-            fails->assert_type = "OK2";
          }
       }
       h2_fail_g(fails);
@@ -5406,8 +5422,7 @@ struct h2_fail_unexpect : h2_fail {
       h2_line a = h2_line(a_expression).acronym(O.verbose >= 4 ? 10000 : 30, 3).gray_quote().brush("cyan");
       line += "OK" + gray("(") + a + gray(")") + " is " + color("false", "bold,red");
    }
-   // https://unicode-table.com/en/sets/arrow-symbols/
-   void print_OK2(h2_line& line)
+   void print_OK2_CP(h2_line& line, const char* assert_type)
    {
       h2_line e, a;
       if (!expection.width()) {
@@ -5416,7 +5431,7 @@ struct h2_fail_unexpect : h2_fail {
          e = expection.acronym(O.verbose >= 4 ? 10000 : 30, 3).brush("green");
       } else {
          e = h2_line(e_expression).acronym(O.verbose >= 4 ? 10000 : 30, 3).gray_quote().brush("cyan") + gray("==>") + expection.acronym(O.verbose >= 4 ? 10000 : 30, 3).brush("green");
-      }
+      }  // https://unicode-table.com/en/sets/arrow-symbols/
 
       if (!represent.width()) {
          a = h2_line(a_expression).acronym(O.verbose >= 4 ? 10000 : 30, 3).gray_quote().brush("bold,red");
@@ -5426,19 +5441,7 @@ struct h2_fail_unexpect : h2_fail {
          a = represent.acronym(O.verbose >= 4 ? 10000 : 30, 3).brush("bold,red") + gray("<==") + h2_line(a_expression).acronym(O.verbose >= 4 ? 10000 : 30, 3).gray_quote().brush("cyan");
       }
 
-      line += "OK" + gray("(") + e + " " + assert_op + " " + a + gray(")");
-   }
-   void print_Ok2(h2_line& line)
-   {
-      h2_line e, a;
-      if (!a_expression.startswith(expection.string())) {
-         e = expection.acronym(O.verbose >= 4 ? 10000 : 30, 3).brush("green") + gray("<==");
-      }
-      if (!a_expression.endswith(represent.string())) {
-         a = gray("==>") + represent.acronym(O.verbose >= 4 ? 10000 : 30, 3).brush("bold,red");
-      }
-
-      line += "OK" + gray("(") + e + h2_line(a_expression).gray_quote().brush("cyan") + a + gray(")");
+      line += assert_type + gray("(") + e + " " + assert_op + " " + a + gray(")");
    }
    void print_JE(h2_line& line)
    {
@@ -5465,8 +5468,7 @@ struct h2_fail_unexpect : h2_fail {
       line.indent(ci * 2 + 1);
       if (!strcmp("Inner", assert_type)) print_Inner(line);
       if (!strcmp("OK1", assert_type)) print_OK1(line);
-      if (!strcmp("OK2", assert_type)) print_OK2(line);
-      if (!strcmp("Ok2", assert_type)) print_Ok2(line);
+      if (!strcmp("OK", assert_type) || !strcmp("CP", assert_type)) print_OK2_CP(line, assert_type);
       if (!strcmp("JE", assert_type)) print_JE(line);
       if (explain.width()) line += comma_if(c++, ", ", " ") + explain;
       if (user_explain.size()) line += {comma_if(c++, ", ", " "), user_explain};

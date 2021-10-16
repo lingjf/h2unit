@@ -75,8 +75,7 @@ struct h2_fail_unexpect : h2_fail {
       h2_line a = h2_line(a_expression).acronym(O.verbose >= 4 ? 10000 : 30, 3).gray_quote().brush("cyan");
       line += "OK" + gray("(") + a + gray(")") + " is " + color("false", "bold,red");
    }
-   // https://unicode-table.com/en/sets/arrow-symbols/
-   void print_OK2(h2_line& line)
+   void print_OK2_CP(h2_line& line, const char* assert_type)
    {
       h2_line e, a;
       if (!expection.width()) {
@@ -85,7 +84,7 @@ struct h2_fail_unexpect : h2_fail {
          e = expection.acronym(O.verbose >= 4 ? 10000 : 30, 3).brush("green");
       } else {
          e = h2_line(e_expression).acronym(O.verbose >= 4 ? 10000 : 30, 3).gray_quote().brush("cyan") + gray("==>") + expection.acronym(O.verbose >= 4 ? 10000 : 30, 3).brush("green");
-      }
+      }  // https://unicode-table.com/en/sets/arrow-symbols/
 
       if (!represent.width()) {
          a = h2_line(a_expression).acronym(O.verbose >= 4 ? 10000 : 30, 3).gray_quote().brush("bold,red");
@@ -95,19 +94,7 @@ struct h2_fail_unexpect : h2_fail {
          a = represent.acronym(O.verbose >= 4 ? 10000 : 30, 3).brush("bold,red") + gray("<==") + h2_line(a_expression).acronym(O.verbose >= 4 ? 10000 : 30, 3).gray_quote().brush("cyan");
       }
 
-      line += "OK" + gray("(") + e + " " + assert_op + " " + a + gray(")");
-   }
-   void print_Ok2(h2_line& line)
-   {
-      h2_line e, a;
-      if (!a_expression.startswith(expection.string())) {
-         e = expection.acronym(O.verbose >= 4 ? 10000 : 30, 3).brush("green") + gray("<==");
-      }
-      if (!a_expression.endswith(represent.string())) {
-         a = gray("==>") + represent.acronym(O.verbose >= 4 ? 10000 : 30, 3).brush("bold,red");
-      }
-
-      line += "OK" + gray("(") + e + h2_line(a_expression).gray_quote().brush("cyan") + a + gray(")");
+      line += assert_type + gray("(") + e + " " + assert_op + " " + a + gray(")");
    }
    void print_JE(h2_line& line)
    {
@@ -134,8 +121,7 @@ struct h2_fail_unexpect : h2_fail {
       line.indent(ci * 2 + 1);
       if (!strcmp("Inner", assert_type)) print_Inner(line);
       if (!strcmp("OK1", assert_type)) print_OK1(line);
-      if (!strcmp("OK2", assert_type)) print_OK2(line);
-      if (!strcmp("Ok2", assert_type)) print_Ok2(line);
+      if (!strcmp("OK", assert_type) || !strcmp("CP", assert_type)) print_OK2_CP(line, assert_type);
       if (!strcmp("JE", assert_type)) print_JE(line);
       if (explain.width()) line += comma_if(c++, ", ", " ") + explain;
       if (user_explain.size()) line += {comma_if(c++, ", ", " "), user_explain};

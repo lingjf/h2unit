@@ -12,12 +12,12 @@ SUITE(number compares)
    Case(integer less than)
    {
       int a1 = 2015;
-      Ok(2017 < a1);
+      CP(2017 < a1);
    }
 
    Case(vector great/equal than)
    {
-      Ok(sizeof(std::vector<int>::size_type) > 100);
+      CP(sizeof(std::vector<int>::size_type) > 100);
    }
 
    Case(double)

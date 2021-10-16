@@ -24,7 +24,7 @@ h2_inline h2_string& h2_string::replace_all(const char* from, const char* to)
    return *this;
 }
 
-h2_inline size_t h2_string::width(size_t columns) const
+h2_inline size_t h2_string::width(size_t columns) const // wcwidth()/wcswidth() 
 {
    size_t w = 0, n = 0;
    for (const char* p = c_str(); *p != '\0'; p += n) {

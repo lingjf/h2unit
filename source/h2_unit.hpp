@@ -138,8 +138,8 @@ namespace h2 {
 #define Teardown H2Teardown
 #endif
 
-#ifndef H2_NO_Ok
-#define Ok H2Ok
+#ifndef H2_NO_CP
+#define CP H2CP
 #endif
 
 #ifndef H2_NO_OK
