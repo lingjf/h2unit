@@ -3,6 +3,7 @@ struct h2_case {
    const char* name;
    bool todo = false, filtered = false, ignored = false;
    bool failed = false, last_failed = false;
+   bool scheduled = false;
    int seq = 0;
    int asserts = 0;
    long long footprint = 0;
@@ -18,7 +19,7 @@ struct h2_case {
 
    void prev_setup();
    void post_setup() {}
-   void prev_cleanup() {}
+   void prev_cleanup() { scheduled = false; }
    void post_cleanup();
 
    void do_fail(h2_fail* fail, bool defer, bool append);

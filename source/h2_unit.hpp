@@ -126,16 +126,16 @@ namespace h2 {
 #define Todo H2Todo
 #endif
 
-#ifndef H2_NO_Cleanup
-#define Cleanup H2Cleanup
-#endif
-
 #ifndef H2_NO_Setup
 #define Setup H2Setup
 #endif
 
 #ifndef H2_NO_Teardown
 #define Teardown H2Teardown
+#endif
+
+#ifndef H2_NO_Cleanup
+#define Cleanup H2Teardown
 #endif
 
 #ifndef H2_NO_CP
