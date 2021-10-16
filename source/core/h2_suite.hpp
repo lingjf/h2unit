@@ -6,7 +6,7 @@ struct h2_stats {
 };
 
 struct h2_suite {
-   h2_sz sz;
+   h2_fs fs;
    const char* name;
    h2_list x;
    int seq = 0;
@@ -18,7 +18,7 @@ struct h2_suite {
    h2_stubs stubs;
    h2_mocks mocks;
 
-   h2_suite(const char* name, void (*)(h2_suite*, h2_case*), const h2_sz& sz);
+   h2_suite(const char* name, void (*)(h2_suite*, h2_case*), const h2_fs& fs);
    void clear();
 
    void enumerate();

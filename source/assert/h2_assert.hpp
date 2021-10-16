@@ -1,11 +1,11 @@
 struct h2_defer_failure : h2_once {
    const char *assert_type, *assert_op = ",";
    const char *e_expression, *a_expression;
-   h2_sz sz;
+   h2_fs fs;
    h2_fail* fails = nullptr;
    h2_ostringstream oss;
 
-   h2_defer_failure(const char* e_expression_, const char* a_expression_, const h2_sz& sz_) : e_expression(e_expression_), a_expression(a_expression_), sz(sz_) {}
+   h2_defer_failure(const char* e_expression_, const char* a_expression_, const h2_fs& fs_) : e_expression(e_expression_), a_expression(a_expression_), fs(fs_) {}
    ~h2_defer_failure();
 };
 

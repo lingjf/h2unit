@@ -56,7 +56,7 @@ struct h2_report_list : h2_report_impl {
       if (O.list_cases & 1) {
          h2_color::prints("dark gray", "SUITE-%d. ", unfiltered_suite_index);
          h2_color::prints("bold,blue", "%s", s->name);
-         h2_color::prints("dark gray", " %s:%d\n", s->sz.file, s->sz.line);
+         h2_color::prints("dark gray", " %s:%d\n", s->fs.file, s->fs.line);
       }
    }
    void on_case_start(h2_suite* s, h2_case* c) override
@@ -77,7 +77,7 @@ struct h2_report_list : h2_report_impl {
          else
             h2_color::prints("dark gray", " %s-%d. ", type, unfiltered_runner_case_index);
          h2_color::prints("cyan", "%s", c->name);
-         h2_color::prints("dark gray", " %s:%d\n", c->sz.basefile(), c->sz.line);
+         h2_color::prints("dark gray", " %s:%d\n", c->fs.basefile(), c->fs.line);
       }
    }
 };
@@ -132,7 +132,7 @@ struct h2_report_console : h2_report_impl {
       h2_line bar;
       if (percentage && O.progressing) format_percentage(bar);
       if (status && status_style) bar.printf(status_style, "%s", status);
-      if (s && c) bar += format_title(s->name, c->name, returnable ? nullptr : c->sz.basefile(), c->sz.line);
+      if (s && c) bar += format_title(s->name, c->name, returnable ? nullptr : c->fs.basefile(), c->fs.line);
       h2_color::printl(bar, false);
       if (returnable) h2_report::I().escape_length = h2_stdio::I().capture_length;
    }
@@ -265,7 +265,7 @@ struct h2_report_junit : h2_report_impl {
       if (!f) return;
       fprintf(f, "<testcase classname=\"%s\" name=\"%s\" status=\"%s\" time=\"%.3f\">\n", s->name, c->name, c->todo ? "TODO" : (c->filtered ? "Filtered" : (c->ignored ? "Ignored" : (c->failed ? "Failed" : "Passed"))), case_cost / 1000.0);
       if (c->failed) {
-         fprintf(f, "<failure message=\"%s:%d:", c->sz.file, c->sz.line);
+         fprintf(f, "<failure message=\"%s:%d:", c->fs.file, c->fs.line);
          if (c->fails) c->fails->foreach([&](h2_fail* fail, size_t si, size_t ci) {fprintf(f, "{newline}"); fail->print(f); });
          fprintf(f, "\" type=\"AssertionFailedError\"></failure>\n");
       }

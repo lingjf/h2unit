@@ -19,15 +19,15 @@ struct h2_runner {
    int main(int argc, const char** argv);
 };
 
-static inline void h2_stub_g(void* srcfp, void* dstfp, const h2_sz& sz)
+static inline void h2_stub_g(void* srcfp, void* dstfp, const h2_fs& fs)
 {
    if (!srcfp || !dstfp) return;
    if (h2_runner::I().current_case)
-      h2_runner::I().current_case->stubs.add(srcfp, dstfp, sz);
+      h2_runner::I().current_case->stubs.add(srcfp, dstfp, fs);
    else if (h2_runner::I().current_suite)
-      h2_runner::I().current_suite->stubs.add(srcfp, dstfp, sz);
+      h2_runner::I().current_suite->stubs.add(srcfp, dstfp, fs);
    else
-      h2_runner::I().stubs.add(srcfp, dstfp, sz);
+      h2_runner::I().stubs.add(srcfp, dstfp, fs);
 }
 
 static inline void h2_unstub_g(void* srcfp)

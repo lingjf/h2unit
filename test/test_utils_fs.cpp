@@ -1,7 +1,7 @@
 #include "../source/h2_unit.cpp"
 #include "test_types.hpp"
 
-SUITE(sz help)
+SUITE(fs help)
 {
    Case(type)
    {
@@ -14,42 +14,42 @@ SUITE(sz help)
 
    Case(basename abc.cpp)
    {
-      h2::h2_sz sz("abc.cpp");
-      OK("abc.cpp", sz.basefile());
+      h2::h2_fs fs("abc.cpp");
+      OK("abc.cpp", fs.basefile());
    }
 
    Case(basename "test/abc.cpp")
    {
-      h2::h2_sz sz("test/abc.cpp");
-      OK("abc.cpp", sz.basefile());
+      h2::h2_fs fs("test/abc.cpp");
+      OK("abc.cpp", fs.basefile());
    }
 
    Case(basename "proj/test/abc.cpp")
    {
-      h2::h2_sz sz("proj/test/abc.cpp");
-      OK("abc.cpp", sz.basefile());
+      h2::h2_fs fs("proj/test/abc.cpp");
+      OK("abc.cpp", fs.basefile());
    }
 
    Case(basename "proj/test\\abc.cpp")
    {
-      h2::h2_sz sz("proj/test\\abc.cpp");
-      OK("abc.cpp", sz.basefile());
+      h2::h2_fs fs("proj/test\\abc.cpp");
+      OK("abc.cpp", fs.basefile());
    }
 }
 
-h2::h2_string sz_tojson(const h2::h2_sz& sz)
+h2::h2_string fs_tojson(const h2::h2_fs& fs)
 {
    h2::h2_string out;
    out.sprintf("{");
-   if (sz.file)
-      out.sprintf("'file': '%s',", sz.file);
+   if (fs.file)
+      out.sprintf("'file': '%s',", fs.file);
    else
       out.sprintf("'file': null,");
 
-   out.sprintf("'line': %d,", sz.line);
+   out.sprintf("'line': %d,", fs.line);
 
-   if (sz.func)
-      out.sprintf("'func': '%s',", sz.func);
+   if (fs.func)
+      out.sprintf("'func': '%s',", fs.func);
    else
       out.sprintf("'func': null,");
 
@@ -57,89 +57,89 @@ h2::h2_string sz_tojson(const h2::h2_sz& sz)
    return out;
 }
 
-SUITE(sz)
+SUITE(fs)
 {
    Case(default constructor)
    {
-      h2::h2_sz sz;
+      h2::h2_fs fs;
       JE("{                \
           'file': null,    \
           'line': 0,       \
           'func': null     \
         }",
-         sz_tojson(sz));
+         fs_tojson(fs));
    }
 
    Case(file line)
    {
-      h2::h2_sz sz("abc.cpp", 123);
+      h2::h2_fs fs("abc.cpp", 123);
       JE("{                      \
           'file': 'abc.cpp',     \
           'line': 123,           \
           'func': null           \
         }",
-         sz_tojson(sz));
+         fs_tojson(fs));
    }
 
    Case(copy constructor)
    {
-      h2::h2_sz sz("abc.cpp", 123);
-      h2::h2_sz sz2(sz);
+      h2::h2_fs fs("abc.cpp", 123);
+      h2::h2_fs fs2(fs);
       JE("{                      \
           'file': 'abc.cpp',     \
           'line': 123,           \
           'func': null           \
         }",
-         sz_tojson(sz2));
+         fs_tojson(fs2));
    }
 
    Case(assigment copy constructor)
    {
-      h2::h2_sz sz("abc.cpp", 123);
-      h2::h2_sz sz2 = sz;
+      h2::h2_fs fs("abc.cpp", 123);
+      h2::h2_fs fs2 = fs;
       JE("{                      \
           'file': 'abc.cpp',     \
           'line': 123,           \
           'func': null           \
         }",
-         sz_tojson(sz2));
+         fs_tojson(fs2));
    }
 
    Case(assigment copy)
    {
-      h2::h2_sz sz("abc.cpp", 123);
-      h2::h2_sz sz2;
+      h2::h2_fs fs("abc.cpp", 123);
+      h2::h2_fs fs2;
 
-      sz2 = sz;
+      fs2 = fs;
       JE("{                      \
           'file': 'abc.cpp',     \
           'line': 123,           \
           'func': null           \
         }",
-         sz_tojson(sz2));
+         fs_tojson(fs2));
    }
 }
 
-static void f1(const h2::h2_sz& sz = h2::h2_sz())
+static void f1(const h2::h2_fs& fs = h2::h2_fs())
 {
    JE("{                         \
           'file': null,          \
           'line': 0,             \
           'func': null           \
         }",
-      sz_tojson(sz));
+      fs_tojson(fs));
 }
-static void f2(const h2::h2_sz& sz = h2::h2_sz())
+static void f2(const h2::h2_fs& fs = h2::h2_fs())
 {
    JE("{                         \
           'file': 'abc.cpp',     \
           'line': 123,           \
           'func': null           \
         }",
-      sz_tojson(sz));
+      fs_tojson(fs));
 }
 
-CASE(sz)
+CASE(fs)
 {
    f1();
    f2({"abc.cpp", 123});

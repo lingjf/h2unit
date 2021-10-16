@@ -22,9 +22,9 @@ struct h2_block : h2_libc {
    h2_block_attributes attributes;
    unsigned long long footprint = 0, allocated = 0;
    const char* where;
-   h2_sz sz;
+   h2_fs fs;
 
-   h2_block(const char* attributes_, const char* where_, const h2_sz& sz_) : attributes(attributes_), where(where_), sz(sz_) {}
+   h2_block(const char* attributes_, const char* where_, const h2_fs& fs_) : attributes(attributes_), where(where_), fs(fs_) {}
 
    h2_fail* check()
    {
@@ -40,7 +40,7 @@ struct h2_block : h2_libc {
          if (!attributes.noleak && !p->free_times)
             leaky.add(p->user_ptr, p->user_size, p->bt_allocate);
 
-      fails = leaky.check(where, sz);
+      fails = leaky.check(where, fs);
       if (fails) return fails;
 
       /* why not chain fails in subling? report one fail ignore more for clean.

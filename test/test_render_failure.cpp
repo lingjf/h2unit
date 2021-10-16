@@ -82,7 +82,7 @@ SUITE(failure)
 
       // Subling ->  fa -> fb -> fc
       const char* e[] = {"a", "b", "c"};
-      H2_H2_FOREACH_FAIL(fail, fails) { OK(e[i++], fail->sz.file); }
+      H2_H2_FOREACH_FAIL(fail, fails) { OK(e[i++], fail->fs.file); }
       fails->foreach([&](h2::h2_fail* fail, size_t, size_t) {
       });
    }
@@ -106,7 +106,7 @@ SUITE(failure)
       //  v
       //  fc
       const char* e[] = {"a", "b", "c"};
-      H2_H2_FOREACH_FAIL(fail, fails) { OK(e[i++], fail->sz.file); }
+      H2_H2_FOREACH_FAIL(fail, fails) { OK(e[i++], fail->fs.file); }
    }
 
    Case(append x y)
@@ -143,6 +143,6 @@ SUITE(failure)
 
       const char* e[] = {"a", "1", "2", "3", "b", "4",
                          "5", "6", "c", "7", "8", "9"};
-      H2_H2_FOREACH_FAIL(fail, fails) { OK(e[i++], fail->sz.file); }
+      H2_H2_FOREACH_FAIL(fail, fails) { OK(e[i++], fail->fs.file); }
    }
 }

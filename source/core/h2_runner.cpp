@@ -82,9 +82,9 @@ h2_inline void h2_runner::enumerate()
       for (auto& cleanup : global_suite_cleanups) cleanup();
       int unfiltered = 0;
       h2_list_for_each_entry (c, s->cases, h2_case, x)
-         if (!(c->filtered = O.filter(ss(s->name), c->name, c->sz.file, c->sz.line)))
+         if (!(c->filtered = O.filter(ss(s->name), c->name, c->fs.file, c->fs.line)))
             unfiltered++;
-      if (unfiltered == 0) s->filtered = O.filter(ss(s->name), "", s->sz.file, s->sz.line);
+      if (unfiltered == 0) s->filtered = O.filter(ss(s->name), "", s->fs.file, s->fs.line);
       cases += s->cases.count();
       if (10 * i + i * i < cases && i < (int)h2_shell::I().cww - 20) i += ::printf(".");
    }

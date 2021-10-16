@@ -1,5 +1,5 @@
 struct h2_case {
-   h2_sz sz;
+   h2_fs fs;
    const char* name;
    bool todo = false, filtered = false, ignored = false;
    bool failed = false, last_failed = false;
@@ -13,7 +13,7 @@ struct h2_case {
    h2_mocks mocks;
    h2_dnses dnses;
 
-   h2_case(const char* name_, int todo_, const h2_sz& sz_) : sz(sz_), name(name_), todo(todo_) {}
+   h2_case(const char* name_, int todo_, const h2_fs& fs_) : fs(fs_), name(name_), todo(todo_) {}
    void clear();
 
    void prev_setup();

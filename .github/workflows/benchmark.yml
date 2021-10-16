@@ -3,7 +3,7 @@ name: benchmark
 on:
   push:
     branches:
-      - 'v*'
+      - 'master'
 
 jobs:
 

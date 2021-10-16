@@ -1,8 +1,8 @@
 struct h2_timer : h2_once {
-   h2_sz sz;
+   h2_fs fs;
    int cpu_ms;
    clock_t start;
-   h2_timer(int ms, const h2_sz& sz);
+   h2_timer(int ms, const h2_fs& fs);
    ~h2_timer();
 };
 

@@ -1,8 +1,8 @@
 struct h2_cout : h2_once {
-   h2_sz sz;
+   h2_fs fs;
    h2_matcher<const char*> m;
    const char *e, *type;
-   h2_cout(h2_matcher<const char*> m, const char* e, const char* type, const h2_sz& sz);
+   h2_cout(h2_matcher<const char*> m, const char* e, const char* type, const h2_fs& fs);
    ~h2_cout();
 };
 

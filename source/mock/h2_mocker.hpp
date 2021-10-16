@@ -1,7 +1,7 @@
 struct h2_mocker_base : h2_libc {
    h2_list x;
    void *srcfp, *dstfp;
-   h2_sz sz;
+   h2_fs fs;
    char return_type[512];
    h2_vector<h2_string> argument_types;
    bool greed_mode = true;
@@ -62,10 +62,10 @@ class h2_mocker<Counter, ClassType, ReturnType(ArgumentTypes...)> : h2_mocker_ba
                continue;
             }
             fails->foreach([this, i](h2_fail* f, size_t, size_t) {
-               f->explain += gray("on ") + (sz.func + argument(f->seqno));
+               f->explain += gray("on ") + (fs.func + argument(f->seqno));
                if (1 < checkin_array.size()) f->explain += gray(" when ") + h2_numeric::sequence_number((size_t)i) + " " + color(checkin_array[i].expr, "cyan");
             });
-            h2_fail* fail = h2_fail::new_normal(signature(), sz);
+            h2_fail* fail = h2_fail::new_normal(signature(), fs);
             h2_fail::append_child(fail, fails);
             h2_fail_g(fail);
          } else {
@@ -80,8 +80,8 @@ class h2_mocker<Counter, ClassType, ReturnType(ArgumentTypes...)> : h2_mocker_ba
       }
       if (checkin_offset != -1) checkin_array[checkin_offset].call += 1;
       if (checkin_offset == -1) {
-         h2_fail* fail = h2_fail::new_normal(signature(), sz);
-         h2_fail* f = h2_fail::new_normal(sz.func + h2_representify(at) + color(" unexpectedly", "red,bold") + " called");
+         h2_fail* fail = h2_fail::new_normal(signature(), fs);
+         h2_fail* f = h2_fail::new_normal(fs.func + h2_representify(at) + color(" unexpectedly", "red,bold") + " called");
          h2_fail::append_child(fail, f);
          h2_fail_g(fail);
       }
@@ -109,7 +109,7 @@ class h2_mocker<Counter, ClassType, ReturnType(ArgumentTypes...)> : h2_mocker_ba
       return *i;
    }
 
-   static h2_mocker& I(void* srcfp, const h2_sz& sz)
+   static h2_mocker& I(void* srcfp, const h2_fs& fs)
    {
       if (std::is_same<std::false_type, ClassType>::value) {
          I().dstfp = (void*)normal_function_stub;
@@ -119,7 +119,7 @@ class h2_mocker<Counter, ClassType, ReturnType(ArgumentTypes...)> : h2_mocker_ba
          I().original.mfp = (ReturnType(*)(ClassType*, ArgumentTypes...))srcfp;
       }
       I().srcfp = srcfp;
-      I().sz = sz;
+      I().fs = fs;
       I().reset();
       I().mock();
       return I();

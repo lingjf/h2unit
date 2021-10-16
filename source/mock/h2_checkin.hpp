@@ -10,7 +10,7 @@ struct h2_checkin { /* 考勤 ; 函数被调次数期望 */
    bool is_saturated(/*饱和*/) const { return call == most; }
    bool is_excessive(/*过多*/) const { return most < call; }
 
-   h2_fail* check(size_t index, size_t total, const h2_sz& sz) const;
+   h2_fail* check(size_t index, size_t total, const h2_fs& fs) const;
    const char* actual() const;
    const char* expect() const;
 

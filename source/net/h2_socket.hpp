@@ -12,14 +12,14 @@ struct h2_sock : h2_once {
    static h2_packet* fetch();
 
    template <typename M1 = h2_polymorphic_matcher<h2_matches_any>, typename M2 = h2_polymorphic_matcher<h2_matches_any>, typename M3 = h2_polymorphic_matcher<h2_matches_any>, typename M4 = h2_polymorphic_matcher<h2_matches_any>>
-   static void check(const h2_sz& sz, const char* e, M1 from = Any, M2 to = Any, M3 payload = Any, M4 size = Any)
+   static void check(const h2_fs& fs, const char* e, M1 from = Any, M2 to = Any, M3 payload = Any, M4 size = Any)
    {
       h2_assert_g();
       h2_packet* p = h2_sock::fetch();
       if (!p) {
          h2_line t = "Outgoing packet miss Ptx(";
          t.printf("green", "%s", e).printf("", ")");
-         h2_fail_g(h2_fail::new_normal(t, sz));
+         h2_fail_g(h2_fail::new_normal(t, fs));
          return;
       }
       h2_fail* fails = nullptr;
@@ -47,7 +47,7 @@ struct h2_sock : h2_once {
       if (fails) {
          h2_line t = "Outgoing packet unexpected Ptx(";
          t.printf("green", "%s", e).printf("", ")");
-         h2_fail* fail = h2_fail::new_normal(t, sz);
+         h2_fail* fail = h2_fail::new_normal(t, fs);
          h2_fail::append_child(fail, fails);
          h2_fail_g(fail);
       }

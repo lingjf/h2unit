@@ -5,13 +5,13 @@ struct h2_memory {
 
    struct stack {
       static void root();
-      static void push(const h2_sz& sz);
+      static void push(const h2_fs& fs);
       static h2_fail* pop();
       static long long footprint();
 
       struct block : h2_once {
          bool unmem = false;
-         block(const char* attributes, const h2_sz& sz);
+         block(const char* attributes, const h2_fs& fs);
          ~block();
       };
    };
