@@ -73,7 +73,7 @@ h2_inline void h2_runner::shadow()
 h2_inline void h2_runner::enumerate()
 {
    int cases = 0, i = 0;
-   ::printf("enumerating...");
+   if (O.progressing) ::printf("enumerating...");
    h2_list_for_each_entry (s, suites, h2_suite, x) {
       for (auto& setup : global_suite_setups) setup();
       s->setup();
@@ -86,9 +86,9 @@ h2_inline void h2_runner::enumerate()
             unfiltered++;
       if (unfiltered == 0) s->filtered = O.filter(ss(s->name), "", s->fs.file, s->fs.line);
       cases += s->cases.count();
-      if (10 * i + i * i < cases && i < (int)h2_shell::I().cww - 20) i += ::printf(".");
+      if (O.progressing && 10 * i + i * i < cases && i < (int)h2_shell::I().cww - 20) i += ::printf(".");
    }
-   ::printf("\33[2K\r");
+   if (O.progressing) ::printf("\33[2K\r");
 }
 
 h2_inline int h2_runner::main(int argc, const char** argv)

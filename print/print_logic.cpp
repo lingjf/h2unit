@@ -4,7 +4,7 @@ SUITE(Logic)
 {
    Case(Not string equal)
    {
-      const char* p = "a7af3452a5eee24a149f8993e48ce81b77b200b212b23c2402c221ddc4"
+      const char* p = "Hello,您好,ボンジュール,안녕하세요.5eee24a149f8993e48ce81b77b200b212b23c2402c221ddc4"
                       "260a608cf328a2133386477eb7a65958893726741cb9223419a7a0224f"
                       "e7af2866944197ee4ab18e25913cae8507bb306a284f";
       OK(Not(p), p);

@@ -14,9 +14,9 @@
 *    `-i` {pattern} *include* filter, suite name or case name wildcard (?, *) matches, if pattern don't contains ? and *, wildcard change to contains. Default is `*` (include all)
 *    `-l` [suite case todo] *list* out suites and cases
 *    `-m` Disable *memory* check(leak, overflow, trample, double free, asymmetric free)
-*    `-p` Disable test percentage *progressing*
+*    `-p` Disable test percentage *progressing* bar
 *    `-r` [n] repeat run n *rounds*
 *    `-s` *shuffle* cases then test in random order if no last failed
-*    `-v` [n] *verbose* output, 0:compact 2:normal 4:acronym default:all
+*    `-v` [n] *verbose* output, 0:compact 2:normal 4:abbreviate default:all
 *    `-x` Thrown *exception* is considered as failure
 *    `-y` [n] *Copy-paste-able* C/C++ source code formatted JSON, 0:no quote, 1:quote by ', 2:quote by ", 3:quote by \\"

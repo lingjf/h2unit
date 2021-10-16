@@ -43,8 +43,8 @@ SUITE(string compares)
 {
    Case(unprintable characters)
    {
-      const char* a1 = "hello the world 北京 welcone you\n!";
-      OK("hello world 上海 welcome you!", a1);
+      const char* a1 = "hello the world 北京 welcone 귀하 !\n ";
+      OK("hello world 上海 welcome そのほう !", a1);
    }
 
    Case(Chinese characters)

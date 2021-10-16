@@ -90,7 +90,7 @@ h2_inline h2_line h2_line::gray_quote() const
    return line;
 }
 
-h2_inline h2_line h2_line::acronym(size_t width, size_t tail) const
+h2_inline h2_line h2_line::abbreviate(size_t width, size_t tail) const
 {
    h2_line line1, line2;
    for (auto& word : *this) {

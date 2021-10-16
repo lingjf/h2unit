@@ -14,7 +14,7 @@ struct h2_line : h2_vector<h2_string> {
 
    bool enclosed(const char c) const;
    h2_line gray_quote() const;
-   h2_line acronym(size_t width = 16, size_t tail = 0) const;
+   h2_line abbreviate(size_t width = 16, size_t tail = 0) const;
    h2_string string() const;
 
    static void samesizify(h2_line& a, h2_line& b);

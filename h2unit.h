@@ -1,5 +1,5 @@
 
-/* v5.14 2021-10-16 10:48:13 */
+/* v5.14 2021-10-16 12:55:08 */
 /* https://github.com/lingjf/h2unit */
 /* Apache Licence 2.0 */
 
@@ -741,7 +741,7 @@ struct h2_line : h2_vector<h2_string> {
 
    bool enclosed(const char c) const;
    h2_line gray_quote() const;
-   h2_line acronym(size_t width = 16, size_t tail = 0) const;
+   h2_line abbreviate(size_t width = 16, size_t tail = 0) const;
    h2_string string() const;
 
    static void samesizify(h2_line& a, h2_line& b);
@@ -4808,7 +4808,7 @@ h2_inline h2_line h2_line::gray_quote() const
    return line;
 }
 
-h2_inline h2_line h2_line::acronym(size_t width, size_t tail) const
+h2_inline h2_line h2_line::abbreviate(size_t width, size_t tail) const
 {
    h2_line line1, line2;
    for (auto& word : *this) {
@@ -9061,7 +9061,7 @@ h2_inline void h2_runner::shadow()
 h2_inline void h2_runner::enumerate()
 {
    int cases = 0, i = 0;
-   ::printf("enumerating...");
+   if (O.progressing) ::printf("enumerating...");
    h2_list_for_each_entry (s, suites, h2_suite, x) {
       for (auto& setup : global_suite_setups) setup();
       s->setup();
@@ -9074,9 +9074,9 @@ h2_inline void h2_runner::enumerate()
             unfiltered++;
       if (unfiltered == 0) s->filtered = O.filter(ss(s->name), "", s->fs.file, s->fs.line);
       cases += s->cases.count();
-      if (10 * i + i * i < cases && i < (int)h2_shell::I().cww - 20) i += ::printf(".");
+      if (O.progressing && 10 * i + i * i < cases && i < (int)h2_shell::I().cww - 20) i += ::printf(".");
    }
-   ::printf("\33[2K\r");
+   if (O.progressing) ::printf("\33[2K\r");
 }
 
 h2_inline int h2_runner::main(int argc, const char** argv)
@@ -9279,34 +9279,34 @@ struct h2_fail_unexpect : h2_fail {
    h2_fail_unexpect(const h2_line& expection_ = {}, const h2_line& represent_ = {}, const h2_line& explain_ = {}, const h2_fs& fs_ = h2_fs()) : h2_fail(explain_, fs_), expection(expection_), represent(represent_) {}
    void print_OK1(h2_line& line)
    {
-      h2_line a = h2_line(a_expression).acronym(O.verbose >= 4 ? 10000 : 30, 3).gray_quote().brush("cyan");
+      h2_line a = h2_line(a_expression).gray_quote().brush("cyan");
       line += "OK" + gray("(") + a + gray(")") + " is " + color("false", "bold,red");
    }
    void print_OK2_CP(h2_line& line, const char* assert_type)
    {
       h2_line e, a;
       if (!expection.width()) {
-         e = h2_line(e_expression).acronym(O.verbose >= 4 ? 10000 : 30, 3).gray_quote().brush("green");
+         e = h2_line(e_expression).abbreviate(10000, 3).gray_quote().brush("green");
       } else if (is_synonym(e_expression, expection.string())) {
-         e = expection.acronym(O.verbose >= 4 ? 10000 : 30, 3).brush("green");
+         e = expection.abbreviate(10000, 3).brush("green");
       } else {
-         e = h2_line(e_expression).acronym(O.verbose >= 4 ? 10000 : 30, 3).gray_quote().brush("cyan") + gray("==>") + expection.acronym(O.verbose >= 4 ? 10000 : 30, 3).brush("green");
+         e = h2_line(e_expression).abbreviate(O.verbose >= 4 ? 10000 : 120, 3).gray_quote().brush("cyan") + gray("==>") + expection.abbreviate(10000, 3).brush("green");
       }  // https://unicode-table.com/en/sets/arrow-symbols/
 
       if (!represent.width()) {
-         a = h2_line(a_expression).acronym(O.verbose >= 4 ? 10000 : 30, 3).gray_quote().brush("bold,red");
+         a = h2_line(a_expression).abbreviate(10000, 3).gray_quote().brush("bold,red");
       } else if (is_synonym(a_expression, represent.string()) || !a_expression.length()) {
-         a = represent.acronym(O.verbose >= 4 ? 10000 : 30, 3).brush("bold,red");
+         a = represent.abbreviate(10000, 3).brush("bold,red");
       } else {
-         a = represent.acronym(O.verbose >= 4 ? 10000 : 30, 3).brush("bold,red") + gray("<==") + h2_line(a_expression).acronym(O.verbose >= 4 ? 10000 : 30, 3).gray_quote().brush("cyan");
+         a = represent.abbreviate(10000, 3).brush("bold,red") + gray("<==") + h2_line(a_expression).abbreviate(O.verbose >= 4 ? 10000 : 120, 3).gray_quote().brush("cyan");
       }
 
       line += assert_type + gray("(") + e + " " + assert_op + " " + a + gray(")");
    }
    void print_JE(h2_line& line)
    {
-      h2_line e = h2_line(e_expression.unquote('\"').unquote('\'')).acronym(O.verbose >= 4 ? 10000 : 30, 2).brush("cyan");
-      h2_line a = h2_line(a_expression.unquote('\"').unquote('\'')).acronym(O.verbose >= 4 ? 10000 : 30, 2).brush("bold,red");
+      h2_line e = h2_line(e_expression.unquote('\"').unquote('\'')).abbreviate(O.verbose >= 4 ? 10000 : 30, 2).brush("cyan");
+      h2_line a = h2_line(a_expression.unquote('\"').unquote('\'')).abbreviate(O.verbose >= 4 ? 10000 : 30, 2).brush("bold,red");
       line += "JE" + gray("(") + e + ", " + a + gray(")");
    }
    void print_Inner(h2_line& line)
@@ -9314,11 +9314,11 @@ struct h2_fail_unexpect : h2_fail {
       if (0 <= seqno) line.printf("dark gray", "%d. ", seqno);
       if (expection.width()) {
          line.printf("", "%sexpect is ", comma_if(c++));
-         line += expection.acronym(O.verbose >= 4 ? 10000 : 30, 3).brush("green");
+         line += expection.abbreviate(O.verbose >= 4 ? 10000 : 120, 3).brush("green");
       }
       if (represent.width()) {
          line.printf("", "%sactual is ", comma_if(c++));
-         line += represent.acronym(O.verbose >= 4 ? 10000 : 30, 3).brush("bold,red");
+         line += represent.abbreviate(O.verbose >= 4 ? 10000 : 120, 3).brush("bold,red");
       }
    }
 
@@ -9340,6 +9340,12 @@ struct h2_fail_strcmp : h2_fail_unexpect {
    const bool caseless;
    const h2_string e_value, a_value;
    h2_fail_strcmp(const h2_string& e_value_, const h2_string& a_value_, bool caseless_, const h2_line& expection, const h2_line& explain = {}) : h2_fail_unexpect(expection, h2_representify(a_value_), explain), caseless(caseless_), e_value(e_value_), a_value(a_value_) {}
+   h2_line fmt_char(h2_string& c, bool eq, const char* style)
+   {
+      if (c.equals(" ") && O.colorful) return gray("‧");
+      if (eq) return c.escape();
+      return color(c.escape(), style);
+   }
    void print(size_t si = 0, size_t ci = 0) override
    {
       h2_fail_unexpect::print(si, ci);
@@ -9348,10 +9354,8 @@ struct h2_fail_strcmp : h2_fail_unexpect {
          h2_line e_line, a_line;
          h2_vector<h2_string> e_chars = e_value.disperse(), a_chars = a_value.disperse();
          auto lcs = h2_LCS(e_chars, a_chars, caseless).lcs();
-         for (size_t i = 0; i < lcs.first.size(); i++)
-            e_line += lcs.first[i] ? h2_line(e_chars[i].escape()) : color(e_chars[i].escape(), "green");
-         for (size_t i = 0; i < lcs.second.size(); i++)
-            a_line += lcs.second[i] ? h2_line(a_chars[i].escape()) : color(a_chars[i].escape(), "red");
+         for (size_t i = 0; i < lcs.first.size(); i++) e_line += fmt_char(e_chars[i], lcs.first[i], "green");
+         for (size_t i = 0; i < lcs.second.size(); i++) a_line += fmt_char(a_chars[i], lcs.second[i], "red");
          h2_color::printl(h2_layout::unified(e_line, a_line, "expect", "actual", h2_shell::I().cww));
       }
    }
@@ -9720,7 +9724,7 @@ struct h2_report_console : h2_report_impl {
          title.printf("dark gray", "┊ ");
          title.printf("", "%s:%d ", file, line);
       } else {
-         title = title.acronym(h2_shell::I().cww - 20);
+         title = title.abbreviate(h2_shell::I().cww - 20);
       }
       return title;
    }
@@ -10051,10 +10055,10 @@ static inline void usage()
               H2_USAGE_SP " -\033[36mj\033[0m  " H2_USAGE_SP "  \033[90m[\033[0mpath\033[90m]\033[0m   " H2_USAGE_SP " Generate \033[36mj\033[0munit report, default is <executable>.junit.xml   " H2_USAGE_SP "\n" H2_USAGE_BR
               H2_USAGE_SP " -\033[36ml\033[0m  " H2_USAGE_SP "  \033[90m[\033[0mtype .\033[90m]\033[0m " H2_USAGE_SP " \033[36ml\033[0mist out suites and cases, type [suite case todo]          " H2_USAGE_SP "\n" H2_USAGE_BR
               H2_USAGE_SP " -\033[36mm\033[0m  " H2_USAGE_SP "           " H2_USAGE_SP " Test cases without \033[36mm\033[0memory check                            " H2_USAGE_SP "\n" H2_USAGE_BR
-              H2_USAGE_SP " -\033[36mp\033[0m  " H2_USAGE_SP "           " H2_USAGE_SP " Disable test percentage \033[36mp\033[0mrogressing                        " H2_USAGE_SP "\n" H2_USAGE_BR
+              H2_USAGE_SP " -\033[36mp\033[0m  " H2_USAGE_SP "           " H2_USAGE_SP " Disable test percentage \033[36mp\033[0mrogressing bar                    " H2_USAGE_SP "\n" H2_USAGE_BR
               H2_USAGE_SP " -\033[36mr\033[0m  " H2_USAGE_SP "    \033[90m[\033[0mn\033[90m]\033[0m    " H2_USAGE_SP " Repeat test n (default 2) \033[36mr\033[0mounds                           " H2_USAGE_SP "\n" H2_USAGE_BR
               H2_USAGE_SP " -\033[36ms\033[0m  " H2_USAGE_SP "           " H2_USAGE_SP " \033[36ms\033[0mhuffle cases then test in random order if no last failed  " H2_USAGE_SP "\n" H2_USAGE_BR
-              H2_USAGE_SP " -\033[36mv\033[0m  " H2_USAGE_SP "    \033[90m[\033[0mn\033[90m]\033[0m    " H2_USAGE_SP " \033[36mv\033[0merbose output, 0:compact 2:normal 4:acronym default:all   " H2_USAGE_SP "\n" H2_USAGE_BR
+              H2_USAGE_SP " -\033[36mv\033[0m  " H2_USAGE_SP "    \033[90m[\033[0mn\033[90m]\033[0m    " H2_USAGE_SP " \033[36mv\033[0merbose, 0:compact 2:normal 4:abbreviate default:all       " H2_USAGE_SP "\n" H2_USAGE_BR
               H2_USAGE_SP " -\033[36mx\033[0m  " H2_USAGE_SP "           " H2_USAGE_SP " Thrown e\033[36mx\033[0mception is considered as failure                  " H2_USAGE_SP "\n" H2_USAGE_BR
               H2_USAGE_SP " -\033[36my\033[0m  " H2_USAGE_SP "    \033[90m[\033[0mn\033[90m]\033[0m    " H2_USAGE_SP " Cop\033[36my\033[0m-paste-able C/C++ source code formatted JSON           " H2_USAGE_SP "\n"
               "\033[90m└─────┴───────────┴────────────────────────────────────────────────────────────┘\033[0m\n";

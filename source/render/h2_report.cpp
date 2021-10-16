@@ -112,7 +112,7 @@ struct h2_report_console : h2_report_impl {
          title.printf("dark gray", "┊ ");
          title.printf("", "%s:%d ", file, line);
       } else {
-         title = title.acronym(h2_shell::I().cww - 20);
+         title = title.abbreviate(h2_shell::I().cww - 20);
       }
       return title;
    }

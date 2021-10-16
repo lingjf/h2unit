@@ -168,126 +168,126 @@ SUITE(h2_line operator+)
    }
 }
 
-SUITE(h2_line acronym without style)
+SUITE(h2_line abbreviate without style)
 {
-   Case(no acronym with 1 string)
+   Case(no abbreviate with 1 string)
    {
       h2::h2_line line("0123456789");
-      OK(ListOf("0123456789"), line.acronym(10));
-      OK(ListOf("0123456789"), line.acronym(11));
+      OK(ListOf("0123456789"), line.abbreviate(10));
+      OK(ListOf("0123456789"), line.abbreviate(11));
    }
 
-   Case(no acronym with 2 string)
+   Case(no abbreviate with 2 string)
    {
       h2::h2_line line({"012", "3456789"});
-      OK(ListOf("012", "3456789"), line.acronym(10));
-      OK(ListOf("012", "3456789"), line.acronym(11));
+      OK(ListOf("012", "3456789"), line.abbreviate(10));
+      OK(ListOf("012", "3456789"), line.abbreviate(11));
    }
 
-   Case(acronym 1 string)
+   Case(abbreviate 1 string)
    {
       h2::h2_line line("0123456789");
-      OK(ListOf("\033{+dark gray}", "...", "\033{-dark gray}"), line.acronym(3));
-      OK(ListOf("0", "\033{+dark gray}", "...", "\033{-dark gray}"), line.acronym(4));
-      OK(ListOf("01", "\033{+dark gray}", "...", "\033{-dark gray}"), line.acronym(5));
-      OK(ListOf("012", "\033{+dark gray}", "...", "\033{-dark gray}"), line.acronym(6));
-      OK(ListOf("0123", "\033{+dark gray}", "...", "\033{-dark gray}"), line.acronym(7));
-      OK(ListOf("01234", "\033{+dark gray}", "...", "\033{-dark gray}"), line.acronym(8));
-      OK(ListOf("012345", "\033{+dark gray}", "...", "\033{-dark gray}"), line.acronym(9));
+      OK(ListOf("\033{+dark gray}", "...", "\033{-dark gray}"), line.abbreviate(3));
+      OK(ListOf("0", "\033{+dark gray}", "...", "\033{-dark gray}"), line.abbreviate(4));
+      OK(ListOf("01", "\033{+dark gray}", "...", "\033{-dark gray}"), line.abbreviate(5));
+      OK(ListOf("012", "\033{+dark gray}", "...", "\033{-dark gray}"), line.abbreviate(6));
+      OK(ListOf("0123", "\033{+dark gray}", "...", "\033{-dark gray}"), line.abbreviate(7));
+      OK(ListOf("01234", "\033{+dark gray}", "...", "\033{-dark gray}"), line.abbreviate(8));
+      OK(ListOf("012345", "\033{+dark gray}", "...", "\033{-dark gray}"), line.abbreviate(9));
    }
 
-   Case(acronym 2 string)
+   Case(abbreviate 2 string)
    {
       h2::h2_line line({"012", "3456789"});
-      OK(ListOf("\033{+dark gray}", "...", "\033{-dark gray}"), line.acronym(3));
-      OK(ListOf("0", "\033{+dark gray}", "...", "\033{-dark gray}"), line.acronym(4));
-      OK(ListOf("01", "\033{+dark gray}", "...", "\033{-dark gray}"), line.acronym(5));
-      OK(ListOf("012", "\033{+dark gray}", "...", "\033{-dark gray}"), line.acronym(6));
-      OK(ListOf("012", "3", "\033{+dark gray}", "...", "\033{-dark gray}"), line.acronym(7));
-      OK(ListOf("012", "34", "\033{+dark gray}", "...", "\033{-dark gray}"), line.acronym(8));
-      OK(ListOf("012", "345", "\033{+dark gray}", "...", "\033{-dark gray}"), line.acronym(9));
+      OK(ListOf("\033{+dark gray}", "...", "\033{-dark gray}"), line.abbreviate(3));
+      OK(ListOf("0", "\033{+dark gray}", "...", "\033{-dark gray}"), line.abbreviate(4));
+      OK(ListOf("01", "\033{+dark gray}", "...", "\033{-dark gray}"), line.abbreviate(5));
+      OK(ListOf("012", "\033{+dark gray}", "...", "\033{-dark gray}"), line.abbreviate(6));
+      OK(ListOf("012", "3", "\033{+dark gray}", "...", "\033{-dark gray}"), line.abbreviate(7));
+      OK(ListOf("012", "34", "\033{+dark gray}", "...", "\033{-dark gray}"), line.abbreviate(8));
+      OK(ListOf("012", "345", "\033{+dark gray}", "...", "\033{-dark gray}"), line.abbreviate(9));
    }
 
-   Case(acronym 1 string with tail 1)
+   Case(abbreviate 1 string with tail 1)
    {
       h2::h2_line line("0123456789");
-      OK(ListOf("\033{+dark gray}", "...", "\033{-dark gray}", "9"), line.acronym(4, 1));
-      OK(ListOf("0", "\033{+dark gray}", "...", "\033{-dark gray}", "9"), line.acronym(5, 1));
-      OK(ListOf("01", "\033{+dark gray}", "...", "\033{-dark gray}", "9"), line.acronym(6, 1));
-      OK(ListOf("012", "\033{+dark gray}", "...", "\033{-dark gray}", "9"), line.acronym(7, 1));
-      OK(ListOf("0123", "\033{+dark gray}", "...", "\033{-dark gray}", "9"), line.acronym(8, 1));
-      OK(ListOf("01234", "\033{+dark gray}", "...", "\033{-dark gray}", "9"), line.acronym(9, 1));
+      OK(ListOf("\033{+dark gray}", "...", "\033{-dark gray}", "9"), line.abbreviate(4, 1));
+      OK(ListOf("0", "\033{+dark gray}", "...", "\033{-dark gray}", "9"), line.abbreviate(5, 1));
+      OK(ListOf("01", "\033{+dark gray}", "...", "\033{-dark gray}", "9"), line.abbreviate(6, 1));
+      OK(ListOf("012", "\033{+dark gray}", "...", "\033{-dark gray}", "9"), line.abbreviate(7, 1));
+      OK(ListOf("0123", "\033{+dark gray}", "...", "\033{-dark gray}", "9"), line.abbreviate(8, 1));
+      OK(ListOf("01234", "\033{+dark gray}", "...", "\033{-dark gray}", "9"), line.abbreviate(9, 1));
    }
 
-   Case(acronym 2 string with tail 1)
+   Case(abbreviate 2 string with tail 1)
    {
       h2::h2_line line({"012", "3456789"});
-      OK(ListOf("\033{+dark gray}", "...", "\033{-dark gray}", "9"), line.acronym(4, 1));
-      OK(ListOf("0", "\033{+dark gray}", "...", "\033{-dark gray}", "9"), line.acronym(5, 1));
-      OK(ListOf("01", "\033{+dark gray}", "...", "\033{-dark gray}", "9"), line.acronym(6, 1));
-      OK(ListOf("012", "\033{+dark gray}", "...", "\033{-dark gray}", "9"), line.acronym(7, 1));
-      OK(ListOf("012", "3", "\033{+dark gray}", "...", "\033{-dark gray}", "9"), line.acronym(8, 1));
-      OK(ListOf("012", "34", "\033{+dark gray}", "...", "\033{-dark gray}", "9"), line.acronym(9, 1));
+      OK(ListOf("\033{+dark gray}", "...", "\033{-dark gray}", "9"), line.abbreviate(4, 1));
+      OK(ListOf("0", "\033{+dark gray}", "...", "\033{-dark gray}", "9"), line.abbreviate(5, 1));
+      OK(ListOf("01", "\033{+dark gray}", "...", "\033{-dark gray}", "9"), line.abbreviate(6, 1));
+      OK(ListOf("012", "\033{+dark gray}", "...", "\033{-dark gray}", "9"), line.abbreviate(7, 1));
+      OK(ListOf("012", "3", "\033{+dark gray}", "...", "\033{-dark gray}", "9"), line.abbreviate(8, 1));
+      OK(ListOf("012", "34", "\033{+dark gray}", "...", "\033{-dark gray}", "9"), line.abbreviate(9, 1));
    }
 
-   Case(acronym 1 string with tail 2)
+   Case(abbreviate 1 string with tail 2)
    {
       h2::h2_line line("0123456789");
-      OK(ListOf("\033{+dark gray}", "...", "\033{-dark gray}", "89"), line.acronym(5, 2));
-      OK(ListOf("0", "\033{+dark gray}", "...", "\033{-dark gray}", "89"), line.acronym(6, 2));
-      OK(ListOf("01", "\033{+dark gray}", "...", "\033{-dark gray}", "89"), line.acronym(7, 2));
-      OK(ListOf("012", "\033{+dark gray}", "...", "\033{-dark gray}", "89"), line.acronym(8, 2));
-      OK(ListOf("0123", "\033{+dark gray}", "...", "\033{-dark gray}", "89"), line.acronym(9, 2));
+      OK(ListOf("\033{+dark gray}", "...", "\033{-dark gray}", "89"), line.abbreviate(5, 2));
+      OK(ListOf("0", "\033{+dark gray}", "...", "\033{-dark gray}", "89"), line.abbreviate(6, 2));
+      OK(ListOf("01", "\033{+dark gray}", "...", "\033{-dark gray}", "89"), line.abbreviate(7, 2));
+      OK(ListOf("012", "\033{+dark gray}", "...", "\033{-dark gray}", "89"), line.abbreviate(8, 2));
+      OK(ListOf("0123", "\033{+dark gray}", "...", "\033{-dark gray}", "89"), line.abbreviate(9, 2));
    }
 
-   Case(acronym 2 string with tail 2)
+   Case(abbreviate 2 string with tail 2)
    {
       h2::h2_line line({"012", "3456789"});
-      OK(ListOf("\033{+dark gray}", "...", "\033{-dark gray}", "89"), line.acronym(5, 2));
-      OK(ListOf("0", "\033{+dark gray}", "...", "\033{-dark gray}", "89"), line.acronym(6, 2));
-      OK(ListOf("01", "\033{+dark gray}", "...", "\033{-dark gray}", "89"), line.acronym(7, 2));
-      OK(ListOf("012", "\033{+dark gray}", "...", "\033{-dark gray}", "89"), line.acronym(8, 2));
-      OK(ListOf("012", "3", "\033{+dark gray}", "...", "\033{-dark gray}", "89"), line.acronym(9, 2));
+      OK(ListOf("\033{+dark gray}", "...", "\033{-dark gray}", "89"), line.abbreviate(5, 2));
+      OK(ListOf("0", "\033{+dark gray}", "...", "\033{-dark gray}", "89"), line.abbreviate(6, 2));
+      OK(ListOf("01", "\033{+dark gray}", "...", "\033{-dark gray}", "89"), line.abbreviate(7, 2));
+      OK(ListOf("012", "\033{+dark gray}", "...", "\033{-dark gray}", "89"), line.abbreviate(8, 2));
+      OK(ListOf("012", "3", "\033{+dark gray}", "...", "\033{-dark gray}", "89"), line.abbreviate(9, 2));
    }
 }
 
-SUITE(h2_line acronym with style)
+SUITE(h2_line abbreviate with style)
 {
-   Case(no acronym with 2 string)
+   Case(no abbreviate with 2 string)
    {
       h2::h2_line line({"\033{red}", "012", "3456789", "\033{reset}"});
-      OK(ListOf("\033{red}", "012", "3456789", "\033{reset}"), line.acronym(10));
-      OK(ListOf("\033{red}", "012", "3456789", "\033{reset}"), line.acronym(11));
+      OK(ListOf("\033{red}", "012", "3456789", "\033{reset}"), line.abbreviate(10));
+      OK(ListOf("\033{red}", "012", "3456789", "\033{reset}"), line.abbreviate(11));
    }
 
-   Case(acronym 1 string)
+   Case(abbreviate 1 string)
    {
       h2::h2_line line({"\033{red}", "0123456789", "\033{reset}"});
-      OK(ListOf("\033{red}", "\033{+dark gray}", "...", "\033{-dark gray}", "\033{reset}"), line.acronym(3));
-      OK(ListOf("\033{red}", "0", "\033{+dark gray}", "...", "\033{-dark gray}", "\033{reset}"), line.acronym(4));
-      OK(ListOf("\033{red}", "01", "\033{+dark gray}", "...", "\033{-dark gray}", "\033{reset}"), line.acronym(5));
-      OK(ListOf("\033{red}", "012", "\033{+dark gray}", "...", "\033{-dark gray}", "\033{reset}"), line.acronym(6));
-      OK(ListOf("\033{red}", "0123", "\033{+dark gray}", "...", "\033{-dark gray}", "\033{reset}"), line.acronym(7));
-      OK(ListOf("\033{red}", "01234", "\033{+dark gray}", "...", "\033{-dark gray}", "\033{reset}"), line.acronym(8));
-      OK(ListOf("\033{red}", "012345", "\033{+dark gray}", "...", "\033{-dark gray}", "\033{reset}"), line.acronym(9));
+      OK(ListOf("\033{red}", "\033{+dark gray}", "...", "\033{-dark gray}", "\033{reset}"), line.abbreviate(3));
+      OK(ListOf("\033{red}", "0", "\033{+dark gray}", "...", "\033{-dark gray}", "\033{reset}"), line.abbreviate(4));
+      OK(ListOf("\033{red}", "01", "\033{+dark gray}", "...", "\033{-dark gray}", "\033{reset}"), line.abbreviate(5));
+      OK(ListOf("\033{red}", "012", "\033{+dark gray}", "...", "\033{-dark gray}", "\033{reset}"), line.abbreviate(6));
+      OK(ListOf("\033{red}", "0123", "\033{+dark gray}", "...", "\033{-dark gray}", "\033{reset}"), line.abbreviate(7));
+      OK(ListOf("\033{red}", "01234", "\033{+dark gray}", "...", "\033{-dark gray}", "\033{reset}"), line.abbreviate(8));
+      OK(ListOf("\033{red}", "012345", "\033{+dark gray}", "...", "\033{-dark gray}", "\033{reset}"), line.abbreviate(9));
    }
 
-   Case(acronym 2 string with tail 2)
+   Case(abbreviate 2 string with tail 2)
    {
       h2::h2_line line({"012", "\033{red}", "3456789", "\033{reset}"});
-      OK(ListOf("\033{+dark gray}", "...", "\033{-dark gray}", "\033{red}", "89", "\033{reset}"), line.acronym(5, 2));
-      OK(ListOf("0", "\033{+dark gray}", "...", "\033{-dark gray}", "\033{red}", "89", "\033{reset}"), line.acronym(6, 2));
-      OK(ListOf("01", "\033{+dark gray}", "...", "\033{-dark gray}", "\033{red}", "89", "\033{reset}"), line.acronym(7, 2));
-      OK(ListOf("012", "\033{red}", "\033{+dark gray}", "...", "\033{-dark gray}", "89", "\033{reset}"), line.acronym(8, 2));
-      OK(ListOf("012", "\033{red}", "3", "\033{+dark gray}", "...", "\033{-dark gray}", "89", "\033{reset}"), line.acronym(9, 2));
+      OK(ListOf("\033{+dark gray}", "...", "\033{-dark gray}", "\033{red}", "89", "\033{reset}"), line.abbreviate(5, 2));
+      OK(ListOf("0", "\033{+dark gray}", "...", "\033{-dark gray}", "\033{red}", "89", "\033{reset}"), line.abbreviate(6, 2));
+      OK(ListOf("01", "\033{+dark gray}", "...", "\033{-dark gray}", "\033{red}", "89", "\033{reset}"), line.abbreviate(7, 2));
+      OK(ListOf("012", "\033{red}", "\033{+dark gray}", "...", "\033{-dark gray}", "89", "\033{reset}"), line.abbreviate(8, 2));
+      OK(ListOf("012", "\033{red}", "3", "\033{+dark gray}", "...", "\033{-dark gray}", "89", "\033{reset}"), line.abbreviate(9, 2));
    }
 }
 
-SUITE(h2_line acronym escape)
+SUITE(h2_line abbreviate escape)
 {
-   Case(acronym with CRLF)
+   Case(abbreviate with CRLF)
    {
       h2::h2_line line("A\r1\t\n");
-      OK(ListOf("A\\r1\\t\\n"), line.acronym(10));
+      OK(ListOf("A\\r1\\t\\n"), line.abbreviate(10));
    }
 }

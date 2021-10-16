@@ -1,5 +1,5 @@
 
-/* v5.14 2021-10-16 10:48:13 */
+/* v5.14 2021-10-16 12:55:08 */
 /* https://github.com/lingjf/h2unit */
 /* Apache Licence 2.0 */
 
@@ -741,7 +741,7 @@ struct h2_line : h2_vector<h2_string> {
 
    bool enclosed(const char c) const;
    h2_line gray_quote() const;
-   h2_line acronym(size_t width = 16, size_t tail = 0) const;
+   h2_line abbreviate(size_t width = 16, size_t tail = 0) const;
    h2_string string() const;
 
    static void samesizify(h2_line& a, h2_line& b);

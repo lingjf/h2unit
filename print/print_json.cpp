@@ -12,10 +12,9 @@ SUITE(json)
             'links': {'left': 1},         \
             'nanes': [                    \
                'circle',                  \
-               'rectangle',               \
                'triangle',                \
-               'square',                  \
-               'ちょくせん'                 \
+               'rectangle',               \
+               'ちょくせん',                \
             ],                            \
             'score': 100                  \
         }";
@@ -28,9 +27,8 @@ SUITE(json)
             links : { left : 1},          \
             names : [                     \
                'circle',                  \
-               'rectangle',               \
                '三角形',                   \
-               'square',                  \
+               '장방형',                    \
                'きょくせん'                 \
             ]                             \
          }",

@@ -72,34 +72,34 @@ struct h2_fail_unexpect : h2_fail {
    h2_fail_unexpect(const h2_line& expection_ = {}, const h2_line& represent_ = {}, const h2_line& explain_ = {}, const h2_fs& fs_ = h2_fs()) : h2_fail(explain_, fs_), expection(expection_), represent(represent_) {}
    void print_OK1(h2_line& line)
    {
-      h2_line a = h2_line(a_expression).acronym(O.verbose >= 4 ? 10000 : 30, 3).gray_quote().brush("cyan");
+      h2_line a = h2_line(a_expression).gray_quote().brush("cyan");
       line += "OK" + gray("(") + a + gray(")") + " is " + color("false", "bold,red");
    }
    void print_OK2_CP(h2_line& line, const char* assert_type)
    {
       h2_line e, a;
       if (!expection.width()) {
-         e = h2_line(e_expression).acronym(O.verbose >= 4 ? 10000 : 30, 3).gray_quote().brush("green");
+         e = h2_line(e_expression).abbreviate(10000, 3).gray_quote().brush("green");
       } else if (is_synonym(e_expression, expection.string())) {
-         e = expection.acronym(O.verbose >= 4 ? 10000 : 30, 3).brush("green");
+         e = expection.abbreviate(10000, 3).brush("green");
       } else {
-         e = h2_line(e_expression).acronym(O.verbose >= 4 ? 10000 : 30, 3).gray_quote().brush("cyan") + gray("==>") + expection.acronym(O.verbose >= 4 ? 10000 : 30, 3).brush("green");
+         e = h2_line(e_expression).abbreviate(O.verbose >= 4 ? 10000 : 120, 3).gray_quote().brush("cyan") + gray("==>") + expection.abbreviate(10000, 3).brush("green");
       }  // https://unicode-table.com/en/sets/arrow-symbols/
 
       if (!represent.width()) {
-         a = h2_line(a_expression).acronym(O.verbose >= 4 ? 10000 : 30, 3).gray_quote().brush("bold,red");
+         a = h2_line(a_expression).abbreviate(10000, 3).gray_quote().brush("bold,red");
       } else if (is_synonym(a_expression, represent.string()) || !a_expression.length()) {
-         a = represent.acronym(O.verbose >= 4 ? 10000 : 30, 3).brush("bold,red");
+         a = represent.abbreviate(10000, 3).brush("bold,red");
       } else {
-         a = represent.acronym(O.verbose >= 4 ? 10000 : 30, 3).brush("bold,red") + gray("<==") + h2_line(a_expression).acronym(O.verbose >= 4 ? 10000 : 30, 3).gray_quote().brush("cyan");
+         a = represent.abbreviate(10000, 3).brush("bold,red") + gray("<==") + h2_line(a_expression).abbreviate(O.verbose >= 4 ? 10000 : 120, 3).gray_quote().brush("cyan");
       }
 
       line += assert_type + gray("(") + e + " " + assert_op + " " + a + gray(")");
    }
    void print_JE(h2_line& line)
    {
-      h2_line e = h2_line(e_expression.unquote('\"').unquote('\'')).acronym(O.verbose >= 4 ? 10000 : 30, 2).brush("cyan");
-      h2_line a = h2_line(a_expression.unquote('\"').unquote('\'')).acronym(O.verbose >= 4 ? 10000 : 30, 2).brush("bold,red");
+      h2_line e = h2_line(e_expression.unquote('\"').unquote('\'')).abbreviate(O.verbose >= 4 ? 10000 : 30, 2).brush("cyan");
+      h2_line a = h2_line(a_expression.unquote('\"').unquote('\'')).abbreviate(O.verbose >= 4 ? 10000 : 30, 2).brush("bold,red");
       line += "JE" + gray("(") + e + ", " + a + gray(")");
    }
    void print_Inner(h2_line& line)
@@ -107,11 +107,11 @@ struct h2_fail_unexpect : h2_fail {
       if (0 <= seqno) line.printf("dark gray", "%d. ", seqno);
       if (expection.width()) {
          line.printf("", "%sexpect is ", comma_if(c++));
-         line += expection.acronym(O.verbose >= 4 ? 10000 : 30, 3).brush("green");
+         line += expection.abbreviate(O.verbose >= 4 ? 10000 : 120, 3).brush("green");
       }
       if (represent.width()) {
          line.printf("", "%sactual is ", comma_if(c++));
-         line += represent.acronym(O.verbose >= 4 ? 10000 : 30, 3).brush("bold,red");
+         line += represent.abbreviate(O.verbose >= 4 ? 10000 : 120, 3).brush("bold,red");
       }
    }
 
@@ -133,6 +133,12 @@ struct h2_fail_strcmp : h2_fail_unexpect {
    const bool caseless;
    const h2_string e_value, a_value;
    h2_fail_strcmp(const h2_string& e_value_, const h2_string& a_value_, bool caseless_, const h2_line& expection, const h2_line& explain = {}) : h2_fail_unexpect(expection, h2_representify(a_value_), explain), caseless(caseless_), e_value(e_value_), a_value(a_value_) {}
+   h2_line fmt_char(h2_string& c, bool eq, const char* style)
+   {
+      if (c.equals(" ") && O.colorful) return gray("‧");
+      if (eq) return c.escape();
+      return color(c.escape(), style);
+   }
    void print(size_t si = 0, size_t ci = 0) override
    {
       h2_fail_unexpect::print(si, ci);
@@ -141,10 +147,8 @@ struct h2_fail_strcmp : h2_fail_unexpect {
          h2_line e_line, a_line;
          h2_vector<h2_string> e_chars = e_value.disperse(), a_chars = a_value.disperse();
          auto lcs = h2_LCS(e_chars, a_chars, caseless).lcs();
-         for (size_t i = 0; i < lcs.first.size(); i++)
-            e_line += lcs.first[i] ? h2_line(e_chars[i].escape()) : color(e_chars[i].escape(), "green");
-         for (size_t i = 0; i < lcs.second.size(); i++)
-            a_line += lcs.second[i] ? h2_line(a_chars[i].escape()) : color(a_chars[i].escape(), "red");
+         for (size_t i = 0; i < lcs.first.size(); i++) e_line += fmt_char(e_chars[i], lcs.first[i], "green");
+         for (size_t i = 0; i < lcs.second.size(); i++) a_line += fmt_char(a_chars[i], lcs.second[i], "red");
          h2_color::printl(h2_layout::unified(e_line, a_line, "expect", "actual", h2_shell::I().cww));
       }
    }
