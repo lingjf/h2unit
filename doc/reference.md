@@ -491,18 +491,26 @@ If length is not specified explicitly, maximal length is used.
 *    [`M64e`](../source/h2_unit.hpp#L321)(expect, [length]) : number of int64.
 *    [`Me`](../source/h2_unit.hpp#L321)(expect, [length]) : following deduced type.
 
-#### Array size
+### Array size
 
 OK(expect, actual, [size])
 
-the third argument in OK is used to specified C/C++ generic array size,
-for STL containers it is not necessary.
+the third argument in OK is used to specified array size which ptr point to,
+for STL containers and native array it is not necessary.
+
+```C++
+CASE(memory compare)
+{
+   int *a;
+   OK(Has(1, 3), a, 3);
+}
+```
 
 ```C++
 CASE(memory compare)
 {
    int a[] = {1, 2, 3};
-   OK(Has(1, 3), a, 3);
+   OK(Has(1, 3), a);
 }
 ```
 

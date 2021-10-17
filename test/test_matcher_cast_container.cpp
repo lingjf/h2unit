@@ -1,5 +1,4 @@
 #include "../source/h2_unit.cpp"
-#if !(defined __CYGWIN__ || defined __MINGW32__ || defined __MINGW64__ || defined NO_CAST_TESTING)
 
 #include <vector>
 #include <deque>
@@ -13,7 +12,7 @@
 #include <tuple>
 #include <valarray>
 
-SUITE(Sequence containers)
+SUITE(cast containers)
 {
    int int_array[] = {1, 2, 3};
    const int const_int_array[] = {1, 2, 3};
@@ -111,4 +110,3 @@ SUITE(Sequence containers)
 #undef TheCheck
    }
 }
-#endif

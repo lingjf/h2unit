@@ -1,5 +1,4 @@
 #include "../source/h2_unit.cpp"
-#if !(defined __CYGWIN__ || defined __MINGW32__ || defined __MINGW64__ || defined NO_CAST_TESTING)
 
 bool bool_true = true;
 const bool const_bool_true = true;
@@ -22,7 +21,7 @@ bool&& bool_rref_false = false;
                         const_bool_false,               \
                         const_bool_ref_false,           \
                         bool_rref_false
-SUITE(Boolean)
+SUITE(cast bool)
 {
    Case(OK)
    {
@@ -50,9 +49,7 @@ SUITE(Boolean)
 
    Case(OK Not)
    {
-#define TheCheck(x)    \
-   OK(Not(IsTrue), x); \
-   OK(IsTrue || IsFalse, x);
+#define TheCheck(x) OK(Not(IsTrue), x);
       H2Foreach(TheCheck, BOOL_FALSE_LIST);
 #undef TheCheck
    }
@@ -64,5 +61,3 @@ SUITE(Boolean)
 #undef TheCheck
    }
 }
-
-#endif

@@ -42,9 +42,16 @@
     <ClCompile Include="test_matcher_cast.cpp" />
     <ClCompile Include="test_matcher_cast_bool.cpp" />
     <ClCompile Include="test_matcher_cast_container.cpp" />
-    <ClCompile Include="test_matcher_cast_number.cpp" />
-    <ClCompile Include="test_matcher_cast_ptr.cpp" />
-    <ClCompile Include="test_matcher_cast_string.cpp" />
+    <ClCompile Include="test_matcher_cast_number1.cpp" />
+    <ClCompile Include="test_matcher_cast_number2.cpp" />
+    <ClCompile Include="test_matcher_cast_number3.cpp" />
+    <ClCompile Include="test_matcher_cast_number4.cpp" />
+    <ClCompile Include="test_matcher_cast_number5.cpp" />
+    <ClCompile Include="test_matcher_cast_ptr1.cpp" />
+    <ClCompile Include="test_matcher_cast_ptr2.cpp" />
+    <ClCompile Include="test_matcher_cast_string1.cpp" />
+    <ClCompile Include="test_matcher_cast_string2.cpp" />
+    <ClCompile Include="test_matcher_cast_string3.cpp" />
     <ClCompile Include="test_matcher_container.cpp" />
     <ClCompile Include="test_matcher_customize.cpp" />
     <ClCompile Include="test_matcher_equation.cpp" />
@@ -183,7 +190,7 @@
       <SDLCheck>false</SDLCheck>
       <AdditionalOptions>-bigobj %(AdditionalOptions)</AdditionalOptions>
       <DisableSpecificWarnings>4101;4804;4805;4834</DisableSpecificWarnings>
-      <PreprocessorDefinitions>NO_CAST_TESTING;WIN32;_DEBUG;_CONSOLE;_CRT_SECURE_NO_WARNINGS;_WINSOCK_DEPRECATED_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;_CRT_SECURE_NO_WARNINGS;_WINSOCK_DEPRECATED_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>false</ConformanceMode>
     </ClCompile>
     <Link>
@@ -200,7 +207,7 @@
       <SDLCheck>false</SDLCheck>
       <AdditionalOptions>-bigobj %(AdditionalOptions)</AdditionalOptions>
       <DisableSpecificWarnings>4101;4804;4805;4834</DisableSpecificWarnings>
-      <PreprocessorDefinitions>NO_CAST_TESTING;_DEBUG;_CONSOLE;_CRT_SECURE_NO_WARNINGS;_WINSOCK_DEPRECATED_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_DEBUG;_CONSOLE;_CRT_SECURE_NO_WARNINGS;_WINSOCK_DEPRECATED_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>false</ConformanceMode>
     </ClCompile>
     <Link>
@@ -235,7 +242,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>false</SDLCheck>
-      <PreprocessorDefinitions>NO_CAST_TESTING;NDEBUG;_CONSOLE;_CRT_SECURE_NO_WARNINGS;_WINSOCK_DEPRECATED_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NDEBUG;_CONSOLE;_CRT_SECURE_NO_WARNINGS;_WINSOCK_DEPRECATED_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
     </ClCompile>
     <Link>

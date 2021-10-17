@@ -238,6 +238,12 @@ SUITE(Has primitive)
 
 SUITE(CountOf primitive)
 {
+   Case(native array)
+   {
+      int a1[] = {1, 2, 3};
+      OK(CountOf(3), a1);
+   }
+
    Case(Sequence containers / array / static contiguous array)
    {
       std::array<int, 3> a1 = {1, 2, 3};

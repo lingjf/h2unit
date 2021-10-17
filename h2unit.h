@@ -1,5 +1,5 @@
 
-/* v5.14 2021-10-16 17:35:10 */
+/* v5.14 2021-10-17 08:31:55 */
 /* https://github.com/lingjf/h2unit */
 /* Apache Licence 2.0 */
 
@@ -3404,11 +3404,10 @@ struct h2_defer_failure : h2_once {
 };
 
 template <typename E, typename A>
-static inline h2_ostringstream& h2_ok2(h2_defer_failure* d, E e, A a, int n = 0)
+static inline h2_ostringstream& h2_ok2(h2_defer_failure* d, E e, A a, size_t n = 0, size_t = 0)
 {
    d->assert_type = "OK";
-   h2::h2_matcher<typename h2_decay<A>::type> m = h2::h2_matcher_cast<typename h2_decay<A>::type>((typename h2_decay<E>::type)e);
-   h2_fail* fail = m.matches((typename h2_decay<A>::type)a, n);
+   h2_fail* fail = h2::h2_matcher_cast<typename h2_decay<A>::type>((typename h2_decay<E>::type)e).matches((typename h2_decay<A>::type)a, (int)n);
    d->fails = fail;
    if (fail && fail->subling_next) {
       d->fails = h2_fail::new_unexpect();
@@ -3481,21 +3480,16 @@ static inline h2_ostringstream& h2_cp(h2_defer_failure* d, h2_2cp<E, A> c)
    return d->oss;
 }
 
-#define H2CP(...) __H2CP(H2PP_UNIQUE(), (#__VA_ARGS__), __VA_ARGS__)
-#define __H2CP(Q, expression, ...) \
-   for (h2::h2_defer_failure Q("", expression, {__FILE__, __LINE__}); Q;) h2::h2_cp(&Q, h2::h2_0cp() > __VA_ARGS__)
+#define H2CP(...) __H2CP(H2PP_UNIQUE(), #__VA_ARGS__, __VA_ARGS__)
+#define __H2CP(Q, expression, ...) for (h2::h2_defer_failure Q("", expression, {__FILE__, __LINE__}); Q;) h2::h2_cp(&Q, h2::h2_0cp() > __VA_ARGS__)
 
 #define H2OK(_1, ...) H2PP_CAT(__H2OK, H2PP_IS_EMPTY(__VA_ARGS__))(H2PP_UNIQUE(), #_1, (#__VA_ARGS__), _1, __VA_ARGS__)
-#define __H2OK1(Q, a_expression, _dummy, actual, ...) \
-   for (h2::h2_defer_failure Q("", a_expression, {__FILE__, __LINE__}); Q;) h2::h2_ok1(&Q, actual)
-#define __H2OK0(Q, e_expression, a_expression, expect, ...) \
-   for (h2::h2_defer_failure Q(e_expression, a_expression, {__FILE__, __LINE__}); Q;) h2::h2_ok2(&Q, expect, __VA_ARGS__)
+#define __H2OK1(Q, a_expression, _, actual, ...) for (h2::h2_defer_failure Q("", a_expression, {__FILE__, __LINE__}); Q;) h2::h2_ok1(&Q, actual)
+#define __H2OK0(Q, e_expression, a_expression, expect, ...) for (h2::h2_defer_failure Q(e_expression, a_expression, {__FILE__, __LINE__}); Q;) (std::is_array<decltype(__VA_ARGS__)>::value ? h2::h2_ok2(&Q, expect, __VA_ARGS__, std::extent<decltype(__VA_ARGS__)>::value) : h2::h2_ok2(&Q, expect, __VA_ARGS__))
 
 #define H2JE(...) H2PP_VARIADIC_CALL(__H2JE, H2PP_UNIQUE(), __VA_ARGS__)
-#define __H2JE3(Q, expect, actual) \
-   for (h2::h2_defer_failure Q(#expect, #actual, {__FILE__, __LINE__}); Q;) h2::h2_je(&Q, expect, actual, "")
-#define __H2JE4(Q, expect, actual, selector) \
-   for (h2::h2_defer_failure Q(#expect, #actual, {__FILE__, __LINE__}); Q;) h2::h2_je(&Q, expect, actual, selector)
+#define __H2JE3(Q, expect, actual) for (h2::h2_defer_failure Q(#expect, #actual, {__FILE__, __LINE__}); Q;) h2::h2_je(&Q, expect, actual, "")
+#define __H2JE4(Q, expect, actual, selector) for (h2::h2_defer_failure Q(#expect, #actual, {__FILE__, __LINE__}); Q;) h2::h2_je(&Q, expect, actual, selector)
 // source/assert/h2_timer.hpp
 struct h2_timer : h2_once {
    h2_fs fs;

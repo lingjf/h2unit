@@ -50,7 +50,7 @@ SUITE(Has)
    Case(C/C++ generic array)
    {
       int a1[] = {1, 2, 3};
-      OK(Has(2), a1);
+      OK(Has(4), a1);
    }
 
    Case(C/C++ generic array sepecified size)
