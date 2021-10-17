@@ -119,7 +119,6 @@ namespace h2 {
 #include "json/h2_dual.cpp"
 #include "json/h2_json.cpp"
 #include "matcher/h2_strcmp.cpp"
-#include "matcher/h2_memcmp.cpp"
 #include "memory/h2_piece.cpp"
 #include "memory/h2_leaky.cpp"
 #include "memory/h2_block.cpp"

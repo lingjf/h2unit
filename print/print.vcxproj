@@ -25,6 +25,7 @@
     <ClCompile Include="print_exception.cpp" />
     <ClCompile Include="print_json.cpp" />
     <ClCompile Include="print_logic.cpp" />
+    <ClCompile Include="print_memcmp.cpp" />
     <ClCompile Include="print_memory.cpp" />
     <ClCompile Include="print_mock.cpp" />
   </ItemGroup>

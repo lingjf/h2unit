@@ -18,38 +18,7 @@ static inline int hex_to_byte(char c)
    return '0' <= c && c <= '9' ? c - '0' : ('A' <= c && c <= 'F' ? c - 'A' + 10 : ('a' <= c && c <= 'f' ? c - 'a' + 10 : -1));
 }
 
-static inline size_t bin_to_bits(const char* bin, unsigned char* bytes)
-{
-   memset(bytes, 0, strlen(bin));
-   size_t c = 0;
-   for (const char* p = bin; *p; p++) {
-      if (*p == ' ') continue;
-      size_t i = c / 8, j = 7 - c % 8;
-      ++c;
-      unsigned char ebit = *p == '1' ? 1 : 0;
-      bytes[i] = bytes[i] | (ebit << j);
-   }
-   return c;
-}
-
-static inline size_t hex_to_bits(const char* hex, unsigned char* bytes)
-{
-   memset(bytes, 0, strlen(hex));
-   if (hex[0] == '0' && ::tolower(hex[1]) == 'x') hex += 2;
-   char b;
-   size_t c = 0;
-   for (const char* p = hex; *p; p++) {
-      if (::isxdigit(*p)) {
-         if (++c % 2 == 0)
-            bytes[c / 2 - 1] = (unsigned char)((hex_to_byte(b) << 4) + hex_to_byte(*p));
-         else
-            b = *p;
-      }
-   }
-   return c * 8 / 2;
-}
-
-static inline size_t hex_to_bytes(const char* hex, unsigned char* bytes)
+h2_inline size_t h2_numeric::hex_to_bytes(const char* hex, unsigned char* bytes)
 {
    char b;
    size_t i = 0, c = 0;
@@ -69,7 +38,21 @@ static inline size_t hex_to_bytes(const char* hex, unsigned char* bytes)
    return c / 2;
 }
 
-static inline bool bits_equal(const unsigned char* b1, const unsigned char* b2, size_t nbits)
+h2_inline size_t h2_numeric::bin_to_bits(const char* bin, unsigned char* bytes)
+{
+   memset(bytes, 0, strlen(bin));
+   size_t c = 0;
+   for (const char* p = bin; *p; p++) {
+      if (*p == ' ') continue;
+      size_t i = c / 8, j = 7 - c % 8;
+      ++c;
+      unsigned char ebit = *p == '1' ? 1 : 0;
+      bytes[i] = bytes[i] | (ebit << j);
+   }
+   return c;
+}
+
+h2_inline bool h2_numeric::bits_equal(const unsigned char* b1, const unsigned char* b2, size_t nbits)
 {
    for (size_t k = 0; k < nbits; ++k) {
       size_t i = k / 8, j = 7 - k % 8;
@@ -78,16 +61,7 @@ static inline bool bits_equal(const unsigned char* b1, const unsigned char* b2, 
    return true;
 }
 
-static inline size_t number_strlen(unsigned long long number, int base)
-{
-   unsigned long long _10000000 = 1;
-   for (size_t i = 1;; ++i) {
-      _10000000 *= base;
-      if (number < _10000000) return i;
-   }
-}
-
-static inline bool is_hex_string(const char* s)
+h2_inline bool h2_numeric::is_hex_string(const char* s)
 {
    if (s[0] == '0' && ::tolower(s[1]) == 'x') return true;
    for (const char* p = s; *p; p++)
@@ -113,6 +87,15 @@ h2_inline const char* h2_numeric::sequence_number(size_t sequence, size_t shift)
    if (sequence < sizeof(st) / sizeof(st[0])) return st[sequence];
    sprintf(ss, "%dth", (int)sequence);
    return ss;
+}
+
+static inline size_t number_strlen(unsigned long long number, int base)
+{
+   unsigned long long _10000000 = 1;
+   for (size_t i = 1;; ++i) {
+      _10000000 *= base;
+      if (number < _10000000) return i;
+   }
 }
 
 static inline const char* format_duration(long long ms)

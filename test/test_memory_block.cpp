@@ -94,13 +94,13 @@ SUITE(BLOCK)
       BLOCK(fill = 0xC5)
       {
          c1 = malloc(8);
-         OK(Me("C5C5C5C5C5C5C5C5", 8), c1);
+         OK(Me("C5C5C5C5C5C5C5C5"), c1);
          free(c1);
       }
       BLOCK(fill = 0xC555)
       {
          c1 = malloc(8);
-         OK(Me("C555C555C555C555", 8), c1);
+         OK(Me("C555C555C555C555"), c1);
          free(c1);
       }
    }

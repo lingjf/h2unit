@@ -65,10 +65,10 @@ struct h2_pointee_matches : h2_matches {
 const h2_polymorphic_matcher<h2_matches_any> _{h2_matches_any()};
 const h2_polymorphic_matcher<h2_matches_any> Any{h2_matches_any()};
 
-inline h2_polymorphic_matcher<h2_matches_null> Is_Null() { return h2_polymorphic_matcher<h2_matches_null>(h2_matches_null(false)); }
-inline h2_polymorphic_matcher<h2_matches_null> Not_Null() { return h2_polymorphic_matcher<h2_matches_null>(h2_matches_null(true)); }
-inline h2_polymorphic_matcher<h2_matches_boolean<true>> Is_True() { return h2_polymorphic_matcher<h2_matches_boolean<true>>(h2_matches_boolean<true>()); }
-inline h2_polymorphic_matcher<h2_matches_boolean<false>> Is_False() { return h2_polymorphic_matcher<h2_matches_boolean<false>>(h2_matches_boolean<false>()); }
+inline h2_polymorphic_matcher<h2_matches_null> _IsNull() { return h2_polymorphic_matcher<h2_matches_null>(h2_matches_null(false)); }
+inline h2_polymorphic_matcher<h2_matches_null> _NotNull() { return h2_polymorphic_matcher<h2_matches_null>(h2_matches_null(true)); }
+inline h2_polymorphic_matcher<h2_matches_boolean<true>> _IsTrue() { return h2_polymorphic_matcher<h2_matches_boolean<true>>(h2_matches_boolean<true>()); }
+inline h2_polymorphic_matcher<h2_matches_boolean<false>> _IsFalse() { return h2_polymorphic_matcher<h2_matches_boolean<false>>(h2_matches_boolean<false>()); }
 
 template <typename M>
 inline h2_polymorphic_matcher<h2_pointee_matches<M>> Pointee(M m) { return h2_polymorphic_matcher<h2_pointee_matches<M>>(h2_pointee_matches<M>(m)); }

@@ -287,22 +287,19 @@ namespace h2 {
 
 using h2::_;
 using h2::Any;
-#define IsNull h2::Is_Null()
-#define NotNull h2::Not_Null()
-#define IsTrue h2::Is_True()
-#define IsFalse h2::Is_False()
+#define IsNull h2::_IsNull()
+#define NotNull h2::_NotNull()
+#define IsTrue h2::_IsTrue()
+#define IsFalse h2::_IsFalse()
 using h2::Eq;
 using h2::Nq;
 using h2::Ge;
 using h2::Gt;
 using h2::Le;
 using h2::Lt;
-using h2::Me;
-using h2::M1e;
-using h2::M8e;
-using h2::M16e;
-using h2::M32e;
-using h2::M64e;
+#ifndef H2_NO_Me
+#define Me H2Me
+#endif
 using h2::Re;
 using h2::We;
 using h2::Je;

@@ -130,44 +130,42 @@ SUITE(memory compares)
    Case(bytes failure)
    {
       const unsigned char e[] = "abcdefghijklmnopqrstuvwxyz";
-      OK(M8e(e, sizeof(e)), "abcdefghijklmnopqrstuvwxyz");  // successful
-      OK(M8e(e, sizeof(e)), "abcdEfghijklmnopqrsTuvwxyz");  // failure
+      OK(Me(e, sizeof(e)), "abcdefghijklmnopqrstuvwxyz");  // successful
+      OK(Me(e, sizeof(e)), "abcdEfghijklmnopqrsTuvwxyz");  // failure
    }
 
    Case(bits successfull)
    {
       unsigned char a1[] = {0x8E, 0xC8, 0x8E, 0xC8, 0xF8};
-      OK(M1e("1000 1110 1100 1000 1000 1110 1100 1000 1111 1"), a1);  // successful
+      OK(Me("1000 1110 1100 1000 1000 1110 1100 1000 1111 1"), a1);  // successful
    }
 
    Case(short successfull)
    {
       short e[] = {1, 2, 3, 4, 5, 6, 7, 8, 9};
       short a1[] = {1, 2, 3, 4, 5, 6, 7, 8, 9};
-      OK(M16e(e, 9), a1);  // successful
+      OK(Me(e, 9), a1);  // successful
    }
 
    Case(int successfull)
    {
       int e[] = {1, 2, 3, 4, 5, 6, 7, 8, 9};
       int a1[] = {1, 2, 3, 4, 5, 6, 7, 8, 9};
-      OK(M32e(e, 9), a1);  // successful
+      OK(Me(e, 9), a1);  // successful
    }
 
    Case(long long successfull)
    {
       long long e[] = {1, 2, 3, 4, 5, 6, 7, 8, 9};
       long long a1[] = {1, 2, 3, 4, 5, 6, 7, 8, 9};
-      OK(M64e(e, 9), a1);  // successful
+      OK(Me(e, 9), a1);  // successful
    }
 
-   Case(Me guess successfull)
+   Case(guess successfull)
    {
       unsigned char a1[] = {0x8E, 0xC8, 0x8E, 0xC8, 0xF8};
       OK(Me("1000 1110 1100 1000 1000 1110 1100 1000 1111 1"), a1);  // successful
       OK(Me("8EC88EC8F8"), a1);                                      // successful
-
-      OK(Me("abcdefghijklmnopqrstuvwxyz"), "abcdefghijklmnopqrstuvwxyz");  // successful
    }
 }
 

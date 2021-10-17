@@ -88,57 +88,49 @@ SUITE(numeric)
 
    Case(is hex string)
    {
-      OK(h2::is_hex_string("10Ac1EE0Fd"));
-      OK(h2::is_hex_string("10Ac1 E0Fd"));
-      OK(h2::is_hex_string("0xDeadC0fe"));
-      OK(!h2::is_hex_string("10Ac1PE0Fd"));
-   }
-
-   Case(hex_to_bits)
-   {
-      unsigned char e1[] = {0xF1, 0xD8};
-      OK(16, h2::hex_to_bits("F1d8", z1));
-      OK(16, h2::hex_to_bits("0xF1d8", z1));
-      OK(memcmp(e1, z1, 2) == 0);
+      OK(h2::h2_numeric::is_hex_string("10Ac1EE0Fd"));
+      OK(h2::h2_numeric::is_hex_string("10Ac1 E0Fd"));
+      OK(h2::h2_numeric::is_hex_string("0xDeadC0fe"));
+      OK(!h2::h2_numeric::is_hex_string("10Ac1PE0Fd"));
    }
 
    Case(hex_to_bytes C)
    {
       unsigned char e1[] = {0xC};
-      OK(1, h2::hex_to_bytes("C", z1));
+      OK(1, h2::h2_numeric::hex_to_bytes("C", z1));
       OK(Me(e1, 1), z1);
    }
 
    Case(hex_to_bytes 4C)
    {
       unsigned char e1[] = {0x4C};
-      OK(1, h2::hex_to_bytes("4C", z1));
+      OK(1, h2::h2_numeric::hex_to_bytes("4C", z1));
       OK(memcmp(e1, z1, 1) == 0);
    }
 
    Case(hex_to_bytes Cd8)
    {
       unsigned char e1[] = {0xC, 0xD8};
-      OK(2, h2::hex_to_bytes("Cd8", z1));
+      OK(2, h2::h2_numeric::hex_to_bytes("Cd8", z1));
       OK(memcmp(e1, z1, 2) == 0);
    }
 
    Case(hex_to_bytes 4Cd8)
    {
       unsigned char e1[] = {0x4C, 0xD8};
-      OK(2, h2::hex_to_bytes("4Cd8", z1));
+      OK(2, h2::h2_numeric::hex_to_bytes("4Cd8", z1));
       OK(memcmp(e1, z1, 2) == 0);
    }
 
    Case(hex_to_bytes 24Cd8)
    {
       unsigned char e1[] = {0x2, 0x4C, 0xD8};
-      OK(3, h2::hex_to_bytes("24Cd8", z1));
+      OK(3, h2::h2_numeric::hex_to_bytes("24Cd8", z1));
       OK(memcmp(e1, z1, 3) == 0);
    }
 }
 
-SUITE(bits_equal)
+SUITE(numeric bits_equal)
 {
    bool ret;
    size_t nbits;
@@ -147,10 +139,10 @@ SUITE(bits_equal)
    Case(bits_equal tobytes 10001110)
    {
       unsigned char a1[] = {0x8E};
-      nbits = h2::bin_to_bits("10001110", z1);
+      nbits = h2::h2_numeric::bin_to_bits("10001110", z1);
       OK(8, nbits);
 
-      ret = h2::bits_equal(z1, (const unsigned char*)a1, nbits);
+      ret = h2::h2_numeric::bits_equal(z1, (const unsigned char*)a1, nbits);
       OK(ret);
       OK(memcmp(z1, a1, 1) == 0);
    }
@@ -158,10 +150,10 @@ SUITE(bits_equal)
    Case(bits_equal tobytes 1000 1110)
    {
       unsigned char a1[] = {0x8E};
-      nbits = h2::bin_to_bits("1000 1110", z1);
+      nbits = h2::h2_numeric::bin_to_bits("1000 1110", z1);
       OK(8, nbits);
 
-      ret = h2::bits_equal(z1, (const unsigned char*)a1, nbits);
+      ret = h2::h2_numeric::bits_equal(z1, (const unsigned char*)a1, nbits);
       OK(ret);
       OK(memcmp(z1, a1, 1) == 0);
    }
@@ -169,10 +161,10 @@ SUITE(bits_equal)
    Case(bits_equal tobytes 1000 1110 1100)
    {
       unsigned char a1[] = {0x8E, 0xC0};
-      nbits = h2::bin_to_bits("1000 1110 1100", z1);
+      nbits = h2::h2_numeric::bin_to_bits("1000 1110 1100", z1);
       OK(12, nbits);
 
-      ret = h2::bits_equal(z1, (const unsigned char*)a1, nbits);
+      ret = h2::h2_numeric::bits_equal(z1, (const unsigned char*)a1, nbits);
       OK(ret);
       OK(memcmp(z1, a1, 2) == 0);
    }
@@ -180,16 +172,16 @@ SUITE(bits_equal)
    Case(bits_equal tobytes 1000 1110 1100 1)
    {
       unsigned char a1[] = {0x8E, 0xC8};
-      nbits = h2::bin_to_bits("1000 1110 1100 1", z1);
+      nbits = h2::h2_numeric::bin_to_bits("1000 1110 1100 1", z1);
       OK(13, nbits);
 
-      ret = h2::bits_equal(z1, (const unsigned char*)a1, nbits);
+      ret = h2::h2_numeric::bits_equal(z1, (const unsigned char*)a1, nbits);
       OK(ret);
       OK(memcmp(z1, a1, 2) == 0);
    }
 }
 
-SUITE(sequence_number)
+SUITE(numeric sequence_number)
 {
    Cases(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18)
    {
@@ -206,7 +198,7 @@ SUITE(sequence_number)
    }
 }
 
-SUITE(number width)
+SUITE(numeric number width)
 {
    Case(base 10 dec)
    {

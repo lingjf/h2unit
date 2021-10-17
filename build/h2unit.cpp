@@ -1,5 +1,5 @@
 
-/* v5.14 2021-10-17 08:31:55 */
+/* v5.14 2021-10-17 20:36:11 */
 /* https://github.com/lingjf/h2unit */
 /* Apache Licence 2.0 */
 #include "h2unit.hpp"
@@ -196,38 +196,7 @@ static inline int hex_to_byte(char c)
    return '0' <= c && c <= '9' ? c - '0' : ('A' <= c && c <= 'F' ? c - 'A' + 10 : ('a' <= c && c <= 'f' ? c - 'a' + 10 : -1));
 }
 
-static inline size_t bin_to_bits(const char* bin, unsigned char* bytes)
-{
-   memset(bytes, 0, strlen(bin));
-   size_t c = 0;
-   for (const char* p = bin; *p; p++) {
-      if (*p == ' ') continue;
-      size_t i = c / 8, j = 7 - c % 8;
-      ++c;
-      unsigned char ebit = *p == '1' ? 1 : 0;
-      bytes[i] = bytes[i] | (ebit << j);
-   }
-   return c;
-}
-
-static inline size_t hex_to_bits(const char* hex, unsigned char* bytes)
-{
-   memset(bytes, 0, strlen(hex));
-   if (hex[0] == '0' && ::tolower(hex[1]) == 'x') hex += 2;
-   char b;
-   size_t c = 0;
-   for (const char* p = hex; *p; p++) {
-      if (::isxdigit(*p)) {
-         if (++c % 2 == 0)
-            bytes[c / 2 - 1] = (unsigned char)((hex_to_byte(b) << 4) + hex_to_byte(*p));
-         else
-            b = *p;
-      }
-   }
-   return c * 8 / 2;
-}
-
-static inline size_t hex_to_bytes(const char* hex, unsigned char* bytes)
+h2_inline size_t h2_numeric::hex_to_bytes(const char* hex, unsigned char* bytes)
 {
    char b;
    size_t i = 0, c = 0;
@@ -247,7 +216,21 @@ static inline size_t hex_to_bytes(const char* hex, unsigned char* bytes)
    return c / 2;
 }
 
-static inline bool bits_equal(const unsigned char* b1, const unsigned char* b2, size_t nbits)
+h2_inline size_t h2_numeric::bin_to_bits(const char* bin, unsigned char* bytes)
+{
+   memset(bytes, 0, strlen(bin));
+   size_t c = 0;
+   for (const char* p = bin; *p; p++) {
+      if (*p == ' ') continue;
+      size_t i = c / 8, j = 7 - c % 8;
+      ++c;
+      unsigned char ebit = *p == '1' ? 1 : 0;
+      bytes[i] = bytes[i] | (ebit << j);
+   }
+   return c;
+}
+
+h2_inline bool h2_numeric::bits_equal(const unsigned char* b1, const unsigned char* b2, size_t nbits)
 {
    for (size_t k = 0; k < nbits; ++k) {
       size_t i = k / 8, j = 7 - k % 8;
@@ -256,16 +239,7 @@ static inline bool bits_equal(const unsigned char* b1, const unsigned char* b2, 
    return true;
 }
 
-static inline size_t number_strlen(unsigned long long number, int base)
-{
-   unsigned long long _10000000 = 1;
-   for (size_t i = 1;; ++i) {
-      _10000000 *= base;
-      if (number < _10000000) return i;
-   }
-}
-
-static inline bool is_hex_string(const char* s)
+h2_inline bool h2_numeric::is_hex_string(const char* s)
 {
    if (s[0] == '0' && ::tolower(s[1]) == 'x') return true;
    for (const char* p = s; *p; p++)
@@ -291,6 +265,15 @@ h2_inline const char* h2_numeric::sequence_number(size_t sequence, size_t shift)
    if (sequence < sizeof(st) / sizeof(st[0])) return st[sequence];
    sprintf(ss, "%dth", (int)sequence);
    return ss;
+}
+
+static inline size_t number_strlen(unsigned long long number, int base)
+{
+   unsigned long long _10000000 = 1;
+   for (size_t i = 1;; ++i) {
+      _10000000 *= base;
+      if (number < _10000000) return i;
+   }
 }
 
 static inline const char* format_duration(long long ms)
@@ -519,7 +502,7 @@ h2_inline int h2_extract::fill(const char* attributes, const char* key, unsigned
    const char* p = p_eq + 1;
    for (; *p && ::isspace(*p);) p++;  // strip left space
    if (p[0] == '0' && ::tolower(p[1]) == 'x') {
-      return (int)hex_to_bytes(p + 2, bytes);
+      return (int)h2_numeric::hex_to_bytes(p + 2, bytes);
    } else {
       unsigned long long v = strtoull(p, nullptr, 10);
       if (v <= 0xFFULL)
@@ -2985,89 +2968,6 @@ h2_inline h2_line h2_matches_json::expection(bool caseless, bool dont, bool ncop
 {
    return CD(h2_stringify(e), caseless, dont, ncop, "≠");
 }
-// source/matcher/h2_memcmp.cpp
-static inline h2_string readable_size(size_t width, size_t nbits)
-{
-   char t[64];
-   switch (width) {
-      case 1: sprintf(t, "%d bit%s", (int)nbits, nbits > 1 ? "s" : ""); break;
-      case 8: sprintf(t, "%d byte%s", (int)(nbits / 8), nbits / 8 > 1 ? "s" : ""); break;
-      case 16: sprintf(t, "%d word%s", (int)(nbits / 16), nbits / 16 > 1 ? "s" : ""); break;
-      case 32: sprintf(t, "%d dword%s", (int)(nbits / 32), nbits / 32 > 1 ? "s" : ""); break;
-      case 64: sprintf(t, "%d qword%s", (int)(nbits / 64), nbits / 64 > 1 ? "s" : ""); break;
-      default: sprintf(t, "?"); break;
-   }
-   return h2_string(t);
-}
-
-h2_inline h2_fail* h2_matches_bytecmp::matches(const void* a, int n, bool caseless, bool dont, bool ncop) const
-{
-   bool result = false;
-   size_t _nbytes;
-   if (isstring) {
-      if (is_hex_string((const char*)e)) {
-         unsigned char* _e = (unsigned char*)alloca(strlen((const char*)e));
-         size_t max_length = hex_to_bytes((const char*)e, _e);
-         _nbytes = nbytes;
-         if (nbytes == 0) _nbytes = max_length;
-         if (_nbytes <= max_length) {
-            result = memcmp(_e, a, _nbytes) == 0;
-         }
-      } else {
-         _nbytes = strlen((const char*)e);
-      }
-   } else {
-      if (nbytes == 0) {
-         return h2_fail::new_normal("length required");
-      }
-   }
-   if (!result) {
-      _nbytes = nbytes;
-      result = memcmp(e, a, _nbytes) == 0;
-   }
-   if (result == !dont) return nullptr;
-   return h2_fail::new_memcmp((const unsigned char*)e, (const unsigned char*)a, width, _nbytes * 8, h2_stringify(a).string(), "memcmp " + readable_size(width, _nbytes * 8));
-}
-
-h2_inline h2_line h2_matches_bytecmp::expection(bool caseless, bool dont, bool ncop) const
-{
-   return CD("Me()", caseless, dont, ncop);
-}
-
-h2_inline h2_fail* h2_matches_bitcmp::matches(const void* a, int n, bool caseless, bool dont, bool ncop) const
-{
-   size_t max_length = INT_MAX;
-   unsigned char* _e = (unsigned char*)e;
-   if (isstring) {
-      unsigned char* t = (unsigned char*)alloca(strlen((const char*)e));
-      if (h2_numeric::is_bin_string((const char*)e)) {
-         max_length = bin_to_bits((const char*)e, t);
-         _e = t;
-      } else if (is_hex_string((const char*)e)) {
-         max_length = hex_to_bits((const char*)e, t);
-         _e = t;
-      } else {
-         max_length = strlen((const char*)e) * 8;
-      }
-   } else {
-      if (nbits == 0) {
-         return h2_fail::new_normal("length required");
-      }
-   }
-   size_t _nbits = nbits;
-   if (nbits == 0) _nbits = max_length;
-   if (max_length < _nbits) {
-      return h2_fail::new_normal("length too loog");
-   }
-   bool result = bits_equal(_e, (const unsigned char*)a, _nbits);
-   if (result == !dont) return nullptr;
-   return h2_fail::new_memcmp(_e, (const unsigned char*)a, 1, _nbits, h2_stringify(a).string(), "memcmp " + readable_size(1, _nbits));
-}
-
-h2_inline h2_line h2_matches_bitcmp::expection(bool caseless, bool dont, bool ncop) const
-{
-   return CD("Me()", caseless, dont, ncop);
-}
 // source/memory/h2_piece.cpp
 struct h2_piece : h2_libc {
    h2_list x;
@@ -5414,7 +5314,7 @@ static inline bool is_synonym(const h2_string& a, const h2_string& b)
 }
 
 struct h2_fail_unexpect : h2_fail {
-   const h2_line expection, represent;
+   h2_line expection, represent;
    int c = 0;
    h2_fail_unexpect(const h2_line& expection_ = {}, const h2_line& represent_ = {}, const h2_line& explain_ = {}, const h2_fs& fs_ = h2_fs()) : h2_fail(explain_, fs_), expection(expection_), represent(represent_) {}
    void print_OK1(h2_line& line)
@@ -5546,10 +5446,11 @@ struct h2_fail_json : h2_fail_unexpect {
 
 struct h2_fail_memcmp : h2_fail_unexpect {
    const h2_vector<unsigned char> e_value, a_value;
-   const size_t width, nbits;
-   h2_fail_memcmp(const unsigned char* e_value_, const unsigned char* a_value_, const size_t width_, const size_t nbits_, const h2_string& represent_, const h2_line& explain_ = {}) : h2_fail_unexpect({}, represent_, explain_), e_value(e_value_, e_value_ + (nbits_ + 7) / 8), a_value(a_value_, a_value_ + (nbits_ + 7) / 8), width(width_), nbits(nbits_) {}
+   const size_t length, width;
+   h2_fail_memcmp(const unsigned char* e_value_, const unsigned char* a_value_, const size_t length_, const size_t width_) : h2_fail_unexpect({}, {}, {}), e_value(e_value_, e_value_ + (length_ * width_ + 7) / 8), a_value(a_value_, a_value_ + (length_ * width_ + 7) / 8), length(length_), width(width_) {}
    void print(size_t si, size_t ci) override
    {
+      expection.printf("", "memcmp %d %s", (int)length, format_width());
       h2_fail_unexpect::print(si, ci);
       h2_lines e_lines, a_lines;
       size_t bytes_per_row = 0;
@@ -5564,6 +5465,18 @@ struct h2_fail_memcmp : h2_fail_unexpect {
       h2_color::printl(h2_layout::split(e_lines, a_lines, "expect", "actual", bytes_per_row * 8 / width, 'x', h2_shell::I().cww));
    }
 
+   const char* format_width()
+   {
+      switch (width) {
+         case 1: return "bits";
+         case 8: return "bytes";
+         case 16: return "uint16";
+         case 32: return "uint32";
+         case 64: return "uint64";
+      }
+      return "";
+   }
+
    void print_bits(h2_lines& e_lines, h2_lines& a_lines, size_t bytes_per_row)
    {
       size_t rows = (size_t)::ceil(e_value.size() * 1.0 / bytes_per_row);
@@ -5573,7 +5486,7 @@ struct h2_fail_memcmp : h2_fail_unexpect {
             if (j) e_line.push_back(" ");
             if (j) a_line.push_back(" ");
             for (size_t k = 0; k < 8; ++k) {
-               if ((i * bytes_per_row + j) * 8 + k < nbits) {
+               if ((i * bytes_per_row + j) * 8 + k < length) {
                   unsigned char e_val = (e_value[i * bytes_per_row + j] >> (7 - k)) & 0x1;
                   unsigned char a_val = (a_value[i * bytes_per_row + j] >> (7 - k)) & 0x1;
                   if (e_val == a_val) {
@@ -5741,7 +5654,7 @@ h2_inline h2_fail* h2_fail::new_unexpect(const h2_line& expection_, const h2_lin
 h2_inline h2_fail* h2_fail::new_strcmp(const h2_string& e_value, const h2_string& a_value, bool caseless, const h2_line& expection_, const h2_line& explain_) { return new h2_fail_strcmp(e_value, a_value, caseless, expection_, explain_); }
 h2_inline h2_fail* h2_fail::new_strfind(const h2_string& e_value, const h2_string& a_value, const h2_line& expection_, const h2_line& explain_) { return new h2_fail_strfind(e_value, a_value, expection_, explain_); }
 h2_inline h2_fail* h2_fail::new_json(const h2_string& e_value, const h2_string& a_value, const h2_line& expection_, bool caseless, const h2_line& explain_) { return new h2_fail_json(e_value, a_value, expection_, caseless, explain_); }
-h2_inline h2_fail* h2_fail::new_memcmp(const unsigned char* e_value, const unsigned char* a_value, const size_t width, const size_t nbits, const h2_string& represent_, const h2_line& explain_) { return new h2_fail_memcmp(e_value, a_value, width, nbits, represent_, explain_); }
+h2_inline h2_fail* h2_fail::new_memcmp(const unsigned char* e_value, const unsigned char* a_value, const size_t length, const size_t width) { return new h2_fail_memcmp(e_value, a_value, length, width); }
 h2_inline h2_fail* h2_fail::new_memory_leak(const void* ptr, const size_t size, const h2_vector<std::pair<size_t, size_t>>& sizes, const h2_backtrace& bt_allocate, const char* where, const h2_fs& fs_) { return new h2_fail_memory_leak(ptr, size, sizes, bt_allocate, where, fs_); }
 h2_inline h2_fail* h2_fail::new_double_free(const void* ptr, const h2_backtrace& bt_allocate, const h2_backtrace& bt_release, const h2_backtrace& bt_double_free) { return new h2_fail_double_free(ptr, bt_allocate, bt_release, bt_double_free); }
 h2_inline h2_fail* h2_fail::new_asymmetric_free(const void* ptr, const char* who_allocate, const char* who_release, const h2_backtrace& bt_allocate, const h2_backtrace& bt_release) { return new h2_fail_asymmetric_free(ptr, who_allocate, who_release, bt_allocate, bt_release); }

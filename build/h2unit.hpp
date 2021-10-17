@@ -1,5 +1,5 @@
 
-/* v5.14 2021-10-17 08:31:55 */
+/* v5.14 2021-10-17 20:36:11 */
 /* https://github.com/lingjf/h2unit */
 /* Apache Licence 2.0 */
 
@@ -586,7 +586,13 @@ static inline const char* ss(const char* a = "") { return a ? a : ""; }
 #define h2_singleton(Class_) static Class_& I() { static Class_ i; return i; }
 // source/utils/h2_numeric.hpp
 struct h2_numeric {
+   static bool is_hex_string(const char* s);
    static bool is_bin_string(const char* s);
+   static size_t hex_to_bytes(const char* hex, unsigned char* bytes);
+   static size_t bin_to_bits(const char* bin, unsigned char* bytes);
+
+   static bool bits_equal(const unsigned char* b1, const unsigned char* b2, size_t nbits);
+
    static const char* sequence_number(size_t sequence, size_t shift = 1);
 };
 // source/utils/h2_libc.hpp
@@ -1062,7 +1068,7 @@ struct h2_fail : h2_libc {
    static h2_fail* new_strcmp(const h2_string& e_value, const h2_string& a_value, bool caseless, const h2_line& expection, const h2_line& explain = {});
    static h2_fail* new_strfind(const h2_string& e_value, const h2_string& a_value, const h2_line& expection, const h2_line& explain = {});
    static h2_fail* new_json(const h2_string& e_value, const h2_string& a_value, const h2_line& expection, bool caseless, const h2_line& explain = {});
-   static h2_fail* new_memcmp(const unsigned char* e_value, const unsigned char* a_value, const size_t width, const size_t nbits, const h2_string& represent, const h2_line& explain = {});
+   static h2_fail* new_memcmp(const unsigned char* e_value, const unsigned char* a_value, const size_t length, const size_t width);
    static h2_fail* new_memory_leak(const void* ptr, const size_t size, const h2_vector<std::pair<size_t, size_t>>& sizes, const h2_backtrace& bt_allocate, const char* where, const h2_fs& fs);
    static h2_fail* new_double_free(const void* ptr, const h2_backtrace& bt_allocate, const h2_backtrace& bt_release, const h2_backtrace& bt_double_free);
    static h2_fail* new_asymmetric_free(const void* ptr, const char* who_allocate, const char* who_release, const h2_backtrace& bt_allocate, const h2_backtrace& bt_release);
@@ -1358,10 +1364,10 @@ struct h2_pointee_matches : h2_matches {
 const h2_polymorphic_matcher<h2_matches_any> _{h2_matches_any()};
 const h2_polymorphic_matcher<h2_matches_any> Any{h2_matches_any()};
 
-inline h2_polymorphic_matcher<h2_matches_null> Is_Null() { return h2_polymorphic_matcher<h2_matches_null>(h2_matches_null(false)); }
-inline h2_polymorphic_matcher<h2_matches_null> Not_Null() { return h2_polymorphic_matcher<h2_matches_null>(h2_matches_null(true)); }
-inline h2_polymorphic_matcher<h2_matches_boolean<true>> Is_True() { return h2_polymorphic_matcher<h2_matches_boolean<true>>(h2_matches_boolean<true>()); }
-inline h2_polymorphic_matcher<h2_matches_boolean<false>> Is_False() { return h2_polymorphic_matcher<h2_matches_boolean<false>>(h2_matches_boolean<false>()); }
+inline h2_polymorphic_matcher<h2_matches_null> _IsNull() { return h2_polymorphic_matcher<h2_matches_null>(h2_matches_null(false)); }
+inline h2_polymorphic_matcher<h2_matches_null> _NotNull() { return h2_polymorphic_matcher<h2_matches_null>(h2_matches_null(true)); }
+inline h2_polymorphic_matcher<h2_matches_boolean<true>> _IsTrue() { return h2_polymorphic_matcher<h2_matches_boolean<true>>(h2_matches_boolean<true>()); }
+inline h2_polymorphic_matcher<h2_matches_boolean<false>> _IsFalse() { return h2_polymorphic_matcher<h2_matches_boolean<false>>(h2_matches_boolean<false>()); }
 
 template <typename M>
 inline h2_polymorphic_matcher<h2_pointee_matches<M>> Pointee(M m) { return h2_polymorphic_matcher<h2_pointee_matches<M>>(h2_pointee_matches<M>(m)); }
@@ -1785,54 +1791,41 @@ inline h2_polymorphic_matcher<h2_matches_json> Je(const h2_string& expect, const
 template <typename M>
 inline h2_polymorphic_matcher<h2_caseless_matches> CaseLess(const M& m) { return h2_polymorphic_matcher<h2_caseless_matches>(h2_caseless_matches(h2_matcher<h2_string>(m))); }
 // source/matcher/h2_memcmp.hpp
-struct h2_matches_bytecmp : h2_matches {
-   const int width;
-   const void* e;
-   const bool isstring;
-   const int nbytes;
-   explicit h2_matches_bytecmp(const int width_, const void* e_, const bool isstring_, const int nbytes_) : width(width_), e(e_), isstring(isstring_), nbytes(nbytes_) {}
-   h2_fail* matches(const void* a, int n, bool caseless, bool dont, bool ncop) const;
-   virtual h2_line expection(bool caseless, bool dont, bool ncop) const override;
-};
-
-struct h2_matches_bitcmp : h2_matches {
-   const void* e;
-   const bool isstring;
-   const int nbits;
-   explicit h2_matches_bitcmp(const void* e_, const bool isstring_, const int nbits_) : e(e_), isstring(isstring_), nbits(nbits_) {}
-   h2_fail* matches(const void* a, int n, bool caseless, bool dont, bool ncop) const;
-   virtual h2_line expection(bool caseless, bool dont, bool ncop) const override;
-};
-
 template <typename E>
 struct h2_matches_memcmp : h2_matches {
-   const E e;
-   const int length;
-   explicit h2_matches_memcmp(const E e_, const int length_) : e(e_), length(length_) {}
+   const E buffer;
+   const size_t size;
+   const size_t length;
+   const size_t width;
+   explicit h2_matches_memcmp(const E buffer_, const size_t size_, const size_t length_, const size_t width_) : buffer(buffer_), size(size_), length(length_), width(width_) {}
    h2_fail* matches(const void* a, int n, bool caseless, bool dont, bool ncop) const
    {
-      h2_fail* fail = (h2_fail*)1;
-
-      if (std::is_convertible<E, h2_string>::value) { /* deduce */
-         if (h2_numeric::is_bin_string((const char*)e)) {
-            h2_matches_bitcmp t((const void*)e, true, length);
-            fail = t.matches(a, n, false, false, ncop);
+      unsigned char* e = (unsigned char*)buffer;
+      size_t l = length, w = width;
+      bool result = true;
+      do {
+         if (!w && !l && std::is_convertible<E, h2_string>::value) { /* deduce by string format */
+            l = strlen((const char*)buffer);
+            w = 8;
+            if (!strcmp((const char*)buffer, (const char*)a)) break; /*result = true;*/
+            if (h2_numeric::is_bin_string((const char*)buffer)) {
+               e = (unsigned char*)alloca(l);
+               l = h2_numeric::bin_to_bits((const char*)buffer, e);
+               w = 1;
+            } else if (h2_numeric::is_hex_string((const char*)buffer)) {
+               e = (unsigned char*)alloca(l);
+               l = h2_numeric::hex_to_bytes((const char*)buffer, e);
+               w = 8;
+            }
          }
-      }
+         if (!w) w = h2_sizeof_pointee<E>::value * 8; /* deduce by data type */
+         if (!l) l = size;                            /* deduce by array size */
+         if (!l || !w) return h2_fail::new_normal(color("length", "red") + " not specified " + gray("in ") + color("Me(buffer, ", "cyan") + color("length", "red") + gray(", width") + color(")", "cyan"));
+         result = h2_numeric::bits_equal(e, (const unsigned char*)a, l * w);
+      } while (0);
 
-      if (fail) {
-         h2_matches_bytecmp t(h2_sizeof_pointee<E>::value * 8, e, std::is_convertible<E, h2_string>::value, length * h2_sizeof_pointee<E>::value);
-         fail = t.matches(a, n, false, false, ncop);
-      }
-
-      if (!fail == !dont) {
-         if (fail) delete fail;
-         return nullptr;
-      }
-      if (dont) {
-         fail = h2_fail::new_unexpect(expection(caseless, dont, ncop), h2_stringify(a));
-      }
-      return fail;
+      if (result == !dont) return nullptr;
+      return h2_fail::new_memcmp((const unsigned char*)e, (const unsigned char*)a, l, w);
    }
    virtual h2_line expection(bool caseless, bool dont, bool ncop) const override
    {
@@ -1841,35 +1834,14 @@ struct h2_matches_memcmp : h2_matches {
 };
 
 template <typename E, typename T = typename std::decay<E>::type>
-inline h2_polymorphic_matcher<h2_matches_memcmp<T>> Me(const E expect, const int length = 0)
+inline h2_polymorphic_matcher<h2_matches_memcmp<T>> _Me(const E buffer, const size_t size, const size_t length = 0, const size_t width = 0)
 {
-   return h2_polymorphic_matcher<h2_matches_memcmp<T>>(h2_matches_memcmp<T>((T)expect, length));
+   return h2_polymorphic_matcher<h2_matches_memcmp<T>>(h2_matches_memcmp<T>((T)buffer, size, length, width));
 }
-template <typename E>
-inline h2_polymorphic_matcher<h2_matches_bitcmp> M1e(const E expect, const int length = 0)
-{
-   return h2_polymorphic_matcher<h2_matches_bitcmp>(h2_matches_bitcmp((const void*)expect, std::is_convertible<E, h2_string>::value, length));
-}
-template <typename E>
-inline h2_polymorphic_matcher<h2_matches_bytecmp> M8e(const E expect, const int length = 0)
-{
-   return h2_polymorphic_matcher<h2_matches_bytecmp>(h2_matches_bytecmp(8, (const void*)expect, std::is_convertible<E, h2_string>::value, length));
-}
-template <typename E>
-inline h2_polymorphic_matcher<h2_matches_bytecmp> M16e(const E expect, const int length = 0)
-{
-   return h2_polymorphic_matcher<h2_matches_bytecmp>(h2_matches_bytecmp(16, (const void*)expect, std::is_convertible<E, h2_string>::value, length * 2));
-}
-template <typename E>
-inline h2_polymorphic_matcher<h2_matches_bytecmp> M32e(const E expect, const int length = 0)
-{
-   return h2_polymorphic_matcher<h2_matches_bytecmp>(h2_matches_bytecmp(32, (const void*)expect, std::is_convertible<E, h2_string>::value, length * 4));
-}
-template <typename E>
-inline h2_polymorphic_matcher<h2_matches_bytecmp> M64e(const E expect, const int length = 0)
-{
-   return h2_polymorphic_matcher<h2_matches_bytecmp>(h2_matches_bytecmp(64, (const void*)expect, std::is_convertible<E, h2_string>::value, length * 8));
-}
+
+#define H2Me(buffer, ...) H2PP_CAT(__H2Me, H2PP_IS_EMPTY(__VA_ARGS__))(buffer, std::extent<decltype(buffer)>::value, __VA_ARGS__)
+#define __H2Me1(buffer, size, ...) h2::_Me(buffer, size)
+#define __H2Me0(buffer, size, ...) h2::_Me(buffer, size, __VA_ARGS__)
 // source/matcher/h2_container.hpp
 template <typename EK, typename EV>
 struct h2_pair_matches : h2_matches {
@@ -3699,22 +3671,19 @@ struct h2_report {
 
 using h2::_;
 using h2::Any;
-#define IsNull h2::Is_Null()
-#define NotNull h2::Not_Null()
-#define IsTrue h2::Is_True()
-#define IsFalse h2::Is_False()
+#define IsNull h2::_IsNull()
+#define NotNull h2::_NotNull()
+#define IsTrue h2::_IsTrue()
+#define IsFalse h2::_IsFalse()
 using h2::Eq;
 using h2::Nq;
 using h2::Ge;
 using h2::Gt;
 using h2::Le;
 using h2::Lt;
-using h2::Me;
-using h2::M1e;
-using h2::M8e;
-using h2::M16e;
-using h2::M32e;
-using h2::M64e;
+#ifndef H2_NO_Me
+#define Me H2Me
+#endif
 using h2::Re;
 using h2::We;
 using h2::Je;

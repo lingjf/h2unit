@@ -385,12 +385,7 @@ CASE(case name)
 *    [`Gt`](../source/h2_unit.hpp#L321)(expect) : matches if value > expect 
 *    [`Le`](../source/h2_unit.hpp#L321)(expect) : matches if value <= expect 
 *    [`Lt`](../source/h2_unit.hpp#L321)(expect) : matches if value < expect 
-*    [`Me`](../source/h2_unit.hpp#L321)(expect, [length]) : matches if memcmp(expect, value, length) == 0 
-     *    [`M1e`](../source/h2_unit.hpp#L321)(expect, [length]) : bit level memcmp
-     *    [`M8e`](../source/h2_unit.hpp#L321)(expect, [length]) : byte level memcmp
-     *    [`M16e`](../source/h2_unit.hpp#L321)(expect, [length]) : int16 level memcmp
-     *    [`M32e`](../source/h2_unit.hpp#L321)(expect, [length]) : int32 level memcmp
-     *    [`M64e`](../source/h2_unit.hpp#L321)(expect, [length]) : int64 level memcmp
+*    [`Me`](../source/h2_unit.hpp#L321)(buffer, [length], [width]) : matches if memory is same 
 *    [`Re`](../source/h2_unit.hpp#L321)(expect) : matches if value Regex equals expect 
 *    [`We`](../source/h2_unit.hpp#L321)(expect) : matches if value Wildcard equals expect 
 *    [`Je`](../source/h2_unit.hpp#L321)(expect) : matches if value JSON equals expect 
@@ -408,7 +403,7 @@ CASE(case name)
 *    [`NoneOf`](../source/h2_unit.hpp#L321)(expect...) : matches if value not matches all of inner matchers 
 *    [`ListOf`](../source/h2_unit.hpp#L321)(expect...) : matches if sequence container(array, vector, ...) item matches inner matchers 
 *    [`CountOf`](../source/h2_unit.hpp#L321)(expect...) : matches if container(array, vector, ...) item count matches inner matchers 
-*    [`Has`](../source/h2_unit.hpp#L321)(expect ...) : matches if there are items in container(vector, set, map, ...) match every inner matchers
+*    [`Has`](../source/h2_unit.hpp#L321)(expect...) : matches if there are items in container(vector, set, map, ...) match every inner matchers
 
 
 Matcher can be used in OK(expect, actual), for example:
@@ -418,78 +413,84 @@ OK(Ge(1.4142), sqrt(2))
 It asserts sqrt(2) result 1.41421356237 is greater or equal than 1.4142
 
 
-### Memcmp matcher
-Expection is described by buffer and length explicitly, comparsion is same with libc memcmp.
+### Memory compare matcher
+Expection is described by buffer, length and width.
+
+#### explicit width
+
+- `1` bit width, length is in bit unit.
+- `8` byte width, length is in byte unit.
+- `16` uint16 width (2 bytes), length is in uint16 unit.
+- `32` uint32 width (4 bytes), length is in uint32 unit.
+- `64` uint64 width (8 bytes), length is in uint64 unit.
+
+
+```C++
+CASE(memory compare bytes)
+{
+   unsigned char e[] = {0x8E, 0xC8, 0x8E, 0xC8, 0xF8};
+   unsigned char *a = ...
+   OK(Me(e, 5, 8), a);
+}
+
+CASE(memory compare ints)
+{
+   unsigned int e[] = {1, 2, 3, 4, 5};
+   unsigned char *a = ...
+   OK(Me(e, 5, 32), a);
+}
+```
+
+#### deduce width
+
+If width is not specified, deduce compare width by data type or string format.
+
+|  data type                |  width   |
+|  ----                     |  ----    |
+| [unsigned] char */[]      |  1 bytes |
+| [unsigned] short */[]     |  2 bytes |
+| [unsigned] int */[]       |  4 bytes |
+| [unsigned] long long */[] |  8 bytes |
+
 ```C++
 CASE(memory compare)
 {
-   unsigned char e1[] = {0x8E, 0xC8, 0x8E, 0xC8, 0xF8};
-   unsigned char *a1 = ...
-   OK(Me(e1, 5), a1);
-   
-   const char *e2 = "\x8E\xC8\x8E\xC8\xF8";
-   unsigned char *a2 = ...
-   OK(Me(e2, 5), a2);
+   unsigned short e[] = {0x018E, 0x23C8, 0x458E, 670xC8, 0x89F8};
+   unsigned char *a = ...
+   OK(Me(e, 5), a); ==> memcmp(e, a, 5*8)
 }
 ```
-#### Compare width
 
-- `M1e` bit width
-- `M8e` byte width
-- `M16e` word width (2 bytes) 
-- `M32e` dword width (4 bytes) 
-- `M64e` qword width (8 bytes) 
+If data type is not char*, and length is not specified, length is set to array size while data type is native array otherwise failed.
 
-`Me` deduce compare width by data type or string format.
-|  data type             |  width   |  matcher  |
-|  ----                  |  ----    |  ----     |
-|  unsigned char *       |  1 bytes |  M8e      |
-| [unsigned] short *     |  2 bytes |  M16e     |
-| [unsigned] int *       |  4 bytes |  M32e     |
-| [unsigned] long long * |  8 bytes |  M64e     |
+
+If data type is char*, and length is also not specified, deduce compare width by string format.
+
+If buffer only contain '0' '1' ' ', width is considered 1, buffer is parsed to binary, length is set to count of '0' and '1'.
 
 ```C++
-const char* e3 = "1000 1110 1";
+CASE(memory compare)
+{
+   const char* e = "1000 1110 1";
+   unsigned char *a = ...
+   OK(Me(e, 5), a); ==> bitcmp("100011101", a, 5)
+}
 ```
-For [const] char * type, "01" formatted string is considered as M1e, others is M8e.
 
-#### String expection deduce
+If data type is char*, and only contain hexidecimal characters, width is considered 8, buffer is parsed to bytes array, length is set to array size.
 
 ```C++
-const char* e4 = "8EC88EC8F8";
-const char* e5 = "8PC88EC8F8";
+CASE(memory compare)
+{
+   const char* e = "8EC88EC8F8";
+   unsigned char *a = ...
+   OK(Me(e), a); ==> memcmp([0x8E, 0xC8, 0x8E, 0xC8, 0xF8], a, 5*8)
+
+   const char* e = "8Ep88EC8F8";
+   unsigned char *a = ...
+   OK(Me(e), a); ==> memcmp("8Ep88EC8F8", a, 10)
+}
 ```
-All characters in e4 are hexidecimal characters, so e4 has two possible:
-- {'8', 'E', 'C', '8', '8', 'E', 'C', '8', 'F', '8'} maximal length 10 bytes
-- {0x8E, 0xC8, 0x8E, 0xC8, 0xF8} maximal length 5 bytes
-
-Any of possible matches, Me matches.
-
-There is not hexidecimal character `P` in e5, so e5 has only one possible:
-- {'8', 'P', 'C', '8', '8', 'E', 'C', '8', 'F', '8'} maximal length 10 bytes
-
-```C++
-const char* e6 = "1000 1110 1";
-```
-All characters in e6 are binary integers, so e6 has two possible:
-- {'1', '0', '0', '0', ' ', '1', '1', '1', '0', ' ', '1'} maximal length 11 bytes
-- {0x8E, 0x80} maximal length 9 bits
-
-Why not provide hexidecimal possible i.e. {0x10, 0x00, 0x11, 0x10, 0x1} maximal length 5 bits ?
-
-User write "01" string, typically want bit level comparasion.
-
-
-If length is not specified explicitly, maximal length is used.
-
-#### Compare length
-
-*    [`M1e`](../source/h2_unit.hpp#L321)(expect, [length]) : number of bits.
-*    [`M8e`](../source/h2_unit.hpp#L321)(expect, [length]) : number of bytes.
-*    [`M16e`](../source/h2_unit.hpp#L321)(expect, [length]) : number of int16.
-*    [`M32e`](../source/h2_unit.hpp#L321)(expect, [length]) : number of int32.
-*    [`M64e`](../source/h2_unit.hpp#L321)(expect, [length]) : number of int64.
-*    [`Me`](../source/h2_unit.hpp#L321)(expect, [length]) : following deduced type.
 
 ### Array size
 

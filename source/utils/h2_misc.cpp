@@ -52,7 +52,7 @@ h2_inline int h2_extract::fill(const char* attributes, const char* key, unsigned
    const char* p = p_eq + 1;
    for (; *p && ::isspace(*p);) p++;  // strip left space
    if (p[0] == '0' && ::tolower(p[1]) == 'x') {
-      return (int)hex_to_bytes(p + 2, bytes);
+      return (int)h2_numeric::hex_to_bytes(p + 2, bytes);
    } else {
       unsigned long long v = strtoull(p, nullptr, 10);
       if (v <= 0xFFULL)

@@ -1,6 +1,6 @@
 #include "../build/h2unit.hpp"
 
-int foo(int a, const char* b)
+static int foo(int a, const char* b)
 {
    return 0;
 }
