@@ -13,6 +13,8 @@ struct h2_line : h2_vector<h2_string> {
    h2_line& brush(const char* style);
 
    bool enclosed(const char c) const;
+   bool has(const char* word) const;
+
    h2_line gray_quote() const;
    h2_line abbreviate(size_t width = 16, size_t tail = 0) const;
    h2_string string() const;

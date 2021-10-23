@@ -1,5 +1,5 @@
 
-/* v5.15 2021-10-23 20:00:16 */
+/* v5.15 2021-10-24 00:51:11 */
 /* https://github.com/lingjf/h2unit */
 /* Apache Licence 2.0 */
 #include "h2unit.hpp"
@@ -922,6 +922,13 @@ h2_inline bool h2_line::enclosed(const char c) const
    }
 
    return f && b;
+}
+
+h2_inline bool h2_line::has(const char* word) const
+{
+   for (auto& t : *this)
+      if (t == word) return true;
+   return false;
 }
 
 h2_inline h2_line h2_line::gray_quote() const

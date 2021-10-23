@@ -59,6 +59,13 @@ h2_inline bool h2_line::enclosed(const char c) const
    return f && b;
 }
 
+h2_inline bool h2_line::has(const char* word) const
+{
+   for (auto& t : *this)
+      if (t == word) return true;
+   return false;
+}
+
 h2_inline h2_line h2_line::gray_quote() const
 {
    if (!enclosed('\"') && !enclosed('\'')) return *this;

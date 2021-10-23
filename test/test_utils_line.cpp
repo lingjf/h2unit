@@ -121,6 +121,14 @@ SUITE(h2_line)
       OK(b3.enclosed('\"'));
    }
 
+   Case(has)
+   {
+      h2::h2_line a = {"123", "\033{red}", "456", "\033{reset}"};
+      OK(a.has("123"));
+      OK(a.has("456"));
+      OK(!a.has("abc"));
+   }
+
    Case(samesizify lines)
    {
       h2::h2_lines e = {{"123", "456"}, {"1234"}};

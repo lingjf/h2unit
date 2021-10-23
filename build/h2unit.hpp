@@ -1,5 +1,5 @@
 
-/* v5.15 2021-10-23 20:00:16 */
+/* v5.15 2021-10-24 00:51:11 */
 /* https://github.com/lingjf/h2unit */
 /* Apache Licence 2.0 */
 
@@ -748,6 +748,8 @@ struct h2_line : h2_vector<h2_string> {
    h2_line& brush(const char* style);
 
    bool enclosed(const char c) const;
+   bool has(const char* word) const;
+
    h2_line gray_quote() const;
    h2_line abbreviate(size_t width = 16, size_t tail = 0) const;
    h2_string string() const;
@@ -1402,18 +1404,18 @@ struct h2_not_matches : h2_matches {
    }
 };
 
-template <typename Matcher1, typename Matcher2>
+template <typename MatcherL, typename MatcherR>
 struct h2_and_matches : h2_matches {
-   const Matcher1 m1;
-   const Matcher2 m2;
-   explicit h2_and_matches(const Matcher1& m1_, const Matcher2& m2_) : m1(m1_), m2(m2_) {}
+   const MatcherL ml;
+   const MatcherR mr;
+   explicit h2_and_matches(const MatcherL& ml_, const MatcherR& mr_) : ml(ml_), mr(mr_) {}
 
    template <typename A>
    h2_fail* matches(const A& a, int n, h2_mc c) const
    {
       h2_fail* fails = nullptr;
-      h2_fail::append_subling(fails, h2_matcher_cast<A>(m1).matches(a, n, c.update_dont(false)));
-      h2_fail::append_subling(fails, h2_matcher_cast<A>(m2).matches(a, n, c.update_dont(false)));
+      h2_fail::append_subling(fails, h2_matcher_cast<A>(ml).matches(a, n, c.update_dont(false)));
+      h2_fail::append_subling(fails, h2_matcher_cast<A>(mr).matches(a, n, c.update_dont(false)));
       if (c.fit(!fails)) {
          if (fails) delete fails;
          return nullptr;
@@ -1426,21 +1428,27 @@ struct h2_and_matches : h2_matches {
 
    virtual h2_line expection(h2_mc c) const override
    {
-      return CD((c.dont ? gray("(") : h2_line()) + h2_matches_expection(m1, c.update_dont(false)) + " and " + h2_matches_expection(m2, c.update_dont(false)) + (c.dont ? gray(")") : h2_line()), c.update_caseless(false));
+      auto sl = h2_matches_expection(ml, c.update_dont(false));
+      if (sl.has(" or ")) sl = gray("(") + sl + gray(")");
+      auto sr = h2_matches_expection(mr, c.update_dont(false));
+      if (sr.has(" and ") || sr.has(" or ")) sr = gray("(") + sr + gray(")");
+      h2_line s = sl + " and " + sr;
+      if (c.dont) s = gray("(") + s + gray(")");
+      return CD(s, c.update_caseless(false));
    }
 };
 
-template <typename Matcher1, typename Matcher2>
+template <typename MatcherL, typename MatcherR>
 struct h2_or_matches : h2_matches {
-   const Matcher1 m1;
-   const Matcher2 m2;
-   explicit h2_or_matches(const Matcher1& m1_, const Matcher2& m2_) : m1(m1_), m2(m2_) {}
+   const MatcherL ml;
+   const MatcherR mr;
+   explicit h2_or_matches(const MatcherL& ml_, const MatcherR& mr_) : ml(ml_), mr(mr_) {}
 
    template <typename A>
    h2_fail* matches(const A& a, int n, h2_mc c) const
    {
-      h2_fail* f1 = h2_matcher_cast<A>(m1).matches(a, n, c.update_dont(false));
-      h2_fail* f2 = h2_matcher_cast<A>(m2).matches(a, n, c.update_dont(false));
+      h2_fail* f1 = h2_matcher_cast<A>(ml).matches(a, n, c.update_dont(false));
+      h2_fail* f2 = h2_matcher_cast<A>(mr).matches(a, n, c.update_dont(false));
       if (c.fit(!f1 || !f2)) {
          if (f1) delete f1;
          if (f2) delete f2;
@@ -1457,7 +1465,12 @@ struct h2_or_matches : h2_matches {
 
    virtual h2_line expection(h2_mc c) const override
    {
-      return CD((c.dont ? gray("(") : h2_line()) + h2_matches_expection(m1, c.update_dont(false)) + " or " + h2_matches_expection(m2, c.update_dont(false)) + (c.dont ? gray(")") : h2_line()), c.update_caseless(false));
+      auto sl = h2_matches_expection(ml, c.update_dont(false));
+      auto sr = h2_matches_expection(mr, c.update_dont(false));
+      if (sr.has(" or ")) sr = gray("(") + sr + gray(")");
+      h2_line s = sl + " or " + sr;
+      if (c.dont) s = gray("(") + s + gray(")");
+      return CD(s, c.update_caseless(false));
    }
 };
 
@@ -1607,51 +1620,51 @@ inline h2_polymorphic_matcher<h2_noneof_matches<typename std::decay<const Matche
    return h2_polymorphic_matcher<h2_noneof_matches<typename std::decay<const Matchers&>::type...>>(h2_noneof_matches<typename std::decay<const Matchers&>::type...>(matchers...));
 }
 
-template <typename M1, typename M2>
-inline h2_polymorphic_matcher<h2_and_matches<h2_polymorphic_matcher<M1>, h2_polymorphic_matcher<M2>>> operator&&(const h2_polymorphic_matcher<M1>& m1, const h2_polymorphic_matcher<M2>& m2)
+template <typename MatcherL, typename MatcherR>
+inline h2_polymorphic_matcher<h2_and_matches<h2_polymorphic_matcher<MatcherL>, h2_polymorphic_matcher<MatcherR>>> operator&&(const h2_polymorphic_matcher<MatcherL>& ml, const h2_polymorphic_matcher<MatcherR>& mr)
 {
-   h2_and_matches<h2_polymorphic_matcher<M1>, h2_polymorphic_matcher<M2>> a(m1, m2);
-   h2_polymorphic_matcher<h2_and_matches<h2_polymorphic_matcher<M1>, h2_polymorphic_matcher<M2>>> b(a);
+   h2_and_matches<h2_polymorphic_matcher<MatcherL>, h2_polymorphic_matcher<MatcherR>> a(ml, mr);
+   h2_polymorphic_matcher<h2_and_matches<h2_polymorphic_matcher<MatcherL>, h2_polymorphic_matcher<MatcherR>>> b(a);
    return b;
 }
-template <typename M1, typename M2>
-inline h2_polymorphic_matcher<h2_and_matches<h2_polymorphic_matcher<M1>, h2_matcher<typename h2_decay<M2>::type>>> operator&&(const h2_polymorphic_matcher<M1>& m1, const M2& m2)
+template <typename MatcherL, typename MatcherR>
+inline h2_polymorphic_matcher<h2_and_matches<h2_polymorphic_matcher<MatcherL>, h2_matcher<typename h2_decay<MatcherR>::type>>> operator&&(const h2_polymorphic_matcher<MatcherL>& ml, const MatcherR& mr)
 {
-   h2_matcher<typename h2_decay<M2>::type> a(m2);
-   h2_and_matches<h2_polymorphic_matcher<M1>, h2_matcher<typename h2_decay<M2>::type>> b(m1, a);
-   h2_polymorphic_matcher<h2_and_matches<h2_polymorphic_matcher<M1>, h2_matcher<typename h2_decay<M2>::type>>> c(b);
+   h2_matcher<typename h2_decay<MatcherR>::type> a(mr);
+   h2_and_matches<h2_polymorphic_matcher<MatcherL>, h2_matcher<typename h2_decay<MatcherR>::type>> b(ml, a);
+   h2_polymorphic_matcher<h2_and_matches<h2_polymorphic_matcher<MatcherL>, h2_matcher<typename h2_decay<MatcherR>::type>>> c(b);
    return c;
 }
-template <typename M1, typename M2>
-inline h2_polymorphic_matcher<h2_and_matches<h2_matcher<typename h2_decay<M1>::type>, h2_polymorphic_matcher<M2>>> operator&&(const M1& m1, const h2_polymorphic_matcher<M2>& m2)
+template <typename MatcherL, typename MatcherR>
+inline h2_polymorphic_matcher<h2_and_matches<h2_matcher<typename h2_decay<MatcherL>::type>, h2_polymorphic_matcher<MatcherR>>> operator&&(const MatcherL& ml, const h2_polymorphic_matcher<MatcherR>& mr)
 {
-   h2_matcher<typename h2_decay<M1>::type> a(m1);
-   h2_and_matches<h2_matcher<typename h2_decay<M1>::type>, h2_polymorphic_matcher<M2>> b(a, m2);
-   h2_polymorphic_matcher<h2_and_matches<h2_matcher<typename h2_decay<M1>::type>, h2_polymorphic_matcher<M2>>> c(b);
+   h2_matcher<typename h2_decay<MatcherL>::type> a(ml);
+   h2_and_matches<h2_matcher<typename h2_decay<MatcherL>::type>, h2_polymorphic_matcher<MatcherR>> b(a, mr);
+   h2_polymorphic_matcher<h2_and_matches<h2_matcher<typename h2_decay<MatcherL>::type>, h2_polymorphic_matcher<MatcherR>>> c(b);
    return c;
 }
 
-template <typename M1, typename M2>
-inline h2_polymorphic_matcher<h2_or_matches<h2_polymorphic_matcher<M1>, h2_polymorphic_matcher<M2>>> operator||(const h2_polymorphic_matcher<M1>& m1, const h2_polymorphic_matcher<M2>& m2)
+template <typename MatcherL, typename MatcherR>
+inline h2_polymorphic_matcher<h2_or_matches<h2_polymorphic_matcher<MatcherL>, h2_polymorphic_matcher<MatcherR>>> operator||(const h2_polymorphic_matcher<MatcherL>& ml, const h2_polymorphic_matcher<MatcherR>& mr)
 {
-   h2_or_matches<h2_polymorphic_matcher<M1>, h2_polymorphic_matcher<M2>> a(m1, m2);
-   h2_polymorphic_matcher<h2_or_matches<h2_polymorphic_matcher<M1>, h2_polymorphic_matcher<M2>>> b(a);
+   h2_or_matches<h2_polymorphic_matcher<MatcherL>, h2_polymorphic_matcher<MatcherR>> a(ml, mr);
+   h2_polymorphic_matcher<h2_or_matches<h2_polymorphic_matcher<MatcherL>, h2_polymorphic_matcher<MatcherR>>> b(a);
    return b;
 }
-template <typename M1, typename M2>
-inline h2_polymorphic_matcher<h2_or_matches<h2_polymorphic_matcher<M1>, h2_matcher<typename h2_decay<M2>::type>>> operator||(const h2_polymorphic_matcher<M1>& m1, const M2& m2)
+template <typename MatcherL, typename MatcherR>
+inline h2_polymorphic_matcher<h2_or_matches<h2_polymorphic_matcher<MatcherL>, h2_matcher<typename h2_decay<MatcherR>::type>>> operator||(const h2_polymorphic_matcher<MatcherL>& ml, const MatcherR& mr)
 {
-   h2_matcher<typename h2_decay<M2>::type> a(m2);
-   h2_or_matches<h2_polymorphic_matcher<M1>, h2_matcher<typename h2_decay<M2>::type>> b(m1, a);
-   h2_polymorphic_matcher<h2_or_matches<h2_polymorphic_matcher<M1>, h2_matcher<typename h2_decay<M2>::type>>> c(b);
+   h2_matcher<typename h2_decay<MatcherR>::type> a(mr);
+   h2_or_matches<h2_polymorphic_matcher<MatcherL>, h2_matcher<typename h2_decay<MatcherR>::type>> b(ml, a);
+   h2_polymorphic_matcher<h2_or_matches<h2_polymorphic_matcher<MatcherL>, h2_matcher<typename h2_decay<MatcherR>::type>>> c(b);
    return c;
 }
-template <typename M1, typename M2>
-inline h2_polymorphic_matcher<h2_or_matches<h2_matcher<typename h2_decay<M1>::type>, h2_polymorphic_matcher<M2>>> operator||(const M1& m1, const h2_polymorphic_matcher<M2>& m2)
+template <typename MatcherL, typename MatcherR>
+inline h2_polymorphic_matcher<h2_or_matches<h2_matcher<typename h2_decay<MatcherL>::type>, h2_polymorphic_matcher<MatcherR>>> operator||(const MatcherL& ml, const h2_polymorphic_matcher<MatcherR>& mr)
 {
-   h2_matcher<typename h2_decay<M1>::type> a(m1);
-   h2_or_matches<h2_matcher<typename h2_decay<M1>::type>, h2_polymorphic_matcher<M2>> b(a, m2);
-   h2_polymorphic_matcher<h2_or_matches<h2_matcher<typename h2_decay<M1>::type>, h2_polymorphic_matcher<M2>>> c(b);
+   h2_matcher<typename h2_decay<MatcherL>::type> a(ml);
+   h2_or_matches<h2_matcher<typename h2_decay<MatcherL>::type>, h2_polymorphic_matcher<MatcherR>> b(a, mr);
+   h2_polymorphic_matcher<h2_or_matches<h2_matcher<typename h2_decay<MatcherL>::type>, h2_polymorphic_matcher<MatcherR>>> c(b);
    return c;
 }
 // source/matcher/h2_inequation.hpp

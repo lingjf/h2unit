@@ -10,25 +10,32 @@ SUITE(Logic)
       OK(Not(p), p);
    }
 
-   Case(&&)
+   Case(one and)
    {
       int a = 0;
       int b = -2;
       OK(Ge(a) && Eq(b), -1);
    }
 
-   Case(||)
+   Case(one or)
    {
       int a = 0;
       int b = -2;
-      OK(Ge(a) || Eq(b), -1);
+      OK(Ge(a) || Eq(b), -1) << ">=0 or ==2";
    }
 
-   Case(|| &&!)
+   Case(two logic)
    {
       int a = 0;
-      int b = -2;
-      OK(-3 || Ge(a) && !Eq(b), -1) << "-3 || (>=0 && !-2)";
+      int b = -1;
+      OK(-3 && Ge(a) && !Eq(b), -1);
+   }
+
+   Case(two logic)
+   {
+      int a = 0;
+      int b = -1;
+      OK((-3 || Ge(a)) && !Eq(b), -1);
    }
 
    Case(!&& ||)
