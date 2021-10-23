@@ -23,22 +23,22 @@ struct h2_sock : h2_once {
          return;
       }
       h2_fail* fails = nullptr;
-      h2_fail* fail_from = h2_matcher_cast<const char*>(from).matches(p->from.c_str(), 0, false, false);
+      h2_fail* fail_from = h2_matcher_cast<const char*>(from).matches(p->from.c_str(), 0, {});
       if (fail_from) {
          fail_from->explain = "from address";
          h2_fail::append_subling(fails, fail_from);
       }
-      h2_fail* fail_to = h2_matcher_cast<const char*>(to).matches(p->to.c_str(), 0, false, false);
+      h2_fail* fail_to = h2_matcher_cast<const char*>(to).matches(p->to.c_str(), 0, {});
       if (fail_to) {
          fail_to->explain = "to address";
          h2_fail::append_subling(fails, fail_to);
       }
-      h2_fail* fail_payload = h2_matcher_cast<const unsigned char*>(payload).matches((unsigned char*)p->data.data(), 0, false, false);
+      h2_fail* fail_payload = h2_matcher_cast<const unsigned char*>(payload).matches((unsigned char*)p->data.data(), 0, {});
       if (fail_payload) {
          fail_payload->explain = "payload";
          h2_fail::append_subling(fails, fail_payload);
       }
-      h2_fail* fail_size = h2_matcher_cast<const int>(size).matches(p->data.size(), 0, false, false);
+      h2_fail* fail_size = h2_matcher_cast<const int>(size).matches(p->data.size(), 0, {});
       if (fail_size) {
          fail_size->explain = "payload length";
          h2_fail::append_subling(fails, fail_size);

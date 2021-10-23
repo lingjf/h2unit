@@ -5,7 +5,7 @@ struct h2_matches_memcmp : h2_matches {
    const size_t length;
    const size_t width;
    explicit h2_matches_memcmp(const E buffer_, const size_t size_, const size_t length_, const size_t width_) : buffer(buffer_), size(size_), length(length_), width(width_) {}
-   h2_fail* matches(const void* a, int n, bool caseless, bool dont, bool ncop) const
+   h2_fail* matches(const void* a, int n, h2_mc c) const
    {
       unsigned char* e = (unsigned char*)buffer;
       size_t l = length, w = width;
@@ -31,12 +31,12 @@ struct h2_matches_memcmp : h2_matches {
          result = h2_numeric::bits_equal(e, (const unsigned char*)a, l * w);
       } while (0);
 
-      if (result == !dont) return nullptr;
+      if (c.fit(result)) return nullptr;
       return h2_fail::new_memcmp((const unsigned char*)e, (const unsigned char*)a, l, w);
    }
-   virtual h2_line expection(bool caseless, bool dont, bool ncop) const override
+   virtual h2_line expection(h2_mc c) const override
    {
-      return CD("Me()", caseless, dont, ncop);
+      return CD("Me()", c);
    }
 };
 

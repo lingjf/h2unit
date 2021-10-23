@@ -21,8 +21,8 @@ SUITE(container matches)
       std::pair<int, double> a1 = std::make_pair(1, 3.14);
       std::pair<int, double> a2 = std::make_pair(2, 3.14);
 
-      OK(IsNull, e1.matches(a1, 0, false, false, false));
-      OK(NotNull, e1.matches(a2, 0, false, false, false));
+      OK(IsNull, e1.matches(a1, 0, {}));
+      OK(NotNull, e1.matches(a2, 0, {}));
    }
 
    Case(ListOf)
@@ -36,14 +36,10 @@ SUITE(container matches)
       h2::h2_listof_matches<T1, T1, T1> a(a1_, a2_, a3_);
 
       int b1[] = {1, 2, 3};
-      OK(nullptr == a.matches(b1, 0, false, false, false));
+      OK(nullptr == a.matches(b1, 0, {}));
 
       std::vector<int> b2 = {1, 2, 3};
-      OK(nullptr == a.matches(b2, 0, false, false, false));
-   }
-
-   Case(In)
-   {
+      OK(nullptr == a.matches(b2, 0, {}));
    }
 }
 
@@ -65,10 +61,11 @@ SUITE(Pair)
 
 SUITE(ListOf primitive)
 {
-   Case(C / C++ generic array)
+   Case(C/C++ generic array)
    {
       int a1[] = {1, 2, 3};
       OK(ListOf(1, 2, 3), a1, 3);
+      OK(ListOf(1, 2, 3), a1);
    }
 
    Case(Sequence containers / array / static contiguous array)
@@ -85,21 +82,21 @@ SUITE(ListOf primitive)
       OK(!ListOf(1, 2, 7), a1);
    }
 
-   Case(Sequence containers / deque / double - ended queue)
+   Case(Sequence containers / deque / double-ended queue)
    {
       std::deque<int> a1 = {1, 2, 3};
       OK(ListOf(1, 2, 3), a1);
       OK(!ListOf(1, 2, 7), a1);
    }
 
-   Case(Sequence containers / forward_list / singly - linked list)
+   Case(Sequence containers / forward_list / singly-linked list)
    {
       std::forward_list<int> a1 = {1, 2, 3};
       OK(ListOf(1, 2, 3), a1);
       OK(!ListOf(1, 2, 7), a1);
    }
 
-   Case(Sequence containers / list / doubly - linked list)
+   Case(Sequence containers / list / doubly-linked list)
    {
       std::list<int> a1 = {1, 2, 3};
       OK(ListOf(1, 2, 3), a1);
@@ -155,7 +152,9 @@ SUITE(Has primitive)
    {
       int a1[] = {1, 2, 3};
       OK(Has(2), a1, 3);
+      OK(Has(2), a1);
       OK(!Has(4), a1, 3);
+      OK(!Has(4), a1);
    }
 
    Case(Sequence containers / array / static contiguous array)
@@ -172,21 +171,21 @@ SUITE(Has primitive)
       OK(!Has(4), a1);
    }
 
-   Case(Sequence containers / deque / double - ended queue)
+   Case(Sequence containers / deque / double-ended queue)
    {
       std::deque<int> a1 = {1, 2, 3};
       OK(Has(2), a1);
       OK(!Has(4), a1);
    }
 
-   Case(Sequence containers / forward_list / singly - linked list)
+   Case(Sequence containers / forward_list / singly-linked list)
    {
       std::forward_list<int> a1 = {1, 2, 3};
       OK(Has(2), a1);
       OK(!Has(4), a1);
    }
 
-   Case(Sequence containers / list / doubly - linked list)
+   Case(Sequence containers / list / doubly-linked list)
    {
       std::list<int> a1 = {1, 2, 3};
       OK(Has(2), a1);
@@ -257,19 +256,19 @@ SUITE(CountOf primitive)
       OK(CountOf(3), a1);
    }
 
-   Case(Sequence containers / deque / double - ended queue)
+   Case(Sequence containers / deque / double-ended queue)
    {
       std::deque<int> a1 = {1, 2, 3};
       OK(CountOf(3), a1);
    }
 
-   Case(Sequence containers / forward_list / singly - linked list)
+   Case(Sequence containers / forward_list / singly-linked list)
    {
       std::forward_list<int> a1 = {1, 2, 3};
       OK(CountOf(3), a1);
    }
 
-   Case(Sequence containers / list / doubly - linked list)
+   Case(Sequence containers / list / doubly-linked list)
    {
       std::list<int> a1 = {1, 2, 3};
       OK(CountOf(3), a1);

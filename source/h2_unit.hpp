@@ -308,6 +308,7 @@ using h2::Substr;
 using h2::StartsWith;
 using h2::EndsWith;
 using h2::CaseLess;
+using h2::SpaceLess;
 using h2::Pointee;
 using h2::Not;
 using h2::operator&&;

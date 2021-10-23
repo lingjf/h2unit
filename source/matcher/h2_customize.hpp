@@ -1,20 +1,17 @@
-#define __Matches_Common(message)                                                                              \
-   template <typename A>                                                                                       \
-   bool __matches(const A& a) const;                                                                           \
-   template <typename A>                                                                                       \
-   h2::h2_fail* matches(const A& a, int, bool caseless, bool dont, bool ncop) const                            \
-   {                                                                                                           \
-      h2::h2_fail* fail = h2::h2_fail::new_unexpect(h2::CD("", caseless, dont, ncop), h2::h2_representify(a)); \
-      if (__matches(a) == !dont) return nullptr;                                                               \
-      if (dont) {                                                                                              \
-      } else {                                                                                                 \
-         h2::h2_ostringstream t;                                                                               \
-         t << H2PP_REMOVE_PARENTHESES(message);                                                                \
-         fail->user_explain = t.str().c_str();                                                                 \
-      }                                                                                                        \
-      return fail;                                                                                             \
-   }                                                                                                           \
-   virtual h2::h2_line expection(bool, bool, bool) const override { return ""; }
+#define __Matches_Common(message)                                                           \
+   template <typename A>                                                                    \
+   bool __matches(const A& a) const;                                                        \
+   template <typename A>                                                                    \
+   h2::h2_fail* matches(const A& a, int, h2::h2_mc c) const                                 \
+   {                                                                                        \
+      h2::h2_fail* fail = h2::h2_fail::new_unexpect(h2::CD("", c), h2::h2_representify(a)); \
+      if (c.fit(__matches(a))) return nullptr;                                              \
+      h2::h2_ostringstream t;                                                               \
+      t << H2PP_REMOVE_PARENTHESES(message);                                                \
+      fail->user_explain = t.str().c_str();                                                 \
+      return fail;                                                                          \
+   }                                                                                        \
+   virtual h2::h2_line expection(h2::h2_mc c) const override { return ""; }
 
 #define H2MATCHER0(name, message)                                               \
    struct h2_##name##_matches : h2::h2_matches {                                \

@@ -52,6 +52,11 @@ SUITE(string compares)
       OK(Substr("兰溪"), "中国\n浙江省\t杭州市\r余杭区");
    }
 
+   Case(squash spaces)
+   {
+      OK(SpaceLess("hello  world!"), "hello   world");
+   }
+
    Case(caseless not)
    {
       OK(!~(Se("Hello World") && Substr("Hello") || Re(".*World")), "hello world");

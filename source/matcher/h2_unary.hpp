@@ -1,37 +1,37 @@
 struct h2_matches_any : h2_matches {
    template <typename A>
-   h2_fail* matches(const A& a, int, bool, bool, bool) const { return nullptr; }
-   virtual h2_line expection(bool, bool, bool) const override { return "Any"; }
+   h2_fail* matches(const A& a, int, h2_mc opt) const { return nullptr; }
+   virtual h2_line expection(h2_mc opt) const override { return "Any"; }
 };
 
 struct h2_matches_null : h2_matches {
    const bool reverse;
    explicit h2_matches_null(bool reverse_) : reverse(reverse_) {}
    template <typename A>
-   h2_fail* matches(const A& a, int, bool, bool dont, bool ncop) const
+   h2_fail* matches(const A& a, int, h2_mc opt) const
    {
-      bool _dont = reverse ? !dont : dont;
-      if ((nullptr == (const void*)a) == !_dont) return nullptr;
-      return h2_fail::new_unexpect(expection(false, dont, ncop), h2_stringify((const void*)a));
+      bool result = reverse ? nullptr != (const void*)a : nullptr == (const void*)a;
+      if (opt.fit(result)) return nullptr;
+      return h2_fail::new_unexpect(expection(opt), h2_stringify((const void*)a));
    }
-   virtual h2_line expection(bool, bool dont, bool ncop) const override
+   virtual h2_line expection(h2_mc opt) const override
    {
-      return (reverse ? !dont : dont) ? "NotNull" : "IsNull";
+      return reverse != opt.dont /*XOR ^*/ ? "NotNull" : "IsNull";
    }
 };
 
 template <bool E>
 struct h2_matches_boolean : h2_matches {
    template <typename A>
-   h2_fail* matches(const A& a, int, bool, bool dont, bool ncop) const
+   h2_fail* matches(const A& a, int, h2_mc opt) const
    {
-      bool _dont = E ? dont : !dont;
-      if (((bool)a) == !_dont) return nullptr;
-      return h2_fail::new_unexpect(expection(false, dont, ncop), a ? "true" : "false");
+      bool result = E ? a : !a;
+      if (opt.fit(result)) return nullptr;
+      return h2_fail::new_unexpect(expection(opt), a ? "true" : "false");
    }
-   virtual h2_line expection(bool, bool dont, bool ncop) const override
+   virtual h2_line expection(h2_mc opt) const override
    {
-      return (E ? dont : !dont) ? "false" : "true";
+      return (E ? opt.dont : !opt.dont) ? "false" : "true";
    }
 };
 
@@ -50,15 +50,15 @@ struct h2_pointee_matches : h2_matches {
    };
 
    template <typename A>
-   h2_fail* matches(A a, int, bool caseless, bool dont, bool ncop) const
+   h2_fail* matches(A a, int, h2_mc opt) const
    {
       typedef typename std::remove_const<typename std::remove_reference<A>::type>::type Pointer;
       typedef typename PointeeOf<Pointer>::type Pointee;
-      return h2_matcher_cast<Pointee>(m).matches(*a, 0, caseless, dont, ncop);
+      return h2_matcher_cast<Pointee>(m).matches(*a, 0, opt);
    }
-   virtual h2_line expection(bool caseless, bool dont, bool ncop) const override
+   virtual h2_line expection(h2_mc opt) const override
    {
-      return h2_matches_expection(m, caseless, dont, ncop);
+      return h2_matches_expection(m, opt);
    }
 };
 

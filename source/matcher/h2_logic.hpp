@@ -4,13 +4,13 @@ struct h2_not_matches : h2_matches {
    explicit h2_not_matches(const Matcher& m_) : m(m_) {}
 
    template <typename A>
-   h2_fail* matches(const A& a, int n, bool caseless, bool dont, bool ncop) const
+   h2_fail* matches(const A& a, int n, h2_mc c) const
    {
-      return h2_matcher_cast<A>(m).matches(a, n, caseless, !dont, ncop);
+      return h2_matcher_cast<A>(m).matches(a, n, c.update_dont(!c.dont));
    }
-   virtual h2_line expection(bool caseless, bool dont, bool ncop) const override
+   virtual h2_line expection(h2_mc c) const override
    {
-      return h2_matches_expection(m, caseless, !dont, ncop);
+      return h2_matches_expection(m, c.update_dont(!c.dont));
    }
 };
 
@@ -21,24 +21,24 @@ struct h2_and_matches : h2_matches {
    explicit h2_and_matches(const Matcher1& m1_, const Matcher2& m2_) : m1(m1_), m2(m2_) {}
 
    template <typename A>
-   h2_fail* matches(const A& a, int n, bool caseless, bool dont, bool ncop) const
+   h2_fail* matches(const A& a, int n, h2_mc c) const
    {
       h2_fail* fails = nullptr;
-      h2_fail::append_subling(fails, h2_matcher_cast<A>(m1).matches(a, n, caseless, false, ncop));
-      h2_fail::append_subling(fails, h2_matcher_cast<A>(m2).matches(a, n, caseless, false, ncop));
-      if (!fails == !dont) {
+      h2_fail::append_subling(fails, h2_matcher_cast<A>(m1).matches(a, n, c.update_dont(false)));
+      h2_fail::append_subling(fails, h2_matcher_cast<A>(m2).matches(a, n, c.update_dont(false)));
+      if (c.fit(!fails)) {
          if (fails) delete fails;
          return nullptr;
       }
-      h2_fail* fail = h2_fail::new_unexpect(expection(caseless, dont, ncop), h2_representify(a));
+      h2_fail* fail = h2_fail::new_unexpect(expection(c), h2_representify(a));
       h2_fail::append_child(fail, fails);
 
       return fail;
    }
 
-   virtual h2_line expection(bool caseless, bool dont, bool ncop) const override
+   virtual h2_line expection(h2_mc c) const override
    {
-      return CD((dont ? gray("(") : h2_line()) + h2_matches_expection(m1, caseless, false, ncop) + " and " + h2_matches_expection(m2, caseless, false, ncop) + (dont ? gray(")") : h2_line()), false, dont, ncop);
+      return CD((c.dont ? gray("(") : h2_line()) + h2_matches_expection(m1, c.update_dont(false)) + " and " + h2_matches_expection(m2, c.update_dont(false)) + (c.dont ? gray(")") : h2_line()), c.update_caseless(false));
    }
 };
 
@@ -49,12 +49,11 @@ struct h2_or_matches : h2_matches {
    explicit h2_or_matches(const Matcher1& m1_, const Matcher2& m2_) : m1(m1_), m2(m2_) {}
 
    template <typename A>
-   h2_fail* matches(const A& a, int n, bool caseless, bool dont, bool ncop) const
+   h2_fail* matches(const A& a, int n, h2_mc c) const
    {
-      h2_fail* f1 = h2_matcher_cast<A>(m1).matches(a, n, caseless, false, ncop);
-      h2_fail* f2 = h2_matcher_cast<A>(m2).matches(a, n, caseless, false, ncop);
-      bool result = !f1 || !f2;
-      if (result == !dont) {
+      h2_fail* f1 = h2_matcher_cast<A>(m1).matches(a, n, c.update_dont(false));
+      h2_fail* f2 = h2_matcher_cast<A>(m2).matches(a, n, c.update_dont(false));
+      if (c.fit(!f1 || !f2)) {
          if (f1) delete f1;
          if (f2) delete f2;
          return nullptr;
@@ -63,14 +62,14 @@ struct h2_or_matches : h2_matches {
       h2_fail::append_subling(fails, f1);
       h2_fail::append_subling(fails, f2);
 
-      h2_fail* fail = h2_fail::new_unexpect(expection(caseless, dont, ncop), h2_representify(a));
+      h2_fail* fail = h2_fail::new_unexpect(expection(c), h2_representify(a));
       h2_fail::append_child(fail, fails);
       return fail;
    }
 
-   virtual h2_line expection(bool caseless, bool dont, bool ncop) const override
+   virtual h2_line expection(h2_mc c) const override
    {
-      return CD((dont ? gray("(") : h2_line()) + h2_matches_expection(m1, caseless, false, ncop) + " or " + h2_matches_expection(m2, caseless, false, ncop) + (dont ? gray(")") : h2_line()), false, dont, ncop);
+      return CD((c.dont ? gray("(") : h2_line()) + h2_matches_expection(m1, c.update_dont(false)) + " or " + h2_matches_expection(m2, c.update_dont(false)) + (c.dont ? gray(")") : h2_line()), c.update_caseless(false));
    }
 };
 
@@ -80,35 +79,35 @@ struct h2_allof_matches : h2_matches {
    explicit h2_allof_matches(const Matchers&... matchers) : t_matchers(matchers...) {}
 
    template <typename A>
-   h2_fail* matches(const A& a, int n, bool caseless, bool dont, bool ncop) const
+   h2_fail* matches(const A& a, int n, h2_mc c) const
    {
       h2_vector<h2_matcher<A>> v_matchers;
       t2v(v_matchers);
 
       h2_fail* fails = nullptr;
       for (size_t i = 0; i < v_matchers.size(); ++i) {
-         h2_fail* fail = v_matchers[i].matches(a, n, caseless, false, ncop);  // dont not transfer down
+         h2_fail* fail = v_matchers[i].matches(a, n, c.update_dont(false));  // dont not transfer down
          if (fail) fail->seqno = (int)i;
          h2_fail::append_subling(fails, fail);
       }
 
-      if (!fails == !dont) {
+      if (c.fit(!fails)) {
          if (fails) delete fails;
          return nullptr;
       }
       h2_fail* fail = nullptr;
-      if (dont) {
-         fail = h2_fail::new_unexpect(expection(caseless, dont, ncop), h2_representify(a), "should not match all");
+      if (c.dont) {
+         fail = h2_fail::new_unexpect(expection(c), h2_representify(a), "should not match all");
       } else {
-         fail = h2_fail::new_unexpect(expection(caseless, dont, ncop), h2_representify(a));
+         fail = h2_fail::new_unexpect(expection(c), h2_representify(a));
          h2_fail::append_child(fail, fails);
       }
       return fail;
    }
 
-   virtual h2_line expection(bool caseless, bool dont, bool ncop) const override
+   virtual h2_line expection(h2_mc c) const override
    {
-      return CD("AllOf" + gray("(") + t2e(caseless, false, ncop) + gray(")"), false, dont, ncop);
+      return CD("AllOf" + gray("(") + t2e(c.update_dont(false)) + gray(")"), c.update_caseless(false));
    }
 
    H2_MATCHES_T2V2E(t_matchers)
@@ -120,40 +119,40 @@ struct h2_anyof_matches : h2_matches {
    explicit h2_anyof_matches(const Matchers&... matchers) : t_matchers(matchers...) {}
 
    template <typename A>
-   h2_fail* matches(const A& a, int n, bool caseless, bool dont, bool ncop) const
+   h2_fail* matches(const A& a, int n, h2_mc c) const
    {
       h2_vector<h2_matcher<A>> v_matchers;
       t2v(v_matchers);
 
-      int c = 0;
+      int count = 0;
       h2_fail* fails = nullptr;
       for (size_t i = 0; i < v_matchers.size(); ++i) {
-         h2_fail* fail = v_matchers[i].matches(a, n, caseless, false, ncop);
+         h2_fail* fail = v_matchers[i].matches(a, n, c.update_dont(false));
          if (!fail) {
-            c++;
+            count++;
             break;
          }
          if (fail) fail->seqno = (int)i;
          h2_fail::append_subling(fails, fail);
       }
 
-      if ((0 < c) == !dont) {
+      if (c.fit(0 < count)) {
          if (fails) delete fails;
          return nullptr;
       }
       h2_fail* fail = nullptr;
-      if (dont) {
-         fail = h2_fail::new_unexpect(expection(caseless, dont, ncop), h2_representify(a), "should not match any one");
+      if (c.dont) {
+         fail = h2_fail::new_unexpect(expection(c), h2_representify(a), "should not match any one");
       } else {
-         fail = h2_fail::new_unexpect(expection(caseless, dont, ncop), h2_representify(a), "not match any one");
+         fail = h2_fail::new_unexpect(expection(c), h2_representify(a), "not match any one");
          h2_fail::append_child(fail, fails);
       }
       return fail;
    }
 
-   virtual h2_line expection(bool caseless, bool dont, bool ncop) const override
+   virtual h2_line expection(h2_mc c) const override
    {
-      return CD("AnyOf" + gray("(") + t2e(caseless, false, ncop) + gray(")"), false, dont, ncop);
+      return CD("AnyOf" + gray("(") + t2e(c.update_dont(false)) + gray(")"), c.update_caseless(false));
    }
 
    H2_MATCHES_T2V2E(t_matchers)
@@ -165,34 +164,34 @@ struct h2_noneof_matches : h2_matches {
    explicit h2_noneof_matches(const Matchers&... matchers) : t_matchers(matchers...) {}
 
    template <typename A>
-   h2_fail* matches(const A& a, int n, bool caseless, bool dont, bool ncop) const
+   h2_fail* matches(const A& a, int n, h2_mc c) const
    {
       h2_vector<h2_matcher<A>> v_matchers;
       t2v(v_matchers);
 
       h2_fail* fails = nullptr;
       for (size_t i = 0; i < v_matchers.size(); ++i) {
-         h2_fail* fail = v_matchers[i].matches(a, n, caseless, false, ncop);
+         h2_fail* fail = v_matchers[i].matches(a, n, c.update_dont(false));
          if (fail)
             delete fail;
          else {
-            fail = h2_fail::new_normal("should not match " + v_matchers[i].expection(caseless, false, ncop).brush("green"));
+            fail = h2_fail::new_normal("should not match " + v_matchers[i].expection(c).brush("green"));
             fail->seqno = (int)i;
             h2_fail::append_subling(fails, fail);
          }
       }
-      if (!fails == !dont) {
+      if (c.fit(!fails)) {
          delete fails;
          return nullptr;
       }
-      h2_fail* fail = h2_fail::new_unexpect(expection(caseless, dont, ncop), h2_representify(a));
+      h2_fail* fail = h2_fail::new_unexpect(expection(c), h2_representify(a));
       h2_fail::append_child(fail, fails);
       return fail;
    }
 
-   virtual h2_line expection(bool caseless, bool dont, bool ncop) const override
+   virtual h2_line expection(h2_mc c) const override
    {
-      return CD("NoneOf" + gray("(") + t2e(caseless, false, ncop) + gray(")"), false, dont, ncop);
+      return CD("NoneOf" + gray("(") + t2e(c.update_dont(false)) + gray(")"), c.update_caseless(false));
    }
 
    H2_MATCHES_T2V2E(t_matchers)

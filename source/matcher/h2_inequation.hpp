@@ -4,14 +4,14 @@ struct h2_matches_ge : h2_matches {
    explicit h2_matches_ge(const E& e_) : e(e_) {}
 
    template <typename A>
-   h2_fail* matches(const A& a, int, bool caseless, bool dont, bool ncop) const
+   h2_fail* matches(const A& a, int, h2_mc c) const
    {
-      if ((a >= e) == !dont) return nullptr;
-      return h2_fail::new_unexpect(expection(caseless, dont, ncop), h2_representify(a));
+      if (c.fit(a >= e)) return nullptr;
+      return h2_fail::new_unexpect(expection(c), h2_representify(a));
    }
-   virtual h2_line expection(bool, bool dont, bool ncop) const override
+   virtual h2_line expection(h2_mc c) const override
    {
-      return CD((ncop ? "" : "≥") + h2_representify(e), false, dont, ncop);
+      return CD((c.ncop ? "" : "≥") + h2_representify(e), c.update_caseless(false));
    }
 };
 
@@ -21,14 +21,14 @@ struct h2_matches_gt : h2_matches {
    explicit h2_matches_gt(const E& e_) : e(e_) {}
 
    template <typename A>
-   h2_fail* matches(const A& a, int, bool caseless, bool dont, bool ncop) const
+   h2_fail* matches(const A& a, int, h2_mc c) const
    {
-      if ((a > e) == !dont) return nullptr;
-      return h2_fail::new_unexpect(expection(caseless, dont, ncop), h2_stringify(a));
+      if (c.fit(a > e)) return nullptr;
+      return h2_fail::new_unexpect(expection(c), h2_stringify(a));
    }
-   virtual h2_line expection(bool, bool dont, bool ncop) const override
+   virtual h2_line expection(h2_mc c) const override
    {
-      return CD((ncop ? "" : ">") + h2_stringify(e), false, dont, ncop);
+      return CD((c.ncop ? "" : ">") + h2_stringify(e), c.update_caseless(false));
    }
 };
 
@@ -38,14 +38,14 @@ struct h2_matches_le : h2_matches {
    explicit h2_matches_le(const E& e_) : e(e_) {}
 
    template <typename A>
-   h2_fail* matches(const A& a, int, bool caseless, bool dont, bool ncop) const
+   h2_fail* matches(const A& a, int, h2_mc c) const
    {
-      if ((a <= e) == !dont) return nullptr;
-      return h2_fail::new_unexpect(expection(caseless, dont, ncop), h2_stringify(a));
+      if (c.fit(a <= e)) return nullptr;
+      return h2_fail::new_unexpect(expection(c), h2_stringify(a));
    }
-   virtual h2_line expection(bool, bool dont, bool ncop) const override
+   virtual h2_line expection(h2_mc c) const override
    {
-      return CD((ncop ? "" : "≤") + h2_stringify(e), false, dont, ncop);
+      return CD((c.ncop ? "" : "≤") + h2_stringify(e), c.update_caseless(false));
    }
 };
 
@@ -55,14 +55,14 @@ struct h2_matches_lt : h2_matches {
    explicit h2_matches_lt(const E& e_) : e(e_) {}
 
    template <typename A>
-   h2_fail* matches(const A& a, int, bool caseless, bool dont, bool ncop) const
+   h2_fail* matches(const A& a, int, h2_mc c) const
    {
-      if ((a < e) == !dont) return nullptr;
-      return h2_fail::new_unexpect(expection(caseless, dont, ncop), h2_stringify(a));
+      if (c.fit(a < e)) return nullptr;
+      return h2_fail::new_unexpect(expection(c), h2_stringify(a));
    }
-   virtual h2_line expection(bool, bool dont, bool ncop) const override
+   virtual h2_line expection(h2_mc c) const override
    {
-      return CD((ncop ? "" : "<") + h2_stringify(e), false, dont, ncop);
+      return CD((c.ncop ? "" : "<") + h2_stringify(e), c.update_caseless(false));
    }
 };
 
