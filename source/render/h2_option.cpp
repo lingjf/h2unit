@@ -82,8 +82,7 @@ h2_inline void h2_option::parse(int argc, const char** argv)
          case 'a': last_failed = true; break;
          case 'b': break_after_fails = 1, get.extract_number(break_after_fails); break;
          case 'c': colorful = !colorful; break;
-         case 'd': debug = "gdb new"; break;
-         case 'D': debug = "gdb attach"; break;
+         case 'd': debug = true; break;
          case 'e':
             while ((t = get.extract_string())) excludes.push_back(t);
             break;

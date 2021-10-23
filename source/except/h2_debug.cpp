@@ -1,16 +1,4 @@
 #if defined __linux
-#   if defined(__GNUC__) && (defined(__i386) || defined(__x86_64))
-#      define h2_raise_trap() asm volatile("int $3")
-#   else
-#      define h2_raise_trap() raise(SIGTRAP)
-#   endif
-#elif defined __APPLE__
-/* clang-format off */
-#   define h2_raise_trap() __asm__("int $3\n" : :)
-/* clang-format on */
-#endif
-
-#if defined __linux
 static inline bool under_debug(int, const char*)
 {
    char t[1024];
@@ -45,26 +33,6 @@ static inline bool under_debug(int pid, const char* path)
 }
 #endif
 
-static inline char* get_gdb1(char* s)
-{
-#if defined __linux
-   sprintf(s, "gdb --quiet --args %s %s", O.path, O.args);
-#elif defined __APPLE__
-   sprintf(s, "lldb %s -- %s", O.path, O.args);
-#endif
-   return s;
-}
-
-static inline char* get_gdb2(char* s, int pid)
-{
-#if defined __linux
-   sprintf(s, "sudo gdb --pid=%d", pid);
-#elif defined __APPLE__
-   sprintf(s, "sudo lldb --attach-pid %d", pid);
-#endif
-   return s;
-}
-
 h2_inline void h2_debugger::trap()
 {
 #if defined __linux || defined __APPLE__
@@ -72,17 +40,17 @@ h2_inline void h2_debugger::trap()
    if (!under_debug(pid, O.path)) {
       static h2_once only_one_time;
       if (only_one_time) {
-         if (!strcmp("gdb attach", O.debug)) {
-            if (fork() == 0)
-               exit(system(get_gdb2((char*)alloca(512), pid)));
-            else
-               while (!under_debug(pid, O.path)) h2_sleep(100);  // wait for password
-         } else {
-            exit(system(get_gdb1((char*)alloca(512))));
-         }
+         char cmd[512];
+#if defined __linux
+         sprintf(cmd, "sudo gdb --pid=%d", pid);
+#elif defined __APPLE__
+         sprintf(cmd, "sudo lldb --attach-pid %d", pid);
+#endif
+         if (fork() == 0)
+            exit(system(cmd));
+         else
+            while (!under_debug(pid, O.path)) h2_sleep(100);
       }
    }
-
-   h2_raise_trap();
 #endif
 }

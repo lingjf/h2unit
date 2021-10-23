@@ -1,5 +1,5 @@
 
-/* v5.15 2021-10-23 15:02:06 */
+/* v5.15 2021-10-23 20:00:16 */
 /* https://github.com/lingjf/h2unit */
 /* Apache Licence 2.0 */
 #include "h2unit.hpp"
@@ -3887,18 +3887,6 @@ h2_inline void h2_exempt::add_by_fp(void* fp)
 }
 // source/except/h2_debug.cpp
 #if defined __linux
-#   if defined(__GNUC__) && (defined(__i386) || defined(__x86_64))
-#      define h2_raise_trap() asm volatile("int $3")
-#   else
-#      define h2_raise_trap() raise(SIGTRAP)
-#   endif
-#elif defined __APPLE__
-/* clang-format off */
-#   define h2_raise_trap() __asm__("int $3\n" : :)
-/* clang-format on */
-#endif
-
-#if defined __linux
 static inline bool under_debug(int, const char*)
 {
    char t[1024];
@@ -3933,26 +3921,6 @@ static inline bool under_debug(int pid, const char* path)
 }
 #endif
 
-static inline char* get_gdb1(char* s)
-{
-#if defined __linux
-   sprintf(s, "gdb --quiet --args %s %s", O.path, O.args);
-#elif defined __APPLE__
-   sprintf(s, "lldb %s -- %s", O.path, O.args);
-#endif
-   return s;
-}
-
-static inline char* get_gdb2(char* s, int pid)
-{
-#if defined __linux
-   sprintf(s, "sudo gdb --pid=%d", pid);
-#elif defined __APPLE__
-   sprintf(s, "sudo lldb --attach-pid %d", pid);
-#endif
-   return s;
-}
-
 h2_inline void h2_debugger::trap()
 {
 #if defined __linux || defined __APPLE__
@@ -3960,18 +3928,18 @@ h2_inline void h2_debugger::trap()
    if (!under_debug(pid, O.path)) {
       static h2_once only_one_time;
       if (only_one_time) {
-         if (!strcmp("gdb attach", O.debug)) {
-            if (fork() == 0)
-               exit(system(get_gdb2((char*)alloca(512), pid)));
-            else
-               while (!under_debug(pid, O.path)) h2_sleep(100);  // wait for password
-         } else {
-            exit(system(get_gdb1((char*)alloca(512))));
-         }
+         char cmd[512];
+#if defined __linux
+         sprintf(cmd, "sudo gdb --pid=%d", pid);
+#elif defined __APPLE__
+         sprintf(cmd, "sudo lldb --attach-pid %d", pid);
+#endif
+         if (fork() == 0)
+            exit(system(cmd));
+         else
+            while (!under_debug(pid, O.path)) h2_sleep(100);
       }
    }
-
-   h2_raise_trap();
 #endif
 }
 // source/except/h2_crash.cpp
@@ -6216,8 +6184,7 @@ h2_inline void h2_option::parse(int argc, const char** argv)
          case 'a': last_failed = true; break;
          case 'b': break_after_fails = 1, get.extract_number(break_after_fails); break;
          case 'c': colorful = !colorful; break;
-         case 'd': debug = "gdb new"; break;
-         case 'D': debug = "gdb attach"; break;
+         case 'd': debug = true; break;
          case 'e':
             while ((t = get.extract_string())) excludes.push_back(t);
             break;

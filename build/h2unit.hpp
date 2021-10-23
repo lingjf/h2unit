@@ -1,5 +1,5 @@
 
-/* v5.15 2021-10-23 15:02:06 */
+/* v5.15 2021-10-23 20:00:16 */
 /* https://github.com/lingjf/h2unit */
 /* Apache Licence 2.0 */
 
@@ -1007,13 +1007,13 @@ struct h2_option {
 
    char args[256];
    const char* path;
-   const char* debug = nullptr;
    bool colorful = true;
    bool progressing = true;
    bool last_failed = false;
    bool shuffle_cases = false;
    bool memory_check = true;
    bool exception_as_fail = false;
+   bool debug = false;
    int list_cases = 0;
    int break_after_fails = 0;
    int run_rounds = 1;
@@ -3463,7 +3463,7 @@ static inline h2_ostringstream& h2_cp(h2_defer_failure* d, h2_2cp<E, A> c)
 {
    d->assert_type = "CP";
    d->assert_op = c.op;
-   h2_fail* fail = h2::h2_matcher_cast<A>(c.m).matches(c.a, 0, {false, false, true, false});
+   h2_fail* fail = h2::h2_matcher_cast<A>(c.m).matches(c.a, 0, {false, false, true});
    d->fails = fail;
    if (fail && fail->subling_next) {
       d->fails = h2_fail::new_unexpect();

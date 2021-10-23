@@ -11,13 +11,13 @@ struct h2_option {
 
    char args[256];
    const char* path;
-   const char* debug = nullptr;
    bool colorful = true;
    bool progressing = true;
    bool last_failed = false;
    bool shuffle_cases = false;
    bool memory_check = true;
    bool exception_as_fail = false;
+   bool debug = false;
    int list_cases = 0;
    int break_after_fails = 0;
    int run_rounds = 1;
