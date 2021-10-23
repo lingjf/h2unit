@@ -1,6 +1,17 @@
 <a id="top"></a>
-[![Github Releases](https://img.shields.io/github/release/lingjf/h2unit.svg)](https://github.com/catchorg/h2unit/releases)
-[![Selftest status](https://github.com/lingjf/h2unit/actions/workflows/ci.yml/badge.svg)](https://github.com/lingjf/h2unit/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/release/lingjf/h2unit.svg)](https://github.com/lingjf/h2unit/releases)
+[![CI](https://github.com/lingjf/h2unit/actions/workflows/ci.yml/badge.svg)](https://github.com/lingjf/h2unit/actions/workflows/ci.yml)
+[![Standard](https://img.shields.io/badge/C%2B%2B-11/14/17/20-blue.svg)](https://en.wikipedia.org/wiki/C%2B%2B#Standardization)
+[![Linux](https://img.shields.io/badge/Linux-green.svg)]()
+[![macOS](https://img.shields.io/badge/macOS-green.svg)]()
+[![Windows](https://img.shields.io/badge/Windows-green.svg)]()
+[![WSL](https://img.shields.io/badge/WSL-green.svg)]()
+[![Cygwin](https://img.shields.io/badge/Cygwin-green.svg)]()
+[![MinGW](https://img.shields.io/badge/MinGW-green.svg)]()
+[![GCC](https://img.shields.io/badge/gcc-5/6/7/8/9/10/11-blue.svg)](http://www.gnu.org/software/gcc)
+[![Clang](https://img.shields.io/badge/clang-7/8/9/10/11/12-blue.svg)](https://releases.llvm.org/download.html)
+[![MSVC](https://img.shields.io/badge/msvc-14.20+-blue.svg)]()
+[![Arch](https://img.shields.io/badge/arch-x86_amd64_aarch64-blue.svg)]()
 
 
 ## What's h2unit
@@ -19,7 +30,7 @@ Example is a helpful manual document.
 
 All the code of following features can be found in the [example folder](example/), [test h2unit by h2unit](test/), and it is executable, the result is visable.
 
-## Design is Deffirence
+## Design is Difference
 
 ### 1. Dynamic STUB
 Unit test cases should be easy to maintain. Dependency breaking is the key way. 

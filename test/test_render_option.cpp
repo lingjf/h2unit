@@ -22,7 +22,7 @@ SUITE(h2_option)
    {
       const char* argv[] = {"./a.out", "-v"};
       c.parse(2, argv);
-      OK(9, c.verbose);
+      OK(8, c.verbose);
    }
 
    Case(verbose -v2)
@@ -150,6 +150,6 @@ SUITE(h2_option)
    {
       const char* argv[] = {"./a.out", "-i", "http", "-v"};
       c.parse(4, argv);
-      OK(9, c.verbose);
+      OK(8, c.verbose);
    }
 }

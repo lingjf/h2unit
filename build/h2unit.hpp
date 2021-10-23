@@ -1,5 +1,5 @@
 
-/* v5.14 2021-10-17 20:36:11 */
+/* v5.15 2021-10-23 08:42:15 */
 /* https://github.com/lingjf/h2unit */
 /* Apache Licence 2.0 */
 
@@ -8,7 +8,7 @@
 #ifndef __H2_UNIT_HPP__
 #define __H2_UNIT_HPP__
 
-#define H2UNIT_VERSION 5.14
+#define H2UNIT_VERSION 5.15
 
 #include <cstdio>      /* printf */
 #include <cstdlib>     /* malloc */
@@ -717,6 +717,8 @@ struct h2_string : public std::basic_string<char, std::char_traits<char>, h2_all
    h2_string escape(bool utf8 = false) const;
    h2_string unescape() const;
    h2_string unquote(const char c = '\"') const;
+   h2_string trim() const;
+   h2_string squash(bool quote = false) const;
    h2_string tolower() const;
    h2_string center(size_t width) const;
    h2_vector<h2_string> disperse() const;

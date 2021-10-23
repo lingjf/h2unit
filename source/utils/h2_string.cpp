@@ -24,7 +24,7 @@ h2_inline h2_string& h2_string::replace_all(const char* from, const char* to)
    return *this;
 }
 
-h2_inline size_t h2_string::width(size_t columns) const // wcwidth()/wcswidth() 
+h2_inline size_t h2_string::width(size_t columns) const  // wcwidth()/wcswidth()
 {
    size_t w = 0, n = 0;
    for (const char* p = c_str(); *p != '\0'; p += n) {
@@ -97,7 +97,7 @@ h2_inline h2_string h2_string::unescape() const
    s.replace_all("\\t", "\t");
    s.replace_all("\\\"", "\"");
    s.replace_all("\\\\", "\\");
-   //todo: escape \u12ab
+   // todo: escape \u12ab
    return s;
 }
 
@@ -105,6 +105,30 @@ h2_inline h2_string h2_string::unquote(const char c) const
 {
    if (!enclosed(c)) return *this;
    return h2_string(size() - 2, c_str() + 1);
+}
+
+h2_inline h2_string h2_string::trim() const
+{
+   const auto a = find_first_not_of("\t\n ");
+   if (a == h2_string::npos) return "";
+   const auto b = find_last_not_of("\t\n ");
+   return substr(a, b - a + 1).c_str();
+}
+
+h2_inline h2_string h2_string::squash(bool quote) const
+{
+   h2_string s;
+   bool quote1 = false, quote2 = false;
+   int spaces = 0;
+   for (char c : trim()) {
+      if (c == '\t' || c == '\n' || c == ' ') c = ' ';
+      if (c != ' ') spaces = 0;
+      if (!quote && c == '\'') quote1 = !quote1;
+      if (!quote && c == '\"') quote2 = !quote2;
+      if (!quote1 && !quote2 && c == ' ' && spaces++) continue;
+      s.push_back(c);
+   }
+   return s;
 }
 
 h2_inline h2_string h2_string::tolower() const

@@ -32,6 +32,8 @@ struct h2_string : public std::basic_string<char, std::char_traits<char>, h2_all
    h2_string escape(bool utf8 = false) const;
    h2_string unescape() const;
    h2_string unquote(const char c = '\"') const;
+   h2_string trim() const;
+   h2_string squash(bool quote = false) const;
    h2_string tolower() const;
    h2_string center(size_t width) const;
    h2_vector<h2_string> disperse() const;

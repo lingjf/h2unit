@@ -72,6 +72,26 @@ SUITE(string assign)
    }
 }
 
+CASE(h2_string convertable)
+{
+   char char_array[128];
+   OK((std::is_convertible<char*, h2::h2_string>::value));
+   OK((std::is_convertible<char*&, h2::h2_string>::value));
+   OK((std::is_convertible<const char*, h2::h2_string>::value));
+   OK((std::is_convertible<char* const, h2::h2_string>::value));
+   OK((std::is_convertible<const char* const, h2::h2_string>::value));
+   OK((std::is_convertible<std::string, h2::h2_string>::value));
+   OK((std::is_convertible<const std::string, h2::h2_string>::value));
+   OK((std::is_convertible<std::string&, h2::h2_string>::value));
+   OK((std::is_convertible<decltype(char_array), h2::h2_string>::value));
+   OK((std::is_convertible<h2::h2_string, h2::h2_string>::value));
+
+   OK((!std::is_convertible<int, h2::h2_string>::value));
+   OK((!std::is_convertible<char, h2::h2_string>::value));
+   OK((!std::is_convertible<unsigned char, h2::h2_string>::value));
+   OK((!std::is_convertible<unsigned char*, h2::h2_string>::value));
+}
+
 SUITE(string)
 {
    Case(width)
@@ -286,8 +306,11 @@ SUITE(string)
       OK(Me("hello\0world\0", 12), t.data());
       OK(12, t.length());
    }
+}
 
-   Case(disperse)
+SUITE(string disperse)
+{
+   Case(ascii)
    {
       h2::h2_string a0 = "";
       OK(ListOf(), a0.disperse());
@@ -295,35 +318,108 @@ SUITE(string)
       OK(ListOf("a"), a1.disperse());
       h2::h2_string a2 = "ab";
       OK(ListOf("a", "b"), a2.disperse());
+   }
 
+   Case(Chinese)
+   {
       h2::h2_string C1 = "中";
       OK(ListOf("中"), C1.disperse());
       h2::h2_string C2 = "中国";
       OK(ListOf("中", "国"), C2.disperse());
+   }
 
+   Case(CJK)
+   {
       h2::h2_string j1 = "い";
       OK(ListOf("い"), j1.disperse());
       h2::h2_string j2 = "いち";
       OK(ListOf("い", "ち"), j2.disperse());
    }
+}
 
-   Case(convertable)
+SUITE(string trim)
+{
+   Case(1 space leading)
    {
-      char char_array[128];
-      OK((std::is_convertible<char*, h2::h2_string>::value));
-      OK((std::is_convertible<char*&, h2::h2_string>::value));
-      OK((std::is_convertible<const char*, h2::h2_string>::value));
-      OK((std::is_convertible<char* const, h2::h2_string>::value));
-      OK((std::is_convertible<const char* const, h2::h2_string>::value));
-      OK((std::is_convertible<std::string, h2::h2_string>::value));
-      OK((std::is_convertible<const std::string, h2::h2_string>::value));
-      OK((std::is_convertible<std::string&, h2::h2_string>::value));
-      OK((std::is_convertible<decltype(char_array), h2::h2_string>::value));
-      OK((std::is_convertible<h2::h2_string, h2::h2_string>::value));
+      h2::h2_string a = " abc  def";
+      OK("abc  def", a.trim());
+   }
 
-      OK((!std::is_convertible<int, h2::h2_string>::value));
-      OK((!std::is_convertible<char, h2::h2_string>::value));
-      OK((!std::is_convertible<unsigned char, h2::h2_string>::value));
-      OK((!std::is_convertible<unsigned char*, h2::h2_string>::value));
+   Case(2 spaces leading)
+   {
+      h2::h2_string a = "  abc  def";
+      OK("abc  def", a.trim());
+   }
+
+   Case(1 space leading and trailing)
+   {
+      h2::h2_string a = " abc  def ";
+      OK("abc  def", a.trim());
+   }
+
+   Case(2 spaces leading and trailing)
+   {
+      h2::h2_string a = "  abc  def  ";
+      OK("abc  def", a.trim());
+   }
+}
+
+SUITE(string squash)
+{
+   Case(2 spaces to 1 space)
+   {
+      h2::h2_string a = "abc  def";
+      OK("abc def", a.squash());
+   }
+
+   Case(3 spaces to 1 space)
+   {
+      h2::h2_string a = "abc   def";
+      OK("abc def", a.squash());
+   }
+
+   Case(1 space and 1 newline to 1 space)
+   {
+      h2::h2_string a = "abc \ndef";
+      OK("abc def", a.squash());
+   }
+
+   Case(1 tab and 1 space and 1 newline to 1 space)
+   {
+      h2::h2_string a = "abc\t \ndef";
+      OK("abc def", a.squash());
+   }
+
+   Case(ignore in double quote)
+   {
+      h2::h2_string a = "abc\"\t \n  \"def";
+      OK("abc\"     \"def", a.squash());
+      OK("abc\"     \"def", a.squash(false));
+   }
+
+   Case(also in double quote)
+   {
+      h2::h2_string a = "abc\"\t \n  \"def";
+      OK("abc\" \"def", a.squash(true));
+   }
+
+   Case(ignore in single quote)
+   {
+      h2::h2_string a = "abc'\t \n  'def";
+      OK("abc'     'def", a.squash());
+      OK("abc'     'def", a.squash(false));
+   }
+
+   Case(also in single quote)
+   {
+      h2::h2_string a = "abc'\t \n  'def";
+      OK("abc' 'def", a.squash(true));
+   }
+
+   Case(2 leading and trailing)
+   {
+      h2::h2_string a = "  abc\"\t \n  \"def \n";
+      OK("abc\"     \"def", a.squash(false));
+      OK("abc\" \"def", a.squash(true));
    }
 }

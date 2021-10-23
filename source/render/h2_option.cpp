@@ -107,7 +107,7 @@ h2_inline void h2_option::parse(int argc, const char** argv)
          case 'p': progressing = !progressing; break;
          case 'r': run_rounds = 2, get.extract_number(run_rounds); break;
          case 's': shuffle_cases = true; break;
-         case 'v': verbose = 9, get.extract_number(verbose); break;
+         case 'v': verbose = 8, get.extract_number(verbose); break;
          case 'x': exception_as_fail = true; break;
          case 'y': copy_paste_json = 3, get.extract_number(copy_paste_json); break;
          case 'h':

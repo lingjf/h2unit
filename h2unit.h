@@ -1,5 +1,5 @@
 
-/* v5.14 2021-10-17 20:36:11 */
+/* v5.15 2021-10-23 08:42:15 */
 /* https://github.com/lingjf/h2unit */
 /* Apache Licence 2.0 */
 
@@ -8,7 +8,7 @@
 #ifndef __H2_UNIT_HPP__
 #define __H2_UNIT_HPP__
 
-#define H2UNIT_VERSION 5.14
+#define H2UNIT_VERSION 5.15
 
 #include <cstdio>      /* printf */
 #include <cstdlib>     /* malloc */
@@ -717,6 +717,8 @@ struct h2_string : public std::basic_string<char, std::char_traits<char>, h2_all
    h2_string escape(bool utf8 = false) const;
    h2_string unescape() const;
    h2_string unquote(const char c = '\"') const;
+   h2_string trim() const;
+   h2_string squash(bool quote = false) const;
    h2_string tolower() const;
    h2_string center(size_t width) const;
    h2_vector<h2_string> disperse() const;
@@ -4434,7 +4436,7 @@ h2_inline h2_string& h2_string::replace_all(const char* from, const char* to)
    return *this;
 }
 
-h2_inline size_t h2_string::width(size_t columns) const // wcwidth()/wcswidth() 
+h2_inline size_t h2_string::width(size_t columns) const  // wcwidth()/wcswidth()
 {
    size_t w = 0, n = 0;
    for (const char* p = c_str(); *p != '\0'; p += n) {
@@ -4507,7 +4509,7 @@ h2_inline h2_string h2_string::unescape() const
    s.replace_all("\\t", "\t");
    s.replace_all("\\\"", "\"");
    s.replace_all("\\\\", "\\");
-   //todo: escape \u12ab
+   // todo: escape \u12ab
    return s;
 }
 
@@ -4515,6 +4517,30 @@ h2_inline h2_string h2_string::unquote(const char c) const
 {
    if (!enclosed(c)) return *this;
    return h2_string(size() - 2, c_str() + 1);
+}
+
+h2_inline h2_string h2_string::trim() const
+{
+   const auto a = find_first_not_of("\t\n ");
+   if (a == h2_string::npos) return "";
+   const auto b = find_last_not_of("\t\n ");
+   return substr(a, b - a + 1).c_str();
+}
+
+h2_inline h2_string h2_string::squash(bool quote) const
+{
+   h2_string s;
+   bool quote1 = false, quote2 = false;
+   int spaces = 0;
+   for (char c : trim()) {
+      if (c == '\t' || c == '\n' || c == ' ') c = ' ';
+      if (c != ' ') spaces = 0;
+      if (!quote && c == '\'') quote1 = !quote1;
+      if (!quote && c == '\"') quote2 = !quote2;
+      if (!quote1 && !quote2 && c == ' ' && spaces++) continue;
+      s.push_back(c);
+   }
+   return s;
 }
 
 h2_inline h2_string h2_string::tolower() const
@@ -9125,9 +9151,12 @@ struct h2_fail_strfind : h2_fail_unexpect {
 struct h2_fail_json : h2_fail_unexpect {
    const bool caseless;
    const h2_string e_value, a_value;
-   h2_fail_json(const h2_string& e_value_, const h2_string& a_value_, const h2_line& expection_, bool caseless_, const h2_line& explain_) : h2_fail_unexpect(expection_, a_value_, explain_), caseless(caseless_), e_value(e_value_), a_value(a_value_) {}
+   h2_fail_json(const h2_string& e_value_, const h2_string& a_value_, const h2_line& expection_, bool caseless_, const h2_line& explain_) : h2_fail_unexpect(expection_, a_value_.squash(), explain_), caseless(caseless_), e_value(e_value_), a_value(a_value_) {}
    void print(size_t si = 0, size_t ci = 0) override
    {
+      e_expression = e_expression.squash(true);
+      a_expression = a_expression.squash(true);
+
       h2_lines e_lines, a_lines;
       h2_fail_unexpect::print(si, ci);
       if (O.copy_paste_json || !h2_json::diff(e_value, a_value, e_lines, a_lines, caseless)) {
@@ -9547,7 +9576,7 @@ struct h2_report_console : h2_report_impl {
    void on_suite_endup(h2_suite* s) override
    {
       h2_report_impl::on_suite_endup(s);
-      if (O.verbose >= 4 && O.includes.size() + O.excludes.size() == 0) {
+      if (O.verbose >= 9 && O.includes.size() + O.excludes.size() == 0) {
          print_bar(false, nullptr, nullptr, nullptr, nullptr, false);
          h2_color::prints("dark gray", "suite ");
          h2_color::prints("", "%s", ss(s->name));
@@ -9586,14 +9615,14 @@ struct h2_report_console : h2_report_impl {
    {
       h2_report_impl::on_case_start(s, c);
       if (c->filtered || c->ignored || c->todo) return;
-      print_bar(true, "light blue", "Testing... ", s, c, true);
+      print_bar(true, "light blue", "Testing", s, c, true);
    }
    void on_case_endup(h2_suite* s, h2_case* c) override
    {
       h2_report_impl::on_case_endup(s, c);
       if (c->filtered || c->ignored) return;
       if (c->todo) {
-         if (O.verbose >= 3) print_bar(true, "yellow", s->name ? "Todo  " : "TODO  ", s, c, false);
+         if (O.verbose >= 3) print_bar(true, "yellow", s->name ? "Todo   " : "TODO   ", s, c, false);
       } else if (c->failed) {
          if (O.verbose >= 1) {
             print_bar(true, "bold,red", "Failed ", s, c, false);
@@ -9909,7 +9938,7 @@ h2_inline void h2_option::parse(int argc, const char** argv)
          case 'p': progressing = !progressing; break;
          case 'r': run_rounds = 2, get.extract_number(run_rounds); break;
          case 's': shuffle_cases = true; break;
-         case 'v': verbose = 9, get.extract_number(verbose); break;
+         case 'v': verbose = 8, get.extract_number(verbose); break;
          case 'x': exception_as_fail = true; break;
          case 'y': copy_paste_json = 3, get.extract_number(copy_paste_json); break;
          case 'h':

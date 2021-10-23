@@ -171,9 +171,12 @@ struct h2_fail_strfind : h2_fail_unexpect {
 struct h2_fail_json : h2_fail_unexpect {
    const bool caseless;
    const h2_string e_value, a_value;
-   h2_fail_json(const h2_string& e_value_, const h2_string& a_value_, const h2_line& expection_, bool caseless_, const h2_line& explain_) : h2_fail_unexpect(expection_, a_value_, explain_), caseless(caseless_), e_value(e_value_), a_value(a_value_) {}
+   h2_fail_json(const h2_string& e_value_, const h2_string& a_value_, const h2_line& expection_, bool caseless_, const h2_line& explain_) : h2_fail_unexpect(expection_, a_value_.squash(), explain_), caseless(caseless_), e_value(e_value_), a_value(a_value_) {}
    void print(size_t si = 0, size_t ci = 0) override
    {
+      e_expression = e_expression.squash(true);
+      a_expression = a_expression.squash(true);
+
       h2_lines e_lines, a_lines;
       h2_fail_unexpect::print(si, ci);
       if (O.copy_paste_json || !h2_json::diff(e_value, a_value, e_lines, a_lines, caseless)) {

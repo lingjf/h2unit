@@ -175,7 +175,7 @@ struct h2_report_console : h2_report_impl {
    void on_suite_endup(h2_suite* s) override
    {
       h2_report_impl::on_suite_endup(s);
-      if (O.verbose >= 4 && O.includes.size() + O.excludes.size() == 0) {
+      if (O.verbose >= 9 && O.includes.size() + O.excludes.size() == 0) {
          print_bar(false, nullptr, nullptr, nullptr, nullptr, false);
          h2_color::prints("dark gray", "suite ");
          h2_color::prints("", "%s", ss(s->name));
@@ -214,14 +214,14 @@ struct h2_report_console : h2_report_impl {
    {
       h2_report_impl::on_case_start(s, c);
       if (c->filtered || c->ignored || c->todo) return;
-      print_bar(true, "light blue", "Testing... ", s, c, true);
+      print_bar(true, "light blue", "Testing", s, c, true);
    }
    void on_case_endup(h2_suite* s, h2_case* c) override
    {
       h2_report_impl::on_case_endup(s, c);
       if (c->filtered || c->ignored) return;
       if (c->todo) {
-         if (O.verbose >= 3) print_bar(true, "yellow", s->name ? "Todo  " : "TODO  ", s, c, false);
+         if (O.verbose >= 3) print_bar(true, "yellow", s->name ? "Todo   " : "TODO   ", s, c, false);
       } else if (c->failed) {
          if (O.verbose >= 1) {
             print_bar(true, "bold,red", "Failed ", s, c, false);
