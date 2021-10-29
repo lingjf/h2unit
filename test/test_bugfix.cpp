@@ -68,4 +68,14 @@ SUITE(bugfix)
       // Passed before fixed
       // JE("{}", "{}, {}");
    }
+   Case(vector bool)
+   {
+      /* https://isocpp.org/blog/2012/11/on-vectorbool */
+
+      std::vector<bool> a = {true, false, true};
+      // for (auto& k : a) {
+      // }
+      for (auto&& k : a) {
+      }
+   }
 }

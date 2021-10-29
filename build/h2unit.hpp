@@ -1,5 +1,5 @@
 
-/* v5.15 2021-10-24 00:51:11 */
+/* v5.15 2021-10-30 00:44:01 */
 /* https://github.com/lingjf/h2unit */
 /* Apache Licence 2.0 */
 
@@ -1922,7 +1922,7 @@ struct h2_has_matches : h2_matches {
    auto matches(const A& a, int n, h2_mc c) const -> typename std::enable_if<h2_is_container<typename std::decay<A>::type>::value, h2_fail*>::type
    {
       bool found = false;
-      for (auto& i : a) {
+      for (auto const& i : a) {
          h2_fail* fail = h2_matcher_cast<typename A::value_type>(m).matches(i, n, c.update_dont(false));
          if (!fail) {
             found = true;
@@ -1963,7 +1963,7 @@ struct h2_countof_matches : h2_matches {
    auto matches(const A& a, int n, h2_mc c) const -> typename std::enable_if<h2_is_container<typename std::decay<A>::type>::value, h2_fail*>::type
    {
       int count = 0;
-      for (auto& c : a) count++; /* container size() is best, but forward_list haven't. iterator works all, regardless speed. https://en.cppreference.com/w/cpp/container */
+      for (auto const& c : a) count++; /* container size() is best, but forward_list haven't. iterator works all, regardless speed. https://en.cppreference.com/w/cpp/container */
       return __matches(count, h2_representify(a), c);
    }
 
@@ -2005,7 +2005,7 @@ struct h2_listof_matches : h2_matches {
       for (size_t i = 0; i < v_matchers.size(); ++i) {
          h2_fail* fail = nullptr;
          size_t j = 0, count = 0;
-         for (auto& k : a) {
+         for (auto const& k : a) {
             if (j++ == i) {
                ++count;
                fail = v_matchers[i].matches(k, 0, c.update_dont(false));
