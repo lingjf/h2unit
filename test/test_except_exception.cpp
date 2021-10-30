@@ -29,7 +29,7 @@ SUITE(exception)
       }
    }
 
-   Cases(1, 2)
+   Cases(integer, (1, 2))
    {
       try {
          throw_a_integer(x);
@@ -46,7 +46,7 @@ CASE(exception)
    }
 }
 
-CASES(1, 2)
+CASES(exception, (1, 2))
 {
    try {
       throw_a_integer(x);

@@ -32,11 +32,11 @@
 #define __H2STUBS_5_0(Object, ClassType, Method, ReturnType, ArgumentTypes) h2::h2_stuber<__COUNTER__, H2PP_REMOVE_PARENTHESES_IF(ClassType), H2PP_REMOVE_PARENTHESES_IF(ReturnType) ArgumentTypes>::I(h2::h2_fp<H2PP_REMOVE_PARENTHESES_IF(ClassType), H2PP_REMOVE_PARENTHESES_IF(ReturnType) ArgumentTypes>::B(h2::h2_pointer_if(Object), &H2PP_REMOVE_PARENTHESES_IF(ClassType)::H2PP_REMOVE_PARENTHESES_IF(Method)), #ClassType "::" #Method, H2_FILE) = [](H2PP_REMOVE_PARENTHESES_IF(ClassType) * This, H2PP_REMOVE_PARENTHESES(ArgumentTypes)) -> H2PP_REMOVE_PARENTHESES_IF(ReturnType)
 #define __H2STUBS_5_1(Object, ClassType, Method, ReturnType, ArgumentTypes) h2::h2_stuber<__COUNTER__, H2PP_REMOVE_PARENTHESES_IF(ClassType), H2PP_REMOVE_PARENTHESES_IF(ReturnType) ArgumentTypes>::I(h2::h2_fp<H2PP_REMOVE_PARENTHESES_IF(ClassType), H2PP_REMOVE_PARENTHESES_IF(ReturnType) ArgumentTypes>::B(h2::h2_pointer_if(Object), &H2PP_REMOVE_PARENTHESES_IF(ClassType)::H2PP_REMOVE_PARENTHESES_IF(Method)), #ClassType "::" #Method, H2_FILE) = [](H2PP_REMOVE_PARENTHESES_IF(ClassType) * This) -> H2PP_REMOVE_PARENTHESES_IF(ReturnType)
 
-#define ___H2STUBS_3(Function, ReturnType, ArgumentTypes, Q)                                                                                                                \
-   struct {                                                                                                                                                                 \
-      void operator=(ReturnType(*dstfp) ArgumentTypes)                                                                                                                      \
-      {                                                                                                                                                                     \
+#define ___H2STUBS_3(Function, ReturnType, ArgumentTypes, Q)                                                                                                          \
+   struct {                                                                                                                                                           \
+      void operator=(ReturnType(*dstfp) ArgumentTypes)                                                                                                                \
+      {                                                                                                                                                               \
          h2::h2_runner::stub(h2::h2_fp<H2PP_REMOVE_PARENTHESES_IF(ReturnType) ArgumentTypes>::A(H2PP_REMOVE_PARENTHESES_IF(Function)), (void*)(dstfp), #Function, H2_FILE); \
-      }                                                                                                                                                                     \
-   } Q;                                                                                                                                                                     \
+      }                                                                                                                                                               \
+   } Q;                                                                                                                                                               \
    Q = [] ArgumentTypes -> ReturnType /* captureless lambda implicit cast to function pointer */

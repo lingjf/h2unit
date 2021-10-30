@@ -10,7 +10,7 @@ SUITE(json lexical simple)
       OK(0, lexical.size());
    }
 
-   Cases("{}", " { } ")
+   Cases(brace, ("{}", " { } "))
    {
       const char* json = x;
       h2::h2_vector<h2::h2_string> lexical;
@@ -18,7 +18,7 @@ SUITE(json lexical simple)
       OK(ListOf("{", "}"), lexical);
    }
 
-   Cases("[]", " [ ] ")
+   Cases(bracket, ("[]", " [ ] "))
    {
       const char* json = x;
       h2::h2_vector<h2::h2_string> lexical;

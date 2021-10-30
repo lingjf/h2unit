@@ -8,6 +8,6 @@ CASE(cast number3)
    NUMBER1_DECL_LIST;
 
 #define TheCheck(x, y) OK(Le(x) || Lt(x) || Nq(x), y);
-   H2Fullmesh(TheCheck, NUMBER1_VAR_LIST);
+   H2Fullmesh(TheCheck, (NUMBER1_VAR_LIST));
 #undef TheCheck
 }

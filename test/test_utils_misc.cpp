@@ -160,7 +160,7 @@ CASE(H2Foreach)
 {
    int s = 0;
 #define FOO(x) s += x;
-   H2Foreach(FOO, 1, 2, 3)
+   H2Foreach(FOO, (1, 2, 3))
 #undef FOO
      OK(6, s);
 }
@@ -171,7 +171,7 @@ SUITE(H2Fullmesh)
    {
       int s = 0;
 #define FOO(x, y) s += x * y;
-      H2Fullmesh(FOO, 1, 2, 3);
+      H2Fullmesh(FOO, (1, 2, 3));
 #undef FOO
       OK(1 * 1 + 1 * 2 + 1 * 3 + 2 * 1 + 2 * 2 + 2 * 3 + 3 * 1 + 3 * 2 + 3 * 3, s);
    }

@@ -1,139 +1,254 @@
 #include "../source/h2_unit.cpp"
 
-SUITE(An)
+SUITE(H2_A)
 {
-   Case()
+   Case(empty)
    {
-      int n0 = _H2_An();
-      OK(0, n0);
-      int n1 = _H2_An(1, 2, 3);
-      OK(1, n1);
+      int n = H2_A();
+      OK(0, n);
    }
 
-   Case(ForEach)
+   Case(one)
    {
-      int n0 = _H2_An_ForEach();
-      OK(0, n0);
-      int n1 = _H2_An_ForEach(1, 2, 3);
-      OK(1, n1);
-      int n2 = _H2_An_ForEach((1, 2, 3));
-      OK(1, n2);
+      int n = H2_A(1);
+      OK(1, n);
    }
 
-   Case(Fullmesh)
+   Case(two)
    {
-      int nx0 = _H2_An_Fullmeshx();
-      OK(0, nx0);
-      int ny0 = _H2_An_Fullmeshy();
-      OK(0, ny0);
+      int n = H2_A(1, 2);
+      OK(1, n);
+   }
 
-      int nx1 = _H2_An_Fullmeshx(1, 2, 3);
-      OK(1, nx1);
-      int ny1 = _H2_An_Fullmeshy(1, 2, 3);
-      OK(3, ny1);
+   Case(empty in parenthesis)
+   {
+      int n = H2_A(());
+      OK(0, n);
+   }
 
-      int nx2 = _H2_An_Fullmeshx((1, 2, 3));
-      OK(1, nx2);
-      int ny2 = _H2_An_Fullmeshy((1, 2, 3));
-      OK(1, ny2);
-      int nx3 = _H2_An_Fullmeshx((1, 2, 3), (4, 5, 6));
-      OK(1, nx3);
-      int ny3 = _H2_An_Fullmeshy((1, 2, 3), (4, 5, 6));
-      OK(4, ny3);
+   Case(one in parenthesis)
+   {
+      int n = H2_A((1));
+      OK(1, n);
+   }
+
+   Case(two in parenthesis)
+   {
+      int n = H2_A((1, 2));
+      OK(1, n);
    }
 }
 
-CASES(1, 2, 3)
+SUITE(H2_A x y)
+{
+   Case(empty)
+   {
+      int x = H2_XA();
+      OK(0, x);
+      int y = H2_YA();
+      OK(0, y);
+   }
+
+   Case(one)
+   {
+      int x = H2_XA(1);
+      OK(1, x);
+      int y = H2_YA(1);
+      OK(1, y);
+   }
+
+   Case(two)
+   {
+      int x = H2_XA(1, 2);
+      OK(1, x);
+      int y = H2_YA(1, 2);
+      OK(2, y);
+   }
+
+   Case(empty in 1 parenthesis)
+   {
+      int x = H2_XA(());
+      OK(0, x);
+      int y = H2_YA(());
+      OK(0, y);
+   }
+
+   Case(one in 1 parenthesis)
+   {
+      int x = H2_XA((1));
+      OK(1, x);
+      int y = H2_YA((1));
+      OK(1, y);
+   }
+
+   Case(two in 1 parenthesis)
+   {
+      int x = H2_XA((1, 2));
+      OK(1, x);
+      int y = H2_YA((1, 2));
+      OK(1, y);
+   }
+
+   Case(empty in 2 parenthesis)
+   {
+      int x = H2_XA((), ());
+      OK(0, x);
+      int y = H2_YA((), ());
+      OK(0, y);
+   }
+
+   Case(one in 2 parenthesis)
+   {
+      int x = H2_XA((1), (2));
+      OK(1, x);
+      int y = H2_YA((1), (2));
+      OK(2, y);
+   }
+
+   Case(two in 2 parenthesis)
+   {
+      int x = H2_XA((1, 2), (3, 4));
+      OK(1, x);
+      int y = H2_YA((1, 2), (3, 4));
+      OK(3, y);
+   }
+
+   Case(three in 2 parenthesis)
+   {
+      int x = H2_XA((1, 2, 3), (4, 5, 6));
+      OK(1, x);
+      int y = H2_YA((1, 2, 3), (4, 5, 6));
+      OK(4, y);
+   }
+}
+
+CASES(parameterized, (1, 2, 3))
 {
    OK(Gt(0), x);
 }
 
-CASES(1, 2, 3)
+CASES(parameterized, (1, 2, 3))
 {
    OK(Gt(0), x);
 }
 
-TODOS(1, 2, 3)
+CASES(parameterized, ())
 {
-   OK(Gt(0), x);
+   OK(Gt(10), x);
 }
 
-CASESS((1, 2, 3), (4, 5, 6))
+CASES(parameterized)
+{
+   OK(Gt(10), x);
+}
+
+TODOS(parameterized, (1, 2, 3))
+{
+   OK(Gt(10), x) << "error";
+}
+
+CASESS(parameterized, (1, 2, 3), (4, 5, 6))
 {
    OK(x < y);
 }
 
-TODOSS((1, 2, 3), (4, 5, 6))
+CASESS(parameterized, (1, 2, 3), ())
 {
    OK(x < y);
 }
 
-CASESS(1, 2, 3)
+CASESS(parameterized, (), (4, 5, 6))
+{
+   OK(x < y);
+}
+
+CASESS(parameterized, (), ())
+{
+   OK(x < y);
+}
+
+CASESS(parameterized, (1, 2, 3))
 {
    OK(1 < x + y);
 }
 
-TODOSS(1, 2, 3)
+CASESS(parameterized, ())
 {
    OK(1 < x + y);
+}
+
+CASESS(parameterized)
+{
+   OK(1 < x + y);
+}
+
+TODOSS(parameterized, (1, 2, 3), (4, 5, 6))
+{
+   OK(x > y) << "error";
+}
+
+TODOSS(parameterized, (1, 2, 3))
+{
+   OK(10 < x + y) << "error";
 }
 
 SUITE(test foreach)
 {
-   Cases(1, 2, 3)
+   Cases(parameterized, (1, 2, 3))
    {
       OK(Gt(0), x);
    }
 
-   Cases(1, 2, 3)
+   Cases(parameterized, (1, 2, 3))
    {
       OK(Gt(0), x);
    }
 
-   Todos(1, 2, 3)
+   Todos(parameterized, (1, 2, 3))
    {
-      OK(Gt(0), x);
+      OK(Gt(10), x) << "error";
    }
 
-   // Cases_t(int, long, double)
+   // Cases_t(parameterized, (int, long, double))
    // {
    // }
 }
 
 SUITE(test fullmesh)
 {
-   Casess(1, 2, 3)
+   Casess(parameterized, (1, 2, 3))
    {
       OK(Gt(1), x + y);
    }
-   Todoss(1, 2, 3)
+
+   Todoss(parameterized, (1, 2, 3))
    {
-      OK(Gt(1), x + y);
+      OK(Gt(10), x + y) << "error";
    }
 }
 
-CASES_T(int, long, double)
+CASES_T(parameterized, (int, long, double))
 {
    x value = 1;
    OK(Gt(0), value);
 }
 
-TODOS_T(int, long, double)
+TODOS_T(parameterized, (int, long, double))
 {
    x value = 1;
-   OK(Gt(0), value);
+   OK(Gt(10), value) << "error";
 }
 
-CASESS_T(int, long, double)
+CASESS_T(parameterized, (int, long, double))
 {
    x value_x = 1;
    y value_y = 1;
    OK(value_x, value_y);
 }
 
-TODOSS_T(int, long, double)
+TODOSS_T(parameterized, (int, long, double))
 {
    x value_x = 1;
-   y value_y = 1;
-   OK(value_x, value_y);
+   y value_y = 2;
+   OK(value_x, value_y) << "error";
 }

@@ -11,6 +11,6 @@ CASE(cast string2)
    OK(Substr(x), y);   \
    OK(Re(x), y);
 
-   H2Fullmesh(TheCheck, STRING_VAR_LIST);
+   H2Fullmesh(TheCheck, (STRING_VAR_LIST));
 #undef TheCheck
 }

@@ -6,7 +6,7 @@ PTR_FILL_DECL_LIST;
 PTR_NULL_DECL_LIST;
 
 #define TheCheck(x) static void foobar##x(decltype(x) v){};
-H2Foreach(TheCheck, PTR_LIST);
+H2Foreach(TheCheck, (PTR_LIST));
 #undef TheCheck
 
 SUITE(cast ptr2)

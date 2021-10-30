@@ -120,7 +120,7 @@ SUITE(stringify simple)
       STRING_DECL_LIST;
 
 #define TheCheck(x) OK("h2unit", h2::h2_stringify(x));
-      H2Foreach(TheCheck, STRING_VAR_LIST);
+      H2Foreach(TheCheck, (STRING_VAR_LIST));
 #undef TheCheck
    }
 
@@ -129,7 +129,7 @@ SUITE(stringify simple)
       NUMBER0_DECL_LIST;
 
 #define TheCheck(x) h2::h2_stringify(x);
-      H2Foreach(TheCheck, NUMBER0_VAR_LIST);
+      H2Foreach(TheCheck, (NUMBER0_VAR_LIST));
 #undef TheCheck
    }
 

@@ -175,43 +175,43 @@ It means user should not write extra code to register test cases.
 
 ### Parameterized test
 #### Value-Parameterized test
-*    `Cases`(values...): Automatically generate `Case` with each value inside `SUITE` (access by x)
-*    `Casess`(values...): Automatically generate `Case` with fullmesh value inside `SUITE` (access by x, y)
-*    `CASES`(values...): Automatically generate `CASE` with each value (access by x)
-*    `CASESS`(values...): Automatically generate `CASE` with fullmesh value (access by x, y)
-*    `Todos`(values...): define a none-executable test case inside `SUITE` (access by x)
-*    `Todoss`(values...): define a none-executable test case inside `SUITE` (access by x, y)
-*    `TODOS`(values...): define a standalone none-executable test case outside `SUITE` (access by x)
-*    `TODOSS`(values...): define a standalone none-executable test case outside `SUITE` (access by x, y)
+*    `Cases`(name, (values...)): Automatically generate `Case` with each value inside `SUITE` (access by x)
+*    `Casess`(name, (values...)): Automatically generate `Case` with fullmesh value inside `SUITE` (access by x, y)
+*    `CASES`(name, (values...)): Automatically generate `CASE` with each value (access by x)
+*    `CASESS`(name, (values...)): Automatically generate `CASE` with fullmesh value (access by x, y)
+*    `Todos`(name, (values...)): define a none-executable test case inside `SUITE` (access by x)
+*    `Todoss`(name, (values...)): define a none-executable test case inside `SUITE` (access by x, y)
+*    `TODOS`(name, (values...)): define a standalone none-executable test case outside `SUITE` (access by x)
+*    `TODOSS`(name, (values...)): define a standalone none-executable test case outside `SUITE` (access by x, y)
 
 
 ```C++
-CASES(1,2,3) // Generate 3 CASE : x=1;x=2;x=3
+CASES(name, (1,2,3)) // Generate 3 CASE : x=1;x=2;x=3
 {
    OK(x...);
 }
 SUITE(suite)
 {
-   Cases(1,2,3) // Generate 3 Case : x=1;x=2;x=3
+   Cases(name, (1,2,3)) // Generate 3 Case : x=1;x=2;x=3
    {
       OK(x...);
    }
 }
-CASESS(1,2,3)             // (1,2,3)x(1,2,3)
-{                         // Generate 9 CASE : x,y=(1,1);(1,2);(1,3);
-   OK(x...y);             //                       (2,1);(2,2);(2,3);
-}                         //                       (3,1);(3,2);(3,3);
-CASESS((1,2,3), (4,5,6))  // (1,2,3)x(4,5,6)
-{                         // Generate 9 CASE : x,y=(1,4);(1,5);(1,6);
-   OK(x...y);             //                       (2,4);(2,5);(2,6);
-}                         //                       (3,4);(3,5);(3,6);
+CASESS(name, (1,2,3))            // (1,2,3)x(1,2,3)
+{                                // Generate 9 CASE : x,y=(1,1);(1,2);(1,3);
+   OK(x...y);                    //                       (2,1);(2,2);(2,3);
+}                                //                       (3,1);(3,2);(3,3);
+CASESS(name, (1,2,3), (4,5,6))   // (1,2,3)x(4,5,6)
+{                                // Generate 9 CASE : x,y=(1,4);(1,5);(1,6);
+   OK(x...y);                    //                       (2,4);(2,5);(2,6);
+}                                //                       (3,4);(3,5);(3,6);
 SUITE(suite)
 {
-   Casess(1,2,3)            // Generate 9 Case : (1,2,3)x(1,2,3)
+   Casess(name, (1,2,3))            // Generate 9 Case : (1,2,3)x(1,2,3)
    {
       OK(x...y);
    }
-   Casess((1,2,3), (4,5,6)) // Generate 9 Case : (1,2,3)x(4,5,6)
+   Casess(name, (1,2,3), (4,5,6))   // Generate 9 Case : (1,2,3)x(4,5,6)
    {
       OK(x...y);
    }
@@ -220,31 +220,31 @@ SUITE(suite)
 ```
 
 #### Type-Parameterized test
-*    `CASES_T`(types...): Automatically generate CASE with each type (access by x)
-*    `CASESS_T`(types...): Automatically generate CASE with fullmesh type (access by x, y)
-*    `Cases_t`(types...): NOT implemented, Automatically generate CASE with each type inside SUITE (access by x)
-*    `Casess_t`(types...): NOT implemented, Automatically generate CASE with fullmesh type inside SUITE (access by x, y)
-*    `TODOS_T`(values...): define a standalone none-executable test case outside `SUITE` (access by x)
-*    `TODOSS_T`(values...): define a standalone none-executable test case outside `SUITE` (access by x, y)
+*    `CASES_T`(name, (types...)): Automatically generate CASE with each type (access by x)
+*    `CASESS_T`(name, (types...)): Automatically generate CASE with fullmesh type (access by x, y)
+*    `Cases_t`(name, (types...)): NOT implemented, Automatically generate CASE with each type inside SUITE (access by x)
+*    `Casess_t`(name, (types...)): NOT implemented, Automatically generate CASE with fullmesh type inside SUITE (access by x, y)
+*    `TODOS_T`(name, (values...)): define a standalone none-executable test case outside `SUITE` (access by x)
+*    `TODOSS_T`(name, (values...)): define a standalone none-executable test case outside `SUITE` (access by x, y)
 
 ```C++
-CASES_T(short,int,long) // Generate 3 CASE : x=short;x=int;x=long
+CASES_T(name, (short,int,long)) // Generate 3 CASE : x=short;x=int;x=long
 {
    OK(x...);
 }
-CASESS_T(short,int,long)  // (short,int,long)x(short,int,long)
-{                         // Generate 9 CASE : x,y=(short,short);(short,int);(short,long);
-   OK(x...y);             //                       (int,short);(int,int);(int,long);
-}                         //                       (long,short);(long,int);(long,long);
-CASESS_T((short,int,long), (u8,u16,u32))  // (short,int,long)x(u8,u16,u32)
-{                                         // Generate 9 CASE : x,y=(short,u8);(short,u16);(short,u32);
-   OK(x...y);                             //                       (int,u8);(int,u16);(int,u32);
-}                                         //                       (long,u8);(long,u16);(long,u32);
+CASESS_T(name, (short,int,long))    // (short,int,long)x(short,int,long)
+{                                   // Generate 9 CASE : x,y=(short,short);(short,int);(short,long);
+   OK(x...y);                       //                       (int,short);(int,int);(int,long);
+}                                   //                       (long,short);(long,int);(long,long);
+CASESS_T(name, (short,int,long), (u8,u16,u32))  // (short,int,long)x(u8,u16,u32)
+{                                               // Generate 9 CASE : x,y=(short,u8);(short,u16);(short,u32);
+   OK(x...y);                                   //                       (int,u8);(int,u16);(int,u32);
+}                                               //                       (long,u8);(long,u16);(long,u32);
 
 ```
 
-*    H2Foreach(Macro, values...): Call Macro(value)
-*    H2Fullmesh(Macro, values...): Call Macro(values x values)
+*    H2Foreach(Macro, (values...)): Call Macro(value)
+*    H2Fullmesh(Macro, (values...)): Call Macro(values x values)
 *    H2Fullmesh(Macro, (x-values...), (y-values...)): Call Macro(x-values x y-values)
 
 

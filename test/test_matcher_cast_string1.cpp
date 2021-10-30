@@ -10,6 +10,6 @@ CASE(cast string1)
    OK(x, y);           \
    OK(Eq(x), y);
 
-   H2Fullmesh(TheCheck, STRING_VAR_LIST);
+   H2Fullmesh(TheCheck, (STRING_VAR_LIST));
 #undef TheCheck
 }

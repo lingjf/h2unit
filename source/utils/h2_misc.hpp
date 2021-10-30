@@ -19,10 +19,10 @@ struct h2_extract {
 static inline const char* ss(const char* a = "") { return a ? a : ""; }
 static inline const size_t sn(const size_t a = 0) { return a; }
 
-#define H2Foreach(_Macro_x, ...) H2PP_FOREACH(, _H2ForeachMacro, (_Macro_x), __VA_ARGS__)
+#define H2Foreach(_Macro_x, ...) H2PP_FOREACH(, _H2ForeachMacro, (_Macro_x), H2PP_REMOVE_PARENTHESES_IF(__VA_ARGS__))
 #define _H2ForeachMacro(_Args, i, x) H2PP_REMOVE_PARENTHESES(_Args)(x)
 
-#define H2Fullmesh(_Macro_x_y, ...) H2PP_FULLMESH((, _H2FullmeshMacro, (_Macro_x_y), __VA_ARGS__))
+#define H2Fullmesh(_Macro_x_y, ...) H2PP_FULLMESH(, _H2FullmeshMacro, (_Macro_x_y), __VA_ARGS__)
 #define _H2FullmeshMacro(_Args, i, j, x, y) H2PP_REMOVE_PARENTHESES(_Args)(x, y)
 
 /* clang-format off */

@@ -3,16 +3,16 @@
 // debug macro only
 // gcc test_utils_macro.cpp -DJUSTPP
 
-#   include "../source/utils/h2_macro.hpp"
-#   define SUITE(...) int main(int argc, char** argv)
-#   define Case(...) for (const char* cn = #   __VA_ARGS__; cn; printf("success %s \n", cn), cn = NULL)
-#   define OK(e, a)                                            \
-      if ((e) != (a)) {                                        \
-         printf("failed %s %s:%d \n", cn, __FILE__, __LINE__); \
-         exit(1);                                              \
-      }
+#include "../source/utils/h2_macro.hpp"
+#define SUITE(...) int main(int argc, char** argv)
+#define Case(...) for (const char* cn = #__VA_ARGS__; cn; printf("success %s \n", cn), cn = NULL)
+#define OK(e, a)                                            \
+   if ((e) != (a)) {                                        \
+      printf("failed %s %s:%d \n", cn, __FILE__, __LINE__); \
+      exit(1);                                              \
+   }
 #else
-#   include "../source/h2_unit.cpp"
+#include "../source/h2_unit.cpp"
 #endif
 
 #include <string.h>
@@ -339,37 +339,6 @@ SUITE(macro)
       OK(1 * 0 + 2 * 1 + 3 * 2, sc);
    }
 
-   Case(H2PP_FULLMESH)
-   {
-      int e = 1 * 1 * 0 * 0 +
-              1 * 2 * 0 * 1 +
-              1 * 3 * 0 * 2 +
-              2 * 1 * 1 * 0 +
-              2 * 2 * 1 * 1 +
-              2 * 3 * 1 * 2 +
-              3 * 1 * 2 * 0 +
-              3 * 2 * 2 * 1 +
-              3 * 3 * 2 * 2;
-
-      int sa = 0;
-#define Fma(Dummy, i, j, x, y) sa += x * y * i * j;
-      H2PP_FULLMESH((, Fma, (), 1, 2, 3));
-#undef Fma
-      OK(e, sa);
-
-      int sb = 0;
-#define Fmb(Dummy, i, j, x, y) sb += x * y * i * j;
-      H2PP_FULLMESH(((), Fmb, (), 1, 2, 3));
-#undef Fmb
-      OK(e, sb);
-
-      int sc = 0;
-#define Fmc(Dummy, i, j, x, y) sc += x * y * i * j
-      H2PP_FULLMESH(((;), Fmc, (), 1, 2, 3));
-#undef Fmc
-      OK(e, sc);
-   }
-
    Case(H2PP_UNIQUE)
    {
       int H2PP_UNIQUE() = 1;
@@ -415,5 +384,72 @@ SUITE(Iterator i j)
       OK(0, ((int*)(&s))[0]);
       OK(1, ((int*)(&s))[1]);
       OK(2, ((int*)(&s))[2]);
+   }
+}
+
+SUITE(H2PP_FULLMESH)
+{
+   int e = 1 * 1 * 0 * 0 +
+           1 * 2 * 0 * 1 +
+           1 * 3 * 0 * 2 +
+           2 * 1 * 1 * 0 +
+           2 * 2 * 1 * 1 +
+           2 * 3 * 1 * 2 +
+           3 * 1 * 2 * 0 +
+           3 * 2 * 2 * 1 +
+           3 * 3 * 2 * 2;
+
+   Case(empty)
+   {
+      int sa = 0;
+#define Fma(Dummy, i, j, x, y) sa += x * y * i * j;
+      H2PP_FULLMESH(, Fma, ());
+#undef Fma
+      OK(0, sa);
+   }
+
+   Case(zero)
+   {
+      int sa = 0;
+#define Fma(Dummy, i, j, x, y) sa += x * y * i * j;
+      H2PP_FULLMESH(, Fma, (), ());
+#undef Fma
+      OK(0, sa);
+   }
+
+   Case(one)
+   {
+      int sa = 0;
+#define Fma(Dummy, i, j, x, y) sa += x * y * (i + 1) * (j + 1);
+      H2PP_FULLMESH(, Fma, (), (1));
+#undef Fma
+      OK(1, sa);
+   }
+
+   Case(no split)
+   {
+      int sa = 0;
+#define Fma(Dummy, i, j, x, y) sa += x * y * i * j;
+      H2PP_FULLMESH(, Fma, (), (1, 2, 3));
+#undef Fma
+      OK(e, sa);
+   }
+
+   Case(empty split)
+   {
+      int sb = 0;
+#define Fmb(Dummy, i, j, x, y) sb += x * y * i * j;
+      H2PP_FULLMESH((), Fmb, (), (1, 2, 3));
+#undef Fmb
+      OK(e, sb);
+   }
+
+   Case(has split)
+   {
+      int sc = 0;
+#define Fmc(Dummy, i, j, x, y) sc += x * y * i * j
+      H2PP_FULLMESH((;), Fmc, (), (1, 2, 3));
+#undef Fmc
+      OK(e, sc);
    }
 }
