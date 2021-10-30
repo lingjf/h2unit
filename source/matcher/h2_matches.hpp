@@ -2,7 +2,7 @@ struct h2_mc {
    bool caseless = false, dont = false, ncop = false, spaceless = false;
    h2_mc(bool caseless_ = false, bool dont_ = false, bool ncop_ = false, bool spaceless_ = false) : caseless(caseless_), dont(dont_), ncop(ncop_), spaceless(spaceless_) {}
 
-   bool fit(bool result) const { return (result == !dont); }
+   bool fit(bool result) const { return result == !dont; }
    h2_mc update_caseless(bool caseless_ = false) const { return {caseless_, dont, ncop, spaceless}; }
    h2_mc update_dont(bool dont_ = false) const { return {caseless, dont_, ncop, spaceless}; }
    h2_mc update_spaceless(bool spaceless_ = false) const { return {caseless, dont, ncop, spaceless_}; }

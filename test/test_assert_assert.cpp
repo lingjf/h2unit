@@ -49,6 +49,15 @@ SUITE(find_op)
    }
 }
 
+static const char* ft(std::true_type)
+{
+   return "True";
+}
+static const char* ft(std::false_type)
+{
+   return "False";
+}
+
 SUITE(array detect)
 {
    Case(native array)
@@ -93,11 +102,19 @@ SUITE(array detect)
       // OK(decltype(a, 3) == decltype(a));
       OK(!std::is_array<decltype(a, 3)>::value);
 
-
       int* b = a;
       // OK(Has(1), b, 3);
       // OK(decltype(b, 3) == decltype(b));
       OK(!std::is_array<decltype(b, 3)>::value);
+   }
+
+   Case(type)
+   {
+      int a1[] = {1, 2, 3};
+      OK("True", ft(std::is_array<decltype(a1)>{}));
+
+      int a2 = 123;
+      OK("False", ft(std::is_array<decltype(a2)>{}));
    }
 }
 

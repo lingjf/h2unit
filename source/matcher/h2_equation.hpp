@@ -4,7 +4,7 @@ struct h2_equation : h2_matches {
    explicit h2_equation(const E& e_, const long double = 0) : e(e_) {}
 
    template <typename A>
-   h2_fail* matches(const A& a, int, h2_mc c) const
+   h2_fail* matches(const A& a, size_t, h2_mc c) const
    {
       if (c.fit(a == e)) return nullptr;
       return h2_fail::new_unexpect(expection(c), h2_representify(a));
@@ -20,7 +20,7 @@ struct h2_equation<E, typename std::enable_if<std::is_convertible<E, h2_string>:
    const h2_string e;
    explicit h2_equation(const E& e_, const long double = 0) : e(h2_string(e_)) {}
 
-   h2_fail* matches(const h2_string& a, int, h2_mc c) const
+   h2_fail* matches(const h2_string& a, size_t, h2_mc c) const
    {
       h2_string _e = e, _a = a;
       if (c.spaceless) _e = e.squash(), _a = a.squash();
@@ -42,7 +42,7 @@ struct h2_equation<E, typename std::enable_if<std::is_arithmetic<E>::value>::typ
    explicit h2_equation(const E& e_, const long double epsilon_ = 0) : e(e_), epsilon(epsilon_) {}
 
    template <typename A>
-   h2_fail* matches(const A& a, int, h2_mc c) const
+   h2_fail* matches(const A& a, size_t, h2_mc c) const
    {
       bool result;
       if (std::is_floating_point<E>::value || std::is_floating_point<A>::value) {

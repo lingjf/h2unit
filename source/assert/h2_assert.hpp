@@ -9,11 +9,8 @@ struct h2_defer_failure : h2_once {
    ~h2_defer_failure();
 };
 
-template <typename E, typename A>
-static inline h2_ostringstream& h2_ok2(h2_defer_failure* d, E e, A a, size_t n = 0, size_t = 0)
+static inline h2_ostringstream& __common_ok(h2_defer_failure* d, h2_fail* fail)
 {
-   d->assert_type = "OK";
-   h2_fail* fail = h2::h2_matcher_cast<typename h2_decay<A>::type>((typename h2_decay<E>::type)e).matches((typename h2_decay<A>::type)a, (int)n);
    d->fails = fail;
    if (fail && fail->subling_next) {
       d->fails = h2_fail::new_unexpect();
@@ -21,6 +18,22 @@ static inline h2_ostringstream& h2_ok2(h2_defer_failure* d, E e, A a, size_t n =
    }
    h2_assert_g();
    return d->oss;
+}
+
+template <typename E, typename A>
+static inline h2_ostringstream& h2_ok2(h2_defer_failure* d, E e, const A& a, size_t n, std::false_type, size_t z)
+{
+   d->assert_type = "OK";
+   h2_fail* fail = h2::h2_matcher_cast<typename h2_decay<A>::type>((typename h2_decay<E>::type)e).matches(a, n);
+   return __common_ok(d, fail);
+}
+
+template <typename E, typename A>
+static inline h2_ostringstream& h2_ok2(h2_defer_failure* d, E e, const A a, size_t n, std::true_type, size_t z)
+{
+   d->assert_type = "OK";
+   h2_fail* fail = h2::h2_matcher_cast<typename h2_decay<A>::type>((typename h2_decay<E>::type)e).matches((typename h2_decay<A>::type)a, n > 0 ? n : z);
+   return __common_ok(d, fail);
 }
 
 static inline h2_ostringstream& h2_ok1(h2_defer_failure* d, bool a)
@@ -76,23 +89,24 @@ static inline h2_ostringstream& h2_cp(h2_defer_failure* d, h2_2cp<E, A> c)
 {
    d->assert_type = "CP";
    d->assert_op = c.op;
-   h2_fail* fail = h2::h2_matcher_cast<A>(c.m).matches(c.a, 0, {false, false, true});
-   d->fails = fail;
-   if (fail && fail->subling_next) {
-      d->fails = h2_fail::new_unexpect();
-      h2_fail::append_child(d->fails, fail);
-   }
-   h2_assert_g();
-   return d->oss;
+   h2_fail* fail = h2::h2_matcher_cast<A>(c.m).matches(c.a, 0, {false, false, true, false});
+   return __common_ok(d, fail);
 }
 
 #define H2CP(...) __H2CP(H2PP_UNIQUE(), #__VA_ARGS__, __VA_ARGS__)
-#define __H2CP(Q, expression, ...) for (h2::h2_defer_failure Q("", expression, {__FILE__, __LINE__}); Q;) h2::h2_cp(&Q, h2::h2_0cp() > __VA_ARGS__)
+#define __H2CP(Q, expression, ...) \
+   for (h2::h2_defer_failure Q("", expression, {__FILE__, __LINE__}); Q;) h2::h2_cp(&Q, h2::h2_0cp() > __VA_ARGS__)
 
 #define H2OK(_1, ...) H2PP_CAT(__H2OK, H2PP_IS_EMPTY(__VA_ARGS__))(H2PP_UNIQUE(), #_1, (#__VA_ARGS__), _1, __VA_ARGS__)
-#define __H2OK1(Q, a_expression, _, actual, ...) for (h2::h2_defer_failure Q("", a_expression, {__FILE__, __LINE__}); Q;) h2::h2_ok1(&Q, actual)
-#define __H2OK0(Q, e_expression, a_expression, expect, ...) for (h2::h2_defer_failure Q(e_expression, a_expression, {__FILE__, __LINE__}); Q;) (std::is_array<decltype(__VA_ARGS__)>::value ? h2::h2_ok2(&Q, expect, __VA_ARGS__, std::extent<decltype(__VA_ARGS__)>::value) : h2::h2_ok2(&Q, expect, __VA_ARGS__))
+#define __H2OK1(Q, a_expression, _, actual, ...) \
+   for (h2::h2_defer_failure Q("", a_expression, {__FILE__, __LINE__}); Q;) h2::h2_ok1(&Q, actual)
+#define __H2OK0(...) __H2OK0_I((__VA_ARGS__))
+#define __H2OK0_I(MSVC_Workaround) H2PP_RESCAN(__H2OK2 MSVC_Workaround)
+#define __H2OK2(Q, e_expression, a_expression, expect, actual, ...) \
+   for (h2::h2_defer_failure Q(e_expression, a_expression, {__FILE__, __LINE__}); Q;) h2::h2_ok2(&Q, expect, actual, h2::sn(__VA_ARGS__), std::is_array<decltype(actual)>{}, std::extent<decltype(actual)>::value)
 
 #define H2JE(...) H2PP_VARIADIC_CALL(__H2JE, H2PP_UNIQUE(), __VA_ARGS__)
-#define __H2JE3(Q, expect, actual) for (h2::h2_defer_failure Q(#expect, #actual, {__FILE__, __LINE__}); Q;) h2::h2_je(&Q, expect, actual, "")
-#define __H2JE4(Q, expect, actual, selector) for (h2::h2_defer_failure Q(#expect, #actual, {__FILE__, __LINE__}); Q;) h2::h2_je(&Q, expect, actual, selector)
+#define __H2JE3(Q, expect, actual) \
+   for (h2::h2_defer_failure Q(#expect, #actual, {__FILE__, __LINE__}); Q;) h2::h2_je(&Q, expect, actual, "")
+#define __H2JE4(Q, expect, actual, selector) \
+   for (h2::h2_defer_failure Q(#expect, #actual, {__FILE__, __LINE__}); Q;) h2::h2_je(&Q, expect, actual, selector)

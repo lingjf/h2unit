@@ -200,7 +200,7 @@ SUITE(stringify complex)
                 "\033{+dark gray}", ", ", "\033{-dark gray}",
                 "nine",
                 "\033{+dark gray}", ")", "\033{-dark gray}"),
-         h2::h2_stringify<std::pair<int, std::string>>(a1));
+         (h2::h2_stringify<std::pair<int, std::string>>(a1)));
       OK(ListOf("\033{+dark gray}", "(", "\033{-dark gray}",
                 "9",
                 "\033{+dark gray}", ", ", "\033{-dark gray}",
@@ -208,7 +208,7 @@ SUITE(stringify complex)
                 "nine",
                 "\033{+dark gray}", "\"", "\033{-dark gray}",
                 "\033{+dark gray}", ")", "\033{-dark gray}"),
-         h2::h2_stringify<std::pair<int, std::string>>(a1, true));
+         (h2::h2_stringify<std::pair<int, std::string>>(a1, true)));
 
       std::pair<std::string, int> a2 = std::make_pair(std::string("nine"), 9);
       OK(ListOf("\033{+dark gray}", "(", "\033{-dark gray}",
@@ -216,7 +216,7 @@ SUITE(stringify complex)
                 "\033{+dark gray}", ", ", "\033{-dark gray}",
                 "9",
                 "\033{+dark gray}", ")", "\033{-dark gray}"),
-         h2::h2_stringify<std::pair<std::string, int>>(a2));
+         (h2::h2_stringify<std::pair<std::string, int>>(a2)));
       OK(ListOf("\033{+dark gray}", "(", "\033{-dark gray}",
                 "\033{+dark gray}", "\"", "\033{-dark gray}",
                 "nine",
@@ -224,7 +224,7 @@ SUITE(stringify complex)
                 "\033{+dark gray}", ", ", "\033{-dark gray}",
                 "9",
                 "\033{+dark gray}", ")", "\033{-dark gray}"),
-         h2::h2_stringify<std::pair<std::string, int>>(a2, true));
+         (h2::h2_stringify<std::pair<std::string, int>>(a2, true)));
    }
 
    Case(tuple)
@@ -255,7 +255,7 @@ SUITE(stringify complex)
                 "\033{+dark gray}", ", ", "\033{-dark gray}",
                 "9",
                 "\033{+dark gray}", ")", "\033{-dark gray}"),
-         h2::h2_stringify<std::tuple<const char*, int>>(a2));
+         (h2::h2_stringify<std::tuple<const char*, int>>(a2)));
       OK(ListOf("\033{+dark gray}", "(", "\033{-dark gray}",
                 "\033{+dark gray}", "\"", "\033{-dark gray}",
                 "nine",
@@ -263,7 +263,7 @@ SUITE(stringify complex)
                 "\033{+dark gray}", ", ", "\033{-dark gray}",
                 "9",
                 "\033{+dark gray}", ")", "\033{-dark gray}"),
-         h2::h2_stringify<std::tuple<const char*, int>>(a2, true));
+         (h2::h2_stringify<std::tuple<const char*, int>>(a2, true)));
 
       OK(ListOf("\033{+dark gray}", "(", "\033{-dark gray}",
                 "nine",
@@ -276,7 +276,7 @@ SUITE(stringify complex)
                 "3.14",
                 "\033{+dark gray}", ")", "\033{-dark gray}",
                 "\033{+dark gray}", ")", "\033{-dark gray}"),
-         h2::h2_stringify<std::tuple<const char*, int, std::pair<std::string, double>>>(a3));
+         (h2::h2_stringify<std::tuple<const char*, int, std::pair<std::string, double>>>(a3)));
       OK(ListOf("\033{+dark gray}", "(", "\033{-dark gray}",
                 "\033{+dark gray}", "\"", "\033{-dark gray}",
                 "nine",
@@ -292,7 +292,7 @@ SUITE(stringify complex)
                 "3.14",
                 "\033{+dark gray}", ")", "\033{-dark gray}",
                 "\033{+dark gray}", ")", "\033{-dark gray}"),
-         h2::h2_stringify<std::tuple<const char*, int, std::pair<std::string, double>>>(a3, true));
+         (h2::h2_stringify<std::tuple<const char*, int, std::pair<std::string, double>>>(a3, true)));
    }
 }
 
@@ -491,7 +491,7 @@ SUITE(stringify Associative containers)
                 "3",
                 "\033{+dark gray}", ")", "\033{-dark gray}",
                 "\033{+dark gray}", "]", "\033{-dark gray}"),
-         h2::h2_stringify<std::map<std::string, int>>(a1));
+         (h2::h2_stringify<std::map<std::string, int>>(a1)));
       OK(ListOf("\033{+dark gray}", "[", "\033{-dark gray}",
                 "\033{+dark gray}", "(", "\033{-dark gray}",
                 "\033{+dark gray}", "\"", "\033{-dark gray}",
@@ -517,7 +517,7 @@ SUITE(stringify Associative containers)
                 "3",
                 "\033{+dark gray}", ")", "\033{-dark gray}",
                 "\033{+dark gray}", "]", "\033{-dark gray}"),
-         h2::h2_stringify<std::map<std::string, int>>(a1, true));
+         (h2::h2_stringify<std::map<std::string, int>>(a1, true)));
    }
 
    Case(multiset)
@@ -565,7 +565,7 @@ SUITE(stringify Associative containers)
                 "-3",
                 "\033{+dark gray}", ")", "\033{-dark gray}",
                 "\033{+dark gray}", "]", "\033{-dark gray}"),
-         h2::h2_stringify<std::multimap<std::string, int>>(a1));
+         (h2::h2_stringify<std::multimap<std::string, int>>(a1)));
 
       OK(ListOf("\033{+dark gray}", "[", "\033{-dark gray}",
                 "\033{+dark gray}", "(", "\033{-dark gray}",
@@ -600,7 +600,7 @@ SUITE(stringify Associative containers)
                 "-3",
                 "\033{+dark gray}", ")", "\033{-dark gray}",
                 "\033{+dark gray}", "]", "\033{-dark gray}"),
-         h2::h2_stringify<std::multimap<std::string, int>>(a1, true));
+         (h2::h2_stringify<std::multimap<std::string, int>>(a1, true)));
    }
 }
 
@@ -630,7 +630,7 @@ SUITE(stringify Unordered Associative containers)
       std::unordered_map<std::string, int> a1 = {{std::string("th1"), 1},
                                                  {std::string("th2"), 2}};
 
-      OK(AnyOf("[(th1, 1), (th2, 2)]", "[(th2, 2), (th1, 1)]"), h2::h2_stringify<std::unordered_map<std::string, int>>(a1).string());
+      OK(AnyOf("[(th1, 1), (th2, 2)]", "[(th2, 2), (th1, 1)]"), (h2::h2_stringify<std::unordered_map<std::string, int>>(a1).string()));
    }
 
    Case(unordered_multimap)
@@ -638,7 +638,7 @@ SUITE(stringify Unordered Associative containers)
       std::unordered_multimap<std::string, int> a1 = {{std::string("th1"), 1},
                                                       {std::string("th2"), 2}};
 
-      OK(AnyOf("[(th1, 1), (th2, 2)]", "[(th2, 2), (th1, 1)]"), h2::h2_stringify<std::unordered_multimap<std::string, int>>(a1).string());
+      OK(AnyOf("[(th1, 1), (th2, 2)]", "[(th2, 2), (th1, 1)]"), (h2::h2_stringify<std::unordered_multimap<std::string, int>>(a1).string()));
    }
 }
 

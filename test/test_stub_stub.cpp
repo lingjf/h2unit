@@ -185,7 +185,7 @@ SUITE(stub template function)
 
    Case(function 2 typename)
    {
-      OK(5, foobar5<int, float>(0, 0));
+      OK(5, (foobar5<int, float>(0, 0)));
 
       STUB((foobar5<int, float>), foobar5_fake);
       OK(-5, (foobar5<int, float>(0, 0)));

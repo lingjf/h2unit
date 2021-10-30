@@ -1,6 +1,6 @@
 template <typename T, typename = void>
 struct h2_stringify_impl {
-   static h2_line print(T a, bool represent = false) { return "?"; }
+   static h2_line print(const T& a, bool represent = false) { return "?"; }
 };
 
 #define H2_TOSTRING_ABLE(tostring)                                                                            \

@@ -278,10 +278,10 @@ SUITE(mock template function)
 
    Case(function 2 typename)
    {
-      OK(5, foobar5<int, int>(1, 2));
+      OK(5, (foobar5<int, int>(1, 2)));
 
       MOCK((foobar5<int, int>), int(int a, int b)).Once().Return(-5);
-      OK(-5, foobar5<int, int>(1, 2));
+      OK(-5, (foobar5<int, int>(1, 2)));
    }
 }
 

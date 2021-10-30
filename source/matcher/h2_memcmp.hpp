@@ -5,7 +5,7 @@ struct h2_matches_memcmp : h2_matches {
    const size_t length;
    const size_t width;
    explicit h2_matches_memcmp(const E buffer_, const size_t size_, const size_t length_, const size_t width_) : buffer(buffer_), size(size_), length(length_), width(width_) {}
-   h2_fail* matches(const void* a, int n, h2_mc c) const
+   h2_fail* matches(const void* a, size_t n, h2_mc c) const
    {
       unsigned char* e = (unsigned char*)buffer;
       size_t l = length, w = width;

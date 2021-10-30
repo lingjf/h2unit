@@ -4,7 +4,7 @@ struct h2_not_matches : h2_matches {
    explicit h2_not_matches(const Matcher& m_) : m(m_) {}
 
    template <typename A>
-   h2_fail* matches(const A& a, int n, h2_mc c) const
+   h2_fail* matches(const A& a, size_t n, h2_mc c) const
    {
       return h2_matcher_cast<A>(m).matches(a, n, c.update_dont(!c.dont));
    }
@@ -21,7 +21,7 @@ struct h2_and_matches : h2_matches {
    explicit h2_and_matches(const MatcherL& ml_, const MatcherR& mr_) : ml(ml_), mr(mr_) {}
 
    template <typename A>
-   h2_fail* matches(const A& a, int n, h2_mc c) const
+   h2_fail* matches(const A& a, size_t n, h2_mc c) const
    {
       h2_fail* fails = nullptr;
       h2_fail::append_subling(fails, h2_matcher_cast<A>(ml).matches(a, n, c.update_dont(false)));
@@ -55,7 +55,7 @@ struct h2_or_matches : h2_matches {
    explicit h2_or_matches(const MatcherL& ml_, const MatcherR& mr_) : ml(ml_), mr(mr_) {}
 
    template <typename A>
-   h2_fail* matches(const A& a, int n, h2_mc c) const
+   h2_fail* matches(const A& a, size_t n, h2_mc c) const
    {
       h2_fail* f1 = h2_matcher_cast<A>(ml).matches(a, n, c.update_dont(false));
       h2_fail* f2 = h2_matcher_cast<A>(mr).matches(a, n, c.update_dont(false));
@@ -90,7 +90,7 @@ struct h2_allof_matches : h2_matches {
    explicit h2_allof_matches(const Matchers&... matchers) : t_matchers(matchers...) {}
 
    template <typename A>
-   h2_fail* matches(const A& a, int n, h2_mc c) const
+   h2_fail* matches(const A& a, size_t n, h2_mc c) const
    {
       h2_vector<h2_matcher<A>> v_matchers;
       t2v(v_matchers);
@@ -130,7 +130,7 @@ struct h2_anyof_matches : h2_matches {
    explicit h2_anyof_matches(const Matchers&... matchers) : t_matchers(matchers...) {}
 
    template <typename A>
-   h2_fail* matches(const A& a, int n, h2_mc c) const
+   h2_fail* matches(const A& a, size_t n, h2_mc c) const
    {
       h2_vector<h2_matcher<A>> v_matchers;
       t2v(v_matchers);
@@ -175,7 +175,7 @@ struct h2_noneof_matches : h2_matches {
    explicit h2_noneof_matches(const Matchers&... matchers) : t_matchers(matchers...) {}
 
    template <typename A>
-   h2_fail* matches(const A& a, int n, h2_mc c) const
+   h2_fail* matches(const A& a, size_t n, h2_mc c) const
    {
       h2_vector<h2_matcher<A>> v_matchers;
       t2v(v_matchers);

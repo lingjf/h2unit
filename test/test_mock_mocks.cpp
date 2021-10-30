@@ -242,10 +242,10 @@ SUITE(mocks template function)
 
    Case(function 2 typename)
    {
-      OK(5, foobar5<int, int>(1, 2));
+      OK(5, (foobar5<int, int>(1, 2)));
 
       MOCKS((foobar5<int, int>), int, (int a, int b), Once()) { return -5; };
-      OK(-5, foobar5<int, int>(1, 2));
+      OK(-5, (foobar5<int, int>(1, 2)));
    }
 }
 

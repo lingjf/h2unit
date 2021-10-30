@@ -2,7 +2,7 @@
    template <typename A>                                                                    \
    bool __matches(const A& a) const;                                                        \
    template <typename A>                                                                    \
-   h2::h2_fail* matches(const A& a, int, h2::h2_mc c) const                                 \
+   h2::h2_fail* matches(const A& a, size_t, h2::h2_mc c) const                              \
    {                                                                                        \
       h2::h2_fail* fail = h2::h2_fail::new_unexpect(h2::CD("", c), h2::h2_representify(a)); \
       if (c.fit(__matches(a))) return nullptr;                                              \
