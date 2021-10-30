@@ -84,7 +84,7 @@ struct h2_fail_unexpect : h2_fail {
          e = expection.abbreviate(10000, 3).brush("green");
       } else {
          e = h2_line(e_expression).abbreviate(O.verbose >= 4 ? 10000 : 120, 3).gray_quote().brush("cyan") + gray("==>") + expection.abbreviate(10000, 3).brush("green");
-      }  // https://unicode-table.com/en/sets/arrow-symbols/
+      }  // https://unicode-table.com/en/sets/arrow-symbols/ (← →) (← →) (⇐ ⇒) (⟵ ⟶) ⟸ ⟹
 
       if (!represent.width()) {
          a = h2_line(a_expression).abbreviate(10000, 3).gray_quote().brush("bold,red");
@@ -143,7 +143,7 @@ struct h2_fail_strcmp : h2_fail_unexpect {
    {
       h2_fail_unexpect::print(si, ci);
 
-      if (16 < e_value.width() || 16 < a_value.width()) {
+      if (O.verbose > 4 || 8 < e_value.width() || 8 < a_value.width()) {
          h2_line e_line, a_line;
          h2_vector<h2_string> e_chars = e_value.disperse(), a_chars = a_value.disperse();
          auto lcs = h2_LCS(e_chars, a_chars, caseless).lcs();

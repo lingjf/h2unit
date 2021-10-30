@@ -29,32 +29,28 @@ struct h2_fuzzy {
 struct h2_LCS {
    h2_vector<h2_string> s1, s2;
    bool caseless;
-   h2_vector<h2_vector<int>> c, d, p;
+   struct matrix {
+      unsigned e : 1, p : 1, d : 6, c : 24;
+      matrix() : e(0), p(0), d(0), c(0) {}
+   };
+   h2_vector<h2_vector<matrix>> m;
 
    h2_LCS(h2_vector<h2_string> s1_, h2_vector<h2_string> s2_, bool caseless_ = false) : s1(s1_), s2(s2_), caseless(caseless_) {}
 
-   void LCS_table()
+   void LCS_cacluate()
    {
-      for (size_t i = 0; i < s1.size() + 1; i++) {
-         c.push_back(h2_vector<int>(s2.size() + 1));
-         d.push_back(h2_vector<int>(s2.size() + 1));
-         p.push_back(h2_vector<int>(s2.size() + 1));
-      }
-
-      for (size_t i = 0; i < s1.size() + 1; i++) c[i][0] = 0;
-      for (size_t i = 0; i < s2.size() + 1; i++) c[0][i] = 0;
-
       for (size_t i = 1; i < s1.size() + 1; i++) {
          for (size_t j = 1; j < s2.size() + 1; j++) {
             if (s1[i - 1].equals(s2[j - 1], caseless)) {
-               c[i][j] = c[i - 1][j - 1] + 1;
-               d[i][j] = 1030; // 10:30 upper left
-            } else if (c[i - 1][j] > c[i][j - 1]) {
-               c[i][j] = c[i - 1][j];
-               d[i][j] = 900; // 9:30 left
+               m[i][j].c = m[i - 1][j - 1].c + 1;
+               m[i][j].e = 1;
             } else {
-               c[i][j] = c[i][j - 1];
-               d[i][j] = 1200; // 12:00 upper
+               if (m[i - 1][j].c > m[i][j - 1].c) {
+                  m[i][j].c = m[i - 1][j].c;
+               } else {
+                  m[i][j].c = m[i][j - 1].c;
+               }
+               m[i][j].e = 0;
             }
          }
       }
@@ -63,31 +59,41 @@ struct h2_LCS {
    void LCS_traceback(size_t i, size_t j)
    {
       if (i == 0 || j == 0) return;
-      if (d[i][j] == 1030) { // 10:30
-         p[i][j] = 1;
-         LCS_traceback(i - 1, j - 1);
-      } else if (d[i][j] == 900) { // 9:00
+
+      if (m[i][j].e || (m[i - 1][j - 1].c >= m[i - 1][j].c && m[i - 1][j - 1].c >= m[i][j - 1].c)) {
+         m[i][j].d = 10;  // 10:30 upper left
+      } else if (m[i - 1][j].c > m[i][j - 1].c) {
+         m[i][j].d = 12;  // 12:00 upper
+      } else {
+         m[i][j].d = 9;  // 9:00 left
+      }
+
+      if (m[i][j].d == 10) {  // 10:30
+         m[i][j].p = m[i][j].e;
+         LCS_traceback(i - 1, j - 1); // i--, j--
+      } else if (m[i][j].d == 12) {  // 12:00 upper i--
          LCS_traceback(i - 1, j);
-      } else { // 1200 12:00
+      } else {  // 9:00 left j--
          LCS_traceback(i, j - 1);
       }
    }
 
-   std::pair<h2_vector<int>, h2_vector<int>> lcs()
+   std::pair<h2_vector<unsigned char>, h2_vector<unsigned char>> lcs()
    {
-      LCS_table();
+      for (size_t i = 0; i < s1.size() + 1; i++) m.push_back(h2_vector<matrix>(s2.size() + 1));
+      LCS_cacluate();
       LCS_traceback(s1.size(), s2.size());
 
-      h2_vector<int> l1(s1.size()), l2(s2.size());
+      h2_vector<unsigned char> l1(s1.size()), l2(s2.size());
       for (size_t i = 1; i < s1.size() + 1; i++) {
          l1[i - 1] = 0;
          for (size_t j = 1; j < s2.size() + 1; j++)
-            if (p[i][j]) l1[i - 1] = 1;
+            if (m[i][j].p) l1[i - 1] = 1;
       }
       for (size_t j = 1; j < s2.size() + 1; j++) {
          l2[j - 1] = 0;
          for (size_t i = 1; i < s1.size() + 1; i++)
-            if (p[i][j]) l2[j - 1] = 1;
+            if (m[i][j].p) l2[j - 1] = 1;
       }
       return {l1, l2};
    }

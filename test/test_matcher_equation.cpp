@@ -36,10 +36,5 @@ SUITE(equation matches)
 
       h2::h2_equation<char*> d4((char*)"*bc");
       OK(nullptr == d4.matches((char*)"abc", 0, {}));
-
-#if !defined _WIN32 || !defined NDEBUG // Windows regex suck under release version and memory check
-      h2::h2_equation<char*> d5((char*)".*bc");
-      OK(nullptr == d5.matches((char*)"abc", 0, {}));
-#endif
    }
 }

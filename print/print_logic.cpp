@@ -21,7 +21,7 @@ SUITE(Logic)
    {
       int a = 0;
       int b = -2;
-      OK(Ge(a) || Eq(b), -1) << ">=0 or ==2";
+      OK(Ge(a) || Eq(b), -1) << ">=0 or ==-2";
    }
 
    Case(two logic)

@@ -13,13 +13,16 @@ SUITE(matches c)
 
    Case(fit)
    {
-      h2::h2_mc c1(false, false, false, false);
-      OK(c1.fit(true));
-      OK(!c1.fit(false));
+      h2::h2_mc c(false, false, false, false);
+      OK(c.fit(true));
+      OK(!c.fit(false));
+   }
 
-      h2::h2_mc c2(false, true, false, false);
-      OK(!c2.fit(true));
-      OK(c2.fit(false));
+   Case(fit negative)
+   {
+      h2::h2_mc c(false, true, false, false);
+      OK(!c.fit(true));
+      OK(c.fit(false));
    }
 
    Case(update)

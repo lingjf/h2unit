@@ -137,7 +137,16 @@ SUITE(harmless)
       sscanf("3   a.out  0x00008a3c foobar + 45", "%*s%*s%*s%s + %d", t, &ret);
 
       /* Operations on files */
-      fclose(fopen("./_this.dat", "w+"));
+
+      char* b = (char*)malloc(1024 * 1024);
+      FILE* f1 = fopen(__FILE__, "r");
+      auto n = fread(b, 1, 1024 * 1024, f1);
+      fclose(f1);
+      FILE* f2 = fopen("./_this.dat", "w+");
+      fwrite(b, 1, n, f2);
+      fclose(f2);
+      free(b);
+
       rename("./_this.dat", "./_that.dat");
       remove("./_that.dat");
       // tmpnam("./_dir"); // deprecated

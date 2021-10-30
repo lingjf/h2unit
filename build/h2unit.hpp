@@ -1,5 +1,5 @@
 
-/* v5.15 2021-10-30 00:44:01 */
+/* v5.15 2021-10-30 08:21:18 */
 /* https://github.com/lingjf/h2unit */
 /* Apache Licence 2.0 */
 
@@ -1227,7 +1227,7 @@ struct h2_equation<E, typename std::enable_if<std::is_convertible<E, h2_string>:
       if (c.spaceless) _e = e.squash(), _a = a.squash();
       if (c.fit(_a.equals(_e, c.caseless))) return nullptr;
       if (c.fit(h2_pattern::wildcard_match(_e.c_str(), _a.c_str(), c.caseless))) return nullptr;
-      if (c.fit(h2_pattern::regex_match(_e.c_str(), _a.c_str(), c.caseless))) return nullptr;
+      // if (c.fit(h2_pattern::regex_match(_e.c_str(), _a.c_str(), c.caseless))) return nullptr;
       return h2_fail::new_strcmp(_e, a, c.caseless, expection(c));
    }
    virtual h2_line expection(h2_mc c) const override

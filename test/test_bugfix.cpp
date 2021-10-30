@@ -68,6 +68,7 @@ SUITE(bugfix)
       // Passed before fixed
       // JE("{}", "{}, {}");
    }
+
    Case(vector bool)
    {
       /* https://isocpp.org/blog/2012/11/on-vectorbool */
@@ -77,5 +78,10 @@ SUITE(bugfix)
       // }
       for (auto&& k : a) {
       }
+   }
+
+   Case(strcmp with LCS)
+   {
+      // OK("hello", "hel1o");
    }
 }

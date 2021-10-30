@@ -26,7 +26,7 @@ struct h2_equation<E, typename std::enable_if<std::is_convertible<E, h2_string>:
       if (c.spaceless) _e = e.squash(), _a = a.squash();
       if (c.fit(_a.equals(_e, c.caseless))) return nullptr;
       if (c.fit(h2_pattern::wildcard_match(_e.c_str(), _a.c_str(), c.caseless))) return nullptr;
-      if (c.fit(h2_pattern::regex_match(_e.c_str(), _a.c_str(), c.caseless))) return nullptr;
+      // if (c.fit(h2_pattern::regex_match(_e.c_str(), _a.c_str(), c.caseless))) return nullptr;
       return h2_fail::new_strcmp(_e, a, c.caseless, expection(c));
    }
    virtual h2_line expection(h2_mc c) const override

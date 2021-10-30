@@ -35,29 +35,78 @@ SUITE(fuzzy match)
    }
 }
 
-void LCS_print(h2::h2_LCS& a, h2::h2_vector<h2::h2_vector<int>>& z)
+CASE(vector reserve initialize)
 {
+   struct matrix {
+      unsigned e : 1, p : 1, d : 6, c : 24;
+      matrix() : e(1), p(1), d(5), c(55) {}
+   };
+   h2::h2_vector<h2::h2_vector<matrix>> m;
+
+   m.push_back(h2::h2_vector<matrix>(3));
+   for (int j = 0; j < 3; j++) {
+      OK(1, m[0][j].e);
+      OK(1, m[0][j].p);
+      OK(5, m[0][j].d);
+      OK(55, m[0][j].c);
+   }
+}
+
+void __LCS_print(h2::h2_LCS& a, const char* t)
+{
+#define W3 " "
+
    for (size_t i = 0; i < a.s2.size() + 2; i++) {
-      printf("%2s ", i < 2 ? "" : a.s2[i - 2].c_str());
+      printf("%2s" W3, i < 2 ? "" : a.s2[i - 2].c_str());
    }
    printf("\n");
 
-   for (size_t i = 0; i < z.size() + 1; i++) {
-      printf("%2s ", i == 0 ? "" : a.s1[i - 1].c_str());
+   for (size_t i = 0; i < a.m.size(); i++) {
+      printf("%2s" W3, i == 0 ? "" : a.s1[i - 1].c_str());
 
-      for (auto& j : z[i]) {
-         if (j == 900)
-            printf(" ⇐ ");
-         else if (j == 1030)
-            printf(" ⇖ ");
-         else if (j == 1200)
-            printf(" ⇑ ");
-         else
-            printf("%2d ", j);
+      for (size_t j = 0; j < a.m[i].size(); j++) {
+         if ('c' == t[0]) {
+            if (i == 0 || j == 0)
+               printf("\033[90m%2d\033[0m" W3, (int)a.m[i][j].c);
+            else
+               printf("%2d" W3, (int)a.m[i][j].c);
+         } else if ('d' == t[0]) {
+            if (a.m[i][j].d == 9) {
+               if (a.m[i][j].p || !strchr(t, 'p'))
+                  printf(" \033[32m←\033[0m" W3);
+               else
+                  printf(" \033[36m←\033[0m" W3);
+
+            } else if (a.m[i][j].d == 10) {
+               if (a.m[i][j].p || !strchr(t, 'p'))
+                  printf(" \033[32m⬉\033[0m" W3);
+               else
+                  printf(" \033[36m⬉\033[0m" W3);
+            } else if (a.m[i][j].d == 12) {
+               if (a.m[i][j].p || !strchr(t, 'p'))
+                  printf(" \033[32m↑\033[0m" W3);
+               else
+                  printf(" \033[36m↑\033[0m" W3);
+            } else {
+               printf(" \033[90m‧\033[0m" W3);
+            }
+         } else if ('p' == t[0]) {
+            if (a.m[i][j].p)
+               printf(" \033[32m*\033[0m" W3);
+            else
+               printf(" \033[90m‧\033[0m" W3);
+         }
       }
       printf("\n");
    }
    printf("\n");
+}
+
+void LCS_print(h2::h2_LCS& a)
+{
+   __LCS_print(a, "c");
+   __LCS_print(a, "dp");
+   __LCS_print(a, "p");
 }
 
 SUITE(LCS)
@@ -66,9 +115,7 @@ SUITE(LCS)
    {
       h2::h2_LCS a(h2::h2_string("abc").disperse(), h2::h2_string("abc").disperse());
       auto ret = a.lcs();
-      // LCS_print(a, a.c);
-      // LCS_print(a, a.d);
-      // LCS_print(a, a.p);
+      // LCS_print(a);
       OK(Pair(ListOf(1, 1, 1), ListOf(1, 1, 1)), ret);
    }
 
@@ -76,53 +123,61 @@ SUITE(LCS)
    {
       h2::h2_LCS a(h2::h2_string("abc").disperse(), h2::h2_string("aBC").disperse(), true);
       auto ret = a.lcs();
-      // LCS_print(a, a.c);
-      // LCS_print(a, a.d);
-      // LCS_print(a, a.p);
+      // LCS_print(a);
       OK(Pair(ListOf(1, 1, 1), ListOf(1, 1, 1)), ret);
    }
 
    Case(utf8 中文)
    {
-      h2::h2_LCS a(h2::h2_string("你好").disperse(), h2::h2_string("你好").disperse());
+      h2::h2_LCS a(h2::h2_string("你好!").disperse(), h2::h2_string("您好!").disperse());
       auto ret = a.lcs();
 
-      // LCS_print(a, a.c);
-      // LCS_print(a, a.d);
-      // LCS_print(a, a.p);
-      OK(Pair(ListOf(1, 1), ListOf(1, 1)), ret);
+      // LCS_print(a);
+      OK(Pair(ListOf(0, 1, 1), ListOf(0, 1, 1)), ret);
    }
 
-   Case(change)
+   Case(change char)
    {
       h2::h2_LCS a(h2::h2_string("abc").disperse(), h2::h2_string("a5c").disperse());
       auto ret = a.lcs();
 
-      // LCS_print(a, a.c);
-      // LCS_print(a, a.d);
-      // LCS_print(a, a.p);
+      // LCS_print(a);
       OK(Pair(ListOf(1, 0, 1), ListOf(1, 0, 1)), ret);
    }
 
-   Case(add)
+   Case(add char)
    {
       h2::h2_LCS a(h2::h2_string("abc").disperse(), h2::h2_string("abxc").disperse());
       auto ret = a.lcs();
 
-      // LCS_print(a, a.c);
-      // LCS_print(a, a.d);
-      // LCS_print(a, a.p);
+      // LCS_print(a);
       OK(Pair(ListOf(1, 1, 1), ListOf(1, 1, 0, 1)), ret);
    }
 
-   Case(hello world)
+   Case(insert word)
    {
       h2::h2_LCS a(h2::h2_string("hello world").disperse(), h2::h2_string("hello twe world").disperse());
       auto ret = a.lcs();
 
-      // LCS_print(a, a.c);
-      // LCS_print(a, a.d);
-      // LCS_print(a, a.p);
+      // LCS_print(a);
       OK(Pair(ListOf(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1), ListOf(1, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1)), ret);
+   }
+
+   Case(hello/hel1o)
+   {
+      h2::h2_LCS a(h2::h2_string("hello").disperse(), h2::h2_string("hel1o").disperse());
+      auto ret = a.lcs();
+
+      // LCS_print(a);
+      OK(Pair(ListOf(1, 1, 1, 0, 1), ListOf(1, 1, 1, 0, 1)), ret);
+   }
+
+   Case(inside table)
+   {
+      h2::h2_LCS a(h2::h2_string("he1lo wor1d!").disperse(), h2::h2_string("hello the world").disperse());
+      auto ret = a.lcs();
+
+      LCS_print(a);
+      OK(Pair(ListOf(1, 1, 0, 1, 1, 1, 1, 1, 1, 0, 1, 0), ListOf(1, 1, 0, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 0, 1)), ret);
    }
 }
