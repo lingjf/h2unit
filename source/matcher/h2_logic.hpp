@@ -6,11 +6,11 @@ struct h2_not_matches : h2_matches {
    template <typename A>
    h2_fail* matches(const A& a, size_t n, h2_mc c) const
    {
-      return h2_matcher_cast<A>(m).matches(a, n, c.update_dont(!c.dont));
+      return h2_matcher_cast<A>(m).matches(a, n, c.update_negative(!c.negative));
    }
    virtual h2_line expection(h2_mc c) const override
    {
-      return h2_matches_expection(m, c.update_dont(!c.dont));
+      return h2_matches_expection(m, c.update_negative(!c.negative));
    }
 };
 
@@ -24,8 +24,8 @@ struct h2_and_matches : h2_matches {
    h2_fail* matches(const A& a, size_t n, h2_mc c) const
    {
       h2_fail* fails = nullptr;
-      h2_fail::append_subling(fails, h2_matcher_cast<A>(ml).matches(a, n, c.update_dont(false)));
-      h2_fail::append_subling(fails, h2_matcher_cast<A>(mr).matches(a, n, c.update_dont(false)));
+      h2_fail::append_subling(fails, h2_matcher_cast<A>(ml).matches(a, n, c.update_negative(false)));
+      h2_fail::append_subling(fails, h2_matcher_cast<A>(mr).matches(a, n, c.update_negative(false)));
       if (c.fit(!fails)) {
          if (fails) delete fails;
          return nullptr;
@@ -38,13 +38,13 @@ struct h2_and_matches : h2_matches {
 
    virtual h2_line expection(h2_mc c) const override
    {
-      auto sl = h2_matches_expection(ml, c.update_dont(false));
+      auto sl = h2_matches_expection(ml, c.update_negative(false));
       if (sl.has(" or ")) sl = gray("(") + sl + gray(")");
-      auto sr = h2_matches_expection(mr, c.update_dont(false));
+      auto sr = h2_matches_expection(mr, c.update_negative(false));
       if (sr.has(" and ") || sr.has(" or ")) sr = gray("(") + sr + gray(")");
       h2_line s = sl + " and " + sr;
-      if (c.dont) s = gray("(") + s + gray(")");
-      return CD(s, c.update_caseless(false));
+      if (c.negative) s = gray("(") + s + gray(")");
+      return ncsc(s, c.update_caseless(false));
    }
 };
 
@@ -57,8 +57,8 @@ struct h2_or_matches : h2_matches {
    template <typename A>
    h2_fail* matches(const A& a, size_t n, h2_mc c) const
    {
-      h2_fail* f1 = h2_matcher_cast<A>(ml).matches(a, n, c.update_dont(false));
-      h2_fail* f2 = h2_matcher_cast<A>(mr).matches(a, n, c.update_dont(false));
+      h2_fail* f1 = h2_matcher_cast<A>(ml).matches(a, n, c.update_negative(false));
+      h2_fail* f2 = h2_matcher_cast<A>(mr).matches(a, n, c.update_negative(false));
       if (c.fit(!f1 || !f2)) {
          if (f1) delete f1;
          if (f2) delete f2;
@@ -75,12 +75,12 @@ struct h2_or_matches : h2_matches {
 
    virtual h2_line expection(h2_mc c) const override
    {
-      auto sl = h2_matches_expection(ml, c.update_dont(false));
-      auto sr = h2_matches_expection(mr, c.update_dont(false));
+      auto sl = h2_matches_expection(ml, c.update_negative(false));
+      auto sr = h2_matches_expection(mr, c.update_negative(false));
       if (sr.has(" or ")) sr = gray("(") + sr + gray(")");
       h2_line s = sl + " or " + sr;
-      if (c.dont) s = gray("(") + s + gray(")");
-      return CD(s, c.update_caseless(false));
+      if (c.negative) s = gray("(") + s + gray(")");
+      return ncsc(s, c.update_caseless(false));
    }
 };
 
@@ -97,7 +97,7 @@ struct h2_allof_matches : h2_matches {
 
       h2_fail* fails = nullptr;
       for (size_t i = 0; i < v_matchers.size(); ++i) {
-         h2_fail* fail = v_matchers[i].matches(a, n, c.update_dont(false));  // dont not transfer down
+         h2_fail* fail = v_matchers[i].matches(a, n, c.update_negative(false));  // dont not transfer down
          if (fail) fail->seqno = (int)i;
          h2_fail::append_subling(fails, fail);
       }
@@ -106,19 +106,14 @@ struct h2_allof_matches : h2_matches {
          if (fails) delete fails;
          return nullptr;
       }
-      h2_fail* fail = nullptr;
-      if (c.dont) {
-         fail = h2_fail::new_unexpect(expection(c), h2_representify(a), "should not match all");
-      } else {
-         fail = h2_fail::new_unexpect(expection(c), h2_representify(a));
-         h2_fail::append_child(fail, fails);
-      }
+      h2_fail* fail = h2_fail::new_unexpect(expection(c), h2_representify(a));
+      h2_fail::append_child(fail, fails);
       return fail;
    }
 
    virtual h2_line expection(h2_mc c) const override
    {
-      return CD("AllOf" + gray("(") + t2e(c.update_dont(false)) + gray(")"), c.update_caseless(false));
+      return ncsc("AllOf" + gray("(") + t2e(c.update_negative(false)) + gray(")"), c.update_caseless(false));
    }
 
    H2_MATCHES_T2V2E(t_matchers)
@@ -138,7 +133,7 @@ struct h2_anyof_matches : h2_matches {
       int count = 0;
       h2_fail* fails = nullptr;
       for (size_t i = 0; i < v_matchers.size(); ++i) {
-         h2_fail* fail = v_matchers[i].matches(a, n, c.update_dont(false));
+         h2_fail* fail = v_matchers[i].matches(a, n, c.update_negative(false));
          if (!fail) {
             count++;
             break;
@@ -151,19 +146,14 @@ struct h2_anyof_matches : h2_matches {
          if (fails) delete fails;
          return nullptr;
       }
-      h2_fail* fail = nullptr;
-      if (c.dont) {
-         fail = h2_fail::new_unexpect(expection(c), h2_representify(a), "should not match any one");
-      } else {
-         fail = h2_fail::new_unexpect(expection(c), h2_representify(a), "not match any one");
-         h2_fail::append_child(fail, fails);
-      }
+      h2_fail* fail = h2_fail::new_unexpect(expection(c), h2_representify(a));
+      h2_fail::append_child(fail, fails);
       return fail;
    }
 
    virtual h2_line expection(h2_mc c) const override
    {
-      return CD("AnyOf" + gray("(") + t2e(c.update_dont(false)) + gray(")"), c.update_caseless(false));
+      return ncsc("AnyOf" + gray("(") + t2e(c.update_negative(false)) + gray(")"), c.update_caseless(false));
    }
 
    H2_MATCHES_T2V2E(t_matchers)
@@ -182,7 +172,7 @@ struct h2_noneof_matches : h2_matches {
 
       h2_fail* fails = nullptr;
       for (size_t i = 0; i < v_matchers.size(); ++i) {
-         h2_fail* fail = v_matchers[i].matches(a, n, c.update_dont(false));
+         h2_fail* fail = v_matchers[i].matches(a, n, c.update_negative(false));
          if (fail)
             delete fail;
          else {
@@ -202,7 +192,7 @@ struct h2_noneof_matches : h2_matches {
 
    virtual h2_line expection(h2_mc c) const override
    {
-      return CD("NoneOf" + gray("(") + t2e(c.update_dont(false)) + gray(")"), c.update_caseless(false));
+      return ncsc("NoneOf" + gray("(") + t2e(c.update_negative(false)) + gray(")"), c.update_caseless(false));
    }
 
    H2_MATCHES_T2V2E(t_matchers)

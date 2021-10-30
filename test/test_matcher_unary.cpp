@@ -32,13 +32,13 @@ SUITE(matches unary)
       OK(nullptr == ee1.matches(nullptr, 0, {}));
       OK(nullptr != ee1.matches(&int65, 0, {}));
       OK("IsNull", ee1.expection({}));
-      OK("NotNull", ee1.expection({false, true, false, false}));
+      OK("NotNull", ee1.expection({true, false, false, false}));
 
       h2::h2_matches_null ee2(true);
       OK(nullptr == ee2.matches(&int65, 0, {}));
       OK(nullptr != ee2.matches(nullptr, 0, {}));
       OK("NotNull", ee2.expection({}));
-      OK("IsNull", ee2.expection({false, true, false, false}));
+      OK("IsNull", ee2.expection({true, false, false, false}));
    }
 
    Case(OK Null)
@@ -55,13 +55,13 @@ SUITE(matches unary)
       OK(nullptr == istrue.matches(true, 0, {}));
       OK(nullptr != istrue.matches(false, 0, {}));
       OK("true", istrue.expection({}));
-      OK("false", istrue.expection({false, true, false, false}));
+      OK("false", istrue.expection({true, false, false, false}));
 
       h2::h2_matches_boolean<false> isfalse;
       OK(nullptr == isfalse.matches(false, 0, {}));
       OK(nullptr != isfalse.matches(true, 0, {}));
       OK("false", isfalse.expection({}));
-      OK("true", isfalse.expection({false, true, false, false}));
+      OK("true", isfalse.expection({true, false, false, false}));
    }
 
    Case(OK Boolean)

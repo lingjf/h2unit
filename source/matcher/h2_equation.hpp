@@ -11,7 +11,7 @@ struct h2_equation : h2_matches {
    }
    virtual h2_line expection(h2_mc c) const override
    {
-      return CD(h2_representify(e), c.update_caseless(false), "≠");
+      return ncsc(h2_representify(e), c.update_caseless(false), "≠");
    }
 };
 
@@ -23,15 +23,15 @@ struct h2_equation<E, typename std::enable_if<std::is_convertible<E, h2_string>:
    h2_fail* matches(const h2_string& a, size_t, h2_mc c) const
    {
       h2_string _e = e, _a = a;
-      if (c.spaceless) _e = e.squash(), _a = a.squash();
-      if (c.fit(_a.equals(_e, c.caseless))) return nullptr;
-      if (c.fit(h2_pattern::wildcard_match(_e.c_str(), _a.c_str(), c.caseless))) return nullptr;
-      // if (c.fit(h2_pattern::regex_match(_e.c_str(), _a.c_str(), c.caseless))) return nullptr;
-      return h2_fail::new_strcmp(_e, a, c.caseless, expection(c));
+      if (c.squash_whitespace) _e = e.squash(), _a = a.squash();
+      if (c.fit(_a.equals(_e, c.case_insensitive))) return nullptr;
+      if (c.fit(h2_pattern::wildcard_match(_e.c_str(), _a.c_str(), c.case_insensitive))) return nullptr;
+      // if (c.fit(h2_pattern::regex_match(_e.c_str(), _a.c_str(), c.case_insensitive))) return nullptr;
+      return h2_fail::new_strcmp(_e, a, c.case_insensitive, expection(c));
    }
    virtual h2_line expection(h2_mc c) const override
    {
-      return CD(h2_representify(c.spaceless ? e.squash() : e), c, "≠");
+      return ncsc(h2_representify(c.squash_whitespace ? e.squash() : e), c, "≠");
    }
 };
 
@@ -68,7 +68,7 @@ struct h2_equation<E, typename std::enable_if<std::is_arithmetic<E>::value>::typ
          oss << "±" << std::fixed << epsilon;
          t += oss.str().c_str();
       }
-      return CD(t, c.update_caseless(false), "≠");
+      return ncsc(t, c.update_caseless(false), "≠");
    }
 };
 

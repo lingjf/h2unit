@@ -1,24 +1,23 @@
 struct h2_mc {
-   bool caseless = false, dont = false, ncop = false, spaceless = false;
-   h2_mc(bool caseless_ = false, bool dont_ = false, bool ncop_ = false, bool spaceless_ = false) : caseless(caseless_), dont(dont_), ncop(ncop_), spaceless(spaceless_) {}
+   bool negative, case_insensitive, squash_whitespace, no_compare_operator;
+   h2_mc(bool negative_ = false, bool case_insensitive_ = false, bool squash_whitespace_ = false, bool no_compare_operator_ = false) : negative(negative_), case_insensitive(case_insensitive_), squash_whitespace(squash_whitespace_), no_compare_operator(no_compare_operator_) {}
 
-   bool fit(bool result) const { return result == !dont; }
-   h2_mc update_caseless(bool caseless_ = false) const { return {caseless_, dont, ncop, spaceless}; }
-   h2_mc update_dont(bool dont_ = false) const { return {caseless, dont_, ncop, spaceless}; }
-   h2_mc update_spaceless(bool spaceless_ = false) const { return {caseless, dont, ncop, spaceless_}; }
+   bool fit(bool result) const { return result == !negative; }
+   h2_mc update_negative(bool target = false) const { return {target, case_insensitive, squash_whitespace, no_compare_operator}; }
+   h2_mc update_caseless(bool target = false) const { return {negative, target, squash_whitespace, no_compare_operator}; }
+   h2_mc update_spaceless(bool target = false) const { return {negative, case_insensitive, target, no_compare_operator}; }
 };
+
 struct h2_matches {
    virtual h2_line expection(h2_mc c) const = 0;
 };
 
-static inline h2_string DS(bool match) { return match ? "should not match" : ""; }
-
-static inline h2_line CD(const h2_line& s, h2_mc c, const char* dsym = "!")
+static inline h2_line ncsc(const h2_line& s, h2_mc c, const char* dsym = "!")
 {
    h2_line t;
-   if (!c.ncop && c.dont) t.push_back(dsym);
-   if (c.caseless) t.push_back("~");
-   if (c.spaceless) t.push_back("*");
+   if (!c.no_compare_operator && c.negative) t.push_back(dsym);
+   if (c.case_insensitive) t.push_back("~");
+   if (c.squash_whitespace) t.push_back("*");
    t += s;
    return t;
 }
@@ -26,7 +25,7 @@ static inline h2_line CD(const h2_line& s, h2_mc c, const char* dsym = "!")
 template <typename T>
 inline auto h2_matches_expection(const T& e, h2_mc c) -> typename std::enable_if<std::is_base_of<h2_matches, T>::value, h2_line>::type { return e.expection(c); }
 template <typename T>
-inline auto h2_matches_expection(const T& e, h2_mc c) -> typename std::enable_if<!std::is_base_of<h2_matches, T>::value, h2_line>::type { return CD(h2_representify(e), c); }
+inline auto h2_matches_expection(const T& e, h2_mc c) -> typename std::enable_if<!std::is_base_of<h2_matches, T>::value, h2_line>::type { return ncsc(h2_representify(e), c); }
 
 #define H2_MATCHES_T2V2E(t_matchers)                                                                                                                    \
    template <typename T>                                                                                                                                \

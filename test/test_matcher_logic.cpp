@@ -100,15 +100,20 @@ SUITE(logic primitive)
    }
 }
 
-SUITE(In primitive)
+SUITE(logic sugar primitive)
 {
-   Case(native)
+   Case(AllOf &&&&&&)
    {
-      OK(AnyOf(1, 2, 3), 2);
+      OK(AllOf(2, Ge(0), Lt(3)), 2);
    }
 
-   Case(Ge)
+   Case(AnyOf ||||||)
    {
-      OK(AnyOf(1, Ge(2), Pair(2, 3)), 2);
+      OK(AnyOf(2, Ge(0), Pair(2, 3)), 2);
+   }
+
+   Case(NoneOf !||||||)
+   {
+      OK(NoneOf(1, Ge(3), Pair(2, 3)), 2);
    }
 }

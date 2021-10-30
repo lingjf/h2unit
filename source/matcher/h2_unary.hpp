@@ -1,37 +1,37 @@
 struct h2_matches_any : h2_matches {
    template <typename A>
-   h2_fail* matches(const A& a, size_t, h2_mc opt) const { return nullptr; }
-   virtual h2_line expection(h2_mc opt) const override { return "Any"; }
+   h2_fail* matches(const A& a, size_t, h2_mc c) const { return nullptr; }
+   virtual h2_line expection(h2_mc c) const override { return "Any"; }
 };
 
 struct h2_matches_null : h2_matches {
    const bool reverse;
    explicit h2_matches_null(bool reverse_) : reverse(reverse_) {}
    template <typename A>
-   h2_fail* matches(const A& a, size_t, h2_mc opt) const
+   h2_fail* matches(const A& a, size_t, h2_mc c) const
    {
       bool result = reverse ? nullptr != (const void*)a : nullptr == (const void*)a;
-      if (opt.fit(result)) return nullptr;
-      return h2_fail::new_unexpect(expection(opt), h2_stringify((const void*)a));
+      if (c.fit(result)) return nullptr;
+      return h2_fail::new_unexpect(expection(c), h2_stringify((const void*)a));
    }
-   virtual h2_line expection(h2_mc opt) const override
+   virtual h2_line expection(h2_mc c) const override
    {
-      return reverse != opt.dont /*XOR ^*/ ? "NotNull" : "IsNull";
+      return reverse != c.negative /*XOR ^*/ ? "NotNull" : "IsNull";
    }
 };
 
 template <bool E>
 struct h2_matches_boolean : h2_matches {
    template <typename A>
-   h2_fail* matches(const A& a, size_t, h2_mc opt) const
+   h2_fail* matches(const A& a, size_t, h2_mc c) const
    {
       bool result = E ? a : !a;
-      if (opt.fit(result)) return nullptr;
-      return h2_fail::new_unexpect(expection(opt), a ? "true" : "false");
+      if (c.fit(result)) return nullptr;
+      return h2_fail::new_unexpect(expection(c), a ? "true" : "false");
    }
-   virtual h2_line expection(h2_mc opt) const override
+   virtual h2_line expection(h2_mc c) const override
    {
-      return (E ? opt.dont : !opt.dont) ? "false" : "true";
+      return (E ? c.negative : !c.negative) ? "false" : "true";
    }
 };
 
@@ -50,15 +50,15 @@ struct h2_pointee_matches : h2_matches {
    };
 
    template <typename A>
-   h2_fail* matches(const A& a, size_t, h2_mc opt) const
+   h2_fail* matches(const A& a, size_t, h2_mc c) const
    {
       typedef typename std::remove_const<typename std::remove_reference<A>::type>::type Pointer;
       typedef typename PointeeOf<Pointer>::type Pointee;
-      return h2_matcher_cast<Pointee>(m).matches(*a, 0, opt);
+      return h2_matcher_cast<Pointee>(m).matches(*a, 0, c);
    }
-   virtual h2_line expection(h2_mc opt) const override
+   virtual h2_line expection(h2_mc c) const override
    {
-      return h2_matches_expection(m, opt);
+      return h2_matches_expection(m, c);
    }
 };
 

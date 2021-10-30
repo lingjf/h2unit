@@ -47,8 +47,8 @@
     <ClCompile Include="test_matcher_cast_number3.cpp" />
     <ClCompile Include="test_matcher_cast_number4.cpp" />
     <ClCompile Include="test_matcher_cast_number5.cpp" />
-    <ClCompile Include="test_matcher_cast_ptr1.cpp" />
-    <ClCompile Include="test_matcher_cast_ptr2.cpp" />
+    <ClCompile Include="test_matcher_cast_pointer1.cpp" />
+    <ClCompile Include="test_matcher_cast_pointer2.cpp" />
     <ClCompile Include="test_matcher_cast_string1.cpp" />
     <ClCompile Include="test_matcher_cast_string2.cpp" />
     <ClCompile Include="test_matcher_cast_string3.cpp" />

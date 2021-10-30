@@ -89,7 +89,7 @@ static inline h2_ostringstream& h2_cp(h2_defer_failure* d, h2_2cp<E, A> c)
 {
    d->assert_type = "CP";
    d->assert_op = c.op;
-   h2_fail* fail = h2::h2_matcher_cast<A>(c.m).matches(c.a, 0, {false, false, true, false});
+   h2_fail* fail = h2::h2_matcher_cast<A>(c.m).matches(c.a, 0, {false, false, false, true});
    return __common_ok(d, fail);
 }
 
