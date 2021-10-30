@@ -1,5 +1,5 @@
 
-/* v5.15 2021-10-30 08:21:18 */
+/* v5.15 2021-10-30 09:36:15 */
 /* https://github.com/lingjf/h2unit */
 /* Apache Licence 2.0 */
 
@@ -1014,6 +1014,7 @@ struct h2_option {
    bool last_failed = false;
    bool shuffle_cases = false;
    bool memory_check = true;
+   bool contiguous = false;
    bool exception_as_fail = false;
    bool debug = false;
    int list_cases = 0;
@@ -3185,7 +3186,7 @@ static inline void h2_fail_g(h2_fail* fail)
 {
    if (!fail) return;
    if (O.debug) h2_debugger::trap();
-   if (h2_runner::I().current_case) h2_runner::I().current_case->do_fail(fail, O.verbose >= 5, true);
+   if (h2_runner::I().current_case) h2_runner::I().current_case->do_fail(fail, O.contiguous, true);
 }
 // source/core/h2_core.hpp
 
@@ -8715,8 +8716,8 @@ h2_inline void h2_case::post_cleanup()
    footprint = h2_memory::stack::footprint();
    dnses.clear();
    stubs.clear();
-   do_fail(mocks.clear(true), true, O.verbose >= 5);
-   do_fail(h2_memory::stack::pop(), true, O.verbose >= 5);
+   do_fail(mocks.clear(true), true, O.contiguous);
+   do_fail(h2_memory::stack::pop(), true, O.contiguous);
 }
 
 h2_inline void h2_case::do_fail(h2_fail* fail, bool defer, bool append)
@@ -8766,7 +8767,7 @@ h2_inline void h2_suite::test(h2_case* c)
    try {
       test_code(this, c); /* include Setup(); c->post_setup() and c->prev_cleanup(); Cleanup() */
    } catch (...) {
-      c->do_fail(h2_fail::new_exception("was thrown but uncaught", h2_exception::I().last_type, h2_exception::I().last_bt), true, O.verbose >= 5);
+      c->do_fail(h2_fail::new_exception("was thrown but uncaught", h2_exception::I().last_type, h2_exception::I().last_bt), true, O.contiguous);
    }
    c->post_cleanup();
 }
@@ -9866,6 +9867,7 @@ static inline void usage()
               H2_USAGE_SP " -\033[36mc\033[0m  " H2_USAGE_SP "           " H2_USAGE_SP " Output in black-white \033[36mc\033[0molor style                          " H2_USAGE_SP "\n" H2_USAGE_BR
               H2_USAGE_SP " -\033[36md\033[0m  " H2_USAGE_SP "           " H2_USAGE_SP " \033[36md\033[0mebug with gdb once failure occurred                       " H2_USAGE_SP "\n" H2_USAGE_BR
               H2_USAGE_SP " -\033[36mf\033[0m  " H2_USAGE_SP "    \033[90m[\033[0mn\033[90m]\033[0m    " H2_USAGE_SP " \033[36mf\033[0mold JSON object or array, bigger n more folded            " H2_USAGE_SP "\n" H2_USAGE_BR
+              H2_USAGE_SP " -\033[36mg\033[0m  " H2_USAGE_SP "           " H2_USAGE_SP " conti\033[36mg\033[0muous case asserts despite failure                    " H2_USAGE_SP "\n" H2_USAGE_BR
               H2_USAGE_SP " -\033[36mi\033[0m/\033[36me\033[0m" H2_USAGE_SP "\033[90m[\033[0mpattern .\033[90m]\033[0m" H2_USAGE_SP " \033[36mi\033[0mnclude/\033[36me\033[0mxclude case, suite or file by substr/wildcard     " H2_USAGE_SP "\n" H2_USAGE_BR
               H2_USAGE_SP " -\033[36mj\033[0m  " H2_USAGE_SP "  \033[90m[\033[0mpath\033[90m]\033[0m   " H2_USAGE_SP " Generate \033[36mj\033[0munit report, default is <executable>.junit.xml   " H2_USAGE_SP "\n" H2_USAGE_BR
               H2_USAGE_SP " -\033[36ml\033[0m  " H2_USAGE_SP "  \033[90m[\033[0mtype .\033[90m]\033[0m " H2_USAGE_SP " \033[36ml\033[0mist out suites and cases, type [suite case todo]          " H2_USAGE_SP "\n" H2_USAGE_BR
@@ -9944,6 +9946,7 @@ h2_inline void h2_option::parse(int argc, const char** argv)
             while ((t = get.extract_string())) excludes.push_back(t);
             break;
          case 'f': fold_json = 0, get.extract_number(fold_json); break;
+         case 'g': contiguous = true; break;
          case 'i':
             while ((t = get.extract_string())) includes.push_back(t);
             break;

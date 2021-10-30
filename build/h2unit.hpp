@@ -1,5 +1,5 @@
 
-/* v5.15 2021-10-30 08:21:18 */
+/* v5.15 2021-10-30 09:36:15 */
 /* https://github.com/lingjf/h2unit */
 /* Apache Licence 2.0 */
 
@@ -1014,6 +1014,7 @@ struct h2_option {
    bool last_failed = false;
    bool shuffle_cases = false;
    bool memory_check = true;
+   bool contiguous = false;
    bool exception_as_fail = false;
    bool debug = false;
    int list_cases = 0;
@@ -3185,7 +3186,7 @@ static inline void h2_fail_g(h2_fail* fail)
 {
    if (!fail) return;
    if (O.debug) h2_debugger::trap();
-   if (h2_runner::I().current_case) h2_runner::I().current_case->do_fail(fail, O.verbose >= 5, true);
+   if (h2_runner::I().current_case) h2_runner::I().current_case->do_fail(fail, O.contiguous, true);
 }
 // source/core/h2_core.hpp
 

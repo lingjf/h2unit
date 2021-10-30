@@ -16,6 +16,7 @@ struct h2_option {
    bool last_failed = false;
    bool shuffle_cases = false;
    bool memory_check = true;
+   bool contiguous = false;
    bool exception_as_fail = false;
    bool debug = false;
    int list_cases = 0;

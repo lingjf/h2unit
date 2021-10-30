@@ -10,6 +10,7 @@
 *    `-d` *debug* mode, gdb attach
 *    `-e` {pattern} *exclude* filter, suite name or case name wildcard (?, *) matches, if pattern don't contains ? and *, wildcard change to contains, default is ` ` (exclude nothing)
 *    `-f` [n] *fold* json object or array, 0:unfold, 1:fold simple, 2:fold same, 3:fold missing peer
+*    `-g` *contiguous* case asserts despite failure
 *    `-j` {path} generate *junit* compatible XML output
 *    `-i` {pattern} *include* filter, suite name or case name wildcard (?, *) matches, if pattern don't contains ? and *, wildcard change to contains. Default is `*` (include all)
 *    `-l` [suite case todo] *list* out suites and cases
