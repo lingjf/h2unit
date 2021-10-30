@@ -1,53 +1,54 @@
 #include "../source/h2_unit.cpp"
 #include "test_types.hpp"
 
-char* h2_source_tojson(h2::h2_source* s, char* b)
+static h2::h2_string h2_source_tojson(h2::h2_source* s)
 {
-   sprintf(b, "{"
-              "\"reference_count\": %d"
-              "}",
-           s->reference_count);
-   return b;
+   h2::h2_string out;
+   out.sprintf("{"
+               "\"reference_count\": %d"
+               "}",
+               s->reference_count);
+   return out;
 }
 
-char* h2_sources_tojson(h2::h2_sources& a, char* b)
+static h2::h2_string h2_sources_tojson(h2::h2_sources& a)
 {
-   sprintf(b, "[");
+   h2::h2_string out;
+   out.sprintf("[");
    h2_list_for_each_entry (p, i, a.sources, h2::h2_source, x) {
-      if (i) sprintf(b + strlen(b), ",");
-      h2_source_tojson(p, b + strlen(b));
+      if (i) out += ",";
+      out += h2_source_tojson(p);
    }
-   sprintf(b + strlen(b), "]");
-   return b;
+   out.sprintf("]");
+   return out;
 }
 
 SUITE(sources)
 {
-   char t1[1024];
    h2::h2_sources pool;
 
    Case(init)
    {
-      JE("[]", h2_sources_tojson(pool, t1));
+      JE("[]", h2_sources_tojson(pool));
       OK(IsNull, pool.get((void*)foobar2));
    }
 
    Case(add del)
    {
-      auto a = pool.add((void*)foobar2, {__FILE__, __LINE__, "foobar2"});
+      auto a = pool.add((void*)foobar2, "foobar2", H2_FILE);
       OK(NotNull, a);
-      JE("[{'reference_count':1}]", h2_sources_tojson(pool, t1));
-      auto b = pool.add((void*)foobar2, {__FILE__, __LINE__, "foobar2"});
+      JE("[{'reference_count':1}]", h2_sources_tojson(pool));
+      auto b = pool.add((void*)foobar2, "foobar2", H2_FILE);
       OK(NotNull, b);
-      JE("[{'reference_count':2}]", h2_sources_tojson(pool, t1));
+      JE("[{'reference_count':2}]", h2_sources_tojson(pool));
 
       auto ret = pool.get((void*)foobar2);
       OK(NotNull, ret);
-      JE("{'reference_count':2}", h2_source_tojson(ret, t1));
+      JE("{'reference_count':2}", h2_source_tojson(ret));
 
       pool.del(ret);
-      JE("[{'reference_count':1}]", h2_sources_tojson(pool, t1));
+      JE("[{'reference_count':1}]", h2_sources_tojson(pool));
       pool.del(ret);
-      JE("[]", h2_sources_tojson(pool, t1));
+      JE("[]", h2_sources_tojson(pool));
    }
 }

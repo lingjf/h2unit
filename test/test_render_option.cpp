@@ -123,27 +123,27 @@ SUITE(h2_option)
    {
       const char* argv[] = {"./a.out", "-i", "http"};
       c.parse(3, argv);
-      OK(!c.filter("server", "connection", "httpd_connection.cpp", 0));
-      OK(!c.filter("server", "my_http_connection", "tcp_connection.cpp", 0));
-      OK(!c.filter("http", "connection", "tcp_connection.cpp", 0));
+      OK(!c.filter("server", "connection", "httpd_connection.cpp:123"));
+      OK(!c.filter("server", "my_http_connection", "tcp_connection.cpp:123"));
+      OK(!c.filter("http", "connection", "tcp_connection.cpp:123"));
    }
 
    Case(include substr 2)
    {
       const char* argv[] = {"./a.out", "-i", "http", "tcp*"};
       c.parse(4, argv);
-      OK(!c.filter("server", "connection", "httpd_connection.cpp", 0));
-      OK(!c.filter("server", "connection", "tcp_connection.cpp", 0));
-      OK(!c.filter("http", "connection", "tcp_connection.cpp", 0));
+      OK(!c.filter("server", "connection", "httpd_connection.cpp:123"));
+      OK(!c.filter("server", "connection", "tcp_connection.cpp:123"));
+      OK(!c.filter("http", "connection", "tcp_connection.cpp:123"));
    }
 
    Case(include exclude)
    {
       const char* argv[] = {"./a.out", "-e", "http", "-e", "tcp"};
       c.parse(5, argv);
-      OK(c.filter("server", "connection", "httpd_connection.cpp", 0));
-      OK(c.filter("server", "connection", "tcp_connection.cpp", 0));
-      OK(c.filter("http", "connection", "tcp_connection.cpp", 0));
+      OK(c.filter("server", "connection", "httpd_connection.cpp:123"));
+      OK(c.filter("server", "connection", "tcp_connection.cpp:123"));
+      OK(c.filter("http", "connection", "tcp_connection.cpp:123"));
    }
 
    Case(include verbose)

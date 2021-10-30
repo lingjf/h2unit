@@ -115,6 +115,8 @@ SUITE(array detect)
 
       int a2 = 123;
       OK("False", ft(std::is_array<decltype(a2)>{}));
+
+      OK("False", ft(std::is_array<std::array<int, 3>>{}));
    }
 }
 
@@ -132,7 +134,7 @@ static int get1()
    return 1;
 }
 
-SUITE(nocall)
+SUITE(nocall in decltype)
 {
    Case(decltype)
    {

@@ -128,15 +128,13 @@ static inline bool match3(const std::vector<const char*>& patterns, const char* 
    return false;
 }
 
-h2_inline bool h2_option::filter(const char* suitename, const char* casename, const char* file, int line) const
+h2_inline bool h2_option::filter(const char* suitename, const char* casename, const char* fileline) const
 {
-   char filename[1024];
-   sprintf(filename, "%s:%d", file, line);
    if (!includes.empty())
-      if (!match3(includes, suitename) && !match3(includes, casename) && !match3(includes, filename))
+      if (!match3(includes, suitename) && !match3(includes, casename) && !match3(includes, fileline))
          return true;
    if (!excludes.empty())
-      if (match3(excludes, suitename) || match3(excludes, casename) || match3(excludes, filename))
+      if (match3(excludes, suitename) || match3(excludes, casename) || match3(excludes, fileline))
          return true;
    return false;
 }

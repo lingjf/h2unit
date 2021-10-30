@@ -1,6 +1,5 @@
 struct h2_stubs {
-   h2_list stubs;
-   bool add(void* srcfp, void* dstfp, const h2_fs& fs);
-   void clear(void* srcfp);
-   void clear();
+   static bool add(h2_list& stubs, void* srcfp, void* dstfp, const char* srcfn, const char* file);
+   static void clear(h2_list& stubs, void* srcfp);
+   static void clear(h2_list& stubs);
 };

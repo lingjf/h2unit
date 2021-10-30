@@ -47,7 +47,6 @@
 
 namespace h2 {
 #include "utils/h2_macro.hpp"         //
-#include "utils/h2_fs.hpp"            //
 #include "utils/h2_template.hpp"      //
 #include "utils/h2_list.hpp"          //
 #include "utils/h2_pattern.hpp"       //
@@ -67,6 +66,7 @@ namespace h2 {
 #include "render/h2_option.hpp"       //
 #include "render/h2_layout.hpp"       //
 #include "render/h2_failure.hpp"      //
+#include "core/h2_runner.hpp"         //
 #include "json/h2_json.hpp"           //
 #include "matcher/h2_matches.hpp"     // failure
 #include "matcher/h2_matcher.hpp"     // matches, failure
@@ -87,7 +87,7 @@ namespace h2 {
 #include "stub/h2_stub.hpp"           // -
 #include "mock/h2_routine.hpp"        //
 #include "mock/h2_checkin.hpp"        // failure
-#include "mock/h2_tuple.hpp"          // failure
+#include "mock/h2_tuple.hpp"          // failure, runner
 #include "mock/h2_mocker.hpp"         // failure, checkin, routine, matcher, stub
 #include "mock/h2_mocks.hpp"          // failure, checkin
 #include "mock/h2_mock.hpp"           //
@@ -99,7 +99,6 @@ namespace h2 {
 #include "net/h2_socket.hpp"          // stub, failure, matcher
 #include "core/h2_case.hpp"           // failure, stub, mock, dns, socket
 #include "core/h2_suite.hpp"          // case, stub, mock
-#include "core/h2_runner.hpp"         // suite, case, failure, stub, mock, option, debug
 #include "core/h2_core.hpp"           //
 #include "assert/h2_assert.hpp"       // failure, matcher
 #include "assert/h2_timer.hpp"        // failure
@@ -131,11 +130,11 @@ namespace h2 {
 #endif
 
 #ifndef H2_NO_Teardown
-#define Teardown H2Teardown
+#define Teardown H2Cleanup
 #endif
 
 #ifndef H2_NO_Cleanup
-#define Cleanup H2Teardown
+#define Cleanup H2Cleanup
 #endif
 
 #ifndef H2_NO_CP

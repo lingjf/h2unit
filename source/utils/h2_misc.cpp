@@ -1,10 +1,26 @@
+static inline bool h2_blank(const char* str)
+{
+   for (; str && *str; str++)
+      if (!::isspace(*str)) return false;
+   return true;
+}
+
+static inline const char* h2_basefile(const char* path)
+{
+   if (path)
+      for (const char* p = path + strlen(path); path <= p; --p)
+         if (*p == '/' || *p == '\\')
+            return p + 1;
+   return path;
+}
+
 static inline const char* get_key(const char* subject, const char* key)
 {
    return strcasestr(subject, key);
 }
 static inline const char* get_eq(const char* start)
 {
-   for (; *start && ::isspace(*start);) start++;  //strip left space
+   for (; *start && ::isspace(*start);) start++;  // strip left space
    return *start == '=' ? start : nullptr;
 }
 
@@ -20,7 +36,7 @@ h2_inline bool h2_extract::numeric(const char* attributes, const char* key, doub
    const char* p_eq = get_eq(p_key + strlen(key));
    if (!p_eq) return false;
    const char* p_numeric = p_eq + 1;
-   for (; *p_numeric && ::isspace(*p_numeric);) p_numeric++;  //strip left space
+   for (; *p_numeric && ::isspace(*p_numeric);) p_numeric++;  // strip left space
    value = strtod(p_numeric, nullptr);
    return true;
 }

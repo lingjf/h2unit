@@ -89,7 +89,7 @@ struct h2_fp {
       if (n == 1) return h2_load::addr_to_ptr(res[0]->addr);
       h2_vector<h2_string> candidates;
       for (int i = 0; i < n; ++i) candidates.push_back(res[i]->name);
-      h2_fail_g(h2_fail::new_symbol(fn, candidates));
+      h2_runner::failing(h2_fail::new_symbol(fn, candidates));
       return nullptr;
    }
 };
@@ -119,7 +119,7 @@ struct h2_fp<ClassType, ReturnType(ArgumentTypes...)> {
 
       ClassType* o = h2_constructible<ClassType>::O(alloca(sizeof(ClassType)));
       if (0 == (unsigned long long)o || 1 == (unsigned long long)o || 2 == (unsigned long long)o) {
-         h2_fail_g(h2_fail::new_symbol("vtable of " + h2_string(constructible_errors[(unsigned long long)o]) + h2_cxa::type_name<ClassType>(), {}, "  try: " + color("STUB/MOCK(", "yellow") + color("Object", "bold,red") + color(", Class, Method, ...)", "yellow")));
+         h2_runner::failing(h2_fail::new_symbol("vtable of " + h2_string(constructible_errors[(unsigned long long)o]) + h2_cxa::type_name<ClassType>(), {}, "  try: " + color("STUB/MOCK(", "yellow") + color("Object", "bold,red") + color(", Class, Method, ...)", "yellow")));
          return nullptr;
       }
       void* t = get_virtual_mfp(o, offset);
@@ -166,7 +166,7 @@ struct h2_fp<ClassType, ReturnType(ArgumentTypes...)> {
       sprintf(vtable_symbol, "_ZTV%s", typeid(ClassType).name());  // mangle for "vtable for ClassType"
       unsigned long long relative_vtable = h2_nm::get_mangle(vtable_symbol);
       if (!relative_vtable) {
-         h2_fail_g(h2_fail::new_symbol("vtable of " + h2_string(constructible_errors[(unsigned long long)o]) + h2_cxa::type_name<ClassType>(), {}, "  try: " + color("STUB/MOCK(", "yellow") + color("Object", "bold,red") + color(", Class, Method, ...)", "yellow")));
+         h2_runner::failing(h2_fail::new_symbol("vtable of " + h2_string(constructible_errors[(unsigned long long)o]) + h2_cxa::type_name<ClassType>(), {}, "  try: " + color("STUB/MOCK(", "yellow") + color("Object", "bold,red") + color(", Class, Method, ...)", "yellow")));
          return nullptr;
       }
       return get_virtual_mfp((void**)h2_load::vtable_to_ptr(relative_vtable), f);

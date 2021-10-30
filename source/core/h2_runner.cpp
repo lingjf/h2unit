@@ -6,7 +6,7 @@ static inline void save_last_order(h2_list& suites)
    if (!f) return;
    h2_list_for_each_entry (s, suites, h2_suite, x)
       h2_list_for_each_entry (c, s->cases, h2_case, x)
-         ::fprintf(f, "%s\n%s\n%d\n", ss(s->name), c->name, (int)c->failed);
+         ::fprintf(f, "%s\n%s\n%d\n", ss(s->name), c->name, c->failed ? 1 : 0);
    ::fclose(f);
 }
 
@@ -82,9 +82,9 @@ h2_inline void h2_runner::enumerate()
       for (auto& cleanup : global_suite_cleanups) cleanup();
       int unfiltered = 0;
       h2_list_for_each_entry (c, s->cases, h2_case, x)
-         if (!(c->filtered = O.filter(ss(s->name), c->name, c->fs.file, c->fs.line)))
+         if (!(c->filtered = O.filter(ss(s->name), c->name, c->file)))
             unfiltered++;
-      if (unfiltered == 0) s->filtered = O.filter(ss(s->name), "", s->fs.file, s->fs.line);
+      if (unfiltered == 0) s->filtered = O.filter(ss(s->name), "", s->file);
       cases += s->cases.count();
       if (O.progressing && 10 * i + i * i < cases && i < (int)h2_shell::I().cww - 20) i += ::printf(".");
    }
@@ -111,7 +111,7 @@ h2_inline int h2_runner::main(int argc, const char** argv)
    for (rounds = 0; rounds < O.run_rounds; ++rounds) {
       shuffle();
       h2_list_for_each_entry (s, suites, h2_suite, x) {
-         current_suite = s;
+         current_suite = (void*)s;
          h2_report::I().on_suite_start(s);
          for (auto& setup : global_suite_setups) setup();
          s->setup();
@@ -124,7 +124,7 @@ h2_inline int h2_runner::main(int argc, const char** argv)
             else if (c->todo)
                stats.todo++, s->stats.todo++;
 
-            current_case = c;
+            current_case = (void*)c;
             h2_report::I().on_case_start(s, c);
             if (!O.list_cases && !c->todo && !c->filtered && !c->ignored) {
                for (auto& setup : global_case_setups) setup();
@@ -145,8 +145,54 @@ h2_inline int h2_runner::main(int argc, const char** argv)
    h2_report::I().on_runner_endup(this);
    for (auto& cleanup : global_cleanups) cleanup();
 
-   stubs.clear();
-   mocks.clear(false);
+   h2_stubs::clear(stubs);
+   h2_mocks::clear(mocks, false);
    h2_memory::finalize();
    return O.verbose >= 6 ? stats.failed : 0;
+}
+
+h2_inline void h2_runner::stub(void* srcfp, void* dstfp, const char* srcfn, const char* file)
+{
+   if (!srcfp || !dstfp) return;
+   if (h2_runner::I().current_case)
+      h2_stubs::add(((h2_case*)h2_runner::I().current_case)->stubs, srcfp, dstfp, srcfn, file);
+   else if (h2_runner::I().current_suite)
+      h2_stubs::add(((h2_suite*)h2_runner::I().current_suite)->stubs, srcfp, dstfp, srcfn, file);
+   else
+      h2_stubs::add(h2_runner::I().stubs, srcfp, dstfp, srcfn, file);
+}
+
+h2_inline void h2_runner::unstub(void* srcfp)
+{
+   if (!srcfp) return;
+   if (h2_runner::I().current_case)
+      h2_stubs::clear(((h2_case*)h2_runner::I().current_case)->stubs, srcfp);
+   else if (h2_runner::I().current_suite)
+      h2_stubs::clear(((h2_suite*)h2_runner::I().current_suite)->stubs, srcfp);
+   else
+      h2_stubs::clear(h2_runner::I().stubs, srcfp);
+}
+
+h2_inline void h2_runner::mock(void* mocker)
+{
+   if (h2_runner::I().current_case)
+      h2_mocks::add(((h2_case*)h2_runner::I().current_case)->mocks, mocker);
+   else if (h2_runner::I().current_suite)
+      h2_mocks::add(((h2_suite*)h2_runner::I().current_suite)->mocks, mocker);
+   else
+      h2_mocks::add(h2_runner::I().mocks, mocker);
+}
+
+h2_inline void h2_runner::failing(h2_fail* fail)
+{
+   if (!fail) return;
+   if (O.debug) h2_debugger::trap();
+   if (h2_runner::I().current_case) ((h2_case*)h2_runner::I().current_case)->failing(fail, O.contiguous, true);
+}
+
+h2_inline void h2_runner::asserts()
+{
+   if (h2_runner::I().current_case) ((h2_case*)h2_runner::I().current_case)->stats.asserts += 1;
+   if (h2_runner::I().current_suite) ((h2_suite*)h2_runner::I().current_suite)->stats.asserts += 1;
+   h2_runner::I().stats.asserts += 1;
 }

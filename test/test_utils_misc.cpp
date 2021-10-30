@@ -1,5 +1,74 @@
 #include "../source/h2_unit.cpp"
 
+/* clang-format off */
+CASE(file line)
+{
+   OK(EndsWith("test_utils_misc.cpp:6"), H2_FILE);
+}
+/* clang-format on */
+
+SUITE(blank)
+{
+   Case(nullptr)
+   {
+      OK(h2::h2_blank(nullptr));
+   }
+
+   Case(empty)
+   {
+      OK(h2::h2_blank(""));
+   }
+
+   Case(space)
+   {
+      OK(h2::h2_blank(" "));
+   }
+
+   Case(space tab)
+   {
+      OK(h2::h2_blank(" \t \r \n "));
+   }
+
+   Case(space mix char)
+   {
+      OK(!h2::h2_blank(" \t abc \n "));
+   }
+
+   Case(abc)
+   {
+      OK(!h2::h2_blank("abc"));
+   }
+}
+
+SUITE(basename)
+{
+   Case(basename "abc.cpp")
+   {
+      OK("abc.cpp", h2::h2_basefile("abc.cpp"));
+   }
+
+   Case(basename "test/abc.cpp:123")
+   {
+      OK("abc.cpp:123", h2::h2_basefile("test/abc.cpp:123"));
+   }
+
+   Case(basename "/proj/test/abc.cpp")
+   {
+      OK("abc.cpp", h2::h2_basefile("/proj/test/abc.cpp"));
+   }
+
+   Case(basename windows)
+   {
+      OK("abc.cpp", h2::h2_basefile("c:\\proj\\test\\abc.cpp"));
+      OK("abc.cpp", h2::h2_basefile("c:\\abc.cpp"));
+   }
+
+   Case(basename "proj/test\\abc.cpp")
+   {
+      OK("abc.cpp", h2::h2_basefile("proj/test\\abc.cpp"));
+   }
+}
+
 SUITE(h2_extract)
 {
    Case(has)

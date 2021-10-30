@@ -1,5 +1,3 @@
-static inline void h2_stub_g(void*, void*, const h2_fs&);
-
 namespace {
 template <int Counter, typename ClassType, typename Signature>
 struct h2_stuber;
@@ -7,17 +5,19 @@ template <int Counter, typename ClassType, typename ReturnType, typename... Argu
 struct h2_stuber<Counter, ClassType, ReturnType(ArgumentTypes...)> {
    h2_singleton(h2_stuber);
    void* srcfp;
-   h2_fs fs;
+   const char* srcfn;
+   const char* file;
 
    ReturnType (*dstfp)(ClassType*, ArgumentTypes...);
    struct member_function_stub {  // wrap for calling conversions
       ReturnType fx(ArgumentTypes... arguments) { return I().dstfp((ClassType*)this, std::forward<ArgumentTypes>(arguments)...); }
    };
 
-   static h2_stuber& I(void* srcfp, const h2_fs& fs)
+   static h2_stuber& I(void* srcfp, const char* srcfn, const char* file)
    {
       I().srcfp = srcfp;
-      I().fs = fs;
+      I().srcfn = srcfn;
+      I().file = file;
       return I();
    }
 
@@ -25,9 +25,9 @@ struct h2_stuber<Counter, ClassType, ReturnType(ArgumentTypes...)> {
    {
 #if defined _WIN32 && (defined __i386__ || defined _M_IX86)  // https://docs.microsoft.com/en-us/cpp/cpp/calling-conventions
       dstfp = dstfp_;
-      h2_stub_g(srcfp, h2_fp<member_function_stub, ReturnType(ArgumentTypes...)>::A(&member_function_stub::fx), fs);
+      h2_runner::stub(srcfp, h2_fp<member_function_stub, ReturnType(ArgumentTypes...)>::A(&member_function_stub::fx), srcfn, file);
 #else
-      h2_stub_g(srcfp, (void*)dstfp_, fs);
+      h2_runner::stub(srcfp, (void*)dstfp_, srcfn, file);
 #endif
    }
 };

@@ -4,9 +4,9 @@ struct h2_stub : h2_libc {
    void *srcfp, *dstfp;
    h2_source* source;
 
-   h2_stub(void* srcfp_, const h2_fs& fs) : srcfp(srcfp_)
+   h2_stub(void* srcfp_, const char* srcfn, const char* file) : srcfp(srcfp_)
    {
-      source = h2_sources::I().add(srcfp, fs);
+      source = h2_sources::I().add(srcfp, srcfn, file);
       if (source) source->save(saved_opcode);
    }
    ~h2_stub()
@@ -22,35 +22,35 @@ struct h2_stub : h2_libc {
    }
 };
 
-static inline h2_stub* h2_stubs_get(h2_stubs* stubs, void* srcfp)
+static inline h2_stub* h2_stubs_get(h2_list& stubs, void* srcfp)
 {
-   h2_list_for_each_entry (p, stubs->stubs, h2_stub, x)
+   h2_list_for_each_entry (p, stubs, h2_stub, x)
       if (p->srcfp == srcfp)
          return p;
    return nullptr;
 }
 
-h2_inline bool h2_stubs::add(void* srcfp, void* dstfp, const h2_fs& fs)
+h2_inline bool h2_stubs::add(h2_list& stubs, void* srcfp, void* dstfp, const char* srcfn, const char* file)
 {
-   h2_stub* stub = h2_stubs_get(this, srcfp);
+   h2_stub* stub = h2_stubs_get(stubs, srcfp);
    if (!stub) {
-      stub = new h2_stub(srcfp, fs);
+      stub = new h2_stub(srcfp, srcfn, file);
       stubs.push(stub->x);
    }
    stub->stub(dstfp);
    return true;
 }
 
-h2_inline void h2_stubs::clear(void* srcfp)
+h2_inline void h2_stubs::clear(h2_list& stubs, void* srcfp)
 {
-   h2_stub* stub = h2_stubs_get(this, srcfp);
+   h2_stub* stub = h2_stubs_get(stubs, srcfp);
    if (stub) {
       stub->x.out();
       delete stub;
    }
 }
 
-h2_inline void h2_stubs::clear()
+h2_inline void h2_stubs::clear(h2_list& stubs)
 {
    h2_list_for_each_entry (p, stubs, h2_stub, x) {
       p->x.out();

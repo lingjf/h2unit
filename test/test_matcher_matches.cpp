@@ -1,6 +1,6 @@
 #include "../source/h2_unit.cpp"
 
-SUITE(matches c)
+SUITE(matches configure)
 {
    Case(default)
    {

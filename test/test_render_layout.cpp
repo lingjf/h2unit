@@ -1,42 +1,5 @@
 #include "../source/h2_unit.cpp"
 
-char* h2_line_tostring(h2::h2_line& line, char* b)
-{
-   sprintf(b + strlen(b), "[");
-   int i = 0;
-   for (auto& s : line) {
-      if (i++)
-         sprintf(b + strlen(b), ",");
-
-      sprintf(b + strlen(b), "\'");
-
-      for (auto& c : s) {
-         if (c == '\033') {
-            sprintf(b + strlen(b), "\\033");
-         } else {
-            sprintf(b + strlen(b), "%c", c);
-         }
-      }
-      sprintf(b + strlen(b), "\'");
-   }
-   sprintf(b + strlen(b), "]");
-   return b;
-}
-
-char* h2_lines_tostring(h2::h2_lines& lines, char* b)
-{
-   sprintf(b + strlen(b), "[");
-   int i = 0;
-   for (auto& line : lines) {
-      if (i++)
-         sprintf(b + strlen(b), ",");
-
-      h2_line_tostring(line, b);
-   }
-   sprintf(b + strlen(b), "]");
-   return b;
-}
-
 SUITE(h2_layout)
 {
    char t1[1024] = {'\0'};

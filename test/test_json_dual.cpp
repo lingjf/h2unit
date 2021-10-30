@@ -1,12 +1,12 @@
 #include "../source/h2_unit.cpp"
 #include "test_types.hpp"
 
-h2::h2_string safes(h2::h2_string s)
+static h2::h2_string safes(h2::h2_string s)
 {
    return s.replace_all("\"", "%").replace_all("'", "&").replace_all("\\\"", "$");
 }
 
-h2::h2_string dual_tojson(h2::h2_json_dual* dual)
+static h2::h2_string dual_tojson(h2::h2_json_dual* dual)
 {
    h2::h2_string out;
    out.sprintf("{");
@@ -30,8 +30,6 @@ h2::h2_string dual_tojson(h2::h2_json_dual* dual)
 
 SUITE(json dual)
 {
-   char t[1024 * 8];
-   memset(t, 0, sizeof(t));
    Case(object only)
    {
       const char* e = "{\"e\": 123}";

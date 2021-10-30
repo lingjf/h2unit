@@ -27,7 +27,7 @@ static inline const char* find_op(const char* src, const char* op)
 h2_inline h2_defer_failure::~h2_defer_failure()
 {
    if (fails) {
-      fails->fs = fs;
+      fails->file = file;
       fails->assert_type = assert_type;
       fails->assert_op = assert_op;
       fails->e_expression = e_expression;
@@ -44,6 +44,6 @@ h2_inline h2_defer_failure::~h2_defer_failure()
             fails->a_expression.assign(q, (a_expression + strlen(a_expression)) - q);
          }
       }
-      h2_fail_g(fails);
+      h2_runner::failing(fails);
    }
 }

@@ -6,7 +6,7 @@ struct h2_override {
    }
    static void free(void* ptr)
    {
-      if (ptr) h2_fail_g(h2_stack::I().rel_piece("free", ptr));
+      if (ptr) h2_runner::failing(h2_stack::I().rel_piece("free", ptr));
    }
    static void* malloc(size_t size)
    {
@@ -25,7 +25,7 @@ struct h2_override {
       if (ptr) old_p = h2_stack::I().get_piece(ptr);
       if (size) new_p = h2_stack::I().new_piece("realloc", size, 0, nullptr);
       if (old_p && new_p) memcpy(new_p->user_ptr, old_p->user_ptr, std::min(old_p->user_size, size));
-      if (ptr) h2_fail_g(h2_stack::I().rel_piece("free", ptr));
+      if (ptr) h2_runner::failing(h2_stack::I().rel_piece("free", ptr));
       return new_p ? new_p->user_ptr : nullptr;
    }
    static int posix_memalign(void** memptr, size_t alignment, size_t size)
@@ -60,18 +60,18 @@ struct h2_override {
    }
    static void operator delete(void* ptr)
    {
-      if (ptr) h2_fail_g(h2_stack::I().rel_piece("delete", ptr));
+      if (ptr) h2_runner::failing(h2_stack::I().rel_piece("delete", ptr));
    }
    static void operator delete(void* ptr, const std::nothrow_t&)
    {
-      if (ptr) h2_fail_g(h2_stack::I().rel_piece("delete nothrow", ptr));
+      if (ptr) h2_runner::failing(h2_stack::I().rel_piece("delete nothrow", ptr));
    }
    static void operator delete[](void* ptr)
    {
-      if (ptr) h2_fail_g(h2_stack::I().rel_piece("delete[]", ptr));
+      if (ptr) h2_runner::failing(h2_stack::I().rel_piece("delete[]", ptr));
    }
    static void operator delete[](void* ptr, const std::nothrow_t&)
    {
-      if (ptr) h2_fail_g(h2_stack::I().rel_piece("delete[] nothrow", ptr));
+      if (ptr) h2_runner::failing(h2_stack::I().rel_piece("delete[] nothrow", ptr));
    }
 };

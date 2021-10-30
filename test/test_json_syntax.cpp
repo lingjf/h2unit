@@ -391,97 +391,97 @@ SUITE(json syntax complex)
       h2::h2_json_syntax syntax(lexical);
       OK(syntax.parse(node));
 
-      JE("{                                                                                     \
-            'type': 'object',                                                                   \
-            'key_string': '',                                                                   \
-            'value_string': '',                                                                 \
-            'value_double': 0,                                                                  \
-            'value_boolean': 0,                                                                 \
-            'children':[                                                                        \
-                {                                                                               \
-                  'type': 'string',                                                             \
-                  'key_string': 'name',                                                         \
-                  'value_string': 'jeff',                                                       \
-                  'value_double': 0,                                                            \
-                  'value_boolean': 0,                                                           \
-                  'children':[]                                                                 \
-               },                                                                               \
-               {                                                                                \
-                  'type': 'number',                                                             \
-                  'key_string': 'age',                                                          \
-                  'value_string': '',                                                           \
-                  'value_double': 28,                                                           \
-                  'value_boolean': 0,                                                           \
-                  'children':[]                                                                 \
-               },                                                                               \
-               {                                                                                \
-                  'type': 'array',                                                              \
-                  'key_string': 'lang',                                                         \
-                  'value_string': '',                                                           \
-                  'value_double': 0,                                                            \
-                  'value_boolean': 0,                                                           \
-                  'children':[                                                                  \
-                     {                                                                          \
-                        'type': 'string',                                                       \
-                        'key_string': '',                                                       \
-                        'value_string': 'java',                                                 \
-                        'value_double': 0,                                                      \
-                        'value_boolean': 0,                                                     \
-                        'children':[]                                                           \
-                     },                                                                         \
-                     {                                                                          \
-                        'type': 'object',                                                       \
-                        'key_string': '',                                                       \
-                        'value_string': '',                                                     \
-                        'value_double': 0,                                                      \
-                        'value_boolean': 0,                                                     \
-                        'children':[                                                            \
-                           {                                                                    \
-                              'type': 'number',                                                 \
-                              'key_string': 'python',                                           \
-                              'value_string': '',                                               \
-                              'value_double': 3,                                                \
-                              'value_boolean': 0,                                               \
-                              'children':[]                                                     \
-                           },                                                                   \
-                           {                                                                    \
-                              'type': 'number',                                                 \
-                              'key_string': 'c++',                                              \
-                              'value_string': '',                                               \
-                              'value_double': 11,                                               \
-                              'value_boolean': 0,                                               \
-                              'children':[]                                                     \
-                           }                                                                    \
-                        ]                                                                       \
-                     },                                                                         \
-                     {                                                                          \
-                        'type': 'array',                                                       \
-                        'key_string': '',                                                       \
-                        'value_string': '',                                                     \
-                        'value_double': 0,                                                      \
-                        'value_boolean': 0,                                                     \
-                        'children':[                                                            \
-                           {                                                                    \
-                              'type': 'string',                                                 \
-                              'key_string': '',                                                 \
-                              'value_string': 'lua',                                            \
-                              'value_double': 0,                                                \
-                              'value_boolean': 0,                                               \
-                              'children':[]                                                     \
-                           },                                                                   \
-                           {                                                                    \
-                              'type': 'null',                                                   \
-                              'key_string': '',                                                 \
-                              'value_string': '',                                               \
-                              'value_double': 0,                                                \
-                              'value_boolean': 0,                                               \
-                              'children':[]                                                     \
-                           }                                                                    \
-                        ]                                                                       \
-                     }                                                                          \
-                  ]                                                                             \
-               }                                                                                \
-            ]                                                                                   \
+      JE("{                                                 \
+            'type': 'object',                               \
+            'key_string': '',                               \
+            'value_string': '',                             \
+            'value_double': 0,                              \
+            'value_boolean': 0,                             \
+            'children':[                                    \
+                {                                           \
+                  'type': 'string',                         \
+                  'key_string': 'name',                     \
+                  'value_string': 'jeff',                   \
+                  'value_double': 0,                        \
+                  'value_boolean': 0,                       \
+                  'children':[]                             \
+               },                                           \
+               {                                            \
+                  'type': 'number',                         \
+                  'key_string': 'age',                      \
+                  'value_string': '',                       \
+                  'value_double': 28,                       \
+                  'value_boolean': 0,                       \
+                  'children':[]                             \
+               },                                           \
+               {                                            \
+                  'type': 'array',                          \
+                  'key_string': 'lang',                     \
+                  'value_string': '',                       \
+                  'value_double': 0,                        \
+                  'value_boolean': 0,                       \
+                  'children':[                              \
+                     {                                      \
+                        'type': 'string',                   \
+                        'key_string': '',                   \
+                        'value_string': 'java',             \
+                        'value_double': 0,                  \
+                        'value_boolean': 0,                 \
+                        'children':[]                       \
+                     },                                     \
+                     {                                      \
+                        'type': 'object',                   \
+                        'key_string': '',                   \
+                        'value_string': '',                 \
+                        'value_double': 0,                  \
+                        'value_boolean': 0,                 \
+                        'children':[                        \
+                           {                                \
+                              'type': 'number',             \
+                              'key_string': 'python',       \
+                              'value_string': '',           \
+                              'value_double': 3,            \
+                              'value_boolean': 0,           \
+                              'children':[]                 \
+                           },                               \
+                           {                                \
+                              'type': 'number',             \
+                              'key_string': 'c++',          \
+                              'value_string': '',           \
+                              'value_double': 11,           \
+                              'value_boolean': 0,           \
+                              'children':[]                 \
+                           }                                \
+                        ]                                   \
+                     },                                     \
+                     {                                      \
+                        'type': 'array',                    \
+                        'key_string': '',                   \
+                        'value_string': '',                 \
+                        'value_double': 0,                  \
+                        'value_boolean': 0,                 \
+                        'children':[                        \
+                           {                                \
+                              'type': 'string',             \
+                              'key_string': '',             \
+                              'value_string': 'lua',        \
+                              'value_double': 0,            \
+                              'value_boolean': 0,           \
+                              'children':[]                 \
+                           },                               \
+                           {                                \
+                              'type': 'null',               \
+                              'key_string': '',             \
+                              'value_string': '',           \
+                              'value_double': 0,            \
+                              'value_boolean': 0,           \
+                              'children':[]                 \
+                           }                                \
+                        ]                                   \
+                     }                                      \
+                  ]                                         \
+               }                                            \
+            ]                                               \
          }",
          node_tojson(&node));
 

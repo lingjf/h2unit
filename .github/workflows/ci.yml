@@ -237,9 +237,7 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - {arch: "x86(x86_64)", platform: 'Win32'}
-          - {arch: "x86_64", platform: 'x64'}
-          - {arch: "x86(x86_64)", platform: 'Win32'}
+          - {arch: "x86", platform: 'Win32'}
           - {arch: "x86_64", platform: 'x64'}
     name: windows-${{matrix.arch}}-cmake-${{matrix.platform}}
     steps:
@@ -282,9 +280,7 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - {arch: "x86(x86_64)", platform: 'Win32'}
-          - {arch: "x86_64", platform: 'x64'}
-          - {arch: "x86(x86_64)", platform: 'Win32'}
+          - {arch: "x86", platform: 'Win32'}
           - {arch: "x86_64", platform: 'x64'}
     name: windows-${{matrix.arch}}-msbuild-${{matrix.platform}}
     steps:

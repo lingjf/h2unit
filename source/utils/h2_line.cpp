@@ -3,7 +3,7 @@ h2_inline size_t h2_line::width(bool ignore_indent) const
    size_t w = 0;
    for (auto& word : *this)
       if (!h2_color::isctrl(word.c_str()))
-         if (!ignore_indent || !word.isspace())
+         if (!ignore_indent || !h2_blank(word.c_str()))
             w += word.width();
    return w;
 }
@@ -170,7 +170,7 @@ h2_inline bool h2_lines::foldable(size_t width) const
    size_t sum = 0;
    for (auto& line : *this)
       for (auto& word : line)
-         if (!word.isspace() && !h2_color::isctrl(word.c_str()))  // ignore indent and \033m controller
+         if (!h2_blank(word.c_str()) && !h2_color::isctrl(word.c_str()))  // ignore indent and \033m controller
             sum += word.size();
 
    return sum < width;
@@ -181,7 +181,7 @@ h2_inline h2_line h2_lines::folds() const
    h2_line folded_line;
    for (auto& line : *this)
       for (auto& word : line)
-         if (!word.isspace())  // drop indent
+         if (!h2_blank(word.c_str()))  // drop indent
             folded_line.push_back(word);
    return folded_line;
 }
@@ -191,7 +191,7 @@ h2_inline h2_string h2_lines::string() const
    h2_string s;
    for (auto& line : *this)
       for (auto& word : line)
-         if (!word.isspace() && !h2_color::isctrl(word.c_str()))
+         if (!h2_blank(word.c_str()) && !h2_color::isctrl(word.c_str()))
             s += word;
    return s;
 }

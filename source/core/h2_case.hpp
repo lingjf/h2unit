@@ -1,20 +1,19 @@
 struct h2_case {
-   h2_fs fs;
+   h2_list x;
+   const char* file;
    const char* name;
-   bool todo = false, filtered = false, ignored = false;
-   bool failed = false, last_failed = false;
+   bool todo = false;
+   bool filtered = false, ignored = false, failed = false, last_failed = false;
    bool scheduled = false;
    int seq = 0;
-   int asserts = 0;
-   long long footprint = 0;
-   h2_list x;
    jmp_buf ctx;
-   h2_fail* fails = nullptr;
-   h2_stubs stubs;
-   h2_mocks mocks;
+   h2_list stubs;
+   h2_list mocks;
    h2_dnses dnses;
+   h2_stats stats;
+   h2_fail* fails = nullptr;
 
-   h2_case(const char* name_, int todo_, const h2_fs& fs_) : fs(fs_), name(name_), todo(todo_) {}
+   h2_case(const char* file_, const char* name_, int todo_) : file(file_), name(name_), todo(todo_) {}
    void clear();
 
    void prev_setup();
@@ -22,7 +21,7 @@ struct h2_case {
    void prev_cleanup() { scheduled = false; }
    void post_cleanup();
 
-   void do_fail(h2_fail* fail, bool defer, bool append);
+   void failing(h2_fail* fail, bool defer, bool append);
 
    struct cleaner : h2_once {
       h2_case* thus;

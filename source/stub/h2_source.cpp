@@ -3,10 +3,10 @@ struct h2_source : h2_libc {
    unsigned char origin_opcode[32];
    void* source_fp;
    int reference_count = 0;
-   h2_source(void* source_fp_, const h2_fs& fs) : source_fp(source_fp_)
+   h2_source(void* source_fp_, const char* srcfn, const char* file) : source_fp(source_fp_)
    {
       if (!h2_e9_save(source_fp, origin_opcode)) {
-         h2_color::prints("yellow", "STUB %s by %s() failed %s:%d\n", fs.func, O.os == 'W' ? "VirtualProtect" : "mprotect", fs.file, fs.line);
+         h2_color::prints("yellow", "STUB %s by %s() failed %s\n", srcfn, O.os == 'W' ? "VirtualProtect" : "mprotect", file);
          if (O.os == 'm') ::printf("try: "), h2_color::prints("green", "printf '\\x07' | dd of=%s bs=1 seek=160 count=1 conv=notrunc\n", O.path);
          if (O.os == 'L') ::printf("try: "), h2_color::prints("green", "objcopy --writable-text %s\n", O.path);
       }
@@ -46,12 +46,12 @@ struct h2_sources {
 
    h2_source* get(void* fp) { return __find(__follow(fp)); }
 
-   h2_source* add(void* fp, const h2_fs& fs)
+   h2_source* add(void* fp, const char* srcfn, const char* file)
    {
       void* source_fp = __follow(fp);
       h2_source* source = __find(source_fp);
       if (!source) {
-         source = new h2_source(source_fp, fs);
+         source = new h2_source(source_fp, srcfn, file);
          sources.push(source->x);
       }
       source->reference_count++;

@@ -90,14 +90,14 @@ struct h2_resolver {
       return &h;
    }
 
-   h2_stubs stubs;
+   h2_list stubs;
    h2_resolver()
    {
-      stubs.add((void*)::getaddrinfo, (void*)getaddrinfo, {__FILE__, __LINE__, "getaddrinfo"});
-      stubs.add((void*)::freeaddrinfo, (void*)freeaddrinfo, {__FILE__, __LINE__, "freeaddrinfo"});
-      stubs.add((void*)::gethostbyname, (void*)gethostbyname, {__FILE__, __LINE__, "gethostbyname"});
+      h2_stubs::add(stubs, (void*)::getaddrinfo, (void*)getaddrinfo, "getaddrinfo", H2_FILE);
+      h2_stubs::add(stubs, (void*)::freeaddrinfo, (void*)freeaddrinfo, "freeaddrinfo", H2_FILE);
+      h2_stubs::add(stubs, (void*)::gethostbyname, (void*)gethostbyname, "gethostbyname", H2_FILE);
    }
-   ~h2_resolver() { stubs.clear(); }
+   ~h2_resolver() { h2_stubs::clear(stubs); }
 };
 
 h2_inline void h2_dnses::add(h2_list& name)
@@ -137,7 +137,7 @@ h2_inline void h2_dns::setaddrinfo(int n, ...)
    va_end(b);
 
    h2_resolver::I().dnses.push(name->y);
-   if (h2_runner::I().current_case) h2_runner::I().current_case->dnses.add(name->x);
+   if (h2_runner::I().current_case) ((h2_case*)h2_runner::I().current_case)->dnses.add(name->x);
 }
 
 h2_inline void h2_dns::initialize()

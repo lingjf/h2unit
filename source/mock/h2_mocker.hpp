@@ -1,7 +1,7 @@
 struct h2_mocker_base : h2_libc {
    h2_list x;
    void *srcfp, *dstfp;
-   h2_fs fs;
+   const char *srcfn, *file;
    char return_type[512];
    h2_vector<h2_string> argument_types;
    bool greed_mode = true;
@@ -54,7 +54,7 @@ class h2_mocker<Counter, ClassType, ReturnType(ArgumentTypes...)> : h2_mocker_ba
       ArgumentTypeTuple at = std::forward_as_tuple(std::forward<ArgumentTypes>(arguments)...);
       int checkin_offset = -1;
       for (int i = checkin_index; i < (int)checkin_array.size(); ++i) {
-         h2_fail* fails = h2_tuple_matches(matcher_array[i], at);
+         h2_fail* fails = tuple_matches(matcher_array[i], at);
          if (fails) {
             if (checkin_offset != -1) break;
             if (checkin_array[i].is_satisfied()) { /* try next h2_checkin */
@@ -62,12 +62,12 @@ class h2_mocker<Counter, ClassType, ReturnType(ArgumentTypes...)> : h2_mocker_ba
                continue;
             }
             fails->foreach([this, i](h2_fail* f, size_t, size_t) {
-               f->explain += gray("on ") + (fs.func + argument(f->seqno));
+               f->explain += gray("on ") + (srcfn + argument(f->seqno));
                if (1 < checkin_array.size()) f->explain += gray(" when ") + h2_numeric::sequence_number((size_t)i) + " " + color(checkin_array[i].expr, "cyan");
             });
-            h2_fail* fail = h2_fail::new_normal(signature(), fs);
+            h2_fail* fail = h2_fail::new_normal(signature(), file);
             h2_fail::append_child(fail, fails);
-            h2_fail_g(fail);
+            h2_runner::failing(fail);
          } else {
             checkin_index = i;
             checkin_offset = i;
@@ -80,10 +80,10 @@ class h2_mocker<Counter, ClassType, ReturnType(ArgumentTypes...)> : h2_mocker_ba
       }
       if (checkin_offset != -1) checkin_array[checkin_offset].call += 1;
       if (checkin_offset == -1) {
-         h2_fail* fail = h2_fail::new_normal(signature(), fs);
-         h2_fail* f = h2_fail::new_normal(fs.func + h2_representify(at) + color(" unexpectedly", "red,bold") + " called");
+         h2_fail* fail = h2_fail::new_normal(signature(), file);
+         h2_fail* f = h2_fail::new_normal(srcfn + h2_representify(at) + color(" unexpectedly", "red,bold") + " called");
          h2_fail::append_child(fail, f);
-         h2_fail_g(fail);
+         h2_runner::failing(fail);
       }
       return checkin_offset;
    }
@@ -104,12 +104,12 @@ class h2_mocker<Counter, ClassType, ReturnType(ArgumentTypes...)> : h2_mocker_ba
       if (!i) {
          i = new h2_mocker();
          h2_cxa::type_name<ReturnType>(i->return_type, sizeof(i->return_type));
-         h2_tuple_types<ArgumentTypeTuple>(i->argument_types);
+         tuple_types<ArgumentTypeTuple>(i->argument_types);
       }
       return *i;
    }
 
-   static h2_mocker& I(void* srcfp, const h2_fs& fs)
+   static h2_mocker& I(void* srcfp, const char* srcfn, const char* file)
    {
       if (std::is_same<std::false_type, ClassType>::value) {
          I().dstfp = (void*)normal_function_stub;
@@ -119,7 +119,8 @@ class h2_mocker<Counter, ClassType, ReturnType(ArgumentTypes...)> : h2_mocker_ba
          I().original.mfp = (ReturnType(*)(ClassType*, ArgumentTypes...))srcfp;
       }
       I().srcfp = srcfp;
-      I().fs = fs;
+      I().srcfn = srcfn;
+      I().file = file;
       I().reset();
       I().mock();
       return I();

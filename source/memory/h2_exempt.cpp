@@ -22,13 +22,13 @@ struct h2_exempt_stub {
 
 h2_inline void h2_exempt::setup()
 {
-   static h2_stubs stubs;
+   static h2_list stubs;
 
-   stubs.add((void*)::gmtime, (void*)h2_exempt_stub::gmtime, {__FILE__, __LINE__, "gmtime"});
-   stubs.add((void*)::ctime, (void*)h2_exempt_stub::ctime, {__FILE__, __LINE__, "ctime"});
-   stubs.add((void*)::asctime, (void*)h2_exempt_stub::asctime, {__FILE__, __LINE__, "asctime"});
-   stubs.add((void*)::localtime, (void*)h2_exempt_stub::localtime, {__FILE__, __LINE__, "localtime"});
-   stubs.add((void*)::mktime, (void*)h2_exempt_stub::mktime, {__FILE__, __LINE__, "mktime"});
+   h2_stubs::add(stubs, (void*)::gmtime, (void*)h2_exempt_stub::gmtime, "gmtime", H2_FILE);
+   h2_stubs::add(stubs, (void*)::ctime, (void*)h2_exempt_stub::ctime, "ctime", H2_FILE);
+   h2_stubs::add(stubs, (void*)::asctime, (void*)h2_exempt_stub::asctime, "asctime", H2_FILE);
+   h2_stubs::add(stubs, (void*)::localtime, (void*)h2_exempt_stub::localtime, "localtime", H2_FILE);
+   h2_stubs::add(stubs, (void*)::mktime, (void*)h2_exempt_stub::mktime, "mktime", H2_FILE);
 
 #if defined _WIN32
    add_by_fp((void*)::_wchdir);
@@ -42,30 +42,30 @@ h2_inline void h2_exempt::setup()
    add_by_fp((void*)::_gmtime64_s);
    add_by_fp(h2_un<void*>(&std::type_info::name));
 #else
-   stubs.add((void*)::gmtime_r, (void*)h2_exempt_stub::gmtime_r, {__FILE__, __LINE__, "gmtime_r"});
-   stubs.add((void*)::ctime_r, (void*)h2_exempt_stub::ctime_r, {__FILE__, __LINE__, "ctime_r"});
-   stubs.add((void*)::asctime_r, (void*)h2_exempt_stub::asctime_r, {__FILE__, __LINE__, "asctime_r"});
-   stubs.add((void*)::localtime_r, (void*)h2_exempt_stub::localtime_r, {__FILE__, __LINE__, "localtime_r"});
+   h2_stubs::add(stubs, (void*)::gmtime_r, (void*)h2_exempt_stub::gmtime_r, "gmtime_r", H2_FILE);
+   h2_stubs::add(stubs, (void*)::ctime_r, (void*)h2_exempt_stub::ctime_r, "ctime_r", H2_FILE);
+   h2_stubs::add(stubs, (void*)::asctime_r, (void*)h2_exempt_stub::asctime_r, "asctime_r", H2_FILE);
+   h2_stubs::add(stubs, (void*)::localtime_r, (void*)h2_exempt_stub::localtime_r, "localtime_r", H2_FILE);
    add_by_fp((void*)::sscanf);
    add_by_fp((void*)::sprintf);
    add_by_fp((void*)::vsnprintf);
 
-#   if defined __APPLE__ && defined __clang__
+#if defined __APPLE__ && defined __clang__
    add_by_fp((void*)::snprintf);
    add_by_fp((void*)::snprintf_l);
    add_by_fp((void*)::strftime_l);
    add_by_fp((void*)::strtod_l);
    add_by_fp((void*)::strtold);
    add_by_fp((void*)::strtof_l);
-#   endif
+#endif
 #endif
 
 #if defined __GNUC__
    add_by_fp((void*)abi::__cxa_demangle);
    add_by_fp((void*)abi::__cxa_throw);
-#   if !defined __clang__
+#if !defined __clang__
    add_by_fp((void*)::__cxa_allocate_exception);
-#   endif
+#endif
 #endif
 
    add_by_fp((void*)h2_pattern::regex_match);

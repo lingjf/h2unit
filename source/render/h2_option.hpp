@@ -30,7 +30,7 @@ struct h2_option {
    std::vector<const char*> includes, excludes;
 
    void parse(int argc, const char** argv);
-   bool filter(const char* suitename, const char* casename, const char* file, int line) const;
+   bool filter(const char* suitename, const char* casename, const char* fileline) const;
 };
 
 static const h2_option& O = h2_option::I();  // for pretty

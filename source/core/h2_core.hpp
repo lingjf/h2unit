@@ -1,16 +1,16 @@
 
-#define __H2SUITE(suite_name, suite_test)                                                      \
-   static void suite_test(h2::h2_suite*, h2::h2_case*);                                        \
-   static h2::h2_suite H2PP_UNIQUE(si)(h2::ss(suite_name), &suite_test, {__FILE__, __LINE__}); \
+#define __H2SUITE(suite_name, suite_test)                                         \
+   static void suite_test(h2::h2_suite*, h2::h2_case*);                           \
+   static h2::h2_suite H2PP_UNIQUE(si)(H2_FILE, h2::ss(suite_name), &suite_test); \
    static void suite_test(h2::h2_suite* suite_1_5_2_8_0_1_1_9_8, h2::h2_case* case_1_1_0_2_6_0_0_2_4)
 
 #define H2SUITE(...) __H2SUITE(#__VA_ARGS__, H2PP_UNIQUE(suite_test_C))
 
 #define H2Setup() if (case_1_1_0_2_6_0_0_2_4)
-#define H2Teardown() if (::setjmp(suite_1_5_2_8_0_1_1_9_8->ctx))
+#define H2Cleanup() if (::setjmp(suite_1_5_2_8_0_1_1_9_8->ctx))
 
 #define __H2Case(case_name, case_instance, suite_cleaner, case_cleaner, todo)                                             \
-   static h2::h2_case case_instance(h2::ss(case_name), todo, {__FILE__, __LINE__});                                       \
+   static h2::h2_case case_instance(H2_FILE, h2::ss(case_name), todo);                                                    \
    static h2::h2_suite::registor H2PP_UNIQUE(sr)(suite_1_5_2_8_0_1_1_9_8, &case_instance);                                \
    if (&case_instance == case_1_1_0_2_6_0_0_2_4)                                                                          \
       for (h2::h2_suite::cleaner suite_cleaner(suite_1_5_2_8_0_1_1_9_8); suite_cleaner; case_1_1_0_2_6_0_0_2_4 = nullptr) \
@@ -24,14 +24,14 @@
    static void case_test();                                                                           \
    static void suite_test(h2::h2_suite* suite_1_5_2_8_0_1_1_9_8, h2::h2_case* case_1_1_0_2_6_0_0_2_4) \
    {                                                                                                  \
-      static h2::h2_case case_instance(h2::ss(case_name), todo, {__FILE__, __LINE__});                \
+      static h2::h2_case case_instance(H2_FILE, h2::ss(case_name), todo);                             \
       static h2::h2_suite::registor suite_registor(suite_1_5_2_8_0_1_1_9_8, &case_instance);          \
       if (&case_instance == case_1_1_0_2_6_0_0_2_4)                                                   \
          for (h2::h2_case::cleaner case_cleaner(&case_instance); case_cleaner;)                       \
             if (!::setjmp(case_instance.ctx))                                                         \
                case_test();                                                                           \
    }                                                                                                  \
-   static h2::h2_suite H2PP_UNIQUE(si)(nullptr, &suite_test, {__FILE__, __LINE__});                   \
+   static h2::h2_suite H2PP_UNIQUE(si)(H2_FILE, nullptr, &suite_test);                                \
    static void case_test()
 
 #define H2CASE(...) __H2CASE(#__VA_ARGS__, H2PP_UNIQUE(case_test_C), H2PP_UNIQUE(suite_test_C), 0)
@@ -89,7 +89,7 @@
                if (!::setjmp(case_1_1_0_2_6_0_0_2_4->ctx))
 
 #define __H2Cases_Macro4(case_instance, Qx, i, x)                                          \
-   static h2::h2_case case_instance(H2PP_STR(i. x), 0, {__FILE__, __LINE__});               \
+   static h2::h2_case case_instance(H2_FILE, H2PP_STR(i. x), 0);                            \
    static h2::h2_suite::registor H2PP_UNIQUE(sr)(suite_1_5_2_8_0_1_1_9_8, &case_instance); \
    if (&case_instance == case_1_1_0_2_6_0_0_2_4) Qx = x, case_1_1_0_2_6_0_0_2_4->scheduled = true;
 
@@ -110,7 +110,7 @@
                   if (!::setjmp(case_1_1_0_2_6_0_0_2_4->ctx))
 
 #define __H2Casess_Macro4(case_instance, Qx, Qy, i, j, x, y)                               \
-   static h2::h2_case case_instance(H2PP_STR(i.j. x, y), 0, {__FILE__, __LINE__});          \
+   static h2::h2_case case_instance(H2_FILE, H2PP_STR(i.j. x, y), 0);                       \
    static h2::h2_suite::registor H2PP_UNIQUE(sr)(suite_1_5_2_8_0_1_1_9_8, &case_instance); \
    if (&case_instance == case_1_1_0_2_6_0_0_2_4) Qx = x, Qy = y, case_1_1_0_2_6_0_0_2_4->scheduled = true;
 
@@ -189,21 +189,3 @@
    template <typename x, typename y> \
    static void case_test()
 #define H2TODOSS_T(...) __H2TODOSS_T(H2PP_UNIQUE(case_test_C), __VA_ARGS__)
-
-#define __H2GlobalCallback(Scope, Q)                        \
-   namespace {                                              \
-   static struct Q {                                        \
-      Q() { h2::h2_runner::I().Scope##s.push_back(Scope); } \
-      static void Scope();                                  \
-   } H2PP_UNIQUE();                                         \
-   }                                                        \
-   void Q::Scope()
-
-#define H2GlobalSetup() __H2GlobalCallback(global_setup, H2PP_UNIQUE())
-#define H2GlobalCleanup() __H2GlobalCallback(global_cleanup, H2PP_UNIQUE())
-
-#define H2GlobalSuiteSetup() __H2GlobalCallback(global_suite_setup, H2PP_UNIQUE())
-#define H2GlobalSuiteCleanup() __H2GlobalCallback(global_suite_cleanup, H2PP_UNIQUE())
-
-#define H2GlobalCaseSetup() __H2GlobalCallback(global_case_setup, H2PP_UNIQUE())
-#define H2GlobalCaseCleanup() __H2GlobalCallback(global_case_cleanup, H2PP_UNIQUE())

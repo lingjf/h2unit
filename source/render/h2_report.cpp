@@ -2,37 +2,36 @@ struct h2_report_impl {
    h2_list x;
    int suites = 0, cases = 0;
    int suite_index = 0, suite_case_index = 0, runner_case_index = 0;
-   long long runner_cost, suite_cost, case_cost;
 
    virtual void on_runner_start(h2_runner* r)
    {
       suites = r->suites.count();
       h2_list_for_each_entry (s, r->suites, h2_suite, x)
          cases += s->cases.count();
-      runner_cost = h2_now();
+      r->stats.timecost = h2_now();
    }
    virtual void on_runner_endup(h2_runner* r)
    {
-      runner_cost = h2_now() - runner_cost;
+      r->stats.timecost = h2_now() - r->stats.timecost;
    }
    virtual void on_suite_start(h2_suite* s)
    {
       suite_case_index = 0;
-      suite_cost = h2_now();
+      s->stats.timecost = h2_now();
    }
    virtual void on_suite_endup(h2_suite* s)
    {
-      suite_cost = h2_now() - suite_cost;
+      s->stats.timecost = h2_now() - s->stats.timecost;
    }
    virtual void on_case_start(h2_suite* s, h2_case* c)
    {
       ++suite_case_index;
-      case_cost = h2_now();
+      c->stats.timecost = h2_now();
    }
    virtual void on_case_endup(h2_suite* s, h2_case* c)
    {
       ++runner_case_index;
-      case_cost = h2_now() - case_cost;
+      c->stats.timecost = h2_now() - c->stats.timecost;
    }
 };
 
@@ -56,7 +55,7 @@ struct h2_report_list : h2_report_impl {
       if (O.list_cases & 1) {
          h2_color::prints("dark gray", "SUITE-%d. ", unfiltered_suite_index);
          h2_color::prints("bold,blue", "%s", s->name);
-         h2_color::prints("dark gray", " %s:%d\n", s->fs.file, s->fs.line);
+         h2_color::prints("dark gray", " %s\n", s->file);
       }
    }
    void on_case_start(h2_suite* s, h2_case* c) override
@@ -77,7 +76,7 @@ struct h2_report_list : h2_report_impl {
          else
             h2_color::prints("dark gray", " %s-%d. ", type, unfiltered_runner_case_index);
          h2_color::prints("cyan", "%s", c->name);
-         h2_color::prints("dark gray", " %s:%d\n", c->fs.basefile(), c->fs.line);
+         h2_color::prints("dark gray", " %s\n", h2_basefile(c->file));
       }
    }
 };
@@ -93,7 +92,7 @@ struct h2_report_console : h2_report_impl {
    {
       return !!a1 + !!a2 + !!a3 + !!a4 + !!a5 + !!a6;
    }
-   h2_line format_title(const char* suite_name, const char* case_name, const char* file, int line)
+   h2_line format_title(const char* suite_name, const char* case_name, const char* file)
    {
       h2_line title;
       title.printf("dark gray", "┊ ");
@@ -110,7 +109,7 @@ struct h2_report_console : h2_report_impl {
       }
       if (file) {
          title.printf("dark gray", "┊ ");
-         title.printf("", "%s:%d ", file, line);
+         title.printf("", "%s ", file);
       } else {
          title = title.abbreviate(h2_shell::I().cww - 20);
       }
@@ -132,7 +131,7 @@ struct h2_report_console : h2_report_impl {
       h2_line bar;
       if (percentage && O.progressing) format_percentage(bar);
       if (status && status_style) bar.printf(status_style, "%s", status);
-      if (s && c) bar += format_title(s->name, c->name, returnable ? nullptr : c->fs.basefile(), c->fs.line);
+      if (s && c) bar += format_title(s->name, c->name, returnable ? nullptr : h2_basefile(c->file));
       h2_color::printl(bar, false);
       if (returnable) h2_report::I().escape_length = h2_stdio::I().capture_length;
    }
@@ -166,7 +165,7 @@ struct h2_report_console : h2_report_impl {
          h2_color::prints("", "%d rounds", r->rounds);
       }
       h2_color::prints("dark gray", ", ");
-      h2_color::prints("", "%s \n", format_duration(runner_cost));
+      h2_color::prints("", "%s \n", format_duration(r->stats.timecost));
    }
    void on_suite_start(h2_suite* s) override
    {
@@ -204,9 +203,9 @@ struct h2_report_console : h2_report_impl {
             h2_color::prints("dark gray", ", ");
             h2_color::prints("", "%s footprint", format_volume(s->stats.footprint));
          }
-         if (1 < suite_cost) {
+         if (1 < s->stats.timecost) {
             h2_color::prints("dark gray", ", ");
-            h2_color::prints("", "%s", format_duration(suite_cost));
+            h2_color::prints("", "%s", format_duration(s->stats.timecost));
          }
       }
    }
@@ -234,9 +233,9 @@ struct h2_report_console : h2_report_impl {
          if (O.verbose >= 3) {
             print_bar(true, "green", "Passed ", s, c, false);
             h2_line ad;
-            if (0 < c->asserts) ad.printf("dark gray", ad.width() ? ", " : "").printf("", "%d assert%s", c->asserts, 1 < c->asserts ? "s" : "");
-            if (0 < c->footprint) ad.printf("dark gray", ad.width() ? ", " : "").printf("", "%s footprint", format_volume(c->footprint));
-            if (0 < case_cost) ad.printf("dark gray", ad.width() ? ", " : "").printf("", "%s", format_duration(case_cost));
+            if (0 < c->stats.asserts) ad.printf("dark gray", ad.width() ? ", " : "").printf("", "%d assert%s", c->stats.asserts, 1 < c->stats.asserts ? "s" : "");
+            if (0 < c->stats.footprint) ad.printf("dark gray", ad.width() ? ", " : "").printf("", "%s footprint", format_volume(c->stats.footprint));
+            if (0 < c->stats.timecost) ad.printf("dark gray", ad.width() ? ", " : "").printf("", "%s", format_duration(c->stats.timecost));
             if (ad.width()) h2_color::printl(gray("- ") + ad, false);
          }
       }
@@ -263,9 +262,9 @@ struct h2_report_junit : h2_report_impl {
    {
       h2_report_impl::on_case_endup(s, c);
       if (!f) return;
-      fprintf(f, "<testcase classname=\"%s\" name=\"%s\" status=\"%s\" time=\"%.3f\">\n", s->name, c->name, c->todo ? "TODO" : (c->filtered ? "Filtered" : (c->ignored ? "Ignored" : (c->failed ? "Failed" : "Passed"))), case_cost / 1000.0);
+      fprintf(f, "<testcase classname=\"%s\" name=\"%s\" status=\"%s\" time=\"%.3f\">\n", s->name, c->name, c->todo ? "TODO" : (c->filtered ? "Filtered" : (c->ignored ? "Ignored" : (c->failed ? "Failed" : "Passed"))), c->stats.timecost / 1000.0);
       if (c->failed) {
-         fprintf(f, "<failure message=\"%s:%d:", c->fs.file, c->fs.line);
+         fprintf(f, "<failure message=\"%s:", c->file);
          if (c->fails) c->fails->foreach([&](h2_fail* fail, size_t si, size_t ci) {fprintf(f, "{newline}"); fail->print(f); });
          fprintf(f, "\" type=\"AssertionFailedError\"></failure>\n");
       }

@@ -1,5 +1,5 @@
 struct h2_override_platform {
-   h2_stubs stubs;
+   h2_list stubs;
 
    static char* strdup(char* s)
    {
@@ -14,10 +14,10 @@ struct h2_override_platform {
 
    void set()
    {
-      stubs.add((void*)::strdup, (void*)strdup, {__FILE__, __LINE__, "strdup"});
+      h2_stubs::add(stubs, (void*)::strdup, (void*)strdup, "strdup", H2_FILE);
 #if defined __CYGWIN__
-      stubs.add((void*)::strndup, (void*)strndup, {__FILE__, __LINE__, "strndup"});
+      h2_stubs::add(stubs, (void*)::strndup, (void*)strndup, "strndup", H2_FILE);
 #endif
    }
-   void reset() { stubs.clear(); }
+   void reset() { h2_stubs::clear(stubs); }
 };

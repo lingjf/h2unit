@@ -1,24 +1,17 @@
-struct h2_stats {
-   int passed = 0, failed = 0, todo = 0, filtered = 0, ignored = 0;
-   int asserts = 0;
-   long long footprint = 0;
-   void clear() { passed = 0, failed = 0, todo = 0, filtered = 0, ignored = 0, asserts = 0, footprint = 0; }
-};
-
 struct h2_suite {
-   h2_fs fs;
-   const char* name;
    h2_list x;
-   int seq = 0;
-   h2_stats stats;
-   bool filtered = false;
-   jmp_buf ctx;
+   const char* file;
+   const char* name;
    void (*test_code)(h2_suite*, h2_case*);
+   bool filtered = false;
+   int seq = 0;
+   jmp_buf ctx;
    h2_list cases;
-   h2_stubs stubs;
-   h2_mocks mocks;
+   h2_list stubs;
+   h2_list mocks;
+   h2_stats stats;
 
-   h2_suite(const char* name, void (*)(h2_suite*, h2_case*), const h2_fs& fs);
+   h2_suite(const char* file, const char* name, void (*)(h2_suite*, h2_case*));
    void clear();
 
    void enumerate();

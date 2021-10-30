@@ -1,5 +1,4 @@
 struct h2_mocks {
-   h2_list mocks;
-   bool add(void* mock);
-   h2_fail* clear(bool check);
+   static bool add(h2_list& mocks, void* mocker);
+   static h2_fail* clear(h2_list& mocks, bool check);
 };

@@ -12,14 +12,14 @@ struct h2_sock : h2_once {
    static h2_packet* fetch();
 
    template <typename M1 = h2_polymorphic_matcher<h2_matches_any>, typename M2 = h2_polymorphic_matcher<h2_matches_any>, typename M3 = h2_polymorphic_matcher<h2_matches_any>, typename M4 = h2_polymorphic_matcher<h2_matches_any>>
-   static void check(const h2_fs& fs, const char* e, M1 from = Any, M2 to = Any, M3 payload = Any, M4 size = Any)
+   static void check(const char* file, const char* e, M1 from = Any, M2 to = Any, M3 payload = Any, M4 size = Any)
    {
-      h2_assert_g();
+      h2_runner::asserts();
       h2_packet* p = h2_sock::fetch();
       if (!p) {
          h2_line t = "Outgoing packet miss Ptx(";
          t.printf("green", "%s", e).printf("", ")");
-         h2_fail_g(h2_fail::new_normal(t, fs));
+         h2_runner::failing(h2_fail::new_normal(t, file));
          return;
       }
       h2_fail* fails = nullptr;
@@ -47,9 +47,9 @@ struct h2_sock : h2_once {
       if (fails) {
          h2_line t = "Outgoing packet unexpected Ptx(";
          t.printf("green", "%s", e).printf("", ")");
-         h2_fail* fail = h2_fail::new_normal(t, fs);
+         h2_fail* fail = h2_fail::new_normal(t, file);
          h2_fail::append_child(fail, fails);
-         h2_fail_g(fail);
+         h2_runner::failing(fail);
       }
    }
 };
@@ -57,5 +57,5 @@ struct h2_sock : h2_once {
 #define __H2SOCK(Q) for (h2::h2_sock Q; Q;)
 #define H2SOCK(...) __H2SOCK(H2PP_UNIQUE())
 
-#define Ptx(...) h2::h2_sock::check({__FILE__, __LINE__}, h2::ss(#__VA_ARGS__), __VA_ARGS__)
+#define Ptx(...) h2::h2_sock::check(H2_FILE, h2::ss(#__VA_ARGS__), __VA_ARGS__)
 #define Pij(Packet_, Size_, ...) h2::h2_sock::inject(Packet_, Size_, h2::ss(#__VA_ARGS__))

@@ -4,25 +4,25 @@ h2_inline void h2_case::clear()
    h2_memory::hook();
    if (fails) delete fails;
    fails = nullptr;
-   asserts = 0;
+   stats.clear();
 }
 
 h2_inline void h2_case::prev_setup()
 {
    failed = false;
-   h2_memory::stack::push(fs);
+   h2_memory::stack::push(file);
 }
 
 h2_inline void h2_case::post_cleanup()
 {
-   footprint = h2_memory::stack::footprint();
+   stats.footprint = h2_memory::stack::footprint();
    dnses.clear();
-   stubs.clear();
-   do_fail(mocks.clear(true), true, O.contiguous);
-   do_fail(h2_memory::stack::pop(), true, O.contiguous);
+   h2_stubs::clear(stubs);
+   failing(h2_mocks::clear(mocks, true), true, O.contiguous);
+   failing(h2_memory::stack::pop(), true, O.contiguous);
 }
 
-h2_inline void h2_case::do_fail(h2_fail* fail, bool defer, bool append)
+h2_inline void h2_case::failing(h2_fail* fail, bool defer, bool append)
 {
    if (fail) {
       failed = true;

@@ -1,4 +1,4 @@
-h2_inline h2_suite::h2_suite(const char* name_, void (*test_code_)(h2_suite*, h2_case*), const h2_fs& fs_) : fs(fs_), name(name_), test_code(test_code_)
+h2_inline h2_suite::h2_suite(const char* file_, const char* name_, void (*test_code_)(h2_suite*, h2_case*)) : file(file_), name(name_), test_code(test_code_)
 {
    memset(ctx, 0, sizeof(jmp_buf));
    h2_runner::I().suites.push_back(x);
@@ -11,13 +11,13 @@ h2_inline void h2_suite::clear()
 
 h2_inline void h2_suite::setup()
 {
-   h2_memory::stack::push(fs);
+   h2_memory::stack::push(file);
 }
 
 h2_inline void h2_suite::cleanup()
 {
-   stubs.clear();
-   mocks.clear(false);
+   h2_stubs::clear(stubs);
+   h2_mocks::clear(mocks, false);
    stats.footprint = h2_memory::stack::footprint();
    h2_memory::stack::pop();
 }
@@ -33,7 +33,7 @@ h2_inline void h2_suite::test(h2_case* c)
    try {
       test_code(this, c); /* include Setup(); c->post_setup() and c->prev_cleanup(); Cleanup() */
    } catch (...) {
-      c->do_fail(h2_fail::new_exception("was thrown but uncaught", h2_exception::I().last_type, h2_exception::I().last_bt), true, O.contiguous);
+      c->failing(h2_fail::new_exception("was thrown but uncaught", h2_exception::I().last_type, h2_exception::I().last_bt), true, O.contiguous);
    }
    c->post_cleanup();
 }

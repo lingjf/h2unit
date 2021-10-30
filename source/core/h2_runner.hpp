@@ -1,14 +1,22 @@
+struct h2_stats {
+   int passed = 0, failed = 0, todo = 0, filtered = 0, ignored = 0;
+   int asserts = 0;
+   long long footprint = 0;
+   long long timecost = 0;
+   void clear() { passed = 0, failed = 0, todo = 0, filtered = 0, ignored = 0, asserts = 0, footprint = 0, timecost = 0; }
+};
+
 struct h2_runner {
    h2_singleton(h2_runner);
 
-   h2_stats stats;
+   void* current_suite = nullptr;
+   void* current_case = nullptr;
    int rounds = 0;
    int last = 0;
    h2_list suites;
-   h2_suite* current_suite = nullptr;
-   h2_case* current_case = nullptr;
-   h2_stubs stubs;
-   h2_mocks mocks;
+   h2_list stubs;
+   h2_list mocks;
+   h2_stats stats;
    std::vector<void (*)()> global_setups, global_cleanups;
    std::vector<void (*)()> global_suite_setups, global_suite_cleanups;
    std::vector<void (*)()> global_case_setups, global_case_cleanups;
@@ -17,50 +25,28 @@ struct h2_runner {
    void shadow();
    void enumerate();
    int main(int argc, const char** argv);
+
+   static void stub(void* srcfp, void* dstfp, const char* srcfn, const char* file);
+   static void unstub(void* srcfp);
+   static void mock(void* mocker);
+   static void failing(h2_fail* fail);
+   static void asserts();
 };
 
-static inline void h2_stub_g(void* srcfp, void* dstfp, const h2_fs& fs)
-{
-   if (!srcfp || !dstfp) return;
-   if (h2_runner::I().current_case)
-      h2_runner::I().current_case->stubs.add(srcfp, dstfp, fs);
-   else if (h2_runner::I().current_suite)
-      h2_runner::I().current_suite->stubs.add(srcfp, dstfp, fs);
-   else
-      h2_runner::I().stubs.add(srcfp, dstfp, fs);
-}
+#define __H2GlobalCallback(Scope, Q)                           \
+   namespace {                                                 \
+      static struct Q {                                        \
+         Q() { h2::h2_runner::I().Scope##s.push_back(Scope); } \
+         static void Scope();                                  \
+      } H2PP_UNIQUE();                                         \
+   }                                                           \
+   void Q::Scope()
 
-static inline void h2_unstub_g(void* srcfp)
-{
-   if (!srcfp) return;
-   if (h2_runner::I().current_case)
-      h2_runner::I().current_case->stubs.clear(srcfp);
-   else if (h2_runner::I().current_suite)
-      h2_runner::I().current_suite->stubs.clear(srcfp);
-   else
-      h2_runner::I().stubs.clear(srcfp);
-}
+#define H2GlobalSetup() __H2GlobalCallback(global_setup, H2PP_UNIQUE())
+#define H2GlobalCleanup() __H2GlobalCallback(global_cleanup, H2PP_UNIQUE())
 
-static inline void h2_mock_g(void* mock)
-{
-   if (h2_runner::I().current_case)
-      h2_runner::I().current_case->mocks.add(mock);
-   else if (h2_runner::I().current_suite)
-      h2_runner::I().current_suite->mocks.add(mock);
-   else
-      h2_runner::I().mocks.add(mock);
-}
+#define H2GlobalSuiteSetup() __H2GlobalCallback(global_suite_setup, H2PP_UNIQUE())
+#define H2GlobalSuiteCleanup() __H2GlobalCallback(global_suite_cleanup, H2PP_UNIQUE())
 
-static inline void h2_assert_g()
-{
-   if (h2_runner::I().current_case) h2_runner::I().current_case->asserts += 1;
-   if (h2_runner::I().current_suite) h2_runner::I().current_suite->stats.asserts += 1;
-   h2_runner::I().stats.asserts += 1;
-}
-
-static inline void h2_fail_g(h2_fail* fail)
-{
-   if (!fail) return;
-   if (O.debug) h2_debugger::trap();
-   if (h2_runner::I().current_case) h2_runner::I().current_case->do_fail(fail, O.contiguous, true);
-}
+#define H2GlobalCaseSetup() __H2GlobalCallback(global_case_setup, H2PP_UNIQUE())
+#define H2GlobalCaseCleanup() __H2GlobalCallback(global_case_cleanup, H2PP_UNIQUE())

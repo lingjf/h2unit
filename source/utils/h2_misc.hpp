@@ -1,3 +1,5 @@
+#define H2_FILE __FILE__ ":" H2PP_STR(__LINE__)
+
 struct h2_once {
    unsigned long c = 0;
    operator bool() { return !c++; }
@@ -25,4 +27,3 @@ static inline const size_t sn(const size_t a = 0) { return a; }
 
 /* clang-format off */
 #define h2_singleton(Class_) static Class_& I() { static Class_ i; return i; }
-

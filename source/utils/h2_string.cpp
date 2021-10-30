@@ -6,10 +6,10 @@ static inline size_t utf8len(const char* s)
    return 1;                                                 // 1-byte ascii (began with 0b0xxxxxxx)
 }
 
-h2_inline h2_string& h2_string::sprintf(const char* format, ...)
+h2_inline h2_string& h2_string::sprintf(const char* fmt, ...)
 {
    char* alloca_str;
-   h2_sprintf(alloca_str, format);
+   h2_sprintf(alloca_str, fmt);
    append(alloca_str);
    return *this;
 }
@@ -24,20 +24,20 @@ h2_inline h2_string& h2_string::replace_all(const char* from, const char* to)
    return *this;
 }
 
-h2_inline size_t h2_string::width(size_t columns) const  // wcwidth()/wcswidth()
+h2_inline size_t h2_string::width(size_t fat) const  // wcwidth()/wcswidth()
 {
    size_t w = 0, n = 0;
    for (const char* p = c_str(); *p != '\0'; p += n) {
       n = utf8len(p);
-      w += (n == 1 ? 1 : columns);
+      w += (n == 1 ? 1 : fat);
    }
    return w;
 }
 
-h2_inline bool h2_string::equals(const h2_string& str, bool caseless) const
+h2_inline bool h2_string::equals(const h2_string& fulstr, bool caseless) const
 {
-   if (!caseless) return *this == str;
-   return tolower() == str.tolower();
+   if (!caseless) return *this == fulstr;
+   return tolower() == fulstr.tolower();
 }
 
 h2_inline bool h2_string::contains(const h2_string& substr, bool caseless) const
@@ -58,13 +58,6 @@ h2_inline bool h2_string::endswith(const h2_string& suffix, bool caseless) const
    if (size() < suffix.size()) return false;
    if (!caseless) return rfind(suffix) == size() - suffix.size();
    return tolower().rfind(suffix.tolower()) == size() - suffix.size();
-}
-
-h2_inline bool h2_string::isspace() const
-{
-   for (auto& c : *this)
-      if (!::isspace(c)) return false;
-   return true;
 }
 
 h2_inline bool h2_string::enclosed(const char c) const

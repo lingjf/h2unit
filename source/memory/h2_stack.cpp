@@ -3,9 +3,9 @@ struct h2_stack {
    h2_list blocks;
    bool at_exit = false;
 
-   void push(const char* block_attributes, const char* where, const h2_fs &fs)
+   void push(const char* block_attributes, const char* where, const char* file)
    {
-      h2_block* b = new h2_block(block_attributes, where, fs);
+      h2_block* b = new h2_block(block_attributes, where, file);
       blocks.push(b->x);
    }
 

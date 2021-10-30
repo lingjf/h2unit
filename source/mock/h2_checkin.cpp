@@ -1,9 +1,9 @@
-h2_inline h2_fail* h2_checkin::check(size_t index, size_t total, const h2_fs& fs) const
+h2_inline h2_fail* h2_checkin::check(size_t index, size_t total, const char* srcfn) const
 {
    if (is_satisfied() || is_saturated()) return nullptr;
-   h2_line t = fs.func + gray("()") + " expected " + delta(expect(), "green") + " but actually " + delta(actual(), "red,bold") + " called";
+   h2_line t = srcfn + gray("()") + " expected " + delta(expect(), "green") + " but actually " + delta(actual(), "red,bold") + " called";
    if (1 < total) t += gray(" when ") + h2_numeric::sequence_number(index) + " " + color(expr, "cyan");
-   return h2_fail::new_normal(t, {nullptr, 0});
+   return h2_fail::new_normal(t);
 }
 
 h2_inline const char* h2_checkin::actual() const

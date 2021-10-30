@@ -95,7 +95,6 @@ __attribute__((weak)) int main(int argc, const char** argv) { return h2::h2_runn
 #endif
 
 namespace h2 {
-#include "utils/h2_fs.cpp"
 #include "utils/h2_list.cpp"
 #include "utils/h2_numeric.cpp"
 #include "utils/h2_pattern.cpp"

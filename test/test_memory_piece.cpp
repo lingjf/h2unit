@@ -1,33 +1,31 @@
 #include "../source/h2_unit.cpp"
 
-char* h2_piece_tojson(h2::h2_piece* piece, char* b)
+static h2::h2_string h2_piece_tojson(h2::h2_piece* piece)
 {
-   int l = 0;
-   l += sprintf(b + l, "{");
+   h2::h2_string out;
+   out.sprintf("{");
 
-   l += sprintf(b + l, "\"user_size\": %zu", piece->user_size);
-   l += sprintf(b + l, ",\"page_size\": %zu", piece->page_size);
-   l += sprintf(b + l, ",\"page_count\": %zu", piece->page_count);
-   l += sprintf(b + l, ",\"user_ptr\": \"%p\"", piece->user_ptr);
-   l += sprintf(b + l, ",\"page_ptr\": \"%p\"", piece->page_ptr);
-   l += sprintf(b + l, ",\"who_allocate\": \"%s\"", piece->who_allocate);
-   l += sprintf(b + l, ",\"free_times\": %d", piece->free_times);
-   l += sprintf(b + l, ",\"snow_flower\": \"%x\"", piece->snow_flower);
-   l += sprintf(b + l, ",\"forbidden_page\": \"%p\"", piece->forbidden_page);
-   l += sprintf(b + l, ",\"forbidden_size\": %zu", piece->forbidden_size);
-   l += sprintf(b + l, ",\"violate_ptr\": \"%p\"", piece->violate_ptr);
-   l += sprintf(b + l, ",\"violate_action\": \"%s\"", piece->violate_action);
-   l += sprintf(b + l, ",\"violate_times\": %d", piece->violate_times);
-   l += sprintf(b + l, ",\"violate_after_free\": %s", piece->violate_after_free ? "true" : "false");
+   out.sprintf("\"user_size\": %zu", piece->user_size);
+   out.sprintf(",\"page_size\": %zu", piece->page_size);
+   out.sprintf(",\"page_count\": %zu", piece->page_count);
+   out.sprintf(",\"user_ptr\": \"%p\"", piece->user_ptr);
+   out.sprintf(",\"page_ptr\": \"%p\"", piece->page_ptr);
+   out.sprintf(",\"who_allocate\": \"%s\"", piece->who_allocate);
+   out.sprintf(",\"free_times\": %d", piece->free_times);
+   out.sprintf(",\"snow_flower\": \"%x\"", piece->snow_flower);
+   out.sprintf(",\"forbidden_page\": \"%p\"", piece->forbidden_page);
+   out.sprintf(",\"forbidden_size\": %zu", piece->forbidden_size);
+   out.sprintf(",\"violate_ptr\": \"%p\"", piece->violate_ptr);
+   out.sprintf(",\"violate_action\": \"%s\"", piece->violate_action);
+   out.sprintf(",\"violate_times\": %d", piece->violate_times);
+   out.sprintf(",\"violate_after_free\": %s", piece->violate_after_free ? "true" : "false");
 
-   l += sprintf(b + l, "}");
-
-   return b;
+   out.sprintf("}");
+   return out;
 }
 
 SUITE(piece)
 {
-   char t1[1024 * 8];
    h2::h2_piece* m = nullptr;
 
    Case(new piece)
@@ -40,7 +38,7 @@ SUITE(piece)
             'who_allocate': 'malloc',     \
             'free_times': 0               \
          }",
-         h2_piece_tojson(m, t1));
+         h2_piece_tojson(m));
 
       OK(IsNull, m->free("free"));
 
@@ -50,7 +48,7 @@ SUITE(piece)
             'who_allocate': 'malloc',     \
             'free_times': 1               \
          }",
-         h2_piece_tojson(m, t1));
+         h2_piece_tojson(m));
 
       delete m;
    }

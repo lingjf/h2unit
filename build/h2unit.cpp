@@ -1,5 +1,5 @@
 
-/* v5.15 2021-10-30 14:51:30 */
+/* v5.15 2021-10-30 18:01:50 */
 /* https://github.com/lingjf/h2unit */
 /* Apache Licence 2.0 */
 #include "h2unit.hpp"
@@ -99,19 +99,6 @@ __attribute__((weak)) int main(int argc, const char** argv) { return h2::h2_runn
 #endif
 
 namespace h2 {
-// source/utils/h2_fs.cpp
-h2_inline bool h2_fs::empty() const
-{
-   return !file || file[0] == '\0';
-}
-h2_inline const char* h2_fs::basefile() const
-{
-   if (file)
-      for (const char* p = file + strlen(file); file <= p; --p)
-         if (*p == '/' || *p == '\\')
-            return p + 1;
-   return file;
-}
 // source/utils/h2_list.cpp
 inline void add_between(h2_list* thus, h2_list* prev, h2_list* next)
 {
@@ -454,13 +441,29 @@ struct h2_LCS {
    }
 };
 // source/utils/h2_misc.cpp
+static inline bool h2_blank(const char* str)
+{
+   for (; str && *str; str++)
+      if (!::isspace(*str)) return false;
+   return true;
+}
+
+static inline const char* h2_basefile(const char* path)
+{
+   if (path)
+      for (const char* p = path + strlen(path); path <= p; --p)
+         if (*p == '/' || *p == '\\')
+            return p + 1;
+   return path;
+}
+
 static inline const char* get_key(const char* subject, const char* key)
 {
    return strcasestr(subject, key);
 }
 static inline const char* get_eq(const char* start)
 {
-   for (; *start && ::isspace(*start);) start++;  //strip left space
+   for (; *start && ::isspace(*start);) start++;  // strip left space
    return *start == '=' ? start : nullptr;
 }
 
@@ -476,7 +479,7 @@ h2_inline bool h2_extract::numeric(const char* attributes, const char* key, doub
    const char* p_eq = get_eq(p_key + strlen(key));
    if (!p_eq) return false;
    const char* p_numeric = p_eq + 1;
-   for (; *p_numeric && ::isspace(*p_numeric);) p_numeric++;  //strip left space
+   for (; *p_numeric && ::isspace(*p_numeric);) p_numeric++;  // strip left space
    value = strtod(p_numeric, nullptr);
    return true;
 }
@@ -715,10 +718,10 @@ static inline size_t utf8len(const char* s)
    return 1;                                                 // 1-byte ascii (began with 0b0xxxxxxx)
 }
 
-h2_inline h2_string& h2_string::sprintf(const char* format, ...)
+h2_inline h2_string& h2_string::sprintf(const char* fmt, ...)
 {
    char* alloca_str;
-   h2_sprintf(alloca_str, format);
+   h2_sprintf(alloca_str, fmt);
    append(alloca_str);
    return *this;
 }
@@ -733,20 +736,20 @@ h2_inline h2_string& h2_string::replace_all(const char* from, const char* to)
    return *this;
 }
 
-h2_inline size_t h2_string::width(size_t columns) const  // wcwidth()/wcswidth()
+h2_inline size_t h2_string::width(size_t fat) const  // wcwidth()/wcswidth()
 {
    size_t w = 0, n = 0;
    for (const char* p = c_str(); *p != '\0'; p += n) {
       n = utf8len(p);
-      w += (n == 1 ? 1 : columns);
+      w += (n == 1 ? 1 : fat);
    }
    return w;
 }
 
-h2_inline bool h2_string::equals(const h2_string& str, bool caseless) const
+h2_inline bool h2_string::equals(const h2_string& fulstr, bool caseless) const
 {
-   if (!caseless) return *this == str;
-   return tolower() == str.tolower();
+   if (!caseless) return *this == fulstr;
+   return tolower() == fulstr.tolower();
 }
 
 h2_inline bool h2_string::contains(const h2_string& substr, bool caseless) const
@@ -767,13 +770,6 @@ h2_inline bool h2_string::endswith(const h2_string& suffix, bool caseless) const
    if (size() < suffix.size()) return false;
    if (!caseless) return rfind(suffix) == size() - suffix.size();
    return tolower().rfind(suffix.tolower()) == size() - suffix.size();
-}
-
-h2_inline bool h2_string::isspace() const
-{
-   for (auto& c : *this)
-      if (!::isspace(c)) return false;
-   return true;
 }
 
 h2_inline bool h2_string::enclosed(const char c) const
@@ -874,7 +870,7 @@ h2_inline size_t h2_line::width(bool ignore_indent) const
    size_t w = 0;
    for (auto& word : *this)
       if (!h2_color::isctrl(word.c_str()))
-         if (!ignore_indent || !word.isspace())
+         if (!ignore_indent || !h2_blank(word.c_str()))
             w += word.width();
    return w;
 }
@@ -1041,7 +1037,7 @@ h2_inline bool h2_lines::foldable(size_t width) const
    size_t sum = 0;
    for (auto& line : *this)
       for (auto& word : line)
-         if (!word.isspace() && !h2_color::isctrl(word.c_str()))  // ignore indent and \033m controller
+         if (!h2_blank(word.c_str()) && !h2_color::isctrl(word.c_str()))  // ignore indent and \033m controller
             sum += word.size();
 
    return sum < width;
@@ -1052,7 +1048,7 @@ h2_inline h2_line h2_lines::folds() const
    h2_line folded_line;
    for (auto& line : *this)
       for (auto& word : line)
-         if (!word.isspace())  // drop indent
+         if (!h2_blank(word.c_str()))  // drop indent
             folded_line.push_back(word);
    return folded_line;
 }
@@ -1062,7 +1058,7 @@ h2_inline h2_string h2_lines::string() const
    h2_string s;
    for (auto& line : *this)
       for (auto& word : line)
-         if (!word.isspace() && !h2_color::isctrl(word.c_str()))
+         if (!h2_blank(word.c_str()) && !h2_color::isctrl(word.c_str()))
             s += word;
    return s;
 }
@@ -3232,12 +3228,12 @@ struct h2_leaky {
          find(size)->second++;
       }
 
-      h2_fail* check(const char* where, const h2_fs& fs)
+      h2_fail* check(const char* where, const char* file)
       {
          size_t s = 0;
          for (auto& p : sizes)
             s += p.first * p.second;
-         return h2_fail::new_memory_leak(ptr, s, sizes, bt, where, fs);
+         return h2_fail::new_memory_leak(ptr, s, sizes, bt, where, file);
       }
    };
 
@@ -3257,10 +3253,10 @@ struct h2_leaky {
       find(bt)->add(size);
    }
 
-   h2_fail* check(const char* where, const h2_fs& fs)
+   h2_fail* check(const char* where, const char* file)
    {
       h2_fail* fails = nullptr;
-      for (auto& p : leaks) h2_fail::append_subling(fails, p.check(where, fs));
+      for (auto& p : leaks) h2_fail::append_subling(fails, p.check(where, file));
       return fails;
    }
 };
@@ -3289,9 +3285,9 @@ struct h2_block : h2_libc {
    h2_block_attributes attributes;
    unsigned long long footprint = 0, allocated = 0;
    const char* where;
-   h2_fs fs;
+   const char* file;
 
-   h2_block(const char* attributes_, const char* where_, const h2_fs& fs_) : attributes(attributes_), where(where_), fs(fs_) {}
+   h2_block(const char* attributes_, const char* where_, const char* file_) : attributes(attributes_), where(where_), file(file_) {}
 
    h2_fail* check()
    {
@@ -3307,7 +3303,7 @@ struct h2_block : h2_libc {
          if (!attributes.noleak && !p->free_times)
             leaky.add(p->user_ptr, p->user_size, p->bt_allocate);
 
-      fails = leaky.check(where, fs);
+      fails = leaky.check(where, file);
       if (fails) return fails;
 
       /* why not chain fails in subling? report one fail ignore more for clean.
@@ -3371,9 +3367,9 @@ struct h2_stack {
    h2_list blocks;
    bool at_exit = false;
 
-   void push(const char* block_attributes, const char* where, const h2_fs &fs)
+   void push(const char* block_attributes, const char* where, const char* file)
    {
-      h2_block* b = new h2_block(block_attributes, where, fs);
+      h2_block* b = new h2_block(block_attributes, where, file);
       blocks.push(b->x);
    }
 
@@ -3436,7 +3432,7 @@ struct h2_override {
    }
    static void free(void* ptr)
    {
-      if (ptr) h2_fail_g(h2_stack::I().rel_piece("free", ptr));
+      if (ptr) h2_runner::failing(h2_stack::I().rel_piece("free", ptr));
    }
    static void* malloc(size_t size)
    {
@@ -3455,7 +3451,7 @@ struct h2_override {
       if (ptr) old_p = h2_stack::I().get_piece(ptr);
       if (size) new_p = h2_stack::I().new_piece("realloc", size, 0, nullptr);
       if (old_p && new_p) memcpy(new_p->user_ptr, old_p->user_ptr, std::min(old_p->user_size, size));
-      if (ptr) h2_fail_g(h2_stack::I().rel_piece("free", ptr));
+      if (ptr) h2_runner::failing(h2_stack::I().rel_piece("free", ptr));
       return new_p ? new_p->user_ptr : nullptr;
    }
    static int posix_memalign(void** memptr, size_t alignment, size_t size)
@@ -3490,49 +3486,49 @@ struct h2_override {
    }
    static void operator delete(void* ptr)
    {
-      if (ptr) h2_fail_g(h2_stack::I().rel_piece("delete", ptr));
+      if (ptr) h2_runner::failing(h2_stack::I().rel_piece("delete", ptr));
    }
    static void operator delete(void* ptr, const std::nothrow_t&)
    {
-      if (ptr) h2_fail_g(h2_stack::I().rel_piece("delete nothrow", ptr));
+      if (ptr) h2_runner::failing(h2_stack::I().rel_piece("delete nothrow", ptr));
    }
    static void operator delete[](void* ptr)
    {
-      if (ptr) h2_fail_g(h2_stack::I().rel_piece("delete[]", ptr));
+      if (ptr) h2_runner::failing(h2_stack::I().rel_piece("delete[]", ptr));
    }
    static void operator delete[](void* ptr, const std::nothrow_t&)
    {
-      if (ptr) h2_fail_g(h2_stack::I().rel_piece("delete[] nothrow", ptr));
+      if (ptr) h2_runner::failing(h2_stack::I().rel_piece("delete[] nothrow", ptr));
    }
 };
 // source/memory/h2_override_stdlib.cpp
 struct h2_override_stdlib {
-   h2_stubs stubs;
+   h2_list stubs;
 
    void set()
    {
-      stubs.add((void*)::free, (void*)h2_override::free, {__FILE__, __LINE__, "free"});
-      stubs.add((void*)::malloc, (void*)h2_override::malloc, {__FILE__, __LINE__, "malloc"});
-      stubs.add((void*)::realloc, (void*)h2_override::realloc, {__FILE__, __LINE__, "realloc"});
-      stubs.add((void*)::calloc, (void*)h2_override::calloc, {__FILE__, __LINE__, "calloc"});
+      h2_stubs::add(stubs, (void*)::free, (void*)h2_override::free, "free", H2_FILE);
+      h2_stubs::add(stubs, (void*)::malloc, (void*)h2_override::malloc, "malloc", H2_FILE);
+      h2_stubs::add(stubs, (void*)::realloc, (void*)h2_override::realloc, "realloc", H2_FILE);
+      h2_stubs::add(stubs, (void*)::calloc, (void*)h2_override::calloc, "calloc", H2_FILE);
 #if defined _POSIX_C_SOURCE && _POSIX_C_SOURCE >= 200112L
-      stubs.add((void*)::posix_memalign, (void*)h2_override::posix_memalign, {__FILE__, __LINE__, "posix_memalign"});
+      h2_stubs::add(stubs, (void*)::posix_memalign, (void*)h2_override::posix_memalign, "posix_memalign", H2_FILE);
 #endif
 #if defined _ISOC11_SOURCE
-      stubs.add((void*)::aligned_alloc, (void*)h2_override::aligned_alloc, {__FILE__, __LINE__, "aligned_alloc"});
+      h2_stubs::add(stubs, (void*)::aligned_alloc, (void*)h2_override::aligned_alloc, "aligned_alloc", H2_FILE);
 #endif
       // valloc pvalloc memalign deprecated
-      stubs.add((void*)((void* (*)(std::size_t))::operator new), (void*)((void* (*)(std::size_t))h2_override::operator new), {__FILE__, __LINE__, "new"});
-      stubs.add((void*)((void* (*)(std::size_t, const std::nothrow_t&))::operator new), (void*)((void* (*)(std::size_t, const std::nothrow_t&))h2_override::operator new), {__FILE__, __LINE__, "new nothrow"});
-      stubs.add((void*)((void* (*)(std::size_t))::operator new[]), (void*)((void* (*)(std::size_t))h2_override::operator new[]), {__FILE__, __LINE__, "new[]"});
-      stubs.add((void*)((void* (*)(std::size_t, const std::nothrow_t&))::operator new[]), (void*)((void* (*)(std::size_t, const std::nothrow_t&))h2_override::operator new[]), {__FILE__, __LINE__, "new[] nothrow"});
-      stubs.add((void*)((void (*)(void*))::operator delete), (void*)((void (*)(void*))h2_override::operator delete), {__FILE__, __LINE__, "delete"});
-      stubs.add((void*)((void (*)(void*, const std::nothrow_t&))::operator delete), (void*)((void (*)(void*, const std::nothrow_t&))h2_override::operator delete), {__FILE__, __LINE__, "delete nothrow"});
-      stubs.add((void*)((void (*)(void*))::operator delete[]), (void*)((void (*)(void*))h2_override::operator delete[]), {__FILE__, __LINE__, "delete[]"});
-      stubs.add((void*)((void (*)(void*, const std::nothrow_t&))::operator delete[]), (void*)((void (*)(void*, const std::nothrow_t&))h2_override::operator delete[]), {__FILE__, __LINE__, "delete[] nothrow"});
+      h2_stubs::add(stubs, (void*)((void* (*)(std::size_t))::operator new), (void*)((void* (*)(std::size_t))h2_override::operator new), "new", H2_FILE);
+      h2_stubs::add(stubs, (void*)((void* (*)(std::size_t, const std::nothrow_t&))::operator new), (void*)((void* (*)(std::size_t, const std::nothrow_t&))h2_override::operator new), "new nothrow", H2_FILE);
+      h2_stubs::add(stubs, (void*)((void* (*)(std::size_t))::operator new[]), (void*)((void* (*)(std::size_t))h2_override::operator new[]), "new[]", H2_FILE);
+      h2_stubs::add(stubs, (void*)((void* (*)(std::size_t, const std::nothrow_t&))::operator new[]), (void*)((void* (*)(std::size_t, const std::nothrow_t&))h2_override::operator new[]), "new[] nothrow", H2_FILE);
+      h2_stubs::add(stubs, (void*)((void (*)(void*))::operator delete), (void*)((void (*)(void*))h2_override::operator delete), "delete", H2_FILE);
+      h2_stubs::add(stubs, (void*)((void (*)(void*, const std::nothrow_t&))::operator delete), (void*)((void (*)(void*, const std::nothrow_t&))h2_override::operator delete), "delete nothrow", H2_FILE);
+      h2_stubs::add(stubs, (void*)((void (*)(void*))::operator delete[]), (void*)((void (*)(void*))h2_override::operator delete[]), "delete[]", H2_FILE);
+      h2_stubs::add(stubs, (void*)((void (*)(void*, const std::nothrow_t&))::operator delete[]), (void*)((void (*)(void*, const std::nothrow_t&))h2_override::operator delete[]), "delete[] nothrow", H2_FILE);
    }
 
-   void reset() { stubs.clear(); }
+   void reset() { h2_stubs::clear(stubs); }
 };
 #if defined __linux
 // source/memory/h2_override_linux.cpp
@@ -3668,7 +3664,7 @@ struct h2_override_platform {
 // https://github.com/gperftools/gperftools
 
 struct h2_override_platform {
-   h2_stubs stubs;
+   h2_list stubs;
 
    // windows specific free_base, free_dbg called by CRT internal functions or operator delete
    // windows specific _msize, _expand
@@ -3679,14 +3675,20 @@ struct h2_override_platform {
    static void* _expand(void* memblock, size_t size) { return NULL; }
    // When _DEBUG _CRTDBG_MAP_ALLOC (default undefined) is defined CRT maps all to _*_dbg, bug CRT Debug version enabled.
 #ifndef NDEBUG
-   static void _free_dbg(void* userData, int blockType) { h2_override::free(userData); }
+   static void _free_dbg(void* userData, int blockType)
+   {
+      h2_override::free(userData);
+   }
    static void* _malloc_dbg(size_t size, int blockType, const char* filename, int linenumber) { return h2_override::malloc(size); }
    static void* _realloc_dbg(void* userData, size_t newSize, int blockType, const char* filename, int linenumber) { return h2_override::realloc(userData, newSize); }
    static void* _calloc_dbg(size_t num, size_t size, int blockType, const char* filename, int linenumber) { return h2_override::calloc(num, size); }
    static size_t _msize_dbg(void* userData, int blockType) { return h2_override::size(userData); }
    static void* _expand_dbg(void* userData, size_t newSize, int blockType, const char* filename, int linenumber) { return NULL; }
 #endif
-   static void* _aligned_malloc(size_t size, size_t alignment) { return h2_override::aligned_alloc(size, alignment); }
+   static void* _aligned_malloc(size_t size, size_t alignment)
+   {
+      return h2_override::aligned_alloc(size, alignment);
+   }
    static void _aligned_free(void* memblock) { h2_override::free(memblock); }
 
    static char* _strdup(char* s)
@@ -3698,28 +3700,28 @@ struct h2_override_platform {
 
    void set()
    {
-      stubs.add((void*)::_free_base, (void*)_free_base, {__FILE__, __LINE__, "_free_base"});
-      stubs.add((void*)::_msize, (void*)h2_override::size, {__FILE__, __LINE__, "_msize"});
-      stubs.add((void*)::_expand, (void*)_expand, {__FILE__, __LINE__, "_expand"});
+      h2_stubs::add(stubs, (void*)::_free_base, (void*)_free_base, "_free_base", H2_FILE);
+      h2_stubs::add(stubs, (void*)::_msize, (void*)h2_override::size, "_msize", H2_FILE);
+      h2_stubs::add(stubs, (void*)::_expand, (void*)_expand, "_expand", H2_FILE);
 #ifndef NDEBUG
-      stubs.add((void*)::_free_dbg, (void*)_free_dbg, {__FILE__, __LINE__, "_free_dbg"});
-      // stubs.add((void*)::_malloc_dbg, (void*)_malloc_dbg, {__FILE__, __LINE__, "_malloc_dbg"});
-      // stubs.add((void*)::_realloc_dbg, (void*)_realloc_dbg, {__FILE__, __LINE__, "_realloc_dbg"});
-      // stubs.add((void*)::_calloc_dbg, (void*)_calloc_dbg, {__FILE__, __LINE__, "_calloc_dbg"});
-      // stubs.add((void*)::_expand_dbg, (void*)_expand_dbg, {__FILE__, __LINE__, "_expand_dbg"});
+      h2_stubs::add(stubs, (void*)::_free_dbg, (void*)_free_dbg, "_free_dbg", H2_FILE);
+      // h2_stubs::add(stubs,(void*)::_malloc_dbg, (void*)_malloc_dbg, "_malloc_dbg", H2_FILE);
+      // h2_stubs::add(stubs,(void*)::_realloc_dbg, (void*)_realloc_dbg, "_realloc_dbg", H2_FILE);
+      // h2_stubs::add(stubs,(void*)::_calloc_dbg, (void*)_calloc_dbg, "_calloc_dbg", H2_FILE);
+      // h2_stubs::add(stubs,(void*)::_expand_dbg, (void*)_expand_dbg, "_expand_dbg", H2_FILE);
 #endif
-      //// stubs.add((void*)::_calloc_crt, (void*)h2_override::calloc, {__FILE__, __LINE__, "_calloc_crt"});
-      stubs.add((void*)::_aligned_malloc, (void*)_aligned_malloc, {__FILE__, __LINE__, "_aligned_malloc"});
-      stubs.add((void*)::_aligned_free, (void*)_aligned_free, {__FILE__, __LINE__, "_aligned_free"});
-      stubs.add((void*)::_strdup, (void*)_strdup, {__FILE__, __LINE__, "_strdup"});  // strdup call to _strdup
+      //// h2_stubs::add(stubs,(void*)::_calloc_crt, (void*)h2_override::calloc, "_calloc_crt", H2_FILE);
+      h2_stubs::add(stubs, (void*)::_aligned_malloc, (void*)_aligned_malloc, "_aligned_malloc", H2_FILE);
+      h2_stubs::add(stubs, (void*)::_aligned_free, (void*)_aligned_free, "_aligned_free", H2_FILE);
+      h2_stubs::add(stubs, (void*)::_strdup, (void*)_strdup, "_strdup", H2_FILE);  // strdup call to _strdup
    }
 
-   void reset() { stubs.clear(); }
+   void reset() { h2_stubs::clear(stubs); }
 };
 #else  // +MinGW
 // source/memory/h2_override_cygwin.cpp
 struct h2_override_platform {
-   h2_stubs stubs;
+   h2_list stubs;
 
    static char* strdup(char* s)
    {
@@ -3734,12 +3736,12 @@ struct h2_override_platform {
 
    void set()
    {
-      stubs.add((void*)::strdup, (void*)strdup, {__FILE__, __LINE__, "strdup"});
+      h2_stubs::add(stubs, (void*)::strdup, (void*)strdup, "strdup", H2_FILE);
 #if defined __CYGWIN__
-      stubs.add((void*)::strndup, (void*)strndup, {__FILE__, __LINE__, "strndup"});
+      h2_stubs::add(stubs, (void*)::strndup, (void*)strndup, "strndup", H2_FILE);
 #endif
    }
-   void reset() { stubs.clear(); }
+   void reset() { h2_stubs::clear(stubs); }
 };
 #endif
 // source/memory/h2_memory.cpp
@@ -3785,11 +3787,11 @@ h2_inline void h2_memory::hook(bool overrides)
 
 h2_inline void h2_memory::stack::root()
 {
-   h2_stack::I().push("", "root", {__FILE__, __LINE__});
+   h2_stack::I().push("", "root", H2_FILE);
 }
-h2_inline void h2_memory::stack::push(const h2_fs& fs)
+h2_inline void h2_memory::stack::push(const char* file)
 {
-   h2_stack::I().push("", "case", fs);
+   h2_stack::I().push("", "case", file);
 }
 h2_inline h2_fail* h2_memory::stack::pop()
 {
@@ -3800,15 +3802,15 @@ h2_inline long long h2_memory::stack::footprint()
    return h2_stack::I().top()->footprint;
 }
 
-h2_inline h2_memory::stack::block::block(const char* attributes, const h2_fs& fs)
+h2_inline h2_memory::stack::block::block(const char* attributes, const char* file)
 {
    unmem = h2_extract::has(attributes, "unmem");
    if (unmem) h2_memory::hook(false);
-   h2_stack::I().push(attributes, "block", fs);
+   h2_stack::I().push(attributes, "block", file);
 }
 h2_inline h2_memory::stack::block::~block()
 {
-   h2_fail_g(h2_stack::I().pop());
+   h2_runner::failing(h2_stack::I().pop());
    if (unmem) h2_memory::hook();
 }
 // source/memory/h2_exempt.cpp
@@ -3836,13 +3838,13 @@ struct h2_exempt_stub {
 
 h2_inline void h2_exempt::setup()
 {
-   static h2_stubs stubs;
+   static h2_list stubs;
 
-   stubs.add((void*)::gmtime, (void*)h2_exempt_stub::gmtime, {__FILE__, __LINE__, "gmtime"});
-   stubs.add((void*)::ctime, (void*)h2_exempt_stub::ctime, {__FILE__, __LINE__, "ctime"});
-   stubs.add((void*)::asctime, (void*)h2_exempt_stub::asctime, {__FILE__, __LINE__, "asctime"});
-   stubs.add((void*)::localtime, (void*)h2_exempt_stub::localtime, {__FILE__, __LINE__, "localtime"});
-   stubs.add((void*)::mktime, (void*)h2_exempt_stub::mktime, {__FILE__, __LINE__, "mktime"});
+   h2_stubs::add(stubs, (void*)::gmtime, (void*)h2_exempt_stub::gmtime, "gmtime", H2_FILE);
+   h2_stubs::add(stubs, (void*)::ctime, (void*)h2_exempt_stub::ctime, "ctime", H2_FILE);
+   h2_stubs::add(stubs, (void*)::asctime, (void*)h2_exempt_stub::asctime, "asctime", H2_FILE);
+   h2_stubs::add(stubs, (void*)::localtime, (void*)h2_exempt_stub::localtime, "localtime", H2_FILE);
+   h2_stubs::add(stubs, (void*)::mktime, (void*)h2_exempt_stub::mktime, "mktime", H2_FILE);
 
 #if defined _WIN32
    add_by_fp((void*)::_wchdir);
@@ -3856,30 +3858,30 @@ h2_inline void h2_exempt::setup()
    add_by_fp((void*)::_gmtime64_s);
    add_by_fp(h2_un<void*>(&std::type_info::name));
 #else
-   stubs.add((void*)::gmtime_r, (void*)h2_exempt_stub::gmtime_r, {__FILE__, __LINE__, "gmtime_r"});
-   stubs.add((void*)::ctime_r, (void*)h2_exempt_stub::ctime_r, {__FILE__, __LINE__, "ctime_r"});
-   stubs.add((void*)::asctime_r, (void*)h2_exempt_stub::asctime_r, {__FILE__, __LINE__, "asctime_r"});
-   stubs.add((void*)::localtime_r, (void*)h2_exempt_stub::localtime_r, {__FILE__, __LINE__, "localtime_r"});
+   h2_stubs::add(stubs, (void*)::gmtime_r, (void*)h2_exempt_stub::gmtime_r, "gmtime_r", H2_FILE);
+   h2_stubs::add(stubs, (void*)::ctime_r, (void*)h2_exempt_stub::ctime_r, "ctime_r", H2_FILE);
+   h2_stubs::add(stubs, (void*)::asctime_r, (void*)h2_exempt_stub::asctime_r, "asctime_r", H2_FILE);
+   h2_stubs::add(stubs, (void*)::localtime_r, (void*)h2_exempt_stub::localtime_r, "localtime_r", H2_FILE);
    add_by_fp((void*)::sscanf);
    add_by_fp((void*)::sprintf);
    add_by_fp((void*)::vsnprintf);
 
-#   if defined __APPLE__ && defined __clang__
+#if defined __APPLE__ && defined __clang__
    add_by_fp((void*)::snprintf);
    add_by_fp((void*)::snprintf_l);
    add_by_fp((void*)::strftime_l);
    add_by_fp((void*)::strtod_l);
    add_by_fp((void*)::strtold);
    add_by_fp((void*)::strtof_l);
-#   endif
+#endif
 #endif
 
 #if defined __GNUC__
    add_by_fp((void*)abi::__cxa_demangle);
    add_by_fp((void*)abi::__cxa_throw);
-#   if !defined __clang__
+#if !defined __clang__
    add_by_fp((void*)::__cxa_allocate_exception);
-#   endif
+#endif
 #endif
 
    add_by_fp((void*)h2_pattern::regex_match);
@@ -3924,7 +3926,7 @@ static inline bool under_debug(int pid, const char* path)
    if (!f) return false;
    bool ret = false;
    while (::fgets(t, sizeof(t) - 1, f)) {
-      if (strstr(t, h2_fs(path).basefile()) || strstr(t, attach_pid)) {
+      if (strstr(t, h2_basefile(path)) || strstr(t, attach_pid)) {
          ret = true;
          break;
       }
@@ -4005,7 +4007,7 @@ struct h2_crash {
 // source/except/h2_exception.cpp
 struct h2_exception {
    h2_singleton(h2_exception);
-   h2_stubs stubs;
+   h2_list stubs;
    h2_backtrace last_bt;
    char last_type[1024];
 
@@ -4013,7 +4015,7 @@ struct h2_exception {
    static void RaiseException(DWORD dwExceptionCode, DWORD dwExceptionFlags, DWORD nNumberOfArguments, const ULONG_PTR* lpArguments)
    {
       I().last_bt = h2_backtrace::dump(1);
-      if (O.exception_as_fail) h2_fail_g(h2_fail::new_exception("was thrown", "", I().last_bt));
+      if (O.exception_as_fail) h2_runner::failing(h2_fail::new_exception("was thrown", "", I().last_bt));
       h2::h2_stub_temporary_restore t((void*)::RaiseException);
       ::RaiseException(dwExceptionCode, dwExceptionFlags, nNumberOfArguments, lpArguments);
    }
@@ -4022,7 +4024,7 @@ struct h2_exception {
    {  // https://itanium-cxx-abi.github.io/cxx-abi/abi-eh.html
       I().last_bt = h2_backtrace::dump(1);
       h2_cxa::demangle(tinfo->name(), I().last_type);
-      if (O.exception_as_fail) h2_fail_g(h2_fail::new_exception("was thrown", I().last_type, I().last_bt));
+      if (O.exception_as_fail) h2_runner::failing(h2_fail::new_exception("was thrown", I().last_type, I().last_bt));
       h2::h2_stub_temporary_restore t((void*)abi::__cxa_throw);
       abi::__cxa_throw(thrown_exception, tinfo, dest);
    }
@@ -4031,9 +4033,9 @@ struct h2_exception {
    static void initialize()
    {
 #if defined _MSC_VER || defined __MINGW32__ || defined __MINGW64__
-      I().stubs.add((void*)::RaiseException, (void*)RaiseException, {__FILE__, __LINE__, "RaiseException"});
+      h2_stubs::add(I().stubs, (void*)::RaiseException, (void*)RaiseException, "RaiseException", H2_FILE);
 #else
-      I().stubs.add((void*)abi::__cxa_throw, (void*)__cxa_throw, {__FILE__, __LINE__, "__cxa_throw"});
+      h2_stubs::add(I().stubs, (void*)abi::__cxa_throw, (void*)__cxa_throw, "__cxa_throw", H2_FILE);
 #endif
       if (!O.debug) h2_crash::install();
    }
@@ -4125,10 +4127,10 @@ struct h2_source : h2_libc {
    unsigned char origin_opcode[32];
    void* source_fp;
    int reference_count = 0;
-   h2_source(void* source_fp_, const h2_fs& fs) : source_fp(source_fp_)
+   h2_source(void* source_fp_, const char* srcfn, const char* file) : source_fp(source_fp_)
    {
       if (!h2_e9_save(source_fp, origin_opcode)) {
-         h2_color::prints("yellow", "STUB %s by %s() failed %s:%d\n", fs.func, O.os == 'W' ? "VirtualProtect" : "mprotect", fs.file, fs.line);
+         h2_color::prints("yellow", "STUB %s by %s() failed %s\n", srcfn, O.os == 'W' ? "VirtualProtect" : "mprotect", file);
          if (O.os == 'm') ::printf("try: "), h2_color::prints("green", "printf '\\x07' | dd of=%s bs=1 seek=160 count=1 conv=notrunc\n", O.path);
          if (O.os == 'L') ::printf("try: "), h2_color::prints("green", "objcopy --writable-text %s\n", O.path);
       }
@@ -4168,12 +4170,12 @@ struct h2_sources {
 
    h2_source* get(void* fp) { return __find(__follow(fp)); }
 
-   h2_source* add(void* fp, const h2_fs& fs)
+   h2_source* add(void* fp, const char* srcfn, const char* file)
    {
       void* source_fp = __follow(fp);
       h2_source* source = __find(source_fp);
       if (!source) {
-         source = new h2_source(source_fp, fs);
+         source = new h2_source(source_fp, srcfn, file);
          sources.push(source->x);
       }
       source->reference_count++;
@@ -4195,9 +4197,9 @@ struct h2_stub : h2_libc {
    void *srcfp, *dstfp;
    h2_source* source;
 
-   h2_stub(void* srcfp_, const h2_fs& fs) : srcfp(srcfp_)
+   h2_stub(void* srcfp_, const char* srcfn, const char* file) : srcfp(srcfp_)
    {
-      source = h2_sources::I().add(srcfp, fs);
+      source = h2_sources::I().add(srcfp, srcfn, file);
       if (source) source->save(saved_opcode);
    }
    ~h2_stub()
@@ -4213,35 +4215,35 @@ struct h2_stub : h2_libc {
    }
 };
 
-static inline h2_stub* h2_stubs_get(h2_stubs* stubs, void* srcfp)
+static inline h2_stub* h2_stubs_get(h2_list& stubs, void* srcfp)
 {
-   h2_list_for_each_entry (p, stubs->stubs, h2_stub, x)
+   h2_list_for_each_entry (p, stubs, h2_stub, x)
       if (p->srcfp == srcfp)
          return p;
    return nullptr;
 }
 
-h2_inline bool h2_stubs::add(void* srcfp, void* dstfp, const h2_fs& fs)
+h2_inline bool h2_stubs::add(h2_list& stubs, void* srcfp, void* dstfp, const char* srcfn, const char* file)
 {
-   h2_stub* stub = h2_stubs_get(this, srcfp);
+   h2_stub* stub = h2_stubs_get(stubs, srcfp);
    if (!stub) {
-      stub = new h2_stub(srcfp, fs);
+      stub = new h2_stub(srcfp, srcfn, file);
       stubs.push(stub->x);
    }
    stub->stub(dstfp);
    return true;
 }
 
-h2_inline void h2_stubs::clear(void* srcfp)
+h2_inline void h2_stubs::clear(h2_list& stubs, void* srcfp)
 {
-   h2_stub* stub = h2_stubs_get(this, srcfp);
+   h2_stub* stub = h2_stubs_get(stubs, srcfp);
    if (stub) {
       stub->x.out();
       delete stub;
    }
 }
 
-h2_inline void h2_stubs::clear()
+h2_inline void h2_stubs::clear(h2_list& stubs)
 {
    h2_list_for_each_entry (p, stubs, h2_stub, x) {
       p->x.out();
@@ -4264,12 +4266,12 @@ h2_inline h2_stub_temporary_restore::~h2_stub_temporary_restore()
    if (source) source->reset(current_opcode);
 }
 // source/mock/h2_checkin.cpp
-h2_inline h2_fail* h2_checkin::check(size_t index, size_t total, const h2_fs& fs) const
+h2_inline h2_fail* h2_checkin::check(size_t index, size_t total, const char* srcfn) const
 {
    if (is_satisfied() || is_saturated()) return nullptr;
-   h2_line t = fs.func + gray("()") + " expected " + delta(expect(), "green") + " but actually " + delta(actual(), "red,bold") + " called";
+   h2_line t = srcfn + gray("()") + " expected " + delta(expect(), "green") + " but actually " + delta(actual(), "red,bold") + " called";
    if (1 < total) t += gray(" when ") + h2_numeric::sequence_number(index) + " " + color(expr, "cyan");
-   return h2_fail::new_normal(t, {nullptr, 0});
+   return h2_fail::new_normal(t);
 }
 
 h2_inline const char* h2_checkin::actual() const
@@ -4312,41 +4314,41 @@ h2_inline h2_line h2_mocker_base::argument(int seq, const char* def) const
 
 h2_inline h2_line h2_mocker_base::signature() const
 {
-   return "MOCK" + gray("<") + delta(return_type, "cyan") + " " + delta(fs.func, "green") + argument(-1, "cyan") + gray(">");
+   return "MOCK" + gray("<") + delta(return_type, "cyan") + " " + delta(srcfn, "green") + argument(-1, "cyan") + gray(">");
 }
 
 h2_inline void h2_mocker_base::mock()
 {
    x.out();
-   h2_mock_g(this);
-   h2_stub_g(srcfp, dstfp, fs);
+   h2_runner::mock(this);
+   h2_runner::stub(srcfp, dstfp, srcfn, file);
 }
 
 h2_inline h2_fail* h2_mocker_base::check() const
 {
    h2_fail* fails = nullptr;
    for (size_t i = 0; i < checkin_array.size(); ++i) {
-      h2_fail* fail = checkin_array[i].check(i, checkin_array.size(), fs);
+      h2_fail* fail = checkin_array[i].check(i, checkin_array.size(), srcfn);
       if (fail) fail->seqno = (int)i;
       h2_fail::append_subling(fails, fail);
-      h2_assert_g();
+      h2_runner::asserts();
    }
    if (!fails) return nullptr;
-   h2_fail* fail = h2_fail::new_normal(signature(), fs);
+   h2_fail* fail = h2_fail::new_normal(signature(), file);
    h2_fail::append_child(fail, fails);
    return fail;
 }
 // source/mock/h2_mocks.cpp
-h2_inline bool h2_mocks::add(void* mock)
+h2_inline bool h2_mocks::add(h2_list& mocks, void* mocker)
 {
-   h2_mocker_base* mocker = (h2_mocker_base*)mock;
+   h2_mocker_base* m = (h2_mocker_base*)mocker;
    h2_list_for_each_entry (p, mocks, h2_mocker_base, x)
-      if (p == mocker) return false;
-   mocks.push(mocker->x);
+      if (p == m) return false;
+   mocks.push(m->x);
    return true;
 }
 
-h2_inline h2_fail* h2_mocks::clear(bool check)
+h2_inline h2_fail* h2_mocks::clear(h2_list& mocks, bool check)
 {
    h2_fail* fails = nullptr;
    h2_list_for_each_entry (p, mocks, h2_mocker_base, x) {
@@ -4367,7 +4369,7 @@ struct h2_stdio {
    {
       h2::h2_stub_temporary_restore t((void*)LIBC__write);
       if ((fd == fileno(stdout) || fd == fileno(stderr)) && h2_report::I().escape_length == I().capture_length && !h2_report::I().in)
-         LIBC__write(fd, "\n", 1); // fall printf/cout into new line from report title
+         LIBC__write(fd, "\n", 1);  // fall printf/cout into new line from report title
       LIBC__write(fd, buf, count);
       if (fd == fileno(stdout) || fd == fileno(stderr))
          I().capture_length += count;
@@ -4460,24 +4462,24 @@ struct h2_stdio {
    {
       ::setbuf(stdout, 0);  // unbuffered
       I().buffer = new h2_string();
-      static h2_stubs stubs;
+      static h2_list stubs;
 
 #if !defined _WIN32
-      stubs.add((void*)LIBC__write, (void*)test_write, {__FILE__, __LINE__, "write"});
+      h2_stubs::add(stubs, (void*)LIBC__write, (void*)test_write, "write", H2_FILE);
       ::printf("\r"), ::fwrite("\r", 1, 1, stdout);
-      stubs.clear();
+      h2_stubs::clear(stubs);
 #endif
       if (I().test_count != 2) {
-         stubs.add((void*)::printf, (void*)printf, {__FILE__, __LINE__, "printf"});
-         stubs.add((void*)::vprintf, (void*)vprintf, {__FILE__, __LINE__, "vprintf"});
-         stubs.add((void*)::putchar, (void*)putchar, {__FILE__, __LINE__, "putchar"});
-         stubs.add((void*)::puts, (void*)puts, {__FILE__, __LINE__, "puts"});
-         stubs.add((void*)::fprintf, (void*)fprintf, {__FILE__, __LINE__, "fprintf"});
-         // stubs.add((void*)::vfprintf, (void*)vfprintf, {__FILE__, __LINE__, "vfprintf"});
-         stubs.add((void*)::fputc, (void*)fputc, {__FILE__, __LINE__, "fputc"});
-         stubs.add((void*)::putc, (void*)fputc, {__FILE__, __LINE__, "fputc"});
-         stubs.add((void*)::fputs, (void*)fputs, {__FILE__, __LINE__, "fputs"});
-         stubs.add((void*)::fwrite, (void*)fwrite, {__FILE__, __LINE__, "fwrite"});
+         h2_stubs::add(stubs, (void*)::printf, (void*)printf, "printf", H2_FILE);
+         h2_stubs::add(stubs, (void*)::vprintf, (void*)vprintf, "vprintf", H2_FILE);
+         h2_stubs::add(stubs, (void*)::putchar, (void*)putchar, "putchar", H2_FILE);
+         h2_stubs::add(stubs, (void*)::puts, (void*)puts, "puts", H2_FILE);
+         h2_stubs::add(stubs, (void*)::fprintf, (void*)fprintf, "fprintf", H2_FILE);
+         // h2_stubs::add(stubs,(void*)::vfprintf, (void*)vfprintf,  "vfprintf",H2_FILE);
+         h2_stubs::add(stubs, (void*)::fputc, (void*)fputc, "fputc", H2_FILE);
+         h2_stubs::add(stubs, (void*)::putc, (void*)fputc, "fputc", H2_FILE);
+         h2_stubs::add(stubs, (void*)::fputs, (void*)fputs, "fputs", H2_FILE);
+         h2_stubs::add(stubs, (void*)::fwrite, (void*)fwrite, "fwrite", H2_FILE);
 #if defined __GNUC__
          struct streambuf : public std::streambuf {
             FILE* f;
@@ -4492,10 +4494,10 @@ struct h2_stdio {
          std::clog.rdbuf(&sb_err); /* print to stderr */
 #endif
       }
-      stubs.add((void*)LIBC__write, (void*)write, {__FILE__, __LINE__, "write"});
+      h2_stubs::add(stubs, (void*)LIBC__write, (void*)write, "write", H2_FILE);
 #if !defined _WIN32
-      stubs.add((void*)::syslog, (void*)syslog, {__FILE__, __LINE__, "syslog"});
-      stubs.add((void*)::vsyslog, (void*)vsyslog, {__FILE__, __LINE__, "vsyslog"});
+      h2_stubs::add(stubs, (void*)::syslog, (void*)syslog, "syslog", H2_FILE);
+      h2_stubs::add(stubs, (void*)::vsyslog, (void*)vsyslog, "vsyslog", H2_FILE);
 #endif
    }
 
@@ -4515,7 +4517,7 @@ struct h2_stdio {
    }
 };
 
-h2_inline h2_cout::h2_cout(h2_matcher<const char*> m_, const char* e_, const char* type_, const h2_fs& fs_) : fs(fs_), m(m_), e(e_), type(type_)
+h2_inline h2_cout::h2_cout(h2_matcher<const char*> m_, const char* e_, const char* type_, const char* file_) : file(file_), m(m_), e(e_), type(type_)
 {
    bool all = !strlen(type);
    h2_stdio::I().start_capture(all || h2_extract::has(type, "out"), all || h2_extract::has(type, "err"), all || h2_extract::has(type, "syslog"));
@@ -4523,15 +4525,15 @@ h2_inline h2_cout::h2_cout(h2_matcher<const char*> m_, const char* e_, const cha
 
 h2_inline h2_cout::~h2_cout()
 {
-   h2_assert_g();
+   h2_runner::asserts();
    h2_fail* fail = m.matches(h2_stdio::I().stop_capture(), 0);
    if (fail) {
-      fail->fs = fs;
+      fail->file = file;
       fail->assert_type = "OK";
       fail->e_expression = e;
       fail->a_expression = "";
       fail->explain = "COUT";
-      h2_fail_g(fail);
+      h2_runner::failing(fail);
    }
 }
 // source/net/h2_dns.cpp
@@ -4627,14 +4629,14 @@ struct h2_resolver {
       return &h;
    }
 
-   h2_stubs stubs;
+   h2_list stubs;
    h2_resolver()
    {
-      stubs.add((void*)::getaddrinfo, (void*)getaddrinfo, {__FILE__, __LINE__, "getaddrinfo"});
-      stubs.add((void*)::freeaddrinfo, (void*)freeaddrinfo, {__FILE__, __LINE__, "freeaddrinfo"});
-      stubs.add((void*)::gethostbyname, (void*)gethostbyname, {__FILE__, __LINE__, "gethostbyname"});
+      h2_stubs::add(stubs, (void*)::getaddrinfo, (void*)getaddrinfo, "getaddrinfo", H2_FILE);
+      h2_stubs::add(stubs, (void*)::freeaddrinfo, (void*)freeaddrinfo, "freeaddrinfo", H2_FILE);
+      h2_stubs::add(stubs, (void*)::gethostbyname, (void*)gethostbyname, "gethostbyname", H2_FILE);
    }
-   ~h2_resolver() { stubs.clear(); }
+   ~h2_resolver() { h2_stubs::clear(stubs); }
 };
 
 h2_inline void h2_dnses::add(h2_list& name)
@@ -4674,7 +4676,7 @@ h2_inline void h2_dns::setaddrinfo(int n, ...)
    va_end(b);
 
    h2_resolver::I().dnses.push(name->y);
-   if (h2_runner::I().current_case) h2_runner::I().current_case->dnses.add(name->x);
+   if (h2_runner::I().current_case) ((h2_case*)h2_runner::I().current_case)->dnses.add(name->x);
 }
 
 h2_inline void h2_dns::initialize()
@@ -4861,7 +4863,7 @@ struct h2_socket {
    }
 #endif
 
-   h2_stubs stubs;
+   h2_list stubs;
 
    struct socket {
       int fd;
@@ -4900,20 +4902,20 @@ struct h2_socket {
    {
       strcpy(last_to, "0.0.0.0:0");
 
-      stubs.add((void*)::sendto, (void*)sendto, {__FILE__, __LINE__, "sendto"});
-      stubs.add((void*)::recvfrom, (void*)recvfrom, {__FILE__, __LINE__, "recvfrom"});
+      h2_stubs::add(stubs, (void*)::sendto, (void*)sendto, "sendto", H2_FILE);
+      h2_stubs::add(stubs, (void*)::recvfrom, (void*)recvfrom, "recvfrom", H2_FILE);
 #if !defined _WIN32
-      stubs.add((void*)::sendmsg, (void*)sendmsg, {__FILE__, __LINE__, "sendmsg"});
-      stubs.add((void*)::recvmsg, (void*)recvmsg, {__FILE__, __LINE__, "recvmsg"});
+      h2_stubs::add(stubs, (void*)::sendmsg, (void*)sendmsg, "sendmsg", H2_FILE);
+      h2_stubs::add(stubs, (void*)::recvmsg, (void*)recvmsg, "recvmsg", H2_FILE);
 #endif
-      stubs.add((void*)::send, (void*)send, {__FILE__, __LINE__, "send"});
-      stubs.add((void*)::recv, (void*)recv, {__FILE__, __LINE__, "recv"});
-      stubs.add((void*)::accept, (void*)accept, {__FILE__, __LINE__, "accept"});
-      stubs.add((void*)::connect, (void*)connect, {__FILE__, __LINE__, "connect"});
+      h2_stubs::add(stubs, (void*)::send, (void*)send, "send", H2_FILE);
+      h2_stubs::add(stubs, (void*)::recv, (void*)recv, "recv", H2_FILE);
+      h2_stubs::add(stubs, (void*)::accept, (void*)accept, "accept", H2_FILE);
+      h2_stubs::add(stubs, (void*)::connect, (void*)connect, "connect", H2_FILE);
    }
    void stop()
    {
-      stubs.clear();
+      h2_stubs::clear(stubs);
       h2_list_for_each_entry (p, incoming, h2_packet, x) {
          p->x.out();
          delete p;
@@ -4959,25 +4961,25 @@ h2_inline void h2_case::clear()
    h2_memory::hook();
    if (fails) delete fails;
    fails = nullptr;
-   asserts = 0;
+   stats.clear();
 }
 
 h2_inline void h2_case::prev_setup()
 {
    failed = false;
-   h2_memory::stack::push(fs);
+   h2_memory::stack::push(file);
 }
 
 h2_inline void h2_case::post_cleanup()
 {
-   footprint = h2_memory::stack::footprint();
+   stats.footprint = h2_memory::stack::footprint();
    dnses.clear();
-   stubs.clear();
-   do_fail(mocks.clear(true), true, O.contiguous);
-   do_fail(h2_memory::stack::pop(), true, O.contiguous);
+   h2_stubs::clear(stubs);
+   failing(h2_mocks::clear(mocks, true), true, O.contiguous);
+   failing(h2_memory::stack::pop(), true, O.contiguous);
 }
 
-h2_inline void h2_case::do_fail(h2_fail* fail, bool defer, bool append)
+h2_inline void h2_case::failing(h2_fail* fail, bool defer, bool append)
 {
    if (fail) {
       failed = true;
@@ -4989,7 +4991,7 @@ h2_inline void h2_case::do_fail(h2_fail* fail, bool defer, bool append)
    }
 }
 // source/core/h2_suite.cpp
-h2_inline h2_suite::h2_suite(const char* name_, void (*test_code_)(h2_suite*, h2_case*), const h2_fs& fs_) : fs(fs_), name(name_), test_code(test_code_)
+h2_inline h2_suite::h2_suite(const char* file_, const char* name_, void (*test_code_)(h2_suite*, h2_case*)) : file(file_), name(name_), test_code(test_code_)
 {
    memset(ctx, 0, sizeof(jmp_buf));
    h2_runner::I().suites.push_back(x);
@@ -5002,13 +5004,13 @@ h2_inline void h2_suite::clear()
 
 h2_inline void h2_suite::setup()
 {
-   h2_memory::stack::push(fs);
+   h2_memory::stack::push(file);
 }
 
 h2_inline void h2_suite::cleanup()
 {
-   stubs.clear();
-   mocks.clear(false);
+   h2_stubs::clear(stubs);
+   h2_mocks::clear(mocks, false);
    stats.footprint = h2_memory::stack::footprint();
    h2_memory::stack::pop();
 }
@@ -5024,7 +5026,7 @@ h2_inline void h2_suite::test(h2_case* c)
    try {
       test_code(this, c); /* include Setup(); c->post_setup() and c->prev_cleanup(); Cleanup() */
    } catch (...) {
-      c->do_fail(h2_fail::new_exception("was thrown but uncaught", h2_exception::I().last_type, h2_exception::I().last_bt), true, O.contiguous);
+      c->failing(h2_fail::new_exception("was thrown but uncaught", h2_exception::I().last_type, h2_exception::I().last_bt), true, O.contiguous);
    }
    c->post_cleanup();
 }
@@ -5051,7 +5053,7 @@ static inline void save_last_order(h2_list& suites)
    if (!f) return;
    h2_list_for_each_entry (s, suites, h2_suite, x)
       h2_list_for_each_entry (c, s->cases, h2_case, x)
-         ::fprintf(f, "%s\n%s\n%d\n", ss(s->name), c->name, (int)c->failed);
+         ::fprintf(f, "%s\n%s\n%d\n", ss(s->name), c->name, c->failed ? 1 : 0);
    ::fclose(f);
 }
 
@@ -5127,9 +5129,9 @@ h2_inline void h2_runner::enumerate()
       for (auto& cleanup : global_suite_cleanups) cleanup();
       int unfiltered = 0;
       h2_list_for_each_entry (c, s->cases, h2_case, x)
-         if (!(c->filtered = O.filter(ss(s->name), c->name, c->fs.file, c->fs.line)))
+         if (!(c->filtered = O.filter(ss(s->name), c->name, c->file)))
             unfiltered++;
-      if (unfiltered == 0) s->filtered = O.filter(ss(s->name), "", s->fs.file, s->fs.line);
+      if (unfiltered == 0) s->filtered = O.filter(ss(s->name), "", s->file);
       cases += s->cases.count();
       if (O.progressing && 10 * i + i * i < cases && i < (int)h2_shell::I().cww - 20) i += ::printf(".");
    }
@@ -5156,7 +5158,7 @@ h2_inline int h2_runner::main(int argc, const char** argv)
    for (rounds = 0; rounds < O.run_rounds; ++rounds) {
       shuffle();
       h2_list_for_each_entry (s, suites, h2_suite, x) {
-         current_suite = s;
+         current_suite = (void*)s;
          h2_report::I().on_suite_start(s);
          for (auto& setup : global_suite_setups) setup();
          s->setup();
@@ -5169,7 +5171,7 @@ h2_inline int h2_runner::main(int argc, const char** argv)
             else if (c->todo)
                stats.todo++, s->stats.todo++;
 
-            current_case = c;
+            current_case = (void*)c;
             h2_report::I().on_case_start(s, c);
             if (!O.list_cases && !c->todo && !c->filtered && !c->ignored) {
                for (auto& setup : global_case_setups) setup();
@@ -5190,10 +5192,56 @@ h2_inline int h2_runner::main(int argc, const char** argv)
    h2_report::I().on_runner_endup(this);
    for (auto& cleanup : global_cleanups) cleanup();
 
-   stubs.clear();
-   mocks.clear(false);
+   h2_stubs::clear(stubs);
+   h2_mocks::clear(mocks, false);
    h2_memory::finalize();
    return O.verbose >= 6 ? stats.failed : 0;
+}
+
+h2_inline void h2_runner::stub(void* srcfp, void* dstfp, const char* srcfn, const char* file)
+{
+   if (!srcfp || !dstfp) return;
+   if (h2_runner::I().current_case)
+      h2_stubs::add(((h2_case*)h2_runner::I().current_case)->stubs, srcfp, dstfp, srcfn, file);
+   else if (h2_runner::I().current_suite)
+      h2_stubs::add(((h2_suite*)h2_runner::I().current_suite)->stubs, srcfp, dstfp, srcfn, file);
+   else
+      h2_stubs::add(h2_runner::I().stubs, srcfp, dstfp, srcfn, file);
+}
+
+h2_inline void h2_runner::unstub(void* srcfp)
+{
+   if (!srcfp) return;
+   if (h2_runner::I().current_case)
+      h2_stubs::clear(((h2_case*)h2_runner::I().current_case)->stubs, srcfp);
+   else if (h2_runner::I().current_suite)
+      h2_stubs::clear(((h2_suite*)h2_runner::I().current_suite)->stubs, srcfp);
+   else
+      h2_stubs::clear(h2_runner::I().stubs, srcfp);
+}
+
+h2_inline void h2_runner::mock(void* mocker)
+{
+   if (h2_runner::I().current_case)
+      h2_mocks::add(((h2_case*)h2_runner::I().current_case)->mocks, mocker);
+   else if (h2_runner::I().current_suite)
+      h2_mocks::add(((h2_suite*)h2_runner::I().current_suite)->mocks, mocker);
+   else
+      h2_mocks::add(h2_runner::I().mocks, mocker);
+}
+
+h2_inline void h2_runner::failing(h2_fail* fail)
+{
+   if (!fail) return;
+   if (O.debug) h2_debugger::trap();
+   if (h2_runner::I().current_case) ((h2_case*)h2_runner::I().current_case)->failing(fail, O.contiguous, true);
+}
+
+h2_inline void h2_runner::asserts()
+{
+   if (h2_runner::I().current_case) ((h2_case*)h2_runner::I().current_case)->stats.asserts += 1;
+   if (h2_runner::I().current_suite) ((h2_suite*)h2_runner::I().current_suite)->stats.asserts += 1;
+   h2_runner::I().stats.asserts += 1;
 }
 // source/assert/h2_assert.cpp
 static inline const char* find_op(const char* src, const char* op)
@@ -5225,7 +5273,7 @@ static inline const char* find_op(const char* src, const char* op)
 h2_inline h2_defer_failure::~h2_defer_failure()
 {
    if (fails) {
-      fails->fs = fs;
+      fails->file = file;
       fails->assert_type = assert_type;
       fails->assert_op = assert_op;
       fails->e_expression = e_expression;
@@ -5242,23 +5290,23 @@ h2_inline h2_defer_failure::~h2_defer_failure()
             fails->a_expression.assign(q, (a_expression + strlen(a_expression)) - q);
          }
       }
-      h2_fail_g(fails);
+      h2_runner::failing(fails);
    }
 }
 // source/assert/h2_timer.cpp
-h2_inline h2_timer::h2_timer(int ms_, const h2_fs& fs_) : fs(fs_), cpu_ms(ms_)
+h2_inline h2_timer::h2_timer(int ms_, const char* file_) : file(file_), cpu_ms(ms_)
 {
    start = ::clock();
 }
 
 h2_inline h2_timer::~h2_timer()
 {
-   h2_assert_g();
+   h2_runner::asserts();
    double delta = (::clock() - start) * 1000.0 / CLOCKS_PER_SEC;
    if (cpu_ms < delta) {
       h2_line line = "performance expect < ";
       line.printf("green", "%d", cpu_ms).printf("", " ms, but actually cost ").printf("red", "%d", (int)delta).printf("", " ms");
-      h2_fail_g(h2_fail::new_normal(line, fs));
+      h2_runner::failing(h2_fail::new_normal(line, file));
    }
 }
 // source/render/h2_failure.cpp
@@ -5292,9 +5340,8 @@ h2_inline h2_fail::~h2_fail()
 
 h2_inline h2_line h2_fail::locate()
 {
-   if (!fs.empty())
-      return gray(" at ") + h2_string("%s:%d", fs.basefile(), fs.line);
-   return {};
+   if (h2_blank(file)) return {};
+   return gray(" at ") + h2_basefile(file);
 }
 
 h2_inline void h2_fail::foreach(std::function<void(h2_fail*, size_t, size_t)> cb, size_t si, size_t ci)
@@ -5305,7 +5352,7 @@ h2_inline void h2_fail::foreach(std::function<void(h2_fail*, size_t, size_t)> cb
 }
 
 struct h2_fail_normal : h2_fail {
-   h2_fail_normal(const h2_line& explain_ = {}, const h2_fs& fs_ = h2_fs()) : h2_fail(explain_, fs_) {}
+   h2_fail_normal(const h2_line& explain_ = {}, const char* file_ = nullptr) : h2_fail(explain_, file_) {}
    void print(size_t si = 0, size_t ci = 0) override
    {
       h2_line line;
@@ -5333,7 +5380,7 @@ static inline bool is_synonym(const h2_string& a, const h2_string& b)
 struct h2_fail_unexpect : h2_fail {
    h2_line expection, represent;
    int c = 0;
-   h2_fail_unexpect(const h2_line& expection_ = {}, const h2_line& represent_ = {}, const h2_line& explain_ = {}, const h2_fs& fs_ = h2_fs()) : h2_fail(explain_, fs_), expection(expection_), represent(represent_) {}
+   h2_fail_unexpect(const h2_line& expection_ = {}, const h2_line& represent_ = {}, const h2_line& explain_ = {}, const char* file_ = nullptr) : h2_fail(explain_, file_), expection(expection_), represent(represent_) {}
    void print_OK1(h2_line& line)
    {
       h2_line a = h2_line(a_expression).gray_quote().brush("cyan");
@@ -5559,13 +5606,13 @@ struct h2_fail_memory : h2_fail {
    const void* ptr;
    const size_t size;
    const h2_backtrace bt_allocate, bt_release;
-   h2_fail_memory(const void* ptr_, const size_t size_, const h2_backtrace& bt_allocate_, const h2_backtrace& bt_release_, const h2_fs& fs_ = h2_fs()) : h2_fail({}, fs_), ptr(ptr_), size(size_), bt_allocate(bt_allocate_), bt_release(bt_release_) {}
+   h2_fail_memory(const void* ptr_, const size_t size_, const h2_backtrace& bt_allocate_, const h2_backtrace& bt_release_, const char* file_ = nullptr) : h2_fail({}, file_), ptr(ptr_), size(size_), bt_allocate(bt_allocate_), bt_release(bt_release_) {}
 };
 
 struct h2_fail_memory_leak : h2_fail_memory {
    const h2_vector<std::pair<size_t, size_t>> sizes;
    const char* where;  // case or block
-   h2_fail_memory_leak(const void* ptr_, const size_t size_, const h2_vector<std::pair<size_t, size_t>>& sizes_, const h2_backtrace& bt_allocate_, const char* where_, const h2_fs& fs_) : h2_fail_memory(ptr_, size_, bt_allocate_, h2_backtrace(), fs_), sizes(sizes_), where(where_) {}
+   h2_fail_memory_leak(const void* ptr_, const size_t size_, const h2_vector<std::pair<size_t, size_t>>& sizes_, const h2_backtrace& bt_allocate_, const char* where_, const char* file_) : h2_fail_memory(ptr_, size_, bt_allocate_, h2_backtrace(), file_), sizes(sizes_), where(where_) {}
    void print(size_t si = 0, size_t ci = 0) override
    {
       h2_line line = h2_stringify(ptr) + color(" memory leak ", "bold,red") + h2_stringify(size).brush("red") + " ";
@@ -5648,7 +5695,7 @@ struct h2_fail_use_after_free : h2_fail_memory {
 struct h2_fail_exception : h2_fail {
    const char* type;
    const h2_backtrace bt_throw;
-   h2_fail_exception(const h2_line& explain_, const char* type_, const h2_backtrace& bt_throw_) : h2_fail(explain_, h2_fs()), type(type_), bt_throw(bt_throw_) {}
+   h2_fail_exception(const h2_line& explain_, const char* type_, const h2_backtrace& bt_throw_) : h2_fail(explain_, nullptr), type(type_), bt_throw(bt_throw_) {}
    void print(size_t si = 0, size_t ci = 0) override
    {
       h2_color::printl(" exception " + color(type, "red") + " " + explain + " at backtrace:");
@@ -5659,7 +5706,7 @@ struct h2_fail_exception : h2_fail {
 struct h2_fail_symbol : h2_fail {
    const h2_string symbol;
    const h2_vector<h2_string> candidates;
-   h2_fail_symbol(const h2_string& symbol_, const h2_vector<h2_string>& candidates_, const h2_line& explain_) : h2_fail(explain_, h2_fs()), symbol(symbol_), candidates(candidates_) {}
+   h2_fail_symbol(const h2_string& symbol_, const h2_vector<h2_string>& candidates_, const h2_line& explain_) : h2_fail(explain_, nullptr), symbol(symbol_), candidates(candidates_) {}
    void print(size_t si = 0, size_t ci = 0) override
    {
       h2_color::printl(color(candidates.size() ? " Find multiple " : " Not found ", "yellow") + color(symbol, "bold,red"));
@@ -5669,13 +5716,13 @@ struct h2_fail_symbol : h2_fail {
    }
 };
 
-h2_inline h2_fail* h2_fail::new_normal(const h2_line& explain_, const h2_fs& fs_) { return new h2_fail_normal(explain_, fs_); }
+h2_inline h2_fail* h2_fail::new_normal(const h2_line& explain_, const char* file_) { return new h2_fail_normal(explain_, file_); }
 h2_inline h2_fail* h2_fail::new_unexpect(const h2_line& expection_, const h2_line& represent_, const h2_line& explain_) { return new h2_fail_unexpect(expection_, represent_, explain_); }
 h2_inline h2_fail* h2_fail::new_strcmp(const h2_string& e_value, const h2_string& a_value, bool caseless, const h2_line& expection_, const h2_line& explain_) { return new h2_fail_strcmp(e_value, a_value, caseless, expection_, explain_); }
 h2_inline h2_fail* h2_fail::new_strfind(const h2_string& e_value, const h2_string& a_value, const h2_line& expection_, const h2_line& explain_) { return new h2_fail_strfind(e_value, a_value, expection_, explain_); }
 h2_inline h2_fail* h2_fail::new_json(const h2_string& e_value, const h2_string& a_value, const h2_line& expection_, bool caseless, const h2_line& explain_) { return new h2_fail_json(e_value, a_value, expection_, caseless, explain_); }
 h2_inline h2_fail* h2_fail::new_memcmp(const unsigned char* e_value, const unsigned char* a_value, const size_t length, const size_t width) { return new h2_fail_memcmp(e_value, a_value, length, width); }
-h2_inline h2_fail* h2_fail::new_memory_leak(const void* ptr, const size_t size, const h2_vector<std::pair<size_t, size_t>>& sizes, const h2_backtrace& bt_allocate, const char* where, const h2_fs& fs_) { return new h2_fail_memory_leak(ptr, size, sizes, bt_allocate, where, fs_); }
+h2_inline h2_fail* h2_fail::new_memory_leak(const void* ptr, const size_t size, const h2_vector<std::pair<size_t, size_t>>& sizes, const h2_backtrace& bt_allocate, const char* where, const char* file_) { return new h2_fail_memory_leak(ptr, size, sizes, bt_allocate, where, file_); }
 h2_inline h2_fail* h2_fail::new_double_free(const void* ptr, const h2_backtrace& bt_allocate, const h2_backtrace& bt_release, const h2_backtrace& bt_double_free) { return new h2_fail_double_free(ptr, bt_allocate, bt_release, bt_double_free); }
 h2_inline h2_fail* h2_fail::new_asymmetric_free(const void* ptr, const char* who_allocate, const char* who_release, const h2_backtrace& bt_allocate, const h2_backtrace& bt_release) { return new h2_fail_asymmetric_free(ptr, who_allocate, who_release, bt_allocate, bt_release); }
 h2_inline h2_fail* h2_fail::new_overflow(const void* ptr, const size_t size, const void* violate_ptr, const char* action, const h2_vector<unsigned char>& spot, const h2_backtrace& bt_allocate, const h2_backtrace& bt_trample) { return new h2_fail_overflow(ptr, size, violate_ptr, action, spot, bt_allocate, bt_trample); }
@@ -5687,37 +5734,36 @@ struct h2_report_impl {
    h2_list x;
    int suites = 0, cases = 0;
    int suite_index = 0, suite_case_index = 0, runner_case_index = 0;
-   long long runner_cost, suite_cost, case_cost;
 
    virtual void on_runner_start(h2_runner* r)
    {
       suites = r->suites.count();
       h2_list_for_each_entry (s, r->suites, h2_suite, x)
          cases += s->cases.count();
-      runner_cost = h2_now();
+      r->stats.timecost = h2_now();
    }
    virtual void on_runner_endup(h2_runner* r)
    {
-      runner_cost = h2_now() - runner_cost;
+      r->stats.timecost = h2_now() - r->stats.timecost;
    }
    virtual void on_suite_start(h2_suite* s)
    {
       suite_case_index = 0;
-      suite_cost = h2_now();
+      s->stats.timecost = h2_now();
    }
    virtual void on_suite_endup(h2_suite* s)
    {
-      suite_cost = h2_now() - suite_cost;
+      s->stats.timecost = h2_now() - s->stats.timecost;
    }
    virtual void on_case_start(h2_suite* s, h2_case* c)
    {
       ++suite_case_index;
-      case_cost = h2_now();
+      c->stats.timecost = h2_now();
    }
    virtual void on_case_endup(h2_suite* s, h2_case* c)
    {
       ++runner_case_index;
-      case_cost = h2_now() - case_cost;
+      c->stats.timecost = h2_now() - c->stats.timecost;
    }
 };
 
@@ -5741,7 +5787,7 @@ struct h2_report_list : h2_report_impl {
       if (O.list_cases & 1) {
          h2_color::prints("dark gray", "SUITE-%d. ", unfiltered_suite_index);
          h2_color::prints("bold,blue", "%s", s->name);
-         h2_color::prints("dark gray", " %s:%d\n", s->fs.file, s->fs.line);
+         h2_color::prints("dark gray", " %s\n", s->file);
       }
    }
    void on_case_start(h2_suite* s, h2_case* c) override
@@ -5762,7 +5808,7 @@ struct h2_report_list : h2_report_impl {
          else
             h2_color::prints("dark gray", " %s-%d. ", type, unfiltered_runner_case_index);
          h2_color::prints("cyan", "%s", c->name);
-         h2_color::prints("dark gray", " %s:%d\n", c->fs.basefile(), c->fs.line);
+         h2_color::prints("dark gray", " %s\n", h2_basefile(c->file));
       }
    }
 };
@@ -5778,7 +5824,7 @@ struct h2_report_console : h2_report_impl {
    {
       return !!a1 + !!a2 + !!a3 + !!a4 + !!a5 + !!a6;
    }
-   h2_line format_title(const char* suite_name, const char* case_name, const char* file, int line)
+   h2_line format_title(const char* suite_name, const char* case_name, const char* file)
    {
       h2_line title;
       title.printf("dark gray", "┊ ");
@@ -5795,7 +5841,7 @@ struct h2_report_console : h2_report_impl {
       }
       if (file) {
          title.printf("dark gray", "┊ ");
-         title.printf("", "%s:%d ", file, line);
+         title.printf("", "%s ", file);
       } else {
          title = title.abbreviate(h2_shell::I().cww - 20);
       }
@@ -5817,7 +5863,7 @@ struct h2_report_console : h2_report_impl {
       h2_line bar;
       if (percentage && O.progressing) format_percentage(bar);
       if (status && status_style) bar.printf(status_style, "%s", status);
-      if (s && c) bar += format_title(s->name, c->name, returnable ? nullptr : c->fs.basefile(), c->fs.line);
+      if (s && c) bar += format_title(s->name, c->name, returnable ? nullptr : h2_basefile(c->file));
       h2_color::printl(bar, false);
       if (returnable) h2_report::I().escape_length = h2_stdio::I().capture_length;
    }
@@ -5851,7 +5897,7 @@ struct h2_report_console : h2_report_impl {
          h2_color::prints("", "%d rounds", r->rounds);
       }
       h2_color::prints("dark gray", ", ");
-      h2_color::prints("", "%s \n", format_duration(runner_cost));
+      h2_color::prints("", "%s \n", format_duration(r->stats.timecost));
    }
    void on_suite_start(h2_suite* s) override
    {
@@ -5889,9 +5935,9 @@ struct h2_report_console : h2_report_impl {
             h2_color::prints("dark gray", ", ");
             h2_color::prints("", "%s footprint", format_volume(s->stats.footprint));
          }
-         if (1 < suite_cost) {
+         if (1 < s->stats.timecost) {
             h2_color::prints("dark gray", ", ");
-            h2_color::prints("", "%s", format_duration(suite_cost));
+            h2_color::prints("", "%s", format_duration(s->stats.timecost));
          }
       }
    }
@@ -5919,9 +5965,9 @@ struct h2_report_console : h2_report_impl {
          if (O.verbose >= 3) {
             print_bar(true, "green", "Passed ", s, c, false);
             h2_line ad;
-            if (0 < c->asserts) ad.printf("dark gray", ad.width() ? ", " : "").printf("", "%d assert%s", c->asserts, 1 < c->asserts ? "s" : "");
-            if (0 < c->footprint) ad.printf("dark gray", ad.width() ? ", " : "").printf("", "%s footprint", format_volume(c->footprint));
-            if (0 < case_cost) ad.printf("dark gray", ad.width() ? ", " : "").printf("", "%s", format_duration(case_cost));
+            if (0 < c->stats.asserts) ad.printf("dark gray", ad.width() ? ", " : "").printf("", "%d assert%s", c->stats.asserts, 1 < c->stats.asserts ? "s" : "");
+            if (0 < c->stats.footprint) ad.printf("dark gray", ad.width() ? ", " : "").printf("", "%s footprint", format_volume(c->stats.footprint));
+            if (0 < c->stats.timecost) ad.printf("dark gray", ad.width() ? ", " : "").printf("", "%s", format_duration(c->stats.timecost));
             if (ad.width()) h2_color::printl(gray("- ") + ad, false);
          }
       }
@@ -5948,9 +5994,9 @@ struct h2_report_junit : h2_report_impl {
    {
       h2_report_impl::on_case_endup(s, c);
       if (!f) return;
-      fprintf(f, "<testcase classname=\"%s\" name=\"%s\" status=\"%s\" time=\"%.3f\">\n", s->name, c->name, c->todo ? "TODO" : (c->filtered ? "Filtered" : (c->ignored ? "Ignored" : (c->failed ? "Failed" : "Passed"))), case_cost / 1000.0);
+      fprintf(f, "<testcase classname=\"%s\" name=\"%s\" status=\"%s\" time=\"%.3f\">\n", s->name, c->name, c->todo ? "TODO" : (c->filtered ? "Filtered" : (c->ignored ? "Ignored" : (c->failed ? "Failed" : "Passed"))), c->stats.timecost / 1000.0);
       if (c->failed) {
-         fprintf(f, "<failure message=\"%s:%d:", c->fs.file, c->fs.line);
+         fprintf(f, "<failure message=\"%s:", c->file);
          if (c->fails) c->fails->foreach([&](h2_fail* fail, size_t si, size_t ci) {fprintf(f, "{newline}"); fail->print(f); });
          fprintf(f, "\" type=\"AssertionFailedError\"></failure>\n");
       }
@@ -6243,15 +6289,13 @@ static inline bool match3(const std::vector<const char*>& patterns, const char* 
    return false;
 }
 
-h2_inline bool h2_option::filter(const char* suitename, const char* casename, const char* file, int line) const
+h2_inline bool h2_option::filter(const char* suitename, const char* casename, const char* fileline) const
 {
-   char filename[1024];
-   sprintf(filename, "%s:%d", file, line);
    if (!includes.empty())
-      if (!match3(includes, suitename) && !match3(includes, casename) && !match3(includes, filename))
+      if (!match3(includes, suitename) && !match3(includes, casename) && !match3(includes, fileline))
          return true;
    if (!excludes.empty())
-      if (match3(excludes, suitename) || match3(excludes, casename) || match3(excludes, filename))
+      if (match3(excludes, suitename) || match3(excludes, casename) || match3(excludes, fileline))
          return true;
    return false;
 }
