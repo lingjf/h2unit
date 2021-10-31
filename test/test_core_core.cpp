@@ -1,123 +1,149 @@
 #include "../source/h2_unit.cpp"
 
-SUITE(H2_A)
+SUITE(H2_An)
 {
+   // S1: H2_An() ==> 0
+   // S2: H2_An(a) ==> a
+   // S3: H2_An(a, b) ==> a
+   // S4: H2_An(()) ==> 0
+   // S5: H2_An((a)) ==> a
+   // S6: H2_An((a, b)) ==> a
+   // S7: H2_An(((a, b, c))) ==> a
+
    Case(empty)
    {
-      int n = H2_A();
+      int n = H2_An();
       OK(0, n);
    }
 
    Case(one)
    {
-      int n = H2_A(1);
+      int n = H2_An(1);
       OK(1, n);
    }
 
    Case(two)
    {
-      int n = H2_A(1, 2);
+      int n = H2_An(1, 2);
       OK(1, n);
    }
 
    Case(empty in parenthesis)
    {
-      int n = H2_A(());
+      int n = H2_An(());
       OK(0, n);
    }
 
    Case(one in parenthesis)
    {
-      int n = H2_A((1));
+      int n = H2_An((1));
       OK(1, n);
    }
 
    Case(two in parenthesis)
    {
-      int n = H2_A((1, 2));
+      int n = H2_An((1, 2));
+      OK(1, n);
+   }
+
+   Case(empty in double parenthesis)
+   {
+      int n = H2_An(());
+      OK(0, n);
+   }
+
+   Case(one in double parenthesis)
+   {
+      int n = H2_An((1));
+      OK(1, n);
+   }
+
+   Case(two in double parenthesis)
+   {
+      int n = H2_An((1, 2));
       OK(1, n);
    }
 }
 
-SUITE(H2_A x y)
+SUITE(H2_An x y)
 {
    Case(empty)
    {
-      int x = H2_XA();
+      int x = H2_XAn();
       OK(0, x);
-      int y = H2_YA();
+      int y = H2_YAn();
       OK(0, y);
    }
 
    Case(one)
    {
-      int x = H2_XA(1);
+      int x = H2_XAn(1);
       OK(1, x);
-      int y = H2_YA(1);
+      int y = H2_YAn(1);
       OK(1, y);
    }
 
    Case(two)
    {
-      int x = H2_XA(1, 2);
+      int x = H2_XAn(1, 2);
       OK(1, x);
-      int y = H2_YA(1, 2);
+      int y = H2_YAn(1, 2);
       OK(2, y);
    }
 
    Case(empty in 1 parenthesis)
    {
-      int x = H2_XA(());
+      int x = H2_XAn(());
       OK(0, x);
-      int y = H2_YA(());
+      int y = H2_YAn(());
       OK(0, y);
    }
 
    Case(one in 1 parenthesis)
    {
-      int x = H2_XA((1));
+      int x = H2_XAn((1));
       OK(1, x);
-      int y = H2_YA((1));
+      int y = H2_YAn((1));
       OK(1, y);
    }
 
    Case(two in 1 parenthesis)
    {
-      int x = H2_XA((1, 2));
+      int x = H2_XAn((1, 2));
       OK(1, x);
-      int y = H2_YA((1, 2));
+      int y = H2_YAn((1, 2));
       OK(1, y);
    }
 
    Case(empty in 2 parenthesis)
    {
-      int x = H2_XA((), ());
+      int x = H2_XAn((), ());
       OK(0, x);
-      int y = H2_YA((), ());
+      int y = H2_YAn((), ());
       OK(0, y);
    }
 
    Case(one in 2 parenthesis)
    {
-      int x = H2_XA((1), (2));
+      int x = H2_XAn((1), (2));
       OK(1, x);
-      int y = H2_YA((1), (2));
+      int y = H2_YAn((1), (2));
       OK(2, y);
    }
 
    Case(two in 2 parenthesis)
    {
-      int x = H2_XA((1, 2), (3, 4));
+      int x = H2_XAn((1, 2), (3, 4));
       OK(1, x);
-      int y = H2_YA((1, 2), (3, 4));
+      int y = H2_YAn((1, 2), (3, 4));
       OK(3, y);
    }
 
    Case(three in 2 parenthesis)
    {
-      int x = H2_XA((1, 2, 3), (4, 5, 6));
+      int x = H2_XAn((1, 2, 3), (4, 5, 6));
       OK(1, x);
-      int y = H2_YA((1, 2, 3), (4, 5, 6));
+      int y = H2_YAn((1, 2, 3), (4, 5, 6));
       OK(4, y);
    }
 }

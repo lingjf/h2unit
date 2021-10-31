@@ -1,5 +1,5 @@
 
-/* v5.15 2021-10-30 21:00:02 */
+/* v5.15 2021-10-31 08:06:13 */
 /* https://github.com/lingjf/h2unit */
 /* Apache Licence 2.0 */
 
@@ -170,13 +170,13 @@ namespace h2 {
 #define _H2PP_FOREACH_CALL_MACRO_1(_Split, _Macro, _Args, _i, _x) _Macro(_Args, _i, _x)
 #define _H2PP_FOREACH_CALL_MACRO_0(_Split, _Macro, _Args, _i, _x) H2PP_REMOVE_PARENTHESES_IF(_Split) _Macro(_Args, _i, _x)
 
-#define H2PP_FULLMESH(_Split, _Macro, _Args, ...) H2PP_CAT2(__H2PP_FULLMESH1_, H2PP_IS_EMPTY(__VA_ARGS__)) ((_Split, _Macro, _Args, __VA_ARGS__))
-#define __H2PP_FULLMESH1_1(...)
-#define __H2PP_FULLMESH1_0(MSVC_Workaround) H2PP_RESCAN(H2PP_FULLMESH1 MSVC_Workaround)
-#define H2PP_FULLMESH1(_Split, _Macro, _Args, _1, ...) H2PP_CAT2(__H2PP_FULLMESH2_, H2PP_IS_EMPTY(__VA_ARGS__)) (_Split, _Macro, _Args, _1, __VA_ARGS__)
-#define __H2PP_FULLMESH2_1(_Split, _Macro, _Args, _1, ...) H2PP_FULLMESH2(_Split, _Macro, _Args, _1, _1)  // Fullmesh((1,2,3)) => (1,2,3) x (1,2,3)
-#define __H2PP_FULLMESH2_0(...) __H2PP_FULLMESH2_0R((__VA_ARGS__))  // Fullmesh((1,2,3), (4,5,6)) => (1,2,3) x (4,5,6)
-#define __H2PP_FULLMESH2_0R(MSVC_Workaround) H2PP_RESCAN(H2PP_FULLMESH2 MSVC_Workaround)
+#define H2PP_FULLMESH(_Split, _Macro, _Args, ...) H2PP_RESCAN(H2PP_CAT2(_H2PP_FULLMESH1_, H2PP_IS_EMPTY(__VA_ARGS__)) ((_Split, _Macro, _Args, __VA_ARGS__)))
+#define _H2PP_FULLMESH1_1(...)
+#define _H2PP_FULLMESH1_0(MSVC_Workaround) H2PP_RESCAN(H2PP_FULLMESH1 MSVC_Workaround)
+#define H2PP_FULLMESH1(_Split, _Macro, _Args, _1, ...) H2PP_CAT2(_H2PP_FULLMESH2_, H2PP_IS_EMPTY(__VA_ARGS__)) (_Split, _Macro, _Args, _1, __VA_ARGS__)
+#define _H2PP_FULLMESH2_1(_Split, _Macro, _Args, _1, ...) H2PP_FULLMESH2(_Split, _Macro, _Args, _1, _1)  // Fullmesh((1,2,3)) => (1,2,3) x (1,2,3)
+#define _H2PP_FULLMESH2_0(...) _H2PP_FULLMESH2_0_R((__VA_ARGS__))  // Fullmesh((1,2,3), (4,5,6)) => (1,2,3) x (4,5,6)
+#define _H2PP_FULLMESH2_0_R(MSVC_Workaround) H2PP_RESCAN(H2PP_FULLMESH2 MSVC_Workaround)
 #define H2PP_FULLMESH2(_Split, _Macro, _Args, _Tuplex, _Tupley) H2PP_EVAL(_H2PP_FOREACHx(_Split, _Macro, _Args, 0, _Tupley, H2PP_REMOVE_PARENTHESES(_Tuplex)))
 #define _H2PP_FOREACHx(_Split, _Macro, _Args, _i, _Tupley, ...) H2PP_CAT2(_H2PP_FOREACHx_, H2PP_IS_EMPTY(__VA_ARGS__)) (_Split, _Macro, _Args, _i, _Tupley, __VA_ARGS__)
 #define _H2PP_FOREACHx_1(...)
@@ -3184,25 +3184,20 @@ struct h2_suite {
 #define H2CASE(...) __H2CASE(#__VA_ARGS__, H2PP_UNIQUE(case_test_C), H2PP_UNIQUE(suite_test_C), 0)
 #define H2TODO(...) __H2CASE(#__VA_ARGS__, H2PP_UNIQUE(case_test_C), H2PP_UNIQUE(suite_test_C), 1)
 
-// S1: H2_A() ==> 0
-// S2: H2_A(a) ==> a
-// S3: H2_A(a, b) ==> a
-// S4: H2_A(()) ==> 0
-// S5: H2_A((a)) ==> a
-// S6: H2_A((a, b)) ==> a
-#define H2_A(...) H2PP_CAT(_H2_A1_, H2PP_IS_EMPTY(__VA_ARGS__))((__VA_ARGS__))
-#define _H2_A1_1(...) 0  // S1
-#define _H2_A1_0(MSVC_Workaround) H2PP_RESCAN(_H2_A1 MSVC_Workaround)
-#define _H2_A1(a, ...) H2PP_CAT(_H2_A2_, H2PP_IS_BEGIN_PARENTHESIS(a))(a)
-#define _H2_A2_0(a) a                    // S2/3
-#define _H2_A2_1(a) H2PP_RESCAN(H2_B a)  // S4/5/6
-#define H2_B(...) H2PP_CAT(_H2_B1_, H2PP_IS_EMPTY(__VA_ARGS__))((__VA_ARGS__))
-#define _H2_B1_1(...) 0  // S4
-#define _H2_B1_0(MSVC_Workaround) H2PP_RESCAN(_H2_B1 MSVC_Workaround)
-#define _H2_B1(a, ...) a  // S5/6
+/* clang-format off */
+// S6: H2_An((a, b, c)) ==> a
+#define H2_An(...) H2PP_EVAL(_H2_An(__VA_ARGS__))
+#define _H2_An(...) H2PP_CAT2(_H2_An1_, H2PP_IS_EMPTY(__VA_ARGS__)) ((__VA_ARGS__))
+#define _H2_An1_1(...) 0
+#define _H2_An1_0(MSVC_Workaround) _H2_An1 MSVC_Workaround
+#define _H2_An1(a, ...) H2PP_CAT2(_H2_An2_, H2PP_IS_BEGIN_PARENTHESIS(a)) (a)
+#define _H2_An2_0(a) a
+#define _H2_An2_1(a) H2PP_DEFER(_H2_An2)() a
+#define _H2_An2() _H2_An
 
-#define H2_XA(...) H2_A(H2PP_HEAD(__VA_ARGS__))
-#define H2_YA(...) H2_A(H2PP_LAST(__VA_ARGS__))
+#define H2_XAn(...) H2_An(H2PP_HEAD(__VA_ARGS__))
+#define H2_YAn(...) H2_An(H2PP_LAST(__VA_ARGS__))
+/* clang-format on */
 
 #define H2CASES(case_prefix, ...) __H2CASES(H2PP_UNIQUE(case_test_C), case_prefix, __VA_ARGS__)
 #define __H2CASES(case_test, case_prefix, ...)                                                          \
@@ -3234,7 +3229,7 @@ struct h2_suite {
 
 #define H2Cases(case_prefix, ...) __H2Cases(H2PP_UNIQUE(x), H2PP_UNIQUE(sc), H2PP_UNIQUE(cc), case_prefix, __VA_ARGS__)
 #define __H2Cases(Qx, suite_cleaner, case_cleaner, case_prefix, ...)                             \
-   auto Qx = H2_A(__VA_ARGS__);                                                                  \
+   auto Qx = H2_An(__VA_ARGS__);                                                                 \
    H2PP_FOREACH(, __H2Cases_Macro1, (Qx, case_prefix), H2PP_REMOVE_PARENTHESES_IF(__VA_ARGS__)); \
    if (case_1_1_0_2_6_0_0_2_4 && case_1_1_0_2_6_0_0_2_4->scheduled)                              \
       for (auto x = Qx; case_1_1_0_2_6_0_0_2_4; case_1_1_0_2_6_0_0_2_4 = nullptr)                \
@@ -3253,8 +3248,8 @@ struct h2_suite {
 
 #define H2Casess(case_prefix, ...) __H2Casess(H2PP_UNIQUE(x), H2PP_UNIQUE(y), H2PP_UNIQUE(sc), H2PP_UNIQUE(cc), case_prefix, __VA_ARGS__)
 #define __H2Casess(Qx, Qy, suite_cleaner, case_cleaner, case_prefix, ...)                      \
-   auto Qx = H2_XA(__VA_ARGS__);                                                               \
-   auto Qy = H2_YA(__VA_ARGS__);                                                               \
+   auto Qx = H2_XAn(__VA_ARGS__);                                                              \
+   auto Qy = H2_YAn(__VA_ARGS__);                                                              \
    H2PP_FULLMESH(, __H2Casess_Macro1, (Qx, Qy, case_prefix), __VA_ARGS__);                     \
    if (case_1_1_0_2_6_0_0_2_4 && case_1_1_0_2_6_0_0_2_4->scheduled)                            \
       for (auto x = Qx; case_1_1_0_2_6_0_0_2_4; case_1_1_0_2_6_0_0_2_4 = nullptr)              \
@@ -3307,13 +3302,13 @@ struct h2_suite {
 #define H2Todos(case_prefix, ...)     \
    H2Todo(case_prefix __VA_ARGS__) {} \
    if (0)                             \
-      for (auto x = H2_A(__VA_ARGS__); false;)
+      for (auto x = H2_An(__VA_ARGS__); false;)
 
-#define H2Todoss(case_prefix, ...)              \
-   H2Todo(case_prefix, __VA_ARGS__) {}          \
-   if (0)                                       \
-      for (auto x = H2_XA(__VA_ARGS__); false;) \
-         for (auto y = H2_YA(__VA_ARGS__); false;)
+#define H2Todoss(case_prefix, ...)               \
+   H2Todo(case_prefix, __VA_ARGS__) {}           \
+   if (0)                                        \
+      for (auto x = H2_XAn(__VA_ARGS__); false;) \
+         for (auto y = H2_YAn(__VA_ARGS__); false;)
 
 #define H2TODOS(case_prefix, ...) __H2TODOS(H2PP_UNIQUE(case_test_C), case_prefix, __VA_ARGS__)
 #define __H2TODOS(case_test, case_prefix, ...) \
