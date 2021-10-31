@@ -47,6 +47,7 @@
 
 namespace h2 {
 #include "utils/h2_macro.hpp"         //
+#include "utils/h2_macro.in.hpp"      //
 #include "utils/h2_template.hpp"      //
 #include "utils/h2_list.hpp"          //
 #include "utils/h2_pattern.hpp"       //

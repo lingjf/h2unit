@@ -19,7 +19,7 @@ SUITE(Mock Function)
       OK(11, foobar(2, "B"));
    }
 
-   Case(once call failure)
+   Todo(once call failure)
    {
       MOCK(time, time_t(time_t*)).Once().Return((time_t)0);
    }
@@ -37,7 +37,7 @@ SUITE(Mock Function)
       OK(11, foobar(1, "A"));
    }
 
-   Case(exceed call failure)
+   Todo(exceed call failure)
    {
       MOCK(time, time_t(time_t*)).Once();
       time(0);

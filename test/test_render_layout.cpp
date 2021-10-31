@@ -2,8 +2,6 @@
 
 SUITE(h2_layout)
 {
-   char t1[1024] = {'\0'};
-
    Case(line break)
    {
       h2::h2_line line = {"123", "456", "  "};

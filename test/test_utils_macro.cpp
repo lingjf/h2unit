@@ -1,23 +1,27 @@
 
-#ifdef JUSTPP
+#ifdef H2UNIT_SELF_UT
+#include "../source/h2_unit.cpp"
+#else
+
 // debug macro only
-// gcc test_utils_macro.cpp -DJUSTPP
+// gcc test_utils_macro.cpp -E
 
 #include "../source/utils/h2_macro.hpp"
-#define SUITE(...) int main(int argc, char** argv)
-#define Case(...) for (const char* cn = #__VA_ARGS__; cn; printf("success %s \n", cn), cn = NULL)
-#define OK(e, a)                                            \
-   if ((e) != (a)) {                                        \
-      printf("failed %s %s:%d \n", cn, __FILE__, __LINE__); \
-      exit(1);                                              \
-   }
-#else
-#include "../source/h2_unit.cpp"
-#endif
+#include "../source/utils/h2_macro.in.hpp"
 
-#include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+
+#define SUITE(...) int main(int argc, char** argv)
+#define Case(...) for (const char* _cn_ = #__VA_ARGS__; _cn_; printf("success %s \n", _cn_), _cn_ = NULL)
+#define OK(e, a)                                              \
+   if ((e) != (a)) {                                          \
+      printf("failed %s %s:%d \n", _cn_, __FILE__, __LINE__); \
+      return 1;                                               \
+   }
+
+#endif
 
 ////////////////////////////////////////////////////////////////
 
@@ -248,6 +252,14 @@ SUITE(macro)
       OK(12, n2[0]);
    }
 
+   Case(H2PP_UNIQUE)
+   {
+      int H2PP_UNIQUE() = 1;
+      int H2PP_UNIQUE() = 1;
+      int H2PP_UNIQUE(prefix) = 1;
+      int H2PP_UNIQUE(prefix) = 1;
+   }
+
    Case(H2PP_VARIADIC_CALL)
    {
 #define M0() 0
@@ -273,183 +285,368 @@ SUITE(macro)
 #undef M3
    }
 
-   Case(H2PP_NARG)
+   Case(H2PP_NARG normal 0)
    {
-      int n0 = H2PP_NARG();
-      int n1a = H2PP_NARG(a);
-      int n1b = H2PP_NARG((a));
-      int n1c = H2PP_NARG((a, b));
-      int n1d = H2PP_NARG((a, b, c));
-      int n2a = H2PP_NARG(a, b);
-      int n2b = H2PP_NARG((a, b), c);
-      int n3 = H2PP_NARG(a, b, c);
+      int n = H2PP_NARG();
+      OK(0, n);
+   }
 
+   Case(H2PP_NARG normal 1)
+   {
+      int n = H2PP_NARG(a);
+      OK(1, n);
+   }
+
+   Case(H2PP_NARG normal 2)
+   {
+      int n = H2PP_NARG(a, b);
+      OK(2, n);
+   }
+
+   Case(H2PP_NARG normal 3)
+   {
+      int n = H2PP_NARG(a, b, c);
+      OK(3, n);
+   }
+
+   Case(H2PP_NARG parenthesis 1)
+   {
+      int n = H2PP_NARG((a));
+      OK(1, n);
+   }
+
+   Case(H2PP_NARG parenthesis 2)
+   {
+      int n = H2PP_NARG((a), (b));
+      OK(2, n);
+   }
+
+   Case(H2PP_NARG two parenthesis 1)
+   {
+      int n = H2PP_NARG((a, b));
+      OK(1, n);
+   }
+
+   Case(H2PP_NARG two parenthesis 2)
+   {
+      int n = H2PP_NARG((a, b), (c));
+      OK(2, n);
+   }
+
+   Case(H2PP_NARG mix)
+   {
+      int n = H2PP_NARG((a, b), c);
+      OK(2, n);
+   }
+
+   Case(H2PP_REPEAT repeat 0 times)
+   {
+#define RepeatCB(Dummy, i) int n##i = i;
+      H2PP_REPEAT((), RepeatCB, , 0);
+#undef RepeatCB
+
+      int n0 = 0, n1 = 1, n2 = 2, n3 = 3;
       OK(0, n0);
-      OK(1, n1a);
-      OK(1, n1b);
-      OK(1, n1c);
-      OK(1, n1d);
-      OK(2, n2a);
-      OK(2, n2b);
+      OK(1, n1);
+      OK(2, n2);
       OK(3, n3);
    }
 
-   Case(H2PP_REPEAT)
+   Case(H2PP_REPEAT repeat 1 times)
    {
-#define M0(Dummy, i) int n##i = i;
-      H2PP_REPEAT((), M0, , 0);
-#undef M0
-      int n0, n1, n2, n3;
+      int n0 = 0, n1 = 1, n2 = 2, n3 = 3;
 
-#define Ma(Dummy, i) n##i = 100 + i
-      H2PP_REPEAT((), Ma, , 1);
+#define RepeatCB(Dummy, i) n##i = 100 + i;
+      H2PP_REPEAT((), RepeatCB, , 1);
+#undef RepeatCB
+
       OK(100, n0);
-#undef Ma
-
-#define Mb(a, i) n##i = 200 + i + a
-      H2PP_REPEAT((), Mb, 0, 1);
-      OK(200, n0);
-#undef Mb
-
-#define Mc(Dummy, i) n##i = 300 + i
-      H2PP_REPEAT((, ), Mc, , 2);
-      OK(300, n0);
-      OK(301, n1);
-#undef Mc
+      OK(1, n1);
+      OK(2, n2);
+      OK(3, n3);
    }
 
-   Case(H2PP_FOREACH)
+   Case(H2PP_REPEAT repeat 2 times)
    {
-      int sa = 0;
-#define Fora(Dummy, i, x) sa += x * i;
-      H2PP_FOREACH(, Fora, (), 1, 2, 3)
-#undef Fora
-      OK(1 * 0 + 2 * 1 + 3 * 2, sa);
+      int n0 = 0, n1 = 1, n2 = 2, n3 = 3;
 
-      int sb = 0;
-#define Forb(Dummy, i, x) sb += x * i;
-      H2PP_FOREACH((), Forb, (), 1, 2, 3)
-#undef Forb
-      OK(1 * 0 + 2 * 1 + 3 * 2, sb);
+#define RepeatCB(Dummy, i) n##i = 100 + i;
+      H2PP_REPEAT((), RepeatCB, , 2);
+#undef RepeatCB
 
-      int sc = 0;
-#define Forc(Dummy, i, x) sc += x * i
-      H2PP_FOREACH((;), Forc, (), 1, 2, 3);
-#undef Forc
-      OK(1 * 0 + 2 * 1 + 3 * 2, sc);
+      OK(100, n0);
+      OK(101, n1);
+      OK(2, n2);
+      OK(3, n3);
    }
 
-   Case(H2PP_UNIQUE)
+   Case(H2PP_REPEAT repeat 3 times)
    {
-      int H2PP_UNIQUE() = 1;
-      int H2PP_UNIQUE() = 1;
-      int H2PP_UNIQUE(prefix) = 1;
-      int H2PP_UNIQUE(prefix) = 1;
-   }
-}
+      int n0 = 0, n1 = 1, n2 = 2, n3 = 3;
 
-SUITE(Iterator i j)
-{
-   Case(H2PP_STR)
+#define RepeatCB(Dummy, i) n##i = 100 + i;
+      H2PP_REPEAT((), RepeatCB, , 3);
+#undef RepeatCB
+
+      OK(100, n0);
+      OK(101, n1);
+      OK(102, n2);
+      OK(3, n3);
+   }
+
+   Case(H2PP_REPEAT repeat 3 times with argument)
+   {
+      int n0 = 0, n1 = 1, n2 = 2, n3 = 3;
+
+#define RepeatCB(a, i) n##i = 100 + i + a;
+      H2PP_REPEAT((), RepeatCB, 20, 3);
+#undef RepeatCB
+
+      OK(120, n0);
+      OK(121, n1);
+      OK(122, n2);
+      OK(3, n3);
+   }
+
+   Case(H2PP_FOREACH empty)
+   {
+      int s = 0;
+#define ForEachCB(Dummy, i, x) s += x * (i + 1);
+      H2PP_FOREACH(, ForEachCB, ())
+#undef ForEachCB
+      OK(0, s);
+   }
+
+   Case(H2PP_FOREACH zero)
+   {
+      int s = 0;
+#define ForEachCB(Dummy, i, x) s += x * (i + 1);
+      H2PP_FOREACH(, ForEachCB, (), )
+#undef ForEachCB
+      OK(0, s);
+   }
+
+   Case(H2PP_FOREACH no split)
+   {
+      int s = 0;
+#define ForEachCB(Dummy, i, x) s += x * (i + 1);
+      H2PP_FOREACH(, ForEachCB, (), 1, 2, 3)
+#undef ForEachCB
+      OK(1 * 1 + 2 * 2 + 3 * 3, s);
+   }
+
+   Case(H2PP_FOREACH empty split)
+   {
+      int s = 0;
+#define ForEachCB(Dummy, i, x) s += x * (i + 1);
+      H2PP_FOREACH((), ForEachCB, (), 1, 2, 3)
+#undef ForEachCB
+      OK(1 * 1 + 2 * 2 + 3 * 3, s);
+   }
+
+   Case(H2PP_FOREACH has split)
+   {
+      int s = 0;
+#define ForEachCB(Dummy, i, x) s += x * (i + 1)
+      H2PP_FOREACH((;), ForEachCB, (), 1, 2, 3);
+#undef ForEachCB
+      OK(1 * 1 + 2 * 2 + 3 * 3, s);
+   }
+
+   Case(H2PP_FOREACH with argument)
+   {
+      int s = 0;
+#define ForEachCB(a, i, x) s += x * (i + 1) * a
+      H2PP_FOREACH((;), ForEachCB, (2), 1, 2, 3);
+#undef ForEachCB
+      OK((1 * 1 + 2 * 2 + 3 * 3) * 2, s);
+   }
+
+   Case(H2PP_FOREACH index STR)
    {
       const char* e[] = {"0.a", "1.b", "2.c"};
-#define Fora(Dummy, i, x) OK(e[i], H2PP_STR(i.x));
-      H2PP_FOREACH(, Fora, (), a, b, c)
-#undef Fora
+#define ForEachCB(Dummy, i, x) OK(e[i], H2PP_STR(i.x));
+      H2PP_FOREACH(, ForEachCB, (), a, b, c)
+#undef ForEachCB
    }
 
-   Case(H2PP_UNIQUE)
+   Case(H2PP_FOREACH index UNIQUE)
    {
-      struct S {
-#define Fora(Dummy, i, x) int H2PP_UNIQUE(x) = i;
+      struct E3 {
+         int v1[1];
+         int v2[2];
+         int v3[3];
+      } e3;
 
-         H2PP_FOREACH(, Fora, (), a, b, c)
-#undef Fora
-      } s;
+      struct A3 {
+#define ForEachCB(Dummy, i, x) int H2PP_UNIQUE(i)[x];
 
-      OK(0, ((int*)(&s))[0]);
-      OK(1, ((int*)(&s))[1]);
-      OK(2, ((int*)(&s))[2]);
+         H2PP_FOREACH(, ForEachCB, (), 1, 2, 3)
+#undef ForEachCB
+      } a3;
+
+      struct B3 {
+#define ForEachCB(Dummy, i, x) int H2PP_CAT(v, i)[x];
+
+         H2PP_FOREACH(, ForEachCB, (), 1, 2, 3)
+#undef ForEachCB
+      } b3;
+
+      OK(sizeof(e3), sizeof(a3));
+      OK(sizeof(e3), sizeof(b3));
+      OK(sizeof(E3), sizeof(A3));
+      OK(sizeof(E3), sizeof(B3));
    }
 
-   Case(H2PP_UNIQUE)
+   Case(H2PP_FULLMESH empty)
    {
-      struct S {
-#define Fora(Dummy, i, x) int H2PP_UNIQUE(i) = i;
-
-         H2PP_FOREACH(, Fora, (), a, b, c)
-#undef Fora
-      } s;
-
-      OK(0, ((int*)(&s))[0]);
-      OK(1, ((int*)(&s))[1]);
-      OK(2, ((int*)(&s))[2]);
-   }
-}
-
-SUITE(H2PP_FULLMESH)
-{
-   int e = 1 * 1 * 0 * 0 +
-           1 * 2 * 0 * 1 +
-           1 * 3 * 0 * 2 +
-           2 * 1 * 1 * 0 +
-           2 * 2 * 1 * 1 +
-           2 * 3 * 1 * 2 +
-           3 * 1 * 2 * 0 +
-           3 * 2 * 2 * 1 +
-           3 * 3 * 2 * 2;
-
-   Case(empty)
-   {
-      int sa = 0;
-#define Fma(Dummy, i, j, x, y) sa += x * y * i * j;
-      H2PP_FULLMESH(, Fma, ());
-#undef Fma
-      OK(0, sa);
+      int s = 0;
+#define FullMeshCB(Dummy, i, j, x, y) s += x * (i + 1) * y * (j + 1);
+      H2PP_FULLMESH(, FullMeshCB, ());
+#undef FullMeshCB
+      OK(0, s);
    }
 
-   Case(zero)
+   int exx = 1 * 1 * 1 * 1 +
+             1 * 1 * 2 * 2 +
+             1 * 1 * 3 * 3 +
+             2 * 2 * 1 * 1 +
+             2 * 2 * 2 * 2 +
+             2 * 2 * 3 * 3 +
+             3 * 3 * 1 * 1 +
+             3 * 3 * 2 * 2 +
+             3 * 3 * 3 * 3;
+
+   Case(H2PP_FULLMESH xx zero)
    {
-      int sa = 0;
-#define Fma(Dummy, i, j, x, y) sa += x * y * i * j;
-      H2PP_FULLMESH(, Fma, (), ());
-#undef Fma
-      OK(0, sa);
+      int s = 0;
+#define FullMeshCB(Dummy, i, j, x, y) s += x * (i + 1) * y * (j + 1);
+      H2PP_FULLMESH(, FullMeshCB, (), ());
+#undef FullMeshCB
+      OK(0, s);
    }
 
-   Case(one)
+   Case(H2PP_FULLMESH xx one)
    {
-      int sa = 0;
-#define Fma(Dummy, i, j, x, y) sa += x * y * (i + 1) * (j + 1);
-      H2PP_FULLMESH(, Fma, (), (1));
-#undef Fma
-      OK(1, sa);
+      int s = 0;
+#define FullMeshCB(Dummy, i, j, x, y) s += x * y * (i + 1) * (j + 1);
+      H2PP_FULLMESH(, FullMeshCB, (), (1));
+#undef FullMeshCB
+      OK(1, s);
    }
 
-   Case(no split)
+   Case(H2PP_FULLMESH xx three)
    {
-      int sa = 0;
-#define Fma(Dummy, i, j, x, y) sa += x * y * i * j;
-      H2PP_FULLMESH(, Fma, (), (1, 2, 3));
-#undef Fma
-      OK(e, sa);
+      int s = 0;
+#define FullMeshCB(Dummy, i, j, x, y) s += x * (i + 1) * y * (j + 1);
+      H2PP_FULLMESH(, FullMeshCB, (), (1, 2, 3));
+#undef FullMeshCB
+      OK(exx, s);
    }
 
-   Case(empty split)
+   Case(H2PP_FULLMESH xx empty split)
    {
-      int sb = 0;
-#define Fmb(Dummy, i, j, x, y) sb += x * y * i * j;
-      H2PP_FULLMESH((), Fmb, (), (1, 2, 3));
-#undef Fmb
-      OK(e, sb);
+      int s = 0;
+#define FullMeshCB(Dummy, i, j, x, y) s += x * (i + 1) * y * (j + 1);
+      H2PP_FULLMESH((), FullMeshCB, (), (1, 2, 3));
+#undef FullMeshCB
+      OK(exx, s);
    }
 
-   Case(has split)
+   Case(H2PP_FULLMESH xx has split)
    {
-      int sc = 0;
-#define Fmc(Dummy, i, j, x, y) sc += x * y * i * j
-      H2PP_FULLMESH((;), Fmc, (), (1, 2, 3));
-#undef Fmc
-      OK(e, sc);
+      int s = 0;
+#define FullMeshCB(Dummy, i, j, x, y) s += x * (i + 1) * y * (j + 1)
+      H2PP_FULLMESH((;), FullMeshCB, (), (1, 2, 3));
+#undef FullMeshCB
+      OK(exx, s);
+   }
+
+   Case(H2PP_FULLMESH xx with argument)
+   {
+      int s = 0;
+#define FullMeshCB(a, i, j, x, y) s += x * (i + 1) * y * (j + 1) * a
+      H2PP_FULLMESH((;), FullMeshCB, (2), (1, 2, 3));
+#undef FullMeshCB
+      OK(exx * 2, s);
+   }
+
+   Case(H2PP_FULLMESH xx index STR)
+   {
+      const char* e_abc[3][3] = {
+        {"0.0:a~a", "0.1:a~b", "0.2:a~c"},
+        {"1.0:b~a", "1.1:b~b", "1.2:b~c"},
+        {"2.0:c~a", "2.1:c~b", "2.2:c~c"}};
+
+#define FullMeshCB(Dummy, i, j, x, y) OK(e_abc[i][j], H2PP_STR(i.j:x~y));
+      H2PP_FULLMESH(, FullMeshCB, (), (a, b, c));
+#undef FullMeshCB
+   }
+
+   int exy = 1 * 1 * 4 * 1 +
+             1 * 1 * 5 * 2 +
+             1 * 1 * 6 * 3 +
+             2 * 2 * 4 * 1 +
+             2 * 2 * 5 * 2 +
+             2 * 2 * 6 * 3 +
+             3 * 3 * 4 * 1 +
+             3 * 3 * 5 * 2 +
+             3 * 3 * 6 * 3;
+
+   Case(H2PP_FULLMESH xy one)
+   {
+      int s = 0;
+#define FullMeshCB(Dummy, i, j, x, y) s += x * y * (i + 1) * (j + 1);
+      H2PP_FULLMESH(, FullMeshCB, (), (1), (1));
+#undef FullMeshCB
+      OK(1, s);
+   }
+
+   Case(H2PP_FULLMESH xy three)
+   {
+      int s = 0;
+#define FullMeshCB(Dummy, i, j, x, y) s += x * (i + 1) * y * (j + 1);
+      H2PP_FULLMESH(, FullMeshCB, (), (1, 2, 3), (4, 5, 6));
+#undef FullMeshCB
+      OK(exy, s);
+   }
+
+   Case(H2PP_FULLMESH xy empty split)
+   {
+      int s = 0;
+#define FullMeshCB(Dummy, i, j, x, y) s += x * (i + 1) * y * (j + 1);
+      H2PP_FULLMESH((), FullMeshCB, (), (1, 2, 3), (4, 5, 6));
+#undef FullMeshCB
+      OK(exy, s);
+   }
+
+   Case(H2PP_FULLMESH xy has split)
+   {
+      int s = 0;
+#define FullMeshCB(Dummy, i, j, x, y) s += x * (i + 1) * y * (j + 1)
+      H2PP_FULLMESH((;), FullMeshCB, (), (1, 2, 3), (4, 5, 6));
+#undef FullMeshCB
+      OK(exy, s);
+   }
+
+   Case(H2PP_FULLMESH xy with argument)
+   {
+      int s = 0;
+#define FullMeshCB(a, i, j, x, y) s += x * (i + 1) * y * (j + 1) * a
+      H2PP_FULLMESH((;), FullMeshCB, (2), (1, 2, 3), (4, 5, 6));
+#undef FullMeshCB
+      OK(exy * 2, s);
+   }
+
+   Case(H2PP_FULLMESH xy index STR)
+   {
+      const char* e_abcxyz[3][3] = {
+        {"0.0:a~x", "0.1:a~y", "0.2:a~z"},
+        {"1.0:b~x", "1.1:b~y", "1.2:b~z"},
+        {"2.0:c~x", "2.1:c~y", "2.2:c~z"}};
+
+#define FullMeshCB(Dummy, i, j, x, y) OK(e_abcxyz[i][j], H2PP_STR(i.j:x~y));
+      H2PP_FULLMESH(, FullMeshCB, (), (a, b, c), (x, y, z));
+#undef FullMeshCB
    }
 }

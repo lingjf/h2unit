@@ -100,8 +100,7 @@ static inline h2_ostringstream& h2_cp(h2_defer_failure* d, h2_2cp<E, A> c)
 #define H2OK(_1, ...) H2PP_CAT(__H2OK, H2PP_IS_EMPTY(__VA_ARGS__))(H2PP_UNIQUE(), #_1, (#__VA_ARGS__), _1, __VA_ARGS__)
 #define __H2OK1(Q, a_expression, _, actual, ...) \
    for (h2::h2_defer_failure Q("", a_expression, H2_FILE); Q;) h2::h2_ok1(&Q, actual)
-#define __H2OK0(...) __H2OK0_I((__VA_ARGS__))
-#define __H2OK0_I(MSVC_Workaround) H2PP_RESCAN(__H2OK2 MSVC_Workaround)
+#define __H2OK0(...) H2PP_PROXY(__H2OK2, (__VA_ARGS__))
 #define __H2OK2(Q, e_expression, a_expression, expect, actual, ...) \
    for (h2::h2_defer_failure Q(e_expression, a_expression, H2_FILE); Q;) h2::h2_ok2(&Q, expect, actual, h2::sn(__VA_ARGS__), std::is_array<decltype(actual)>{}, std::extent<decltype(actual)>::value)
 

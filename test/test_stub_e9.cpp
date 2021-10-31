@@ -8,7 +8,7 @@ static time_t STUB_time(time_t* x)
 
 SUITE(stub e9)
 {
-   Case(libc time)
+   Todo(libc time)
    {
       OK(Nq(42), time(0));
       unsigned char saved[16];
