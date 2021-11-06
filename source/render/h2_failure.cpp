@@ -82,7 +82,7 @@ struct h2_fail_unexpect : h2_fail {
       } else if (is_synonym(e_expression, expection.string())) {
          e = expection.abbreviate(10000, 3).brush("green");
       } else {
-         e = h2_line(e_expression).abbreviate(O.verbose >= 4 ? 10000 : 120, 3).gray_quote().brush("cyan") + gray("==>") + expection.abbreviate(10000, 3).brush("green");
+         e = h2_line(e_expression).abbreviate(O.verbose >= verbose_detail ? 10000 : 120, 3).gray_quote().brush("cyan") + gray("==>") + expection.abbreviate(10000, 3).brush("green");
       }  // https://unicode-table.com/en/sets/arrow-symbols/ (← →) (← →) (⇐ ⇒) (⟵ ⟶) ⟸ ⟹
 
       if (!represent.width()) {
@@ -90,15 +90,15 @@ struct h2_fail_unexpect : h2_fail {
       } else if (is_synonym(a_expression, represent.string()) || !a_expression.length()) {
          a = represent.abbreviate(10000, 3).brush("bold,red");
       } else {
-         a = represent.abbreviate(10000, 3).brush("bold,red") + gray("<==") + h2_line(a_expression).abbreviate(O.verbose >= 4 ? 10000 : 120, 3).gray_quote().brush("cyan");
+         a = represent.abbreviate(10000, 3).brush("bold,red") + gray("<==") + h2_line(a_expression).abbreviate(O.verbose >= verbose_detail ? 10000 : 120, 3).gray_quote().brush("cyan");
       }
 
       line += assert_type + gray("(") + e + " " + assert_op + " " + a + gray(")");
    }
    void print_JE(h2_line& line)
    {
-      h2_line e = h2_line(e_expression.unquote('\"').unquote('\'')).abbreviate(O.verbose >= 4 ? 10000 : 30, 2).brush("cyan");
-      h2_line a = h2_line(a_expression.unquote('\"').unquote('\'')).abbreviate(O.verbose >= 4 ? 10000 : 30, 2).brush("bold,red");
+      h2_line e = h2_line(e_expression.unquote('\"').unquote('\'')).abbreviate(O.verbose >= verbose_detail ? 10000 : 30, 2).brush("cyan");
+      h2_line a = h2_line(a_expression.unquote('\"').unquote('\'')).abbreviate(O.verbose >= verbose_detail ? 10000 : 30, 2).brush("bold,red");
       line += "JE" + gray("(") + e + ", " + a + gray(")");
    }
    void print_Inner(h2_line& line)
@@ -106,11 +106,11 @@ struct h2_fail_unexpect : h2_fail {
       if (0 <= seqno) line.printf("dark gray", "%d. ", seqno);
       if (expection.width()) {
          line.printf("", "%sexpect is ", comma_if(c++));
-         line += expection.abbreviate(O.verbose >= 4 ? 10000 : 120, 3).brush("green");
+         line += expection.abbreviate(O.verbose >= verbose_detail ? 10000 : 120, 3).brush("green");
       }
       if (represent.width()) {
          line.printf("", "%sactual is ", comma_if(c++));
-         line += represent.abbreviate(O.verbose >= 4 ? 10000 : 120, 3).brush("bold,red");
+         line += represent.abbreviate(O.verbose >= verbose_detail ? 10000 : 120, 3).brush("bold,red");
       }
    }
 
@@ -142,7 +142,7 @@ struct h2_fail_strcmp : h2_fail_unexpect {
    {
       h2_fail_unexpect::print(si, ci);
 
-      if (O.verbose > 4 || 8 < e_value.width() || 8 < a_value.width()) {
+      if (O.verbose >= verbose_detail || 8 < e_value.width() || 8 < a_value.width()) {
          h2_line e_line, a_line;
          h2_vector<h2_string> e_chars = e_value.disperse(), a_chars = a_value.disperse();
          auto lcs = h2_LCS(e_chars, a_chars, caseless).lcs();
@@ -308,7 +308,7 @@ struct h2_fail_memory_leak : h2_fail_memory {
       h2_line sl;
       for (auto& p : sizes) {
          sl += gray(comma_if(i++));
-         if (O.verbose <= 1 && n < i) {
+         if (O.verbose <= verbose_compact_passed && n < i) {
             sl += gray("..." + h2_stringify(sizes.size() - n));
             break;
          }

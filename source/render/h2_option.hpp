@@ -1,3 +1,10 @@
+
+static constexpr int verbose_quiet = 0;
+static constexpr int verbose_compact_failed = 1;
+static constexpr int verbose_compact_passed = 2;
+static constexpr int verbose_normal = 3;
+static constexpr int verbose_detail = 4;
+
 struct h2_option {
    h2_singleton(h2_option);
 
@@ -24,7 +31,7 @@ struct h2_option {
    int run_rounds = 1;
    int fold_json = 9; // 0 unfold, 1 fold simple, 2 fold same, 3 fold peer-miss
    int copy_paste_json = 0; // 0 no quote, 1 quote by ', 2 quote by ", 3 quote by \"
-   int verbose = 2;
+   int verbose = verbose_normal;
    char junit_path[256]{'\0'};
    char tap_path[256]{'\0'};
    std::vector<const char*> includes, excludes;

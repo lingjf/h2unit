@@ -15,7 +15,7 @@ static inline char* addr2line(unsigned long long addr)
    }
    if (!ret) return nullptr;
    if (O.os == 'm' ? !memcmp(buf, "0x", 2) : !!strstr(buf, "??:")) return nullptr;
-   for (int i = strlen(buf) - 1; 0 <= i && ::isspace(buf[i]); --i) buf[i] = '\0';  //strip tail
+   for (int i = strlen(buf) - 1; 0 <= i && ::isspace(buf[i]); --i) buf[i] = '\0';  // strip tail
 #endif
    return buf;
 }
@@ -24,13 +24,13 @@ static inline bool backtrace_extract(const char* line, char* mangle_name, unsign
 {
    unsigned long long _t;
 #if defined __APPLE__
-   //MAC: `3   a.out  0x000000010e777f3d _ZN2h24unit6mallocEm + 45
+   // MAC: `3   a.out  0x000000010e777f3d _ZN2h24unit6mallocEm + 45
    if (2 == ::sscanf(line, "%*s%*s%*s%s + %llu", mangle_name, displacement ? displacement : &_t)) return true;
 #else
    static unsigned long long v1 = 0, v2 = 0, once = 0;
-   //Linux: `./a.out(_ZN2h24unit7executeEv+0x131)[0x55aa6bb840ef]
+   // Linux: `./a.out(_ZN2h24unit7executeEv+0x131)[0x55aa6bb840ef]
    if (2 == ::sscanf(line, "%*[^(]%*[^_a-zA-Z]%1023[^)+]+0x%llx", mangle_name, displacement ? displacement : &_t)) return (bool)++v2;
-   //Linux: `./a.out(+0xb1887)[0x560c5ed06887]
+   // Linux: `./a.out(+0xb1887)[0x560c5ed06887]
    mangle_name[0] = '\0';
    if (1 == ::sscanf(line, "%*[^(]%*[^+]+0x%llx", displacement ? displacement : &_t)) return (bool)++v1;
 
@@ -131,7 +131,7 @@ h2_inline void h2_backtrace::print(h2_vector<h2_string>& stacks) const
    for (int i = shift; i < count; ++i) {
       char *p = nullptr, mangle_name[1024] = "", demangle_name[1024] = "";
       backtrace_extract(symbols[i], mangle_name);
-      if (O.verbose >= 4 || O.os != 'm') p = addr2line(h2_load::ptr_to_addr(frames[i])); /* atos is slow */
+      if (O.verbose >= verbose_detail || O.os != 'm') p = addr2line(h2_load::ptr_to_addr(frames[i])); /* atos is slow */
       if (!p) p = h2_cxa::demangle(mangle_name, demangle_name);
       if (!p || !strlen(p)) p = symbols[i];
       stacks.push_back(p);

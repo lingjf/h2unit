@@ -18,6 +18,6 @@
 *    `-p` Disable test percentage *progressing* bar
 *    `-r` [n] repeat run n *rounds*
 *    `-s` *shuffle* cases then test in random order if no last failed
-*    `-v` [n] *verbose* output, 0:compact 2:normal 4:abbreviate default:all
+*    `-v` [n] *verbose* output, 0:quiet 1:compact failed 2:compact passed 3:normal 4:details
 *    `-x` Thrown *exception* is considered as failure
 *    `-y` [n] *Copy-paste-able* C/C++ source code formatted JSON, 0:no quote, 1:quote by ', 2:quote by ", 3:quote by \\"

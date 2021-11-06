@@ -1,5 +1,5 @@
 
-/* v5.15 2021-11-06 11:19:03 */
+/* v5.15 2021-11-06 13:50:01 */
 /* https://github.com/lingjf/h2unit */
 /* Apache Licence 2.0 */
 
@@ -956,6 +956,13 @@ struct h2_cxa {
    }
 };
 // source/render/h2_option.hpp
+
+static constexpr int verbose_quiet = 0;
+static constexpr int verbose_compact_failed = 1;
+static constexpr int verbose_compact_passed = 2;
+static constexpr int verbose_normal = 3;
+static constexpr int verbose_detail = 4;
+
 struct h2_option {
    h2_singleton(h2_option);
 
@@ -982,7 +989,7 @@ struct h2_option {
    int run_rounds = 1;
    int fold_json = 9; // 0 unfold, 1 fold simple, 2 fold same, 3 fold peer-miss
    int copy_paste_json = 0; // 0 no quote, 1 quote by ', 2 quote by ", 3 quote by \"
-   int verbose = 2;
+   int verbose = verbose_normal;
    char junit_path[256]{'\0'};
    char tap_path[256]{'\0'};
    std::vector<const char*> includes, excludes;
@@ -3408,7 +3415,6 @@ struct h2_report {
    h2_singleton(h2_report);
    static void initialize();
 
-   bool in = true;
    long long escape_length = 0;
    h2_list reports;
    void on_runner_start(h2_runner* r);
@@ -4294,10 +4300,10 @@ struct h2_libc_malloc {
 
 #if defined _WIN32
       PVOID ptr = VirtualAlloc(NULL, brk_count * brk_size, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
-      if (ptr == NULL) ::printf("VirtualAlloc failed at %s:%d\n", __FILE__, __LINE__), abort();
+      if (ptr == NULL) h2_color::prints("", "VirtualAlloc failed at %s:%d\n", __FILE__, __LINE__), abort();
 #else
       void* ptr = ::mmap(nullptr, brk_count * brk_size, PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0);
-      if (ptr == MAP_FAILED) ::printf("mmap failed at %s:%d\n", __FILE__, __LINE__), abort();
+      if (ptr == MAP_FAILED) h2_color::prints("", "mmap failed at %s:%d\n", __FILE__, __LINE__), abort();
 #endif
 
       block* p = new (ptr) block(brk_count * brk_size);
@@ -4768,7 +4774,7 @@ struct h2_shell {
          if (current[i][0] != '\0')
             sprintf(a + strlen(a), "%d;", style2value(current[i]));
       a[strlen(a) - 1] = 'm';
-      LIBC__write(1, a, strlen(a));
+      LIBC__write(-1, a, strlen(a));
    }
    void parse(const char* style)
    {
@@ -4790,7 +4796,7 @@ struct h2_shell {
       if (h2_color::isctrl(str)) {
          if (h2_option::I().colorful) I().parse(str), I().change();
       } else {
-         LIBC__write(fileno(stdout), str, strlen(str));
+         LIBC__write(-1, str, strlen(str));
       }
    }
    int style2value(const char* style)  // https://en.wikipedia.org/wiki/ANSI_escape_code#CSI_sequences
@@ -5046,7 +5052,7 @@ static inline char* addr2line(unsigned long long addr)
    }
    if (!ret) return nullptr;
    if (O.os == 'm' ? !memcmp(buf, "0x", 2) : !!strstr(buf, "??:")) return nullptr;
-   for (int i = strlen(buf) - 1; 0 <= i && ::isspace(buf[i]); --i) buf[i] = '\0';  //strip tail
+   for (int i = strlen(buf) - 1; 0 <= i && ::isspace(buf[i]); --i) buf[i] = '\0';  // strip tail
 #endif
    return buf;
 }
@@ -5055,13 +5061,13 @@ static inline bool backtrace_extract(const char* line, char* mangle_name, unsign
 {
    unsigned long long _t;
 #if defined __APPLE__
-   //MAC: `3   a.out  0x000000010e777f3d _ZN2h24unit6mallocEm + 45
+   // MAC: `3   a.out  0x000000010e777f3d _ZN2h24unit6mallocEm + 45
    if (2 == ::sscanf(line, "%*s%*s%*s%s + %llu", mangle_name, displacement ? displacement : &_t)) return true;
 #else
    static unsigned long long v1 = 0, v2 = 0, once = 0;
-   //Linux: `./a.out(_ZN2h24unit7executeEv+0x131)[0x55aa6bb840ef]
+   // Linux: `./a.out(_ZN2h24unit7executeEv+0x131)[0x55aa6bb840ef]
    if (2 == ::sscanf(line, "%*[^(]%*[^_a-zA-Z]%1023[^)+]+0x%llx", mangle_name, displacement ? displacement : &_t)) return (bool)++v2;
-   //Linux: `./a.out(+0xb1887)[0x560c5ed06887]
+   // Linux: `./a.out(+0xb1887)[0x560c5ed06887]
    mangle_name[0] = '\0';
    if (1 == ::sscanf(line, "%*[^(]%*[^+]+0x%llx", displacement ? displacement : &_t)) return (bool)++v1;
 
@@ -5162,7 +5168,7 @@ h2_inline void h2_backtrace::print(h2_vector<h2_string>& stacks) const
    for (int i = shift; i < count; ++i) {
       char *p = nullptr, mangle_name[1024] = "", demangle_name[1024] = "";
       backtrace_extract(symbols[i], mangle_name);
-      if (O.verbose >= 4 || O.os != 'm') p = addr2line(h2_load::ptr_to_addr(frames[i])); /* atos is slow */
+      if (O.verbose >= verbose_detail || O.os != 'm') p = addr2line(h2_load::ptr_to_addr(frames[i])); /* atos is slow */
       if (!p) p = h2_cxa::demangle(mangle_name, demangle_name);
       if (!p || !strlen(p)) p = symbols[i];
       stacks.push_back(p);
@@ -6683,10 +6689,10 @@ struct h2_piece : h2_libc {
 
 #if defined _WIN32
       page_ptr = (unsigned char*)VirtualAlloc(NULL, page_size * (page_count + 1), MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
-      if (page_ptr == NULL) ::printf("VirtualAlloc failed at %s:%d\n", __FILE__, __LINE__), abort();
+      if (page_ptr == NULL) h2_color::prints("", "VirtualAlloc failed at %s:%d\n", __FILE__, __LINE__), abort();
 #else
       page_ptr = (unsigned char*)::mmap(nullptr, page_size * (page_count + 1), PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0);
-      if (page_ptr == MAP_FAILED) ::printf("mmap failed at %s:%d\n", __FILE__, __LINE__), abort();
+      if (page_ptr == MAP_FAILED) h2_color::prints("", "mmap failed at %s:%d\n", __FILE__, __LINE__), abort();
 #endif
 
       user_ptr = page_ptr + page_size * page_count - user_size_plus + alignment;
@@ -7769,8 +7775,8 @@ struct h2_source : h2_libc {
    {
       if (!h2_e9_save(source_fp, origin_opcode)) {
          h2_color::prints("yellow", "STUB %s by %s() failed %s\n", srcfn, O.os == 'W' ? "VirtualProtect" : "mprotect", file);
-         if (O.os == 'm') ::printf("try: "), h2_color::prints("green", "printf '\\x07' | dd of=%s bs=1 seek=160 count=1 conv=notrunc\n", O.path);
-         if (O.os == 'L') ::printf("try: "), h2_color::prints("green", "objcopy --writable-text %s\n", O.path);
+         if (O.os == 'm') h2_color::prints("", "try: "), h2_color::prints("green", "printf '\\x07' | dd of=%s bs=1 seek=160 count=1 conv=notrunc\n", O.path);
+         if (O.os == 'L') h2_color::prints("", "try: "), h2_color::prints("green", "objcopy --writable-text %s\n", O.path);
       }
    }
    ~h2_source() { h2_e9_reset(source_fp, origin_opcode); }
@@ -8005,12 +8011,14 @@ struct h2_stdio {
 
    static ssize_t write(int fd, const void* buf, size_t count)
    {
-      h2::h2_stub_temporary_restore t((void*)LIBC__write);
-      if ((fd == fileno(stdout) || fd == fileno(stderr)) && h2_report::I().escape_length == I().capture_length && !h2_report::I().in)
-         LIBC__write(fd, "\n", 1);  // fall printf/cout into new line from report title
-      LIBC__write(fd, buf, count);
-      if (fd == fileno(stdout) || fd == fileno(stderr))
-         I().capture_length += count;
+      if (O.verbose >= verbose_normal || (fd != fileno(stdout) && fd != fileno(stderr))) {
+         h2::h2_stub_temporary_restore _((void*)LIBC__write);
+         if ((fd == fileno(stdout) || fd == fileno(stderr)) && h2_report::I().escape_length == I().capture_length)
+            LIBC__write(fd, "\n", 1);  // fall printf/cout into new line from report title
+         LIBC__write(fd >= 0 ? fd : fileno(stdout), buf, count);
+         if (fd == fileno(stdout) || fd == fileno(stderr))
+            I().capture_length += count;
+      }
       if ((I().stdout_capturable && fd == fileno(stdout)) || (I().stderr_capturable && fd == fileno(stderr)))
          I().buffer->append((char*)buf, count);
       return (ssize_t)count;
@@ -8093,45 +8101,35 @@ struct h2_stdio {
       va_end(a);
    }
 
-   size_t test_count = 0;
-   static ssize_t test_write(int fd, const void* buf, size_t count) { return I().test_count += count, (ssize_t)count; }
-
    static void initialize()
    {
       ::setbuf(stdout, 0);  // unbuffered
       I().buffer = new h2_string();
       static h2_list stubs;
 
-#if !defined _WIN32
-      h2_stubs::add(stubs, (void*)LIBC__write, (void*)test_write, "write", H2_FILE);
-      ::printf("\r"), ::fwrite("\r", 1, 1, stdout);
-      h2_stubs::clear(stubs);
-#endif
-      if (I().test_count != 2) {
-         h2_stubs::add(stubs, (void*)::printf, (void*)printf, "printf", H2_FILE);
-         h2_stubs::add(stubs, (void*)::vprintf, (void*)vprintf, "vprintf", H2_FILE);
-         h2_stubs::add(stubs, (void*)::putchar, (void*)putchar, "putchar", H2_FILE);
-         h2_stubs::add(stubs, (void*)::puts, (void*)puts, "puts", H2_FILE);
-         h2_stubs::add(stubs, (void*)::fprintf, (void*)fprintf, "fprintf", H2_FILE);
-         // h2_stubs::add(stubs,(void*)::vfprintf, (void*)vfprintf,  "vfprintf",H2_FILE);
-         h2_stubs::add(stubs, (void*)::fputc, (void*)fputc, "fputc", H2_FILE);
-         h2_stubs::add(stubs, (void*)::putc, (void*)fputc, "fputc", H2_FILE);
-         h2_stubs::add(stubs, (void*)::fputs, (void*)fputs, "fputs", H2_FILE);
-         h2_stubs::add(stubs, (void*)::fwrite, (void*)fwrite, "fwrite", H2_FILE);
+      h2_stubs::add(stubs, (void*)::printf, (void*)printf, "printf", H2_FILE);
+      h2_stubs::add(stubs, (void*)::vprintf, (void*)vprintf, "vprintf", H2_FILE);
+      h2_stubs::add(stubs, (void*)::putchar, (void*)putchar, "putchar", H2_FILE);
+      h2_stubs::add(stubs, (void*)::puts, (void*)puts, "puts", H2_FILE);
+      h2_stubs::add(stubs, (void*)::fprintf, (void*)fprintf, "fprintf", H2_FILE);
+      // h2_stubs::add(stubs,(void*)::vfprintf, (void*)vfprintf,  "vfprintf",H2_FILE);
+      h2_stubs::add(stubs, (void*)::fputc, (void*)fputc, "fputc", H2_FILE);
+      h2_stubs::add(stubs, (void*)::putc, (void*)fputc, "fputc", H2_FILE);
+      h2_stubs::add(stubs, (void*)::fputs, (void*)fputs, "fputs", H2_FILE);
+      h2_stubs::add(stubs, (void*)::fwrite, (void*)fwrite, "fwrite", H2_FILE);
 #if defined __GNUC__
-         struct streambuf : public std::streambuf {
-            FILE* f;
-            int sync() override { return 0; }
-            int overflow(int c) override { return (c != EOF) && h2_stdio::fputc(c, f), 0; }
-            streambuf(FILE* _f) : f(_f) { setp(nullptr, 0); }
-         };
-         static streambuf sb_out(stdout);
-         static streambuf sb_err(stderr);
-         std::cout.rdbuf(&sb_out); /* internal fwrite() called, but */
-         std::cerr.rdbuf(&sb_err);
-         std::clog.rdbuf(&sb_err); /* print to stderr */
+      struct streambuf : public std::streambuf {
+         FILE* f;
+         int sync() override { return 0; }
+         int overflow(int c) override { return (c != EOF) && h2_stdio::fputc(c, f), 0; }
+         streambuf(FILE* _f) : f(_f) { setp(nullptr, 0); }
+      };
+      static streambuf sb_out(stdout);
+      static streambuf sb_err(stderr);
+      std::cout.rdbuf(&sb_out); /* internal fwrite() called, but */
+      std::cerr.rdbuf(&sb_err);
+      std::clog.rdbuf(&sb_err); /* print to stderr */
 #endif
-      }
       h2_stubs::add(stubs, (void*)LIBC__write, (void*)write, "write", H2_FILE);
 #if !defined _WIN32
       h2_stubs::add(stubs, (void*)::syslog, (void*)syslog, "syslog", H2_FILE);
@@ -8774,7 +8772,7 @@ h2_inline void h2_runner::shadow()
 h2_inline void h2_runner::enumerate()
 {
    int cases = 0, i = 0;
-   if (O.progressing) ::printf("enumerating...");
+   if (O.progressing) h2_color::prints("", "enumerating...");
    h2_list_for_each_entry (s, suites, h2_suite, x) {
       for (auto& setup : global_suite_setups) setup();
       s->setup();
@@ -8787,9 +8785,9 @@ h2_inline void h2_runner::enumerate()
             unfiltered++;
       if (unfiltered == 0) s->filtered = O.filter(ss(s->name), "", s->file);
       cases += s->cases.count();
-      if (O.progressing && 10 * i + i * i < cases && i < (int)h2_shell::I().cww - 20) i += ::printf(".");
+      if (O.progressing && 10 * i + i * i < cases && i < (int)h2_shell::I().cww - 20) h2_color::prints("", "."), ++i;
    }
-   if (O.progressing) ::printf("\33[2K\r");
+   if (O.progressing) h2_color::prints("", "\33[2K\r");
 }
 
 h2_inline int h2_runner::main(int argc, const char** argv)
@@ -9048,7 +9046,7 @@ struct h2_fail_unexpect : h2_fail {
       } else if (is_synonym(e_expression, expection.string())) {
          e = expection.abbreviate(10000, 3).brush("green");
       } else {
-         e = h2_line(e_expression).abbreviate(O.verbose >= 4 ? 10000 : 120, 3).gray_quote().brush("cyan") + gray("==>") + expection.abbreviate(10000, 3).brush("green");
+         e = h2_line(e_expression).abbreviate(O.verbose >= verbose_detail ? 10000 : 120, 3).gray_quote().brush("cyan") + gray("==>") + expection.abbreviate(10000, 3).brush("green");
       }  // https://unicode-table.com/en/sets/arrow-symbols/ (← →) (← →) (⇐ ⇒) (⟵ ⟶) ⟸ ⟹
 
       if (!represent.width()) {
@@ -9056,15 +9054,15 @@ struct h2_fail_unexpect : h2_fail {
       } else if (is_synonym(a_expression, represent.string()) || !a_expression.length()) {
          a = represent.abbreviate(10000, 3).brush("bold,red");
       } else {
-         a = represent.abbreviate(10000, 3).brush("bold,red") + gray("<==") + h2_line(a_expression).abbreviate(O.verbose >= 4 ? 10000 : 120, 3).gray_quote().brush("cyan");
+         a = represent.abbreviate(10000, 3).brush("bold,red") + gray("<==") + h2_line(a_expression).abbreviate(O.verbose >= verbose_detail ? 10000 : 120, 3).gray_quote().brush("cyan");
       }
 
       line += assert_type + gray("(") + e + " " + assert_op + " " + a + gray(")");
    }
    void print_JE(h2_line& line)
    {
-      h2_line e = h2_line(e_expression.unquote('\"').unquote('\'')).abbreviate(O.verbose >= 4 ? 10000 : 30, 2).brush("cyan");
-      h2_line a = h2_line(a_expression.unquote('\"').unquote('\'')).abbreviate(O.verbose >= 4 ? 10000 : 30, 2).brush("bold,red");
+      h2_line e = h2_line(e_expression.unquote('\"').unquote('\'')).abbreviate(O.verbose >= verbose_detail ? 10000 : 30, 2).brush("cyan");
+      h2_line a = h2_line(a_expression.unquote('\"').unquote('\'')).abbreviate(O.verbose >= verbose_detail ? 10000 : 30, 2).brush("bold,red");
       line += "JE" + gray("(") + e + ", " + a + gray(")");
    }
    void print_Inner(h2_line& line)
@@ -9072,11 +9070,11 @@ struct h2_fail_unexpect : h2_fail {
       if (0 <= seqno) line.printf("dark gray", "%d. ", seqno);
       if (expection.width()) {
          line.printf("", "%sexpect is ", comma_if(c++));
-         line += expection.abbreviate(O.verbose >= 4 ? 10000 : 120, 3).brush("green");
+         line += expection.abbreviate(O.verbose >= verbose_detail ? 10000 : 120, 3).brush("green");
       }
       if (represent.width()) {
          line.printf("", "%sactual is ", comma_if(c++));
-         line += represent.abbreviate(O.verbose >= 4 ? 10000 : 120, 3).brush("bold,red");
+         line += represent.abbreviate(O.verbose >= verbose_detail ? 10000 : 120, 3).brush("bold,red");
       }
    }
 
@@ -9108,7 +9106,7 @@ struct h2_fail_strcmp : h2_fail_unexpect {
    {
       h2_fail_unexpect::print(si, ci);
 
-      if (O.verbose > 4 || 8 < e_value.width() || 8 < a_value.width()) {
+      if (O.verbose >= verbose_detail || 8 < e_value.width() || 8 < a_value.width()) {
          h2_line e_line, a_line;
          h2_vector<h2_string> e_chars = e_value.disperse(), a_chars = a_value.disperse();
          auto lcs = h2_LCS(e_chars, a_chars, caseless).lcs();
@@ -9274,7 +9272,7 @@ struct h2_fail_memory_leak : h2_fail_memory {
       h2_line sl;
       for (auto& p : sizes) {
          sl += gray(comma_if(i++));
-         if (O.verbose <= 1 && n < i) {
+         if (O.verbose <= verbose_compact_passed && n < i) {
             sl += gray("..." + h2_stringify(sizes.size() - n));
             break;
          }
@@ -9507,19 +9505,20 @@ struct h2_report_console : h2_report_impl {
       bar.printf("", "%3d%%", cases ? (int)(runner_case_index * 100 / cases) : 100);
       bar.printf("dark gray", "] ");
    }
-   void print_bar(bool percentage, const char* status_style, const char* status, h2_suite* s, h2_case* c, bool returnable)
+   void print_bar(bool percentage, const char* status_style, const char* status, h2_suite* s, h2_case* c, bool backable)
    {
-      if (!O.progressing && returnable) return;
+      if (!O.progressing && backable) return;
       if (h2_report::I().escape_length == h2_stdio::I().capture_length)
-         ::printf("\33[2K\r"); /* clear line */
+         h2_color::prints("", "\33[2K\r"); /* clear line */
       else
-         ::printf("\n"); /* user output, new line */
+         h2_color::prints("", "\n"); /* user output, new line */
+      h2_report::I().escape_length = backable ? h2_stdio::I().capture_length : -1;
+
       h2_line bar;
       if (percentage && O.progressing) format_percentage(bar);
       if (status && status_style) bar.printf(status_style, "%s", status);
-      if (s && c) bar += format_title(s->name, c->name, returnable ? nullptr : h2_basefile(c->file));
+      if (s && c) bar += format_title(s->name, c->name, backable ? nullptr : h2_basefile(c->file));
       h2_color::printl(bar, false);
-      if (returnable) h2_report::I().escape_length = h2_stdio::I().capture_length;
    }
    void on_runner_endup(h2_runner* r) override
    {
@@ -9606,23 +9605,25 @@ struct h2_report_console : h2_report_impl {
       h2_report_impl::on_case_endup(s, c);
       if (c->filtered || c->ignored) return;
       if (c->todo) {
-         if (O.verbose >= 3) print_bar(true, "yellow", s->name ? "Todo   " : "TODO   ", s, c, false);
+         if (O.verbose >= verbose_detail) print_bar(true, "yellow", s->name ? "Todo   " : "TODO   ", s, c, false);
       } else if (c->failed) {
-         if (O.verbose >= 1) {
+         if (O.verbose >= verbose_compact_failed) {
             print_bar(true, "bold,red", "Failed ", s, c, false);
-            if (O.verbose >= 2) {
+            if (O.verbose >= verbose_normal) {
                h2_color::prints("", "\n");
                if (c->fails) c->fails->foreach([](h2_fail* fail, size_t si, size_t ci) { fail->print(si, ci); });
             }
          }
       } else {  // Passed
-         if (O.verbose >= 3) {
+         if (O.verbose >= verbose_detail || O.verbose == verbose_compact_passed) {
             print_bar(true, "green", "Passed ", s, c, false);
-            h2_line ad;
-            if (0 < c->stats.asserts) ad.printf("dark gray", ad.width() ? ", " : "").printf("", "%d assert%s", c->stats.asserts, 1 < c->stats.asserts ? "s" : "");
-            if (0 < c->stats.footprint) ad.printf("dark gray", ad.width() ? ", " : "").printf("", "%s footprint", format_volume(c->stats.footprint));
-            if (0 < c->stats.timecost) ad.printf("dark gray", ad.width() ? ", " : "").printf("", "%s", format_duration(c->stats.timecost));
-            if (ad.width()) h2_color::printl(gray("- ") + ad, false);
+            if (O.verbose >= verbose_detail) {
+               h2_line ad;
+               if (0 < c->stats.asserts) ad.printf("dark gray", ad.width() ? ", " : "").printf("", "%d assert%s", c->stats.asserts, 1 < c->stats.asserts ? "s" : "");
+               if (0 < c->stats.footprint) ad.printf("dark gray", ad.width() ? ", " : "").printf("", "%s footprint", format_volume(c->stats.footprint));
+               if (0 < c->stats.timecost) ad.printf("dark gray", ad.width() ? ", " : "").printf("", "%s", format_duration(c->stats.timecost));
+               if (ad.width()) h2_color::printl(gray("- ") + ad, false);
+            }
          }
       }
    }
@@ -9691,17 +9692,13 @@ h2_inline void h2_report::initialize()
    }
 }
 
-struct in_report {
-   in_report() { h2_report::I().in = true; }
-   ~in_report() { h2_report::I().in = false; }
-};
 /* clang-format off */
-h2_inline void h2_report::on_runner_start(h2_runner* r) { in_report t; h2_list_for_each_entry (p, reports, h2_report_impl, x) p->on_runner_start(r); }
-h2_inline void h2_report::on_runner_endup(h2_runner* r) { in_report t; h2_list_for_each_entry (p, reports, h2_report_impl, x) p->on_runner_endup(r); }
-h2_inline void h2_report::on_suite_start(h2_suite* s) { in_report t; h2_list_for_each_entry (p, reports, h2_report_impl, x) p->on_suite_start(s); }
-h2_inline void h2_report::on_suite_endup(h2_suite* s) { in_report t; h2_list_for_each_entry (p, reports, h2_report_impl, x) p->on_suite_endup(s); }
-h2_inline void h2_report::on_case_start(h2_suite* s, h2_case* c) { in_report t; h2_list_for_each_entry (p, reports, h2_report_impl, x) p->on_case_start(s, c); }
-h2_inline void h2_report::on_case_endup(h2_suite* s, h2_case* c) { in_report t; h2_list_for_each_entry (p, reports, h2_report_impl, x) p->on_case_endup(s, c); }
+h2_inline void h2_report::on_runner_start(h2_runner* r) { h2_list_for_each_entry (p, reports, h2_report_impl, x) p->on_runner_start(r); }
+h2_inline void h2_report::on_runner_endup(h2_runner* r) { h2_list_for_each_entry (p, reports, h2_report_impl, x) p->on_runner_endup(r); }
+h2_inline void h2_report::on_suite_start(h2_suite* s) { h2_list_for_each_entry (p, reports, h2_report_impl, x) p->on_suite_start(s); }
+h2_inline void h2_report::on_suite_endup(h2_suite* s) { h2_list_for_each_entry (p, reports, h2_report_impl, x) p->on_suite_endup(s); }
+h2_inline void h2_report::on_case_start(h2_suite* s, h2_case* c) { h2_list_for_each_entry (p, reports, h2_report_impl, x) p->on_case_start(s, c); }
+h2_inline void h2_report::on_case_endup(h2_suite* s, h2_case* c) { h2_list_for_each_entry (p, reports, h2_report_impl, x) p->on_case_endup(s, c); }
 // source/render/h2_layout.cpp
 static inline h2_lines line_break(const h2_line& line, size_t width)
 {
@@ -9832,7 +9829,7 @@ static inline void usage()
               H2_USAGE_SP " -\033[36mp\033[0m  " H2_USAGE_SP "           " H2_USAGE_SP " Disable test percentage \033[36mp\033[0mrogressing bar                    " H2_USAGE_SP "\n" H2_USAGE_BR
               H2_USAGE_SP " -\033[36mr\033[0m  " H2_USAGE_SP "    \033[90m[\033[0mn\033[90m]\033[0m    " H2_USAGE_SP " Repeat test n (default 2) \033[36mr\033[0mounds                           " H2_USAGE_SP "\n" H2_USAGE_BR
               H2_USAGE_SP " -\033[36ms\033[0m  " H2_USAGE_SP "           " H2_USAGE_SP " \033[36ms\033[0mhuffle cases then test in random order if no last failed  " H2_USAGE_SP "\n" H2_USAGE_BR
-              H2_USAGE_SP " -\033[36mv\033[0m  " H2_USAGE_SP "    \033[90m[\033[0mn\033[90m]\033[0m    " H2_USAGE_SP " \033[36mv\033[0merbose, 0:compact 2:normal 4:abbreviate default:all       " H2_USAGE_SP "\n" H2_USAGE_BR
+              H2_USAGE_SP " -\033[36mv\033[0m  " H2_USAGE_SP "    \033[90m[\033[0mn\033[90m]\033[0m    " H2_USAGE_SP " \033[36mv\033[0merbose, 0:quiet 1/2:compact 3:normal 4:details            " H2_USAGE_SP "\n" H2_USAGE_BR
               H2_USAGE_SP " -\033[36mx\033[0m  " H2_USAGE_SP "           " H2_USAGE_SP " Thrown e\033[36mx\033[0mception is considered as failure                  " H2_USAGE_SP "\n" H2_USAGE_BR
               H2_USAGE_SP " -\033[36my\033[0m  " H2_USAGE_SP "    \033[90m[\033[0mn\033[90m]\033[0m    " H2_USAGE_SP " Cop\033[36my\033[0m-paste-able C/C++ source code formatted JSON           " H2_USAGE_SP "\n"
               "\033[90m└─────┴───────────┴────────────────────────────────────────────────────────────┘\033[0m\n";

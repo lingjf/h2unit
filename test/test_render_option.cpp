@@ -9,7 +9,7 @@ SUITE(h2_option)
    {
       const char* argv[] = {"./a.out"};
       c.parse(1, argv);
-      OK(2, c.verbose);
+      OK(3, c.verbose);
       OK(!c.list_cases);
       OK(c.colorful);
       OK(!c.shuffle_cases);

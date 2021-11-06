@@ -6,12 +6,14 @@ struct h2_stdio {
 
    static ssize_t write(int fd, const void* buf, size_t count)
    {
-      h2::h2_stub_temporary_restore t((void*)LIBC__write);
-      if ((fd == fileno(stdout) || fd == fileno(stderr)) && h2_report::I().escape_length == I().capture_length && !h2_report::I().in)
-         LIBC__write(fd, "\n", 1);  // fall printf/cout into new line from report title
-      LIBC__write(fd, buf, count);
-      if (fd == fileno(stdout) || fd == fileno(stderr))
-         I().capture_length += count;
+      if (O.verbose >= verbose_normal || (fd != fileno(stdout) && fd != fileno(stderr))) {
+         h2::h2_stub_temporary_restore _((void*)LIBC__write);
+         if ((fd == fileno(stdout) || fd == fileno(stderr)) && h2_report::I().escape_length == I().capture_length)
+            LIBC__write(fd, "\n", 1);  // fall printf/cout into new line from report title
+         LIBC__write(fd >= 0 ? fd : fileno(stdout), buf, count);
+         if (fd == fileno(stdout) || fd == fileno(stderr))
+            I().capture_length += count;
+      }
       if ((I().stdout_capturable && fd == fileno(stdout)) || (I().stderr_capturable && fd == fileno(stderr)))
          I().buffer->append((char*)buf, count);
       return (ssize_t)count;
@@ -94,45 +96,35 @@ struct h2_stdio {
       va_end(a);
    }
 
-   size_t test_count = 0;
-   static ssize_t test_write(int fd, const void* buf, size_t count) { return I().test_count += count, (ssize_t)count; }
-
    static void initialize()
    {
       ::setbuf(stdout, 0);  // unbuffered
       I().buffer = new h2_string();
       static h2_list stubs;
 
-#if !defined _WIN32
-      h2_stubs::add(stubs, (void*)LIBC__write, (void*)test_write, "write", H2_FILE);
-      ::printf("\r"), ::fwrite("\r", 1, 1, stdout);
-      h2_stubs::clear(stubs);
-#endif
-      if (I().test_count != 2) {
-         h2_stubs::add(stubs, (void*)::printf, (void*)printf, "printf", H2_FILE);
-         h2_stubs::add(stubs, (void*)::vprintf, (void*)vprintf, "vprintf", H2_FILE);
-         h2_stubs::add(stubs, (void*)::putchar, (void*)putchar, "putchar", H2_FILE);
-         h2_stubs::add(stubs, (void*)::puts, (void*)puts, "puts", H2_FILE);
-         h2_stubs::add(stubs, (void*)::fprintf, (void*)fprintf, "fprintf", H2_FILE);
-         // h2_stubs::add(stubs,(void*)::vfprintf, (void*)vfprintf,  "vfprintf",H2_FILE);
-         h2_stubs::add(stubs, (void*)::fputc, (void*)fputc, "fputc", H2_FILE);
-         h2_stubs::add(stubs, (void*)::putc, (void*)fputc, "fputc", H2_FILE);
-         h2_stubs::add(stubs, (void*)::fputs, (void*)fputs, "fputs", H2_FILE);
-         h2_stubs::add(stubs, (void*)::fwrite, (void*)fwrite, "fwrite", H2_FILE);
+      h2_stubs::add(stubs, (void*)::printf, (void*)printf, "printf", H2_FILE);
+      h2_stubs::add(stubs, (void*)::vprintf, (void*)vprintf, "vprintf", H2_FILE);
+      h2_stubs::add(stubs, (void*)::putchar, (void*)putchar, "putchar", H2_FILE);
+      h2_stubs::add(stubs, (void*)::puts, (void*)puts, "puts", H2_FILE);
+      h2_stubs::add(stubs, (void*)::fprintf, (void*)fprintf, "fprintf", H2_FILE);
+      // h2_stubs::add(stubs,(void*)::vfprintf, (void*)vfprintf,  "vfprintf",H2_FILE);
+      h2_stubs::add(stubs, (void*)::fputc, (void*)fputc, "fputc", H2_FILE);
+      h2_stubs::add(stubs, (void*)::putc, (void*)fputc, "fputc", H2_FILE);
+      h2_stubs::add(stubs, (void*)::fputs, (void*)fputs, "fputs", H2_FILE);
+      h2_stubs::add(stubs, (void*)::fwrite, (void*)fwrite, "fwrite", H2_FILE);
 #if defined __GNUC__
-         struct streambuf : public std::streambuf {
-            FILE* f;
-            int sync() override { return 0; }
-            int overflow(int c) override { return (c != EOF) && h2_stdio::fputc(c, f), 0; }
-            streambuf(FILE* _f) : f(_f) { setp(nullptr, 0); }
-         };
-         static streambuf sb_out(stdout);
-         static streambuf sb_err(stderr);
-         std::cout.rdbuf(&sb_out); /* internal fwrite() called, but */
-         std::cerr.rdbuf(&sb_err);
-         std::clog.rdbuf(&sb_err); /* print to stderr */
+      struct streambuf : public std::streambuf {
+         FILE* f;
+         int sync() override { return 0; }
+         int overflow(int c) override { return (c != EOF) && h2_stdio::fputc(c, f), 0; }
+         streambuf(FILE* _f) : f(_f) { setp(nullptr, 0); }
+      };
+      static streambuf sb_out(stdout);
+      static streambuf sb_err(stderr);
+      std::cout.rdbuf(&sb_out); /* internal fwrite() called, but */
+      std::cerr.rdbuf(&sb_err);
+      std::clog.rdbuf(&sb_err); /* print to stderr */
 #endif
-      }
       h2_stubs::add(stubs, (void*)LIBC__write, (void*)write, "write", H2_FILE);
 #if !defined _WIN32
       h2_stubs::add(stubs, (void*)::syslog, (void*)syslog, "syslog", H2_FILE);

@@ -112,8 +112,11 @@ SUITE(harmless)
    {
 #if !(defined __MINGW32__ || defined __MINGW64__)
       getenv("LANG");
+#ifdef _WIN32
       system("pwd");
-
+#else
+      system("echo 'a' | grep b");
+#endif
       srand(0);
       rand();
       // bsearch();
@@ -128,11 +131,16 @@ SUITE(harmless)
       fprintf(stderr, "%g%5s%c", 1.0 / 3.0, " test ", ' ');
       sprintf(t, "%g%5s%c", 1.0 / 3.0, " test ", ' ');
       snprintf(t, 100, "%g%5s%c", 1.0 / 3.0, " test ", ' ');
-      my_printf("%g%5s%c", 1.0 / 3.0, " test ", ' ');           // vprintf
+      my_printf("%g%5s%c", 1.0 / 3.0, " test ", ' ');  // vprintf
+#if 0
       my_fprintf(stderr, "%g%5s%c", 1.0 / 3.0, " test ", ' ');  // vfprintf
+#endif
       my_sprintf(t, "%g%5s%c", 1.0 / 3.0, " test ", ' ');       // vsprintf
       my_snprintf(t, 10, "%g%5s%c", 1.0 / 3.0, " test ", ' ');  // vsnprintf
-      perror("perror test");
+
+#if 0
+      perror("perror");  // passed.
+#endif
 
       sscanf("3   a.out  0x00008a3c foobar + 45", "%*s%*s%*s%s + %d", t, &ret);
 

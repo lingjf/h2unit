@@ -121,19 +121,20 @@ struct h2_report_console : h2_report_impl {
       bar.printf("", "%3d%%", cases ? (int)(runner_case_index * 100 / cases) : 100);
       bar.printf("dark gray", "] ");
    }
-   void print_bar(bool percentage, const char* status_style, const char* status, h2_suite* s, h2_case* c, bool returnable)
+   void print_bar(bool percentage, const char* status_style, const char* status, h2_suite* s, h2_case* c, bool backable)
    {
-      if (!O.progressing && returnable) return;
+      if (!O.progressing && backable) return;
       if (h2_report::I().escape_length == h2_stdio::I().capture_length)
-         ::printf("\33[2K\r"); /* clear line */
+         h2_color::prints("", "\33[2K\r"); /* clear line */
       else
-         ::printf("\n"); /* user output, new line */
+         h2_color::prints("", "\n"); /* user output, new line */
+      h2_report::I().escape_length = backable ? h2_stdio::I().capture_length : -1;
+
       h2_line bar;
       if (percentage && O.progressing) format_percentage(bar);
       if (status && status_style) bar.printf(status_style, "%s", status);
-      if (s && c) bar += format_title(s->name, c->name, returnable ? nullptr : h2_basefile(c->file));
+      if (s && c) bar += format_title(s->name, c->name, backable ? nullptr : h2_basefile(c->file));
       h2_color::printl(bar, false);
-      if (returnable) h2_report::I().escape_length = h2_stdio::I().capture_length;
    }
    void on_runner_endup(h2_runner* r) override
    {
@@ -220,23 +221,25 @@ struct h2_report_console : h2_report_impl {
       h2_report_impl::on_case_endup(s, c);
       if (c->filtered || c->ignored) return;
       if (c->todo) {
-         if (O.verbose >= 3) print_bar(true, "yellow", s->name ? "Todo   " : "TODO   ", s, c, false);
+         if (O.verbose >= verbose_detail) print_bar(true, "yellow", s->name ? "Todo   " : "TODO   ", s, c, false);
       } else if (c->failed) {
-         if (O.verbose >= 1) {
+         if (O.verbose >= verbose_compact_failed) {
             print_bar(true, "bold,red", "Failed ", s, c, false);
-            if (O.verbose >= 2) {
+            if (O.verbose >= verbose_normal) {
                h2_color::prints("", "\n");
                if (c->fails) c->fails->foreach([](h2_fail* fail, size_t si, size_t ci) { fail->print(si, ci); });
             }
          }
       } else {  // Passed
-         if (O.verbose >= 3) {
+         if (O.verbose >= verbose_detail || O.verbose == verbose_compact_passed) {
             print_bar(true, "green", "Passed ", s, c, false);
-            h2_line ad;
-            if (0 < c->stats.asserts) ad.printf("dark gray", ad.width() ? ", " : "").printf("", "%d assert%s", c->stats.asserts, 1 < c->stats.asserts ? "s" : "");
-            if (0 < c->stats.footprint) ad.printf("dark gray", ad.width() ? ", " : "").printf("", "%s footprint", format_volume(c->stats.footprint));
-            if (0 < c->stats.timecost) ad.printf("dark gray", ad.width() ? ", " : "").printf("", "%s", format_duration(c->stats.timecost));
-            if (ad.width()) h2_color::printl(gray("- ") + ad, false);
+            if (O.verbose >= verbose_detail) {
+               h2_line ad;
+               if (0 < c->stats.asserts) ad.printf("dark gray", ad.width() ? ", " : "").printf("", "%d assert%s", c->stats.asserts, 1 < c->stats.asserts ? "s" : "");
+               if (0 < c->stats.footprint) ad.printf("dark gray", ad.width() ? ", " : "").printf("", "%s footprint", format_volume(c->stats.footprint));
+               if (0 < c->stats.timecost) ad.printf("dark gray", ad.width() ? ", " : "").printf("", "%s", format_duration(c->stats.timecost));
+               if (ad.width()) h2_color::printl(gray("- ") + ad, false);
+            }
          }
       }
    }
@@ -305,14 +308,10 @@ h2_inline void h2_report::initialize()
    }
 }
 
-struct in_report {
-   in_report() { h2_report::I().in = true; }
-   ~in_report() { h2_report::I().in = false; }
-};
 /* clang-format off */
-h2_inline void h2_report::on_runner_start(h2_runner* r) { in_report t; h2_list_for_each_entry (p, reports, h2_report_impl, x) p->on_runner_start(r); }
-h2_inline void h2_report::on_runner_endup(h2_runner* r) { in_report t; h2_list_for_each_entry (p, reports, h2_report_impl, x) p->on_runner_endup(r); }
-h2_inline void h2_report::on_suite_start(h2_suite* s) { in_report t; h2_list_for_each_entry (p, reports, h2_report_impl, x) p->on_suite_start(s); }
-h2_inline void h2_report::on_suite_endup(h2_suite* s) { in_report t; h2_list_for_each_entry (p, reports, h2_report_impl, x) p->on_suite_endup(s); }
-h2_inline void h2_report::on_case_start(h2_suite* s, h2_case* c) { in_report t; h2_list_for_each_entry (p, reports, h2_report_impl, x) p->on_case_start(s, c); }
-h2_inline void h2_report::on_case_endup(h2_suite* s, h2_case* c) { in_report t; h2_list_for_each_entry (p, reports, h2_report_impl, x) p->on_case_endup(s, c); }
+h2_inline void h2_report::on_runner_start(h2_runner* r) { h2_list_for_each_entry (p, reports, h2_report_impl, x) p->on_runner_start(r); }
+h2_inline void h2_report::on_runner_endup(h2_runner* r) { h2_list_for_each_entry (p, reports, h2_report_impl, x) p->on_runner_endup(r); }
+h2_inline void h2_report::on_suite_start(h2_suite* s) { h2_list_for_each_entry (p, reports, h2_report_impl, x) p->on_suite_start(s); }
+h2_inline void h2_report::on_suite_endup(h2_suite* s) { h2_list_for_each_entry (p, reports, h2_report_impl, x) p->on_suite_endup(s); }
+h2_inline void h2_report::on_case_start(h2_suite* s, h2_case* c) { h2_list_for_each_entry (p, reports, h2_report_impl, x) p->on_case_start(s, c); }
+h2_inline void h2_report::on_case_endup(h2_suite* s, h2_case* c) { h2_list_for_each_entry (p, reports, h2_report_impl, x) p->on_case_endup(s, c); }
