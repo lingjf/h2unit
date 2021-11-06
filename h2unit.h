@@ -1,5 +1,5 @@
 
-/* v5.15 2021-11-06 09:42:16 */
+/* v5.15 2021-11-06 11:19:03 */
 /* https://github.com/lingjf/h2unit */
 /* Apache Licence 2.0 */
 
@@ -8691,31 +8691,47 @@ static inline void save_last_order(h2_list& suites)
    if (!f) return;
    h2_list_for_each_entry (s, suites, h2_suite, x)
       h2_list_for_each_entry (c, s->cases, h2_case, x)
-         ::fprintf(f, "%s\n%s\n%d\n", ss(s->name), c->name, c->failed ? 1 : 0);
+         ::fprintf(f, "  file: %s\n suite: %s\n  case: %s\nstatus: %s\n\n", c->file, ss(s->name), c->name, c->failed ? "failed" : "passed");
    ::fclose(f);
 }
 
-static inline void __mark(h2_list& suites, char* suitename, char* casename, bool failed)
+static inline void __find_mark(h2_list& suites, char* fileline, char* suitename, char* casename, bool failed)
 {
    static int seq = INT_MIN / 4;
-   h2_list_for_each_entry (s, suites, h2_suite, x)
+   int founds = 0;
+   h2_list_for_each_entry (s, suites, h2_suite, x)  // full match 3
       if (!strcmp(suitename, ss(s->name)))
          h2_list_for_each_entry (c, s->cases, h2_case, x)
-            if (!strcmp(casename, c->name))
-               s->seq = c->seq = ++seq, c->last_failed = failed;
+            if (!strcmp(casename, c->name) && !strcmp(fileline, c->file)) {
+               s->seq = c->seq = ++seq;
+               if (failed) c->last_failed = true;
+               ++founds;
+            }
+   if (founds) return;
+   h2_list_for_each_entry (s, suites, h2_suite, x)  // line position change, match2
+      if (!strcmp(suitename, ss(s->name)))
+         h2_list_for_each_entry (c, s->cases, h2_case, x)
+            if (!strcmp(casename, c->name)) {
+               s->seq = c->seq = ++seq;
+               if (failed) c->last_failed = true;
+            }
+}
+
+static inline bool __read_line(FILE* f, char* b, size_t n)
+{
+   if (!::fgets(b, n, f)) return false;
+   b[strlen(b) - 1] = '\0'; /* remove \n in save_last_order */
+   return true;
 }
 
 static inline int mark_last_order(h2_list& suites)
 {
    int count = 0;
-   char suitename[1024], casename[1024], failed[32];
+   char fileline[1024], suitename[1024], casename[1024], status[32], br[32];
    FILE* f = ::fopen(".last_order", "r");
    if (!f) return 0;
-   while (::fgets(suitename, sizeof(suitename), f) && ::fgets(casename, sizeof(casename), f) && ::fgets(failed, sizeof(failed), f)) {
-      suitename[strlen(suitename) - 1] = '\0'; /* remove \n in save_last_order */
-      casename[strlen(casename) - 1] = '\0';
-      failed[strlen(failed) - 1] = '\0';
-      __mark(suites, suitename, casename, !!atoi(failed));
+   while (__read_line(f, fileline, sizeof(fileline)) && __read_line(f, suitename, sizeof(suitename)) && __read_line(f, casename, sizeof(casename)) && __read_line(f, status, sizeof(status)) && __read_line(f, br, sizeof(br))) {
+      __find_mark(suites, fileline + 8, suitename + 8, casename + 8, !strcmp("failed", status + 8));
       count++;
    }
    ::fclose(f);
