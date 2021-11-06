@@ -28,8 +28,9 @@
 
 #if defined __GNUC__ || defined __clang__
 // #pragma clang diagnostic ignored === #pragma GCC diagnostic ignored
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+#pragma GCC diagnostic ignored "-Wunused-variable"
 #pragma GCC diagnostic ignored "-Wint-to-pointer-cast"
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 #elif defined _MSC_VER
 #pragma warning(disable : 4244)  // conversion possible loss of data
 #pragma warning(disable : 4267)  // conversion possible loss of data

@@ -1,5 +1,9 @@
 #include "../build/h2unit.hpp"
 
+#if defined(__GNUC__) && __GNUC__ > 6 && !defined(__clang__) // gcc > 6
+#pragma GCC diagnostic ignored "-Wstringop-overflow"
+#endif
+
 SUITE(Memory asymmetric allocate and free)
 {
    Case(malloc delete failure)

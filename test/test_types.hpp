@@ -1,4 +1,8 @@
 
+#if defined __GNUC__ || defined __clang__
+#pragma GCC diagnostic ignored "-Wunused-function"
+#endif
+
 extern char buffer[1024];
 
 extern "C" {
@@ -101,7 +105,7 @@ class B_DerivedClass : public A_AbstractClass {
    char* s;
 
    B_DerivedClass() : b('b') { s = (char*)malloc(11); }
-   ~B_DerivedClass() { free(s); }
+   virtual ~B_DerivedClass() { free(s); }
 
  private:
    static const char* static_f2(int x, int y) { return sprintf(buffer, "B.static_f2(%d,%d)", x, y), buffer; }
@@ -116,6 +120,7 @@ class C_OverrideClass : public A_AbstractClass {
    std::string s;
 
    C_OverrideClass() : c('c'), s(10000, 's') {}
+   virtual ~C_OverrideClass() {}
 
  private:
    static const char* static_f1(int x) { return sprintf(buffer, "C.static_f1(%d)", x), buffer; }
@@ -156,6 +161,7 @@ class E_NamespaceClass : public A_AbstractClass {
  public:
    char e;
    E_NamespaceClass() : e('e') {}
+   virtual ~E_NamespaceClass() {}
 
  private:
    virtual const char* pure_f0() { return sprintf(buffer, "E.pure_f0()%c", e), buffer; }
@@ -177,6 +183,7 @@ static const char* E_virtual_f1_fake(test_ns::E_NamespaceClass* This, int x) { r
 template <typename T>
 struct F_TemplateClass {
    char f = 'f';
+   virtual ~F_TemplateClass() {}
    static const char* static_f1(T x) { return sprintf(buffer, "F.static_f1(%d)", x), buffer; }
    template <typename U>
    const char* normal_f1(U x) { return sprintf(buffer, "F.normal_f1(%d)%c", x, f), buffer; }
@@ -296,19 +303,19 @@ static std::pair<const char*, double> G_virtual_f2_fake(G_TemplateClass<int, int
      stdstring1,          \
      stdstringref1
 
-#define STRING_DECL_LIST                             \
-   const char* const const_char_const_p1 = "h2unit"; \
-   const char* const_char_p1 = "h2unit";             \
-   char* const char_const_p1 = (char* const)"h2unit";\
-   char* char_p1 = (char*)"h2unit";                  \
-   char*& char_ref_p1 = char_p1;                     \
-   char char_array1[1024] = "h2unit";                \
-   const char const_char_array1[1024] = "h2unit";    \
-   const h2::h2_string const_h2string1 = "h2unit";   \
-   h2::h2_string h2string1 = "h2unit";               \
-   h2::h2_string& h2stringref1 = h2string1;          \
-   const std::string const_stdstring1 = "h2unit";    \
-   std::string stdstring1 = "h2unit";                \
+#define STRING_DECL_LIST                              \
+   const char* const const_char_const_p1 = "h2unit";  \
+   const char* const_char_p1 = "h2unit";              \
+   char* const char_const_p1 = (char* const)"h2unit"; \
+   char* char_p1 = (char*)"h2unit";                   \
+   char*& char_ref_p1 = char_p1;                      \
+   char char_array1[1024] = "h2unit";                 \
+   const char const_char_array1[1024] = "h2unit";     \
+   const h2::h2_string const_h2string1 = "h2unit";    \
+   h2::h2_string h2string1 = "h2unit";                \
+   h2::h2_string& h2stringref1 = h2string1;           \
+   const std::string const_stdstring1 = "h2unit";     \
+   std::string stdstring1 = "h2unit";                 \
    std::string& stdstringref1 = stdstring1;
 
 struct test_ptr {
@@ -382,29 +389,29 @@ enum A_Enum { America = 1,
 typedef int (*A_FunctionPointer)(int a, int b);
 
 #if defined _MSC_VER
-#   define CloseSocket closesocket
+#define CloseSocket closesocket
 #else
-#   define CloseSocket close
+#define CloseSocket close
 #endif
 
 #if defined _MSC_VER
-#   define _long_long "__int64"
-#   define _enum "enum "
-#   define _struct "struct "
-#   define _class "class "
+#define _long_long "__int64"
+#define _enum "enum "
+#define _struct "struct "
+#define _class "class "
 #else
-#   define _long_long "long long"
-#   define _enum
-#   define _struct
-#   define _class
+#define _long_long "long long"
+#define _enum
+#define _struct
+#define _class
 #endif
 
 #if defined _MSC_VER && (defined __x86_64__ || defined _M_X64)
-#   define _pointer " * __ptr64"
-#   define _fptr "__cdecl*"
+#define _pointer " * __ptr64"
+#define _fptr "__cdecl*"
 #else
-#   define _pointer "*"
-#   define _fptr "*"
+#define _pointer "*"
+#define _fptr "*"
 #endif
 
 extern const char* node_type_tostring(const int type);

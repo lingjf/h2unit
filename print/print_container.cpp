@@ -28,8 +28,8 @@ SUITE(ListOf)
 
    Case(C/C++ native array)
    {
-      int a1[] = {1, 2, 3};
-      OK(ListOf(1, 7, 3), a1);
+      int a[] = {1, 2, 3};
+      OK(ListOf(1, 7, 3), a);
    }
 }
 
@@ -49,13 +49,13 @@ SUITE(Has)
 
    Case(C/C++ generic array)
    {
-      int a1[] = {1, 2, 3};
-      OK(Has(4), a1);
+      int a[] = {1, 2, 3};
+      OK(Has(4), a);
    }
 
    Case(C/C++ generic array sepecified size)
    {
-      int a1[] = {1, 2, 3};
-      OK(Has(2), a1, 3);
+      int a[] = {1, 2, 3};
+      OK(Has(2), a, 3);
    }
 }

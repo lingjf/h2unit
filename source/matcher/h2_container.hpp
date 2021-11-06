@@ -55,7 +55,7 @@ struct h2_has_matches : h2_matches {
    auto matches(A a, size_t n, h2_mc c) const -> typename std::enable_if<!h2_is_container<typename std::decay<A>::type>::value, h2_fail*>::type
    {
       bool found = false;
-      for (int i = 0; i < n; ++i) {
+      for (size_t i = 0; i < n; ++i) {
          h2_fail* fail = h2_matcher_cast<typename std::decay<decltype(a[i])>::type>(m).matches(a[i], n, c.update_negative(false));
          if (!fail) {
             found = true;
@@ -81,7 +81,7 @@ struct h2_countof_matches : h2_matches {
    auto matches(const A& a, size_t n, h2_mc c) const -> typename std::enable_if<h2_is_container<typename std::decay<A>::type>::value, h2_fail*>::type
    {
       size_t count = 0;
-      for (auto const& c : a) count++; /* container size() is best, but forward_list haven't. iterator works all, regardless speed. https://en.cppreference.com/w/cpp/container */
+      for (auto const& _ : a) count++; /* container size() is best, but forward_list haven't. iterator works all, regardless speed. https://en.cppreference.com/w/cpp/container */
       return __matches(count, h2_representify(a), c);
    }
 

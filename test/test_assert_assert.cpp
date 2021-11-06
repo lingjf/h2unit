@@ -120,13 +120,6 @@ SUITE(array detect)
    }
 }
 
-static int c0 = 0;
-static int get0()
-{
-   ++c0;
-   return 1;
-}
-
 static int c1 = 0;
 static int get1()
 {
@@ -138,12 +131,15 @@ SUITE(nocall in decltype)
 {
    Case(decltype)
    {
-      decltype(get0()) b = 0;
-      OK(0, c0);
+      c1 = 0;
+      decltype(get1()) b = 0;
+      OK(0, c1);
+      OK(0, b);
    }
 
    Case(actual call one time)
    {
+      c1 = 0;
       OK(1, get1());
       OK(1, c1);
    }

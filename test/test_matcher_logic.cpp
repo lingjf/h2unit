@@ -2,7 +2,7 @@
 
 SUITE(logic matches)
 {
-   int int65 = 65, int66 = 66;
+   int int65 = 65;
 
    Case(Not)
    {

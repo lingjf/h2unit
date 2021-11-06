@@ -77,6 +77,7 @@ SUITE(bugfix)
       // for (auto& k : a) {
       // }
       for (auto&& k : a) {
+         OK(_, k);
       }
    }
 

@@ -32,6 +32,13 @@ IF(CMAKE_BUILD_TYPE MATCHES "Release")
     ENDIF()
 ENDIF()
 
+
+IF(MSVC)
+    
+ELSE()
+    ADD_COMPILE_OPTIONS(-Werror)
+ENDIF()
+
 AUX_SOURCE_DIRECTORY(. SRC_TEST)
 ADD_EXECUTABLE(a.out ../build/h2unit.cpp ${SRC_TEST})
 

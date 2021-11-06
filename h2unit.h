@@ -1,5 +1,5 @@
 
-/* v5.15 2021-11-06 01:08:17 */
+/* v5.15 2021-11-06 09:42:16 */
 /* https://github.com/lingjf/h2unit */
 /* Apache Licence 2.0 */
 
@@ -35,8 +35,9 @@
 
 #if defined __GNUC__ || defined __clang__
 // #pragma clang diagnostic ignored === #pragma GCC diagnostic ignored
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+#pragma GCC diagnostic ignored "-Wunused-variable"
 #pragma GCC diagnostic ignored "-Wint-to-pointer-cast"
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 #elif defined _MSC_VER
 #pragma warning(disable : 4244)  // conversion possible loss of data
 #pragma warning(disable : 4267)  // conversion possible loss of data
@@ -1201,7 +1202,7 @@ struct h2_polymorphic_matcher : h2_matches {
    struct internal_impl : h2_matcher_impl<T>, h2_libc {
       const Matches m;
       bool negative, case_insensitive, squash_whitespace;
-      explicit internal_impl(const Matches& m_, bool negative_, bool case_insensitive_, bool squash_whitespace_) : m(m_), case_insensitive(case_insensitive_), negative(negative_), squash_whitespace(squash_whitespace_) {}
+      explicit internal_impl(const Matches& m_, bool negative_, bool case_insensitive_, bool squash_whitespace_) : m(m_), negative(negative_), case_insensitive(case_insensitive_), squash_whitespace(squash_whitespace_) {}
       h2_fail* matches(const T& a, size_t n = 0, h2_mc c = {}) const override { return m.matches(a, n, {negative != c.negative, case_insensitive || c.case_insensitive, squash_whitespace || c.squash_whitespace, c.no_compare_operator}); }
       h2_line expection(h2_mc c) const override { return m.expection({negative != c.negative /*XOR ^*/, case_insensitive || c.case_insensitive, squash_whitespace || c.squash_whitespace, c.no_compare_operator}); }
    };
@@ -1937,7 +1938,7 @@ struct h2_has_matches : h2_matches {
    auto matches(A a, size_t n, h2_mc c) const -> typename std::enable_if<!h2_is_container<typename std::decay<A>::type>::value, h2_fail*>::type
    {
       bool found = false;
-      for (int i = 0; i < n; ++i) {
+      for (size_t i = 0; i < n; ++i) {
          h2_fail* fail = h2_matcher_cast<typename std::decay<decltype(a[i])>::type>(m).matches(a[i], n, c.update_negative(false));
          if (!fail) {
             found = true;
@@ -1963,7 +1964,7 @@ struct h2_countof_matches : h2_matches {
    auto matches(const A& a, size_t n, h2_mc c) const -> typename std::enable_if<h2_is_container<typename std::decay<A>::type>::value, h2_fail*>::type
    {
       size_t count = 0;
-      for (auto const& c : a) count++; /* container size() is best, but forward_list haven't. iterator works all, regardless speed. https://en.cppreference.com/w/cpp/container */
+      for (auto const& _ : a) count++; /* container size() is best, but forward_list haven't. iterator works all, regardless speed. https://en.cppreference.com/w/cpp/container */
       return __matches(count, h2_representify(a), c);
    }
 

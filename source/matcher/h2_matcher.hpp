@@ -48,7 +48,7 @@ struct h2_polymorphic_matcher : h2_matches {
    struct internal_impl : h2_matcher_impl<T>, h2_libc {
       const Matches m;
       bool negative, case_insensitive, squash_whitespace;
-      explicit internal_impl(const Matches& m_, bool negative_, bool case_insensitive_, bool squash_whitespace_) : m(m_), case_insensitive(case_insensitive_), negative(negative_), squash_whitespace(squash_whitespace_) {}
+      explicit internal_impl(const Matches& m_, bool negative_, bool case_insensitive_, bool squash_whitespace_) : m(m_), negative(negative_), case_insensitive(case_insensitive_), squash_whitespace(squash_whitespace_) {}
       h2_fail* matches(const T& a, size_t n = 0, h2_mc c = {}) const override { return m.matches(a, n, {negative != c.negative, case_insensitive || c.case_insensitive, squash_whitespace || c.squash_whitespace, c.no_compare_operator}); }
       h2_line expection(h2_mc c) const override { return m.expection({negative != c.negative /*XOR ^*/, case_insensitive || c.case_insensitive, squash_whitespace || c.squash_whitespace, c.no_compare_operator}); }
    };
