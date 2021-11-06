@@ -1,6 +1,6 @@
 
 #if defined _WIN32 || defined __CYGWIN__
-#define IMPORT_MAIN
+#define H2UNIT_IMPORT_MAIN
 #endif
 
 #include "../source/h2_unit.cpp"

@@ -86,9 +86,10 @@
 #endif
 
 #if defined _WIN32 || defined __CYGWIN__  // +MinGW
-int main(int argc, const char** argv);
-#if defined __H2UNIT_HPP__ || defined IMPORT_MAIN
+#if defined __H2UNIT_HPP__ || defined H2UNIT_IMPORT_MAIN
 int main(int argc, const char** argv) { return h2::h2_runner::I().main(argc, argv); }
+#else
+int main(int argc, const char** argv);
 #endif
 #else
 __attribute__((weak)) int main(int argc, const char** argv) { return h2::h2_runner::I().main(argc, argv); }

@@ -1,5 +1,5 @@
 
-#define IMPORT_MAIN
+#define H2UNIT_IMPORT_MAIN
 
 #if H2UNIT == 1
 #include "../h2unit.h"

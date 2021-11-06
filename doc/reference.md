@@ -1,15 +1,15 @@
 # Reference
 
 ## File Structure
-### IMPORT_MAIN
+### H2UNIT_IMPORT_MAIN
 
-On windows platform, define `IMPORT_MAIN` in one of test source files to import main(), in others should not define it to avoid multiple definition.
+On windows platform, define `H2UNIT_IMPORT_MAIN` in one of test source files to import main(), in others should not define it to avoid multiple definition.
 
-On Linux or macOS unix platform, `IMPORT_MAIN` is not necessary with help of weak reference.
+On Linux or macOS unix platform, `H2UNIT_IMPORT_MAIN` is not necessary with help of weak reference.
 
 ```C++
 // test1.cpp
-#define IMPORT_MAIN
+#define H2UNIT_IMPORT_MAIN
 #include "h2unit.h"
 ```
 

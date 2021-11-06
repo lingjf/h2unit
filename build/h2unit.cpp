@@ -1,5 +1,5 @@
 
-/* v5.15 2021-11-06 15:21:51 */
+/* v5.15 2021-11-06 16:41:25 */
 /* https://github.com/lingjf/h2unit */
 /* Apache Licence 2.0 */
 #include "h2unit.hpp"
@@ -90,9 +90,10 @@
 #endif
 
 #if defined _WIN32 || defined __CYGWIN__  // +MinGW
-int main(int argc, const char** argv);
-#if defined __H2UNIT_HPP__ || defined IMPORT_MAIN
+#if defined __H2UNIT_HPP__ || defined H2UNIT_IMPORT_MAIN
 int main(int argc, const char** argv) { return h2::h2_runner::I().main(argc, argv); }
+#else
+int main(int argc, const char** argv);
 #endif
 #else
 __attribute__((weak)) int main(int argc, const char** argv) { return h2::h2_runner::I().main(argc, argv); }
