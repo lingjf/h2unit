@@ -29,13 +29,6 @@ struct h2_override_platform {
    }
    static void _aligned_free(void* memblock) { h2_override::free(memblock); }
 
-   static char* _strdup(char* s)
-   {
-      char* ret = (char*)h2_override::malloc(strlen(s) + 1);
-      if (ret) strcpy(ret, s);
-      return ret;
-   }
-
    void set()
    {
       h2_stubs::add(stubs, (void*)::_free_base, (void*)_free_base, "_free_base", H2_FILE);
@@ -51,7 +44,7 @@ struct h2_override_platform {
       //// h2_stubs::add(stubs,(void*)::_calloc_crt, (void*)h2_override::calloc, "_calloc_crt", H2_FILE);
       h2_stubs::add(stubs, (void*)::_aligned_malloc, (void*)_aligned_malloc, "_aligned_malloc", H2_FILE);
       h2_stubs::add(stubs, (void*)::_aligned_free, (void*)_aligned_free, "_aligned_free", H2_FILE);
-      h2_stubs::add(stubs, (void*)::_strdup, (void*)_strdup, "_strdup", H2_FILE);  // strdup call to _strdup
+      h2_stubs::add(stubs, (void*)::_strdup, (void*)h2_override_stdlib::strdup, "_strdup", H2_FILE);  // strdup call to _strdup
    }
 
    void reset() { h2_stubs::clear(stubs); }

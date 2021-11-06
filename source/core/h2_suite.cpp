@@ -47,7 +47,7 @@ h2_inline h2_suite::registor::registor(h2_suite* s, h2_case* c)
 
 h2_inline h2_suite::cleaner::~cleaner()
 {
-   static const jmp_buf zero = {0};
+   static const unsigned char zero[sizeof(jmp_buf)] = {0};
    if (memcmp((const void*)thus->ctx, (const void*)zero, sizeof(jmp_buf)))
       ::longjmp(thus->ctx, 1);
 }

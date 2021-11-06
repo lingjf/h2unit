@@ -1,26 +1,8 @@
-struct h2_shell {
-   h2_singleton(h2_shell);
+struct h2_color {
+   h2_singleton(h2_color);
    char current[8][32];
-   size_t cww;
 
-   h2_shell()
-   {
-      memset(current, 0, sizeof(current));
-      cww = 120;
-#if defined _WIN32
-      CONSOLE_SCREEN_BUFFER_INFO csbi;
-      int columns, rows;
-
-      GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE), &csbi);
-      columns = csbi.srWindow.Right - csbi.srWindow.Left + 1;
-      rows = csbi.srWindow.Bottom - csbi.srWindow.Top + 1;
-
-      cww = 16 < columns ? columns : 120;
-#else
-      struct winsize w;
-      if (-1 != ioctl(STDOUT_FILENO, TIOCGWINSZ, &w)) cww = 16 < w.ws_col ? w.ws_col : 120;
-#endif
-   }
+   h2_color() { memset(current, 0, sizeof(current)); }
 
    void clear_style()
    {
@@ -69,8 +51,11 @@ struct h2_shell {
    void print(const char* str)
    {
       /* Windows PowerShell works, but CMD not, refer to v5.11 SetConsoleTextAttribute */
-      if (h2_color::isctrl(str)) {
-         if (h2_option::I().colorful) I().parse(str), I().change();
+      if (h2_console::isctrl(str)) {
+         if (h2_option::I().colorful) {
+            I().parse(str);
+            I().change();
+         }
       } else {
          LIBC__write(-1, str, strlen(str));
       }
@@ -112,28 +97,48 @@ struct h2_shell {
    }
 };
 
-h2_inline void h2_color::prints(const char* style, const char* format, ...)
+h2_inline size_t h2_console::width()
+{
+   static size_t s_width = 0;
+   if (s_width == 0) {
+      s_width = 120;
+#if defined _WIN32
+      CONSOLE_SCREEN_BUFFER_INFO csbi;
+      GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE), &csbi);
+      auto columns = csbi.srWindow.Right - csbi.srWindow.Left + 1;
+      // auto rows = csbi.srWindow.Bottom - csbi.srWindow.Top + 1;
+      if (16 < columns) s_width = columns;
+#else
+      struct winsize w;
+      if (-1 != ioctl(STDOUT_FILENO, TIOCGWINSZ, &w))
+         if (16 < w.ws_col) s_width = w.ws_col;
+#endif
+   }
+   return s_width;
+}
+
+h2_inline void h2_console::prints(const char* style, const char* format, ...)
 {
    if (style && strlen(style)) {
       char t[128];
       sprintf(t, "\033{%s}", style);
-      h2_shell::I().print(t);
+      h2_color::I().print(t);
    }
 
    char* alloca_str;
    h2_sprintf(alloca_str, format);
-   h2_shell::I().print(alloca_str);
+   h2_color::I().print(alloca_str);
 
-   if (style && strlen(style)) h2_shell::I().print("\033{reset}");
+   if (style && strlen(style)) h2_color::I().print("\033{reset}");
 }
 
-h2_inline void h2_color::printl(const h2_line& line, bool cr)
+h2_inline void h2_console::printl(const h2_line& line, bool cr)
 {
-   for (auto& word : line) h2_shell::I().print(word.c_str());
-   if (cr) h2_shell::I().print("\n");
+   for (auto& word : line) h2_color::I().print(word.c_str());
+   if (cr) h2_color::I().print("\n");
 }
 
-h2_inline void h2_color::printl(const h2_lines& lines, bool cr)
+h2_inline void h2_console::printl(const h2_lines& lines, bool cr)
 {
    for (auto& line : lines) printl(line, cr);
 }

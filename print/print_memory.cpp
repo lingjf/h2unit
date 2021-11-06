@@ -1,6 +1,6 @@
 #include "../build/h2unit.hpp"
 
-#if defined(__GNUC__) && __GNUC__ > 6 && !defined(__clang__) // gcc > 6
+#if defined(__GNUC__) && __GNUC__ >= 7 && !defined(__clang__)  // gcc >= 7
 #pragma GCC diagnostic ignored "-Wstringop-overflow"
 #endif
 

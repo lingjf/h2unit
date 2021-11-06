@@ -47,7 +47,7 @@ struct h2_fail_normal : h2_fail {
       line.indent(ci * 2 + 1);
       if (0 <= seqno) line.printf("dark gray", "%d. ", seqno);
       line += explain;
-      h2_color::printl(line + locate());
+      h2_console::printl(line + locate());
    }
 };
 
@@ -124,7 +124,7 @@ struct h2_fail_unexpect : h2_fail {
       if (!strcmp("JE", assert_type)) print_JE(line);
       if (explain.width()) line += comma_if(c++, ", ", " ") + explain;
       if (user_explain.size()) line += {comma_if(c++, ", ", " "), user_explain};
-      h2_color::printl(line + locate());
+      h2_console::printl(line + locate());
    }
 };
 
@@ -148,7 +148,7 @@ struct h2_fail_strcmp : h2_fail_unexpect {
          auto lcs = h2_LCS(e_chars, a_chars, caseless).lcs();
          for (size_t i = 0; i < lcs.first.size(); i++) e_line += fmt_char(e_chars[i], lcs.first[i], "green");
          for (size_t i = 0; i < lcs.second.size(); i++) a_line += fmt_char(a_chars[i], lcs.second[i], "red");
-         h2_color::printl(h2_layout::unified(e_line, a_line, "expect", "actual", h2_shell::I().cww));
+         h2_console::printl(h2_layout::unified(e_line, a_line, "expect", "actual", h2_console::width()));
       }
    }
 };
@@ -162,7 +162,7 @@ struct h2_fail_strfind : h2_fail_unexpect {
 
       if (16 < e_value.width() || 16 < a_value.width()) {
          h2_line e_line = e_value.escape(), a_line = a_value.escape();
-         h2_color::printl(h2_layout::seperate(e_line, a_line, "expect", "actual", h2_shell::I().cww));
+         h2_console::printl(h2_layout::seperate(e_line, a_line, "expect", "actual", h2_console::width()));
       }
    }
 };
@@ -185,16 +185,16 @@ struct h2_fail_json : h2_fail_unexpect {
             if (i) e_lines[i].indent(8);
          for (size_t i = 0; i < a_lines.size(); ++i)
             if (i) a_lines[i].indent(8);
-         h2_color::prints("dark gray", "expect");
-         h2_color::prints("green", "> ");
-         h2_color::printl(e_lines);
-         h2_color::prints("dark gray", "actual");
-         h2_color::prints("red", "> ");
-         h2_color::printl(a_lines);
+         h2_console::prints("dark gray", "expect");
+         h2_console::prints("green", "> ");
+         h2_console::printl(e_lines);
+         h2_console::prints("dark gray", "actual");
+         h2_console::prints("red", "> ");
+         h2_console::printl(a_lines);
       } else {
-         h2_lines lines = h2_layout::split(e_lines, a_lines, "expect", "actual", 0, 'd', h2_shell::I().cww - 1);
+         h2_lines lines = h2_layout::split(e_lines, a_lines, "expect", "actual", 0, 'd', h2_console::width() - 1);
          for (auto& line : lines) line.indent(1);
-         h2_color::printl(lines);
+         h2_console::printl(lines);
       }
    }
 };
@@ -211,13 +211,13 @@ struct h2_fail_memcmp : h2_fail_unexpect {
       size_t bytes_per_row = 0;
       switch (width) {
          case 1: print_bits(e_lines, a_lines, bytes_per_row = 4); break;
-         case 8: print_ints<unsigned char>(e_lines, a_lines, bytes_per_row = (h2_shell::I().cww < 108 ? 8 : 16)); break;
+         case 8: print_ints<unsigned char>(e_lines, a_lines, bytes_per_row = (h2_console::width() < 108 ? 8 : 16)); break;
          case 16: print_ints<unsigned short>(e_lines, a_lines, bytes_per_row = 16); break;
          case 32: print_ints<unsigned int>(e_lines, a_lines, bytes_per_row = 16); break;
          case 64: print_ints<unsigned long long>(e_lines, a_lines, bytes_per_row = 16); break;
          default: break;
       }
-      h2_color::printl(h2_layout::split(e_lines, a_lines, "expect", "actual", bytes_per_row * 8 / width, 'x', h2_shell::I().cww));
+      h2_console::printl(h2_layout::split(e_lines, a_lines, "expect", "actual", bytes_per_row * 8 / width, 'x', h2_console::width()));
    }
 
    const char* format_width()
@@ -317,8 +317,8 @@ struct h2_fail_memory_leak : h2_fail_memory {
          c += p.second;
       }
       if (1 < c) line += gray("[") + sl + gray("] ");
-      h2_color::printl(" " + line + "bytes in " + where + " totally" + locate());
-      h2_color::prints("", "  which allocate at backtrace:\n"), bt_allocate.print(3);
+      h2_console::printl(" " + line + "bytes in " + where + " totally" + locate());
+      h2_console::prints("", "  which allocate at backtrace:\n"), bt_allocate.print(3);
    }
 };
 
@@ -327,11 +327,11 @@ struct h2_fail_double_free : h2_fail_memory {
    h2_fail_double_free(const void* ptr_, const h2_backtrace& bt_allocate_, const h2_backtrace& bt_release_, const h2_backtrace& bt_double_free_) : h2_fail_memory(ptr_, 0, bt_allocate_, bt_release_), bt_double_free(bt_double_free_) {}
    void print(size_t si = 0, size_t ci = 0) override
    {
-      h2_color::prints("", " %p", ptr);
-      h2_color::prints("bold,red", " double free");
-      h2_color::prints("", " at backtrace:\n", ptr), bt_double_free.print(2);
-      h2_color::prints("", "  which allocate at backtrace:\n"), bt_allocate.print(3);
-      h2_color::prints("", "  already free at backtrace:\n"), bt_release.print(3);
+      h2_console::prints("", " %p", ptr);
+      h2_console::prints("bold,red", " double free");
+      h2_console::prints("", " at backtrace:\n", ptr), bt_double_free.print(2);
+      h2_console::prints("", "  which allocate at backtrace:\n"), bt_allocate.print(3);
+      h2_console::prints("", "  already free at backtrace:\n"), bt_release.print(3);
    }
 };
 
@@ -340,12 +340,12 @@ struct h2_fail_asymmetric_free : h2_fail_memory {
    h2_fail_asymmetric_free(const void* ptr_, const char* who_allocate_, const char* who_release_, const h2_backtrace& bt_allocate_, const h2_backtrace& bt_release_) : h2_fail_memory(ptr_, 0, bt_allocate_, bt_release_), who_allocate(who_allocate_), who_release(who_release_) {}
    void print(size_t si = 0, size_t ci = 0) override
    {
-      h2_color::prints("", " %p allocate with ", ptr);
-      h2_color::prints("bold,red", "%s", who_allocate);
-      h2_color::prints("", ", release by ");
-      h2_color::prints("bold,red", "%s", who_release);
-      h2_color::prints("", " asymmetrically at backtrace:\n"), bt_release.print(2);
-      if (0 < bt_allocate.count) h2_color::prints("", "  which allocate at backtrace:\n"), bt_allocate.print(3);
+      h2_console::prints("", " %p allocate with ", ptr);
+      h2_console::prints("bold,red", "%s", who_allocate);
+      h2_console::prints("", ", release by ");
+      h2_console::prints("bold,red", "%s", who_release);
+      h2_console::prints("", " asymmetrically at backtrace:\n"), bt_release.print(2);
+      if (0 < bt_allocate.count) h2_console::prints("", "  which allocate at backtrace:\n"), bt_allocate.print(3);
    }
 };
 
@@ -360,9 +360,9 @@ struct h2_fail_overflow : h2_fail_memory {
       long long offset = ptr < violate_ptr ? (long long)violate_ptr - ((long long)ptr + size) : (long long)violate_ptr - (long long)ptr;
       h2_line t = h2_stringify(ptr) + " " + color(h2_string("%+d", (int)offset), "bold,red") + " " + gray("(") + h2_stringify(violate_ptr) + gray(")") + " " + color(action, "bold,red") + " " + (offset >= 0 ? "overflow" : "underflow") + " ";
       for (size_t i = 0; i < spot.size(); ++i) t.printf("bold,red", "%02X ", spot[i]);
-      h2_color::printl(" " + t + locate() + (bt_trample.count ? " at backtrace:" : ""));
+      h2_console::printl(" " + t + locate() + (bt_trample.count ? " at backtrace:" : ""));
       if (bt_trample.count) bt_trample.print(3);
-      h2_color::prints("", "  which allocate at backtrace:\n"), bt_allocate.print(3);
+      h2_console::prints("", "  which allocate at backtrace:\n"), bt_allocate.print(3);
    }
 };
 
@@ -374,9 +374,9 @@ struct h2_fail_use_after_free : h2_fail_memory {
    void print(size_t si = 0, size_t ci = 0) override
    {
       h2_line t = h2_stringify(ptr) + " " + color(h2_string("%+d", (long long)violate_ptr - (long long)ptr), "bold,red") + " " + gray("(") + h2_stringify(violate_ptr) + gray(")") + " " + color(action, "bold,red") + color(" after free", "bold,red");
-      h2_color::printl(" " + t + " at backtrace:"), bt_use.print(2);
-      h2_color::prints("", "  which allocate at backtrace:\n"), bt_allocate.print(3);
-      h2_color::prints("", "  and free at backtrace:\n"), bt_release.print(3);
+      h2_console::printl(" " + t + " at backtrace:"), bt_use.print(2);
+      h2_console::prints("", "  which allocate at backtrace:\n"), bt_allocate.print(3);
+      h2_console::prints("", "  and free at backtrace:\n"), bt_release.print(3);
    }
 };
 
@@ -386,7 +386,7 @@ struct h2_fail_exception : h2_fail {
    h2_fail_exception(const h2_line& explain_, const char* type_, const h2_backtrace& bt_throw_) : h2_fail(explain_, nullptr), type(type_), bt_throw(bt_throw_) {}
    void print(size_t si = 0, size_t ci = 0) override
    {
-      h2_color::printl(" exception " + color(type, "red") + " " + explain + " at backtrace:");
+      h2_console::printl(" exception " + color(type, "red") + " " + explain + " at backtrace:");
       bt_throw.print(3);
    }
 };
@@ -397,10 +397,10 @@ struct h2_fail_symbol : h2_fail {
    h2_fail_symbol(const h2_string& symbol_, const h2_vector<h2_string>& candidates_, const h2_line& explain_) : h2_fail(explain_, nullptr), symbol(symbol_), candidates(candidates_) {}
    void print(size_t si = 0, size_t ci = 0) override
    {
-      h2_color::printl(color(candidates.size() ? " Find multiple " : " Not found ", "yellow") + color(symbol, "bold,red"));
+      h2_console::printl(color(candidates.size() ? " Find multiple " : " Not found ", "yellow") + color(symbol, "bold,red"));
       for (size_t i = 0; i < candidates.size(); ++i)
-         h2_color::printl("  " + gray(h2_stringify(i) + ". ") + color(candidates[i], "yellow"));
-      if (explain.width()) h2_color::printl(explain);
+         h2_console::printl("  " + gray(h2_stringify(i) + ". ") + color(candidates[i], "yellow"));
+      if (explain.width()) h2_console::printl(explain);
    }
 };
 

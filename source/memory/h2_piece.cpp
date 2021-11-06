@@ -29,10 +29,10 @@ struct h2_piece : h2_libc {
 
 #if defined _WIN32
       page_ptr = (unsigned char*)VirtualAlloc(NULL, page_size * (page_count + 1), MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
-      if (page_ptr == NULL) h2_color::prints("", "VirtualAlloc failed at %s:%d\n", __FILE__, __LINE__), abort();
+      if (page_ptr == NULL) h2_console::prints("", "VirtualAlloc failed at %s:%d\n", __FILE__, __LINE__), abort();
 #else
       page_ptr = (unsigned char*)::mmap(nullptr, page_size * (page_count + 1), PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0);
-      if (page_ptr == MAP_FAILED) h2_color::prints("", "mmap failed at %s:%d\n", __FILE__, __LINE__), abort();
+      if (page_ptr == MAP_FAILED) h2_console::prints("", "mmap failed at %s:%d\n", __FILE__, __LINE__), abort();
 #endif
 
       user_ptr = page_ptr + page_size * page_count - user_size_plus + alignment;
@@ -62,7 +62,7 @@ struct h2_piece : h2_libc {
       if (permission & writable)
          new_permission = PAGE_READWRITE;
       if (!VirtualProtect(forbidden_page, forbidden_size, new_permission, &old_permission))
-         h2_color::prints("yellow", "VirtualProtect failed %lu\n", GetLastError());
+         h2_console::prints("yellow", "VirtualProtect failed %lu\n", GetLastError());
 #else
       int new_permission = PROT_NONE;
       if (permission & readable)
@@ -70,7 +70,7 @@ struct h2_piece : h2_libc {
       if (permission & writable)
          new_permission = PROT_READ | PROT_WRITE;
       if (::mprotect(forbidden_page, forbidden_size, new_permission) != 0)
-         h2_color::prints("yellow", "mprotect failed %s\n", strerror(errno));
+         h2_console::prints("yellow", "mprotect failed %s\n", strerror(errno));
 #endif
    }
 

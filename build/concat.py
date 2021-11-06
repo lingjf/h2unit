@@ -2,8 +2,16 @@
 import os
 import time
 import re
+import subprocess
+
 
 build_dir = os.path.dirname(os.path.realpath(__file__))
+
+def get_git_revision_hash():
+    return subprocess.check_output(['git', 'rev-parse', '--short', 'HEAD']).decode('ascii').strip()
+
+def get_git_active_branch():
+    return subprocess.check_output(['git', 'rev-parse', '--abbrev-ref', 'HEAD']).decode('ascii').strip()
 
 def read_version():
     with open(os.path.join(build_dir, '../source/h2_unit.hpp'), 'r') as f:
@@ -13,7 +21,7 @@ def read_version():
                 return version.group(1)
     return '    '
 
-version_date = '/* v{0} {1} */'.format(read_version(), time.strftime('%Y-%m-%d %H:%M:%S', time.localtime()))
+version_date = '/* v{0} {1} {2} {3} */'.format(read_version(), time.strftime('%Y-%m-%d %H:%M:%S', time.localtime()), get_git_active_branch(), get_git_revision_hash())
 github_url = '/* https://github.com/lingjf/h2unit */'
 copyright = '/* Apache Licence 2.0 */'
 
@@ -54,6 +62,7 @@ f_h2unit_h.write(github_url + '\n')
 f_h2unit_h.write(copyright + '\n\n')
 f_h2unit_h.write('#ifndef __H2UNIT_H__' + '\n')
 f_h2unit_h.write('#define __H2UNIT_H__' + '\n')
+f_h2unit_h.write('#define H2UNIT_REVISION ' + get_git_revision_hash() + ' ' + get_git_active_branch() + '\n')
 with open(os.path.join(build_dir, '../source/h2_unit.cpp'), 'r') as f_h2_unit_cpp:
     merge_files(f_h2_unit_cpp, f_h2unit_h, True)
 f_h2unit_h.write('#endif' + '\n')
@@ -66,6 +75,7 @@ f_h2unit_hpp.write(github_url + '\n')
 f_h2unit_hpp.write(copyright + '\n\n')
 f_h2unit_hpp.write('#ifndef __H2UNIT_HPP__' + '\n')
 f_h2unit_hpp.write('#define __H2UNIT_HPP__' + '\n')
+f_h2unit_hpp.write('#define H2UNIT_REVISION ' + get_git_revision_hash() + ' ' + get_git_active_branch() + '\n')
 with open(os.path.join(build_dir, '../source/h2_unit.hpp'), 'r') as f_h2_unit_hpp:
     merge_files(f_h2_unit_hpp, f_h2unit_hpp, False)
 f_h2unit_hpp.write('#endif' + '\n')

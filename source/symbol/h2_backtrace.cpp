@@ -34,7 +34,7 @@ static inline bool backtrace_extract(const char* line, char* mangle_name, unsign
    mangle_name[0] = '\0';
    if (1 == ::sscanf(line, "%*[^(]%*[^+]+0x%llx", displacement ? displacement : &_t)) return (bool)++v1;
 
-   if (!v2 && !once++) h2_color::prints("yellow", "\nAdd -rdynamic to linker options\n");
+   if (!v2 && !once++) h2_console::prints("yellow", "\nAdd -rdynamic to linker options\n");
 #endif
    return false;
 }
@@ -150,5 +150,5 @@ h2_inline void h2_backtrace::print(size_t pad) const
    h2_lines lines;
    for (auto& c : stacks) lines.push_back(c.startswith("h2::") || c.contains(": h2::") ? gray(c) : h2_line(c));
    lines.sequence(pad);
-   h2_color::printl(lines);
+   h2_console::printl(lines);
 }

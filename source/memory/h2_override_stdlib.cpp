@@ -1,6 +1,13 @@
 struct h2_override_stdlib {
    h2_list stubs;
 
+   static char* strdup(char* s)
+   {
+      char* ret = (char*)h2_override::malloc(strlen(s) + 1);
+      if (ret) strcpy(ret, s);
+      return ret;
+   }
+
    void set()
    {
       h2_stubs::add(stubs, (void*)::free, (void*)h2_override::free, "free", H2_FILE);

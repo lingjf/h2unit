@@ -95,19 +95,6 @@ SUITE(array detect)
       OK(!std::is_array<std::forward_list<int>>::value);
    }
 
-   Case(with n)
-   {
-      int a[3] = {1, 2, 3};
-      // OK(Has(1), a, 3);
-      // OK(decltype(a, 3) == decltype(a));
-      OK(!std::is_array<decltype(a, 3)>::value);
-
-      int* b = a;
-      // OK(Has(1), b, 3);
-      // OK(decltype(b, 3) == decltype(b));
-      OK(!std::is_array<decltype(b, 3)>::value);
-   }
-
    Case(type)
    {
       int a1[] = {1, 2, 3};

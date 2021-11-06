@@ -53,19 +53,18 @@ static inline int mark_last_order(h2_list& suites)
    return count;
 }
 
-struct h2_compare_wrapper {
-   static int suite_cmp(h2_list* a, h2_list* b)
-   {
-      return h2_list_entry(a, h2_suite, x)->seq - h2_list_entry(b, h2_suite, x)->seq;
-   }
-   static int case_cmp(h2_list* a, h2_list* b)
-   {
-      return h2_list_entry(a, h2_case, x)->seq - h2_list_entry(b, h2_case, x)->seq;
-   }
-};
-
 h2_inline void h2_runner::shuffle()
 {
+   struct comparison {
+      static int suite(h2_list* a, h2_list* b)
+      {
+         return h2_list_entry(a, h2_suite, x)->seq - h2_list_entry(b, h2_suite, x)->seq;
+      }
+      static int _case(h2_list* a, h2_list* b)
+      {
+         return h2_list_entry(a, h2_case, x)->seq - h2_list_entry(b, h2_case, x)->seq;
+      }
+   };
    last = mark_last_order(suites);
    ::srand(::clock());
    if (O.shuffle_cases && last == 0)
@@ -73,9 +72,9 @@ h2_inline void h2_runner::shuffle()
          h2_list_for_each_entry (c, s->cases, h2_case, x)
             s->seq = c->seq = ::rand();
 
-   suites.sort(h2_compare_wrapper::suite_cmp);
+   suites.sort(comparison::suite);
    h2_list_for_each_entry (s, suites, h2_suite, x)
-      s->cases.sort(h2_compare_wrapper::case_cmp);
+      s->cases.sort(comparison::_case);
 }
 
 h2_inline void h2_runner::shadow()
@@ -89,7 +88,7 @@ h2_inline void h2_runner::shadow()
 h2_inline void h2_runner::enumerate()
 {
    int cases = 0, i = 0;
-   if (O.progressing) h2_color::prints("", "enumerating...");
+   if (O.progressing) h2_console::prints("", "enumerating...");
    h2_list_for_each_entry (s, suites, h2_suite, x) {
       for (auto& setup : global_suite_setups) setup();
       s->setup();
@@ -102,9 +101,9 @@ h2_inline void h2_runner::enumerate()
             unfiltered++;
       if (unfiltered == 0) s->filtered = O.filter(ss(s->name), "", s->file);
       cases += s->cases.count();
-      if (O.progressing && 10 * i + i * i < cases && i < (int)h2_shell::I().cww - 20) h2_color::prints("", "."), ++i;
+      if (O.progressing && 10 * i + i * i < cases && i < (int)h2_console::width() - 20) h2_console::prints("", "."), ++i;
    }
-   if (O.progressing) h2_color::prints("", "\33[2K\r");
+   if (O.progressing) h2_console::prints("", "\33[2K\r");
 }
 
 h2_inline int h2_runner::main(int argc, const char** argv)

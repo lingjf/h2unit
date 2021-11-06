@@ -60,7 +60,7 @@ namespace h2 {
 #include "utils/h2_string.hpp"        // allocate
 #include "utils/h2_line.hpp"          // string
 #include "utils/h2_stringify.hpp"     // string, line
-#include "utils/h2_color.hpp"         // line
+#include "utils/h2_console.hpp"       // line
 #include "symbol/h2_nm.hpp"           //
 #include "symbol/h2_load.hpp"         //
 #include "symbol/h2_backtrace.hpp"    // line

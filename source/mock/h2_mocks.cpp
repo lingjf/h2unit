@@ -1,9 +1,8 @@
 h2_inline bool h2_mocks::add(h2_list& mocks, void* mocker)
 {
-   h2_mocker_base* m = (h2_mocker_base*)mocker;
    h2_list_for_each_entry (p, mocks, h2_mocker_base, x)
-      if (p == m) return false;
-   mocks.push(m->x);
+      if (p == (h2_mocker_base*)mocker) return false;
+   mocks.push(((h2_mocker_base*)mocker)->x);
    return true;
 }
 

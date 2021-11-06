@@ -5,7 +5,7 @@ static inline h2_lines line_break(const h2_line& line, size_t width)
    h2_line wrap;
 
    for (auto& word : line) {
-      if (h2_color::isctrl(word.c_str())) {  // + - style , issue
+      if (h2_console::isctrl(word.c_str())) {  // + - style , issue
          wrap.push_back(word);
          current_style = word;
          continue;

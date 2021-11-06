@@ -80,9 +80,9 @@
 #endif
 
 #if defined _MSC_VER
-#define h2__stdcall __stdcall
+#define h2_stdcall __stdcall
 #else
-#define h2__stdcall
+#define h2_stdcall
 #endif
 
 #if defined _WIN32 || defined __CYGWIN__  // +MinGW
@@ -104,7 +104,7 @@ namespace h2 {
 #include "utils/h2_libc.cpp"
 #include "utils/h2_string.cpp"
 #include "utils/h2_line.cpp"
-#include "utils/h2_color.cpp"
+#include "utils/h2_console.cpp"
 #include "symbol/h2_nm.cpp"
 #include "symbol/h2_load.cpp"
 #include "symbol/h2_backtrace.cpp"

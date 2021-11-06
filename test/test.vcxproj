@@ -60,6 +60,7 @@
     <ClCompile Include="test_matcher_matcher.cpp" />
     <ClCompile Include="test_matcher_matches.cpp" />
     <ClCompile Include="test_matcher_memcmp.cpp" />
+    <ClCompile Include="test_matcher_none_copy.cpp" />
     <ClCompile Include="test_matcher_polymorphic.cpp" />
     <ClCompile Include="test_matcher_strcmp.cpp" />
     <ClCompile Include="test_matcher_unary.cpp" />
@@ -78,7 +79,6 @@
     <ClCompile Include="test_mock_unmock.cpp" />
     <ClCompile Include="test_net_dns.cpp" />
     <ClCompile Include="test_net_socket.cpp" />
-    <ClCompile Include="test_none_copy.cpp" />
     <ClCompile Include="test_render_failure.cpp" />
     <ClCompile Include="test_render_layout.cpp" />
     <ClCompile Include="test_render_option.cpp" />
@@ -98,7 +98,7 @@
     <ClCompile Include="test_syntax_dup.cpp" />
     <ClCompile Include="test_types.cpp" />
     <ClCompile Include="test_utils_allocate.cpp" />
-    <ClCompile Include="test_utils_color.cpp" />
+    <ClCompile Include="test_utils_console.cpp" />
     <ClCompile Include="test_utils_libc.cpp" />
     <ClCompile Include="test_utils_list.cpp" />
     <ClCompile Include="test_utils_macro.cpp" />

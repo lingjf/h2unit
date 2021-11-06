@@ -1,10 +1,11 @@
 
-/* v5.15 2021-11-06 16:41:25 */
+/* v5.15 2021-11-06 22:12:32 v5 8768700 */
 /* https://github.com/lingjf/h2unit */
 /* Apache Licence 2.0 */
 
 #ifndef __H2UNIT_HPP__
 #define __H2UNIT_HPP__
+#define H2UNIT_REVISION 8768700 v5
 #ifndef __H2_UNIT_HPP__
 #define __H2_UNIT_HPP__
 
@@ -883,8 +884,9 @@ inline h2_line h2_representify(const T& a) { return h2_stringify(a, true); }
 
 template <typename T>
 inline h2_line h2_representify(T a, size_t n) { return h2_stringify(a, n, true); }
-// source/utils/h2_color.hpp
-struct h2_color {
+// source/utils/h2_console.hpp
+struct h2_console {
+   static size_t width();
    static void prints(const char* style, const char* format, ...);
    static void printl(const h2_line& line, bool cr = true);
    static void printl(const h2_lines& lines, bool cr = true);
@@ -2480,18 +2482,18 @@ struct h2_stuber<Counter, ClassType, ReturnType(ArgumentTypes...)> {
 };
 }
 // source/stub/h2_stub.hpp
-// STUB(                              Src      , Dst )
-// STUB(                    Function, Signature, Dst )
-// STUB(         ClassType, Method  , Signature, Dst )
-// STUB( Object, ClassType, Method  , Signature, Dst )
+// STUB(                              Source   , Destination )
+// STUB(                    Function, Signature, Destination )
+// STUB(         ClassType, Method  , Signature, Destination )
+// STUB( Object, ClassType, Method  , Signature, Destination )
 #define H2STUB(...) H2PP_VARIADIC_CALL(__H2STUB_, __VA_ARGS__)
-#define __H2STUB_2(Src, Dst) h2::h2_runner::stub(h2::h2_fp<>::A(Src), (void*)Dst, #Src, H2_FILE)
-#define __H2STUB_3(Function, Signature, Dst) h2::h2_runner::stub(h2::h2_fp<H2PP_REMOVE_PARENTHESES_IF(Signature)>::A(H2PP_REMOVE_PARENTHESES_IF(Function)), (void*)(Dst), #Function, H2_FILE)
-#define __H2STUB_4(ClassType, Method, Signature, Dst) h2::h2_stuber<__COUNTER__, H2PP_REMOVE_PARENTHESES_IF(ClassType), H2PP_REMOVE_PARENTHESES_IF(Signature)>::I(h2::h2_fp<H2PP_REMOVE_PARENTHESES_IF(ClassType), H2PP_REMOVE_PARENTHESES_IF(Signature)>::A(&H2PP_REMOVE_PARENTHESES_IF(ClassType)::H2PP_REMOVE_PARENTHESES_IF(Method)), #ClassType "::" #Method, H2_FILE) = Dst
-#define __H2STUB_5(Object, ClassType, Method, Signature, Dst) h2::h2_stuber<__COUNTER__, H2PP_REMOVE_PARENTHESES_IF(ClassType), H2PP_REMOVE_PARENTHESES_IF(Signature)>::I(h2::h2_fp<H2PP_REMOVE_PARENTHESES_IF(ClassType), H2PP_REMOVE_PARENTHESES_IF(Signature)>::B(h2::h2_pointer_if(Object), &H2PP_REMOVE_PARENTHESES_IF(ClassType)::H2PP_REMOVE_PARENTHESES_IF(Method)), #ClassType "::" #Method, H2_FILE) = Dst
+#define __H2STUB_2(Source, Destination) h2::h2_runner::stub(h2::h2_fp<>::A(Source), (void*)Destination, #Source, H2_FILE)
+#define __H2STUB_3(Function, Signature, Destination) h2::h2_runner::stub(h2::h2_fp<H2PP_REMOVE_PARENTHESES_IF(Signature)>::A(H2PP_REMOVE_PARENTHESES_IF(Function)), (void*)(Destination), #Function, H2_FILE)
+#define __H2STUB_4(ClassType, Method, Signature, Destination) h2::h2_stuber<__COUNTER__, H2PP_REMOVE_PARENTHESES_IF(ClassType), H2PP_REMOVE_PARENTHESES_IF(Signature)>::I(h2::h2_fp<H2PP_REMOVE_PARENTHESES_IF(ClassType), H2PP_REMOVE_PARENTHESES_IF(Signature)>::A(&H2PP_REMOVE_PARENTHESES_IF(ClassType)::H2PP_REMOVE_PARENTHESES_IF(Method)), #ClassType "::" #Method, H2_FILE) = Destination
+#define __H2STUB_5(Object, ClassType, Method, Signature, Destination) h2::h2_stuber<__COUNTER__, H2PP_REMOVE_PARENTHESES_IF(ClassType), H2PP_REMOVE_PARENTHESES_IF(Signature)>::I(h2::h2_fp<H2PP_REMOVE_PARENTHESES_IF(ClassType), H2PP_REMOVE_PARENTHESES_IF(Signature)>::B(h2::h2_pointer_if(Object), &H2PP_REMOVE_PARENTHESES_IF(ClassType)::H2PP_REMOVE_PARENTHESES_IF(Method)), #ClassType "::" #Method, H2_FILE) = Destination
 
 #define H2UNSTUB(...) H2PP_VARIADIC_CALL(__H2UNSTUB_, __VA_ARGS__)
-#define __H2UNSTUB_1(Src) h2::h2_runner::unstub(h2::h2_fp<>::A(Src))
+#define __H2UNSTUB_1(Source) h2::h2_runner::unstub(h2::h2_fp<>::A(Source))
 #define __H2UNSTUB_2(Function, Signature) h2::h2_runner::unstub(h2::h2_fp<H2PP_REMOVE_PARENTHESES_IF(Signature)>::A(H2PP_REMOVE_PARENTHESES_IF(Function)))
 #define __H2UNSTUB_3(ClassType, Method, Signature) h2::h2_runner::unstub(h2::h2_fp<H2PP_REMOVE_PARENTHESES_IF(ClassType), H2PP_REMOVE_PARENTHESES_IF(Signature)>::A(&H2PP_REMOVE_PARENTHESES_IF(ClassType)::H2PP_REMOVE_PARENTHESES_IF(Method)))
 #define __H2UNSTUB_4(Object, ClassType, Method, Signature) h2::h2_runner::unstub(h2::h2_fp<H2PP_REMOVE_PARENTHESES_IF(ClassType), H2PP_REMOVE_PARENTHESES_IF(Signature)>::B(h2::h2_pointer_if(Object), &H2PP_REMOVE_PARENTHESES_IF(ClassType)::H2PP_REMOVE_PARENTHESES_IF(Method)))
@@ -2500,7 +2502,7 @@ struct h2_stuber<Counter, ClassType, ReturnType(ArgumentTypes...)> {
 // STUBS(         ClassType, Method  , ReturnType, ArgumentTypes ) { }
 // STUBS( Object, ClassType, Method  , ReturnType, ArgumentTypes ) { }
 #define H2UNSTUBS(...) H2PP_VARIADIC_CALL(__H2UNSTUBS_, __VA_ARGS__)
-#define __H2UNSTUBS_1(Src) h2::h2_runner::unstub(h2::h2_fp<>::A(Src))
+#define __H2UNSTUBS_1(Source) h2::h2_runner::unstub(h2::h2_fp<>::A(Source))
 #define __H2UNSTUBS_3(Function, ReturnType, ArgumentTypes) h2::h2_runner::unstub(h2::h2_fp<H2PP_REMOVE_PARENTHESES_IF(ReturnType) ArgumentTypes>::A(H2PP_REMOVE_PARENTHESES_IF(Function)))
 #define __H2UNSTUBS_4(ClassType, Method, ReturnType, ArgumentTypes) h2::h2_runner::unstub(h2::h2_fp<H2PP_REMOVE_PARENTHESES_IF(ClassType), H2PP_REMOVE_PARENTHESES_IF(ReturnType) ArgumentTypes>::A(&H2PP_REMOVE_PARENTHESES_IF(ClassType)::H2PP_REMOVE_PARENTHESES_IF(Method)))
 #define __H2UNSTUBS_5(Object, ClassType, Method, ReturnType, ArgumentTypes) h2::h2_runner::unstub(h2::h2_fp<H2PP_REMOVE_PARENTHESES_IF(ClassType), H2PP_REMOVE_PARENTHESES_IF(ReturnType) ArgumentTypes>::B(h2::h2_pointer_if(Object), &H2PP_REMOVE_PARENTHESES_IF(ClassType)::H2PP_REMOVE_PARENTHESES_IF(Method)))
@@ -2514,13 +2516,13 @@ struct h2_stuber<Counter, ClassType, ReturnType(ArgumentTypes...)> {
 #define __H2STUBS_5_0(Object, ClassType, Method, ReturnType, ArgumentTypes) h2::h2_stuber<__COUNTER__, H2PP_REMOVE_PARENTHESES_IF(ClassType), H2PP_REMOVE_PARENTHESES_IF(ReturnType) ArgumentTypes>::I(h2::h2_fp<H2PP_REMOVE_PARENTHESES_IF(ClassType), H2PP_REMOVE_PARENTHESES_IF(ReturnType) ArgumentTypes>::B(h2::h2_pointer_if(Object), &H2PP_REMOVE_PARENTHESES_IF(ClassType)::H2PP_REMOVE_PARENTHESES_IF(Method)), #ClassType "::" #Method, H2_FILE) = [](H2PP_REMOVE_PARENTHESES_IF(ClassType) * This, H2PP_REMOVE_PARENTHESES(ArgumentTypes)) -> H2PP_REMOVE_PARENTHESES_IF(ReturnType)
 #define __H2STUBS_5_1(Object, ClassType, Method, ReturnType, ArgumentTypes) h2::h2_stuber<__COUNTER__, H2PP_REMOVE_PARENTHESES_IF(ClassType), H2PP_REMOVE_PARENTHESES_IF(ReturnType) ArgumentTypes>::I(h2::h2_fp<H2PP_REMOVE_PARENTHESES_IF(ClassType), H2PP_REMOVE_PARENTHESES_IF(ReturnType) ArgumentTypes>::B(h2::h2_pointer_if(Object), &H2PP_REMOVE_PARENTHESES_IF(ClassType)::H2PP_REMOVE_PARENTHESES_IF(Method)), #ClassType "::" #Method, H2_FILE) = [](H2PP_REMOVE_PARENTHESES_IF(ClassType) * This) -> H2PP_REMOVE_PARENTHESES_IF(ReturnType)
 
-#define ___H2STUBS_3(Function, ReturnType, ArgumentTypes, Q)                                                                                                          \
-   struct {                                                                                                                                                           \
-      void operator=(ReturnType(*dstfp) ArgumentTypes)                                                                                                                \
-      {                                                                                                                                                               \
+#define ___H2STUBS_3(Function, ReturnType, ArgumentTypes, Q)                                                                                                                \
+   struct {                                                                                                                                                                 \
+      void operator=(ReturnType(*dstfp) ArgumentTypes)                                                                                                                      \
+      {                                                                                                                                                                     \
          h2::h2_runner::stub(h2::h2_fp<H2PP_REMOVE_PARENTHESES_IF(ReturnType) ArgumentTypes>::A(H2PP_REMOVE_PARENTHESES_IF(Function)), (void*)(dstfp), #Function, H2_FILE); \
-      }                                                                                                                                                               \
-   } Q;                                                                                                                                                               \
+      }                                                                                                                                                                     \
+   } Q;                                                                                                                                                                     \
    Q = [] ArgumentTypes -> ReturnType /* captureless lambda implicit cast to function pointer */
 // source/mock/h2_routine.hpp
 template <typename ReturnType>
@@ -2959,13 +2961,13 @@ struct h2_debugger {
    static void trap();
 };
 
-#define h2_debug(shift, ...)                                                        \
-   do {                                                                             \
-      if (!O.debugger_trap) {                                                       \
-         h2_color::prints("", __VA_ARGS__);                                         \
-         h2_color::prints("", " %s : %d = %s\n", __FILE__, __LINE__, __FUNCTION__); \
-         h2_backtrace::dump(shift).print(3);                                        \
-      }                                                                             \
+#define h2_debug(shift, ...)                                                          \
+   do {                                                                               \
+      if (!O.debugger_trap) {                                                         \
+         h2_console::prints("", __VA_ARGS__);                                         \
+         h2_console::prints("", " %s : %d = %s\n", __FILE__, __LINE__, __FUNCTION__); \
+         h2_backtrace::dump(shift).print(3);                                          \
+      }                                                                               \
    } while (0)
 // source/stdio/h2_stdio.hpp
 struct h2_cout : h2_once {

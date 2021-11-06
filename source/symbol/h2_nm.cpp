@@ -4,11 +4,11 @@ static inline void nm_mangle(std::map<std::string, unsigned long long>*& symbols
    h2_memory::hook(false);
    char nm[256], line[2048], addr[128], type, name[2048];
    symbols = new std::map<std::string, unsigned long long>();
-#   if defined __APPLE__
+#if defined __APPLE__
    sprintf(nm, "nm -U %s", O.path);
-#   else
+#else
    sprintf(nm, "nm --defined-only %s", O.path);
-#   endif
+#endif
    FILE* f = ::popen(nm, "r");
    if (f) {
       while (::fgets(line, sizeof(line) - 1, f)) {
@@ -27,11 +27,11 @@ static inline void nm_demangle(h2_list& symbols)
 {
    h2_memory::hook(false);
    char nm[256], line[2048], addr[128], type, name[2048];
-#   if defined __APPLE__
+#if defined __APPLE__
    sprintf(nm, "nm -f bsd --demangle -U -n %s", O.path);
-#   else
+#else
    sprintf(nm, "nm -f bsd --demangle --defined-only -n %s", O.path);
-#   endif
+#endif
    FILE* f = ::popen(nm, "r");
    if (f) {
       while (::fgets(line, sizeof(line) - 1, f)) {

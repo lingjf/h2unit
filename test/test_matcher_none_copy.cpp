@@ -195,7 +195,9 @@ SUITE(non_copy)
       Rv_reset();
 
       const Rv& r2 = rv;
+      OK(VisZero, r2);
       auto r3 = static_cast<Rv>(r2);
+      OK(VisZero, r3);
       OK(1, Rv_times());
    }
 }
