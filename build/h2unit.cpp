@@ -1,5 +1,5 @@
 
-/* v5.15 2021-11-06 13:50:01 */
+/* v5.15 2021-11-06 15:21:51 */
 /* https://github.com/lingjf/h2unit */
 /* Apache Licence 2.0 */
 #include "h2unit.hpp"
@@ -2263,23 +2263,13 @@ struct h2_json_node : h2_libc {
    bool is_array() const { return t_array == type; }
    bool is_object() const { return t_object == type; }
 
-   h2_string quote_if(int quote) const
-   {
-      switch (quote) {
-         case 1: return "'";
-         case 2: return "\"";
-         case 3: return "\\\"";
-         default: return "";
-      }
-   }
-
-   h2_string format_value(int quote) const
+   h2_string format_value(const char* quote) const
    {
       switch (type) {
          case t_null: return "null";
          case t_boolean: return value_boolean ? "true" : "false";
          case t_number: return (value_double - ::floor(value_double) == 0) ? std::to_string((long long)value_double).c_str() : std::to_string(value_double).c_str();
-         case t_string: return quote_if(quote) + value_string + quote_if(quote);
+         case t_string: return quote + value_string + quote;
          case t_pattern: return "/" + value_string + "/";
          case t_array:
          case t_object:
@@ -2287,20 +2277,20 @@ struct h2_json_node : h2_libc {
       }
    }
 
-   void format(int& _type, h2_string& _key, h2_string& _value, int quote = 0) const
+   void format(int& _type, h2_string& _key, h2_string& _value, const char* quote = "") const
    {
       _type = type;
-      if (key_string.size()) _key = quote_if(quote) + key_string + quote_if(quote);
+      if (key_string.size()) _key = quote + key_string + quote;
       _value = format_value(quote);
    }
 
-   h2_lines format(bool fold, int quote = 0, size_t depth = 0, int next = 0) const
+   h2_lines format(bool fold, const char* quote = "", size_t depth = 0, int next = 0) const
    {
       h2_lines lines;
       h2_line line;
       line.indent(depth * 2);
       if (key_string.size())
-         line.push_back(quote_if(quote) + key_string + quote_if(quote) + ": ");
+         line.push_back(quote + key_string + quote + ": ");
       if (is_array() || is_object()) {
          h2_lines children_lines;
          h2_list_for_each_entry (p, i, children, h2_json_node, x)
@@ -2798,8 +2788,8 @@ struct h2_json_dual : h2_libc {  // Combine two node into a dual
    h2_json_dual(h2_json_node* e, h2_json_node* a, bool caseless, size_t depth_ = 0, int relationship_ = 0) : depth(depth_), relationship(relationship_)
    {
       if (e) index = e->index;
-      if (e) e->format(e_type, e_key, e_value, 2);
-      if (a) a->format(a_type, a_key, a_value, 2);
+      if (e) e->format(e_type, e_key, e_value, "\"");
+      if (a) a->format(a_type, a_key, a_value, "\"");
       key_equal = e_key.equals(a_key, caseless);
       value_match = h2_json_match::match(e, a, caseless);
 
@@ -2888,8 +2878,8 @@ h2_inline h2_lines h2_json::dump(const h2_string& json_string)
 {
    h2_json_tree tree(json_string.c_str());
    if (tree.illformed) return {tree.serialize()};
-   h2_lines lines = tree.format(O.fold_json, O.copy_paste_json);
-   if (O.copy_paste_json) {
+   h2_lines lines = tree.format(O.fold_json, O.json_source_quote);
+   if (!h2_blank(O.json_source_quote)) {
       if (!lines.empty()) {
          lines.front() = "\"" + lines.front();
          lines.back() = lines.back() + "\"";
@@ -2909,7 +2899,7 @@ h2_inline h2_string h2_json::select(const h2_string& json_string, const h2_strin
    if (tree.illformed) return json_string;
    h2_json_node* node = tree.select(selector.c_str(), caseless);
    if (!node) return "";
-   return node->format(O.fold_json, 2).string();
+   return node->format(O.fold_json, "\"").string();
 }
 
 h2_inline int h2_json::match(const h2_string& expect, const h2_string& actual, bool caseless)
@@ -4037,7 +4027,7 @@ struct h2_exception {
 #else
       h2_stubs::add(I().stubs, (void*)abi::__cxa_throw, (void*)__cxa_throw, "__cxa_throw", H2_FILE);
 #endif
-      if (!O.debug) h2_crash::install();
+      if (!O.debugger_trap) h2_crash::install();
    }
 };
 // source/stub/h2_e9.cpp
@@ -4967,8 +4957,8 @@ h2_inline void h2_case::post_cleanup()
    stats.footprint = h2_memory::stack::footprint();
    dnses.clear();
    h2_stubs::clear(stubs);
-   failing(h2_mocks::clear(mocks, true), true, O.contiguous);
-   failing(h2_memory::stack::pop(), true, O.contiguous);
+   failing(h2_mocks::clear(mocks, true), true, O.continue_assert);
+   failing(h2_memory::stack::pop(), true, O.continue_assert);
 }
 
 h2_inline void h2_case::failing(h2_fail* fail, bool defer, bool append)
@@ -5018,7 +5008,7 @@ h2_inline void h2_suite::test(h2_case* c)
    try {
       test_code(this, c); /* include Setup(); c->post_setup() and c->prev_cleanup(); Cleanup() */
    } catch (...) {
-      c->failing(h2_fail::new_exception("was thrown but uncaught", h2_exception::I().last_type, h2_exception::I().last_bt), true, O.contiguous);
+      c->failing(h2_fail::new_exception("was thrown but uncaught", h2_exception::I().last_type, h2_exception::I().last_bt), true, O.continue_assert);
    }
    c->post_cleanup();
 }
@@ -5171,7 +5161,7 @@ h2_inline int h2_runner::main(int argc, const char** argv)
          for (auto& setup : global_suite_setups) setup();
          s->setup();
          h2_list_for_each_entry (c, s->cases, h2_case, x) {
-            if ((0 < O.break_after_fails && O.break_after_fails <= stats.failed) || (O.last_failed && !c->last_failed)) c->ignored = true;
+            if ((0 < O.break_after_fails && O.break_after_fails <= stats.failed) || (O.only_last_failed && !c->last_failed)) c->ignored = true;
             if (c->ignored)
                stats.ignored++, s->stats.ignored++;
             else if (c->filtered)
@@ -5181,7 +5171,7 @@ h2_inline int h2_runner::main(int argc, const char** argv)
 
             current_case = (void*)c;
             h2_report::I().on_case_start(s, c);
-            if (!O.list_cases && !c->todo && !c->filtered && !c->ignored) {
+            if (!O.list_cases.size() && !c->todo && !c->filtered && !c->ignored) {
                for (auto& setup : global_case_setups) setup();
                s->test(c);
                for (auto& cleanup : global_case_cleanups) cleanup();
@@ -5203,7 +5193,7 @@ h2_inline int h2_runner::main(int argc, const char** argv)
    h2_stubs::clear(stubs);
    h2_mocks::clear(mocks, false);
    h2_memory::finalize();
-   return O.verbose >= 6 ? stats.failed : 0;
+   return O.quit_exit_code ? stats.failed : 0;
 }
 
 h2_inline void h2_runner::stub(void* srcfp, void* dstfp, const char* srcfn, const char* file)
@@ -5241,8 +5231,8 @@ h2_inline void h2_runner::mock(void* mocker)
 h2_inline void h2_runner::failing(h2_fail* fail)
 {
    if (!fail) return;
-   if (O.debug) h2_debugger::trap();
-   if (h2_runner::I().current_case) ((h2_case*)h2_runner::I().current_case)->failing(fail, O.contiguous, true);
+   if (O.debugger_trap) h2_debugger::trap();
+   if (h2_runner::I().current_case) ((h2_case*)h2_runner::I().current_case)->failing(fail, O.continue_assert, true);
 }
 
 h2_inline void h2_runner::asserts()
@@ -5498,7 +5488,7 @@ struct h2_fail_json : h2_fail_unexpect {
 
       h2_lines e_lines, a_lines;
       h2_fail_unexpect::print(si, ci);
-      if (O.copy_paste_json || !h2_json::diff(e_value, a_value, e_lines, a_lines, caseless)) {
+      if (!h2_blank(O.json_source_quote) || !h2_json::diff(e_value, a_value, e_lines, a_lines, caseless)) {
          e_lines = h2_json::dump(e_value);
          a_lines = h2_json::dump(a_value);
          for (size_t i = 0; i < e_lines.size(); ++i)
@@ -5777,7 +5767,12 @@ struct h2_report_impl {
 
 struct h2_report_list : h2_report_impl {
    int unfiltered_suite_index = 0, unfiltered_suite_case_index = 0, unfiltered_runner_case_index = 0;
-
+   bool option_has(const char* type)
+   {
+      for (auto t : O.list_cases)
+         if (!strcasecmp("all", t) || !strcasecmp(type, t)) return true;
+      return false;
+   }
    void on_runner_endup(h2_runner* r) override
    {
       h2_report_impl::on_runner_endup(r);
@@ -5792,7 +5787,7 @@ struct h2_report_list : h2_report_impl {
       if (!s->name) return;  // CASE
       if (s->filtered) return;
       ++unfiltered_suite_index;
-      if (O.list_cases & 1) {
+      if (option_has("suite")) {
          h2_color::prints("dark gray", "SUITE-%d. ", unfiltered_suite_index);
          h2_color::prints("bold,blue", "%s", s->name);
          h2_color::prints("dark gray", " %s\n", s->file);
@@ -5804,14 +5799,14 @@ struct h2_report_list : h2_report_impl {
       if (s->filtered) return;
       const char* type = nullptr;
       if (c->todo) {
-         if (O.list_cases & 4) type = s->name ? "Todo" : "TODO";
+         if (option_has("todo")) type = s->name ? "Todo" : "TODO";
       } else {
-         if (O.list_cases & 2) type = s->name ? "Case" : "CASE";
+         if (option_has("case")) type = s->name ? "Case" : "CASE";
       }
 
       if (type) {
          ++unfiltered_runner_case_index, ++unfiltered_suite_case_index;
-         if (O.list_cases & 1)
+         if (option_has("suite"))
             h2_color::prints("dark gray", " %s/%d-%d. ", type, unfiltered_suite_case_index, unfiltered_runner_case_index);
          else
             h2_color::prints("dark gray", " %s-%d. ", type, unfiltered_runner_case_index);
@@ -6039,7 +6034,7 @@ h2_inline void h2_report::initialize()
    static h2_report_console console_report;
    static h2_report_junit junit_report;
    static h2_report_tap tap_report;
-   if (O.list_cases) {
+   if (O.list_cases.size()) {
       I().reports.push_back(list_report.x);
    } else {
       I().reports.push_back(console_report.x);
@@ -6169,28 +6164,27 @@ h2_inline h2_lines h2_layout::seperate(const h2_line& up_line, const h2_line& do
 /* clang-format off */
 static inline void usage()
 {
-#define H2_USAGE_SP "\033[90m│\033[0m"
+   ::printf(" \033[90mhttps://github.com/lingjf/\033[0m\033[32mh2unit\033[0m \033[90mv\033[0m%s \n", H2PP_STR(H2UNIT_VERSION));
 #define H2_USAGE_BR "\033[90m├─────┼───────────┼────────────────────────────────────────────────────────────┤\033[0m\n"
-   char b[] = "\033[90m┌─────┬───────────┬────────────────────────────────────────────────────────────┐\033[0m\n"
-              H2_USAGE_SP " -\033[36ma\033[0m  " H2_USAGE_SP "           " H2_USAGE_SP " \033[36ma\033[0mttend to last failed cases                                " H2_USAGE_SP "\n" H2_USAGE_BR
-              H2_USAGE_SP " -\033[36mb\033[0m  " H2_USAGE_SP "    \033[90m[\033[0mn\033[90m]\033[0m    " H2_USAGE_SP " \033[36mb\033[0mreak test once n (default 1) cases failed                 " H2_USAGE_SP "\n" H2_USAGE_BR
-              H2_USAGE_SP " -\033[36mc\033[0m  " H2_USAGE_SP "           " H2_USAGE_SP " Output in black-white \033[36mc\033[0molor style                          " H2_USAGE_SP "\n" H2_USAGE_BR
-              H2_USAGE_SP " -\033[36md\033[0m  " H2_USAGE_SP "           " H2_USAGE_SP " \033[36md\033[0mebug with gdb once failure occurred                       " H2_USAGE_SP "\n" H2_USAGE_BR
-              H2_USAGE_SP " -\033[36mf\033[0m  " H2_USAGE_SP "    \033[90m[\033[0mn\033[90m]\033[0m    " H2_USAGE_SP " \033[36mf\033[0mold JSON object or array, bigger n more folded            " H2_USAGE_SP "\n" H2_USAGE_BR
-              H2_USAGE_SP " -\033[36mg\033[0m  " H2_USAGE_SP "           " H2_USAGE_SP " conti\033[36mg\033[0muous case asserts despite failure                    " H2_USAGE_SP "\n" H2_USAGE_BR
-              H2_USAGE_SP " -\033[36mi\033[0m/\033[36me\033[0m" H2_USAGE_SP "\033[90m[\033[0mpattern .\033[90m]\033[0m" H2_USAGE_SP " \033[36mi\033[0mnclude/\033[36me\033[0mxclude case, suite or file by substr/wildcard     " H2_USAGE_SP "\n" H2_USAGE_BR
-              H2_USAGE_SP " -\033[36mj\033[0m  " H2_USAGE_SP "  \033[90m[\033[0mpath\033[90m]\033[0m   " H2_USAGE_SP " Generate \033[36mj\033[0munit report, default is <executable>.junit.xml   " H2_USAGE_SP "\n" H2_USAGE_BR
-              H2_USAGE_SP " -\033[36ml\033[0m  " H2_USAGE_SP "  \033[90m[\033[0mtype .\033[90m]\033[0m " H2_USAGE_SP " \033[36ml\033[0mist out suites and cases, type [suite case todo]          " H2_USAGE_SP "\n" H2_USAGE_BR
-              H2_USAGE_SP " -\033[36mm\033[0m  " H2_USAGE_SP "           " H2_USAGE_SP " Test cases without \033[36mm\033[0memory check                            " H2_USAGE_SP "\n" H2_USAGE_BR
-              H2_USAGE_SP " -\033[36mp\033[0m  " H2_USAGE_SP "           " H2_USAGE_SP " Disable test percentage \033[36mp\033[0mrogressing bar                    " H2_USAGE_SP "\n" H2_USAGE_BR
-              H2_USAGE_SP " -\033[36mr\033[0m  " H2_USAGE_SP "    \033[90m[\033[0mn\033[90m]\033[0m    " H2_USAGE_SP " Repeat test n (default 2) \033[36mr\033[0mounds                           " H2_USAGE_SP "\n" H2_USAGE_BR
-              H2_USAGE_SP " -\033[36ms\033[0m  " H2_USAGE_SP "           " H2_USAGE_SP " \033[36ms\033[0mhuffle cases then test in random order if no last failed  " H2_USAGE_SP "\n" H2_USAGE_BR
-              H2_USAGE_SP " -\033[36mv\033[0m  " H2_USAGE_SP "    \033[90m[\033[0mn\033[90m]\033[0m    " H2_USAGE_SP " \033[36mv\033[0merbose, 0:quiet 1/2:compact 3:normal 4:details            " H2_USAGE_SP "\n" H2_USAGE_BR
-              H2_USAGE_SP " -\033[36mx\033[0m  " H2_USAGE_SP "           " H2_USAGE_SP " Thrown e\033[36mx\033[0mception is considered as failure                  " H2_USAGE_SP "\n" H2_USAGE_BR
-              H2_USAGE_SP " -\033[36my\033[0m  " H2_USAGE_SP "    \033[90m[\033[0mn\033[90m]\033[0m    " H2_USAGE_SP " Cop\033[36my\033[0m-paste-able C/C++ source code formatted JSON           " H2_USAGE_SP "\n"
-              "\033[90m└─────┴───────────┴────────────────────────────────────────────────────────────┘\033[0m\n";
-
-   ::printf(" \033[90mhttps://github.com/lingjf/\033[0m\033[32mh2unit\033[0m \033[90mv\033[0m%-5s \n%s", H2PP_STR(H2UNIT_VERSION), b);
+   ::printf("\033[90m┌─────┬───────────┬────────────────────────────────────────────────────────────┐\033[0m\n"
+            "\033[90m│\033[0m" " -\033[36mb\033[0m  "                               "\033[90m│\033[0m" "   \033[90m[\033[0mn=1\033[90m]\033[0m   "     "\033[90m│\033[0m" " \033[36mb\033[0mreak test once n (default 1) cases failed                 "                               "\033[90m│\033[0m\n" H2_USAGE_BR
+            "\033[90m│\033[0m" " -\033[36mc\033[0m  "                               "\033[90m│\033[0m" "           "                                   "\033[90m│\033[0m" " \033[36mc\033[0montinue asserts even if failure occurred                  "                               "\033[90m│\033[0m\n" H2_USAGE_BR
+            "\033[90m│\033[0m" " -\033[36md\033[0m  "                               "\033[90m│\033[0m" "           "                                   "\033[90m│\033[0m" " \033[36md\033[0mebug with gdb once failure occurred                       "                               "\033[90m│\033[0m\n" H2_USAGE_BR
+            "\033[90m│\033[0m" " -\033[36mf\033[0m  "                               "\033[90m│\033[0m" "           "                                   "\033[90m│\033[0m" " Only test last \033[36mf\033[0mailed cases                                "                               "\033[90m│\033[0m\n" H2_USAGE_BR
+            "\033[90m│\033[0m" " -\033[36mi\033[0m\033[90m/\033[0m\033[36me\033[0m" "\033[90m│\033[0m" "\033[90m[\033[0mpattern .\033[90m]\033[0m"     "\033[90m│\033[0m" " \033[36mi\033[0mnclude\033[90m/\033[0m\033[36me\033[0mxclude case suite or file by substr wildcard      " "\033[90m│\033[0m\n" H2_USAGE_BR
+            "\033[90m│\033[0m" " -\033[36mj\033[0m  "                               "\033[90m│\033[0m" "  \033[90m[\033[0mn=max\033[90m]\033[0m  "     "\033[90m│\033[0m" " Fold \033[36mj\033[0mson print, 0:unfold 1:short 2:same 3:single          "                               "\033[90m│\033[0m\n" H2_USAGE_BR
+            "\033[90m│\033[0m" " -\033[36ml\033[0m  "                               "\033[90m│\033[0m" "  \033[90m[\033[0mtype .\033[90m]\033[0m "     "\033[90m│\033[0m" " \033[36ml\033[0mist out suites and cases, type [suite case todo]          "                               "\033[90m│\033[0m\n" H2_USAGE_BR
+            "\033[90m│\033[0m" " -\033[36mm\033[0m  "                               "\033[90m│\033[0m" "           "                                   "\033[90m│\033[0m" " Test cases without \033[36mm\033[0memory check                            "                               "\033[90m│\033[0m\n" H2_USAGE_BR
+            "\033[90m│\033[0m" " -\033[36mn\033[0m  "                               "\033[90m│\033[0m" "   \033[90m[\033[0mn=2\033[90m]\033[0m   "     "\033[90m│\033[0m" " Repeat test \033[36mn\033[0m (default 2) rounds                           "                               "\033[90m│\033[0m\n" H2_USAGE_BR
+            "\033[90m│\033[0m" " -\033[36mo\033[0m  "                               "\033[90m│\033[0m" "  \033[90m[\033[0mpath\033[90m]\033[0m   "     "\033[90m│\033[0m" " \033[36mo\033[0mutput junit report, default is <executable>.junit.xml     "                               "\033[90m│\033[0m\n" H2_USAGE_BR
+            "\033[90m│\033[0m" " -\033[36mp\033[0m  "                               "\033[90m│\033[0m" "           "                                   "\033[90m│\033[0m" " Disable test percentage \033[36mp\033[0mrogressing bar                    "                               "\033[90m│\033[0m\n" H2_USAGE_BR
+            "\033[90m│\033[0m" " -\033[36mq\033[0m  "                               "\033[90m│\033[0m" "           "                                   "\033[90m│\033[0m" " \033[36mq\033[0muit exit code as failed cases count                       "                               "\033[90m│\033[0m\n" H2_USAGE_BR
+            "\033[90m│\033[0m" " -\033[36mr\033[0m  "                               "\033[90m│\033[0m" "           "                                   "\033[90m│\033[0m" " test cases in \033[36mr\033[0mandom order if no last failed               "                               "\033[90m│\033[0m\n" H2_USAGE_BR
+            "\033[90m│\033[0m" " -\033[36ms\033[0m  "                               "\033[90m│\033[0m" "\033[90m[\033[0mtype=\\\\\\\"\033[90m]\033[0m" "\033[90m│\033[0m" " JSON C/C++ \033[36ms\033[0mource code, type [\\\'/single \\\"/double \\\\\\\"]    "                       "\033[90m│\033[0m\n" H2_USAGE_BR
+            "\033[90m│\033[0m" " -\033[36mv\033[0m  "                               "\033[90m│\033[0m" "  \033[90m[\033[0mn=max\033[90m]\033[0m  "     "\033[90m│\033[0m" " \033[36mv\033[0merbose, 0:quiet 1/2:compact 3:normal 4:details            "                               "\033[90m│\033[0m\n" H2_USAGE_BR
+            "\033[90m│\033[0m" " -\033[36mw\033[0m  "                               "\033[90m│\033[0m" "           "                                   "\033[90m│\033[0m" " Console output in black-\033[36mw\033[0mhite color style                  "                               "\033[90m│\033[0m\n" H2_USAGE_BR
+            "\033[90m│\033[0m" " -\033[36mx\033[0m  "                               "\033[90m│\033[0m" "           "                                   "\033[90m│\033[0m" " Thrown e\033[36mx\033[0mception is considered as failure                  "                               "\033[90m│\033[0m\n"
+            "\033[90m└─────┴───────────┴────────────────────────────────────────────────────────────┘\033[0m\n");
 }
 /* clang-format on */
 
@@ -6234,8 +6228,7 @@ struct getopt {
 
    void arguments(char* s)
    {
-      for (int k = 0; k < argc; ++k)
-         s += sprintf(s, " %s", args[k]);
+      for (int k = 0; k < argc; ++k) s += sprintf(s, " %s", args[k]);
    }
 };
 
@@ -6248,42 +6241,47 @@ h2_inline void h2_option::parse(int argc, const char** argv)
    for (const char* t;;) {
       switch (get.next_option()) {
          case '\0': return;
-         case 'a': last_failed = true; break;
-         case 'b': break_after_fails = 1, get.extract_number(break_after_fails); break;
-         case 'c': colorful = !colorful; break;
-         case 'd': debug = true; break;
+         case 'b': get.extract_number(break_after_fails = 1); break;
+         case 'c': continue_assert = true; break;
+         case 'd': debugger_trap = true; break;
          case 'e':
             while ((t = get.extract_string())) excludes.push_back(t);
             break;
-         case 'f': fold_json = 0, get.extract_number(fold_json); break;
-         case 'g': contiguous = true; break;
+         case 'f': only_last_failed = true; break;
          case 'i':
             while ((t = get.extract_string())) includes.push_back(t);
             break;
-         case 'j':
+         case 'j': get.extract_number(fold_json = 0); break;
+         case 'l':
+            while ((t = get.extract_string())) list_cases.push_back(t);
+            if (!list_cases.size()) list_cases.push_back("all");
+            memory_check = false;
+            break;
+         case 'm': memory_check = !memory_check; break;
+         case 'n': get.extract_number(run_rounds = 2); break;
+         case 'o':
             sprintf(junit_path, "%s.junit.xml", path);
             if ((t = get.extract_string())) strcpy(junit_path, t);
             break;
-         case 'l':
-            while ((t = get.extract_string())) {
-               if (!strcasecmp("suite", t)) list_cases |= 1;
-               if (!strcasecmp("case", t)) list_cases |= 2;
-               if (!strcasecmp("todo", t)) list_cases |= 4;
-            }
-            if (!list_cases) list_cases = 1 | 2 | 4;
-            break;
-         case 'm': memory_check = !memory_check; break;
          case 'p': progressing = !progressing; break;
-         case 'r': run_rounds = 2, get.extract_number(run_rounds); break;
-         case 's': shuffle_cases = true; break;
-         case 'v': verbose = 8, get.extract_number(verbose); break;
+         case 'q': quit_exit_code = true; break;
+         case 'r': shuffle_cases = true; break;
+         case 's':
+            json_source_quote = "\\\"";
+            if ((t = get.extract_string())) {
+               json_source_quote = t;
+               if (!strcasecmp("single", t)) json_source_quote = "\'";
+               if (!strcasecmp("double", t)) json_source_quote = "\"";
+               if (strcasecmp("\'", t) && strcasecmp("\"", t) && strcasecmp("\\\"", t)) json_source_quote = "\\\"";
+            }
+            break;
+         case 'v': get.extract_number(verbose = 8); break;
+         case 'w': colorful = !colorful; break;
          case 'x': exception_as_fail = true; break;
-         case 'y': copy_paste_json = 3, get.extract_number(copy_paste_json); break;
          case 'h':
          case '?': usage(); exit(0);
       }
    }
-   if (list_cases) memory_check = false;
 }
 
 static inline bool match3(const std::vector<const char*>& patterns, const char* subject)

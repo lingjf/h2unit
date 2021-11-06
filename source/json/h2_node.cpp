@@ -55,23 +55,13 @@ struct h2_json_node : h2_libc {
    bool is_array() const { return t_array == type; }
    bool is_object() const { return t_object == type; }
 
-   h2_string quote_if(int quote) const
-   {
-      switch (quote) {
-         case 1: return "'";
-         case 2: return "\"";
-         case 3: return "\\\"";
-         default: return "";
-      }
-   }
-
-   h2_string format_value(int quote) const
+   h2_string format_value(const char* quote) const
    {
       switch (type) {
          case t_null: return "null";
          case t_boolean: return value_boolean ? "true" : "false";
          case t_number: return (value_double - ::floor(value_double) == 0) ? std::to_string((long long)value_double).c_str() : std::to_string(value_double).c_str();
-         case t_string: return quote_if(quote) + value_string + quote_if(quote);
+         case t_string: return quote + value_string + quote;
          case t_pattern: return "/" + value_string + "/";
          case t_array:
          case t_object:
@@ -79,20 +69,20 @@ struct h2_json_node : h2_libc {
       }
    }
 
-   void format(int& _type, h2_string& _key, h2_string& _value, int quote = 0) const
+   void format(int& _type, h2_string& _key, h2_string& _value, const char* quote = "") const
    {
       _type = type;
-      if (key_string.size()) _key = quote_if(quote) + key_string + quote_if(quote);
+      if (key_string.size()) _key = quote + key_string + quote;
       _value = format_value(quote);
    }
 
-   h2_lines format(bool fold, int quote = 0, size_t depth = 0, int next = 0) const
+   h2_lines format(bool fold, const char* quote = "", size_t depth = 0, int next = 0) const
    {
       h2_lines lines;
       h2_line line;
       line.indent(depth * 2);
       if (key_string.size())
-         line.push_back(quote_if(quote) + key_string + quote_if(quote) + ": ");
+         line.push_back(quote + key_string + quote + ": ");
       if (is_array() || is_object()) {
          h2_lines children_lines;
          h2_list_for_each_entry (p, i, children, h2_json_node, x)

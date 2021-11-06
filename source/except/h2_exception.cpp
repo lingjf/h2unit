@@ -30,6 +30,6 @@ struct h2_exception {
 #else
       h2_stubs::add(I().stubs, (void*)abi::__cxa_throw, (void*)__cxa_throw, "__cxa_throw", H2_FILE);
 #endif
-      if (!O.debug) h2_crash::install();
+      if (!O.debugger_trap) h2_crash::install();
    }
 };

@@ -37,7 +37,12 @@ struct h2_report_impl {
 
 struct h2_report_list : h2_report_impl {
    int unfiltered_suite_index = 0, unfiltered_suite_case_index = 0, unfiltered_runner_case_index = 0;
-
+   bool option_has(const char* type)
+   {
+      for (auto t : O.list_cases)
+         if (!strcasecmp("all", t) || !strcasecmp(type, t)) return true;
+      return false;
+   }
    void on_runner_endup(h2_runner* r) override
    {
       h2_report_impl::on_runner_endup(r);
@@ -52,7 +57,7 @@ struct h2_report_list : h2_report_impl {
       if (!s->name) return;  // CASE
       if (s->filtered) return;
       ++unfiltered_suite_index;
-      if (O.list_cases & 1) {
+      if (option_has("suite")) {
          h2_color::prints("dark gray", "SUITE-%d. ", unfiltered_suite_index);
          h2_color::prints("bold,blue", "%s", s->name);
          h2_color::prints("dark gray", " %s\n", s->file);
@@ -64,14 +69,14 @@ struct h2_report_list : h2_report_impl {
       if (s->filtered) return;
       const char* type = nullptr;
       if (c->todo) {
-         if (O.list_cases & 4) type = s->name ? "Todo" : "TODO";
+         if (option_has("todo")) type = s->name ? "Todo" : "TODO";
       } else {
-         if (O.list_cases & 2) type = s->name ? "Case" : "CASE";
+         if (option_has("case")) type = s->name ? "Case" : "CASE";
       }
 
       if (type) {
          ++unfiltered_runner_case_index, ++unfiltered_suite_case_index;
-         if (O.list_cases & 1)
+         if (option_has("suite"))
             h2_color::prints("dark gray", " %s/%d-%d. ", type, unfiltered_suite_case_index, unfiltered_runner_case_index);
          else
             h2_color::prints("dark gray", " %s-%d. ", type, unfiltered_runner_case_index);
@@ -299,7 +304,7 @@ h2_inline void h2_report::initialize()
    static h2_report_console console_report;
    static h2_report_junit junit_report;
    static h2_report_tap tap_report;
-   if (O.list_cases) {
+   if (O.list_cases.size()) {
       I().reports.push_back(list_report.x);
    } else {
       I().reports.push_back(console_report.x);

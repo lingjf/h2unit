@@ -1,5 +1,5 @@
 
-/* v5.15 2021-11-06 13:50:01 */
+/* v5.15 2021-11-06 15:21:51 */
 /* https://github.com/lingjf/h2unit */
 /* Apache Licence 2.0 */
 
@@ -970,7 +970,7 @@ struct h2_option {
    static constexpr char os = 'L';
 #elif defined __APPLE__
    static constexpr char os = 'm';
-#elif defined _WIN32 || defined __CYGWIN__ // +MinGW
+#elif defined _WIN32 || defined __CYGWIN__  // +MinGW
    static constexpr char os = 'W';
 #endif
 
@@ -978,20 +978,21 @@ struct h2_option {
    const char* path;
    bool colorful = true;
    bool progressing = true;
-   bool last_failed = false;
+   bool only_last_failed = false;
    bool shuffle_cases = false;
    bool memory_check = true;
-   bool contiguous = false;
+   bool continue_assert = false;
    bool exception_as_fail = false;
-   bool debug = false;
-   int list_cases = 0;
+   bool debugger_trap = false;
+   bool quit_exit_code = false;
    int break_after_fails = 0;
    int run_rounds = 1;
-   int fold_json = 9; // 0 unfold, 1 fold simple, 2 fold same, 3 fold peer-miss
-   int copy_paste_json = 0; // 0 no quote, 1 quote by ', 2 quote by ", 3 quote by \"
+   int fold_json = 5;  // 0 unfold, 1 fold short, 2 fold same, 3 fold single
    int verbose = verbose_normal;
+   const char* json_source_quote = "";
    char junit_path[256]{'\0'};
    char tap_path[256]{'\0'};
+   std::vector<const char*> list_cases;
    std::vector<const char*> includes, excludes;
 
    void parse(int argc, const char** argv);
@@ -2960,7 +2961,7 @@ struct h2_debugger {
 
 #define h2_debug(shift, ...)                                                        \
    do {                                                                             \
-      if (!O.debug) {                                                               \
+      if (!O.debugger_trap) {                                                       \
          h2_color::prints("", __VA_ARGS__);                                         \
          h2_color::prints("", " %s : %d = %s\n", __FILE__, __LINE__, __FUNCTION__); \
          h2_backtrace::dump(shift).print(3);                                        \

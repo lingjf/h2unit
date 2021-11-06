@@ -4,7 +4,7 @@ struct h2_debugger {
 
 #define h2_debug(shift, ...)                                                        \
    do {                                                                             \
-      if (!O.debug) {                                                               \
+      if (!O.debugger_trap) {                                                       \
          h2_color::prints("", __VA_ARGS__);                                         \
          h2_color::prints("", " %s : %d = %s\n", __FILE__, __LINE__, __FUNCTION__); \
          h2_backtrace::dump(shift).print(3);                                        \

@@ -132,7 +132,7 @@ h2_inline int h2_runner::main(int argc, const char** argv)
          for (auto& setup : global_suite_setups) setup();
          s->setup();
          h2_list_for_each_entry (c, s->cases, h2_case, x) {
-            if ((0 < O.break_after_fails && O.break_after_fails <= stats.failed) || (O.last_failed && !c->last_failed)) c->ignored = true;
+            if ((0 < O.break_after_fails && O.break_after_fails <= stats.failed) || (O.only_last_failed && !c->last_failed)) c->ignored = true;
             if (c->ignored)
                stats.ignored++, s->stats.ignored++;
             else if (c->filtered)
@@ -142,7 +142,7 @@ h2_inline int h2_runner::main(int argc, const char** argv)
 
             current_case = (void*)c;
             h2_report::I().on_case_start(s, c);
-            if (!O.list_cases && !c->todo && !c->filtered && !c->ignored) {
+            if (!O.list_cases.size() && !c->todo && !c->filtered && !c->ignored) {
                for (auto& setup : global_case_setups) setup();
                s->test(c);
                for (auto& cleanup : global_case_cleanups) cleanup();
@@ -164,7 +164,7 @@ h2_inline int h2_runner::main(int argc, const char** argv)
    h2_stubs::clear(stubs);
    h2_mocks::clear(mocks, false);
    h2_memory::finalize();
-   return O.verbose >= 6 ? stats.failed : 0;
+   return O.quit_exit_code ? stats.failed : 0;
 }
 
 h2_inline void h2_runner::stub(void* srcfp, void* dstfp, const char* srcfn, const char* file)
@@ -202,8 +202,8 @@ h2_inline void h2_runner::mock(void* mocker)
 h2_inline void h2_runner::failing(h2_fail* fail)
 {
    if (!fail) return;
-   if (O.debug) h2_debugger::trap();
-   if (h2_runner::I().current_case) ((h2_case*)h2_runner::I().current_case)->failing(fail, O.contiguous, true);
+   if (O.debugger_trap) h2_debugger::trap();
+   if (h2_runner::I().current_case) ((h2_case*)h2_runner::I().current_case)->failing(fail, O.continue_assert, true);
 }
 
 h2_inline void h2_runner::asserts()

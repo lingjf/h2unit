@@ -18,8 +18,8 @@ h2_inline void h2_case::post_cleanup()
    stats.footprint = h2_memory::stack::footprint();
    dnses.clear();
    h2_stubs::clear(stubs);
-   failing(h2_mocks::clear(mocks, true), true, O.contiguous);
-   failing(h2_memory::stack::pop(), true, O.contiguous);
+   failing(h2_mocks::clear(mocks, true), true, O.continue_assert);
+   failing(h2_memory::stack::pop(), true, O.continue_assert);
 }
 
 h2_inline void h2_case::failing(h2_fail* fail, bool defer, bool append)

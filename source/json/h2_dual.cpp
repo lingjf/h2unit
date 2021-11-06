@@ -42,8 +42,8 @@ struct h2_json_dual : h2_libc {  // Combine two node into a dual
    h2_json_dual(h2_json_node* e, h2_json_node* a, bool caseless, size_t depth_ = 0, int relationship_ = 0) : depth(depth_), relationship(relationship_)
    {
       if (e) index = e->index;
-      if (e) e->format(e_type, e_key, e_value, 2);
-      if (a) a->format(a_type, a_key, a_value, 2);
+      if (e) e->format(e_type, e_key, e_value, "\"");
+      if (a) a->format(a_type, a_key, a_value, "\"");
       key_equal = e_key.equals(a_key, caseless);
       value_match = h2_json_match::match(e, a, caseless);
 

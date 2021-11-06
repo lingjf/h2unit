@@ -9,13 +9,21 @@ SUITE(h2_option)
    {
       const char* argv[] = {"./a.out"};
       c.parse(1, argv);
-      OK(3, c.verbose);
-      OK(!c.list_cases);
       OK(c.colorful);
+      OK(c.progressing);
+      OK(!c.only_last_failed);
       OK(!c.shuffle_cases);
       OK(c.memory_check);
-      OK(!c.break_after_fails);
+      OK(!c.continue_assert);
+      OK(!c.debugger_trap);
+      OK(!c.quit_exit_code);
+      OK(0,c.break_after_fails);
+      OK(!c.exception_as_fail);
+      OK(!c.list_cases.size());
       OK(1, c.run_rounds);
+      OK(5, c.fold_json);
+      OK(3, c.verbose);
+      OK("", c.json_source_quote);
    }
 
    Case(verbose -v)
@@ -43,40 +51,40 @@ SUITE(h2_option)
    {
       const char* argv[] = {"./a.out", "-l"};
       c.parse(2, argv);
-      OK(c.list_cases);
+      OK(ListOf("all"), c.list_cases);
    }
 
    Case(colorful)
    {
-      const char* argv[] = {"./a.out", "-c"};
+      const char* argv[] = {"./a.out", "-w"};
       c.parse(2, argv);
       OK(!c.colorful);
    }
 
    Case(rounds)
    {
-      const char* argv[] = {"./a.out", "-r"};
+      const char* argv[] = {"./a.out", "-n"};
       c.parse(2, argv);
       OK(2, c.run_rounds);
    }
 
-   Case(rounds - r1)
+   Case(rounds - n1)
    {
-      const char* argv[] = {"./a.out", "-r1"};
+      const char* argv[] = {"./a.out", "-n1"};
       c.parse(2, argv);
       OK(1, c.run_rounds);
    }
 
-   Case(rounds - r 4)
+   Case(rounds - n 4)
    {
-      const char* argv[] = {"./a.out", "-r", "4"};
+      const char* argv[] = {"./a.out", "-n", "4"};
       c.parse(3, argv);
       OK(4, c.run_rounds);
    }
 
    Case(shuffle memory_check break_after_fails)
    {
-      const char* argv[] = {"./a.out", "-smb"};
+      const char* argv[] = {"./a.out", "-rmb"};
       c.parse(2, argv);
       OK(c.shuffle_cases);
       OK(!c.memory_check);
@@ -114,7 +122,7 @@ SUITE(h2_option)
 
    Case(junit)
    {
-      const char* argv[] = {"./a.out", "-j", "jenkins.xml"};
+      const char* argv[] = {"./a.out", "-o", "jenkins.xml"};
       c.parse(3, argv);
       OK("jenkins.xml", c.junit_path);
    }

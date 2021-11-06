@@ -2,8 +2,8 @@ h2_inline h2_lines h2_json::dump(const h2_string& json_string)
 {
    h2_json_tree tree(json_string.c_str());
    if (tree.illformed) return {tree.serialize()};
-   h2_lines lines = tree.format(O.fold_json, O.copy_paste_json);
-   if (O.copy_paste_json) {
+   h2_lines lines = tree.format(O.fold_json, O.json_source_quote);
+   if (!h2_blank(O.json_source_quote)) {
       if (!lines.empty()) {
          lines.front() = "\"" + lines.front();
          lines.back() = lines.back() + "\"";
@@ -23,7 +23,7 @@ h2_inline h2_string h2_json::select(const h2_string& json_string, const h2_strin
    if (tree.illformed) return json_string;
    h2_json_node* node = tree.select(selector.c_str(), caseless);
    if (!node) return "";
-   return node->format(O.fold_json, 2).string();
+   return node->format(O.fold_json, "\"").string();
 }
 
 h2_inline int h2_json::match(const h2_string& expect, const h2_string& actual, bool caseless)
