@@ -113,16 +113,19 @@ SUITE(stringable)
       // #define __cplusplus 201703L
 
       // g++ -x c++ -std=c++2a -dM -E - </dev/null | grep __cplusplus
-      // #define __cplusplus 201709L
+      // #define __cplusplus 202002L
+
+      // g++ -x c++ -std=c++2b -dM -E - </dev/null | grep __cplusplus
+      // #define __cplusplus 202102L
 
       // https://docs.microsoft.com/en-us/cpp/preprocessor/predefined-macros
 
 #if __cplusplus >= 201703L || _MSVC_LANG >= 201703L
       OK(h2::h2_is_ostreamable<std::nullptr_t>::value);
 #else
-#   if !defined __clang__  // clang implement operator<<(std::nullptr_t) before C++ 17
+#if !defined __clang__  // clang implement operator<<(std::nullptr_t) before C++ 17
       OK(!h2::h2_is_ostreamable<std::nullptr_t>::value);
-#   endif
+#endif
 #endif
    }
 }

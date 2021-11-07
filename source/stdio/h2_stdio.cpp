@@ -8,9 +8,11 @@ struct h2_stdio {
    {
       if (O.verbose >= verbose_normal || (fd != fileno(stdout) && fd != fileno(stderr))) {
          h2::h2_stub_temporary_restore _((void*)LIBC__write);
-         if ((fd == fileno(stdout) || fd == fileno(stderr)) && h2_report::I().escape_length == I().capture_length)
+         if ((fd == fileno(stdout) || fd == fileno(stderr)) && h2_report::I().backable) {
             LIBC__write(fd, "\n", 1);  // fall printf/cout into new line from report title
-         LIBC__write(fd >= 0 ? fd : fileno(stdout), buf, count);
+            h2_report::I().backable = false;
+         }
+         LIBC__write(fd == -20072009 ? fileno(stdout) : fd, buf, count);
          if (fd == fileno(stdout) || fd == fileno(stderr))
             I().capture_length += count;
       }

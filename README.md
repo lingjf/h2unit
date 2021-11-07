@@ -1,7 +1,7 @@
 <a id="top"></a>
 [![Release](https://img.shields.io/github/release/lingjf/h2unit.svg)](https://github.com/lingjf/h2unit/releases)
 [![CI](https://github.com/lingjf/h2unit/actions/workflows/ci.yml/badge.svg)](https://github.com/lingjf/h2unit/actions/workflows/ci.yml)
-[![Standard](https://img.shields.io/badge/C%2B%2B-11/14/17/20-blue.svg)](https://en.wikipedia.org/wiki/C%2B%2B#Standardization)
+[![Standard](https://img.shields.io/badge/C%2B%2B-11/14/17/20/23-blue.svg)](https://en.wikipedia.org/wiki/C%2B%2B#Standardization)
 [![Linux](https://img.shields.io/badge/Linux-green.svg)]()
 [![macOS](https://img.shields.io/badge/macOS-green.svg)]()
 [![Windows](https://img.shields.io/badge/Windows-green.svg)]()

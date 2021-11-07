@@ -116,7 +116,7 @@ struct h2_report_console : h2_report_impl {
          title.printf("dark gray", "┊ ");
          title.printf("", "%s ", file);
       } else {
-         title = title.abbreviate(h2_console::width() - 20);
+         title = title.abbreviate(h2_console::width() - 10);
       }
       return title;
    }
@@ -128,17 +128,25 @@ struct h2_report_console : h2_report_impl {
    }
    void print_bar(bool percentage, const char* status_style, const char* status, h2_suite* s, h2_case* c, bool backable)
    {
-      if (!O.progressing && backable) return;
-      if (h2_report::I().escape_length == h2_stdio::I().capture_length)
+      static long long last_capture_length = 0;
+      if (last_capture_length == h2_stdio::I().capture_length)
          h2_console::prints("", "\33[2K\r"); /* clear line */
       else
          h2_console::prints("", "\n"); /* user output, new line */
-      h2_report::I().escape_length = backable ? h2_stdio::I().capture_length : -1;
+      last_capture_length = h2_stdio::I().capture_length;
+      h2_report::I().backable = O.progressing && backable;
 
+      if (!O.progressing && backable) return;
       h2_line bar;
       if (percentage && O.progressing) format_percentage(bar);
       if (status && status_style) bar.printf(status_style, "%s", status);
       if (s && c) bar += format_title(s->name, c->name, backable ? nullptr : h2_basefile(c->file));
+      if (backable) {
+         if (h2_console::width() > bar.width())
+            bar.padding(h2_console::width() - bar.width());
+         else
+            bar = bar.abbreviate(h2_console::width());
+      }
       h2_console::printl(bar, false);
    }
    void on_runner_endup(h2_runner* r) override
@@ -181,7 +189,7 @@ struct h2_report_console : h2_report_impl {
    {
       h2_report_impl::on_suite_endup(s);
       if (O.verbose >= 9 && O.includes.size() + O.excludes.size() == 0) {
-         print_bar(false, nullptr, nullptr, nullptr, nullptr, false);
+         print_bar(true, nullptr, nullptr, nullptr, nullptr, false);
          h2_console::prints("dark gray", "suite ");
          h2_console::prints("", "%s", ss(s->name));
          if (1 < nonzero_count(s->stats.passed, s->stats.failed, s->stats.todo, s->stats.filtered, s->stats.ignored))
@@ -213,6 +221,7 @@ struct h2_report_console : h2_report_impl {
             h2_console::prints("dark gray", ", ");
             h2_console::prints("", "%s", format_duration(s->stats.timecost));
          }
+         h2_console::prints("", "\n");
       }
    }
    void on_case_start(h2_suite* s, h2_case* c) override
@@ -230,8 +239,8 @@ struct h2_report_console : h2_report_impl {
       } else if (c->failed) {
          if (O.verbose >= verbose_compact_failed) {
             print_bar(true, "bold,red", "Failed ", s, c, false);
+            h2_console::prints("", "\n");
             if (O.verbose >= verbose_normal) {
-               h2_console::prints("", "\n");
                if (c->fails) c->fails->foreach([](h2_fail* fail, size_t si, size_t ci) { fail->print(si, ci); });
             }
          }
@@ -245,6 +254,7 @@ struct h2_report_console : h2_report_impl {
                if (0 < c->stats.timecost) ad.printf("dark gray", ad.width() ? ", " : "").printf("", "%s", format_duration(c->stats.timecost));
                if (ad.width()) h2_console::printl(gray("- ") + ad, false);
             }
+            h2_console::prints("", "\n");
          }
       }
    }

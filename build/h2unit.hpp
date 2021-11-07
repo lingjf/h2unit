@@ -1,11 +1,11 @@
 
-/* v5.15 2021-11-07 13:22:50 v5 45f7f5f */
+/* v5.15 2021-11-07 22:08:48 m0 13383d1 */
 /* https://github.com/lingjf/h2unit */
 /* Apache Licence 2.0 */
 
 #ifndef __H2UNIT_HPP__
 #define __H2UNIT_HPP__
-#define H2UNIT_REVISION 45f7f5f v5
+#define H2UNIT_REVISION 13383d1 m0
 #ifndef __H2_UNIT_HPP__
 #define __H2_UNIT_HPP__
 
@@ -3421,7 +3421,7 @@ struct h2_report {
    h2_singleton(h2_report);
    static void initialize();
 
-   long long escape_length = 0;
+   bool backable = false;
    h2_list reports;
    void on_runner_start(h2_runner* r);
    void on_runner_endup(h2_runner* r);
