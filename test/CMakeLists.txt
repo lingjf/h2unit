@@ -39,6 +39,7 @@ IF(MSVC)
     ADD_COMPILE_OPTIONS(/wd4805) #comparison operations between bool and int
     ADD_COMPILE_OPTIONS(/wd4834) #discarding return value of function
 ELSE()
+    ADD_COMPILE_OPTIONS(-Wall)
     ADD_COMPILE_OPTIONS(-Werror)
 ENDIF()
 

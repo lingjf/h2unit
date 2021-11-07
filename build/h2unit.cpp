@@ -1,5 +1,5 @@
 
-/* v5.15 2021-11-06 22:12:32 v5 8768700 */
+/* v5.15 2021-11-07 13:22:50 v5 45f7f5f */
 /* https://github.com/lingjf/h2unit */
 /* Apache Licence 2.0 */
 #include "h2unit.hpp"
@@ -1397,6 +1397,7 @@ h2_inline unsigned long long h2_load::ptr_to_addr(void* ptr)
 #endif
 }
 // source/symbol/h2_backtrace.cpp
+#if !defined _WIN32  // -MinGW
 static inline char* addr2line(unsigned long long addr)
 {
    static char buf[1024];
@@ -1418,7 +1419,9 @@ static inline char* addr2line(unsigned long long addr)
 #endif
    return buf;
 }
+#endif
 
+#if !(defined _MSC_VER || defined __CYGWIN__ || defined __MINGW32__ || defined __MINGW64__)
 static inline bool backtrace_extract(const char* line, char* mangle_name, unsigned long long* displacement = nullptr)
 {
    unsigned long long _t;
@@ -1437,6 +1440,7 @@ static inline bool backtrace_extract(const char* line, char* mangle_name, unsign
 #endif
    return false;
 }
+#endif
 
 h2_inline bool h2_backtrace::operator==(const h2_backtrace& bt) const
 {

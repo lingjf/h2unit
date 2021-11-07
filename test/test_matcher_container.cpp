@@ -1,3 +1,7 @@
+#if defined __clang__
+#pragma GCC diagnostic ignored "-Wrange-loop-analysis"
+#endif
+
 #include "../source/h2_unit.cpp"
 
 #include <vector>

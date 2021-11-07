@@ -28,7 +28,8 @@
 
 #if defined __GNUC__ || defined __clang__
 // #pragma clang diagnostic ignored === #pragma GCC diagnostic ignored
-#pragma GCC diagnostic ignored "-Wunused-variable"
+#pragma GCC diagnostic ignored "-Wparentheses"   // CP
+#pragma GCC diagnostic ignored "-Wsign-compare"  // (in)equation
 #pragma GCC diagnostic ignored "-Wint-to-pointer-cast"
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 #elif defined _MSC_VER

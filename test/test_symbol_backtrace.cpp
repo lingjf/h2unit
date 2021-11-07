@@ -35,6 +35,7 @@ SUITE(backtrace)
    }
 }
 
+#if defined __APPLE__ || defined __linux
 SUITE(backtrace extract)
 {
    char mangled[256] = "---";
@@ -91,3 +92,4 @@ SUITE(backtrace extract)
    }
 #endif
 }
+#endif

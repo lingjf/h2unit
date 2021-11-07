@@ -1,11 +1,11 @@
 
-/* v5.15 2021-11-06 22:12:32 v5 8768700 */
+/* v5.15 2021-11-07 13:22:50 v5 45f7f5f */
 /* https://github.com/lingjf/h2unit */
 /* Apache Licence 2.0 */
 
 #ifndef __H2UNIT_H__
 #define __H2UNIT_H__
-#define H2UNIT_REVISION 8768700 v5
+#define H2UNIT_REVISION 45f7f5f v5
 #ifndef __H2_UNIT_HPP__
 #define __H2_UNIT_HPP__
 
@@ -36,7 +36,8 @@
 
 #if defined __GNUC__ || defined __clang__
 // #pragma clang diagnostic ignored === #pragma GCC diagnostic ignored
-#pragma GCC diagnostic ignored "-Wunused-variable"
+#pragma GCC diagnostic ignored "-Wparentheses"   // CP
+#pragma GCC diagnostic ignored "-Wsign-compare"  // (in)equation
 #pragma GCC diagnostic ignored "-Wint-to-pointer-cast"
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 #elif defined _MSC_VER
@@ -1973,8 +1974,10 @@ struct h2_countof_matches : h2_matches {
    template <typename A>
    auto matches(const A& a, size_t n, h2_mc c) const -> typename std::enable_if<h2_is_container<typename std::decay<A>::type>::value, h2_fail*>::type
    {
+      // container size() is best, but forward_list haven't. iterator works all, regardless speed. https://en.cppreference.com/w/cpp/container
       size_t count = 0;
-      for (auto const& _ : a) count++; /* container size() is best, but forward_list haven't. iterator works all, regardless speed. https://en.cppreference.com/w/cpp/container */
+      for (auto first = a.cbegin(); first != a.cend(); ++first) count++;
+      // for (auto const& _ : a) count++;  Warning unused-variable
       return __matches(count, h2_representify(a), c);
    }
 
@@ -5044,6 +5047,7 @@ h2_inline unsigned long long h2_load::ptr_to_addr(void* ptr)
 #endif
 }
 // source/symbol/h2_backtrace.cpp
+#if !defined _WIN32  // -MinGW
 static inline char* addr2line(unsigned long long addr)
 {
    static char buf[1024];
@@ -5065,7 +5069,9 @@ static inline char* addr2line(unsigned long long addr)
 #endif
    return buf;
 }
+#endif
 
+#if !(defined _MSC_VER || defined __CYGWIN__ || defined __MINGW32__ || defined __MINGW64__)
 static inline bool backtrace_extract(const char* line, char* mangle_name, unsigned long long* displacement = nullptr)
 {
    unsigned long long _t;
@@ -5084,6 +5090,7 @@ static inline bool backtrace_extract(const char* line, char* mangle_name, unsign
 #endif
    return false;
 }
+#endif
 
 h2_inline bool h2_backtrace::operator==(const h2_backtrace& bt) const
 {

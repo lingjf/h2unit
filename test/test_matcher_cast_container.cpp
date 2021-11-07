@@ -1,4 +1,5 @@
 #include "../source/h2_unit.cpp"
+#include "test_types.hpp"
 
 #include <vector>
 #include <deque>

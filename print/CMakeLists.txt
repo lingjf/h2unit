@@ -36,6 +36,7 @@ ENDIF()
 IF(MSVC)
     
 ELSE()
+    ADD_COMPILE_OPTIONS(-Wall)
     ADD_COMPILE_OPTIONS(-Werror)
 ENDIF()
 

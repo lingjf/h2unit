@@ -1,3 +1,4 @@
+#if !defined _WIN32  // -MinGW
 static inline char* addr2line(unsigned long long addr)
 {
    static char buf[1024];
@@ -19,7 +20,9 @@ static inline char* addr2line(unsigned long long addr)
 #endif
    return buf;
 }
+#endif
 
+#if !(defined _MSC_VER || defined __CYGWIN__ || defined __MINGW32__ || defined __MINGW64__)
 static inline bool backtrace_extract(const char* line, char* mangle_name, unsigned long long* displacement = nullptr)
 {
    unsigned long long _t;
@@ -38,6 +41,7 @@ static inline bool backtrace_extract(const char* line, char* mangle_name, unsign
 #endif
    return false;
 }
+#endif
 
 h2_inline bool h2_backtrace::operator==(const h2_backtrace& bt) const
 {

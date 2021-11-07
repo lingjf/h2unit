@@ -80,8 +80,10 @@ struct h2_countof_matches : h2_matches {
    template <typename A>
    auto matches(const A& a, size_t n, h2_mc c) const -> typename std::enable_if<h2_is_container<typename std::decay<A>::type>::value, h2_fail*>::type
    {
+      // container size() is best, but forward_list haven't. iterator works all, regardless speed. https://en.cppreference.com/w/cpp/container
       size_t count = 0;
-      for (auto const& _ : a) count++; /* container size() is best, but forward_list haven't. iterator works all, regardless speed. https://en.cppreference.com/w/cpp/container */
+      for (auto first = a.cbegin(); first != a.cend(); ++first) count++;
+      // for (auto const& _ : a) count++;  Warning unused-variable
       return __matches(count, h2_representify(a), c);
    }
 

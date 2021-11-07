@@ -1,3 +1,15 @@
+#if defined(__GNUC__) && !defined(__clang__)
+#pragma GCC diagnostic ignored "-Wunused-but-set-variable"
+#endif
+
+#if defined(__GNUC__) && __GNUC__ >= 8 && !defined(__clang__)  // gcc >= 8
+#pragma GCC diagnostic ignored "-Wstringop-truncation"
+#endif
+
+#if defined(__GNUC__) && __GNUC__ == 7 && !defined(__clang__)  // gcc == 7
+#pragma GCC diagnostic ignored "-Wnoexcept-type"
+#endif
+
 #include "../source/h2_unit.cpp"
 #include "test_types.hpp"
 
@@ -12,9 +24,11 @@ GlobalSetup()
    WORD wVersionRequested;
    WSADATA wsaData;
 
-   int err;
    wVersionRequested = MAKEWORD(1, 1);
-   err = WSAStartup(wVersionRequested, &wsaData);
+   int nErrCode = WSAStartup(wVersionRequested, &wsaData);
+   if (nErrCode != 0) {
+      ::printf("WSAStartup() failed\n");
+   }
 }
 
 GlobalCleanup()

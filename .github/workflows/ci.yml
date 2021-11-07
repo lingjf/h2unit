@@ -416,13 +416,16 @@ jobs:
           - {os: ubuntu-18.04, cc: gcc-8, cxx: g++-8, apt: true}
           - {os: ubuntu-20.04, cc: gcc-9, cxx: g++-9, apt: false}
           - {os: ubuntu-20.04, cc: gcc-10, cxx: g++-10, apt: false}
-          - {os: ubuntu-20.04, cc: gcc-11, cxx: g++-11, apt: true} # http://www.gnu.org/software/gcc
+          - {os: ubuntu-20.04, cc: gcc-11, cxx: g++-11, apt: true} 
+          # http://www.gnu.org/software/gcc
           - {os: ubuntu-18.04, cc: clang-7, cxx: clang++-7, apt: true}
           - {os: ubuntu-18.04, cc: clang-8, cxx: clang++-8, apt: true}
           - {os: ubuntu-18.04, cc: clang-9, cxx: clang++-9, apt: false}
           - {os: ubuntu-20.04, cc: clang-10, cxx: clang++-10, apt: false}
           - {os: ubuntu-20.04, cc: clang-11, cxx: clang++-11, apt: false}
-          - {os: ubuntu-20.04, cc: clang-12, cxx: clang++-12, apt: false} # https://releases.llvm.org/download.html
+          - {os: ubuntu-20.04, cc: clang-12, cxx: clang++-12, apt: false} 
+          # - {os: ubuntu-20.04, cc: clang-13, cxx: clang++-13, apt: true} 
+          # https://releases.llvm.org/download.html
     name: linux-x86_64-${{matrix.cc}}
     steps:
       - uses: actions/checkout@v2
@@ -550,25 +553,70 @@ jobs:
       - name: ✨ run test with memory check
         run: LD_BIND_NOW=1 ./ci_test/a.out -rwpvqo
 
-  cpp:
-    runs-on: ${{matrix.os}}
+  cpp-linux:
+    runs-on: ubuntu-latest
+    env:
+      CC: gcc-11
+      CXX: g++-11
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - {os: ubuntu-latest, cpp: 14, sys: gcc-linux}
-          - {os: macos-latest, cpp: 14, sys: clang-macos}
-          - {os: windows-latest, cpp: 14, sys: msvc-windows}
-          - {os: ubuntu-latest, cpp: 17, sys: gcc-linux}
-          - {os: macos-latest, cpp: 17, sys: clang-macos}
-          - {os: windows-latest, cpp: 17, sys: msvc-windows}
-          - {os: ubuntu-latest, cpp: 20, sys: gcc-linux}
-          - {os: macos-latest, cpp: 20, sys: clang-macos}
-          - {os: windows-latest, cpp: 20, sys: msvc-windows}
-          - {os: ubuntu-latest, cpp: 23, sys: gcc-linux}
-          - {os: macos-latest, cpp: 23, sys: clang-macos}
-          - {os: windows-latest, cpp: 23, sys: msvc-windows}
-    name: c++${{matrix.cpp}}-${{matrix.sys}}
+        cpp: [14, 17, 20, 23]
+    name: c++${{matrix.cpp}}-gcc-linux
+    steps:
+      - uses: actions/checkout@v2
+      - name: install gcc-11 g++-11
+        run: |
+          sudo apt-get update
+          sudo apt-get install build-essential software-properties-common
+          sudo add-apt-repository ppa:ubuntu-toolchain-r/test
+          sudo apt-get update
+          sudo apt-get install gcc-11 g++-11
+      - name: configure print
+        run: cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_STANDARD=${{matrix.cpp}} -B ci_print print
+      - name: build print
+        run: cmake --build ci_print --config Release
+      - name: 🔨 run print
+        run: ./ci_print/a.out -e 'new[] free'
+      - name: configure test
+        run: cmake -DCMAKE_VERBOSE_MAKEFILE=ON -DCMAKE_CXX_STANDARD=${{matrix.cpp}} -B ci_test test
+      - name: 🏗️ build test
+        run: cmake --build ci_test -j2
+      - name: ✨ run test
+        run: ./ci_test/a.out -rwpvqo -e pthread
+
+  cpp-macos:
+    runs-on: macos-11
+    strategy:
+      fail-fast: false
+      matrix:
+        cpp: [14, 17, 20, 23]
+    name: c++${{matrix.cpp}}-clang-macos
+    steps:
+      - uses: actions/checkout@v2
+      - uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: 13.0
+      - name: configure print
+        run: cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_STANDARD=${{matrix.cpp}} -B ci_print print
+      - name: build print
+        run: cmake --build ci_print --config Release
+      - name: 🔨 run print
+        run: ./ci_print/a.out -e 'new[] free'
+      - name: configure test
+        run: cmake -DCMAKE_VERBOSE_MAKEFILE=ON -DCMAKE_CXX_STANDARD=${{matrix.cpp}} -B ci_test test
+      - name: 🏗️ build test
+        run: cmake --build ci_test -j2
+      - name: ✨ run test
+        run: ./ci_test/a.out -rwpvqo -e pthread
+
+  cpp-windows:
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        cpp: [14, 17, 20, 23]
+    name: c++${{matrix.cpp}}-msvc-windows
     steps:
       - uses: actions/checkout@v2
       - name: configure print

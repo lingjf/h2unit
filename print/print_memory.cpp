@@ -1,7 +1,11 @@
 #include "../build/h2unit.hpp"
 
-#if defined(__GNUC__) && __GNUC__ >= 7 && !defined(__clang__)  // gcc >= 7
+#if defined(__GNUC__) && __GNUC__ >= 7 && !defined(__clang__) // gcc >= 7
 #pragma GCC diagnostic ignored "-Wstringop-overflow"
+#endif
+
+#if defined(__GNUC__) && __GNUC__ >= 11 && !defined(__clang__) // gcc >= 11
+#pragma GCC diagnostic ignored "-Wmismatched-new-delete"
 #endif
 
 SUITE(Memory asymmetric allocate and free)
@@ -68,7 +72,7 @@ SUITE(Ilegal Access)
 
       struct tm* write_after_free = (struct tm*)malloc(sizeof(struct tm));
       free(write_after_free);
-      write_after_free->tm_sec = 42;
+      write_after_free->tm_sec = b;
    }
 }
 

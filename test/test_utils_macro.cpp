@@ -1,6 +1,12 @@
 
 #ifdef H2UNIT_SELF_UT
+
+#if defined __GNUC__ || defined __clang__
+#pragma GCC diagnostic ignored "-Wunused-variable"
+#pragma GCC diagnostic ignored "-Wunused-function"
+#endif
 #include "../source/h2_unit.cpp"
+
 #else
 
 // debug macro only

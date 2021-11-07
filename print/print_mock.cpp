@@ -112,4 +112,5 @@ CASE(mock abstract class)
    CA* a = dynamic_cast<CA*>(&b);
 
    STUBS(CA, fx, int, (int a, const char* b)) { return -1; };
+   STUBS(a, CA, fx, int, (int a, const char* b)) { return -1; };
 }

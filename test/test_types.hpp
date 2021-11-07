@@ -1,5 +1,6 @@
 
 #if defined __GNUC__ || defined __clang__
+#pragma GCC diagnostic ignored "-Wunused-variable"
 #pragma GCC diagnostic ignored "-Wunused-function"
 #endif
 
