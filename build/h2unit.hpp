@@ -1,11 +1,11 @@
 
-/* v5.15 2021-11-07 22:08:48 m0 13383d1 */
+/* v5.15 2021-11-13 00:08:20 v5 f8ec41f */
 /* https://github.com/lingjf/h2unit */
 /* Apache Licence 2.0 */
 
 #ifndef __H2UNIT_HPP__
 #define __H2UNIT_HPP__
-#define H2UNIT_REVISION 13383d1 m0
+#define H2UNIT_REVISION f8ec41f v5
 #ifndef __H2_UNIT_HPP__
 #define __H2_UNIT_HPP__
 

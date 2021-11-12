@@ -1,5 +1,5 @@
 
-/* v5.15 2021-11-07 22:08:48 m0 13383d1 */
+/* v5.15 2021-11-13 00:08:20 v5 f8ec41f */
 /* https://github.com/lingjf/h2unit */
 /* Apache Licence 2.0 */
 #include "h2unit.hpp"
@@ -5126,9 +5126,12 @@ h2_inline void h2_runner::shadow()
 
 h2_inline void h2_runner::enumerate()
 {
-   int cases = 0, i = 0;
-   if (O.progressing) h2_console::prints("", "enumerating...");
-   h2_list_for_each_entry (s, suites, h2_suite, x) {
+   double dots = 0, dps = (h2_console::width() - 11) / (suites.count() + 0.000001);
+   if (O.progressing) h2_console::prints("dark gray", "Collecting ");
+   h2_list_for_each_entry (s, i, suites, h2_suite, x) {
+      if (O.progressing)
+         for (; dots <= i * dps; dots++)
+            h2_console::prints("dark gray", ".");
       for (auto& setup : global_suite_setups) setup();
       s->setup();
       s->enumerate();
@@ -5139,8 +5142,6 @@ h2_inline void h2_runner::enumerate()
          if (!(c->filtered = O.filter(ss(s->name), c->name, c->file)))
             unfiltered++;
       if (unfiltered == 0) s->filtered = O.filter(ss(s->name), "", s->file);
-      cases += s->cases.count();
-      if (O.progressing && 10 * i + i * i < cases && i < (int)h2_console::width() - 20) h2_console::prints("", "."), ++i;
    }
    if (O.progressing) h2_console::prints("", "\33[2K\r");
 }
