@@ -1,37 +1,54 @@
 
 import os
-import time
+import sys
 import re
 import subprocess
+from datetime import datetime
+
+if sys.version_info > (3, 2):
+    from datetime import timezone, timedelta
+
+
+h2unit_version = '5.16'
 
 
 build_dir = os.path.dirname(os.path.realpath(__file__))
 
-def get_git_revision_hash():
+
+def get_date_time():
+    if sys.version_info > (3, 2):
+        return datetime.today().astimezone(timezone(timedelta(hours=+8))).strftime('%Y-%m-%d')
+    else:
+        return datetime.today().strftime('%Y-%m-%d')
+
+
+def get_git_commit_hash():
     return subprocess.check_output(['git', 'rev-parse', '--short', 'HEAD']).decode('ascii').strip()
 
-def get_git_active_branch():
-    return subprocess.check_output(['git', 'rev-parse', '--abbrev-ref', 'HEAD']).decode('ascii').strip()
 
-def read_version():
-    with open(os.path.join(build_dir, '../source/h2_unit.hpp'), 'r') as f:
-        for line in f:
-            version = re.match(r'#define H2UNIT_VERSION \s*(.*)', line)
-            if version:
-                return version.group(1)
-    return '    '
+def get_git_branch_tag():
+    c = 'git symbolic-ref -q --short HEAD || git describe --tags --exact-match --all'
+    t = subprocess.check_output(c, shell=True).decode('ascii').strip()
+    if not t.startswith('tags/'):
+        return 'branches/' + t
+    return t
 
-version_date = '/* v{0} {1} {2} {3} */'.format(read_version(), time.strftime('%Y-%m-%d %H:%M:%S', time.localtime()), get_git_active_branch(), get_git_revision_hash())
-github_url = '/* https://github.com/lingjf/h2unit */'
-copyright = '/* Apache Licence 2.0 */'
+
+def get_revision():
+    revision = get_date_time() + ' ' + get_git_branch_tag()
+    if len(sys.argv) > 1 and sys.argv[1] == 'release':
+        return revision + ':' + get_git_commit_hash()
+    return revision
 
 
 def copy_line(line, f):
     f.write(line)
 
+
 def copy_file(inf, outf):
     for line in inf:
         copy_line(line, outf)
+
 
 def merge_files(inf, outf, one):
     for line in inf:
@@ -57,12 +74,12 @@ h2unit_cpp = os.path.join(build_dir, 'h2unit.cpp')
 
 f_h2unit_h = open(h2unit_h, 'w')
 f_h2unit_h.write('\n')
-f_h2unit_h.write(version_date + '\n')
-f_h2unit_h.write(github_url + '\n')
-f_h2unit_h.write(copyright + '\n\n')
+f_h2unit_h.write('/* https://github.com/lingjf/h2unit */\n')
+f_h2unit_h.write('/* Apache Licence 2.0 */\n\n')
 f_h2unit_h.write('#ifndef __H2UNIT_H__' + '\n')
 f_h2unit_h.write('#define __H2UNIT_H__' + '\n')
-f_h2unit_h.write('#define H2UNIT_REVISION ' + get_git_revision_hash() + ' ' + get_git_active_branch() + '\n')
+f_h2unit_h.write('#define H2UNIT_VERSION ' + h2unit_version + '\n')
+f_h2unit_h.write('#define H2UNIT_REVISION ' + get_revision() + '\n')
 with open(os.path.join(build_dir, '../source/h2_unit.cpp'), 'r') as f_h2_unit_cpp:
     merge_files(f_h2_unit_cpp, f_h2unit_h, True)
 f_h2unit_h.write('#endif' + '\n')
@@ -70,12 +87,12 @@ f_h2unit_h.close()
 
 f_h2unit_hpp = open(h2unit_hpp, 'w')
 f_h2unit_hpp.write('\n')
-f_h2unit_hpp.write(version_date + '\n')
-f_h2unit_hpp.write(github_url + '\n')
-f_h2unit_hpp.write(copyright + '\n\n')
+f_h2unit_hpp.write('/* https://github.com/lingjf/h2unit */\n')
+f_h2unit_hpp.write('/* Apache Licence 2.0 */\n\n')
 f_h2unit_hpp.write('#ifndef __H2UNIT_HPP__' + '\n')
 f_h2unit_hpp.write('#define __H2UNIT_HPP__' + '\n')
-f_h2unit_hpp.write('#define H2UNIT_REVISION ' + get_git_revision_hash() + ' ' + get_git_active_branch() + '\n')
+f_h2unit_hpp.write('#define H2UNIT_VERSION ' + h2unit_version + '\n')
+f_h2unit_hpp.write('#define H2UNIT_REVISION ' + get_revision() + '\n')
 with open(os.path.join(build_dir, '../source/h2_unit.hpp'), 'r') as f_h2_unit_hpp:
     merge_files(f_h2_unit_hpp, f_h2unit_hpp, False)
 f_h2unit_hpp.write('#endif' + '\n')
@@ -83,11 +100,11 @@ f_h2unit_hpp.close()
 
 f_h2unit_cpp = open(h2unit_cpp, 'w')
 f_h2unit_cpp.write('\n')
-f_h2unit_cpp.write(version_date + '\n')
-f_h2unit_cpp.write(github_url + '\n')
-f_h2unit_cpp.write(copyright + '\n')
+f_h2unit_cpp.write('/* https://github.com/lingjf/h2unit */\n')
+f_h2unit_cpp.write('/* Apache Licence 2.0 */\n\n')
 with open(os.path.join(build_dir, '../source/h2_unit.cpp'), 'r') as f_h2_unit_cpp:
     merge_files(f_h2_unit_cpp, f_h2unit_cpp, False)
 f_h2unit_cpp.close()
 
-print('Concatenated ' + version_date)
+
+print('Concatenated v{0} {1} {2} {3} '.format(h2unit_version, datetime.today().strftime('%Y-%m-%d %H:%M:%S'), get_git_branch_tag(), get_git_commit_hash()))

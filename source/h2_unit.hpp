@@ -1,8 +1,6 @@
 #ifndef __H2_UNIT_HPP__
 #define __H2_UNIT_HPP__
 
-#define H2UNIT_VERSION 5.15
-
 #include <cstdio>      /* printf */
 #include <cstdlib>     /* malloc */
 #include <cstring>     /* strcpy, memcpy */

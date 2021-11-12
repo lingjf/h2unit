@@ -1,7 +1,7 @@
 
-/* v5.15 2021-11-13 00:08:20 v5 f8ec41f */
 /* https://github.com/lingjf/h2unit */
 /* Apache Licence 2.0 */
+
 #include "h2unit.hpp"
 
 #include <cassert>   /* assert */
@@ -5855,8 +5855,6 @@ struct h2_report_console : h2_report_impl {
       if (file) {
          title.printf("dark gray", "┊ ");
          title.printf("", "%s ", file);
-      } else {
-         title = title.abbreviate(h2_console::width() - 10);
       }
       return title;
    }
@@ -5980,8 +5978,9 @@ struct h2_report_console : h2_report_impl {
          if (O.verbose >= verbose_compact_failed) {
             print_bar(true, "bold,red", "Failed ", s, c, false);
             h2_console::prints("", "\n");
-            if (O.verbose >= verbose_normal) {
-               if (c->fails) c->fails->foreach([](h2_fail* fail, size_t si, size_t ci) { fail->print(si, ci); });
+            if (O.verbose >= verbose_normal && c->fails) {
+               c->fails->foreach([](h2_fail* fail, size_t si, size_t ci) { fail->print(si, ci); });
+               h2_console::prints("", "\n");
             }
          }
       } else {  // Passed

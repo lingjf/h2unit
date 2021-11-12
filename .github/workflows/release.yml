@@ -12,7 +12,7 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - name: Concatenate
-      run: python ./build/concat.py
+      run: python ./build/concat.py release
     - name: Upload
       uses: svenstaro/upload-release-action@v2
       with:

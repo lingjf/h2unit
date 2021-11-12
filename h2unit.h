@@ -1,15 +1,13 @@
 
-/* v5.15 2021-11-13 00:08:20 v5 f8ec41f */
 /* https://github.com/lingjf/h2unit */
 /* Apache Licence 2.0 */
 
 #ifndef __H2UNIT_H__
 #define __H2UNIT_H__
-#define H2UNIT_REVISION f8ec41f v5
+#define H2UNIT_VERSION 5.16
+#define H2UNIT_REVISION 2021-11-13 branches/v5
 #ifndef __H2_UNIT_HPP__
 #define __H2_UNIT_HPP__
-
-#define H2UNIT_VERSION 5.15
 
 #include <cstdio>      /* printf */
 #include <cstdlib>     /* malloc */
@@ -9505,8 +9503,6 @@ struct h2_report_console : h2_report_impl {
       if (file) {
          title.printf("dark gray", "┊ ");
          title.printf("", "%s ", file);
-      } else {
-         title = title.abbreviate(h2_console::width() - 10);
       }
       return title;
    }
@@ -9630,8 +9626,9 @@ struct h2_report_console : h2_report_impl {
          if (O.verbose >= verbose_compact_failed) {
             print_bar(true, "bold,red", "Failed ", s, c, false);
             h2_console::prints("", "\n");
-            if (O.verbose >= verbose_normal) {
-               if (c->fails) c->fails->foreach([](h2_fail* fail, size_t si, size_t ci) { fail->print(si, ci); });
+            if (O.verbose >= verbose_normal && c->fails) {
+               c->fails->foreach([](h2_fail* fail, size_t si, size_t ci) { fail->print(si, ci); });
+               h2_console::prints("", "\n");
             }
          }
       } else {  // Passed
