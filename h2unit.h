@@ -978,6 +978,12 @@ static constexpr int verbose_compact_passed = 2;
 static constexpr int verbose_normal = 3;
 static constexpr int verbose_detail = 4;
 
+static constexpr int ShuffleCode = 0x0;
+static constexpr int ShuffleRandom = 0x10;
+static constexpr int ShuffleName = 0x100;
+static constexpr int ShuffleFile = 0x1000;
+static constexpr int ShuffleReverse = 0x10000;
+
 struct h2_option {
    h2_singleton(h2_option);
 
@@ -994,7 +1000,6 @@ struct h2_option {
    bool colorful = true;
    bool progressing = true;
    bool only_last_failed = false;
-   bool shuffle_cases = false;
    bool memory_check = true;
    bool continue_assert = false;
    bool exception_as_fail = false;
@@ -1003,6 +1008,7 @@ struct h2_option {
    int break_after_fails = 0;
    int run_rounds = 1;
    int fold_json = 5;  // 0 unfold, 1 fold short, 2 fold same, 3 fold single
+   int shuffle_cases = ShuffleCode;
    int verbose = verbose_normal;
    const char* json_source_quote = "";
    char junit_path[256]{'\0'};
@@ -3711,6 +3717,7 @@ using h2::Pair;
 #include <ws2tcpip.h> /* getaddrinfo */
 #include <io.h>       /* _write */
 #define strcasecmp _stricmp
+#define strncasecmp _strnicmp
 #define fileno _fileno
 #define socklen_t int
 #define ssize_t int
@@ -8766,30 +8773,6 @@ static inline int mark_last_order(h2_list& suites)
    return count;
 }
 
-h2_inline void h2_runner::shuffle()
-{
-   struct comparison {
-      static int suite(h2_list* a, h2_list* b)
-      {
-         return h2_list_entry(a, h2_suite, x)->seq - h2_list_entry(b, h2_suite, x)->seq;
-      }
-      static int _case(h2_list* a, h2_list* b)
-      {
-         return h2_list_entry(a, h2_case, x)->seq - h2_list_entry(b, h2_case, x)->seq;
-      }
-   };
-   last = mark_last_order(suites);
-   ::srand(::clock());
-   if (O.shuffle_cases && last == 0)
-      h2_list_for_each_entry (s, suites, h2_suite, x)
-         h2_list_for_each_entry (c, s->cases, h2_case, x)
-            s->seq = c->seq = ::rand();
-
-   suites.sort(comparison::suite);
-   h2_list_for_each_entry (s, suites, h2_suite, x)
-      s->cases.sort(comparison::_case);
-}
-
 h2_inline void h2_runner::shadow()
 {
    if (stats.failed == 0)
@@ -8818,6 +8801,64 @@ h2_inline void h2_runner::enumerate()
       if (unfiltered == 0) s->filtered = O.filter(ss(s->name), "", s->file);
    }
    if (O.progressing) h2_console::prints("", "\33[2K\r");
+}
+
+template <typename T, int R>
+struct shuffle_comparison {
+   static int seq(h2_list* a, h2_list* b)
+   {
+      return (h2_list_entry(a, T, x)->seq - h2_list_entry(b, T, x)->seq) * R;
+   }
+   static int name(h2_list* a, h2_list* b)
+   {
+      return strcasecmp(ss(h2_list_entry(a, T, x)->name), ss(h2_list_entry(b, T, x)->name)) * R;
+   }
+   static int file(h2_list* a, h2_list* b)
+   {
+      return strcasecmp(h2_list_entry(a, T, x)->file, h2_list_entry(b, T, x)->file) * R;
+   }
+};
+
+h2_inline void h2_runner::shuffle()
+{
+   ::srand(::clock());
+   last = mark_last_order(suites);
+
+   int (*suite_cmp)(h2_list*, h2_list*) = shuffle_comparison<h2_suite, 1>::seq;
+   int (*case_cmp)(h2_list*, h2_list*) = shuffle_comparison<h2_case, 1>::seq;
+
+   if (last == 0) {
+      if (O.shuffle_cases & ShuffleRandom)
+         h2_list_for_each_entry (s, suites, h2_suite, x)
+            h2_list_for_each_entry (c, s->cases, h2_case, x)
+               s->seq = c->seq = ::rand();
+
+      if (O.shuffle_cases & ShuffleReverse) {
+         suite_cmp = shuffle_comparison<h2_suite, -1>::seq;
+         case_cmp = shuffle_comparison<h2_case, -1>::seq;
+         if (O.shuffle_cases & ShuffleName) {
+            suite_cmp = shuffle_comparison<h2_suite, -1>::name;
+            case_cmp = shuffle_comparison<h2_case, -1>::name;
+         } else if (O.shuffle_cases & ShuffleFile) {
+            suite_cmp = shuffle_comparison<h2_suite, -1>::file;
+            case_cmp = shuffle_comparison<h2_case, -1>::file;
+         }
+      } else {
+         if (O.shuffle_cases & ShuffleName) {
+            suite_cmp = shuffle_comparison<h2_suite, 1>::name;
+            case_cmp = shuffle_comparison<h2_case, 1>::name;
+         } else if (O.shuffle_cases & ShuffleFile) {
+            suite_cmp = shuffle_comparison<h2_suite, 1>::file;
+            case_cmp = shuffle_comparison<h2_case, 1>::file;
+         }
+      }
+   }
+
+   if (last || O.shuffle_cases) {
+      suites.sort(suite_cmp);
+      h2_list_for_each_entry (s, suites, h2_suite, x)
+         s->cases.sort(case_cmp);
+   }
 }
 
 h2_inline int h2_runner::main(int argc, const char** argv)
@@ -9872,8 +9913,8 @@ static inline void usage()
             "\033[90m│\033[0m" " -\033[36mo\033[0m  "                               "\033[90m│\033[0m" "  \033[90m[\033[0mpath\033[90m]\033[0m   "     "\033[90m│\033[0m" " \033[36mo\033[0mutput junit report, default is <executable>.junit.xml     "                               "\033[90m│\033[0m\n" H2_USAGE_BR
             "\033[90m│\033[0m" " -\033[36mp\033[0m  "                               "\033[90m│\033[0m" "           "                                   "\033[90m│\033[0m" " Disable test percentage \033[36mp\033[0mrogressing bar                    "                               "\033[90m│\033[0m\n" H2_USAGE_BR
             "\033[90m│\033[0m" " -\033[36mq\033[0m  "                               "\033[90m│\033[0m" "           "                                   "\033[90m│\033[0m" " \033[36mq\033[0muit exit code as failed cases count                       "                               "\033[90m│\033[0m\n" H2_USAGE_BR
-            "\033[90m│\033[0m" " -\033[36mr\033[0m  "                               "\033[90m│\033[0m" "           "                                   "\033[90m│\033[0m" " test cases in \033[36mr\033[0mandom order if no last failed               "                               "\033[90m│\033[0m\n" H2_USAGE_BR
-            "\033[90m│\033[0m" " -\033[36ms\033[0m  "                               "\033[90m│\033[0m" "\033[90m[\033[0mtype=\\\\\\\"\033[90m]\033[0m" "\033[90m│\033[0m" " JSON C/C++ \033[36ms\033[0mource code, type [\\\'/single \\\"/double \\\\\\\"]    "                       "\033[90m│\033[0m\n" H2_USAGE_BR
+            "\033[90m│\033[0m" " -\033[36ms\033[0m  "                               "\033[90m│\033[0m" "\033[90m[\033[0mtype=rand\033[90m]\033[0m"     "\033[90m│\033[0m" " \033[36ms\033[0mhuffle cases random/name/file/reverse if no last failed   "                               "\033[90m│\033[0m\n" H2_USAGE_BR
+            "\033[90m│\033[0m" " -\033[36mS\033[0m  "                               "\033[90m│\033[0m" "\033[90m[\033[0mtype=\\\\\\\"\033[90m]\033[0m" "\033[90m│\033[0m" " JSON C/C++ \033[36mS\033[0mource code, type [\\\'/single \\\"/double \\\\\\\"]    "                       "\033[90m│\033[0m\n" H2_USAGE_BR
             "\033[90m│\033[0m" " -\033[36mv\033[0m  "                               "\033[90m│\033[0m" "  \033[90m[\033[0mn=max\033[90m]\033[0m  "     "\033[90m│\033[0m" " \033[36mv\033[0merbose, 0:quiet 1/2:compact 3:normal 4:details            "                               "\033[90m│\033[0m\n" H2_USAGE_BR
             "\033[90m│\033[0m" " -\033[36mw\033[0m  "                               "\033[90m│\033[0m" "           "                                   "\033[90m│\033[0m" " Console output in black-\033[36mw\033[0mhite color style                  "                               "\033[90m│\033[0m\n" H2_USAGE_BR
             "\033[90m│\033[0m" " -\033[36mx\033[0m  "                               "\033[90m│\033[0m" "           "                                   "\033[90m│\033[0m" " Thrown e\033[36mx\033[0mception is considered as failure                  "                               "\033[90m│\033[0m\n"
@@ -9925,6 +9966,20 @@ struct getopt {
    }
 };
 
+static inline bool prefix_match(const char* pattern, const char* subject, const char* candidates[], int n)
+{
+   auto len = strlen(subject);
+   if (strncasecmp(pattern, subject, len)) return false;
+   for (int i = 0; i < n; ++i) {
+      if (!strcmp(candidates[i], pattern)) continue;
+      if (!strncasecmp(candidates[i], subject, len)) {
+         ::printf("ambiguous parameter %s: %s/%s\n", subject, pattern, candidates[i]);
+         exit(1);
+      }
+   }
+   return true;
+}
+
 h2_inline void h2_option::parse(int argc, const char** argv)
 {
    path = argv[0];
@@ -9958,8 +10013,17 @@ h2_inline void h2_option::parse(int argc, const char** argv)
             break;
          case 'p': progressing = !progressing; break;
          case 'q': quit_exit_code = true; break;
-         case 'r': shuffle_cases = true; break;
          case 's':
+            while ((t = get.extract_string())) {
+               const char* candidates[] = {"random", "name", "file", "reverse"};
+               if (prefix_match("random", t, candidates, 4)) shuffle_cases |= ShuffleRandom;
+               if (prefix_match("name", t, candidates, 4)) shuffle_cases |= ShuffleName;
+               if (prefix_match("file", t, candidates, 4)) shuffle_cases |= ShuffleFile;
+               if (prefix_match("reverse", t, candidates, 4)) shuffle_cases |= ShuffleReverse;
+            }
+            if (!shuffle_cases) shuffle_cases = ShuffleRandom;
+            break;
+         case 'S':
             json_source_quote = "\\\"";
             if ((t = get.extract_string())) {
                json_source_quote = t;

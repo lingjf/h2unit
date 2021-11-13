@@ -16,8 +16,8 @@ static inline void usage()
             "\033[90m│\033[0m" " -\033[36mo\033[0m  "                               "\033[90m│\033[0m" "  \033[90m[\033[0mpath\033[90m]\033[0m   "     "\033[90m│\033[0m" " \033[36mo\033[0mutput junit report, default is <executable>.junit.xml     "                               "\033[90m│\033[0m\n" H2_USAGE_BR
             "\033[90m│\033[0m" " -\033[36mp\033[0m  "                               "\033[90m│\033[0m" "           "                                   "\033[90m│\033[0m" " Disable test percentage \033[36mp\033[0mrogressing bar                    "                               "\033[90m│\033[0m\n" H2_USAGE_BR
             "\033[90m│\033[0m" " -\033[36mq\033[0m  "                               "\033[90m│\033[0m" "           "                                   "\033[90m│\033[0m" " \033[36mq\033[0muit exit code as failed cases count                       "                               "\033[90m│\033[0m\n" H2_USAGE_BR
-            "\033[90m│\033[0m" " -\033[36mr\033[0m  "                               "\033[90m│\033[0m" "           "                                   "\033[90m│\033[0m" " test cases in \033[36mr\033[0mandom order if no last failed               "                               "\033[90m│\033[0m\n" H2_USAGE_BR
-            "\033[90m│\033[0m" " -\033[36ms\033[0m  "                               "\033[90m│\033[0m" "\033[90m[\033[0mtype=\\\\\\\"\033[90m]\033[0m" "\033[90m│\033[0m" " JSON C/C++ \033[36ms\033[0mource code, type [\\\'/single \\\"/double \\\\\\\"]    "                       "\033[90m│\033[0m\n" H2_USAGE_BR
+            "\033[90m│\033[0m" " -\033[36ms\033[0m  "                               "\033[90m│\033[0m" "\033[90m[\033[0mtype=rand\033[90m]\033[0m"     "\033[90m│\033[0m" " \033[36ms\033[0mhuffle cases random/name/file/reverse if no last failed   "                               "\033[90m│\033[0m\n" H2_USAGE_BR
+            "\033[90m│\033[0m" " -\033[36mS\033[0m  "                               "\033[90m│\033[0m" "\033[90m[\033[0mtype=\\\\\\\"\033[90m]\033[0m" "\033[90m│\033[0m" " JSON C/C++ \033[36mS\033[0mource code, type [\\\'/single \\\"/double \\\\\\\"]    "                       "\033[90m│\033[0m\n" H2_USAGE_BR
             "\033[90m│\033[0m" " -\033[36mv\033[0m  "                               "\033[90m│\033[0m" "  \033[90m[\033[0mn=max\033[90m]\033[0m  "     "\033[90m│\033[0m" " \033[36mv\033[0merbose, 0:quiet 1/2:compact 3:normal 4:details            "                               "\033[90m│\033[0m\n" H2_USAGE_BR
             "\033[90m│\033[0m" " -\033[36mw\033[0m  "                               "\033[90m│\033[0m" "           "                                   "\033[90m│\033[0m" " Console output in black-\033[36mw\033[0mhite color style                  "                               "\033[90m│\033[0m\n" H2_USAGE_BR
             "\033[90m│\033[0m" " -\033[36mx\033[0m  "                               "\033[90m│\033[0m" "           "                                   "\033[90m│\033[0m" " Thrown e\033[36mx\033[0mception is considered as failure                  "                               "\033[90m│\033[0m\n"
@@ -69,6 +69,20 @@ struct getopt {
    }
 };
 
+static inline bool prefix_match(const char* pattern, const char* subject, const char* candidates[], int n)
+{
+   auto len = strlen(subject);
+   if (strncasecmp(pattern, subject, len)) return false;
+   for (int i = 0; i < n; ++i) {
+      if (!strcmp(candidates[i], pattern)) continue;
+      if (!strncasecmp(candidates[i], subject, len)) {
+         ::printf("ambiguous parameter %s: %s/%s\n", subject, pattern, candidates[i]);
+         exit(1);
+      }
+   }
+   return true;
+}
+
 h2_inline void h2_option::parse(int argc, const char** argv)
 {
    path = argv[0];
@@ -102,8 +116,17 @@ h2_inline void h2_option::parse(int argc, const char** argv)
             break;
          case 'p': progressing = !progressing; break;
          case 'q': quit_exit_code = true; break;
-         case 'r': shuffle_cases = true; break;
          case 's':
+            while ((t = get.extract_string())) {
+               const char* candidates[] = {"random", "name", "file", "reverse"};
+               if (prefix_match("random", t, candidates, 4)) shuffle_cases |= ShuffleRandom;
+               if (prefix_match("name", t, candidates, 4)) shuffle_cases |= ShuffleName;
+               if (prefix_match("file", t, candidates, 4)) shuffle_cases |= ShuffleFile;
+               if (prefix_match("reverse", t, candidates, 4)) shuffle_cases |= ShuffleReverse;
+            }
+            if (!shuffle_cases) shuffle_cases = ShuffleRandom;
+            break;
+         case 'S':
             json_source_quote = "\\\"";
             if ((t = get.extract_string())) {
                json_source_quote = t;

@@ -17,8 +17,8 @@
 *    `-o` {path} *output* junit compatible XML output
 *    `-p` Disable test percentage *progressing* bar
 *    `-q` *Quit" exit code as failed cases count
-*    `-s` [type] JSON C/C++ source code , *'* single, *"* double, *\\"*
-*    `-r` test cases in *random* order if no last failed
+*    `-s` *shuffle* test cases in random/name/file/reverse order if no last failed, default is random, name is suite/case name alphabet order
+*    `-S` [type] JSON C/C++ source code , *'* single, *"* double, *\\"*
 *    `-v` [n=max] *verbose* output, 0:quiet 1:compact failed 2:compact passed 3:normal 4:details
 *    `-w` Console output, *black-white* color style
 *    `-x` Thrown *exception* is considered as failure

@@ -53,30 +53,6 @@ static inline int mark_last_order(h2_list& suites)
    return count;
 }
 
-h2_inline void h2_runner::shuffle()
-{
-   struct comparison {
-      static int suite(h2_list* a, h2_list* b)
-      {
-         return h2_list_entry(a, h2_suite, x)->seq - h2_list_entry(b, h2_suite, x)->seq;
-      }
-      static int _case(h2_list* a, h2_list* b)
-      {
-         return h2_list_entry(a, h2_case, x)->seq - h2_list_entry(b, h2_case, x)->seq;
-      }
-   };
-   last = mark_last_order(suites);
-   ::srand(::clock());
-   if (O.shuffle_cases && last == 0)
-      h2_list_for_each_entry (s, suites, h2_suite, x)
-         h2_list_for_each_entry (c, s->cases, h2_case, x)
-            s->seq = c->seq = ::rand();
-
-   suites.sort(comparison::suite);
-   h2_list_for_each_entry (s, suites, h2_suite, x)
-      s->cases.sort(comparison::_case);
-}
-
 h2_inline void h2_runner::shadow()
 {
    if (stats.failed == 0)
@@ -105,6 +81,64 @@ h2_inline void h2_runner::enumerate()
       if (unfiltered == 0) s->filtered = O.filter(ss(s->name), "", s->file);
    }
    if (O.progressing) h2_console::prints("", "\33[2K\r");
+}
+
+template <typename T, int R>
+struct shuffle_comparison {
+   static int seq(h2_list* a, h2_list* b)
+   {
+      return (h2_list_entry(a, T, x)->seq - h2_list_entry(b, T, x)->seq) * R;
+   }
+   static int name(h2_list* a, h2_list* b)
+   {
+      return strcasecmp(ss(h2_list_entry(a, T, x)->name), ss(h2_list_entry(b, T, x)->name)) * R;
+   }
+   static int file(h2_list* a, h2_list* b)
+   {
+      return strcasecmp(h2_list_entry(a, T, x)->file, h2_list_entry(b, T, x)->file) * R;
+   }
+};
+
+h2_inline void h2_runner::shuffle()
+{
+   ::srand(::clock());
+   last = mark_last_order(suites);
+
+   int (*suite_cmp)(h2_list*, h2_list*) = shuffle_comparison<h2_suite, 1>::seq;
+   int (*case_cmp)(h2_list*, h2_list*) = shuffle_comparison<h2_case, 1>::seq;
+
+   if (last == 0) {
+      if (O.shuffle_cases & ShuffleRandom)
+         h2_list_for_each_entry (s, suites, h2_suite, x)
+            h2_list_for_each_entry (c, s->cases, h2_case, x)
+               s->seq = c->seq = ::rand();
+
+      if (O.shuffle_cases & ShuffleReverse) {
+         suite_cmp = shuffle_comparison<h2_suite, -1>::seq;
+         case_cmp = shuffle_comparison<h2_case, -1>::seq;
+         if (O.shuffle_cases & ShuffleName) {
+            suite_cmp = shuffle_comparison<h2_suite, -1>::name;
+            case_cmp = shuffle_comparison<h2_case, -1>::name;
+         } else if (O.shuffle_cases & ShuffleFile) {
+            suite_cmp = shuffle_comparison<h2_suite, -1>::file;
+            case_cmp = shuffle_comparison<h2_case, -1>::file;
+         }
+      } else {
+         if (O.shuffle_cases & ShuffleName) {
+            suite_cmp = shuffle_comparison<h2_suite, 1>::name;
+            case_cmp = shuffle_comparison<h2_case, 1>::name;
+         } else if (O.shuffle_cases & ShuffleFile) {
+            suite_cmp = shuffle_comparison<h2_suite, 1>::file;
+            case_cmp = shuffle_comparison<h2_case, 1>::file;
+         }
+      }
+   }
+
+   if (last || O.shuffle_cases) {
+      suites.sort(suite_cmp);
+      h2_list_for_each_entry (s, suites, h2_suite, x)
+         s->cases.sort(case_cmp);
+   }
 }
 
 h2_inline int h2_runner::main(int argc, const char** argv)

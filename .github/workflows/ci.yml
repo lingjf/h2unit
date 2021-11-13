@@ -47,17 +47,17 @@ jobs:
       - name: 🏗️ build test/debug
         run: cmake --build debug_test -j2
       - name: run test/debug without memory check
-        run: cd debug_test && LD_BIND_NOW=1 ./a.out -r -p -m -v -q -e test_memory_
+        run: cd debug_test && LD_BIND_NOW=1 ./a.out -s -p -m -v -q -e test_memory_
       - name: ✨ run test/debug with memory check
-        run: cd debug_test && LD_BIND_NOW=1 ./a.out -rwpvqo
+        run: cd debug_test && LD_BIND_NOW=1 ./a.out -swpvqo
       - name: configure test/release
         run: cmake -DCMAKE_VERBOSE_MAKEFILE=ON -DCMAKE_BUILD_TYPE=Release -B release_test test
       - name: 🏗️ build test/release
         run: cmake --build release_test -j2
       - name: run test/release without memory check
-        run: cd release_test && LD_BIND_NOW=1 ./a.out -r -p -m -v -q -e test_memory_
+        run: cd release_test && LD_BIND_NOW=1 ./a.out -s -p -m -v -q -e test_memory_
       - name: ✨ run test/release with memory check
-        run: cd release_test && LD_BIND_NOW=1 ./a.out -rwpvqo
+        run: cd release_test && LD_BIND_NOW=1 ./a.out -swpvqo
       - name: install coverage tools
         run: sudo pip3 install git+https://github.com/gcovr/gcovr.git
       - name: build and run example
@@ -103,17 +103,17 @@ jobs:
       - name: 🏗️ build test/debug
         run: cmake --build debug_test -j2
       - name: run test/debug without memory check
-        run: cd debug_test && LD_BIND_NOW=1 ./a.out -r -p -m -v -q -e test_memory_
+        run: cd debug_test && LD_BIND_NOW=1 ./a.out -s -p -m -v -q -e test_memory_
       - name: ✨ run test/debug with memory check
-        run: cd debug_test && LD_BIND_NOW=1 ./a.out -rwpvqo
+        run: cd debug_test && LD_BIND_NOW=1 ./a.out -swpvqo
       - name: configure test/release
         run: cmake -DCMAKE_VERBOSE_MAKEFILE=ON -DCMAKE_BUILD_TYPE=Release -B release_test test
       - name: 🏗️ build test/release
         run: cmake --build release_test -j2
       - name: run test/release without memory check
-        run: cd release_test && LD_BIND_NOW=1 ./a.out -r -p -m -v -q -e test_memory_
+        run: cd release_test && LD_BIND_NOW=1 ./a.out -s -p -m -v -q -e test_memory_
       - name: ✨ run test/release with memory check
-        run: cd release_test && LD_BIND_NOW=1 ./a.out -rwpvqo
+        run: cd release_test && LD_BIND_NOW=1 ./a.out -swpvqo
       - name: install coverage tools
         run: brew install lcov
       - name: build and run example
@@ -158,9 +158,9 @@ jobs:
       - name: 🏗️ build test/debug
         run: cmake --build debug_test -j $env:NUMBER_OF_PROCESSORS
       - name: run test/debug without memory check
-        run: cd debug_test && ./a.out.exe -r -p -m -v -q -e test_memory_
+        run: cd debug_test && ./a.out.exe -s -p -m -v -q -e test_memory_
       - name: ✨ run test/debug with memory check
-        run: cd debug_test && ./a.out.exe -rwpvqo
+        run: cd debug_test && ./a.out.exe -swpvqo
       - name: configure test/release
         run: cmake -DCMAKE_VERBOSE_MAKEFILE=ON -DCMAKE_BUILD_TYPE=Release -B release_test test
       - name: cat test/release vcxproj
@@ -221,9 +221,9 @@ jobs:
       - name: 🏗️ build test
         run: cmake --build ci_test -j2
       - name: run test without memory check
-        run: ./ci_test/a.out -r -p -m -v -q -e test_memory_
+        run: ./ci_test/a.out -s -p -m -v -q -e test_memory_
       - name: ✨ run test with memory check
-        run: ./ci_test/a.out -rwpvqo
+        run: ./ci_test/a.out -swpvqo
       - name: configure example
         run: cmake -B ci_example example
       - name: build example
@@ -264,9 +264,9 @@ jobs:
       - name: 🏗️ build test
         run: cd test && cmake --build . -j $env:NUMBER_OF_PROCESSORS
       - name: run test without memory check
-        run: cd test && ./a.out.exe -r -p -m -v -q -e test_memory_
+        run: cd test && ./a.out.exe -s -p -m -v -q -e test_memory_
       - name: ✨ run test with memory check
-        run: cd test && ./a.out.exe -rwpvqo
+        run: cd test && ./a.out.exe -swpvqo
       - name: configure example
         run: cmake -A ${{matrix.platform}} -B ci_example example
       - name: build example
@@ -308,9 +308,9 @@ jobs:
       - name: 🏗️ build test
         run: cd test && msbuild test.vcxproj /property:Configuration=Debug /property:Platform=${{matrix.platform}} -maxcpucount:1
       - name: run test without memory check
-        run: cd test && ./test.exe -r -p -m -v -q -e test_memory_
+        run: cd test && ./test.exe -s -p -m -v -q -e test_memory_
       - name: ✨ run test with memory check
-        run: cd test && ./test.exe -rwpvqo
+        run: cd test && ./test.exe -swpvqo
       - name: build example
         run: cd example && msbuild example.vcxproj /property:Configuration=Debug /property:Platform=${{matrix.platform}}
       - name: run example
@@ -350,9 +350,9 @@ jobs:
       - name: 🏗️ build test
         run: cmake --build ci_test -j2
       - name: run test without memory check
-        run: qemu-${{matrix.arch}} -L /usr/${{matrix.arch}}-linux-gnu -E LD_BIND_NOW=1 ./ci_test/a.out -r -p -m -v -q -e test_memory_
+        run: qemu-${{matrix.arch}} -L /usr/${{matrix.arch}}-linux-gnu -E LD_BIND_NOW=1 ./ci_test/a.out -s -p -m -v -q -e test_memory_
       - name: ✨ run test with memory check
-        run: qemu-${{matrix.arch}} -L /usr/${{matrix.arch}}-linux-gnu -E LD_BIND_NOW=1 ./ci_test/a.out -rwpvqo
+        run: qemu-${{matrix.arch}} -L /usr/${{matrix.arch}}-linux-gnu -E LD_BIND_NOW=1 ./ci_test/a.out -swpvqo
       - name: configure example
         run: cmake -DCMAKE_C_COMPILER="${{matrix.cc}}" -DCMAKE_CXX_COMPILER="${{matrix.cxx}}" -DCMAKE_C_FLAGS="${{matrix.cflag}}" -DCMAKE_CXX_FLAGS="${{matrix.cflag}}" -B ci_example example
       - name: build example
@@ -391,9 +391,9 @@ jobs:
       - name: 🏗️ build test
         run: cmake --build ci_test -j2
       - name: run test without memory check
-        run: LD_BIND_NOW=1 ./ci_test/a.out -r -p -m -v -q -e test_memory_
+        run: LD_BIND_NOW=1 ./ci_test/a.out -s -p -m -v -q -e test_memory_
       - name: ✨ run test with memory check
-        run: LD_BIND_NOW=1 ./ci_test/a.out -rwpvqo
+        run: LD_BIND_NOW=1 ./ci_test/a.out -swpvqo
       - name: configure example
         run: cmake -DCMAKE_C_FLAGS="-m32" -DCMAKE_CXX_FLAGS="-m32" -B ci_example example
       - name: build example
@@ -454,9 +454,9 @@ jobs:
       - name: 🏗️ build test
         run: cmake --build ci_test -j2
       - name: run test without memory check
-        run: LD_BIND_NOW=1 ./ci_test/a.out -r -p -m -v -q -e test_memory_
+        run: LD_BIND_NOW=1 ./ci_test/a.out -s -p -m -v -q -e test_memory_
       - name: ✨ run test with memory check
-        run: LD_BIND_NOW=1 ./ci_test/a.out -rwpvqo
+        run: LD_BIND_NOW=1 ./ci_test/a.out -swpvqo
       - name: configure example
         run: cmake -B ci_example example
       - name: build example
@@ -505,10 +505,10 @@ jobs:
       - name: 🏗️ build test
         run: cd test && make -j2
       - name: run test without memory check
-        run: cd test && LD_BIND_NOW=1 ./a.out -r -p -m -v -q -e test_memory_
+        run: cd test && LD_BIND_NOW=1 ./a.out -s -p -m -v -q -e test_memory_
       - name: ✨ run test with memory check
         if: ${{matrix.sys != 'openSUSE'}} #TODO
-        run: cd test && LD_BIND_NOW=1 ./a.out -rwpvqo
+        run: cd test && LD_BIND_NOW=1 ./a.out -swpvqo
       - name: build and run example
         run: make run -C example -j2
 
@@ -549,9 +549,9 @@ jobs:
       - name: 🏗️ build test
         run: cmake --build ci_test -j2
       - name: run test without memory check
-        run: LD_BIND_NOW=1 ./ci_test/a.out -r -p -m -v -q -e test_memory_
+        run: LD_BIND_NOW=1 ./ci_test/a.out -s -p -m -v -q -e test_memory_
       - name: ✨ run test with memory check
-        run: LD_BIND_NOW=1 ./ci_test/a.out -rwpvqo
+        run: LD_BIND_NOW=1 ./ci_test/a.out -swpvqo
 
   cpp-linux:
     runs-on: ubuntu-latest
@@ -583,7 +583,7 @@ jobs:
       - name: 🏗️ build test
         run: cmake --build ci_test -j2
       - name: ✨ run test
-        run: ./ci_test/a.out -rwpvqo -e pthread
+        run: ./ci_test/a.out -swpvqo -e pthread
 
   cpp-macos:
     runs-on: macos-11
@@ -608,7 +608,7 @@ jobs:
       - name: 🏗️ build test
         run: cmake --build ci_test -j2
       - name: ✨ run test
-        run: ./ci_test/a.out -rwpvqo -e pthread
+        run: ./ci_test/a.out -swpvqo -e pthread
 
   cpp-windows:
     runs-on: windows-latest
@@ -630,4 +630,4 @@ jobs:
       - name: 🏗️ build test
         run: cmake --build ci_test -j2
       - name: ✨ run test
-        run: ./ci_test/a.out -rwpvqo -e pthread
+        run: ./ci_test/a.out -swpvqo -e pthread

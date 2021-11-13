@@ -4,15 +4,8 @@ struct list_host {
    int a;
    float b;
    h2::h2_list link;
-   char c[343];
+   const char* c;
 };
-
-int list_host_cmp(h2::h2_list* a, h2::h2_list* b)
-{
-   list_host* a_ = h2_list_entry(a, list_host, link);
-   list_host* b_ = h2_list_entry(b, list_host, link);
-   return a_->a - b_->a;
-}
 
 SUITE(list)
 {
@@ -122,6 +115,20 @@ SUITE(list)
    }
 }
 
+static int list_host_cmp_by_a(h2::h2_list* a, h2::h2_list* b)
+{
+   list_host* a_ = h2_list_entry(a, list_host, link);
+   list_host* b_ = h2_list_entry(b, list_host, link);
+   return a_->a - b_->a;
+}
+
+static int list_host_cmp_by_c(h2::h2_list* a, h2::h2_list* b)
+{
+   list_host* a_ = h2_list_entry(a, list_host, link);
+   list_host* b_ = h2_list_entry(b, list_host, link);
+   return strcmp(a_->c, b_->c) * -1;
+}
+
 CASE(list sort)
 {
    h2::h2_list root;
@@ -132,12 +139,20 @@ CASE(list sort)
    h2.a = 2;
    h3.a = 3;
 
+   h1.c = "c";
+   h2.c = "b";
+   h3.c = "a";
+
    root.add_tail(h2.link);
    root.add_tail(h3.link);
    root.add_tail(h1.link);
 
-   root.sort(list_host_cmp);
+   root.sort(list_host_cmp_by_a);
+   h2_list_for_each_entry (p, i, root, list_host, link) {
+      OK(i + 1, p->a);
+   }
 
+   root.sort(list_host_cmp_by_c);
    h2_list_for_each_entry (p, i, root, list_host, link) {
       OK(i + 1, p->a);
    }

@@ -33,6 +33,7 @@
 #include <ws2tcpip.h> /* getaddrinfo */
 #include <io.h>       /* _write */
 #define strcasecmp _stricmp
+#define strncasecmp _strnicmp
 #define fileno _fileno
 #define socklen_t int
 #define ssize_t int
