@@ -6337,16 +6337,16 @@ static inline void usage()
             "\033[90m│\033[0m" " -\033[36mc\033[0m  "                               "\033[90m│\033[0m" "           "                                   "\033[90m│\033[0m" " \033[36mc\033[0montinue asserts even if failure occurred                  "                               "\033[90m│\033[0m\n" H2_USAGE_BR
             "\033[90m│\033[0m" " -\033[36md\033[0m  "                               "\033[90m│\033[0m" "           "                                   "\033[90m│\033[0m" " \033[36md\033[0mebug with gdb once failure occurred                       "                               "\033[90m│\033[0m\n" H2_USAGE_BR
             "\033[90m│\033[0m" " -\033[36mf\033[0m  "                               "\033[90m│\033[0m" "           "                                   "\033[90m│\033[0m" " Only test last \033[36mf\033[0mailed cases                                "                               "\033[90m│\033[0m\n" H2_USAGE_BR
+            "\033[90m│\033[0m" " -\033[36mF\033[0m  "                               "\033[90m│\033[0m" "  \033[90m[\033[0mn=max\033[90m]\033[0m  "     "\033[90m│\033[0m" " \033[36mF\033[0mold json print, 0:unfold 1:short 2:same 3:single          "                               "\033[90m│\033[0m\n" H2_USAGE_BR
             "\033[90m│\033[0m" " -\033[36mi\033[0m\033[90m/\033[0m\033[36me\033[0m" "\033[90m│\033[0m" "\033[90m[\033[0mpattern .\033[90m]\033[0m"     "\033[90m│\033[0m" " \033[36mi\033[0mnclude\033[90m/\033[0m\033[36me\033[0mxclude case suite or file by substr wildcard      " "\033[90m│\033[0m\n" H2_USAGE_BR
-            "\033[90m│\033[0m" " -\033[36mj\033[0m  "                               "\033[90m│\033[0m" "  \033[90m[\033[0mn=max\033[90m]\033[0m  "     "\033[90m│\033[0m" " Fold \033[36mj\033[0mson print, 0:unfold 1:short 2:same 3:single          "                               "\033[90m│\033[0m\n" H2_USAGE_BR
             "\033[90m│\033[0m" " -\033[36ml\033[0m  "                               "\033[90m│\033[0m" "  \033[90m[\033[0mtype .\033[90m]\033[0m "     "\033[90m│\033[0m" " \033[36ml\033[0mist out suites and cases, type [suite case todo]          "                               "\033[90m│\033[0m\n" H2_USAGE_BR
             "\033[90m│\033[0m" " -\033[36mm\033[0m  "                               "\033[90m│\033[0m" "           "                                   "\033[90m│\033[0m" " Test cases without \033[36mm\033[0memory check                            "                               "\033[90m│\033[0m\n" H2_USAGE_BR
-            "\033[90m│\033[0m" " -\033[36mn\033[0m  "                               "\033[90m│\033[0m" "   \033[90m[\033[0mn=2\033[90m]\033[0m   "     "\033[90m│\033[0m" " Repeat test \033[36mn\033[0m (default 2) rounds                           "                               "\033[90m│\033[0m\n" H2_USAGE_BR
             "\033[90m│\033[0m" " -\033[36mo\033[0m  "                               "\033[90m│\033[0m" "  \033[90m[\033[0mpath\033[90m]\033[0m   "     "\033[90m│\033[0m" " \033[36mo\033[0mutput junit report, default is <executable>.junit.xml     "                               "\033[90m│\033[0m\n" H2_USAGE_BR
             "\033[90m│\033[0m" " -\033[36mp\033[0m  "                               "\033[90m│\033[0m" "           "                                   "\033[90m│\033[0m" " Disable test percentage \033[36mp\033[0mrogressing bar                    "                               "\033[90m│\033[0m\n" H2_USAGE_BR
             "\033[90m│\033[0m" " -\033[36mq\033[0m  "                               "\033[90m│\033[0m" "           "                                   "\033[90m│\033[0m" " \033[36mq\033[0muit exit code as failed cases count                       "                               "\033[90m│\033[0m\n" H2_USAGE_BR
-            "\033[90m│\033[0m" " -\033[36ms\033[0m  "                               "\033[90m│\033[0m" "\033[90m[\033[0mtype=rand\033[90m]\033[0m"     "\033[90m│\033[0m" " \033[36ms\033[0mhuffle cases random/name/file/reverse if no last failed   "                               "\033[90m│\033[0m\n" H2_USAGE_BR
-            "\033[90m│\033[0m" " -\033[36mS\033[0m  "                               "\033[90m│\033[0m" "\033[90m[\033[0mtype=\\\\\\\"\033[90m]\033[0m" "\033[90m│\033[0m" " JSON C/C++ \033[36mS\033[0mource code, type [\\\'/single \\\"/double \\\\\\\"]    "                       "\033[90m│\033[0m\n" H2_USAGE_BR
+            "\033[90m│\033[0m" " -\033[36mr\033[0m  "                               "\033[90m│\033[0m" "   \033[90m[\033[0mn=2\033[90m]\033[0m   "     "\033[90m│\033[0m" " Repeat test n (default 2) \033[36mr\033[0mounds                           "                               "\033[90m│\033[0m\n" H2_USAGE_BR
+            "\033[90m│\033[0m" " -\033[36ms\033[0m  "                               "\033[90m│\033[0m" "\033[90m[\033[0mtype=rand\033[90m]\033[0m"     "\033[90m│\033[0m" " \033[36ms\033[0mhuffle cases random/alphabet/reverse if no last failed    "                               "\033[90m│\033[0m\n" H2_USAGE_BR
+            "\033[90m│\033[0m" " -\033[36mS\033[0m  "                               "\033[90m│\033[0m" " \033[90m[\033[0mtype=\\\"\033[90m]\033[0m "   "\033[90m│\033[0m" " JSON C/C++ \033[36mS\033[0mource code, type [\\\'/single \\\"/double \\\\\\\"]    "                       "\033[90m│\033[0m\n" H2_USAGE_BR
             "\033[90m│\033[0m" " -\033[36mt\033[0m  "                               "\033[90m│\033[0m" "           "                                   "\033[90m│\033[0m" " \033[36mt\033[0mags include/exclude filter                                "                               "\033[90m│\033[0m\n" H2_USAGE_BR
             "\033[90m│\033[0m" " -\033[36mv\033[0m  "                               "\033[90m│\033[0m" "  \033[90m[\033[0mn=max\033[90m]\033[0m  "     "\033[90m│\033[0m" " \033[36mv\033[0merbose, 0:quiet 1/2:compact 3:normal 4:details            "                               "\033[90m│\033[0m\n" H2_USAGE_BR
             "\033[90m│\033[0m" " -\033[36mw\033[0m  "                               "\033[90m│\033[0m" "           "                                   "\033[90m│\033[0m" " Console output in black-\033[36mw\033[0mhite color style                  "                               "\033[90m│\033[0m\n" H2_USAGE_BR
@@ -6429,23 +6429,23 @@ h2_inline void h2_option::parse(int argc, const char** argv)
             while ((t = get.extract_string())) excludes.push_back(t);
             break;
          case 'f': only_last_failed = true; break;
+         case 'F': get.extract_number(fold_json = 0); break;
          case 'i':
             while ((t = get.extract_string())) includes.push_back(t);
             break;
-         case 'j': get.extract_number(fold_json = 0); break;
          case 'l':
             while ((t = get.extract_string())) list_cases.push_back(t);
             if (!list_cases.size()) list_cases.push_back("all");
             memory_check = false;
             break;
          case 'm': memory_check = !memory_check; break;
-         case 'n': get.extract_number(run_rounds = 2); break;
          case 'o':
             sprintf(junit_path, "%s.junit.xml", path);
             if ((t = get.extract_string())) strcpy(junit_path, t);
             break;
          case 'p': progressing = !progressing; break;
          case 'q': quit_exit_code = true; break;
+         case 'r': get.extract_number(run_rounds = 2); break;
          case 's':
             while ((t = get.extract_string())) {
                const char* candidates[] = {"random", "name", "file", "reverse"};
@@ -6460,9 +6460,9 @@ h2_inline void h2_option::parse(int argc, const char** argv)
             json_source_quote = "\\\"";
             if ((t = get.extract_string())) {
                json_source_quote = t;
-               if (!strcasecmp("single", t)) json_source_quote = "\'";
-               if (!strcasecmp("double", t)) json_source_quote = "\"";
-               if (strcasecmp("\'", t) && strcasecmp("\"", t) && strcasecmp("\\\"", t)) json_source_quote = "\\\"";
+               if (prefix_match("single", t, nullptr, 0)) json_source_quote = "\'";
+               if (prefix_match("double", t, nullptr, 0)) json_source_quote = "\"";
+               if (strcmp("\'", json_source_quote) && strcmp("\"", json_source_quote) && strcmp("\\\"", json_source_quote)) json_source_quote = "\\\"";
             }
             break;
          case 't': tags_filter = true; break;

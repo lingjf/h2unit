@@ -64,21 +64,21 @@ SUITE(h2_option)
 
    Case(rounds)
    {
-      const char* argv[] = {"./a.out", "-n"};
+      const char* argv[] = {"./a.out", "-r"};
       c.parse(2, argv);
       OK(2, c.run_rounds);
    }
 
-   Case(rounds -n1)
+   Case(rounds - r1)
    {
-      const char* argv[] = {"./a.out", "-n1"};
+      const char* argv[] = {"./a.out", "-r1"};
       c.parse(2, argv);
       OK(1, c.run_rounds);
    }
 
-   Case(rounds -n 4)
+   Case(rounds - r 4)
    {
-      const char* argv[] = {"./a.out", "-n", "4"};
+      const char* argv[] = {"./a.out", "-r", "4"};
       c.parse(3, argv);
       OK(4, c.run_rounds);
    }
@@ -211,5 +211,17 @@ SUITE(option shuffle)
       const char* argv[] = {"./a.out", "-s", "n", "re"};
       c.parse(4, argv);
       OK(0x10100, c.shuffle_cases);
+   }
+}
+
+SUITE(option json source quote)
+{
+   h2::h2_option c;
+
+   Case(list_cases -S)
+   {
+      const char* argv[] = {"./a.out", "-S"};
+      c.parse(2, argv);
+      OK("\\\"", c.json_source_quote);
    }
 }
