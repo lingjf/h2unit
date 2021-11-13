@@ -50,20 +50,34 @@ struct h2_stringify_impl<T, typename std::enable_if<h2_is_ostreamable<T>::value>
    static h2_line print(const T& a, bool represent = false) { return ostream_print(a, represent); }
 
    template <typename U>
-   static h2_line ostream_print(const U& a, bool represent)
+   static auto ostream_print(const U& a, bool) -> typename std::enable_if<std::is_arithmetic<U>::value, h2_line>::type
    {
       h2_ostringstream oss;
-      oss << std::boolalpha << const_cast<U&>(a);
-      if (represent) {
-         const char* quote = nullptr;
-         if (std::is_same<char, U>::value) quote = "'";
-         if (std::is_convertible<U, h2_string>::value) quote = "\"";
-         if (quote) return gray(quote) + oss.str().c_str() + gray(quote);
-      }
+      oss << std::boolalpha << std::fixed << a;  // std::setprecision(10) <iomanip>
+      auto str = oss.str();
+      if (str.find_first_of('.') != std::string::npos)
+         str.erase(str.find_last_not_of('0') + 1);
+      return {str.c_str()};
+   }
+
+   template <typename U>
+   static auto ostream_print(const U& a, bool represent) -> typename std::enable_if<!std::is_arithmetic<U>::value, h2_line>::type
+   {
+      h2_ostringstream oss;
+      oss << const_cast<U&>(a);
+      if (represent && std::is_convertible<U, h2_string>::value)
+         return gray("\"") + oss.str().c_str() + gray("\"");
       return {oss.str().c_str()};
    }
 
-   static h2_line ostream_print(unsigned char a, bool represent)
+   static h2_line ostream_print(const char a, bool represent)
+   {
+      h2_string str(1, a);
+      if (represent) return gray("'") + str + gray("'");
+      return {str};
+   }
+
+   static h2_line ostream_print(const unsigned char a, bool represent)
    {  // https://en.cppreference.com/w/cpp/string/byte/isprint
       return ostream_print<unsigned int>(static_cast<unsigned int>(a), represent);
    }

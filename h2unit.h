@@ -798,20 +798,34 @@ struct h2_stringify_impl<T, typename std::enable_if<h2_is_ostreamable<T>::value>
    static h2_line print(const T& a, bool represent = false) { return ostream_print(a, represent); }
 
    template <typename U>
-   static h2_line ostream_print(const U& a, bool represent)
+   static auto ostream_print(const U& a, bool) -> typename std::enable_if<std::is_arithmetic<U>::value, h2_line>::type
    {
       h2_ostringstream oss;
-      oss << std::boolalpha << const_cast<U&>(a);
-      if (represent) {
-         const char* quote = nullptr;
-         if (std::is_same<char, U>::value) quote = "'";
-         if (std::is_convertible<U, h2_string>::value) quote = "\"";
-         if (quote) return gray(quote) + oss.str().c_str() + gray(quote);
-      }
+      oss << std::boolalpha << std::fixed << a;  // std::setprecision(10) <iomanip>
+      auto str = oss.str();
+      if (str.find_first_of('.') != std::string::npos)
+         str.erase(str.find_last_not_of('0') + 1);
+      return {str.c_str()};
+   }
+
+   template <typename U>
+   static auto ostream_print(const U& a, bool represent) -> typename std::enable_if<!std::is_arithmetic<U>::value, h2_line>::type
+   {
+      h2_ostringstream oss;
+      oss << const_cast<U&>(a);
+      if (represent && std::is_convertible<U, h2_string>::value)
+         return gray("\"") + oss.str().c_str() + gray("\"");
       return {oss.str().c_str()};
    }
 
-   static h2_line ostream_print(unsigned char a, bool represent)
+   static h2_line ostream_print(const char a, bool represent)
+   {
+      h2_string str(1, a);
+      if (represent) return gray("'") + str + gray("'");
+      return {str};
+   }
+
+   static h2_line ostream_print(const unsigned char a, bool represent)
    {  // https://en.cppreference.com/w/cpp/string/byte/isprint
       return ostream_print<unsigned int>(static_cast<unsigned int>(a), represent);
    }
@@ -1274,7 +1288,12 @@ struct h2_equation<E, typename std::enable_if<std::is_arithmetic<E>::value>::typ
          //      || std::fabs(a - e) < std::numeric_limits<double>::min();  // unless the result is subnormal
          long double _epsilon = epsilon;
          if (_epsilon == 0) _epsilon = 0.00001;
-         result = std::fabs((const long double)a - (const long double)e) < _epsilon;
+         if (21371647 < _epsilon) {  // percentage
+            _epsilon -= 21371647;
+            result = std::fabs((const long double)a - (const long double)e) < std::fabs((const long double)e * _epsilon);
+         } else {  // absolute
+            result = std::fabs((const long double)a - (const long double)e) < std::fabs(_epsilon);
+         }
       } else {
          result = a == e;
       }
@@ -1283,15 +1302,21 @@ struct h2_equation<E, typename std::enable_if<std::is_arithmetic<E>::value>::typ
    }
    virtual h2_line expection(h2_mc c) const override
    {
-      h2_line t = h2_representify(e);
+      h2_line t = h2_stringify(e);
       if (epsilon != 0) {
-         h2_ostringstream oss;
-         oss << "±" << std::fixed << epsilon;
-         t += oss.str().c_str();
+         if (21371647 < epsilon)
+            t += "±" + h2_stringify(std::fabs(epsilon - 21371647) * 100.0) + "%";
+         else
+            t += "±" + h2_stringify(std::fabs(epsilon));
       }
       return ncsc(t, c.update_caseless(false), "≠");
    }
 };
+
+constexpr long double operator"" _p(long double epsilon)
+{
+   return 21371647 + epsilon;
+}
 
 template <typename T, typename E = typename h2_decay<T>::type>
 inline h2_polymorphic_matcher<h2_equation<E>> Eq(const T& expect, const long double epsilon = 0)
@@ -3615,6 +3640,7 @@ using h2::Any;
 #define NotNull h2::_NotNull()
 #define IsTrue h2::_IsTrue()
 #define IsFalse h2::_IsFalse()
+using h2::operator"" _p;
 using h2::Eq;
 using h2::Nq;
 using h2::Ge;

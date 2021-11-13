@@ -26,6 +26,11 @@ SUITE(number compares)
       OK(1, a1);
    }
 
+   Case(approximate)
+   {
+      OK(Eq(3.14, 0.0001_p), 3.1415926) << "float precision problem " << 3.1415926;
+   }
+
    Case(bool)
    {
       bool a1 = false;

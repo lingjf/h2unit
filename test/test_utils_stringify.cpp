@@ -61,13 +61,13 @@ SUITE(stringify simple)
    Case(int)
    {
       OK(ListOf("1"), h2::h2_stringify<int>(1));
-      OK(ListOf("1"), h2::h2_stringify<int>(1, true));
+      OK(ListOf("100"), h2::h2_stringify<int>(100, true));
    }
 
    Case(double)
    {
-      OK(ListOf("1.41421"), h2::h2_stringify<double>(sqrt(2)));
-      OK(ListOf("1.41421"), h2::h2_stringify<double>(sqrt(2), true));
+      OK(ListOf("3.141593"), h2::h2_stringify<double>(3.1415926));
+      OK(ListOf("3.141593"), h2::h2_stringify<double>(3.1415926, true));
    }
 
    Case(bool)
@@ -90,9 +90,9 @@ SUITE(stringify simple)
 
    Case(long long)
    {
-      long long a = 12345678;
-      OK(ListOf("12345678"), h2::h2_stringify<long long>(a));
-      OK(ListOf("12345678"), h2::h2_stringify<long long>(a, true));
+      long long a = 123456780;
+      OK(ListOf("123456780"), h2::h2_stringify<long long>(a));
+      OK(ListOf("123456780"), h2::h2_stringify<long long>(a, true));
    }
 
    Case(char)

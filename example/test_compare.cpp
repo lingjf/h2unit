@@ -18,6 +18,7 @@ SUITE(Number compares)
       rectangle_t p1 = {3, 4};
       OK(5, rectangle_diag(&p1));  // successful
       rectangle_t p2 = {1, 1};
+      OK(Eq(1.41, 0.01_p), rectangle_diag(&p2));  // successful
       OK(Eq(1.41, 0.000001), rectangle_diag(&p2))
         << "float precision problem " << 1.41421356237;  // failure
    }

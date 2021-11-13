@@ -53,7 +53,12 @@ struct h2_equation<E, typename std::enable_if<std::is_arithmetic<E>::value>::typ
          //      || std::fabs(a - e) < std::numeric_limits<double>::min();  // unless the result is subnormal
          long double _epsilon = epsilon;
          if (_epsilon == 0) _epsilon = 0.00001;
-         result = std::fabs((const long double)a - (const long double)e) < _epsilon;
+         if (21371647 < _epsilon) {  // percentage
+            _epsilon -= 21371647;
+            result = std::fabs((const long double)a - (const long double)e) < std::fabs((const long double)e * _epsilon);
+         } else {  // absolute
+            result = std::fabs((const long double)a - (const long double)e) < std::fabs(_epsilon);
+         }
       } else {
          result = a == e;
       }
@@ -62,15 +67,21 @@ struct h2_equation<E, typename std::enable_if<std::is_arithmetic<E>::value>::typ
    }
    virtual h2_line expection(h2_mc c) const override
    {
-      h2_line t = h2_representify(e);
+      h2_line t = h2_stringify(e);
       if (epsilon != 0) {
-         h2_ostringstream oss;
-         oss << "±" << std::fixed << epsilon;
-         t += oss.str().c_str();
+         if (21371647 < epsilon)
+            t += "±" + h2_stringify(std::fabs(epsilon - 21371647) * 100.0) + "%";
+         else
+            t += "±" + h2_stringify(std::fabs(epsilon));
       }
       return ncsc(t, c.update_caseless(false), "≠");
    }
 };
+
+constexpr long double operator"" _p(long double epsilon)
+{
+   return 21371647 + epsilon;
+}
 
 template <typename T, typename E = typename h2_decay<T>::type>
 inline h2_polymorphic_matcher<h2_equation<E>> Eq(const T& expect, const long double epsilon = 0)

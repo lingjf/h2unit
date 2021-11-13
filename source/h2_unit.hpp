@@ -291,6 +291,7 @@ using h2::Any;
 #define NotNull h2::_NotNull()
 #define IsTrue h2::_IsTrue()
 #define IsFalse h2::_IsFalse()
+using h2::operator"" _p;
 using h2::Eq;
 using h2::Nq;
 using h2::Ge;
