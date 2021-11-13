@@ -2,11 +2,11 @@
 
 struct compare_host {
    h2::h2_list x;
-   const char* name;
+   h2::h2_describe describe;
    int seq = 0;
 
-   compare_host(const char* name_) : name(name_) {}
-   compare_host(int seq_) : name(""), seq(seq_) {}
+   compare_host(const char* describe_) : describe(describe_) {}
+   compare_host(int seq_) : describe(""), seq(seq_) {}
 };
 
 SUITE(shuffle_comparison)

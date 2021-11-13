@@ -260,7 +260,7 @@ SUITE(harmless)
    }
 
 #if !defined _WIN32
-   Case(pthread.h)
+   Case(pthread.h [openSUSE])
    {
       UNMEM(pthread_create);
       pthread_t tid;

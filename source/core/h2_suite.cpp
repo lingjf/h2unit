@@ -1,4 +1,4 @@
-h2_inline h2_suite::h2_suite(const char* file_, const char* name_, void (*test_code_)(h2_suite*, h2_case*)) : file(file_), name(name_), test_code(test_code_)
+h2_inline h2_suite::h2_suite(const char* file_, const char* describe_, void (*test_code_)(h2_suite*, h2_case*)) : file(file_), describe(describe_), test_code(test_code_)
 {
    memset(ctx, 0, sizeof(jmp_buf));
    h2_runner::I().suites.push_back(x);

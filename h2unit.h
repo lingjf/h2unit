@@ -5,7 +5,7 @@
 #ifndef __H2UNIT_H__
 #define __H2UNIT_H__
 #define H2UNIT_VERSION 5.16
-#define H2UNIT_REVISION 2021-11-13 branches/v5
+#define H2UNIT_REVISION 2021-11-14 branches/v5
 #ifndef __H2_UNIT_HPP__
 #define __H2_UNIT_HPP__
 
@@ -1005,6 +1005,7 @@ struct h2_option {
    bool exception_as_fail = false;
    bool debugger_trap = false;
    bool quit_exit_code = false;
+   bool tags_filter = false;
    int break_after_fails = 0;
    int run_rounds = 1;
    int fold_json = 5;  // 0 unfold, 1 fold short, 2 fold same, 3 fold single
@@ -1017,7 +1018,6 @@ struct h2_option {
    std::vector<const char*> includes, excludes;
 
    void parse(int argc, const char** argv);
-   bool filter(const char* suitename, const char* casename, const char* fileline) const;
 };
 
 static const h2_option& O = h2_option::I();  // for pretty
@@ -3087,11 +3087,23 @@ struct h2_sock : h2_once {
 
 #define Ptx(...) h2::h2_sock::check(H2_FILE, h2::ss(#__VA_ARGS__), __VA_ARGS__)
 #define Pij(Packet_, Size_, ...) h2::h2_sock::inject(Packet_, Size_, h2::ss(#__VA_ARGS__))
+// source/core/h2_describe.hpp
+
+struct h2_describe {
+   const char* desc;
+   const char* name = "";
+   const char* tags[64]{nullptr};
+   char nbuf[512], tbuf[512];
+
+   h2_describe(const char* describe);
+   void split();
+   bool has_tag(const char* pattern);
+};
 // source/core/h2_case.hpp
 struct h2_case {
    h2_list x;
    const char* file;
-   const char* name;
+   h2_describe describe;
    bool todo = false;
    bool filtered = false, ignored = false, failed = false, last_failed = false;
    bool scheduled = false;
@@ -3103,7 +3115,7 @@ struct h2_case {
    h2_stats stats;
    h2_fail* fails = nullptr;
 
-   h2_case(const char* file_, const char* name_, int todo_) : file(file_), name(name_), todo(todo_) {}
+   h2_case(const char* file_, const char* describe_, int todo_) : file(file_), describe(describe_), todo(todo_) {}
    void clear();
 
    void prev_setup();
@@ -3123,7 +3135,7 @@ struct h2_case {
 struct h2_suite {
    h2_list x;
    const char* file;
-   const char* name;
+   h2_describe describe;
    void (*test_code)(h2_suite*, h2_case*);
    bool filtered = false;
    int seq = 0;
@@ -3133,8 +3145,9 @@ struct h2_suite {
    h2_list mocks;
    h2_stats stats;
 
-   h2_suite(const char* file, const char* name, void (*)(h2_suite*, h2_case*));
+   h2_suite(const char* file, const char* describe, void (*)(h2_suite*, h2_case*));
    void clear();
+   bool absent() const { return !describe.desc; }  // nullptr describe means no SUITE wrapper (CASE/TODO ...)
 
    void enumerate();
    void test(h2_case* c);
@@ -3155,9 +3168,9 @@ struct h2_suite {
 // source/core/h2_core.hpp
 
 #define H2SUITE(...) __H2SUITE(#__VA_ARGS__, H2PP_UNIQUE(suite_test_C))
-#define __H2SUITE(suite_name, suite_test)                                         \
-   static void suite_test(h2::h2_suite*, h2::h2_case*);                           \
-   static h2::h2_suite H2PP_UNIQUE(si)(H2_FILE, h2::ss(suite_name), &suite_test); \
+#define __H2SUITE(suite_describe, suite_test)                                         \
+   static void suite_test(h2::h2_suite*, h2::h2_case*);                               \
+   static h2::h2_suite H2PP_UNIQUE(si)(H2_FILE, h2::ss(suite_describe), &suite_test); \
    static void suite_test(h2::h2_suite* suite_1_5_2_8_0_1_1_9_8, h2::h2_case* case_1_1_0_2_6_0_0_2_4)
 
 #define H2Setup() if (case_1_1_0_2_6_0_0_2_4)
@@ -3165,8 +3178,8 @@ struct h2_suite {
 
 #define H2Todo(...) __H2Case(#__VA_ARGS__, H2PP_UNIQUE(ci), H2PP_UNIQUE(sc), H2PP_UNIQUE(cc), 1)
 #define H2Case(...) __H2Case(#__VA_ARGS__, H2PP_UNIQUE(ci), H2PP_UNIQUE(sc), H2PP_UNIQUE(cc), 0)
-#define __H2Case(case_name, case_instance, suite_cleaner, case_cleaner, todo)                                             \
-   static h2::h2_case case_instance(H2_FILE, h2::ss(case_name), todo);                                                    \
+#define __H2Case(case_describe, case_instance, suite_cleaner, case_cleaner, todo)                                         \
+   static h2::h2_case case_instance(H2_FILE, h2::ss(case_describe), todo);                                                \
    static h2::h2_suite::registor H2PP_UNIQUE(sr)(suite_1_5_2_8_0_1_1_9_8, &case_instance);                                \
    if (&case_instance == case_1_1_0_2_6_0_0_2_4)                                                                          \
       for (h2::h2_suite::cleaner suite_cleaner(suite_1_5_2_8_0_1_1_9_8); suite_cleaner; case_1_1_0_2_6_0_0_2_4 = nullptr) \
@@ -3175,11 +3188,11 @@ struct h2_suite {
 
 #define H2TODO(...) __H2CASE(#__VA_ARGS__, H2PP_UNIQUE(case_test_C), H2PP_UNIQUE(suite_test_C), 1)
 #define H2CASE(...) __H2CASE(#__VA_ARGS__, H2PP_UNIQUE(case_test_C), H2PP_UNIQUE(suite_test_C), 0)
-#define __H2CASE(case_name, case_test, suite_test, todo)                                              \
+#define __H2CASE(case_describe, case_test, suite_test, todo)                                          \
    static void case_test();                                                                           \
    static void suite_test(h2::h2_suite* suite_1_5_2_8_0_1_1_9_8, h2::h2_case* case_1_1_0_2_6_0_0_2_4) \
    {                                                                                                  \
-      static h2::h2_case case_instance(H2_FILE, h2::ss(case_name), todo);                             \
+      static h2::h2_case case_instance(H2_FILE, h2::ss(case_describe), todo);                         \
       static h2::h2_suite::registor suite_registor(suite_1_5_2_8_0_1_1_9_8, &case_instance);          \
       if (&case_instance == case_1_1_0_2_6_0_0_2_4)                                                   \
          for (h2::h2_case::cleaner case_cleaner(&case_instance); case_cleaner;)                       \
@@ -8627,6 +8640,53 @@ h2_inline h2_sock::~h2_sock()
 {
    h2_socket::I().stop();
 }
+// source/core/h2_describe.cpp
+h2_inline h2_describe::h2_describe(const char* describe) : desc(describe)
+{
+   if (desc) {
+      strcpy(nbuf, desc);
+      strcpy(tbuf, "");
+      split();
+
+      name = nbuf;
+      while (*name && ::isspace(*name)) name++;  // strip left space
+
+      int count = 0;
+      for (char* t = strtok(tbuf, " ,"); t; t = strtok(nullptr, " ,"))
+         if (count < sizeof(tags) / sizeof(tags[0]) - 1) tags[count++] = t;
+      tags[count] = nullptr;
+   }
+}
+
+h2_inline void h2_describe::split()
+{
+   const char* p = desc;
+   for (bool quote = false; *p; ++p) {
+      if (*p == '\"') quote = !quote;
+      if (!quote && *p == '[') break;
+   }
+   if (*p != '[') return;  // left brace
+   const char* q = p;
+   for (bool quote = false; *q; ++q) {
+      if (*q == '\"') quote = !quote;
+      if (!quote && *q == ']') break;
+   }
+   if (*q != ']') return;  // right brace
+
+   strncpy(tbuf, p + 1, (size_t)(q - p - 1));
+   tbuf[(size_t)(q - p - 1)] = '\0';
+
+   strcpy(&nbuf[(size_t)(p - desc)], q + 1);
+}
+
+h2_inline bool h2_describe::has_tag(const char* pattern)
+{
+   for (int i = 0; tags[i]; ++i) {
+      if (!strcasecmp(tags[i], pattern)) return true;
+      if (strcspn(pattern, "?*[]") < strlen(pattern) && h2_pattern::wildcard_match(pattern, tags[i], true)) return true;
+   }
+   return false;
+}
 // source/core/h2_case.cpp
 h2_inline void h2_case::clear()
 {
@@ -8664,7 +8724,7 @@ h2_inline void h2_case::failing(h2_fail* fail, bool defer, bool append)
    }
 }
 // source/core/h2_suite.cpp
-h2_inline h2_suite::h2_suite(const char* file_, const char* name_, void (*test_code_)(h2_suite*, h2_case*)) : file(file_), name(name_), test_code(test_code_)
+h2_inline h2_suite::h2_suite(const char* file_, const char* describe_, void (*test_code_)(h2_suite*, h2_case*)) : file(file_), describe(describe_), test_code(test_code_)
 {
    memset(ctx, 0, sizeof(jmp_buf));
    h2_runner::I().suites.push_back(x);
@@ -8717,6 +8777,72 @@ h2_inline h2_suite::cleaner::~cleaner()
    if (memcmp((const void*)thus->ctx, (const void*)zero, sizeof(jmp_buf)))
       ::longjmp(thus->ctx, 1);
 }
+// source/core/h2_filter.cpp
+static inline bool match_names(const std::vector<const char*>& patterns, const char* subject)
+{
+   for (auto pattern : patterns) {
+      if (strcasestr(subject, pattern)) return true;
+      if (strcspn(pattern, "?*[]") < strlen(pattern) && h2_pattern::wildcard_match(pattern, subject, true)) return true;
+   }
+   return false;
+}
+
+static inline bool match_tags(const std::vector<const char*>& patterns, h2_describe& describe)
+{
+   for (auto pattern : patterns)
+      if (describe.has_tag(pattern)) return true;
+   return false;
+}
+
+static inline bool h2_filter_case(h2_suite* s, h2_case* c)
+{
+   if (O.tags_filter) {
+      if (!O.includes.empty())
+         if (!match_tags(O.includes, s->describe) && !match_tags(O.includes, c->describe))
+            return true;
+      if (!O.excludes.empty())
+         if (match_tags(O.excludes, s->describe) || match_tags(O.excludes, c->describe))
+            return true;
+   } else {
+      if (!O.includes.empty())
+         if (!match_names(O.includes, s->describe.name) && !match_names(O.includes, c->describe.name) && !match_names(O.includes, c->file))
+            return true;
+      if (!O.excludes.empty())
+         if (match_names(O.excludes, s->describe.name) || match_names(O.excludes, c->describe.name) || match_names(O.excludes, c->file))
+            return true;
+   }
+   return false;
+}
+
+static inline bool h2_filter_suite(h2_suite* s)
+{
+   if (O.tags_filter) {
+      if (!O.includes.empty())
+         if (!match_tags(O.includes, s->describe))
+            return true;
+      if (!O.excludes.empty())
+         if (match_tags(O.includes, s->describe))
+            return true;
+   } else {
+      if (!O.includes.empty())
+         if (!match_names(O.includes, s->describe.name) && !match_names(O.includes, s->file))
+            return true;
+      if (!O.excludes.empty())
+         if (match_names(O.excludes, s->describe.name) || match_names(O.excludes, s->file))
+            return true;
+   }
+   return false;
+}
+
+static inline void h2_filter(h2_suite* s, h2_case* c = nullptr)
+{
+   if (c) {
+      c->filtered = h2_filter_case(s, c);
+      if (!c->filtered) s->filtered = false;
+   } else {
+      s->filtered = h2_filter_suite(s);
+   }
+}
 // source/core/h2_runner.cpp
 static inline void drop_last_order() { ::remove(".last_order"); }
 
@@ -8726,7 +8852,7 @@ static inline void save_last_order(h2_list& suites)
    if (!f) return;
    h2_list_for_each_entry (s, suites, h2_suite, x)
       h2_list_for_each_entry (c, s->cases, h2_case, x)
-         ::fprintf(f, "  file: %s\n suite: %s\n  case: %s\nstatus: %s\n\n", c->file, ss(s->name), c->name, c->failed ? "failed" : "passed");
+         ::fprintf(f, "  file: %s\n suite: %s\n  case: %s\nstatus: %s\n\n", c->file, s->describe.name, c->describe.name, c->failed ? "failed" : "passed");
    ::fclose(f);
 }
 
@@ -8735,18 +8861,18 @@ static inline void __find_mark(h2_list& suites, char* fileline, char* suitename,
    static int seq = INT_MIN / 4;
    int founds = 0;
    h2_list_for_each_entry (s, suites, h2_suite, x)  // full match 3
-      if (!strcmp(suitename, ss(s->name)))
+      if (!strcmp(suitename, s->describe.name))
          h2_list_for_each_entry (c, s->cases, h2_case, x)
-            if (!strcmp(casename, c->name) && !strcmp(fileline, c->file)) {
+            if (!strcmp(casename, c->describe.name) && !strcmp(fileline, c->file)) {
                s->seq = c->seq = ++seq;
                if (failed) c->last_failed = true;
                ++founds;
             }
    if (founds) return;
    h2_list_for_each_entry (s, suites, h2_suite, x)  // line position change, match2
-      if (!strcmp(suitename, ss(s->name)))
+      if (!strcmp(suitename, s->describe.name))
          h2_list_for_each_entry (c, s->cases, h2_case, x)
-            if (!strcmp(casename, c->name)) {
+            if (!strcmp(casename, c->describe.name)) {
                s->seq = c->seq = ++seq;
                if (failed) c->last_failed = true;
             }
@@ -8789,16 +8915,15 @@ h2_inline void h2_runner::enumerate()
       if (O.progressing)
          for (; dots <= i * dps; dots++)
             h2_console::prints("dark gray", ".");
+
       for (auto& setup : global_suite_setups) setup();
       s->setup();
       s->enumerate();
       s->cleanup();
       for (auto& cleanup : global_suite_cleanups) cleanup();
-      int unfiltered = 0;
+      h2_filter(s);
       h2_list_for_each_entry (c, s->cases, h2_case, x)
-         if (!(c->filtered = O.filter(ss(s->name), c->name, c->file)))
-            unfiltered++;
-      if (unfiltered == 0) s->filtered = O.filter(ss(s->name), "", s->file);
+         h2_filter(s, c);
    }
    if (O.progressing) h2_console::prints("", "\33[2K\r");
 }
@@ -8811,7 +8936,7 @@ struct shuffle_comparison {
    }
    static int name(h2_list* a, h2_list* b)
    {
-      return strcasecmp(ss(h2_list_entry(a, T, x)->name), ss(h2_list_entry(b, T, x)->name)) * R;
+      return strcasecmp(h2_list_entry(a, T, x)->describe.name, h2_list_entry(b, T, x)->describe.name) * R;
    }
    static int file(h2_list* a, h2_list* b)
    {
@@ -9509,12 +9634,12 @@ struct h2_report_list : h2_report_impl {
    {
       h2_report_impl::on_suite_start(s);
       unfiltered_suite_case_index = 0;
-      if (!s->name) return;  // CASE
+      if (s->absent()) return;  // CASE
       if (s->filtered) return;
       ++unfiltered_suite_index;
       if (option_has("suite")) {
          h2_console::prints("dark gray", "SUITE-%d. ", unfiltered_suite_index);
-         h2_console::prints("bold,blue", "%s", s->name);
+         h2_console::prints("bold,blue", "%s", s->describe.name);
          h2_console::prints("dark gray", " %s\n", s->file);
       }
    }
@@ -9524,9 +9649,9 @@ struct h2_report_list : h2_report_impl {
       if (s->filtered) return;
       const char* type = nullptr;
       if (c->todo) {
-         if (option_has("todo")) type = s->name ? "Todo" : "TODO";
+         if (option_has("todo")) type = s->absent() ? "TODO" : "Todo";
       } else {
-         if (option_has("case")) type = s->name ? "Case" : "CASE";
+         if (option_has("case")) type = s->absent() ? "CASE" : "Case";
       }
 
       if (type) {
@@ -9535,7 +9660,7 @@ struct h2_report_list : h2_report_impl {
             h2_console::prints("dark gray", " %s/%d-%d. ", type, unfiltered_suite_case_index, unfiltered_runner_case_index);
          else
             h2_console::prints("dark gray", " %s-%d. ", type, unfiltered_runner_case_index);
-         h2_console::prints("cyan", "%s", c->name);
+         h2_console::prints("cyan", "%s", c->describe.name);
          h2_console::prints("dark gray", " %s\n", h2_basefile(c->file));
       }
    }
@@ -9593,7 +9718,7 @@ struct h2_report_console : h2_report_impl {
       h2_line bar;
       if (percentage && O.progressing) format_percentage(bar);
       if (status && status_style) bar.printf(status_style, "%s", status);
-      if (s && c) bar += format_title(s->name, c->name, backable ? nullptr : h2_basefile(c->file));
+      if (s && c) bar += format_title(s->describe.name, c->describe.name, backable ? nullptr : h2_basefile(c->file));
       if (backable) {
          if (h2_console::width() > bar.width())
             bar.padding(h2_console::width() - bar.width());
@@ -9644,7 +9769,7 @@ struct h2_report_console : h2_report_impl {
       if (O.verbose >= 9 && O.includes.size() + O.excludes.size() == 0) {
          print_bar(true, nullptr, nullptr, nullptr, nullptr, false);
          h2_console::prints("dark gray", "suite ");
-         h2_console::prints("", "%s", ss(s->name));
+         h2_console::prints("", "%s", s->describe.name);
          if (1 < nonzero_count(s->stats.passed, s->stats.failed, s->stats.todo, s->stats.filtered, s->stats.ignored))
             h2_console::prints("dark gray", " (");
          else
@@ -9688,7 +9813,7 @@ struct h2_report_console : h2_report_impl {
       h2_report_impl::on_case_endup(s, c);
       if (c->filtered || c->ignored) return;
       if (c->todo) {
-         if (O.verbose >= verbose_detail) print_bar(true, "yellow", s->name ? "Todo   " : "TODO   ", s, c, false);
+         if (O.verbose >= verbose_detail) print_bar(true, "yellow", s->absent() ? "TODO   " : "Todo   ", s, c, false);
       } else if (c->failed) {
          if (O.verbose >= verbose_compact_failed) {
             print_bar(true, "bold,red", "Failed ", s, c, false);
@@ -9728,13 +9853,13 @@ struct h2_report_junit : h2_report_impl {
    {
       h2_report_impl::on_suite_start(s);
       if (!f) return;
-      fprintf(f, "<testsuite errors=\"0\" failures=\"%d\" hostname=\"localhost\" name=\"%s\" skipped=\"%d\" tests=\"%d\" time=\"%d\" timestamp=\"%s\">\n", s->stats.failed, s->name, s->stats.todo + s->stats.filtered, s->cases.count(), 0, "");
+      fprintf(f, "<testsuite errors=\"0\" failures=\"%d\" hostname=\"localhost\" name=\"%s\" skipped=\"%d\" tests=\"%d\" time=\"%d\" timestamp=\"%s\">\n", s->stats.failed, s->describe.name, s->stats.todo + s->stats.filtered, s->cases.count(), 0, "");
    }
    void on_case_endup(h2_suite* s, h2_case* c) override
    {
       h2_report_impl::on_case_endup(s, c);
       if (!f) return;
-      fprintf(f, "<testcase classname=\"%s\" name=\"%s\" status=\"%s\" time=\"%.3f\">\n", s->name, c->name, c->todo ? "TODO" : (c->filtered ? "Filtered" : (c->ignored ? "Ignored" : (c->failed ? "Failed" : "Passed"))), c->stats.timecost / 1000.0);
+      fprintf(f, "<testcase classname=\"%s\" name=\"%s\" status=\"%s\" time=\"%.3f\">\n", s->describe.name, c->describe.name, c->todo ? "TODO" : (c->filtered ? "Filtered" : (c->ignored ? "Ignored" : (c->failed ? "Failed" : "Passed"))), c->stats.timecost / 1000.0);
       if (c->failed) {
          fprintf(f, "<failure message=\"%s:", c->file);
          if (c->fails) c->fails->foreach([&](h2_fail* fail, size_t si, size_t ci) {fprintf(f, "{newline}"); fail->print(f); });
@@ -9915,6 +10040,7 @@ static inline void usage()
             "\033[90m│\033[0m" " -\033[36mq\033[0m  "                               "\033[90m│\033[0m" "           "                                   "\033[90m│\033[0m" " \033[36mq\033[0muit exit code as failed cases count                       "                               "\033[90m│\033[0m\n" H2_USAGE_BR
             "\033[90m│\033[0m" " -\033[36ms\033[0m  "                               "\033[90m│\033[0m" "\033[90m[\033[0mtype=rand\033[90m]\033[0m"     "\033[90m│\033[0m" " \033[36ms\033[0mhuffle cases random/name/file/reverse if no last failed   "                               "\033[90m│\033[0m\n" H2_USAGE_BR
             "\033[90m│\033[0m" " -\033[36mS\033[0m  "                               "\033[90m│\033[0m" "\033[90m[\033[0mtype=\\\\\\\"\033[90m]\033[0m" "\033[90m│\033[0m" " JSON C/C++ \033[36mS\033[0mource code, type [\\\'/single \\\"/double \\\\\\\"]    "                       "\033[90m│\033[0m\n" H2_USAGE_BR
+            "\033[90m│\033[0m" " -\033[36mt\033[0m  "                               "\033[90m│\033[0m" "           "                                   "\033[90m│\033[0m" " \033[36mt\033[0mags include/exclude filter                                "                               "\033[90m│\033[0m\n" H2_USAGE_BR
             "\033[90m│\033[0m" " -\033[36mv\033[0m  "                               "\033[90m│\033[0m" "  \033[90m[\033[0mn=max\033[90m]\033[0m  "     "\033[90m│\033[0m" " \033[36mv\033[0merbose, 0:quiet 1/2:compact 3:normal 4:details            "                               "\033[90m│\033[0m\n" H2_USAGE_BR
             "\033[90m│\033[0m" " -\033[36mw\033[0m  "                               "\033[90m│\033[0m" "           "                                   "\033[90m│\033[0m" " Console output in black-\033[36mw\033[0mhite color style                  "                               "\033[90m│\033[0m\n" H2_USAGE_BR
             "\033[90m│\033[0m" " -\033[36mx\033[0m  "                               "\033[90m│\033[0m" "           "                                   "\033[90m│\033[0m" " Thrown e\033[36mx\033[0mception is considered as failure                  "                               "\033[90m│\033[0m\n"
@@ -10032,6 +10158,7 @@ h2_inline void h2_option::parse(int argc, const char** argv)
                if (strcasecmp("\'", t) && strcasecmp("\"", t) && strcasecmp("\\\"", t)) json_source_quote = "\\\"";
             }
             break;
+         case 't': tags_filter = true; break;
          case 'v': get.extract_number(verbose = 8); break;
          case 'w': colorful = !colorful; break;
          case 'x': exception_as_fail = true; break;
@@ -10039,27 +10166,6 @@ h2_inline void h2_option::parse(int argc, const char** argv)
          case '?': usage(); exit(0);
       }
    }
-}
-
-static inline bool match3(const std::vector<const char*>& patterns, const char* subject)
-{
-   for (auto pattern : patterns) {
-      if (strcasestr(subject, pattern)) return true;
-      if (strcspn(pattern, "?*[]") < strlen(pattern) && h2_pattern::wildcard_match(pattern, subject, true)) return true;
-      // if (strcspn(pattern, "?*[]+^$\\.") < strlen(pattern) && h2_pattern::regex_match(pattern, subject, true)) return true;
-   }
-   return false;
-}
-
-h2_inline bool h2_option::filter(const char* suitename, const char* casename, const char* fileline) const
-{
-   if (!includes.empty())
-      if (!match3(includes, suitename) && !match3(includes, casename) && !match3(includes, fileline))
-         return true;
-   if (!excludes.empty())
-      if (match3(excludes, suitename) || match3(excludes, casename) || match3(excludes, fileline))
-         return true;
-   return false;
 }
 }
 #endif

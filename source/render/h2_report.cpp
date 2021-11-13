@@ -54,12 +54,12 @@ struct h2_report_list : h2_report_impl {
    {
       h2_report_impl::on_suite_start(s);
       unfiltered_suite_case_index = 0;
-      if (!s->name) return;  // CASE
+      if (s->absent()) return;  // CASE
       if (s->filtered) return;
       ++unfiltered_suite_index;
       if (option_has("suite")) {
          h2_console::prints("dark gray", "SUITE-%d. ", unfiltered_suite_index);
-         h2_console::prints("bold,blue", "%s", s->name);
+         h2_console::prints("bold,blue", "%s", s->describe.name);
          h2_console::prints("dark gray", " %s\n", s->file);
       }
    }
@@ -69,9 +69,9 @@ struct h2_report_list : h2_report_impl {
       if (s->filtered) return;
       const char* type = nullptr;
       if (c->todo) {
-         if (option_has("todo")) type = s->name ? "Todo" : "TODO";
+         if (option_has("todo")) type = s->absent() ? "TODO" : "Todo";
       } else {
-         if (option_has("case")) type = s->name ? "Case" : "CASE";
+         if (option_has("case")) type = s->absent() ? "CASE" : "Case";
       }
 
       if (type) {
@@ -80,7 +80,7 @@ struct h2_report_list : h2_report_impl {
             h2_console::prints("dark gray", " %s/%d-%d. ", type, unfiltered_suite_case_index, unfiltered_runner_case_index);
          else
             h2_console::prints("dark gray", " %s-%d. ", type, unfiltered_runner_case_index);
-         h2_console::prints("cyan", "%s", c->name);
+         h2_console::prints("cyan", "%s", c->describe.name);
          h2_console::prints("dark gray", " %s\n", h2_basefile(c->file));
       }
    }
@@ -138,7 +138,7 @@ struct h2_report_console : h2_report_impl {
       h2_line bar;
       if (percentage && O.progressing) format_percentage(bar);
       if (status && status_style) bar.printf(status_style, "%s", status);
-      if (s && c) bar += format_title(s->name, c->name, backable ? nullptr : h2_basefile(c->file));
+      if (s && c) bar += format_title(s->describe.name, c->describe.name, backable ? nullptr : h2_basefile(c->file));
       if (backable) {
          if (h2_console::width() > bar.width())
             bar.padding(h2_console::width() - bar.width());
@@ -189,7 +189,7 @@ struct h2_report_console : h2_report_impl {
       if (O.verbose >= 9 && O.includes.size() + O.excludes.size() == 0) {
          print_bar(true, nullptr, nullptr, nullptr, nullptr, false);
          h2_console::prints("dark gray", "suite ");
-         h2_console::prints("", "%s", ss(s->name));
+         h2_console::prints("", "%s", s->describe.name);
          if (1 < nonzero_count(s->stats.passed, s->stats.failed, s->stats.todo, s->stats.filtered, s->stats.ignored))
             h2_console::prints("dark gray", " (");
          else
@@ -233,7 +233,7 @@ struct h2_report_console : h2_report_impl {
       h2_report_impl::on_case_endup(s, c);
       if (c->filtered || c->ignored) return;
       if (c->todo) {
-         if (O.verbose >= verbose_detail) print_bar(true, "yellow", s->name ? "Todo   " : "TODO   ", s, c, false);
+         if (O.verbose >= verbose_detail) print_bar(true, "yellow", s->absent() ? "TODO   " : "Todo   ", s, c, false);
       } else if (c->failed) {
          if (O.verbose >= verbose_compact_failed) {
             print_bar(true, "bold,red", "Failed ", s, c, false);
@@ -273,13 +273,13 @@ struct h2_report_junit : h2_report_impl {
    {
       h2_report_impl::on_suite_start(s);
       if (!f) return;
-      fprintf(f, "<testsuite errors=\"0\" failures=\"%d\" hostname=\"localhost\" name=\"%s\" skipped=\"%d\" tests=\"%d\" time=\"%d\" timestamp=\"%s\">\n", s->stats.failed, s->name, s->stats.todo + s->stats.filtered, s->cases.count(), 0, "");
+      fprintf(f, "<testsuite errors=\"0\" failures=\"%d\" hostname=\"localhost\" name=\"%s\" skipped=\"%d\" tests=\"%d\" time=\"%d\" timestamp=\"%s\">\n", s->stats.failed, s->describe.name, s->stats.todo + s->stats.filtered, s->cases.count(), 0, "");
    }
    void on_case_endup(h2_suite* s, h2_case* c) override
    {
       h2_report_impl::on_case_endup(s, c);
       if (!f) return;
-      fprintf(f, "<testcase classname=\"%s\" name=\"%s\" status=\"%s\" time=\"%.3f\">\n", s->name, c->name, c->todo ? "TODO" : (c->filtered ? "Filtered" : (c->ignored ? "Ignored" : (c->failed ? "Failed" : "Passed"))), c->stats.timecost / 1000.0);
+      fprintf(f, "<testcase classname=\"%s\" name=\"%s\" status=\"%s\" time=\"%.3f\">\n", s->describe.name, c->describe.name, c->todo ? "TODO" : (c->filtered ? "Filtered" : (c->ignored ? "Ignored" : (c->failed ? "Failed" : "Passed"))), c->stats.timecost / 1000.0);
       if (c->failed) {
          fprintf(f, "<failure message=\"%s:", c->file);
          if (c->fails) c->fails->foreach([&](h2_fail* fail, size_t si, size_t ci) {fprintf(f, "{newline}"); fail->print(f); });

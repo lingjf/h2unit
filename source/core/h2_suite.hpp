@@ -1,7 +1,7 @@
 struct h2_suite {
    h2_list x;
    const char* file;
-   const char* name;
+   h2_describe describe;
    void (*test_code)(h2_suite*, h2_case*);
    bool filtered = false;
    int seq = 0;
@@ -11,8 +11,9 @@ struct h2_suite {
    h2_list mocks;
    h2_stats stats;
 
-   h2_suite(const char* file, const char* name, void (*)(h2_suite*, h2_case*));
+   h2_suite(const char* file, const char* describe, void (*)(h2_suite*, h2_case*));
    void clear();
+   bool absent() const { return !describe.desc; }  // nullptr describe means no SUITE wrapper (CASE/TODO ...)
 
    void enumerate();
    void test(h2_case* c);

@@ -55,11 +55,11 @@ g++ -std=c++11 h2unit.cpp test2.cpp -o a.out
 
 ### H2SUITE alias SUITE
 
-`SUITE` define a group of test cases. Suite name is not requred quoted by double quotation marks `"`.
+`SUITE` define a group of test cases. Suite name is not requred quoted by double quotation marks `"`. Tags separated by space or comma and in braces[].
 
 ```C++
 #include "h2unit.h"
-SUITE(suite name)
+SUITE(suite name [tag1 tag2 tag3])
 {
 
 }
@@ -67,13 +67,13 @@ SUITE(suite name)
 
 ### H2Case alias Case
 
-`Case` define a test case inside `SUITE`. Case name is not requred quoted by double quotation marks `"`.
+`Case` define a test case inside `SUITE`. Case name is not requred quoted by double quotation marks `"`. Tags separated by space or comma and in braces[].
 
 ```C++
 #include "h2unit.h"
 SUITE(suite name)
 {
-    Case(case name)
+    Case(case name [tag1 tag2 tag3])
     {
 
     }

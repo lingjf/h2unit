@@ -1,7 +1,7 @@
 #include "../source/h2_unit.cpp"
 #include "test_types.hpp"
 
-SUITE(override)
+SUITE(override [memory_check])
 {
    Case(malloc)
    {
@@ -44,7 +44,7 @@ SUITE(override)
       }
    }
 
-   Case(new[])
+   Case("new[]")
    {
       delete[] new char[100];
       delete[] new (std::nothrow) char[100];

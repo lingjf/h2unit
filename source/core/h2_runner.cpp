@@ -6,7 +6,7 @@ static inline void save_last_order(h2_list& suites)
    if (!f) return;
    h2_list_for_each_entry (s, suites, h2_suite, x)
       h2_list_for_each_entry (c, s->cases, h2_case, x)
-         ::fprintf(f, "  file: %s\n suite: %s\n  case: %s\nstatus: %s\n\n", c->file, ss(s->name), c->name, c->failed ? "failed" : "passed");
+         ::fprintf(f, "  file: %s\n suite: %s\n  case: %s\nstatus: %s\n\n", c->file, s->describe.name, c->describe.name, c->failed ? "failed" : "passed");
    ::fclose(f);
 }
 
@@ -15,18 +15,18 @@ static inline void __find_mark(h2_list& suites, char* fileline, char* suitename,
    static int seq = INT_MIN / 4;
    int founds = 0;
    h2_list_for_each_entry (s, suites, h2_suite, x)  // full match 3
-      if (!strcmp(suitename, ss(s->name)))
+      if (!strcmp(suitename, s->describe.name))
          h2_list_for_each_entry (c, s->cases, h2_case, x)
-            if (!strcmp(casename, c->name) && !strcmp(fileline, c->file)) {
+            if (!strcmp(casename, c->describe.name) && !strcmp(fileline, c->file)) {
                s->seq = c->seq = ++seq;
                if (failed) c->last_failed = true;
                ++founds;
             }
    if (founds) return;
    h2_list_for_each_entry (s, suites, h2_suite, x)  // line position change, match2
-      if (!strcmp(suitename, ss(s->name)))
+      if (!strcmp(suitename, s->describe.name))
          h2_list_for_each_entry (c, s->cases, h2_case, x)
-            if (!strcmp(casename, c->name)) {
+            if (!strcmp(casename, c->describe.name)) {
                s->seq = c->seq = ++seq;
                if (failed) c->last_failed = true;
             }
@@ -69,16 +69,15 @@ h2_inline void h2_runner::enumerate()
       if (O.progressing)
          for (; dots <= i * dps; dots++)
             h2_console::prints("dark gray", ".");
+
       for (auto& setup : global_suite_setups) setup();
       s->setup();
       s->enumerate();
       s->cleanup();
       for (auto& cleanup : global_suite_cleanups) cleanup();
-      int unfiltered = 0;
+      h2_filter(s);
       h2_list_for_each_entry (c, s->cases, h2_case, x)
-         if (!(c->filtered = O.filter(ss(s->name), c->name, c->file)))
-            unfiltered++;
-      if (unfiltered == 0) s->filtered = O.filter(ss(s->name), "", s->file);
+         h2_filter(s, c);
    }
    if (O.progressing) h2_console::prints("", "\33[2K\r");
 }
@@ -91,7 +90,7 @@ struct shuffle_comparison {
    }
    static int name(h2_list* a, h2_list* b)
    {
-      return strcasecmp(ss(h2_list_entry(a, T, x)->name), ss(h2_list_entry(b, T, x)->name)) * R;
+      return strcasecmp(h2_list_entry(a, T, x)->describe.name, h2_list_entry(b, T, x)->describe.name) * R;
    }
    static int file(h2_list* a, h2_list* b)
    {

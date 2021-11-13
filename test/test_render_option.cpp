@@ -19,6 +19,7 @@ SUITE(h2_option)
       OK(!c.quit_exit_code);
       OK(0, c.break_after_fails);
       OK(!c.exception_as_fail);
+      OK(!c.tags_filter);
       OK(!c.list_cases.size());
       OK(1, c.run_rounds);
       OK(5, c.fold_json);
@@ -127,31 +128,35 @@ SUITE(h2_option)
       OK("jenkins.xml", c.junit_path);
    }
 
+   Case(tags -t)
+   {
+      const char* argv[] = {"./a.out", "-t", ""};
+      c.parse(3, argv);
+      OK(c.tags_filter);
+   }
+
    Case(include substr)
    {
       const char* argv[] = {"./a.out", "-i", "http"};
       c.parse(3, argv);
-      OK(!c.filter("server", "connection", "httpd_connection.cpp:123"));
-      OK(!c.filter("server", "my_http_connection", "tcp_connection.cpp:123"));
-      OK(!c.filter("http", "connection", "tcp_connection.cpp:123"));
+      OK(ListOf("http"), c.includes);
+      OK(CountOf(0), c.excludes);
    }
 
    Case(include substr 2)
    {
       const char* argv[] = {"./a.out", "-i", "http", "tcp*"};
       c.parse(4, argv);
-      OK(!c.filter("server", "connection", "httpd_connection.cpp:123"));
-      OK(!c.filter("server", "connection", "tcp_connection.cpp:123"));
-      OK(!c.filter("http", "connection", "tcp_connection.cpp:123"));
+      OK(ListOf("http", "tcp*"), c.includes);
+      OK(CountOf(0), c.excludes);
    }
 
    Case(include exclude)
    {
       const char* argv[] = {"./a.out", "-e", "http", "-e", "tcp"};
       c.parse(5, argv);
-      OK(c.filter("server", "connection", "httpd_connection.cpp:123"));
-      OK(c.filter("server", "connection", "tcp_connection.cpp:123"));
-      OK(c.filter("http", "connection", "tcp_connection.cpp:123"));
+      OK(ListOf("http", "tcp"), c.excludes);
+      OK(CountOf(0), c.includes);
    }
 
    Case(include verbose)

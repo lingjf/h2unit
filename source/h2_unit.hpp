@@ -98,6 +98,7 @@ namespace h2 {
 #include "stdio/h2_stdio.hpp"         //
 #include "net/h2_dns.hpp"             //
 #include "net/h2_socket.hpp"          // stub, failure, matcher
+#include "core/h2_describe.hpp"       //
 #include "core/h2_case.hpp"           // failure, stub, mock, dns, socket
 #include "core/h2_suite.hpp"          // case, stub, mock
 #include "core/h2_core.hpp"           //

@@ -16,7 +16,7 @@ SUITE(Memory asymmetric allocate and free)
       delete p;
    }
 
-   Case(malloc delete[] failure)
+   Case(malloc "delete[]" failure)
    {
       char* p = (char*)malloc(100);
       delete[] p;
@@ -28,13 +28,13 @@ SUITE(Memory asymmetric allocate and free)
       free(p);
    }
 
-   Case(new delete[] failure)
+   Case(new "delete[]" failure)
    {
       char* p = (char*)new char;
       delete[] p;
    }
 
-   Case(new[] free failure)
+   Case("new[]" free failure)
    {
       char* p = (char*)new char[100];
       free(p);

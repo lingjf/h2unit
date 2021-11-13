@@ -22,7 +22,7 @@ SUITE(json select empty)
       OK(0, select.values.size());
    }
 
-   Case([] empty)
+   Case("[]" empty)
    {
       h2::h2_json_select select1("[]");
       OK(0, select1.values.size());
@@ -30,13 +30,13 @@ SUITE(json select empty)
       OK(0, select2.values.size());
    }
 
-   Case([][] empty)
+   Case("[][]" empty)
    {
       h2::h2_json_select select("[][]");
       OK(0, select.values.size());
    }
 
-   Case(.[] empty)
+   Case(".[]" empty)
    {
       h2::h2_json_select select(".[]");
       OK(0, select.values.size());
@@ -69,7 +69,7 @@ SUITE(json select)
       OK("world", select.values[1].key);
    }
 
-   Case([hello])
+   Case("[hello]")
    {
       h2::h2_json_select select1("[hello]");
       OK(1, select1.values.size());
@@ -82,7 +82,7 @@ SUITE(json select)
       OK("hello", select2.values[0].key);
    }
 
-   Case(["hello"])
+   Case("hello" braces)
    {
       h2::h2_json_select select("[\"hello\"]");
       OK(1, select.values.size());
@@ -91,7 +91,7 @@ SUITE(json select)
       OK("hello", select.values[0].key);
    }
 
-   Case(['hello'])
+   Case("['hello']")
    {
       h2::h2_json_select select("['hello']");
       OK(1, select.values.size());
@@ -100,7 +100,7 @@ SUITE(json select)
       OK("hello", select.values[0].key);
    }
 
-   Case([hello][world])
+   Case("[hello][world]")
    {
       h2::h2_json_select select("[hello][world]");
       OK(2, select.values.size());
@@ -111,7 +111,7 @@ SUITE(json select)
       OK("world", select.values[1].key);
    }
 
-   Case([1])
+   Case("[1]")
    {
       h2::h2_json_select select1("[1]");
       OK(1, select1.values.size());
@@ -124,7 +124,7 @@ SUITE(json select)
       OK("", select2.values[0].key);
    }
 
-   Case([1][-2])
+   Case("[1][-2]")
    {
       h2::h2_json_select select1("[1][-2]");
       OK(2, select1.values.size());

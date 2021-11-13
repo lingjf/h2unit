@@ -45,7 +45,7 @@ SUITE(block attributes)
    }
 }
 
-SUITE(BLOCK)
+SUITE(BLOCK [memory_check])
 {
    void *c1, *c2, *c3, *c4;
 

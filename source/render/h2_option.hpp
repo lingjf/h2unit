@@ -32,6 +32,7 @@ struct h2_option {
    bool exception_as_fail = false;
    bool debugger_trap = false;
    bool quit_exit_code = false;
+   bool tags_filter = false;
    int break_after_fails = 0;
    int run_rounds = 1;
    int fold_json = 5;  // 0 unfold, 1 fold short, 2 fold same, 3 fold single
@@ -44,7 +45,6 @@ struct h2_option {
    std::vector<const char*> includes, excludes;
 
    void parse(int argc, const char** argv);
-   bool filter(const char* suitename, const char* casename, const char* fileline) const;
 };
 
 static const h2_option& O = h2_option::I();  // for pretty

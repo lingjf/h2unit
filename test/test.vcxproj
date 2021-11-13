@@ -25,6 +25,8 @@
     <ClCompile Include="test_bugfix.cpp" />
     <ClCompile Include="test_core_case.cpp" />
     <ClCompile Include="test_core_core.cpp" />
+    <ClCompile Include="test_core_describe.cpp" />
+    <ClCompile Include="test_core_filter.cpp" />
     <ClCompile Include="test_core_runner.cpp" />
     <ClCompile Include="test_core_suite.cpp" />
     <ClCompile Include="test_except_exception.cpp" />

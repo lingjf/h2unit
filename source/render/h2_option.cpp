@@ -18,6 +18,7 @@ static inline void usage()
             "\033[90m│\033[0m" " -\033[36mq\033[0m  "                               "\033[90m│\033[0m" "           "                                   "\033[90m│\033[0m" " \033[36mq\033[0muit exit code as failed cases count                       "                               "\033[90m│\033[0m\n" H2_USAGE_BR
             "\033[90m│\033[0m" " -\033[36ms\033[0m  "                               "\033[90m│\033[0m" "\033[90m[\033[0mtype=rand\033[90m]\033[0m"     "\033[90m│\033[0m" " \033[36ms\033[0mhuffle cases random/name/file/reverse if no last failed   "                               "\033[90m│\033[0m\n" H2_USAGE_BR
             "\033[90m│\033[0m" " -\033[36mS\033[0m  "                               "\033[90m│\033[0m" "\033[90m[\033[0mtype=\\\\\\\"\033[90m]\033[0m" "\033[90m│\033[0m" " JSON C/C++ \033[36mS\033[0mource code, type [\\\'/single \\\"/double \\\\\\\"]    "                       "\033[90m│\033[0m\n" H2_USAGE_BR
+            "\033[90m│\033[0m" " -\033[36mt\033[0m  "                               "\033[90m│\033[0m" "           "                                   "\033[90m│\033[0m" " \033[36mt\033[0mags include/exclude filter                                "                               "\033[90m│\033[0m\n" H2_USAGE_BR
             "\033[90m│\033[0m" " -\033[36mv\033[0m  "                               "\033[90m│\033[0m" "  \033[90m[\033[0mn=max\033[90m]\033[0m  "     "\033[90m│\033[0m" " \033[36mv\033[0merbose, 0:quiet 1/2:compact 3:normal 4:details            "                               "\033[90m│\033[0m\n" H2_USAGE_BR
             "\033[90m│\033[0m" " -\033[36mw\033[0m  "                               "\033[90m│\033[0m" "           "                                   "\033[90m│\033[0m" " Console output in black-\033[36mw\033[0mhite color style                  "                               "\033[90m│\033[0m\n" H2_USAGE_BR
             "\033[90m│\033[0m" " -\033[36mx\033[0m  "                               "\033[90m│\033[0m" "           "                                   "\033[90m│\033[0m" " Thrown e\033[36mx\033[0mception is considered as failure                  "                               "\033[90m│\033[0m\n"
@@ -135,6 +136,7 @@ h2_inline void h2_option::parse(int argc, const char** argv)
                if (strcasecmp("\'", t) && strcasecmp("\"", t) && strcasecmp("\\\"", t)) json_source_quote = "\\\"";
             }
             break;
+         case 't': tags_filter = true; break;
          case 'v': get.extract_number(verbose = 8); break;
          case 'w': colorful = !colorful; break;
          case 'x': exception_as_fail = true; break;
@@ -142,25 +144,4 @@ h2_inline void h2_option::parse(int argc, const char** argv)
          case '?': usage(); exit(0);
       }
    }
-}
-
-static inline bool match3(const std::vector<const char*>& patterns, const char* subject)
-{
-   for (auto pattern : patterns) {
-      if (strcasestr(subject, pattern)) return true;
-      if (strcspn(pattern, "?*[]") < strlen(pattern) && h2_pattern::wildcard_match(pattern, subject, true)) return true;
-      // if (strcspn(pattern, "?*[]+^$\\.") < strlen(pattern) && h2_pattern::regex_match(pattern, subject, true)) return true;
-   }
-   return false;
-}
-
-h2_inline bool h2_option::filter(const char* suitename, const char* casename, const char* fileline) const
-{
-   if (!includes.empty())
-      if (!match3(includes, suitename) && !match3(includes, casename) && !match3(includes, fileline))
-         return true;
-   if (!excludes.empty())
-      if (match3(excludes, suitename) || match3(excludes, casename) || match3(excludes, fileline))
-         return true;
-   return false;
 }

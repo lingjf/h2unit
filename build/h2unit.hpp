@@ -5,7 +5,7 @@
 #ifndef __H2UNIT_HPP__
 #define __H2UNIT_HPP__
 #define H2UNIT_VERSION 5.16
-#define H2UNIT_REVISION 2021-11-13 branches/v5
+#define H2UNIT_REVISION 2021-11-14 branches/v5
 #ifndef __H2_UNIT_HPP__
 #define __H2_UNIT_HPP__
 
@@ -1005,6 +1005,7 @@ struct h2_option {
    bool exception_as_fail = false;
    bool debugger_trap = false;
    bool quit_exit_code = false;
+   bool tags_filter = false;
    int break_after_fails = 0;
    int run_rounds = 1;
    int fold_json = 5;  // 0 unfold, 1 fold short, 2 fold same, 3 fold single
@@ -1017,7 +1018,6 @@ struct h2_option {
    std::vector<const char*> includes, excludes;
 
    void parse(int argc, const char** argv);
-   bool filter(const char* suitename, const char* casename, const char* fileline) const;
 };
 
 static const h2_option& O = h2_option::I();  // for pretty
@@ -3087,11 +3087,23 @@ struct h2_sock : h2_once {
 
 #define Ptx(...) h2::h2_sock::check(H2_FILE, h2::ss(#__VA_ARGS__), __VA_ARGS__)
 #define Pij(Packet_, Size_, ...) h2::h2_sock::inject(Packet_, Size_, h2::ss(#__VA_ARGS__))
+// source/core/h2_describe.hpp
+
+struct h2_describe {
+   const char* desc;
+   const char* name = "";
+   const char* tags[64]{nullptr};
+   char nbuf[512], tbuf[512];
+
+   h2_describe(const char* describe);
+   void split();
+   bool has_tag(const char* pattern);
+};
 // source/core/h2_case.hpp
 struct h2_case {
    h2_list x;
    const char* file;
-   const char* name;
+   h2_describe describe;
    bool todo = false;
    bool filtered = false, ignored = false, failed = false, last_failed = false;
    bool scheduled = false;
@@ -3103,7 +3115,7 @@ struct h2_case {
    h2_stats stats;
    h2_fail* fails = nullptr;
 
-   h2_case(const char* file_, const char* name_, int todo_) : file(file_), name(name_), todo(todo_) {}
+   h2_case(const char* file_, const char* describe_, int todo_) : file(file_), describe(describe_), todo(todo_) {}
    void clear();
 
    void prev_setup();
@@ -3123,7 +3135,7 @@ struct h2_case {
 struct h2_suite {
    h2_list x;
    const char* file;
-   const char* name;
+   h2_describe describe;
    void (*test_code)(h2_suite*, h2_case*);
    bool filtered = false;
    int seq = 0;
@@ -3133,8 +3145,9 @@ struct h2_suite {
    h2_list mocks;
    h2_stats stats;
 
-   h2_suite(const char* file, const char* name, void (*)(h2_suite*, h2_case*));
+   h2_suite(const char* file, const char* describe, void (*)(h2_suite*, h2_case*));
    void clear();
+   bool absent() const { return !describe.desc; }  // nullptr describe means no SUITE wrapper (CASE/TODO ...)
 
    void enumerate();
    void test(h2_case* c);
@@ -3155,9 +3168,9 @@ struct h2_suite {
 // source/core/h2_core.hpp
 
 #define H2SUITE(...) __H2SUITE(#__VA_ARGS__, H2PP_UNIQUE(suite_test_C))
-#define __H2SUITE(suite_name, suite_test)                                         \
-   static void suite_test(h2::h2_suite*, h2::h2_case*);                           \
-   static h2::h2_suite H2PP_UNIQUE(si)(H2_FILE, h2::ss(suite_name), &suite_test); \
+#define __H2SUITE(suite_describe, suite_test)                                         \
+   static void suite_test(h2::h2_suite*, h2::h2_case*);                               \
+   static h2::h2_suite H2PP_UNIQUE(si)(H2_FILE, h2::ss(suite_describe), &suite_test); \
    static void suite_test(h2::h2_suite* suite_1_5_2_8_0_1_1_9_8, h2::h2_case* case_1_1_0_2_6_0_0_2_4)
 
 #define H2Setup() if (case_1_1_0_2_6_0_0_2_4)
@@ -3165,8 +3178,8 @@ struct h2_suite {
 
 #define H2Todo(...) __H2Case(#__VA_ARGS__, H2PP_UNIQUE(ci), H2PP_UNIQUE(sc), H2PP_UNIQUE(cc), 1)
 #define H2Case(...) __H2Case(#__VA_ARGS__, H2PP_UNIQUE(ci), H2PP_UNIQUE(sc), H2PP_UNIQUE(cc), 0)
-#define __H2Case(case_name, case_instance, suite_cleaner, case_cleaner, todo)                                             \
-   static h2::h2_case case_instance(H2_FILE, h2::ss(case_name), todo);                                                    \
+#define __H2Case(case_describe, case_instance, suite_cleaner, case_cleaner, todo)                                         \
+   static h2::h2_case case_instance(H2_FILE, h2::ss(case_describe), todo);                                                \
    static h2::h2_suite::registor H2PP_UNIQUE(sr)(suite_1_5_2_8_0_1_1_9_8, &case_instance);                                \
    if (&case_instance == case_1_1_0_2_6_0_0_2_4)                                                                          \
       for (h2::h2_suite::cleaner suite_cleaner(suite_1_5_2_8_0_1_1_9_8); suite_cleaner; case_1_1_0_2_6_0_0_2_4 = nullptr) \
@@ -3175,11 +3188,11 @@ struct h2_suite {
 
 #define H2TODO(...) __H2CASE(#__VA_ARGS__, H2PP_UNIQUE(case_test_C), H2PP_UNIQUE(suite_test_C), 1)
 #define H2CASE(...) __H2CASE(#__VA_ARGS__, H2PP_UNIQUE(case_test_C), H2PP_UNIQUE(suite_test_C), 0)
-#define __H2CASE(case_name, case_test, suite_test, todo)                                              \
+#define __H2CASE(case_describe, case_test, suite_test, todo)                                          \
    static void case_test();                                                                           \
    static void suite_test(h2::h2_suite* suite_1_5_2_8_0_1_1_9_8, h2::h2_case* case_1_1_0_2_6_0_0_2_4) \
    {                                                                                                  \
-      static h2::h2_case case_instance(H2_FILE, h2::ss(case_name), todo);                             \
+      static h2::h2_case case_instance(H2_FILE, h2::ss(case_describe), todo);                         \
       static h2::h2_suite::registor suite_registor(suite_1_5_2_8_0_1_1_9_8, &case_instance);          \
       if (&case_instance == case_1_1_0_2_6_0_0_2_4)                                                   \
          for (h2::h2_case::cleaner case_cleaner(&case_instance); case_cleaner;)                       \
