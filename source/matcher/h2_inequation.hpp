@@ -4,7 +4,7 @@ struct h2_matches_ge : h2_matches {
    explicit h2_matches_ge(const E& e_) : e(e_) {}
 
    template <typename A>
-   h2_fail* matches(const A& a, size_t, h2_mc c) const
+   h2_fail* matches(const A& a, h2_mc c) const
    {
       if (c.fit(a >= e)) return nullptr;
       return h2_fail::new_unexpect(expection(c), h2_representify(a));
@@ -21,7 +21,7 @@ struct h2_matches_gt : h2_matches {
    explicit h2_matches_gt(const E& e_) : e(e_) {}
 
    template <typename A>
-   h2_fail* matches(const A& a, size_t, h2_mc c) const
+   h2_fail* matches(const A& a, h2_mc c) const
    {
       if (c.fit(a > e)) return nullptr;
       return h2_fail::new_unexpect(expection(c), h2_stringify(a));
@@ -38,7 +38,7 @@ struct h2_matches_le : h2_matches {
    explicit h2_matches_le(const E& e_) : e(e_) {}
 
    template <typename A>
-   h2_fail* matches(const A& a, size_t, h2_mc c) const
+   h2_fail* matches(const A& a, h2_mc c) const
    {
       if (c.fit(a <= e)) return nullptr;
       return h2_fail::new_unexpect(expection(c), h2_stringify(a));
@@ -55,7 +55,7 @@ struct h2_matches_lt : h2_matches {
    explicit h2_matches_lt(const E& e_) : e(e_) {}
 
    template <typename A>
-   h2_fail* matches(const A& a, size_t, h2_mc c) const
+   h2_fail* matches(const A& a, h2_mc c) const
    {
       if (c.fit(a < e)) return nullptr;
       return h2_fail::new_unexpect(expection(c), h2_stringify(a));

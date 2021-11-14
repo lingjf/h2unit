@@ -24,7 +24,7 @@ template <typename E, typename A>
 static inline h2_ostringstream& h2_ok2(h2_defer_failure* d, E e, const A& a, size_t n, std::false_type, size_t z)
 {
    d->assert_type = "OK";
-   h2_fail* fail = h2::h2_matcher_cast<typename h2_decay<A>::type>((typename h2_decay<E>::type)e).matches(a, n);
+   h2_fail* fail = h2::h2_matcher_cast<typename h2_decay<A>::type>((typename h2_decay<E>::type)e).matches(a, {n});
    return __common_ok(d, fail);
 }
 
@@ -32,7 +32,7 @@ template <typename E, typename A>
 static inline h2_ostringstream& h2_ok2(h2_defer_failure* d, E e, const A a, size_t n, std::true_type, size_t z)
 {
    d->assert_type = "OK";
-   h2_fail* fail = h2::h2_matcher_cast<typename h2_decay<A>::type>((typename h2_decay<E>::type)e).matches((typename h2_decay<A>::type)a, n > 0 ? n : z);
+   h2_fail* fail = h2::h2_matcher_cast<typename h2_decay<A>::type>((typename h2_decay<E>::type)e).matches((typename h2_decay<A>::type)a, {n > 0 ? n : z});
    return __common_ok(d, fail);
 }
 
@@ -89,7 +89,7 @@ static inline h2_ostringstream& h2_cp(h2_defer_failure* d, h2_2cp<E, A> c)
 {
    d->assert_type = "CP";
    d->assert_op = c.op;
-   h2_fail* fail = h2::h2_matcher_cast<A>(c.m).matches(c.a, 0, {false, false, false, true});
+   h2_fail* fail = h2::h2_matcher_cast<A>(c.m).matches(c.a, {0, false, false, false, true});
    return __common_ok(d, fail);
 }
 

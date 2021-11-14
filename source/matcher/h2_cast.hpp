@@ -19,7 +19,7 @@ struct h2_matcher_cast_impl<T, h2_matcher<U>> {
    struct internal_impl : h2_matcher_impl<const T&>, h2_libc {
       const h2_matcher<U> from;
       explicit internal_impl(const h2_matcher<U>& from_) : from(from_) {}
-      h2_fail* matches(const T& a, size_t n, h2_mc c) const override { return from.matches(static_cast<U>(a), n, c); }
+      h2_fail* matches(const T& a, h2_mc c) const override { return from.matches(static_cast<U>(a), c); }
       void operator=(internal_impl const&) = delete;
    };
 };

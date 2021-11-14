@@ -4,9 +4,9 @@ struct h2_not_matches : h2_matches {
    explicit h2_not_matches(const Matcher& m_) : m(m_) {}
 
    template <typename A>
-   h2_fail* matches(const A& a, size_t n, h2_mc c) const
+   h2_fail* matches(const A& a, h2_mc c) const
    {
-      return h2_matcher_cast<A>(m).matches(a, n, c.update_negative(!c.negative));
+      return h2_matcher_cast<A>(m).matches(a, c.update_negative(!c.negative));
    }
    virtual h2_line expection(h2_mc c) const override
    {
@@ -21,11 +21,11 @@ struct h2_and_matches : h2_matches {
    explicit h2_and_matches(const MatcherL& ml_, const MatcherR& mr_) : ml(ml_), mr(mr_) {}
 
    template <typename A>
-   h2_fail* matches(const A& a, size_t n, h2_mc c) const
+   h2_fail* matches(const A& a, h2_mc c) const
    {
       h2_fail* fails = nullptr;
-      h2_fail::append_subling(fails, h2_matcher_cast<A>(ml).matches(a, n, c.update_negative(false)));
-      h2_fail::append_subling(fails, h2_matcher_cast<A>(mr).matches(a, n, c.update_negative(false)));
+      h2_fail::append_subling(fails, h2_matcher_cast<A>(ml).matches(a, c.update_negative(false)));
+      h2_fail::append_subling(fails, h2_matcher_cast<A>(mr).matches(a, c.update_negative(false)));
       if (c.fit(!fails)) {
          if (fails) delete fails;
          return nullptr;
@@ -55,10 +55,10 @@ struct h2_or_matches : h2_matches {
    explicit h2_or_matches(const MatcherL& ml_, const MatcherR& mr_) : ml(ml_), mr(mr_) {}
 
    template <typename A>
-   h2_fail* matches(const A& a, size_t n, h2_mc c) const
+   h2_fail* matches(const A& a, h2_mc c) const
    {
-      h2_fail* f1 = h2_matcher_cast<A>(ml).matches(a, n, c.update_negative(false));
-      h2_fail* f2 = h2_matcher_cast<A>(mr).matches(a, n, c.update_negative(false));
+      h2_fail* f1 = h2_matcher_cast<A>(ml).matches(a, c.update_negative(false));
+      h2_fail* f2 = h2_matcher_cast<A>(mr).matches(a, c.update_negative(false));
       if (c.fit(!f1 || !f2)) {
          if (f1) delete f1;
          if (f2) delete f2;
@@ -90,14 +90,14 @@ struct h2_allof_matches : h2_matches {
    explicit h2_allof_matches(const Matchers&... matchers) : t_matchers(matchers...) {}
 
    template <typename A>
-   h2_fail* matches(const A& a, size_t n, h2_mc c) const
+   h2_fail* matches(const A& a, h2_mc c) const
    {
       h2_vector<h2_matcher<A>> v_matchers;
       t2v(v_matchers);
 
       h2_fail* fails = nullptr;
       for (size_t i = 0; i < v_matchers.size(); ++i) {
-         h2_fail* fail = v_matchers[i].matches(a, n, c.update_negative(false));  // dont not transfer down
+         h2_fail* fail = v_matchers[i].matches(a, c.update_negative(false));  // dont not transfer down
          if (fail) fail->seqno = (int)i;
          h2_fail::append_subling(fails, fail);
       }
@@ -125,7 +125,7 @@ struct h2_anyof_matches : h2_matches {
    explicit h2_anyof_matches(const Matchers&... matchers) : t_matchers(matchers...) {}
 
    template <typename A>
-   h2_fail* matches(const A& a, size_t n, h2_mc c) const
+   h2_fail* matches(const A& a, h2_mc c) const
    {
       h2_vector<h2_matcher<A>> v_matchers;
       t2v(v_matchers);
@@ -133,7 +133,7 @@ struct h2_anyof_matches : h2_matches {
       int count = 0;
       h2_fail* fails = nullptr;
       for (size_t i = 0; i < v_matchers.size(); ++i) {
-         h2_fail* fail = v_matchers[i].matches(a, n, c.update_negative(false));
+         h2_fail* fail = v_matchers[i].matches(a, c.update_negative(false));
          if (!fail) {
             count++;
             break;
@@ -165,14 +165,14 @@ struct h2_noneof_matches : h2_matches {
    explicit h2_noneof_matches(const Matchers&... matchers) : t_matchers(matchers...) {}
 
    template <typename A>
-   h2_fail* matches(const A& a, size_t n, h2_mc c) const
+   h2_fail* matches(const A& a, h2_mc c) const
    {
       h2_vector<h2_matcher<A>> v_matchers;
       t2v(v_matchers);
 
       h2_fail* fails = nullptr;
       for (size_t i = 0; i < v_matchers.size(); ++i) {
-         h2_fail* fail = v_matchers[i].matches(a, n, c.update_negative(false));
+         h2_fail* fail = v_matchers[i].matches(a, c.update_negative(false));
          if (fail)
             delete fail;
          else {
