@@ -97,7 +97,7 @@ struct h2_json_dual : h2_libc {  // Combine two node into a dual
       h2_list_for_each_entry (p, children, h2_json_dual, x)
          p->align(e_children_lines, a_children_lines);
 
-      if ((O.fold_json >= 2 && key_equal && value_match) || (O.fold_json >= 3 && relationship < 0)) {
+      if ((O.fold_json >= FoldSame && key_equal && value_match) || (O.fold_json >= FoldSingle && relationship < 0)) {
          e_line += e_children_lines.foldable() ? e_children_lines.folds() : gray(" ... ");
          a_line += a_children_lines.foldable() ? a_children_lines.folds() : gray(" ... ");
       } else if (O.fold_json && e_children_lines.foldable() && a_children_lines.foldable()) {

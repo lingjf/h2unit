@@ -113,6 +113,8 @@ static inline unsigned h2_page_size()
 #endif
 }
 
+static inline const char* comma_if(bool a, const char* t = ", ", const char* f = "") { return a ? t : f; }
+
 static inline bool h2_in(const char* x, const char* s[], int n = 0)
 {
    for (int i = 0; s[i] && i < (n ? n : 1000); ++i)
@@ -120,7 +122,28 @@ static inline bool h2_in(const char* x, const char* s[], int n = 0)
    return false;
 }
 
-static inline const char* comma_if(bool a, const char* t = ", ", const char* f = "") { return a ? t : f; };
+static inline const char* h2_candidate(const char* a, int n, ...)
+{
+   int count = 0;
+   const char* matches[32];
+
+   va_list ap;
+   va_start(ap, n);
+   for (int i = 0; i < n; ++i) {
+      const char* b = va_arg(ap, const char*);
+      if (!strncasecmp(b, a, strlen(a))) matches[count++] = b;
+   }
+   va_end(ap);
+
+   if (count == 0) return nullptr;
+   if (count == 1) return matches[0];
+
+   static char ss[1024];
+   sprintf(ss, "ambiguous argument: %s, candidates: ", a);
+   for (int i = 0; i < count; ++i)
+      sprintf(ss + strlen(ss), "%s%s", comma_if(i, " | "), matches[i]);
+   return ss;
+}
 
 #define h2_sprintvf(str, fmt, ap)               \
    do {                                         \

@@ -107,33 +107,33 @@ h2_inline void h2_runner::shuffle()
    int (*case_cmp)(h2_list*, h2_list*) = shuffle_comparison<h2_case, 1>::seq;
 
    if (last == 0) {
-      if (O.shuffle_cases & ShuffleRandom)
+      if (O.shuffles & ShuffleRandom)
          h2_list_for_each_entry (s, suites, h2_suite, x)
             h2_list_for_each_entry (c, s->cases, h2_case, x)
                s->seq = c->seq = ::rand();
 
-      if (O.shuffle_cases & ShuffleReverse) {
+      if (O.shuffles & ShuffleReverse) {
          suite_cmp = shuffle_comparison<h2_suite, -1>::seq;
          case_cmp = shuffle_comparison<h2_case, -1>::seq;
-         if (O.shuffle_cases & ShuffleName) {
+         if (O.shuffles & ShuffleName) {
             suite_cmp = shuffle_comparison<h2_suite, -1>::name;
             case_cmp = shuffle_comparison<h2_case, -1>::name;
-         } else if (O.shuffle_cases & ShuffleFile) {
+         } else if (O.shuffles & ShuffleFile) {
             suite_cmp = shuffle_comparison<h2_suite, -1>::file;
             case_cmp = shuffle_comparison<h2_case, -1>::file;
          }
       } else {
-         if (O.shuffle_cases & ShuffleName) {
+         if (O.shuffles & ShuffleName) {
             suite_cmp = shuffle_comparison<h2_suite, 1>::name;
             case_cmp = shuffle_comparison<h2_case, 1>::name;
-         } else if (O.shuffle_cases & ShuffleFile) {
+         } else if (O.shuffles & ShuffleFile) {
             suite_cmp = shuffle_comparison<h2_suite, 1>::file;
             case_cmp = shuffle_comparison<h2_case, 1>::file;
          }
       }
    }
 
-   if (last || O.shuffle_cases) {
+   if (last || O.shuffles) {
       suites.sort(suite_cmp);
       h2_list_for_each_entry (s, suites, h2_suite, x)
          s->cases.sort(case_cmp);
@@ -175,7 +175,7 @@ h2_inline int h2_runner::main(int argc, const char** argv)
 
             current_case = (void*)c;
             h2_report::I().on_case_start(s, c);
-            if (!O.list_cases && !c->todo && !c->filtered && !c->ignored) {
+            if (!O.lists && !c->todo && !c->filtered && !c->ignored) {
                for (auto& setup : global_case_setups) setup();
                s->test(c);
                for (auto& cleanup : global_case_cleanups) cleanup();

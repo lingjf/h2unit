@@ -44,7 +44,7 @@ struct h2_report_list : h2_report_impl {
    void on_runner_endup(h2_runner* r) override
    {
       h2_report_impl::on_runner_endup(r);
-      if (O.list_cases & ListTag) {
+      if (O.lists & ListTag) {
          int i = 0;
          for (auto& tag : tags) {
             h2_line line;
@@ -58,13 +58,13 @@ struct h2_report_list : h2_report_impl {
       }
 
       h2_line line;
-      if (O.list_cases & ListSuite) line += gray(comma_if(line.size())) + color(h2_stringify(unfiltered_suites), "green") + " " + gray(unfiltered_suites > 1 ? "suites" : "suite");
-      if (O.list_cases & ListCase) line += gray(comma_if(line.size())) + color(h2_stringify(unfiltered_cases), "green") + " " + gray(unfiltered_cases > 1 ? "cases" : "case");
-      if (O.list_cases & ListTodo) line += gray(comma_if(line.size())) + color(h2_stringify(unfiltered_todos), "green") + " " + gray(unfiltered_todos > 1 ? "todos" : "todo");
-      if (O.list_cases & ListTag) line += gray(comma_if(line.size())) + color(h2_stringify(tags.size()), "green") + " " + gray(tags.size() > 1 ? "tags" : "tag");
-      if (O.list_cases & ListSuite && suites > unfiltered_suites) line.printf("dark gray", "%s%d filtered %s", comma_if(line.size()), suites - unfiltered_suites, suites - unfiltered_suites > 1 ? "suites" : "suite");
-      if (O.list_cases & ListCase && cases > unfiltered_cases) line.printf("dark gray", "%s%d filtered %s", comma_if(line.size()), cases - unfiltered_cases, cases - unfiltered_cases > 1 ? "cases" : "case");
-      if (O.list_cases & ListTodo && todos > unfiltered_todos) line.printf("dark gray", "%s%d filtered %s", comma_if(line.size()), todos - unfiltered_todos, todos - unfiltered_todos > 1 ? "todos" : "todo");
+      if (O.lists & ListSuite) line += gray(comma_if(line.size())) + color(h2_stringify(unfiltered_suites), "green") + " " + gray(unfiltered_suites > 1 ? "suites" : "suite");
+      if (O.lists & ListCase) line += gray(comma_if(line.size())) + color(h2_stringify(unfiltered_cases), "green") + " " + gray(unfiltered_cases > 1 ? "cases" : "case");
+      if (O.lists & ListTodo) line += gray(comma_if(line.size())) + color(h2_stringify(unfiltered_todos), "green") + " " + gray(unfiltered_todos > 1 ? "todos" : "todo");
+      if (O.lists & ListTag) line += gray(comma_if(line.size())) + color(h2_stringify(tags.size()), "green") + " " + gray(tags.size() > 1 ? "tags" : "tag");
+      if (O.lists & ListSuite && suites > unfiltered_suites) line.printf("dark gray", "%s%d filtered %s", comma_if(line.size()), suites - unfiltered_suites, suites - unfiltered_suites > 1 ? "suites" : "suite");
+      if (O.lists & ListCase && cases > unfiltered_cases) line.printf("dark gray", "%s%d filtered %s", comma_if(line.size()), cases - unfiltered_cases, cases - unfiltered_cases > 1 ? "cases" : "case");
+      if (O.lists & ListTodo && todos > unfiltered_todos) line.printf("dark gray", "%s%d filtered %s", comma_if(line.size()), todos - unfiltered_todos, todos - unfiltered_todos > 1 ? "todos" : "todo");
       h2_console::printl("Listing " + line);
    }
    void on_suite_start(h2_suite* s) override
@@ -76,7 +76,7 @@ struct h2_report_list : h2_report_impl {
       for (int i = 0; s->describe.tags[i]; ++i) tags[s->describe.tags[i]] += 0x10000;
 
       ++suites;
-      if (!s->filtered && O.list_cases & ListSuite) {
+      if (!s->filtered && O.lists & ListSuite) {
          ++unfiltered_suites;
          h2_line line;
          line.printf("dark gray", "SUITE-%d. ", unfiltered_suites);
@@ -91,13 +91,13 @@ struct h2_report_list : h2_report_impl {
       const char* type = nullptr;
       if (c->todo) {
          ++todos;
-         if (!c->filtered && O.list_cases & ListTodo) {
+         if (!c->filtered && O.lists & ListTodo) {
             type = s->absent() ? "TODO" : "Todo";
             ++unfiltered_todos, ++suite_todos;
          }
       } else {
          ++cases;
-         if (!c->filtered && O.list_cases & ListCase) {
+         if (!c->filtered && O.lists & ListCase) {
             type = s->absent() ? "CASE" : "Case";
             ++unfiltered_cases, ++suite_cases;
          }
@@ -105,7 +105,7 @@ struct h2_report_list : h2_report_impl {
 
       if (type) {
          h2_line line;
-         if (O.list_cases & ListSuite)
+         if (O.lists & ListSuite)
             line.printf("dark gray", " %s/%d-%d. ", type, suite_cases + suite_todos, unfiltered_cases + unfiltered_todos);
          else
             line.printf("dark gray", " %s-%d. ", type, unfiltered_cases + unfiltered_todos);
@@ -261,20 +261,20 @@ struct h2_report_console : h2_report_impl {
       h2_report_impl::on_case_endup(s, c);
       if (c->filtered || c->ignored) return;
       if (c->todo) {
-         if (O.verbose >= verbose_detail) print_bar(true, "yellow", s->absent() ? "TODO   " : "Todo   ", s, c, false);
+         if (O.verbose >= VerboseDetail) print_bar(true, "yellow", s->absent() ? "TODO   " : "Todo   ", s, c, false);
       } else if (c->failed) {
-         if (O.verbose >= verbose_compact_failed) {
+         if (O.verbose >= VerboseCompactFailed) {
             print_bar(true, "bold,red", "Failed ", s, c, false);
             h2_console::prints("", "\n");
-            if (O.verbose >= verbose_normal && c->fails) {
+            if (O.verbose >= VerboseNormal && c->fails) {
                c->fails->foreach([](h2_fail* fail, size_t si, size_t ci) { fail->print(si, ci); });
                h2_console::prints("", "\n");
             }
          }
       } else {  // Passed
-         if (O.verbose >= verbose_detail || O.verbose == verbose_compact_passed) {
+         if (O.verbose >= VerboseDetail || O.verbose == VerboseCompactPassed) {
             print_bar(true, "green", "Passed ", s, c, false);
-            if (O.verbose >= verbose_detail) {
+            if (O.verbose >= VerboseDetail) {
                h2_line ad;
                if (0 < c->stats.asserts) ad.printf("dark gray", ad.width() ? ", " : "").printf("", "%d assert%s", c->stats.asserts, 1 < c->stats.asserts ? "s" : "");
                if (0 < c->stats.footprint) ad.printf("dark gray", ad.width() ? ", " : "").printf("", "%s footprint", format_volume(c->stats.footprint));
@@ -341,7 +341,7 @@ h2_inline void h2_report::initialize()
    static h2_report_console console_report;
    static h2_report_junit junit_report;
    static h2_report_tap tap_report;
-   if (O.list_cases) {
+   if (O.lists) {
       I().reports.push_back(list_report.x);
    } else {
       I().reports.push_back(console_report.x);

@@ -1,9 +1,9 @@
 
-static constexpr int verbose_quiet = 0;
-static constexpr int verbose_compact_failed = 1;
-static constexpr int verbose_compact_passed = 2;
-static constexpr int verbose_normal = 3;
-static constexpr int verbose_detail = 4;
+static constexpr int VerboseQuiet = 0;
+static constexpr int VerboseCompactFailed = 1;
+static constexpr int VerboseCompactPassed = 2;
+static constexpr int VerboseNormal = 3;
+static constexpr int VerboseDetail = 4;
 
 static constexpr int ShuffleCode = 0x0;
 static constexpr int ShuffleRandom = 0x10;
@@ -16,6 +16,12 @@ static constexpr int ListSuite = 0x10;
 static constexpr int ListCase = 0x100;
 static constexpr int ListTodo = 0x1000;
 static constexpr int ListTag = 0x10000;
+
+static constexpr int FoldUnFold = 0;
+static constexpr int FoldShort = 1;
+static constexpr int FoldSame = 2;
+static constexpr int FoldSingle = 3;
+static constexpr int FoldMax = 5;
 
 struct h2_option {
    h2_singleton(h2_option);
@@ -41,10 +47,10 @@ struct h2_option {
    bool tags_filter = false;
    int break_after_fails = 0;
    int run_rounds = 1;
-   int fold_json = 5;  // 0 unfold, 1 fold short, 2 fold same, 3 fold single
-   int shuffle_cases = ShuffleCode;
-   int list_cases = ListNone;
-   int verbose = verbose_normal;
+   int fold_json = FoldMax;
+   int shuffles = ShuffleCode;
+   int lists = ListNone;
+   int verbose = VerboseNormal;
    const char* json_source_quote = "";
    char junit_path[256]{'\0'};
    char tap_path[256]{'\0'};

@@ -6,7 +6,7 @@ struct h2_stdio {
 
    static ssize_t write(int fd, const void* buf, size_t count)
    {
-      if (O.verbose >= verbose_normal || (fd != fileno(stdout) && fd != fileno(stderr))) {
+      if (O.verbose >= VerboseNormal || (fd != fileno(stdout) && fd != fileno(stderr))) {
          h2::h2_stub_temporary_restore _((void*)LIBC__write);
          if ((fd == fileno(stdout) || fd == fileno(stderr)) && h2_report::I().backable) {
             LIBC__write(fd, "\n", 1);  // fall printf/cout into new line from report title

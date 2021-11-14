@@ -70,20 +70,6 @@ struct getopt {
    }
 };
 
-static inline bool prefix_match(const char* pattern, const char* subject, const char* candidates[], int n)
-{
-   auto len = strlen(subject);
-   if (strncasecmp(pattern, subject, len)) return false;
-   for (int i = 0; i < n; ++i) {
-      if (!strcmp(candidates[i], pattern)) continue;
-      if (!strncasecmp(candidates[i], subject, len)) {
-         ::printf("ambiguous parameter %s: %s/%s\n", subject, pattern, candidates[i]);
-         exit(1);
-      }
-   }
-   return true;
-}
-
 h2_inline void h2_option::parse(int argc, const char** argv)
 {
    path = argv[0];
@@ -106,13 +92,21 @@ h2_inline void h2_option::parse(int argc, const char** argv)
             break;
          case 'l':
             while ((t = get.extract_string())) {
-               const char* candidates[] = {"suites", "cases", "todos", "tags"};
-               if (prefix_match("suites", t, candidates, 4)) list_cases |= ListSuite;
-               if (prefix_match("cases", t, candidates, 4)) list_cases |= ListCase;
-               if (prefix_match("todos", t, candidates, 4)) list_cases |= ListTodo;
-               if (prefix_match("tags", t, candidates, 4)) list_cases |= ListTag;
+               const char* r = h2_candidate(t, 4, "suite", "case", "todo", "tag");
+               if (!r)
+                  ::printf("-l invalid argument: %s, availables: suite | case | todo | tag\n", t);
+               else if (!strcmp("suite", r))
+                  lists |= ListSuite;
+               else if (!strcmp("case", r))
+                  lists |= ListCase;
+               else if (!strcmp("todo", r))
+                  lists |= ListTodo;
+               else if (!strcmp("tag", r))
+                  lists |= ListTag;
+               else
+                  ::printf("-l %s\n", r);
             }
-            if (!list_cases) list_cases = ListSuite | ListCase | ListTodo;
+            if (!lists) lists = ListSuite | ListCase | ListTodo;
             break;
          case 'm': memory_check = !memory_check; break;
          case 'o':
@@ -124,20 +118,37 @@ h2_inline void h2_option::parse(int argc, const char** argv)
          case 'r': get.extract_number(run_rounds = 2); break;
          case 's':
             while ((t = get.extract_string())) {
-               const char* candidates[] = {"random", "name", "file", "reverse"};
-               if (prefix_match("random", t, candidates, 4)) shuffle_cases |= ShuffleRandom;
-               if (prefix_match("name", t, candidates, 4)) shuffle_cases |= ShuffleName;
-               if (prefix_match("file", t, candidates, 4)) shuffle_cases |= ShuffleFile;
-               if (prefix_match("reverse", t, candidates, 4)) shuffle_cases |= ShuffleReverse;
+               const char* r = h2_candidate(t, 4, "random", "name", "file", "reverse");
+               if (!r)
+                  ::printf("-s invalid argument: %s, availables: random | name | file | reverse\n", t);
+               else if (!strcmp("random", r))
+                  shuffles |= ShuffleRandom;
+               else if (!strcmp("name", r))
+                  shuffles |= ShuffleName;
+               else if (!strcmp("file", r))
+                  shuffles |= ShuffleFile;
+               else if (!strcmp("reverse", r))
+                  shuffles |= ShuffleReverse;
+               else
+                  ::printf("-s %s\n", r);
             }
-            if (!shuffle_cases) shuffle_cases = ShuffleRandom;
+            if (!shuffles) shuffles = ShuffleRandom;
             break;
          case 'S':
             json_source_quote = "\\\"";
             if ((t = get.extract_string())) {
-               json_source_quote = t;
-               if (prefix_match("single", t, nullptr, 0)) json_source_quote = "\'";
-               if (prefix_match("double", t, nullptr, 0)) json_source_quote = "\"";
+               const char* r = h2_candidate(t, 5, "\'", "single", "\"", "double", "\\\"");
+               if (!r)
+                  ::printf("-S invalid argument: %s, availables: \' | single | \" | double | \\\"\n", t);
+               else if (!strcmp("\'", r) || !strcmp("single", r))
+                  json_source_quote = "\'";
+               else if (!strcmp("\"", r) || !strcmp("double", r))
+                  json_source_quote = "\"";
+               else if (!strcmp("\\\"", r))
+                  json_source_quote = "\\\"";
+               else
+                  ::printf("-S %s\n", r);
+
                if (strcmp("\'", json_source_quote) && strcmp("\"", json_source_quote) && strcmp("\\\"", json_source_quote)) json_source_quote = "\\\"";
             }
             break;

@@ -972,11 +972,11 @@ struct h2_cxa {
 };
 // source/render/h2_option.hpp
 
-static constexpr int verbose_quiet = 0;
-static constexpr int verbose_compact_failed = 1;
-static constexpr int verbose_compact_passed = 2;
-static constexpr int verbose_normal = 3;
-static constexpr int verbose_detail = 4;
+static constexpr int VerboseQuiet = 0;
+static constexpr int VerboseCompactFailed = 1;
+static constexpr int VerboseCompactPassed = 2;
+static constexpr int VerboseNormal = 3;
+static constexpr int VerboseDetail = 4;
 
 static constexpr int ShuffleCode = 0x0;
 static constexpr int ShuffleRandom = 0x10;
@@ -989,6 +989,12 @@ static constexpr int ListSuite = 0x10;
 static constexpr int ListCase = 0x100;
 static constexpr int ListTodo = 0x1000;
 static constexpr int ListTag = 0x10000;
+
+static constexpr int FoldUnFold = 0;
+static constexpr int FoldShort = 1;
+static constexpr int FoldSame = 2;
+static constexpr int FoldSingle = 3;
+static constexpr int FoldMax = 5;
 
 struct h2_option {
    h2_singleton(h2_option);
@@ -1014,10 +1020,10 @@ struct h2_option {
    bool tags_filter = false;
    int break_after_fails = 0;
    int run_rounds = 1;
-   int fold_json = 5;  // 0 unfold, 1 fold short, 2 fold same, 3 fold single
-   int shuffle_cases = ShuffleCode;
-   int list_cases = ListNone;
-   int verbose = verbose_normal;
+   int fold_json = FoldMax;
+   int shuffles = ShuffleCode;
+   int lists = ListNone;
+   int verbose = VerboseNormal;
    const char* json_source_quote = "";
    char junit_path[256]{'\0'};
    char tap_path[256]{'\0'};
@@ -4260,6 +4266,8 @@ static inline unsigned h2_page_size()
 #endif
 }
 
+static inline const char* comma_if(bool a, const char* t = ", ", const char* f = "") { return a ? t : f; }
+
 static inline bool h2_in(const char* x, const char* s[], int n = 0)
 {
    for (int i = 0; s[i] && i < (n ? n : 1000); ++i)
@@ -4267,7 +4275,28 @@ static inline bool h2_in(const char* x, const char* s[], int n = 0)
    return false;
 }
 
-static inline const char* comma_if(bool a, const char* t = ", ", const char* f = "") { return a ? t : f; };
+static inline const char* h2_candidate(const char* a, int n, ...)
+{
+   int count = 0;
+   const char* matches[32];
+
+   va_list ap;
+   va_start(ap, n);
+   for (int i = 0; i < n; ++i) {
+      const char* b = va_arg(ap, const char*);
+      if (!strncasecmp(b, a, strlen(a))) matches[count++] = b;
+   }
+   va_end(ap);
+
+   if (count == 0) return nullptr;
+   if (count == 1) return matches[0];
+
+   static char ss[1024];
+   sprintf(ss, "ambiguous argument: %s, candidates: ", a);
+   for (int i = 0; i < count; ++i)
+      sprintf(ss + strlen(ss), "%s%s", comma_if(i, " | "), matches[i]);
+   return ss;
+}
 
 #define h2_sprintvf(str, fmt, ap)               \
    do {                                         \
@@ -5237,7 +5266,7 @@ h2_inline void h2_backtrace::print(h2_vector<h2_string>& stacks) const
    for (int i = shift; i < count; ++i) {
       char *p = nullptr, mangle_name[1024] = "", demangle_name[1024] = "";
       backtrace_extract(symbols[i], mangle_name);
-      if (O.verbose >= verbose_detail || O.os != 'm') p = addr2line(h2_load::ptr_to_addr(frames[i])); /* atos is slow */
+      if (O.verbose >= VerboseDetail || O.os != 'm') p = addr2line(h2_load::ptr_to_addr(frames[i])); /* atos is slow */
       if (!p) p = h2_cxa::demangle(mangle_name, demangle_name);
       if (!p || !strlen(p)) p = symbols[i];
       stacks.push_back(p);
@@ -6556,7 +6585,7 @@ struct h2_json_dual : h2_libc {  // Combine two node into a dual
       h2_list_for_each_entry (p, children, h2_json_dual, x)
          p->align(e_children_lines, a_children_lines);
 
-      if ((O.fold_json >= 2 && key_equal && value_match) || (O.fold_json >= 3 && relationship < 0)) {
+      if ((O.fold_json >= FoldSame && key_equal && value_match) || (O.fold_json >= FoldSingle && relationship < 0)) {
          e_line += e_children_lines.foldable() ? e_children_lines.folds() : gray(" ... ");
          a_line += a_children_lines.foldable() ? a_children_lines.folds() : gray(" ... ");
       } else if (O.fold_json && e_children_lines.foldable() && a_children_lines.foldable()) {
@@ -8068,7 +8097,7 @@ struct h2_stdio {
 
    static ssize_t write(int fd, const void* buf, size_t count)
    {
-      if (O.verbose >= verbose_normal || (fd != fileno(stdout) && fd != fileno(stderr))) {
+      if (O.verbose >= VerboseNormal || (fd != fileno(stdout) && fd != fileno(stderr))) {
          h2::h2_stub_temporary_restore _((void*)LIBC__write);
          if ((fd == fileno(stdout) || fd == fileno(stderr)) && h2_report::I().backable) {
             LIBC__write(fd, "\n", 1);  // fall printf/cout into new line from report title
@@ -8962,33 +8991,33 @@ h2_inline void h2_runner::shuffle()
    int (*case_cmp)(h2_list*, h2_list*) = shuffle_comparison<h2_case, 1>::seq;
 
    if (last == 0) {
-      if (O.shuffle_cases & ShuffleRandom)
+      if (O.shuffles & ShuffleRandom)
          h2_list_for_each_entry (s, suites, h2_suite, x)
             h2_list_for_each_entry (c, s->cases, h2_case, x)
                s->seq = c->seq = ::rand();
 
-      if (O.shuffle_cases & ShuffleReverse) {
+      if (O.shuffles & ShuffleReverse) {
          suite_cmp = shuffle_comparison<h2_suite, -1>::seq;
          case_cmp = shuffle_comparison<h2_case, -1>::seq;
-         if (O.shuffle_cases & ShuffleName) {
+         if (O.shuffles & ShuffleName) {
             suite_cmp = shuffle_comparison<h2_suite, -1>::name;
             case_cmp = shuffle_comparison<h2_case, -1>::name;
-         } else if (O.shuffle_cases & ShuffleFile) {
+         } else if (O.shuffles & ShuffleFile) {
             suite_cmp = shuffle_comparison<h2_suite, -1>::file;
             case_cmp = shuffle_comparison<h2_case, -1>::file;
          }
       } else {
-         if (O.shuffle_cases & ShuffleName) {
+         if (O.shuffles & ShuffleName) {
             suite_cmp = shuffle_comparison<h2_suite, 1>::name;
             case_cmp = shuffle_comparison<h2_case, 1>::name;
-         } else if (O.shuffle_cases & ShuffleFile) {
+         } else if (O.shuffles & ShuffleFile) {
             suite_cmp = shuffle_comparison<h2_suite, 1>::file;
             case_cmp = shuffle_comparison<h2_case, 1>::file;
          }
       }
    }
 
-   if (last || O.shuffle_cases) {
+   if (last || O.shuffles) {
       suites.sort(suite_cmp);
       h2_list_for_each_entry (s, suites, h2_suite, x)
          s->cases.sort(case_cmp);
@@ -9030,7 +9059,7 @@ h2_inline int h2_runner::main(int argc, const char** argv)
 
             current_case = (void*)c;
             h2_report::I().on_case_start(s, c);
-            if (!O.list_cases && !c->todo && !c->filtered && !c->ignored) {
+            if (!O.lists && !c->todo && !c->filtered && !c->ignored) {
                for (auto& setup : global_case_setups) setup();
                s->test(c);
                for (auto& cleanup : global_case_cleanups) cleanup();
@@ -9251,7 +9280,7 @@ struct h2_fail_unexpect : h2_fail {
       } else if (is_synonym(e_expression, expection.string())) {
          e = expection.abbreviate(10000, 3).brush("green");
       } else {
-         e = h2_line(e_expression).abbreviate(O.verbose >= verbose_detail ? 10000 : 120, 3).gray_quote().brush("cyan") + gray("==>") + expection.abbreviate(10000, 3).brush("green");
+         e = h2_line(e_expression).abbreviate(O.verbose >= VerboseDetail ? 10000 : 120, 3).gray_quote().brush("cyan") + gray("==>") + expection.abbreviate(10000, 3).brush("green");
       }  // https://unicode-table.com/en/sets/arrow-symbols/ (← →) (← →) (⇐ ⇒) (⟵ ⟶) ⟸ ⟹
 
       if (!represent.width()) {
@@ -9259,15 +9288,15 @@ struct h2_fail_unexpect : h2_fail {
       } else if (is_synonym(a_expression, represent.string()) || !a_expression.length()) {
          a = represent.abbreviate(10000, 3).brush("bold,red");
       } else {
-         a = represent.abbreviate(10000, 3).brush("bold,red") + gray("<==") + h2_line(a_expression).abbreviate(O.verbose >= verbose_detail ? 10000 : 120, 3).gray_quote().brush("cyan");
+         a = represent.abbreviate(10000, 3).brush("bold,red") + gray("<==") + h2_line(a_expression).abbreviate(O.verbose >= VerboseDetail ? 10000 : 120, 3).gray_quote().brush("cyan");
       }
 
       line += assert_type + gray("(") + e + " " + assert_op + " " + a + gray(")");
    }
    void print_JE(h2_line& line)
    {
-      h2_line e = h2_line(e_expression.unquote('\"').unquote('\'')).abbreviate(O.verbose >= verbose_detail ? 10000 : 30, 2).brush("cyan");
-      h2_line a = h2_line(a_expression.unquote('\"').unquote('\'')).abbreviate(O.verbose >= verbose_detail ? 10000 : 30, 2).brush("bold,red");
+      h2_line e = h2_line(e_expression.unquote('\"').unquote('\'')).abbreviate(O.verbose >= VerboseDetail ? 10000 : 30, 2).brush("cyan");
+      h2_line a = h2_line(a_expression.unquote('\"').unquote('\'')).abbreviate(O.verbose >= VerboseDetail ? 10000 : 30, 2).brush("bold,red");
       line += "JE" + gray("(") + e + ", " + a + gray(")");
    }
    void print_Inner(h2_line& line)
@@ -9275,11 +9304,11 @@ struct h2_fail_unexpect : h2_fail {
       if (0 <= seqno) line.printf("dark gray", "%d. ", seqno);
       if (expection.width()) {
          line.printf("", "%sexpect is ", comma_if(c++));
-         line += expection.abbreviate(O.verbose >= verbose_detail ? 10000 : 120, 3).brush("green");
+         line += expection.abbreviate(O.verbose >= VerboseDetail ? 10000 : 120, 3).brush("green");
       }
       if (represent.width()) {
          line.printf("", "%sactual is ", comma_if(c++));
-         line += represent.abbreviate(O.verbose >= verbose_detail ? 10000 : 120, 3).brush("bold,red");
+         line += represent.abbreviate(O.verbose >= VerboseDetail ? 10000 : 120, 3).brush("bold,red");
       }
    }
 
@@ -9311,7 +9340,7 @@ struct h2_fail_strcmp : h2_fail_unexpect {
    {
       h2_fail_unexpect::print(si, ci);
 
-      if (O.verbose >= verbose_detail || 8 < e_value.width() || 8 < a_value.width()) {
+      if (O.verbose >= VerboseDetail || 8 < e_value.width() || 8 < a_value.width()) {
          h2_line e_line, a_line;
          h2_vector<h2_string> e_chars = e_value.disperse(), a_chars = a_value.disperse();
          auto lcs = h2_LCS(e_chars, a_chars, caseless).lcs();
@@ -9477,7 +9506,7 @@ struct h2_fail_memory_leak : h2_fail_memory {
       h2_line sl;
       for (auto& p : sizes) {
          sl += gray(comma_if(i++));
-         if (O.verbose <= verbose_compact_passed && n < i) {
+         if (O.verbose <= VerboseCompactPassed && n < i) {
             sl += gray("..." + h2_stringify(sizes.size() - n));
             break;
          }
@@ -9633,7 +9662,7 @@ struct h2_report_list : h2_report_impl {
    void on_runner_endup(h2_runner* r) override
    {
       h2_report_impl::on_runner_endup(r);
-      if (O.list_cases & ListTag) {
+      if (O.lists & ListTag) {
          int i = 0;
          for (auto& tag : tags) {
             h2_line line;
@@ -9647,13 +9676,13 @@ struct h2_report_list : h2_report_impl {
       }
 
       h2_line line;
-      if (O.list_cases & ListSuite) line += gray(comma_if(line.size())) + color(h2_stringify(unfiltered_suites), "green") + " " + gray(unfiltered_suites > 1 ? "suites" : "suite");
-      if (O.list_cases & ListCase) line += gray(comma_if(line.size())) + color(h2_stringify(unfiltered_cases), "green") + " " + gray(unfiltered_cases > 1 ? "cases" : "case");
-      if (O.list_cases & ListTodo) line += gray(comma_if(line.size())) + color(h2_stringify(unfiltered_todos), "green") + " " + gray(unfiltered_todos > 1 ? "todos" : "todo");
-      if (O.list_cases & ListTag) line += gray(comma_if(line.size())) + color(h2_stringify(tags.size()), "green") + " " + gray(tags.size() > 1 ? "tags" : "tag");
-      if (O.list_cases & ListSuite && suites > unfiltered_suites) line.printf("dark gray", "%s%d filtered %s", comma_if(line.size()), suites - unfiltered_suites, suites - unfiltered_suites > 1 ? "suites" : "suite");
-      if (O.list_cases & ListCase && cases > unfiltered_cases) line.printf("dark gray", "%s%d filtered %s", comma_if(line.size()), cases - unfiltered_cases, cases - unfiltered_cases > 1 ? "cases" : "case");
-      if (O.list_cases & ListTodo && todos > unfiltered_todos) line.printf("dark gray", "%s%d filtered %s", comma_if(line.size()), todos - unfiltered_todos, todos - unfiltered_todos > 1 ? "todos" : "todo");
+      if (O.lists & ListSuite) line += gray(comma_if(line.size())) + color(h2_stringify(unfiltered_suites), "green") + " " + gray(unfiltered_suites > 1 ? "suites" : "suite");
+      if (O.lists & ListCase) line += gray(comma_if(line.size())) + color(h2_stringify(unfiltered_cases), "green") + " " + gray(unfiltered_cases > 1 ? "cases" : "case");
+      if (O.lists & ListTodo) line += gray(comma_if(line.size())) + color(h2_stringify(unfiltered_todos), "green") + " " + gray(unfiltered_todos > 1 ? "todos" : "todo");
+      if (O.lists & ListTag) line += gray(comma_if(line.size())) + color(h2_stringify(tags.size()), "green") + " " + gray(tags.size() > 1 ? "tags" : "tag");
+      if (O.lists & ListSuite && suites > unfiltered_suites) line.printf("dark gray", "%s%d filtered %s", comma_if(line.size()), suites - unfiltered_suites, suites - unfiltered_suites > 1 ? "suites" : "suite");
+      if (O.lists & ListCase && cases > unfiltered_cases) line.printf("dark gray", "%s%d filtered %s", comma_if(line.size()), cases - unfiltered_cases, cases - unfiltered_cases > 1 ? "cases" : "case");
+      if (O.lists & ListTodo && todos > unfiltered_todos) line.printf("dark gray", "%s%d filtered %s", comma_if(line.size()), todos - unfiltered_todos, todos - unfiltered_todos > 1 ? "todos" : "todo");
       h2_console::printl("Listing " + line);
    }
    void on_suite_start(h2_suite* s) override
@@ -9665,7 +9694,7 @@ struct h2_report_list : h2_report_impl {
       for (int i = 0; s->describe.tags[i]; ++i) tags[s->describe.tags[i]] += 0x10000;
 
       ++suites;
-      if (!s->filtered && O.list_cases & ListSuite) {
+      if (!s->filtered && O.lists & ListSuite) {
          ++unfiltered_suites;
          h2_line line;
          line.printf("dark gray", "SUITE-%d. ", unfiltered_suites);
@@ -9680,13 +9709,13 @@ struct h2_report_list : h2_report_impl {
       const char* type = nullptr;
       if (c->todo) {
          ++todos;
-         if (!c->filtered && O.list_cases & ListTodo) {
+         if (!c->filtered && O.lists & ListTodo) {
             type = s->absent() ? "TODO" : "Todo";
             ++unfiltered_todos, ++suite_todos;
          }
       } else {
          ++cases;
-         if (!c->filtered && O.list_cases & ListCase) {
+         if (!c->filtered && O.lists & ListCase) {
             type = s->absent() ? "CASE" : "Case";
             ++unfiltered_cases, ++suite_cases;
          }
@@ -9694,7 +9723,7 @@ struct h2_report_list : h2_report_impl {
 
       if (type) {
          h2_line line;
-         if (O.list_cases & ListSuite)
+         if (O.lists & ListSuite)
             line.printf("dark gray", " %s/%d-%d. ", type, suite_cases + suite_todos, unfiltered_cases + unfiltered_todos);
          else
             line.printf("dark gray", " %s-%d. ", type, unfiltered_cases + unfiltered_todos);
@@ -9850,20 +9879,20 @@ struct h2_report_console : h2_report_impl {
       h2_report_impl::on_case_endup(s, c);
       if (c->filtered || c->ignored) return;
       if (c->todo) {
-         if (O.verbose >= verbose_detail) print_bar(true, "yellow", s->absent() ? "TODO   " : "Todo   ", s, c, false);
+         if (O.verbose >= VerboseDetail) print_bar(true, "yellow", s->absent() ? "TODO   " : "Todo   ", s, c, false);
       } else if (c->failed) {
-         if (O.verbose >= verbose_compact_failed) {
+         if (O.verbose >= VerboseCompactFailed) {
             print_bar(true, "bold,red", "Failed ", s, c, false);
             h2_console::prints("", "\n");
-            if (O.verbose >= verbose_normal && c->fails) {
+            if (O.verbose >= VerboseNormal && c->fails) {
                c->fails->foreach([](h2_fail* fail, size_t si, size_t ci) { fail->print(si, ci); });
                h2_console::prints("", "\n");
             }
          }
       } else {  // Passed
-         if (O.verbose >= verbose_detail || O.verbose == verbose_compact_passed) {
+         if (O.verbose >= VerboseDetail || O.verbose == VerboseCompactPassed) {
             print_bar(true, "green", "Passed ", s, c, false);
-            if (O.verbose >= verbose_detail) {
+            if (O.verbose >= VerboseDetail) {
                h2_line ad;
                if (0 < c->stats.asserts) ad.printf("dark gray", ad.width() ? ", " : "").printf("", "%d assert%s", c->stats.asserts, 1 < c->stats.asserts ? "s" : "");
                if (0 < c->stats.footprint) ad.printf("dark gray", ad.width() ? ", " : "").printf("", "%s footprint", format_volume(c->stats.footprint));
@@ -9930,7 +9959,7 @@ h2_inline void h2_report::initialize()
    static h2_report_console console_report;
    static h2_report_junit junit_report;
    static h2_report_tap tap_report;
-   if (O.list_cases) {
+   if (O.lists) {
       I().reports.push_back(list_report.x);
    } else {
       I().reports.push_back(console_report.x);
@@ -10129,20 +10158,6 @@ struct getopt {
    }
 };
 
-static inline bool prefix_match(const char* pattern, const char* subject, const char* candidates[], int n)
-{
-   auto len = strlen(subject);
-   if (strncasecmp(pattern, subject, len)) return false;
-   for (int i = 0; i < n; ++i) {
-      if (!strcmp(candidates[i], pattern)) continue;
-      if (!strncasecmp(candidates[i], subject, len)) {
-         ::printf("ambiguous parameter %s: %s/%s\n", subject, pattern, candidates[i]);
-         exit(1);
-      }
-   }
-   return true;
-}
-
 h2_inline void h2_option::parse(int argc, const char** argv)
 {
    path = argv[0];
@@ -10165,13 +10180,21 @@ h2_inline void h2_option::parse(int argc, const char** argv)
             break;
          case 'l':
             while ((t = get.extract_string())) {
-               const char* candidates[] = {"suites", "cases", "todos", "tags"};
-               if (prefix_match("suites", t, candidates, 4)) list_cases |= ListSuite;
-               if (prefix_match("cases", t, candidates, 4)) list_cases |= ListCase;
-               if (prefix_match("todos", t, candidates, 4)) list_cases |= ListTodo;
-               if (prefix_match("tags", t, candidates, 4)) list_cases |= ListTag;
+               const char* r = h2_candidate(t, 4, "suite", "case", "todo", "tag");
+               if (!r)
+                  ::printf("-l invalid argument: %s, availables: suite | case | todo | tag\n", t);
+               else if (!strcmp("suite", r))
+                  lists |= ListSuite;
+               else if (!strcmp("case", r))
+                  lists |= ListCase;
+               else if (!strcmp("todo", r))
+                  lists |= ListTodo;
+               else if (!strcmp("tag", r))
+                  lists |= ListTag;
+               else
+                  ::printf("-l %s\n", r);
             }
-            if (!list_cases) list_cases = ListSuite | ListCase | ListTodo;
+            if (!lists) lists = ListSuite | ListCase | ListTodo;
             break;
          case 'm': memory_check = !memory_check; break;
          case 'o':
@@ -10183,20 +10206,37 @@ h2_inline void h2_option::parse(int argc, const char** argv)
          case 'r': get.extract_number(run_rounds = 2); break;
          case 's':
             while ((t = get.extract_string())) {
-               const char* candidates[] = {"random", "name", "file", "reverse"};
-               if (prefix_match("random", t, candidates, 4)) shuffle_cases |= ShuffleRandom;
-               if (prefix_match("name", t, candidates, 4)) shuffle_cases |= ShuffleName;
-               if (prefix_match("file", t, candidates, 4)) shuffle_cases |= ShuffleFile;
-               if (prefix_match("reverse", t, candidates, 4)) shuffle_cases |= ShuffleReverse;
+               const char* r = h2_candidate(t, 4, "random", "name", "file", "reverse");
+               if (!r)
+                  ::printf("-s invalid argument: %s, availables: random | name | file | reverse\n", t);
+               else if (!strcmp("random", r))
+                  shuffles |= ShuffleRandom;
+               else if (!strcmp("name", r))
+                  shuffles |= ShuffleName;
+               else if (!strcmp("file", r))
+                  shuffles |= ShuffleFile;
+               else if (!strcmp("reverse", r))
+                  shuffles |= ShuffleReverse;
+               else
+                  ::printf("-s %s\n", r);
             }
-            if (!shuffle_cases) shuffle_cases = ShuffleRandom;
+            if (!shuffles) shuffles = ShuffleRandom;
             break;
          case 'S':
             json_source_quote = "\\\"";
             if ((t = get.extract_string())) {
-               json_source_quote = t;
-               if (prefix_match("single", t, nullptr, 0)) json_source_quote = "\'";
-               if (prefix_match("double", t, nullptr, 0)) json_source_quote = "\"";
+               const char* r = h2_candidate(t, 5, "\'", "single", "\"", "double", "\\\"");
+               if (!r)
+                  ::printf("-S invalid argument: %s, availables: \' | single | \" | double | \\\"\n", t);
+               else if (!strcmp("\'", r) || !strcmp("single", r))
+                  json_source_quote = "\'";
+               else if (!strcmp("\"", r) || !strcmp("double", r))
+                  json_source_quote = "\"";
+               else if (!strcmp("\\\"", r))
+                  json_source_quote = "\\\"";
+               else
+                  ::printf("-S %s\n", r);
+
                if (strcmp("\'", json_source_quote) && strcmp("\"", json_source_quote) && strcmp("\\\"", json_source_quote)) json_source_quote = "\\\"";
             }
             break;

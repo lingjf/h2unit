@@ -69,6 +69,25 @@ SUITE(basename)
    }
 }
 
+SUITE(h2_candidate)
+{
+   Case(3 candidates)
+   {
+      OK("single", h2::h2_candidate("si", 3, "single", "double", "sample"));
+      OK("single", h2::h2_candidate("sin", 3, "single", "double", "sample"));
+      OK("single", h2::h2_candidate("sing", 3, "single", "double", "sample"));
+      OK("single", h2::h2_candidate("singl", 3, "single", "double", "sample"));
+      OK("single", h2::h2_candidate("single", 3, "single", "double", "sample"));
+
+      OK(IsNull, h2::h2_candidate("z", 3, "single", "double", "sample"));
+   }
+
+   Case(ambiguous)
+   {
+      OK("ambiguous argument: s, candidates: single | sample", h2::h2_candidate("s", 3, "single", "double", "sample"));
+   }
+}
+
 SUITE(h2_extract)
 {
    Case(has)
