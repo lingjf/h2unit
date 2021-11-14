@@ -49,7 +49,7 @@ jobs:
       - name: run test/debug without memory check
         run: cd debug_test && LD_BIND_NOW=1 ./a.out -s -p -m -v -q -te memory_check
       - name: ✨ run test/debug with memory check
-        run: cd debug_test && LD_BIND_NOW=1 ./a.out -swpvqo
+        run: cd debug_test && LD_BIND_NOW=1 ./a.out -swpvqo -r
       - name: configure test/release
         run: cmake -DCMAKE_VERBOSE_MAKEFILE=ON -DCMAKE_BUILD_TYPE=Release -B release_test test
       - name: 🏗️ build test/release
@@ -57,7 +57,7 @@ jobs:
       - name: run test/release without memory check
         run: cd release_test && LD_BIND_NOW=1 ./a.out -s -p -m -v -q -te memory_check
       - name: ✨ run test/release with memory check
-        run: cd release_test && LD_BIND_NOW=1 ./a.out -swpvqo
+        run: cd release_test && LD_BIND_NOW=1 ./a.out -swpvqo -r
       - name: install coverage tools
         run: sudo pip3 install git+https://github.com/gcovr/gcovr.git
       - name: build and run example
@@ -105,7 +105,7 @@ jobs:
       - name: run test/debug without memory check
         run: cd debug_test && LD_BIND_NOW=1 ./a.out -s -p -m -v -q -te memory_check
       - name: ✨ run test/debug with memory check
-        run: cd debug_test && LD_BIND_NOW=1 ./a.out -swpvqo
+        run: cd debug_test && LD_BIND_NOW=1 ./a.out -swpvqo -r
       - name: configure test/release
         run: cmake -DCMAKE_VERBOSE_MAKEFILE=ON -DCMAKE_BUILD_TYPE=Release -B release_test test
       - name: 🏗️ build test/release
@@ -113,7 +113,7 @@ jobs:
       - name: run test/release without memory check
         run: cd release_test && LD_BIND_NOW=1 ./a.out -s -p -m -v -q -te memory_check
       - name: ✨ run test/release with memory check
-        run: cd release_test && LD_BIND_NOW=1 ./a.out -swpvqo
+        run: cd release_test && LD_BIND_NOW=1 ./a.out -swpvqo -r
       - name: install coverage tools
         run: brew install lcov
       - name: build and run example
@@ -160,7 +160,7 @@ jobs:
       - name: run test/debug without memory check
         run: cd debug_test && ./a.out.exe -s -p -m -v -q -te memory_check
       - name: ✨ run test/debug with memory check
-        run: cd debug_test && ./a.out.exe -swpvqo
+        run: cd debug_test && ./a.out.exe -swpvqo -r
       - name: configure test/release
         run: cmake -DCMAKE_VERBOSE_MAKEFILE=ON -DCMAKE_BUILD_TYPE=Release -B release_test test
       - name: cat test/release vcxproj

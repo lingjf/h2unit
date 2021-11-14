@@ -50,12 +50,18 @@ SUITE(User Defined Matcher)
 {
    Case(IsEven)
    {
-      OK(IsEven, 2);
-      OK(IsEven2, 2);
-      OK(IsEven3, 2);
-      OK(!IsEven, 1);
-      OK(!IsEven2, 1);
-      OK(!IsEven3, 1);
+      OK(IsEven(), 2);
+      OK(IsEven2(), 2);
+      OK(IsEven3(), 2);
+      OK(!IsEven(), 1);
+      OK(!IsEven2(), 1);
+      OK(!IsEven3(), 1);
+      OK(IsEven(), 4);
+      OK(IsEven2(), 4);
+      OK(IsEven3(), 4);
+      OK(!IsEven(), 5);
+      OK(!IsEven2(), 5);
+      OK(!IsEven3(), 5);
    }
 
    Case(Divable)

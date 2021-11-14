@@ -85,4 +85,11 @@ SUITE(bugfix)
    {
       // OK("hello", "hel1o");
    }
+
+   Case(customize matcher 0 argument)
+   {
+      // OK(IsEven, 2);
+      // OK(!IsEven, 1);
+      // OK(IsEven, 4);  // failed before fix
+   }
 }

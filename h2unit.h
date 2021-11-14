@@ -2136,13 +2136,16 @@ inline h2_polymorphic_matcher<h2_listof_matches<typename std::decay<const Matche
    }                                                                                          \
    virtual h2::h2_line expection(h2::h2_mc c) const override { return ""; }
 
-#define H2MATCHER0(name, message)                                               \
-   struct h2_##name##_matches : h2::h2_matches {                                \
-      explicit h2_##name##_matches() {}                                         \
-      __Matches_Common(message)                                                 \
-   };                                                                           \
-   h2::h2_polymorphic_matcher<h2_##name##_matches> name{h2_##name##_matches()}; \
-   template <typename A>                                                        \
+#define H2MATCHER0(name, message)                                                    \
+   struct h2_##name##_matches : h2::h2_matches {                                     \
+      explicit h2_##name##_matches() {}                                              \
+      __Matches_Common(message)                                                      \
+   };                                                                                \
+   inline h2::h2_polymorphic_matcher<h2_##name##_matches> name()                     \
+   {                                                                                 \
+      return h2::h2_polymorphic_matcher<h2_##name##_matches>(h2_##name##_matches()); \
+   }                                                                                 \
+   template <typename A>                                                             \
    bool h2_##name##_matches::__matches(const A& a) const
 
 #define H2MATCHER1(name, e1, message)                                                           \
