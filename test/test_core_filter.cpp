@@ -1,6 +1,6 @@
 #include "../source/h2_unit.cpp"
 
-SUITE(match_names)
+SUITE(match_names [yes])
 {
    bool ret;
 

@@ -11,7 +11,7 @@
 *    `-f` Only test last *failed* cases
 *    `-F` [n] *Fold* json object or array, 0:unfold, 1:fold short, 2:fold same, 3:fold single (missing peer)
 *    `-i` {pattern} *include* filter, suite name or case name wildcard (?, *) matches, if pattern don't contains ? and *, wildcard change to contains. Default is `*` (include all)
-*    `-l` [suite case todo] *list* out suites and cases
+*    `-l` [suite case todo tag] *list* out suites and cases todos tags
 *    `-m` Disable *memory* check(leak, overflow, trample, double free, asymmetric free)
 *    `-o` {path} *output* junit compatible XML output
 *    `-p` Disable test percentage *progressing* bar

@@ -20,7 +20,7 @@ SUITE(h2_option)
       OK(0, c.break_after_fails);
       OK(!c.exception_as_fail);
       OK(!c.tags_filter);
-      OK(!c.list_cases.size());
+      OK(0, c.list_cases);
       OK(1, c.run_rounds);
       OK(5, c.fold_json);
       OK(3, c.verbose);
@@ -46,13 +46,6 @@ SUITE(h2_option)
       const char* argv[] = {"./a.out", "-v", "3"};
       c.parse(3, argv);
       OK(3, c.verbose);
-   }
-
-   Case(list_cases)
-   {
-      const char* argv[] = {"./a.out", "-l"};
-      c.parse(2, argv);
-      OK(ListOf("all"), c.list_cases);
    }
 
    Case(colorful)
@@ -164,6 +157,53 @@ SUITE(h2_option)
       const char* argv[] = {"./a.out", "-i", "http", "-v"};
       c.parse(4, argv);
       OK(8, c.verbose);
+   }
+}
+
+SUITE(option list)
+{
+   h2::h2_option c;
+
+   Case(list_cases -l)
+   {
+      const char* argv[] = {"./a.out", "-l"};
+      c.parse(2, argv);
+      OK(0x1110, c.list_cases);
+   }
+
+   Case(list_cases -l suite)
+   {
+      const char* argv[] = {"./a.out", "-l", "suite"};
+      c.parse(3, argv);
+      OK(0x10, c.list_cases);
+   }
+
+   Case(list_cases -l case)
+   {
+      const char* argv[] = {"./a.out", "-l", "case"};
+      c.parse(3, argv);
+      OK(0x100, c.list_cases);
+   }
+
+   Case(list_cases -l todo)
+   {
+      const char* argv[] = {"./a.out", "-l", "todo"};
+      c.parse(3, argv);
+      OK(0x1000, c.list_cases);
+   }
+
+   Case(list_cases -l tag)
+   {
+      const char* argv[] = {"./a.out", "-l", "tag"};
+      c.parse(3, argv);
+      OK(0x10000, c.list_cases);
+   }
+
+   Case(list_cases -l s)
+   {
+      const char* argv[] = {"./a.out", "-l", "s"};
+      c.parse(3, argv);
+      OK(0x10, c.list_cases);
    }
 }
 

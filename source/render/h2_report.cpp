@@ -36,52 +36,80 @@ struct h2_report_impl {
 };
 
 struct h2_report_list : h2_report_impl {
-   int unfiltered_suite_index = 0, unfiltered_suite_case_index = 0, unfiltered_runner_case_index = 0;
-   bool option_has(const char* type)
-   {
-      for (auto t : O.list_cases)
-         if (!strcasecmp("all", t) || !strcasecmp(type, t)) return true;
-      return false;
-   }
+   int suites = 0, cases = 0, todos = 0;
+   int unfiltered_suites = 0, unfiltered_cases = 0, unfiltered_todos = 0;
+   int suite_cases = 0, suite_todos = 0;
+   std::map<std::string, unsigned long> tags;
+
    void on_runner_endup(h2_runner* r) override
    {
       h2_report_impl::on_runner_endup(r);
-      h2_console::prints("bold,green", "Listing <%d suites, %d cases", unfiltered_suite_index, unfiltered_runner_case_index);
-      if (runner_case_index - unfiltered_runner_case_index) h2_console::prints("bold,green", ", %d filtered", runner_case_index - unfiltered_runner_case_index);
-      h2_console::prints("bold,green", ">\n");
+      if (O.list_cases & ListTag) {
+         int i = 0;
+         for (auto& tag : tags) {
+            h2_line line;
+            line.printf("dark gray", "TAG-%d. ", ++i).printf("bold,light purple", "%s ", tag.first.c_str());
+            auto suites = (tag.second & 0xFFFF0000) >> 16;
+            if (suites) line.printf("", " %d ", suites).printf("dark gray", suites > 1 ? "suites" : "suite");
+            auto cases = tag.second & 0x0000FFFF;
+            if (cases) line.printf("", " %d ", cases).printf("dark gray", cases > 1 ? "cases" : "case");
+            h2_console::printl(line);
+         }
+      }
+
+      h2_line line;
+      if (O.list_cases & ListSuite) line += gray(comma_if(line.size())) + color(h2_stringify(unfiltered_suites), "green") + " " + gray(unfiltered_suites > 1 ? "suites" : "suite");
+      if (O.list_cases & ListCase) line += gray(comma_if(line.size())) + color(h2_stringify(unfiltered_cases), "green") + " " + gray(unfiltered_cases > 1 ? "cases" : "case");
+      if (O.list_cases & ListTodo) line += gray(comma_if(line.size())) + color(h2_stringify(unfiltered_todos), "green") + " " + gray(unfiltered_todos > 1 ? "todos" : "todo");
+      if (O.list_cases & ListTag) line += gray(comma_if(line.size())) + color(h2_stringify(tags.size()), "green") + " " + gray(tags.size() > 1 ? "tags" : "tag");
+      if (O.list_cases & ListSuite && suites > unfiltered_suites) line.printf("dark gray", "%s%d filtered %s", comma_if(line.size()), suites - unfiltered_suites, suites - unfiltered_suites > 1 ? "suites" : "suite");
+      if (O.list_cases & ListCase && cases > unfiltered_cases) line.printf("dark gray", "%s%d filtered %s", comma_if(line.size()), cases - unfiltered_cases, cases - unfiltered_cases > 1 ? "cases" : "case");
+      if (O.list_cases & ListTodo && todos > unfiltered_todos) line.printf("dark gray", "%s%d filtered %s", comma_if(line.size()), todos - unfiltered_todos, todos - unfiltered_todos > 1 ? "todos" : "todo");
+      h2_console::printl("Listing " + line);
    }
    void on_suite_start(h2_suite* s) override
    {
       h2_report_impl::on_suite_start(s);
-      unfiltered_suite_case_index = 0;
+      suite_cases = 0;
+      suite_todos = 0;
       if (s->absent()) return;  // CASE
-      if (s->filtered) return;
-      ++unfiltered_suite_index;
-      if (option_has("suite")) {
-         h2_console::prints("dark gray", "SUITE-%d. ", unfiltered_suite_index);
-         h2_console::prints("bold,blue", "%s", s->describe.name);
-         h2_console::prints("dark gray", " %s\n", s->file);
+      for (int i = 0; s->describe.tags[i]; ++i) tags[s->describe.tags[i]] += 0x10000;
+
+      ++suites;
+      if (!s->filtered && O.list_cases & ListSuite) {
+         ++unfiltered_suites;
+         h2_line line;
+         line.printf("dark gray", "SUITE-%d. ", unfiltered_suites);
+         h2_console::printl(line + color(s->describe.name, "bold,blue") + " " + gray(h2_basefile(s->file)));
       }
    }
    void on_case_start(h2_suite* s, h2_case* c) override
    {
       h2_report_impl::on_case_start(s, c);
-      if (s->filtered) return;
+      for (int i = 0; c->describe.tags[i]; ++i) tags[c->describe.tags[i]] += 0x1;
+
       const char* type = nullptr;
       if (c->todo) {
-         if (option_has("todo")) type = s->absent() ? "TODO" : "Todo";
+         ++todos;
+         if (!c->filtered && O.list_cases & ListTodo) {
+            type = s->absent() ? "TODO" : "Todo";
+            ++unfiltered_todos, ++suite_todos;
+         }
       } else {
-         if (option_has("case")) type = s->absent() ? "CASE" : "Case";
+         ++cases;
+         if (!c->filtered && O.list_cases & ListCase) {
+            type = s->absent() ? "CASE" : "Case";
+            ++unfiltered_cases, ++suite_cases;
+         }
       }
 
       if (type) {
-         ++unfiltered_runner_case_index, ++unfiltered_suite_case_index;
-         if (option_has("suite"))
-            h2_console::prints("dark gray", " %s/%d-%d. ", type, unfiltered_suite_case_index, unfiltered_runner_case_index);
+         h2_line line;
+         if (O.list_cases & ListSuite)
+            line.printf("dark gray", " %s/%d-%d. ", type, suite_cases + suite_todos, unfiltered_cases + unfiltered_todos);
          else
-            h2_console::prints("dark gray", " %s-%d. ", type, unfiltered_runner_case_index);
-         h2_console::prints("cyan", "%s", c->describe.name);
-         h2_console::prints("dark gray", " %s\n", h2_basefile(c->file));
+            line.printf("dark gray", " %s-%d. ", type, unfiltered_cases + unfiltered_todos);
+         h2_console::printl(line + color(c->describe.name, "cyan") + " " + gray(h2_basefile(c->file)));
       }
    }
 };
@@ -313,7 +341,7 @@ h2_inline void h2_report::initialize()
    static h2_report_console console_report;
    static h2_report_junit junit_report;
    static h2_report_tap tap_report;
-   if (O.list_cases.size()) {
+   if (O.list_cases) {
       I().reports.push_back(list_report.x);
    } else {
       I().reports.push_back(console_report.x);

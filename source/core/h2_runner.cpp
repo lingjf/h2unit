@@ -175,7 +175,7 @@ h2_inline int h2_runner::main(int argc, const char** argv)
 
             current_case = (void*)c;
             h2_report::I().on_case_start(s, c);
-            if (!O.list_cases.size() && !c->todo && !c->filtered && !c->ignored) {
+            if (!O.list_cases && !c->todo && !c->filtered && !c->ignored) {
                for (auto& setup : global_case_setups) setup();
                s->test(c);
                for (auto& cleanup : global_case_cleanups) cleanup();

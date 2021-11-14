@@ -11,6 +11,12 @@ static constexpr int ShuffleName = 0x100;
 static constexpr int ShuffleFile = 0x1000;
 static constexpr int ShuffleReverse = 0x10000;
 
+static constexpr int ListNone = 0x0;
+static constexpr int ListSuite = 0x10;
+static constexpr int ListCase = 0x100;
+static constexpr int ListTodo = 0x1000;
+static constexpr int ListTag = 0x10000;
+
 struct h2_option {
    h2_singleton(h2_option);
 
@@ -37,11 +43,11 @@ struct h2_option {
    int run_rounds = 1;
    int fold_json = 5;  // 0 unfold, 1 fold short, 2 fold same, 3 fold single
    int shuffle_cases = ShuffleCode;
+   int list_cases = ListNone;
    int verbose = verbose_normal;
    const char* json_source_quote = "";
    char junit_path[256]{'\0'};
    char tap_path[256]{'\0'};
-   std::vector<const char*> list_cases;
    std::vector<const char*> includes, excludes;
 
    void parse(int argc, const char** argv);
