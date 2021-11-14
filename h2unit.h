@@ -3118,12 +3118,14 @@ struct h2_sock : h2_once {
 // source/core/h2_describe.hpp
 
 struct h2_describe {
+   const char* file;
+   int line;
    const char* desc;
    const char* name = "";
    const char* tags[64]{nullptr};
    char nbuf[512], tbuf[512];
 
-   h2_describe(const char* describe);
+   h2_describe(const char* file, int line, const char* describe);
    void split();
    bool has_tag(const char* pattern);
 };
@@ -3143,7 +3145,7 @@ struct h2_case {
    h2_stats stats;
    h2_fail* fails = nullptr;
 
-   h2_case(const char* filine_, const char* describe_, int todo_) : filine(filine_), describe(describe_), todo(todo_) {}
+   h2_case(const char* filine_, const char* file_, int line_, const char* describe_, int todo_) : filine(filine_), describe(file_, line_, describe_), todo(todo_) {}
    void clear();
 
    void prev_setup();
@@ -3173,7 +3175,7 @@ struct h2_suite {
    h2_list mocks;
    h2_stats stats;
 
-   h2_suite(const char* filine, const char* describe, void (*)(h2_suite*, h2_case*));
+   h2_suite(const char* filine, const char* file, int line, const char* describe, void (*)(h2_suite*, h2_case*));
    void clear();
    bool absent() const { return !describe.desc; }  // nullptr describe means no SUITE wrapper (CASE/TODO ...)
 
@@ -3196,9 +3198,9 @@ struct h2_suite {
 // source/core/h2_core.hpp
 
 #define H2SUITE(...) __H2SUITE(#__VA_ARGS__, H2PP_UNIQUE(suite_test_C))
-#define __H2SUITE(suite_describe, suite_test)                                           \
-   static void suite_test(h2::h2_suite*, h2::h2_case*);                                 \
-   static h2::h2_suite H2PP_UNIQUE(si)(H2_FILINE, h2::ss(suite_describe), &suite_test); \
+#define __H2SUITE(suite_describe, suite_test)                                                               \
+   static void suite_test(h2::h2_suite*, h2::h2_case*);                                                     \
+   static h2::h2_suite H2PP_UNIQUE(si)(H2_FILINE, __FILE__, __LINE__, h2::ss(suite_describe), &suite_test); \
    static void suite_test(h2::h2_suite* suite_1_5_2_8_0_1_1_9_8, h2::h2_case* case_1_1_0_2_6_0_0_2_4)
 
 #define H2Setup() if (case_1_1_0_2_6_0_0_2_4)
@@ -3207,7 +3209,7 @@ struct h2_suite {
 #define H2Todo(...) __H2Case(#__VA_ARGS__, H2PP_UNIQUE(ci), H2PP_UNIQUE(sc), H2PP_UNIQUE(cc), 1)
 #define H2Case(...) __H2Case(#__VA_ARGS__, H2PP_UNIQUE(ci), H2PP_UNIQUE(sc), H2PP_UNIQUE(cc), 0)
 #define __H2Case(case_describe, case_instance, suite_cleaner, case_cleaner, todo)                                         \
-   static h2::h2_case case_instance(H2_FILINE, h2::ss(case_describe), todo);                                              \
+   static h2::h2_case case_instance(H2_FILINE, __FILE__, __LINE__, h2::ss(case_describe), todo);                          \
    static h2::h2_suite::registor H2PP_UNIQUE(sr)(suite_1_5_2_8_0_1_1_9_8, &case_instance);                                \
    if (&case_instance == case_1_1_0_2_6_0_0_2_4)                                                                          \
       for (h2::h2_suite::cleaner suite_cleaner(suite_1_5_2_8_0_1_1_9_8); suite_cleaner; case_1_1_0_2_6_0_0_2_4 = nullptr) \
@@ -3220,14 +3222,14 @@ struct h2_suite {
    static void case_test();                                                                           \
    static void suite_test(h2::h2_suite* suite_1_5_2_8_0_1_1_9_8, h2::h2_case* case_1_1_0_2_6_0_0_2_4) \
    {                                                                                                  \
-      static h2::h2_case case_instance(H2_FILINE, h2::ss(case_describe), todo);                       \
+      static h2::h2_case case_instance(H2_FILINE, __FILE__, __LINE__, h2::ss(case_describe), todo);   \
       static h2::h2_suite::registor suite_registor(suite_1_5_2_8_0_1_1_9_8, &case_instance);          \
       if (&case_instance == case_1_1_0_2_6_0_0_2_4)                                                   \
          for (h2::h2_case::cleaner case_cleaner(&case_instance); case_cleaner;)                       \
             if (!::setjmp(case_instance.ctx))                                                         \
                case_test();                                                                           \
    }                                                                                                  \
-   static h2::h2_suite H2PP_UNIQUE(si)(H2_FILINE, nullptr, &suite_test);                              \
+   static h2::h2_suite H2PP_UNIQUE(si)(H2_FILINE, __FILE__, __LINE__, nullptr, &suite_test);          \
    static void case_test()
 
 /* clang-format off */
@@ -3276,9 +3278,9 @@ struct h2_suite {
          for (h2::h2_suite::cleaner suite_cleaner(suite_1_5_2_8_0_1_1_9_8); suite_cleaner;)        \
             for (h2::h2_case::cleaner case_cleaner(case_1_1_0_2_6_0_0_2_4); case_cleaner;)         \
                if (!::setjmp(case_1_1_0_2_6_0_0_2_4->ctx))
-#define __H2Cases2(case_instance, Qx, case_prefix, i, x)                                   \
-   static h2::h2_case case_instance(H2_FILINE, H2PP_STR(case_prefix i. x), 0);              \
-   static h2::h2_suite::registor H2PP_UNIQUE(sr)(suite_1_5_2_8_0_1_1_9_8, &case_instance); \
+#define __H2Cases2(case_instance, Qx, case_prefix, i, x)                                          \
+   static h2::h2_case case_instance(H2_FILINE, __FILE__, __LINE__, H2PP_STR(case_prefix i. x), 0); \
+   static h2::h2_suite::registor H2PP_UNIQUE(sr)(suite_1_5_2_8_0_1_1_9_8, &case_instance);        \
    if (&case_instance == case_1_1_0_2_6_0_0_2_4) Qx = x, case_1_1_0_2_6_0_0_2_4->scheduled = true;
 #define __H2Cases_Callback(Pack, i, x) H2PP_PROXY(__H2Cases2, (H2PP_UNIQUE(ci), H2PP_REMOVE_PARENTHESES(Pack), i, x))
 
@@ -3293,9 +3295,9 @@ struct h2_suite {
             for (h2::h2_suite::cleaner suite_cleaner(suite_1_5_2_8_0_1_1_9_8); suite_cleaner;) \
                for (h2::h2_case::cleaner case_cleaner(case_1_1_0_2_6_0_0_2_4); case_cleaner;)  \
                   if (!::setjmp(case_1_1_0_2_6_0_0_2_4->ctx))
-#define __H2Casess2(case_instance, Qx, Qy, case_prefix, i, j, x, y)                        \
-   static h2::h2_case case_instance(H2_FILINE, H2PP_STR(case_prefix i.j. x, y), 0);         \
-   static h2::h2_suite::registor H2PP_UNIQUE(sr)(suite_1_5_2_8_0_1_1_9_8, &case_instance); \
+#define __H2Casess2(case_instance, Qx, Qy, case_prefix, i, j, x, y)                                    \
+   static h2::h2_case case_instance(H2_FILINE, __FILE__, __LINE__, H2PP_STR(case_prefix i.j. x, y), 0); \
+   static h2::h2_suite::registor H2PP_UNIQUE(sr)(suite_1_5_2_8_0_1_1_9_8, &case_instance);             \
    if (&case_instance == case_1_1_0_2_6_0_0_2_4) Qx = x, Qy = y, case_1_1_0_2_6_0_0_2_4->scheduled = true;
 #define __H2Casess_Callback(Pack, i, j, x, y) H2PP_PROXY(__H2Casess2, (H2PP_UNIQUE(ci), H2PP_REMOVE_PARENTHESES(Pack), i, j, x, y))
 
@@ -8696,7 +8698,7 @@ h2_inline h2_sock::~h2_sock()
    h2_socket::I().stop();
 }
 // source/core/h2_describe.cpp
-h2_inline h2_describe::h2_describe(const char* describe) : desc(describe)
+h2_inline h2_describe::h2_describe(const char* file_, int line_, const char* describe) : file(file_), line(line_), desc(describe)
 {
    if (desc) {
       strcpy(nbuf, desc);
@@ -8779,7 +8781,7 @@ h2_inline void h2_case::failing(h2_fail* fail, bool defer, bool append)
    }
 }
 // source/core/h2_suite.cpp
-h2_inline h2_suite::h2_suite(const char* filine_, const char* describe_, void (*test_code_)(h2_suite*, h2_case*)) : filine(filine_), describe(describe_), test_code(test_code_)
+h2_inline h2_suite::h2_suite(const char* filine_, const char* file_, int line_, const char* describe_, void (*test_code_)(h2_suite*, h2_case*)) : filine(filine_), describe(file_, line_, describe_), test_code(test_code_)
 {
    memset(ctx, 0, sizeof(jmp_buf));
    h2_runner::I().suites.push_back(x);
@@ -8983,61 +8985,49 @@ h2_inline void h2_runner::enumerate()
    if (O.progressing) h2_console::prints("", "\33[2K\r");
 }
 
-template <typename T, int R>
+template <typename T>
 struct shuffle_comparison {
    static int seq(h2_list* a, h2_list* b)
    {
-      return (h2_list_entry(a, T, x)->seq - h2_list_entry(b, T, x)->seq) * R;
+      return h2_list_entry(a, T, x)->seq - h2_list_entry(b, T, x)->seq;
    }
    static int name(h2_list* a, h2_list* b)
    {
-      return strcasecmp(h2_list_entry(a, T, x)->describe.name, h2_list_entry(b, T, x)->describe.name) * R;
+      return strcasecmp(h2_list_entry(a, T, x)->describe.name, h2_list_entry(b, T, x)->describe.name);
    }
    static int file(h2_list* a, h2_list* b)
    {
-      return strcasecmp(h2_list_entry(a, T, x)->filine, h2_list_entry(b, T, x)->filine) * R;
+      int t = strcasecmp(h2_list_entry(a, T, x)->describe.file, h2_list_entry(b, T, x)->describe.file);
+      return t != 0 ? t : h2_list_entry(a, T, x)->describe.line - h2_list_entry(b, T, x)->describe.line;
+   }
+   static int cmp(h2_list* a, h2_list* b)
+   {
+      int reverse = O.shuffles & ShuffleReverse ? -1 : 1;
+      if (O.shuffles & ShuffleName) return name(a, b) * reverse;
+      if (O.shuffles & ShuffleFile) return file(a, b) * reverse;
+      return seq(a, b) * reverse;  // Random or Code Declare
    }
 };
 
 h2_inline void h2_runner::shuffle()
 {
-   ::srand(::clock());
-   last = mark_last_order(suites);
+   if ((last = mark_last_order(suites))) {
+      suites.sort(shuffle_comparison<h2_suite>::seq);
+      h2_list_for_each_entry (s, suites, h2_suite, x)
+         s->cases.sort(shuffle_comparison<h2_case>::seq);
+      return;  // run in last order if last failed
+   }
 
-   int (*suite_cmp)(h2_list*, h2_list*) = shuffle_comparison<h2_suite, 1>::seq;
-   int (*case_cmp)(h2_list*, h2_list*) = shuffle_comparison<h2_case, 1>::seq;
-
-   if (last == 0) {
+   if (O.shuffles) {
+      ::srand(::clock());
       if (O.shuffles & ShuffleRandom)
          h2_list_for_each_entry (s, suites, h2_suite, x)
             h2_list_for_each_entry (c, s->cases, h2_case, x)
                s->seq = c->seq = ::rand();
 
-      if (O.shuffles & ShuffleReverse) {
-         suite_cmp = shuffle_comparison<h2_suite, -1>::seq;
-         case_cmp = shuffle_comparison<h2_case, -1>::seq;
-         if (O.shuffles & ShuffleName) {
-            suite_cmp = shuffle_comparison<h2_suite, -1>::name;
-            case_cmp = shuffle_comparison<h2_case, -1>::name;
-         } else if (O.shuffles & ShuffleFile) {
-            suite_cmp = shuffle_comparison<h2_suite, -1>::file;
-            case_cmp = shuffle_comparison<h2_case, -1>::file;
-         }
-      } else {
-         if (O.shuffles & ShuffleName) {
-            suite_cmp = shuffle_comparison<h2_suite, 1>::name;
-            case_cmp = shuffle_comparison<h2_case, 1>::name;
-         } else if (O.shuffles & ShuffleFile) {
-            suite_cmp = shuffle_comparison<h2_suite, 1>::file;
-            case_cmp = shuffle_comparison<h2_case, 1>::file;
-         }
-      }
-   }
-
-   if (last || O.shuffles) {
-      suites.sort(suite_cmp);
+      suites.sort(shuffle_comparison<h2_suite>::cmp);
       h2_list_for_each_entry (s, suites, h2_suite, x)
-         s->cases.sort(case_cmp);
+         s->cases.sort(shuffle_comparison<h2_case>::cmp);
    }
 }
 

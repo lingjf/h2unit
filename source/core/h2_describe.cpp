@@ -1,4 +1,4 @@
-h2_inline h2_describe::h2_describe(const char* describe) : desc(describe)
+h2_inline h2_describe::h2_describe(const char* file_, int line_, const char* describe) : file(file_), line(line_), desc(describe)
 {
    if (desc) {
       strcpy(nbuf, desc);

@@ -5,21 +5,21 @@ struct compare_host {
    h2::h2_describe describe;
    int seq = 0;
 
-   compare_host(const char* describe_) : describe(describe_) {}
-   compare_host(int seq_) : describe(""), seq(seq_) {}
+   compare_host(const char* describe_) : describe(__FILE__, __LINE__, describe_) {}
+   compare_host(int seq_) : describe(__FILE__, __LINE__, ""), seq(seq_) {}
+   compare_host(const char* file, int line) : describe(file, line, "") {}
 };
 
 SUITE(shuffle_comparison)
 {
+   int ret;
+
    Case(same name)
    {
       compare_host a("abc");
       compare_host b("abc");
-      int ret1 = h2::shuffle_comparison<compare_host, 1>::name(&a.x, &b.x);
-      CP(ret1 == 0);
-
-      int ret2 = h2::shuffle_comparison<compare_host, -1>::name(&a.x, &b.x);
-      CP(ret2 == 0);
+      ret = h2::shuffle_comparison<compare_host>::name(&a.x, &b.x);
+      CP(ret == 0);
    }
 
    Case(name abc-bcd)
@@ -28,11 +28,8 @@ SUITE(shuffle_comparison)
 
       compare_host a("abc");
       compare_host b("bcd");
-      int ret1 = h2::shuffle_comparison<compare_host, 1>::name(&a.x, &b.x);
-      CP(ret1 < 0);
-
-      int ret2 = h2::shuffle_comparison<compare_host, -1>::name(&a.x, &b.x);
-      CP(ret2 > 0);
+      ret = h2::shuffle_comparison<compare_host>::name(&a.x, &b.x);
+      CP(ret < 0);
    }
 
    Case(name bcd-abc)
@@ -41,44 +38,67 @@ SUITE(shuffle_comparison)
 
       compare_host a("bcd");
       compare_host b("abc");
-      int ret1 = h2::shuffle_comparison<compare_host, 1>::name(&a.x, &b.x);
-      CP(ret1 > 0);
-
-      int ret2 = h2::shuffle_comparison<compare_host, -1>::name(&a.x, &b.x);
-      CP(ret2 < 0);
+      ret = h2::shuffle_comparison<compare_host>::name(&a.x, &b.x);
+      CP(ret > 0);
    }
 
    Case(same seq)
    {
       compare_host a(123);
       compare_host b(123);
-      int ret1 = h2::shuffle_comparison<compare_host, 1>::seq(&a.x, &b.x);
-      CP(ret1 == 0);
-
-      int ret2 = h2::shuffle_comparison<compare_host, -1>::seq(&a.x, &b.x);
-      CP(ret2 == 0);
+      ret = h2::shuffle_comparison<compare_host>::seq(&a.x, &b.x);
+      CP(ret == 0);
    }
 
    Case(seq 123-234)
    {
       compare_host a(123);
       compare_host b(234);
-      int ret1 = h2::shuffle_comparison<compare_host, 1>::seq(&a.x, &b.x);
-      CP(ret1 < 0);
-
-      int ret2 = h2::shuffle_comparison<compare_host, -1>::seq(&a.x, &b.x);
-      CP(ret2 > 0);
+      ret = h2::shuffle_comparison<compare_host>::seq(&a.x, &b.x);
+      CP(ret < 0);
    }
 
    Case(seq 234-123)
    {
       compare_host a(234);
       compare_host b(123);
-      int ret1 = h2::shuffle_comparison<compare_host, 1>::seq(&a.x, &b.x);
-      CP(ret1 > 0);
+      ret = h2::shuffle_comparison<compare_host>::seq(&a.x, &b.x);
+      CP(ret > 0);
+   }
 
-      int ret2 = h2::shuffle_comparison<compare_host, -1>::seq(&a.x, &b.x);
-      CP(ret2 < 0);
+   Case(same file line)
+   {
+      compare_host a("abc.cpp", 123);
+      compare_host b("abc.cpp", 123);
+      CP(h2::shuffle_comparison<compare_host>::file(&a.x, &b.x) == 0);
+   }
+
+   Case(file line abc.cpp:123-abc.cpp:234)
+   {
+      compare_host a("abc.cpp", 123);
+      compare_host b("abc.cpp", 234);
+      CP(h2::shuffle_comparison<compare_host>::file(&a.x, &b.x) < 0);
+   }
+
+   Case(file line abc.cpp:123-bcd.cpp:123)
+   {
+      compare_host a("abc.cpp", 123);
+      compare_host b("bcd.cpp", 123);
+      CP(h2::shuffle_comparison<compare_host>::file(&a.x, &b.x) < 0);
+   }
+
+   Case(file line abc.cpp:234-abc.cpp:123)
+   {
+      compare_host a("abc.cpp", 234);
+      compare_host b("abc.cpp", 123);
+      CP(h2::shuffle_comparison<compare_host>::file(&a.x, &b.x) > 0);
+   }
+
+   Case(file line bcd.cpp:123-abc.cpp:123)
+   {
+      compare_host a("bcd.cpp", 123);
+      compare_host b("abc.cpp", 123);
+      CP(h2::shuffle_comparison<compare_host>::file(&a.x, &b.x) > 0);
    }
 }
 

@@ -13,7 +13,7 @@ struct h2_case {
    h2_stats stats;
    h2_fail* fails = nullptr;
 
-   h2_case(const char* filine_, const char* describe_, int todo_) : filine(filine_), describe(describe_), todo(todo_) {}
+   h2_case(const char* filine_, const char* file_, int line_, const char* describe_, int todo_) : filine(filine_), describe(file_, line_, describe_), todo(todo_) {}
    void clear();
 
    void prev_setup();

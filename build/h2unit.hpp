@@ -3118,12 +3118,14 @@ struct h2_sock : h2_once {
 // source/core/h2_describe.hpp
 
 struct h2_describe {
+   const char* file;
+   int line;
    const char* desc;
    const char* name = "";
    const char* tags[64]{nullptr};
    char nbuf[512], tbuf[512];
 
-   h2_describe(const char* describe);
+   h2_describe(const char* file, int line, const char* describe);
    void split();
    bool has_tag(const char* pattern);
 };
@@ -3143,7 +3145,7 @@ struct h2_case {
    h2_stats stats;
    h2_fail* fails = nullptr;
 
-   h2_case(const char* filine_, const char* describe_, int todo_) : filine(filine_), describe(describe_), todo(todo_) {}
+   h2_case(const char* filine_, const char* file_, int line_, const char* describe_, int todo_) : filine(filine_), describe(file_, line_, describe_), todo(todo_) {}
    void clear();
 
    void prev_setup();
@@ -3173,7 +3175,7 @@ struct h2_suite {
    h2_list mocks;
    h2_stats stats;
 
-   h2_suite(const char* filine, const char* describe, void (*)(h2_suite*, h2_case*));
+   h2_suite(const char* filine, const char* file, int line, const char* describe, void (*)(h2_suite*, h2_case*));
    void clear();
    bool absent() const { return !describe.desc; }  // nullptr describe means no SUITE wrapper (CASE/TODO ...)
 
@@ -3196,9 +3198,9 @@ struct h2_suite {
 // source/core/h2_core.hpp
 
 #define H2SUITE(...) __H2SUITE(#__VA_ARGS__, H2PP_UNIQUE(suite_test_C))
-#define __H2SUITE(suite_describe, suite_test)                                           \
-   static void suite_test(h2::h2_suite*, h2::h2_case*);                                 \
-   static h2::h2_suite H2PP_UNIQUE(si)(H2_FILINE, h2::ss(suite_describe), &suite_test); \
+#define __H2SUITE(suite_describe, suite_test)                                                               \
+   static void suite_test(h2::h2_suite*, h2::h2_case*);                                                     \
+   static h2::h2_suite H2PP_UNIQUE(si)(H2_FILINE, __FILE__, __LINE__, h2::ss(suite_describe), &suite_test); \
    static void suite_test(h2::h2_suite* suite_1_5_2_8_0_1_1_9_8, h2::h2_case* case_1_1_0_2_6_0_0_2_4)
 
 #define H2Setup() if (case_1_1_0_2_6_0_0_2_4)
@@ -3207,7 +3209,7 @@ struct h2_suite {
 #define H2Todo(...) __H2Case(#__VA_ARGS__, H2PP_UNIQUE(ci), H2PP_UNIQUE(sc), H2PP_UNIQUE(cc), 1)
 #define H2Case(...) __H2Case(#__VA_ARGS__, H2PP_UNIQUE(ci), H2PP_UNIQUE(sc), H2PP_UNIQUE(cc), 0)
 #define __H2Case(case_describe, case_instance, suite_cleaner, case_cleaner, todo)                                         \
-   static h2::h2_case case_instance(H2_FILINE, h2::ss(case_describe), todo);                                              \
+   static h2::h2_case case_instance(H2_FILINE, __FILE__, __LINE__, h2::ss(case_describe), todo);                          \
    static h2::h2_suite::registor H2PP_UNIQUE(sr)(suite_1_5_2_8_0_1_1_9_8, &case_instance);                                \
    if (&case_instance == case_1_1_0_2_6_0_0_2_4)                                                                          \
       for (h2::h2_suite::cleaner suite_cleaner(suite_1_5_2_8_0_1_1_9_8); suite_cleaner; case_1_1_0_2_6_0_0_2_4 = nullptr) \
@@ -3220,14 +3222,14 @@ struct h2_suite {
    static void case_test();                                                                           \
    static void suite_test(h2::h2_suite* suite_1_5_2_8_0_1_1_9_8, h2::h2_case* case_1_1_0_2_6_0_0_2_4) \
    {                                                                                                  \
-      static h2::h2_case case_instance(H2_FILINE, h2::ss(case_describe), todo);                       \
+      static h2::h2_case case_instance(H2_FILINE, __FILE__, __LINE__, h2::ss(case_describe), todo);   \
       static h2::h2_suite::registor suite_registor(suite_1_5_2_8_0_1_1_9_8, &case_instance);          \
       if (&case_instance == case_1_1_0_2_6_0_0_2_4)                                                   \
          for (h2::h2_case::cleaner case_cleaner(&case_instance); case_cleaner;)                       \
             if (!::setjmp(case_instance.ctx))                                                         \
                case_test();                                                                           \
    }                                                                                                  \
-   static h2::h2_suite H2PP_UNIQUE(si)(H2_FILINE, nullptr, &suite_test);                              \
+   static h2::h2_suite H2PP_UNIQUE(si)(H2_FILINE, __FILE__, __LINE__, nullptr, &suite_test);          \
    static void case_test()
 
 /* clang-format off */
@@ -3276,9 +3278,9 @@ struct h2_suite {
          for (h2::h2_suite::cleaner suite_cleaner(suite_1_5_2_8_0_1_1_9_8); suite_cleaner;)        \
             for (h2::h2_case::cleaner case_cleaner(case_1_1_0_2_6_0_0_2_4); case_cleaner;)         \
                if (!::setjmp(case_1_1_0_2_6_0_0_2_4->ctx))
-#define __H2Cases2(case_instance, Qx, case_prefix, i, x)                                   \
-   static h2::h2_case case_instance(H2_FILINE, H2PP_STR(case_prefix i. x), 0);              \
-   static h2::h2_suite::registor H2PP_UNIQUE(sr)(suite_1_5_2_8_0_1_1_9_8, &case_instance); \
+#define __H2Cases2(case_instance, Qx, case_prefix, i, x)                                          \
+   static h2::h2_case case_instance(H2_FILINE, __FILE__, __LINE__, H2PP_STR(case_prefix i. x), 0); \
+   static h2::h2_suite::registor H2PP_UNIQUE(sr)(suite_1_5_2_8_0_1_1_9_8, &case_instance);        \
    if (&case_instance == case_1_1_0_2_6_0_0_2_4) Qx = x, case_1_1_0_2_6_0_0_2_4->scheduled = true;
 #define __H2Cases_Callback(Pack, i, x) H2PP_PROXY(__H2Cases2, (H2PP_UNIQUE(ci), H2PP_REMOVE_PARENTHESES(Pack), i, x))
 
@@ -3293,9 +3295,9 @@ struct h2_suite {
             for (h2::h2_suite::cleaner suite_cleaner(suite_1_5_2_8_0_1_1_9_8); suite_cleaner;) \
                for (h2::h2_case::cleaner case_cleaner(case_1_1_0_2_6_0_0_2_4); case_cleaner;)  \
                   if (!::setjmp(case_1_1_0_2_6_0_0_2_4->ctx))
-#define __H2Casess2(case_instance, Qx, Qy, case_prefix, i, j, x, y)                        \
-   static h2::h2_case case_instance(H2_FILINE, H2PP_STR(case_prefix i.j. x, y), 0);         \
-   static h2::h2_suite::registor H2PP_UNIQUE(sr)(suite_1_5_2_8_0_1_1_9_8, &case_instance); \
+#define __H2Casess2(case_instance, Qx, Qy, case_prefix, i, j, x, y)                                    \
+   static h2::h2_case case_instance(H2_FILINE, __FILE__, __LINE__, H2PP_STR(case_prefix i.j. x, y), 0); \
+   static h2::h2_suite::registor H2PP_UNIQUE(sr)(suite_1_5_2_8_0_1_1_9_8, &case_instance);             \
    if (&case_instance == case_1_1_0_2_6_0_0_2_4) Qx = x, Qy = y, case_1_1_0_2_6_0_0_2_4->scheduled = true;
 #define __H2Casess_Callback(Pack, i, j, x, y) H2PP_PROXY(__H2Casess2, (H2PP_UNIQUE(ci), H2PP_REMOVE_PARENTHESES(Pack), i, j, x, y))
 
