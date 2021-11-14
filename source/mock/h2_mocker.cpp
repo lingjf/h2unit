@@ -15,7 +15,7 @@ h2_inline void h2_mocker_base::mock()
 {
    x.out();
    h2_runner::mock(this);
-   h2_runner::stub(srcfp, dstfp, srcfn, file);
+   h2_runner::stub(srcfp, dstfp, srcfn, filine);
 }
 
 h2_inline h2_fail* h2_mocker_base::check() const
@@ -28,7 +28,7 @@ h2_inline h2_fail* h2_mocker_base::check() const
       h2_runner::asserts();
    }
    if (!fails) return nullptr;
-   h2_fail* fail = h2_fail::new_normal(signature(), file);
+   h2_fail* fail = h2_fail::new_normal(signature(), filine);
    h2_fail::append_child(fail, fails);
    return fail;
 }

@@ -80,7 +80,7 @@ struct h2_report_list : h2_report_impl {
          ++unfiltered_suites;
          h2_line line;
          line.printf("dark gray", "SUITE-%d. ", unfiltered_suites);
-         h2_console::printl(line + color(s->describe.name, "bold,blue") + " " + gray(h2_basefile(s->file)));
+         h2_console::printl(line + color(s->describe.name, "bold,blue") + " " + gray(h2_basefile(s->filine)));
       }
    }
    void on_case_start(h2_suite* s, h2_case* c) override
@@ -109,7 +109,7 @@ struct h2_report_list : h2_report_impl {
             line.printf("dark gray", " %s/%d-%d. ", type, suite_cases + suite_todos, unfiltered_cases + unfiltered_todos);
          else
             line.printf("dark gray", " %s-%d. ", type, unfiltered_cases + unfiltered_todos);
-         h2_console::printl(line + color(c->describe.name, "cyan") + " " + gray(h2_basefile(c->file)));
+         h2_console::printl(line + color(c->describe.name, "cyan") + " " + gray(h2_basefile(c->filine)));
       }
    }
 };
@@ -166,7 +166,7 @@ struct h2_report_console : h2_report_impl {
       h2_line bar;
       if (percentage && O.progressing) format_percentage(bar);
       if (status && status_style) bar.printf(status_style, "%s", status);
-      if (s && c) bar += format_title(s->describe.name, c->describe.name, backable ? nullptr : h2_basefile(c->file));
+      if (s && c) bar += format_title(s->describe.name, c->describe.name, backable ? nullptr : h2_basefile(c->filine));
       if (backable) {
          if (h2_console::width() > bar.width())
             bar.padding(h2_console::width() - bar.width());
@@ -309,7 +309,7 @@ struct h2_report_junit : h2_report_impl {
       if (!f) return;
       fprintf(f, "<testcase classname=\"%s\" name=\"%s\" status=\"%s\" time=\"%.3f\">\n", s->describe.name, c->describe.name, c->todo ? "TODO" : (c->filtered ? "Filtered" : (c->ignored ? "Ignored" : (c->failed ? "Failed" : "Passed"))), c->stats.timecost / 1000.0);
       if (c->failed) {
-         fprintf(f, "<failure message=\"%s:", c->file);
+         fprintf(f, "<failure message=\"%s:", c->filine);
          if (c->fails) c->fails->foreach([&](h2_fail* fail, size_t si, size_t ci) {fprintf(f, "{newline}"); fail->print(f); });
          fprintf(f, "\" type=\"AssertionFailedError\"></failure>\n");
       }

@@ -104,16 +104,16 @@ struct h2_stdio {
       I().buffer = new h2_string();
       static h2_list stubs;
 
-      h2_stubs::add(stubs, (void*)::printf, (void*)printf, "printf", H2_FILE);
-      h2_stubs::add(stubs, (void*)::vprintf, (void*)vprintf, "vprintf", H2_FILE);
-      h2_stubs::add(stubs, (void*)::putchar, (void*)putchar, "putchar", H2_FILE);
-      h2_stubs::add(stubs, (void*)::puts, (void*)puts, "puts", H2_FILE);
-      h2_stubs::add(stubs, (void*)::fprintf, (void*)fprintf, "fprintf", H2_FILE);
-      // h2_stubs::add(stubs,(void*)::vfprintf, (void*)vfprintf,  "vfprintf",H2_FILE);
-      h2_stubs::add(stubs, (void*)::fputc, (void*)fputc, "fputc", H2_FILE);
-      h2_stubs::add(stubs, (void*)::putc, (void*)fputc, "fputc", H2_FILE);
-      h2_stubs::add(stubs, (void*)::fputs, (void*)fputs, "fputs", H2_FILE);
-      h2_stubs::add(stubs, (void*)::fwrite, (void*)fwrite, "fwrite", H2_FILE);
+      h2_stubs::add(stubs, (void*)::printf, (void*)printf, "printf", H2_FILINE);
+      h2_stubs::add(stubs, (void*)::vprintf, (void*)vprintf, "vprintf", H2_FILINE);
+      h2_stubs::add(stubs, (void*)::putchar, (void*)putchar, "putchar", H2_FILINE);
+      h2_stubs::add(stubs, (void*)::puts, (void*)puts, "puts", H2_FILINE);
+      h2_stubs::add(stubs, (void*)::fprintf, (void*)fprintf, "fprintf", H2_FILINE);
+      // h2_stubs::add(stubs,(void*)::vfprintf, (void*)vfprintf,  "vfprintf",H2_FILINE);
+      h2_stubs::add(stubs, (void*)::fputc, (void*)fputc, "fputc", H2_FILINE);
+      h2_stubs::add(stubs, (void*)::putc, (void*)fputc, "fputc", H2_FILINE);
+      h2_stubs::add(stubs, (void*)::fputs, (void*)fputs, "fputs", H2_FILINE);
+      h2_stubs::add(stubs, (void*)::fwrite, (void*)fwrite, "fwrite", H2_FILINE);
 #if defined __GNUC__
       struct streambuf : public std::streambuf {
          FILE* f;
@@ -127,10 +127,10 @@ struct h2_stdio {
       std::cerr.rdbuf(&sb_err);
       std::clog.rdbuf(&sb_err); /* print to stderr */
 #endif
-      h2_stubs::add(stubs, (void*)LIBC__write, (void*)write, "write", H2_FILE);
+      h2_stubs::add(stubs, (void*)LIBC__write, (void*)write, "write", H2_FILINE);
 #if !defined _WIN32
-      h2_stubs::add(stubs, (void*)::syslog, (void*)syslog, "syslog", H2_FILE);
-      h2_stubs::add(stubs, (void*)::vsyslog, (void*)vsyslog, "vsyslog", H2_FILE);
+      h2_stubs::add(stubs, (void*)::syslog, (void*)syslog, "syslog", H2_FILINE);
+      h2_stubs::add(stubs, (void*)::vsyslog, (void*)vsyslog, "vsyslog", H2_FILINE);
 #endif
    }
 
@@ -150,7 +150,7 @@ struct h2_stdio {
    }
 };
 
-h2_inline h2_cout::h2_cout(h2_matcher<const char*> m_, const char* e_, const char* type_, const char* file_) : file(file_), m(m_), e(e_), type(type_)
+h2_inline h2_cout::h2_cout(h2_matcher<const char*> m_, const char* e_, const char* type_, const char* filine_) : filine(filine_), m(m_), e(e_), type(type_)
 {
    bool all = !strlen(type);
    h2_stdio::I().start_capture(all || h2_extract::has(type, "out"), all || h2_extract::has(type, "err"), all || h2_extract::has(type, "syslog"));
@@ -161,7 +161,7 @@ h2_inline h2_cout::~h2_cout()
    h2_runner::asserts();
    h2_fail* fail = m.matches(h2_stdio::I().stop_capture(), 0);
    if (fail) {
-      fail->file = file;
+      fail->filine = filine;
       fail->assert_type = "OK";
       fail->e_expression = e;
       fail->a_expression = "";

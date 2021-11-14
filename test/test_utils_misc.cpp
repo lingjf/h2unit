@@ -3,7 +3,7 @@
 /* clang-format off */
 CASE(file line)
 {
-   OK(EndsWith("test_utils_misc.cpp:6"), H2_FILE);
+   OK(EndsWith("test_utils_misc.cpp:6"), H2_FILINE);
 }
 /* clang-format on */
 

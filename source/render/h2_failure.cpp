@@ -28,8 +28,8 @@ h2_inline h2_fail::~h2_fail()
 
 h2_inline h2_line h2_fail::locate()
 {
-   if (h2_blank(file)) return {};
-   return gray(" at ") + h2_basefile(file);
+   if (h2_blank(filine)) return {};
+   return gray(" at ") + h2_basefile(filine);
 }
 
 h2_inline void h2_fail::foreach(std::function<void(h2_fail*, size_t, size_t)> cb, size_t si, size_t ci)
@@ -40,7 +40,7 @@ h2_inline void h2_fail::foreach(std::function<void(h2_fail*, size_t, size_t)> cb
 }
 
 struct h2_fail_normal : h2_fail {
-   h2_fail_normal(const h2_line& explain_ = {}, const char* file_ = nullptr) : h2_fail(explain_, file_) {}
+   h2_fail_normal(const h2_line& explain_ = {}, const char* filine_ = nullptr) : h2_fail(explain_, filine_) {}
    void print(size_t si = 0, size_t ci = 0) override
    {
       h2_line line;

@@ -1,4 +1,4 @@
-#define H2_FILE __FILE__ ":" H2PP_STR(__LINE__)
+#define H2_FILINE __FILE__ ":" H2PP_STR(__LINE__)
 
 struct h2_once {
    unsigned long c = 0;

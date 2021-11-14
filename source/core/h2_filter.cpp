@@ -25,10 +25,10 @@ static inline bool h2_filter_case(h2_suite* s, h2_case* c)
             return true;
    } else {
       if (!O.includes.empty())
-         if (!match_names(O.includes, s->describe.name) && !match_names(O.includes, c->describe.name) && !match_names(O.includes, c->file))
+         if (!match_names(O.includes, s->describe.name) && !match_names(O.includes, c->describe.name) && !match_names(O.includes, c->filine))
             return true;
       if (!O.excludes.empty())
-         if (match_names(O.excludes, s->describe.name) || match_names(O.excludes, c->describe.name) || match_names(O.excludes, c->file))
+         if (match_names(O.excludes, s->describe.name) || match_names(O.excludes, c->describe.name) || match_names(O.excludes, c->filine))
             return true;
    }
    return false;
@@ -45,10 +45,10 @@ static inline bool h2_filter_suite(h2_suite* s)
             return true;
    } else {
       if (!O.includes.empty())
-         if (!match_names(O.includes, s->describe.name) && !match_names(O.includes, s->file))
+         if (!match_names(O.includes, s->describe.name) && !match_names(O.includes, s->filine))
             return true;
       if (!O.excludes.empty())
-         if (match_names(O.excludes, s->describe.name) || match_names(O.excludes, s->file))
+         if (match_names(O.excludes, s->describe.name) || match_names(O.excludes, s->filine))
             return true;
    }
    return false;

@@ -26,7 +26,7 @@ struct h2_runner {
    void enumerate();
    int main(int argc, const char** argv);
 
-   static void stub(void* srcfp, void* dstfp, const char* srcfn, const char* file);
+   static void stub(void* srcfp, void* dstfp, const char* srcfn, const char* filine);
    static void unstub(void* srcfp);
    static void mock(void* mocker);
    static void failing(h2_fail* fail);

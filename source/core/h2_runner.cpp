@@ -6,7 +6,7 @@ static inline void save_last_order(h2_list& suites)
    if (!f) return;
    h2_list_for_each_entry (s, suites, h2_suite, x)
       h2_list_for_each_entry (c, s->cases, h2_case, x)
-         ::fprintf(f, "  file: %s\n suite: %s\n  case: %s\nstatus: %s\n\n", c->file, s->describe.name, c->describe.name, c->failed ? "failed" : "passed");
+         ::fprintf(f, "  file: %s\n suite: %s\n  case: %s\nstatus: %s\n\n", c->filine, s->describe.name, c->describe.name, c->failed ? "failed" : "passed");
    ::fclose(f);
 }
 
@@ -17,7 +17,7 @@ static inline void __find_mark(h2_list& suites, char* fileline, char* suitename,
    h2_list_for_each_entry (s, suites, h2_suite, x)  // full match 3
       if (!strcmp(suitename, s->describe.name))
          h2_list_for_each_entry (c, s->cases, h2_case, x)
-            if (!strcmp(casename, c->describe.name) && !strcmp(fileline, c->file)) {
+            if (!strcmp(casename, c->describe.name) && !strcmp(fileline, c->filine)) {
                s->seq = c->seq = ++seq;
                if (failed) c->last_failed = true;
                ++founds;
@@ -94,7 +94,7 @@ struct shuffle_comparison {
    }
    static int file(h2_list* a, h2_list* b)
    {
-      return strcasecmp(h2_list_entry(a, T, x)->file, h2_list_entry(b, T, x)->file) * R;
+      return strcasecmp(h2_list_entry(a, T, x)->filine, h2_list_entry(b, T, x)->filine) * R;
    }
 };
 

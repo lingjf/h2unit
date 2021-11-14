@@ -517,7 +517,7 @@ struct h2_pattern {
    static bool match(const char* pattern, const char* subject, bool caseless = false);
 };
 // source/utils/h2_misc.hpp
-#define H2_FILE __FILE__ ":" H2PP_STR(__LINE__)
+#define H2_FILINE __FILE__ ":" H2PP_STR(__LINE__)
 
 struct h2_once {
    unsigned long c = 0;
@@ -1055,9 +1055,9 @@ struct h2_fail : h2_libc {
    // char       We(var)        We('a')        'a'             a
 
    int seqno = -1;
-   const char* file;
+   const char* filine;
 
-   h2_fail(const h2_line& explain_, const char* file_) : explain(explain_), file(file_) {}
+   h2_fail(const h2_line& explain_, const char* filine_) : explain(explain_), filine(filine_) {}
    virtual ~h2_fail();
 
    h2_line locate();
@@ -1069,13 +1069,13 @@ struct h2_fail : h2_libc {
    static void append_subling(h2_fail*& fail, h2_fail* nf);
    static void append_child(h2_fail*& fail, h2_fail* nf);
 
-   static h2_fail* new_normal(const h2_line& explain, const char* file = nullptr);
+   static h2_fail* new_normal(const h2_line& explain, const char* filine = nullptr);
    static h2_fail* new_unexpect(const h2_line& expection = {}, const h2_line& represent = {}, const h2_line& explain = {});
    static h2_fail* new_strcmp(const h2_string& e_value, const h2_string& a_value, bool caseless, const h2_line& expection, const h2_line& explain = {});
    static h2_fail* new_strfind(const h2_string& e_value, const h2_string& a_value, const h2_line& expection, const h2_line& explain = {});
    static h2_fail* new_json(const h2_string& e_value, const h2_string& a_value, const h2_line& expection, bool caseless, const h2_line& explain = {});
    static h2_fail* new_memcmp(const unsigned char* e_value, const unsigned char* a_value, const size_t length, const size_t width);
-   static h2_fail* new_memory_leak(const void* ptr, const size_t size, const h2_vector<std::pair<size_t, size_t>>& sizes, const h2_backtrace& bt_allocate, const char* where, const char* file);
+   static h2_fail* new_memory_leak(const void* ptr, const size_t size, const h2_vector<std::pair<size_t, size_t>>& sizes, const h2_backtrace& bt_allocate, const char* where, const char* filine);
    static h2_fail* new_double_free(const void* ptr, const h2_backtrace& bt_allocate, const h2_backtrace& bt_release, const h2_backtrace& bt_double_free);
    static h2_fail* new_asymmetric_free(const void* ptr, const char* who_allocate, const char* who_release, const h2_backtrace& bt_allocate, const h2_backtrace& bt_release);
    static h2_fail* new_overflow(const void* ptr, const size_t size, const void* violate_ptr, const char* action, const h2_vector<unsigned char>& spot, const h2_backtrace& bt_allocate, const h2_backtrace& bt_trample);
@@ -1112,7 +1112,7 @@ struct h2_runner {
    void enumerate();
    int main(int argc, const char** argv);
 
-   static void stub(void* srcfp, void* dstfp, const char* srcfn, const char* file);
+   static void stub(void* srcfp, void* dstfp, const char* srcfn, const char* filine);
    static void unstub(void* srcfp);
    static void mock(void* mocker);
    static void failing(h2_fail* fail);
@@ -2482,7 +2482,7 @@ struct h2_fp<ClassType, ReturnType(ArgumentTypes...)> {
 };
 // source/stub/h2_stubs.hpp
 struct h2_stubs {
-   static bool add(h2_list& stubs, void* srcfp, void* dstfp, const char* srcfn, const char* file);
+   static bool add(h2_list& stubs, void* srcfp, void* dstfp, const char* srcfn, const char* filine);
    static void clear(h2_list& stubs, void* srcfp);
    static void clear(h2_list& stubs);
 };
@@ -2502,18 +2502,18 @@ struct h2_stuber<Counter, ClassType, ReturnType(ArgumentTypes...)> {
    h2_singleton(h2_stuber);
    void* srcfp;
    const char* srcfn;
-   const char* file;
+   const char* filine;
 
    ReturnType (*dstfp)(ClassType*, ArgumentTypes...);
    struct member_function_stub {  // wrap for calling conversions
       ReturnType fx(ArgumentTypes... arguments) { return I().dstfp((ClassType*)this, std::forward<ArgumentTypes>(arguments)...); }
    };
 
-   static h2_stuber& I(void* srcfp, const char* srcfn, const char* file)
+   static h2_stuber& I(void* srcfp, const char* srcfn, const char* filine)
    {
       I().srcfp = srcfp;
       I().srcfn = srcfn;
-      I().file = file;
+      I().filine = filine;
       return I();
    }
 
@@ -2521,9 +2521,9 @@ struct h2_stuber<Counter, ClassType, ReturnType(ArgumentTypes...)> {
    {
 #if defined _WIN32 && (defined __i386__ || defined _M_IX86)  // https://docs.microsoft.com/en-us/cpp/cpp/calling-conventions
       dstfp = dstfp_;
-      h2_runner::stub(srcfp, h2_fp<member_function_stub, ReturnType(ArgumentTypes...)>::A(&member_function_stub::fx), srcfn, file);
+      h2_runner::stub(srcfp, h2_fp<member_function_stub, ReturnType(ArgumentTypes...)>::A(&member_function_stub::fx), srcfn, filine);
 #else
-      h2_runner::stub(srcfp, (void*)dstfp_, srcfn, file);
+      h2_runner::stub(srcfp, (void*)dstfp_, srcfn, filine);
 #endif
    }
 };
@@ -2534,10 +2534,10 @@ struct h2_stuber<Counter, ClassType, ReturnType(ArgumentTypes...)> {
 // STUB(         ClassType, Method  , Signature, Destination )
 // STUB( Object, ClassType, Method  , Signature, Destination )
 #define H2STUB(...) H2PP_VARIADIC_CALL(__H2STUB_, __VA_ARGS__)
-#define __H2STUB_2(Source, Destination) h2::h2_runner::stub(h2::h2_fp<>::A(Source), (void*)Destination, #Source, H2_FILE)
-#define __H2STUB_3(Function, Signature, Destination) h2::h2_runner::stub(h2::h2_fp<H2PP_REMOVE_PARENTHESES_IF(Signature)>::A(H2PP_REMOVE_PARENTHESES_IF(Function)), (void*)(Destination), #Function, H2_FILE)
-#define __H2STUB_4(ClassType, Method, Signature, Destination) h2::h2_stuber<__COUNTER__, H2PP_REMOVE_PARENTHESES_IF(ClassType), H2PP_REMOVE_PARENTHESES_IF(Signature)>::I(h2::h2_fp<H2PP_REMOVE_PARENTHESES_IF(ClassType), H2PP_REMOVE_PARENTHESES_IF(Signature)>::A(&H2PP_REMOVE_PARENTHESES_IF(ClassType)::H2PP_REMOVE_PARENTHESES_IF(Method)), #ClassType "::" #Method, H2_FILE) = Destination
-#define __H2STUB_5(Object, ClassType, Method, Signature, Destination) h2::h2_stuber<__COUNTER__, H2PP_REMOVE_PARENTHESES_IF(ClassType), H2PP_REMOVE_PARENTHESES_IF(Signature)>::I(h2::h2_fp<H2PP_REMOVE_PARENTHESES_IF(ClassType), H2PP_REMOVE_PARENTHESES_IF(Signature)>::B(h2::h2_pointer_if(Object), &H2PP_REMOVE_PARENTHESES_IF(ClassType)::H2PP_REMOVE_PARENTHESES_IF(Method)), #ClassType "::" #Method, H2_FILE) = Destination
+#define __H2STUB_2(Source, Destination) h2::h2_runner::stub(h2::h2_fp<>::A(Source), (void*)Destination, #Source, H2_FILINE)
+#define __H2STUB_3(Function, Signature, Destination) h2::h2_runner::stub(h2::h2_fp<H2PP_REMOVE_PARENTHESES_IF(Signature)>::A(H2PP_REMOVE_PARENTHESES_IF(Function)), (void*)(Destination), #Function, H2_FILINE)
+#define __H2STUB_4(ClassType, Method, Signature, Destination) h2::h2_stuber<__COUNTER__, H2PP_REMOVE_PARENTHESES_IF(ClassType), H2PP_REMOVE_PARENTHESES_IF(Signature)>::I(h2::h2_fp<H2PP_REMOVE_PARENTHESES_IF(ClassType), H2PP_REMOVE_PARENTHESES_IF(Signature)>::A(&H2PP_REMOVE_PARENTHESES_IF(ClassType)::H2PP_REMOVE_PARENTHESES_IF(Method)), #ClassType "::" #Method, H2_FILINE) = Destination
+#define __H2STUB_5(Object, ClassType, Method, Signature, Destination) h2::h2_stuber<__COUNTER__, H2PP_REMOVE_PARENTHESES_IF(ClassType), H2PP_REMOVE_PARENTHESES_IF(Signature)>::I(h2::h2_fp<H2PP_REMOVE_PARENTHESES_IF(ClassType), H2PP_REMOVE_PARENTHESES_IF(Signature)>::B(h2::h2_pointer_if(Object), &H2PP_REMOVE_PARENTHESES_IF(ClassType)::H2PP_REMOVE_PARENTHESES_IF(Method)), #ClassType "::" #Method, H2_FILINE) = Destination
 
 #define H2UNSTUB(...) H2PP_VARIADIC_CALL(__H2UNSTUB_, __VA_ARGS__)
 #define __H2UNSTUB_1(Source) h2::h2_runner::unstub(h2::h2_fp<>::A(Source))
@@ -2557,17 +2557,17 @@ struct h2_stuber<Counter, ClassType, ReturnType(ArgumentTypes...)> {
 #define H2STUBS(...) H2PP_VARIADIC_CALL(__H2STUBS_, __VA_ARGS__)
 #define __H2STUBS_3(Function, ReturnType, ArgumentTypes) ___H2STUBS_3(Function, ReturnType, ArgumentTypes, H2PP_UNIQUE(t_stub3))
 #define __H2STUBS_4(ClassType, Method, ReturnType, ArgumentTypes) H2PP_CAT(__H2STUBS_4_, H2PP_IS_EMPTY ArgumentTypes)(ClassType, Method, ReturnType, ArgumentTypes)
-#define __H2STUBS_4_0(ClassType, Method, ReturnType, ArgumentTypes) h2::h2_stuber<__COUNTER__, H2PP_REMOVE_PARENTHESES_IF(ClassType), H2PP_REMOVE_PARENTHESES_IF(ReturnType) ArgumentTypes>::I(h2::h2_fp<H2PP_REMOVE_PARENTHESES_IF(ClassType), H2PP_REMOVE_PARENTHESES_IF(ReturnType) ArgumentTypes>::A(&H2PP_REMOVE_PARENTHESES_IF(ClassType)::H2PP_REMOVE_PARENTHESES_IF(Method)), #ClassType "::" #Method, H2_FILE) = [](H2PP_REMOVE_PARENTHESES_IF(ClassType) * This, H2PP_REMOVE_PARENTHESES(ArgumentTypes)) -> H2PP_REMOVE_PARENTHESES_IF(ReturnType)
-#define __H2STUBS_4_1(ClassType, Method, ReturnType, ArgumentTypes) h2::h2_stuber<__COUNTER__, H2PP_REMOVE_PARENTHESES_IF(ClassType), H2PP_REMOVE_PARENTHESES_IF(ReturnType) ArgumentTypes>::I(h2::h2_fp<H2PP_REMOVE_PARENTHESES_IF(ClassType), H2PP_REMOVE_PARENTHESES_IF(ReturnType) ArgumentTypes>::A(&H2PP_REMOVE_PARENTHESES_IF(ClassType)::H2PP_REMOVE_PARENTHESES_IF(Method)), #ClassType "::" #Method, H2_FILE) = [](H2PP_REMOVE_PARENTHESES_IF(ClassType) * This) -> H2PP_REMOVE_PARENTHESES_IF(ReturnType)
+#define __H2STUBS_4_0(ClassType, Method, ReturnType, ArgumentTypes) h2::h2_stuber<__COUNTER__, H2PP_REMOVE_PARENTHESES_IF(ClassType), H2PP_REMOVE_PARENTHESES_IF(ReturnType) ArgumentTypes>::I(h2::h2_fp<H2PP_REMOVE_PARENTHESES_IF(ClassType), H2PP_REMOVE_PARENTHESES_IF(ReturnType) ArgumentTypes>::A(&H2PP_REMOVE_PARENTHESES_IF(ClassType)::H2PP_REMOVE_PARENTHESES_IF(Method)), #ClassType "::" #Method, H2_FILINE) = [](H2PP_REMOVE_PARENTHESES_IF(ClassType) * This, H2PP_REMOVE_PARENTHESES(ArgumentTypes)) -> H2PP_REMOVE_PARENTHESES_IF(ReturnType)
+#define __H2STUBS_4_1(ClassType, Method, ReturnType, ArgumentTypes) h2::h2_stuber<__COUNTER__, H2PP_REMOVE_PARENTHESES_IF(ClassType), H2PP_REMOVE_PARENTHESES_IF(ReturnType) ArgumentTypes>::I(h2::h2_fp<H2PP_REMOVE_PARENTHESES_IF(ClassType), H2PP_REMOVE_PARENTHESES_IF(ReturnType) ArgumentTypes>::A(&H2PP_REMOVE_PARENTHESES_IF(ClassType)::H2PP_REMOVE_PARENTHESES_IF(Method)), #ClassType "::" #Method, H2_FILINE) = [](H2PP_REMOVE_PARENTHESES_IF(ClassType) * This) -> H2PP_REMOVE_PARENTHESES_IF(ReturnType)
 #define __H2STUBS_5(Object, ClassType, Method, ReturnType, ArgumentTypes) H2PP_CAT(__H2STUBS_5_, H2PP_IS_EMPTY ArgumentTypes)(Object, ClassType, Method, ReturnType, ArgumentTypes)
-#define __H2STUBS_5_0(Object, ClassType, Method, ReturnType, ArgumentTypes) h2::h2_stuber<__COUNTER__, H2PP_REMOVE_PARENTHESES_IF(ClassType), H2PP_REMOVE_PARENTHESES_IF(ReturnType) ArgumentTypes>::I(h2::h2_fp<H2PP_REMOVE_PARENTHESES_IF(ClassType), H2PP_REMOVE_PARENTHESES_IF(ReturnType) ArgumentTypes>::B(h2::h2_pointer_if(Object), &H2PP_REMOVE_PARENTHESES_IF(ClassType)::H2PP_REMOVE_PARENTHESES_IF(Method)), #ClassType "::" #Method, H2_FILE) = [](H2PP_REMOVE_PARENTHESES_IF(ClassType) * This, H2PP_REMOVE_PARENTHESES(ArgumentTypes)) -> H2PP_REMOVE_PARENTHESES_IF(ReturnType)
-#define __H2STUBS_5_1(Object, ClassType, Method, ReturnType, ArgumentTypes) h2::h2_stuber<__COUNTER__, H2PP_REMOVE_PARENTHESES_IF(ClassType), H2PP_REMOVE_PARENTHESES_IF(ReturnType) ArgumentTypes>::I(h2::h2_fp<H2PP_REMOVE_PARENTHESES_IF(ClassType), H2PP_REMOVE_PARENTHESES_IF(ReturnType) ArgumentTypes>::B(h2::h2_pointer_if(Object), &H2PP_REMOVE_PARENTHESES_IF(ClassType)::H2PP_REMOVE_PARENTHESES_IF(Method)), #ClassType "::" #Method, H2_FILE) = [](H2PP_REMOVE_PARENTHESES_IF(ClassType) * This) -> H2PP_REMOVE_PARENTHESES_IF(ReturnType)
+#define __H2STUBS_5_0(Object, ClassType, Method, ReturnType, ArgumentTypes) h2::h2_stuber<__COUNTER__, H2PP_REMOVE_PARENTHESES_IF(ClassType), H2PP_REMOVE_PARENTHESES_IF(ReturnType) ArgumentTypes>::I(h2::h2_fp<H2PP_REMOVE_PARENTHESES_IF(ClassType), H2PP_REMOVE_PARENTHESES_IF(ReturnType) ArgumentTypes>::B(h2::h2_pointer_if(Object), &H2PP_REMOVE_PARENTHESES_IF(ClassType)::H2PP_REMOVE_PARENTHESES_IF(Method)), #ClassType "::" #Method, H2_FILINE) = [](H2PP_REMOVE_PARENTHESES_IF(ClassType) * This, H2PP_REMOVE_PARENTHESES(ArgumentTypes)) -> H2PP_REMOVE_PARENTHESES_IF(ReturnType)
+#define __H2STUBS_5_1(Object, ClassType, Method, ReturnType, ArgumentTypes) h2::h2_stuber<__COUNTER__, H2PP_REMOVE_PARENTHESES_IF(ClassType), H2PP_REMOVE_PARENTHESES_IF(ReturnType) ArgumentTypes>::I(h2::h2_fp<H2PP_REMOVE_PARENTHESES_IF(ClassType), H2PP_REMOVE_PARENTHESES_IF(ReturnType) ArgumentTypes>::B(h2::h2_pointer_if(Object), &H2PP_REMOVE_PARENTHESES_IF(ClassType)::H2PP_REMOVE_PARENTHESES_IF(Method)), #ClassType "::" #Method, H2_FILINE) = [](H2PP_REMOVE_PARENTHESES_IF(ClassType) * This) -> H2PP_REMOVE_PARENTHESES_IF(ReturnType)
 
 #define ___H2STUBS_3(Function, ReturnType, ArgumentTypes, Q)                                                                                                                \
    struct {                                                                                                                                                                 \
       void operator=(ReturnType(*dstfp) ArgumentTypes)                                                                                                                      \
       {                                                                                                                                                                     \
-         h2::h2_runner::stub(h2::h2_fp<H2PP_REMOVE_PARENTHESES_IF(ReturnType) ArgumentTypes>::A(H2PP_REMOVE_PARENTHESES_IF(Function)), (void*)(dstfp), #Function, H2_FILE); \
+         h2::h2_runner::stub(h2::h2_fp<H2PP_REMOVE_PARENTHESES_IF(ReturnType) ArgumentTypes>::A(H2PP_REMOVE_PARENTHESES_IF(Function)), (void*)(dstfp), #Function, H2_FILINE); \
       }                                                                                                                                                                     \
    } Q;                                                                                                                                                                     \
    Q = [] ArgumentTypes -> ReturnType /* captureless lambda implicit cast to function pointer */
@@ -2706,7 +2706,7 @@ inline void tuple_types(h2_vector<h2_string>& names)
 struct h2_mocker_base : h2_libc {
    h2_list x;
    void *srcfp, *dstfp;
-   const char *srcfn, *file;
+   const char *srcfn, *filine;
    char return_type[512];
    h2_vector<h2_string> argument_types;
    bool greed_mode = true;
@@ -2770,7 +2770,7 @@ class h2_mocker<Counter, ClassType, ReturnType(ArgumentTypes...)> : h2_mocker_ba
                f->explain += gray("on ") + (srcfn + argument(f->seqno));
                if (1 < checkin_array.size()) f->explain += gray(" when ") + h2_numeric::sequence_number((size_t)i) + " " + color(checkin_array[i].expr, "cyan");
             });
-            h2_fail* fail = h2_fail::new_normal(signature(), file);
+            h2_fail* fail = h2_fail::new_normal(signature(), filine);
             h2_fail::append_child(fail, fails);
             h2_runner::failing(fail);
          } else {
@@ -2785,7 +2785,7 @@ class h2_mocker<Counter, ClassType, ReturnType(ArgumentTypes...)> : h2_mocker_ba
       }
       if (checkin_offset != -1) checkin_array[checkin_offset].call += 1;
       if (checkin_offset == -1) {
-         h2_fail* fail = h2_fail::new_normal(signature(), file);
+         h2_fail* fail = h2_fail::new_normal(signature(), filine);
          h2_fail* f = h2_fail::new_normal(srcfn + h2_representify(at) + color(" unexpectedly", "red,bold") + " called");
          h2_fail::append_child(fail, f);
          h2_runner::failing(fail);
@@ -2814,7 +2814,7 @@ class h2_mocker<Counter, ClassType, ReturnType(ArgumentTypes...)> : h2_mocker_ba
       return *i;
    }
 
-   static h2_mocker& I(void* srcfp, const char* srcfn, const char* file)
+   static h2_mocker& I(void* srcfp, const char* srcfn, const char* filine)
    {
       if (std::is_same<std::false_type, ClassType>::value) {
          I().dstfp = (void*)normal_function_stub;
@@ -2825,7 +2825,7 @@ class h2_mocker<Counter, ClassType, ReturnType(ArgumentTypes...)> : h2_mocker_ba
       }
       I().srcfp = srcfp;
       I().srcfn = srcfn;
-      I().file = file;
+      I().filine = filine;
       I().reset();
       I().mock();
       return I();
@@ -2950,21 +2950,21 @@ struct h2_mocks {
 // MOCK(         ClassType, Method  , Signature )
 // MOCK( Object, ClassType, Method  , Signature )
 #define H2MOCK(...) H2PP_VARIADIC_CALL(__H2MOCK_, __VA_ARGS__)
-#define __H2MOCK_2(Function, Signature) h2::h2_mocker<__COUNTER__, std::false_type, H2PP_REMOVE_PARENTHESES_IF(Signature)>::I(h2::h2_fp<H2PP_REMOVE_PARENTHESES_IF(Signature)>::A(Function), #Function, H2_FILE)
-#define __H2MOCK_3(ClassType, Method, Signature) h2::h2_mocker<__COUNTER__, H2PP_REMOVE_PARENTHESES_IF(ClassType), H2PP_REMOVE_PARENTHESES_IF(Signature)>::I(h2::h2_fp<H2PP_REMOVE_PARENTHESES_IF(ClassType), H2PP_REMOVE_PARENTHESES_IF(Signature)>::A(&H2PP_REMOVE_PARENTHESES_IF(ClassType)::H2PP_REMOVE_PARENTHESES_IF(Method)), #ClassType "::" #Method, H2_FILE)
-#define __H2MOCK_4(Object, ClassType, Method, Signature) h2::h2_mocker<__COUNTER__, H2PP_REMOVE_PARENTHESES_IF(ClassType), H2PP_REMOVE_PARENTHESES_IF(Signature)>::I(h2::h2_fp<H2PP_REMOVE_PARENTHESES_IF(ClassType), H2PP_REMOVE_PARENTHESES_IF(Signature)>::B(h2::h2_pointer_if(Object), &H2PP_REMOVE_PARENTHESES_IF(ClassType)::H2PP_REMOVE_PARENTHESES_IF(Method)), #ClassType "::" #Method, H2_FILE)
+#define __H2MOCK_2(Function, Signature) h2::h2_mocker<__COUNTER__, std::false_type, H2PP_REMOVE_PARENTHESES_IF(Signature)>::I(h2::h2_fp<H2PP_REMOVE_PARENTHESES_IF(Signature)>::A(Function), #Function, H2_FILINE)
+#define __H2MOCK_3(ClassType, Method, Signature) h2::h2_mocker<__COUNTER__, H2PP_REMOVE_PARENTHESES_IF(ClassType), H2PP_REMOVE_PARENTHESES_IF(Signature)>::I(h2::h2_fp<H2PP_REMOVE_PARENTHESES_IF(ClassType), H2PP_REMOVE_PARENTHESES_IF(Signature)>::A(&H2PP_REMOVE_PARENTHESES_IF(ClassType)::H2PP_REMOVE_PARENTHESES_IF(Method)), #ClassType "::" #Method, H2_FILINE)
+#define __H2MOCK_4(Object, ClassType, Method, Signature) h2::h2_mocker<__COUNTER__, H2PP_REMOVE_PARENTHESES_IF(ClassType), H2PP_REMOVE_PARENTHESES_IF(Signature)>::I(h2::h2_fp<H2PP_REMOVE_PARENTHESES_IF(ClassType), H2PP_REMOVE_PARENTHESES_IF(Signature)>::B(h2::h2_pointer_if(Object), &H2PP_REMOVE_PARENTHESES_IF(ClassType)::H2PP_REMOVE_PARENTHESES_IF(Method)), #ClassType "::" #Method, H2_FILINE)
 
 // MOCKS(                    Function, ReturnType, ArgumentTypes, Inspection ) { }
 // MOCKS(         ClassType, Method  , ReturnType, ArgumentTypes, Inspection ) { }
 // MOCKS( Object, ClassType, Method  , ReturnType, ArgumentTypes, Inspection ) { }
 #define H2MOCKS(...) H2PP_VARIADIC_CALL(__H2MOCKS_, __VA_ARGS__)
-#define __H2MOCKS_4(Function, ReturnType, ArgumentTypes, Inspection) h2::h2_mocker<__COUNTER__, std::false_type, H2PP_REMOVE_PARENTHESES_IF(ReturnType) ArgumentTypes>::I(h2::h2_fp<H2PP_REMOVE_PARENTHESES_IF(ReturnType) ArgumentTypes>::A(Function), #Function, H2_FILE).Inspection = [] ArgumentTypes -> H2PP_REMOVE_PARENTHESES_IF(ReturnType)
+#define __H2MOCKS_4(Function, ReturnType, ArgumentTypes, Inspection) h2::h2_mocker<__COUNTER__, std::false_type, H2PP_REMOVE_PARENTHESES_IF(ReturnType) ArgumentTypes>::I(h2::h2_fp<H2PP_REMOVE_PARENTHESES_IF(ReturnType) ArgumentTypes>::A(Function), #Function, H2_FILINE).Inspection = [] ArgumentTypes -> H2PP_REMOVE_PARENTHESES_IF(ReturnType)
 #define __H2MOCKS_5(ClassType, Method, ReturnType, ArgumentTypes, Inspection) H2PP_CAT(__H2MOCKS_5_, H2PP_IS_EMPTY ArgumentTypes)(ClassType, Method, ReturnType, ArgumentTypes, Inspection)
-#define __H2MOCKS_5_0(ClassType, Method, ReturnType, ArgumentTypes, Inspection) h2::h2_mocker<__COUNTER__, H2PP_REMOVE_PARENTHESES_IF(ClassType), H2PP_REMOVE_PARENTHESES_IF(ReturnType) ArgumentTypes>::I(h2::h2_fp<H2PP_REMOVE_PARENTHESES_IF(ClassType), H2PP_REMOVE_PARENTHESES_IF(ReturnType) ArgumentTypes>::A(&H2PP_REMOVE_PARENTHESES_IF(ClassType)::H2PP_REMOVE_PARENTHESES_IF(Method)), #ClassType "::" #Method, H2_FILE).Inspection = [](H2PP_REMOVE_PARENTHESES_IF(ClassType) * This, H2PP_REMOVE_PARENTHESES(ArgumentTypes)) -> H2PP_REMOVE_PARENTHESES_IF(ReturnType)
-#define __H2MOCKS_5_1(ClassType, Method, ReturnType, ArgumentTypes, Inspection) h2::h2_mocker<__COUNTER__, H2PP_REMOVE_PARENTHESES_IF(ClassType), H2PP_REMOVE_PARENTHESES_IF(ReturnType) ArgumentTypes>::I(h2::h2_fp<H2PP_REMOVE_PARENTHESES_IF(ClassType), H2PP_REMOVE_PARENTHESES_IF(ReturnType) ArgumentTypes>::A(&H2PP_REMOVE_PARENTHESES_IF(ClassType)::H2PP_REMOVE_PARENTHESES_IF(Method)), #ClassType "::" #Method, H2_FILE).Inspection = [](H2PP_REMOVE_PARENTHESES_IF(ClassType) * This) -> H2PP_REMOVE_PARENTHESES_IF(ReturnType)
+#define __H2MOCKS_5_0(ClassType, Method, ReturnType, ArgumentTypes, Inspection) h2::h2_mocker<__COUNTER__, H2PP_REMOVE_PARENTHESES_IF(ClassType), H2PP_REMOVE_PARENTHESES_IF(ReturnType) ArgumentTypes>::I(h2::h2_fp<H2PP_REMOVE_PARENTHESES_IF(ClassType), H2PP_REMOVE_PARENTHESES_IF(ReturnType) ArgumentTypes>::A(&H2PP_REMOVE_PARENTHESES_IF(ClassType)::H2PP_REMOVE_PARENTHESES_IF(Method)), #ClassType "::" #Method, H2_FILINE).Inspection = [](H2PP_REMOVE_PARENTHESES_IF(ClassType) * This, H2PP_REMOVE_PARENTHESES(ArgumentTypes)) -> H2PP_REMOVE_PARENTHESES_IF(ReturnType)
+#define __H2MOCKS_5_1(ClassType, Method, ReturnType, ArgumentTypes, Inspection) h2::h2_mocker<__COUNTER__, H2PP_REMOVE_PARENTHESES_IF(ClassType), H2PP_REMOVE_PARENTHESES_IF(ReturnType) ArgumentTypes>::I(h2::h2_fp<H2PP_REMOVE_PARENTHESES_IF(ClassType), H2PP_REMOVE_PARENTHESES_IF(ReturnType) ArgumentTypes>::A(&H2PP_REMOVE_PARENTHESES_IF(ClassType)::H2PP_REMOVE_PARENTHESES_IF(Method)), #ClassType "::" #Method, H2_FILINE).Inspection = [](H2PP_REMOVE_PARENTHESES_IF(ClassType) * This) -> H2PP_REMOVE_PARENTHESES_IF(ReturnType)
 #define __H2MOCKS_6(Object, ClassType, Method, ReturnType, ArgumentTypes, Inspection) H2PP_CAT(__H2MOCKS_6_, H2PP_IS_EMPTY ArgumentTypes)(Object, ClassType, Method, ReturnType, ArgumentTypes, Inspection)
-#define __H2MOCKS_6_0(Object, ClassType, Method, ReturnType, ArgumentTypes, Inspection) h2::h2_mocker<__COUNTER__, H2PP_REMOVE_PARENTHESES_IF(ClassType), H2PP_REMOVE_PARENTHESES_IF(ReturnType) ArgumentTypes>::I(h2::h2_fp<H2PP_REMOVE_PARENTHESES_IF(ClassType), H2PP_REMOVE_PARENTHESES_IF(ReturnType) ArgumentTypes>::B(h2::h2_pointer_if(Object), &H2PP_REMOVE_PARENTHESES_IF(ClassType)::H2PP_REMOVE_PARENTHESES_IF(Method)), #ClassType "::" #Method, H2_FILE).Inspection = [](H2PP_REMOVE_PARENTHESES_IF(ClassType) * This, H2PP_REMOVE_PARENTHESES(ArgumentTypes)) -> H2PP_REMOVE_PARENTHESES_IF(ReturnType)
-#define __H2MOCKS_6_1(Object, ClassType, Method, ReturnType, ArgumentTypes, Inspection) h2::h2_mocker<__COUNTER__, H2PP_REMOVE_PARENTHESES_IF(ClassType), H2PP_REMOVE_PARENTHESES_IF(ReturnType) ArgumentTypes>::I(h2::h2_fp<H2PP_REMOVE_PARENTHESES_IF(ClassType), H2PP_REMOVE_PARENTHESES_IF(ReturnType) ArgumentTypes>::B(h2::h2_pointer_if(Object), &H2PP_REMOVE_PARENTHESES_IF(ClassType)::H2PP_REMOVE_PARENTHESES_IF(Method)), #ClassType "::" #Method, H2_FILE).Inspection = [](H2PP_REMOVE_PARENTHESES_IF(ClassType) * This) -> H2PP_REMOVE_PARENTHESES_IF(ReturnType)
+#define __H2MOCKS_6_0(Object, ClassType, Method, ReturnType, ArgumentTypes, Inspection) h2::h2_mocker<__COUNTER__, H2PP_REMOVE_PARENTHESES_IF(ClassType), H2PP_REMOVE_PARENTHESES_IF(ReturnType) ArgumentTypes>::I(h2::h2_fp<H2PP_REMOVE_PARENTHESES_IF(ClassType), H2PP_REMOVE_PARENTHESES_IF(ReturnType) ArgumentTypes>::B(h2::h2_pointer_if(Object), &H2PP_REMOVE_PARENTHESES_IF(ClassType)::H2PP_REMOVE_PARENTHESES_IF(Method)), #ClassType "::" #Method, H2_FILINE).Inspection = [](H2PP_REMOVE_PARENTHESES_IF(ClassType) * This, H2PP_REMOVE_PARENTHESES(ArgumentTypes)) -> H2PP_REMOVE_PARENTHESES_IF(ReturnType)
+#define __H2MOCKS_6_1(Object, ClassType, Method, ReturnType, ArgumentTypes, Inspection) h2::h2_mocker<__COUNTER__, H2PP_REMOVE_PARENTHESES_IF(ClassType), H2PP_REMOVE_PARENTHESES_IF(ReturnType) ArgumentTypes>::I(h2::h2_fp<H2PP_REMOVE_PARENTHESES_IF(ClassType), H2PP_REMOVE_PARENTHESES_IF(ReturnType) ArgumentTypes>::B(h2::h2_pointer_if(Object), &H2PP_REMOVE_PARENTHESES_IF(ClassType)::H2PP_REMOVE_PARENTHESES_IF(Method)), #ClassType "::" #Method, H2_FILINE).Inspection = [](H2PP_REMOVE_PARENTHESES_IF(ClassType) * This) -> H2PP_REMOVE_PARENTHESES_IF(ReturnType)
 // source/memory/h2_exempt.hpp
 struct h2_exempt {
    h2_singleton(h2_exempt);
@@ -2982,19 +2982,19 @@ struct h2_memory {
 
    struct stack {
       static void root();
-      static void push(const char* file);
+      static void push(const char* filine);
       static h2_fail* pop();
       static long long footprint();
 
       struct block : h2_once {
          bool unmem = false;
-         block(const char* attributes, const char* file);
+         block(const char* attributes, const char* filine);
          ~block();
       };
    };
 };
 
-#define __H2BLOCK(Attributes, Qb) for (h2::h2_memory::stack::block Qb(h2::ss(Attributes), H2_FILE); Qb;)
+#define __H2BLOCK(Attributes, Qb) for (h2::h2_memory::stack::block Qb(h2::ss(Attributes), H2_FILINE); Qb;)
 #define H2BLOCK(...) __H2BLOCK(#__VA_ARGS__, H2PP_UNIQUE())
 
 template <typename T>
@@ -3018,14 +3018,14 @@ struct h2_debugger {
    } while (0)
 // source/stdio/h2_stdio.hpp
 struct h2_cout : h2_once {
-   const char* file;
+   const char* filine;
    h2_matcher<const char*> m;
    const char *e, *type;
-   h2_cout(h2_matcher<const char*> m, const char* e, const char* type, const char* file);
+   h2_cout(h2_matcher<const char*> m, const char* e, const char* type, const char* filine);
    ~h2_cout();
 };
 
-#define __H2COUT(Matcher_, expression, type, Q) for (h2::h2_cout Q(Matcher_, expression, h2::ss(type), H2_FILE); Q;)
+#define __H2COUT(Matcher_, expression, type, Q) for (h2::h2_cout Q(Matcher_, expression, h2::ss(type), H2_FILINE); Q;)
 #define H2COUT(Matcher_, ...) __H2COUT(Matcher_, #Matcher_, #__VA_ARGS__, H2PP_UNIQUE())
 // source/net/h2_dns.hpp
 struct h2_dns {
@@ -3055,33 +3055,33 @@ struct h2_sock : h2_once {
    static h2_packet* fetch();
 
    template <typename M1 = h2_polymorphic_matcher<h2_matches_any>, typename M2 = h2_polymorphic_matcher<h2_matches_any>, typename M3 = h2_polymorphic_matcher<h2_matches_any>, typename M4 = h2_polymorphic_matcher<h2_matches_any>>
-   static void check(const char* file, const char* e, M1 from = Any, M2 to = Any, M3 payload = Any, M4 size = Any)
+   static void check(const char* filine, const char* e, M1 from = Any, M2 to = Any, M3 payload = Any, M4 size = Any)
    {
       h2_runner::asserts();
       h2_packet* p = h2_sock::fetch();
       if (!p) {
          h2_line t = "Outgoing packet miss Ptx(";
          t.printf("green", "%s", e).printf("", ")");
-         h2_runner::failing(h2_fail::new_normal(t, file));
+         h2_runner::failing(h2_fail::new_normal(t, filine));
          return;
       }
       h2_fail* fails = nullptr;
-      h2_fail* fail_from = h2_matcher_cast<const char*>(from).matches(p->from.c_str(), 0, {});
+      h2_fail* fail_from = h2_matcher_cast<const char*>(from).matches(p->from.c_str());
       if (fail_from) {
          fail_from->explain = "from address";
          h2_fail::append_subling(fails, fail_from);
       }
-      h2_fail* fail_to = h2_matcher_cast<const char*>(to).matches(p->to.c_str(), 0, {});
+      h2_fail* fail_to = h2_matcher_cast<const char*>(to).matches(p->to.c_str());
       if (fail_to) {
          fail_to->explain = "to address";
          h2_fail::append_subling(fails, fail_to);
       }
-      h2_fail* fail_payload = h2_matcher_cast<const unsigned char*>(payload).matches((unsigned char*)p->data.data(), 0, {});
+      h2_fail* fail_payload = h2_matcher_cast<const unsigned char*>(payload).matches((unsigned char*)p->data.data());
       if (fail_payload) {
          fail_payload->explain = "payload";
          h2_fail::append_subling(fails, fail_payload);
       }
-      h2_fail* fail_size = h2_matcher_cast<const int>(size).matches(p->data.size(), 0, {});
+      h2_fail* fail_size = h2_matcher_cast<const int>(size).matches(p->data.size());
       if (fail_size) {
          fail_size->explain = "payload length";
          h2_fail::append_subling(fails, fail_size);
@@ -3090,7 +3090,7 @@ struct h2_sock : h2_once {
       if (fails) {
          h2_line t = "Outgoing packet unexpected Ptx(";
          t.printf("green", "%s", e).printf("", ")");
-         h2_fail* fail = h2_fail::new_normal(t, file);
+         h2_fail* fail = h2_fail::new_normal(t, filine);
          h2_fail::append_child(fail, fails);
          h2_runner::failing(fail);
       }
@@ -3100,7 +3100,7 @@ struct h2_sock : h2_once {
 #define __H2SOCK(Q) for (h2::h2_sock Q; Q;)
 #define H2SOCK(...) __H2SOCK(H2PP_UNIQUE())
 
-#define Ptx(...) h2::h2_sock::check(H2_FILE, h2::ss(#__VA_ARGS__), __VA_ARGS__)
+#define Ptx(...) h2::h2_sock::check(H2_FILINE, h2::ss(#__VA_ARGS__), __VA_ARGS__)
 #define Pij(Packet_, Size_, ...) h2::h2_sock::inject(Packet_, Size_, h2::ss(#__VA_ARGS__))
 // source/core/h2_describe.hpp
 
@@ -3117,7 +3117,7 @@ struct h2_describe {
 // source/core/h2_case.hpp
 struct h2_case {
    h2_list x;
-   const char* file;
+   const char* filine;
    h2_describe describe;
    bool todo = false;
    bool filtered = false, ignored = false, failed = false, last_failed = false;
@@ -3130,7 +3130,7 @@ struct h2_case {
    h2_stats stats;
    h2_fail* fails = nullptr;
 
-   h2_case(const char* file_, const char* describe_, int todo_) : file(file_), describe(describe_), todo(todo_) {}
+   h2_case(const char* filine_, const char* describe_, int todo_) : filine(filine_), describe(describe_), todo(todo_) {}
    void clear();
 
    void prev_setup();
@@ -3149,7 +3149,7 @@ struct h2_case {
 // source/core/h2_suite.hpp
 struct h2_suite {
    h2_list x;
-   const char* file;
+   const char* filine;
    h2_describe describe;
    void (*test_code)(h2_suite*, h2_case*);
    bool filtered = false;
@@ -3160,7 +3160,7 @@ struct h2_suite {
    h2_list mocks;
    h2_stats stats;
 
-   h2_suite(const char* file, const char* describe, void (*)(h2_suite*, h2_case*));
+   h2_suite(const char* filine, const char* describe, void (*)(h2_suite*, h2_case*));
    void clear();
    bool absent() const { return !describe.desc; }  // nullptr describe means no SUITE wrapper (CASE/TODO ...)
 
@@ -3183,9 +3183,9 @@ struct h2_suite {
 // source/core/h2_core.hpp
 
 #define H2SUITE(...) __H2SUITE(#__VA_ARGS__, H2PP_UNIQUE(suite_test_C))
-#define __H2SUITE(suite_describe, suite_test)                                         \
-   static void suite_test(h2::h2_suite*, h2::h2_case*);                               \
-   static h2::h2_suite H2PP_UNIQUE(si)(H2_FILE, h2::ss(suite_describe), &suite_test); \
+#define __H2SUITE(suite_describe, suite_test)                                           \
+   static void suite_test(h2::h2_suite*, h2::h2_case*);                                 \
+   static h2::h2_suite H2PP_UNIQUE(si)(H2_FILINE, h2::ss(suite_describe), &suite_test); \
    static void suite_test(h2::h2_suite* suite_1_5_2_8_0_1_1_9_8, h2::h2_case* case_1_1_0_2_6_0_0_2_4)
 
 #define H2Setup() if (case_1_1_0_2_6_0_0_2_4)
@@ -3194,7 +3194,7 @@ struct h2_suite {
 #define H2Todo(...) __H2Case(#__VA_ARGS__, H2PP_UNIQUE(ci), H2PP_UNIQUE(sc), H2PP_UNIQUE(cc), 1)
 #define H2Case(...) __H2Case(#__VA_ARGS__, H2PP_UNIQUE(ci), H2PP_UNIQUE(sc), H2PP_UNIQUE(cc), 0)
 #define __H2Case(case_describe, case_instance, suite_cleaner, case_cleaner, todo)                                         \
-   static h2::h2_case case_instance(H2_FILE, h2::ss(case_describe), todo);                                                \
+   static h2::h2_case case_instance(H2_FILINE, h2::ss(case_describe), todo);                                              \
    static h2::h2_suite::registor H2PP_UNIQUE(sr)(suite_1_5_2_8_0_1_1_9_8, &case_instance);                                \
    if (&case_instance == case_1_1_0_2_6_0_0_2_4)                                                                          \
       for (h2::h2_suite::cleaner suite_cleaner(suite_1_5_2_8_0_1_1_9_8); suite_cleaner; case_1_1_0_2_6_0_0_2_4 = nullptr) \
@@ -3207,14 +3207,14 @@ struct h2_suite {
    static void case_test();                                                                           \
    static void suite_test(h2::h2_suite* suite_1_5_2_8_0_1_1_9_8, h2::h2_case* case_1_1_0_2_6_0_0_2_4) \
    {                                                                                                  \
-      static h2::h2_case case_instance(H2_FILE, h2::ss(case_describe), todo);                         \
+      static h2::h2_case case_instance(H2_FILINE, h2::ss(case_describe), todo);                       \
       static h2::h2_suite::registor suite_registor(suite_1_5_2_8_0_1_1_9_8, &case_instance);          \
       if (&case_instance == case_1_1_0_2_6_0_0_2_4)                                                   \
          for (h2::h2_case::cleaner case_cleaner(&case_instance); case_cleaner;)                       \
             if (!::setjmp(case_instance.ctx))                                                         \
                case_test();                                                                           \
    }                                                                                                  \
-   static h2::h2_suite H2PP_UNIQUE(si)(H2_FILE, nullptr, &suite_test);                                \
+   static h2::h2_suite H2PP_UNIQUE(si)(H2_FILINE, nullptr, &suite_test);                              \
    static void case_test()
 
 /* clang-format off */
@@ -3230,7 +3230,7 @@ struct h2_suite {
 
 #define H2_XAn(...) H2_An(H2PP_HEAD(__VA_ARGS__))
 #define H2_YAn(...) H2_An(H2PP_LAST(__VA_ARGS__))
-/* clang-format off */
+/* clang-format on */
 
 #define H2CASES(case_prefix, ...) __H2CASES1(H2PP_UNIQUE(case_test_C), case_prefix, __VA_ARGS__)
 #define __H2CASES1(case_test, case_prefix, ...)                                                           \
@@ -3239,8 +3239,9 @@ struct h2_suite {
    H2PP_FOREACH(, __H2CASES_Callback, (case_test, case_prefix), H2PP_REMOVE_PARENTHESES_IF(__VA_ARGS__)); \
    template <typename T>                                                                                  \
    static void case_test(T x)
-#define __H2CASES2(case_test, case_prefix, i, x) H2CASE(case_prefix i. x) { case_test(x); }
-#define __H2CASES_Callback(args, i, x) H2PP_PROXY(__H2CASES2, (H2PP_REMOVE_PARENTHESES(args), i, x))
+#define __H2CASES2(case_test, case_prefix, i, x) \
+   H2CASE(case_prefix i. x) { case_test(x); }
+#define __H2CASES_Callback(Pack, i, x) H2PP_PROXY(__H2CASES2, (H2PP_REMOVE_PARENTHESES(Pack), i, x))
 
 #define H2CASESS(case_prefix, ...) __H2CASESS1(H2PP_UNIQUE(case_test_C), case_prefix, __VA_ARGS__)
 #define __H2CASESS1(case_test, case_prefix, ...)                                \
@@ -3249,8 +3250,9 @@ struct h2_suite {
    H2PP_FULLMESH(, __H2CASESS_Callback, (case_test, case_prefix), __VA_ARGS__); \
    template <typename Tx, typename Ty>                                          \
    static void case_test(Tx x, Ty y)
-#define __H2CASESS2(case_test, case_prefix, i, j, x, y) H2CASE(case_prefix i.j. x, y) { case_test(x, y); }
-#define __H2CASESS_Callback(args, i, j, x, y) H2PP_PROXY(__H2CASESS2, (H2PP_REMOVE_PARENTHESES(args), i, j, x, y))
+#define __H2CASESS2(case_test, case_prefix, i, j, x, y) \
+   H2CASE(case_prefix i.j. x, y) { case_test(x, y); }
+#define __H2CASESS_Callback(Pack, i, j, x, y) H2PP_PROXY(__H2CASESS2, (H2PP_REMOVE_PARENTHESES(Pack), i, j, x, y))
 
 #define H2Cases(case_prefix, ...) __H2Cases1(H2PP_UNIQUE(x), H2PP_UNIQUE(sc), H2PP_UNIQUE(cc), case_prefix, __VA_ARGS__)
 #define __H2Cases1(Qx, suite_cleaner, case_cleaner, case_prefix, ...)                              \
@@ -3262,10 +3264,10 @@ struct h2_suite {
             for (h2::h2_case::cleaner case_cleaner(case_1_1_0_2_6_0_0_2_4); case_cleaner;)         \
                if (!::setjmp(case_1_1_0_2_6_0_0_2_4->ctx))
 #define __H2Cases2(case_instance, Qx, case_prefix, i, x)                                   \
-   static h2::h2_case case_instance(H2_FILE, H2PP_STR(case_prefix i. x), 0);               \
+   static h2::h2_case case_instance(H2_FILINE, H2PP_STR(case_prefix i. x), 0);              \
    static h2::h2_suite::registor H2PP_UNIQUE(sr)(suite_1_5_2_8_0_1_1_9_8, &case_instance); \
    if (&case_instance == case_1_1_0_2_6_0_0_2_4) Qx = x, case_1_1_0_2_6_0_0_2_4->scheduled = true;
-#define __H2Cases_Callback(args, i, x) H2PP_PROXY(__H2Cases2, (H2PP_UNIQUE(ci), H2PP_REMOVE_PARENTHESES(args), i, x))
+#define __H2Cases_Callback(Pack, i, x) H2PP_PROXY(__H2Cases2, (H2PP_UNIQUE(ci), H2PP_REMOVE_PARENTHESES(Pack), i, x))
 
 #define H2Casess(case_prefix, ...) __H2Casess1(H2PP_UNIQUE(x), H2PP_UNIQUE(y), H2PP_UNIQUE(sc), H2PP_UNIQUE(cc), case_prefix, __VA_ARGS__)
 #define __H2Casess1(Qx, Qy, suite_cleaner, case_cleaner, case_prefix, ...)                     \
@@ -3279,10 +3281,10 @@ struct h2_suite {
                for (h2::h2_case::cleaner case_cleaner(case_1_1_0_2_6_0_0_2_4); case_cleaner;)  \
                   if (!::setjmp(case_1_1_0_2_6_0_0_2_4->ctx))
 #define __H2Casess2(case_instance, Qx, Qy, case_prefix, i, j, x, y)                        \
-   static h2::h2_case case_instance(H2_FILE, H2PP_STR(case_prefix i.j. x, y), 0);          \
+   static h2::h2_case case_instance(H2_FILINE, H2PP_STR(case_prefix i.j. x, y), 0);         \
    static h2::h2_suite::registor H2PP_UNIQUE(sr)(suite_1_5_2_8_0_1_1_9_8, &case_instance); \
    if (&case_instance == case_1_1_0_2_6_0_0_2_4) Qx = x, Qy = y, case_1_1_0_2_6_0_0_2_4->scheduled = true;
-#define __H2Casess_Callback(args, i, j, x, y) H2PP_PROXY(__H2Casess2, (H2PP_UNIQUE(ci), H2PP_REMOVE_PARENTHESES(args), i, j, x, y))
+#define __H2Casess_Callback(Pack, i, j, x, y) H2PP_PROXY(__H2Casess2, (H2PP_UNIQUE(ci), H2PP_REMOVE_PARENTHESES(Pack), i, j, x, y))
 
 // can't declare/define template class/function in function scope
 #define H2Cases_t(...) static_assert(false, "Cases_t not implemented, use H2CASES_T outside of SUITE{}");
@@ -3295,8 +3297,9 @@ struct h2_suite {
    H2PP_FOREACH(, __H2CASES_T_Callback, (case_test, case_prefix), H2PP_REMOVE_PARENTHESES_IF(__VA_ARGS__)); \
    template <typename x>                                                                                    \
    static void case_test()
-#define __H2CASES_T2(case_test, case_prefix, i, x) H2CASE(case_prefix i. x) { case_test<x>(); }
-#define __H2CASES_T_Callback(args, i, x) H2PP_PROXY(__H2CASES_T2, (H2PP_REMOVE_PARENTHESES(args), i, x))
+#define __H2CASES_T2(case_test, case_prefix, i, x) \
+   H2CASE(case_prefix i. x) { case_test<x>(); }
+#define __H2CASES_T_Callback(Pack, i, x) H2PP_PROXY(__H2CASES_T2, (H2PP_REMOVE_PARENTHESES(Pack), i, x))
 
 #define H2CASESS_T(case_prefix, ...) __H2CASESS_T1(H2PP_UNIQUE(case_test_C), case_prefix, __VA_ARGS__)
 #define __H2CASESS_T1(case_test, case_prefix, ...)                                \
@@ -3305,8 +3308,9 @@ struct h2_suite {
    H2PP_FULLMESH(, __H2CASESS_T_Callback, (case_test, case_prefix), __VA_ARGS__); \
    template <typename x, typename y>                                              \
    static void case_test()
-#define __H2CASESS_T2(case_test, case_prefix, i, j, x, y) H2CASE(case_prefix i.j. x, y) { case_test<x, y>(); }
-#define __H2CASESS_T_Callback(args, i, j, x, y) H2PP_PROXY(__H2CASESS_T2, (H2PP_REMOVE_PARENTHESES(args), i, j, x, y))
+#define __H2CASESS_T2(case_test, case_prefix, i, j, x, y) \
+   H2CASE(case_prefix i.j. x, y) { case_test<x, y>(); }
+#define __H2CASESS_T_Callback(Pack, i, j, x, y) H2PP_PROXY(__H2CASESS_T2, (H2PP_REMOVE_PARENTHESES(Pack), i, j, x, y))
 
 #define H2Todos(case_prefix, ...)     \
    H2Todo(case_prefix __VA_ARGS__) {} \
@@ -3354,11 +3358,11 @@ struct h2_suite {
 struct h2_defer_failure : h2_once {
    const char *assert_type, *assert_op = ",";
    const char *e_expression, *a_expression;
-   const char* file;
+   const char* filine;
    h2_fail* fails = nullptr;
    h2_ostringstream oss;
 
-   h2_defer_failure(const char* e_expression_, const char* a_expression_, const char* file_) : e_expression(e_expression_), a_expression(a_expression_), file(file_) {}
+   h2_defer_failure(const char* e_expression_, const char* a_expression_, const char* filine_) : e_expression(e_expression_), a_expression(a_expression_), filine(filine_) {}
    ~h2_defer_failure();
 };
 
@@ -3448,30 +3452,30 @@ static inline h2_ostringstream& h2_cp(h2_defer_failure* d, h2_2cp<E, A> c)
 
 #define H2CP(...) __H2CP(H2PP_UNIQUE(), #__VA_ARGS__, __VA_ARGS__)
 #define __H2CP(Q, expression, ...) \
-   for (h2::h2_defer_failure Q("", expression, H2_FILE); Q;) h2::h2_cp(&Q, h2::h2_0cp() > __VA_ARGS__)
+   for (h2::h2_defer_failure Q("", expression, H2_FILINE); Q;) h2::h2_cp(&Q, h2::h2_0cp() > __VA_ARGS__)
 
 #define H2OK(_1, ...) H2PP_CAT(__H2OK, H2PP_IS_EMPTY(__VA_ARGS__))(H2PP_UNIQUE(), #_1, (#__VA_ARGS__), _1, __VA_ARGS__)
 #define __H2OK1(Q, a_expression, _, actual, ...) \
-   for (h2::h2_defer_failure Q("", a_expression, H2_FILE); Q;) h2::h2_ok1(&Q, actual)
+   for (h2::h2_defer_failure Q("", a_expression, H2_FILINE); Q;) h2::h2_ok1(&Q, actual)
 #define __H2OK0(...) H2PP_PROXY(__H2OK2, (__VA_ARGS__))
 #define __H2OK2(Q, e_expression, a_expression, expect, actual, ...) \
-   for (h2::h2_defer_failure Q(e_expression, a_expression, H2_FILE); Q;) h2::h2_ok2(&Q, expect, actual, h2::sn(__VA_ARGS__), std::is_array<decltype(actual)>{}, std::extent<decltype(actual)>::value)
+   for (h2::h2_defer_failure Q(e_expression, a_expression, H2_FILINE); Q;) h2::h2_ok2(&Q, expect, actual, h2::sn(__VA_ARGS__), std::is_array<decltype(actual)>{}, std::extent<decltype(actual)>::value)
 
 #define H2JE(...) H2PP_VARIADIC_CALL(__H2JE, H2PP_UNIQUE(), __VA_ARGS__)
 #define __H2JE3(Q, expect, actual) \
-   for (h2::h2_defer_failure Q(#expect, #actual, H2_FILE); Q;) h2::h2_je(&Q, expect, actual, "")
+   for (h2::h2_defer_failure Q(#expect, #actual, H2_FILINE); Q;) h2::h2_je(&Q, expect, actual, "")
 #define __H2JE4(Q, expect, actual, selector) \
-   for (h2::h2_defer_failure Q(#expect, #actual, H2_FILE); Q;) h2::h2_je(&Q, expect, actual, selector)
+   for (h2::h2_defer_failure Q(#expect, #actual, H2_FILINE); Q;) h2::h2_je(&Q, expect, actual, selector)
 // source/assert/h2_timer.hpp
 struct h2_timer : h2_once {
-   const char* file;
+   const char* filine;
    int cpu_ms;
    clock_t start;
-   h2_timer(int ms, const char* file);
+   h2_timer(int ms, const char* filine);
    ~h2_timer();
 };
 
-#define __H2PF(ms, Q) for (h2::h2_timer Q(ms, H2_FILE); Q;)
+#define __H2PF(ms, Q) for (h2::h2_timer Q(ms, H2_FILINE); Q;)
 #define H2PF(ms) __H2PF(ms, H2PP_UNIQUE())
 // source/render/h2_report.hpp
 struct h2_report {

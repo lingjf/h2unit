@@ -1,11 +1,11 @@
 struct h2_defer_failure : h2_once {
    const char *assert_type, *assert_op = ",";
    const char *e_expression, *a_expression;
-   const char* file;
+   const char* filine;
    h2_fail* fails = nullptr;
    h2_ostringstream oss;
 
-   h2_defer_failure(const char* e_expression_, const char* a_expression_, const char* file_) : e_expression(e_expression_), a_expression(a_expression_), file(file_) {}
+   h2_defer_failure(const char* e_expression_, const char* a_expression_, const char* filine_) : e_expression(e_expression_), a_expression(a_expression_), filine(filine_) {}
    ~h2_defer_failure();
 };
 
@@ -95,17 +95,17 @@ static inline h2_ostringstream& h2_cp(h2_defer_failure* d, h2_2cp<E, A> c)
 
 #define H2CP(...) __H2CP(H2PP_UNIQUE(), #__VA_ARGS__, __VA_ARGS__)
 #define __H2CP(Q, expression, ...) \
-   for (h2::h2_defer_failure Q("", expression, H2_FILE); Q;) h2::h2_cp(&Q, h2::h2_0cp() > __VA_ARGS__)
+   for (h2::h2_defer_failure Q("", expression, H2_FILINE); Q;) h2::h2_cp(&Q, h2::h2_0cp() > __VA_ARGS__)
 
 #define H2OK(_1, ...) H2PP_CAT(__H2OK, H2PP_IS_EMPTY(__VA_ARGS__))(H2PP_UNIQUE(), #_1, (#__VA_ARGS__), _1, __VA_ARGS__)
 #define __H2OK1(Q, a_expression, _, actual, ...) \
-   for (h2::h2_defer_failure Q("", a_expression, H2_FILE); Q;) h2::h2_ok1(&Q, actual)
+   for (h2::h2_defer_failure Q("", a_expression, H2_FILINE); Q;) h2::h2_ok1(&Q, actual)
 #define __H2OK0(...) H2PP_PROXY(__H2OK2, (__VA_ARGS__))
 #define __H2OK2(Q, e_expression, a_expression, expect, actual, ...) \
-   for (h2::h2_defer_failure Q(e_expression, a_expression, H2_FILE); Q;) h2::h2_ok2(&Q, expect, actual, h2::sn(__VA_ARGS__), std::is_array<decltype(actual)>{}, std::extent<decltype(actual)>::value)
+   for (h2::h2_defer_failure Q(e_expression, a_expression, H2_FILINE); Q;) h2::h2_ok2(&Q, expect, actual, h2::sn(__VA_ARGS__), std::is_array<decltype(actual)>{}, std::extent<decltype(actual)>::value)
 
 #define H2JE(...) H2PP_VARIADIC_CALL(__H2JE, H2PP_UNIQUE(), __VA_ARGS__)
 #define __H2JE3(Q, expect, actual) \
-   for (h2::h2_defer_failure Q(#expect, #actual, H2_FILE); Q;) h2::h2_je(&Q, expect, actual, "")
+   for (h2::h2_defer_failure Q(#expect, #actual, H2_FILINE); Q;) h2::h2_je(&Q, expect, actual, "")
 #define __H2JE4(Q, expect, actual, selector) \
-   for (h2::h2_defer_failure Q(#expect, #actual, H2_FILE); Q;) h2::h2_je(&Q, expect, actual, selector)
+   for (h2::h2_defer_failure Q(#expect, #actual, H2_FILINE); Q;) h2::h2_je(&Q, expect, actual, selector)

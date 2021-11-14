@@ -12,33 +12,33 @@ struct h2_sock : h2_once {
    static h2_packet* fetch();
 
    template <typename M1 = h2_polymorphic_matcher<h2_matches_any>, typename M2 = h2_polymorphic_matcher<h2_matches_any>, typename M3 = h2_polymorphic_matcher<h2_matches_any>, typename M4 = h2_polymorphic_matcher<h2_matches_any>>
-   static void check(const char* file, const char* e, M1 from = Any, M2 to = Any, M3 payload = Any, M4 size = Any)
+   static void check(const char* filine, const char* e, M1 from = Any, M2 to = Any, M3 payload = Any, M4 size = Any)
    {
       h2_runner::asserts();
       h2_packet* p = h2_sock::fetch();
       if (!p) {
          h2_line t = "Outgoing packet miss Ptx(";
          t.printf("green", "%s", e).printf("", ")");
-         h2_runner::failing(h2_fail::new_normal(t, file));
+         h2_runner::failing(h2_fail::new_normal(t, filine));
          return;
       }
       h2_fail* fails = nullptr;
-      h2_fail* fail_from = h2_matcher_cast<const char*>(from).matches(p->from.c_str(), 0, {});
+      h2_fail* fail_from = h2_matcher_cast<const char*>(from).matches(p->from.c_str());
       if (fail_from) {
          fail_from->explain = "from address";
          h2_fail::append_subling(fails, fail_from);
       }
-      h2_fail* fail_to = h2_matcher_cast<const char*>(to).matches(p->to.c_str(), 0, {});
+      h2_fail* fail_to = h2_matcher_cast<const char*>(to).matches(p->to.c_str());
       if (fail_to) {
          fail_to->explain = "to address";
          h2_fail::append_subling(fails, fail_to);
       }
-      h2_fail* fail_payload = h2_matcher_cast<const unsigned char*>(payload).matches((unsigned char*)p->data.data(), 0, {});
+      h2_fail* fail_payload = h2_matcher_cast<const unsigned char*>(payload).matches((unsigned char*)p->data.data());
       if (fail_payload) {
          fail_payload->explain = "payload";
          h2_fail::append_subling(fails, fail_payload);
       }
-      h2_fail* fail_size = h2_matcher_cast<const int>(size).matches(p->data.size(), 0, {});
+      h2_fail* fail_size = h2_matcher_cast<const int>(size).matches(p->data.size());
       if (fail_size) {
          fail_size->explain = "payload length";
          h2_fail::append_subling(fails, fail_size);
@@ -47,7 +47,7 @@ struct h2_sock : h2_once {
       if (fails) {
          h2_line t = "Outgoing packet unexpected Ptx(";
          t.printf("green", "%s", e).printf("", ")");
-         h2_fail* fail = h2_fail::new_normal(t, file);
+         h2_fail* fail = h2_fail::new_normal(t, filine);
          h2_fail::append_child(fail, fails);
          h2_runner::failing(fail);
       }
@@ -57,5 +57,5 @@ struct h2_sock : h2_once {
 #define __H2SOCK(Q) for (h2::h2_sock Q; Q;)
 #define H2SOCK(...) __H2SOCK(H2PP_UNIQUE())
 
-#define Ptx(...) h2::h2_sock::check(H2_FILE, h2::ss(#__VA_ARGS__), __VA_ARGS__)
+#define Ptx(...) h2::h2_sock::check(H2_FILINE, h2::ss(#__VA_ARGS__), __VA_ARGS__)
 #define Pij(Packet_, Size_, ...) h2::h2_sock::inject(Packet_, Size_, h2::ss(#__VA_ARGS__))

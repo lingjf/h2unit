@@ -216,16 +216,16 @@ struct h2_socket {
    {
       strcpy(last_to, "0.0.0.0:0");
 
-      h2_stubs::add(stubs, (void*)::sendto, (void*)sendto, "sendto", H2_FILE);
-      h2_stubs::add(stubs, (void*)::recvfrom, (void*)recvfrom, "recvfrom", H2_FILE);
+      h2_stubs::add(stubs, (void*)::sendto, (void*)sendto, "sendto", H2_FILINE);
+      h2_stubs::add(stubs, (void*)::recvfrom, (void*)recvfrom, "recvfrom", H2_FILINE);
 #if !defined _WIN32
-      h2_stubs::add(stubs, (void*)::sendmsg, (void*)sendmsg, "sendmsg", H2_FILE);
-      h2_stubs::add(stubs, (void*)::recvmsg, (void*)recvmsg, "recvmsg", H2_FILE);
+      h2_stubs::add(stubs, (void*)::sendmsg, (void*)sendmsg, "sendmsg", H2_FILINE);
+      h2_stubs::add(stubs, (void*)::recvmsg, (void*)recvmsg, "recvmsg", H2_FILINE);
 #endif
-      h2_stubs::add(stubs, (void*)::send, (void*)send, "send", H2_FILE);
-      h2_stubs::add(stubs, (void*)::recv, (void*)recv, "recv", H2_FILE);
-      h2_stubs::add(stubs, (void*)::accept, (void*)accept, "accept", H2_FILE);
-      h2_stubs::add(stubs, (void*)::connect, (void*)connect, "connect", H2_FILE);
+      h2_stubs::add(stubs, (void*)::send, (void*)send, "send", H2_FILINE);
+      h2_stubs::add(stubs, (void*)::recv, (void*)recv, "recv", H2_FILINE);
+      h2_stubs::add(stubs, (void*)::accept, (void*)accept, "accept", H2_FILINE);
+      h2_stubs::add(stubs, (void*)::connect, (void*)connect, "connect", H2_FILINE);
    }
    void stop()
    {

@@ -13,9 +13,9 @@ struct h2_override_platform {
 
    void set()
    {
-      h2_stubs::add(stubs, (void*)::strdup, (void*)h2_override_stdlib::strdup, "strdup", H2_FILE);
+      h2_stubs::add(stubs, (void*)::strdup, (void*)h2_override_stdlib::strdup, "strdup", H2_FILINE);
 #if defined __CYGWIN__
-      h2_stubs::add(stubs, (void*)::strndup, (void*)strndup, "strndup", H2_FILE);
+      h2_stubs::add(stubs, (void*)::strndup, (void*)strndup, "strndup", H2_FILINE);
 #endif
    }
    void reset() { h2_stubs::clear(stubs); }

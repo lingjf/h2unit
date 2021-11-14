@@ -4,9 +4,9 @@ struct h2_stub : h2_libc {
    void *srcfp, *dstfp;
    h2_source* source;
 
-   h2_stub(void* srcfp_, const char* srcfn, const char* file) : srcfp(srcfp_)
+   h2_stub(void* srcfp_, const char* srcfn, const char* filine) : srcfp(srcfp_)
    {
-      source = h2_sources::I().add(srcfp, srcfn, file);
+      source = h2_sources::I().add(srcfp, srcfn, filine);
       if (source) source->save(saved_opcode);
    }
    ~h2_stub()
@@ -30,11 +30,11 @@ static inline h2_stub* h2_stubs_get(h2_list& stubs, void* srcfp)
    return nullptr;
 }
 
-h2_inline bool h2_stubs::add(h2_list& stubs, void* srcfp, void* dstfp, const char* srcfn, const char* file)
+h2_inline bool h2_stubs::add(h2_list& stubs, void* srcfp, void* dstfp, const char* srcfn, const char* filine)
 {
    h2_stub* stub = h2_stubs_get(stubs, srcfp);
    if (!stub) {
-      stub = new h2_stub(srcfp, srcfn, file);
+      stub = new h2_stub(srcfp, srcfn, filine);
       stubs.push(stub->x);
    }
    stub->stub(dstfp);
