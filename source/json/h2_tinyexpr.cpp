@@ -123,23 +123,23 @@ struct tinyexpr
     static double e(void) {return 2.71828182845904523536;}
     static double fac(double a) {/* simplest version of fac */
         if (a < 0.0) return (NAN);
-        if (a > UINT_MAX) return (NAN);
+        if (a > 0xffffffffu) return (NAN);
         unsigned int ua = (unsigned int)(a);
         unsigned long int result = 1, i;
         for (i = 1; i <= ua; i++) {
-            if (i > ULONG_MAX / result) return (NAN);
+            if (i > 0xffffffffu / result) return (NAN);
             result *= i;
         }
         return (double)result;
     }
     static double ncr(double n, double r) {
         if (n < 0.0 || r < 0.0 || n < r) return (NAN);
-        if (n > UINT_MAX || r > UINT_MAX) return (NAN);
+        if (n > 0xffffffffu || r > 0xffffffffu) return (NAN);
         unsigned long int un = (unsigned int)(n), ur = (unsigned int)(r), i;
         unsigned long int result = 1;
         if (ur > un / 2) ur = un - ur;
         for (i = 1; i <= ur; i++) {
-            if (result > ULONG_MAX / (un - ur + i)) return (NAN);
+            if (result > 0xffffffffu / (un - ur + i)) return (NAN);
             result *= un - ur + i;
             result /= i;
         }

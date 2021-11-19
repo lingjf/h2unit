@@ -1784,23 +1784,23 @@ struct tinyexpr
     static double e(void) {return 2.71828182845904523536;}
     static double fac(double a) {/* simplest version of fac */
         if (a < 0.0) return (NAN);
-        if (a > UINT_MAX) return (NAN);
+        if (a > 0xffffffffu) return (NAN);
         unsigned int ua = (unsigned int)(a);
         unsigned long int result = 1, i;
         for (i = 1; i <= ua; i++) {
-            if (i > ULONG_MAX / result) return (NAN);
+            if (i > 0xffffffffu / result) return (NAN);
             result *= i;
         }
         return (double)result;
     }
     static double ncr(double n, double r) {
         if (n < 0.0 || r < 0.0 || n < r) return (NAN);
-        if (n > UINT_MAX || r > UINT_MAX) return (NAN);
+        if (n > 0xffffffffu || r > 0xffffffffu) return (NAN);
         unsigned long int un = (unsigned int)(n), ur = (unsigned int)(r), i;
         unsigned long int result = 1;
         if (ur > un / 2) ur = un - ur;
         for (i = 1; i <= ur; i++) {
-            if (result > ULONG_MAX / (un - ur + i)) return (NAN);
+            if (result > 0xffffffffu / (un - ur + i)) return (NAN);
             result *= un - ur + i;
             result /= i;
         }
@@ -2754,7 +2754,7 @@ struct h2_json_match {
 // source/json/h2_dual.cpp
 struct h2_json_dual : h2_libc {  // Combine two node into a dual
    size_t depth;
-   int relationship, index = INT_MAX;
+   int relationship, index = 0x7fffffff;
    bool key_equal = false, value_match = false;
    bool e_last = true, a_last = true;
    int e_type = h2_json_node::t_absent, a_type = h2_json_node::t_absent;
@@ -3254,7 +3254,7 @@ struct h2_leaky {
 };
 // source/memory/h2_block.cpp
 struct h2_block_attributes {
-   unsigned long long limit = LLONG_MAX / 2;
+   unsigned long long limit = 0xffffffffffffull;
    int alignment = sizeof(void*);
    unsigned char s_fill[32];
    int n_fill = 0;
@@ -4063,7 +4063,7 @@ static inline void h2_e9_set(void* srcfp, void* dstfp)
 
 #if defined __i386__ || defined __x86_64__ || defined _M_IX86 || defined _M_X64
    long long delta = (unsigned char*)dstfp - I - 5;
-   if (delta < INT_MIN || INT_MAX < delta) {  //x86_64 asm("movq $dstfp, %rax; jmpq %rax")
+   if (delta < -0x7fffffff || 0x7fffffff < delta) {  //x86_64 asm("movq $dstfp, %rax; jmpq %rax")
       unsigned char C[] = {0x48, 0xB8, 0, 0, 0, 0, 0, 0, 0, 0, 0xFF, 0xE0};
       memcpy(C + 2, &dstfp, sizeof(void*));
       memcpy(I, C, sizeof(C));
@@ -4281,15 +4281,15 @@ h2_inline const char* h2_checkin::expect() const
    if (least == 0) {
       if (most == 0)
          sprintf(st, "never called");
-      else if (most == INT_MAX)
+      else if (most == 0x7fffffff)
          sprintf(st, "any number of times");
       else
          sprintf(st, "at most %d times", most);
    } else if (least == most) {
       sprintf(st, "exactly %d times", least);
-   } else if (most == INT_MAX) {
+   } else if (most == 0x7fffffff) {
       sprintf(st, "at least %d times", least);
-   } else {  // 0 < least < most < INT_MAX
+   } else {  // 0 < least < most < 0x7fffffff
       sprintf(st, "between %d and %d times", least, most);
    }
    return st;
@@ -5064,7 +5064,7 @@ h2_inline void h2_suite::test(h2_case* c)
 
 h2_inline h2_suite::registor::registor(h2_suite* s, h2_case* c)
 {
-   static int seq = INT_MAX / 4;
+   static int seq = 0x0fffffff;
    s->cases.push_back(c->x);
    s->seq = c->seq = ++seq;
 }
@@ -5156,7 +5156,7 @@ static inline void save_last_order(h2_list& suites)
 
 static inline void __find_mark(h2_list& suites, char* fileline, char* suitename, char* casename, bool failed)
 {
-   static int seq = INT_MIN / 4;
+   static int seq = 0;
    int founds = 0;
    h2_list_for_each_entry (s, suites, h2_suite, x)  // full match 3
       if (!strcmp(suitename, s->describe.name))

@@ -126,7 +126,7 @@ SUITE(checkin)
    {
       h2::h2_checkin ci = h2::h2_checkin::Any();
       OK(0, ci.least);
-      OK(INT_MAX, ci.most);
+      OK(0x7fffffff, ci.most);
       OK(0, ci.call);
       OK("any number of times", ci.expect());
 
@@ -158,7 +158,7 @@ SUITE(checkin)
    {
       h2::h2_checkin ci = h2::h2_checkin::Atleast(2);
       OK(2, ci.least);
-      OK(INT_MAX, ci.most);
+      OK(0x7fffffff, ci.most);
       OK(0, ci.call);
       OK("at least 2 times", ci.expect());
 

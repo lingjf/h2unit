@@ -1,5 +1,5 @@
 struct h2_block_attributes {
-   unsigned long long limit = LLONG_MAX / 2;
+   unsigned long long limit = 0xffffffffffffull;
    int alignment = sizeof(void*);
    unsigned char s_fill[32];
    int n_fill = 0;

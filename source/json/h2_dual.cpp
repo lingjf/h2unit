@@ -1,6 +1,6 @@
 struct h2_json_dual : h2_libc {  // Combine two node into a dual
    size_t depth;
-   int relationship, index = INT_MAX;
+   int relationship, index = 0x7fffffff;
    bool key_equal = false, value_match = false;
    bool e_last = true, a_last = true;
    int e_type = h2_json_node::t_absent, a_type = h2_json_node::t_absent;

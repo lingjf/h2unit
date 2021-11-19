@@ -29,7 +29,7 @@ static inline void h2_e9_set(void* srcfp, void* dstfp)
 
 #if defined __i386__ || defined __x86_64__ || defined _M_IX86 || defined _M_X64
    long long delta = (unsigned char*)dstfp - I - 5;
-   if (delta < INT_MIN || INT_MAX < delta) {  //x86_64 asm("movq $dstfp, %rax; jmpq %rax")
+   if (delta < -0x7fffffff || 0x7fffffff < delta) {  //x86_64 asm("movq $dstfp, %rax; jmpq %rax")
       unsigned char C[] = {0x48, 0xB8, 0, 0, 0, 0, 0, 0, 0, 0, 0xFF, 0xE0};
       memcpy(C + 2, &dstfp, sizeof(void*));
       memcpy(I, C, sizeof(C));

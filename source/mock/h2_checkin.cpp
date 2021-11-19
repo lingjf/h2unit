@@ -22,15 +22,15 @@ h2_inline const char* h2_checkin::expect() const
    if (least == 0) {
       if (most == 0)
          sprintf(st, "never called");
-      else if (most == INT_MAX)
+      else if (most == 0x7fffffff)
          sprintf(st, "any number of times");
       else
          sprintf(st, "at most %d times", most);
    } else if (least == most) {
       sprintf(st, "exactly %d times", least);
-   } else if (most == INT_MAX) {
+   } else if (most == 0x7fffffff) {
       sprintf(st, "at least %d times", least);
-   } else {  // 0 < least < most < INT_MAX
+   } else {  // 0 < least < most < 0x7fffffff
       sprintf(st, "between %d and %d times", least, most);
    }
    return st;

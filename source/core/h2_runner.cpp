@@ -12,7 +12,7 @@ static inline void save_last_order(h2_list& suites)
 
 static inline void __find_mark(h2_list& suites, char* fileline, char* suitename, char* casename, bool failed)
 {
-   static int seq = INT_MIN / 4;
+   static int seq = 0;
    int founds = 0;
    h2_list_for_each_entry (s, suites, h2_suite, x)  // full match 3
       if (!strcmp(suitename, s->describe.name))

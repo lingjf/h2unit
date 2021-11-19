@@ -4,7 +4,6 @@
 #include <cstdio>      /* printf */
 #include <cstdlib>     /* malloc */
 #include <cstring>     /* strcpy, memcpy */
-#include <climits>     /* INT_MAX */
 #include <cmath>       /* fabs */
 #include <csetjmp>     /* setjmp, longjmp */
 #include <sstream>     /* std::basic_ostringstream */

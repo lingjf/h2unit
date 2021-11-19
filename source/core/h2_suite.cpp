@@ -40,7 +40,7 @@ h2_inline void h2_suite::test(h2_case* c)
 
 h2_inline h2_suite::registor::registor(h2_suite* s, h2_case* c)
 {
-   static int seq = INT_MAX / 4;
+   static int seq = 0x0fffffff;
    s->cases.push_back(c->x);
    s->seq = c->seq = ++seq;
 }
