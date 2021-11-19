@@ -69,6 +69,37 @@ SUITE(basename)
    }
 }
 
+CASE(comma_if)
+{
+   OK("", h2::comma_if(false));
+   OK(", ", h2::comma_if(true));
+
+   OK("", h2::comma_if(false, ",,"));
+   OK(",,", h2::comma_if(true, ",,"));
+
+   OK("  ", h2::comma_if(false, ",,", "  "));
+   OK(",,", h2::comma_if(true, ",,", "  "));
+}
+
+SUITE(h2_in)
+{
+   Case(3 items)
+   {
+      OK(h2::h2_in("a", 3, "a", "ab", "abc"));
+      OK(h2::h2_in("ab", 3, "a", "ab", "abc"));
+      OK(h2::h2_in("abc", 3, "a", "ab", "abc"));
+
+      OK(!h2::h2_in("", 3, "a", "ab", "abc"));
+      OK(!h2::h2_in("abcd", 3, "a", "ab", "abc"));
+      OK(!h2::h2_in("s", 3, "a", "ab", "abc"));
+   }
+
+   Case(0 items)
+   {
+      OK(!h2::h2_in("a", 0));
+   }
+}
+
 SUITE(h2_candidate)
 {
    Case(3 candidates)
@@ -86,6 +117,19 @@ SUITE(h2_candidate)
    {
       OK("ambiguous argument: s, candidates: single | sample", h2::h2_candidate("s", 3, "single", "double", "sample"));
    }
+}
+
+CASE(ss)
+{
+   OK("h2unit", h2::ss("h2unit"));
+   OK("", h2::ss(""));
+   OK("", h2::ss(nullptr));
+}
+
+CASE(sn)
+{
+   OK(42, h2::sn(42));
+   OK(0, h2::sn());
 }
 
 SUITE(h2_extract)

@@ -149,7 +149,7 @@ h2_inline void h2_option::parse(int argc, const char** argv)
                else
                   ::printf("-S %s\n", r);
 
-               if (strcmp("\'", json_source_quote) && strcmp("\"", json_source_quote) && strcmp("\\\"", json_source_quote)) json_source_quote = "\\\"";
+               if (!h2_in(json_source_quote, 3, "\'", "\"", "\\\"")) json_source_quote = "\\\"";
             }
             break;
          case 't': tags_filter = true; break;

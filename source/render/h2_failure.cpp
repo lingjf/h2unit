@@ -53,15 +53,16 @@ struct h2_fail_normal : h2_fail {
 
 static inline bool is_synonym(const h2_string& a, const h2_string& b)
 {
-   static const char* s_null[] = {"NULL", "__null", "((void *)0)", "(nil)", "nullptr", "0", "0x0", "00000000", "0000000000000000", nullptr};
-   static const char* s_true[] = {"IsTrue", "true", "TRUE", "True", "1", nullptr};
-   static const char* s_false[] = {"IsFalse", "false", "FALSE", "False", "0", nullptr};
-   static const char** S[] = {s_null, s_true, s_false};
    h2_string a1 = a.escape(), b1 = b.escape();
    if (a1 == b1) return true;
-   for (size_t i = 0; i < sizeof(S) / sizeof(S[0]); ++i)
-      if (h2_in(a1.c_str(), S[i]) && h2_in(b1.c_str(), S[i]))
-         return true;
+
+#define H2_NULL_SYNONYM "NULL", "__null", "((void *)0)", "(nil)", "nullptr", "0", "0x0", "00000000", "0000000000000000"
+#define H2_TREE_SYNONYM "IsTrue", "true", "TRUE", "True", "1"
+#define H2_FALSE_SYNONYM "IsFalse", "false", "FALSE", "False", "0"
+
+   if (h2_in(a1.c_str(), 9, H2_NULL_SYNONYM) && h2_in(b1.c_str(), 9, H2_NULL_SYNONYM)) return true;
+   if (h2_in(a1.c_str(), 5, H2_TREE_SYNONYM) && h2_in(b1.c_str(), 5, H2_TREE_SYNONYM)) return true;
+   if (h2_in(a1.c_str(), 5, H2_FALSE_SYNONYM) && h2_in(b1.c_str(), 5, H2_FALSE_SYNONYM)) return true;
    return false;
 }
 

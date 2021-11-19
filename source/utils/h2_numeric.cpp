@@ -97,32 +97,3 @@ static inline size_t number_strlen(unsigned long long number, int base)
       if (number < _10000000) return i;
    }
 }
-
-static inline const char* format_duration(long long ms)
-{
-   static char st[128];
-   if (ms < 100)
-      sprintf(st, "%lld milliseconds", ms);
-   else if (ms < 1000 * 60)
-      sprintf(st, "%.2g second%s", ms / 1000.0, ms == 1000 ? "" : "s");
-   else if (ms < 1000 * 60 * 60)
-      sprintf(st, "%.2g minute%s", ms / 60000.0, ms == 60000 ? "" : "s");
-   else
-      sprintf(st, "%.2g hour%s", ms / 3600000.0, ms == 3600000 ? "" : "s");
-
-   return st;
-}
-
-static inline const char* format_volume(long long footprint)
-{
-   static char st[128];
-   if (footprint < 1024LL)
-      sprintf(st, "%lld", footprint);
-   else if (footprint < 1024LL * 1024LL)
-      sprintf(st, "%.2gKB", footprint / 1024.0);
-   else if (footprint < 1024LL * 1024LL * 1024LL)
-      sprintf(st, "%.2gMB", footprint / (1024.0 * 1024.0));
-   else
-      sprintf(st, "%.2gGB", footprint / (1024.0 * 1024.0 * 1024.0));
-   return st;
-}

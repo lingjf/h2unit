@@ -152,16 +152,10 @@ struct h2_piece : h2_libc {
 
    h2_fail* check_asymmetric_free(const char* who_release)
    {
-      static const char* a1[] = {"malloc", "calloc", "realloc", "posix_memalign", "aligned_alloc", nullptr};
-      static const char* a2[] = {"free", nullptr};
-      static const char* b1[] = {"new", "new nothrow", nullptr};
-      static const char* b2[] = {"delete", "delete nothrow", nullptr};
-      static const char* c1[] = {"new[]", "new[] nothrow", nullptr};
-      static const char* c2[] = {"delete[]", "delete[] nothrow", nullptr};
-      static const char** S[] = {a1, a2, b1, b2, c1, c2};
-      for (size_t i = 0; i < sizeof(S) / sizeof(S[0]); i += 2)
-         if (h2_in(who_allocate, S[i]) && h2_in(who_release, S[i + 1]))
-            return nullptr;
+      if (h2_in(who_allocate, 5, "malloc", "calloc", "realloc", "posix_memalign", "aligned_alloc") && h2_in(who_release, 1, "free")) return nullptr;
+      if (h2_in(who_allocate, 2, "new", "new nothrow") && h2_in(who_release, 2, "delete", "delete nothrow")) return nullptr;
+      if (h2_in(who_allocate, 2, "new[]", "new[] nothrow") && h2_in(who_release, 2, "delete[]", "delete[] nothrow")) return nullptr;
+
       if (bt_allocate.in(h2_exempt::I().fps)) return nullptr;
       return h2_fail::new_asymmetric_free(user_ptr, who_allocate, who_release, bt_allocate, bt_release);
    }

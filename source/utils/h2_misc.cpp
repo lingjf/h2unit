@@ -115,10 +115,13 @@ static inline unsigned h2_page_size()
 
 static inline const char* comma_if(bool a, const char* t = ", ", const char* f = "") { return a ? t : f; }
 
-static inline bool h2_in(const char* x, const char* s[], int n = 0)
+static inline bool h2_in(const char* a, int n, ...)
 {
-   for (int i = 0; s[i] && i < (n ? n : 1000); ++i)
-      if (!strcmp(s[i], x)) return true;
+   va_list ap;
+   va_start(ap, n);
+   for (int i = 0; i < n; ++i)
+      if (!strcmp(va_arg(ap, const char*), a)) return true;
+   va_end(ap);
    return false;
 }
 
