@@ -1,3 +1,7 @@
+struct h2_runner;
+struct h2_suite;
+struct h2_case;
+
 struct h2_report {
    h2_singleton(h2_report);
    static void initialize();

@@ -100,12 +100,12 @@ struct h2_resolver {
    ~h2_resolver() { h2_stubs::clear(stubs); }
 };
 
-h2_inline void h2_dnses::add(h2_list& name)
+h2_inline void h2_dnses::add(h2_list& dnses, h2_list& name)
 {
    dnses.push(name);
 }
 
-h2_inline void h2_dnses::clear()
+h2_inline void h2_dnses::clear(h2_list& dnses)
 {
    h2_list_for_each_entry (p, dnses, h2_name, x) {
       p->x.out();
@@ -137,7 +137,8 @@ h2_inline void h2_dns::setaddrinfo(int n, ...)
    va_end(b);
 
    h2_resolver::I().dnses.push(name->y);
-   if (h2_runner::I().current_case) ((h2_case*)h2_runner::I().current_case)->dnses.add(name->x);
+   if (h2_runner::I().current_case)
+      h2_dnses::add(h2_runner::I().current_case->dnses, name->x);
 }
 
 h2_inline void h2_dns::initialize()

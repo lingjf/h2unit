@@ -7,59 +7,40 @@ static inline bool match_names(const std::vector<const char*>& patterns, const c
    return false;
 }
 
-static inline bool match_tags(const std::vector<const char*>& patterns, h2_describe& describe)
+static inline bool match_tags(const std::vector<const char*>& patterns, const h2_test* test)
 {
    for (auto pattern : patterns)
-      if (describe.has_tag(pattern)) return true;
+      if (test->tagged(pattern)) return true;
    return false;
 }
 
-static inline bool h2_filter_case(h2_suite* s, h2_case* c)
+static inline bool __filter(const h2_test* s, const h2_test* c, const std::vector<const char*>& includes, const std::vector<const char*>& excludes, bool tags_filter)
 {
-   if (O.tags_filter) {
-      if (!O.includes.empty())
-         if (!match_tags(O.includes, s->describe) && !match_tags(O.includes, c->describe))
+   if (tags_filter) {
+      if (!includes.empty())
+         if (!(match_tags(includes, s) || c && match_tags(includes, c))) // priority && > ||
             return true;
-      if (!O.excludes.empty())
-         if (match_tags(O.excludes, s->describe) || match_tags(O.excludes, c->describe))
+      if (!excludes.empty())
+         if (match_tags(excludes, s) || c && match_tags(excludes, c))
             return true;
    } else {
-      if (!O.includes.empty())
-         if (!match_names(O.includes, s->describe.name) && !match_names(O.includes, c->describe.name) && !match_names(O.includes, c->filine))
+      if (!includes.empty())
+         if (!(match_names(includes, s->name) || c && match_names(includes, c->name) || match_names(includes, c ? c->filine : s->filine)))
             return true;
-      if (!O.excludes.empty())
-         if (match_names(O.excludes, s->describe.name) || match_names(O.excludes, c->describe.name) || match_names(O.excludes, c->filine))
+      if (!excludes.empty())
+         if (match_names(excludes, s->name) || c && match_names(excludes, c->name) || match_names(excludes, c ? c->filine : s->filine))
             return true;
    }
    return false;
 }
 
-static inline bool h2_filter_suite(h2_suite* s)
+static inline void h2_filter_suite(h2_suite* s)
 {
-   if (O.tags_filter) {
-      if (!O.includes.empty())
-         if (!match_tags(O.includes, s->describe))
-            return true;
-      if (!O.excludes.empty())
-         if (match_tags(O.includes, s->describe))
-            return true;
-   } else {
-      if (!O.includes.empty())
-         if (!match_names(O.includes, s->describe.name) && !match_names(O.includes, s->filine))
-            return true;
-      if (!O.excludes.empty())
-         if (match_names(O.excludes, s->describe.name) || match_names(O.excludes, s->filine))
-            return true;
-   }
-   return false;
+   s->filtered = __filter(s, nullptr, O.includes, O.excludes, O.tags_filter);
 }
 
-static inline void h2_filter(h2_suite* s, h2_case* c = nullptr)
+static inline void h2_filter_case(h2_suite* s, h2_case* c)
 {
-   if (c) {
-      c->filtered = h2_filter_case(s, c);
-      if (!c->filtered) s->filtered = false;
-   } else {
-      s->filtered = h2_filter_suite(s);
-   }
+   c->filtered = __filter(s, c, O.includes, O.excludes, O.tags_filter);
+   if (!c->filtered) s->filtered = false;
 }

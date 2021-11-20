@@ -1,18 +1,11 @@
-struct h2_stats {
-   int passed = 0, failed = 0, todo = 0, filtered = 0, ignored = 0;
-   int asserts = 0;
-   long long footprint = 0;
-   long long timecost = 0;
-   void clear() { passed = 0, failed = 0, todo = 0, filtered = 0, ignored = 0, asserts = 0, footprint = 0, timecost = 0; }
-};
 
 struct h2_runner {
    h2_singleton(h2_runner);
 
-   void* current_suite = nullptr;
-   void* current_case = nullptr;
+   h2_suite* current_suite = nullptr;
+   h2_case* current_case = nullptr;
    int rounds = 0;
-   int last = 0;
+   int lasts = 0;
    h2_list suites;
    h2_list stubs;
    h2_list mocks;
@@ -21,9 +14,9 @@ struct h2_runner {
    std::vector<void (*)()> global_suite_setups, global_suite_cleanups;
    std::vector<void (*)()> global_case_setups, global_case_cleanups;
 
-   void shuffle();
-   void shadow();
    void enumerate();
+   void filter();
+   void shuffle();
    int main(int argc, const char** argv);
 
    static void stub(void* srcfp, void* dstfp, const char* srcfn, const char* filine);

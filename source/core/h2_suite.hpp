@@ -1,19 +1,11 @@
-struct h2_suite {
-   h2_list x;
-   const char* filine;
-   h2_describe describe;
+struct h2_suite : h2_test {
    void (*test_code)(h2_suite*, h2_case*);
-   bool filtered = false;
-   int seq = 0;
-   jmp_buf ctx;
+   jmp_buf cleanup_hole;
    h2_list cases;
-   h2_list stubs;
-   h2_list mocks;
-   h2_stats stats;
 
    h2_suite(const char* filine, const char* file, int line, const char* describe, void (*)(h2_suite*, h2_case*));
    void clear();
-   bool absent() const { return !describe.desc; }  // nullptr describe means no SUITE wrapper (CASE/TODO ...)
+   bool absent() const { return !describe; }  // nullptr describe means no SUITE wrapper (CASE/TODO ...)
 
    void enumerate();
    void test(h2_case* c);

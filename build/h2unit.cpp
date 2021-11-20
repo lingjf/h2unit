@@ -20,7 +20,7 @@
 #include <cxxabi.h> /* abi::__cxa_demangle, abi::__cxa_throw */
 #endif
 
-#if defined __linux || defined __APPLE__  // -MSCV -Cygwin -MinGW
+#if defined __linux || defined __APPLE__  // -MSVC -Cygwin -MinGW
 #include <execinfo.h>                     /* backtrace, backtrace_symbols */
 #endif
 
@@ -4623,12 +4623,12 @@ struct h2_resolver {
    ~h2_resolver() { h2_stubs::clear(stubs); }
 };
 
-h2_inline void h2_dnses::add(h2_list& name)
+h2_inline void h2_dnses::add(h2_list& dnses, h2_list& name)
 {
    dnses.push(name);
 }
 
-h2_inline void h2_dnses::clear()
+h2_inline void h2_dnses::clear(h2_list& dnses)
 {
    h2_list_for_each_entry (p, dnses, h2_name, x) {
       p->x.out();
@@ -4660,7 +4660,8 @@ h2_inline void h2_dns::setaddrinfo(int n, ...)
    va_end(b);
 
    h2_resolver::I().dnses.push(name->y);
-   if (h2_runner::I().current_case) ((h2_case*)h2_runner::I().current_case)->dnses.add(name->x);
+   if (h2_runner::I().current_case)
+      h2_dnses::add(h2_runner::I().current_case->dnses, name->x);
 }
 
 h2_inline void h2_dns::initialize()
@@ -4938,27 +4939,14 @@ h2_inline h2_sock::~h2_sock()
 {
    h2_socket::I().stop();
 }
-// source/core/h2_describe.cpp
-h2_inline h2_describe::h2_describe(const char* file_, int line_, const char* describe) : file(file_), line(line_), desc(describe)
+// source/core/h2_test.cpp
+
+static inline void __split_describe(const char* describe, char* name_buf, char* tags_buf)
 {
-   if (desc) {
-      strcpy(nbuf, desc);
-      strcpy(tbuf, "");
-      split();
+   strcpy(name_buf, describe);
+   strcpy(tags_buf, "");
 
-      name = nbuf;
-      while (*name && ::isspace(*name)) name++;  // strip left space
-
-      int count = 0;
-      for (char* t = strtok(tbuf, " ,"); t; t = strtok(nullptr, " ,"))
-         if (count < sizeof(tags) / sizeof(tags[0]) - 1) tags[count++] = t;
-      tags[count] = nullptr;
-   }
-}
-
-h2_inline void h2_describe::split()
-{
-   const char* p = desc;
+   const char* p = describe;
    for (bool quote = false; *p; ++p) {
       if (*p == '\"') quote = !quote;
       if (!quote && *p == '[') break;
@@ -4971,17 +4959,32 @@ h2_inline void h2_describe::split()
    }
    if (*q != ']') return;  // right brace
 
-   strncpy(tbuf, p + 1, (size_t)(q - p - 1));
-   tbuf[(size_t)(q - p - 1)] = '\0';
+   strncpy(tags_buf, p + 1, (size_t)(q - p - 1));
+   tags_buf[(size_t)(q - p - 1)] = '\0';
 
-   strcpy(&nbuf[(size_t)(p - desc)], q + 1);
+   strcpy(&name_buf[(size_t)(p - describe)], q + 1);
 }
 
-h2_inline bool h2_describe::has_tag(const char* pattern)
+h2_inline h2_test::h2_test(const char* filine_, const char* file_, int line_, const char* describe_) : filine(filine_), file(h2_basefile(file_)), line(line_), describe(describe_)
+{
+   if (describe) {
+      __split_describe(describe, name_buf, tags_buf);
+
+      name = name_buf;
+      while (*name && ::isspace(*name)) name++;  // strip left space
+
+      int count = 0;
+      for (char* t = strtok(tags_buf, " ,"); t; t = strtok(nullptr, " ,"))
+         if (count < sizeof(tags) / sizeof(tags[0]) - 1) tags[count++] = t;
+      tags[count] = nullptr;
+   }
+}
+
+h2_inline bool h2_test::tagged(const char* tag_pattern) const
 {
    for (int i = 0; tags[i]; ++i) {
-      if (!strcasecmp(tags[i], pattern)) return true;
-      if (strcspn(pattern, "?*[]") < strlen(pattern) && h2_pattern::wildcard_match(pattern, tags[i], true)) return true;
+      if (!strcasecmp(tags[i], tag_pattern)) return true;
+      if (strcspn(tag_pattern, "?*[]") < strlen(tag_pattern) && h2_pattern::wildcard_match(tag_pattern, tags[i], true)) return true;
    }
    return false;
 }
@@ -5004,7 +5007,7 @@ h2_inline void h2_case::prev_setup()
 h2_inline void h2_case::post_cleanup()
 {
    stats.footprint = h2_memory::stack::footprint();
-   dnses.clear();
+   h2_dnses::clear(dnses);
    h2_stubs::clear(stubs);
    failing(h2_mocks::clear(mocks, true), true, O.continue_assert);
    failing(h2_memory::stack::pop(), true, O.continue_assert);
@@ -5018,13 +5021,13 @@ h2_inline void h2_case::failing(h2_fail* fail, bool defer, bool append)
          delete fail;
       else
          h2_fail::append_subling(fails, fail);
-      if (!defer) ::longjmp(ctx, 1);
+      if (!defer) ::longjmp(fail_hole, 1);
    }
 }
 // source/core/h2_suite.cpp
-h2_inline h2_suite::h2_suite(const char* filine_, const char* file_, int line_, const char* describe_, void (*test_code_)(h2_suite*, h2_case*)) : filine(filine_), describe(file_, line_, describe_), test_code(test_code_)
+h2_inline h2_suite::h2_suite(const char* filine_, const char* file_, int line_, const char* describe_, void (*test_code_)(h2_suite*, h2_case*)) : h2_test(filine_, file_, line_, describe_), test_code(test_code_)
 {
-   memset(ctx, 0, sizeof(jmp_buf));
+   memset(cleanup_hole, 0, sizeof(jmp_buf));
    h2_runner::I().suites.push_back(x);
 }
 
@@ -5072,8 +5075,8 @@ h2_inline h2_suite::registor::registor(h2_suite* s, h2_case* c)
 h2_inline h2_suite::cleaner::~cleaner()
 {
    static const unsigned char zero[sizeof(jmp_buf)] = {0};
-   if (memcmp((const void*)thus->ctx, (const void*)zero, sizeof(jmp_buf)))
-      ::longjmp(thus->ctx, 1);
+   if (memcmp((const void*)thus->cleanup_hole, (const void*)zero, sizeof(jmp_buf)))
+      ::longjmp(thus->cleanup_hole, 1);
 }
 // source/core/h2_filter.cpp
 static inline bool match_names(const std::vector<const char*>& patterns, const char* subject)
@@ -5085,61 +5088,42 @@ static inline bool match_names(const std::vector<const char*>& patterns, const c
    return false;
 }
 
-static inline bool match_tags(const std::vector<const char*>& patterns, h2_describe& describe)
+static inline bool match_tags(const std::vector<const char*>& patterns, const h2_test* test)
 {
    for (auto pattern : patterns)
-      if (describe.has_tag(pattern)) return true;
+      if (test->tagged(pattern)) return true;
    return false;
 }
 
-static inline bool h2_filter_case(h2_suite* s, h2_case* c)
+static inline bool __filter(const h2_test* s, const h2_test* c, const std::vector<const char*>& includes, const std::vector<const char*>& excludes, bool tags_filter)
 {
-   if (O.tags_filter) {
-      if (!O.includes.empty())
-         if (!match_tags(O.includes, s->describe) && !match_tags(O.includes, c->describe))
+   if (tags_filter) {
+      if (!includes.empty())
+         if (!(match_tags(includes, s) || c && match_tags(includes, c))) // priority && > ||
             return true;
-      if (!O.excludes.empty())
-         if (match_tags(O.excludes, s->describe) || match_tags(O.excludes, c->describe))
+      if (!excludes.empty())
+         if (match_tags(excludes, s) || c && match_tags(excludes, c))
             return true;
    } else {
-      if (!O.includes.empty())
-         if (!match_names(O.includes, s->describe.name) && !match_names(O.includes, c->describe.name) && !match_names(O.includes, c->filine))
+      if (!includes.empty())
+         if (!(match_names(includes, s->name) || c && match_names(includes, c->name) || match_names(includes, c ? c->filine : s->filine)))
             return true;
-      if (!O.excludes.empty())
-         if (match_names(O.excludes, s->describe.name) || match_names(O.excludes, c->describe.name) || match_names(O.excludes, c->filine))
+      if (!excludes.empty())
+         if (match_names(excludes, s->name) || c && match_names(excludes, c->name) || match_names(excludes, c ? c->filine : s->filine))
             return true;
    }
    return false;
 }
 
-static inline bool h2_filter_suite(h2_suite* s)
+static inline void h2_filter_suite(h2_suite* s)
 {
-   if (O.tags_filter) {
-      if (!O.includes.empty())
-         if (!match_tags(O.includes, s->describe))
-            return true;
-      if (!O.excludes.empty())
-         if (match_tags(O.includes, s->describe))
-            return true;
-   } else {
-      if (!O.includes.empty())
-         if (!match_names(O.includes, s->describe.name) && !match_names(O.includes, s->filine))
-            return true;
-      if (!O.excludes.empty())
-         if (match_names(O.excludes, s->describe.name) || match_names(O.excludes, s->filine))
-            return true;
-   }
-   return false;
+   s->filtered = __filter(s, nullptr, O.includes, O.excludes, O.tags_filter);
 }
 
-static inline void h2_filter(h2_suite* s, h2_case* c = nullptr)
+static inline void h2_filter_case(h2_suite* s, h2_case* c)
 {
-   if (c) {
-      c->filtered = h2_filter_case(s, c);
-      if (!c->filtered) s->filtered = false;
-   } else {
-      s->filtered = h2_filter_suite(s);
-   }
+   c->filtered = __filter(s, c, O.includes, O.excludes, O.tags_filter);
+   if (!c->filtered) s->filtered = false;
 }
 // source/core/h2_runner.cpp
 static inline void drop_last_order() { ::remove(".last_order"); }
@@ -5150,59 +5134,41 @@ static inline void save_last_order(h2_list& suites)
    if (!f) return;
    h2_list_for_each_entry (s, suites, h2_suite, x)
       h2_list_for_each_entry (c, s->cases, h2_case, x)
-         ::fprintf(f, "  file: %s\n suite: %s\n  case: %s\nstatus: %s\n\n", c->filine, s->describe.name, c->describe.name, c->failed ? "failed" : "passed");
+         ::fprintf(f, " file: %s\nsuite: %s\n case: %s\n test: %s\n\n", c->file, s->name, c->name, c->failed ? "failed" : "passed");
    ::fclose(f);
 }
 
-static inline void __find_mark(h2_list& suites, char* fileline, char* suitename, char* casename, bool failed)
+static inline void __find_case(h2_list& suites, char* filename, char* suitename, char* casename, bool failed)
 {
    static int seq = 0;
-   int founds = 0;
-   h2_list_for_each_entry (s, suites, h2_suite, x)  // full match 3
-      if (!strcmp(suitename, s->describe.name))
+   h2_list_for_each_entry (s, suites, h2_suite, x)
+      if (!strcmp(suitename, s->name))
          h2_list_for_each_entry (c, s->cases, h2_case, x)
-            if (!strcmp(casename, c->describe.name) && !strcmp(fileline, c->filine)) {
-               s->seq = c->seq = ++seq;
-               if (failed) c->last_failed = true;
-               ++founds;
-            }
-   if (founds) return;
-   h2_list_for_each_entry (s, suites, h2_suite, x)  // line position change, match2
-      if (!strcmp(suitename, s->describe.name))
-         h2_list_for_each_entry (c, s->cases, h2_case, x)
-            if (!strcmp(casename, c->describe.name)) {
+            if (!strcmp(casename, c->name) && !strcmp(filename, c->file)) {
                s->seq = c->seq = ++seq;
                if (failed) c->last_failed = true;
             }
 }
 
-static inline bool __read_line(FILE* f, char* b, size_t n)
+static inline bool fgets(FILE* f, char* b)
 {
-   if (!::fgets(b, n, f)) return false;
+   if (!::fgets(b, 512, f)) return false;
    b[strlen(b) - 1] = '\0'; /* remove \n in save_last_order */
    return true;
 }
 
-static inline int mark_last_order(h2_list& suites)
+static inline int sequence_last_order(h2_list& suites)
 {
    int count = 0;
-   char fileline[1024], suitename[1024], casename[1024], status[32], br[32];
+   char filename[512], suitename[512], casename[512], test[512], br[512];
    FILE* f = ::fopen(".last_order", "r");
    if (!f) return 0;
-   while (__read_line(f, fileline, sizeof(fileline)) && __read_line(f, suitename, sizeof(suitename)) && __read_line(f, casename, sizeof(casename)) && __read_line(f, status, sizeof(status)) && __read_line(f, br, sizeof(br))) {
-      __find_mark(suites, fileline + 8, suitename + 8, casename + 8, !strcmp("failed", status + 8));
+   while (fgets(f, filename) && fgets(f, suitename) && fgets(f, casename) && fgets(f, test) && fgets(f, br)) {
+      __find_case(suites, filename + 7, suitename + 7, casename + 7, !strcmp("failed", test + 7));
       count++;
    }
    ::fclose(f);
    return count;
-}
-
-h2_inline void h2_runner::shadow()
-{
-   if (stats.failed == 0)
-      drop_last_order();
-   else if (last == 0)
-      save_last_order(suites);
 }
 
 h2_inline void h2_runner::enumerate()
@@ -5211,19 +5177,24 @@ h2_inline void h2_runner::enumerate()
    if (O.progressing) h2_console::prints("dark gray", "Collecting ");
    h2_list_for_each_entry (s, i, suites, h2_suite, x) {
       if (O.progressing)
-         for (; dots <= i * dps; dots++)
-            h2_console::prints("dark gray", ".");
+         for (; dots <= i * dps; dots++) h2_console::prints("dark gray", ".");
 
       for (auto& setup : global_suite_setups) setup();
       s->setup();
       s->enumerate();
       s->cleanup();
       for (auto& cleanup : global_suite_cleanups) cleanup();
-      h2_filter(s);
-      h2_list_for_each_entry (c, s->cases, h2_case, x)
-         h2_filter(s, c);
    }
    if (O.progressing) h2_console::prints("", "\33[2K\r");
+}
+
+h2_inline void h2_runner::filter()
+{
+   h2_list_for_each_entry (s, i, suites, h2_suite, x) {
+      h2_filter_suite(s);
+      h2_list_for_each_entry (c, s->cases, h2_case, x)
+         h2_filter_case(s, c);
+   }
 }
 
 template <typename T>
@@ -5234,12 +5205,12 @@ struct shuffle_comparison {
    }
    static int name(h2_list* a, h2_list* b)
    {
-      return strcasecmp(h2_list_entry(a, T, x)->describe.name, h2_list_entry(b, T, x)->describe.name);
+      return strcasecmp(h2_list_entry(a, T, x)->name, h2_list_entry(b, T, x)->name);
    }
    static int file(h2_list* a, h2_list* b)
    {
-      int t = strcasecmp(h2_list_entry(a, T, x)->describe.file, h2_list_entry(b, T, x)->describe.file);
-      return t != 0 ? t : h2_list_entry(a, T, x)->describe.line - h2_list_entry(b, T, x)->describe.line;
+      int t = strcasecmp(h2_list_entry(a, T, x)->file, h2_list_entry(b, T, x)->file);
+      return t != 0 ? t : h2_list_entry(a, T, x)->line - h2_list_entry(b, T, x)->line;
    }
    static int cmp(h2_list* a, h2_list* b)
    {
@@ -5252,7 +5223,7 @@ struct shuffle_comparison {
 
 h2_inline void h2_runner::shuffle()
 {
-   if ((last = mark_last_order(suites))) {
+   if ((lasts = sequence_last_order(suites))) {
       suites.sort(shuffle_comparison<h2_suite>::seq);
       h2_list_for_each_entry (s, suites, h2_suite, x)
          s->cases.sort(shuffle_comparison<h2_case>::seq);
@@ -5287,17 +5258,19 @@ h2_inline int h2_runner::main(int argc, const char** argv)
 
    for (auto& setup : global_setups) setup();
    enumerate();
+   filter();
 
    h2_report::I().on_runner_start(this);
    for (rounds = 0; rounds < O.run_rounds; ++rounds) {
       shuffle();
       h2_list_for_each_entry (s, suites, h2_suite, x) {
-         current_suite = (void*)s;
+         current_suite = s;
          h2_report::I().on_suite_start(s);
          for (auto& setup : global_suite_setups) setup();
          s->setup();
          h2_list_for_each_entry (c, s->cases, h2_case, x) {
-            if ((0 < O.break_after_fails && O.break_after_fails <= stats.failed) || (O.only_last_failed && !c->last_failed)) c->ignored = true;
+            if ((0 < O.break_after_fails && O.break_after_fails <= stats.failed) || (O.only_last_failed && !c->last_failed))
+               c->ignored = true;
             if (c->ignored)
                stats.ignored++, s->stats.ignored++;
             else if (c->filtered)
@@ -5305,7 +5278,7 @@ h2_inline int h2_runner::main(int argc, const char** argv)
             else if (c->todo)
                stats.todo++, s->stats.todo++;
 
-            current_case = (void*)c;
+            current_case = c;
             h2_report::I().on_case_start(s, c);
             if (!O.lists && !c->todo && !c->filtered && !c->ignored) {
                for (auto& setup : global_case_setups) setup();
@@ -5321,7 +5294,10 @@ h2_inline int h2_runner::main(int argc, const char** argv)
          h2_report::I().on_suite_endup(s);
          s->clear();
       }
-      shadow();
+      if (stats.failed == 0)
+         drop_last_order();
+      else if (lasts == 0)
+         save_last_order(suites);
    }
    h2_report::I().on_runner_endup(this);
    for (auto& cleanup : global_cleanups) cleanup();
@@ -5332,24 +5308,24 @@ h2_inline int h2_runner::main(int argc, const char** argv)
    return O.quit_exit_code ? stats.failed : 0;
 }
 
-h2_inline void h2_runner::stub(void* srcfp, void* dstfp, const char* srcfn, const char* file)
+h2_inline void h2_runner::stub(void* srcfp, void* dstfp, const char* srcfn, const char* filine)
 {
    if (!srcfp || !dstfp) return;
    if (h2_runner::I().current_case)
-      h2_stubs::add(((h2_case*)h2_runner::I().current_case)->stubs, srcfp, dstfp, srcfn, file);
+      h2_stubs::add(h2_runner::I().current_case->stubs, srcfp, dstfp, srcfn, filine);
    else if (h2_runner::I().current_suite)
-      h2_stubs::add(((h2_suite*)h2_runner::I().current_suite)->stubs, srcfp, dstfp, srcfn, file);
+      h2_stubs::add(h2_runner::I().current_suite->stubs, srcfp, dstfp, srcfn, filine);
    else
-      h2_stubs::add(h2_runner::I().stubs, srcfp, dstfp, srcfn, file);
+      h2_stubs::add(h2_runner::I().stubs, srcfp, dstfp, srcfn, filine);
 }
 
 h2_inline void h2_runner::unstub(void* srcfp)
 {
    if (!srcfp) return;
    if (h2_runner::I().current_case)
-      h2_stubs::clear(((h2_case*)h2_runner::I().current_case)->stubs, srcfp);
+      h2_stubs::clear(h2_runner::I().current_case->stubs, srcfp);
    else if (h2_runner::I().current_suite)
-      h2_stubs::clear(((h2_suite*)h2_runner::I().current_suite)->stubs, srcfp);
+      h2_stubs::clear(h2_runner::I().current_suite->stubs, srcfp);
    else
       h2_stubs::clear(h2_runner::I().stubs, srcfp);
 }
@@ -5357,9 +5333,9 @@ h2_inline void h2_runner::unstub(void* srcfp)
 h2_inline void h2_runner::mock(void* mocker)
 {
    if (h2_runner::I().current_case)
-      h2_mocks::add(((h2_case*)h2_runner::I().current_case)->mocks, mocker);
+      h2_mocks::add(h2_runner::I().current_case->mocks, mocker);
    else if (h2_runner::I().current_suite)
-      h2_mocks::add(((h2_suite*)h2_runner::I().current_suite)->mocks, mocker);
+      h2_mocks::add(h2_runner::I().current_suite->mocks, mocker);
    else
       h2_mocks::add(h2_runner::I().mocks, mocker);
 }
@@ -5368,13 +5344,13 @@ h2_inline void h2_runner::failing(h2_fail* fail)
 {
    if (!fail) return;
    if (O.debugger_trap) h2_debugger::trap();
-   if (h2_runner::I().current_case) ((h2_case*)h2_runner::I().current_case)->failing(fail, O.continue_assert, true);
+   if (h2_runner::I().current_case) h2_runner::I().current_case->failing(fail, O.continue_assert, true);
 }
 
 h2_inline void h2_runner::asserts()
 {
-   if (h2_runner::I().current_case) ((h2_case*)h2_runner::I().current_case)->stats.asserts += 1;
-   if (h2_runner::I().current_suite) ((h2_suite*)h2_runner::I().current_suite)->stats.asserts += 1;
+   if (h2_runner::I().current_case) h2_runner::I().current_case->stats.asserts += 1;
+   if (h2_runner::I().current_suite) h2_runner::I().current_suite->stats.asserts += 1;
    h2_runner::I().stats.asserts += 1;
 }
 // source/assert/h2_assert.cpp
@@ -5938,20 +5914,20 @@ struct h2_report_list : h2_report_impl {
       suite_cases = 0;
       suite_todos = 0;
       if (s->absent()) return;  // CASE
-      for (int i = 0; s->describe.tags[i]; ++i) tags[s->describe.tags[i]] += 0x10000;
+      for (int i = 0; s->tags[i]; ++i) tags[s->tags[i]] += 0x10000;
 
       ++suites;
       if (!s->filtered && O.lists & ListSuite) {
          ++unfiltered_suites;
          h2_line line;
          line.printf("dark gray", "SUITE-%d. ", unfiltered_suites);
-         h2_console::printl(line + color(s->describe.name, "bold,blue") + " " + gray(h2_basefile(s->filine)));
+         h2_console::printl(line + color(s->name, "bold,blue") + " " + gray(h2_basefile(s->filine)));
       }
    }
    void on_case_start(h2_suite* s, h2_case* c) override
    {
       h2_report_impl::on_case_start(s, c);
-      for (int i = 0; c->describe.tags[i]; ++i) tags[c->describe.tags[i]] += 0x1;
+      for (int i = 0; c->tags[i]; ++i) tags[c->tags[i]] += 0x1;
 
       const char* type = nullptr;
       if (c->todo) {
@@ -5974,7 +5950,7 @@ struct h2_report_list : h2_report_impl {
             line.printf("dark gray", " %s/%d-%d. ", type, suite_cases + suite_todos, unfiltered_cases + unfiltered_todos);
          else
             line.printf("dark gray", " %s-%d. ", type, unfiltered_cases + unfiltered_todos);
-         h2_console::printl(line + color(c->describe.name, "cyan") + " " + gray(h2_basefile(c->filine)));
+         h2_console::printl(line + color(c->name, "cyan") + " " + gray(h2_basefile(c->filine)));
       }
    }
 };
@@ -6055,7 +6031,7 @@ struct h2_report_console : h2_report_impl {
       h2_line bar;
       if (percentage && O.progressing) format_percentage(bar);
       if (status && status_style) bar.printf(status_style, "%s", status);
-      if (s && c) bar += format_title(s->describe.name, c->describe.name, backable ? nullptr : h2_basefile(c->filine));
+      if (s && c) bar += format_title(s->name, c->name, backable ? nullptr : h2_basefile(c->filine));
       if (backable) {
          if (h2_console::width() > bar.width())
             bar.padding(h2_console::width() - bar.width());
@@ -6101,7 +6077,7 @@ struct h2_report_console : h2_report_impl {
          if (s->stats.todo) line += gray(comma_if(line.width())) + h2_stringify(s->stats.todo) + " todo";
          if (s->stats.filtered) line += gray(comma_if(line.width())) + h2_stringify(s->stats.filtered) + " filtered";
          if (s->stats.ignored) line += gray(comma_if(line.width())) + h2_stringify(s->stats.ignored) + " ignored";
-         line = gray("suite ") + s->describe.name + gray(1 < n ? " (" : " - ") + line + gray(1 < n ? ")" : "");
+         line = gray("suite ") + s->name + gray(1 < n ? " (" : " - ") + line + gray(1 < n ? ")" : "");
          if (0 < s->cases.count()) line += H2_UNITS(s->cases.count(), " case");
          if (0 < s->stats.asserts) line += gray(", ") + format_units(s->stats.asserts, " assert");
          if (0 < s->stats.footprint) line += gray(", ") + format_volume(s->stats.footprint) + " footprint";
@@ -6161,13 +6137,13 @@ struct h2_report_junit : h2_report_impl {
    {
       h2_report_impl::on_suite_start(s);
       if (!f) return;
-      fprintf(f, "<testsuite errors=\"0\" failures=\"%d\" hostname=\"localhost\" name=\"%s\" skipped=\"%d\" tests=\"%d\" time=\"%d\" timestamp=\"%s\">\n", s->stats.failed, s->describe.name, s->stats.todo + s->stats.filtered, s->cases.count(), 0, "");
+      fprintf(f, "<testsuite errors=\"0\" failures=\"%d\" hostname=\"localhost\" name=\"%s\" skipped=\"%d\" tests=\"%d\" time=\"%d\" timestamp=\"%s\">\n", s->stats.failed, s->name, s->stats.todo + s->stats.filtered, s->cases.count(), 0, "");
    }
    void on_case_endup(h2_suite* s, h2_case* c) override
    {
       h2_report_impl::on_case_endup(s, c);
       if (!f) return;
-      fprintf(f, "<testcase classname=\"%s\" name=\"%s\" status=\"%s\" time=\"%.3f\">\n", s->describe.name, c->describe.name, c->todo ? "TODO" : (c->filtered ? "Filtered" : (c->ignored ? "Ignored" : (c->failed ? "Failed" : "Passed"))), c->stats.timecost / 1000.0);
+      fprintf(f, "<testcase classname=\"%s\" name=\"%s\" status=\"%s\" time=\"%.3f\">\n", s->name, c->name, c->todo ? "TODO" : (c->filtered ? "Filtered" : (c->ignored ? "Ignored" : (c->failed ? "Failed" : "Passed"))), c->stats.timecost / 1000.0);
       if (c->failed) {
          fprintf(f, "<failure message=\"%s:", c->filine);
          if (c->fails) c->fails->foreach([&](h2_fail* fail, size_t si, size_t ci) {fprintf(f, "{newline}"); fail->print(f); });

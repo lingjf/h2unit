@@ -63,10 +63,15 @@ namespace h2 {
 #include "symbol/h2_load.hpp"         //
 #include "symbol/h2_backtrace.hpp"    // line
 #include "symbol/h2_cxa.hpp"          //
+#include "render/h2_failure.hpp"      //
 #include "render/h2_option.hpp"       //
 #include "render/h2_layout.hpp"       //
-#include "render/h2_failure.hpp"      //
-#include "core/h2_runner.hpp"         //
+#include "render/h2_report.hpp"       //
+#include "core/h2_test.hpp"           //
+#include "core/h2_case.hpp"           // failure
+#include "core/h2_suite.hpp"          // case
+#include "core/h2_runner.hpp"         // failure
+#include "core/h2_core.hpp"           // [macro]
 #include "json/h2_json.hpp"           //
 #include "matcher/h2_matches.hpp"     // failure
 #include "matcher/h2_matcher.hpp"     // matches, failure
@@ -97,13 +102,8 @@ namespace h2 {
 #include "stdio/h2_stdio.hpp"         //
 #include "net/h2_dns.hpp"             //
 #include "net/h2_socket.hpp"          // stub, failure, matcher
-#include "core/h2_describe.hpp"       //
-#include "core/h2_case.hpp"           // failure, stub, mock, dns, socket
-#include "core/h2_suite.hpp"          // case, stub, mock
-#include "core/h2_core.hpp"           //
 #include "assert/h2_assert.hpp"       // failure, matcher
 #include "assert/h2_timer.hpp"        // failure
-#include "render/h2_report.hpp"       // runner, suite, case
 }
 
 #ifndef H2_NO_SUITE

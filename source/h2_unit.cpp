@@ -16,7 +16,7 @@
 #include <cxxabi.h> /* abi::__cxa_demangle, abi::__cxa_throw */
 #endif
 
-#if defined __linux || defined __APPLE__  // -MSCV -Cygwin -MinGW
+#if defined __linux || defined __APPLE__  // -MSVC -Cygwin -MinGW
 #include <execinfo.h>                     /* backtrace, backtrace_symbols */
 #endif
 
@@ -150,7 +150,7 @@ namespace h2 {
 #include "stdio/h2_stdio.cpp"
 #include "net/h2_dns.cpp"
 #include "net/h2_socket.cpp"
-#include "core/h2_describe.cpp"
+#include "core/h2_test.cpp"
 #include "core/h2_case.cpp"
 #include "core/h2_suite.cpp"
 #include "core/h2_filter.cpp"

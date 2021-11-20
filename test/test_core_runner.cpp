@@ -2,12 +2,14 @@
 
 struct compare_host {
    h2::h2_list x;
-   h2::h2_describe describe;
+   const char* file;
+   int line;
+   const char* name = "";
    int seq = 0;
 
-   compare_host(const char* describe_) : describe(__FILE__, __LINE__, describe_) {}
-   compare_host(int seq_) : describe(__FILE__, __LINE__, ""), seq(seq_) {}
-   compare_host(const char* file, int line) : describe(file, line, "") {}
+   compare_host(const char* name_) : name(name_) {}
+   compare_host(int seq_) : seq(seq_) {}
+   compare_host(const char* file_, int line_) : file(file_), line(line_) {}
 };
 
 SUITE(shuffle_comparison)

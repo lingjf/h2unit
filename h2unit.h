@@ -969,6 +969,50 @@ struct h2_cxa {
       return name;
    }
 };
+// source/render/h2_failure.hpp
+struct h2_fail : h2_libc {
+   h2_fail *subling_next = nullptr, *child_next = nullptr;
+
+   const char* assert_type = "Inner";  // Inner(Mock, AllOf, &&, ||)
+   const char* assert_op = ",";
+   h2_string e_expression, a_expression;
+   h2_line explain;
+   h2_string user_explain;
+
+   //           expression     expection      represent       value
+   // number     Ge(var)        Ge(5)          5               5
+   // string     We(var)        We("abc")      "abc"           abc
+   // char       We(var)        We('a')        'a'             a
+
+   int seqno = -1;
+   const char* filine;
+
+   h2_fail(const h2_line& explain_, const char* filine_) : explain(explain_), filine(filine_) {}
+   virtual ~h2_fail();
+
+   h2_line locate();
+
+   virtual void print(size_t si = 0, size_t ci = 0) {}
+   virtual void print(FILE* fp) {}
+
+   void foreach(std::function<void(h2_fail*, size_t, size_t)> cb, size_t si = 0, size_t ci = 0);
+   static void append_subling(h2_fail*& fail, h2_fail* nf);
+   static void append_child(h2_fail*& fail, h2_fail* nf);
+
+   static h2_fail* new_normal(const h2_line& explain, const char* filine = nullptr);
+   static h2_fail* new_unexpect(const h2_line& expection = {}, const h2_line& represent = {}, const h2_line& explain = {});
+   static h2_fail* new_strcmp(const h2_string& e_value, const h2_string& a_value, bool caseless, const h2_line& expection, const h2_line& explain = {});
+   static h2_fail* new_strfind(const h2_string& e_value, const h2_string& a_value, const h2_line& expection, const h2_line& explain = {});
+   static h2_fail* new_json(const h2_string& e_value, const h2_string& a_value, const h2_line& expection, bool caseless, const h2_line& explain = {});
+   static h2_fail* new_memcmp(const unsigned char* e_value, const unsigned char* a_value, const size_t length, const size_t width);
+   static h2_fail* new_memory_leak(const void* ptr, const size_t size, const h2_vector<std::pair<size_t, size_t>>& sizes, const h2_backtrace& bt_allocate, const char* where, const char* filine);
+   static h2_fail* new_double_free(const void* ptr, const h2_backtrace& bt_allocate, const h2_backtrace& bt_release, const h2_backtrace& bt_double_free);
+   static h2_fail* new_asymmetric_free(const void* ptr, const char* who_allocate, const char* who_release, const h2_backtrace& bt_allocate, const h2_backtrace& bt_release);
+   static h2_fail* new_overflow(const void* ptr, const size_t size, const void* violate_ptr, const char* action, const h2_vector<unsigned char>& spot, const h2_backtrace& bt_allocate, const h2_backtrace& bt_trample);
+   static h2_fail* new_use_after_free(const void* ptr, const void* violate_ptr, const char* action, const h2_backtrace& bt_allocate, const h2_backtrace& bt_release, const h2_backtrace& bt_use);
+   static h2_fail* new_exception(const char* explain, const char* type, const h2_backtrace& bt_throw);
+   static h2_fail* new_symbol(const h2_string& symbol, const h2_vector<h2_string>& candidates, const h2_line& explain = {});
+};
 // source/render/h2_option.hpp
 
 static constexpr int VerboseQuiet = 0;
@@ -1038,51 +1082,25 @@ struct h2_layout {
    static h2_lines unified(const h2_line& up_line, const h2_line& down_line, const char* up_title, const char* down_title, size_t width);
    static h2_lines seperate(const h2_line& up_line, const h2_line& down_line, const char* up_title, const char* down_title, size_t width);
 };
-// source/render/h2_failure.hpp
-struct h2_fail : h2_libc {
-   h2_fail *subling_next = nullptr, *child_next = nullptr;
+// source/render/h2_report.hpp
+struct h2_runner;
+struct h2_suite;
+struct h2_case;
 
-   const char* assert_type = "Inner";  // Inner(Mock, AllOf, &&, ||)
-   const char* assert_op = ",";
-   h2_string e_expression, a_expression;
-   h2_line explain;
-   h2_string user_explain;
+struct h2_report {
+   h2_singleton(h2_report);
+   static void initialize();
 
-   //           expression     expection      represent       value
-   // number     Ge(var)        Ge(5)          5               5
-   // string     We(var)        We("abc")      "abc"           abc
-   // char       We(var)        We('a')        'a'             a
-
-   int seqno = -1;
-   const char* filine;
-
-   h2_fail(const h2_line& explain_, const char* filine_) : explain(explain_), filine(filine_) {}
-   virtual ~h2_fail();
-
-   h2_line locate();
-
-   virtual void print(size_t si = 0, size_t ci = 0) {}
-   virtual void print(FILE* fp) {}
-
-   void foreach(std::function<void(h2_fail*, size_t, size_t)> cb, size_t si = 0, size_t ci = 0);
-   static void append_subling(h2_fail*& fail, h2_fail* nf);
-   static void append_child(h2_fail*& fail, h2_fail* nf);
-
-   static h2_fail* new_normal(const h2_line& explain, const char* filine = nullptr);
-   static h2_fail* new_unexpect(const h2_line& expection = {}, const h2_line& represent = {}, const h2_line& explain = {});
-   static h2_fail* new_strcmp(const h2_string& e_value, const h2_string& a_value, bool caseless, const h2_line& expection, const h2_line& explain = {});
-   static h2_fail* new_strfind(const h2_string& e_value, const h2_string& a_value, const h2_line& expection, const h2_line& explain = {});
-   static h2_fail* new_json(const h2_string& e_value, const h2_string& a_value, const h2_line& expection, bool caseless, const h2_line& explain = {});
-   static h2_fail* new_memcmp(const unsigned char* e_value, const unsigned char* a_value, const size_t length, const size_t width);
-   static h2_fail* new_memory_leak(const void* ptr, const size_t size, const h2_vector<std::pair<size_t, size_t>>& sizes, const h2_backtrace& bt_allocate, const char* where, const char* filine);
-   static h2_fail* new_double_free(const void* ptr, const h2_backtrace& bt_allocate, const h2_backtrace& bt_release, const h2_backtrace& bt_double_free);
-   static h2_fail* new_asymmetric_free(const void* ptr, const char* who_allocate, const char* who_release, const h2_backtrace& bt_allocate, const h2_backtrace& bt_release);
-   static h2_fail* new_overflow(const void* ptr, const size_t size, const void* violate_ptr, const char* action, const h2_vector<unsigned char>& spot, const h2_backtrace& bt_allocate, const h2_backtrace& bt_trample);
-   static h2_fail* new_use_after_free(const void* ptr, const void* violate_ptr, const char* action, const h2_backtrace& bt_allocate, const h2_backtrace& bt_release, const h2_backtrace& bt_use);
-   static h2_fail* new_exception(const char* explain, const char* type, const h2_backtrace& bt_throw);
-   static h2_fail* new_symbol(const h2_string& symbol, const h2_vector<h2_string>& candidates, const h2_line& explain = {});
+   bool backable = false;
+   h2_list reports;
+   void on_runner_start(h2_runner* r);
+   void on_runner_endup(h2_runner* r);
+   void on_suite_start(h2_suite* s);
+   void on_suite_endup(h2_suite* s);
+   void on_case_start(h2_suite* s, h2_case* c);
+   void on_case_endup(h2_suite* s, h2_case* c);
 };
-// source/core/h2_runner.hpp
+// source/core/h2_test.hpp
 struct h2_stats {
    int passed = 0, failed = 0, todo = 0, filtered = 0, ignored = 0;
    int asserts = 0;
@@ -1091,13 +1109,86 @@ struct h2_stats {
    void clear() { passed = 0, failed = 0, todo = 0, filtered = 0, ignored = 0, asserts = 0, footprint = 0, timecost = 0; }
 };
 
+struct h2_test {
+   h2_list x;
+
+   const char* filine;
+   const char* file;  // base file name
+   int line;
+
+   const char* describe;
+   const char* name = "";
+   const char* tags[64]{nullptr};
+   char name_buf[512], tags_buf[512];
+
+   int seq = 0;
+   bool filtered = false;
+   h2_stats stats;
+   h2_list stubs;
+   h2_list mocks;
+   h2_list dnses;
+
+   h2_test(const char* filine, const char* file, int line, const char* describe);
+   bool tagged(const char* tag_pattern) const;
+};
+// source/core/h2_case.hpp
+struct h2_case : h2_test {
+   bool todo = false;
+   bool ignored = false, failed = false, last_failed = false;
+   jmp_buf fail_hole;
+   h2_fail* fails = nullptr;
+
+   h2_case(const char* filine_, const char* file_, int line_, const char* describe_, int todo_) : h2_test(filine_, file_, line_, describe_), todo(todo_) {}
+   void clear();
+
+   void prev_setup();
+   void post_setup() {}
+   void prev_cleanup() {}
+   void post_cleanup();
+
+   void failing(h2_fail* fail, bool defer, bool append);
+
+   struct cleaner : h2_once {
+      h2_case* thus;
+      cleaner(h2_case* c) : thus(c) { thus->post_setup(); }
+      ~cleaner() { thus->prev_cleanup(); }
+   };
+};
+// source/core/h2_suite.hpp
+struct h2_suite : h2_test {
+   void (*test_code)(h2_suite*, h2_case*);
+   jmp_buf cleanup_hole;
+   h2_list cases;
+
+   h2_suite(const char* filine, const char* file, int line, const char* describe, void (*)(h2_suite*, h2_case*));
+   void clear();
+   bool absent() const { return !describe; }  // nullptr describe means no SUITE wrapper (CASE/TODO ...)
+
+   void enumerate();
+   void test(h2_case* c);
+
+   void setup();
+   void cleanup();
+
+   struct registor {
+      registor(h2_suite* s, h2_case* c);
+   };
+
+   struct cleaner : h2_once {
+      h2_suite* thus;
+      cleaner(h2_suite* s) : thus(s) {}
+      ~cleaner();
+   };
+};
+// source/core/h2_runner.hpp
+
 struct h2_runner {
    h2_singleton(h2_runner);
 
-   void* current_suite = nullptr;
-   void* current_case = nullptr;
+   h2_suite* current_suite = nullptr;
+   h2_case* current_case = nullptr;
    int rounds = 0;
-   int last = 0;
+   int lasts = 0;
    h2_list suites;
    h2_list stubs;
    h2_list mocks;
@@ -1106,9 +1197,9 @@ struct h2_runner {
    std::vector<void (*)()> global_suite_setups, global_suite_cleanups;
    std::vector<void (*)()> global_case_setups, global_case_cleanups;
 
-   void shuffle();
-   void shadow();
    void enumerate();
+   void filter();
+   void shuffle();
    int main(int argc, const char** argv);
 
    static void stub(void* srcfp, void* dstfp, const char* srcfn, const char* filine);
@@ -1135,6 +1226,182 @@ struct h2_runner {
 
 #define H2GlobalCaseSetup() __H2GlobalCallback(global_case_setup, H2PP_UNIQUE())
 #define H2GlobalCaseCleanup() __H2GlobalCallback(global_case_cleanup, H2PP_UNIQUE())
+// source/core/h2_core.hpp
+
+#define H2SUITE(...) __H2SUITE(#__VA_ARGS__, H2PP_UNIQUE(suite_test_C))
+#define __H2SUITE(suite_describe, suite_test)                                                               \
+   static void suite_test(h2::h2_suite*, h2::h2_case*);                                                     \
+   static h2::h2_suite H2PP_UNIQUE(si)(H2_FILINE, __FILE__, __LINE__, h2::ss(suite_describe), &suite_test); \
+   static void suite_test(h2::h2_suite* suite_1_5_2_8_0_1_1_9_8, h2::h2_case* case_1_1_0_2_6_0_0_2_4)
+
+#define H2Setup() if (case_1_1_0_2_6_0_0_2_4)
+#define H2Cleanup() if (::setjmp(suite_1_5_2_8_0_1_1_9_8->cleanup_hole))
+
+#define H2Todo(...) __H2Case(#__VA_ARGS__, H2PP_UNIQUE(ci), H2PP_UNIQUE(sc), H2PP_UNIQUE(cc), 1)
+#define H2Case(...) __H2Case(#__VA_ARGS__, H2PP_UNIQUE(ci), H2PP_UNIQUE(sc), H2PP_UNIQUE(cc), 0)
+#define __H2Case(case_describe, case_instance, suite_cleaner, case_cleaner, todo)                                         \
+   static h2::h2_case case_instance(H2_FILINE, __FILE__, __LINE__, h2::ss(case_describe), todo);                          \
+   static h2::h2_suite::registor H2PP_UNIQUE(sr)(suite_1_5_2_8_0_1_1_9_8, &case_instance);                                \
+   if (&case_instance == case_1_1_0_2_6_0_0_2_4)                                                                          \
+      for (h2::h2_suite::cleaner suite_cleaner(suite_1_5_2_8_0_1_1_9_8); suite_cleaner; case_1_1_0_2_6_0_0_2_4 = nullptr) \
+         for (h2::h2_case::cleaner case_cleaner(&case_instance); case_cleaner;)                                           \
+            if (!::setjmp(case_instance.fail_hole))
+
+#define H2TODO(...) __H2CASE(#__VA_ARGS__, H2PP_UNIQUE(case_test_C), H2PP_UNIQUE(suite_test_C), 1)
+#define H2CASE(...) __H2CASE(#__VA_ARGS__, H2PP_UNIQUE(case_test_C), H2PP_UNIQUE(suite_test_C), 0)
+#define __H2CASE(case_describe, case_test, suite_test, todo)                                          \
+   static void case_test();                                                                           \
+   static void suite_test(h2::h2_suite* suite_1_5_2_8_0_1_1_9_8, h2::h2_case* case_1_1_0_2_6_0_0_2_4) \
+   {                                                                                                  \
+      static h2::h2_case case_instance(H2_FILINE, __FILE__, __LINE__, h2::ss(case_describe), todo);   \
+      static h2::h2_suite::registor suite_registor(suite_1_5_2_8_0_1_1_9_8, &case_instance);          \
+      if (&case_instance == case_1_1_0_2_6_0_0_2_4)                                                   \
+         for (h2::h2_case::cleaner case_cleaner(&case_instance); case_cleaner;)                       \
+            if (!::setjmp(case_instance.fail_hole))                                                   \
+               case_test();                                                                           \
+   }                                                                                                  \
+   static h2::h2_suite H2PP_UNIQUE(si)(H2_FILINE, __FILE__, __LINE__, nullptr, &suite_test);          \
+   static void case_test()
+
+/* clang-format off */
+// H2_An((a, b, c)) ==> a
+#define H2_An(...) H2PP_EVAL(_H2_An(__VA_ARGS__))
+#define _H2_An(...) H2PP_CAT2(_H2_An1_, H2PP_IS_EMPTY(__VA_ARGS__)) ((__VA_ARGS__))
+#define _H2_An1_1(...) 0
+#define _H2_An1_0(MSVC_Workaround) _H2_An1 MSVC_Workaround
+#define _H2_An1(a, ...) H2PP_CAT2(_H2_An2_, H2PP_IS_BEGIN_PARENTHESIS(a)) (a)
+#define _H2_An2_0(a) a
+#define _H2_An2_1(a) H2PP_DEFER(_H2_An2)() a
+#define _H2_An2() _H2_An
+
+#define H2_XAn(...) H2_An(H2PP_HEAD(__VA_ARGS__))
+#define H2_YAn(...) H2_An(H2PP_LAST(__VA_ARGS__))
+/* clang-format on */
+
+#define H2CASES(case_prefix, ...) __H2CASES1(H2PP_UNIQUE(case_test_C), case_prefix, __VA_ARGS__)
+#define __H2CASES1(case_test, case_prefix, ...)                                                           \
+   template <typename T>                                                                                  \
+   static void case_test(T x);                                                                            \
+   H2PP_FOREACH(, __H2CASES_Callback, (case_test, case_prefix), H2PP_REMOVE_PARENTHESES_IF(__VA_ARGS__)); \
+   template <typename T>                                                                                  \
+   static void case_test(T x)
+#define __H2CASES2(case_test, case_prefix, i, x) \
+   H2CASE(case_prefix i. x) { case_test(x); }
+#define __H2CASES_Callback(Pack, i, x) H2PP_PROXY(__H2CASES2, (H2PP_REMOVE_PARENTHESES(Pack), i, x))
+
+#define H2CASESS(case_prefix, ...) __H2CASESS1(H2PP_UNIQUE(case_test_C), case_prefix, __VA_ARGS__)
+#define __H2CASESS1(case_test, case_prefix, ...)                                \
+   template <typename Tx, typename Ty>                                          \
+   static void case_test(Tx x, Ty y);                                           \
+   H2PP_FULLMESH(, __H2CASESS_Callback, (case_test, case_prefix), __VA_ARGS__); \
+   template <typename Tx, typename Ty>                                          \
+   static void case_test(Tx x, Ty y)
+#define __H2CASESS2(case_test, case_prefix, i, j, x, y) \
+   H2CASE(case_prefix i.j. x, y) { case_test(x, y); }
+#define __H2CASESS_Callback(Pack, i, j, x, y) H2PP_PROXY(__H2CASESS2, (H2PP_REMOVE_PARENTHESES(Pack), i, j, x, y))
+
+#define H2Cases(case_prefix, ...) __H2Cases1(H2PP_UNIQUE(x), H2PP_UNIQUE(do), H2PP_UNIQUE(sc), H2PP_UNIQUE(cc), case_prefix, __VA_ARGS__)
+#define __H2Cases1(Qx, door_open, suite_cleaner, case_cleaner, case_prefix, ...)                              \
+   auto Qx = H2_An(__VA_ARGS__);                                                                              \
+   bool door_open = false;                                                                                    \
+   H2PP_FOREACH(, __H2Cases_Callback, (Qx, door_open, case_prefix), H2PP_REMOVE_PARENTHESES_IF(__VA_ARGS__)); \
+   if (case_1_1_0_2_6_0_0_2_4 && door_open)                                                                   \
+      for (auto x = Qx; case_1_1_0_2_6_0_0_2_4; case_1_1_0_2_6_0_0_2_4 = nullptr)                             \
+         for (h2::h2_suite::cleaner suite_cleaner(suite_1_5_2_8_0_1_1_9_8); suite_cleaner;)                   \
+            for (h2::h2_case::cleaner case_cleaner(case_1_1_0_2_6_0_0_2_4); case_cleaner;)                    \
+               if (!::setjmp(case_1_1_0_2_6_0_0_2_4->fail_hole))
+#define __H2Cases2(case_instance, Qx, door_open, case_prefix, i, x)                               \
+   static h2::h2_case case_instance(H2_FILINE, __FILE__, __LINE__, H2PP_STR(case_prefix i. x), 0); \
+   static h2::h2_suite::registor H2PP_UNIQUE(sr)(suite_1_5_2_8_0_1_1_9_8, &case_instance);        \
+   if (&case_instance == case_1_1_0_2_6_0_0_2_4) Qx = x, door_open = true;
+#define __H2Cases_Callback(Pack, i, x) H2PP_PROXY(__H2Cases2, (H2PP_UNIQUE(ci), H2PP_REMOVE_PARENTHESES(Pack), i, x))
+
+#define H2Casess(case_prefix, ...) __H2Casess1(H2PP_UNIQUE(x), H2PP_UNIQUE(y), H2PP_UNIQUE(do), H2PP_UNIQUE(sc), H2PP_UNIQUE(cc), case_prefix, __VA_ARGS__)
+#define __H2Casess1(Qx, Qy, door_open, suite_cleaner, case_cleaner, case_prefix, ...)          \
+   auto Qx = H2_XAn(__VA_ARGS__);                                                              \
+   auto Qy = H2_YAn(__VA_ARGS__);                                                              \
+   bool door_open = false;                                                                     \
+   H2PP_FULLMESH(, __H2Casess_Callback, (Qx, Qy, door_open, case_prefix), __VA_ARGS__);        \
+   if (case_1_1_0_2_6_0_0_2_4 && door_open)                                                    \
+      for (auto x = Qx; case_1_1_0_2_6_0_0_2_4; case_1_1_0_2_6_0_0_2_4 = nullptr)              \
+         for (auto y = Qy; case_1_1_0_2_6_0_0_2_4; case_1_1_0_2_6_0_0_2_4 = nullptr)           \
+            for (h2::h2_suite::cleaner suite_cleaner(suite_1_5_2_8_0_1_1_9_8); suite_cleaner;) \
+               for (h2::h2_case::cleaner case_cleaner(case_1_1_0_2_6_0_0_2_4); case_cleaner;)  \
+                  if (!::setjmp(case_1_1_0_2_6_0_0_2_4->fail_hole))
+#define __H2Casess2(case_instance, Qx, Qy, door_open, case_prefix, i, j, x, y)                         \
+   static h2::h2_case case_instance(H2_FILINE, __FILE__, __LINE__, H2PP_STR(case_prefix i.j. x, y), 0); \
+   static h2::h2_suite::registor H2PP_UNIQUE(sr)(suite_1_5_2_8_0_1_1_9_8, &case_instance);             \
+   if (&case_instance == case_1_1_0_2_6_0_0_2_4) Qx = x, Qy = y, door_open = true;
+#define __H2Casess_Callback(Pack, i, j, x, y) H2PP_PROXY(__H2Casess2, (H2PP_UNIQUE(ci), H2PP_REMOVE_PARENTHESES(Pack), i, j, x, y))
+
+// can't declare/define template class/function in function scope
+#define H2Cases_t(...) static_assert(false, "Cases_t not implemented, use H2CASES_T outside of SUITE{}");
+#define H2Casess_t(...) static_assert(false, "Casess_t not implemented, use H2CASESS_T outside of SUITE{}");
+
+#define H2CASES_T(case_prefix, ...) __H2CASES_T1(H2PP_UNIQUE(case_test_C), case_prefix, __VA_ARGS__)
+#define __H2CASES_T1(case_test, case_prefix, ...)                                                           \
+   template <typename x>                                                                                    \
+   static void case_test();                                                                                 \
+   H2PP_FOREACH(, __H2CASES_T_Callback, (case_test, case_prefix), H2PP_REMOVE_PARENTHESES_IF(__VA_ARGS__)); \
+   template <typename x>                                                                                    \
+   static void case_test()
+#define __H2CASES_T2(case_test, case_prefix, i, x) \
+   H2CASE(case_prefix i. x) { case_test<x>(); }
+#define __H2CASES_T_Callback(Pack, i, x) H2PP_PROXY(__H2CASES_T2, (H2PP_REMOVE_PARENTHESES(Pack), i, x))
+
+#define H2CASESS_T(case_prefix, ...) __H2CASESS_T1(H2PP_UNIQUE(case_test_C), case_prefix, __VA_ARGS__)
+#define __H2CASESS_T1(case_test, case_prefix, ...)                                \
+   template <typename x, typename y>                                              \
+   static void case_test();                                                       \
+   H2PP_FULLMESH(, __H2CASESS_T_Callback, (case_test, case_prefix), __VA_ARGS__); \
+   template <typename x, typename y>                                              \
+   static void case_test()
+#define __H2CASESS_T2(case_test, case_prefix, i, j, x, y) \
+   H2CASE(case_prefix i.j. x, y) { case_test<x, y>(); }
+#define __H2CASESS_T_Callback(Pack, i, j, x, y) H2PP_PROXY(__H2CASESS_T2, (H2PP_REMOVE_PARENTHESES(Pack), i, j, x, y))
+
+#define H2Todos(case_prefix, ...)     \
+   H2Todo(case_prefix __VA_ARGS__) {} \
+   if (0)                             \
+      for (auto x = H2_An(__VA_ARGS__); false;)
+
+#define H2Todoss(case_prefix, ...)               \
+   H2Todo(case_prefix, __VA_ARGS__) {}           \
+   if (0)                                        \
+      for (auto x = H2_XAn(__VA_ARGS__); false;) \
+         for (auto y = H2_YAn(__VA_ARGS__); false;)
+
+#define H2TODOS(case_prefix, ...) __H2TODOS(H2PP_UNIQUE(case_test_C), case_prefix, __VA_ARGS__)
+#define __H2TODOS(case_test, case_prefix, ...) \
+   template <typename T>                       \
+   static void case_test(T x);                 \
+   H2TODO(case_prefix, __VA_ARGS__) {}         \
+   template <typename T>                       \
+   static void case_test(T x)
+
+#define H2TODOSS(case_prefix, ...) __H2TODOSS(H2PP_UNIQUE(case_test_C), case_prefix, __VA_ARGS__)
+#define __H2TODOSS(case_test, case_prefix, ...) \
+   template <typename Tx, typename Ty>          \
+   static void case_test(Tx x, Ty y);           \
+   H2TODO(case_prefix, __VA_ARGS__) {}          \
+   template <typename Tx, typename Ty>          \
+   static void case_test(Tx x, Ty y)
+
+#define H2TODOS_T(case_prefix, ...) __H2TODOS_T(H2PP_UNIQUE(case_test_C), case_prefix, __VA_ARGS__)
+#define __H2TODOS_T(case_test, case_prefix, ...) \
+   template <typename x>                         \
+   static void case_test();                      \
+   H2TODO(case_prefix, __VA_ARGS__) {}           \
+   template <typename x>                         \
+   static void case_test()
+
+#define H2TODOSS_T(case_prefix, ...) __H2TODOSS_T(H2PP_UNIQUE(case_test_C), case_prefix, __VA_ARGS__)
+#define __H2TODOSS_T(case_test, case_prefix, ...) \
+   template <typename x, typename y>              \
+   static void case_test();                       \
+   H2TODO(case_prefix, __VA_ARGS__) {}            \
+   template <typename x, typename y>              \
+   static void case_test()
 // source/json/h2_json.hpp
 struct h2_json {
    static h2_lines dump(const h2_string& json_string);
@@ -3046,9 +3313,8 @@ struct h2_dns {
 };
 
 struct h2_dnses {
-   h2_list dnses;
-   void add(h2_list& name);
-   void clear();
+   static void add(h2_list& dnses, h2_list& name);
+   static void clear(h2_list& dnses);
 };
 
 #define H2DNS(...) h2::h2_dns::setaddrinfo(H2PP_NARG(__VA_ARGS__), __VA_ARGS__)
@@ -3114,260 +3380,6 @@ struct h2_sock : h2_once {
 
 #define Ptx(...) h2::h2_sock::check(H2_FILINE, h2::ss(#__VA_ARGS__), __VA_ARGS__)
 #define Pij(Packet_, Size_, ...) h2::h2_sock::inject(Packet_, Size_, h2::ss(#__VA_ARGS__))
-// source/core/h2_describe.hpp
-
-struct h2_describe {
-   const char* file;
-   int line;
-   const char* desc;
-   const char* name = "";
-   const char* tags[64]{nullptr};
-   char nbuf[512], tbuf[512];
-
-   h2_describe(const char* file, int line, const char* describe);
-   void split();
-   bool has_tag(const char* pattern);
-};
-// source/core/h2_case.hpp
-struct h2_case {
-   h2_list x;
-   const char* filine;
-   h2_describe describe;
-   bool todo = false;
-   bool filtered = false, ignored = false, failed = false, last_failed = false;
-   bool scheduled = false;
-   int seq = 0;
-   jmp_buf ctx;
-   h2_list stubs;
-   h2_list mocks;
-   h2_dnses dnses;
-   h2_stats stats;
-   h2_fail* fails = nullptr;
-
-   h2_case(const char* filine_, const char* file_, int line_, const char* describe_, int todo_) : filine(filine_), describe(file_, line_, describe_), todo(todo_) {}
-   void clear();
-
-   void prev_setup();
-   void post_setup() {}
-   void prev_cleanup() { scheduled = false; }
-   void post_cleanup();
-
-   void failing(h2_fail* fail, bool defer, bool append);
-
-   struct cleaner : h2_once {
-      h2_case* thus;
-      cleaner(h2_case* c) : thus(c) { thus->post_setup(); }
-      ~cleaner() { thus->prev_cleanup(); }
-   };
-};
-// source/core/h2_suite.hpp
-struct h2_suite {
-   h2_list x;
-   const char* filine;
-   h2_describe describe;
-   void (*test_code)(h2_suite*, h2_case*);
-   bool filtered = false;
-   int seq = 0;
-   jmp_buf ctx;
-   h2_list cases;
-   h2_list stubs;
-   h2_list mocks;
-   h2_stats stats;
-
-   h2_suite(const char* filine, const char* file, int line, const char* describe, void (*)(h2_suite*, h2_case*));
-   void clear();
-   bool absent() const { return !describe.desc; }  // nullptr describe means no SUITE wrapper (CASE/TODO ...)
-
-   void enumerate();
-   void test(h2_case* c);
-
-   void setup();
-   void cleanup();
-
-   struct registor {
-      registor(h2_suite* s, h2_case* c);
-   };
-
-   struct cleaner : h2_once {
-      h2_suite* thus;
-      cleaner(h2_suite* s) : thus(s) {}
-      ~cleaner();
-   };
-};
-// source/core/h2_core.hpp
-
-#define H2SUITE(...) __H2SUITE(#__VA_ARGS__, H2PP_UNIQUE(suite_test_C))
-#define __H2SUITE(suite_describe, suite_test)                                                               \
-   static void suite_test(h2::h2_suite*, h2::h2_case*);                                                     \
-   static h2::h2_suite H2PP_UNIQUE(si)(H2_FILINE, __FILE__, __LINE__, h2::ss(suite_describe), &suite_test); \
-   static void suite_test(h2::h2_suite* suite_1_5_2_8_0_1_1_9_8, h2::h2_case* case_1_1_0_2_6_0_0_2_4)
-
-#define H2Setup() if (case_1_1_0_2_6_0_0_2_4)
-#define H2Cleanup() if (::setjmp(suite_1_5_2_8_0_1_1_9_8->ctx))
-
-#define H2Todo(...) __H2Case(#__VA_ARGS__, H2PP_UNIQUE(ci), H2PP_UNIQUE(sc), H2PP_UNIQUE(cc), 1)
-#define H2Case(...) __H2Case(#__VA_ARGS__, H2PP_UNIQUE(ci), H2PP_UNIQUE(sc), H2PP_UNIQUE(cc), 0)
-#define __H2Case(case_describe, case_instance, suite_cleaner, case_cleaner, todo)                                         \
-   static h2::h2_case case_instance(H2_FILINE, __FILE__, __LINE__, h2::ss(case_describe), todo);                          \
-   static h2::h2_suite::registor H2PP_UNIQUE(sr)(suite_1_5_2_8_0_1_1_9_8, &case_instance);                                \
-   if (&case_instance == case_1_1_0_2_6_0_0_2_4)                                                                          \
-      for (h2::h2_suite::cleaner suite_cleaner(suite_1_5_2_8_0_1_1_9_8); suite_cleaner; case_1_1_0_2_6_0_0_2_4 = nullptr) \
-         for (h2::h2_case::cleaner case_cleaner(&case_instance); case_cleaner;)                                           \
-            if (!::setjmp(case_instance.ctx))
-
-#define H2TODO(...) __H2CASE(#__VA_ARGS__, H2PP_UNIQUE(case_test_C), H2PP_UNIQUE(suite_test_C), 1)
-#define H2CASE(...) __H2CASE(#__VA_ARGS__, H2PP_UNIQUE(case_test_C), H2PP_UNIQUE(suite_test_C), 0)
-#define __H2CASE(case_describe, case_test, suite_test, todo)                                          \
-   static void case_test();                                                                           \
-   static void suite_test(h2::h2_suite* suite_1_5_2_8_0_1_1_9_8, h2::h2_case* case_1_1_0_2_6_0_0_2_4) \
-   {                                                                                                  \
-      static h2::h2_case case_instance(H2_FILINE, __FILE__, __LINE__, h2::ss(case_describe), todo);   \
-      static h2::h2_suite::registor suite_registor(suite_1_5_2_8_0_1_1_9_8, &case_instance);          \
-      if (&case_instance == case_1_1_0_2_6_0_0_2_4)                                                   \
-         for (h2::h2_case::cleaner case_cleaner(&case_instance); case_cleaner;)                       \
-            if (!::setjmp(case_instance.ctx))                                                         \
-               case_test();                                                                           \
-   }                                                                                                  \
-   static h2::h2_suite H2PP_UNIQUE(si)(H2_FILINE, __FILE__, __LINE__, nullptr, &suite_test);          \
-   static void case_test()
-
-/* clang-format off */
-// H2_An((a, b, c)) ==> a
-#define H2_An(...) H2PP_EVAL(_H2_An(__VA_ARGS__))
-#define _H2_An(...) H2PP_CAT2(_H2_An1_, H2PP_IS_EMPTY(__VA_ARGS__)) ((__VA_ARGS__))
-#define _H2_An1_1(...) 0
-#define _H2_An1_0(MSVC_Workaround) _H2_An1 MSVC_Workaround
-#define _H2_An1(a, ...) H2PP_CAT2(_H2_An2_, H2PP_IS_BEGIN_PARENTHESIS(a)) (a)
-#define _H2_An2_0(a) a
-#define _H2_An2_1(a) H2PP_DEFER(_H2_An2)() a
-#define _H2_An2() _H2_An
-
-#define H2_XAn(...) H2_An(H2PP_HEAD(__VA_ARGS__))
-#define H2_YAn(...) H2_An(H2PP_LAST(__VA_ARGS__))
-/* clang-format on */
-
-#define H2CASES(case_prefix, ...) __H2CASES1(H2PP_UNIQUE(case_test_C), case_prefix, __VA_ARGS__)
-#define __H2CASES1(case_test, case_prefix, ...)                                                           \
-   template <typename T>                                                                                  \
-   static void case_test(T x);                                                                            \
-   H2PP_FOREACH(, __H2CASES_Callback, (case_test, case_prefix), H2PP_REMOVE_PARENTHESES_IF(__VA_ARGS__)); \
-   template <typename T>                                                                                  \
-   static void case_test(T x)
-#define __H2CASES2(case_test, case_prefix, i, x) \
-   H2CASE(case_prefix i. x) { case_test(x); }
-#define __H2CASES_Callback(Pack, i, x) H2PP_PROXY(__H2CASES2, (H2PP_REMOVE_PARENTHESES(Pack), i, x))
-
-#define H2CASESS(case_prefix, ...) __H2CASESS1(H2PP_UNIQUE(case_test_C), case_prefix, __VA_ARGS__)
-#define __H2CASESS1(case_test, case_prefix, ...)                                \
-   template <typename Tx, typename Ty>                                          \
-   static void case_test(Tx x, Ty y);                                           \
-   H2PP_FULLMESH(, __H2CASESS_Callback, (case_test, case_prefix), __VA_ARGS__); \
-   template <typename Tx, typename Ty>                                          \
-   static void case_test(Tx x, Ty y)
-#define __H2CASESS2(case_test, case_prefix, i, j, x, y) \
-   H2CASE(case_prefix i.j. x, y) { case_test(x, y); }
-#define __H2CASESS_Callback(Pack, i, j, x, y) H2PP_PROXY(__H2CASESS2, (H2PP_REMOVE_PARENTHESES(Pack), i, j, x, y))
-
-#define H2Cases(case_prefix, ...) __H2Cases1(H2PP_UNIQUE(x), H2PP_UNIQUE(sc), H2PP_UNIQUE(cc), case_prefix, __VA_ARGS__)
-#define __H2Cases1(Qx, suite_cleaner, case_cleaner, case_prefix, ...)                              \
-   auto Qx = H2_An(__VA_ARGS__);                                                                   \
-   H2PP_FOREACH(, __H2Cases_Callback, (Qx, case_prefix), H2PP_REMOVE_PARENTHESES_IF(__VA_ARGS__)); \
-   if (case_1_1_0_2_6_0_0_2_4 && case_1_1_0_2_6_0_0_2_4->scheduled)                                \
-      for (auto x = Qx; case_1_1_0_2_6_0_0_2_4; case_1_1_0_2_6_0_0_2_4 = nullptr)                  \
-         for (h2::h2_suite::cleaner suite_cleaner(suite_1_5_2_8_0_1_1_9_8); suite_cleaner;)        \
-            for (h2::h2_case::cleaner case_cleaner(case_1_1_0_2_6_0_0_2_4); case_cleaner;)         \
-               if (!::setjmp(case_1_1_0_2_6_0_0_2_4->ctx))
-#define __H2Cases2(case_instance, Qx, case_prefix, i, x)                                          \
-   static h2::h2_case case_instance(H2_FILINE, __FILE__, __LINE__, H2PP_STR(case_prefix i. x), 0); \
-   static h2::h2_suite::registor H2PP_UNIQUE(sr)(suite_1_5_2_8_0_1_1_9_8, &case_instance);        \
-   if (&case_instance == case_1_1_0_2_6_0_0_2_4) Qx = x, case_1_1_0_2_6_0_0_2_4->scheduled = true;
-#define __H2Cases_Callback(Pack, i, x) H2PP_PROXY(__H2Cases2, (H2PP_UNIQUE(ci), H2PP_REMOVE_PARENTHESES(Pack), i, x))
-
-#define H2Casess(case_prefix, ...) __H2Casess1(H2PP_UNIQUE(x), H2PP_UNIQUE(y), H2PP_UNIQUE(sc), H2PP_UNIQUE(cc), case_prefix, __VA_ARGS__)
-#define __H2Casess1(Qx, Qy, suite_cleaner, case_cleaner, case_prefix, ...)                     \
-   auto Qx = H2_XAn(__VA_ARGS__);                                                              \
-   auto Qy = H2_YAn(__VA_ARGS__);                                                              \
-   H2PP_FULLMESH(, __H2Casess_Callback, (Qx, Qy, case_prefix), __VA_ARGS__);                   \
-   if (case_1_1_0_2_6_0_0_2_4 && case_1_1_0_2_6_0_0_2_4->scheduled)                            \
-      for (auto x = Qx; case_1_1_0_2_6_0_0_2_4; case_1_1_0_2_6_0_0_2_4 = nullptr)              \
-         for (auto y = Qy; case_1_1_0_2_6_0_0_2_4; case_1_1_0_2_6_0_0_2_4 = nullptr)           \
-            for (h2::h2_suite::cleaner suite_cleaner(suite_1_5_2_8_0_1_1_9_8); suite_cleaner;) \
-               for (h2::h2_case::cleaner case_cleaner(case_1_1_0_2_6_0_0_2_4); case_cleaner;)  \
-                  if (!::setjmp(case_1_1_0_2_6_0_0_2_4->ctx))
-#define __H2Casess2(case_instance, Qx, Qy, case_prefix, i, j, x, y)                                    \
-   static h2::h2_case case_instance(H2_FILINE, __FILE__, __LINE__, H2PP_STR(case_prefix i.j. x, y), 0); \
-   static h2::h2_suite::registor H2PP_UNIQUE(sr)(suite_1_5_2_8_0_1_1_9_8, &case_instance);             \
-   if (&case_instance == case_1_1_0_2_6_0_0_2_4) Qx = x, Qy = y, case_1_1_0_2_6_0_0_2_4->scheduled = true;
-#define __H2Casess_Callback(Pack, i, j, x, y) H2PP_PROXY(__H2Casess2, (H2PP_UNIQUE(ci), H2PP_REMOVE_PARENTHESES(Pack), i, j, x, y))
-
-// can't declare/define template class/function in function scope
-#define H2Cases_t(...) static_assert(false, "Cases_t not implemented, use H2CASES_T outside of SUITE{}");
-#define H2Casess_t(...) static_assert(false, "Casess_t not implemented, use H2CASESS_T outside of SUITE{}");
-
-#define H2CASES_T(case_prefix, ...) __H2CASES_T1(H2PP_UNIQUE(case_test_C), case_prefix, __VA_ARGS__)
-#define __H2CASES_T1(case_test, case_prefix, ...)                                                           \
-   template <typename x>                                                                                    \
-   static void case_test();                                                                                 \
-   H2PP_FOREACH(, __H2CASES_T_Callback, (case_test, case_prefix), H2PP_REMOVE_PARENTHESES_IF(__VA_ARGS__)); \
-   template <typename x>                                                                                    \
-   static void case_test()
-#define __H2CASES_T2(case_test, case_prefix, i, x) \
-   H2CASE(case_prefix i. x) { case_test<x>(); }
-#define __H2CASES_T_Callback(Pack, i, x) H2PP_PROXY(__H2CASES_T2, (H2PP_REMOVE_PARENTHESES(Pack), i, x))
-
-#define H2CASESS_T(case_prefix, ...) __H2CASESS_T1(H2PP_UNIQUE(case_test_C), case_prefix, __VA_ARGS__)
-#define __H2CASESS_T1(case_test, case_prefix, ...)                                \
-   template <typename x, typename y>                                              \
-   static void case_test();                                                       \
-   H2PP_FULLMESH(, __H2CASESS_T_Callback, (case_test, case_prefix), __VA_ARGS__); \
-   template <typename x, typename y>                                              \
-   static void case_test()
-#define __H2CASESS_T2(case_test, case_prefix, i, j, x, y) \
-   H2CASE(case_prefix i.j. x, y) { case_test<x, y>(); }
-#define __H2CASESS_T_Callback(Pack, i, j, x, y) H2PP_PROXY(__H2CASESS_T2, (H2PP_REMOVE_PARENTHESES(Pack), i, j, x, y))
-
-#define H2Todos(case_prefix, ...)     \
-   H2Todo(case_prefix __VA_ARGS__) {} \
-   if (0)                             \
-      for (auto x = H2_An(__VA_ARGS__); false;)
-
-#define H2Todoss(case_prefix, ...)               \
-   H2Todo(case_prefix, __VA_ARGS__) {}           \
-   if (0)                                        \
-      for (auto x = H2_XAn(__VA_ARGS__); false;) \
-         for (auto y = H2_YAn(__VA_ARGS__); false;)
-
-#define H2TODOS(case_prefix, ...) __H2TODOS(H2PP_UNIQUE(case_test_C), case_prefix, __VA_ARGS__)
-#define __H2TODOS(case_test, case_prefix, ...) \
-   template <typename T>                       \
-   static void case_test(T x);                 \
-   H2TODO(case_prefix, __VA_ARGS__) {}         \
-   template <typename T>                       \
-   static void case_test(T x)
-
-#define H2TODOSS(case_prefix, ...) __H2TODOSS(H2PP_UNIQUE(case_test_C), case_prefix, __VA_ARGS__)
-#define __H2TODOSS(case_test, case_prefix, ...) \
-   template <typename Tx, typename Ty>          \
-   static void case_test(Tx x, Ty y);           \
-   H2TODO(case_prefix, __VA_ARGS__) {}          \
-   template <typename Tx, typename Ty>          \
-   static void case_test(Tx x, Ty y)
-
-#define H2TODOS_T(case_prefix, ...) __H2TODOS_T(H2PP_UNIQUE(case_test_C), case_prefix, __VA_ARGS__)
-#define __H2TODOS_T(case_test, case_prefix, ...) \
-   template <typename x>                         \
-   static void case_test();                      \
-   H2TODO(case_prefix, __VA_ARGS__) {}           \
-   template <typename x>                         \
-   static void case_test()
-
-#define H2TODOSS_T(case_prefix, ...) __H2TODOSS_T(H2PP_UNIQUE(case_test_C), case_prefix, __VA_ARGS__)
-#define __H2TODOSS_T(case_test, case_prefix, ...) \
-   template <typename x, typename y>              \
-   static void case_test();                       \
-   H2TODO(case_prefix, __VA_ARGS__) {}            \
-   template <typename x, typename y>              \
-   static void case_test()
 // source/assert/h2_assert.hpp
 struct h2_defer_failure : h2_once {
    const char *assert_type, *assert_op = ",";
@@ -3491,20 +3503,6 @@ struct h2_timer : h2_once {
 
 #define __H2PF(ms, Q) for (h2::h2_timer Q(ms, H2_FILINE); Q;)
 #define H2PF(ms) __H2PF(ms, H2PP_UNIQUE())
-// source/render/h2_report.hpp
-struct h2_report {
-   h2_singleton(h2_report);
-   static void initialize();
-
-   bool backable = false;
-   h2_list reports;
-   void on_runner_start(h2_runner* r);
-   void on_runner_endup(h2_runner* r);
-   void on_suite_start(h2_suite* s);
-   void on_suite_endup(h2_suite* s);
-   void on_case_start(h2_suite* s, h2_case* c);
-   void on_case_endup(h2_suite* s, h2_case* c);
-};
 }
 
 #ifndef H2_NO_SUITE
@@ -3746,7 +3744,7 @@ using h2::Pair;
 #include <cxxabi.h> /* abi::__cxa_demangle, abi::__cxa_throw */
 #endif
 
-#if defined __linux || defined __APPLE__  // -MSCV -Cygwin -MinGW
+#if defined __linux || defined __APPLE__  // -MSVC -Cygwin -MinGW
 #include <execinfo.h>                     /* backtrace, backtrace_symbols */
 #endif
 
@@ -8349,12 +8347,12 @@ struct h2_resolver {
    ~h2_resolver() { h2_stubs::clear(stubs); }
 };
 
-h2_inline void h2_dnses::add(h2_list& name)
+h2_inline void h2_dnses::add(h2_list& dnses, h2_list& name)
 {
    dnses.push(name);
 }
 
-h2_inline void h2_dnses::clear()
+h2_inline void h2_dnses::clear(h2_list& dnses)
 {
    h2_list_for_each_entry (p, dnses, h2_name, x) {
       p->x.out();
@@ -8386,7 +8384,8 @@ h2_inline void h2_dns::setaddrinfo(int n, ...)
    va_end(b);
 
    h2_resolver::I().dnses.push(name->y);
-   if (h2_runner::I().current_case) ((h2_case*)h2_runner::I().current_case)->dnses.add(name->x);
+   if (h2_runner::I().current_case)
+      h2_dnses::add(h2_runner::I().current_case->dnses, name->x);
 }
 
 h2_inline void h2_dns::initialize()
@@ -8664,27 +8663,14 @@ h2_inline h2_sock::~h2_sock()
 {
    h2_socket::I().stop();
 }
-// source/core/h2_describe.cpp
-h2_inline h2_describe::h2_describe(const char* file_, int line_, const char* describe) : file(file_), line(line_), desc(describe)
+// source/core/h2_test.cpp
+
+static inline void __split_describe(const char* describe, char* name_buf, char* tags_buf)
 {
-   if (desc) {
-      strcpy(nbuf, desc);
-      strcpy(tbuf, "");
-      split();
+   strcpy(name_buf, describe);
+   strcpy(tags_buf, "");
 
-      name = nbuf;
-      while (*name && ::isspace(*name)) name++;  // strip left space
-
-      int count = 0;
-      for (char* t = strtok(tbuf, " ,"); t; t = strtok(nullptr, " ,"))
-         if (count < sizeof(tags) / sizeof(tags[0]) - 1) tags[count++] = t;
-      tags[count] = nullptr;
-   }
-}
-
-h2_inline void h2_describe::split()
-{
-   const char* p = desc;
+   const char* p = describe;
    for (bool quote = false; *p; ++p) {
       if (*p == '\"') quote = !quote;
       if (!quote && *p == '[') break;
@@ -8697,17 +8683,32 @@ h2_inline void h2_describe::split()
    }
    if (*q != ']') return;  // right brace
 
-   strncpy(tbuf, p + 1, (size_t)(q - p - 1));
-   tbuf[(size_t)(q - p - 1)] = '\0';
+   strncpy(tags_buf, p + 1, (size_t)(q - p - 1));
+   tags_buf[(size_t)(q - p - 1)] = '\0';
 
-   strcpy(&nbuf[(size_t)(p - desc)], q + 1);
+   strcpy(&name_buf[(size_t)(p - describe)], q + 1);
 }
 
-h2_inline bool h2_describe::has_tag(const char* pattern)
+h2_inline h2_test::h2_test(const char* filine_, const char* file_, int line_, const char* describe_) : filine(filine_), file(h2_basefile(file_)), line(line_), describe(describe_)
+{
+   if (describe) {
+      __split_describe(describe, name_buf, tags_buf);
+
+      name = name_buf;
+      while (*name && ::isspace(*name)) name++;  // strip left space
+
+      int count = 0;
+      for (char* t = strtok(tags_buf, " ,"); t; t = strtok(nullptr, " ,"))
+         if (count < sizeof(tags) / sizeof(tags[0]) - 1) tags[count++] = t;
+      tags[count] = nullptr;
+   }
+}
+
+h2_inline bool h2_test::tagged(const char* tag_pattern) const
 {
    for (int i = 0; tags[i]; ++i) {
-      if (!strcasecmp(tags[i], pattern)) return true;
-      if (strcspn(pattern, "?*[]") < strlen(pattern) && h2_pattern::wildcard_match(pattern, tags[i], true)) return true;
+      if (!strcasecmp(tags[i], tag_pattern)) return true;
+      if (strcspn(tag_pattern, "?*[]") < strlen(tag_pattern) && h2_pattern::wildcard_match(tag_pattern, tags[i], true)) return true;
    }
    return false;
 }
@@ -8730,7 +8731,7 @@ h2_inline void h2_case::prev_setup()
 h2_inline void h2_case::post_cleanup()
 {
    stats.footprint = h2_memory::stack::footprint();
-   dnses.clear();
+   h2_dnses::clear(dnses);
    h2_stubs::clear(stubs);
    failing(h2_mocks::clear(mocks, true), true, O.continue_assert);
    failing(h2_memory::stack::pop(), true, O.continue_assert);
@@ -8744,13 +8745,13 @@ h2_inline void h2_case::failing(h2_fail* fail, bool defer, bool append)
          delete fail;
       else
          h2_fail::append_subling(fails, fail);
-      if (!defer) ::longjmp(ctx, 1);
+      if (!defer) ::longjmp(fail_hole, 1);
    }
 }
 // source/core/h2_suite.cpp
-h2_inline h2_suite::h2_suite(const char* filine_, const char* file_, int line_, const char* describe_, void (*test_code_)(h2_suite*, h2_case*)) : filine(filine_), describe(file_, line_, describe_), test_code(test_code_)
+h2_inline h2_suite::h2_suite(const char* filine_, const char* file_, int line_, const char* describe_, void (*test_code_)(h2_suite*, h2_case*)) : h2_test(filine_, file_, line_, describe_), test_code(test_code_)
 {
-   memset(ctx, 0, sizeof(jmp_buf));
+   memset(cleanup_hole, 0, sizeof(jmp_buf));
    h2_runner::I().suites.push_back(x);
 }
 
@@ -8798,8 +8799,8 @@ h2_inline h2_suite::registor::registor(h2_suite* s, h2_case* c)
 h2_inline h2_suite::cleaner::~cleaner()
 {
    static const unsigned char zero[sizeof(jmp_buf)] = {0};
-   if (memcmp((const void*)thus->ctx, (const void*)zero, sizeof(jmp_buf)))
-      ::longjmp(thus->ctx, 1);
+   if (memcmp((const void*)thus->cleanup_hole, (const void*)zero, sizeof(jmp_buf)))
+      ::longjmp(thus->cleanup_hole, 1);
 }
 // source/core/h2_filter.cpp
 static inline bool match_names(const std::vector<const char*>& patterns, const char* subject)
@@ -8811,61 +8812,42 @@ static inline bool match_names(const std::vector<const char*>& patterns, const c
    return false;
 }
 
-static inline bool match_tags(const std::vector<const char*>& patterns, h2_describe& describe)
+static inline bool match_tags(const std::vector<const char*>& patterns, const h2_test* test)
 {
    for (auto pattern : patterns)
-      if (describe.has_tag(pattern)) return true;
+      if (test->tagged(pattern)) return true;
    return false;
 }
 
-static inline bool h2_filter_case(h2_suite* s, h2_case* c)
+static inline bool __filter(const h2_test* s, const h2_test* c, const std::vector<const char*>& includes, const std::vector<const char*>& excludes, bool tags_filter)
 {
-   if (O.tags_filter) {
-      if (!O.includes.empty())
-         if (!match_tags(O.includes, s->describe) && !match_tags(O.includes, c->describe))
+   if (tags_filter) {
+      if (!includes.empty())
+         if (!(match_tags(includes, s) || c && match_tags(includes, c))) // priority && > ||
             return true;
-      if (!O.excludes.empty())
-         if (match_tags(O.excludes, s->describe) || match_tags(O.excludes, c->describe))
+      if (!excludes.empty())
+         if (match_tags(excludes, s) || c && match_tags(excludes, c))
             return true;
    } else {
-      if (!O.includes.empty())
-         if (!match_names(O.includes, s->describe.name) && !match_names(O.includes, c->describe.name) && !match_names(O.includes, c->filine))
+      if (!includes.empty())
+         if (!(match_names(includes, s->name) || c && match_names(includes, c->name) || match_names(includes, c ? c->filine : s->filine)))
             return true;
-      if (!O.excludes.empty())
-         if (match_names(O.excludes, s->describe.name) || match_names(O.excludes, c->describe.name) || match_names(O.excludes, c->filine))
+      if (!excludes.empty())
+         if (match_names(excludes, s->name) || c && match_names(excludes, c->name) || match_names(excludes, c ? c->filine : s->filine))
             return true;
    }
    return false;
 }
 
-static inline bool h2_filter_suite(h2_suite* s)
+static inline void h2_filter_suite(h2_suite* s)
 {
-   if (O.tags_filter) {
-      if (!O.includes.empty())
-         if (!match_tags(O.includes, s->describe))
-            return true;
-      if (!O.excludes.empty())
-         if (match_tags(O.includes, s->describe))
-            return true;
-   } else {
-      if (!O.includes.empty())
-         if (!match_names(O.includes, s->describe.name) && !match_names(O.includes, s->filine))
-            return true;
-      if (!O.excludes.empty())
-         if (match_names(O.excludes, s->describe.name) || match_names(O.excludes, s->filine))
-            return true;
-   }
-   return false;
+   s->filtered = __filter(s, nullptr, O.includes, O.excludes, O.tags_filter);
 }
 
-static inline void h2_filter(h2_suite* s, h2_case* c = nullptr)
+static inline void h2_filter_case(h2_suite* s, h2_case* c)
 {
-   if (c) {
-      c->filtered = h2_filter_case(s, c);
-      if (!c->filtered) s->filtered = false;
-   } else {
-      s->filtered = h2_filter_suite(s);
-   }
+   c->filtered = __filter(s, c, O.includes, O.excludes, O.tags_filter);
+   if (!c->filtered) s->filtered = false;
 }
 // source/core/h2_runner.cpp
 static inline void drop_last_order() { ::remove(".last_order"); }
@@ -8876,59 +8858,41 @@ static inline void save_last_order(h2_list& suites)
    if (!f) return;
    h2_list_for_each_entry (s, suites, h2_suite, x)
       h2_list_for_each_entry (c, s->cases, h2_case, x)
-         ::fprintf(f, "  file: %s\n suite: %s\n  case: %s\nstatus: %s\n\n", c->filine, s->describe.name, c->describe.name, c->failed ? "failed" : "passed");
+         ::fprintf(f, " file: %s\nsuite: %s\n case: %s\n test: %s\n\n", c->file, s->name, c->name, c->failed ? "failed" : "passed");
    ::fclose(f);
 }
 
-static inline void __find_mark(h2_list& suites, char* fileline, char* suitename, char* casename, bool failed)
+static inline void __find_case(h2_list& suites, char* filename, char* suitename, char* casename, bool failed)
 {
    static int seq = 0;
-   int founds = 0;
-   h2_list_for_each_entry (s, suites, h2_suite, x)  // full match 3
-      if (!strcmp(suitename, s->describe.name))
+   h2_list_for_each_entry (s, suites, h2_suite, x)
+      if (!strcmp(suitename, s->name))
          h2_list_for_each_entry (c, s->cases, h2_case, x)
-            if (!strcmp(casename, c->describe.name) && !strcmp(fileline, c->filine)) {
-               s->seq = c->seq = ++seq;
-               if (failed) c->last_failed = true;
-               ++founds;
-            }
-   if (founds) return;
-   h2_list_for_each_entry (s, suites, h2_suite, x)  // line position change, match2
-      if (!strcmp(suitename, s->describe.name))
-         h2_list_for_each_entry (c, s->cases, h2_case, x)
-            if (!strcmp(casename, c->describe.name)) {
+            if (!strcmp(casename, c->name) && !strcmp(filename, c->file)) {
                s->seq = c->seq = ++seq;
                if (failed) c->last_failed = true;
             }
 }
 
-static inline bool __read_line(FILE* f, char* b, size_t n)
+static inline bool fgets(FILE* f, char* b)
 {
-   if (!::fgets(b, n, f)) return false;
+   if (!::fgets(b, 512, f)) return false;
    b[strlen(b) - 1] = '\0'; /* remove \n in save_last_order */
    return true;
 }
 
-static inline int mark_last_order(h2_list& suites)
+static inline int sequence_last_order(h2_list& suites)
 {
    int count = 0;
-   char fileline[1024], suitename[1024], casename[1024], status[32], br[32];
+   char filename[512], suitename[512], casename[512], test[512], br[512];
    FILE* f = ::fopen(".last_order", "r");
    if (!f) return 0;
-   while (__read_line(f, fileline, sizeof(fileline)) && __read_line(f, suitename, sizeof(suitename)) && __read_line(f, casename, sizeof(casename)) && __read_line(f, status, sizeof(status)) && __read_line(f, br, sizeof(br))) {
-      __find_mark(suites, fileline + 8, suitename + 8, casename + 8, !strcmp("failed", status + 8));
+   while (fgets(f, filename) && fgets(f, suitename) && fgets(f, casename) && fgets(f, test) && fgets(f, br)) {
+      __find_case(suites, filename + 7, suitename + 7, casename + 7, !strcmp("failed", test + 7));
       count++;
    }
    ::fclose(f);
    return count;
-}
-
-h2_inline void h2_runner::shadow()
-{
-   if (stats.failed == 0)
-      drop_last_order();
-   else if (last == 0)
-      save_last_order(suites);
 }
 
 h2_inline void h2_runner::enumerate()
@@ -8937,19 +8901,24 @@ h2_inline void h2_runner::enumerate()
    if (O.progressing) h2_console::prints("dark gray", "Collecting ");
    h2_list_for_each_entry (s, i, suites, h2_suite, x) {
       if (O.progressing)
-         for (; dots <= i * dps; dots++)
-            h2_console::prints("dark gray", ".");
+         for (; dots <= i * dps; dots++) h2_console::prints("dark gray", ".");
 
       for (auto& setup : global_suite_setups) setup();
       s->setup();
       s->enumerate();
       s->cleanup();
       for (auto& cleanup : global_suite_cleanups) cleanup();
-      h2_filter(s);
-      h2_list_for_each_entry (c, s->cases, h2_case, x)
-         h2_filter(s, c);
    }
    if (O.progressing) h2_console::prints("", "\33[2K\r");
+}
+
+h2_inline void h2_runner::filter()
+{
+   h2_list_for_each_entry (s, i, suites, h2_suite, x) {
+      h2_filter_suite(s);
+      h2_list_for_each_entry (c, s->cases, h2_case, x)
+         h2_filter_case(s, c);
+   }
 }
 
 template <typename T>
@@ -8960,12 +8929,12 @@ struct shuffle_comparison {
    }
    static int name(h2_list* a, h2_list* b)
    {
-      return strcasecmp(h2_list_entry(a, T, x)->describe.name, h2_list_entry(b, T, x)->describe.name);
+      return strcasecmp(h2_list_entry(a, T, x)->name, h2_list_entry(b, T, x)->name);
    }
    static int file(h2_list* a, h2_list* b)
    {
-      int t = strcasecmp(h2_list_entry(a, T, x)->describe.file, h2_list_entry(b, T, x)->describe.file);
-      return t != 0 ? t : h2_list_entry(a, T, x)->describe.line - h2_list_entry(b, T, x)->describe.line;
+      int t = strcasecmp(h2_list_entry(a, T, x)->file, h2_list_entry(b, T, x)->file);
+      return t != 0 ? t : h2_list_entry(a, T, x)->line - h2_list_entry(b, T, x)->line;
    }
    static int cmp(h2_list* a, h2_list* b)
    {
@@ -8978,7 +8947,7 @@ struct shuffle_comparison {
 
 h2_inline void h2_runner::shuffle()
 {
-   if ((last = mark_last_order(suites))) {
+   if ((lasts = sequence_last_order(suites))) {
       suites.sort(shuffle_comparison<h2_suite>::seq);
       h2_list_for_each_entry (s, suites, h2_suite, x)
          s->cases.sort(shuffle_comparison<h2_case>::seq);
@@ -9013,17 +8982,19 @@ h2_inline int h2_runner::main(int argc, const char** argv)
 
    for (auto& setup : global_setups) setup();
    enumerate();
+   filter();
 
    h2_report::I().on_runner_start(this);
    for (rounds = 0; rounds < O.run_rounds; ++rounds) {
       shuffle();
       h2_list_for_each_entry (s, suites, h2_suite, x) {
-         current_suite = (void*)s;
+         current_suite = s;
          h2_report::I().on_suite_start(s);
          for (auto& setup : global_suite_setups) setup();
          s->setup();
          h2_list_for_each_entry (c, s->cases, h2_case, x) {
-            if ((0 < O.break_after_fails && O.break_after_fails <= stats.failed) || (O.only_last_failed && !c->last_failed)) c->ignored = true;
+            if ((0 < O.break_after_fails && O.break_after_fails <= stats.failed) || (O.only_last_failed && !c->last_failed))
+               c->ignored = true;
             if (c->ignored)
                stats.ignored++, s->stats.ignored++;
             else if (c->filtered)
@@ -9031,7 +9002,7 @@ h2_inline int h2_runner::main(int argc, const char** argv)
             else if (c->todo)
                stats.todo++, s->stats.todo++;
 
-            current_case = (void*)c;
+            current_case = c;
             h2_report::I().on_case_start(s, c);
             if (!O.lists && !c->todo && !c->filtered && !c->ignored) {
                for (auto& setup : global_case_setups) setup();
@@ -9047,7 +9018,10 @@ h2_inline int h2_runner::main(int argc, const char** argv)
          h2_report::I().on_suite_endup(s);
          s->clear();
       }
-      shadow();
+      if (stats.failed == 0)
+         drop_last_order();
+      else if (lasts == 0)
+         save_last_order(suites);
    }
    h2_report::I().on_runner_endup(this);
    for (auto& cleanup : global_cleanups) cleanup();
@@ -9058,24 +9032,24 @@ h2_inline int h2_runner::main(int argc, const char** argv)
    return O.quit_exit_code ? stats.failed : 0;
 }
 
-h2_inline void h2_runner::stub(void* srcfp, void* dstfp, const char* srcfn, const char* file)
+h2_inline void h2_runner::stub(void* srcfp, void* dstfp, const char* srcfn, const char* filine)
 {
    if (!srcfp || !dstfp) return;
    if (h2_runner::I().current_case)
-      h2_stubs::add(((h2_case*)h2_runner::I().current_case)->stubs, srcfp, dstfp, srcfn, file);
+      h2_stubs::add(h2_runner::I().current_case->stubs, srcfp, dstfp, srcfn, filine);
    else if (h2_runner::I().current_suite)
-      h2_stubs::add(((h2_suite*)h2_runner::I().current_suite)->stubs, srcfp, dstfp, srcfn, file);
+      h2_stubs::add(h2_runner::I().current_suite->stubs, srcfp, dstfp, srcfn, filine);
    else
-      h2_stubs::add(h2_runner::I().stubs, srcfp, dstfp, srcfn, file);
+      h2_stubs::add(h2_runner::I().stubs, srcfp, dstfp, srcfn, filine);
 }
 
 h2_inline void h2_runner::unstub(void* srcfp)
 {
    if (!srcfp) return;
    if (h2_runner::I().current_case)
-      h2_stubs::clear(((h2_case*)h2_runner::I().current_case)->stubs, srcfp);
+      h2_stubs::clear(h2_runner::I().current_case->stubs, srcfp);
    else if (h2_runner::I().current_suite)
-      h2_stubs::clear(((h2_suite*)h2_runner::I().current_suite)->stubs, srcfp);
+      h2_stubs::clear(h2_runner::I().current_suite->stubs, srcfp);
    else
       h2_stubs::clear(h2_runner::I().stubs, srcfp);
 }
@@ -9083,9 +9057,9 @@ h2_inline void h2_runner::unstub(void* srcfp)
 h2_inline void h2_runner::mock(void* mocker)
 {
    if (h2_runner::I().current_case)
-      h2_mocks::add(((h2_case*)h2_runner::I().current_case)->mocks, mocker);
+      h2_mocks::add(h2_runner::I().current_case->mocks, mocker);
    else if (h2_runner::I().current_suite)
-      h2_mocks::add(((h2_suite*)h2_runner::I().current_suite)->mocks, mocker);
+      h2_mocks::add(h2_runner::I().current_suite->mocks, mocker);
    else
       h2_mocks::add(h2_runner::I().mocks, mocker);
 }
@@ -9094,13 +9068,13 @@ h2_inline void h2_runner::failing(h2_fail* fail)
 {
    if (!fail) return;
    if (O.debugger_trap) h2_debugger::trap();
-   if (h2_runner::I().current_case) ((h2_case*)h2_runner::I().current_case)->failing(fail, O.continue_assert, true);
+   if (h2_runner::I().current_case) h2_runner::I().current_case->failing(fail, O.continue_assert, true);
 }
 
 h2_inline void h2_runner::asserts()
 {
-   if (h2_runner::I().current_case) ((h2_case*)h2_runner::I().current_case)->stats.asserts += 1;
-   if (h2_runner::I().current_suite) ((h2_suite*)h2_runner::I().current_suite)->stats.asserts += 1;
+   if (h2_runner::I().current_case) h2_runner::I().current_case->stats.asserts += 1;
+   if (h2_runner::I().current_suite) h2_runner::I().current_suite->stats.asserts += 1;
    h2_runner::I().stats.asserts += 1;
 }
 // source/assert/h2_assert.cpp
@@ -9664,20 +9638,20 @@ struct h2_report_list : h2_report_impl {
       suite_cases = 0;
       suite_todos = 0;
       if (s->absent()) return;  // CASE
-      for (int i = 0; s->describe.tags[i]; ++i) tags[s->describe.tags[i]] += 0x10000;
+      for (int i = 0; s->tags[i]; ++i) tags[s->tags[i]] += 0x10000;
 
       ++suites;
       if (!s->filtered && O.lists & ListSuite) {
          ++unfiltered_suites;
          h2_line line;
          line.printf("dark gray", "SUITE-%d. ", unfiltered_suites);
-         h2_console::printl(line + color(s->describe.name, "bold,blue") + " " + gray(h2_basefile(s->filine)));
+         h2_console::printl(line + color(s->name, "bold,blue") + " " + gray(h2_basefile(s->filine)));
       }
    }
    void on_case_start(h2_suite* s, h2_case* c) override
    {
       h2_report_impl::on_case_start(s, c);
-      for (int i = 0; c->describe.tags[i]; ++i) tags[c->describe.tags[i]] += 0x1;
+      for (int i = 0; c->tags[i]; ++i) tags[c->tags[i]] += 0x1;
 
       const char* type = nullptr;
       if (c->todo) {
@@ -9700,7 +9674,7 @@ struct h2_report_list : h2_report_impl {
             line.printf("dark gray", " %s/%d-%d. ", type, suite_cases + suite_todos, unfiltered_cases + unfiltered_todos);
          else
             line.printf("dark gray", " %s-%d. ", type, unfiltered_cases + unfiltered_todos);
-         h2_console::printl(line + color(c->describe.name, "cyan") + " " + gray(h2_basefile(c->filine)));
+         h2_console::printl(line + color(c->name, "cyan") + " " + gray(h2_basefile(c->filine)));
       }
    }
 };
@@ -9781,7 +9755,7 @@ struct h2_report_console : h2_report_impl {
       h2_line bar;
       if (percentage && O.progressing) format_percentage(bar);
       if (status && status_style) bar.printf(status_style, "%s", status);
-      if (s && c) bar += format_title(s->describe.name, c->describe.name, backable ? nullptr : h2_basefile(c->filine));
+      if (s && c) bar += format_title(s->name, c->name, backable ? nullptr : h2_basefile(c->filine));
       if (backable) {
          if (h2_console::width() > bar.width())
             bar.padding(h2_console::width() - bar.width());
@@ -9827,7 +9801,7 @@ struct h2_report_console : h2_report_impl {
          if (s->stats.todo) line += gray(comma_if(line.width())) + h2_stringify(s->stats.todo) + " todo";
          if (s->stats.filtered) line += gray(comma_if(line.width())) + h2_stringify(s->stats.filtered) + " filtered";
          if (s->stats.ignored) line += gray(comma_if(line.width())) + h2_stringify(s->stats.ignored) + " ignored";
-         line = gray("suite ") + s->describe.name + gray(1 < n ? " (" : " - ") + line + gray(1 < n ? ")" : "");
+         line = gray("suite ") + s->name + gray(1 < n ? " (" : " - ") + line + gray(1 < n ? ")" : "");
          if (0 < s->cases.count()) line += H2_UNITS(s->cases.count(), " case");
          if (0 < s->stats.asserts) line += gray(", ") + format_units(s->stats.asserts, " assert");
          if (0 < s->stats.footprint) line += gray(", ") + format_volume(s->stats.footprint) + " footprint";
@@ -9887,13 +9861,13 @@ struct h2_report_junit : h2_report_impl {
    {
       h2_report_impl::on_suite_start(s);
       if (!f) return;
-      fprintf(f, "<testsuite errors=\"0\" failures=\"%d\" hostname=\"localhost\" name=\"%s\" skipped=\"%d\" tests=\"%d\" time=\"%d\" timestamp=\"%s\">\n", s->stats.failed, s->describe.name, s->stats.todo + s->stats.filtered, s->cases.count(), 0, "");
+      fprintf(f, "<testsuite errors=\"0\" failures=\"%d\" hostname=\"localhost\" name=\"%s\" skipped=\"%d\" tests=\"%d\" time=\"%d\" timestamp=\"%s\">\n", s->stats.failed, s->name, s->stats.todo + s->stats.filtered, s->cases.count(), 0, "");
    }
    void on_case_endup(h2_suite* s, h2_case* c) override
    {
       h2_report_impl::on_case_endup(s, c);
       if (!f) return;
-      fprintf(f, "<testcase classname=\"%s\" name=\"%s\" status=\"%s\" time=\"%.3f\">\n", s->describe.name, c->describe.name, c->todo ? "TODO" : (c->filtered ? "Filtered" : (c->ignored ? "Ignored" : (c->failed ? "Failed" : "Passed"))), c->stats.timecost / 1000.0);
+      fprintf(f, "<testcase classname=\"%s\" name=\"%s\" status=\"%s\" time=\"%.3f\">\n", s->name, c->name, c->todo ? "TODO" : (c->filtered ? "Filtered" : (c->ignored ? "Ignored" : (c->failed ? "Failed" : "Passed"))), c->stats.timecost / 1000.0);
       if (c->failed) {
          fprintf(f, "<failure message=\"%s:", c->filine);
          if (c->fails) c->fails->foreach([&](h2_fail* fail, size_t si, size_t ci) {fprintf(f, "{newline}"); fail->print(f); });

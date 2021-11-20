@@ -1,24 +1,15 @@
-struct h2_case {
-   h2_list x;
-   const char* filine;
-   h2_describe describe;
+struct h2_case : h2_test {
    bool todo = false;
-   bool filtered = false, ignored = false, failed = false, last_failed = false;
-   bool scheduled = false;
-   int seq = 0;
-   jmp_buf ctx;
-   h2_list stubs;
-   h2_list mocks;
-   h2_dnses dnses;
-   h2_stats stats;
+   bool ignored = false, failed = false, last_failed = false;
+   jmp_buf fail_hole;
    h2_fail* fails = nullptr;
 
-   h2_case(const char* filine_, const char* file_, int line_, const char* describe_, int todo_) : filine(filine_), describe(file_, line_, describe_), todo(todo_) {}
+   h2_case(const char* filine_, const char* file_, int line_, const char* describe_, int todo_) : h2_test(filine_, file_, line_, describe_), todo(todo_) {}
    void clear();
 
    void prev_setup();
    void post_setup() {}
-   void prev_cleanup() { scheduled = false; }
+   void prev_cleanup() {}
    void post_cleanup();
 
    void failing(h2_fail* fail, bool defer, bool append);

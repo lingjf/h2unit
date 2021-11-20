@@ -1,6 +1,6 @@
-h2_inline h2_suite::h2_suite(const char* filine_, const char* file_, int line_, const char* describe_, void (*test_code_)(h2_suite*, h2_case*)) : filine(filine_), describe(file_, line_, describe_), test_code(test_code_)
+h2_inline h2_suite::h2_suite(const char* filine_, const char* file_, int line_, const char* describe_, void (*test_code_)(h2_suite*, h2_case*)) : h2_test(filine_, file_, line_, describe_), test_code(test_code_)
 {
-   memset(ctx, 0, sizeof(jmp_buf));
+   memset(cleanup_hole, 0, sizeof(jmp_buf));
    h2_runner::I().suites.push_back(x);
 }
 
@@ -48,6 +48,6 @@ h2_inline h2_suite::registor::registor(h2_suite* s, h2_case* c)
 h2_inline h2_suite::cleaner::~cleaner()
 {
    static const unsigned char zero[sizeof(jmp_buf)] = {0};
-   if (memcmp((const void*)thus->ctx, (const void*)zero, sizeof(jmp_buf)))
-      ::longjmp(thus->ctx, 1);
+   if (memcmp((const void*)thus->cleanup_hole, (const void*)zero, sizeof(jmp_buf)))
+      ::longjmp(thus->cleanup_hole, 1);
 }
