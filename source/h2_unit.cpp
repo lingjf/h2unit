@@ -1,6 +1,5 @@
 #include "h2_unit.hpp"
 
-#include <cassert>   /* assert */
 #include <cctype>    /* tolower, isspace */
 #include <cstdarg>   /* va_list */
 #include <errno.h>   /* strerror */
@@ -98,14 +97,14 @@ __attribute__((weak)) int main(int argc, const char** argv) { return h2::h2_runn
 
 namespace h2 {
 #include "utils/h2_list.cpp"
-#include "utils/h2_numeric.cpp"
 #include "utils/h2_pattern.cpp"
 #include "utils/h2_diff.cpp"
 #include "utils/h2_misc.cpp"
 #include "utils/h2_libc.cpp"
 #include "utils/h2_string.cpp"
+#include "utils/h2_color.cpp"
 #include "utils/h2_line.cpp"
-#include "utils/h2_console.cpp"
+#include "render/h2_console.cpp"
 #include "symbol/h2_nm.cpp"
 #include "symbol/h2_load.cpp"
 #include "symbol/h2_backtrace.cpp"
@@ -120,6 +119,7 @@ namespace h2 {
 #include "json/h2_dual.cpp"
 #include "json/h2_json.cpp"
 #include "matcher/h2_strcmp.cpp"
+#include "matcher/h2_memcmp.cpp"
 #include "memory/h2_piece.cpp"
 #include "memory/h2_leaky.cpp"
 #include "memory/h2_block.cpp"
@@ -157,8 +157,8 @@ namespace h2 {
 #include "core/h2_runner.cpp"
 #include "assert/h2_assert.cpp"
 #include "assert/h2_timer.cpp"
+#include "render/h2_layout.cpp"
 #include "render/h2_failure.cpp"
 #include "render/h2_report.cpp"
-#include "render/h2_layout.cpp"
 #include "render/h2_option.cpp"
 }

@@ -51,7 +51,7 @@ struct h2_color {
    void print(const char* str)
    {
       /* Windows PowerShell works, but CMD not, refer to v5.11 SetConsoleTextAttribute */
-      if (h2_console::isctrl(str)) {
+      if (isctrl(str)) {
          if (h2_option::I().colorful) {
             I().parse(str);
             I().change();
@@ -95,50 +95,6 @@ struct h2_color {
       if (!strcmp(style, "bg_white")) return 47;
       return 0;
    }
+
+   static bool isctrl(const char* s) { return s[0] == '\033' && s[1] == '{'; };
 };
-
-h2_inline size_t h2_console::width()
-{
-   static size_t s_width = 0;
-   if (s_width == 0) {
-      s_width = 120;
-#if defined _WIN32
-      CONSOLE_SCREEN_BUFFER_INFO csbi;
-      GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE), &csbi);
-      auto columns = csbi.srWindow.Right - csbi.srWindow.Left + 1;
-      // auto rows = csbi.srWindow.Bottom - csbi.srWindow.Top + 1;
-      if (16 < columns) s_width = columns;
-#else
-      struct winsize w;
-      if (-1 != ioctl(STDOUT_FILENO, TIOCGWINSZ, &w))
-         if (16 < w.ws_col) s_width = w.ws_col;
-#endif
-   }
-   return s_width;
-}
-
-h2_inline void h2_console::prints(const char* style, const char* format, ...)
-{
-   if (style && strlen(style)) {
-      char t[128];
-      sprintf(t, "\033{%s}", style);
-      h2_color::I().print(t);
-   }
-
-   char* alloca_str;
-   h2_sprintf(alloca_str, format);
-   h2_color::I().print(alloca_str);
-
-   if (style && strlen(style)) h2_color::I().print("\033{reset}");
-}
-
-h2_inline void h2_console::printl(const h2_line& line, bool cr)
-{
-   for (auto& word : line) h2_color::I().print(word.c_str());
-   if (cr) h2_color::I().print("\n");
-}
-
-h2_inline void h2_console::printl(const h2_lines& lines, bool cr)
-{
-   for (auto& line : lines) printl(line, cr);
-}

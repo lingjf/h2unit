@@ -15,6 +15,8 @@ struct h2_mocker_base : h2_libc {
 
    virtual void reset() = 0;
    void mock();
+
+   void failing(h2_fail* fail, int checkin_offset) const;
 };
 
 namespace {
@@ -61,13 +63,7 @@ class h2_mocker<Counter, ClassType, ReturnType(ArgumentTypes...)> : h2_mocker_ba
                delete fails;
                continue;
             }
-            fails->foreach([this, i](h2_fail* f, size_t, size_t) {
-               f->explain += gray("on ") + (srcfn + argument(f->seqno));
-               if (1 < checkin_array.size()) f->explain += gray(" when ") + h2_numeric::sequence_number((size_t)i) + " " + color(checkin_array[i].expr, "cyan");
-            });
-            h2_fail* fail = h2_fail::new_normal(signature(), filine);
-            h2_fail::append_child(fail, fails);
-            h2_runner::failing(fail);
+            failing(fails, i);
          } else {
             checkin_index = i;
             checkin_offset = i;

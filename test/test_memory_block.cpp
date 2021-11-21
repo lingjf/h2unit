@@ -43,6 +43,15 @@ SUITE(block attributes)
       OK(Me("\x60\xEA", 2), a.s_fill);
       OK(!a.noleak);
    }
+
+   Case("fill=0x1122334455667788")
+   {
+      h2::h2_block_attributes a("fill=0x1122334455667788");
+
+      OK(8, a.n_fill);
+      OK(Me("\x11\x22\x33\x44\x55\x66\x77\x88", 8), a.s_fill);
+      OK(!a.noleak);
+   }
 }
 
 SUITE(BLOCK [memory_check])

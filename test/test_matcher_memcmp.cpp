@@ -1,5 +1,71 @@
 #include "../source/h2_unit.cpp"
 
+SUITE(memcmp util)
+{
+   bool ret;
+   size_t nbits;
+   unsigned char z1[1024];
+
+   Case(is hex string)
+   {
+      OK(h2::h2_memcmp_util::is_hex_string("10Ac1EE0Fd"));
+      OK(h2::h2_memcmp_util::is_hex_string("10Ac1 E0Fd"));
+      OK(h2::h2_memcmp_util::is_hex_string("0xDeadC0fe"));
+      OK(!h2::h2_memcmp_util::is_hex_string("10Ac1PE0Fd"));
+   }
+
+   Case(is bin string)
+   {
+      OK(h2::h2_memcmp_util::is_bin_string("110011100"));
+      OK(h2::h2_memcmp_util::is_bin_string("1100 11100"));
+      OK(!h2::h2_memcmp_util::is_bin_string("110211100"));
+   }
+
+   Case(bits_equal tobytes 10001110)
+   {
+      unsigned char a1[] = {0x8E};
+      nbits = h2::h2_memcmp_util::bin_to_bits("10001110", z1);
+      OK(8, nbits);
+
+      ret = h2::h2_memcmp_util::bits_equal(z1, (const unsigned char*)a1, nbits);
+      OK(ret);
+      OK(memcmp(z1, a1, 1) == 0);
+   }
+
+   Case(bits_equal tobytes 1000 1110)
+   {
+      unsigned char a1[] = {0x8E};
+      nbits = h2::h2_memcmp_util::bin_to_bits("1000 1110", z1);
+      OK(8, nbits);
+
+      ret = h2::h2_memcmp_util::bits_equal(z1, (const unsigned char*)a1, nbits);
+      OK(ret);
+      OK(memcmp(z1, a1, 1) == 0);
+   }
+
+   Case(bits_equal tobytes 1000 1110 1100)
+   {
+      unsigned char a1[] = {0x8E, 0xC0};
+      nbits = h2::h2_memcmp_util::bin_to_bits("1000 1110 1100", z1);
+      OK(12, nbits);
+
+      ret = h2::h2_memcmp_util::bits_equal(z1, (const unsigned char*)a1, nbits);
+      OK(ret);
+      OK(memcmp(z1, a1, 2) == 0);
+   }
+
+   Case(bits_equal tobytes 1000 1110 1100 1)
+   {
+      unsigned char a1[] = {0x8E, 0xC8};
+      nbits = h2::h2_memcmp_util::bin_to_bits("1000 1110 1100 1", z1);
+      OK(13, nbits);
+
+      ret = h2::h2_memcmp_util::bits_equal(z1, (const unsigned char*)a1, nbits);
+      OK(ret);
+      OK(memcmp(z1, a1, 2) == 0);
+   }
+}
+
 SUITE(memory compares explicitly)
 {
    Case(bytes)

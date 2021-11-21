@@ -1,9 +1,8 @@
 #if !defined _MSC_VER
-static inline void nm_mangle(std::map<std::string, unsigned long long>*& symbols)
+static inline void nm_mangle(h2_list& symbols)
 {
    h2_memory::hook(false);
    char nm[256], line[2048], addr[128], type, name[2048];
-   symbols = new std::map<std::string, unsigned long long>();
 #if defined __APPLE__
    sprintf(nm, "nm -U %s", O.path);
 #else
@@ -16,7 +15,8 @@ static inline void nm_mangle(std::map<std::string, unsigned long long>*& symbols
          if (strchr("bBcCdDiIuU", type)) continue;  // reject bBcCdDiIuU, accept tTwWsSvV, sS for vtable
          int underscore = 0;
          if (O.os == 'm') underscore = 1;  // remove prefix '_' in MacOS
-         (*symbols)[name + underscore] = (unsigned long long)strtoull(addr, nullptr, 16);
+         h2_symbol* symbol = new h2_symbol(name + underscore, (unsigned long long)strtoull(addr, nullptr, 16));
+         if (symbol) symbols.push_back(symbol->x);
       }
       ::pclose(f);
    }
@@ -119,9 +119,11 @@ h2_inline unsigned long long h2_nm::get_mangle(const char* name)
    return (unsigned long long)symbol->Address;
 #else
    if (!name || strlen(name) == 0) return 0;
-   if (!I().mangle_symbols) nm_mangle(I().mangle_symbols);
+   if (I().mangle_symbols.empty()) nm_mangle(I().mangle_symbols);
 
-   auto it = I().mangle_symbols->find(name);
-   return it != I().mangle_symbols->end() ? it->second : 0ULL;
+   h2_list_for_each_entry (p, I().mangle_symbols, h2_symbol, x)
+      if (!strcmp(p->name, name)) return p->addr;
+
+   return 0;
 #endif
 }

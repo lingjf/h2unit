@@ -292,7 +292,7 @@ SUITE(mocks template member function)
          return sprintf(buffer, "*G.normal_f2(%d,%d)%c", x, y, This->g), buffer;
       };
       OK("*G.normal_f2(1,2)g", (g.normal_f2<int, int>(1, 2)));
-#if !defined WIN32 // Suck when member return Object
+#if !defined WIN32  // Suck when member return Object
       MOCKS((G_TemplateClass<int, int>), (virtual_f2<int, int>), (std::pair<const char*, double>), (int x, int y), Any())
       {
          return std::make_pair("*G.virtual_f2", x * 10 + y + This->G / 10.0);
@@ -345,5 +345,49 @@ SUITE(mocks by function name)
    {
       MOCKS("foobar0", int, (), Once()) { return 1; };
       OK(1, foobar0());
+   }
+}
+
+SUITE(UNMOCK)
+{
+   Case(normal function)
+   {
+      MOCKS(foobar2, int, (int, const char*), Once(1, "A")) { return 11; };
+      OK(11, foobar2(1, "A"));
+      UNMOCKS(foobar2, int, (int, const char*));
+      OK(2, foobar2(1, "A"));
+   }
+
+   Case(normal member function)
+   {
+      B_DerivedClass b;
+      MOCKS(B_DerivedClass, normal_f2, const char*, (int x, int y), Once(1, 2))
+      {
+         return sprintf(buffer, "*B.normal_f2(%d,%d)%c", x, y, This->b), buffer;
+      };
+      OK("*B.normal_f2(1,2)b", b.normal_f2(1, 2));
+      UNMOCKS(B_DerivedClass, normal_f2, const char*, (int, int));
+      OK("B.normal_f2(1,2)b", b.normal_f2(1, 2));
+   }
+
+   Case(template class member function)
+   {
+      F_TemplateClass<int> f;
+      MOCKS(F_TemplateClass<int>, virtual_f1, const char*, (int x), Once())
+      {
+         return sprintf(buffer, "*F.virtual_f1(%d)%c", x, This->f), buffer;
+      };
+      OK("*F.virtual_f1(1)f", f.virtual_f1(1));
+      UNMOCKS(F_TemplateClass<int>, virtual_f1, const char*, (int a));
+      OK("F.virtual_f1(1)f", f.virtual_f1(1));
+   }
+
+   Case(function name)
+   {
+      MOCKS("foobar0", int, (), Once()) { return 1; };
+      OK(1, foobar0());
+
+      UNMOCKS("foobar0");
+      OK(0, foobar0());
    }
 }

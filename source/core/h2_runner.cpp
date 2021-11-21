@@ -51,11 +51,11 @@ h2_inline void h2_runner::enumerate()
       if (O.progressing)
          for (; dots <= i * dps; dots++) h2_console::prints("dark gray", ".");
 
-      for (auto& setup : global_suite_setups) setup();
+      for (int i = 0; global_suite_setups[i]; ++i) global_suite_setups[i]();
       s->setup();
       s->enumerate();
       s->cleanup();
-      for (auto& cleanup : global_suite_cleanups) cleanup();
+      for (int i = 0; global_suite_cleanups[i]; ++i) global_suite_cleanups[i]();
    }
    if (O.progressing) h2_console::prints("", "\33[2K\r");
 }
@@ -128,7 +128,7 @@ h2_inline int h2_runner::main(int argc, const char** argv)
    h2_stdio::initialize();
    h2_dns::initialize();
 
-   for (auto& setup : global_setups) setup();
+   for (int i = 0; global_setups[i]; ++i) global_setups[i]();
    enumerate();
    filter();
 
@@ -138,7 +138,7 @@ h2_inline int h2_runner::main(int argc, const char** argv)
       h2_list_for_each_entry (s, suites, h2_suite, x) {
          current_suite = s;
          h2_report::I().on_suite_start(s);
-         for (auto& setup : global_suite_setups) setup();
+         for (int i = 0; global_suite_setups[i]; ++i) global_suite_setups[i]();
          s->setup();
          h2_list_for_each_entry (c, s->cases, h2_case, x) {
             if ((0 < O.break_after_fails && O.break_after_fails <= stats.failed) || (O.only_last_failed && !c->last_failed))
@@ -153,16 +153,16 @@ h2_inline int h2_runner::main(int argc, const char** argv)
             current_case = c;
             h2_report::I().on_case_start(s, c);
             if (!O.lists && !c->todo && !c->filtered && !c->ignored) {
-               for (auto& setup : global_case_setups) setup();
+               for (int i = 0; global_case_setups[i]; ++i) global_case_setups[i]();
                s->test(c);
-               for (auto& cleanup : global_case_cleanups) cleanup();
+               for (int i = 0; global_case_cleanups[i]; ++i) global_case_cleanups[i]();
                c->failed ? (stats.failed++, s->stats.failed++) : (stats.passed++, s->stats.passed++);
             }
             h2_report::I().on_case_endup(s, c);
             c->clear();
          }
          s->cleanup();
-         for (auto& cleanup : global_suite_cleanups) cleanup();
+         for (int i = 0; global_suite_cleanups[i]; ++i) global_suite_cleanups[i]();
          h2_report::I().on_suite_endup(s);
          s->clear();
       }
@@ -172,7 +172,7 @@ h2_inline int h2_runner::main(int argc, const char** argv)
          save_last_order(suites);
    }
    h2_report::I().on_runner_endup(this);
-   for (auto& cleanup : global_cleanups) cleanup();
+   for (int i = 0; global_cleanups[i]; i++) global_cleanups[i]();
 
    h2_stubs::clear(stubs);
    h2_mocks::clear(mocks, false);

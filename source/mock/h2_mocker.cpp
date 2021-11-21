@@ -32,3 +32,14 @@ h2_inline h2_fail* h2_mocker_base::check() const
    h2_fail::append_child(fail, fails);
    return fail;
 }
+
+h2_inline void h2_mocker_base::failing(h2_fail* fail, int checkin_offset) const
+{
+   fail->foreach([this, checkin_offset](h2_fail* f, size_t, size_t) {
+      f->explain += gray("on ") + (srcfn + argument(f->seqno));
+      if (1 < checkin_array.size()) f->explain += gray(" when ") + index_th((size_t)checkin_offset) + " " + color(checkin_array[checkin_offset].expr, "cyan");
+   });
+   h2_fail* fails = h2_fail::new_normal(signature(), filine);
+   h2_fail::append_child(fails, fail);
+   h2_runner::failing(fails);
+}

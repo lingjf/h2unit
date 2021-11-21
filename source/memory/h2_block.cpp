@@ -1,17 +1,34 @@
 struct h2_block_attributes {
    unsigned long long limit = 0xffffffffffffull;
-   int alignment = sizeof(void*);
+   size_t alignment = sizeof(void*);
+   size_t n_fill = 0;
    unsigned char s_fill[32];
-   int n_fill = 0;
    bool noleak = false;
+
+   size_t parse_fill(const char* p, unsigned char bytes[])
+   {
+      if (p[0] == '0' && ::tolower(p[1]) == 'x') {
+         return hex2bytes(p + 2, bytes);
+      } else {
+         unsigned long long v = strtoull(p, nullptr, 10);
+         if (v <= 0xFFULL)
+            return *((unsigned char*)bytes) = (unsigned char)v, 1;
+         else if (v <= 0xFFFFULL)
+            return *((unsigned short*)bytes) = (unsigned short)v, 2;
+         else if (v <= 0xFFFFFFFFULL)
+            return *((unsigned int*)bytes) = (unsigned int)v, 4;
+         else
+            return *((unsigned long long*)bytes) = (unsigned long long)v, 8;
+      }
+   }
 
    h2_block_attributes(const char* attributes)
    {
-      double d;
-      if (h2_extract::has(attributes, "noleak")) noleak = true;
-      if (h2_extract::numeric(attributes, "limit", d)) limit = (unsigned long long)d;
-      if (h2_extract::numeric(attributes, "align", d)) alignment = (int)d;
-      n_fill = h2_extract::fill(attributes, "fill", s_fill);
+      const char* p;
+      if (get_keyvalue(attributes, "noleak")) noleak = true;
+      if ((p = get_keyvalue(attributes, "limit"))) limit = strtod(p, nullptr);
+      if ((p = get_keyvalue(attributes, "align"))) alignment = strtod(p, nullptr);
+      if ((p = get_keyvalue(attributes, "fill"))) n_fill = parse_fill(p, s_fill);
    }
 };
 
@@ -65,7 +82,7 @@ struct h2_block : h2_libc {
 
       // allocate action fill is prior to block level fill
       unsigned char* s_fill = attributes.s_fill;
-      int n_fill = attributes.n_fill;
+      size_t n_fill = attributes.n_fill;
       if (fill) {
          s_fill = &c_fill;
          n_fill = 1;

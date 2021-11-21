@@ -1,5 +1,11 @@
-
 #include "../source/h2_unit.cpp"
+
+static int counts(const char* array[])
+{
+   int count = 0;
+   while (array[count]) ++count;
+   return count;
+}
 
 SUITE(h2_option)
 {
@@ -137,32 +143,32 @@ SUITE(option filter)
    {
       const char* argv[] = {"./a.out", "-i", "http"};
       c.parse(3, argv);
-      OK(ListOf("http"), c.includes);
-      OK(CountOf(0), c.excludes);
+      OK(ListOf("http"), c.includes, 1);
+      OK(0, counts(c.excludes));
    }
 
    Case(2 include)
    {
       const char* argv[] = {"./a.out", "-i", "http", "-i", "tcp"};
       c.parse(5, argv);
-      OK(ListOf("http", "tcp"), c.includes);
-      OK(CountOf(0), c.excludes);
+      OK(ListOf("http", "tcp"), c.includes, 2);
+      OK(0, counts(c.excludes));
    }
 
    Case(include 2)
    {
       const char* argv[] = {"./a.out", "-i", "http", "tcp*"};
       c.parse(4, argv);
-      OK(ListOf("http", "tcp*"), c.includes);
-      OK(CountOf(0), c.excludes);
+      OK(ListOf("http", "tcp*"), c.includes, 2);
+      OK(0, counts(c.excludes));
    }
 
    Case(2 exclude)
    {
       const char* argv[] = {"./a.out", "-e", "http", "-e", "tcp"};
       c.parse(5, argv);
-      OK(ListOf("http", "tcp"), c.excludes);
-      OK(CountOf(0), c.includes);
+      OK(ListOf("http", "tcp"), c.excludes, 2);
+      OK(0, counts(c.includes));
    }
 }
 

@@ -10,9 +10,10 @@ struct h2_runner {
    h2_list stubs;
    h2_list mocks;
    h2_stats stats;
-   std::vector<void (*)()> global_setups, global_cleanups;
-   std::vector<void (*)()> global_suite_setups, global_suite_cleanups;
-   std::vector<void (*)()> global_case_setups, global_case_cleanups;
+
+   void (*global_setups[1024])(){nullptr}, (*global_cleanups[1024])(){nullptr};
+   void (*global_suite_setups[1024])(){nullptr}, (*global_suite_cleanups[1024])(){nullptr};
+   void (*global_case_setups[1024])(){nullptr}, (*global_case_cleanups[1024])(){nullptr};
 
    void enumerate();
    void filter();
@@ -26,20 +27,28 @@ struct h2_runner {
    static void asserts();
 };
 
-#define __H2GlobalCallback(Scope, Q)                           \
-   namespace {                                                 \
-      static struct Q {                                        \
-         Q() { h2::h2_runner::I().Scope##s.push_back(Scope); } \
-         static void Scope();                                  \
-      } H2PP_UNIQUE();                                         \
-   }                                                           \
+#define __H2GlobalCallback(Scope, Q)                   \
+   namespace {                                         \
+      static struct Q {                                \
+         Q()                                           \
+         {                                             \
+            for (int i = 0; i < 1024; ++i) {           \
+               if (!h2::h2_runner::I().Scope[i]) {     \
+                  h2::h2_runner::I().Scope[i] = Scope; \
+                  break;                               \
+               }                                       \
+            }                                          \
+         }                                             \
+         static void Scope();                          \
+      } H2PP_UNIQUE();                                 \
+   }                                                   \
    void Q::Scope()
 
-#define H2GlobalSetup() __H2GlobalCallback(global_setup, H2PP_UNIQUE())
-#define H2GlobalCleanup() __H2GlobalCallback(global_cleanup, H2PP_UNIQUE())
+#define H2GlobalSetup() __H2GlobalCallback(global_setups, H2PP_UNIQUE())
+#define H2GlobalCleanup() __H2GlobalCallback(global_cleanups, H2PP_UNIQUE())
 
-#define H2GlobalSuiteSetup() __H2GlobalCallback(global_suite_setup, H2PP_UNIQUE())
-#define H2GlobalSuiteCleanup() __H2GlobalCallback(global_suite_cleanup, H2PP_UNIQUE())
+#define H2GlobalSuiteSetup() __H2GlobalCallback(global_suite_setups, H2PP_UNIQUE())
+#define H2GlobalSuiteCleanup() __H2GlobalCallback(global_suite_cleanups, H2PP_UNIQUE())
 
-#define H2GlobalCaseSetup() __H2GlobalCallback(global_case_setup, H2PP_UNIQUE())
-#define H2GlobalCaseCleanup() __H2GlobalCallback(global_case_cleanup, H2PP_UNIQUE())
+#define H2GlobalCaseSetup() __H2GlobalCallback(global_case_setups, H2PP_UNIQUE())
+#define H2GlobalCaseCleanup() __H2GlobalCallback(global_case_cleanups, H2PP_UNIQUE())

@@ -2,7 +2,7 @@ h2_inline h2_fail* h2_checkin::check(size_t index, size_t total, const char* src
 {
    if (is_satisfied() || is_saturated()) return nullptr;
    h2_line t = srcfn + gray("()") + " expected " + delta(expect(), "green") + " but actually " + delta(actual(), "red,bold") + " called";
-   if (1 < total) t += gray(" when ") + h2_numeric::sequence_number(index) + " " + color(expr, "cyan");
+   if (1 < total) t += gray(" when ") + index_th(index) + " " + color(expr, "cyan");
    return h2_fail::new_normal(t);
 }
 

@@ -1,33 +1,33 @@
-static inline bool match_names(const std::vector<const char*>& patterns, const char* subject)
+static inline bool match_names(const char* const patterns[], const char* subject)
 {
-   for (auto pattern : patterns) {
-      if (strcasestr(subject, pattern)) return true;
-      if (strcspn(pattern, "?*[]") < strlen(pattern) && h2_pattern::wildcard_match(pattern, subject, true)) return true;
+   for (int i = 0; patterns[i]; ++i) {
+      if (strcasestr(subject, patterns[i])) return true;
+      if (strcspn(patterns[i], "?*[]") < strlen(patterns[i]) && h2_pattern::wildcard_match(patterns[i], subject, true)) return true;
    }
    return false;
 }
 
-static inline bool match_tags(const std::vector<const char*>& patterns, const h2_test* test)
+static inline bool match_tags(const char* const patterns[], const h2_test* test)
 {
-   for (auto pattern : patterns)
-      if (test->tagged(pattern)) return true;
+   for (int i = 0; patterns[i]; ++i)
+      if (test->tagged(patterns[i])) return true;
    return false;
 }
 
-static inline bool __filter(const h2_test* s, const h2_test* c, const std::vector<const char*>& includes, const std::vector<const char*>& excludes, bool tags_filter)
+static inline bool __filter(const h2_test* s, const h2_test* c, const char* const includes[], const char* const excludes[], bool tags_filter)
 {
    if (tags_filter) {
-      if (!includes.empty())
-         if (!(match_tags(includes, s) || c && match_tags(includes, c))) // priority && > ||
+      if (includes[0])
+         if (!(match_tags(includes, s) || c && match_tags(includes, c)))  // priority && > ||
             return true;
-      if (!excludes.empty())
+      if (excludes[0])
          if (match_tags(excludes, s) || c && match_tags(excludes, c))
             return true;
    } else {
-      if (!includes.empty())
+      if (includes[0])
          if (!(match_names(includes, s->name) || c && match_names(includes, c->name) || match_names(includes, c ? c->filine : s->filine)))
             return true;
-      if (!excludes.empty())
+      if (excludes[0])
          if (match_names(excludes, s->name) || c && match_names(excludes, c->name) || match_names(excludes, c ? c->filine : s->filine))
             return true;
    }

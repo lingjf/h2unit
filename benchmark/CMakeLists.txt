@@ -16,7 +16,7 @@ OPTION(H2UNIT2 "using h2unit.hpp/cpp" OFF)
 
 SET(SRC_TEST 1v2.cpp)
 
-FOREACH(i RANGE 1000)
+FOREACH(i RANGE 512)
     EXECUTE_PROCESS(COMMAND cp ../benchmark/test.cpp test_${i}.cpp)
     list(APPEND SRC_TEST test_${i}.cpp)
 ENDFOREACH(i)

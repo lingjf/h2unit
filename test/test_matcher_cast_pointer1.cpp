@@ -1,5 +1,4 @@
 #include "../source/h2_unit.cpp"
-
 #include "test_types.hpp"
 
 PTR_FILL_DECL_LIST;

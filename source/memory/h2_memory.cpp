@@ -57,7 +57,7 @@ h2_inline long long h2_memory::stack::footprint()
 
 h2_inline h2_memory::stack::block::block(const char* attributes, const char* filine)
 {
-   unmem = h2_extract::has(attributes, "unmem");
+   unmem = !!get_keyvalue(attributes, "unmem");
    if (unmem) h2_memory::hook(false);
    h2_stack::I().push(attributes, "block", filine);
 }

@@ -14,6 +14,27 @@ CASE(type of __LINE__)
    OK(AnyOf("int", "long"), h2::h2_cxa::demangle(typeid(decltype(line)).name()));
 }
 
+CASE(once)
+{
+   h2::h2_once once;
+   OK(once);
+   OK(!once);
+   OK(!once);
+}
+
+CASE(ss)
+{
+   OK("h2unit", h2::ss("h2unit"));
+   OK("", h2::ss(""));
+   OK("", h2::ss(nullptr));
+}
+
+CASE(sn)
+{
+   OK(42, h2::sn(42));
+   OK(0, h2::sn());
+}
+
 SUITE(blank)
 {
    Case(nullptr)
@@ -126,106 +147,6 @@ SUITE(h2_candidate)
    }
 }
 
-CASE(ss)
-{
-   OK("h2unit", h2::ss("h2unit"));
-   OK("", h2::ss(""));
-   OK("", h2::ss(nullptr));
-}
-
-CASE(sn)
-{
-   OK(42, h2::sn(42));
-   OK(0, h2::sn());
-}
-
-SUITE(h2_extract)
-{
-   Case(has)
-   {
-      const char* a0 = "ok";
-      OK(NotNull, h2::h2_extract::has(a0, "ok"));
-
-      const char* a1 = "to=1.2.3.4";
-      OK(NotNull, h2::h2_extract::has(a1, "to"));
-
-      const char* a2 = "to=1.2.3.4, name = zhang3";
-      OK(NotNull, h2::h2_extract::has(a2, "to"));
-      OK(NotNull, h2::h2_extract::has(a2, "name"));
-   }
-
-   Case(numeric)
-   {
-      double ret;
-
-      const char* a1 = "len=1234";
-      OK(true, h2::h2_extract::numeric(a1, "len", ret));
-      OK(1234, ret);
-
-      const char* a2 = "len =1234.56";
-      OK(true, h2::h2_extract::numeric(a2, "len", ret));
-      OK(1234.56, ret);
-
-      const char* a3 = "len =  1234.56 ";
-      OK(true, h2::h2_extract::numeric(a3, "len", ret));
-      OK(1234.56, ret);
-   }
-
-   Case(iport)
-   {
-      char ret[256];
-
-      const char* a1 = "to=1.2.3.4:5678";
-      OK(h2::h2_extract::iport(a1, "to", ret));
-      OK("1.2.3.4:5678", ret);
-
-      const char* a2 = "to = 1.2.3.4:*";
-      OK(h2::h2_extract::iport(a2, "to", ret));
-      OK("1.2.3.4:*", ret);
-
-      const char* a3 = "to=  * :5678";
-      OK(h2::h2_extract::iport(a3, "to", ret));
-      OK("*:5678", ret);
-
-      const char* a4 = "to=*:  *";
-      OK(h2::h2_extract::iport(a4, "to", ret));
-      OK("*:*", ret);
-   }
-
-   Case(fill)
-   {
-      unsigned char ret[256];
-
-      const char* a1 = "bin=1";
-      OK(1, h2::h2_extract::fill(a1, "bin", ret));
-      OK(Me("\x01", 1), ret);
-
-      const char* a2 = "bin =0x55";
-      OK(1, h2::h2_extract::fill(a2, "bin", ret));
-      OK(Me("\x55", 1), ret);
-
-      const char* a3 = "bin= 60000";
-      OK(2, h2::h2_extract::fill(a3, "bin", ret));
-      OK(Me("\x60\xEA", 2), ret);
-
-      const char* a4 = "bin=  0x5566";
-      OK(2, h2::h2_extract::fill(a4, "bin", ret));
-      OK(Me("\x55\x66", 2), ret);
-
-      const char* a5 = "bin=0x1122334455667788";
-      OK(8, h2::h2_extract::fill(a5, "bin", ret));
-      OK(Me("\x11\x22\x33\x44\x55\x66\x77\x88", 8), ret);
-   }
-}
-
-CASE(once)
-{
-   h2::h2_once once;
-   OK(once);
-   OK(!once);
-   OK(!once);
-}
-
 CASE(H2Foreach)
 {
    int s = 0;
@@ -235,30 +156,227 @@ CASE(H2Foreach)
      OK(6, s);
 }
 
-SUITE(H2Fullmesh)
-{
-   Case(direct)
-   {
-      int s = 0;
+SUITE(H2Fullmesh){
+  Case(direct){
+    int s = 0;
 #define FOO(x, y) s += x * y;
-      H2Fullmesh(FOO, (1, 2, 3));
+H2Fullmesh(FOO, (1, 2, 3));
 #undef FOO
-      OK(1 * 1 + 1 * 2 + 1 * 3 + 2 * 1 + 2 * 2 + 2 * 3 + 3 * 1 + 3 * 2 + 3 * 3, s);
-   }
+OK(1 * 1 + 1 * 2 + 1 * 3 + 2 * 1 + 2 * 2 + 2 * 3 + 3 * 1 + 3 * 2 + 3 * 3, s);
+}
 
-   Case(macro)
-   {
+Case(macro)
+{
 #define M123 1, 2, 3
-      int s = 0;
+   int s = 0;
 #define FOO(x, y) s += x * y;
-      H2Fullmesh(FOO, (M123), (M123));
+   H2Fullmesh(FOO, (M123), (M123));
 #undef FOO
-      OK(1 * 1 + 1 * 2 + 1 * 3 + 2 * 1 + 2 * 2 + 2 * 3 + 3 * 1 + 3 * 2 + 3 * 3, s);
-   }
+   OK(1 * 1 + 1 * 2 + 1 * 3 + 2 * 1 + 2 * 2 + 2 * 3 + 3 * 1 + 3 * 2 + 3 * 3, s);
+}
 
 #define BAR(x, y) \
    Case(generator x y) {}
 
-   H2Fullmesh(BAR, (A, B, C), (1, 2, 3))
+H2Fullmesh(BAR, (A, B, C), (1, 2, 3))
 #undef BAR
+}
+
+SUITE(get key value)
+{
+   Case(unary)
+   {
+      const char* a0 = "ok";
+      OK("", h2::get_keyvalue(a0, "ok"));
+      OK(IsNull, h2::get_keyvalue(a0, "ko"));
+   }
+
+   Case(key=value)
+   {
+      const char* a1 = "to=1.2.3.4";
+      OK("1.2.3.4", h2::get_keyvalue(a1, "to"));
+   }
+
+   Case(strip space)
+   {
+      const char* a2 = "to=1.2.3.4, name = zhang3";
+      OK(NotNull, h2::get_keyvalue(a2, "to"));
+      OK("zhang3", h2::get_keyvalue(a2, "name"));
+   }
+}
+
+SUITE(numeric)
+{
+   unsigned char z1[1024];
+
+   Case(not2n)
+   {
+      OK(!h2::not2n(0));
+
+      for (int i = 0; i < 32; i++)
+         OK(!h2::not2n(1 << i));
+
+      OK(h2::not2n(3));
+      OK(h2::not2n(0x55));
+   }
+
+   Case(mask2n)
+   {
+      OK(0x0, h2::mask2n(0));
+      OK(0x1, h2::mask2n(1));
+      OK(0x3, h2::mask2n(2));
+      OK(0x3, h2::mask2n(3));
+      OK(0x7, h2::mask2n(4));
+      OK(0x7, h2::mask2n(5));
+      OK(0x7, h2::mask2n(6));
+      OK(0x7, h2::mask2n(7));
+      OK(0xF, h2::mask2n(8));
+      OK(0xF, h2::mask2n(9));
+      OK(0xF, h2::mask2n(10));
+      OK(0xF, h2::mask2n(11));
+      OK(0xF, h2::mask2n(12));
+      OK(0xF, h2::mask2n(13));
+      OK(0xF, h2::mask2n(14));
+      OK(0xF, h2::mask2n(15));
+      for (unsigned i = 16; i < 32; ++i) {
+         OK(0x1F, h2::mask2n(i));
+      }
+      for (unsigned i = 32; i < 64; ++i) {
+         OK(0x3F, h2::mask2n(i));
+      }
+      for (unsigned i = 64; i < 128; ++i) {
+         OK(0x7F, h2::mask2n(i));
+      }
+      for (unsigned i = 128; i < 256; ++i) {
+         OK(0xFF, h2::mask2n(i));
+      }
+      for (unsigned i = 0x7FFFFFF0U; i < 0x7FFFFFFFU; ++i) {
+         OK(0x7FFFFFFFU, h2::mask2n(i));
+      }
+      for (unsigned i = 0xFFFFFFF0U; i < 0xFFFFFFFFU; ++i) {
+         OK(0xFFFFFFFFU, h2::mask2n(i));
+      }
+   }
+
+   Case(hex2byte)
+   {
+      OK(0, h2::hex2byte('0'));
+      OK(1, h2::hex2byte('1'));
+      OK(2, h2::hex2byte('2'));
+      OK(3, h2::hex2byte('3'));
+      OK(4, h2::hex2byte('4'));
+      OK(5, h2::hex2byte('5'));
+      OK(6, h2::hex2byte('6'));
+      OK(7, h2::hex2byte('7'));
+      OK(8, h2::hex2byte('8'));
+      OK(9, h2::hex2byte('9'));
+      OK(10, h2::hex2byte('a'));
+      OK(11, h2::hex2byte('b'));
+      OK(12, h2::hex2byte('c'));
+      OK(13, h2::hex2byte('d'));
+      OK(14, h2::hex2byte('e'));
+      OK(15, h2::hex2byte('f'));
+      OK(10, h2::hex2byte('A'));
+      OK(11, h2::hex2byte('B'));
+      OK(12, h2::hex2byte('C'));
+      OK(13, h2::hex2byte('D'));
+      OK(14, h2::hex2byte('E'));
+      OK(15, h2::hex2byte('F'));
+   }
+
+   Case(hex2bytes C)
+   {
+      unsigned char e1[] = {0xC};
+      OK(1, h2::hex2bytes("C", z1));
+      OK(Me(e1, 1), z1);
+   }
+
+   Case(hex2bytes 4C)
+   {
+      unsigned char e1[] = {0x4C};
+      OK(1, h2::hex2bytes("4C", z1));
+      OK(memcmp(e1, z1, 1) == 0);
+   }
+
+   Case(hex2bytes Cd8)
+   {
+      unsigned char e1[] = {0xC, 0xD8};
+      OK(2, h2::hex2bytes("Cd8", z1));
+      OK(memcmp(e1, z1, 2) == 0);
+   }
+
+   Case(hex2bytes 4Cd8)
+   {
+      unsigned char e1[] = {0x4C, 0xD8};
+      OK(2, h2::hex2bytes("4Cd8", z1));
+      OK(memcmp(e1, z1, 2) == 0);
+   }
+
+   Case(hex2bytes 24Cd8)
+   {
+      unsigned char e1[] = {0x2, 0x4C, 0xD8};
+      OK(3, h2::hex2bytes("24Cd8", z1));
+      OK(memcmp(e1, z1, 3) == 0);
+   }
+}
+
+SUITE(index_th)
+{
+   Cases(base0, (0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18))
+   {
+      const char* e[] = {"0th", "1st", "2nd", "3rd", "4th", "5th", "6th", "7th", "8th", "9th", "10th", "11th", "12th", "13th", "14th", "15th", "16th", "17th", "18th", "19th", "20th"};
+
+      OK(e[x], h2::index_th(x, 0));
+   }
+
+   Cases(base1, (0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18))
+   {
+      const char* e[] = {"1st", "2nd", "3rd", "4th", "5th", "6th", "7th", "8th", "9th", "10th", "11th", "12th", "13th", "14th", "15th", "16th", "17th", "18th", "19th", "20th"};
+
+      OK(e[x], h2::index_th(x));
+   }
+}
+
+SUITE(numeric number width)
+{
+   Case(base 10 dec)
+   {
+      OK(1, h2::number_strlen(0, 10));
+      OK(1, h2::number_strlen(9, 10));
+      OK(2, h2::number_strlen(10, 10));
+      OK(2, h2::number_strlen(99, 10));
+      OK(3, h2::number_strlen(100, 10));
+      OK(3, h2::number_strlen(999, 10));
+      OK(4, h2::number_strlen(1000, 10));
+      OK(4, h2::number_strlen(9999, 10));
+      OK(5, h2::number_strlen(10000, 10));
+      OK(5, h2::number_strlen(99999, 10));
+      OK(6, h2::number_strlen(100000, 10));
+      OK(6, h2::number_strlen(999999, 10));
+      OK(7, h2::number_strlen(1000000, 10));
+      OK(7, h2::number_strlen(9999999, 10));
+      OK(8, h2::number_strlen(10000000, 10));
+      OK(8, h2::number_strlen(99999999, 10));
+      OK(9, h2::number_strlen(100000000, 10));
+      OK(9, h2::number_strlen(999999999, 10));
+   }
+   Case(base 16 hex)
+   {
+      OK(1, h2::number_strlen(0x0, 16));
+      OK(1, h2::number_strlen(0xF, 16));
+      OK(2, h2::number_strlen(0x10, 16));
+      OK(2, h2::number_strlen(0xFF, 16));
+      OK(3, h2::number_strlen(0x100, 16));
+      OK(3, h2::number_strlen(0xFF0, 16));
+      OK(4, h2::number_strlen(0x1000, 16));
+      OK(4, h2::number_strlen(0xFFFF, 16));
+      OK(5, h2::number_strlen(0x10000, 16));
+      OK(5, h2::number_strlen(0xFFFFF, 16));
+      OK(6, h2::number_strlen(0x100000, 16));
+      OK(6, h2::number_strlen(0xFFFFFF, 16));
+      OK(7, h2::number_strlen(0x1000000, 16));
+      OK(7, h2::number_strlen(0xFFFFFFF, 16));
+      OK(8, h2::number_strlen(0x10000000, 16));
+      OK(8, h2::number_strlen(0xFFFFFFFF, 16));
+   }
 }

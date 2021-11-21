@@ -104,3 +104,83 @@ SUITE(container)
       OK((h2::h2_is_container<h2::h2_string>::value));
    }
 }
+
+#define FF()                                     \
+   sprintf(z, "%9s: t=%s, T=%s", s,              \
+           h2::h2_cxa::type_name<decltype(t)>(), \
+           h2::h2_cxa::type_name<T>());          \
+   return z
+
+#define FF2()                                                \
+   sprintf(z, "%9s: t=%s, T=%s", s,                          \
+           h2::h2_cxa::demangle(typeid(decltype(t)).name()), \
+           h2::h2_cxa::demangle(typeid(T).name()));          \
+   return z
+
+static char z[256];
+
+template <typename T>
+static const char* f1(const char* s, T t) { FF(); }
+
+template <typename T>
+static const char* f2(const char* s, const T t) { FF(); }
+
+template <typename T>
+static const char* f3(const char* s, T& t) { FF(); }
+
+template <typename T>
+static const char* f4(const char* s, const T& t) { FF(); }
+
+TODO(template parameter type)
+{
+   int a = 1;
+   int* ap = &a;  // auto ap = &a;
+   int& ar = a;
+   int&& arr = 2;
+
+   const int ca = 1;
+   const int* cap = &ca;  // auto cap = &ca;
+   const int& car = ca;
+   const int&& carr = 2;
+
+   ::printf("        a: %s\n", h2::h2_cxa::type_name<decltype(a)>());
+   ::printf("       ap: %s\n", h2::h2_cxa::type_name<decltype(ap)>());
+   ::printf("       ar: %s\n", h2::h2_cxa::type_name<decltype(ar)>());
+   ::printf("      arr: %s\n", h2::h2_cxa::type_name<decltype(arr)>());
+   ::printf("       ca: %s\n", h2::h2_cxa::type_name<decltype(ca)>());
+   ::printf("      cap: %s\n", h2::h2_cxa::type_name<decltype(cap)>());
+   ::printf("      car: %s\n", h2::h2_cxa::type_name<decltype(car)>());
+   ::printf("     carr: %s\n", h2::h2_cxa::type_name<decltype(carr)>());
+
+   ::printf("%s\n", f1("f1(a)", a));
+   ::printf("%s\n", f1("f1(ap)", ap));
+   ::printf("%s\n", f1("f1(ar)", ar));
+   ::printf("%s\n", f1("f1(arr)", arr));
+   ::printf("%s\n", f1("f1(ca)", ca));
+   ::printf("%s\n", f1("f1(cap)", cap));
+   ::printf("%s\n", f1("f1(car)", car));
+   ::printf("%s\n", f1("f1(carr)", carr));
+
+   ::printf("%s\n", f2("f2(a)", a));
+   ::printf("%s\n", f2("f2(ap)", ap));
+   ::printf("%s\n", f2("f2(ar)", ar));
+   ::printf("%s\n", f2("f2(arr)", arr));
+   ::printf("%s\n", f2("f2(ca)", ca));
+   ::printf("%s\n", f2("f2(cap)", cap));
+   ::printf("%s\n", f2("f2(car)", car));
+   ::printf("%s\n", f2("f2(carr)", carr));
+
+   ::printf("%s\n", f3("f3(a)", a));
+   ::printf("%s\n", f3("f3(ap)", ap));
+   ::printf("%s\n", f3("f3(ar)", ar));
+   ::printf("%s\n", f3("f3(arr)", arr));
+   ::printf("%s\n", f3("f3(ca)", ca));
+   ::printf("%s\n", f3("f3(cap)", cap));
+   ::printf("%s\n", f3("f3(car)", car));
+   ::printf("%s\n", f3("f3(carr)", carr));
+
+   ::printf("%s\n", f4("f4(ca)", ca));
+   ::printf("%s\n", f4("f4(cap)", cap));
+   ::printf("%s\n", f4("f4(car)", car));
+   ::printf("%s\n", f4("f4(carr)", carr));
+}

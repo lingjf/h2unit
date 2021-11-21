@@ -267,7 +267,7 @@ struct h2_report_console : h2_report_impl {
    void on_suite_endup(h2_suite* s) override
    {
       h2_report_impl::on_suite_endup(s);
-      if (O.verbose >= 9 && O.includes.size() + O.excludes.size() == 0) {
+      if (O.verbose >= 9 && !(O.includes[0] || O.excludes[0])) {
          print_bar(true, nullptr, nullptr, nullptr, nullptr, false);
 
          int n = nonzero_count(s->stats.passed, s->stats.failed, s->stats.todo, s->stats.filtered, s->stats.ignored);

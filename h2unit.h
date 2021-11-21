@@ -17,7 +17,6 @@
 #include <sstream>     /* std::basic_ostringstream */
 #include <string>      /* std::string */
 #include <vector>      /* std::vector */
-#include <map>         /* std::map */
 #include <tuple>       /* std::tuple */
 #include <functional>  /* std::function */
 #include <utility>     /* std::forward, std::pair */
@@ -515,13 +514,6 @@ struct h2_once {
    operator bool() { return !c++; }
 };
 
-struct h2_extract {
-   static const char* has(const char* attributes, const char* key);
-   static bool numeric(const char* attributes, const char* key, double& value);
-   static bool iport(const char* attributes, const char* key, char* str);
-   static int fill(const char* attributes, const char* key, unsigned char bytes[]);
-};
-
 // #define M(...) func(#__VA_ARGS__, other)
 // Unix M() ==> func("", other) stringify empty __VA_ARGS__ to "" string
 // Windows M() ==> func(, other) stringify empty __VA_ARGS__ to empty
@@ -537,17 +529,6 @@ static inline const size_t sn(const size_t a = 0) { return a; }
 
 /* clang-format off */
 #define h2_singleton(Class) static Class& I() { static Class i; return i; }
-// source/utils/h2_numeric.hpp
-struct h2_numeric {
-   static bool is_hex_string(const char* s);
-   static bool is_bin_string(const char* s);
-   static size_t hex_to_bytes(const char* hex, unsigned char* bytes);
-   static size_t bin_to_bits(const char* bin, unsigned char* bytes);
-
-   static bool bits_equal(const unsigned char* b1, const unsigned char* b2, size_t nbits);
-
-   static const char* sequence_number(size_t sequence, size_t shift = 1);
-};
 // source/utils/h2_libc.hpp
 struct h2_libc {
    static void* malloc(size_t size);
@@ -916,14 +897,6 @@ inline h2_line h2_stringify(T a, size_t n, bool represent)
    line += gray("]");
    return line;
 }
-// source/utils/h2_console.hpp
-struct h2_console {
-   static size_t width();
-   static void prints(const char* style, const char* format, ...);
-   static void printl(const h2_line& line, bool cr = true);
-   static void printl(const h2_lines& lines, bool cr = true);
-   static bool isctrl(const char* s) { return s[0] == '\033' && s[1] == '{'; };
-};
 // source/symbol/h2_nm.hpp
 struct h2_symbol {
    h2_list x;
@@ -934,8 +907,7 @@ struct h2_symbol {
 
 struct h2_nm {
    h2_singleton(h2_nm);
-   std::map<std::string, unsigned long long>* mangle_symbols;
-   h2_list demangle_symbols;
+   h2_list mangle_symbols, demangle_symbols;
    static int get_by_name(const char* name, h2_symbol* res[], int n);
    static h2_symbol* get_by_addr(unsigned long long addr);
    static unsigned long long get_mangle(const char* name);
@@ -1035,29 +1007,10 @@ struct h2_fail : h2_libc {
 };
 // source/render/h2_option.hpp
 
-static constexpr int VerboseQuiet = 0;
-static constexpr int VerboseCompactFailed = 1;
-static constexpr int VerboseCompactPassed = 2;
-static constexpr int VerboseNormal = 3;
-static constexpr int VerboseDetail = 4;
-
-static constexpr int ShuffleCode = 0x0;
-static constexpr int ShuffleRandom = 0x10;
-static constexpr int ShuffleName = 0x100;
-static constexpr int ShuffleFile = 0x1000;
-static constexpr int ShuffleReverse = 0x10000;
-
-static constexpr int ListNone = 0x0;
-static constexpr int ListSuite = 0x10;
-static constexpr int ListCase = 0x100;
-static constexpr int ListTodo = 0x1000;
-static constexpr int ListTag = 0x10000;
-
-static constexpr int FoldUnFold = 0;
-static constexpr int FoldShort = 1;
-static constexpr int FoldSame = 2;
-static constexpr int FoldSingle = 3;
-static constexpr int FoldMax = 5;
+static constexpr int VerboseQuiet = 0, VerboseCompactFailed = 1, VerboseCompactPassed = 2, VerboseNormal = 3, VerboseDetail = 4;
+static constexpr int ShuffleCode = 0x0, ShuffleRandom = 0x10, ShuffleName = 0x100, ShuffleFile = 0x1000, ShuffleReverse = 0x10000;
+static constexpr int ListNone = 0x0, ListSuite = 0x10, ListCase = 0x100, ListTodo = 0x1000, ListTag = 0x10000;
+static constexpr int FoldUnFold = 0, FoldShort = 1, FoldSame = 2, FoldSingle = 3, FoldMax = 5;
 
 struct h2_option {
    h2_singleton(h2_option);
@@ -1090,36 +1043,25 @@ struct h2_option {
    const char* json_source_quote = "";
    char junit_path[256]{'\0'};
    char tap_path[256]{'\0'};
-   std::vector<const char*> includes, excludes;
+   const char *includes[128]{nullptr}, *excludes[128]{nullptr};
 
    void parse(int argc, const char** argv);
 };
 
 static const h2_option& O = h2_option::I();  // for pretty
-// source/render/h2_layout.hpp
-struct h2_layout {
-   static h2_lines split(const h2_lines& left_lines, const h2_lines& right_lines, const char* left_title, const char* right_title, size_t step, char scale, size_t width);
-   static h2_lines unified(const h2_line& up_line, const h2_line& down_line, const char* up_title, const char* down_title, size_t width);
-   static h2_lines seperate(const h2_line& up_line, const h2_line& down_line, const char* up_title, const char* down_title, size_t width);
+// source/except/h2_debug.hpp
+struct h2_debugger {
+   static void trap();
 };
-// source/render/h2_report.hpp
-struct h2_runner;
-struct h2_suite;
-struct h2_case;
 
-struct h2_report {
-   h2_singleton(h2_report);
-   static void initialize();
-
-   bool backable = false;
-   h2_list reports;
-   void on_runner_start(h2_runner* r);
-   void on_runner_endup(h2_runner* r);
-   void on_suite_start(h2_suite* s);
-   void on_suite_endup(h2_suite* s);
-   void on_case_start(h2_suite* s, h2_case* c);
-   void on_case_endup(h2_suite* s, h2_case* c);
-};
+#define h2_debug(shift, ...)                                            \
+   do {                                                                 \
+      if (!O.debugger_trap) {                                           \
+         ::printf(" " __VA_ARGS__);                                     \
+         ::printf(" %s : %d = %s\n", __FILE__, __LINE__, __FUNCTION__); \
+         h2_backtrace::dump(shift).print(3);                            \
+      }                                                                 \
+   } while (0)
 // source/core/h2_test.hpp
 struct h2_stats {
    int passed = 0, failed = 0, todo = 0, filtered = 0, ignored = 0;
@@ -1213,9 +1155,10 @@ struct h2_runner {
    h2_list stubs;
    h2_list mocks;
    h2_stats stats;
-   std::vector<void (*)()> global_setups, global_cleanups;
-   std::vector<void (*)()> global_suite_setups, global_suite_cleanups;
-   std::vector<void (*)()> global_case_setups, global_case_cleanups;
+
+   void (*global_setups[1024])(){nullptr}, (*global_cleanups[1024])(){nullptr};
+   void (*global_suite_setups[1024])(){nullptr}, (*global_suite_cleanups[1024])(){nullptr};
+   void (*global_case_setups[1024])(){nullptr}, (*global_case_cleanups[1024])(){nullptr};
 
    void enumerate();
    void filter();
@@ -1229,23 +1172,31 @@ struct h2_runner {
    static void asserts();
 };
 
-#define __H2GlobalCallback(Scope, Q)                           \
-   namespace {                                                 \
-      static struct Q {                                        \
-         Q() { h2::h2_runner::I().Scope##s.push_back(Scope); } \
-         static void Scope();                                  \
-      } H2PP_UNIQUE();                                         \
-   }                                                           \
+#define __H2GlobalCallback(Scope, Q)                   \
+   namespace {                                         \
+      static struct Q {                                \
+         Q()                                           \
+         {                                             \
+            for (int i = 0; i < 1024; ++i) {           \
+               if (!h2::h2_runner::I().Scope[i]) {     \
+                  h2::h2_runner::I().Scope[i] = Scope; \
+                  break;                               \
+               }                                       \
+            }                                          \
+         }                                             \
+         static void Scope();                          \
+      } H2PP_UNIQUE();                                 \
+   }                                                   \
    void Q::Scope()
 
-#define H2GlobalSetup() __H2GlobalCallback(global_setup, H2PP_UNIQUE())
-#define H2GlobalCleanup() __H2GlobalCallback(global_cleanup, H2PP_UNIQUE())
+#define H2GlobalSetup() __H2GlobalCallback(global_setups, H2PP_UNIQUE())
+#define H2GlobalCleanup() __H2GlobalCallback(global_cleanups, H2PP_UNIQUE())
 
-#define H2GlobalSuiteSetup() __H2GlobalCallback(global_suite_setup, H2PP_UNIQUE())
-#define H2GlobalSuiteCleanup() __H2GlobalCallback(global_suite_cleanup, H2PP_UNIQUE())
+#define H2GlobalSuiteSetup() __H2GlobalCallback(global_suite_setups, H2PP_UNIQUE())
+#define H2GlobalSuiteCleanup() __H2GlobalCallback(global_suite_cleanups, H2PP_UNIQUE())
 
-#define H2GlobalCaseSetup() __H2GlobalCallback(global_case_setup, H2PP_UNIQUE())
-#define H2GlobalCaseCleanup() __H2GlobalCallback(global_case_cleanup, H2PP_UNIQUE())
+#define H2GlobalCaseSetup() __H2GlobalCallback(global_case_setups, H2PP_UNIQUE())
+#define H2GlobalCaseCleanup() __H2GlobalCallback(global_case_cleanups, H2PP_UNIQUE())
 // source/core/h2_core.hpp
 
 #define H2SUITE(...) __H2SUITE(#__VA_ARGS__, H2PP_UNIQUE(suite_test_C))
@@ -1422,13 +1373,23 @@ struct h2_runner {
    H2TODO(case_prefix, __VA_ARGS__) {}            \
    template <typename x, typename y>              \
    static void case_test()
-// source/json/h2_json.hpp
-struct h2_json {
-   static h2_lines dump(const h2_string& json_string);
-   static h2_string select(const h2_string& json_string, const h2_string& selector, bool caseless);
-   // < 0 illformed json; = 0 matched; > 0 unmatched
-   static int match(const h2_string& expect, const h2_string& actual, bool caseless);
-   static bool diff(const h2_string& expect, const h2_string& actual, h2_lines& e_lines, h2_lines& a_lines, bool caseless);
+// source/render/h2_report.hpp
+struct h2_runner;
+struct h2_suite;
+struct h2_case;
+
+struct h2_report {
+   h2_singleton(h2_report);
+   static void initialize();
+
+   bool backable = false;
+   h2_list reports;
+   void on_runner_start(h2_runner* r);
+   void on_runner_endup(h2_runner* r);
+   void on_suite_start(h2_suite* s);
+   void on_suite_endup(h2_suite* s);
+   void on_case_start(h2_suite* s, h2_case* c);
+   void on_case_endup(h2_suite* s, h2_case* c);
 };
 // source/matcher/h2_matches.hpp
 struct h2_mc {
@@ -2194,6 +2155,15 @@ inline h2_polymorphic_matcher<h2_caseless_matches> CaseLess(const M& m) { return
 template <typename M>
 inline h2_polymorphic_matcher<h2_spaceless_matches> SpaceLess(const M& m) { return h2_polymorphic_matcher<h2_spaceless_matches>(h2_spaceless_matches(h2_matcher<h2_string>(m))); }
 // source/matcher/h2_memcmp.hpp
+
+struct h2_memcmp_util {
+   static bool is_hex_string(const char* s);
+   static bool is_bin_string(const char* s);
+   static size_t bin_to_bits(const char* bin, unsigned char* bytes);
+   static size_t hex_to_bytes(const char* hex, unsigned char* bytes);
+   static bool bits_equal(const unsigned char* b1, const unsigned char* b2, size_t nbits);
+};
+
 template <typename E>
 struct h2_matches_memcmp : h2_matches {
    const E buffer;
@@ -2211,20 +2181,20 @@ struct h2_matches_memcmp : h2_matches {
             l = strlen((const char*)buffer);
             w = 8;
             if (!strcmp((const char*)buffer, (const char*)a)) break; /*result = true;*/
-            if (h2_numeric::is_bin_string((const char*)buffer)) {
+            if (h2_memcmp_util::is_bin_string((const char*)buffer)) {
                e = (unsigned char*)alloca(l);
-               l = h2_numeric::bin_to_bits((const char*)buffer, e);
+               l = h2_memcmp_util::bin_to_bits((const char*)buffer, e);
                w = 1;
-            } else if (h2_numeric::is_hex_string((const char*)buffer)) {
+            } else if (h2_memcmp_util::is_hex_string((const char*)buffer)) {
                e = (unsigned char*)alloca(l);
-               l = h2_numeric::hex_to_bytes((const char*)buffer, e);
+               l = h2_memcmp_util::hex_to_bytes((const char*)buffer, e);
                w = 8;
             }
          }
          if (!w) w = h2_sizeof_pointee<E>::value * 8; /* deduce by data type */
          if (!l) l = size;                            /* deduce by array size */
          if (!l || !w) return h2_fail::new_normal(color("length", "red") + " not specified " + gray("in ") + color("Me(buffer, ", "cyan") + color("length", "red") + gray(", width") + color(")", "cyan"));
-         result = h2_numeric::bits_equal(e, (const unsigned char*)a, l * w);
+         result = h2_memcmp_util::bits_equal(e, (const unsigned char*)a, l * w);
       } while (0);
 
       if (c.fit(result)) return nullptr;
@@ -3032,6 +3002,8 @@ struct h2_mocker_base : h2_libc {
 
    virtual void reset() = 0;
    void mock();
+
+   void failing(h2_fail* fail, int checkin_offset) const;
 };
 
 namespace {
@@ -3078,13 +3050,7 @@ class h2_mocker<Counter, ClassType, ReturnType(ArgumentTypes...)> : h2_mocker_ba
                delete fails;
                continue;
             }
-            fails->foreach([this, i](h2_fail* f, size_t, size_t) {
-               f->explain += gray("on ") + (srcfn + argument(f->seqno));
-               if (1 < checkin_array.size()) f->explain += gray(" when ") + h2_numeric::sequence_number((size_t)i) + " " + color(checkin_array[i].expr, "cyan");
-            });
-            h2_fail* fail = h2_fail::new_normal(signature(), filine);
-            h2_fail::append_child(fail, fails);
-            h2_runner::failing(fail);
+            failing(fails, i);
          } else {
             checkin_index = i;
             checkin_offset = i;
@@ -3315,19 +3281,6 @@ template <>
 inline void h2_unmem(const char* f) { h2_exempt::add_by_name(f); }
 
 #define H2UNMEM(f) h2::h2_unmem(f)
-// source/except/h2_debug.hpp
-struct h2_debugger {
-   static void trap();
-};
-
-#define h2_debug(shift, ...)                                                          \
-   do {                                                                               \
-      if (!O.debugger_trap) {                                                         \
-         h2_console::prints("", __VA_ARGS__);                                         \
-         h2_console::prints("", " %s : %d = %s\n", __FILE__, __LINE__, __FUNCTION__); \
-         h2_backtrace::dump(shift).print(3);                                          \
-      }                                                                               \
-   } while (0)
 // source/stdio/h2_stdio.hpp
 struct h2_cout : h2_once {
    const char* filine;
@@ -3759,7 +3712,6 @@ using h2::Pair;
 
 #endif
 
-#include <cassert>   /* assert */
 #include <cctype>    /* tolower, isspace */
 #include <cstdarg>   /* va_list */
 #include <errno.h>   /* strerror */
@@ -3917,106 +3869,6 @@ h2_inline void h2_list::sort(int (*cmp)(h2_list*, h2_list*))
    }
    while (!sorted.empty()) {
       push_back(sorted.pop());
-   }
-}
-// source/utils/h2_numeric.cpp
-static inline bool not2n(unsigned x)
-{
-   return x & (x - 1);
-}
-
-static inline unsigned mask2n(unsigned x)
-{
-   x |= (x >> 1);
-   x |= (x >> 2);
-   x |= (x >> 4);
-   x |= (x >> 8);
-   x |= (x >> 16);
-   return x;
-}
-
-static inline int hex_to_byte(char c)
-{
-   return '0' <= c && c <= '9' ? c - '0' : ('A' <= c && c <= 'F' ? c - 'A' + 10 : ('a' <= c && c <= 'f' ? c - 'a' + 10 : -1));
-}
-
-h2_inline size_t h2_numeric::hex_to_bytes(const char* hex, unsigned char* bytes)
-{
-   char b;
-   size_t i = 0, c = 0;
-
-   for (; ::isxdigit(hex[c]);) ++c;
-   if (c % 2 == 1) {
-      b = '0';
-      i = 1;
-      c += 1;
-      hex = hex - 1;
-   }
-   for (; i < c; ++i) {
-      if (i % 2 == 1)
-         bytes[i / 2] = (unsigned char)((hex_to_byte(b) << 4) + hex_to_byte(hex[i]));
-      b = hex[i];
-   }
-   return c / 2;
-}
-
-h2_inline size_t h2_numeric::bin_to_bits(const char* bin, unsigned char* bytes)
-{
-   memset(bytes, 0, strlen(bin));
-   size_t c = 0;
-   for (const char* p = bin; *p; p++) {
-      if (*p == ' ') continue;
-      size_t i = c / 8, j = 7 - c % 8;
-      ++c;
-      unsigned char ebit = *p == '1' ? 1 : 0;
-      bytes[i] = bytes[i] | (ebit << j);
-   }
-   return c;
-}
-
-h2_inline bool h2_numeric::bits_equal(const unsigned char* b1, const unsigned char* b2, size_t nbits)
-{
-   for (size_t k = 0; k < nbits; ++k) {
-      size_t i = k / 8, j = 7 - k % 8;
-      if (((b1[i] >> j) & 1) != ((b2[i] >> j) & 1)) return false;
-   }
-   return true;
-}
-
-h2_inline bool h2_numeric::is_hex_string(const char* s)
-{
-   if (s[0] == '0' && ::tolower(s[1]) == 'x') return true;
-   for (const char* p = s; *p; p++)
-      if (!::isxdigit(*p) && !::isspace(*p))
-         return false;
-   return true;
-}
-
-h2_inline bool h2_numeric::is_bin_string(const char* s)
-{
-   for (const char* p = s; *p; p++)
-      if (*p != '0' && *p != '1' && !::isspace(*p))
-         return false;
-   return true;
-}
-
-h2_inline const char* h2_numeric::sequence_number(size_t sequence, size_t shift)
-{
-   static const char* st[] = {"0th", "1st", "2nd", "3rd", "4th", "5th", "6th", "7th", "8th", "9th", "10th", "11th", "12th", "13th", "14th", "15th"};
-   static char ss[64];
-
-   sequence += shift;
-   if (sequence < sizeof(st) / sizeof(st[0])) return st[sequence];
-   sprintf(ss, "%dth", (int)sequence);
-   return ss;
-}
-
-static inline size_t number_strlen(unsigned long long number, int base)
-{
-   unsigned long long _10000000 = 1;
-   for (size_t i = 1;; ++i) {
-      _10000000 *= base;
-      if (number < _10000000) return i;
    }
 }
 // source/utils/h2_pattern.cpp
@@ -4185,71 +4037,78 @@ static inline const char* h2_basefile(const char* path)
    return path;
 }
 
-static inline const char* get_key(const char* subject, const char* key)
+static inline bool not2n(unsigned x)
 {
-   return strcasestr(subject, key);
-}
-static inline const char* get_eq(const char* start)
-{
-   for (; *start && ::isspace(*start);) start++;  // strip left space
-   return *start == '=' ? start : nullptr;
+   return x & (x - 1);
 }
 
-h2_inline const char* h2_extract::has(const char* attributes, const char* key)
+static inline unsigned mask2n(unsigned x)
 {
-   return strcasestr(attributes, key);
+   x |= (x >> 1);
+   x |= (x >> 2);
+   x |= (x >> 4);
+   x |= (x >> 8);
+   x |= (x >> 16);
+   return x;
 }
 
-h2_inline bool h2_extract::numeric(const char* attributes, const char* key, double& value)
+static inline const char* strip_left(const char* s)
 {
-   const char* p_key = get_key(attributes, key);
-   if (!p_key) return false;
-   const char* p_eq = get_eq(p_key + strlen(key));
-   if (!p_eq) return false;
-   const char* p_numeric = p_eq + 1;
-   for (; *p_numeric && ::isspace(*p_numeric);) p_numeric++;  // strip left space
-   value = strtod(p_numeric, nullptr);
-   return true;
+   for (; s && *s && ::isspace(*s);) s++;  // strip left space
+   return s;
 }
 
-h2_inline bool h2_extract::iport(const char* attributes, const char* key, char* str)
+static inline const char* get_keyvalue(const char* attributes, const char* key)
 {
-   const char* p_key = get_key(attributes, key);
-   if (!p_key) return false;
-   const char* p_eq = get_eq(p_key + strlen(key));
-   if (!p_eq) return false;
+   const char* p_key = strcasestr(attributes, key);
+   if (!p_key) return nullptr;
+   const char* p_eq = strip_left(p_key + strlen(key));
+   if (*p_eq != '=') return "";
+   return strip_left(p_eq + 1);
+}
 
-   for (const char* p = p_eq + 1; *p; p++) {
-      if (::isdigit(*p) || *p == '.' || *p == ':' || *p == '*' || *p == '?') {
-         *str++ = *p;
-         *str = '\0';
-      } else {
-         if (!(::isspace(*p) || *p == '\"')) break;
-      }
+static inline int hex2byte(char c)
+{
+   return '0' <= c && c <= '9' ? c - '0' : ('A' <= c && c <= 'F' ? c - 'A' + 10 : ('a' <= c && c <= 'f' ? c - 'a' + 10 : -1));
+}
+
+static inline size_t hex2bytes(const char* hex, unsigned char* bytes)
+{
+   char b;
+   size_t i = 0, c = 0;
+
+   for (; ::isxdigit(hex[c]);) ++c;
+   if (c % 2 == 1) {
+      b = '0';
+      i = 1;
+      c += 1;
+      hex = hex - 1;
    }
-   return true;
+   for (; i < c; ++i) {
+      if (i % 2 == 1)
+         bytes[i / 2] = (unsigned char)((hex2byte(b) << 4) + hex2byte(hex[i]));
+      b = hex[i];
+   }
+   return c / 2;
 }
 
-h2_inline int h2_extract::fill(const char* attributes, const char* key, unsigned char bytes[])
+static inline const char* index_th(size_t sequence, size_t shift = 1)
 {
-   const char* p_key = get_key(attributes, key);
-   if (!p_key) return 0;
-   const char* p_eq = get_eq(p_key + strlen(key));
-   if (!p_eq) return 0;
-   const char* p = p_eq + 1;
-   for (; *p && ::isspace(*p);) p++;  // strip left space
-   if (p[0] == '0' && ::tolower(p[1]) == 'x') {
-      return (int)h2_numeric::hex_to_bytes(p + 2, bytes);
-   } else {
-      unsigned long long v = strtoull(p, nullptr, 10);
-      if (v <= 0xFFULL)
-         return *((unsigned char*)bytes) = (unsigned char)v, 1;
-      else if (v <= 0xFFFFULL)
-         return *((unsigned short*)bytes) = (unsigned short)v, 2;
-      else if (v <= 0xFFFFFFFFULL)
-         return *((unsigned int*)bytes) = (unsigned int)v, 4;
-      else
-         return *((unsigned long long*)bytes) = (unsigned long long)v, 8;
+   static const char* st[] = {"0th", "1st", "2nd", "3rd", "4th", "5th", "6th", "7th", "8th", "9th", "10th", "11th", "12th", "13th", "14th", "15th"};
+   static char ss[64];
+
+   sequence += shift;
+   if (sequence < sizeof(st) / sizeof(st[0])) return st[sequence];
+   sprintf(ss, "%dth", (int)sequence);
+   return ss;
+}
+
+static inline size_t number_strlen(unsigned long long number, int base)
+{
+   unsigned long long _10000000 = 1;
+   for (size_t i = 1;; ++i) {
+      _10000000 *= base;
+      if (number < _10000000) return i;
    }
 }
 
@@ -4318,6 +4177,14 @@ static inline const char* h2_candidate(const char* a, int n, ...)
       sprintf(ss + strlen(ss), "%s%s", comma_if(i, " | "), matches[i]);
    return ss;
 }
+
+#define h2_append(Array, Size, a)   \
+   for (int i = 0; i < Size; ++i) { \
+      if (!Array[i]) {              \
+         Array[i] = a;              \
+         break;                     \
+      }                             \
+   }
 
 #define h2_sprintvf(str, fmt, ap)               \
    do {                                         \
@@ -4410,10 +4277,10 @@ struct h2_libc_malloc {
 
 #if defined _WIN32
       PVOID ptr = VirtualAlloc(NULL, brk_count * brk_size, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
-      if (ptr == NULL) h2_console::prints("", "VirtualAlloc failed at %s:%d\n", __FILE__, __LINE__), abort();
+      if (ptr == NULL) ::printf("VirtualAlloc failed at %s:%d\n", __FILE__, __LINE__), abort();
 #else
       void* ptr = ::mmap(nullptr, brk_count * brk_size, PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0);
-      if (ptr == MAP_FAILED) h2_console::prints("", "mmap failed at %s:%d\n", __FILE__, __LINE__), abort();
+      if (ptr == MAP_FAILED) ::printf("mmap failed at %s:%d\n", __FILE__, __LINE__), abort();
 #endif
 
       block* p = new (ptr) block(brk_count * brk_size);
@@ -4618,220 +4485,7 @@ h2_inline h2_vector<h2_string> h2_string::disperse() const
    }
    return chars;
 }
-// source/utils/h2_line.cpp
-h2_inline size_t h2_line::width(bool ignore_indent) const
-{
-   size_t w = 0;
-   for (auto& word : *this)
-      if (!h2_console::isctrl(word.c_str()))
-         if (!ignore_indent || !h2_blank(word.c_str()))
-            w += word.width();
-   return w;
-}
-
-h2_inline h2_line& h2_line::indent(size_t n, const char c)
-{
-   if (n) insert(begin(), h2_string(n, c));
-   return *this;
-}
-
-h2_inline h2_line& h2_line::padding(size_t n, const char c)
-{
-   if (n) push_back(h2_string(n, c));
-   return *this;
-}
-
-h2_inline h2_line& h2_line::printf(const char* style, const char* format, ...)
-{
-   if (style && strlen(style)) push_back("\033{" + h2_string(style) + "}");
-   char* alloca_str;
-   h2_sprintf(alloca_str, format);
-   push_back(alloca_str);
-   if (style && strlen(style)) push_back("\033{reset}");
-   return *this;
-}
-
-h2_inline h2_line& h2_line::operator+=(const h2_line& line)
-{
-   insert(end(), line.begin(), line.end());
-   return *this;
-}
-
-h2_inline h2_line& h2_line::brush(const char* style)
-{
-   if (style && strlen(style)) {
-      insert(begin(), "\033{" + h2_string(style) + "}");
-      push_back("\033{reset}");
-   }
-   return *this;
-}
-
-h2_inline bool h2_line::enclosed(const char c) const
-{
-   bool f = false, ff = false, b = false;
-   for (auto& word : *this) {
-      if (!h2_console::isctrl(word.c_str())) {
-         if (!ff) f = word.front() == c;
-         ff = true;
-         b = word.back() == c;
-      }
-   }
-
-   return f && b;
-}
-
-h2_inline bool h2_line::has(const char* word) const
-{
-   for (auto& t : *this)
-      if (t == word) return true;
-   return false;
-}
-
-h2_inline h2_line h2_line::gray_quote() const
-{
-   if (!enclosed('\"') && !enclosed('\'')) return *this;
-
-   h2_line line;
-   size_t i = 0, w = width();
-
-   for (auto& word : *this) {
-      if (h2_console::isctrl(word.c_str())) {
-         line.push_back(word);
-         continue;
-      }
-      h2_string h, m, t;
-      for (auto& c : word.disperse()) {
-         if (i == 0) {
-            h.append(c.c_str());
-         } else if (i == w - 1) {
-            t.append(c.c_str());
-         } else {
-            m.append(c.c_str());
-         }
-         i += c.width();
-      }
-      if (h.size()) line += gray(h);
-      if (m.size()) line.push_back(m);
-      if (t.size()) line += gray(t);
-   }
-
-   return line;
-}
-
-h2_inline h2_line h2_line::abbreviate(size_t width, size_t tail) const
-{
-   h2_line line1, line2;
-   for (auto& word : *this) {
-      if (h2_console::isctrl(word.c_str()))
-         line1.push_back(word);
-      else
-         line1.push_back(word.escape());
-   }
-
-   size_t i = 0, line1_width = line1.width();
-   if (line1_width <= width) return line1;
-
-   for (auto& word : line1) {
-      if (h2_console::isctrl(word.c_str())) {
-         line2.push_back(word);
-         continue;
-      }
-      h2_string h, m, t;
-      for (auto& c : word.disperse()) {
-         if (i < width - 3 - tail) {
-            h.append(c.c_str());
-         } else if (i == width - 3 - tail) {
-            m = "...";
-         } else if (line1_width - tail <= i) {
-            t.append(c.c_str());
-         }
-         i += c.width();
-      }
-      if (h.size()) line2.push_back(h);
-      if (m.size()) line2 += gray(m);
-      if (t.size()) line2.push_back(t);
-   }
-
-   return line2;
-}
-
-h2_inline h2_string h2_line::string() const
-{
-   h2_string s;
-   for (auto& word : *this)
-      if (!h2_console::isctrl(word.c_str()))
-         s += word;
-   return s;
-}
-
-h2_inline void h2_line::samesizify(h2_line& a, h2_line& b)
-{
-   size_t a_w = a.width(), b_w = b.width();
-   a.padding(std::max(a_w, b_w) - a_w);
-   b.padding(std::max(a_w, b_w) - b_w);
-}
-
-///// h2_lines
-h2_inline h2_lines& h2_lines::operator+=(const h2_lines& lines)
-{
-   insert(end(), lines.begin(), lines.end());
-   return *this;
-}
-
-h2_inline size_t h2_lines::width() const
-{
-   size_t m = 0;
-   for (auto& line : *this)
-      m = std::max(m, line.width());
-   return m;
-}
-
-h2_inline bool h2_lines::foldable(size_t width) const
-{
-   size_t sum = 0;
-   for (auto& line : *this)
-      for (auto& word : line)
-         if (!h2_blank(word.c_str()) && !h2_console::isctrl(word.c_str()))  // ignore indent and \033m controller
-            sum += word.size();
-
-   return sum < width;
-}
-
-h2_inline h2_line h2_lines::folds() const
-{
-   h2_line folded_line;
-   for (auto& line : *this)
-      for (auto& word : line)
-         if (!h2_blank(word.c_str()))  // drop indent
-            folded_line.push_back(word);
-   return folded_line;
-}
-
-h2_inline h2_string h2_lines::string() const
-{
-   h2_string s;
-   for (auto& line : *this)
-      for (auto& word : line)
-         if (!h2_blank(word.c_str()) && !h2_console::isctrl(word.c_str()))
-            s += word;
-   return s;
-}
-
-h2_inline void h2_lines::sequence(size_t indent, size_t start)
-{
-   for (size_t i = 0; i < size(); ++i) {
-      at(i) = gray(h2_string("%d. ", (int)(i + start))) + at(i);
-      if (indent) at(i).indent(indent);
-   }
-}
-
-h2_inline void h2_lines::samesizify(h2_lines& a, h2_lines& b)
-{
-   auto size = std::max(a.size(), b.size());
-   for (auto i = a.size(); i < size; ++i) a.push_back(h2_line());
-   for (auto i = b.size(); i < size; ++i) b.push_back(h2_line());
-}
-// source/utils/h2_console.cpp
+// source/utils/h2_color.cpp
 struct h2_color {
    h2_singleton(h2_color);
    char current[8][32];
@@ -4885,7 +4539,7 @@ struct h2_color {
    void print(const char* str)
    {
       /* Windows PowerShell works, but CMD not, refer to v5.11 SetConsoleTextAttribute */
-      if (h2_console::isctrl(str)) {
+      if (isctrl(str)) {
          if (h2_option::I().colorful) {
             I().parse(str);
             I().change();
@@ -4929,60 +4583,275 @@ struct h2_color {
       if (!strcmp(style, "bg_white")) return 47;
       return 0;
    }
-};
 
-h2_inline size_t h2_console::width()
+   static bool isctrl(const char* s) { return s[0] == '\033' && s[1] == '{'; };
+};
+// source/utils/h2_line.cpp
+h2_inline size_t h2_line::width(bool ignore_indent) const
 {
-   static size_t s_width = 0;
-   if (s_width == 0) {
-      s_width = 120;
-#if defined _WIN32
-      CONSOLE_SCREEN_BUFFER_INFO csbi;
-      GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE), &csbi);
-      auto columns = csbi.srWindow.Right - csbi.srWindow.Left + 1;
-      // auto rows = csbi.srWindow.Bottom - csbi.srWindow.Top + 1;
-      if (16 < columns) s_width = columns;
-#else
-      struct winsize w;
-      if (-1 != ioctl(STDOUT_FILENO, TIOCGWINSZ, &w))
-         if (16 < w.ws_col) s_width = w.ws_col;
-#endif
-   }
-   return s_width;
+   size_t w = 0;
+   for (auto& word : *this)
+      if (!h2_color::isctrl(word.c_str()))
+         if (!ignore_indent || !h2_blank(word.c_str()))
+            w += word.width();
+   return w;
 }
 
-h2_inline void h2_console::prints(const char* style, const char* format, ...)
+h2_inline h2_line& h2_line::indent(size_t n, const char c)
 {
-   if (style && strlen(style)) {
-      char t[128];
-      sprintf(t, "\033{%s}", style);
-      h2_color::I().print(t);
-   }
+   if (n) insert(begin(), h2_string(n, c));
+   return *this;
+}
 
+h2_inline h2_line& h2_line::padding(size_t n, const char c)
+{
+   if (n) push_back(h2_string(n, c));
+   return *this;
+}
+
+h2_inline h2_line& h2_line::printf(const char* style, const char* format, ...)
+{
+   if (style && strlen(style)) push_back("\033{" + h2_string(style) + "}");
    char* alloca_str;
    h2_sprintf(alloca_str, format);
-   h2_color::I().print(alloca_str);
-
-   if (style && strlen(style)) h2_color::I().print("\033{reset}");
+   push_back(alloca_str);
+   if (style && strlen(style)) push_back("\033{reset}");
+   return *this;
 }
 
-h2_inline void h2_console::printl(const h2_line& line, bool cr)
+h2_inline h2_line& h2_line::operator+=(const h2_line& line)
 {
-   for (auto& word : line) h2_color::I().print(word.c_str());
-   if (cr) h2_color::I().print("\n");
+   insert(end(), line.begin(), line.end());
+   return *this;
 }
 
-h2_inline void h2_console::printl(const h2_lines& lines, bool cr)
+h2_inline h2_line& h2_line::brush(const char* style)
 {
-   for (auto& line : lines) printl(line, cr);
+   if (style && strlen(style)) {
+      insert(begin(), "\033{" + h2_string(style) + "}");
+      push_back("\033{reset}");
+   }
+   return *this;
 }
+
+h2_inline bool h2_line::enclosed(const char c) const
+{
+   bool f = false, ff = false, b = false;
+   for (auto& word : *this) {
+      if (!h2_color::isctrl(word.c_str())) {
+         if (!ff) f = word.front() == c;
+         ff = true;
+         b = word.back() == c;
+      }
+   }
+
+   return f && b;
+}
+
+h2_inline bool h2_line::has(const char* word) const
+{
+   for (auto& t : *this)
+      if (t == word) return true;
+   return false;
+}
+
+h2_inline h2_line h2_line::gray_quote() const
+{
+   if (!enclosed('\"') && !enclosed('\'')) return *this;
+
+   h2_line line;
+   size_t i = 0, w = width();
+
+   for (auto& word : *this) {
+      if (h2_color::isctrl(word.c_str())) {
+         line.push_back(word);
+         continue;
+      }
+      h2_string h, m, t;
+      for (auto& c : word.disperse()) {
+         if (i == 0) {
+            h.append(c.c_str());
+         } else if (i == w - 1) {
+            t.append(c.c_str());
+         } else {
+            m.append(c.c_str());
+         }
+         i += c.width();
+      }
+      if (h.size()) line += gray(h);
+      if (m.size()) line.push_back(m);
+      if (t.size()) line += gray(t);
+   }
+
+   return line;
+}
+
+h2_inline h2_line h2_line::abbreviate(size_t width, size_t tail) const
+{
+   h2_line line1, line2;
+   for (auto& word : *this) {
+      if (h2_color::isctrl(word.c_str()))
+         line1.push_back(word);
+      else
+         line1.push_back(word.escape());
+   }
+
+   size_t i = 0, line1_width = line1.width();
+   if (line1_width <= width) return line1;
+
+   for (auto& word : line1) {
+      if (h2_color::isctrl(word.c_str())) {
+         line2.push_back(word);
+         continue;
+      }
+      h2_string h, m, t;
+      for (auto& c : word.disperse()) {
+         if (i < width - 3 - tail) {
+            h.append(c.c_str());
+         } else if (i == width - 3 - tail) {
+            m = "...";
+         } else if (line1_width - tail <= i) {
+            t.append(c.c_str());
+         }
+         i += c.width();
+      }
+      if (h.size()) line2.push_back(h);
+      if (m.size()) line2 += gray(m);
+      if (t.size()) line2.push_back(t);
+   }
+
+   return line2;
+}
+
+h2_inline h2_string h2_line::string() const
+{
+   h2_string s;
+   for (auto& word : *this)
+      if (!h2_color::isctrl(word.c_str()))
+         s += word;
+   return s;
+}
+
+h2_inline void h2_line::samesizify(h2_line& a, h2_line& b)
+{
+   size_t a_w = a.width(), b_w = b.width();
+   a.padding(std::max(a_w, b_w) - a_w);
+   b.padding(std::max(a_w, b_w) - b_w);
+}
+
+///// h2_lines
+h2_inline h2_lines& h2_lines::operator+=(const h2_lines& lines)
+{
+   insert(end(), lines.begin(), lines.end());
+   return *this;
+}
+
+h2_inline size_t h2_lines::width() const
+{
+   size_t m = 0;
+   for (auto& line : *this)
+      m = std::max(m, line.width());
+   return m;
+}
+
+h2_inline bool h2_lines::foldable(size_t width) const
+{
+   size_t sum = 0;
+   for (auto& line : *this)
+      for (auto& word : line)
+         if (!h2_blank(word.c_str()) && !h2_color::isctrl(word.c_str()))  // ignore indent and \033m controller
+            sum += word.size();
+
+   return sum < width;
+}
+
+h2_inline h2_line h2_lines::folds() const
+{
+   h2_line folded_line;
+   for (auto& line : *this)
+      for (auto& word : line)
+         if (!h2_blank(word.c_str()))  // drop indent
+            folded_line.push_back(word);
+   return folded_line;
+}
+
+h2_inline h2_string h2_lines::string() const
+{
+   h2_string s;
+   for (auto& line : *this)
+      for (auto& word : line)
+         if (!h2_blank(word.c_str()) && !h2_color::isctrl(word.c_str()))
+            s += word;
+   return s;
+}
+
+h2_inline void h2_lines::sequence(size_t indent, size_t start)
+{
+   for (size_t i = 0; i < size(); ++i) {
+      at(i) = gray(h2_string("%d. ", (int)(i + start))) + at(i);
+      if (indent) at(i).indent(indent);
+   }
+}
+
+h2_inline void h2_lines::samesizify(h2_lines& a, h2_lines& b)
+{
+   auto size = std::max(a.size(), b.size());
+   for (auto i = a.size(); i < size; ++i) a.push_back(h2_line());
+   for (auto i = b.size(); i < size; ++i) b.push_back(h2_line());
+}
+// source/render/h2_console.cpp
+struct h2_console {
+   static size_t width()
+   {
+      static size_t s_width = 0;
+      if (s_width == 0) {
+         s_width = 120;
+#if defined _WIN32
+         CONSOLE_SCREEN_BUFFER_INFO csbi;
+         GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE), &csbi);
+         auto columns = csbi.srWindow.Right - csbi.srWindow.Left + 1;
+         if (16 < columns) s_width = columns;
+#else
+         struct winsize w;
+         if (-1 != ioctl(STDOUT_FILENO, TIOCGWINSZ, &w))
+            if (16 < w.ws_col) s_width = w.ws_col;
+#endif
+      }
+      return s_width;
+   }
+
+   static void prints(const char* style, const char* format, ...)
+   {
+      if (style && strlen(style)) {
+         char t[128];
+         sprintf(t, "\033{%s}", style);
+         h2_color::I().print(t);
+      }
+
+      char* alloca_str;
+      h2_sprintf(alloca_str, format);
+      h2_color::I().print(alloca_str);
+
+      if (style && strlen(style)) h2_color::I().print("\033{reset}");
+   }
+
+   static void printl(const h2_line& line, bool cr = true)
+   {
+      for (auto& word : line) h2_color::I().print(word.c_str());
+      if (cr) h2_color::I().print("\n");
+   }
+
+   static void printl(const h2_lines& lines, bool cr = true)
+   {
+      for (auto& line : lines) printl(line, cr);
+   }
+};
 // source/symbol/h2_nm.cpp
 #if !defined _MSC_VER
-static inline void nm_mangle(std::map<std::string, unsigned long long>*& symbols)
+static inline void nm_mangle(h2_list& symbols)
 {
    h2_memory::hook(false);
    char nm[256], line[2048], addr[128], type, name[2048];
-   symbols = new std::map<std::string, unsigned long long>();
 #if defined __APPLE__
    sprintf(nm, "nm -U %s", O.path);
 #else
@@ -4995,7 +4864,8 @@ static inline void nm_mangle(std::map<std::string, unsigned long long>*& symbols
          if (strchr("bBcCdDiIuU", type)) continue;  // reject bBcCdDiIuU, accept tTwWsSvV, sS for vtable
          int underscore = 0;
          if (O.os == 'm') underscore = 1;  // remove prefix '_' in MacOS
-         (*symbols)[name + underscore] = (unsigned long long)strtoull(addr, nullptr, 16);
+         h2_symbol* symbol = new h2_symbol(name + underscore, (unsigned long long)strtoull(addr, nullptr, 16));
+         if (symbol) symbols.push_back(symbol->x);
       }
       ::pclose(f);
    }
@@ -5098,10 +4968,12 @@ h2_inline unsigned long long h2_nm::get_mangle(const char* name)
    return (unsigned long long)symbol->Address;
 #else
    if (!name || strlen(name) == 0) return 0;
-   if (!I().mangle_symbols) nm_mangle(I().mangle_symbols);
+   if (I().mangle_symbols.empty()) nm_mangle(I().mangle_symbols);
 
-   auto it = I().mangle_symbols->find(name);
-   return it != I().mangle_symbols->end() ? it->second : 0ULL;
+   h2_list_for_each_entry (p, I().mangle_symbols, h2_symbol, x)
+      if (!strcmp(p->name, name)) return p->addr;
+
+   return 0;
 #endif
 }
 // source/symbol/h2_load.cpp
@@ -6637,49 +6509,51 @@ struct h2_json_dual : h2_libc {  // Combine two node into a dual
    }
 };
 // source/json/h2_json.cpp
-h2_inline h2_lines h2_json::dump(const h2_string& json_string)
-{
-   h2_json_tree tree(json_string.c_str());
-   if (tree.illformed) return {tree.serialize()};
-   h2_lines lines = tree.format(O.fold_json, O.json_source_quote);
-   if (!h2_blank(O.json_source_quote)) {
-      if (!lines.empty()) {
-         lines.front() = "\"" + lines.front();
-         lines.back() = lines.back() + "\"";
+struct h2_json {
+   static h2_lines dump(const h2_string& json_string)
+   {
+      h2_json_tree tree(json_string.c_str());
+      if (tree.illformed) return {tree.serialize()};
+      h2_lines lines = tree.format(O.fold_json, O.json_source_quote);
+      if (!h2_blank(O.json_source_quote)) {
+         if (!lines.empty()) {
+            lines.front() = "\"" + lines.front();
+            lines.back() = lines.back() + "\"";
+         }
+         size_t max_width = lines.width();
+         for (size_t i = 0; i < lines.size(); ++i) {
+            lines[i].padding(max_width - lines[i].width() + 3);
+            if (i < lines.size() - 1) lines[i].push_back("\\");
+         }
       }
-      size_t max_width = lines.width();
-      for (size_t i = 0; i < lines.size(); ++i) {
-         lines[i].padding(max_width - lines[i].width() + 3);
-         if (i < lines.size() - 1) lines[i].push_back("\\");
-      }
+      return lines;
    }
-   return lines;
-}
 
-h2_inline h2_string h2_json::select(const h2_string& json_string, const h2_string& selector, bool caseless)
-{
-   h2_json_tree tree(json_string.c_str());
-   if (tree.illformed) return json_string;
-   h2_json_node* node = tree.select(selector.c_str(), caseless);
-   if (!node) return "";
-   return node->format(O.fold_json, "\"").string();
-}
+   static h2_string select(const h2_string& json_string, const h2_string& selector, bool caseless)
+   {
+      h2_json_tree tree(json_string.c_str());
+      if (tree.illformed) return json_string;
+      h2_json_node* node = tree.select(selector.c_str(), caseless);
+      if (!node) return "";
+      return node->format(O.fold_json, "\"").string();
+   }
 
-h2_inline int h2_json::match(const h2_string& expect, const h2_string& actual, bool caseless)
-{
-   h2_json_tree e_tree(expect.c_str()), a_tree(actual.c_str());
-   if (e_tree.illformed || a_tree.illformed) return -1;
-   return h2_json_match::match(&e_tree, &a_tree, caseless) ? 0 : 1;
-}
+   static int match(const h2_string& expect, const h2_string& actual, bool caseless)
+   {  // < 0 illformed json; = 0 matched; > 0 unmatched
+      h2_json_tree e_tree(expect.c_str()), a_tree(actual.c_str());
+      if (e_tree.illformed || a_tree.illformed) return -1;
+      return h2_json_match::match(&e_tree, &a_tree, caseless) ? 0 : 1;
+   }
 
-h2_inline bool h2_json::diff(const h2_string& expect, const h2_string& actual, h2_lines& e_lines, h2_lines& a_lines, bool caseless)
-{
-   h2_json_tree e_tree(expect.c_str()), a_tree(actual.c_str());
-   if (e_tree.illformed || a_tree.illformed) return false;
-   h2_json_dual dual(&e_tree, &a_tree, caseless);
-   dual.align(e_lines, a_lines);
-   return true;
-}
+   static bool diff(const h2_string& expect, const h2_string& actual, h2_lines& e_lines, h2_lines& a_lines, bool caseless)
+   {
+      h2_json_tree e_tree(expect.c_str()), a_tree(actual.c_str());
+      if (e_tree.illformed || a_tree.illformed) return false;
+      h2_json_dual dual(&e_tree, &a_tree, caseless);
+      dual.align(e_lines, a_lines);
+      return true;
+   }
+};
 // source/matcher/h2_strcmp.cpp
 h2_inline h2_fail* h2_matches_regex::matches(const h2_string& a, h2_mc c) const
 {
@@ -6766,7 +6640,49 @@ h2_inline h2_line h2_matches_json::expection(h2_mc c) const
 {
    return ncsc(h2_stringify(e), c, "≠");
 }
-// source/memory/h2_piece.cpp
+// source/matcher/h2_memcmp.cpp
+
+h2_inline bool h2_memcmp_util::is_hex_string(const char* s)
+{
+   if (s[0] == '0' && ::tolower(s[1]) == 'x') return true;
+   for (const char* p = s; *p; p++)
+      if (!::isxdigit(*p) && !::isspace(*p))
+         return false;
+   return true;
+}
+
+h2_inline bool h2_memcmp_util::is_bin_string(const char* s)
+{
+   for (const char* p = s; *p; p++)
+      if (*p != '0' && *p != '1' && !::isspace(*p))
+         return false;
+   return true;
+}
+
+h2_inline size_t h2_memcmp_util::bin_to_bits(const char* bin, unsigned char* bytes)
+{
+   memset(bytes, 0, strlen(bin));
+   size_t c = 0;
+   for (const char* p = bin; *p; p++) {
+      if (*p == ' ') continue;
+      size_t i = c / 8, j = 7 - c % 8;
+      ++c;
+      unsigned char ebit = *p == '1' ? 1 : 0;
+      bytes[i] = bytes[i] | (ebit << j);
+   }
+   return c;
+}
+
+h2_inline size_t h2_memcmp_util::hex_to_bytes(const char* hex, unsigned char* bytes) { return hex2bytes(hex, bytes); }
+
+h2_inline bool h2_memcmp_util::bits_equal(const unsigned char* b1, const unsigned char* b2, size_t nbits)
+{
+   for (size_t k = 0; k < nbits; ++k) {
+      size_t i = k / 8, j = 7 - k % 8;
+      if (((b1[i] >> j) & 1) != ((b2[i] >> j) & 1)) return false;
+   }
+   return true;
+}// source/memory/h2_piece.cpp
 struct h2_piece : h2_libc {
    h2_list x;
    unsigned char *user_ptr, *page_ptr;
@@ -6798,10 +6714,10 @@ struct h2_piece : h2_libc {
 
 #if defined _WIN32
       page_ptr = (unsigned char*)VirtualAlloc(NULL, page_size * (page_count + 1), MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
-      if (page_ptr == NULL) h2_console::prints("", "VirtualAlloc failed at %s:%d\n", __FILE__, __LINE__), abort();
+      if (page_ptr == NULL) h2_console::prints("yellow", "VirtualAlloc failed at %s:%d\n", __FILE__, __LINE__), abort();
 #else
       page_ptr = (unsigned char*)::mmap(nullptr, page_size * (page_count + 1), PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0);
-      if (page_ptr == MAP_FAILED) h2_console::prints("", "mmap failed at %s:%d\n", __FILE__, __LINE__), abort();
+      if (page_ptr == MAP_FAILED) h2_console::prints("yellow", "mmap failed at %s:%d\n", __FILE__, __LINE__), abort();
 #endif
 
       user_ptr = page_ptr + page_size * page_count - user_size_plus + alignment;
@@ -7010,18 +6926,35 @@ struct h2_leaky {
 // source/memory/h2_block.cpp
 struct h2_block_attributes {
    unsigned long long limit = 0xffffffffffffull;
-   int alignment = sizeof(void*);
+   size_t alignment = sizeof(void*);
+   size_t n_fill = 0;
    unsigned char s_fill[32];
-   int n_fill = 0;
    bool noleak = false;
+
+   size_t parse_fill(const char* p, unsigned char bytes[])
+   {
+      if (p[0] == '0' && ::tolower(p[1]) == 'x') {
+         return hex2bytes(p + 2, bytes);
+      } else {
+         unsigned long long v = strtoull(p, nullptr, 10);
+         if (v <= 0xFFULL)
+            return *((unsigned char*)bytes) = (unsigned char)v, 1;
+         else if (v <= 0xFFFFULL)
+            return *((unsigned short*)bytes) = (unsigned short)v, 2;
+         else if (v <= 0xFFFFFFFFULL)
+            return *((unsigned int*)bytes) = (unsigned int)v, 4;
+         else
+            return *((unsigned long long*)bytes) = (unsigned long long)v, 8;
+      }
+   }
 
    h2_block_attributes(const char* attributes)
    {
-      double d;
-      if (h2_extract::has(attributes, "noleak")) noleak = true;
-      if (h2_extract::numeric(attributes, "limit", d)) limit = (unsigned long long)d;
-      if (h2_extract::numeric(attributes, "align", d)) alignment = (int)d;
-      n_fill = h2_extract::fill(attributes, "fill", s_fill);
+      const char* p;
+      if (get_keyvalue(attributes, "noleak")) noleak = true;
+      if ((p = get_keyvalue(attributes, "limit"))) limit = strtod(p, nullptr);
+      if ((p = get_keyvalue(attributes, "align"))) alignment = strtod(p, nullptr);
+      if ((p = get_keyvalue(attributes, "fill"))) n_fill = parse_fill(p, s_fill);
    }
 };
 
@@ -7075,7 +7008,7 @@ struct h2_block : h2_libc {
 
       // allocate action fill is prior to block level fill
       unsigned char* s_fill = attributes.s_fill;
-      int n_fill = attributes.n_fill;
+      size_t n_fill = attributes.n_fill;
       if (fill) {
          s_fill = &c_fill;
          n_fill = 1;
@@ -7550,7 +7483,7 @@ h2_inline long long h2_memory::stack::footprint()
 
 h2_inline h2_memory::stack::block::block(const char* attributes, const char* filine)
 {
-   unmem = h2_extract::has(attributes, "unmem");
+   unmem = !!get_keyvalue(attributes, "unmem");
    if (unmem) h2_memory::hook(false);
    h2_stack::I().push(attributes, "block", filine);
 }
@@ -8016,7 +7949,7 @@ h2_inline h2_fail* h2_checkin::check(size_t index, size_t total, const char* src
 {
    if (is_satisfied() || is_saturated()) return nullptr;
    h2_line t = srcfn + gray("()") + " expected " + delta(expect(), "green") + " but actually " + delta(actual(), "red,bold") + " called";
-   if (1 < total) t += gray(" when ") + h2_numeric::sequence_number(index) + " " + color(expr, "cyan");
+   if (1 < total) t += gray(" when ") + index_th(index) + " " + color(expr, "cyan");
    return h2_fail::new_normal(t);
 }
 
@@ -8083,6 +8016,17 @@ h2_inline h2_fail* h2_mocker_base::check() const
    h2_fail* fail = h2_fail::new_normal(signature(), filine);
    h2_fail::append_child(fail, fails);
    return fail;
+}
+
+h2_inline void h2_mocker_base::failing(h2_fail* fail, int checkin_offset) const
+{
+   fail->foreach([this, checkin_offset](h2_fail* f, size_t, size_t) {
+      f->explain += gray("on ") + (srcfn + argument(f->seqno));
+      if (1 < checkin_array.size()) f->explain += gray(" when ") + index_th((size_t)checkin_offset) + " " + color(checkin_array[checkin_offset].expr, "cyan");
+   });
+   h2_fail* fails = h2_fail::new_normal(signature(), filine);
+   h2_fail::append_child(fails, fail);
+   h2_runner::failing(fails);
 }
 // source/mock/h2_mocks.cpp
 h2_inline bool h2_mocks::add(h2_list& mocks, void* mocker)
@@ -8259,7 +8203,7 @@ struct h2_stdio {
 h2_inline h2_cout::h2_cout(h2_matcher<const char*> m_, const char* e_, const char* type_, const char* filine_) : filine(filine_), m(m_), e(e_), type(type_)
 {
    bool all = !strlen(type);
-   h2_stdio::I().start_capture(all || h2_extract::has(type, "out"), all || h2_extract::has(type, "err"), all || h2_extract::has(type, "syslog"));
+   h2_stdio::I().start_capture(all || get_keyvalue(type, "out"), all || get_keyvalue(type, "err"), all || get_keyvalue(type, "syslog"));
 }
 
 h2_inline h2_cout::~h2_cout()
@@ -8667,11 +8611,23 @@ struct h2_socket {
    }
 };
 
+static inline void parse_iport(const char* s, char* iport)
+{
+   for (const char* p = s; p && *p; p++) {
+      if (::isdigit(*p) || *p == '.' || *p == ':' || *p == '*' || *p == '?') {
+         *iport++ = *p;
+         *iport = '\0';
+      } else {
+         if (!(::isspace(*p) || *p == '\"')) break;
+      }
+   }
+}
+
 h2_inline void h2_sock::inject(const void* packet, size_t size, const char* attributes)
 {
    char from[256] = "", to[256] = "*";
-   h2_extract::iport(attributes, "from", from);
-   h2_extract::iport(attributes, "to", to);
+   parse_iport(get_keyvalue(attributes, "from"), from);
+   parse_iport(get_keyvalue(attributes, "to"), to);
    h2_socket::I().put_incoming(from, to, (const char*)packet, size);
 }
 
@@ -8720,18 +8676,20 @@ static inline void __split_describe(const char* describe, char* name_buf, char* 
    strcpy(&name_buf[(size_t)(p - describe)], q + 1);
 }
 
+static inline int __split_tags(char* tags_buf, const char* tags[], size_t n)
+{
+   size_t count = 0;
+   for (char* t = strtok(tags_buf, " ,"); t; t = strtok(nullptr, " ,"))
+      if (count < n - 1) tags[count++] = t;
+   return count;
+}
+
 h2_inline h2_test::h2_test(const char* filine_, const char* file_, int line_, const char* describe_) : filine(filine_), file(h2_basefile(file_)), line(line_), describe(describe_)
 {
    if (describe) {
       __split_describe(describe, name_buf, tags_buf);
-
-      name = name_buf;
-      while (*name && ::isspace(*name)) name++;  // strip left space
-
-      int count = 0;
-      for (char* t = strtok(tags_buf, " ,"); t; t = strtok(nullptr, " ,"))
-         if (count < sizeof(tags) / sizeof(tags[0]) - 1) tags[count++] = t;
-      tags[count] = nullptr;
+      name = strip_left(name_buf);
+      tags[__split_tags(tags_buf, tags, sizeof(tags) / sizeof(tags[0]))] = nullptr;
    }
 }
 
@@ -8834,36 +8792,36 @@ h2_inline h2_suite::cleaner::~cleaner()
       ::longjmp(thus->cleanup_hole, 1);
 }
 // source/core/h2_filter.cpp
-static inline bool match_names(const std::vector<const char*>& patterns, const char* subject)
+static inline bool match_names(const char* const patterns[], const char* subject)
 {
-   for (auto pattern : patterns) {
-      if (strcasestr(subject, pattern)) return true;
-      if (strcspn(pattern, "?*[]") < strlen(pattern) && h2_pattern::wildcard_match(pattern, subject, true)) return true;
+   for (int i = 0; patterns[i]; ++i) {
+      if (strcasestr(subject, patterns[i])) return true;
+      if (strcspn(patterns[i], "?*[]") < strlen(patterns[i]) && h2_pattern::wildcard_match(patterns[i], subject, true)) return true;
    }
    return false;
 }
 
-static inline bool match_tags(const std::vector<const char*>& patterns, const h2_test* test)
+static inline bool match_tags(const char* const patterns[], const h2_test* test)
 {
-   for (auto pattern : patterns)
-      if (test->tagged(pattern)) return true;
+   for (int i = 0; patterns[i]; ++i)
+      if (test->tagged(patterns[i])) return true;
    return false;
 }
 
-static inline bool __filter(const h2_test* s, const h2_test* c, const std::vector<const char*>& includes, const std::vector<const char*>& excludes, bool tags_filter)
+static inline bool __filter(const h2_test* s, const h2_test* c, const char* const includes[], const char* const excludes[], bool tags_filter)
 {
    if (tags_filter) {
-      if (!includes.empty())
-         if (!(match_tags(includes, s) || c && match_tags(includes, c))) // priority && > ||
+      if (includes[0])
+         if (!(match_tags(includes, s) || c && match_tags(includes, c)))  // priority && > ||
             return true;
-      if (!excludes.empty())
+      if (excludes[0])
          if (match_tags(excludes, s) || c && match_tags(excludes, c))
             return true;
    } else {
-      if (!includes.empty())
+      if (includes[0])
          if (!(match_names(includes, s->name) || c && match_names(includes, c->name) || match_names(includes, c ? c->filine : s->filine)))
             return true;
-      if (!excludes.empty())
+      if (excludes[0])
          if (match_names(excludes, s->name) || c && match_names(excludes, c->name) || match_names(excludes, c ? c->filine : s->filine))
             return true;
    }
@@ -8934,11 +8892,11 @@ h2_inline void h2_runner::enumerate()
       if (O.progressing)
          for (; dots <= i * dps; dots++) h2_console::prints("dark gray", ".");
 
-      for (auto& setup : global_suite_setups) setup();
+      for (int i = 0; global_suite_setups[i]; ++i) global_suite_setups[i]();
       s->setup();
       s->enumerate();
       s->cleanup();
-      for (auto& cleanup : global_suite_cleanups) cleanup();
+      for (int i = 0; global_suite_cleanups[i]; ++i) global_suite_cleanups[i]();
    }
    if (O.progressing) h2_console::prints("", "\33[2K\r");
 }
@@ -9011,7 +8969,7 @@ h2_inline int h2_runner::main(int argc, const char** argv)
    h2_stdio::initialize();
    h2_dns::initialize();
 
-   for (auto& setup : global_setups) setup();
+   for (int i = 0; global_setups[i]; ++i) global_setups[i]();
    enumerate();
    filter();
 
@@ -9021,7 +8979,7 @@ h2_inline int h2_runner::main(int argc, const char** argv)
       h2_list_for_each_entry (s, suites, h2_suite, x) {
          current_suite = s;
          h2_report::I().on_suite_start(s);
-         for (auto& setup : global_suite_setups) setup();
+         for (int i = 0; global_suite_setups[i]; ++i) global_suite_setups[i]();
          s->setup();
          h2_list_for_each_entry (c, s->cases, h2_case, x) {
             if ((0 < O.break_after_fails && O.break_after_fails <= stats.failed) || (O.only_last_failed && !c->last_failed))
@@ -9036,16 +8994,16 @@ h2_inline int h2_runner::main(int argc, const char** argv)
             current_case = c;
             h2_report::I().on_case_start(s, c);
             if (!O.lists && !c->todo && !c->filtered && !c->ignored) {
-               for (auto& setup : global_case_setups) setup();
+               for (int i = 0; global_case_setups[i]; ++i) global_case_setups[i]();
                s->test(c);
-               for (auto& cleanup : global_case_cleanups) cleanup();
+               for (int i = 0; global_case_cleanups[i]; ++i) global_case_cleanups[i]();
                c->failed ? (stats.failed++, s->stats.failed++) : (stats.passed++, s->stats.passed++);
             }
             h2_report::I().on_case_endup(s, c);
             c->clear();
          }
          s->cleanup();
-         for (auto& cleanup : global_suite_cleanups) cleanup();
+         for (int i = 0; global_suite_cleanups[i]; ++i) global_suite_cleanups[i]();
          h2_report::I().on_suite_endup(s);
          s->clear();
       }
@@ -9055,7 +9013,7 @@ h2_inline int h2_runner::main(int argc, const char** argv)
          save_last_order(suites);
    }
    h2_report::I().on_runner_endup(this);
-   for (auto& cleanup : global_cleanups) cleanup();
+   for (int i = 0; global_cleanups[i]; i++) global_cleanups[i]();
 
    h2_stubs::clear(stubs);
    h2_mocks::clear(mocks, false);
@@ -9174,6 +9132,118 @@ h2_inline h2_timer::~h2_timer()
       h2_runner::failing(h2_fail::new_normal(line, filine));
    }
 }
+// source/render/h2_layout.cpp
+struct h2_layout {
+   static h2_lines line_break(const h2_line& line, size_t width)
+   {
+      h2_lines lines;
+      h2_string current_style;
+      h2_line wrap;
+
+      for (auto& word : line) {
+         if (h2_color::isctrl(word.c_str())) {  // + - style , issue
+            wrap.push_back(word);
+            current_style = word;
+            continue;
+         }
+         for (auto& c : word.disperse()) {
+            if (width < wrap.width() + c.width()) {
+               lines.push_back(wrap.padding(width - wrap.width()));
+               wrap.clear();
+               if (current_style.size()) wrap.push_back(current_style);
+            }
+            wrap.push_back(c);
+         }
+      }
+      lines.push_back(wrap.padding(width - wrap.width()));
+      return lines;
+   }
+
+   static h2_lines lines_merge(const h2_lines& left_lines, const h2_lines& right_lines, size_t left_width, size_t right_width, int step, char scale, size_t seq_width)
+   {
+      h2_lines lines;
+      char seq_fmt[32];
+      sprintf(seq_fmt, "%%%d%c┊ ", (int)seq_width, scale);
+      const h2_string left_empty(left_width, ' '), right_empty(right_width, ' ');
+      for (size_t i = 0; i < std::max(left_lines.size(), right_lines.size()); ++i) {
+         auto left_wrap_lines = line_break(i < left_lines.size() ? left_lines[i] : left_empty, left_width);
+         auto right_wrap_lines = line_break(i < right_lines.size() ? right_lines[i] : right_empty, right_width);
+         for (size_t j = 0; j < std::max(left_wrap_lines.size(), right_wrap_lines.size()); ++j) {
+            h2_line line;
+            if (step) {
+               if (j == 0)
+                  line.printf("dark gray", seq_fmt, step * i);
+               else
+                  line.indent(seq_width + 2);
+            }
+            line += j < left_wrap_lines.size() ? left_wrap_lines[j].brush("reset") : color(left_empty, "reset");
+            line.printf("dark gray", j < left_wrap_lines.size() - 1 ? "\\│ " : " │ ");
+            line += j < right_wrap_lines.size() ? right_wrap_lines[j].brush("reset") : color(right_empty, "reset");
+            line.printf("dark gray", j < right_wrap_lines.size() - 1 ? "\\" : " ");
+            lines.push_back(line);
+         }
+      }
+      return lines;
+   }
+
+   static h2_lines prefix_break(const h2_line& line, const h2_line& title, size_t width)
+   {
+      h2_lines lines = line_break(line, width - title.width());
+
+      for (size_t i = 0; i < lines.size(); ++i) {
+         if (i == 0)
+            lines[i] = title + lines[i];
+         else
+            lines[i].indent(title.width());
+      }
+      return lines;
+   }
+
+   static h2_lines split(const h2_lines& left_lines, const h2_lines& right_lines, const char* left_title, const char* right_title, size_t step, char scale, size_t width)
+   {
+      size_t seq_width = number_strlen((unsigned long long)step * std::max(left_lines.size(), right_lines.size()), scale == 'x' ? 16 : 10);
+      size_t valid_width = width - (seq_width + 1 /* "|" */) - 1 /*|*/ - 4 /* spaces */;
+
+      size_t left_width = std::max(left_lines.width(), strlen(left_title));
+      size_t right_width = std::max(right_lines.width(), strlen(right_title));
+
+      if (left_width < valid_width / 2)
+         right_width = std::min(valid_width - left_width, right_width);
+      else if (right_width < valid_width / 2)
+         left_width = std::min(valid_width - right_width, left_width);
+      else
+         left_width = right_width = valid_width / 2;
+
+      h2_line title = gray((step ? h2_string(seq_width + 2, ' ') : "") + h2_string(left_title).center(left_width)) + "   " + gray(h2_string(right_title).center(right_width));
+      h2_lines lines = {title};
+
+      return lines += lines_merge(left_lines, right_lines, left_width, right_width, step, scale, seq_width);
+   }
+
+   static h2_lines unified(const h2_line& up_line, const h2_line& down_line, const char* up_title, const char* down_title, size_t width)
+   {
+      h2_lines lines;
+      h2_line up_title_line = gray(up_title) + color("> ", "green");
+      h2_line down_title_line = gray(down_title) + color("> ", "red");
+
+      h2_lines up_lines = line_break(up_line, width - up_title_line.width());
+      h2_lines down_lines = line_break(down_line, width - down_title_line.width());
+
+      for (size_t i = 0; i < std::max(up_lines.size(), down_lines.size()); ++i) {
+         if (i < up_lines.size()) lines.push_back(up_title_line + up_lines[i]);
+         if (i < down_lines.size()) lines.push_back(down_title_line + down_lines[i]);
+      }
+      return lines;
+   }
+
+   static h2_lines seperate(const h2_line& up_line, const h2_line& down_line, const char* up_title, const char* down_title, size_t width)
+   {
+      h2_line up_title_line = gray(up_title) + color("> ", "green");
+      h2_line down_title_line = gray(down_title) + color("> ", "red");
+      h2_lines lines = prefix_break(up_line, up_title_line, width);
+      return lines += prefix_break(down_line, down_title_line, width);
+   }
+};
 // source/render/h2_failure.cpp
 h2_inline void h2_fail::append_subling(h2_fail*& fail, h2_fail* nf)
 {
@@ -9865,7 +9935,7 @@ struct h2_report_console : h2_report_impl {
    void on_suite_endup(h2_suite* s) override
    {
       h2_report_impl::on_suite_endup(s);
-      if (O.verbose >= 9 && O.includes.size() + O.excludes.size() == 0) {
+      if (O.verbose >= 9 && !(O.includes[0] || O.excludes[0])) {
          print_bar(true, nullptr, nullptr, nullptr, nullptr, false);
 
          int n = nonzero_count(s->stats.passed, s->stats.failed, s->stats.todo, s->stats.filtered, s->stats.ignored);
@@ -9991,116 +10061,6 @@ h2_inline void h2_report::on_suite_start(h2_suite* s) { h2_list_for_each_entry (
 h2_inline void h2_report::on_suite_endup(h2_suite* s) { h2_list_for_each_entry (p, reports, h2_report_impl, x) p->on_suite_endup(s); }
 h2_inline void h2_report::on_case_start(h2_suite* s, h2_case* c) { h2_list_for_each_entry (p, reports, h2_report_impl, x) p->on_case_start(s, c); }
 h2_inline void h2_report::on_case_endup(h2_suite* s, h2_case* c) { h2_list_for_each_entry (p, reports, h2_report_impl, x) p->on_case_endup(s, c); }
-// source/render/h2_layout.cpp
-static inline h2_lines line_break(const h2_line& line, size_t width)
-{
-   h2_lines lines;
-   h2_string current_style;
-   h2_line wrap;
-
-   for (auto& word : line) {
-      if (h2_console::isctrl(word.c_str())) {  // + - style , issue
-         wrap.push_back(word);
-         current_style = word;
-         continue;
-      }
-      for (auto& c : word.disperse()) {
-         if (width < wrap.width() + c.width()) {
-            lines.push_back(wrap.padding(width - wrap.width()));
-            wrap.clear();
-            if (current_style.size()) wrap.push_back(current_style);
-         }
-         wrap.push_back(c);
-      }
-   }
-   lines.push_back(wrap.padding(width - wrap.width()));
-   return lines;
-}
-
-static inline h2_lines lines_merge(const h2_lines& left_lines, const h2_lines& right_lines, size_t left_width, size_t right_width, int step, char scale, size_t seq_width)
-{
-   h2_lines lines;
-   char seq_fmt[32];
-   sprintf(seq_fmt, "%%%d%c┊ ", (int)seq_width, scale);
-   const h2_string left_empty(left_width, ' '), right_empty(right_width, ' ');
-   for (size_t i = 0; i < std::max(left_lines.size(), right_lines.size()); ++i) {
-      auto left_wrap_lines = line_break(i < left_lines.size() ? left_lines[i] : left_empty, left_width);
-      auto right_wrap_lines = line_break(i < right_lines.size() ? right_lines[i] : right_empty, right_width);
-      for (size_t j = 0; j < std::max(left_wrap_lines.size(), right_wrap_lines.size()); ++j) {
-         h2_line line;
-         if (step) {
-            if (j == 0)
-               line.printf("dark gray", seq_fmt, step * i);
-            else
-               line.indent(seq_width + 2);
-         }
-         line += j < left_wrap_lines.size() ? left_wrap_lines[j].brush("reset") : color(left_empty, "reset");
-         line.printf("dark gray", j < left_wrap_lines.size() - 1 ? "\\│ " : " │ ");
-         line += j < right_wrap_lines.size() ? right_wrap_lines[j].brush("reset") : color(right_empty, "reset");
-         line.printf("dark gray", j < right_wrap_lines.size() - 1 ? "\\" : " ");
-         lines.push_back(line);
-      }
-   }
-   return lines;
-}
-
-h2_inline h2_lines h2_layout::split(const h2_lines& left_lines, const h2_lines& right_lines, const char* left_title, const char* right_title, size_t step, char scale, size_t width)
-{
-   size_t seq_width = number_strlen((unsigned long long)step * std::max(left_lines.size(), right_lines.size()), scale == 'x' ? 16 : 10);
-   size_t valid_width = width - (seq_width + 1 /* "|" */) - 1 /*|*/ - 4 /* spaces */;
-
-   size_t left_width = std::max(left_lines.width(), strlen(left_title));
-   size_t right_width = std::max(right_lines.width(), strlen(right_title));
-
-   if (left_width < valid_width / 2)
-      right_width = std::min(valid_width - left_width, right_width);
-   else if (right_width < valid_width / 2)
-      left_width = std::min(valid_width - right_width, left_width);
-   else
-      left_width = right_width = valid_width / 2;
-
-   h2_line title = gray((step ? h2_string(seq_width + 2, ' ') : "") + h2_string(left_title).center(left_width)) + "   " + gray(h2_string(right_title).center(right_width));
-   h2_lines lines = {title};
-
-   return lines += lines_merge(left_lines, right_lines, left_width, right_width, step, scale, seq_width);
-}
-
-h2_inline h2_lines h2_layout::unified(const h2_line& up_line, const h2_line& down_line, const char* up_title, const char* down_title, size_t width)
-{
-   h2_lines lines;
-   h2_line up_title_line = gray(up_title) + color("> ", "green");
-   h2_line down_title_line = gray(down_title) + color("> ", "red");
-
-   h2_lines up_lines = line_break(up_line, width - up_title_line.width());
-   h2_lines down_lines = line_break(down_line, width - down_title_line.width());
-
-   for (size_t i = 0; i < std::max(up_lines.size(), down_lines.size()); ++i) {
-      if (i < up_lines.size()) lines.push_back(up_title_line + up_lines[i]);
-      if (i < down_lines.size()) lines.push_back(down_title_line + down_lines[i]);
-   }
-   return lines;
-}
-
-static inline h2_lines prefix_break(const h2_line& line, const h2_line& title, size_t width)
-{
-   h2_lines lines = line_break(line, width - title.width());
-
-   for (size_t i = 0; i < lines.size(); ++i) {
-      if (i == 0)
-         lines[i] = title + lines[i];
-      else
-         lines[i].indent(title.width());
-   }
-   return lines;
-}
-
-h2_inline h2_lines h2_layout::seperate(const h2_line& up_line, const h2_line& down_line, const char* up_title, const char* down_title, size_t width)
-{
-   h2_line up_title_line = gray(up_title) + color("> ", "green");
-   h2_line down_title_line = gray(down_title) + color("> ", "red");
-   h2_lines lines = prefix_break(up_line, up_title_line, width);
-   return lines += prefix_break(down_line, down_title_line, width);
-}
 // source/render/h2_option.cpp
 /* clang-format off */
 static inline void usage()
@@ -10187,12 +10147,12 @@ h2_inline void h2_option::parse(int argc, const char** argv)
          case 'c': continue_assert = true; break;
          case 'd': debugger_trap = true; break;
          case 'e':
-            while ((t = get.extract_string())) excludes.push_back(t);
+            while ((t = get.extract_string())) h2_append(excludes, 128, t);
             break;
          case 'f': only_last_failed = true; break;
          case 'F': get.extract_number(fold_json = 0); break;
          case 'i':
-            while ((t = get.extract_string())) includes.push_back(t);
+            while ((t = get.extract_string())) h2_append(includes, 128, t);
             break;
          case 'l':
             while ((t = get.extract_string())) {

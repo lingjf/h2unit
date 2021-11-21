@@ -9,7 +9,6 @@
 #include <sstream>     /* std::basic_ostringstream */
 #include <string>      /* std::string */
 #include <vector>      /* std::vector */
-#include <map>         /* std::map */
 #include <tuple>       /* std::tuple */
 #include <functional>  /* std::function */
 #include <utility>     /* std::forward, std::pair */
@@ -51,28 +50,25 @@ namespace h2 {
 #include "utils/h2_list.hpp"          //
 #include "utils/h2_pattern.hpp"       //
 #include "utils/h2_misc.hpp"          //
-#include "utils/h2_numeric.hpp"       //
 #include "utils/h2_libc.hpp"          // list
 #include "utils/h2_shared_ptr.hpp"    // libc
 #include "utils/h2_allocate.hpp"      // libc
 #include "utils/h2_string.hpp"        // allocate
 #include "utils/h2_line.hpp"          // string
 #include "utils/h2_stringify.hpp"     // string, line
-#include "utils/h2_console.hpp"       // line
 #include "symbol/h2_nm.hpp"           //
 #include "symbol/h2_load.hpp"         //
 #include "symbol/h2_backtrace.hpp"    // line
 #include "symbol/h2_cxa.hpp"          //
 #include "render/h2_failure.hpp"      //
 #include "render/h2_option.hpp"       //
-#include "render/h2_layout.hpp"       //
-#include "render/h2_report.hpp"       //
+#include "except/h2_debug.hpp"        // option
 #include "core/h2_test.hpp"           //
 #include "core/h2_case.hpp"           // failure
 #include "core/h2_suite.hpp"          // case
 #include "core/h2_runner.hpp"         // failure
 #include "core/h2_core.hpp"           // [macro]
-#include "json/h2_json.hpp"           //
+#include "render/h2_report.hpp"       //!runner, suite, case
 #include "matcher/h2_matches.hpp"     // failure
 #include "matcher/h2_matcher.hpp"     // matches, failure
 #include "matcher/h2_equation.hpp"    // matches
@@ -84,7 +80,7 @@ namespace h2 {
 #include "matcher/h2_memcmp.hpp"      // matches, matcher, failure
 #include "matcher/h2_container.hpp"   // matches, matcher, failure
 #include "matcher/h2_customize.hpp"   // matches, matcher, failure
-#include "matcher/h2_matcher.cpp"     // matches, matcher, equation
+#include "matcher/h2_matcher.cpp"     //!matches, matcher, equation
 #include "stub/h2_fp.hpp"             // nm, load
 #include "stub/h2_stubs.hpp"          // -
 #include "stub/h2_temporary.hpp"      // -
@@ -98,7 +94,6 @@ namespace h2 {
 #include "mock/h2_mock.hpp"           //
 #include "memory/h2_exempt.hpp"       // -
 #include "memory/h2_memory.hpp"       // failure, fp
-#include "except/h2_debug.hpp"        // option
 #include "stdio/h2_stdio.hpp"         //
 #include "net/h2_dns.hpp"             //
 #include "net/h2_socket.hpp"          // stub, failure, matcher

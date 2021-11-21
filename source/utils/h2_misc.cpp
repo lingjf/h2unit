@@ -14,71 +14,78 @@ static inline const char* h2_basefile(const char* path)
    return path;
 }
 
-static inline const char* get_key(const char* subject, const char* key)
+static inline bool not2n(unsigned x)
 {
-   return strcasestr(subject, key);
-}
-static inline const char* get_eq(const char* start)
-{
-   for (; *start && ::isspace(*start);) start++;  // strip left space
-   return *start == '=' ? start : nullptr;
+   return x & (x - 1);
 }
 
-h2_inline const char* h2_extract::has(const char* attributes, const char* key)
+static inline unsigned mask2n(unsigned x)
 {
-   return strcasestr(attributes, key);
+   x |= (x >> 1);
+   x |= (x >> 2);
+   x |= (x >> 4);
+   x |= (x >> 8);
+   x |= (x >> 16);
+   return x;
 }
 
-h2_inline bool h2_extract::numeric(const char* attributes, const char* key, double& value)
+static inline const char* strip_left(const char* s)
 {
-   const char* p_key = get_key(attributes, key);
-   if (!p_key) return false;
-   const char* p_eq = get_eq(p_key + strlen(key));
-   if (!p_eq) return false;
-   const char* p_numeric = p_eq + 1;
-   for (; *p_numeric && ::isspace(*p_numeric);) p_numeric++;  // strip left space
-   value = strtod(p_numeric, nullptr);
-   return true;
+   for (; s && *s && ::isspace(*s);) s++;  // strip left space
+   return s;
 }
 
-h2_inline bool h2_extract::iport(const char* attributes, const char* key, char* str)
+static inline const char* get_keyvalue(const char* attributes, const char* key)
 {
-   const char* p_key = get_key(attributes, key);
-   if (!p_key) return false;
-   const char* p_eq = get_eq(p_key + strlen(key));
-   if (!p_eq) return false;
+   const char* p_key = strcasestr(attributes, key);
+   if (!p_key) return nullptr;
+   const char* p_eq = strip_left(p_key + strlen(key));
+   if (*p_eq != '=') return "";
+   return strip_left(p_eq + 1);
+}
 
-   for (const char* p = p_eq + 1; *p; p++) {
-      if (::isdigit(*p) || *p == '.' || *p == ':' || *p == '*' || *p == '?') {
-         *str++ = *p;
-         *str = '\0';
-      } else {
-         if (!(::isspace(*p) || *p == '\"')) break;
-      }
+static inline int hex2byte(char c)
+{
+   return '0' <= c && c <= '9' ? c - '0' : ('A' <= c && c <= 'F' ? c - 'A' + 10 : ('a' <= c && c <= 'f' ? c - 'a' + 10 : -1));
+}
+
+static inline size_t hex2bytes(const char* hex, unsigned char* bytes)
+{
+   char b;
+   size_t i = 0, c = 0;
+
+   for (; ::isxdigit(hex[c]);) ++c;
+   if (c % 2 == 1) {
+      b = '0';
+      i = 1;
+      c += 1;
+      hex = hex - 1;
    }
-   return true;
+   for (; i < c; ++i) {
+      if (i % 2 == 1)
+         bytes[i / 2] = (unsigned char)((hex2byte(b) << 4) + hex2byte(hex[i]));
+      b = hex[i];
+   }
+   return c / 2;
 }
 
-h2_inline int h2_extract::fill(const char* attributes, const char* key, unsigned char bytes[])
+static inline const char* index_th(size_t sequence, size_t shift = 1)
 {
-   const char* p_key = get_key(attributes, key);
-   if (!p_key) return 0;
-   const char* p_eq = get_eq(p_key + strlen(key));
-   if (!p_eq) return 0;
-   const char* p = p_eq + 1;
-   for (; *p && ::isspace(*p);) p++;  // strip left space
-   if (p[0] == '0' && ::tolower(p[1]) == 'x') {
-      return (int)h2_numeric::hex_to_bytes(p + 2, bytes);
-   } else {
-      unsigned long long v = strtoull(p, nullptr, 10);
-      if (v <= 0xFFULL)
-         return *((unsigned char*)bytes) = (unsigned char)v, 1;
-      else if (v <= 0xFFFFULL)
-         return *((unsigned short*)bytes) = (unsigned short)v, 2;
-      else if (v <= 0xFFFFFFFFULL)
-         return *((unsigned int*)bytes) = (unsigned int)v, 4;
-      else
-         return *((unsigned long long*)bytes) = (unsigned long long)v, 8;
+   static const char* st[] = {"0th", "1st", "2nd", "3rd", "4th", "5th", "6th", "7th", "8th", "9th", "10th", "11th", "12th", "13th", "14th", "15th"};
+   static char ss[64];
+
+   sequence += shift;
+   if (sequence < sizeof(st) / sizeof(st[0])) return st[sequence];
+   sprintf(ss, "%dth", (int)sequence);
+   return ss;
+}
+
+static inline size_t number_strlen(unsigned long long number, int base)
+{
+   unsigned long long _10000000 = 1;
+   for (size_t i = 1;; ++i) {
+      _10000000 *= base;
+      if (number < _10000000) return i;
    }
 }
 
@@ -147,6 +154,14 @@ static inline const char* h2_candidate(const char* a, int n, ...)
       sprintf(ss + strlen(ss), "%s%s", comma_if(i, " | "), matches[i]);
    return ss;
 }
+
+#define h2_append(Array, Size, a)   \
+   for (int i = 0; i < Size; ++i) { \
+      if (!Array[i]) {              \
+         Array[i] = a;              \
+         break;                     \
+      }                             \
+   }
 
 #define h2_sprintvf(str, fmt, ap)               \
    do {                                         \

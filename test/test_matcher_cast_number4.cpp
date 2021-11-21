@@ -1,8 +1,7 @@
 #include "../source/h2_unit.cpp"
-
 #include "test_types.hpp"
 
-CASE(cast number3)
+CASE(cast number4)
 {
    NUMBER0_DECL_LIST;
    NUMBER1_DECL_LIST;

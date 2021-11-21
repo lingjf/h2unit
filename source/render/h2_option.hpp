@@ -1,27 +1,8 @@
 
-static constexpr int VerboseQuiet = 0;
-static constexpr int VerboseCompactFailed = 1;
-static constexpr int VerboseCompactPassed = 2;
-static constexpr int VerboseNormal = 3;
-static constexpr int VerboseDetail = 4;
-
-static constexpr int ShuffleCode = 0x0;
-static constexpr int ShuffleRandom = 0x10;
-static constexpr int ShuffleName = 0x100;
-static constexpr int ShuffleFile = 0x1000;
-static constexpr int ShuffleReverse = 0x10000;
-
-static constexpr int ListNone = 0x0;
-static constexpr int ListSuite = 0x10;
-static constexpr int ListCase = 0x100;
-static constexpr int ListTodo = 0x1000;
-static constexpr int ListTag = 0x10000;
-
-static constexpr int FoldUnFold = 0;
-static constexpr int FoldShort = 1;
-static constexpr int FoldSame = 2;
-static constexpr int FoldSingle = 3;
-static constexpr int FoldMax = 5;
+static constexpr int VerboseQuiet = 0, VerboseCompactFailed = 1, VerboseCompactPassed = 2, VerboseNormal = 3, VerboseDetail = 4;
+static constexpr int ShuffleCode = 0x0, ShuffleRandom = 0x10, ShuffleName = 0x100, ShuffleFile = 0x1000, ShuffleReverse = 0x10000;
+static constexpr int ListNone = 0x0, ListSuite = 0x10, ListCase = 0x100, ListTodo = 0x1000, ListTag = 0x10000;
+static constexpr int FoldUnFold = 0, FoldShort = 1, FoldSame = 2, FoldSingle = 3, FoldMax = 5;
 
 struct h2_option {
    h2_singleton(h2_option);
@@ -54,7 +35,7 @@ struct h2_option {
    const char* json_source_quote = "";
    char junit_path[256]{'\0'};
    char tap_path[256]{'\0'};
-   std::vector<const char*> includes, excludes;
+   const char *includes[128]{nullptr}, *excludes[128]{nullptr};
 
    void parse(int argc, const char** argv);
 };

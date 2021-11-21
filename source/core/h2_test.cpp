@@ -23,18 +23,20 @@ static inline void __split_describe(const char* describe, char* name_buf, char* 
    strcpy(&name_buf[(size_t)(p - describe)], q + 1);
 }
 
+static inline int __split_tags(char* tags_buf, const char* tags[], size_t n)
+{
+   size_t count = 0;
+   for (char* t = strtok(tags_buf, " ,"); t; t = strtok(nullptr, " ,"))
+      if (count < n - 1) tags[count++] = t;
+   return count;
+}
+
 h2_inline h2_test::h2_test(const char* filine_, const char* file_, int line_, const char* describe_) : filine(filine_), file(h2_basefile(file_)), line(line_), describe(describe_)
 {
    if (describe) {
       __split_describe(describe, name_buf, tags_buf);
-
-      name = name_buf;
-      while (*name && ::isspace(*name)) name++;  // strip left space
-
-      int count = 0;
-      for (char* t = strtok(tags_buf, " ,"); t; t = strtok(nullptr, " ,"))
-         if (count < sizeof(tags) / sizeof(tags[0]) - 1) tags[count++] = t;
-      tags[count] = nullptr;
+      name = strip_left(name_buf);
+      tags[__split_tags(tags_buf, tags, sizeof(tags) / sizeof(tags[0]))] = nullptr;
    }
 }
 

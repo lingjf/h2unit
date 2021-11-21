@@ -1,3 +1,12 @@
+
+struct h2_memcmp_util {
+   static bool is_hex_string(const char* s);
+   static bool is_bin_string(const char* s);
+   static size_t bin_to_bits(const char* bin, unsigned char* bytes);
+   static size_t hex_to_bytes(const char* hex, unsigned char* bytes);
+   static bool bits_equal(const unsigned char* b1, const unsigned char* b2, size_t nbits);
+};
+
 template <typename E>
 struct h2_matches_memcmp : h2_matches {
    const E buffer;
@@ -15,20 +24,20 @@ struct h2_matches_memcmp : h2_matches {
             l = strlen((const char*)buffer);
             w = 8;
             if (!strcmp((const char*)buffer, (const char*)a)) break; /*result = true;*/
-            if (h2_numeric::is_bin_string((const char*)buffer)) {
+            if (h2_memcmp_util::is_bin_string((const char*)buffer)) {
                e = (unsigned char*)alloca(l);
-               l = h2_numeric::bin_to_bits((const char*)buffer, e);
+               l = h2_memcmp_util::bin_to_bits((const char*)buffer, e);
                w = 1;
-            } else if (h2_numeric::is_hex_string((const char*)buffer)) {
+            } else if (h2_memcmp_util::is_hex_string((const char*)buffer)) {
                e = (unsigned char*)alloca(l);
-               l = h2_numeric::hex_to_bytes((const char*)buffer, e);
+               l = h2_memcmp_util::hex_to_bytes((const char*)buffer, e);
                w = 8;
             }
          }
          if (!w) w = h2_sizeof_pointee<E>::value * 8; /* deduce by data type */
          if (!l) l = size;                            /* deduce by array size */
          if (!l || !w) return h2_fail::new_normal(color("length", "red") + " not specified " + gray("in ") + color("Me(buffer, ", "cyan") + color("length", "red") + gray(", width") + color(")", "cyan"));
-         result = h2_numeric::bits_equal(e, (const unsigned char*)a, l * w);
+         result = h2_memcmp_util::bits_equal(e, (const unsigned char*)a, l * w);
       } while (0);
 
       if (c.fit(result)) return nullptr;

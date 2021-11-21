@@ -241,11 +241,23 @@ struct h2_socket {
    }
 };
 
+static inline void parse_iport(const char* s, char* iport)
+{
+   for (const char* p = s; p && *p; p++) {
+      if (::isdigit(*p) || *p == '.' || *p == ':' || *p == '*' || *p == '?') {
+         *iport++ = *p;
+         *iport = '\0';
+      } else {
+         if (!(::isspace(*p) || *p == '\"')) break;
+      }
+   }
+}
+
 h2_inline void h2_sock::inject(const void* packet, size_t size, const char* attributes)
 {
    char from[256] = "", to[256] = "*";
-   h2_extract::iport(attributes, "from", from);
-   h2_extract::iport(attributes, "to", to);
+   parse_iport(get_keyvalue(attributes, "from"), from);
+   parse_iport(get_keyvalue(attributes, "to"), to);
    h2_socket::I().put_incoming(from, to, (const char*)packet, size);
 }
 

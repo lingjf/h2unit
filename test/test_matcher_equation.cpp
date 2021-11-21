@@ -1,6 +1,5 @@
 #include "../source/h2_unit.cpp"
 
-
 SUITE(bool matches)
 {
    Case(true)
