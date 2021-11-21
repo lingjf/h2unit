@@ -31,9 +31,7 @@ SUITE(normal)
 
    Case(case 3)
    {
-      OK(_, 0);
-      OK(IsNull, nullptr);
-      OK(IsTrue, true) << "hello user message";
+      OK(_, 0) << "hello user message";
    }
 
    Case(case 4)

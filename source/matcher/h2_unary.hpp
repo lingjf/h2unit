@@ -20,21 +20,6 @@ struct h2_matches_null : h2_matches {
    }
 };
 
-template <bool E>
-struct h2_matches_boolean : h2_matches {
-   template <typename A>
-   h2_fail* matches(const A& a, h2_mc c) const
-   {
-      bool result = E ? a : !a;
-      if (c.fit(result)) return nullptr;
-      return h2_fail::new_unexpect(expection(c), a ? "true" : "false");
-   }
-   virtual h2_line expection(h2_mc c) const override
-   {
-      return (E ? c.negative : !c.negative) ? "false" : "true";
-   }
-};
-
 template <typename Matcher>
 struct h2_pointee_matches : h2_matches {
    const Matcher m;
@@ -67,8 +52,6 @@ const h2_polymorphic_matcher<h2_matches_any> Any{h2_matches_any()};
 
 inline h2_polymorphic_matcher<h2_matches_null> _IsNull() { return h2_polymorphic_matcher<h2_matches_null>(h2_matches_null(false)); }
 inline h2_polymorphic_matcher<h2_matches_null> _NotNull() { return h2_polymorphic_matcher<h2_matches_null>(h2_matches_null(true)); }
-inline h2_polymorphic_matcher<h2_matches_boolean<true>> _IsTrue() { return h2_polymorphic_matcher<h2_matches_boolean<true>>(h2_matches_boolean<true>()); }
-inline h2_polymorphic_matcher<h2_matches_boolean<false>> _IsFalse() { return h2_polymorphic_matcher<h2_matches_boolean<false>>(h2_matches_boolean<false>()); }
 
 template <typename M>
 inline h2_polymorphic_matcher<h2_pointee_matches<M>> Pointee(M m) { return h2_polymorphic_matcher<h2_pointee_matches<M>>(h2_pointee_matches<M>(m)); }

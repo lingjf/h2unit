@@ -289,8 +289,6 @@ using h2::_;
 using h2::Any;
 #define IsNull h2::_IsNull()
 #define NotNull h2::_NotNull()
-#define IsTrue h2::_IsTrue()
-#define IsFalse h2::_IsFalse()
 using h2::operator"" _p;
 using h2::Eq;
 using h2::Nq;

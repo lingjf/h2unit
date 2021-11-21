@@ -33,23 +33,23 @@ SUITE(cast bool)
 #undef TheCheck
    }
 
-   Case(OK IsTrue)
+   Case(OK Is True)
    {
-#define TheCheck(x) OK(IsTrue, x);
+#define TheCheck(x) OK(true, x);
       H2Foreach(TheCheck, (BOOL_TRUE_LIST));
 #undef TheCheck
    }
 
-   Case(OK IsFalse)
+   Case(OK Is False)
    {
-#define TheCheck(x) OK(IsFalse, x);
+#define TheCheck(x) OK(false, x);
       H2Foreach(TheCheck, (BOOL_FALSE_LIST));
 #undef TheCheck
    }
 
-   Case(OK Not)
+   Case(OK Not True)
    {
-#define TheCheck(x) OK(Not(IsTrue), x);
+#define TheCheck(x) OK(Not(true), x);
       H2Foreach(TheCheck, (BOOL_FALSE_LIST));
 #undef TheCheck
    }

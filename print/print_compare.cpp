@@ -31,10 +31,22 @@ SUITE(number compares)
       OK(Eq(3.14, 0.0001_p), 3.1415926) << "float precision problem " << 3.1415926;
    }
 
-   Case(bool)
+   Case(bool bool)
    {
       bool a1 = false;
       OK(true, a1);
+   }
+
+   Case(bool int)
+   {
+      int a1 = 3;
+      OK(false, a1);
+   }
+
+   Case(bool char*)
+   {
+      const char* a1 = "hello";
+      OK(false, a1);
    }
 
    Case(char)

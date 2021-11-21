@@ -1,5 +1,27 @@
 #include "../source/h2_unit.cpp"
 
+
+SUITE(bool matches)
+{
+   Case(true)
+   {
+      h2::h2_matches_bool istrue(true);
+      OK(nullptr == istrue.matches(true, {}));
+      OK(nullptr != istrue.matches(false, {}));
+      OK("true", istrue.expection({}));
+      OK("false", istrue.expection({0, true, false, false, false}));
+   }
+
+   Case(false)
+   {
+      h2::h2_matches_bool isfalse(false);
+      OK(nullptr == isfalse.matches(false, {}));
+      OK(nullptr != isfalse.matches(true, {}));
+      OK("false", isfalse.expection({}));
+      OK("true", isfalse.expection({0, true, false, false, false}));
+   }
+}
+
 SUITE(equation matches)
 {
    Case(integer)
@@ -10,14 +32,6 @@ SUITE(equation matches)
       OK(nullptr == a2.matches(123, {}));
       h2::h2_equation<unsigned long long> a3(123);
       OK(nullptr == a3.matches(123, {}));
-   }
-
-   Case(boolean)
-   {
-      h2::h2_equation<bool> a1(false);
-      OK(nullptr == a1.matches(false, {}));
-      h2::h2_equation<const bool> a2(false);
-      OK(nullptr == a2.matches(false, {}));
    }
 
    Case(string)

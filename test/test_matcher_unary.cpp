@@ -49,29 +49,6 @@ SUITE(matches unary)
       OK(NotNull(), 1234);
    }
 
-   Case(Boolean)
-   {
-      h2::h2_matches_boolean<true> istrue;
-      OK(nullptr == istrue.matches(true, {}));
-      OK(nullptr != istrue.matches(false, {}));
-      OK("true", istrue.expection({}));
-      OK("false", istrue.expection({0, true, false, false, false}));
-
-      h2::h2_matches_boolean<false> isfalse;
-      OK(nullptr == isfalse.matches(false, {}));
-      OK(nullptr != isfalse.matches(true, {}));
-      OK("false", isfalse.expection({}));
-      OK("true", isfalse.expection({0, true, false, false, false}));
-   }
-
-   Case(OK Boolean)
-   {
-      OK(IsTrue, 1);
-      OK(IsTrue(), 1);
-      OK(IsFalse, 0);
-      OK(IsFalse(), 0);
-   }
-
    Case(Pointee)
    {
       h2::h2_pointee_matches<h2::h2_polymorphic_matcher<h2::h2_equation<int>>> a1(h2::h2_polymorphic_matcher<h2::h2_equation<int>>{h2::h2_equation<int>(65)});

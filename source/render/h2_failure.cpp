@@ -57,12 +57,12 @@ static inline bool is_synonym(const h2_string& a, const h2_string& b)
    if (a1 == b1) return true;
 
 #define H2_NULL_SYNONYM "NULL", "__null", "((void *)0)", "(nil)", "nullptr", "0", "0x0", "00000000", "0000000000000000"
-#define H2_TREE_SYNONYM "IsTrue", "true", "TRUE", "True", "1"
-#define H2_FALSE_SYNONYM "IsFalse", "false", "FALSE", "False", "0"
+#define H2_TREE_SYNONYM "true", "TRUE", "True", "1"
+#define H2_FALSE_SYNONYM "false", "FALSE", "False", "0"
 
    if (h2_in(a1.c_str(), 9, H2_NULL_SYNONYM) && h2_in(b1.c_str(), 9, H2_NULL_SYNONYM)) return true;
-   if (h2_in(a1.c_str(), 5, H2_TREE_SYNONYM) && h2_in(b1.c_str(), 5, H2_TREE_SYNONYM)) return true;
-   if (h2_in(a1.c_str(), 5, H2_FALSE_SYNONYM) && h2_in(b1.c_str(), 5, H2_FALSE_SYNONYM)) return true;
+   if (h2_in(a1.c_str(), 4, H2_TREE_SYNONYM) && h2_in(b1.c_str(), 4, H2_TREE_SYNONYM)) return true;
+   if (h2_in(a1.c_str(), 4, H2_FALSE_SYNONYM) && h2_in(b1.c_str(), 4, H2_FALSE_SYNONYM)) return true;
    return false;
 }
 

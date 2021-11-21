@@ -1,15 +1,23 @@
 template <typename T, typename M>
 struct h2_matcher_cast_impl {
-   static h2_matcher<T> cast(const M& from) { return do_cast(from, std::is_convertible<M, h2_matcher<T>>{}, std::is_convertible<M, T>{}); }
+   static h2_matcher<T> cast(const M& from)
+   {
+      return do_cast(from,
+                     std::integral_constant<bool, std::is_same<bool, M>::value>{},
+                     std::is_convertible<M, h2_matcher<T>>{} /* h2_matcher::h2_matcher(T value) Converting constructor | h2_polymorphic_matcher::operator h2_matcher<T>() */,
+                     std::is_convertible<M, T>{});
+   }
+
+   template <bool Ignore1, bool Ignore2>
+   static h2_matcher<T> do_cast(const M& from, std::true_type, std::integral_constant<bool, Ignore1>, std::integral_constant<bool, Ignore2>) { return Eq(from); }
 
    template <bool Ignore>
-   static h2_matcher<T> do_cast(const M& from, std::true_type, std::integral_constant<bool, Ignore>) { return from; }
+   static h2_matcher<T> do_cast(const M& from, std::false_type, std::true_type, std::integral_constant<bool, Ignore>) { return from; }
 
    template <typename To>
    static To implicit_cast(To x) { return x; }
-
-   static h2_matcher<T> do_cast(const M& from, std::false_type, std::true_type) { return h2_matcher<T>(implicit_cast<T>(from)); }
-   static h2_matcher<T> do_cast(const M& from, std::false_type, std::false_type) { return h2_polymorphic_matcher<h2_equation<M>>(h2_equation<M>(from)); }
+   static h2_matcher<T> do_cast(const M& from, std::false_type, std::false_type, std::true_type) { return h2_matcher<T>(implicit_cast<T>(from)); }
+   static h2_matcher<T> do_cast(const M& from, std::false_type, std::false_type, std::false_type) { return Eq(from); }
 };
 
 template <typename T, typename U>

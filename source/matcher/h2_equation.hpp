@@ -1,3 +1,19 @@
+struct h2_matches_bool : h2_matches {
+   const bool e;
+   explicit h2_matches_bool(bool e_) : e(e_) {}
+   template <typename A>
+   h2_fail* matches(const A& a, h2_mc c) const
+   {
+      bool result = e ? !!a : !a;
+      if (c.fit(result)) return nullptr;
+      return h2_fail::new_unexpect(expection(c), h2_stringify(a, true));
+   }
+   virtual h2_line expection(h2_mc c) const override
+   {
+      return (e ? c.negative : !c.negative) ? "false" : "true";
+   }
+};
+
 template <typename E, typename = void>
 struct h2_equation : h2_matches {
    const E e;
@@ -84,7 +100,13 @@ constexpr long double operator"" _p(long double epsilon)
 }
 
 template <typename T, typename E = typename h2_decay<T>::type>
-inline h2_polymorphic_matcher<h2_equation<E>> Eq(const T& expect, const long double epsilon = 0)
+auto Eq(const T& expect, const long double epsilon = 0) -> typename std::enable_if<!std::is_same<bool, E>::value, h2_polymorphic_matcher<h2_equation<E>>>::type
 {
    return h2_polymorphic_matcher<h2_equation<E>>(h2_equation<E>(expect, epsilon));
+}
+
+template <typename T, typename E = typename h2_decay<T>::type>
+auto Eq(const T& expect) -> typename std::enable_if<std::is_same<bool, E>::value, h2_polymorphic_matcher<h2_matches_bool>>::type
+{
+   return h2_polymorphic_matcher<h2_matches_bool>(h2_matches_bool(expect));
 }

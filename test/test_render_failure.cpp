@@ -10,12 +10,14 @@ SUITE(failure utils)
    h2::h2_string a_0 = "0";
    h2::h2_string a_0x0 = "0x0";
 
-   h2::h2_string true_IsTrue = "IsTrue";
    h2::h2_string true_true = "true";
+   h2::h2_string true_TRUE = "TRUE";
+   h2::h2_string true_True = "True";
    h2::h2_string true_1 = "1";
 
-   h2::h2_string false_IsFalse = "IsFalse";
    h2::h2_string false_false = "false";
+   h2::h2_string false_FALSE = "FALSE";
+   h2::h2_string false_False = "False";
    h2::h2_string false_0 = "0";
 
    Case(is_synonym null)
@@ -35,7 +37,7 @@ SUITE(failure utils)
 
    Case(is_synonym true)
    {
-#define TRUE_SET true_IsTrue, true_true, true_1
+#define TRUE_SET true_true, true_TRUE, true_True, true_1
 #define TheCheck(x, y) OK(h2::is_synonym(x, y));
       H2Fullmesh(TheCheck, (TRUE_SET));
 #undef TheCheck
@@ -43,7 +45,7 @@ SUITE(failure utils)
 
    Case(is_synonym false)
    {
-#define FALSE_SET false_IsFalse, false_false, false_0
+#define FALSE_SET false_false, false_FALSE, false_False, false_0
 #define TheCheck(x, y) OK(h2::is_synonym(x, y));
       H2Fullmesh(TheCheck, (FALSE_SET));
 #undef TheCheck

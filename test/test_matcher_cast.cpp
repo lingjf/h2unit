@@ -34,6 +34,13 @@ SUITE(matcher cast)
 
 SUITE(Same Number Type)
 {
+   Case(char)
+   {
+      OK(!(std::is_same<char, unsigned char>::value));
+      OK(!(std::is_same<char, signed char>::value));
+      OK(!(std::is_same< signed char, unsigned char>::value));
+   }
+
    Case(signed)
    {
       OK((std::is_same<short, short int>::value));
@@ -56,7 +63,8 @@ SUITE(Same Number Type)
 
    Case(const)
    {
-      // OK((std::is_same<int, const int>::value));
-      // OK((std::is_same<int, int&>::value));
+      OK(!(std::is_same<int, const int>::value));
+      OK(!(std::is_same<int, int&>::value));
+      OK(!(std::is_same<int, const int&>::value));
    }
 }

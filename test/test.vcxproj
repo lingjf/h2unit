@@ -41,6 +41,7 @@
     <ClCompile Include="test_json_tinyexpr.cpp" />
     <ClCompile Include="test_json_tree.cpp" />
     <ClCompile Include="test_lib_dynamic.cpp" />
+    <ClCompile Include="test_matcher_bool.cpp" />
     <ClCompile Include="test_matcher_cast.cpp" />
     <ClCompile Include="test_matcher_cast_bool.cpp" />
     <ClCompile Include="test_matcher_cast_container.cpp" />

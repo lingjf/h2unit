@@ -377,8 +377,6 @@ CASE(case name)
 *    [`_`](../source/h2_unit.hpp#L321) / [`Any`](../source/h2_unit.hpp#L321) : matches any value 
 *    [`IsNull`](../source/h2_unit.hpp#L321) : matches if value is null 
 *    [`NotNull`](../source/h2_unit.hpp#L321) : matches if value is not null 
-*    [`IsTrue`](../source/h2_unit.hpp#L321) : matches if value is true 
-*    [`IsFalse`](../source/h2_unit.hpp#L321) : matches if value is false 
 *    [`Eq`](../source/h2_unit.hpp#L321)(expect [, epsilon]) : matches if value equals expect (one of [strcmp wildcard regex] equals for string compare), float value near equals expect, default epsilon is 0.00001. 0.01_p matches if delta in 1% range of expect
 *    [`Nq`](../source/h2_unit.hpp#L321)(expect) : matches if value not equals expect 
 *    [`Ge`](../source/h2_unit.hpp#L321)(expect) : matches if value >= expect 

@@ -159,15 +159,15 @@ SUITE(h2_extract)
       double ret;
 
       const char* a1 = "len=1234";
-      OK(IsTrue, h2::h2_extract::numeric(a1, "len", ret));
+      OK(true, h2::h2_extract::numeric(a1, "len", ret));
       OK(1234, ret);
 
       const char* a2 = "len =1234.56";
-      OK(IsTrue, h2::h2_extract::numeric(a2, "len", ret));
+      OK(true, h2::h2_extract::numeric(a2, "len", ret));
       OK(1234.56, ret);
 
       const char* a3 = "len =  1234.56 ";
-      OK(IsTrue, h2::h2_extract::numeric(a3, "len", ret));
+      OK(true, h2::h2_extract::numeric(a3, "len", ret));
       OK(1234.56, ret);
    }
 

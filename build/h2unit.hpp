@@ -1522,7 +1522,7 @@ struct h2_polymorphic_matcher : h2_matches {
       squash_whitespace = true;
       return *this;
    }
-   h2_polymorphic_matcher& operator()() { return *this; }  // IsTrue/IsTrue() both works
+   h2_polymorphic_matcher& operator()() { return *this; }  // Matcher/Mather() both works
 
    template <typename T>
    operator h2_matcher<T>() const
@@ -1551,6 +1551,22 @@ struct h2_polymorphic_matcher : h2_matches {
    }
 };
 // source/matcher/h2_equation.hpp
+struct h2_matches_bool : h2_matches {
+   const bool e;
+   explicit h2_matches_bool(bool e_) : e(e_) {}
+   template <typename A>
+   h2_fail* matches(const A& a, h2_mc c) const
+   {
+      bool result = e ? !!a : !a;
+      if (c.fit(result)) return nullptr;
+      return h2_fail::new_unexpect(expection(c), h2_stringify(a, true));
+   }
+   virtual h2_line expection(h2_mc c) const override
+   {
+      return (e ? c.negative : !c.negative) ? "false" : "true";
+   }
+};
+
 template <typename E, typename = void>
 struct h2_equation : h2_matches {
    const E e;
@@ -1637,23 +1653,37 @@ constexpr long double operator"" _p(long double epsilon)
 }
 
 template <typename T, typename E = typename h2_decay<T>::type>
-inline h2_polymorphic_matcher<h2_equation<E>> Eq(const T& expect, const long double epsilon = 0)
+auto Eq(const T& expect, const long double epsilon = 0) -> typename std::enable_if<!std::is_same<bool, E>::value, h2_polymorphic_matcher<h2_equation<E>>>::type
 {
    return h2_polymorphic_matcher<h2_equation<E>>(h2_equation<E>(expect, epsilon));
+}
+
+template <typename T, typename E = typename h2_decay<T>::type>
+auto Eq(const T& expect) -> typename std::enable_if<std::is_same<bool, E>::value, h2_polymorphic_matcher<h2_matches_bool>>::type
+{
+   return h2_polymorphic_matcher<h2_matches_bool>(h2_matches_bool(expect));
 }
 // source/matcher/h2_cast.hpp
 template <typename T, typename M>
 struct h2_matcher_cast_impl {
-   static h2_matcher<T> cast(const M& from) { return do_cast(from, std::is_convertible<M, h2_matcher<T>>{}, std::is_convertible<M, T>{}); }
+   static h2_matcher<T> cast(const M& from)
+   {
+      return do_cast(from,
+                     std::integral_constant<bool, std::is_same<bool, M>::value>{},
+                     std::is_convertible<M, h2_matcher<T>>{} /* h2_matcher::h2_matcher(T value) Converting constructor | h2_polymorphic_matcher::operator h2_matcher<T>() */,
+                     std::is_convertible<M, T>{});
+   }
+
+   template <bool Ignore1, bool Ignore2>
+   static h2_matcher<T> do_cast(const M& from, std::true_type, std::integral_constant<bool, Ignore1>, std::integral_constant<bool, Ignore2>) { return Eq(from); }
 
    template <bool Ignore>
-   static h2_matcher<T> do_cast(const M& from, std::true_type, std::integral_constant<bool, Ignore>) { return from; }
+   static h2_matcher<T> do_cast(const M& from, std::false_type, std::true_type, std::integral_constant<bool, Ignore>) { return from; }
 
    template <typename To>
    static To implicit_cast(To x) { return x; }
-
-   static h2_matcher<T> do_cast(const M& from, std::false_type, std::true_type) { return h2_matcher<T>(implicit_cast<T>(from)); }
-   static h2_matcher<T> do_cast(const M& from, std::false_type, std::false_type) { return h2_polymorphic_matcher<h2_equation<M>>(h2_equation<M>(from)); }
+   static h2_matcher<T> do_cast(const M& from, std::false_type, std::false_type, std::true_type) { return h2_matcher<T>(implicit_cast<T>(from)); }
+   static h2_matcher<T> do_cast(const M& from, std::false_type, std::false_type, std::false_type) { return Eq(from); }
 };
 
 template <typename T, typename U>
@@ -1698,21 +1728,6 @@ struct h2_matches_null : h2_matches {
    }
 };
 
-template <bool E>
-struct h2_matches_boolean : h2_matches {
-   template <typename A>
-   h2_fail* matches(const A& a, h2_mc c) const
-   {
-      bool result = E ? a : !a;
-      if (c.fit(result)) return nullptr;
-      return h2_fail::new_unexpect(expection(c), a ? "true" : "false");
-   }
-   virtual h2_line expection(h2_mc c) const override
-   {
-      return (E ? c.negative : !c.negative) ? "false" : "true";
-   }
-};
-
 template <typename Matcher>
 struct h2_pointee_matches : h2_matches {
    const Matcher m;
@@ -1745,8 +1760,6 @@ const h2_polymorphic_matcher<h2_matches_any> Any{h2_matches_any()};
 
 inline h2_polymorphic_matcher<h2_matches_null> _IsNull() { return h2_polymorphic_matcher<h2_matches_null>(h2_matches_null(false)); }
 inline h2_polymorphic_matcher<h2_matches_null> _NotNull() { return h2_polymorphic_matcher<h2_matches_null>(h2_matches_null(true)); }
-inline h2_polymorphic_matcher<h2_matches_boolean<true>> _IsTrue() { return h2_polymorphic_matcher<h2_matches_boolean<true>>(h2_matches_boolean<true>()); }
-inline h2_polymorphic_matcher<h2_matches_boolean<false>> _IsFalse() { return h2_polymorphic_matcher<h2_matches_boolean<false>>(h2_matches_boolean<false>()); }
 
 template <typename M>
 inline h2_polymorphic_matcher<h2_pointee_matches<M>> Pointee(M m) { return h2_polymorphic_matcher<h2_pointee_matches<M>>(h2_pointee_matches<M>(m)); }
@@ -3708,8 +3721,6 @@ using h2::_;
 using h2::Any;
 #define IsNull h2::_IsNull()
 #define NotNull h2::_NotNull()
-#define IsTrue h2::_IsTrue()
-#define IsFalse h2::_IsFalse()
 using h2::operator"" _p;
 using h2::Eq;
 using h2::Nq;

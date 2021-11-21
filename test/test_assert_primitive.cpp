@@ -13,7 +13,7 @@ SUITE(OK Primitive)
    Case(dual)
    {
       OK(1, 1);
-      OK(IsTrue, (std::is_same<long, long int>::value));
+      OK(true, (std::is_same<long, long int>::value));
    }
 
    Case(Any)

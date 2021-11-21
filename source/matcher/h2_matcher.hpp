@@ -39,7 +39,7 @@ struct h2_polymorphic_matcher : h2_matches {
       squash_whitespace = true;
       return *this;
    }
-   h2_polymorphic_matcher& operator()() { return *this; }  // IsTrue/IsTrue() both works
+   h2_polymorphic_matcher& operator()() { return *this; }  // Matcher/Mather() both works
 
    template <typename T>
    operator h2_matcher<T>() const

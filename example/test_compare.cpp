@@ -203,15 +203,15 @@ SUITE(zero operator)
       OK(NotNull, NULL);  // failure
    }
 
-   Case(IsTrue failure)
+   Case(Is True failure)
    {
-      OK(IsTrue, true);   // successful
-      OK(IsTrue, false);  // failure
+      OK(true, true);   // successful
+      OK(true, false);  // failure
    }
 
-   Case(IsFalse failure)
+   Case(Is False failure)
    {
-      OK(IsFalse, false);  // successful
-      OK(IsFalse, true);   // failure
+      OK(false, false);  // successful
+      OK(false, true);   // failure
    }
 }
