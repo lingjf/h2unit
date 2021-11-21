@@ -132,7 +132,7 @@ struct h2_fail_unexpect : h2_fail {
 struct h2_fail_strcmp : h2_fail_unexpect {
    const bool caseless;
    const h2_string e_value, a_value;
-   h2_fail_strcmp(const h2_string& e_value_, const h2_string& a_value_, bool caseless_, const h2_line& expection, const h2_line& explain = {}) : h2_fail_unexpect(expection, h2_representify(a_value_), explain), caseless(caseless_), e_value(e_value_), a_value(a_value_) {}
+   h2_fail_strcmp(const h2_string& e_value_, const h2_string& a_value_, bool caseless_, const h2_line& expection, const h2_line& explain = {}) : h2_fail_unexpect(expection, h2_stringify(a_value_, true), explain), caseless(caseless_), e_value(e_value_), a_value(a_value_) {}
    h2_line fmt_char(h2_string& c, bool eq, const char* style)
    {
       if (c.equals(" ") && O.colorful) return gray("‧");
@@ -156,7 +156,7 @@ struct h2_fail_strcmp : h2_fail_unexpect {
 
 struct h2_fail_strfind : h2_fail_unexpect {
    const h2_string e_value, a_value;
-   h2_fail_strfind(const h2_string& e_value_, const h2_string& a_value_, const h2_line& expection, const h2_line& explain) : h2_fail_unexpect(expection, h2_representify(a_value_), explain), e_value(e_value_), a_value(a_value_) {}
+   h2_fail_strfind(const h2_string& e_value_, const h2_string& a_value_, const h2_line& expection, const h2_line& explain) : h2_fail_unexpect(expection, h2_stringify(a_value_, true), explain), e_value(e_value_), a_value(a_value_) {}
    void print(size_t si = 0, size_t ci = 0) override
    {
       h2_fail_unexpect::print(si, ci);

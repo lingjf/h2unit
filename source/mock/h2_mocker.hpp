@@ -81,7 +81,7 @@ class h2_mocker<Counter, ClassType, ReturnType(ArgumentTypes...)> : h2_mocker_ba
       if (checkin_offset != -1) checkin_array[checkin_offset].call += 1;
       if (checkin_offset == -1) {
          h2_fail* fail = h2_fail::new_normal(signature(), filine);
-         h2_fail* f = h2_fail::new_normal(srcfn + h2_representify(at) + color(" unexpectedly", "red,bold") + " called");
+         h2_fail* f = h2_fail::new_normal(srcfn + h2_stringify(at, true) + color(" unexpectedly", "red,bold") + " called");
          h2_fail::append_child(fail, f);
          h2_runner::failing(fail);
       }

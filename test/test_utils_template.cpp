@@ -1,4 +1,5 @@
 #include "../source/h2_unit.cpp"
+#include "test_types.hpp"
 
 #include <vector>
 #include <deque>
@@ -11,39 +12,6 @@
 #include <unordered_map>
 #include <tuple>
 #include <valarray>
-
-struct Tpl1 {
-   int a;
-   int bar(int) { return 0; }
-};
-
-struct Tpl2 {
-   h2::h2_string toString() { return "Tpl2"; }
-};
-
-struct Tpl3 {
-   int bar(int) { return 0; }
-};
-std::ostream& operator<<(std::ostream& os, Tpl3 a)
-{
-   return os << "Tpl3";
-}
-
-struct Tpl4 {
-   int bar(int) { return 0; }
-};
-std::ostream& operator<<(std::ostream& os, Tpl4& a)
-{
-   return os << "Tpl4";
-}
-
-struct Tpl5 {
-   int bar(int) { return 0; }
-};
-std::ostream& operator<<(std::ostream& os, const Tpl5& a)
-{
-   return os << "Tpl5";
-}
 
 CASE(nth_type)
 {
@@ -68,9 +36,9 @@ SUITE(sizeof pointee)
       OK(8, h2::h2_sizeof_pointee<unsigned long long*>::value);
    }
 
-   Case(Tpl1*)
+   Case(B_ClassStruct*)
    {
-      OK(4, h2::h2_sizeof_pointee<Tpl1*>::value);
+      OK(sizeof(B_ClassStruct), h2::h2_sizeof_pointee<B_ClassStruct*>::value);
    }
 
    Case(void*)
@@ -81,52 +49,6 @@ SUITE(sizeof pointee)
    Case(void**)
    {
       OK(sizeof(void*), h2::h2_sizeof_pointee<void**>::value);
-   }
-}
-
-SUITE(stringable)
-{
-   Case(is_ostreamable)
-   {
-      OK(h2::h2_is_ostreamable<int>::value);
-      OK(h2::h2_is_ostreamable<unsigned char>::value);
-      OK(h2::h2_is_ostreamable<uint8_t>::value);
-      OK(!h2::h2_is_ostreamable<Tpl1>::value);
-      OK(!h2::h2_is_ostreamable<Tpl2>::value);
-      OK(h2::h2_is_ostreamable<Tpl3>::value);
-      OK(h2::h2_is_ostreamable<Tpl4>::value);
-      OK(h2::h2_is_ostreamable<Tpl5>::value);
-   }
-
-   Case(nullptr_t)
-   {
-      // https://en.cppreference.com/w/cpp/io/basic_ostream/operator_ltlt
-      // basic_ostream& operator<<(std::nullptr_t); (since C++ 17)
-
-      // g++ -x c++ -std=c++11 -dM -E - </dev/null | grep __cplusplus
-      // #define __cplusplus 201103L
-
-      // g++ -x c++ -std=c++14 -dM -E - </dev/null | grep __cplusplus
-      // #define __cplusplus 201402L
-
-      // g++ -x c++ -std=c++17 -dM -E - </dev/null | grep __cplusplus
-      // #define __cplusplus 201703L
-
-      // g++ -x c++ -std=c++2a -dM -E - </dev/null | grep __cplusplus
-      // #define __cplusplus 202002L
-
-      // g++ -x c++ -std=c++2b -dM -E - </dev/null | grep __cplusplus
-      // #define __cplusplus 202102L
-
-      // https://docs.microsoft.com/en-us/cpp/preprocessor/predefined-macros
-
-#if __cplusplus >= 201703L || _MSVC_LANG >= 201703L
-      OK(h2::h2_is_ostreamable<std::nullptr_t>::value);
-#else
-#if !defined __clang__  // clang implement operator<<(std::nullptr_t) before C++ 17
-      OK(!h2::h2_is_ostreamable<std::nullptr_t>::value);
-#endif
-#endif
    }
 }
 

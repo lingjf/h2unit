@@ -2,6 +2,20 @@
 
 SUITE(OK Primitive)
 {
+   Case(unary)
+   {
+      OK(1);
+      OK(!0);
+      OK(true);
+      OK((std::is_same<long, long int>::value));
+   }
+
+   Case(dual)
+   {
+      OK(1, 1);
+      OK(IsTrue, (std::is_same<long, long int>::value));
+   }
+
    Case(Any)
    {
       OK(_, 1);
@@ -25,6 +39,11 @@ SUITE(OK Primitive)
 
 SUITE(JE Primitive)
 {
+   Case(normal)
+   {
+      JE("{'name': \"hello world\"}", "{'name': \"hello world\", 'age': [18, 20]}");
+   }
+
    Case(selector)
    {
       JE("hello world", "{'name': \"hello world\", 'age': [18, 20]}", ".name");
@@ -34,6 +53,7 @@ SUITE(JE Primitive)
       OK(Je("hello world", ".name"), "{'name': \"hello world\", 'age': [18, 20]}");
       OK(Je("18", ".age[0]"), "{'name': \"hello world\", 'age': [18, 20]}");
    }
+
    Case(selector empty)
    {
       OK(!Je("hello world", ".say"), "{'name': \"hello world\", 'age': [18, 20]}");
@@ -70,5 +90,8 @@ SUITE(CP Primitive)
    {
       CP("abc" == "abc");
       CP("abc" != "xyz");
+
+      const char* a1 = "def";
+      CP("abc" != a1);
    }
 }

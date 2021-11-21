@@ -1,5 +1,4 @@
 #include "../source/h2_unit.cpp"
-
 #include "test_types.hpp"
 
 #include <vector>
@@ -14,24 +13,16 @@
 #include <tuple>
 #include <valarray>
 
-struct Stringify1 {
+struct Stringify11 {
    int bar(int) { return 0; }
 };
 
-struct Stringify2 {
+struct Stringify12 {
    h2::h2_string tostring() { return "tostring"; }
    h2::h2_string toString() { return "toString"; }
 };
 
-struct Stringify3 {
-   int bar(int) { return 0; }
-};
-std::ostream& operator<<(std::ostream& os, Stringify3 a)
-{
-   return os << "Stringify3";
-}
-
-struct Stringify4 {
+struct Stringify13 {
    std::string tostring() { return "std::string toString()"; }
    h2::h2_string toString() { return "h2::h2_string toString"; }
    std::string Tostring(int) { return "std::string Tostring"; }
@@ -39,35 +30,179 @@ struct Stringify4 {
    const char* to_string() { return "const char* to_string"; }
 };
 
+struct Stringify21 {
+   int bar(int) { return 0; }
+};
+std::ostream& operator<<(std::ostream& os, Stringify21 a)
+{
+   return os << "Stringify21";
+}
+
+struct Stringify22 {
+   int bar(int) { return 0; }
+};
+std::ostream& operator<<(std::ostream& os, Stringify22& a)
+{
+   return os << "Stringify22";
+}
+
+struct Stringify23 {
+   int bar(int) { return 0; }
+};
+std::ostream& operator<<(std::ostream& os, const Stringify23& a)
+{
+   return os << "Stringify23";
+}
+
 CASE(tostring able)
 {
-   OK(h2::h2_toString_able<Stringify2>::value);
+   OK(h2::h2_toString_able<Stringify12>::value);
 
-   OK(h2::h2_tostring_able<Stringify4>::value);
-   OK(h2::h2_toString_able<Stringify4>::value);
-   OK(!h2::h2_Tostring_able<Stringify4>::value);
-   OK(!h2::h2_ToString_able<Stringify4>::value);
-   OK(h2::h2_to_string_able<Stringify4>::value);
+   OK(h2::h2_tostring_able<Stringify13>::value);
+   OK(h2::h2_toString_able<Stringify13>::value);
+   OK(!h2::h2_Tostring_able<Stringify13>::value);
+   OK(!h2::h2_ToString_able<Stringify13>::value);
+   OK(h2::h2_to_string_able<Stringify13>::value);
 
-   OK(!h2::h2_tostring_able<Stringify1>::value);
-   OK(!h2::h2_toString_able<Stringify1>::value);
-   OK(!h2::h2_Tostring_able<Stringify1>::value);
-   OK(!h2::h2_ToString_able<Stringify1>::value);
-   OK(!h2::h2_to_string_able<Stringify1>::value);
+   OK(!h2::h2_tostring_able<Stringify11>::value);
+   OK(!h2::h2_toString_able<Stringify11>::value);
+   OK(!h2::h2_Tostring_able<Stringify11>::value);
+   OK(!h2::h2_ToString_able<Stringify11>::value);
+   OK(!h2::h2_to_string_able<Stringify11>::value);
+}
+
+SUITE(ostream able)
+{
+   Case(arithmetic type)
+   {
+      OK(h2::h2_is_ostreamable<char>::value);
+      OK(h2::h2_is_ostreamable<signed char>::value);
+      OK(h2::h2_is_ostreamable<unsigned char>::value);
+      OK(h2::h2_is_ostreamable<uint8_t>::value);
+
+      OK(h2::h2_is_ostreamable<short int>::value);
+      OK(h2::h2_is_ostreamable<unsigned short int>::value);
+
+      OK(h2::h2_is_ostreamable<int>::value);
+      OK(h2::h2_is_ostreamable<unsigned int>::value);
+
+      OK(h2::h2_is_ostreamable<long int>::value);
+      OK(h2::h2_is_ostreamable<unsigned long int>::value);
+
+      OK(h2::h2_is_ostreamable<long long int>::value);
+      OK(h2::h2_is_ostreamable<unsigned long long int>::value);
+   }
+
+   Case(void)
+   {
+      OK(!h2::h2_is_ostreamable<void>::value);
+   }
+
+   Case(void*)
+   {
+      OK(h2::h2_is_ostreamable<void*>::value);
+   }
+
+   Case(user type)
+   {
+      OK(!h2::h2_is_ostreamable<Stringify11>::value);
+      OK(!h2::h2_is_ostreamable<Stringify12>::value);
+      OK(!h2::h2_is_ostreamable<Stringify13>::value);
+      OK(h2::h2_is_ostreamable<Stringify21>::value);
+      OK(h2::h2_is_ostreamable<Stringify22>::value);
+      OK(h2::h2_is_ostreamable<Stringify23>::value);
+   }
+
+   Case(nullptr_t)
+   {
+      // https://en.cppreference.com/w/cpp/io/basic_ostream/operator_ltlt
+      // basic_ostream& operator<<(std::nullptr_t); (since C++ 17)
+
+      // g++ -x c++ -std=c++11 -dM -E - </dev/null | grep __cplusplus
+      // #define __cplusplus 201103L
+
+      // g++ -x c++ -std=c++14 -dM -E - </dev/null | grep __cplusplus
+      // #define __cplusplus 201402L
+
+      // g++ -x c++ -std=c++17 -dM -E - </dev/null | grep __cplusplus
+      // #define __cplusplus 201703L
+
+      // g++ -x c++ -std=c++2a -dM -E - </dev/null | grep __cplusplus
+      // #define __cplusplus 202002L
+
+      // g++ -x c++ -std=c++2b -dM -E - </dev/null | grep __cplusplus
+      // #define __cplusplus 202102L
+
+      // https://docs.microsoft.com/en-us/cpp/preprocessor/predefined-macros
+
+#if __cplusplus >= 201703L || _MSVC_LANG >= 201703L
+      OK(h2::h2_is_ostreamable<std::nullptr_t>::value);
+#else
+#if !defined __clang__  // clang implement operator<<(std::nullptr_t) before C++ 17
+      OK(!h2::h2_is_ostreamable<std::nullptr_t>::value);
+#endif
+#endif
+   }
 }
 
 SUITE(stringify simple)
 {
    Case(int)
    {
+      OK(ListOf("0"), h2::h2_stringify<int>(0));
       OK(ListOf("1"), h2::h2_stringify<int>(1));
+      OK(ListOf("42"), h2::h2_stringify<int>(42));
       OK(ListOf("100"), h2::h2_stringify<int>(100, true));
+   }
+
+   Case(-int)
+   {
+      OK(ListOf("0"), h2::h2_stringify<int>(-0));
+      OK(ListOf("-1"), h2::h2_stringify<int>(-1));
+      OK(ListOf("-42"), h2::h2_stringify<int>(-42));
+      OK(ListOf("-100"), h2::h2_stringify<int>(-100, true));
+   }
+
+   Case(+int)
+   {
+      OK(ListOf("0"), h2::h2_stringify<int>(+0));
+      OK(ListOf("1"), h2::h2_stringify<int>(+1));
+      OK(ListOf("42"), h2::h2_stringify<int>(+42));
+      OK(ListOf("100"), h2::h2_stringify<int>(+100, true));
+   }
+
+   Case(hex oct)
+   {
+      OK(ListOf("0"), h2::h2_stringify<int>(0x0));
+      OK(ListOf("1"), h2::h2_stringify<int>(01));
+      OK(ListOf("42"), h2::h2_stringify<int>(0x2a));
+      OK(ListOf("100"), h2::h2_stringify<int>(0144, true));
    }
 
    Case(double)
    {
+      OK(ListOf("1"), h2::h2_stringify<double>(1.0));
+
+      OK(ListOf("3.14"), h2::h2_stringify<double>(3.14));
+      OK(ListOf("3.14"), h2::h2_stringify<double>(3.14, true));
       OK(ListOf("3.141593"), h2::h2_stringify<double>(3.1415926));
       OK(ListOf("3.141593"), h2::h2_stringify<double>(3.1415926, true));
+   }
+
+   Case(-double)
+   {
+      OK(ListOf("-3.14"), h2::h2_stringify<double>(-3.14));
+      OK(ListOf("-3.14"), h2::h2_stringify<double>(-3.14, true));
+      OK(ListOf("-3.141593"), h2::h2_stringify<double>(-3.1415926));
+      OK(ListOf("-3.141593"), h2::h2_stringify<double>(-3.1415926, true));
+   }
+
+   Case(+double)
+   {
+      OK(ListOf("3.14"), h2::h2_stringify<double>(+3.14));
+      OK(ListOf("3.14"), h2::h2_stringify<double>(+3.14, true));
+      OK(ListOf("3.141593"), h2::h2_stringify<double>(+3.1415926));
+      OK(ListOf("3.141593"), h2::h2_stringify<double>(+3.1415926, true));
    }
 
    Case(bool)
@@ -90,9 +225,47 @@ SUITE(stringify simple)
 
    Case(long long)
    {
-      long long a = 123456780;
-      OK(ListOf("123456780"), h2::h2_stringify<long long>(a));
-      OK(ListOf("123456780"), h2::h2_stringify<long long>(a, true));
+      OK(ListOf("12345678"), h2::h2_stringify<long long>(12345678LL));
+      OK(ListOf("123456780"), h2::h2_stringify<long long>(123456780LL));
+      OK(ListOf("1234567800"), h2::h2_stringify<long long>(1234567800LL, true));
+   }
+
+   Case(short)
+   {
+      OK(ListOf("1234"), h2::h2_stringify<short>(1234));
+   }
+
+   Case(short int)
+   {
+      OK(ListOf("1234"), h2::h2_stringify<short int>(1234));
+   }
+
+   Case(long int)
+   {
+      OK(ListOf("12345678"), h2::h2_stringify<long int>(12345678));
+   }
+
+   Case(long long int)
+   {
+      OK(ListOf("12345678"), h2::h2_stringify<long long int>(12345678LL));
+   }
+
+   Case(float)
+   {
+      OK(ListOf("3.14"), h2::h2_stringify<float>(3.14));
+   }
+
+   Case(long double)
+   {
+#if !(defined WIN32 && defined __clang__)  //! failed at msys2-clang64
+      OK(ListOf("3.14"), h2::h2_stringify<long double>(3.14));
+#endif
+   }
+
+   Case(enum)
+   {
+      enum { enum_1234 = 1234 };
+      OK(ListOf("1234"), h2::h2_stringify(enum_1234));
    }
 
    Case(char)
@@ -105,6 +278,13 @@ SUITE(stringify simple)
          h2::h2_stringify<char>(a, true));
    }
 
+   Case(signed char)
+   {
+      signed char a = 'A';
+      OK(ListOf("A"), h2::h2_stringify<signed char>(a));
+      OK(ListOf("A"), h2::h2_stringify<signed char>(a, true));  // what signed char should be
+   }
+
    Case(char*)
    {
       char* a = (char*)"hello world";
@@ -115,21 +295,36 @@ SUITE(stringify simple)
          h2::h2_stringify<char*>(a, true));
    }
 
+   Case("char[]")
+   {
+      char a[100];
+      strcpy(a, "hello world");
+
+      OK("hello world", h2::h2_stringify(a));
+      OK(ListOf("\033{+dark gray}", "\"", "\033{-dark gray}",
+                "hello world",
+                "\033{+dark gray}", "\"", "\033{-dark gray}"),
+         h2::h2_stringify(a, true));
+   }
+
+   Case(char* null)
+   {
+      char* a = nullptr;
+      OK(ListOf("(null)"), h2::h2_stringify<char*>(a));
+   }
+
+   Case(const char* null)
+   {
+      const char* a = nullptr;
+      OK(ListOf("(null)"), h2::h2_stringify<const char*>(a));
+   }
+
    Case(string)
    {
       STRING_DECL_LIST;
 
-#define TheCheck(x) OK("h2unit", h2::h2_stringify(x));
+#define TheCheck(x) OK(ListOf("h2unit"), h2::h2_stringify(x));
       H2Foreach(TheCheck, (STRING_VAR_LIST));
-#undef TheCheck
-   }
-
-   Case(numbers)
-   {
-      NUMBER0_DECL_LIST;
-
-#define TheCheck(x) h2::h2_stringify(x);
-      H2Foreach(TheCheck, (NUMBER0_VAR_LIST));
 #undef TheCheck
    }
 
@@ -138,39 +333,64 @@ SUITE(stringify simple)
       PTR_FILL_DECL_LIST;
       PTR_NULL_DECL_LIST;
 
-// #define TheCheck(x) h2::h2_stringify(x);
-//       H2Foreach(TheCheck, PTR_NULL_VAR_LIST2);
-// #undef TheCheck
+      // #define TheCheck(x) h2::h2_stringify(x);
+      //       H2Foreach(TheCheck, PTR_NULL_VAR_LIST2);
+      // #undef TheCheck
    }
 
    Case(unsigned char*)
    {
-      unsigned char a[] = {'h', 'e', 'l', 'l', 'o', 0};
-      OK("hello", h2::h2_stringify<unsigned char*>(a));
-      OK("hello", h2::h2_stringify<unsigned char*>(a, true));
+      unsigned char a1[] = {'h', 'e', 'l', 'l', 'o', 0};
+      OK(ListOf("hello"), h2::h2_stringify<unsigned char*>(a1));
+      OK(ListOf("hello"), h2::h2_stringify<unsigned char*>(a1, true));
+
+      unsigned char a2[] = {1, 2, 3, 4, 5, 0};
+      OK(ListOf("\1\2\3\4\5\0"), h2::h2_stringify<unsigned char*>(a2));
+      OK(ListOf("\1\2\3\4\5\0"), h2::h2_stringify<unsigned char*>(a2, true));
    }
 
    Case(void*)
    {
       void* a = (void*)0x12345678;
-      OK(AnyOf("0x12345678", "0000000012345678", "12345678"), h2::h2_stringify<void*>(a));
-      OK(AnyOf("0x12345678", "0000000012345678", "12345678"), h2::h2_stringify<void*>(a, true));
+      OK(AnyOf(ListOf("0x12345678"), ListOf("0000000012345678"), ListOf("12345678")), h2::h2_stringify<void*>(a));
+      OK(AnyOf(ListOf("0x12345678"), ListOf("0000000012345678"), ListOf("12345678")), h2::h2_stringify<void*>(a, true));
    }
 
    Case(nullptr)
    {
-      OK("nullptr", h2::h2_stringify<std::nullptr_t>(nullptr));
-      OK("nullptr", h2::h2_stringify<std::nullptr_t>(nullptr, true));
+      OK(ListOf("nullptr"), h2::h2_stringify<std::nullptr_t>(nullptr));
+      OK(ListOf("nullptr"), h2::h2_stringify<std::nullptr_t>(nullptr, true));
    }
 
    // https://en.cppreference.com/w/cpp/string/byte/isprint
    Case(uint8_t)
    {
       unsigned char a1 = 7;
-      OK("7", h2::h2_stringify<unsigned char>(a1));
-      OK("7", h2::h2_stringify<unsigned char>(a1, true));
+      OK(ListOf("7"), h2::h2_stringify<unsigned char>(a1));
+      OK(ListOf("7"), h2::h2_stringify<unsigned char>(a1, true));
       uint8_t a2 = 7;
-      OK("7", h2::h2_stringify<uint8_t>(a2, true));
+      OK(ListOf("7"), h2::h2_stringify<uint8_t>(a2, true));
+   }
+
+   Case(const)
+   {
+      const int a1 = 42;
+      const double a2 = 3.14;
+      OK(ListOf("42"), h2::h2_stringify(a1));
+      OK(ListOf("3.14"), h2::h2_stringify(a2));
+   }
+
+   Case(reference)
+   {
+      int a1 = 42;
+      int& r1 = a1;
+      OK(ListOf("42"), h2::h2_stringify(a1));
+      OK(ListOf("42"), h2::h2_stringify(r1));
+
+      double a2 = 3.14;
+      double& r2 = a2;
+      OK(ListOf("3.14"), h2::h2_stringify(a2));
+      OK(ListOf("3.14"), h2::h2_stringify(r2));
    }
 }
 
@@ -178,15 +398,18 @@ SUITE(stringify user)
 {
    Case(toString)
    {
-      Stringify2 f2;
-      OK("tostring", h2::h2_stringify<Stringify2>(f2));
-      OK("tostring", h2::h2_stringify<Stringify2>(f2, true));
+      Stringify12 f2;
+      OK(ListOf("tostring"), h2::h2_stringify<Stringify12>(f2));
+      OK(ListOf("\033{+dark gray}", "\"", "\033{-dark gray}",
+                "tostring",
+                "\033{+dark gray}", "\"", "\033{-dark gray}"),
+         h2::h2_stringify<Stringify12>(f2, true));
    }
 
    Case(operator<<)
    {
-      Stringify3 f3;
-      OK("Stringify3", h2::h2_stringify<Stringify3>(f3, true));
+      Stringify21 f3;
+      OK(ListOf("Stringify21"), h2::h2_stringify<Stringify21>(f3, true));
    }
 }
 

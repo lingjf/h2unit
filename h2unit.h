@@ -5,7 +5,7 @@
 #ifndef __H2UNIT_H__
 #define __H2UNIT_H__
 #define H2UNIT_VERSION 5.16
-#define H2UNIT_REVISION 2021-11-20 branches/v5
+#define H2UNIT_REVISION 2021-11-21 branches/v5
 #ifndef __H2_UNIT_HPP__
 #define __H2_UNIT_HPP__
 
@@ -433,14 +433,6 @@ inline T* h2_pointer_if(T& a) { return &a; }
 template <typename T>
 inline T* h2_pointer_if(T* a) { return a; }
 
-template <typename T>
-struct h2_is_ostreamable {
-   template <typename U>
-   static auto test(U* u) -> decltype(std::declval<std::ostream&>() << *u, std::true_type());
-   template <typename U>
-   static auto test(...) -> std::false_type;
-   static constexpr bool value = decltype(test<T>(nullptr))::value;
-};
 
 template <typename T>
 struct h2_is_pair : std::false_type {
@@ -769,27 +761,40 @@ H2_TOSTRING_ABLE(to_string);
 /* tostring() may not be mark const, remove cast const in T a; fix multi-tostring */
 template <typename T>
 struct h2_stringify_impl<T, typename std::enable_if<h2::h2_tostring_able<T>::value || h2::h2_toString_able<T>::value || h2::h2_Tostring_able<T>::value || h2::h2_ToString_able<T>::value || h2::h2_to_string_able<T>::value>::type> {
-   static h2_line print(const T& a, bool represent = false) { return print__tostring(a, represent); }
+   static h2_line print(const T& a, bool represent = false)
+   {
+      if (represent) return gray("\"") + print__tostring(a) + gray("\"");
+      return print__tostring(a);
+   }
    template <typename U>
-   static auto print__tostring(const U& a, bool represent) -> typename std::enable_if<h2::h2_tostring_able<U>::value, h2_line>::type { return const_cast<U&>(a).tostring(); }
+   static auto print__tostring(const U& a) -> typename std::enable_if<h2::h2_tostring_able<U>::value, h2_string>::type { return const_cast<U&>(a).tostring(); }
    template <typename U>
-   static auto print__tostring(const U& a, bool represent) -> typename std::enable_if<!h2::h2_tostring_able<U>::value, h2_line>::type { return print__toString(a, represent); }
+   static auto print__tostring(const U& a) -> typename std::enable_if<!h2::h2_tostring_able<U>::value, h2_string>::type { return print__toString(a); }
    template <typename U>
-   static auto print__toString(const U& a, bool represent) -> typename std::enable_if<h2::h2_toString_able<U>::value, h2_line>::type { return const_cast<U&>(a).toString(); }
+   static auto print__toString(const U& a) -> typename std::enable_if<h2::h2_toString_able<U>::value, h2_string>::type { return const_cast<U&>(a).toString(); }
    template <typename U>
-   static auto print__toString(const U& a, bool represent) -> typename std::enable_if<!h2::h2_toString_able<U>::value, h2_line>::type { return print__Tostring(a, represent); }
+   static auto print__toString(const U& a) -> typename std::enable_if<!h2::h2_toString_able<U>::value, h2_string>::type { return print__Tostring(a); }
    template <typename U>
-   static auto print__Tostring(const U& a, bool represent) -> typename std::enable_if<h2::h2_Tostring_able<U>::value, h2_line>::type { return const_cast<U&>(a).toString(); }
+   static auto print__Tostring(const U& a) -> typename std::enable_if<h2::h2_Tostring_able<U>::value, h2_string>::type { return const_cast<U&>(a).toString(); }
    template <typename U>
-   static auto print__Tostring(const U& a, bool represent) -> typename std::enable_if<!h2::h2_Tostring_able<U>::value, h2_line>::type { return print__ToString(a, represent); }
+   static auto print__Tostring(const U& a) -> typename std::enable_if<!h2::h2_Tostring_able<U>::value, h2_string>::type { return print__ToString(a); }
    template <typename U>
-   static auto print__ToString(const U& a, bool represent) -> typename std::enable_if<h2::h2_ToString_able<U>::value, h2_line>::type { return const_cast<U&>(a).ToString(); }
+   static auto print__ToString(const U& a) -> typename std::enable_if<h2::h2_ToString_able<U>::value, h2_string>::type { return const_cast<U&>(a).ToString(); }
    template <typename U>
-   static auto print__ToString(const U& a, bool represent) -> typename std::enable_if<!h2::h2_ToString_able<U>::value, h2_line>::type { return print__to_string(a, represent); }
+   static auto print__ToString(const U& a) -> typename std::enable_if<!h2::h2_ToString_able<U>::value, h2_string>::type { return print__to_string(a); }
    template <typename U>
-   static auto print__to_string(const U& a, bool represent) -> typename std::enable_if<h2::h2_to_string_able<U>::value, h2_line>::type { return const_cast<U&>(a).to_string(); }
+   static auto print__to_string(const U& a) -> typename std::enable_if<h2::h2_to_string_able<U>::value, h2_string>::type { return const_cast<U&>(a).to_string(); }
    template <typename U>
-   static auto print__to_string(const U& a, bool represent) -> typename std::enable_if<!h2::h2_to_string_able<U>::value, h2_line>::type { return ""; }
+   static auto print__to_string(const U& a) -> typename std::enable_if<!h2::h2_to_string_able<U>::value, h2_string>::type { return ""; }
+};
+
+template <typename T>
+struct h2_is_ostreamable {
+   template <typename U>
+   static auto test(U* u) -> decltype(std::declval<std::ostream&>() << *u, std::true_type());
+   template <typename U>
+   static auto test(...) -> std::false_type;
+   static constexpr bool value = decltype(test<T>(nullptr))::value;
 };
 
 template <typename T>
@@ -803,7 +808,7 @@ struct h2_stringify_impl<T, typename std::enable_if<h2_is_ostreamable<T>::value>
       oss << std::boolalpha << std::fixed << a;  // std::setprecision(10) <iomanip>
       auto str = oss.str();
       if (str.find_first_of('.') != std::string::npos)
-         str.erase(str.find_last_not_of('0') + 1);
+         str.erase(str.find_last_not_of(".0") + 1);
       return {str.c_str()};
    }
 
@@ -811,22 +816,10 @@ struct h2_stringify_impl<T, typename std::enable_if<h2_is_ostreamable<T>::value>
    static auto ostream_print(const U& a, bool represent) -> typename std::enable_if<!std::is_arithmetic<U>::value, h2_line>::type
    {
       h2_ostringstream oss;
-      oss << const_cast<U&>(a);
+      oss << a;
       if (represent && std::is_convertible<U, h2_string>::value)
          return gray("\"") + oss.str().c_str() + gray("\"");
       return {oss.str().c_str()};
-   }
-
-   static h2_line ostream_print(const char a, bool represent)
-   {
-      h2_string str(1, a);
-      if (represent) return gray("'") + str + gray("'");
-      return {str};
-   }
-
-   static h2_line ostream_print(const unsigned char a, bool represent)
-   {  // https://en.cppreference.com/w/cpp/string/byte/isprint
-      return ostream_print<unsigned int>(static_cast<unsigned int>(a), represent);
    }
 };
 
@@ -873,8 +866,41 @@ struct h2_stringify_impl<std::nullptr_t> {
    static h2_line print(std::nullptr_t a, bool represent = false) { return "nullptr"; }
 };
 
+template <>
+struct h2_stringify_impl<const char*> {
+   static h2_line print(const char* a, bool represent)
+   {
+      if (!a) return {"(null)"};
+      if (represent) return gray("\"") + a + gray("\"");
+      return {a};
+   }
+};
+
+template <>
+struct h2_stringify_impl<char*> {
+   static h2_line print(char* a, bool represent) { return h2_stringify_impl<const char*>::print(a, represent); }
+};
+
+template <>
+struct h2_stringify_impl<unsigned char> {
+   static h2_line print(unsigned char a, bool)
+   {  // https://en.cppreference.com/w/cpp/string/byte/isprint
+      return h2_stringify_impl<unsigned int>::print(static_cast<unsigned int>(a), false);
+   }
+};
+
+template <>
+struct h2_stringify_impl<char> {
+   static h2_line print(char a, bool represent)
+   {
+      h2_string str(1, a);
+      if (represent) return gray("'") + str + gray("'");
+      return {str};
+   }
+};
+
 template <typename T>
-inline h2_line h2_stringify(const T& a, bool represent = false) { return h2_stringify_impl<T>::print(a, represent); }
+inline h2_line h2_stringify(const T& a, bool represent = false) { return h2_stringify_impl<typename h2_decay<T>::type>::print(a, represent); }
 
 template <typename T>
 inline h2_line h2_stringify(T a, size_t n, bool represent)
@@ -890,12 +916,6 @@ inline h2_line h2_stringify(T a, size_t n, bool represent)
    line += gray("]");
    return line;
 }
-
-template <typename T>
-inline h2_line h2_representify(const T& a) { return h2_stringify(a, true); }
-
-template <typename T>
-inline h2_line h2_representify(T a, size_t n) { return h2_stringify(a, n, true); }
 // source/utils/h2_console.hpp
 struct h2_console {
    static size_t width();
@@ -1440,7 +1460,7 @@ static inline h2_line ncsc(const h2_line& s, h2_mc c, const char* dsym = "!")
 template <typename T>
 inline auto h2_matches_expection(const T& e, h2_mc c) -> typename std::enable_if<std::is_base_of<h2_matches, T>::value, h2_line>::type { return e.expection(c); }
 template <typename T>
-inline auto h2_matches_expection(const T& e, h2_mc c) -> typename std::enable_if<!std::is_base_of<h2_matches, T>::value, h2_line>::type { return ncsc(h2_representify(e), c); }
+inline auto h2_matches_expection(const T& e, h2_mc c) -> typename std::enable_if<!std::is_base_of<h2_matches, T>::value, h2_line>::type { return ncsc(h2_stringify(e, true), c); }
 
 #define H2_MATCHES_T2V2E(t_matchers)                                                                                                                    \
    template <typename T>                                                                                                                                \
@@ -1540,11 +1560,11 @@ struct h2_equation : h2_matches {
    h2_fail* matches(const A& a, h2_mc c) const
    {
       if (c.fit(a == e)) return nullptr;
-      return h2_fail::new_unexpect(expection(c), h2_representify(a));
+      return h2_fail::new_unexpect(expection(c), h2_stringify(a, true));
    }
    virtual h2_line expection(h2_mc c) const override
    {
-      return ncsc(h2_representify(e), c.update_caseless(false), "≠");
+      return ncsc(h2_stringify(e, true), c.update_caseless(false), "≠");
    }
 };
 
@@ -1564,7 +1584,7 @@ struct h2_equation<E, typename std::enable_if<std::is_convertible<E, h2_string>:
    }
    virtual h2_line expection(h2_mc c) const override
    {
-      return ncsc(h2_representify(c.squash_whitespace ? e.squash() : e), c, "≠");
+      return ncsc(h2_stringify(c.squash_whitespace ? e.squash() : e, true), c, "≠");
    }
 };
 
@@ -1596,7 +1616,7 @@ struct h2_equation<E, typename std::enable_if<std::is_arithmetic<E>::value>::typ
          result = a == e;
       }
       if (c.fit(result)) return nullptr;
-      return h2_fail::new_unexpect(expection(c), h2_representify(a));
+      return h2_fail::new_unexpect(expection(c), h2_stringify(a, true));
    }
    virtual h2_line expection(h2_mc c) const override
    {
@@ -1763,7 +1783,7 @@ struct h2_and_matches : h2_matches {
          if (fails) delete fails;
          return nullptr;
       }
-      h2_fail* fail = h2_fail::new_unexpect(expection(c), h2_representify(a));
+      h2_fail* fail = h2_fail::new_unexpect(expection(c), h2_stringify(a, true));
       h2_fail::append_child(fail, fails);
 
       return fail;
@@ -1801,7 +1821,7 @@ struct h2_or_matches : h2_matches {
       h2_fail::append_subling(fails, f1);
       h2_fail::append_subling(fails, f2);
 
-      h2_fail* fail = h2_fail::new_unexpect(expection(c), h2_representify(a));
+      h2_fail* fail = h2_fail::new_unexpect(expection(c), h2_stringify(a, true));
       h2_fail::append_child(fail, fails);
       return fail;
    }
@@ -1839,7 +1859,7 @@ struct h2_allof_matches : h2_matches {
          if (fails) delete fails;
          return nullptr;
       }
-      h2_fail* fail = h2_fail::new_unexpect(expection(c), h2_representify(a));
+      h2_fail* fail = h2_fail::new_unexpect(expection(c), h2_stringify(a, true));
       h2_fail::append_child(fail, fails);
       return fail;
    }
@@ -1879,7 +1899,7 @@ struct h2_anyof_matches : h2_matches {
          if (fails) delete fails;
          return nullptr;
       }
-      h2_fail* fail = h2_fail::new_unexpect(expection(c), h2_representify(a));
+      h2_fail* fail = h2_fail::new_unexpect(expection(c), h2_stringify(a, true));
       h2_fail::append_child(fail, fails);
       return fail;
    }
@@ -1918,7 +1938,7 @@ struct h2_noneof_matches : h2_matches {
          delete fails;
          return nullptr;
       }
-      h2_fail* fail = h2_fail::new_unexpect(expection(c), h2_representify(a));
+      h2_fail* fail = h2_fail::new_unexpect(expection(c), h2_stringify(a, true));
       h2_fail::append_child(fail, fails);
       return fail;
    }
@@ -2010,11 +2030,11 @@ struct h2_matches_ge : h2_matches {
    h2_fail* matches(const A& a, h2_mc c) const
    {
       if (c.fit(a >= e)) return nullptr;
-      return h2_fail::new_unexpect(expection(c), h2_representify(a));
+      return h2_fail::new_unexpect(expection(c), h2_stringify(a, true));
    }
    virtual h2_line expection(h2_mc c) const override
    {
-      return ncsc((c.no_compare_operator ? "" : "≥") + h2_representify(e), c.update_caseless(false));
+      return ncsc((c.no_compare_operator ? "" : "≥") + h2_stringify(e, true), c.update_caseless(false));
    }
 };
 
@@ -2229,7 +2249,7 @@ struct h2_pair_matches : h2_matches {
          if (fails) delete fails;
          return nullptr;
       }
-      h2_fail* fail = h2_fail::new_unexpect(expection(c), h2_representify(a));
+      h2_fail* fail = h2_fail::new_unexpect(expection(c), h2_stringify(a, true));
       h2_fail::append_child(fail, fails);
       return fail;
    }
@@ -2237,7 +2257,7 @@ struct h2_pair_matches : h2_matches {
    template <typename A>
    auto matches(const A& a, h2_mc c) const -> typename std::enable_if<!h2_is_pair<typename std::decay<A>::type>::value, h2_fail*>::type
    {
-      return h2_fail::new_unexpect(expection(c), h2_representify(a));
+      return h2_fail::new_unexpect(expection(c), h2_stringify(a, true));
    }
 
    virtual h2_line expection(h2_mc c) const override
@@ -2263,7 +2283,7 @@ struct h2_has_matches : h2_matches {
          }
       }
       if (c.fit(found)) return nullptr;
-      return h2_fail::new_unexpect(expection(c), h2_representify(a));
+      return h2_fail::new_unexpect(expection(c), h2_stringify(a, true));
    }
 
    template <typename A>
@@ -2278,7 +2298,7 @@ struct h2_has_matches : h2_matches {
          }
       }
       if (c.fit(found)) return nullptr;
-      return h2_fail::new_unexpect(expection(c), h2_representify(a, c.n));
+      return h2_fail::new_unexpect(expection(c), h2_stringify(a, c.n, true));
    }
 
    virtual h2_line expection(h2_mc c) const override
@@ -2299,13 +2319,13 @@ struct h2_countof_matches : h2_matches {
       size_t count = 0;
       for (auto it = a.cbegin(); it != a.cend(); ++it) count++;
       // for (auto const& _ : a) count++;  Warning unused-variable
-      return __matches(count, h2_representify(a), c);
+      return __matches(count, h2_stringify(a, true), c);
    }
 
    template <typename A>
    auto matches(A a, h2_mc c) const -> typename std::enable_if<!h2_is_container<typename std::decay<A>::type>::value, h2_fail*>::type
    {
-      return __matches(c.n, h2_representify(a, c.n), c);
+      return __matches(c.n, h2_stringify(a, c.n, true), c);
    }
 
    h2_fail* __matches(size_t count, h2_line&& represent, h2_mc c) const
@@ -2357,7 +2377,7 @@ struct h2_listof_matches : h2_matches {
          if (fails) delete fails;
          return nullptr;
       }
-      h2_fail* fail = h2_fail::new_unexpect(expection(c), h2_representify(a));
+      h2_fail* fail = h2_fail::new_unexpect(expection(c), h2_stringify(a, true));
       h2_fail::append_child(fail, fails);
       return fail;
    }
@@ -2378,7 +2398,7 @@ struct h2_listof_matches : h2_matches {
          if (fails) delete fails;
          return nullptr;
       }
-      h2_fail* fail = h2_fail::new_unexpect(expection(c), h2_representify(a, c.n));
+      h2_fail* fail = h2_fail::new_unexpect(expection(c), h2_stringify(a, c.n, true));
       h2_fail::append_child(fail, fails);
       return fail;
    }
@@ -2412,19 +2432,19 @@ inline h2_polymorphic_matcher<h2_listof_matches<typename std::decay<const Matche
    return h2_polymorphic_matcher<h2_listof_matches<typename std::decay<const Matchers&>::type...>>(h2_listof_matches<typename std::decay<const Matchers&>::type...>(matchers...));
 }
 // source/matcher/h2_customize.hpp
-#define __Matches_Common(message)                                                             \
-   template <typename A>                                                                      \
-   bool __matches(const A& a) const;                                                          \
-   template <typename A>                                                                      \
-   h2::h2_fail* matches(const A& a, h2::h2_mc c) const                                        \
-   {                                                                                          \
-      h2::h2_fail* fail = h2::h2_fail::new_unexpect(h2::ncsc("", c), h2::h2_representify(a)); \
-      if (c.fit(__matches(a))) return nullptr;                                                \
-      h2::h2_ostringstream t;                                                                 \
-      t << H2PP_REMOVE_PARENTHESES(message);                                                  \
-      fail->user_explain = t.str().c_str();                                                   \
-      return fail;                                                                            \
-   }                                                                                          \
+#define __Matches_Common(message)                                                                \
+   template <typename A>                                                                         \
+   bool __matches(const A& a) const;                                                             \
+   template <typename A>                                                                         \
+   h2::h2_fail* matches(const A& a, h2::h2_mc c) const                                           \
+   {                                                                                             \
+      h2::h2_fail* fail = h2::h2_fail::new_unexpect(h2::ncsc("", c), h2::h2_stringify(a, true)); \
+      if (c.fit(__matches(a))) return nullptr;                                                   \
+      h2::h2_ostringstream t;                                                                    \
+      t << H2PP_REMOVE_PARENTHESES(message);                                                     \
+      fail->user_explain = t.str().c_str();                                                      \
+      return fail;                                                                               \
+   }                                                                                             \
    virtual h2::h2_line expection(h2::h2_mc c) const override { return ""; }
 
 #define H2MATCHER0(name, message)                                                    \
@@ -3065,7 +3085,7 @@ class h2_mocker<Counter, ClassType, ReturnType(ArgumentTypes...)> : h2_mocker_ba
       if (checkin_offset != -1) checkin_array[checkin_offset].call += 1;
       if (checkin_offset == -1) {
          h2_fail* fail = h2_fail::new_normal(signature(), filine);
-         h2_fail* f = h2_fail::new_normal(srcfn + h2_representify(at) + color(" unexpectedly", "red,bold") + " called");
+         h2_fail* f = h2_fail::new_normal(srcfn + h2_stringify(at, true) + color(" unexpectedly", "red,bold") + " called");
          h2_fail::append_child(fail, f);
          h2_runner::failing(fail);
       }
@@ -6683,7 +6703,7 @@ h2_inline h2_fail* h2_matches_strcmp::matches(const h2_string& a, h2_mc c) const
 }
 h2_inline h2_line h2_matches_strcmp::expection(h2_mc c) const
 {
-   return ncsc(h2_representify(c.squash_whitespace ? e.squash() : e), c, "≠");
+   return ncsc(h2_stringify(c.squash_whitespace ? e.squash() : e, true), c, "≠");
 }
 
 h2_inline h2_fail* h2_matches_substr::matches(const h2_string& a, h2_mc c) const
@@ -6695,7 +6715,7 @@ h2_inline h2_fail* h2_matches_substr::matches(const h2_string& a, h2_mc c) const
 }
 h2_inline h2_line h2_matches_substr::expection(h2_mc c) const
 {
-   return ncsc("Substr" + gray("(") + h2_representify(substring) + gray(")"), c);
+   return ncsc("Substr" + gray("(") + h2_stringify(substring, true) + gray(")"), c);
 }
 
 h2_inline h2_fail* h2_matches_startswith::matches(const h2_string& a, h2_mc c) const
@@ -6707,7 +6727,7 @@ h2_inline h2_fail* h2_matches_startswith::matches(const h2_string& a, h2_mc c) c
 }
 h2_inline h2_line h2_matches_startswith::expection(h2_mc c) const
 {
-   return ncsc("StartsWith" + gray("(") + h2_representify(prefix_string) + gray(")"), c);
+   return ncsc("StartsWith" + gray("(") + h2_stringify(prefix_string, true) + gray(")"), c);
 }
 
 h2_inline h2_fail* h2_matches_endswith::matches(const h2_string& a, h2_mc c) const
@@ -6719,7 +6739,7 @@ h2_inline h2_fail* h2_matches_endswith::matches(const h2_string& a, h2_mc c) con
 }
 h2_inline h2_line h2_matches_endswith::expection(h2_mc c) const
 {
-   return ncsc("EndsWith" + gray("(") + h2_representify(suffix_string) + gray(")"), c);
+   return ncsc("EndsWith" + gray("(") + h2_stringify(suffix_string, true) + gray(")"), c);
 }
 
 h2_inline h2_fail* h2_matches_json::matches(const h2_string& a, h2_mc c) const
@@ -9278,7 +9298,7 @@ struct h2_fail_unexpect : h2_fail {
 struct h2_fail_strcmp : h2_fail_unexpect {
    const bool caseless;
    const h2_string e_value, a_value;
-   h2_fail_strcmp(const h2_string& e_value_, const h2_string& a_value_, bool caseless_, const h2_line& expection, const h2_line& explain = {}) : h2_fail_unexpect(expection, h2_representify(a_value_), explain), caseless(caseless_), e_value(e_value_), a_value(a_value_) {}
+   h2_fail_strcmp(const h2_string& e_value_, const h2_string& a_value_, bool caseless_, const h2_line& expection, const h2_line& explain = {}) : h2_fail_unexpect(expection, h2_stringify(a_value_, true), explain), caseless(caseless_), e_value(e_value_), a_value(a_value_) {}
    h2_line fmt_char(h2_string& c, bool eq, const char* style)
    {
       if (c.equals(" ") && O.colorful) return gray("‧");
@@ -9302,7 +9322,7 @@ struct h2_fail_strcmp : h2_fail_unexpect {
 
 struct h2_fail_strfind : h2_fail_unexpect {
    const h2_string e_value, a_value;
-   h2_fail_strfind(const h2_string& e_value_, const h2_string& a_value_, const h2_line& expection, const h2_line& explain) : h2_fail_unexpect(expection, h2_representify(a_value_), explain), e_value(e_value_), a_value(a_value_) {}
+   h2_fail_strfind(const h2_string& e_value_, const h2_string& a_value_, const h2_line& expection, const h2_line& explain) : h2_fail_unexpect(expection, h2_stringify(a_value_, true), explain), e_value(e_value_), a_value(a_value_) {}
    void print(size_t si = 0, size_t ci = 0) override
    {
       h2_fail_unexpect::print(si, ci);
@@ -9604,20 +9624,51 @@ struct h2_report_list : h2_report_impl {
    int suites = 0, cases = 0, todos = 0;
    int unfiltered_suites = 0, unfiltered_cases = 0, unfiltered_todos = 0;
    int suite_cases = 0, suite_todos = 0;
-   std::map<std::string, unsigned long> tags;
+
+   struct tag {
+      const char* name;
+      int suites, cases;
+   };
+
+   int tagc = 0, unfiltered_tagc = 0;
+   struct tag tags[4096], unfiltered_tags[4096];
+
+   static tag* get_tag(tag tags[], int& tagc, const char* name)
+   {
+      for (int i = 0; i < tagc; ++i)
+         if (!strcmp(name, tags[i].name)) return &tags[i];
+      return nullptr;
+   }
+   static tag* add_tag(tag tags[], int& tagc, const char* name)
+   {
+      tag* t = get_tag(tags, tagc, name);
+      if (t) return t;
+      if (tagc >= 4096) return nullptr;
+      t = &tags[tagc++];
+      t->name = name;
+      t->suites = t->cases = 0;
+      return t;
+   }
+   static void add_suite_tag(tag tags[], int& tagc, const char* name)
+   {
+      auto t = add_tag(tags, tagc, name);
+      if (t) t->suites++;
+   }
+   static void add_case_tag(tag tags[], int& tagc, const char* name)
+   {
+      auto t = add_tag(tags, tagc, name);
+      if (t) t->cases++;
+   }
 
    void on_runner_endup(h2_runner* r) override
    {
       h2_report_impl::on_runner_endup(r);
       if (O.lists & ListTag) {
-         int i = 0;
-         for (auto& tag : tags) {
+         for (int i = 0; i < unfiltered_tagc; ++i) {
             h2_line line;
-            line.printf("dark gray", "TAG-%d. ", ++i).printf("bold,light purple", "%s ", tag.first.c_str());
-            auto suite_count = (tag.second & 0xFFFF0000) >> 16;
-            if (suite_count) line.printf("", " %d ", suite_count).printf("dark gray", H2_UNITS(suite_count, "suite"));
-            auto case_count = tag.second & 0x0000FFFF;
-            if (case_count) line.printf("", " %d ", case_count).printf("dark gray", H2_UNITS(case_count, "case"));
+            line.printf("dark gray", "TAG-%d. ", i).printf("bold,light purple", "%s ", unfiltered_tags[i].name);
+            if (unfiltered_tags[i].suites) line.printf("", " %d ", unfiltered_tags[i].suites).printf("dark gray", H2_UNITS(unfiltered_tags[i].suites, "suite"));
+            if (unfiltered_tags[i].cases) line.printf("", " %d ", unfiltered_tags[i].cases).printf("dark gray", H2_UNITS(unfiltered_tags[i].cases, "case"));
             h2_console::printl(line);
          }
       }
@@ -9626,11 +9677,19 @@ struct h2_report_list : h2_report_impl {
       if (O.lists & ListSuite) line += gray(comma_if(line.width())) + color(h2_stringify(unfiltered_suites), "green") + " " + gray(H2_UNITS(unfiltered_suites, "suite"));
       if (O.lists & ListCase) line += gray(comma_if(line.width())) + color(h2_stringify(unfiltered_cases), "green") + " " + gray(H2_UNITS(unfiltered_cases, "case"));
       if (O.lists & ListTodo) line += gray(comma_if(line.width())) + color(h2_stringify(unfiltered_todos), "green") + " " + gray(H2_UNITS(unfiltered_todos, "todo"));
-      if (O.lists & ListTag) line += gray(comma_if(line.width())) + color(h2_stringify(tags.size()), "green") + " " + gray(H2_UNITS(tags.size(), "tag"));
+      if (O.lists & ListTag) line += gray(comma_if(line.width())) + color(h2_stringify(unfiltered_tagc), "green") + " " + gray(H2_UNITS(unfiltered_tagc, "tag"));
       if (O.lists & ListSuite && suites > unfiltered_suites) line.printf("dark gray", "%s%d filtered %s", comma_if(line.width()), suites - unfiltered_suites, H2_UNITS(suites - unfiltered_suites, "suite"));
       if (O.lists & ListCase && cases > unfiltered_cases) line.printf("dark gray", "%s%d filtered %s", comma_if(line.width()), cases - unfiltered_cases, H2_UNITS(cases - unfiltered_cases, "case"));
       if (O.lists & ListTodo && todos > unfiltered_todos) line.printf("dark gray", "%s%d filtered %s", comma_if(line.width()), todos - unfiltered_todos, H2_UNITS(todos - unfiltered_todos, "todo"));
+      if (O.lists & ListTag && tagc > unfiltered_tagc) line.printf("dark gray", "%s%d filtered %s", comma_if(line.width()), tagc - unfiltered_tagc, H2_UNITS(tagc - unfiltered_tagc, "tag"));
       h2_console::printl("Listing " + line);
+   }
+   h2_line format_tags(const char* tags[])
+   {
+      h2_line line;
+      if (O.lists & ListTag)
+         for (int i = 0; tags[i]; ++i) line.printf("purple", " %s", tags[i]);
+      return line;
    }
    void on_suite_start(h2_suite* s) override
    {
@@ -9638,20 +9697,23 @@ struct h2_report_list : h2_report_impl {
       suite_cases = 0;
       suite_todos = 0;
       if (s->absent()) return;  // CASE
-      for (int i = 0; s->tags[i]; ++i) tags[s->tags[i]] += 0x10000;
-
+      for (int i = 0; s->tags[i]; ++i) add_suite_tag(tags, tagc, s->tags[i]);
+      if (!s->filtered)
+         for (int i = 0; s->tags[i]; ++i) add_suite_tag(unfiltered_tags, unfiltered_tagc, s->tags[i]);
       ++suites;
       if (!s->filtered && O.lists & ListSuite) {
          ++unfiltered_suites;
          h2_line line;
          line.printf("dark gray", "SUITE-%d. ", unfiltered_suites);
-         h2_console::printl(line + color(s->name, "bold,blue") + " " + gray(h2_basefile(s->filine)));
+         h2_console::printl(line + color(s->name, "bold,blue") + " " + gray(h2_basefile(s->filine)) + format_tags(s->tags));
       }
    }
    void on_case_start(h2_suite* s, h2_case* c) override
    {
       h2_report_impl::on_case_start(s, c);
-      for (int i = 0; c->tags[i]; ++i) tags[c->tags[i]] += 0x1;
+      for (int i = 0; c->tags[i]; ++i) add_case_tag(tags, tagc, c->tags[i]);
+      if (!c->filtered)
+         for (int i = 0; c->tags[i]; ++i) add_case_tag(unfiltered_tags, unfiltered_tagc, c->tags[i]);
 
       const char* type = nullptr;
       if (c->todo) {
@@ -9674,7 +9736,8 @@ struct h2_report_list : h2_report_impl {
             line.printf("dark gray", " %s/%d-%d. ", type, suite_cases + suite_todos, unfiltered_cases + unfiltered_todos);
          else
             line.printf("dark gray", " %s-%d. ", type, unfiltered_cases + unfiltered_todos);
-         h2_console::printl(line + color(c->name, "cyan") + " " + gray(h2_basefile(c->filine)));
+
+         h2_console::printl(line + color(c->name, "cyan") + " " + gray(h2_basefile(c->filine)) + format_tags(c->tags));
       }
    }
 };

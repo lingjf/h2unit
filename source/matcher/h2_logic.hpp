@@ -30,7 +30,7 @@ struct h2_and_matches : h2_matches {
          if (fails) delete fails;
          return nullptr;
       }
-      h2_fail* fail = h2_fail::new_unexpect(expection(c), h2_representify(a));
+      h2_fail* fail = h2_fail::new_unexpect(expection(c), h2_stringify(a, true));
       h2_fail::append_child(fail, fails);
 
       return fail;
@@ -68,7 +68,7 @@ struct h2_or_matches : h2_matches {
       h2_fail::append_subling(fails, f1);
       h2_fail::append_subling(fails, f2);
 
-      h2_fail* fail = h2_fail::new_unexpect(expection(c), h2_representify(a));
+      h2_fail* fail = h2_fail::new_unexpect(expection(c), h2_stringify(a, true));
       h2_fail::append_child(fail, fails);
       return fail;
    }
@@ -106,7 +106,7 @@ struct h2_allof_matches : h2_matches {
          if (fails) delete fails;
          return nullptr;
       }
-      h2_fail* fail = h2_fail::new_unexpect(expection(c), h2_representify(a));
+      h2_fail* fail = h2_fail::new_unexpect(expection(c), h2_stringify(a, true));
       h2_fail::append_child(fail, fails);
       return fail;
    }
@@ -146,7 +146,7 @@ struct h2_anyof_matches : h2_matches {
          if (fails) delete fails;
          return nullptr;
       }
-      h2_fail* fail = h2_fail::new_unexpect(expection(c), h2_representify(a));
+      h2_fail* fail = h2_fail::new_unexpect(expection(c), h2_stringify(a, true));
       h2_fail::append_child(fail, fails);
       return fail;
    }
@@ -185,7 +185,7 @@ struct h2_noneof_matches : h2_matches {
          delete fails;
          return nullptr;
       }
-      h2_fail* fail = h2_fail::new_unexpect(expection(c), h2_representify(a));
+      h2_fail* fail = h2_fail::new_unexpect(expection(c), h2_stringify(a, true));
       h2_fail::append_child(fail, fails);
       return fail;
    }

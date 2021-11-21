@@ -14,7 +14,7 @@ struct h2_pair_matches : h2_matches {
          if (fails) delete fails;
          return nullptr;
       }
-      h2_fail* fail = h2_fail::new_unexpect(expection(c), h2_representify(a));
+      h2_fail* fail = h2_fail::new_unexpect(expection(c), h2_stringify(a, true));
       h2_fail::append_child(fail, fails);
       return fail;
    }
@@ -22,7 +22,7 @@ struct h2_pair_matches : h2_matches {
    template <typename A>
    auto matches(const A& a, h2_mc c) const -> typename std::enable_if<!h2_is_pair<typename std::decay<A>::type>::value, h2_fail*>::type
    {
-      return h2_fail::new_unexpect(expection(c), h2_representify(a));
+      return h2_fail::new_unexpect(expection(c), h2_stringify(a, true));
    }
 
    virtual h2_line expection(h2_mc c) const override
@@ -48,7 +48,7 @@ struct h2_has_matches : h2_matches {
          }
       }
       if (c.fit(found)) return nullptr;
-      return h2_fail::new_unexpect(expection(c), h2_representify(a));
+      return h2_fail::new_unexpect(expection(c), h2_stringify(a, true));
    }
 
    template <typename A>
@@ -63,7 +63,7 @@ struct h2_has_matches : h2_matches {
          }
       }
       if (c.fit(found)) return nullptr;
-      return h2_fail::new_unexpect(expection(c), h2_representify(a, c.n));
+      return h2_fail::new_unexpect(expection(c), h2_stringify(a, c.n, true));
    }
 
    virtual h2_line expection(h2_mc c) const override
@@ -84,13 +84,13 @@ struct h2_countof_matches : h2_matches {
       size_t count = 0;
       for (auto it = a.cbegin(); it != a.cend(); ++it) count++;
       // for (auto const& _ : a) count++;  Warning unused-variable
-      return __matches(count, h2_representify(a), c);
+      return __matches(count, h2_stringify(a, true), c);
    }
 
    template <typename A>
    auto matches(A a, h2_mc c) const -> typename std::enable_if<!h2_is_container<typename std::decay<A>::type>::value, h2_fail*>::type
    {
-      return __matches(c.n, h2_representify(a, c.n), c);
+      return __matches(c.n, h2_stringify(a, c.n, true), c);
    }
 
    h2_fail* __matches(size_t count, h2_line&& represent, h2_mc c) const
@@ -142,7 +142,7 @@ struct h2_listof_matches : h2_matches {
          if (fails) delete fails;
          return nullptr;
       }
-      h2_fail* fail = h2_fail::new_unexpect(expection(c), h2_representify(a));
+      h2_fail* fail = h2_fail::new_unexpect(expection(c), h2_stringify(a, true));
       h2_fail::append_child(fail, fails);
       return fail;
    }
@@ -163,7 +163,7 @@ struct h2_listof_matches : h2_matches {
          if (fails) delete fails;
          return nullptr;
       }
-      h2_fail* fail = h2_fail::new_unexpect(expection(c), h2_representify(a, c.n));
+      h2_fail* fail = h2_fail::new_unexpect(expection(c), h2_stringify(a, c.n, true));
       h2_fail::append_child(fail, fails);
       return fail;
    }

@@ -100,4 +100,10 @@ SUITE(matches unary)
       OK(Pointee("S"), stdstring_ptr);
       OK(Pointee("S"), const_stdstring_ptr);
    }
+
+   Case(OK smart pointee)
+   {
+      auto a1 = std::make_shared<int>(42);
+      OK(Pointee(42), a1);
+   }
 }

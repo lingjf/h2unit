@@ -8,7 +8,7 @@
 
 SUITE(find_op)
 {
-   Case(sample)
+   Case(simple)
    {
       OK("== b", h2::find_op("a == b", "=="));
       OK("!= b", h2::find_op("a != b", "!="));

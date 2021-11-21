@@ -31,7 +31,7 @@ h2_inline h2_fail* h2_matches_strcmp::matches(const h2_string& a, h2_mc c) const
 }
 h2_inline h2_line h2_matches_strcmp::expection(h2_mc c) const
 {
-   return ncsc(h2_representify(c.squash_whitespace ? e.squash() : e), c, "≠");
+   return ncsc(h2_stringify(c.squash_whitespace ? e.squash() : e, true), c, "≠");
 }
 
 h2_inline h2_fail* h2_matches_substr::matches(const h2_string& a, h2_mc c) const
@@ -43,7 +43,7 @@ h2_inline h2_fail* h2_matches_substr::matches(const h2_string& a, h2_mc c) const
 }
 h2_inline h2_line h2_matches_substr::expection(h2_mc c) const
 {
-   return ncsc("Substr" + gray("(") + h2_representify(substring) + gray(")"), c);
+   return ncsc("Substr" + gray("(") + h2_stringify(substring, true) + gray(")"), c);
 }
 
 h2_inline h2_fail* h2_matches_startswith::matches(const h2_string& a, h2_mc c) const
@@ -55,7 +55,7 @@ h2_inline h2_fail* h2_matches_startswith::matches(const h2_string& a, h2_mc c) c
 }
 h2_inline h2_line h2_matches_startswith::expection(h2_mc c) const
 {
-   return ncsc("StartsWith" + gray("(") + h2_representify(prefix_string) + gray(")"), c);
+   return ncsc("StartsWith" + gray("(") + h2_stringify(prefix_string, true) + gray(")"), c);
 }
 
 h2_inline h2_fail* h2_matches_endswith::matches(const h2_string& a, h2_mc c) const
@@ -67,7 +67,7 @@ h2_inline h2_fail* h2_matches_endswith::matches(const h2_string& a, h2_mc c) con
 }
 h2_inline h2_line h2_matches_endswith::expection(h2_mc c) const
 {
-   return ncsc("EndsWith" + gray("(") + h2_representify(suffix_string) + gray(")"), c);
+   return ncsc("EndsWith" + gray("(") + h2_stringify(suffix_string, true) + gray(")"), c);
 }
 
 h2_inline h2_fail* h2_matches_json::matches(const h2_string& a, h2_mc c) const

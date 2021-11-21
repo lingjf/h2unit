@@ -1,16 +1,16 @@
-#define __Matches_Common(message)                                                             \
-   template <typename A>                                                                      \
-   bool __matches(const A& a) const;                                                          \
-   template <typename A>                                                                      \
-   h2::h2_fail* matches(const A& a, h2::h2_mc c) const                                        \
-   {                                                                                          \
-      h2::h2_fail* fail = h2::h2_fail::new_unexpect(h2::ncsc("", c), h2::h2_representify(a)); \
-      if (c.fit(__matches(a))) return nullptr;                                                \
-      h2::h2_ostringstream t;                                                                 \
-      t << H2PP_REMOVE_PARENTHESES(message);                                                  \
-      fail->user_explain = t.str().c_str();                                                   \
-      return fail;                                                                            \
-   }                                                                                          \
+#define __Matches_Common(message)                                                                \
+   template <typename A>                                                                         \
+   bool __matches(const A& a) const;                                                             \
+   template <typename A>                                                                         \
+   h2::h2_fail* matches(const A& a, h2::h2_mc c) const                                           \
+   {                                                                                             \
+      h2::h2_fail* fail = h2::h2_fail::new_unexpect(h2::ncsc("", c), h2::h2_stringify(a, true)); \
+      if (c.fit(__matches(a))) return nullptr;                                                   \
+      h2::h2_ostringstream t;                                                                    \
+      t << H2PP_REMOVE_PARENTHESES(message);                                                     \
+      fail->user_explain = t.str().c_str();                                                      \
+      return fail;                                                                               \
+   }                                                                                             \
    virtual h2::h2_line expection(h2::h2_mc c) const override { return ""; }
 
 #define H2MATCHER0(name, message)                                                    \

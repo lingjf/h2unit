@@ -7,11 +7,11 @@ struct h2_equation : h2_matches {
    h2_fail* matches(const A& a, h2_mc c) const
    {
       if (c.fit(a == e)) return nullptr;
-      return h2_fail::new_unexpect(expection(c), h2_representify(a));
+      return h2_fail::new_unexpect(expection(c), h2_stringify(a, true));
    }
    virtual h2_line expection(h2_mc c) const override
    {
-      return ncsc(h2_representify(e), c.update_caseless(false), "≠");
+      return ncsc(h2_stringify(e, true), c.update_caseless(false), "≠");
    }
 };
 
@@ -31,7 +31,7 @@ struct h2_equation<E, typename std::enable_if<std::is_convertible<E, h2_string>:
    }
    virtual h2_line expection(h2_mc c) const override
    {
-      return ncsc(h2_representify(c.squash_whitespace ? e.squash() : e), c, "≠");
+      return ncsc(h2_stringify(c.squash_whitespace ? e.squash() : e, true), c, "≠");
    }
 };
 
@@ -63,7 +63,7 @@ struct h2_equation<E, typename std::enable_if<std::is_arithmetic<E>::value>::typ
          result = a == e;
       }
       if (c.fit(result)) return nullptr;
-      return h2_fail::new_unexpect(expection(c), h2_representify(a));
+      return h2_fail::new_unexpect(expection(c), h2_stringify(a, true));
    }
    virtual h2_line expection(h2_mc c) const override
    {

@@ -22,27 +22,40 @@ H2_TOSTRING_ABLE(to_string);
 /* tostring() may not be mark const, remove cast const in T a; fix multi-tostring */
 template <typename T>
 struct h2_stringify_impl<T, typename std::enable_if<h2::h2_tostring_able<T>::value || h2::h2_toString_able<T>::value || h2::h2_Tostring_able<T>::value || h2::h2_ToString_able<T>::value || h2::h2_to_string_able<T>::value>::type> {
-   static h2_line print(const T& a, bool represent = false) { return print__tostring(a, represent); }
+   static h2_line print(const T& a, bool represent = false)
+   {
+      if (represent) return gray("\"") + print__tostring(a) + gray("\"");
+      return print__tostring(a);
+   }
    template <typename U>
-   static auto print__tostring(const U& a, bool represent) -> typename std::enable_if<h2::h2_tostring_able<U>::value, h2_line>::type { return const_cast<U&>(a).tostring(); }
+   static auto print__tostring(const U& a) -> typename std::enable_if<h2::h2_tostring_able<U>::value, h2_string>::type { return const_cast<U&>(a).tostring(); }
    template <typename U>
-   static auto print__tostring(const U& a, bool represent) -> typename std::enable_if<!h2::h2_tostring_able<U>::value, h2_line>::type { return print__toString(a, represent); }
+   static auto print__tostring(const U& a) -> typename std::enable_if<!h2::h2_tostring_able<U>::value, h2_string>::type { return print__toString(a); }
    template <typename U>
-   static auto print__toString(const U& a, bool represent) -> typename std::enable_if<h2::h2_toString_able<U>::value, h2_line>::type { return const_cast<U&>(a).toString(); }
+   static auto print__toString(const U& a) -> typename std::enable_if<h2::h2_toString_able<U>::value, h2_string>::type { return const_cast<U&>(a).toString(); }
    template <typename U>
-   static auto print__toString(const U& a, bool represent) -> typename std::enable_if<!h2::h2_toString_able<U>::value, h2_line>::type { return print__Tostring(a, represent); }
+   static auto print__toString(const U& a) -> typename std::enable_if<!h2::h2_toString_able<U>::value, h2_string>::type { return print__Tostring(a); }
    template <typename U>
-   static auto print__Tostring(const U& a, bool represent) -> typename std::enable_if<h2::h2_Tostring_able<U>::value, h2_line>::type { return const_cast<U&>(a).toString(); }
+   static auto print__Tostring(const U& a) -> typename std::enable_if<h2::h2_Tostring_able<U>::value, h2_string>::type { return const_cast<U&>(a).toString(); }
    template <typename U>
-   static auto print__Tostring(const U& a, bool represent) -> typename std::enable_if<!h2::h2_Tostring_able<U>::value, h2_line>::type { return print__ToString(a, represent); }
+   static auto print__Tostring(const U& a) -> typename std::enable_if<!h2::h2_Tostring_able<U>::value, h2_string>::type { return print__ToString(a); }
    template <typename U>
-   static auto print__ToString(const U& a, bool represent) -> typename std::enable_if<h2::h2_ToString_able<U>::value, h2_line>::type { return const_cast<U&>(a).ToString(); }
+   static auto print__ToString(const U& a) -> typename std::enable_if<h2::h2_ToString_able<U>::value, h2_string>::type { return const_cast<U&>(a).ToString(); }
    template <typename U>
-   static auto print__ToString(const U& a, bool represent) -> typename std::enable_if<!h2::h2_ToString_able<U>::value, h2_line>::type { return print__to_string(a, represent); }
+   static auto print__ToString(const U& a) -> typename std::enable_if<!h2::h2_ToString_able<U>::value, h2_string>::type { return print__to_string(a); }
    template <typename U>
-   static auto print__to_string(const U& a, bool represent) -> typename std::enable_if<h2::h2_to_string_able<U>::value, h2_line>::type { return const_cast<U&>(a).to_string(); }
+   static auto print__to_string(const U& a) -> typename std::enable_if<h2::h2_to_string_able<U>::value, h2_string>::type { return const_cast<U&>(a).to_string(); }
    template <typename U>
-   static auto print__to_string(const U& a, bool represent) -> typename std::enable_if<!h2::h2_to_string_able<U>::value, h2_line>::type { return ""; }
+   static auto print__to_string(const U& a) -> typename std::enable_if<!h2::h2_to_string_able<U>::value, h2_string>::type { return ""; }
+};
+
+template <typename T>
+struct h2_is_ostreamable {
+   template <typename U>
+   static auto test(U* u) -> decltype(std::declval<std::ostream&>() << *u, std::true_type());
+   template <typename U>
+   static auto test(...) -> std::false_type;
+   static constexpr bool value = decltype(test<T>(nullptr))::value;
 };
 
 template <typename T>
@@ -56,7 +69,7 @@ struct h2_stringify_impl<T, typename std::enable_if<h2_is_ostreamable<T>::value>
       oss << std::boolalpha << std::fixed << a;  // std::setprecision(10) <iomanip>
       auto str = oss.str();
       if (str.find_first_of('.') != std::string::npos)
-         str.erase(str.find_last_not_of('0') + 1);
+         str.erase(str.find_last_not_of(".0") + 1);
       return {str.c_str()};
    }
 
@@ -64,22 +77,10 @@ struct h2_stringify_impl<T, typename std::enable_if<h2_is_ostreamable<T>::value>
    static auto ostream_print(const U& a, bool represent) -> typename std::enable_if<!std::is_arithmetic<U>::value, h2_line>::type
    {
       h2_ostringstream oss;
-      oss << const_cast<U&>(a);
+      oss << a;
       if (represent && std::is_convertible<U, h2_string>::value)
          return gray("\"") + oss.str().c_str() + gray("\"");
       return {oss.str().c_str()};
-   }
-
-   static h2_line ostream_print(const char a, bool represent)
-   {
-      h2_string str(1, a);
-      if (represent) return gray("'") + str + gray("'");
-      return {str};
-   }
-
-   static h2_line ostream_print(const unsigned char a, bool represent)
-   {  // https://en.cppreference.com/w/cpp/string/byte/isprint
-      return ostream_print<unsigned int>(static_cast<unsigned int>(a), represent);
    }
 };
 
@@ -126,8 +127,41 @@ struct h2_stringify_impl<std::nullptr_t> {
    static h2_line print(std::nullptr_t a, bool represent = false) { return "nullptr"; }
 };
 
+template <>
+struct h2_stringify_impl<const char*> {
+   static h2_line print(const char* a, bool represent)
+   {
+      if (!a) return {"(null)"};
+      if (represent) return gray("\"") + a + gray("\"");
+      return {a};
+   }
+};
+
+template <>
+struct h2_stringify_impl<char*> {
+   static h2_line print(char* a, bool represent) { return h2_stringify_impl<const char*>::print(a, represent); }
+};
+
+template <>
+struct h2_stringify_impl<unsigned char> {
+   static h2_line print(unsigned char a, bool)
+   {  // https://en.cppreference.com/w/cpp/string/byte/isprint
+      return h2_stringify_impl<unsigned int>::print(static_cast<unsigned int>(a), false);
+   }
+};
+
+template <>
+struct h2_stringify_impl<char> {
+   static h2_line print(char a, bool represent)
+   {
+      h2_string str(1, a);
+      if (represent) return gray("'") + str + gray("'");
+      return {str};
+   }
+};
+
 template <typename T>
-inline h2_line h2_stringify(const T& a, bool represent = false) { return h2_stringify_impl<T>::print(a, represent); }
+inline h2_line h2_stringify(const T& a, bool represent = false) { return h2_stringify_impl<typename h2_decay<T>::type>::print(a, represent); }
 
 template <typename T>
 inline h2_line h2_stringify(T a, size_t n, bool represent)
@@ -143,9 +177,3 @@ inline h2_line h2_stringify(T a, size_t n, bool represent)
    line += gray("]");
    return line;
 }
-
-template <typename T>
-inline h2_line h2_representify(const T& a) { return h2_stringify(a, true); }
-
-template <typename T>
-inline h2_line h2_representify(T a, size_t n) { return h2_stringify(a, n, true); }

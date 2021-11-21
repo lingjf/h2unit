@@ -2959,7 +2959,7 @@ h2_inline h2_fail* h2_matches_strcmp::matches(const h2_string& a, h2_mc c) const
 }
 h2_inline h2_line h2_matches_strcmp::expection(h2_mc c) const
 {
-   return ncsc(h2_representify(c.squash_whitespace ? e.squash() : e), c, "≠");
+   return ncsc(h2_stringify(c.squash_whitespace ? e.squash() : e, true), c, "≠");
 }
 
 h2_inline h2_fail* h2_matches_substr::matches(const h2_string& a, h2_mc c) const
@@ -2971,7 +2971,7 @@ h2_inline h2_fail* h2_matches_substr::matches(const h2_string& a, h2_mc c) const
 }
 h2_inline h2_line h2_matches_substr::expection(h2_mc c) const
 {
-   return ncsc("Substr" + gray("(") + h2_representify(substring) + gray(")"), c);
+   return ncsc("Substr" + gray("(") + h2_stringify(substring, true) + gray(")"), c);
 }
 
 h2_inline h2_fail* h2_matches_startswith::matches(const h2_string& a, h2_mc c) const
@@ -2983,7 +2983,7 @@ h2_inline h2_fail* h2_matches_startswith::matches(const h2_string& a, h2_mc c) c
 }
 h2_inline h2_line h2_matches_startswith::expection(h2_mc c) const
 {
-   return ncsc("StartsWith" + gray("(") + h2_representify(prefix_string) + gray(")"), c);
+   return ncsc("StartsWith" + gray("(") + h2_stringify(prefix_string, true) + gray(")"), c);
 }
 
 h2_inline h2_fail* h2_matches_endswith::matches(const h2_string& a, h2_mc c) const
@@ -2995,7 +2995,7 @@ h2_inline h2_fail* h2_matches_endswith::matches(const h2_string& a, h2_mc c) con
 }
 h2_inline h2_line h2_matches_endswith::expection(h2_mc c) const
 {
-   return ncsc("EndsWith" + gray("(") + h2_representify(suffix_string) + gray(")"), c);
+   return ncsc("EndsWith" + gray("(") + h2_stringify(suffix_string, true) + gray(")"), c);
 }
 
 h2_inline h2_fail* h2_matches_json::matches(const h2_string& a, h2_mc c) const
@@ -5554,7 +5554,7 @@ struct h2_fail_unexpect : h2_fail {
 struct h2_fail_strcmp : h2_fail_unexpect {
    const bool caseless;
    const h2_string e_value, a_value;
-   h2_fail_strcmp(const h2_string& e_value_, const h2_string& a_value_, bool caseless_, const h2_line& expection, const h2_line& explain = {}) : h2_fail_unexpect(expection, h2_representify(a_value_), explain), caseless(caseless_), e_value(e_value_), a_value(a_value_) {}
+   h2_fail_strcmp(const h2_string& e_value_, const h2_string& a_value_, bool caseless_, const h2_line& expection, const h2_line& explain = {}) : h2_fail_unexpect(expection, h2_stringify(a_value_, true), explain), caseless(caseless_), e_value(e_value_), a_value(a_value_) {}
    h2_line fmt_char(h2_string& c, bool eq, const char* style)
    {
       if (c.equals(" ") && O.colorful) return gray("‧");
@@ -5578,7 +5578,7 @@ struct h2_fail_strcmp : h2_fail_unexpect {
 
 struct h2_fail_strfind : h2_fail_unexpect {
    const h2_string e_value, a_value;
-   h2_fail_strfind(const h2_string& e_value_, const h2_string& a_value_, const h2_line& expection, const h2_line& explain) : h2_fail_unexpect(expection, h2_representify(a_value_), explain), e_value(e_value_), a_value(a_value_) {}
+   h2_fail_strfind(const h2_string& e_value_, const h2_string& a_value_, const h2_line& expection, const h2_line& explain) : h2_fail_unexpect(expection, h2_stringify(a_value_, true), explain), e_value(e_value_), a_value(a_value_) {}
    void print(size_t si = 0, size_t ci = 0) override
    {
       h2_fail_unexpect::print(si, ci);
@@ -5880,20 +5880,51 @@ struct h2_report_list : h2_report_impl {
    int suites = 0, cases = 0, todos = 0;
    int unfiltered_suites = 0, unfiltered_cases = 0, unfiltered_todos = 0;
    int suite_cases = 0, suite_todos = 0;
-   std::map<std::string, unsigned long> tags;
+
+   struct tag {
+      const char* name;
+      int suites, cases;
+   };
+
+   int tagc = 0, unfiltered_tagc = 0;
+   struct tag tags[4096], unfiltered_tags[4096];
+
+   static tag* get_tag(tag tags[], int& tagc, const char* name)
+   {
+      for (int i = 0; i < tagc; ++i)
+         if (!strcmp(name, tags[i].name)) return &tags[i];
+      return nullptr;
+   }
+   static tag* add_tag(tag tags[], int& tagc, const char* name)
+   {
+      tag* t = get_tag(tags, tagc, name);
+      if (t) return t;
+      if (tagc >= 4096) return nullptr;
+      t = &tags[tagc++];
+      t->name = name;
+      t->suites = t->cases = 0;
+      return t;
+   }
+   static void add_suite_tag(tag tags[], int& tagc, const char* name)
+   {
+      auto t = add_tag(tags, tagc, name);
+      if (t) t->suites++;
+   }
+   static void add_case_tag(tag tags[], int& tagc, const char* name)
+   {
+      auto t = add_tag(tags, tagc, name);
+      if (t) t->cases++;
+   }
 
    void on_runner_endup(h2_runner* r) override
    {
       h2_report_impl::on_runner_endup(r);
       if (O.lists & ListTag) {
-         int i = 0;
-         for (auto& tag : tags) {
+         for (int i = 0; i < unfiltered_tagc; ++i) {
             h2_line line;
-            line.printf("dark gray", "TAG-%d. ", ++i).printf("bold,light purple", "%s ", tag.first.c_str());
-            auto suite_count = (tag.second & 0xFFFF0000) >> 16;
-            if (suite_count) line.printf("", " %d ", suite_count).printf("dark gray", H2_UNITS(suite_count, "suite"));
-            auto case_count = tag.second & 0x0000FFFF;
-            if (case_count) line.printf("", " %d ", case_count).printf("dark gray", H2_UNITS(case_count, "case"));
+            line.printf("dark gray", "TAG-%d. ", i).printf("bold,light purple", "%s ", unfiltered_tags[i].name);
+            if (unfiltered_tags[i].suites) line.printf("", " %d ", unfiltered_tags[i].suites).printf("dark gray", H2_UNITS(unfiltered_tags[i].suites, "suite"));
+            if (unfiltered_tags[i].cases) line.printf("", " %d ", unfiltered_tags[i].cases).printf("dark gray", H2_UNITS(unfiltered_tags[i].cases, "case"));
             h2_console::printl(line);
          }
       }
@@ -5902,11 +5933,19 @@ struct h2_report_list : h2_report_impl {
       if (O.lists & ListSuite) line += gray(comma_if(line.width())) + color(h2_stringify(unfiltered_suites), "green") + " " + gray(H2_UNITS(unfiltered_suites, "suite"));
       if (O.lists & ListCase) line += gray(comma_if(line.width())) + color(h2_stringify(unfiltered_cases), "green") + " " + gray(H2_UNITS(unfiltered_cases, "case"));
       if (O.lists & ListTodo) line += gray(comma_if(line.width())) + color(h2_stringify(unfiltered_todos), "green") + " " + gray(H2_UNITS(unfiltered_todos, "todo"));
-      if (O.lists & ListTag) line += gray(comma_if(line.width())) + color(h2_stringify(tags.size()), "green") + " " + gray(H2_UNITS(tags.size(), "tag"));
+      if (O.lists & ListTag) line += gray(comma_if(line.width())) + color(h2_stringify(unfiltered_tagc), "green") + " " + gray(H2_UNITS(unfiltered_tagc, "tag"));
       if (O.lists & ListSuite && suites > unfiltered_suites) line.printf("dark gray", "%s%d filtered %s", comma_if(line.width()), suites - unfiltered_suites, H2_UNITS(suites - unfiltered_suites, "suite"));
       if (O.lists & ListCase && cases > unfiltered_cases) line.printf("dark gray", "%s%d filtered %s", comma_if(line.width()), cases - unfiltered_cases, H2_UNITS(cases - unfiltered_cases, "case"));
       if (O.lists & ListTodo && todos > unfiltered_todos) line.printf("dark gray", "%s%d filtered %s", comma_if(line.width()), todos - unfiltered_todos, H2_UNITS(todos - unfiltered_todos, "todo"));
+      if (O.lists & ListTag && tagc > unfiltered_tagc) line.printf("dark gray", "%s%d filtered %s", comma_if(line.width()), tagc - unfiltered_tagc, H2_UNITS(tagc - unfiltered_tagc, "tag"));
       h2_console::printl("Listing " + line);
+   }
+   h2_line format_tags(const char* tags[])
+   {
+      h2_line line;
+      if (O.lists & ListTag)
+         for (int i = 0; tags[i]; ++i) line.printf("purple", " %s", tags[i]);
+      return line;
    }
    void on_suite_start(h2_suite* s) override
    {
@@ -5914,20 +5953,23 @@ struct h2_report_list : h2_report_impl {
       suite_cases = 0;
       suite_todos = 0;
       if (s->absent()) return;  // CASE
-      for (int i = 0; s->tags[i]; ++i) tags[s->tags[i]] += 0x10000;
-
+      for (int i = 0; s->tags[i]; ++i) add_suite_tag(tags, tagc, s->tags[i]);
+      if (!s->filtered)
+         for (int i = 0; s->tags[i]; ++i) add_suite_tag(unfiltered_tags, unfiltered_tagc, s->tags[i]);
       ++suites;
       if (!s->filtered && O.lists & ListSuite) {
          ++unfiltered_suites;
          h2_line line;
          line.printf("dark gray", "SUITE-%d. ", unfiltered_suites);
-         h2_console::printl(line + color(s->name, "bold,blue") + " " + gray(h2_basefile(s->filine)));
+         h2_console::printl(line + color(s->name, "bold,blue") + " " + gray(h2_basefile(s->filine)) + format_tags(s->tags));
       }
    }
    void on_case_start(h2_suite* s, h2_case* c) override
    {
       h2_report_impl::on_case_start(s, c);
-      for (int i = 0; c->tags[i]; ++i) tags[c->tags[i]] += 0x1;
+      for (int i = 0; c->tags[i]; ++i) add_case_tag(tags, tagc, c->tags[i]);
+      if (!c->filtered)
+         for (int i = 0; c->tags[i]; ++i) add_case_tag(unfiltered_tags, unfiltered_tagc, c->tags[i]);
 
       const char* type = nullptr;
       if (c->todo) {
@@ -5950,7 +5992,8 @@ struct h2_report_list : h2_report_impl {
             line.printf("dark gray", " %s/%d-%d. ", type, suite_cases + suite_todos, unfiltered_cases + unfiltered_todos);
          else
             line.printf("dark gray", " %s-%d. ", type, unfiltered_cases + unfiltered_todos);
-         h2_console::printl(line + color(c->name, "cyan") + " " + gray(h2_basefile(c->filine)));
+
+         h2_console::printl(line + color(c->name, "cyan") + " " + gray(h2_basefile(c->filine)) + format_tags(c->tags));
       }
    }
 };

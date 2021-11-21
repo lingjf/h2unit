@@ -27,7 +27,7 @@ static inline h2_line ncsc(const h2_line& s, h2_mc c, const char* dsym = "!")
 template <typename T>
 inline auto h2_matches_expection(const T& e, h2_mc c) -> typename std::enable_if<std::is_base_of<h2_matches, T>::value, h2_line>::type { return e.expection(c); }
 template <typename T>
-inline auto h2_matches_expection(const T& e, h2_mc c) -> typename std::enable_if<!std::is_base_of<h2_matches, T>::value, h2_line>::type { return ncsc(h2_representify(e), c); }
+inline auto h2_matches_expection(const T& e, h2_mc c) -> typename std::enable_if<!std::is_base_of<h2_matches, T>::value, h2_line>::type { return ncsc(h2_stringify(e, true), c); }
 
 #define H2_MATCHES_T2V2E(t_matchers)                                                                                                                    \
    template <typename T>                                                                                                                                \

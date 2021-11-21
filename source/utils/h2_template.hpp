@@ -54,14 +54,6 @@ inline T* h2_pointer_if(T& a) { return &a; }
 template <typename T>
 inline T* h2_pointer_if(T* a) { return a; }
 
-template <typename T>
-struct h2_is_ostreamable {
-   template <typename U>
-   static auto test(U* u) -> decltype(std::declval<std::ostream&>() << *u, std::true_type());
-   template <typename U>
-   static auto test(...) -> std::false_type;
-   static constexpr bool value = decltype(test<T>(nullptr))::value;
-};
 
 template <typename T>
 struct h2_is_pair : std::false_type {

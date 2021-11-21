@@ -85,11 +85,14 @@ CASE(h2_string convertable)
    OK((std::is_convertible<std::string&, h2::h2_string>::value));
    OK((std::is_convertible<decltype(char_array), h2::h2_string>::value));
    OK((std::is_convertible<h2::h2_string, h2::h2_string>::value));
+   OK((std::is_convertible<std::nullptr_t, h2::h2_string>::value));
+   OK((std::is_convertible<decltype(nullptr), h2::h2_string>::value));
 
    OK((!std::is_convertible<int, h2::h2_string>::value));
    OK((!std::is_convertible<char, h2::h2_string>::value));
    OK((!std::is_convertible<unsigned char, h2::h2_string>::value));
    OK((!std::is_convertible<unsigned char*, h2::h2_string>::value));
+   OK((!std::is_convertible<void*, h2::h2_string>::value));
 }
 
 SUITE(string)

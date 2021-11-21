@@ -7,11 +7,11 @@ struct h2_matches_ge : h2_matches {
    h2_fail* matches(const A& a, h2_mc c) const
    {
       if (c.fit(a >= e)) return nullptr;
-      return h2_fail::new_unexpect(expection(c), h2_representify(a));
+      return h2_fail::new_unexpect(expection(c), h2_stringify(a, true));
    }
    virtual h2_line expection(h2_mc c) const override
    {
-      return ncsc((c.no_compare_operator ? "" : "≥") + h2_representify(e), c.update_caseless(false));
+      return ncsc((c.no_compare_operator ? "" : "≥") + h2_stringify(e, true), c.update_caseless(false));
    }
 };
 
