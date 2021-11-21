@@ -3,12 +3,14 @@
 
 #include <cstdio>      /* printf */
 #include <cstdlib>     /* malloc */
+#include <cstdint>     /* std::uintptr_t */
 #include <cstring>     /* strcpy, memcpy */
 #include <cmath>       /* fabs */
 #include <csetjmp>     /* setjmp, longjmp */
 #include <sstream>     /* std::basic_ostringstream */
 #include <string>      /* std::string */
 #include <vector>      /* std::vector */
+#include <memory>      /* std::allocator, std::shared_ptr */
 #include <tuple>       /* std::tuple */
 #include <functional>  /* std::function */
 #include <utility>     /* std::forward, std::pair */
@@ -47,6 +49,7 @@ namespace h2 {
 #include "utils/h2_macro.hpp"         //
 #include "utils/h2_macro.in.hpp"      //
 #include "utils/h2_template.hpp"      //
+#include "utils/h2_numberfy.hpp"      //
 #include "utils/h2_list.hpp"          //
 #include "utils/h2_pattern.hpp"       //
 #include "utils/h2_misc.hpp"          //
@@ -282,8 +285,6 @@ namespace h2 {
 
 using h2::_;
 using h2::Any;
-#define IsNull h2::_IsNull()
-#define NotNull h2::_NotNull()
 using h2::operator"" _p;
 using h2::Eq;
 using h2::Nq;

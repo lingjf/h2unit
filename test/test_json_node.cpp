@@ -37,7 +37,7 @@ SUITE(json node get)
 
       JE(week, node_dump(&c1));
 
-      OK(IsNull, c1.get("ling", false));
+      OK(NULL, c1.get("ling", false));
 
       for (int i = 0; i < c1.size(); i++) {
          OK(d[i]->value_string, c1.get(i)->value_string);

@@ -63,6 +63,7 @@
     <ClCompile Include="test_matcher_matches.cpp" />
     <ClCompile Include="test_matcher_memcmp.cpp" />
     <ClCompile Include="test_matcher_none_copy.cpp" />
+    <ClCompile Include="test_matcher_null.cpp" />
     <ClCompile Include="test_matcher_polymorphic.cpp" />
     <ClCompile Include="test_matcher_strcmp.cpp" />
     <ClCompile Include="test_matcher_unary.cpp" />
@@ -110,6 +111,7 @@
     <ClCompile Include="test_utils_macro.cpp" />
     <ClCompile Include="test_utils_macro_generated.cpp" />
     <ClCompile Include="test_utils_misc.cpp" />
+    <ClCompile Include="test_utils_numberfy.cpp" />
     <ClCompile Include="test_utils_pattern.cpp" />
     <ClCompile Include="test_utils_shared_ptr.cpp" />
     <ClCompile Include="test_utils_string.cpp" />

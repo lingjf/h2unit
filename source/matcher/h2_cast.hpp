@@ -3,7 +3,7 @@ struct h2_matcher_cast_impl {
    static h2_matcher<T> cast(const M& from)
    {
       return do_cast(from,
-                     std::integral_constant<bool, std::is_same<bool, M>::value>{},
+                     std::integral_constant < bool, std::is_same<bool, M>::value || std::is_same<std::nullptr_t, M>::value > {},
                      std::is_convertible<M, h2_matcher<T>>{} /* h2_matcher::h2_matcher(T value) Converting constructor | h2_polymorphic_matcher::operator h2_matcher<T>() */,
                      std::is_convertible<M, T>{});
    }

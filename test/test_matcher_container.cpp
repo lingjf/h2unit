@@ -25,8 +25,8 @@ SUITE(container matches)
       std::pair<int, double> a1 = std::make_pair(1, 3.14);
       std::pair<int, double> a2 = std::make_pair(2, 3.14);
 
-      OK(IsNull, e1.matches(a1, {}));
-      OK(NotNull, e1.matches(a2, {}));
+      OK(nullptr, e1.matches(a1, {}));
+      OK(Not(NULL), e1.matches(a2, {}));
    }
 
    Case(ListOf)

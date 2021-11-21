@@ -6,16 +6,16 @@ PTR_NULL_DECL_LIST;
 
 SUITE(cast ptr1)
 {
-   Case(OK IsNull)
+   Case(OK Is Null)
    {
-#define TheCheck(x) OK(IsNull, x);
+#define TheCheck(x) OK(nullptr, x);
       H2Foreach(TheCheck, (PTR_NULL_VALUE_LIST));
 #undef TheCheck
    }
 
-   Case(OK NotNull)
+   Case(OK Not Null)
    {
-#define TheCheck(x) OK(NotNull, x);
+#define TheCheck(x) OK(Not(NULL), x);
       H2Foreach(TheCheck, (PTR_FILL_VALUE_LIST));
 #undef TheCheck
    }
@@ -29,10 +29,10 @@ SUITE(cast ptr1)
 
    Case(OK AllOf, AnyOf, NoneOf)
    {
-#define TheCheck(x, y)      \
-   OK(AllOf(_, IsNull), y); \
-   OK(AnyOf(_, IsNull), y); \
-   OK(!!NoneOf(NotNull), y);
+#define TheCheck(x, y)              \
+   OK(AllOf(_, NULL), y);           \
+   OK(AnyOf(_, nullptr), y);        \
+   OK(!!NoneOf(Not(nullptr)), y);
 
       H2Fullmesh(TheCheck, (PTR_NULL_VALUE_LIST));
 #undef TheCheck

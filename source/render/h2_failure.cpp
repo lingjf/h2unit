@@ -56,11 +56,13 @@ static inline bool is_synonym(const h2_string& a, const h2_string& b)
    h2_string a1 = a.escape(), b1 = b.escape();
    if (a1 == b1) return true;
 
-#define H2_NULL_SYNONYM "NULL", "__null", "((void *)0)", "(nil)", "nullptr", "0", "0x0", "00000000", "0000000000000000"
+#define H2_NULL_SYNONYM "NULL", "nullptr", "null", "__null", "(null)", "(nil)", "((void *)0)", "0", "0x0", "00000000", "0000000000000000"
+#define H2_NOTNULL_SYNONYM "!NULL", "!nullptr", "Not(NULL)", "Not(nullptr)", "Nq(NULL)", "Nq(nullptr)"
 #define H2_TREE_SYNONYM "true", "TRUE", "True", "1"
 #define H2_FALSE_SYNONYM "false", "FALSE", "False", "0"
 
-   if (h2_in(a1.c_str(), 9, H2_NULL_SYNONYM) && h2_in(b1.c_str(), 9, H2_NULL_SYNONYM)) return true;
+   if (h2_in(a1.c_str(), 11, H2_NULL_SYNONYM) && h2_in(b1.c_str(), 11, H2_NULL_SYNONYM)) return true;
+   if (h2_in(a1.c_str(), 6, H2_NOTNULL_SYNONYM) && h2_in(b1.c_str(), 6, H2_NOTNULL_SYNONYM)) return true;
    if (h2_in(a1.c_str(), 4, H2_TREE_SYNONYM) && h2_in(b1.c_str(), 4, H2_TREE_SYNONYM)) return true;
    if (h2_in(a1.c_str(), 4, H2_FALSE_SYNONYM) && h2_in(b1.c_str(), 4, H2_FALSE_SYNONYM)) return true;
    return false;
@@ -81,7 +83,7 @@ struct h2_fail_unexpect : h2_fail {
       if (!expection.width()) {
          e = h2_line(e_expression).abbreviate(10000, 3).gray_quote().brush("green");
       } else if (is_synonym(e_expression, expection.string())) {
-         e = expection.abbreviate(10000, 3).brush("green");
+         e = h2_line(e_expression).abbreviate(10000, 3).brush("green");
       } else {
          e = h2_line(e_expression).abbreviate(O.verbose >= VerboseDetail ? 10000 : 120, 3).gray_quote().brush("cyan") + gray("==>") + expection.abbreviate(10000, 3).brush("green");
       }  // https://unicode-table.com/en/sets/arrow-symbols/ (← →) (← →) (⇐ ⇒) (⟵ ⟶) ⟸ ⟹

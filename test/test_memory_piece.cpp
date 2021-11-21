@@ -40,7 +40,7 @@ SUITE(piece)
          }",
          h2_piece_tojson(m));
 
-      OK(IsNull, m->free("free"));
+      OK(NULL, m->free("free"));
 
       JE("{                               \
             'user_size': 100,             \
@@ -57,10 +57,10 @@ SUITE(piece)
    {
       h2::h2_backtrace bt;
       m = new h2::h2_piece(0, 0, "malloc", bt);
-      OK(NotNull, m);
-      OK(NotNull, m->user_ptr);
+      OK(Not(NULL), m);
+      OK(Not(NULL), m->user_ptr);
       OK(0, m->user_size);
-      OK(IsNull, m->free("free"));
+      OK(NULL, m->free("free"));
       delete m;
    }
 
@@ -68,9 +68,9 @@ SUITE(piece)
    {
       h2::h2_backtrace bt;
       m = new h2::h2_piece(100, 8, "malloc", bt);
-      OK(IsNull, m->free("free"));
+      OK(NULL, m->free("free"));
       auto fail = m->free("free");
-      OK(NotNull, fail);
+      OK(Not(NULL), fail);
       OK(typeid(h2::h2_fail_double_free).name(), typeid(*fail).name());
       delete m;
    }
@@ -80,7 +80,7 @@ SUITE(piece)
       h2::h2_backtrace bt;
       m = new h2::h2_piece(100, 8, "malloc", bt);
       auto fail = m->free("delete");
-      OK(NotNull, fail);
+      OK(Not(NULL), fail);
       OK(typeid(h2::h2_fail_asymmetric_free).name(), typeid(*fail).name());
       delete m;
    }
@@ -91,7 +91,7 @@ SUITE(piece)
       m = new h2::h2_piece(100, 8, "malloc", bt);
       ((unsigned short*)m->user_ptr)[50] = 0xCC33;
       auto fail = m->free("free");
-      OK(NotNull, fail);
+      OK(Not(NULL), fail);
       OK(typeid(h2::h2_fail_overflow).name(), typeid(*fail).name());
       delete m;
    }

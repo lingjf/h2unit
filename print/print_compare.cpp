@@ -54,6 +54,25 @@ SUITE(number compares)
       char a1 = 'a';
       OK('b', a1) << "char is not same " << 123;
    }
+
+   Case(void*)
+   {
+      void* a1 = (void*)1234;
+      OK(NULL, a1);
+   }
+
+   Case(void*)
+   {
+      void* a1 = (void*)1234;
+      OK(nullptr, a1);
+   }
+
+   Case(void*)
+   {
+      void* a1 = (void*)nullptr;
+      OK(Not(NULL), a1);
+      OK(Not(nullptr), a1);
+   }
 }
 
 SUITE(string compares)

@@ -30,7 +30,7 @@ SUITE(libc_malloc)
       JE("[]", h2_libc_malloc_tojson(&M));
 
       long long* p1 = (long long*)M.malloc(88);
-      OK(NotNull, p1);
+      OK(Not(nullptr), p1);
       OK(88 + 8, *(p1 - 1));
 
       sprintf(t2, "[                                              \
@@ -43,7 +43,7 @@ SUITE(libc_malloc)
       JE(t2, h2_libc_malloc_tojson(&M));
 
       long long* p2 = (long long*)M.malloc(1001);
-      OK(NotNull, p2);
+      OK(Not(nullptr), p2);
       OK(1008 + 8, *(p2 - 1));
 
       sprintf(t2, "[                                                          \
@@ -56,7 +56,7 @@ SUITE(libc_malloc)
       JE(t2, h2_libc_malloc_tojson(&M));
 
       long long* p3 = (long long*)M.malloc(201);
-      OK(NotNull, p3);
+      OK(Not(nullptr), p3);
       OK(208 + 8, *(p3 - 1));
 
       sprintf(t2, "[                                                                   \

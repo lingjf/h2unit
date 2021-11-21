@@ -30,20 +30,20 @@ SUITE(sources)
    Case(init)
    {
       JE("[]", h2_sources_tojson(pool));
-      OK(IsNull, pool.get((void*)foobar2));
+      OK(NULL, pool.get((void*)foobar2));
    }
 
    Case(add del)
    {
       auto a = pool.add((void*)foobar2, "foobar2", H2_FILINE);
-      OK(NotNull, a);
+      OK(Not(nullptr), a);
       JE("[{'reference_count':1}]", h2_sources_tojson(pool));
       auto b = pool.add((void*)foobar2, "foobar2", H2_FILINE);
-      OK(NotNull, b);
+      OK(Not(nullptr), b);
       JE("[{'reference_count':2}]", h2_sources_tojson(pool));
 
       auto ret = pool.get((void*)foobar2);
-      OK(NotNull, ret);
+      OK(Not(nullptr), ret);
       JE("{'reference_count':2}", h2_source_tojson(ret));
 
       pool.del(ret);

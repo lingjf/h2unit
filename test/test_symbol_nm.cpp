@@ -8,6 +8,6 @@ SUITE(nm)
       h2::h2_symbol* res[16];
       int n = h2::h2_nm::get_by_name("foobar0", res, 16);
       OK(1, n);
-      OK(NotNull, res[0]->addr);
+      OK(Not(NULL), res[0]->addr);
    }
 }

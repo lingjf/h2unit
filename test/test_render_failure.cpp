@@ -6,9 +6,19 @@ SUITE(failure utils)
    h2::h2_string a_nullptr = "nullptr";
    h2::h2_string a_void = "((void *)0)";
    h2::h2_string a___null = "__null";
+   h2::h2_string a_null = "(null)";
    h2::h2_string a_nil = "(nil)";
    h2::h2_string a_0 = "0";
    h2::h2_string a_0x0 = "0x0";
+   h2::h2_string a_00000000 = "00000000";
+   h2::h2_string a_0000000000000000 = "0000000000000000";
+
+   h2::h2_string n_1NULL = "!NULL";
+   h2::h2_string n_1nullptr = "!nullptr";
+   h2::h2_string n_NotNULL = "Not(NULL)";
+   h2::h2_string n_Notnullptr = "Not(nullptr)";
+   h2::h2_string n_NqNULL = "Nq(NULL)";
+   h2::h2_string n_Nqnullptr = "Nq(nullptr)";
 
    h2::h2_string true_true = "true";
    h2::h2_string true_TRUE = "TRUE";
@@ -27,11 +37,23 @@ SUITE(failure utils)
      a_nullptr,  \
      a_void,     \
      a___null,   \
+     a_null,     \
+     a_nil,      \
      a_0,        \
-     a_0x0
+     a_0x0,      \
+     a_00000000, \
+     a_0000000000000000
 
 #define TheCheck(x, y) OK(h2::is_synonym(x, y));
       H2Fullmesh(TheCheck, (NULL_SET));
+#undef TheCheck
+   }
+
+   Case(is_synonym notnull)
+   {
+#define NOTNULL_SET n_1NULL, n_1nullptr, n_NotNULL, n_Notnullptr, n_NqNULL, n_Nqnullptr
+#define TheCheck(x, y) OK(h2::is_synonym(x, y));
+      H2Fullmesh(TheCheck, (NOTNULL_SET));
 #undef TheCheck
    }
 

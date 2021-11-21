@@ -88,12 +88,12 @@ SUITE(BLOCK [memory_check])
       BLOCK(limit = 10)
       {
          c2 = malloc(8);
-         OK(NotNull, c2);
+         OK(Not(NULL), c2);
          c3 = malloc(8);
-         OK(IsNull, c3);
+         OK(NULL, c3);
          free(c2);
          c4 = malloc(8);
-         OK(NotNull, c4);
+         OK(Not(NULL), c4);
          free(c4);
       }
    }

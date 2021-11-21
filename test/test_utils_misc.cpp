@@ -138,7 +138,7 @@ SUITE(h2_candidate)
       OK("single", h2::h2_candidate("singl", 3, "single", "double", "sample"));
       OK("single", h2::h2_candidate("single", 3, "single", "double", "sample"));
 
-      OK(IsNull, h2::h2_candidate("z", 3, "single", "double", "sample"));
+      OK(NULL, h2::h2_candidate("z", 3, "single", "double", "sample"));
    }
 
    Case(ambiguous)
@@ -188,7 +188,7 @@ SUITE(get key value)
    {
       const char* a0 = "ok";
       OK("", h2::get_keyvalue(a0, "ok"));
-      OK(IsNull, h2::get_keyvalue(a0, "ko"));
+      OK(NULL, h2::get_keyvalue(a0, "ko"));
    }
 
    Case(key=value)
@@ -200,7 +200,7 @@ SUITE(get key value)
    Case(strip space)
    {
       const char* a2 = "to=1.2.3.4, name = zhang3";
-      OK(NotNull, h2::get_keyvalue(a2, "to"));
+      OK(Not(NULL), h2::get_keyvalue(a2, "to"));
       OK("zhang3", h2::get_keyvalue(a2, "name"));
    }
 }

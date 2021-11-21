@@ -24,12 +24,6 @@ SUITE(OK Primitive)
       OK((Any), "A");
    }
 
-   Case(IsNull NotNull)
-   {
-      OK(IsNull, 0);
-      OK((NotNull), 1);
-   }
-
    Case(Je)
    {
       OK(~Je("{'name': /hello.*world/, 'age': 18}"), "{'Name': \"hello world\", 'age': 18}");

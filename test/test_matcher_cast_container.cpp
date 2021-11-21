@@ -13,34 +13,6 @@
 #include <tuple>
 #include <valarray>
 
-static int int_array[] = {1, 2, 3};
-static const int const_int_array[] = {1, 2, 3};
-static intptr_t intptr_t_array[] = {1, 2, 3};
-static const intptr_t const_intptr_t_array[] = {1, 2, 3};
-static std::vector<int> stdvector = {1, 2, 3};
-static const std::vector<int> const_stdvector = {1, 2, 3};
-static std::array<int, 3> stdarray = {1, 2, 3};
-static const std::array<int, 3> const_stdarray = {1, 2, 3};
-static std::deque<int> stddeque = {1, 2, 3};
-static const std::deque<int> const_stddeque = {1, 2, 3};
-static std::list<int> stdlist = {1, 2, 3};
-static const std::list<int> const_stdlist = {1, 2, 3};
-static std::forward_list<int> stdforward_list = {1, 2, 3};
-static const std::forward_list<int> const_stdforward_list = {1, 2, 3};
-static std::set<int> stdset = {1, 2, 3};
-static const std::set<int> const_stdset = {1, 2, 3};
-static std::multiset<int> stdmultiset = {1, 2, 3};
-static const std::multiset<int> const_stdmultiset = {1, 2, 3};
-static std::unordered_set<int> stdunordered_set = {1, 2, 3};
-static const std::unordered_set<int> const_stdunordered_set = {1, 2, 3};
-static std::unordered_multiset<int> stdunordered_multiset = {1, 2, 3};
-static const std::unordered_multiset<int> const_stdunordered_multiset = {1, 2, 3};
-
-static std::map<int, int> stdmap = {{1, 111}, {2, 222}, {3, 333}};
-static std::multimap<int, int> stdmultimap = {{1, 111}, {2, 222}, {3, 333}};
-static std::unordered_map<int, int> stdunordered_map = {{1, 111}, {2, 222}, {3, 333}};
-static std::unordered_multimap<int, int> stdunordered_multimap = {{1, 111}, {2, 222}, {3, 333}};
-
 #define LISTOF_FOR_LIST int_array,                                \
                         const_int_array,                          \
                         intptr_t_array, /*const_intptr_t_array,*/ \
@@ -80,6 +52,34 @@ static std::unordered_multimap<int, int> stdunordered_multimap = {{1, 111}, {2, 
 
 SUITE(cast containers)
 {
+   int int_array[] = {1, 2, 3};
+   const int const_int_array[] = {1, 2, 3};
+   intptr_t intptr_t_array[] = {1, 2, 3};
+   const intptr_t const_intptr_t_array[] = {1, 2, 3};
+   std::vector<int> stdvector = {1, 2, 3};
+   const std::vector<int> const_stdvector = {1, 2, 3};
+   std::array<int, 3> stdarray = {1, 2, 3};
+   const std::array<int, 3> const_stdarray = {1, 2, 3};
+   std::deque<int> stddeque = {1, 2, 3};
+   const std::deque<int> const_stddeque = {1, 2, 3};
+   std::list<int> stdlist = {1, 2, 3};
+   const std::list<int> const_stdlist = {1, 2, 3};
+   std::forward_list<int> stdforward_list = {1, 2, 3};
+   const std::forward_list<int> const_stdforward_list = {1, 2, 3};
+   std::set<int> stdset = {1, 2, 3};
+   const std::set<int> const_stdset = {1, 2, 3};
+   std::multiset<int> stdmultiset = {1, 2, 3};
+   const std::multiset<int> const_stdmultiset = {1, 2, 3};
+   std::unordered_set<int> stdunordered_set = {1, 2, 3};
+   const std::unordered_set<int> const_stdunordered_set = {1, 2, 3};
+   std::unordered_multiset<int> stdunordered_multiset = {1, 2, 3};
+   const std::unordered_multiset<int> const_stdunordered_multiset = {1, 2, 3};
+
+   std::map<int, int> stdmap = {{1, 111}, {2, 222}, {3, 333}};
+   std::multimap<int, int> stdmultimap = {{1, 111}, {2, 222}, {3, 333}};
+   std::unordered_map<int, int> stdunordered_map = {{1, 111}, {2, 222}, {3, 333}};
+   std::unordered_multimap<int, int> stdunordered_multimap = {{1, 111}, {2, 222}, {3, 333}};
+
    Case(OK ListOf)
    {
 #define TheCheck(x) OK(ListOf(1, 2, 3), x);

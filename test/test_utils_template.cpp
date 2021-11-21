@@ -19,6 +19,31 @@ CASE(nth_type)
    OK((std::is_same<short, typename h2::h2_nth_type<1, char, short>::type>::value));
 }
 
+SUITE(is smart pointer)
+{
+   Case(shared_ptr)
+   {
+      auto a1 = std::make_shared<int>(42);
+      OK((h2::h2_is_smart_ptr<decltype(a1)>::value));
+   }
+
+   Case(unique_ptr)
+   {
+      std::string* s1 = new std::string("hello");
+      std::unique_ptr<std::string> a1(s1);
+
+      OK((h2::h2_is_smart_ptr<decltype(a1)>::value));
+   }
+
+   Case(weak_ptr)
+   {
+      std::weak_ptr<int> a1;
+      a1 = std::make_shared<int>(42);
+
+      OK((h2::h2_is_smart_ptr<decltype(a1)>::value));
+   }
+}
+
 SUITE(sizeof pointee)
 {
    Case(char*)
@@ -49,6 +74,63 @@ SUITE(sizeof pointee)
    Case(void**)
    {
       OK(sizeof(void*), h2::h2_sizeof_pointee<void**>::value);
+   }
+
+   Case(smart ptr)
+   {
+      auto a1 = std::make_shared<int>(42);
+      OK(sizeof(int), h2::h2_sizeof_pointee<decltype(a1)>::value);
+   }
+}
+
+SUITE(pointer_if)
+{
+   Case(normal ptr nullptr)
+   {
+      const char* a1 = nullptr;
+      OK(nullptr == h2::h2_pointer_if(a1));
+
+      int* a2 = nullptr;
+      OK(nullptr == h2::h2_pointer_if(a2));
+
+      std::string* a3 = nullptr;
+      OK(nullptr == h2::h2_pointer_if(a3));
+   }
+
+   Case(normal ptr)
+   {
+      char s1[1024];
+      const char* a1 = s1;
+      OK(s1 == h2::h2_pointer_if(a1));
+
+      int s2 = 1;
+      int* a2 = &s2;
+      OK(&s2 == h2::h2_pointer_if(a2));
+
+      std::string s3;
+      std::string* a3 = &s3;
+      OK(&s3 == h2::h2_pointer_if(a3));
+   }
+
+   Case(smart ptr)
+   {
+      std::string* s1 = new std::string("hello");
+      std::shared_ptr<std::string> a1(s1);
+
+      OK(!(std::is_pointer<std::shared_ptr<std::string>>::value));
+      OK(s1 == (std::string*)h2::h2_pointer_if(a1));
+   }
+
+   Case(object)
+   {
+      char s1[1024];
+      OK(s1 == h2::h2_pointer_if(s1));
+
+      int s2 = 1;
+      OK(&s2 == h2::h2_pointer_if(s2));
+
+      std::string s3;
+      OK(&s3 == h2::h2_pointer_if(s3));
    }
 }
 

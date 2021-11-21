@@ -84,7 +84,7 @@ SUITE(Memory Leak)
    {
       BLOCK(limit = 10 /* in the block , available memory only 10 bytes */)
       {
-         OK(IsNull, malloc(11)); /* no enough available memory */
+         OK(NULL, malloc(11)); /* no enough available memory */
       }
    }
 

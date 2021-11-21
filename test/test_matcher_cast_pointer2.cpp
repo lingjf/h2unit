@@ -13,7 +13,7 @@ SUITE(cast ptr2)
    Case(MOCK)
    {
 #define TheCheck(x, y)                              \
-   MOCK(foobar##x, void(decltype(x))).Once(IsNull); \
+   MOCK(foobar##x, void(decltype(x))).Once(NULL);   \
    foobar##x((decltype(x))y);
 
       H2Fullmesh(TheCheck, (PTR_LIST), (PTR_NULL_VALUE_LIST));

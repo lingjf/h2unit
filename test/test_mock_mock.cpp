@@ -110,9 +110,9 @@ SUITE(mock function)
       foobar22();
    }
 
-   Case(IsNull Matcher)
+   Case(Is Null Matcher)
    {
-      MOCK(foobar2, int(int, const char*)).Once(1, IsNull).Return(11);
+      MOCK(foobar2, int(int, const char*)).Once(1, NULL).Return(11);
       OK(11, foobar2(1, NULL));
    }
 

@@ -198,7 +198,7 @@ SUITE(select json)
    Case(not found)
    {
       h2::h2_json_tree c2(day);
-      OK(IsNull, c2.select(".ap", true));
+      OK(NULL, c2.select(".ap", true));
    }
 }
 

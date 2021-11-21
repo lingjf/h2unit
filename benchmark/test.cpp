@@ -45,7 +45,6 @@ SUITE(normal)
       OK(ListOf(1, 6, 3), a);
    }
 
-
    Case(case 6)
    {
       BLOCK()

@@ -121,7 +121,7 @@ SUITE(SOCK)
       }
    }
 
-#   if !defined _WIN32
+#if !defined _WIN32
    Case(UDP sendmsg recvmsg)
    {
       unsigned char b2[1024];
@@ -171,9 +171,9 @@ SUITE(SOCK)
          CloseSocket(sock);
       }
    }
-#   endif
+#endif
 
-#   if !defined _MSC_VER  //TODO
+#if !defined _MSC_VER  // TODO
    Case(TCP server)
    {
       SOCK()
@@ -207,7 +207,7 @@ SUITE(SOCK)
          CloseSocket(sock);
       }
    }
-#   endif
+#endif
 
    Case(TCP client)
    {

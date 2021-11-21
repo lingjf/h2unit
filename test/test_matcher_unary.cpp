@@ -23,32 +23,6 @@ SUITE(matches unary)
       OK(Any, 1);
    }
 
-   Case(Null)
-   {
-      int int65 = 65;
-
-      h2::h2_matches_null ee1(false);
-      OK(nullptr == ee1.matches(NULL, {}));
-      OK(nullptr == ee1.matches(nullptr, {}));
-      OK(nullptr != ee1.matches(&int65, {}));
-      OK("IsNull", ee1.expection({}));
-      OK("NotNull", ee1.expection({0, true, false, false, false}));
-
-      h2::h2_matches_null ee2(true);
-      OK(nullptr == ee2.matches(&int65, {}));
-      OK(nullptr != ee2.matches(nullptr, {}));
-      OK("NotNull", ee2.expection({}));
-      OK("IsNull", ee2.expection({0, true, false, false, false}));
-   }
-
-   Case(OK Null)
-   {
-      OK(IsNull, 0);
-      OK(IsNull(), 0);
-      OK(NotNull, 1234);
-      OK(NotNull(), 1234);
-   }
-
    Case(Pointee)
    {
       h2::h2_pointee_matches<h2::h2_polymorphic_matcher<h2::h2_equation<int>>> a1(h2::h2_polymorphic_matcher<h2::h2_equation<int>>{h2::h2_equation<int>(65)});

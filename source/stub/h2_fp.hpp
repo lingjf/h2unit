@@ -81,7 +81,7 @@ static constexpr const char* const constructible_errors[] = {"", "abstract ", "n
 template <typename = void, typename = void>
 struct h2_fp {
    template <typename T>
-   static void* A(T fp) { return h2_un<void*>(fp); }
+   static void* A(T fp) { return h2_numberfy<void*>(fp); }
    static void* A(const char* fn)
    {
       h2_symbol* res[16];
@@ -96,7 +96,7 @@ struct h2_fp {
 
 template <typename ReturnType, typename... ArgumentTypes>
 struct h2_fp<ReturnType(ArgumentTypes...)> {
-   static void* A(ReturnType (*fp)(ArgumentTypes...)) { return h2_un<void*>(fp); }
+   static void* A(ReturnType (*fp)(ArgumentTypes...)) { return h2_numberfy<void*>(fp); }
    static void* A(const char* fn) { return h2_fp<>::A(fn); }
 };
 
@@ -115,7 +115,7 @@ struct h2_fp<ClassType, ReturnType(ArgumentTypes...)> {
    static void* A(ReturnType (ClassType::*f)(ArgumentTypes...))
    {
       long offset;
-      if (!is_virtual_mfp(f, offset)) return h2_un<void*>(f);
+      if (!is_virtual_mfp(f, offset)) return h2_numberfy<void*>(f);
 
       ClassType* o = h2_constructible<ClassType>::O(alloca(sizeof(ClassType)));
       if (0 == (unsigned long long)o || 1 == (unsigned long long)o || 2 == (unsigned long long)o) {
@@ -129,7 +129,7 @@ struct h2_fp<ClassType, ReturnType(ArgumentTypes...)> {
    static void* B(ClassType* o, ReturnType (ClassType::*f)(ArgumentTypes...))
    {
       long offset;
-      if (!is_virtual_mfp(f, offset)) return h2_un<void*>(f);
+      if (!is_virtual_mfp(f, offset)) return h2_numberfy<void*>(f);
       return get_virtual_mfp(o, offset);
    }
 
@@ -140,7 +140,7 @@ struct h2_fp<ClassType, ReturnType(ArgumentTypes...)> {
    }
    static bool is_virtual_mfp(ReturnType (ClassType::*f)(ArgumentTypes...), long& offset)
    {
-      h2_symbol* symbol = h2_nm::get_by_addr((unsigned long long)h2_cxa::follow_jmp(h2_un<void*>(f)));
+      h2_symbol* symbol = h2_nm::get_by_addr((unsigned long long)h2_cxa::follow_jmp(h2_numberfy<void*>(f)));
       if (!symbol) return false;
       char* p = strstr(symbol->name, "::`vcall'{");
       if (!p) return false;  // not virtual member function
@@ -155,7 +155,7 @@ struct h2_fp<ClassType, ReturnType(ArgumentTypes...)> {
    //  The least-significant bit therefore discriminates between virtual and non-virtual functions.
    static void* A(ReturnType (ClassType::*f)(ArgumentTypes...))
    {
-      if (!is_virtual_mfp(f)) return h2_un<void*>(f);
+      if (!is_virtual_mfp(f)) return h2_numberfy<void*>(f);
       ClassType* o = h2_constructible<ClassType>::O(alloca(sizeof(ClassType)));
       if (2 < (unsigned long long)o) {
          void* t = get_virtual_mfp(o, f);
@@ -173,7 +173,7 @@ struct h2_fp<ClassType, ReturnType(ArgumentTypes...)> {
    }
    static void* B(ClassType* o, ReturnType (ClassType::*f)(ArgumentTypes...))
    {
-      if (!is_virtual_mfp(f)) return h2_un<void*>(f);
+      if (!is_virtual_mfp(f)) return h2_numberfy<void*>(f);
       return get_virtual_mfp(*(void***)o, f);
    }
 
@@ -183,14 +183,14 @@ struct h2_fp<ClassType, ReturnType(ArgumentTypes...)> {
    }
    static void* get_virtual_mfp(void** vtable, ReturnType (ClassType::*f)(ArgumentTypes...))
    {
-      return vtable[(h2_un<unsigned long long>(f) & ~1ULL) / sizeof(void*)];
+      return vtable[(h2_numberfy<unsigned long long>(f) & ~1ULL) / sizeof(void*)];
    }
    static bool is_virtual_mfp(ReturnType (ClassType::*f)(ArgumentTypes...))
    {
-      if (h2_un<unsigned long long>(&h2_vtable_test::dummy) & 1)
-         return (h2_un<unsigned long long>(f) & 1) && (h2_un<unsigned long long>(f) - 1) % sizeof(void*) == 0 && h2_un<unsigned long long>(f) < 1000 * sizeof(void*);
+      if (h2_numberfy<unsigned long long>(&h2_vtable_test::dummy) & 1)
+         return (h2_numberfy<unsigned long long>(f) & 1) && (h2_numberfy<unsigned long long>(f) - 1) % sizeof(void*) == 0 && h2_numberfy<unsigned long long>(f) < 1000 * sizeof(void*);
       else
-         return h2_un<unsigned long long>(f) % sizeof(void*) == 0 && h2_un<unsigned long long>(f) < 100 * sizeof(void*);
+         return h2_numberfy<unsigned long long>(f) % sizeof(void*) == 0 && h2_numberfy<unsigned long long>(f) < 100 * sizeof(void*);
    }
 #endif
 };

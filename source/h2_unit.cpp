@@ -5,7 +5,6 @@
 #include <errno.h>   /* strerror */
 #include <exception> /* std::exception */
 #include <iostream>  /* std::cout, std::streambuf */
-#include <memory>    /* std::allocator */
 #include <regex>     /* std::regex */
 #include <signal.h>  /* sigaction */
 #include <time.h>    /* clock */

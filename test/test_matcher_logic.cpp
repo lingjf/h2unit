@@ -14,7 +14,7 @@ SUITE(logic matches)
       h2::h2_not_matches<h2::h2_polymorphic_matcher<h2::h2_matches_null>> a2(h2::h2_polymorphic_matcher<h2::h2_matches_null>{h2::h2_matches_null(false)});
       OK(nullptr != a2.matches(nullptr, {}));
       OK(nullptr == a2.matches(&int65, {}));
-      OK("NotNull", a2.expection({}).string());
+      OK("!NULL", a2.expection({}).string());
 
       h2::h2_not_matches<h2::h2_polymorphic_matcher<h2::h2_matches_substr>> a3(h2::h2_polymorphic_matcher<h2::h2_matches_substr>{h2::h2_matches_substr("A")});
       OK(nullptr != a3.matches("ABC", {}));

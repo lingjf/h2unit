@@ -8,7 +8,7 @@ SUITE(override [memory_check])
       free(malloc(100));
       BLOCK(limit = 10)
       {
-         OK(IsNull, malloc(100));
+         OK(nullptr, malloc(100));
       }
    }
 
@@ -17,19 +17,19 @@ SUITE(override [memory_check])
       free(calloc(10, 10));
       BLOCK(limit = 10)
       {
-         OK(IsNull, calloc(10, 10));
+         OK(nullptr, calloc(10, 10));
       }
    }
 
    Case(realloc)
    {
       auto p = realloc(NULL, 100);  // act as malloc
-      OK(NotNull, p);
+      OK(Not(NULL), p);
       free(p);
 
       BLOCK(limit = 10)
       {
-         OK(IsNull, realloc(NULL, 100));
+         OK(nullptr, realloc(NULL, 100));
       }
    }
 
@@ -39,8 +39,8 @@ SUITE(override [memory_check])
       delete new (std::nothrow) A_PlainStruct;
       BLOCK(limit = 10)
       {
-         OK(IsNull, new A_PlainStruct);
-         OK(IsNull, new (std::nothrow) A_PlainStruct);
+         OK(nullptr, new A_PlainStruct);
+         OK(nullptr, new (std::nothrow) A_PlainStruct);
       }
    }
 
@@ -50,8 +50,8 @@ SUITE(override [memory_check])
       delete[] new (std::nothrow) char[100];
       BLOCK(limit = 10)
       {
-         OK(IsNull, new char[100]);
-         OK(IsNull, new (std::nothrow) char[100]);
+         OK(nullptr, new char[100]);
+         OK(nullptr, new (std::nothrow) char[100]);
       }
    }
 
@@ -60,7 +60,7 @@ SUITE(override [memory_check])
       free(strdup("1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890"));
       BLOCK(limit = 10)
       {
-         OK(IsNull, strdup("1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890"));
+         OK(nullptr, strdup("1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890"));
       }
    }
 
@@ -70,7 +70,7 @@ SUITE(override [memory_check])
       free(strndup("1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890", 100));
       BLOCK(limit = 10)
       {
-         OK(IsNull, strndup("1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890", 100));
+         OK(nullptr, strndup("1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890", 100));
       }
    }
 #endif
@@ -80,7 +80,7 @@ SUITE(override [memory_check])
    {
       void* ptr = NULL;
       OK(0, posix_memalign(&ptr, 8, 100));
-      OK(NotNull, ptr);
+      OK(Not(NULL), ptr);
       free(ptr);
       BLOCK(limit = 10)
       {
@@ -95,7 +95,7 @@ SUITE(override [memory_check])
       free(aligned_alloc(10, 10));
       BLOCK(limit = 10)
       {
-         OK(IsNull, aligned_alloc(10, 100));
+         OK(nullptr, aligned_alloc(10, 100));
       }
    }
 #endif

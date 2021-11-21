@@ -189,18 +189,18 @@ SUITE(zero operator)
       OK(Any, 1);
    }
 
-   Case(IsNull failure)
+   Case(Is Null failure)
    {
       int x;
-      OK(IsNull, nullptr);  // successful
-      OK(IsNull, &x);       // failure
+      OK(NULL, nullptr);  // successful
+      OK(nullptr, &x);       // failure
    }
 
-   Case(NotNull failure)
+   Case(Not Null failure)
    {
       int x;
-      OK(NotNull, &x);    // successful
-      OK(NotNull, NULL);  // failure
+      OK(Not(NULL), &x);    // successful
+      OK(Not(nullptr), NULL);  // failure
    }
 
    Case(Is True failure)

@@ -104,4 +104,28 @@ SUITE(shuffle_comparison)
    }
 }
 
-SUITE(runner) {}
+SUITE(runner)
+{
+   Case(C++ array elements with missing values will be initialized to 0)
+   {
+      int a[10] = {1, 2};  // initialize to 1,2,0,0,0...
+      OK(1, a[0]);
+      OK(2, a[1]);
+      for (int i = 2; i < 10; i++)
+         OK(0, a[i]);
+   }
+
+   Case(initialize all elements to 0)
+   {
+      int a[10] = {0};  // all elements 0
+      for (int i = 0; i < 10; i++)
+         OK(0, a[i]);
+   }
+
+   Case(C++ an empty initialization list will initialize every element to 0)
+   {
+      int a[10] = {};  // all elements 0 in C++, is not allowed with C
+      for (int i = 0; i < 10; i++)
+         OK(0, a[i]);
+   }
+}

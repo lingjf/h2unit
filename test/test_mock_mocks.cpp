@@ -110,9 +110,9 @@ SUITE(mocks function)
       foobar22();
    }
 
-   Case(IsNull Matcher)
+   Case(Is Null Matcher)
    {
-      MOCKS(foobar2, int, (int, const char*), Once(1, IsNull)) { return 11; };
+      MOCKS(foobar2, int, (int, const char*), Once(1, NULL)) { return 11; };
       OK(11, foobar2(1, NULL));
    }
 

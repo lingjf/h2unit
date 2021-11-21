@@ -1,13 +1,15 @@
-template <typename R, typename T>
-static R h2_un(T t)
-{
-   union h2_un {
-      T t;
-      R r;
-   } u;
-   u.t = t;
-   return u.r;
-}
+template <typename T, typename = void>
+struct h2_is_smart_ptr : std::false_type {
+};
+template <typename T>
+struct h2_is_smart_ptr<T, typename std::enable_if<std::is_same<typename std::remove_cv<T>::type, std::shared_ptr<typename T::element_type>>::value>::type> : std::true_type {
+};
+template <typename T>
+struct h2_is_smart_ptr<T, typename std::enable_if<std::is_same<typename std::remove_cv<T>::type, std::unique_ptr<typename T::element_type>>::value>::type> : std::true_type {
+};
+template <typename T>
+struct h2_is_smart_ptr<T, typename std::enable_if<std::is_same<typename std::remove_cv<T>::type, std::weak_ptr<typename T::element_type>>::value>::type> : std::true_type {
+};
 
 template <typename U, typename = void>
 struct h2_decay_impl {
@@ -48,12 +50,16 @@ struct h2_sizeof_pointee : std::integral_constant<std::size_t, sizeof(typename s
 template <typename T>
 struct h2_sizeof_pointee<T, typename std::enable_if<std::is_void<typename std::remove_pointer<T>::type>::value>::type> : std::integral_constant<std::size_t, 1> {
 };
-
 template <typename T>
-inline T* h2_pointer_if(T& a) { return &a; }
+struct h2_sizeof_pointee<T, typename std::enable_if<h2_is_smart_ptr<T>::value>::type> : std::integral_constant<std::size_t, sizeof(typename T::element_type)> {  // smart ptr not hold void*
+};
+
 template <typename T>
 inline T* h2_pointer_if(T* a) { return a; }
-
+template <typename T>
+inline auto h2_pointer_if(T& a) -> typename std::enable_if<h2_is_smart_ptr<T>::value, typename T::element_type*>::type { return a.get(); }
+template <typename T>
+inline auto h2_pointer_if(T& a) -> typename std::enable_if<!h2_is_smart_ptr<T>::value, T*>::type { return &a; }
 
 template <typename T>
 struct h2_is_pair : std::false_type {
