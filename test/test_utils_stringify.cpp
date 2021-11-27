@@ -182,9 +182,11 @@ SUITE(stringify simple)
    Case(double)
    {
       OK(ListOf("1"), h2::h2_stringify<double>(1.0));
+      OK(ListOf("10"), h2::h2_stringify<double>(10.0));
 
       OK(ListOf("3.14"), h2::h2_stringify<double>(3.14));
       OK(ListOf("3.14"), h2::h2_stringify<double>(3.14, true));
+      OK(ListOf("3.14"), h2::h2_stringify<double>(3.140));
       OK(ListOf("3.141593"), h2::h2_stringify<double>(3.1415926));
       OK(ListOf("3.141593"), h2::h2_stringify<double>(3.1415926, true));
    }
@@ -281,8 +283,7 @@ SUITE(stringify simple)
    Case(signed char)
    {
       signed char a = 'A';
-      OK(ListOf("A"), h2::h2_stringify<signed char>(a));
-      OK(ListOf("A"), h2::h2_stringify<signed char>(a, true));  // what signed char should be
+      OK(ListOf("65"), h2::h2_stringify<signed char>(a));
    }
 
    Case(char*)

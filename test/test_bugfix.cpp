@@ -92,4 +92,9 @@ SUITE(bugfix)
       // OK(!IsEven, 1);
       // OK(IsEven, 4);  // failed before fix
    }
+
+   Case(stringify double 30.0)
+   {
+      // OK(30, 6.0); // OK(30==>3 , 6<==6.0)
+   }
 }

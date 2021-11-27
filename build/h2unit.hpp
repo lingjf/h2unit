@@ -5,7 +5,7 @@
 #ifndef __H2UNIT_HPP__
 #define __H2UNIT_HPP__
 #define H2UNIT_VERSION 5.16
-#define H2UNIT_REVISION 2021-11-21 branches/v5
+#define H2UNIT_REVISION 2021-11-27 branches/v5
 #ifndef __H2_UNIT_HPP__
 #define __H2_UNIT_HPP__
 
@@ -762,7 +762,7 @@ struct h2_lines : h2_vector<h2_line> {
 // source/utils/h2_stringify.hpp
 template <typename T, typename = void>
 struct h2_stringify_impl {
-   static h2_line print(const T& a, bool represent = false) { return "?"; }
+   static h2_line print(const T&, bool = false) { return "?"; }
 };
 
 #define H2_TOSTRING_ABLE(tostring)                                                                            \
@@ -827,11 +827,11 @@ struct h2_stringify_impl<T, typename std::enable_if<h2_is_ostreamable<T>::value>
    template <typename U>
    static auto ostream_print(const U& a, bool) -> typename std::enable_if<std::is_arithmetic<U>::value, h2_line>::type
    {
-      h2_ostringstream oss;
-      oss << std::boolalpha << std::fixed << a;  // std::setprecision(10) <iomanip>
-      auto str = oss.str();
-      if (str.find_first_of('.') != std::string::npos)
-         str.erase(str.find_last_not_of(".0") + 1);
+      auto str = std::to_string(a);
+      if (str.find_first_of('.') != std::string::npos) {
+         str.erase(str.find_last_not_of("0") + 1);
+         str.erase(str.find_last_not_of(".") + 1);
+      }
       return {str.c_str()};
    }
 
@@ -859,13 +859,9 @@ struct h2_stringify_impl<T, typename std::enable_if<h2_is_container<T>::value &&
    static h2_line print(const T& a, bool represent = false)
    {
       h2_line line;
-      line += gray("[");
-      for (auto it = a.begin(); it != a.end(); it++) {
-         if (it != a.begin()) line += gray(", ");
-         line += h2_stringify_impl<typename T::value_type>::print(*it, represent);
-      }
-      line += gray("]");
-      return line;
+      for (auto it = a.begin(); it != a.end(); it++)
+         line += (it != a.begin() ? gray(", ") : h2_line()) + h2_stringify_impl<typename T::value_type>::print(*it, represent);
+      return gray("[") + line + gray("]");
    }
 };
 
@@ -886,7 +882,12 @@ struct h2_stringify_impl<std::tuple<Args...>> {
 
 template <>
 struct h2_stringify_impl<std::nullptr_t> {
-   static h2_line print(std::nullptr_t a, bool represent = false) { return "nullptr"; }
+   static h2_line print(std::nullptr_t a, bool = false) { return "nullptr"; }
+};
+
+template <>
+struct h2_stringify_impl<bool> {
+   static h2_line print(const bool a, bool = false) { return a ? "true" : "false"; }
 };
 
 template <>
@@ -905,11 +906,8 @@ struct h2_stringify_impl<char*> {
 };
 
 template <>
-struct h2_stringify_impl<unsigned char> {
-   static h2_line print(unsigned char a, bool)
-   {  // https://en.cppreference.com/w/cpp/string/byte/isprint
-      return h2_stringify_impl<unsigned int>::print(static_cast<unsigned int>(a), false);
-   }
+struct h2_stringify_impl<unsigned char> {  // https://en.cppreference.com/w/cpp/string/byte/isprint
+   static h2_line print(unsigned char a, bool) { return h2_stringify_impl<unsigned int>::print(static_cast<unsigned int>(a), false); }
 };
 
 template <>
@@ -923,21 +921,15 @@ struct h2_stringify_impl<char> {
 };
 
 template <typename T>
-inline h2_line h2_stringify(const T& a, bool represent = false) { return h2_stringify_impl<typename h2_decay<T>::type>::print(a, represent); }
-
+inline h2_line h2_stringify(const T& a, bool represent = false) { return h2_stringify_impl<T>::print(a, represent); }
 template <typename T>
 inline h2_line h2_stringify(T a, size_t n, bool represent)
 {
    if (n == 0) return h2_stringify(a, represent);
-
    h2_line line;
-   line += gray("[");
-   for (size_t i = 0; i < n; ++i) {
-      if (i) line += gray(", ");
-      line += h2_stringify(a[i], represent);
-   }
-   line += gray("]");
-   return line;
+   for (size_t i = 0; i < n; ++i)
+      line += (i ? gray(", ") : h2_line()) + h2_stringify(a[i], represent);
+   return gray("[") + line + gray("]");
 }
 // source/symbol/h2_nm.hpp
 struct h2_symbol {
