@@ -934,14 +934,16 @@ inline h2_line h2_stringify(T a, size_t n, bool represent)
 // source/symbol/h2_nm.hpp
 struct h2_symbol {
    h2_list x;
-   char name[128];
+   char symbol[128]{'\0'};
    unsigned long long addr;
-   h2_symbol(const char* name_, unsigned long long addr_) : addr(addr_) { strncpy(name, name_, 127); }
+   h2_symbol(const char* symbol_, unsigned long long addr_) : addr(addr_) { strncpy(symbol, symbol_, 127); }
+   char* name();
 };
 
 struct h2_nm {
    h2_singleton(h2_nm);
    h2_list mangle_symbols, demangle_symbols;
+   bool leading_underscore = false;
    static int get_by_name(const char* name, h2_symbol* res[], int n);
    static h2_symbol* get_by_addr(unsigned long long addr);
    static unsigned long long get_mangle(const char* name);
@@ -2719,7 +2721,7 @@ struct h2_fp {
       int n = h2_nm::get_by_name(fn, res, 16);
       if (n == 1) return h2_load::addr_to_ptr(res[0]->addr);
       h2_vector<h2_string> candidates;
-      for (int i = 0; i < n; ++i) candidates.push_back(res[i]->name);
+      for (int i = 0; i < n; ++i) candidates.push_back(res[i]->name());
       h2_runner::failing(h2_fail::new_symbol(fn, candidates));
       return nullptr;
    }
@@ -2773,7 +2775,7 @@ struct h2_fp<ClassType, ReturnType(ArgumentTypes...)> {
    {
       h2_symbol* symbol = h2_nm::get_by_addr((unsigned long long)h2_cxa::follow_jmp(h2_numberfy<void*>(f)));
       if (!symbol) return false;
-      char* p = strstr(symbol->name, "::`vcall'{");
+      char* p = strstr(symbol->name(), "::`vcall'{");
       if (!p) return false;  // not virtual member function
       offset = strtol(p + 10, nullptr, 10);
       return true;

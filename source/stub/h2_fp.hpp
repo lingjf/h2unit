@@ -88,7 +88,7 @@ struct h2_fp {
       int n = h2_nm::get_by_name(fn, res, 16);
       if (n == 1) return h2_load::addr_to_ptr(res[0]->addr);
       h2_vector<h2_string> candidates;
-      for (int i = 0; i < n; ++i) candidates.push_back(res[i]->name);
+      for (int i = 0; i < n; ++i) candidates.push_back(res[i]->name());
       h2_runner::failing(h2_fail::new_symbol(fn, candidates));
       return nullptr;
    }
@@ -142,7 +142,7 @@ struct h2_fp<ClassType, ReturnType(ArgumentTypes...)> {
    {
       h2_symbol* symbol = h2_nm::get_by_addr((unsigned long long)h2_cxa::follow_jmp(h2_numberfy<void*>(f)));
       if (!symbol) return false;
-      char* p = strstr(symbol->name, "::`vcall'{");
+      char* p = strstr(symbol->name(), "::`vcall'{");
       if (!p) return false;  // not virtual member function
       offset = strtol(p + 10, nullptr, 10);
       return true;

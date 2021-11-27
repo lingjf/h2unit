@@ -934,14 +934,16 @@ inline h2_line h2_stringify(T a, size_t n, bool represent)
 // source/symbol/h2_nm.hpp
 struct h2_symbol {
    h2_list x;
-   char name[128];
+   char symbol[128]{'\0'};
    unsigned long long addr;
-   h2_symbol(const char* name_, unsigned long long addr_) : addr(addr_) { strncpy(name, name_, 127); }
+   h2_symbol(const char* symbol_, unsigned long long addr_) : addr(addr_) { strncpy(symbol, symbol_, 127); }
+   char* name();
 };
 
 struct h2_nm {
    h2_singleton(h2_nm);
    h2_list mangle_symbols, demangle_symbols;
+   bool leading_underscore = false;
    static int get_by_name(const char* name, h2_symbol* res[], int n);
    static h2_symbol* get_by_addr(unsigned long long addr);
    static unsigned long long get_mangle(const char* name);
@@ -2719,7 +2721,7 @@ struct h2_fp {
       int n = h2_nm::get_by_name(fn, res, 16);
       if (n == 1) return h2_load::addr_to_ptr(res[0]->addr);
       h2_vector<h2_string> candidates;
-      for (int i = 0; i < n; ++i) candidates.push_back(res[i]->name);
+      for (int i = 0; i < n; ++i) candidates.push_back(res[i]->name());
       h2_runner::failing(h2_fail::new_symbol(fn, candidates));
       return nullptr;
    }
@@ -2773,7 +2775,7 @@ struct h2_fp<ClassType, ReturnType(ArgumentTypes...)> {
    {
       h2_symbol* symbol = h2_nm::get_by_addr((unsigned long long)h2_cxa::follow_jmp(h2_numberfy<void*>(f)));
       if (!symbol) return false;
-      char* p = strstr(symbol->name, "::`vcall'{");
+      char* p = strstr(symbol->name(), "::`vcall'{");
       if (!p) return false;  // not virtual member function
       offset = strtol(p + 10, nullptr, 10);
       return true;
@@ -4908,54 +4910,43 @@ struct h2_console {
 };
 // source/symbol/h2_nm.cpp
 #if !defined _MSC_VER
-static inline void nm_mangle(h2_list& symbols)
+static inline void __nm(h2_list& symbols, bool demangle)
 {
    h2_memory::hook(false);
-   char nm[256], line[2048], addr[128], type, name[2048];
-#if defined __APPLE__
-   sprintf(nm, "nm -U %s", O.path);
-#else
-   sprintf(nm, "nm --defined-only %s", O.path);
-#endif
-   FILE* f = ::popen(nm, "r");
+   char cmd[256], line[2048], addr[128], type, symbol[2048];
+   sprintf(cmd, "nm --defined-only %s -n %s", demangle ? "-f bsd --demangle" : "", O.path);
+   FILE* f = ::popen(cmd, "r");
    if (f) {
       while (::fgets(line, sizeof(line) - 1, f)) {
-         if (3 != sscanf(line, "%s %c %s", addr, &type, name)) continue;
+         if (3 != sscanf(line, "%s %c %[^\n]", addr, &type, symbol)) continue;
          if (strchr("bBcCdDiIuU", type)) continue;  // reject bBcCdDiIuU, accept tTwWsSvV, sS for vtable
-         int underscore = 0;
-         if (O.os == 'm') underscore = 1;  // remove prefix '_' in MacOS
-         h2_symbol* symbol = new h2_symbol(name + underscore, (unsigned long long)strtoull(addr, nullptr, 16));
-         if (symbol) symbols.push_back(symbol->x);
+         symbols.push_back((new h2_symbol(symbol, strtoull(addr, nullptr, 16)))->x);
       }
       ::pclose(f);
    }
    h2_memory::hook();
 }
-
-static inline void nm_demangle(h2_list& symbols)
+static inline bool __leading_underscore(h2_list& symbols)
 {
-   h2_memory::hook(false);
-   char nm[256], line[2048], addr[128], type, name[2048];
-#if defined __APPLE__
-   sprintf(nm, "nm -f bsd --demangle -U -n %s", O.path);
-#else
-   sprintf(nm, "nm -f bsd --demangle --defined-only -n %s", O.path);
-#endif
-   FILE* f = ::popen(nm, "r");
-   if (f) {
-      while (::fgets(line, sizeof(line) - 1, f)) {
-         if (3 != sscanf(line, "%s %c %[^\n]", addr, &type, name)) continue;
-         if (strchr("bBcCdDiIuU", type)) continue;
-         int underscore = 0;
-         if (O.os == 'm' && !strchr(name, '(')) underscore = 1;
-         h2_symbol* symbol = new h2_symbol(name + underscore, (unsigned long long)strtoull(addr, nullptr, 16));
-         if (symbol) symbols.push_back(symbol->x);
-      }
-      ::pclose(f);
+   bool _main = false;
+   h2_list_for_each_entry (p, symbols, h2_symbol, x) {
+      if (!strcmp("main", p->symbol)) return false;
+      if (!strcmp("_main", p->symbol)) _main = true;
    }
-   h2_memory::hook();
+   return _main;
+}
+static inline void nm(bool demangle, h2_list& symbols, bool& leading_underscore)
+{
+   __nm(symbols, demangle);
+   static h2_once one;
+   if (one) leading_underscore = __leading_underscore(symbols);
 }
 #endif
+
+h2_inline char* h2_symbol::name()
+{
+   return h2_nm::I().leading_underscore && symbol[0] == '_' ? symbol + 1 : symbol;  // remove leading underscore '_' in MacOS
+}
 
 static inline bool strncmp_reverse(const char* a, const char* ae, const char* b, const char* be, size_t n)  // [a, ae) [b, be)
 {
@@ -4979,21 +4970,21 @@ h2_inline int h2_nm::get_by_name(const char* name, h2_symbol* res[], int n)
    res[0] = &s_symbol;
    return 1;
 #else
-   if (I().demangle_symbols.empty()) nm_demangle(I().demangle_symbols);
+   if (I().demangle_symbols.empty()) nm(true, I().demangle_symbols, I().leading_underscore);
 
    h2_list_for_each_entry (p, I().demangle_symbols, h2_symbol, x) {
-      if (!strcmp(p->name, name)) {
+      if (!strcmp(p->name(), name)) {
          res[0] = p;
          return 1;
       }
    }
    int count = 0;
    h2_list_for_each_entry (p, I().demangle_symbols, h2_symbol, x) {
-      char* parentheses = strchr(p->name, '(');
+      char* parentheses = strchr(p->name(), '(');
       if (!parentheses) continue;
-      if (!strncmp_reverse(p->name, parentheses, name, name + len, len)) continue;  // compare function name
+      if (!strncmp_reverse(p->name(), parentheses, name, name + len, len)) continue;  // compare function name
       char* func = parentheses - len;
-      if (p->name < func && (func[-1] != ':' || func[-2] != ':')) continue;  // strip namespace
+      if (p->name() < func && (func[-1] != ':' || func[-2] != ':')) continue;  // strip namespace
       if (count < n) res[count++] = p;
    }
    return count;
@@ -5009,7 +5000,7 @@ h2_inline h2_symbol* h2_nm::get_by_addr(unsigned long long addr)
    symbol->MaxNameLen = 256;
    if (!SymFromAddr(GetCurrentProcess(), (DWORD64)(addr), 0, symbol)) return nullptr;
    static h2_symbol s_symbol("", 0);
-   strcpy(s_symbol.name, symbol->Name);
+   strcpy(s_symbol.symbol, symbol->Name);
    s_symbol.addr = (unsigned long long)symbol->Address;
    return &s_symbol;
 #else
@@ -5028,10 +5019,10 @@ h2_inline unsigned long long h2_nm::get_mangle(const char* name)
    return (unsigned long long)symbol->Address;
 #else
    if (!name || strlen(name) == 0) return 0;
-   if (I().mangle_symbols.empty()) nm_mangle(I().mangle_symbols);
+   if (I().mangle_symbols.empty()) nm(false, I().mangle_symbols, I().leading_underscore);
 
    h2_list_for_each_entry (p, I().mangle_symbols, h2_symbol, x)
-      if (!strcmp(p->name, name)) return p->addr;
+      if (!strcmp(p->name(), name)) return p->addr;
 
    return 0;
 #endif
