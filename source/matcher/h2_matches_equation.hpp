@@ -1,46 +1,3 @@
-
-struct h2_matches_null : h2_matches {
-   const bool reverse;
-   explicit h2_matches_null(bool reverse_) : reverse(reverse_) {}
-
-   template <typename A>
-   auto matches(const A& a, h2_mc c) const -> typename std::enable_if<std::is_pointer<A>::value || h2_is_smart_ptr<A>::value || std::is_integral<A>::value, h2_fail*>::type
-   {
-      bool result = !a;
-      result = reverse ? !result : result;
-      if (c.fit(result)) return nullptr;
-      return h2_fail::new_unexpect(expection(c), h2_stringify(a, true));
-   }
-   template <typename A>
-   auto matches(const A& a, h2_mc c) const -> typename std::enable_if<!std::is_pointer<A>::value && !h2_is_smart_ptr<A>::value && !std::is_integral<A>::value, h2_fail*>::type
-   {
-      bool result = std::is_same<std::nullptr_t, typename std::decay<decltype(a)>::type>::value;
-      result = reverse ? !result : result;
-      if (c.fit(result)) return nullptr;
-      return h2_fail::new_unexpect(expection(c), h2_stringify(a, true));
-   }
-   virtual h2_line expection(h2_mc c) const override
-   {
-      return reverse != c.negative /*XOR ^*/ ? "!NULL" : "NULL";
-   }
-};
-
-struct h2_matches_bool : h2_matches {
-   const bool e;
-   explicit h2_matches_bool(bool e_) : e(e_) {}
-   template <typename A>
-   h2_fail* matches(const A& a, h2_mc c) const
-   {
-      bool result = e ? !!a : !a;
-      if (c.fit(result)) return nullptr;
-      return h2_fail::new_unexpect(expection(c), h2_stringify(a, true));
-   }
-   virtual h2_line expection(h2_mc c) const override
-   {
-      return (e ? c.negative : !c.negative) ? "false" : "true";
-   }
-};
-
 template <typename E, typename = void>
 struct h2_equation : h2_matches {
    const E e;
@@ -68,8 +25,8 @@ struct h2_equation<E, typename std::enable_if<std::is_convertible<E, h2_string>:
    h2_fail* matches(const A& a, h2_mc c) const
    {
       if (null_e) {
-         h2_matches_null m(false);
-         return m.matches(a, c);
+         h2_matches_null null_m;
+         return null_m.matches(a, c);
       }
       if (!h2_pointer_if(a)) {
          if (c.fit(false)) return nullptr;
@@ -150,7 +107,7 @@ auto Eq(const T& expect, const long double epsilon = 0) -> typename std::enable_
 template <typename T, typename E = typename h2_decay<T>::type>
 auto Eq(const T&) -> typename std::enable_if<std::is_same<std::nullptr_t, E>::value, h2_polymorphic_matcher<h2_matches_null>>::type
 {
-   return h2_polymorphic_matcher<h2_matches_null>(h2_matches_null(false));
+   return h2_polymorphic_matcher<h2_matches_null>(h2_matches_null());
 }
 
 template <typename T, typename E = typename h2_decay<T>::type>

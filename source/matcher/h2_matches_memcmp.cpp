@@ -1,3 +1,11 @@
+h2_inline bool h2_memcmp_util::bits_equal(const unsigned char* b1, const unsigned char* b2, size_t nbits)
+{
+   for (size_t k = 0; k < nbits; ++k) {
+      size_t i = k / 8, j = 7 - k % 8;
+      if (((b1[i] >> j) & 1) != ((b2[i] >> j) & 1)) return false;
+   }
+   return true;
+}
 
 h2_inline bool h2_memcmp_util::is_hex_string(const char* s)
 {
@@ -31,12 +39,3 @@ h2_inline size_t h2_memcmp_util::bin_to_bits(const char* bin, unsigned char* byt
 }
 
 h2_inline size_t h2_memcmp_util::hex_to_bytes(const char* hex, unsigned char* bytes) { return hex2bytes(hex, bytes); }
-
-h2_inline bool h2_memcmp_util::bits_equal(const unsigned char* b1, const unsigned char* b2, size_t nbits)
-{
-   for (size_t k = 0; k < nbits; ++k) {
-      size_t i = k / 8, j = 7 - k % 8;
-      if (((b1[i] >> j) & 1) != ((b2[i] >> j) & 1)) return false;
-   }
-   return true;
-}

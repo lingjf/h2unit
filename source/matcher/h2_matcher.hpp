@@ -11,7 +11,7 @@ struct h2_matcher : h2_matches {
 
    h2_matcher();         // Any matcher
    h2_matcher(T value);  // Converting constructor
-   explicit h2_matcher(const h2_matcher_impl<const T&>* impl_, const int placeholder) : impl(impl_) {}
+   explicit h2_matcher(const h2_matcher_impl<const T&>* impl_, const int /*placeholder*/) : impl(impl_) {}
    h2_matcher(const h2_matcher&) = default;
    h2_matcher& operator=(const h2_matcher&) = default;
    virtual ~h2_matcher() {}
@@ -39,7 +39,7 @@ struct h2_polymorphic_matcher : h2_matches {
       squash_whitespace = true;
       return *this;
    }
-   h2_polymorphic_matcher& operator()() { return *this; }  // Matcher/Mather() both works
+   const h2_polymorphic_matcher& operator()() const { return *this; }  // Matcher/Mather() both works
 
    template <typename T>
    operator h2_matcher<T>() const
@@ -67,3 +67,6 @@ struct h2_polymorphic_matcher : h2_matches {
       return h2_matches_expection(m, {c.n, negative != c.negative, case_insensitive || c.case_insensitive, squash_whitespace || c.squash_whitespace, c.no_compare_operator});
    }
 };
+
+const h2_polymorphic_matcher<h2_matches_any> _{h2_matches_any()};
+const h2_polymorphic_matcher<h2_matches_any> Any{h2_matches_any()};

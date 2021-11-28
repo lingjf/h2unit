@@ -55,3 +55,41 @@ SUITE(matches configure)
       OK(!d.no_compare_operator);
    }
 }
+
+CASE(any matches)
+{
+   h2::h2_matches_any a;
+   OK(nullptr == a.matches(65, {}));
+   OK(nullptr == a.matches(65.000000001, {}));
+   OK(nullptr == a.matches(true, {}));
+   OK(nullptr == a.matches("abc", {}));
+   OK(nullptr == a.matches(NULL, {}));
+   OK(nullptr == a.matches(nullptr, {}));
+}
+
+CASE(null matches)
+{
+   int int65 = 65;
+
+   h2::h2_matches_null a1;
+   OK(nullptr == a1.matches(NULL, {}));
+   OK(nullptr == a1.matches(nullptr, {}));
+   OK(nullptr != a1.matches(&int65, {}));
+   OK("NULL", a1.expection({}));
+   OK("!NULL", a1.expection({0, true, false, false, false}));
+}
+
+CASE(bool matches)
+{
+   h2::h2_matches_bool IsTrue(true);
+   OK(nullptr == IsTrue.matches(true, {}));
+   OK(nullptr != IsTrue.matches(false, {}));
+   OK("true", IsTrue.expection({}));
+   OK("false", IsTrue.expection({0, true, false, false, false}));
+
+   h2::h2_matches_bool IsFalse(false);
+   OK(nullptr == IsFalse.matches(false, {}));
+   OK(nullptr != IsFalse.matches(true, {}));
+   OK("false", IsFalse.expection({}));
+   OK("true", IsFalse.expection({0, true, false, false, false}));
+}

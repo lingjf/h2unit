@@ -1,21 +1,5 @@
 #include "../source/h2_unit.cpp"
-
-CASE(bool type traits)
-{
-   OK((!std::is_pointer<bool>::value));
-   OK((std::is_integral<bool>::value));
-   OK((std::is_arithmetic<bool>::value));
-   OK((!std::is_convertible<bool, h2::h2_string>::value));
-   OK((std::is_convertible<bool, int>::value));
-   OK((!std::is_convertible<bool, void*>::value));
-
-   OK("bool", h2::h2_cxa::demangle(typeid(bool).name()));
-
-   OK((!std::is_same<bool, char>::value));
-   OK((!std::is_same<bool, short>::value));
-   OK((!std::is_same<bool, int>::value));
-   OK((!std::is_same<bool, long>::value));
-}
+#include "test_types.hpp"
 
 SUITE(bool)
 {
@@ -51,5 +35,11 @@ SUITE(bool)
       OK(true, a3);
       a3 = nullptr;
       OK(false, a3);
+   }
+
+   Case(MOCK)
+   {
+      MOCK(foobar2, int(int, const char*)).Once(true, "A").Return(11);
+      OK(11, foobar2(1, "A"));
    }
 }

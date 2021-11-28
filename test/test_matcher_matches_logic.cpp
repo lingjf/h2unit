@@ -11,7 +11,7 @@ SUITE(logic matches)
       OK(nullptr == a1.matches(66, {}));
       OK("≠65", a1.expection({}).string());
 
-      h2::h2_not_matches<h2::h2_polymorphic_matcher<h2::h2_matches_null>> a2(h2::h2_polymorphic_matcher<h2::h2_matches_null>{h2::h2_matches_null(false)});
+      h2::h2_not_matches<h2::h2_polymorphic_matcher<h2::h2_matches_null>> a2(h2::h2_polymorphic_matcher<h2::h2_matches_null>{h2::h2_matches_null()});
       OK(nullptr != a2.matches(nullptr, {}));
       OK(nullptr == a2.matches(&int65, {}));
       OK("!NULL", a2.expection({}).string());
@@ -25,7 +25,7 @@ SUITE(logic matches)
    {
       using T1 = h2::h2_polymorphic_matcher<h2::h2_matches_null>;
       using T2 = h2::h2_polymorphic_matcher<h2::h2_matches_any>;
-      h2::h2_allof_matches<T1, T2> a(T1{h2::h2_matches_null(false)}, T2{h2::h2_matches_any()});
+      h2::h2_allof_matches<T1, T2> a(T1{h2::h2_matches_null()}, T2{h2::h2_matches_any()});
       OK(nullptr == a.matches(nullptr, {}));
    }
 
@@ -33,7 +33,7 @@ SUITE(logic matches)
    {
       using T1 = h2::h2_polymorphic_matcher<h2::h2_matches_null>;
       using T2 = h2::h2_polymorphic_matcher<h2::h2_matches_any>;
-      h2::h2_anyof_matches<T1, T2> a(T1{h2::h2_matches_null(false)}, T2{h2::h2_matches_any()});
+      h2::h2_anyof_matches<T1, T2> a(T1{h2::h2_matches_null()}, T2{h2::h2_matches_any()});
       OK(nullptr == a.matches(nullptr, {}));
       OK(nullptr == a.matches(NULL, {}));
    }
@@ -43,7 +43,7 @@ SUITE(logic matches)
       using T1 = h2::h2_polymorphic_matcher<h2::h2_matches_null>;
       using T2 = h2::h2_polymorphic_matcher<h2::h2_pointee_matches<h2::h2_matcher<int>>>;
       h2::h2_pointee_matches<h2::h2_matcher<int>> a_(h2::h2_matcher<int>(66));
-      h2::h2_noneof_matches<T1, T2> a(T1{h2::h2_matches_null(false)}, T2(a_));
+      h2::h2_noneof_matches<T1, T2> a(T1{h2::h2_matches_null()}, T2(a_));
       OK(nullptr == a.matches(&int65, {}));
    }
 }

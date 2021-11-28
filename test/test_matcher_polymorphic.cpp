@@ -16,4 +16,16 @@ SUITE(Polymorphic Matcher)
       h2::h2_matcher<int> b(!a);
       OK(nullptr != b.matches(65));
    }
+
+   Case(case insensitive)
+   {
+      ~a;
+      OK(a.case_insensitive);
+   }
+
+   Case(squash whitespace)
+   {
+      *a;
+      OK(a.squash_whitespace);
+   }
 }

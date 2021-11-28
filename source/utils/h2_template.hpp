@@ -55,6 +55,15 @@ struct h2_sizeof_pointee<T, typename std::enable_if<h2_is_smart_ptr<T>::value>::
 };
 
 template <typename T>
+struct h2_pointee_type {
+   typedef typename T::element_type type;
+};
+template <typename T>
+struct h2_pointee_type<T*> {
+   typedef T type;
+};
+
+template <typename T>
 inline T* h2_pointer_if(T* a) { return a; }
 template <typename T>
 inline auto h2_pointer_if(T& a) -> typename std::enable_if<h2_is_smart_ptr<T>::value, typename T::element_type*>::type { return a.get(); }

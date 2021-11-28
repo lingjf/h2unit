@@ -83,6 +83,66 @@ SUITE(sizeof pointee)
    }
 }
 
+SUITE(pointee type)
+{
+   Case(int*)
+   {
+      OK((std::is_same<int, typename h2::h2_pointee_type<int*>::type>::value));
+   }
+
+   Case(int**)
+   {
+      OK((std::is_same<int*, typename h2::h2_pointee_type<int**>::type>::value));
+   }
+
+   Case(int***)
+   {
+      OK((std::is_same<int**, typename h2::h2_pointee_type<int***>::type>::value));
+   }
+
+   Case(char*)
+   {
+      OK((std::is_same<char, typename h2::h2_pointee_type<char*>::type>::value));
+   }
+
+   Case(short*)
+   {
+      OK((std::is_same<short, typename h2::h2_pointee_type<short*>::type>::value));
+   }
+
+   Case(unsigned long long*)
+   {
+      OK((std::is_same<unsigned long long, typename h2::h2_pointee_type<unsigned long long*>::type>::value));
+   }
+
+   Case(B_ClassStruct*)
+   {
+      OK((std::is_same<B_ClassStruct, typename h2::h2_pointee_type<B_ClassStruct*>::type>::value));
+   }
+
+   Case(void*)
+   {
+      OK((std::is_same<void, typename h2::h2_pointee_type<void*>::type>::value));
+   }
+
+   Case(void**)
+   {
+      OK((std::is_same<void*, typename h2::h2_pointee_type<void**>::type>::value));
+   }
+
+   Case(smart ptr)
+   {
+      auto a1 = std::make_shared<int>(42);
+      OK((std::is_same<int, typename h2::h2_pointee_type<decltype(a1)>::type>::value));
+
+      std::unique_ptr<int> a2(new int(42));
+      OK((std::is_same<int, typename h2::h2_pointee_type<decltype(a2)>::type>::value));
+
+      std::weak_ptr<int> a3(std::make_shared<int>(42));
+      OK((std::is_same<int, typename h2::h2_pointee_type<decltype(a3)>::type>::value));
+   }
+}
+
 SUITE(pointer_if)
 {
    Case(normal ptr nullptr)

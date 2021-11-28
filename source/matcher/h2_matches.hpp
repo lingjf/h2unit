@@ -24,6 +24,49 @@ static inline h2_line ncsc(const h2_line& s, h2_mc c, const char* dsym = "!")
    return t;
 }
 
+struct h2_matches_any : h2_matches {
+   template <typename A>
+   h2_fail* matches(const A& a, h2_mc c) const { return nullptr; }
+   virtual h2_line expection(h2_mc c) const override { return "Any"; }
+};
+
+struct h2_matches_null : h2_matches {
+   template <typename A>
+   auto matches(const A& a, h2_mc c) const -> typename std::enable_if<std::is_pointer<A>::value || h2_is_smart_ptr<A>::value || std::is_integral<A>::value, h2_fail*>::type
+   {
+      bool result = !a;
+      if (c.fit(result)) return nullptr;
+      return h2_fail::new_unexpect(expection(c), h2_stringify(a, true));
+   }
+   template <typename A>
+   auto matches(const A& a, h2_mc c) const -> typename std::enable_if<!std::is_pointer<A>::value && !h2_is_smart_ptr<A>::value && !std::is_integral<A>::value, h2_fail*>::type
+   {
+      bool result = std::is_same<std::nullptr_t, typename std::decay<decltype(a)>::type>::value;
+      if (c.fit(result)) return nullptr;
+      return h2_fail::new_unexpect(expection(c), h2_stringify(a, true));
+   }
+   virtual h2_line expection(h2_mc c) const override
+   {
+      return c.negative ? "!NULL" : "NULL";
+   }
+};
+
+struct h2_matches_bool : h2_matches {
+   const bool e;
+   explicit h2_matches_bool(bool e_) : e(e_) {}
+   template <typename A>
+   h2_fail* matches(const A& a, h2_mc c) const
+   {
+      bool result = e ? !!a : !a;
+      if (c.fit(result)) return nullptr;
+      return h2_fail::new_unexpect(expection(c), h2_stringify(a, true));
+   }
+   virtual h2_line expection(h2_mc c) const override
+   {
+      return (e ? c.negative : !c.negative) ? "false" : "true";
+   }
+};
+
 template <typename T>
 inline auto h2_matches_expection(const T& e, h2_mc c) -> typename std::enable_if<std::is_base_of<h2_matches, T>::value, h2_line>::type { return e.expection(c); }
 template <typename T>

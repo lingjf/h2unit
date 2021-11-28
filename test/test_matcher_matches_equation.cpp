@@ -1,52 +1,5 @@
 #include "../source/h2_unit.cpp"
 
-CASE(void* type)
-{
-   OK(!(std::is_arithmetic<void*>::value));
-}
-
-SUITE(null matches)
-{
-   Case(Null)
-   {
-      int int65 = 65;
-
-      h2::h2_matches_null ee1(false);
-      OK(nullptr == ee1.matches(NULL, {}));
-      OK(nullptr == ee1.matches(nullptr, {}));
-      OK(nullptr != ee1.matches(&int65, {}));
-      OK("NULL", ee1.expection({}));
-      OK("!NULL", ee1.expection({0, true, false, false, false}));
-
-      h2::h2_matches_null ee2(true);
-      OK(nullptr == ee2.matches(&int65, {}));
-      OK(nullptr != ee2.matches(nullptr, {}));
-      OK("!NULL", ee2.expection({}));
-      OK("NULL", ee2.expection({0, true, false, false, false}));
-   }
-}
-
-SUITE(bool matches)
-{
-   Case(true)
-   {
-      h2::h2_matches_bool istrue(true);
-      OK(nullptr == istrue.matches(true, {}));
-      OK(nullptr != istrue.matches(false, {}));
-      OK("true", istrue.expection({}));
-      OK("false", istrue.expection({0, true, false, false, false}));
-   }
-
-   Case(false)
-   {
-      h2::h2_matches_bool isfalse(false);
-      OK(nullptr == isfalse.matches(false, {}));
-      OK(nullptr != isfalse.matches(true, {}));
-      OK("false", isfalse.expection({}));
-      OK("true", isfalse.expection({0, true, false, false, false}));
-   }
-}
-
 SUITE(equation matches)
 {
    Case(integer)

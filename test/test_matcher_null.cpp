@@ -1,26 +1,5 @@
 #include "../source/h2_unit.cpp"
-
-CASE(nullptr type traits)
-{
-   OK((!std::is_pointer<std::nullptr_t>::value));
-   OK((!std::is_integral<std::nullptr_t>::value));
-   OK((!std::is_arithmetic<std::nullptr_t>::value));
-   OK((std::is_convertible<std::nullptr_t, h2::h2_string>::value));
-   OK((!std::is_convertible<std::nullptr_t, int>::value));
-   OK((std::is_convertible<std::nullptr_t, void*>::value));
-}
-
-CASE(NULL type traits)
-{
-   // https://en.cppreference.com/w/cpp/types/NULL
-   // #define NULL /*implementation-defined*/
-   // gcc: long
-   // clang: long
-   // MSVC: int
-   // msys2: long long / int
-
-   OK((std::is_same<decltype(NULL), long>::value || std::is_same<decltype(NULL), int>::value || std::is_same<decltype(NULL), long long>::value));
-}
+#include "test_types.hpp"
 
 SUITE(NULL)
 {
@@ -90,5 +69,11 @@ SUITE(NULL)
    Case(nullptr NULL)
    {
       OK(nullptr, NULL);
+   }
+
+   Case(MOCK)
+   {
+      MOCK(foobar2, int(int, const char*)).Once(true, NULL).Return(11);
+      OK(11, foobar2(1, nullptr));
    }
 }
