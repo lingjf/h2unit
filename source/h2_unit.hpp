@@ -285,8 +285,9 @@ namespace h2 {
 
 using h2::_;
 using h2::Any;
-using h2::operator"" _p;
-using h2::Eq;
+#ifndef H2_NO_Eq
+#define Eq H2Eq
+#endif
 using h2::Nq;
 using h2::Ge;
 using h2::Gt;

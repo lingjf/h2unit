@@ -1650,6 +1650,32 @@ struct h2_equation<E, typename std::enable_if<std::is_convertible<E, h2_string>:
    }
 };
 
+struct h2_approximate {
+   static constexpr unsigned long long A = 100000000000000ull;
+   static constexpr unsigned long long B = 1000000000000000000ull;
+
+   unsigned long long operator*(const double& epsilon) const
+   {
+      if (epsilon == B) return 0;  // Eq(100.0) without epsilon in Eq
+      return (unsigned long long)(fabs(epsilon) * A);
+   }
+
+   static bool is_scale(const long double epsilon)
+   {
+      if (epsilon == 0) return false;
+      return epsilon < B;
+   }
+   static const long double absolute_margin(const long double epsilon)
+   {
+      if (epsilon == 0) return 0.00001;
+      return (epsilon - B) / A;
+   }
+   static const long double percentage_scale(const long double epsilon)
+   {
+      return (epsilon / A) / 100;
+   }
+};
+
 template <typename E>
 struct h2_equation<E, typename std::enable_if<std::is_arithmetic<E>::value>::type> : h2_matches {
    const E e;
@@ -1664,14 +1690,10 @@ struct h2_equation<E, typename std::enable_if<std::is_arithmetic<E>::value>::typ
       // bool result = std::fabs(a - e) < std::numeric_limits<double>::epsilon() * std::fabs(a + e) * 2
       //      || std::fabs(a - e) < std::numeric_limits<double>::min();  // unless the result is subnormal
       bool result;
-      long double _epsilon = epsilon;
-      if (_epsilon == 0) _epsilon = 0.00001;
-      if (21371647 < _epsilon) {  // percentage
-         _epsilon -= 21371647;
-         result = std::fabs((const long double)a - (const long double)e) < std::fabs((const long double)e * _epsilon);
-      } else {  // absolute
-         result = std::fabs((const long double)a - (const long double)e) < std::fabs(_epsilon);
-      }
+      if (h2::h2_approximate::is_scale(epsilon))  // percentage/scale
+         result = std::fabs((const long double)a - (const long double)e) <= std::fabs(e * h2::h2_approximate::percentage_scale(epsilon));
+      else  // absolute/margin
+         result = std::fabs((const long double)a - (const long double)e) <= std::fabs(h2::h2_approximate::absolute_margin(epsilon));
       if (c.fit(result)) return nullptr;
       return h2_fail::new_unexpect(expection(c), h2_stringify(a, true));
    }
@@ -1689,37 +1711,39 @@ struct h2_equation<E, typename std::enable_if<std::is_arithmetic<E>::value>::typ
    {
       h2_line t = h2_stringify(e);
       if (epsilon != 0) {
-         if (21371647 < epsilon)
-            t += "±" + h2_stringify(std::fabs(epsilon - 21371647) * 100.0) + "%";
-         else
-            t += "±" + h2_stringify(std::fabs(epsilon));
+         if (h2::h2_approximate::is_scale(epsilon))  // percentage/scale
+            t += "±" + h2_stringify(h2::h2_approximate::percentage_scale(epsilon) * 100.0) + "%";
+         else  // absolute/margin
+            t += "±" + h2_stringify(std::fabs(h2::h2_approximate::absolute_margin(epsilon)));
       }
       return ncsc(t, c.update_caseless(false), "≠");
    }
 };
 
-constexpr long double operator"" _p(long double epsilon)
-{
-   return 21371647 + epsilon;
-}
-
 template <typename T, typename E = typename h2_decay<T>::type>
-auto Eq(const T& expect, const long double epsilon = 0) -> typename std::enable_if<!std::is_same<std::nullptr_t, E>::value && !std::is_same<bool, E>::value, h2_polymorphic_matcher<h2_equation<E>>>::type
+auto _Eq(const T& expect, const long double epsilon = 0) -> typename std::enable_if<!std::is_same<std::nullptr_t, E>::value && !std::is_same<bool, E>::value, h2_polymorphic_matcher<h2_equation<E>>>::type
 {
    return h2_polymorphic_matcher<h2_equation<E>>(h2_equation<E>(expect, epsilon));
 }
 
 template <typename T, typename E = typename h2_decay<T>::type>
-auto Eq(const T&) -> typename std::enable_if<std::is_same<std::nullptr_t, E>::value, h2_polymorphic_matcher<h2_matches_null>>::type
+auto _Eq(const T&, const long double = 0) -> typename std::enable_if<std::is_same<std::nullptr_t, E>::value, h2_polymorphic_matcher<h2_matches_null>>::type
 {
    return h2_polymorphic_matcher<h2_matches_null>(h2_matches_null());
 }
 
 template <typename T, typename E = typename h2_decay<T>::type>
-auto Eq(const T& expect) -> typename std::enable_if<std::is_same<bool, E>::value, h2_polymorphic_matcher<h2_matches_bool>>::type
+auto _Eq(const T& expect, const long double = 0) -> typename std::enable_if<std::is_same<bool, E>::value, h2_polymorphic_matcher<h2_matches_bool>>::type
 {
    return h2_polymorphic_matcher<h2_matches_bool>(h2_matches_bool(expect));
 }
+
+#define H3Eq(expect, ...) \
+   h2::_Eq(expect, h2::h2_approximate() * __VA_ARGS__ + h2::h2_approximate::B)
+
+#define H2Eq(expect, ...) H2PP_CAT(__H2Eq, H2PP_IS_EMPTY(__VA_ARGS__))(expect, __VA_ARGS__)
+#define __H2Eq1(expect, ...) h2::_Eq(expect, 0)
+#define __H2Eq0(expect, ...) h2::_Eq(expect, h2::h2_approximate() * __VA_ARGS__ + h2::h2_approximate::B)
 // source/matcher/h2_matcher_cast.hpp
 template <typename T, typename M>
 struct h2_matcher_cast_impl {
@@ -1732,7 +1756,7 @@ struct h2_matcher_cast_impl {
    }
 
    template <bool Ignore1, bool Ignore2>
-   static h2_matcher<T> do_cast(const M& from, std::true_type, std::integral_constant<bool, Ignore1>, std::integral_constant<bool, Ignore2>) { return Eq(from); }
+   static h2_matcher<T> do_cast(const M& from, std::true_type, std::integral_constant<bool, Ignore1>, std::integral_constant<bool, Ignore2>) { return _Eq(from); }
 
    template <bool Ignore>
    static h2_matcher<T> do_cast(const M& from, std::false_type, std::true_type, std::integral_constant<bool, Ignore>) { return from; }
@@ -1740,7 +1764,7 @@ struct h2_matcher_cast_impl {
    template <typename To>
    static To implicit_cast(To x) { return x; }
    static h2_matcher<T> do_cast(const M& from, std::false_type, std::false_type, std::true_type) { return h2_matcher<T>(implicit_cast<T>(from)); }
-   static h2_matcher<T> do_cast(const M& from, std::false_type, std::false_type, std::false_type) { return Eq(from); }
+   static h2_matcher<T> do_cast(const M& from, std::false_type, std::false_type, std::false_type) { return _Eq(from); }
 };
 
 template <typename T, typename U>
@@ -2475,7 +2499,7 @@ template <typename T>
 inline h2_matcher<T>::h2_matcher() { *this = Any; }
 
 template <typename T>
-inline h2_matcher<T>::h2_matcher(T value) { *this = Eq(value); }
+inline h2_matcher<T>::h2_matcher(T value) { *this = _Eq(value); }
 // source/matcher/h2_customize.hpp
 #define __Matches_Common(message)                                                                \
    template <typename A>                                                                         \
@@ -3491,7 +3515,7 @@ struct h2_1cp {
    T t;
    explicit h2_1cp(T t_) : t(t_) {}
    template <typename U, typename A = typename h2_decay<U>::type>
-   h2_2cp<decltype(Eq((E)t)), A> operator==(const U& u) const { return {Eq((E)t), (A)u, "=="}; }
+   h2_2cp<decltype(_Eq((E)t)), A> operator==(const U& u) const { return {_Eq((E)t), (A)u, "=="}; }
    template <typename U, typename A = typename h2_decay<U>::type>
    h2_2cp<decltype(Nq((E)t)), A> operator!=(const U& u) const { return {Nq((E)t), (A)u, "!="}; }
    template <typename U, typename A = typename h2_decay<U>::type>
@@ -3728,8 +3752,9 @@ struct h2_timer : h2_once {
 
 using h2::_;
 using h2::Any;
-using h2::operator"" _p;
-using h2::Eq;
+#ifndef H2_NO_Eq
+#define Eq H2Eq
+#endif
 using h2::Nq;
 using h2::Ge;
 using h2::Gt;

@@ -66,7 +66,7 @@ struct h2_1cp {
    T t;
    explicit h2_1cp(T t_) : t(t_) {}
    template <typename U, typename A = typename h2_decay<U>::type>
-   h2_2cp<decltype(Eq((E)t)), A> operator==(const U& u) const { return {Eq((E)t), (A)u, "=="}; }
+   h2_2cp<decltype(_Eq((E)t)), A> operator==(const U& u) const { return {_Eq((E)t), (A)u, "=="}; }
    template <typename U, typename A = typename h2_decay<U>::type>
    h2_2cp<decltype(Nq((E)t)), A> operator!=(const U& u) const { return {Nq((E)t), (A)u, "!="}; }
    template <typename U, typename A = typename h2_decay<U>::type>
