@@ -52,7 +52,7 @@ SUITE(Basic Cases)
 
    Case(a success case successful)
    {
-      OK(2, uv);
+      OK(2 <= uv);
    }
 
    Case(a c++ case successful)

@@ -1,52 +1,76 @@
 #include "../source/h2_unit.cpp"
+#include "test_cplusplus.hpp"
 
-#include <vector>
-#include <deque>
-#include <array>
-#include <list>
-#include <forward_list>
-
-SUITE(find_op)
+SUITE(find_compare)
 {
    Case(simple)
    {
-      OK("== b", h2::find_op("a == b", "=="));
-      OK("!= b", h2::find_op("a != b", "!="));
-      OK("< b", h2::find_op("a < b", "<"));
-      OK("<= b", h2::find_op("a <= b", "<="));
-      OK("> b", h2::find_op("a > b", ">"));
-      OK(">= b", h2::find_op("a >= b", ">="));
+      OK("== b", h2::__find_compare("a == b", "=="));
+      OK("!= b", h2::__find_compare("a != b", "!="));
+      OK("< b", h2::__find_compare("a < b", "<"));
+      OK("<= b", h2::__find_compare("a <= b", "<="));
+      OK("> b", h2::__find_compare("a > b", ">"));
+      OK(">= b", h2::__find_compare("a >= b", ">="));
    }
 
    Case(no space)
    {
-      OK("==b", h2::find_op("a ==b", "=="));
-      OK("!= b", h2::find_op("a!= b", "!="));
-      OK("<b", h2::find_op("a<b", "<"));
-      OK("<=b", h2::find_op("a <=b", "<="));
-      OK("> b", h2::find_op("a> b", ">"));
-      OK(">=b", h2::find_op("a>=b", ">="));
+      OK("==b", h2::__find_compare("a ==b", "=="));
+      OK("!= b", h2::__find_compare("a!= b", "!="));
+      OK("<b", h2::__find_compare("a<b", "<"));
+      OK("<=b", h2::__find_compare("a <=b", "<="));
+      OK("> b", h2::__find_compare("a> b", ">"));
+      OK(">=b", h2::__find_compare("a>=b", ">="));
    }
 
    Case(in string)
    {
-      OK("==b", h2::find_op("\"a==\" ==b", "=="));
-      OK("!= b", h2::find_op("\"a!=\"!= b", "!="));
-      OK("<b", h2::find_op("\"a<\"<b", "<"));
-      OK("<=b", h2::find_op("\"a<=\" <=b", "<="));
-      OK("> b", h2::find_op("\"a>\"> b", ">"));
-      OK(">=b", h2::find_op("\"a>=\">=b", ">="));
+      OK("==b", h2::__find_compare("\"a==\" ==b", "=="));
+      OK("!= b", h2::__find_compare("\"a!=\"!= b", "!="));
+      OK("<b", h2::__find_compare("\"a<\"<b", "<"));
+      OK("<=b", h2::__find_compare("\"a<=\" <=b", "<="));
+      OK("> b", h2::__find_compare("\"a>\"> b", ">"));
+      OK(">=b", h2::__find_compare("\"a>=\">=b", ">="));
    }
 
    Case(has template)
    {
-      OK("== b", h2::find_op("sizeof(std::vector<int>::size_type) == b", "=="));
-      OK("!= b", h2::find_op("sizeof(std::vector<int>::size_type)!= b", "!="));
-      OK("<b", h2::find_op("sizeof(std::vector<int>::size_type)<b", "<"));
-      OK("<=b", h2::find_op("sizeof(std::vector<int>::size_type) <=b", "<="));
-      OK("> b", h2::find_op("sizeof(std::vector<int>::size_type)> b", ">"));
-      OK(">=b", h2::find_op("sizeof(std::vector<int>::size_type)>=b", ">="));
+      OK("== b", h2::__find_compare("sizeof(std::vector<int>::size_type) == b", "=="));
+      OK("!= b", h2::__find_compare("sizeof(std::vector<int>::size_type)!= b", "!="));
+      OK("<b", h2::__find_compare("sizeof(std::vector<int>::size_type)<b", "<"));
+      OK("<=b", h2::__find_compare("sizeof(std::vector<int>::size_type) <=b", "<="));
+      OK("> b", h2::__find_compare("sizeof(std::vector<int>::size_type)> b", ">"));
+      OK(">=b", h2::__find_compare("sizeof(std::vector<int>::size_type)>=b", ">="));
    }
+}
+
+CASE(split_compare)
+{
+   h2::h2_string eexpr, aexpr;
+
+   h2::__split_compare("a1 == b1", "==", eexpr, aexpr);
+   OK("a1", eexpr);
+   OK("b1", aexpr);
+
+   h2::__split_compare("a2!= b2", "!=", eexpr, aexpr);
+   OK("a2", eexpr);
+   OK("b2", aexpr);
+
+   h2::__split_compare("a3 <b3", "<", eexpr, aexpr);
+   OK("a3", eexpr);
+   OK("b3", aexpr);
+
+   h2::__split_compare("a4<=b4", "<=", eexpr, aexpr);
+   OK("a4", eexpr);
+   OK("b4", aexpr);
+
+   h2::__split_compare("a5 \t> \n b5", ">", eexpr, aexpr);
+   OK("a5", eexpr);
+   OK("b5", aexpr);
+
+   h2::__split_compare("a6 >= b6", ">=", eexpr, aexpr);
+   OK("a6", eexpr);
+   OK("b6", aexpr);
 }
 
 static const char* ft(std::true_type)

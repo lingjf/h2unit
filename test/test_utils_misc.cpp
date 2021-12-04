@@ -17,9 +17,12 @@ CASE(type of __LINE__)
 CASE(once)
 {
    h2::h2_once once;
-   OK(once);
-   OK(!once);
-   OK(!once);
+   bool a1 = once;
+   bool a2 = !once;
+   bool a3 = !once;
+   OK(a1);
+   OK(a2);
+   OK(a3);
 }
 
 CASE(ss)
@@ -94,6 +97,86 @@ SUITE(basename)
    Case(basename "proj/test\\abc.cpp")
    {
       OK("abc.cpp", h2::h2_basefile("proj/test\\abc.cpp"));
+   }
+}
+
+SUITE(strip)
+{
+   Case(left no stripped)
+   {
+      const char* a1 = "hello world";
+      OK(a1, h2::strip_left(a1));
+      OK(a1, h2::strip_left(a1, a1 + 5));
+   }
+
+   Case(left empty)
+   {
+      const char* a1 = "";
+      OK(a1, h2::strip_left(a1));
+
+      const char* a2 = "  ";
+      OK(a2 + 2, h2::strip_left(a2));
+
+      const char* a3 = " \t \n ";
+      OK(a3 + 5, h2::strip_left(a3));
+   }
+
+   Case(left spaces)
+   {
+      const char* a1 = "  hello world";
+      OK(a1 + 2, h2::strip_left(a1));
+      OK(a1 + 1, h2::strip_left(a1, a1 + 1));
+      OK(a1 + 2, h2::strip_left(a1, a1 + 5));
+   }
+
+   Case(left tabs)
+   {
+      const char* a1 = "  \t\nhello world";
+      OK("hello world", h2::strip_left(a1));
+      OK(" \t\nhello world", h2::strip_left(a1, a1 + 1));
+      OK("\t\nhello world", h2::strip_left(a1, a1 + 2));
+      OK("\nhello world", h2::strip_left(a1, a1 + 3));
+      OK("hello world", h2::strip_left(a1, a1 + 4));
+      OK("hello world", h2::strip_left(a1, a1 + 5));
+   }
+
+   Case(right no stripped)
+   {
+      const char* a1 = "hello world";
+      OK("", h2::strip_right(a1));
+      OK("", h2::strip_right(a1, a1 + strlen(a1)));
+      OK("d", h2::strip_right(a1, a1 + strlen(a1) - 1));
+      OK("ld", h2::strip_right(a1, a1 + strlen(a1) - 2));
+      OK("rld", h2::strip_right(a1, a1 + strlen(a1) - 3));
+   }
+
+   Case(right empty)
+   {
+      const char* a1 = "";
+      OK(a1, h2::strip_right(a1));
+
+      const char* a2 = "  ";
+      OK(a2, h2::strip_right(a2));
+
+      const char* a3 = " \r \n ";
+      OK(a3, h2::strip_right(a3));
+   }
+
+   Case(right)
+   {
+      const char* a1 = "hello world  ";
+      OK(a1 + 11, h2::strip_right(a1));
+      OK(a1 + 11, h2::strip_right(a1, a1 + strlen(a1)));
+      OK(a1 + 11, h2::strip_right(a1, a1 + strlen(a1) - 1));
+      OK(a1 + 11, h2::strip_right(a1, a1 + strlen(a1) - 2));
+
+      const char* a2 = "hello world \r \n ";
+      OK(a2 + 11, h2::strip_right(a2));
+      OK(a2 + 11, h2::strip_right(a2, a2 + strlen(a2)));
+      OK(a2 + 11, h2::strip_right(a2, a2 + strlen(a2) - 1));
+      OK(a2 + 11, h2::strip_right(a2, a2 + strlen(a2) - 2));
+      OK(a2 + 11, h2::strip_right(a2, a2 + strlen(a2) - 3));
+      OK(a2 + 11, h2::strip_right(a2, a2 + strlen(a2) - 4));
    }
 }
 

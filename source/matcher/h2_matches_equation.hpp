@@ -4,9 +4,16 @@ struct h2_equation : h2_matches {
    explicit h2_equation(const E& e_, const long double = 0) : e(e_) {}
 
    template <typename A>
-   h2_fail* matches(const A& a, h2_mc c) const
+   auto matches(const A& a, h2_mc c) const -> typename std::enable_if<!std::is_pointer<E>::value && !std::is_pointer<A>::value, h2_fail*>::type
    {
       if (c.fit(a == e)) return nullptr;
+      return h2_fail::new_unexpect(expection(c), h2_stringify(a, true));
+   }
+   template <typename A>
+   auto matches(const A& a, h2_mc c) const -> typename std::enable_if<std::is_pointer<E>::value || std::is_pointer<A>::value, h2_fail*>::type
+   {
+      if (!e) return h2_matches_null().matches(a, c);
+      if (c.fit((void*)a == (void*)e)) return nullptr;
       return h2_fail::new_unexpect(expection(c), h2_stringify(a, true));
    }
    virtual h2_line expection(h2_mc c) const override
@@ -18,20 +25,11 @@ struct h2_equation : h2_matches {
 template <typename E>
 struct h2_equation<E, typename std::enable_if<std::is_convertible<E, h2_string>::value>::type> : h2_matches {
    const h2_string e;
-   const bool null_e = false;
-   explicit h2_equation(const E& e_, const long double = 0) : e(h2_pointer_if(e_) ? h2_string(e_) : ""), null_e(!h2_pointer_if(e_)) {}
+   explicit h2_equation(const E& e_, const long double = 0) : e(e_) {}
 
    template <typename A>
    h2_fail* matches(const A& a, h2_mc c) const
    {
-      if (null_e) {
-         h2_matches_null null_m;
-         return null_m.matches(a, c);
-      }
-      if (!h2_pointer_if(a)) {
-         if (c.fit(false)) return nullptr;
-         return h2_fail::new_strcmp(e, "(null)", c.case_insensitive, expection(c));
-      }
       h2_string _e = e, _a(a);
       if (c.squash_whitespace) _e = e.squash(), _a = _a.squash();
       if (c.fit(_a.equals(_e, c.case_insensitive))) return nullptr;
@@ -40,9 +38,39 @@ struct h2_equation<E, typename std::enable_if<std::is_convertible<E, h2_string>:
    }
    virtual h2_line expection(h2_mc c) const override
    {
-      if (null_e) return c.negative ? "!NULL" : "NULL";
       return ncsc(h2_stringify(c.squash_whitespace ? e.squash() : e, true), c, "≠");
    }
+};
+
+template <>
+struct h2_equation<const char*> : h2_matches {
+   const char* e;
+   explicit h2_equation(const char* e_, const long double = 0) : e(e_) {}
+
+   template <typename A>
+   auto matches(const A& a, h2_mc c) const -> typename std::enable_if<std::is_convertible<A, h2_string>::value, h2_fail*>::type
+   {
+      if (!e) return h2_matches_null().matches(a, c);
+      h2_equation<h2_string> string_m(e);
+      return string_m.matches(a, c);
+   }
+   template <typename A>
+   auto matches(const A& a, h2_mc c) const -> typename std::enable_if<!std::is_convertible<A, h2_string>::value, h2_fail*>::type
+   {
+      if (!e) return h2_matches_null().matches(a, c);
+      if (c.fit((void*)a == (void*)e)) return nullptr;
+      return h2_fail::new_unexpect(expection(c), h2_stringify(a, true));
+   }
+   virtual h2_line expection(h2_mc c) const override
+   {
+      if (!e) return h2_matches_null().expection(c);
+      return ncsc(h2_stringify(c.squash_whitespace ? h2_string(e).squash() : h2_string(e), true), c, "≠");
+   }
+};
+
+template <>
+struct h2_equation<char*> : h2_equation<const char*> {
+   explicit h2_equation(const char* e_, const long double = 0) : h2_equation<const char*>((const char*)e_) {}
 };
 
 struct h2_approximate {

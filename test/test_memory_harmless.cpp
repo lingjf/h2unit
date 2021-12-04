@@ -338,27 +338,3 @@ CASE(dbg)
 #endif
 #endif
 }
-
-CASE(cpp std)
-{
-   // g++ -x c++ -std=c++11 -dM -E - </dev/null | grep __cplusplus
-   // #define __cplusplus 201103L
-
-   // g++ -x c++ -std=c++14 -dM -E - </dev/null | grep __cplusplus
-   // #define __cplusplus 201402L
-
-   // g++ -x c++ -std=c++17 -dM -E - </dev/null | grep __cplusplus
-   // #define __cplusplus 201703L
-
-   // g++ -x c++ -std=c++2a -dM -E - </dev/null | grep __cplusplus
-   // #define __cplusplus 202002L
-
-   // g++ -x c++ -std=c++2b -dM -E - </dev/null | grep __cplusplus
-   // #define __cplusplus 202102L
-
-   // https://docs.microsoft.com/en-us/cpp/preprocessor/predefined-macros
-   ::printf("__cplusplus = %s\n", H2PP_STR(__cplusplus));
-#if defined _MSC_VER
-   ::printf("__cplusplus = %s\n", H2PP_STR(_MSVC_LANG));
-#endif
-}

@@ -10,6 +10,66 @@ SUITE(OK Primitive)
       OK((std::is_same<long, long int>::value));
    }
 
+   Case(compare integer)
+   {
+      OK(1 == 1);
+      OK(1 != 2);
+      OK(1 < 2);
+      OK(1 <= 2);
+      OK(1 <= 1);
+      OK(2 > 1);
+      OK(2 >= 1);
+      OK(2 >= 2);
+   }
+
+   Case(compare double)
+   {
+      OK(1.0 == 1);
+      OK(1.0 != 2);
+      OK(1.0 < 2);
+      OK(1.0 <= 2);
+      OK(1.0 <= 1);
+      OK(2.0 > 1);
+      OK(2.0 >= 1);
+      OK(2.0 >= 2);
+   }
+
+   Case(compare string)
+   {
+      OK("abc" == "abc");
+      OK("abc" != "xyz");
+
+      const char* a1 = "def";
+      OK("abc" != a1);
+   }
+
+   Case(compare pointer)
+   {
+      const char* a1 = "def";
+      OK(NULL != a1);
+      OK(a1 != NULL);
+
+      const char* a2 = nullptr;
+      OK(NULL == a2);
+      OK(a2 == NULL);
+
+      int* b1 = (int*)12345678;
+      OK(NULL != b1);
+      OK(b1 != NULL);
+
+      int* b2 = nullptr;
+      OK(NULL == b2);
+      OK(b2 == NULL);
+
+      void* c1 = (void*)12345678;
+      OK(NULL != c1);
+      OK(c1 != NULL);
+
+      void* c2 = nullptr;
+      OK(NULL == c2);
+      OK(c2 == NULL);
+   }
+
    Case(dual)
    {
       OK(1, 1);
@@ -51,41 +111,5 @@ SUITE(JE Primitive)
    Case(selector empty)
    {
       OK(!Je("hello world", ".say"), "{'name': \"hello world\", 'age': [18, 20]}");
-   }
-}
-
-SUITE(CP Primitive)
-{
-   Case(compare integer)
-   {
-      CP(1 == 1);
-      CP(1 != 2);
-      CP(1 < 2);
-      CP(1 <= 2);
-      CP(1 <= 1);
-      CP(2 > 1);
-      CP(2 >= 1);
-      CP(2 >= 2);
-   }
-
-   Case(compare double)
-   {
-      CP(1.0 == 1);
-      CP(1.0 != 2);
-      CP(1.0 < 2);
-      CP(1.0 <= 2);
-      CP(1.0 <= 1);
-      CP(2.0 > 1);
-      CP(2.0 >= 1);
-      CP(2.0 >= 2);
-   }
-
-   Case(compare string)
-   {
-      CP("abc" == "abc");
-      CP("abc" != "xyz");
-
-      const char* a1 = "def";
-      CP("abc" != a1);
    }
 }

@@ -34,7 +34,7 @@
 
 #if defined __GNUC__ || defined __clang__
 // #pragma clang diagnostic ignored === #pragma GCC diagnostic ignored
-#pragma GCC diagnostic ignored "-Wparentheses"   // CP
+#pragma GCC diagnostic ignored "-Wparentheses"   // OK
 #pragma GCC diagnostic ignored "-Wsign-compare"  // (in)equation
 #pragma GCC diagnostic ignored "-Wint-to-pointer-cast"
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
@@ -673,13 +673,13 @@ struct h2_string : public std::basic_string<char, std::char_traits<char>, h2_all
    h2_string(const h2_string& s) : basic_string(s.c_str()) {}
    h2_string(const std::string& s) : basic_string(s.c_str()) {}
    template <typename... T>
-   h2_string(const char* fmt, T... t) : basic_string() { sizeof...(T) ? sprintf(fmt, t...) : assign(fmt); }
+   h2_string(const char* fmt, T... t) : basic_string() { sizeof...(T) ? sprintf(fmt, t...) : assign(fmt ? fmt : "(null)"); }
    h2_string(size_t n, const char* s) : basic_string(s, n) {}
    h2_string(size_t n, const char c) : basic_string(n, c) {}
 
    h2_string& operator=(const h2_string& s) { return assign(s.c_str()), *this; }
    h2_string& operator=(const std::string& s) { return assign(s.c_str()), *this; }
-   h2_string& operator=(const char* s) { return assign(s), *this; }
+   h2_string& operator=(const char* s) { return assign(s ? s : "(null)"), *this; }
    h2_string& operator=(const char c) { return assign(1, c), *this; }
 
    h2_string& operator+=(const h2_string& s) { return append(s.c_str()), *this; }
@@ -1605,9 +1605,16 @@ struct h2_equation : h2_matches {
    explicit h2_equation(const E& e_, const long double = 0) : e(e_) {}
 
    template <typename A>
-   h2_fail* matches(const A& a, h2_mc c) const
+   auto matches(const A& a, h2_mc c) const -> typename std::enable_if<!std::is_pointer<E>::value && !std::is_pointer<A>::value, h2_fail*>::type
    {
       if (c.fit(a == e)) return nullptr;
+      return h2_fail::new_unexpect(expection(c), h2_stringify(a, true));
+   }
+   template <typename A>
+   auto matches(const A& a, h2_mc c) const -> typename std::enable_if<std::is_pointer<E>::value || std::is_pointer<A>::value, h2_fail*>::type
+   {
+      if (!e) return h2_matches_null().matches(a, c);
+      if (c.fit((void*)a == (void*)e)) return nullptr;
       return h2_fail::new_unexpect(expection(c), h2_stringify(a, true));
    }
    virtual h2_line expection(h2_mc c) const override
@@ -1619,20 +1626,11 @@ struct h2_equation : h2_matches {
 template <typename E>
 struct h2_equation<E, typename std::enable_if<std::is_convertible<E, h2_string>::value>::type> : h2_matches {
    const h2_string e;
-   const bool null_e = false;
-   explicit h2_equation(const E& e_, const long double = 0) : e(h2_pointer_if(e_) ? h2_string(e_) : ""), null_e(!h2_pointer_if(e_)) {}
+   explicit h2_equation(const E& e_, const long double = 0) : e(e_) {}
 
    template <typename A>
    h2_fail* matches(const A& a, h2_mc c) const
    {
-      if (null_e) {
-         h2_matches_null null_m;
-         return null_m.matches(a, c);
-      }
-      if (!h2_pointer_if(a)) {
-         if (c.fit(false)) return nullptr;
-         return h2_fail::new_strcmp(e, "(null)", c.case_insensitive, expection(c));
-      }
       h2_string _e = e, _a(a);
       if (c.squash_whitespace) _e = e.squash(), _a = _a.squash();
       if (c.fit(_a.equals(_e, c.case_insensitive))) return nullptr;
@@ -1641,9 +1639,39 @@ struct h2_equation<E, typename std::enable_if<std::is_convertible<E, h2_string>:
    }
    virtual h2_line expection(h2_mc c) const override
    {
-      if (null_e) return c.negative ? "!NULL" : "NULL";
       return ncsc(h2_stringify(c.squash_whitespace ? e.squash() : e, true), c, "≠");
    }
+};
+
+template <>
+struct h2_equation<const char*> : h2_matches {
+   const char* e;
+   explicit h2_equation(const char* e_, const long double = 0) : e(e_) {}
+
+   template <typename A>
+   auto matches(const A& a, h2_mc c) const -> typename std::enable_if<std::is_convertible<A, h2_string>::value, h2_fail*>::type
+   {
+      if (!e) return h2_matches_null().matches(a, c);
+      h2_equation<h2_string> string_m(e);
+      return string_m.matches(a, c);
+   }
+   template <typename A>
+   auto matches(const A& a, h2_mc c) const -> typename std::enable_if<!std::is_convertible<A, h2_string>::value, h2_fail*>::type
+   {
+      if (!e) return h2_matches_null().matches(a, c);
+      if (c.fit((void*)a == (void*)e)) return nullptr;
+      return h2_fail::new_unexpect(expection(c), h2_stringify(a, true));
+   }
+   virtual h2_line expection(h2_mc c) const override
+   {
+      if (!e) return h2_matches_null().expection(c);
+      return ncsc(h2_stringify(c.squash_whitespace ? h2_string(e).squash() : h2_string(e), true), c, "≠");
+   }
+};
+
+template <>
+struct h2_equation<char*> : h2_equation<const char*> {
+   explicit h2_equation(const char* e_, const long double = 0) : h2_equation<const char*>((const char*)e_) {}
 };
 
 struct h2_approximate {
@@ -3443,59 +3471,32 @@ struct h2_sock : h2_once {
 #define Ptx(...) h2::h2_sock::check(H2_FILINE, h2::ss(#__VA_ARGS__), __VA_ARGS__)
 #define Pij(Packet_, Size_, ...) h2::h2_sock::inject(Packet_, Size_, h2::ss(#__VA_ARGS__))
 // source/assert/h2_assert.hpp
-struct h2_defer_failure : h2_once {
-   const char *assert_type, *assert_op = ",";
-   const char *e_expression, *a_expression;
-   const char* filine;
+struct h2_assert : h2_once {
    h2_fail* fails = nullptr;
    h2_ostringstream oss;
-
-   h2_defer_failure(const char* e_expression_, const char* a_expression_, const char* filine_) : e_expression(e_expression_), a_expression(a_expression_), filine(filine_) {}
-   ~h2_defer_failure();
+   h2_ostringstream& stash(h2_fail* fail, const char* assert_type, const char* assert_op = ",");
+   void failing(const char* e_expression, const char* a_expression, const char* filine);
 };
 
-static inline h2_ostringstream& __common_ok(h2_defer_failure* d, h2_fail* fail)
+static inline h2_ostringstream& h2_je(h2_assert* d, h2_string e, h2_string a, h2_string selector)
 {
-   d->fails = fail;
-   if (fail && fail->subling_next) {
-      d->fails = h2_fail::new_unexpect();
-      h2_fail::append_child(d->fails, fail);
-   }
-   h2_runner::asserts();
-   return d->oss;
-}
-
-template <typename E, typename A>
-static inline h2_ostringstream& h2_ok2(h2_defer_failure* d, E e, const A& a, size_t n, std::false_type, size_t z)
-{
-   d->assert_type = "OK";
-   h2_fail* fail = h2::h2_matcher_cast<typename h2_decay<A>::type>((typename h2_decay<E>::type)e).matches(a, {n});
-   return __common_ok(d, fail);
-}
-
-template <typename E, typename A>
-static inline h2_ostringstream& h2_ok2(h2_defer_failure* d, E e, const A a, size_t n, std::true_type, size_t z)
-{
-   d->assert_type = "OK";
-   h2_fail* fail = h2::h2_matcher_cast<typename h2_decay<A>::type>((typename h2_decay<E>::type)e).matches((typename h2_decay<A>::type)a, {n > 0 ? n : z});
-   return __common_ok(d, fail);
-}
-
-static inline h2_ostringstream& h2_ok1(h2_defer_failure* d, bool a)
-{
-   d->assert_type = "OK1";
-   if (!a) d->fails = h2_fail::new_unexpect("true", "false");
-   h2_runner::asserts();
-   return d->oss;
-}
-
-static inline h2_ostringstream& h2_je(h2_defer_failure* d, h2_string e, h2_string a, h2_string selector)
-{
-   d->assert_type = "JE";
    h2::h2_matcher<h2_string> m = Je(e, selector);
-   d->fails = m.matches(a);
-   h2_runner::asserts();
-   return d->oss;
+   h2_fail* fail = m.matches(a);
+   return d->stash(fail, "JE");
+}
+
+template <typename E, typename A>
+static inline h2_ostringstream& h2_ok2(h2_assert* d, E e, const A& a, size_t n, std::false_type, size_t z)
+{
+   h2_fail* fail = h2::h2_matcher_cast<typename h2_decay<A>::type>((typename h2_decay<E>::type)e).matches(a, {n});
+   return d->stash(fail, "OK2");
+}
+
+template <typename E, typename A>
+static inline h2_ostringstream& h2_ok2(h2_assert* d, E e, const A a, size_t n, std::true_type, size_t z)
+{
+   h2_fail* fail = h2::h2_matcher_cast<typename h2_decay<A>::type>((typename h2_decay<E>::type)e).matches((typename h2_decay<A>::type)a, {n > 0 ? n : z});
+   return d->stash(fail, "OK2");
 }
 
 template <typename M, typename A>
@@ -3506,22 +3507,22 @@ struct h2_2cp {
    h2_2cp(M m_, A a_, const char* op_) : m(m_), a(a_), op(op_) {}
 };
 
-template <typename T, typename E = typename h2_decay<T>::type>
+template <typename U, typename E = typename h2_decay<U>::type>
 struct h2_1cp {
-   T t;
-   explicit h2_1cp(T t_) : t(t_) {}
-   template <typename U, typename A = typename h2_decay<U>::type>
-   h2_2cp<decltype(_Eq((E)t)), A> operator==(const U& u) const { return {_Eq((E)t), (A)u, "=="}; }
-   template <typename U, typename A = typename h2_decay<U>::type>
-   h2_2cp<decltype(Nq((E)t)), A> operator!=(const U& u) const { return {Nq((E)t), (A)u, "!="}; }
-   template <typename U, typename A = typename h2_decay<U>::type>
-   h2_2cp<decltype(Lt((E)t)), A> operator>(const U& u) const { return {Lt((E)t), (A)u, ">"}; }
-   template <typename U, typename A = typename h2_decay<U>::type>
-   h2_2cp<decltype(Gt((E)t)), A> operator<(const U& u) const { return {Gt((E)t), (A)u, "<"}; }
-   template <typename U, typename A = typename h2_decay<U>::type>
-   h2_2cp<decltype(Le((E)t)), A> operator>=(const U& u) const { return {Le((E)t), (A)u, ">="}; }
-   template <typename U, typename A = typename h2_decay<U>::type>
-   h2_2cp<decltype(Ge((E)t)), A> operator<=(const U& u) const { return {Ge((E)t), (A)u, "<="}; }
+   U a;
+   explicit h2_1cp(U u) : a(u) {}
+   template <typename V, typename A = typename h2_decay<V>::type>
+   h2_2cp<decltype(_Eq((E)a)), A> operator==(const V& v) const { return {_Eq((E)a), (A)v, "=="}; }
+   template <typename V, typename A = typename h2_decay<V>::type>
+   h2_2cp<decltype(Nq((E)a)), A> operator!=(const V& v) const { return {Nq((E)a), (A)v, "!="}; }
+   template <typename V, typename A = typename h2_decay<V>::type>
+   h2_2cp<decltype(Lt((E)a)), A> operator>(const V& v) const { return {Lt((E)a), (A)v, ">"}; }
+   template <typename V, typename A = typename h2_decay<V>::type>
+   h2_2cp<decltype(Gt((E)a)), A> operator<(const V& v) const { return {Gt((E)a), (A)v, "<"}; }
+   template <typename V, typename A = typename h2_decay<V>::type>
+   h2_2cp<decltype(Le((E)a)), A> operator>=(const V& v) const { return {Le((E)a), (A)v, ">="}; }
+   template <typename V, typename A = typename h2_decay<V>::type>
+   h2_2cp<decltype(Ge((E)a)), A> operator<=(const V& v) const { return {Ge((E)a), (A)v, "<="}; }
 };
 
 struct h2_0cp {
@@ -3530,30 +3531,32 @@ struct h2_0cp {
 };
 
 template <typename E, typename A>
-static inline h2_ostringstream& h2_cp(h2_defer_failure* d, h2_2cp<E, A> c)
+static inline h2_ostringstream& h2_ok1(h2_assert* d, h2_2cp<E, A> c2)
 {
-   d->assert_type = "CP";
-   d->assert_op = c.op;
-   h2_fail* fail = h2::h2_matcher_cast<A>(c.m).matches(c.a, {0, false, false, false, true});
-   return __common_ok(d, fail);
+   h2_fail* fail = h2::h2_matcher_cast<A>(c2.m).matches(c2.a, {0, false, false, false, true});
+   return d->stash(fail, "OK2", c2.op);
 }
 
-#define H2CP(...) __H2CP(H2PP_UNIQUE(), #__VA_ARGS__, __VA_ARGS__)
-#define __H2CP(Q, expression, ...) \
-   for (h2::h2_defer_failure Q("", expression, H2_FILINE); Q;) h2::h2_cp(&Q, h2::h2_0cp() > __VA_ARGS__)
+template <typename A>
+static inline h2_ostringstream& h2_ok1(h2_assert* d, h2_1cp<A> c1)
+{
+   h2_fail* fail = nullptr;
+   if (!c1.a) fail = h2_fail::new_unexpect("true", h2_stringify(c1.a, true));
+   return d->stash(fail, "OK1");
+}
 
 #define H2OK(_1, ...) H2PP_CAT(__H2OK, H2PP_IS_EMPTY(__VA_ARGS__))(H2PP_UNIQUE(), #_1, (#__VA_ARGS__), _1, __VA_ARGS__)
-#define __H2OK1(Q, a_expression, _, actual, ...) \
-   for (h2::h2_defer_failure Q("", a_expression, H2_FILINE); Q;) h2::h2_ok1(&Q, actual)
+#define __H2OK1(Q, expression, _, actual, ...) \
+   for (h2::h2_assert Q; Q; Q.failing("", expression, H2_FILINE)) h2::h2_ok1(&Q, h2::h2_0cp() > actual)
 #define __H2OK0(...) H2PP_PROXY(__H2OK2, (__VA_ARGS__))
 #define __H2OK2(Q, e_expression, a_expression, expect, actual, ...) \
-   for (h2::h2_defer_failure Q(e_expression, a_expression, H2_FILINE); Q;) h2::h2_ok2(&Q, expect, actual, h2::sn(__VA_ARGS__), std::is_array<decltype(actual)>{}, std::extent<decltype(actual)>::value)
+   for (h2::h2_assert Q; Q; Q.failing(e_expression, a_expression, H2_FILINE)) h2::h2_ok2(&Q, expect, actual, h2::sn(__VA_ARGS__), std::is_array<decltype(actual)>{}, std::extent<decltype(actual)>::value)
 
 #define H2JE(...) H2PP_VARIADIC_CALL(__H2JE, H2PP_UNIQUE(), __VA_ARGS__)
 #define __H2JE3(Q, expect, actual) \
-   for (h2::h2_defer_failure Q(#expect, #actual, H2_FILINE); Q;) h2::h2_je(&Q, expect, actual, "")
+   for (h2::h2_assert Q; Q; Q.failing(#expect, #actual, H2_FILINE)) h2::h2_je(&Q, expect, actual, "")
 #define __H2JE4(Q, expect, actual, selector) \
-   for (h2::h2_defer_failure Q(#expect, #actual, H2_FILINE); Q;) h2::h2_je(&Q, expect, actual, selector)
+   for (h2::h2_assert Q; Q; Q.failing(#expect, #actual, H2_FILINE)) h2::h2_je(&Q, expect, actual, selector)
 // source/assert/h2_timer.hpp
 struct h2_timer : h2_once {
    const char* filine;
@@ -3597,10 +3600,6 @@ struct h2_timer : h2_once {
 
 #ifndef H2_NO_Cleanup
 #define Cleanup H2Cleanup
-#endif
-
-#ifndef H2_NO_CP
-#define CP H2CP
 #endif
 
 #ifndef H2_NO_OK

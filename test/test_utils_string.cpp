@@ -42,6 +42,13 @@ SUITE(string constructor)
       h2::h2_string a2(2, "ab");
       OK("ab", a2);
    }
+
+   Case(NULL)
+   {
+      const char* s0 = nullptr;
+      h2::h2_string a0(s0);
+      OK("(null)", a0);
+   }
 }
 
 SUITE(string assign)
@@ -69,6 +76,15 @@ SUITE(string assign)
    {
       h2::h2_string a = "hello";
       OK("hello", a);
+   }
+
+   Case(NULL)
+   {
+      const char* s0 = nullptr;
+      h2::h2_string a0 = s0;
+      OK("(null)", a0);
+      h2::h2_string a1 = nullptr;
+      OK("(null)", a1);
    }
 }
 

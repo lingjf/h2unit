@@ -29,10 +29,17 @@ static inline unsigned mask2n(unsigned x)
    return x;
 }
 
-static inline const char* strip_left(const char* s)
+static inline const char* strip_left(const char* left, const char* right = nullptr)  // [left, right)
 {
-   for (; s && *s && ::isspace(*s);) s++;  // strip left space
-   return s;
+   while ((right ? left < right : true) && *left && ::isspace(*left)) ++left;
+   return left;
+}
+
+static inline const char* strip_right(const char* left, const char* right = nullptr)  // [left, right)
+{
+   if (!right) right = left + strlen(left);
+   for (--right; left <= right && (!*right || ::isspace(*right));) --right;
+   return right + 1;
 }
 
 static inline const char* get_keyvalue(const char* attributes, const char* key)

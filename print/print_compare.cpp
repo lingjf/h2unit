@@ -2,6 +2,13 @@
 
 SUITE(number compares)
 {
+   Case(unary)
+   {
+      OK(2011);
+      OK("");
+      OK(0);
+   }
+
    Case(integer)
    {
       int a1 = 2017;
@@ -12,12 +19,8 @@ SUITE(number compares)
    Case(integer less than)
    {
       int a1 = 2015;
-      CP(2017 < a1);
-   }
-
-   Case(vector great/equal than)
-   {
-      CP(sizeof(std::vector<int>::size_type) > 100);
+      OK(2017 > a1);
+      OK(2017 < a1);
    }
 
    Case(double)
@@ -28,6 +31,7 @@ SUITE(number compares)
 
    Case(approximate)
    {
+      OK(Eq(3.14, 0.1%), 3.1415926);
       OK(Eq(3.14, 0.01%), 3.1415926) << "float precision problem " << 3.1415926;
    }
 

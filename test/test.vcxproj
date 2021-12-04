@@ -29,6 +29,7 @@
     <ClCompile Include="test_core_runner.cpp" />
     <ClCompile Include="test_core_suite.cpp" />
     <ClCompile Include="test_core_test.cpp" />
+    <ClCompile Include="test_cplusplus.cpp" />
     <ClCompile Include="test_except_exception.cpp" />
     <ClCompile Include="test_json_dual.cpp" />
     <ClCompile Include="test_json_example.cpp" />

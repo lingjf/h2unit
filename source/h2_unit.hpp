@@ -26,7 +26,7 @@
 
 #if defined __GNUC__ || defined __clang__
 // #pragma clang diagnostic ignored === #pragma GCC diagnostic ignored
-#pragma GCC diagnostic ignored "-Wparentheses"   // CP
+#pragma GCC diagnostic ignored "-Wparentheses"   // OK
 #pragma GCC diagnostic ignored "-Wsign-compare"  // (in)equation
 #pragma GCC diagnostic ignored "-Wint-to-pointer-cast"
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
@@ -134,10 +134,6 @@ namespace h2 {
 
 #ifndef H2_NO_Cleanup
 #define Cleanup H2Cleanup
-#endif
-
-#ifndef H2_NO_CP
-#define CP H2CP
 #endif
 
 #ifndef H2_NO_OK

@@ -343,10 +343,17 @@ static inline unsigned mask2n(unsigned x)
    return x;
 }
 
-static inline const char* strip_left(const char* s)
+static inline const char* strip_left(const char* left, const char* right = nullptr)  // [left, right)
 {
-   for (; s && *s && ::isspace(*s);) s++;  // strip left space
-   return s;
+   while ((right ? left < right : true) && *left && ::isspace(*left)) ++left;
+   return left;
+}
+
+static inline const char* strip_right(const char* left, const char* right = nullptr)  // [left, right)
+{
+   if (!right) right = left + strlen(left);
+   for (--right; left <= right && (!*right || ::isspace(*right));) --right;
+   return right + 1;
 }
 
 static inline const char* get_keyvalue(const char* attributes, const char* key)
@@ -5099,24 +5106,24 @@ h2_inline void h2_runner::asserts()
    h2_runner::I().stats.asserts += 1;
 }
 // source/assert/h2_assert.cpp
-static inline const char* find_op(const char* src, const char* op)
+static inline const char* __find_compare(const char* expression, const char* op)
 {
    bool quote = false;
    if (strlen(op) == 2) {
-      for (const char* p = src; *p; p++) {
+      for (const char* p = expression; *p; ++p) {
          if (*p == '\"') quote = !quote;
          if (!quote && !strncmp(op, p, 2)) return p;
       }
    } else {
       int stacks = 0;
       if (*op == '>')
-         for (const char* p = src; *p; p++) {
+         for (const char* p = expression; *p; ++p) {
             if (*p == '\"') quote = !quote;
             if (!quote && *p == '<') ++stacks;
             if (!quote && *p == '>' && 0 == stacks--) return p;
          }
       if (*op == '<')
-         for (const char* p = src + strlen(src); src <= p; p--) {
+         for (const char* p = expression + strlen(expression); expression <= p; --p) {
             if (*p == '\"') quote = !quote;
             if (!quote && *p == '>') ++stacks;
             if (!quote && *p == '<' && 0 == stacks--) return p;
@@ -5125,28 +5132,40 @@ static inline const char* find_op(const char* src, const char* op)
    return nullptr;
 }
 
-h2_inline h2_defer_failure::~h2_defer_failure()
+static inline void __split_compare(const char* expression, const char* op, h2_string& e_expression, h2_string& a_expression)
 {
+   const char* p = __find_compare(expression, op);
+   if (p) {
+      e_expression.assign(expression, strip_right(expression, p) - expression);
+      a_expression = strip_left(p + strlen(op));
+   }
+}
+
+h2_inline h2_ostringstream& h2_assert::stash(h2_fail* fail, const char* assert_type, const char* assert_op)
+{
+   h2_runner::asserts();
+   fails = fail;
+   if (fail && fail->subling_next) {
+      fails = h2_fail::new_unexpect();
+      h2_fail::append_child(fails, fail);
+   }
    if (fails) {
-      fails->filine = filine;
       fails->assert_type = assert_type;
       fails->assert_op = assert_op;
+   }
+   return oss;
+}
+
+h2_inline void h2_assert::failing(const char* e_expression, const char* a_expression, const char* filine)
+{
+   if (fails) {
+      fails->user_explain = oss.str().c_str();
+      fails->filine = filine;
       fails->e_expression = e_expression;
       fails->a_expression = a_expression;
-      fails->user_explain = oss.str().c_str();
-
-      if (!strcmp("CP", assert_type) && strcmp(",", assert_op)) {
-         const char* p_op = find_op(a_expression, assert_op);
-         if (p_op) {
-            const char *p, *q;
-            for (p = p_op - 1; a_expression <= p && ::isspace(*p);) p--;
-            fails->e_expression.assign(a_expression, (p + 1) - a_expression);
-            for (q = p_op + strlen(assert_op); ::isspace(*q);) q++;
-            fails->a_expression.assign(q, (a_expression + strlen(a_expression)) - q);
-         }
-      }
-      h2_runner::failing(fails);
+      if (*fails->assert_op != ',') __split_compare(a_expression, fails->assert_op, fails->e_expression, fails->a_expression);
    }
+   h2_runner::failing(fails);
 }
 // source/assert/h2_timer.cpp
 h2_inline h2_timer::h2_timer(int ms_, const char* filine_) : filine(filine_), cpu_ms(ms_)
@@ -5356,7 +5375,7 @@ struct h2_fail_unexpect : h2_fail {
       h2_line a = h2_line(a_expression).gray_quote().brush("cyan");
       line += "OK" + gray("(") + a + gray(")") + " is " + color("false", "bold,red");
    }
-   void print_OK2_CP(h2_line& line, const char* assert_type)
+   void print_OK2(h2_line& line)
    {
       h2_line e, a;
       if (!expection.width()) {
@@ -5375,7 +5394,7 @@ struct h2_fail_unexpect : h2_fail {
          a = represent.abbreviate(10000, 3).brush("bold,red") + gray("<==") + h2_line(a_expression).abbreviate(O.verbose >= VerboseDetail ? 10000 : 120, 3).gray_quote().brush("cyan");
       }
 
-      line += assert_type + gray("(") + e + " " + assert_op + " " + a + gray(")");
+      line += "OK" + gray("(") + e + " " + assert_op + " " + a + gray(")");
    }
    void print_JE(h2_line& line)
    {
@@ -5402,7 +5421,7 @@ struct h2_fail_unexpect : h2_fail {
       line.indent(ci * 2 + 1);
       if (!strcmp("Inner", assert_type)) print_Inner(line);
       if (!strcmp("OK1", assert_type)) print_OK1(line);
-      if (!strcmp("OK", assert_type) || !strcmp("CP", assert_type)) print_OK2_CP(line, assert_type);
+      if (!strcmp("OK2", assert_type)) print_OK2(line);
       if (!strcmp("JE", assert_type)) print_JE(line);
       if (explain.width()) line += comma_if(c++, ", ", " ") + explain;
       if (user_explain.size()) line += {comma_if(c++, ", ", " "), user_explain};

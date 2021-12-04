@@ -250,30 +250,16 @@ CASESS_T(name, (short,int,long), (u8,u16,u32))  // (short,int,long)x(u8,u16,u32)
 
 ## Test Compare
 
-### H2CP alias CP
-
-[`CP`](../source/assert/h2_assert.hpp)(expect < <= > >= == != actual) : compare the actual value with expect value, only support six operator(< <= > >= == !=).(lowercase k)
-
-```C++
-Case(case name)
-{
-    CP(1 == 1);
-    CP(1 != 2);
-    CP(e < a);
-    CP(e <= a);
-    CP(e > a);
-    CP(e >= a);
-}
-```
-
 ### H2OK alias OK
 *    [`OK`](../source/assert/h2_assert.hpp)(expr) : check the result of `expr` is true.
+*    [`OK`](../source/assert/h2_assert.hpp)(lhs <= rhs) : compare the lhs and rhs value, support six operator(< <= > >= == !=).
 *    [`OK`](../source/assert/h2_assert.hpp)(expect, actual) : check the actual value matches with expect value.
 
 ```C++
 Case(case name)
 {
     OK(a);
+    OK(a < b);
     OK(e , a);
 }
 ```

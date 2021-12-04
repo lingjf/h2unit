@@ -77,7 +77,7 @@ struct h2_fail_unexpect : h2_fail {
       h2_line a = h2_line(a_expression).gray_quote().brush("cyan");
       line += "OK" + gray("(") + a + gray(")") + " is " + color("false", "bold,red");
    }
-   void print_OK2_CP(h2_line& line, const char* assert_type)
+   void print_OK2(h2_line& line)
    {
       h2_line e, a;
       if (!expection.width()) {
@@ -96,7 +96,7 @@ struct h2_fail_unexpect : h2_fail {
          a = represent.abbreviate(10000, 3).brush("bold,red") + gray("<==") + h2_line(a_expression).abbreviate(O.verbose >= VerboseDetail ? 10000 : 120, 3).gray_quote().brush("cyan");
       }
 
-      line += assert_type + gray("(") + e + " " + assert_op + " " + a + gray(")");
+      line += "OK" + gray("(") + e + " " + assert_op + " " + a + gray(")");
    }
    void print_JE(h2_line& line)
    {
@@ -123,7 +123,7 @@ struct h2_fail_unexpect : h2_fail {
       line.indent(ci * 2 + 1);
       if (!strcmp("Inner", assert_type)) print_Inner(line);
       if (!strcmp("OK1", assert_type)) print_OK1(line);
-      if (!strcmp("OK", assert_type) || !strcmp("CP", assert_type)) print_OK2_CP(line, assert_type);
+      if (!strcmp("OK2", assert_type)) print_OK2(line);
       if (!strcmp("JE", assert_type)) print_JE(line);
       if (explain.width()) line += comma_if(c++, ", ", " ") + explain;
       if (user_explain.size()) line += {comma_if(c++, ", ", " "), user_explain};

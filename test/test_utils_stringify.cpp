@@ -56,61 +56,95 @@ std::ostream& operator<<(std::ostream& os, const Stringify23& a)
 
 CASE(tostring able)
 {
-   OK(h2::h2_toString_able<Stringify12>::value);
+   bool ret;
 
-   OK(h2::h2_tostring_able<Stringify13>::value);
-   OK(h2::h2_toString_able<Stringify13>::value);
-   OK(!h2::h2_Tostring_able<Stringify13>::value);
-   OK(!h2::h2_ToString_able<Stringify13>::value);
-   OK(h2::h2_to_string_able<Stringify13>::value);
+   ret = h2::h2_toString_able<Stringify12>::value;
+   OK(ret);
 
-   OK(!h2::h2_tostring_able<Stringify11>::value);
-   OK(!h2::h2_toString_able<Stringify11>::value);
-   OK(!h2::h2_Tostring_able<Stringify11>::value);
-   OK(!h2::h2_ToString_able<Stringify11>::value);
-   OK(!h2::h2_to_string_able<Stringify11>::value);
+   ret = h2::h2_tostring_able<Stringify13>::value;
+   OK(ret);
+   ret = h2::h2_toString_able<Stringify13>::value;
+   OK(ret);
+   ret = h2::h2_Tostring_able<Stringify13>::value;
+   OK(!ret);
+   ret = h2::h2_ToString_able<Stringify13>::value;
+   OK(!ret);
+   ret = h2::h2_to_string_able<Stringify13>::value;
+   OK(ret);
+
+   ret = h2::h2_tostring_able<Stringify11>::value;
+   OK(!ret);
+   ret = h2::h2_toString_able<Stringify11>::value;
+   OK(!ret);
+   ret = h2::h2_Tostring_able<Stringify11>::value;
+   OK(!ret);
+   ret = h2::h2_ToString_able<Stringify11>::value;
+   OK(!ret);
+   ret = h2::h2_to_string_able<Stringify11>::value;
+   OK(!ret);
 }
 
 SUITE(ostream able)
 {
+   bool ret;
    Case(arithmetic type)
    {
-      OK(h2::h2_is_ostreamable<char>::value);
-      OK(h2::h2_is_ostreamable<signed char>::value);
-      OK(h2::h2_is_ostreamable<unsigned char>::value);
-      OK(h2::h2_is_ostreamable<uint8_t>::value);
+      ret = h2::h2_is_ostreamable<char>::value;
+      OK(ret);
+      ret = h2::h2_is_ostreamable<signed char>::value;
+      OK(ret);
+      ret = h2::h2_is_ostreamable<unsigned char>::value;
+      OK(ret);
+      ret = h2::h2_is_ostreamable<uint8_t>::value;
+      OK(ret);
 
-      OK(h2::h2_is_ostreamable<short int>::value);
-      OK(h2::h2_is_ostreamable<unsigned short int>::value);
+      ret = h2::h2_is_ostreamable<short int>::value;
+      OK(ret);
+      ret = h2::h2_is_ostreamable<unsigned short int>::value;
+      OK(ret);
 
-      OK(h2::h2_is_ostreamable<int>::value);
-      OK(h2::h2_is_ostreamable<unsigned int>::value);
+      ret = h2::h2_is_ostreamable<int>::value;
+      OK(ret);
+      ret = h2::h2_is_ostreamable<unsigned int>::value;
+      OK(ret);
 
-      OK(h2::h2_is_ostreamable<long int>::value);
-      OK(h2::h2_is_ostreamable<unsigned long int>::value);
+      ret = h2::h2_is_ostreamable<long int>::value;
+      OK(ret);
+      ret = h2::h2_is_ostreamable<unsigned long int>::value;
+      OK(ret);
 
-      OK(h2::h2_is_ostreamable<long long int>::value);
-      OK(h2::h2_is_ostreamable<unsigned long long int>::value);
+      ret = h2::h2_is_ostreamable<long long int>::value;
+      OK(ret);
+      ret = h2::h2_is_ostreamable<unsigned long long int>::value;
+      OK(ret);
    }
 
    Case(void)
    {
-      OK(!h2::h2_is_ostreamable<void>::value);
+      ret = h2::h2_is_ostreamable<void>::value;
+      OK(!ret);
    }
 
    Case(void*)
    {
-      OK(h2::h2_is_ostreamable<void*>::value);
+      ret = h2::h2_is_ostreamable<void*>::value;
+      OK(ret);
    }
 
    Case(user type)
    {
-      OK(!h2::h2_is_ostreamable<Stringify11>::value);
-      OK(!h2::h2_is_ostreamable<Stringify12>::value);
-      OK(!h2::h2_is_ostreamable<Stringify13>::value);
-      OK(h2::h2_is_ostreamable<Stringify21>::value);
-      OK(h2::h2_is_ostreamable<Stringify22>::value);
-      OK(h2::h2_is_ostreamable<Stringify23>::value);
+      ret = h2::h2_is_ostreamable<Stringify11>::value;
+      OK(!ret);
+      ret = h2::h2_is_ostreamable<Stringify12>::value;
+      OK(!ret);
+      ret = h2::h2_is_ostreamable<Stringify13>::value;
+      OK(!ret);
+      ret = h2::h2_is_ostreamable<Stringify21>::value;
+      OK(ret);
+      ret = h2::h2_is_ostreamable<Stringify22>::value;
+      OK(ret);
+      ret = h2::h2_is_ostreamable<Stringify23>::value;
+      OK(ret);
    }
 
    Case(nullptr_t)
@@ -118,28 +152,13 @@ SUITE(ostream able)
       // https://en.cppreference.com/w/cpp/io/basic_ostream/operator_ltlt
       // basic_ostream& operator<<(std::nullptr_t); (since C++ 17)
 
-      // g++ -x c++ -std=c++11 -dM -E - </dev/null | grep __cplusplus
-      // #define __cplusplus 201103L
-
-      // g++ -x c++ -std=c++14 -dM -E - </dev/null | grep __cplusplus
-      // #define __cplusplus 201402L
-
-      // g++ -x c++ -std=c++17 -dM -E - </dev/null | grep __cplusplus
-      // #define __cplusplus 201703L
-
-      // g++ -x c++ -std=c++2a -dM -E - </dev/null | grep __cplusplus
-      // #define __cplusplus 202002L
-
-      // g++ -x c++ -std=c++2b -dM -E - </dev/null | grep __cplusplus
-      // #define __cplusplus 202102L
-
-      // https://docs.microsoft.com/en-us/cpp/preprocessor/predefined-macros
-
 #if __cplusplus >= 201703L || _MSVC_LANG >= 201703L
-      OK(h2::h2_is_ostreamable<std::nullptr_t>::value);
+      ret = h2::h2_is_ostreamable<std::nullptr_t>::value;
+      OK(ret);
 #else
 #if !defined __clang__  // clang implement operator<<(std::nullptr_t) before C++ 17
-      OK(!h2::h2_is_ostreamable<std::nullptr_t>::value);
+      ret = h2::h2_is_ostreamable<std::nullptr_t>::value;
+      OK(!ret);
 #endif
 #endif
    }
