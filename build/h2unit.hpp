@@ -1095,10 +1095,6 @@ struct h2_option {
 
 static const h2_option& O = h2_option::I();  // for pretty
 // source/except/h2_debug.hpp
-struct h2_debugger {
-   static void trap();
-};
-
 #define h2_debug(shift, ...)                                            \
    do {                                                                 \
       if (!O.debugger_trap) {                                           \

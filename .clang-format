@@ -62,7 +62,7 @@ ExperimentalAutoDetectBinPacking: false
 ForEachMacros: [h2_list_for_each_entry, h2_list_for_each_reverse_entry]
 StatementMacros: []
 TypenameMacros: [H2PP_CAT, H2PP_REMOVE_PARENTHESES]
-WhitespaceSensitiveMacros: [H2PP_STR, H2SUITE, H2CASE, SUITE, CASE, TODO, Case, Todo, Cases, Casess, CASES, CASESS, Todos, Todoss, TODOS, TODOSS, CASES_T, CASESS_T, TODOS_T, TODOSS_T]
+WhitespaceSensitiveMacros: [__asm__, H2PP_STR, H2SUITE, H2CASE, SUITE, CASE, TODO, Case, Todo, Cases, Casess, CASES, CASESS, Todos, Todoss, TODOS, TODOSS, CASES_T, CASESS_T, TODOS_T, TODOSS_T]
 IncludeCategories:
   - Regex: '^"(llvm|llvm-c|clang|clang-c)/'
     Priority: 2

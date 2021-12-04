@@ -1,7 +1,3 @@
-struct h2_debugger {
-   static void trap();
-};
-
 #define h2_debug(shift, ...)                                            \
    do {                                                                 \
       if (!O.debugger_trap) {                                           \

@@ -3600,62 +3600,74 @@ h2_inline void h2_exempt::add_by_fp(void* fp)
    I().fps[I().nfp] = nullptr;
 }
 // source/except/h2_debug.cpp
-#if defined __linux
-static inline bool under_debug(int, const char*)
+static inline bool in_debugging()
 {
+   bool ret = false;
+#if defined __linux
    char t[1024];
    FILE* f = ::fopen("/proc/self/status", "r");
-   if (!f) return false;
-   bool ret = false;
-   while (::fgets(t, sizeof(t) - 1, f)) {
-      if (strncmp(t, "TracerPid:\t", 11) == 0) {
-         ret = t[11] != '\0' && t[11] != '0';
-         break;
+   if (f) {
+      while (::fgets(t, sizeof(t) - 1, f)) {
+         if (strncmp(t, "TracerPid:\t", 11) == 0) {
+            ret = t[11] != '\0' && t[11] != '0';
+            break;
+         }
       }
+      ::fclose(f);
    }
-   ::fclose(f);
+#elif defined __APPLE__
+   char t[1024], attach_pid[64];
+   sprintf(attach_pid, "%d", (int)getpid());
+   FILE* f = ::popen("ps -ef | grep lldb | grep -v sudo | grep -v grep", "r");
+   if (f) {
+      while (::fgets(t, sizeof(t) - 1, f)) {
+         if (strstr(t, h2_basefile(O.path)) || strstr(t, attach_pid)) {
+            ret = true;
+            break;
+         }
+      }
+      ::pclose(f);
+   }
+#endif
    return ret;
 }
-#elif defined __APPLE__
-static inline bool under_debug(int pid, const char* path)
-{
-   char t[1024], attach_pid[64];
-   sprintf(attach_pid, "%d", pid);
-   FILE* f = ::popen("ps -ef | grep lldb | grep -v sudo | grep -v grep", "r");
-   if (!f) return false;
-   bool ret = false;
-   while (::fgets(t, sizeof(t) - 1, f)) {
-      if (strstr(t, h2_basefile(path)) || strstr(t, attach_pid)) {
-         ret = true;
-         break;
-      }
-   }
-   ::pclose(f);
-   return false;
-}
-#endif
 
-h2_inline void h2_debugger::trap()
+static inline bool h2_attach_debugger()
 {
 #if defined __linux || defined __APPLE__
-   int pid = (int)getpid();
-   if (!under_debug(pid, O.path)) {
-      static h2_once only_one_time;
-      if (only_one_time) {
+   while (!in_debugging()) {
+      static h2_once one;
+      if (one) {
          char cmd[512];
+         ::printf("\nEnter \033[33mpassword\033[0m for connecting \033[33m%s\033[0m. \n", O.os == 'L' ? "GDB" : "LLDB");
 #if defined __linux
-         sprintf(cmd, "sudo gdb --pid=%d", pid);
+         sprintf(cmd, "sudo gdb --silent -ex cont --pid=%d", (int)getpid());
 #elif defined __APPLE__
-         sprintf(cmd, "sudo lldb --attach-pid %d", pid);
+         sprintf(cmd, "sudo lldb -o 'continue' --attach-pid %d", (int)getpid());
 #endif
-         if (fork() == 0)
-            exit(system(cmd));
-         else
-            while (!under_debug(pid, O.path)) h2_sleep(100);
+         if (fork() == 0) exit(system(cmd));
       }
+      h2_sleep(100);
    }
 #endif
+   return true;
 }
+
+#if defined __linux
+#if defined(__GNUC__) && (defined(__i386) || defined(__x86_64))
+#define h2_raise_trap() asm volatile("int $3")
+#else
+#define h2_raise_trap() raise(SIGTRAP)
+#endif
+#elif defined __APPLE__
+#if defined(__i386__) || defined(__x86_64__)
+#define h2_raise_trap() __asm__("int $3\n" : :)
+#elif defined(__aarch64__)
+#define h2_raise_trap() __asm__(".inst 0xd4200000")
+#endif
+#else
+#define h2_raise_trap() in_debugging()
+#endif
 // source/except/h2_crash.cpp
 struct h2_crash {
 #if defined _WIN32
@@ -5076,7 +5088,7 @@ h2_inline void h2_runner::mock(void* mocker)
 h2_inline void h2_runner::failing(h2_fail* fail)
 {
    if (!fail) return;
-   if (O.debugger_trap) h2_debugger::trap();
+   if (O.debugger_trap && h2_attach_debugger()) h2_raise_trap();
    if (h2_runner::I().current_case) h2_runner::I().current_case->failing(fail, O.continue_assert, true);
 }
 

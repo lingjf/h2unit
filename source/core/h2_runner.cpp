@@ -215,7 +215,7 @@ h2_inline void h2_runner::mock(void* mocker)
 h2_inline void h2_runner::failing(h2_fail* fail)
 {
    if (!fail) return;
-   if (O.debugger_trap) h2_debugger::trap();
+   if (O.debugger_trap && h2_attach_debugger()) h2_raise_trap();
    if (h2_runner::I().current_case) h2_runner::I().current_case->failing(fail, O.continue_assert, true);
 }
 
