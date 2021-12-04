@@ -321,6 +321,24 @@ JE("{
 ```
 It expect rectangle width equal to 111, and height equal to 222
 
+Math expression supports addition (+), subtraction/negation (-), multiplication (*), division (/), exponentiation (^) and modulus (%) with the normal operator precedence.
+
+The following C math functions are also supported:
+
+abs, acos, asin, atan, atan2, ceil, cos, cosh, exp, floor, ln, log, log10, pow, sin, sinh, sqrt, tan, tanh
+
+The following functions are also supported:
+
+n! (factorials e.g.  5! == 120)
+
+C(n,m) (combinations e.g. C(6,2) == 15)
+
+P(n,m) (permutations e.g. P(6,2) == 30)
+
+Also, the following constants are available:
+
+pi(𝛑), e(e natural constant), inf(∞ infinity), nan(not a number)
+
 #### Regex is support in JSON compare
 ```C++
 JE("{

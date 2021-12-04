@@ -8,7 +8,7 @@ CASE(JSON rectangle failure)
 {
    rectangle_t p1 = {111, 222};
 
-   JE("{ 'width': 110,                   \
+   JE("{ 'width': 5!,                    \
          'height': 222 * sqrt(4),        \
          'corners': [1,2,3,'4'],         \
          'links': {'left': 1},           \

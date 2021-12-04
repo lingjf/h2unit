@@ -28,7 +28,10 @@ struct h2_json_match {
          case h2_json_node::t_boolean:
             return a->is_bool() && e->value_boolean == a->value_boolean;
          case h2_json_node::t_number:
-            return a->is_number() && ::fabs(e->value_double - a->value_double) < 0.00001;
+            if (!a->is_number()) return false;
+            if (std::isnan(e->value_double) && std::isnan(a->value_double)) return true;
+            if (std::isinf(e->value_double) && std::isinf(a->value_double)) return true;
+            return ::fabs(e->value_double - a->value_double) < 0.00001;
          case h2_json_node::t_string:
             return a->is_string() && e->value_string.equals(a->value_string, caseless);
          case h2_json_node::t_pattern:

@@ -21,7 +21,7 @@ SUITE(json)
 
       JE("{                               \
             width: 116,                   \
-            height: 222 * sqrt(4),        \
+            height: 222 * sqrt(2!+2),     \
             weight: 100 kg,               \
             corners : [1,2,3,'4'],        \
             links : { left : 1},          \

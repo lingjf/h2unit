@@ -19,13 +19,6 @@ struct h2_json_syntax {
       return s;
    }
 
-   bool interpret_number(const h2_string& s, double& value) const
-   {
-      int err = 0;
-      value = tinyexpr::te_interp(s.c_str(), &err);
-      return 0 == err;
-   }
-
    bool desire(const char* s)
    {
       if (lexical.size() <= i || !lexical[i].equals(s)) return false;
@@ -83,7 +76,7 @@ struct h2_json_syntax {
    bool parse_string_or_number(h2_json_node& node)
    {
       node.value_string = lexical[i++];
-      if (interpret_number(node.value_string, node.value_double)) {
+      if (tinyexpr::evaluate(node.value_string.c_str(), node.value_double)) {
          node.type = h2_json_node::t_number;
          node.value_string = "";
          return true;
