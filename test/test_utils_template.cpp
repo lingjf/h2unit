@@ -4,8 +4,9 @@
 
 CASE(nth_type)
 {
-   OK((std::is_same<char, typename h2::h2_nth_type<0, char, short>::type>::value));
-   OK((std::is_same<short, typename h2::h2_nth_type<1, char, short>::type>::value));
+   OK((std::is_same<char, typename h2::h2_nth_type<0, char, short, int>::type>::value));
+   OK((std::is_same<short, typename h2::h2_nth_type<1, char, short, int>::type>::value));
+   OK((std::is_same<int, typename h2::h2_nth_type<2, char, short, int>::type>::value));
 }
 
 SUITE(is smart pointer)
@@ -65,9 +66,15 @@ SUITE(sizeof pointee)
       OK(sizeof(void*), h2::h2_sizeof_pointee<void**>::value);
    }
 
-   Case(smart ptr)
+   Case(shared_ptr)
    {
       auto a1 = std::make_shared<int>(42);
+      OK(sizeof(int), h2::h2_sizeof_pointee<decltype(a1)>::value);
+   }
+
+   Case(unique_ptr)
+   {
+      std::unique_ptr<int> a1(new int(42));
       OK(sizeof(int), h2::h2_sizeof_pointee<decltype(a1)>::value);
    }
 }
@@ -119,16 +126,22 @@ SUITE(pointee type)
       OK((std::is_same<void*, typename h2::h2_pointee_type<void**>::type>::value));
    }
 
-   Case(smart ptr)
+   Case(shared_ptr)
    {
       auto a1 = std::make_shared<int>(42);
       OK((std::is_same<int, typename h2::h2_pointee_type<decltype(a1)>::type>::value));
+   }
 
-      std::unique_ptr<int> a2(new int(42));
-      OK((std::is_same<int, typename h2::h2_pointee_type<decltype(a2)>::type>::value));
+   Case(unique_ptr)
+   {
+      std::unique_ptr<int> a1(new int(42));
+      OK((std::is_same<int, typename h2::h2_pointee_type<decltype(a1)>::type>::value));
+   }
 
-      std::weak_ptr<int> a3(std::make_shared<int>(42));
-      OK((std::is_same<int, typename h2::h2_pointee_type<decltype(a3)>::type>::value));
+   Case(weak_ptr)
+   {
+      std::weak_ptr<int> a1(std::make_shared<int>(42));
+      OK((std::is_same<int, typename h2::h2_pointee_type<decltype(a1)>::type>::value));
    }
 }
 
@@ -208,48 +221,286 @@ SUITE(pair)
    }
 }
 
-SUITE(container)
+SUITE(is_string)
 {
-   bool ret;
-   Case(is_container)
+   Case(Fundamental types)
    {
-      ret = h2::h2_is_container<int>::value;
-      OK(!ret);
-      ret = h2::h2_is_container<std::array<int, 8>>::value;
-      OK(ret);
-      ret = h2::h2_is_container<std::vector<int>>::value;
-      OK(ret);
-      ret = h2::h2_is_container<std::deque<int>>::value;
-      OK(ret);
-      ret = h2::h2_is_container<std::list<int>>::value;
-      OK(ret);
-      ret = h2::h2_is_container<std::forward_list<int>>::value;
-      OK(ret);
-      ret = h2::h2_is_container<std::set<int>>::value;
-      OK(ret);
-      ret = h2::h2_is_container<std::multiset<int>>::value;
-      OK(ret);
-      ret = h2::h2_is_container<std::unordered_set<int>>::value;
-      OK(ret);
-      ret = h2::h2_is_container<std::unordered_multiset<int>>::value;
-      OK(ret);
-      ret = h2::h2_is_container<std::map<int, int>>::value;
-      OK(ret);
-      ret = h2::h2_is_container<std::multimap<int, int>>::value;
-      OK(ret);
-      ret = h2::h2_is_container<std::unordered_map<int, int>>::value;
-      OK(ret);
-      ret = h2::h2_is_container<std::unordered_multimap<int, int>>::value;
-      OK(ret);
+      OK(!(h2::h2_is_string<int>::value));
+   }
 
-      ret = h2::h2_is_container<std::valarray<int>>::value;
-      OK(!ret);
-      ret = h2::h2_is_container<h2::h2_vector<int>>::value;
-      OK(ret);
+   Case(std::string)
+   {
+      OK((h2::h2_is_string<std::string>::value));
+   }
 
-      ret = h2::h2_is_container<std::string>::value;
-      OK(ret);
-      ret = h2::h2_is_container<h2::h2_string>::value;
-      OK(ret);
+   Case(h2_string)
+   {
+      OK((h2::h2_is_string<h2::h2_string>::value));
+   }
+
+   Case(Sequence containers)
+   {
+      OK(!(h2::h2_is_string<std::array<int, 8>>::value));
+      OK(!(h2::h2_is_string<std::vector<int>>::value));
+      OK(!(h2::h2_is_string<std::deque<int>>::value));
+      OK(!(h2::h2_is_string<std::list<int>>::value));
+      OK(!(h2::h2_is_string<std::forward_list<int>>::value));
+
+      OK(!(h2::h2_is_string<h2::h2_vector<int>>::value));
+   }
+
+   Case(Associative containers)
+   {
+      OK(!(h2::h2_is_string<std::set<int>>::value));
+      OK(!(h2::h2_is_string<std::multiset<int>>::value));
+      OK(!(h2::h2_is_string<std::unordered_set<int>>::value));
+      OK(!(h2::h2_is_string<std::unordered_multiset<int>>::value));
+      OK(!(h2::h2_is_string<std::map<int, int>>::value));
+      OK(!(h2::h2_is_string<std::multimap<int, int>>::value));
+      OK(!(h2::h2_is_string<std::unordered_map<int, int>>::value));
+      OK(!(h2::h2_is_string<std::unordered_multimap<int, int>>::value));
+   }
+
+   Case(Container adaptors)
+   {
+      OK(!(h2::h2_is_string<std::stack<int>>::value));
+      OK(!(h2::h2_is_string<std::queue<int>>::value));
+      OK(!(h2::h2_is_string<std::priority_queue<int>>::value));
+   }
+}
+
+SUITE(is_iterable)
+{
+   Case(Fundamental types)
+   {
+      OK(!(h2::h2_is_iterable<int>::value));
+   }
+
+   Case(Sequence containers)
+   {
+      OK((h2::h2_is_iterable<std::array<int, 8>>::value));
+      OK((h2::h2_is_iterable<std::vector<int>>::value));
+      OK((h2::h2_is_iterable<std::deque<int>>::value));
+      OK((h2::h2_is_iterable<std::list<int>>::value));
+      OK((h2::h2_is_iterable<std::forward_list<int>>::value));
+
+      OK((h2::h2_is_iterable<h2::h2_vector<int>>::value));
+   }
+
+   Case(Associative containers)
+   {
+      OK((h2::h2_is_iterable<std::set<int>>::value));
+      OK((h2::h2_is_iterable<std::multiset<int>>::value));
+      OK((h2::h2_is_iterable<std::unordered_set<int>>::value));
+      OK((h2::h2_is_iterable<std::unordered_multiset<int>>::value));
+      OK((h2::h2_is_iterable<std::map<int, int>>::value));
+      OK((h2::h2_is_iterable<std::multimap<int, int>>::value));
+      OK((h2::h2_is_iterable<std::unordered_map<int, int>>::value));
+      OK((h2::h2_is_iterable<std::unordered_multimap<int, int>>::value));
+   }
+
+   Case(Container adaptors)
+   {
+      OK(!(h2::h2_is_iterable<std::stack<int>>::value));
+      OK(!(h2::h2_is_iterable<std::queue<int>>::value));
+      OK(!(h2::h2_is_iterable<std::priority_queue<int>>::value));
+   }
+
+   Case(string)
+   {
+      OK((h2::h2_is_iterable<std::string>::value));
+      OK((h2::h2_is_iterable<h2::h2_string>::value));
+   }
+
+   Case(valarray)
+   {
+      OK(!(h2::h2_is_iterable<std::valarray<int>>::value));
+   }
+}
+
+SUITE(is_container)
+{
+   Case(Fundamental types)
+   {
+      OK(!(h2::h2_is_container<int>::value));
+   }
+
+   Case(Sequence containers)
+   {
+      OK((h2::h2_is_container<std::array<int, 8>>::value));
+      OK((h2::h2_is_container<std::vector<int>>::value));
+      OK((h2::h2_is_container<std::deque<int>>::value));
+      OK((h2::h2_is_container<std::list<int>>::value));
+      OK((h2::h2_is_container<std::forward_list<int>>::value));
+
+      OK((h2::h2_is_container<h2::h2_vector<int>>::value));
+   }
+
+   Case(Associative containers)
+   {
+      OK((h2::h2_is_container<std::set<int>>::value));
+      OK((h2::h2_is_container<std::multiset<int>>::value));
+      OK((h2::h2_is_container<std::unordered_set<int>>::value));
+      OK((h2::h2_is_container<std::unordered_multiset<int>>::value));
+      OK((h2::h2_is_container<std::map<int, int>>::value));
+      OK((h2::h2_is_container<std::multimap<int, int>>::value));
+      OK((h2::h2_is_container<std::unordered_map<int, int>>::value));
+      OK((h2::h2_is_container<std::unordered_multimap<int, int>>::value));
+   }
+
+   Case(Container adaptors)
+   {
+      OK(!(h2::h2_is_container<std::stack<int>>::value));
+      OK(!(h2::h2_is_container<std::queue<int>>::value));
+      OK(!(h2::h2_is_container<std::priority_queue<int>>::value));
+   }
+
+   Case(string)
+   {
+      OK(!(h2::h2_is_container<std::string>::value));
+      OK(!(h2::h2_is_container<h2::h2_string>::value));
+   }
+
+   Case(valarray)
+   {
+      OK(!(h2::h2_is_container<std::valarray<int>>::value));
+   }
+}
+
+SUITE(is_container_adaptor)
+{
+   Case(Fundamental types)
+   {
+      OK(!(h2::h2_is_container_adaptor<int>::value));
+   }
+
+   Case(stack)
+   {
+      OK((h2::h2_is_container_adaptor<std::stack<int>>::value));
+
+      std::stack<int> a1;
+      a1.push(1);
+      a1.push(2);
+      a1.push(3);
+
+      OK((h2::h2_is_container_adaptor<decltype(a1)>::value));
+   }
+
+   Case(queue)
+   {
+      OK((h2::h2_is_container_adaptor<std::queue<int>>::value));
+   }
+
+   Case(priority_queue)
+   {
+      OK((h2::h2_is_container_adaptor<std::priority_queue<int>>::value));
+   }
+
+   Case(Sequence containers)
+   {
+      OK(!(h2::h2_is_container_adaptor<std::array<int, 8>>::value));
+      OK(!(h2::h2_is_container_adaptor<std::vector<int>>::value));
+      OK(!(h2::h2_is_container_adaptor<std::deque<int>>::value));
+      OK(!(h2::h2_is_container_adaptor<std::list<int>>::value));
+      OK(!(h2::h2_is_container_adaptor<std::forward_list<int>>::value));
+
+      OK(!(h2::h2_is_container_adaptor<h2::h2_vector<int>>::value));
+   }
+
+   Case(Associative containers)
+   {
+      OK(!(h2::h2_is_container_adaptor<std::set<int>>::value));
+      OK(!(h2::h2_is_container_adaptor<std::multiset<int>>::value));
+      OK(!(h2::h2_is_container_adaptor<std::unordered_set<int>>::value));
+      OK(!(h2::h2_is_container_adaptor<std::unordered_multiset<int>>::value));
+      OK(!(h2::h2_is_container_adaptor<std::map<int, int>>::value));
+      OK(!(h2::h2_is_container_adaptor<std::multimap<int, int>>::value));
+      OK(!(h2::h2_is_container_adaptor<std::unordered_map<int, int>>::value));
+      OK(!(h2::h2_is_container_adaptor<std::unordered_multimap<int, int>>::value));
+   }
+
+   Case(string)
+   {
+      OK(!(h2::h2_is_container_adaptor<std::string>::value));
+      OK(!(h2::h2_is_container_adaptor<h2::h2_string>::value));
+   }
+}
+
+SUITE(sizable)
+{
+   Case(Fundamental types)
+   {
+      OK(!(h2::h2_is_sizable<int>::value));
+   }
+
+   Case(Sequence containers)
+   {
+      OK((h2::h2_is_sizable<std::array<int, 8>>::value));
+      OK((h2::h2_is_sizable<std::vector<int>>::value));
+      OK((h2::h2_is_sizable<std::deque<int>>::value));
+      OK((h2::h2_is_sizable<std::list<int>>::value));
+      OK(!(h2::h2_is_sizable<std::forward_list<int>>::value));
+
+      OK((h2::h2_is_sizable<h2::h2_vector<int>>::value));
+   }
+
+   Case(Associative containers)
+   {
+      OK((h2::h2_is_sizable<std::set<int>>::value));
+      OK((h2::h2_is_sizable<std::multiset<int>>::value));
+      OK((h2::h2_is_sizable<std::unordered_set<int>>::value));
+      OK((h2::h2_is_sizable<std::unordered_multiset<int>>::value));
+      OK((h2::h2_is_sizable<std::map<int, int>>::value));
+      OK((h2::h2_is_sizable<std::multimap<int, int>>::value));
+      OK((h2::h2_is_sizable<std::unordered_map<int, int>>::value));
+      OK((h2::h2_is_sizable<std::unordered_multimap<int, int>>::value));
+   }
+
+   Case(valarray)
+   {
+      OK((h2::h2_is_sizable<std::valarray<int>>::value));
+   }
+
+   Case(string)
+   {
+      OK((h2::h2_is_sizable<std::string>::value));
+      OK((h2::h2_is_sizable<h2::h2_string>::value));
+   }
+
+   Case(Container adaptors)
+   {
+      OK((h2::h2_is_sizable<std::stack<int>>::value));
+      OK((h2::h2_is_sizable<std::queue<int>>::value));
+      OK((h2::h2_is_sizable<std::priority_queue<int>>::value));
+   }
+}
+
+SUITE(underlying_container)
+{
+   Case(stack)
+   {
+      std::stack<int> a1;
+      a1.push(1);
+      a1.push(2);
+      a1.push(3);
+      OK(ListOf(1, 2, 3), h2::underlying_container(a1));
+   }
+
+   Case(queue)
+   {
+      std::queue<int> a1;
+      a1.push(1);
+      a1.push(2);
+      a1.push(3);
+      OK(ListOf(1, 2, 3), h2::underlying_container(a1));
+   }
+
+   Case(priority_queue)
+   {
+      std::priority_queue<int> a1;
+      a1.push(1);
+      a1.push(2);
+      a1.push(3);
+      OK(Has(1) && Has(2) && Has(3), h2::underlying_container(a1));
    }
 }

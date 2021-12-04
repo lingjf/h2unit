@@ -457,25 +457,86 @@ template <typename K, typename V>
 struct h2_is_pair<std::pair<K, V>> : std::true_type {
 };
 
-template <typename T>
-struct h2_is_container {
-   template <typename U>
-   static std::true_type has_const_iterator(typename U::const_iterator*);
-   template <typename U>
-   static std::false_type has_const_iterator(...);
-
-   template <typename U>
-   static std::true_type has_begin(typename std::enable_if<std::is_same<decltype(static_cast<typename U::const_iterator (U::*)() const>(&U::begin)), typename U::const_iterator (U::*)() const>::value>::type*);
-   template <typename U>
-   static std::false_type has_begin(...);
-
-   template <typename U>
-   static auto has_end(U* u) -> typename std::enable_if<std::is_member_function_pointer<decltype(static_cast<typename U::const_iterator (U::*)() const>(&U::end))>::value, std::true_type>::type;
-   template <typename U>
-   static std::false_type has_end(...);
-
-   static constexpr bool value = decltype(has_const_iterator<T>(nullptr))::value && decltype(has_begin<T>(nullptr))::value && decltype(has_end<T>(nullptr))::value;
+template <typename...>
+struct h2_valid_t {
 };
+
+template <typename T, typename = void>
+struct h2_is_string : std::false_type {
+};
+
+template <typename T>
+struct h2_is_string<T,
+                    typename std::conditional<false,
+                                              h2_valid_t<typename T::value_type,
+                                                         typename T::size_type,
+                                                         typename T::iterator,
+                                                         typename T::const_iterator,
+                                                         decltype(std::declval<T>().c_str()),
+                                                         decltype(std::declval<T>().begin()),
+                                                         decltype(std::declval<T>().end()),
+                                                         decltype(std::declval<T>().cbegin()),
+                                                         decltype(std::declval<T>().cend())>,
+                                              void>::type> : std::true_type {
+};
+
+template <typename T, typename = void>
+struct h2_is_iterable : std::false_type {
+};
+
+template <typename T>
+struct h2_is_iterable<T,
+                      typename std::conditional<false,
+                                                h2_valid_t<typename T::value_type,
+                                                           typename T::size_type,
+                                                           typename T::iterator,
+                                                           typename T::const_iterator,
+                                                           decltype(std::declval<T>().begin()),
+                                                           decltype(std::declval<T>().end()),
+                                                           decltype(std::declval<T>().cbegin()),
+                                                           decltype(std::declval<T>().cend())>,
+                                                void>::type> : std::true_type {
+};
+
+template <typename T>
+struct h2_is_container : std::conditional<h2_is_iterable<T>::value && !h2_is_string<T>::value, std::true_type, std::false_type>::type {
+};
+
+template <typename T, typename = void>
+struct h2_is_container_adaptor : std::false_type {
+};
+
+template <typename T>
+struct h2_is_container_adaptor<T,
+                               typename std::conditional<false,
+                                                         h2_valid_t<typename T::value_type,
+                                                                    typename T::size_type,
+                                                                    typename T::container_type>,
+                                                         void>::type> : std::true_type {
+};
+
+template <typename T, typename = void>
+struct h2_is_sizable : std::false_type {
+};
+
+template <typename T>
+struct h2_is_sizable<T,
+                     typename std::conditional<false,
+                                               h2_valid_t<decltype(std::declval<T>().size())>,
+                                               void>::type> : public std::true_type {
+};
+
+template <typename ContainerAdaptor>
+const typename ContainerAdaptor::container_type& underlying_container(const ContainerAdaptor& ca)
+{
+   struct AntiProtected : ContainerAdaptor {
+      static const typename ContainerAdaptor::container_type& get(const ContainerAdaptor& ca)
+      {
+         return ca.*&AntiProtected::c;
+      }
+   };
+   return AntiProtected::get(ca);
+}
 // source/utils/h2_numberfy.hpp
 
 template <typename T, typename = void>
@@ -864,13 +925,22 @@ struct h2_stringify_impl<std::pair<K, V>> {
 };
 
 template <typename T>
-struct h2_stringify_impl<T, typename std::enable_if<h2_is_container<T>::value && !std::is_convertible<T, h2_string>::value>::type> {
+struct h2_stringify_impl<T, typename std::enable_if<h2_is_container<T>::value>::type> {
    static h2_line print(const T& a, bool represent = false)
    {
       h2_line line;
-      for (auto it = a.begin(); it != a.end(); it++)
+      for (auto it = a.begin(); it != a.end(); ++it)
          line += (it != a.begin() ? gray(", ") : h2_line()) + h2_stringify_impl<typename T::value_type>::print(*it, represent);
       return gray("[") + line + gray("]");
+   }
+};
+
+template <typename T>
+struct h2_stringify_impl<T, typename std::enable_if<h2_is_container_adaptor<T>::value>::type> {
+   static h2_line print(const T& a, bool represent = false)
+   {
+      auto _a = underlying_container(a);
+      return h2_stringify_impl<decltype(_a)>::print(_a, represent);
    }
 };
 
@@ -930,7 +1000,10 @@ struct h2_stringify_impl<char> {
 };
 
 template <typename T>
-inline h2_line h2_stringify(const T& a, bool represent = false) { return h2_stringify_impl<T>::print(a, represent); }
+inline h2_line h2_stringify(const T& a, bool represent = false)
+{
+   return h2_stringify_impl<T>::print(a, represent);
+}
 template <typename T>
 inline h2_line h2_stringify(T a, size_t n, bool represent)
 {
@@ -1850,7 +1923,7 @@ struct h2_has_matches : h2_matches {
    explicit h2_has_matches(const Matcher& m_) : m(m_) {}
 
    template <typename A>
-   auto matches(const A& a, h2_mc c) const -> typename std::enable_if<h2_is_container<typename std::decay<A>::type>::value, h2_fail*>::type
+   auto matches(const A& a, h2_mc c) const -> typename std::enable_if<h2_is_iterable<typename std::decay<A>::type>::value, h2_fail*>::type
    {
       bool found = false;
       for (auto const& i : a) {
@@ -1865,7 +1938,13 @@ struct h2_has_matches : h2_matches {
    }
 
    template <typename A>
-   auto matches(A a, h2_mc c) const -> typename std::enable_if<!h2_is_container<typename std::decay<A>::type>::value, h2_fail*>::type
+   auto matches(const A& a, h2_mc c) const -> typename std::enable_if<h2_is_container_adaptor<typename std::decay<A>::type>::value, h2_fail*>::type
+   {
+      return matches(underlying_container(a), c);
+   }
+
+   template <typename A>
+   auto matches(A a, h2_mc c) const -> typename std::enable_if<!h2_is_iterable<typename std::decay<A>::type>::value && !h2_is_container_adaptor<typename std::decay<A>::type>::value, h2_fail*>::type
    {
       bool found = false;
       for (size_t i = 0; i < c.n; ++i) {
@@ -1891,17 +1970,21 @@ struct h2_countof_matches : h2_matches {
    explicit h2_countof_matches(const Matcher& m_) : m(m_) {}
 
    template <typename A>
-   auto matches(const A& a, h2_mc c) const -> typename std::enable_if<h2_is_container<typename std::decay<A>::type>::value, h2_fail*>::type
+   auto matches(const A& a, h2_mc c) const -> typename std::enable_if<h2_is_sizable<typename std::decay<A>::type>::value, h2_fail*>::type
    {
-      // container size() is best, but forward_list haven't. iterator works all. https://en.cppreference.com/w/cpp/container
+      return __matches(a.size(), h2_stringify(a, true), c);
+   }
+
+   template <typename A>
+   auto matches(const A& a, h2_mc c) const -> typename std::enable_if<!h2_is_sizable<typename std::decay<A>::type>::value && h2_is_iterable<typename std::decay<A>::type>::value, h2_fail*>::type
+   {  // std::forward_list no size()
       size_t count = 0;
       for (auto it = a.cbegin(); it != a.cend(); ++it) count++;
-      // for (auto const& _ : a) count++;  Warning unused-variable
       return __matches(count, h2_stringify(a, true), c);
    }
 
    template <typename A>
-   auto matches(A a, h2_mc c) const -> typename std::enable_if<!h2_is_container<typename std::decay<A>::type>::value, h2_fail*>::type
+   auto matches(const A& a, h2_mc c) const -> typename std::enable_if<!h2_is_sizable<typename std::decay<A>::type>::value && !h2_is_iterable<typename std::decay<A>::type>::value, h2_fail*>::type
    {
       return __matches(c.n, h2_stringify(a, c.n, true), c);
    }
@@ -1928,7 +2011,7 @@ struct h2_listof_matches : h2_matches {
    explicit h2_listof_matches(const Matchers&... matchers) : t_matchers(matchers...) {}
 
    template <typename A>
-   auto matches(const A& a, h2_mc c) const -> typename std::enable_if<h2_is_container<typename std::decay<A>::type>::value, h2_fail*>::type
+   auto matches(const A& a, h2_mc c) const -> typename std::enable_if<h2_is_iterable<typename std::decay<A>::type>::value, h2_fail*>::type
    {
       h2_fail* fails = nullptr;
 
@@ -1960,8 +2043,14 @@ struct h2_listof_matches : h2_matches {
       return fail;
    }
 
+   template <typename A>
+   auto matches(const A& a, h2_mc c) const -> typename std::enable_if<h2_is_container_adaptor<typename std::decay<A>::type>::value, h2_fail*>::type
+   {
+      return matches(underlying_container(a), c);
+   }
+
    template <typename A> /* c/c++ generic array */
-   auto matches(A a, h2_mc c) const -> typename std::enable_if<!h2_is_container<typename std::decay<A>::type>::value, h2_fail*>::type
+   auto matches(A a, h2_mc c) const -> typename std::enable_if<!h2_is_iterable<typename std::decay<A>::type>::value && !h2_is_container_adaptor<typename std::decay<A>::type>::value, h2_fail*>::type
    {
       h2_fail* fails = nullptr;
       h2_vector<h2_matcher<typename std::decay<decltype(a[0])>::type>> v_matchers;
@@ -1994,16 +2083,19 @@ inline h2_polymorphic_matcher<h2_pair_matches<EK, EV>> Pair(const MK& mk, const 
 {
    return h2_polymorphic_matcher<h2_pair_matches<EK, EV>>(h2_pair_matches<EK, EV>(mk, mv));
 }
+
 template <typename Matcher>
 inline h2_polymorphic_matcher<h2_has_matches<typename std::decay<const Matcher&>::type>> Has(const Matcher& m)
 {
    return h2_polymorphic_matcher<h2_has_matches<typename std::decay<const Matcher&>::type>>(h2_has_matches<typename std::decay<const Matcher&>::type>(m));
 }
+
 template <typename Matcher>
 inline h2_polymorphic_matcher<h2_countof_matches<typename std::decay<const Matcher&>::type>> CountOf(const Matcher& m)
 {
    return h2_polymorphic_matcher<h2_countof_matches<typename std::decay<const Matcher&>::type>>(h2_countof_matches<typename std::decay<const Matcher&>::type>(m));
 }
+
 template <typename... Matchers>
 inline h2_polymorphic_matcher<h2_listof_matches<typename std::decay<const Matchers&>::type...>> ListOf(const Matchers&... matchers)
 {

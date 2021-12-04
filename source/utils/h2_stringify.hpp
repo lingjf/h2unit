@@ -93,13 +93,22 @@ struct h2_stringify_impl<std::pair<K, V>> {
 };
 
 template <typename T>
-struct h2_stringify_impl<T, typename std::enable_if<h2_is_container<T>::value && !std::is_convertible<T, h2_string>::value>::type> {
+struct h2_stringify_impl<T, typename std::enable_if<h2_is_container<T>::value>::type> {
    static h2_line print(const T& a, bool represent = false)
    {
       h2_line line;
-      for (auto it = a.begin(); it != a.end(); it++)
+      for (auto it = a.begin(); it != a.end(); ++it)
          line += (it != a.begin() ? gray(", ") : h2_line()) + h2_stringify_impl<typename T::value_type>::print(*it, represent);
       return gray("[") + line + gray("]");
+   }
+};
+
+template <typename T>
+struct h2_stringify_impl<T, typename std::enable_if<h2_is_container_adaptor<T>::value>::type> {
+   static h2_line print(const T& a, bool represent = false)
+   {
+      auto _a = underlying_container(a);
+      return h2_stringify_impl<decltype(_a)>::print(_a, represent);
    }
 };
 
@@ -159,7 +168,10 @@ struct h2_stringify_impl<char> {
 };
 
 template <typename T>
-inline h2_line h2_stringify(const T& a, bool represent = false) { return h2_stringify_impl<T>::print(a, represent); }
+inline h2_line h2_stringify(const T& a, bool represent = false)
+{
+   return h2_stringify_impl<T>::print(a, represent);
+}
 template <typename T>
 inline h2_line h2_stringify(T a, size_t n, bool represent)
 {

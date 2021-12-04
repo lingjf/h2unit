@@ -77,22 +77,83 @@ template <typename K, typename V>
 struct h2_is_pair<std::pair<K, V>> : std::true_type {
 };
 
-template <typename T>
-struct h2_is_container {
-   template <typename U>
-   static std::true_type has_const_iterator(typename U::const_iterator*);
-   template <typename U>
-   static std::false_type has_const_iterator(...);
-
-   template <typename U>
-   static std::true_type has_begin(typename std::enable_if<std::is_same<decltype(static_cast<typename U::const_iterator (U::*)() const>(&U::begin)), typename U::const_iterator (U::*)() const>::value>::type*);
-   template <typename U>
-   static std::false_type has_begin(...);
-
-   template <typename U>
-   static auto has_end(U* u) -> typename std::enable_if<std::is_member_function_pointer<decltype(static_cast<typename U::const_iterator (U::*)() const>(&U::end))>::value, std::true_type>::type;
-   template <typename U>
-   static std::false_type has_end(...);
-
-   static constexpr bool value = decltype(has_const_iterator<T>(nullptr))::value && decltype(has_begin<T>(nullptr))::value && decltype(has_end<T>(nullptr))::value;
+template <typename...>
+struct h2_valid_t {
 };
+
+template <typename T, typename = void>
+struct h2_is_string : std::false_type {
+};
+
+template <typename T>
+struct h2_is_string<T,
+                    typename std::conditional<false,
+                                              h2_valid_t<typename T::value_type,
+                                                         typename T::size_type,
+                                                         typename T::iterator,
+                                                         typename T::const_iterator,
+                                                         decltype(std::declval<T>().c_str()),
+                                                         decltype(std::declval<T>().begin()),
+                                                         decltype(std::declval<T>().end()),
+                                                         decltype(std::declval<T>().cbegin()),
+                                                         decltype(std::declval<T>().cend())>,
+                                              void>::type> : std::true_type {
+};
+
+template <typename T, typename = void>
+struct h2_is_iterable : std::false_type {
+};
+
+template <typename T>
+struct h2_is_iterable<T,
+                      typename std::conditional<false,
+                                                h2_valid_t<typename T::value_type,
+                                                           typename T::size_type,
+                                                           typename T::iterator,
+                                                           typename T::const_iterator,
+                                                           decltype(std::declval<T>().begin()),
+                                                           decltype(std::declval<T>().end()),
+                                                           decltype(std::declval<T>().cbegin()),
+                                                           decltype(std::declval<T>().cend())>,
+                                                void>::type> : std::true_type {
+};
+
+template <typename T>
+struct h2_is_container : std::conditional<h2_is_iterable<T>::value && !h2_is_string<T>::value, std::true_type, std::false_type>::type {
+};
+
+template <typename T, typename = void>
+struct h2_is_container_adaptor : std::false_type {
+};
+
+template <typename T>
+struct h2_is_container_adaptor<T,
+                               typename std::conditional<false,
+                                                         h2_valid_t<typename T::value_type,
+                                                                    typename T::size_type,
+                                                                    typename T::container_type>,
+                                                         void>::type> : std::true_type {
+};
+
+template <typename T, typename = void>
+struct h2_is_sizable : std::false_type {
+};
+
+template <typename T>
+struct h2_is_sizable<T,
+                     typename std::conditional<false,
+                                               h2_valid_t<decltype(std::declval<T>().size())>,
+                                               void>::type> : public std::true_type {
+};
+
+template <typename ContainerAdaptor>
+const typename ContainerAdaptor::container_type& underlying_container(const ContainerAdaptor& ca)
+{
+   struct AntiProtected : ContainerAdaptor {
+      static const typename ContainerAdaptor::container_type& get(const ContainerAdaptor& ca)
+      {
+         return ca.*&AntiProtected::c;
+      }
+   };
+   return AntiProtected::get(ca);
+}

@@ -1,4 +1,5 @@
 #include "../source/h2_unit.cpp"
+#include "test_cplusplus.hpp"
 #include "test_types.hpp"
 
 #include <vector>
@@ -882,6 +883,94 @@ SUITE(stringify Unordered Associative containers)
                                                       {std::string("th2"), 2}};
 
       OK(AnyOf("[(th1, 1), (th2, 2)]", "[(th2, 2), (th1, 1)]"), (h2::h2_stringify<std::unordered_multimap<std::string, int>>(a1).string()));
+   }
+}
+
+SUITE(stringify Container adaptors)
+{
+   // Container adaptors
+
+   //    stack
+   //    queue
+   //    priority_queue
+
+   Case(Container adaptors / stack)
+   {
+      // std::vector<int> a1 = {1, 2, 3};
+      std::stack<int> a1;
+      a1.push(1);
+      a1.push(2);
+      a1.push(3);
+
+      OK(ListOf("\033{+dark gray}", "[", "\033{-dark gray}",
+                "1",
+                "\033{+dark gray}", ", ", "\033{-dark gray}",
+                "2",
+                "\033{+dark gray}", ", ", "\033{-dark gray}",
+                "3",
+                "\033{+dark gray}", "]", "\033{-dark gray}"),
+         h2::h2_stringify(a1));
+
+      OK(ListOf("\033{+dark gray}", "[", "\033{-dark gray}",
+                "1",
+                "\033{+dark gray}", ", ", "\033{-dark gray}",
+                "2",
+                "\033{+dark gray}", ", ", "\033{-dark gray}",
+                "3",
+                "\033{+dark gray}", "]", "\033{-dark gray}"),
+         h2::h2_stringify(a1, true));
+   }
+
+   Case(Container adaptors / queue)
+   {
+      std::queue<int> a1;
+      a1.push(1);
+      a1.push(2);
+      a1.push(3);
+
+      OK(ListOf("\033{+dark gray}", "[", "\033{-dark gray}",
+                "1",
+                "\033{+dark gray}", ", ", "\033{-dark gray}",
+                "2",
+                "\033{+dark gray}", ", ", "\033{-dark gray}",
+                "3",
+                "\033{+dark gray}", "]", "\033{-dark gray}"),
+         h2::h2_stringify(a1));
+
+      OK(ListOf("\033{+dark gray}", "[", "\033{-dark gray}",
+                "1",
+                "\033{+dark gray}", ", ", "\033{-dark gray}",
+                "2",
+                "\033{+dark gray}", ", ", "\033{-dark gray}",
+                "3",
+                "\033{+dark gray}", "]", "\033{-dark gray}"),
+         h2::h2_stringify(a1, true));
+   }
+
+   Case(Container adaptors / priority_queue)
+   {
+      std::priority_queue<int> a1;
+      a1.push(1);
+      a1.push(2);
+      a1.push(3);
+
+      OK(ListOf("\033{+dark gray}", "[", "\033{-dark gray}",
+                "3",
+                "\033{+dark gray}", ", ", "\033{-dark gray}",
+                "1",
+                "\033{+dark gray}", ", ", "\033{-dark gray}",
+                "2",
+                "\033{+dark gray}", "]", "\033{-dark gray}"),
+         h2::h2_stringify(a1));
+
+      OK(ListOf("\033{+dark gray}", "[", "\033{-dark gray}",
+                "3",
+                "\033{+dark gray}", ", ", "\033{-dark gray}",
+                "1",
+                "\033{+dark gray}", ", ", "\033{-dark gray}",
+                "2",
+                "\033{+dark gray}", "]", "\033{-dark gray}"),
+         h2::h2_stringify(a1, true));
    }
 }
 

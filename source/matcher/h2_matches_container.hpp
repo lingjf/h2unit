@@ -37,7 +37,7 @@ struct h2_has_matches : h2_matches {
    explicit h2_has_matches(const Matcher& m_) : m(m_) {}
 
    template <typename A>
-   auto matches(const A& a, h2_mc c) const -> typename std::enable_if<h2_is_container<typename std::decay<A>::type>::value, h2_fail*>::type
+   auto matches(const A& a, h2_mc c) const -> typename std::enable_if<h2_is_iterable<typename std::decay<A>::type>::value, h2_fail*>::type
    {
       bool found = false;
       for (auto const& i : a) {
@@ -52,7 +52,13 @@ struct h2_has_matches : h2_matches {
    }
 
    template <typename A>
-   auto matches(A a, h2_mc c) const -> typename std::enable_if<!h2_is_container<typename std::decay<A>::type>::value, h2_fail*>::type
+   auto matches(const A& a, h2_mc c) const -> typename std::enable_if<h2_is_container_adaptor<typename std::decay<A>::type>::value, h2_fail*>::type
+   {
+      return matches(underlying_container(a), c);
+   }
+
+   template <typename A>
+   auto matches(A a, h2_mc c) const -> typename std::enable_if<!h2_is_iterable<typename std::decay<A>::type>::value && !h2_is_container_adaptor<typename std::decay<A>::type>::value, h2_fail*>::type
    {
       bool found = false;
       for (size_t i = 0; i < c.n; ++i) {
@@ -78,17 +84,21 @@ struct h2_countof_matches : h2_matches {
    explicit h2_countof_matches(const Matcher& m_) : m(m_) {}
 
    template <typename A>
-   auto matches(const A& a, h2_mc c) const -> typename std::enable_if<h2_is_container<typename std::decay<A>::type>::value, h2_fail*>::type
+   auto matches(const A& a, h2_mc c) const -> typename std::enable_if<h2_is_sizable<typename std::decay<A>::type>::value, h2_fail*>::type
    {
-      // container size() is best, but forward_list haven't. iterator works all. https://en.cppreference.com/w/cpp/container
+      return __matches(a.size(), h2_stringify(a, true), c);
+   }
+
+   template <typename A>
+   auto matches(const A& a, h2_mc c) const -> typename std::enable_if<!h2_is_sizable<typename std::decay<A>::type>::value && h2_is_iterable<typename std::decay<A>::type>::value, h2_fail*>::type
+   {  // std::forward_list no size()
       size_t count = 0;
       for (auto it = a.cbegin(); it != a.cend(); ++it) count++;
-      // for (auto const& _ : a) count++;  Warning unused-variable
       return __matches(count, h2_stringify(a, true), c);
    }
 
    template <typename A>
-   auto matches(A a, h2_mc c) const -> typename std::enable_if<!h2_is_container<typename std::decay<A>::type>::value, h2_fail*>::type
+   auto matches(const A& a, h2_mc c) const -> typename std::enable_if<!h2_is_sizable<typename std::decay<A>::type>::value && !h2_is_iterable<typename std::decay<A>::type>::value, h2_fail*>::type
    {
       return __matches(c.n, h2_stringify(a, c.n, true), c);
    }
@@ -115,7 +125,7 @@ struct h2_listof_matches : h2_matches {
    explicit h2_listof_matches(const Matchers&... matchers) : t_matchers(matchers...) {}
 
    template <typename A>
-   auto matches(const A& a, h2_mc c) const -> typename std::enable_if<h2_is_container<typename std::decay<A>::type>::value, h2_fail*>::type
+   auto matches(const A& a, h2_mc c) const -> typename std::enable_if<h2_is_iterable<typename std::decay<A>::type>::value, h2_fail*>::type
    {
       h2_fail* fails = nullptr;
 
@@ -147,8 +157,14 @@ struct h2_listof_matches : h2_matches {
       return fail;
    }
 
+   template <typename A>
+   auto matches(const A& a, h2_mc c) const -> typename std::enable_if<h2_is_container_adaptor<typename std::decay<A>::type>::value, h2_fail*>::type
+   {
+      return matches(underlying_container(a), c);
+   }
+
    template <typename A> /* c/c++ generic array */
-   auto matches(A a, h2_mc c) const -> typename std::enable_if<!h2_is_container<typename std::decay<A>::type>::value, h2_fail*>::type
+   auto matches(A a, h2_mc c) const -> typename std::enable_if<!h2_is_iterable<typename std::decay<A>::type>::value && !h2_is_container_adaptor<typename std::decay<A>::type>::value, h2_fail*>::type
    {
       h2_fail* fails = nullptr;
       h2_vector<h2_matcher<typename std::decay<decltype(a[0])>::type>> v_matchers;
@@ -181,16 +197,19 @@ inline h2_polymorphic_matcher<h2_pair_matches<EK, EV>> Pair(const MK& mk, const 
 {
    return h2_polymorphic_matcher<h2_pair_matches<EK, EV>>(h2_pair_matches<EK, EV>(mk, mv));
 }
+
 template <typename Matcher>
 inline h2_polymorphic_matcher<h2_has_matches<typename std::decay<const Matcher&>::type>> Has(const Matcher& m)
 {
    return h2_polymorphic_matcher<h2_has_matches<typename std::decay<const Matcher&>::type>>(h2_has_matches<typename std::decay<const Matcher&>::type>(m));
 }
+
 template <typename Matcher>
 inline h2_polymorphic_matcher<h2_countof_matches<typename std::decay<const Matcher&>::type>> CountOf(const Matcher& m)
 {
    return h2_polymorphic_matcher<h2_countof_matches<typename std::decay<const Matcher&>::type>>(h2_countof_matches<typename std::decay<const Matcher&>::type>(m));
 }
+
 template <typename... Matchers>
 inline h2_polymorphic_matcher<h2_listof_matches<typename std::decay<const Matchers&>::type...>> ListOf(const Matchers&... matchers)
 {

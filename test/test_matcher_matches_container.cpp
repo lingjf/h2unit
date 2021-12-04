@@ -3,18 +3,7 @@
 #endif
 
 #include "../source/h2_unit.cpp"
-
-#include <vector>
-#include <deque>
-#include <array>
-#include <list>
-#include <forward_list>
-#include <set>
-#include <unordered_set>
-#include <map>
-#include <unordered_map>
-#include <tuple>
-#include <valarray>
+#include "test_cplusplus.hpp"
 
 SUITE(container matches)
 {
@@ -143,6 +132,42 @@ SUITE(ListOf primitive)
       // OK(ListOf(Pair(1, 111), Pair(2, 222), Pair(3, 333)), a1);
    }
 
+   Case(Container adaptors / stack)
+   {
+      std::stack<int> a1;
+      a1.push(1);
+      a1.push(2);
+      a1.push(3);
+
+      OK(ListOf(1, 2, 3), a1);
+   }
+
+   Case(Container adaptors / queue)
+   {
+      std::queue<int> a1;
+      a1.push(1);
+      a1.push(2);
+      a1.push(3);
+
+      OK(ListOf(1, 2, 3), a1);
+   }
+
+   Case(Container adaptors / priority_queue)
+   {
+      std::priority_queue<int> a1;
+      a1.push(1);
+      a1.push(2);
+      a1.push(3);
+
+      OK(ListOf(1, 2, 3) || ListOf(1, 3, 2) || ListOf(2, 1, 3) || ListOf(2, 3, 1) || ListOf(3, 1, 2) || ListOf(3, 2, 1), a1);
+   }
+
+   Case(string)
+   {
+      std::string a1 = "abc";
+      OK(ListOf('a', 'b', 'c'), a1);
+   }
+
    Case(empty)
    {
       std::array<int, 3> a1 = {1, 2, 3};
@@ -237,6 +262,54 @@ SUITE(Has primitive)
       OK(Has(Pair(3, 333)), a1);
       OK(!Has(Pair(4, 444)), a1);
    }
+
+   Case(Container adaptors / stack)
+   {
+      std::stack<int> a1;
+      a1.push(1);
+      a1.push(2);
+      a1.push(3);
+
+      OK(Has(1), a1);
+      OK(Has(2), a1);
+      OK(Has(3), a1);
+      OK(!Has(4), a1);
+   }
+
+   Case(Container adaptors / queue)
+   {
+      std::queue<int> a1;
+      a1.push(1);
+      a1.push(2);
+      a1.push(3);
+
+      OK(Has(1), a1);
+      OK(Has(2), a1);
+      OK(Has(3), a1);
+      OK(!Has(4), a1);
+   }
+
+   Case(Container adaptors / priority_queue)
+   {
+      std::priority_queue<int> a1;
+      a1.push(1);
+      a1.push(2);
+      a1.push(3);
+
+      OK(Has(1), a1);
+      OK(Has(2), a1);
+      OK(Has(3), a1);
+      OK(!Has(4), a1);
+   }
+
+   Case(string)
+   {
+      std::string a1 = "abc";
+      OK(Has('a'), a1);
+      OK(Has('b'), a1);
+      OK(Has('c'), a1);
+      OK(!Has('d'), a1);
+   }
 }
 
 SUITE(CountOf primitive)
@@ -312,6 +385,45 @@ SUITE(CountOf primitive)
    {
       std::unordered_multimap<int, int> a1 = {{1, 111}, {2, 222}, {3, 333}};
       OK(CountOf(3), a1);
+   }
+
+   Case(Container adaptors / stack)
+   {
+      std::stack<int> a1;
+      a1.push(1);
+      a1.push(2);
+      a1.push(3);
+
+      OK(CountOf(3), a1);
+   }
+
+   Case(Container adaptors / queue)
+   {
+      std::queue<int> a1;
+      a1.push(1);
+      a1.push(2);
+      a1.push(3);
+
+      OK(CountOf(3), a1);
+   }
+
+   Case(Container adaptors / priority_queue)
+   {
+      std::priority_queue<int> a1;
+      a1.push(1);
+      a1.push(2);
+      a1.push(3);
+
+      OK(CountOf(3), a1);
+   }
+
+   Case(string)
+   {
+      std::string a1 = "abc";
+      OK(CountOf(3), a1);
+
+      h2::h2_string a2 = "abc";
+      OK(CountOf(3), a2);
    }
 }
 
