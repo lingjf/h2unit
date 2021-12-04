@@ -311,6 +311,8 @@ using h2::NoneOf;
 using h2::ListOf;
 using h2::CountOf;
 using h2::Has;
+using h2::HasKey;
+using h2::HasValue;
 using h2::Pair;
 
 #ifdef __cplusplus

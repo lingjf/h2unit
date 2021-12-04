@@ -21,6 +21,7 @@ struct h2_matcher : h2_matches {
 
 template <typename Matches>
 struct h2_polymorphic_matcher : h2_matches {
+   using matches_type = Matches;
    const Matches m;
    bool negative = false, case_insensitive = false, squash_whitespace = false;
    explicit h2_polymorphic_matcher(const Matches& m_) : m(m_) {}
@@ -66,6 +67,16 @@ struct h2_polymorphic_matcher : h2_matches {
    {
       return h2_matches_expection(m, {c.n, negative != c.negative, case_insensitive || c.case_insensitive, squash_whitespace || c.squash_whitespace, c.no_compare_operator});
    }
+};
+
+template <typename T, typename = void>
+struct h2_is_polymorphic_matcher : std::false_type {
+};
+template <typename T>
+struct h2_is_polymorphic_matcher<T,
+                                 typename std::conditional<false,
+                                                           h2_valid_t<typename T::matches_type>,
+                                                           void>::type> : std::true_type {
 };
 
 const h2_polymorphic_matcher<h2_matches_any> _{h2_matches_any()};

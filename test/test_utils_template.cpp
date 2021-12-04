@@ -318,6 +318,55 @@ SUITE(is_iterable)
    }
 }
 
+SUITE(is_map)
+{
+   Case(Fundamental types)
+   {
+      OK(!(h2::h2_is_map<int>::value));
+   }
+
+   Case(Sequence containers)
+   {
+      OK(!(h2::h2_is_map<std::array<int, 8>>::value));
+      OK(!(h2::h2_is_map<std::vector<int>>::value));
+      OK(!(h2::h2_is_map<std::deque<int>>::value));
+      OK(!(h2::h2_is_map<std::list<int>>::value));
+      OK(!(h2::h2_is_map<std::forward_list<int>>::value));
+
+      OK(!(h2::h2_is_map<h2::h2_vector<int>>::value));
+   }
+
+   Case(Associative containers)
+   {
+      OK(!(h2::h2_is_map<std::set<int>>::value));
+      OK(!(h2::h2_is_map<std::multiset<int>>::value));
+      OK(!(h2::h2_is_map<std::unordered_set<int>>::value));
+      OK(!(h2::h2_is_map<std::unordered_multiset<int>>::value));
+      OK((h2::h2_is_map<std::map<int, int>>::value));
+      OK((h2::h2_is_map<std::multimap<int, int>>::value));
+      OK((h2::h2_is_map<std::unordered_map<int, int>>::value));
+      OK((h2::h2_is_map<std::unordered_multimap<int, int>>::value));
+   }
+
+   Case(Container adaptors)
+   {
+      OK(!(h2::h2_is_map<std::stack<int>>::value));
+      OK(!(h2::h2_is_map<std::queue<int>>::value));
+      OK(!(h2::h2_is_map<std::priority_queue<int>>::value));
+   }
+
+   Case(string)
+   {
+      OK(!(h2::h2_is_map<std::string>::value));
+      OK(!(h2::h2_is_map<h2::h2_string>::value));
+   }
+
+   Case(valarray)
+   {
+      OK(!(h2::h2_is_map<std::valarray<int>>::value));
+   }
+}
+
 SUITE(is_container)
 {
    Case(Fundamental types)

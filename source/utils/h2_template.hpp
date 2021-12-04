@@ -118,6 +118,25 @@ struct h2_is_iterable<T,
                                                 void>::type> : std::true_type {
 };
 
+template <typename T, typename = void>
+struct h2_is_map : std::false_type {
+};
+
+template <typename T>
+struct h2_is_map<T,
+                 typename std::conditional<false,
+                                           h2_valid_t<typename T::value_type,
+                                                      typename T::size_type,
+                                                      typename T::mapped_type,
+                                                      typename T::iterator,
+                                                      typename T::const_iterator,
+                                                      decltype(std::declval<T>().begin()),
+                                                      decltype(std::declval<T>().end()),
+                                                      decltype(std::declval<T>().cbegin()),
+                                                      decltype(std::declval<T>().cend())>,
+                                           void>::type> : std::true_type {
+};
+
 template <typename T>
 struct h2_is_container : std::conditional<h2_is_iterable<T>::value && !h2_is_string<T>::value, std::true_type, std::false_type>::type {
 };

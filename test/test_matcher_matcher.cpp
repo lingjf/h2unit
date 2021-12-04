@@ -1,4 +1,5 @@
 #include "../source/h2_unit.cpp"
+#include "test_cplusplus.hpp"
 #include "test_types.hpp"
 
 SUITE(Matcher)

@@ -403,8 +403,8 @@ CASE(case name)
 *    [`AnyOf`](../source/h2_unit.hpp#L321)(expect...) : matches if value matches any one of inner matchers, act as OR logical operator
 *    [`NoneOf`](../source/h2_unit.hpp#L321)(expect...) : matches if value not matches all of inner matchers 
 *    [`ListOf`](../source/h2_unit.hpp#L321)(expect...) : matches if sequence container(array, vector, ...) item matches inner matchers 
-*    [`CountOf`](../source/h2_unit.hpp#L321)(expect...) : matches if container(array, vector, ...) item count matches inner matchers 
-*    [`Has`](../source/h2_unit.hpp#L321)(expect...) : matches if there are items in container(vector, set, map, ...) match every inner matchers
+*    [`CountOf`](../source/h2_unit.hpp#L321)(expect) : matches if container(array, vector, ...) item count matches inner matcher
+*    [`Has`](../source/h2_unit.hpp#L321)(expect...) : matches if there are items in container(vector, set, map, ...) match every inner matcher
 
 
 Matcher can be used in OK(expect, actual), for example:
@@ -414,7 +414,58 @@ OK(Ge(1.4142), sqrt(2))
 It asserts sqrt(2) result 1.41421356237 is greater or equal than 1.4142
 
 
-### Memory compare matcher
+### Has element in container (`Has`)
+Check element existence in container using `Has`.
+
+Following sample is check if 2 exist in vector.
+```C++
+CASE(has element in vector)
+{
+   std::vector<int> a = {1, 2, 3};
+   OK(Has(2), a);
+}
+```
+
+Use two parameters in `Has` to check element existence in map container.
+```C++
+CASE(has element in map)
+{
+   std::map<std::string, int> a = {{"a": 1}, {"b": 2}, {"c": 3}};
+   OK(Has("b", 2), a);
+}
+```
+
+Also can use `Pair` to combine key and value.
+```C++
+CASE(has element in map)
+{
+   std::map<std::string, int> a = {{"a": 1}, {"b": 2}, {"c": 3}};
+   OK(Has(Pair("b", 2)), a);
+}
+```
+If only one parameter in `Has` to check key existence in map container.
+
+`HasKey` is other way to check key existence in map constructor.
+```C++
+CASE(has element in map)
+{
+   std::map<std::string, int> a = {{"a": 1}, {"b": 2}, {"c": 3}};
+   OK(Has("b"), a);
+   OK(HasKey("b"), a);
+}
+```
+
+If want to check value existence in map container, set first parameter to Any, or using `HasValue`.
+```C++
+CASE(has element in map)
+{
+   std::map<std::string, int> a = {{"a": 1}, {"b": 2}, {"c": 3}};
+   OK(Has(Any, 2), a);
+   OK(HasValue(2), a);
+}
+```
+
+### Memory compare matcher (`Me`)
 Expection is described by buffer, length and width.
 
 #### explicit width
