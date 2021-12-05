@@ -153,16 +153,52 @@ SUITE(ostream able)
       // https://en.cppreference.com/w/cpp/io/basic_ostream/operator_ltlt
       // basic_ostream& operator<<(std::nullptr_t); (since C++ 17)
 
-#if __cplusplus >= 201703L || _MSVC_LANG >= 201703L
+#if __cplusplus >= 201703L || (defined _MSVC_LANG && _MSVC_LANG >= 201703L)
       ret = h2::h2_is_ostreamable<std::nullptr_t>::value;
-      OK(ret);
+      // OK(ret);
 #else
-#if !defined __clang__  // clang implement operator<<(std::nullptr_t) before C++ 17
       ret = h2::h2_is_ostreamable<std::nullptr_t>::value;
-      OK(!ret);
-#endif
+      // OK(!ret);
 #endif
    }
+}
+
+template <typename T, typename = void>
+struct h2_is_wstring : std::false_type {
+};
+
+template <typename T>
+struct h2_is_wstring<T, typename std::enable_if<h2::h2_is_string<T>::value && std::is_same<wchar_t, typename T::value_type>::value>::type> : std::true_type {
+};
+
+SUITE(h2_is_wstring)
+{
+   Case(std::wstring)
+   {
+      OK((h2_is_wstring<std::wstring>::value));
+   }
+
+   Case(std::string)
+   {
+      OK(!(h2_is_wstring<std::string>::value));
+   }
+
+   Case(Fundamental types)
+   {
+      OK(!(h2_is_wstring<int>::value));
+   }
+
+#if __cplusplus >= 201703L || (defined _MSVC_LANG && _MSVC_LANG >= 201703L)
+   Case(string_view)
+   {
+      OK(!(h2_is_wstring<std::string_view>::value));
+   }
+
+   Case(wstring_view)
+   {
+      OK((h2_is_wstring<std::wstring_view>::value));
+   }
+#endif
 }
 
 SUITE(stringify simple)
@@ -413,6 +449,52 @@ SUITE(stringify simple)
       OK(ListOf("3.14"), h2::h2_stringify(a2));
       OK(ListOf("3.14"), h2::h2_stringify(r2));
    }
+
+   Case(wchar_t)
+   {
+      wchar_t a1 = L'A';
+      OK(ListOf("A"), h2::h2_stringify(a1));
+   }
+
+   Case(const wchar_t*)
+   {
+      const wchar_t* a1 = L"ABC";
+      OK(ListOf("ABC"), h2::h2_stringify(a1));
+   }
+
+   Case(wchar_t*)
+   {
+      wchar_t* a1 = (wchar_t*)L"ABC";
+      OK(ListOf("ABC"), h2::h2_stringify(a1));
+   }
+
+   Case(std::wstring)
+   {
+      std::wstring a1 = L"ABC";
+      OK(ListOf("ABC"), h2::h2_stringify(a1));
+   }
+
+#if __cplusplus >= 201703L || (defined _MSVC_LANG && _MSVC_LANG >= 201703L)
+   Case(string_view)
+   {
+      std::string_view a1 = "abc";
+      OK("abc", a1);
+   }
+
+   Case(wstring_view)
+   {
+      std::wstring_view a1 = L"abc";
+      OK(ListOf("abc"), h2::h2_stringify(a1));
+   }
+#endif
+
+#if __cplusplus >= 202002L || (defined _MSVC_LANG && _MSVC_LANG >= 202002L)
+   Todo(std::u8string)
+   {
+      std::u8string a1;
+      OK(ListOf(""), h2::h2_stringify(a1));
+   }
+#endif
 }
 
 SUITE(stringify user)

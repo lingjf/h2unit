@@ -139,12 +139,7 @@ struct h2_stringify_impl<bool> {
 
 template <>
 struct h2_stringify_impl<const char*> {
-   static h2_line print(const char* a, bool represent)
-   {
-      if (!a) return {"(null)"};
-      if (represent) return gray("\"") + a + gray("\"");
-      return {a};
-   }
+   static h2_line print(const char* a, bool represent) { return a ? h2_stringify_impl<h2_string>::print(h2_string{a}, represent) : h2_line{"(null)"}; }
 };
 
 template <>
@@ -165,6 +160,31 @@ struct h2_stringify_impl<char> {
       if (represent) return gray("'") + str + gray("'");
       return {str};
    }
+};
+
+template <typename T>
+struct h2_stringify_impl<T, typename std::enable_if<h2_is_string<T>::value && std::is_same<wchar_t, typename T::value_type>::value>::type> {
+   static h2_line print(const T& a, bool represent = false)
+   {
+      h2_string s;
+      for (auto c : a) s += (c <= 0xff) ? static_cast<char>(c) : '?';
+      return h2_stringify_impl<h2_string>::print(s, represent);
+   }
+};
+
+template <>
+struct h2_stringify_impl<const wchar_t*> {
+   static h2_line print(const wchar_t* a, bool represent) { return a ? h2_stringify_impl<std::wstring>::print(std::wstring{a}, represent) : h2_line{"(null)"}; }
+};
+
+template <>
+struct h2_stringify_impl<wchar_t*> {
+   static h2_line print(wchar_t* a, bool represent) { return h2_stringify_impl<const wchar_t*>::print(a, represent); }
+};
+
+template <>
+struct h2_stringify_impl<wchar_t> {
+   static h2_line print(wchar_t a, bool represent) { return h2_stringify_impl<char>::print((a <= 0xff) ? static_cast<char>(a) : '?', represent); }
 };
 
 template <typename T>
