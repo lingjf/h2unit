@@ -10,8 +10,8 @@ SUITE(mock tuple)
 
       OK(5, names.size());
       OK("int", names[0]);
-      OK("char*", names[1]);
-      OK(_struct "tm" _pointer, names[2]);
+      OK(Se("char" _pointer), names[1]);
+      OK(Se(_struct "tm" _pointer), names[2]);
       OK(_class "B_DerivedClass", names[3]);
       OK(_class "C_OverrideClass&", names[4]);
    }

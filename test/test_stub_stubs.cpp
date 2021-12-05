@@ -20,9 +20,9 @@ SUITE(STUBS)
 
       STUBS(B_DerivedClass, normal_f1, const char*, (int x))
       {
-         return sprintf(buffer, "*B.normal_f1(%d)%c", x, This->b), buffer;
+         return sprintf(buffer, "@B.normal_f1(%d)%c", x, This->b), buffer;
       };
-      OK("*B.normal_f1(1)b", b.normal_f1(1));
+      OK("@B.normal_f1(1)b", b.normal_f1(1));
 
       UNSTUBS(B_DerivedClass, normal_f1, const char*, (int a));
       OK("A.normal_f1(1)a", b.normal_f1(1));
@@ -36,9 +36,9 @@ SUITE(STUBS)
 
       STUBS(B_DerivedClass, virtual_f2, const char*, (int x, int y))
       {
-         return sprintf(buffer, "*B.virtual_f2(%d,%d)%c", x, y, This->b), buffer;
+         return sprintf(buffer, "@B.virtual_f2(%d,%d)%c", x, y, This->b), buffer;
       };
-      OK("*B.virtual_f2(1,2)b", b.virtual_f2(1, 2));
+      OK("@B.virtual_f2(1,2)b", b.virtual_f2(1, 2));
       UNSTUBS(B_DerivedClass, virtual_f2, const char*, (int a, int b));
       OK("B.virtual_f2(1,2)b", b.virtual_f2(1, 2));
    }
@@ -47,9 +47,9 @@ SUITE(STUBS)
    {
       STUBS(B_DerivedClass::static_f2, const char*, (int x, int y))
       {
-         return sprintf(buffer, "*B.static_f2(%d,%d)", x, y), buffer;
+         return sprintf(buffer, "@B.static_f2(%d,%d)", x, y), buffer;
       };
-      OK("*B.static_f2(1,2)", B_DerivedClass::static_f2(1, 2));
+      OK("@B.static_f2(1,2)", B_DerivedClass::static_f2(1, 2));
 
       UNSTUBS(B_DerivedClass::static_f2, const char*, (int a, int b));
       OK("B.static_f2(1,2)", B_DerivedClass::static_f2(1, 2));
@@ -63,9 +63,9 @@ SUITE(STUBS)
 
       STUBS(a, A_AbstractClass, virtual_f1, const char*, (int x))
       {
-         return sprintf(buffer, "*A.virtual_f1(%d)%c", x, This->a), buffer;
+         return sprintf(buffer, "@A.virtual_f1(%d)%c", x, This->a), buffer;
       };
-      OK("*A.virtual_f1(1)a", b.virtual_f1(1));
+      OK("@A.virtual_f1(1)a", b.virtual_f1(1));
       UNSTUBS(a, A_AbstractClass, virtual_f1, const char*, (int a));
       OK("A.virtual_f1(1)a", b.virtual_f1(1));
    }
@@ -75,9 +75,9 @@ SUITE(STUBS)
       D_NoConstructorClass d(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11);
       STUBS(d, D_NoConstructorClass, virtual_f3, const char*, (int x, int y, int z))
       {
-         return sprintf(buffer, "*D.virtual_f3(%d,%d,%d)%c", x, y, z, This->d), buffer;
+         return sprintf(buffer, "@D.virtual_f3(%d,%d,%d)%c", x, y, z, This->d), buffer;
       };
-      OK("*D.virtual_f3(1,2,3)d", d.virtual_f3(1, 2, 3));
+      OK("@D.virtual_f3(1,2,3)d", d.virtual_f3(1, 2, 3));
       UNSTUBS(d, D_NoConstructorClass, virtual_f3, const char*, (int, int, int));
       OK("D.virtual_f3(1,2,3)d", d.virtual_f3(1, 2, 3));
    }

@@ -82,6 +82,7 @@
     <ClCompile Include="test_mock_routine.cpp" />
     <ClCompile Include="test_mock_scope.cpp" />
     <ClCompile Include="test_mock_tuple.cpp" />
+    <ClCompile Include="test_mock_unmock.cpp" />
     <ClCompile Include="test_net_dns.cpp" />
     <ClCompile Include="test_net_socket.cpp" />
     <ClCompile Include="test_render_console.cpp" />

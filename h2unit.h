@@ -1737,7 +1737,7 @@ struct h2_equation<E, typename std::enable_if<std::is_convertible<E, h2_string>:
       h2_string _e = e, _a(a);
       if (c.squash_whitespace) _e = e.squash(), _a = _a.squash();
       if (c.fit(_a.equals(_e, c.case_insensitive))) return nullptr;
-      if (c.fit(h2_pattern::wildcard_match(_e.c_str(), _a.c_str(), c.case_insensitive))) return nullptr;
+      // if (c.fit(h2_pattern::wildcard_match(_e.c_str(), _a.c_str(), c.case_insensitive))) return nullptr;
       return h2_fail::new_strcmp(_e, a, c.case_insensitive, expection(c));
    }
    virtual h2_line expection(h2_mc c) const override
@@ -3629,49 +3629,9 @@ struct h2_sock : h2_once {
    ~h2_sock();
    static void clear();
    static void inject(const void* packet, size_t size, const char* attributes = "");  // from=1.2.3.4:5678, to=4.3.2.1:8765
-   static h2_packet* fetch();
 
    template <typename M1 = h2_polymorphic_matcher<h2_matches_any>, typename M2 = h2_polymorphic_matcher<h2_matches_any>, typename M3 = h2_polymorphic_matcher<h2_matches_any>, typename M4 = h2_polymorphic_matcher<h2_matches_any>>
-   static void check(const char* filine, const char* e, M1 from = Any, M2 to = Any, M3 payload = Any, M4 size = Any)
-   {
-      h2_runner::asserts();
-      h2_packet* p = h2_sock::fetch();
-      if (!p) {
-         h2_line t = "Outgoing packet miss Ptx(";
-         t.printf("green", "%s", e).printf("", ")");
-         h2_runner::failing(h2_fail::new_normal(t, filine));
-         return;
-      }
-      h2_fail* fails = nullptr;
-      h2_fail* fail_from = h2_matcher_cast<const char*>(from).matches(p->from.c_str());
-      if (fail_from) {
-         fail_from->explain = "from address";
-         h2_fail::append_subling(fails, fail_from);
-      }
-      h2_fail* fail_to = h2_matcher_cast<const char*>(to).matches(p->to.c_str());
-      if (fail_to) {
-         fail_to->explain = "to address";
-         h2_fail::append_subling(fails, fail_to);
-      }
-      h2_fail* fail_payload = h2_matcher_cast<const unsigned char*>(payload).matches((unsigned char*)p->data.data());
-      if (fail_payload) {
-         fail_payload->explain = "payload";
-         h2_fail::append_subling(fails, fail_payload);
-      }
-      h2_fail* fail_size = h2_matcher_cast<const int>(size).matches(p->data.size());
-      if (fail_size) {
-         fail_size->explain = "payload length";
-         h2_fail::append_subling(fails, fail_size);
-      }
-
-      if (fails) {
-         h2_line t = "Outgoing packet unexpected Ptx(";
-         t.printf("green", "%s", e).printf("", ")");
-         h2_fail* fail = h2_fail::new_normal(t, filine);
-         h2_fail::append_child(fail, fails);
-         h2_runner::failing(fail);
-      }
-   }
+   static void check(const char* filine, const char* e, M1 from = Any, M2 to = Any, M3 payload = Any, M4 size = Any);
 };
 
 #define __H2SOCK(Q) for (h2::h2_sock Q; Q;)
@@ -8645,7 +8605,7 @@ struct h2_socket {
 
 static inline void parse_iport(const char* s, char* iport)
 {
-   for (const char* p = s; p && *p; p++) {
+   for (const char* p = s; p && *p; ++p) {
       if (::isdigit(*p) || *p == '.' || *p == ':' || *p == '*' || *p == '?') {
          *iport++ = *p;
          *iport = '\0';
@@ -8663,11 +8623,6 @@ h2_inline void h2_sock::inject(const void* packet, size_t size, const char* attr
    h2_socket::I().put_incoming(from, to, (const char*)packet, size);
 }
 
-h2_inline h2_packet* h2_sock::fetch()
-{
-   return h2_list_pop_entry(h2_socket::I().outgoing, h2_packet, x);
-}
-
 h2_inline void h2_sock::clear()
 {
    h2_socket::I().stop();
@@ -8681,6 +8636,48 @@ h2_inline h2_sock::h2_sock()
 h2_inline h2_sock::~h2_sock()
 {
    h2_socket::I().stop();
+}
+
+template <typename M1, typename M2, typename M3, typename M4>
+h2_inline void h2_sock::check(const char* filine, const char* e, M1 from, M2 to, M3 payload, M4 size)
+{
+   h2_runner::asserts();
+   h2_packet* p = h2_list_pop_entry(h2_socket::I().outgoing, h2_packet, x);;
+   if (!p) {
+      h2_line t = "Outgoing packet miss Ptx(";
+      t.printf("green", "%s", e).printf("", ")");
+      h2_runner::failing(h2_fail::new_normal(t, filine));
+      return;
+   }
+   h2_fail* fails = nullptr;
+   h2_fail* fail_from = h2_matcher_cast<const char*>(We(from)).matches(p->from.c_str());
+   if (fail_from) {
+      fail_from->explain = "from address";
+      h2_fail::append_subling(fails, fail_from);
+   }
+   h2_fail* fail_to = h2_matcher_cast<const char*>(We(to)).matches(p->to.c_str());
+   if (fail_to) {
+      fail_to->explain = "to address";
+      h2_fail::append_subling(fails, fail_to);
+   }
+   h2_fail* fail_payload = h2_matcher_cast<const unsigned char*>(payload).matches((unsigned char*)p->data.data());
+   if (fail_payload) {
+      fail_payload->explain = "payload";
+      h2_fail::append_subling(fails, fail_payload);
+   }
+   h2_fail* fail_size = h2_matcher_cast<const int>(size).matches(p->data.size());
+   if (fail_size) {
+      fail_size->explain = "payload length";
+      h2_fail::append_subling(fails, fail_size);
+   }
+
+   if (fails) {
+      h2_line t = "Outgoing packet unexpected Ptx(";
+      t.printf("green", "%s", e).printf("", ")");
+      h2_fail* fail = h2_fail::new_normal(t, filine);
+      h2_fail::append_child(fail, fails);
+      h2_runner::failing(fail);
+   }
 }
 // source/core/h2_test.cpp
 

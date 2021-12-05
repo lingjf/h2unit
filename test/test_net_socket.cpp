@@ -17,19 +17,19 @@ SUITE(parse iport)
 
       const char* a1 = "1.2.3.4:5678";
       h2::parse_iport(a1, ret);
-      OK("1.2.3.4:5678", ret);
+      OK(Se("1.2.3.4:5678"), ret);
 
       const char* a2 = " 1.2.3.4:*";
       h2::parse_iport(a2, ret);
-      OK("1.2.3.4:*", ret);
+      OK(Se("1.2.3.4:*"), ret);
 
       const char* a3 = "  :5678";
       h2::parse_iport(a3, ret);
-      OK("*:5678", ret);
+      OK(Se(":5678"), ret);
 
       const char* a4 = "*:  *";
       h2::parse_iport(a4, ret);
-      OK("*:*", ret);
+      OK(Se("*:*"), ret);
    }
 }
 

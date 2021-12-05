@@ -407,9 +407,14 @@ typedef int (*A_FunctionPointer)(int a, int b);
 #define _class
 #endif
 
-#if defined _MSC_VER && (defined __x86_64__ || defined _M_X64)
+#if defined _MSC_VER
+#if defined __x86_64__ || defined _M_X64
 #define _pointer " * __ptr64"
 #define _fptr "__cdecl*"
+#else
+#define _pointer " *"
+#define _fptr " *"
+#endif
 #else
 #define _pointer "*"
 #define _fptr "*"

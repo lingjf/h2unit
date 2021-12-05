@@ -9,9 +9,10 @@ CASE(file line)
 
 CASE(type of __LINE__)
 {
+   char t[1024];
    auto line = __LINE__;
    // MSVC is long, gcc/clang is int
-   OK(AnyOf("int", "long"), h2::h2_cxa::demangle(typeid(decltype(line)).name()));
+   OK(AnyOf("int", "long"), h2::h2_cxa::demangle(typeid(decltype(line)).name(), t));
 }
 
 CASE(once)

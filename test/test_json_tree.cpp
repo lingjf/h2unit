@@ -73,7 +73,7 @@ SUITE(json parse)
    {
       h2::h2_json_tree c1("/123*567/");
       OK(c1.is_pattern());
-      OK("123*567", c1.value_string);
+      OK(Se("123*567"), c1.value_string);
    }
 
    Case(empty array)

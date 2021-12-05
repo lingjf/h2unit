@@ -33,7 +33,7 @@ struct h2_equation<E, typename std::enable_if<std::is_convertible<E, h2_string>:
       h2_string _e = e, _a(a);
       if (c.squash_whitespace) _e = e.squash(), _a = _a.squash();
       if (c.fit(_a.equals(_e, c.case_insensitive))) return nullptr;
-      if (c.fit(h2_pattern::wildcard_match(_e.c_str(), _a.c_str(), c.case_insensitive))) return nullptr;
+      // if (c.fit(h2_pattern::wildcard_match(_e.c_str(), _a.c_str(), c.case_insensitive))) return nullptr;
       return h2_fail::new_strcmp(_e, a, c.case_insensitive, expection(c));
    }
    virtual h2_line expection(h2_mc c) const override

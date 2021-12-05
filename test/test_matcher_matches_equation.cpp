@@ -23,9 +23,6 @@ SUITE(equation matches)
       OK(nullptr == a2.matches("abc", {}));
       h2::h2_equation<std::string> a3("abc");
       OK(nullptr == a3.matches("abc", {}));
-
-      h2::h2_equation<char*> a4((char*)"*bc");
-      OK(nullptr == a4.matches((char*)"abc", {}));
    }
 
    Case(float)
