@@ -83,12 +83,12 @@ h2_inline void h2_option::parse(int argc, const char** argv)
          case 'c': continue_assert = true; break;
          case 'd': debugger_trap = true; break;
          case 'e':
-            while ((t = get.extract_string())) h2_append(excludes, 128, t);
+            while ((t = get.extract_string())) h2_array_append(excludes, t);
             break;
          case 'f': only_last_failed = true; break;
          case 'F': get.extract_number(fold_json = 0); break;
          case 'i':
-            while ((t = get.extract_string())) h2_append(includes, 128, t);
+            while ((t = get.extract_string())) h2_array_append(includes, t);
             break;
          case 'l':
             while ((t = get.extract_string())) {

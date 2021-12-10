@@ -1,6 +1,6 @@
 static inline bool h2_blank(const char* str)
 {
-   for (; str && *str; str++)
+   for (; str && *str; ++str)
       if (!::isspace(*str)) return false;
    return true;
 }
@@ -87,7 +87,7 @@ static inline const char* index_th(size_t sequence, size_t shift = 1)
    return ss;
 }
 
-static inline size_t number_strlen(unsigned long long number, int base)
+static inline size_t number_strlen(size_t number, int base)
 {
    unsigned long long _10000000 = 1;
    for (size_t i = 1;; ++i) {
@@ -127,8 +127,6 @@ static inline unsigned h2_page_size()
 #endif
 }
 
-static inline const char* comma_if(bool a, const char* t = ", ", const char* f = "") { return a ? t : f; }
-
 static inline bool h2_in(const char* a, int n, ...)
 {
    va_list ap;
@@ -162,28 +160,16 @@ static inline const char* h2_candidate(const char* a, int n, ...)
    return ss;
 }
 
-#define h2_append(Array, Size, a)   \
-   for (int i = 0; i < Size; ++i) { \
-      if (!Array[i]) {              \
-         Array[i] = a;              \
-         break;                     \
-      }                             \
-   }
+#define h2_sprintvf(str, fmt, ap)            \
+   va_list bp;                               \
+   va_copy(bp, ap);                          \
+   int len = vsnprintf(nullptr, 0, fmt, bp); \
+   str = (char*)alloca(len + 1);             \
+   va_end(bp);                               \
+   len = vsnprintf(str, len + 1, fmt, ap);
 
-#define h2_sprintvf(str, fmt, ap)               \
-   do {                                         \
-      va_list bp;                               \
-      va_copy(bp, ap);                          \
-      int len = vsnprintf(nullptr, 0, fmt, bp); \
-      str = (char*)alloca(len + 1);             \
-      va_end(bp);                               \
-      len = vsnprintf(str, len + 1, fmt, ap);   \
-   } while (0)
-
-#define h2_sprintf(str, fmt)     \
-   do {                          \
-      va_list ap;                \
-      va_start(ap, fmt);         \
-      h2_sprintvf(str, fmt, ap); \
-      va_end(ap);                \
-   } while (0)
+#define h2_sprintf(str, fmt)  \
+   va_list ap;                \
+   va_start(ap, fmt);         \
+   h2_sprintvf(str, fmt, ap); \
+   va_end(ap);

@@ -12,6 +12,13 @@ SUITE(color)
 {
    h2::h2_color color;
 
+   Case(init)
+   {
+      for (int i = 0; i < 8; ++i) {
+         OK('\0', color.current[i][0]);
+      }
+   }
+
    Case(parse)
    {
       char c1[1024] = "\033{red}";

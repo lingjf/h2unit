@@ -2,7 +2,7 @@ h2_inline h2_line h2_mocker_base::argument(int seq, const char* def) const
 {
    h2_line t;
    for (int i = 0; i < (int)argument_types.size(); ++i)
-      t += (i ? gray(", ") : "") + color(argument_types[i], seq == i ? "red,bold" : def);
+      t += gray(comma_if(i)) + color(argument_types[i], seq == i ? "red,bold" : def);
    return gray("(") + t + gray(")");
 }
 

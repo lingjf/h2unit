@@ -69,6 +69,16 @@ SUITE(h2_line)
       OK(ListOf("123"), line);
    }
 
+   Case(+)
+   {
+      h2::h2_line line = "123";
+      line = line + line;
+      OK(ListOf("123", "123"), line);
+
+      line = line + h2::h2_line();
+      OK(ListOf("123", "123"), line);
+   }
+
    Case(+=)
    {
       h2::h2_line s = {"456", "789"};

@@ -98,7 +98,7 @@ struct h2_stringify_impl<T, typename std::enable_if<h2_is_container<T>::value>::
    {
       h2_line line;
       for (auto it = a.begin(); it != a.end(); ++it)
-         line += (it != a.begin() ? gray(", ") : h2_line()) + h2_stringify_impl<typename T::value_type>::print(*it, represent);
+         line += gray(comma_if(it != a.begin())) + h2_stringify_impl<typename T::value_type>::print(*it, represent);
       return gray("[") + line + gray("]");
    }
 };
@@ -123,7 +123,7 @@ struct h2_stringify_impl<std::tuple<Args...>> {
    template <std::size_t I>
    static h2_line tuple_print(const std::tuple<Args...>& a, bool represent, std::integral_constant<std::size_t, I>)
    {
-      return tuple_print(a, represent, std::integral_constant<std::size_t, I - 1>()) + (1 < I ? gray(", ") : h2_line()) + h2_stringify_impl<typename std::decay<decltype(std::get<I - 1>(a))>::type>::print(std::get<I - 1>(a), represent);
+      return tuple_print(a, represent, std::integral_constant<std::size_t, I - 1>()) + gray(comma_if(1 < I)) + h2_stringify_impl<typename std::decay<decltype(std::get<I - 1>(a))>::type>::print(std::get<I - 1>(a), represent);
    }
 };
 
@@ -198,6 +198,6 @@ inline h2_line h2_stringify(T a, size_t n, bool represent)
    if (n == 0) return h2_stringify(a, represent);
    h2_line line;
    for (size_t i = 0; i < n; ++i)
-      line += (i ? gray(", ") : h2_line()) + h2_stringify(a[i], represent);
+      line += gray(comma_if(i)) + h2_stringify(a[i], represent);
    return gray("[") + line + gray("]");
 }

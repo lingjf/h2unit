@@ -1,13 +1,10 @@
 struct h2_color {
    h2_singleton(h2_color);
-   char current[8][32];
-
-   h2_color() { memset(current, 0, sizeof(current)); }
+   char current[8][32]{{'\0'}};
 
    void clear_style()
    {
-      for (size_t i = 0; i < sizeof(current) / sizeof(current[0]); ++i)
-         current[i][0] = '\0';
+      for (size_t i = 0; i < sizeof(current) / sizeof(current[0]); ++i) current[i][0] = '\0';
    }
    void push_style(const char* style, size_t length)
    {
@@ -26,20 +23,19 @@ struct h2_color {
    }
    void change()
    {
-      char a[256];
-      sprintf(a, "\033[%d;", style2value("reset"));
+      char a[256], *p = a;
+      p += sprintf(p, "\033[%d;", style2value("reset"));
       for (size_t i = 0; i < sizeof(current) / sizeof(current[0]); ++i)
          if (current[i][0] != '\0')
-            sprintf(a + strlen(a), "%d;", style2value(current[i]));
-      a[strlen(a) - 1] = 'm';
-      LIBC__write(-20072009, a, strlen(a));
+            p += sprintf(p, "%d;", style2value(current[i]));
+      *(p - 1) = 'm';
+      LIBC__write(-21371647, a, (size_t)(p - a));
    }
    void parse(const char* style)
    {
       const char* p = style + 2;
       char s = '+';
       if (*p == '+' || *p == '-') s = *p++;
-
       for (;;) {
          size_t l = strcspn(p, ",}");
          s == '-' ? pop_style(p, l) : push_style(p, l);
@@ -49,15 +45,14 @@ struct h2_color {
       }
    }
    void print(const char* str)
-   {
-      /* Windows PowerShell works, but CMD not, refer to v5.11 SetConsoleTextAttribute */
+   {  /* Windows PowerShell works, but CMD not, refer to v5.11 SetConsoleTextAttribute */
       if (isctrl(str)) {
          if (h2_option::I().colorful) {
             I().parse(str);
             I().change();
          }
       } else {
-         LIBC__write(-20072009, str, strlen(str));
+         LIBC__write(-21371647, str, strlen(str));
       }
    }
    int style2value(const char* style)  // https://en.wikipedia.org/wiki/ANSI_escape_code#CSI_sequences

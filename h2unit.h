@@ -5,7 +5,7 @@
 #ifndef __H2UNIT_H__
 #define __H2UNIT_H__
 #define H2UNIT_VERSION 5.16
-#define H2UNIT_REVISION 2021-12-05 branches/v5
+#define H2UNIT_REVISION 2021-12-11 branches/v5
 #ifndef __H2_UNIT_HPP__
 #define __H2_UNIT_HPP__
 
@@ -645,12 +645,21 @@ struct h2_once {
    operator bool() { return !c++; }
 };
 
+#define h2_array_append(Array, a)                                      \
+   for (size_t i = 0; i < sizeof(Array) / sizeof(Array)[0] - 1; ++i) { \
+      if (!(Array)[i]) {                                               \
+         (Array)[i] = (a);                                             \
+         break;                                                        \
+      }                                                                \
+   }
+
 // #define M(...) func(#__VA_ARGS__, other)
 // Unix M() ==> func("", other) stringify empty __VA_ARGS__ to "" string
 // Windows M() ==> func(, other) stringify empty __VA_ARGS__ to empty
 // #define M(...) func(ss(#__VA_ARGS__), other)
 static inline const char* ss(const char* a = "") { return a ? a : ""; }
 static inline const size_t sn(const size_t a = 0) { return a; }
+static inline const char* comma_if(bool a, const char* t = ", ", const char* f = "") { return a ? t : f; }
 
 #define H2Foreach(Callback_x, ...) H2PP_FOREACH(, _H2ForeachMacro, (Callback_x), H2PP_REMOVE_PARENTHESES_IF(__VA_ARGS__))
 #define _H2ForeachMacro(_Args, i, x) H2PP_REMOVE_PARENTHESES(_Args)(x)
@@ -830,7 +839,7 @@ inline h2_line operator+(const h2_line& a, const h2_line& b)  // implicit conver
 
 static inline const h2_line color(const h2_line& line, const char* style) { return ("\033{" + h2_string(style) + "}") + line + "\033{reset}"; }
 static inline const h2_line delta(const h2_line& line, const char* style) { return ("\033{+" + h2_string(style) + "}") + line + ("\033{-" + h2_string(style) + "}"); }
-static inline const h2_line gray(const h2_line& line) { return delta(line, "dark gray"); }
+static inline const h2_line gray(const char* s) { return s && strlen(s) ? delta(s, "dark gray") : h2_line(); }
 
 ///// h2_lines
 struct h2_lines : h2_vector<h2_line> {
@@ -949,7 +958,7 @@ struct h2_stringify_impl<T, typename std::enable_if<h2_is_container<T>::value>::
    {
       h2_line line;
       for (auto it = a.begin(); it != a.end(); ++it)
-         line += (it != a.begin() ? gray(", ") : h2_line()) + h2_stringify_impl<typename T::value_type>::print(*it, represent);
+         line += gray(comma_if(it != a.begin())) + h2_stringify_impl<typename T::value_type>::print(*it, represent);
       return gray("[") + line + gray("]");
    }
 };
@@ -974,7 +983,7 @@ struct h2_stringify_impl<std::tuple<Args...>> {
    template <std::size_t I>
    static h2_line tuple_print(const std::tuple<Args...>& a, bool represent, std::integral_constant<std::size_t, I>)
    {
-      return tuple_print(a, represent, std::integral_constant<std::size_t, I - 1>()) + (1 < I ? gray(", ") : h2_line()) + h2_stringify_impl<typename std::decay<decltype(std::get<I - 1>(a))>::type>::print(std::get<I - 1>(a), represent);
+      return tuple_print(a, represent, std::integral_constant<std::size_t, I - 1>()) + gray(comma_if(1 < I)) + h2_stringify_impl<typename std::decay<decltype(std::get<I - 1>(a))>::type>::print(std::get<I - 1>(a), represent);
    }
 };
 
@@ -1049,7 +1058,7 @@ inline h2_line h2_stringify(T a, size_t n, bool represent)
    if (n == 0) return h2_stringify(a, represent);
    h2_line line;
    for (size_t i = 0; i < n; ++i)
-      line += (i ? gray(", ") : h2_line()) + h2_stringify(a[i], represent);
+      line += gray(comma_if(i)) + h2_stringify(a[i], represent);
    return gray("[") + line + gray("]");
 }
 // source/symbol/h2_nm.hpp
@@ -1296,7 +1305,6 @@ struct h2_suite : h2_test {
    };
 };
 // source/core/h2_runner.hpp
-
 struct h2_runner {
    h2_singleton(h2_runner);
 
@@ -1325,21 +1333,13 @@ struct h2_runner {
    static void asserts();
 };
 
-#define __H2GlobalCallback(Scope, Q)                   \
-   namespace {                                         \
-      static struct Q {                                \
-         Q()                                           \
-         {                                             \
-            for (int i = 0; i < 1024; ++i) {           \
-               if (!h2::h2_runner::I().Scope[i]) {     \
-                  h2::h2_runner::I().Scope[i] = Scope; \
-                  break;                               \
-               }                                       \
-            }                                          \
-         }                                             \
-         static void Scope();                          \
-      } H2PP_UNIQUE();                                 \
-   }                                                   \
+#define __H2GlobalCallback(Scope, Q)                               \
+   namespace {                                                     \
+      static struct Q {                                            \
+         Q() { h2_array_append(h2::h2_runner::I().Scope, Scope); } \
+         static void Scope();                                      \
+      } H2PP_UNIQUE();                                             \
+   }                                                               \
    void Q::Scope()
 
 #define H2GlobalSetup() __H2GlobalCallback(global_setups, H2PP_UNIQUE())
@@ -1619,23 +1619,23 @@ inline auto h2_matches_expection(const T& e, h2_mc c) -> typename std::enable_if
 template <typename T>
 inline auto h2_matches_expection(const T& e, h2_mc c) -> typename std::enable_if<!std::is_base_of<h2_matches, T>::value, h2_line>::type { return ncsc(h2_stringify(e, true), c); }
 
-#define H2_MATCHES_T2V2E(t_matchers)                                                                                                                    \
-   template <typename T>                                                                                                                                \
-   void t2v(h2_vector<h2_matcher<T>>& v_matchers, std::integral_constant<std::size_t, 0>) const {}                                                      \
-   template <typename T, std::size_t I>                                                                                                                 \
-   void t2v(h2_vector<h2_matcher<T>>& v_matchers, std::integral_constant<std::size_t, I>) const                                                         \
-   {                                                                                                                                                    \
-      t2v(v_matchers, std::integral_constant<std::size_t, I - 1>());                                                                                    \
-      v_matchers.push_back(h2_matcher_cast<T>(std::get<I - 1>(t_matchers)));                                                                            \
-   }                                                                                                                                                    \
-   template <typename T>                                                                                                                                \
-   void t2v(h2_vector<h2_matcher<T>>& v_matchers) const { return t2v(v_matchers, std::integral_constant<std::size_t, sizeof...(Matchers)>()); }         \
-   h2_line t2e(h2_mc c, std::integral_constant<std::size_t, 0>) const { return {}; }                                                                    \
-   template <std::size_t I>                                                                                                                             \
-   h2_line t2e(h2_mc c, std::integral_constant<std::size_t, I>) const                                                                                   \
-   {                                                                                                                                                    \
-      return t2e(c, std::integral_constant<size_t, I - 1>()) + (1 < I ? gray(", ") : h2_line()) + h2_matches_expection(std::get<I - 1>(t_matchers), c); \
-   }                                                                                                                                                    \
+#define H2_MATCHES_T2V2E(t_matchers)                                                                                                            \
+   template <typename T>                                                                                                                        \
+   void t2v(h2_vector<h2_matcher<T>>& v_matchers, std::integral_constant<std::size_t, 0>) const {}                                              \
+   template <typename T, std::size_t I>                                                                                                         \
+   void t2v(h2_vector<h2_matcher<T>>& v_matchers, std::integral_constant<std::size_t, I>) const                                                 \
+   {                                                                                                                                            \
+      t2v(v_matchers, std::integral_constant<std::size_t, I - 1>());                                                                            \
+      v_matchers.push_back(h2_matcher_cast<T>(std::get<I - 1>(t_matchers)));                                                                    \
+   }                                                                                                                                            \
+   template <typename T>                                                                                                                        \
+   void t2v(h2_vector<h2_matcher<T>>& v_matchers) const { return t2v(v_matchers, std::integral_constant<std::size_t, sizeof...(Matchers)>()); } \
+   h2_line t2e(h2_mc c, std::integral_constant<std::size_t, 0>) const { return {}; }                                                            \
+   template <std::size_t I>                                                                                                                     \
+   h2_line t2e(h2_mc c, std::integral_constant<std::size_t, I>) const                                                                           \
+   {                                                                                                                                            \
+      return t2e(c, std::integral_constant<size_t, I - 1>()) + gray(comma_if(1 < I)) + h2_matches_expection(std::get<I - 1>(t_matchers), c);    \
+   }                                                                                                                                            \
    h2_line t2e(h2_mc c) const { return t2e(c, std::integral_constant<std::size_t, sizeof...(Matchers)>()); }
 // source/matcher/h2_matcher.hpp
 template <typename T>
@@ -1978,8 +1978,7 @@ template <typename T, typename = void>
 struct h2_is_polymorphic_matcher_pair_matches : std::false_type {
 };
 template <typename T>
-struct h2_is_polymorphic_matcher_pair_matches<T,
-                                              typename std::enable_if<h2_is_polymorphic_matcher<T>::value && h2_is_pair_matches<typename T::matches_type>::value>::type> : std::true_type {
+struct h2_is_polymorphic_matcher_pair_matches<T, typename std::enable_if<h2_is_polymorphic_matcher<T>::value && h2_is_pair_matches<typename T::matches_type>::value>::type> : std::true_type {
 };
 
 template <typename Matcher>
@@ -3579,8 +3578,7 @@ struct h2_mocks {
 // source/memory/h2_exempt.hpp
 struct h2_exempt {
    h2_singleton(h2_exempt);
-   void* fps[10000];
-   int nfp = 0;
+   void* fps[4096]{nullptr};
    static void setup();
    static void add_by_fp(void* fp);
    static void add_by_name(const char* fn);
@@ -4287,7 +4285,7 @@ struct h2_LCS {
 // source/utils/h2_misc.cpp
 static inline bool h2_blank(const char* str)
 {
-   for (; str && *str; str++)
+   for (; str && *str; ++str)
       if (!::isspace(*str)) return false;
    return true;
 }
@@ -4374,7 +4372,7 @@ static inline const char* index_th(size_t sequence, size_t shift = 1)
    return ss;
 }
 
-static inline size_t number_strlen(unsigned long long number, int base)
+static inline size_t number_strlen(size_t number, int base)
 {
    unsigned long long _10000000 = 1;
    for (size_t i = 1;; ++i) {
@@ -4414,8 +4412,6 @@ static inline unsigned h2_page_size()
 #endif
 }
 
-static inline const char* comma_if(bool a, const char* t = ", ", const char* f = "") { return a ? t : f; }
-
 static inline bool h2_in(const char* a, int n, ...)
 {
    va_list ap;
@@ -4449,31 +4445,19 @@ static inline const char* h2_candidate(const char* a, int n, ...)
    return ss;
 }
 
-#define h2_append(Array, Size, a)   \
-   for (int i = 0; i < Size; ++i) { \
-      if (!Array[i]) {              \
-         Array[i] = a;              \
-         break;                     \
-      }                             \
-   }
+#define h2_sprintvf(str, fmt, ap)            \
+   va_list bp;                               \
+   va_copy(bp, ap);                          \
+   int len = vsnprintf(nullptr, 0, fmt, bp); \
+   str = (char*)alloca(len + 1);             \
+   va_end(bp);                               \
+   len = vsnprintf(str, len + 1, fmt, ap);
 
-#define h2_sprintvf(str, fmt, ap)               \
-   do {                                         \
-      va_list bp;                               \
-      va_copy(bp, ap);                          \
-      int len = vsnprintf(nullptr, 0, fmt, bp); \
-      str = (char*)alloca(len + 1);             \
-      va_end(bp);                               \
-      len = vsnprintf(str, len + 1, fmt, ap);   \
-   } while (0)
-
-#define h2_sprintf(str, fmt)     \
-   do {                          \
-      va_list ap;                \
-      va_start(ap, fmt);         \
-      h2_sprintvf(str, fmt, ap); \
-      va_end(ap);                \
-   } while (0)
+#define h2_sprintf(str, fmt)  \
+   va_list ap;                \
+   va_start(ap, fmt);         \
+   h2_sprintvf(str, fmt, ap); \
+   va_end(ap);
 // source/utils/h2_libc.cpp
 struct h2_libc_malloc {
    h2_singleton(h2_libc_malloc);
@@ -4759,14 +4743,11 @@ h2_inline h2_vector<h2_string> h2_string::disperse() const
 // source/utils/h2_color.cpp
 struct h2_color {
    h2_singleton(h2_color);
-   char current[8][32];
-
-   h2_color() { memset(current, 0, sizeof(current)); }
+   char current[8][32]{{'\0'}};
 
    void clear_style()
    {
-      for (size_t i = 0; i < sizeof(current) / sizeof(current[0]); ++i)
-         current[i][0] = '\0';
+      for (size_t i = 0; i < sizeof(current) / sizeof(current[0]); ++i) current[i][0] = '\0';
    }
    void push_style(const char* style, size_t length)
    {
@@ -4785,20 +4766,19 @@ struct h2_color {
    }
    void change()
    {
-      char a[256];
-      sprintf(a, "\033[%d;", style2value("reset"));
+      char a[256], *p = a;
+      p += sprintf(p, "\033[%d;", style2value("reset"));
       for (size_t i = 0; i < sizeof(current) / sizeof(current[0]); ++i)
          if (current[i][0] != '\0')
-            sprintf(a + strlen(a), "%d;", style2value(current[i]));
-      a[strlen(a) - 1] = 'm';
-      LIBC__write(-20072009, a, strlen(a));
+            p += sprintf(p, "%d;", style2value(current[i]));
+      *(p - 1) = 'm';
+      LIBC__write(-21371647, a, (size_t)(p - a));
    }
    void parse(const char* style)
    {
       const char* p = style + 2;
       char s = '+';
       if (*p == '+' || *p == '-') s = *p++;
-
       for (;;) {
          size_t l = strcspn(p, ",}");
          s == '-' ? pop_style(p, l) : push_style(p, l);
@@ -4808,15 +4788,14 @@ struct h2_color {
       }
    }
    void print(const char* str)
-   {
-      /* Windows PowerShell works, but CMD not, refer to v5.11 SetConsoleTextAttribute */
+   {  /* Windows PowerShell works, but CMD not, refer to v5.11 SetConsoleTextAttribute */
       if (isctrl(str)) {
          if (h2_option::I().colorful) {
             I().parse(str);
             I().change();
          }
       } else {
-         LIBC__write(-20072009, str, strlen(str));
+         LIBC__write(-21371647, str, strlen(str));
       }
    }
    int style2value(const char* style)  // https://en.wikipedia.org/wiki/ANSI_escape_code#CSI_sequences
@@ -4915,7 +4894,6 @@ h2_inline bool h2_line::enclosed(const char c) const
          b = word.back() == c;
       }
    }
-
    return f && b;
 }
 
@@ -4949,9 +4927,9 @@ h2_inline h2_line h2_line::gray_quote() const
          }
          i += c.width();
       }
-      if (h.size()) line += gray(h);
+      if (h.size()) line += delta(h, "dark gray");
       if (m.size()) line.push_back(m);
-      if (t.size()) line += gray(t);
+      if (t.size()) line += delta(t, "dark gray");
    }
 
    return line;
@@ -4987,7 +4965,7 @@ h2_inline h2_line h2_line::abbreviate(size_t width, size_t tail) const
          i += c.width();
       }
       if (h.size()) line2.push_back(h);
-      if (m.size()) line2 += gray(m);
+      if (m.size()) line2 += delta(m, "dark gray");
       if (t.size()) line2.push_back(t);
    }
 
@@ -5032,7 +5010,6 @@ h2_inline bool h2_lines::foldable(size_t width) const
       for (auto& word : line)
          if (!h2_blank(word.c_str()) && !h2_color::isctrl(word.c_str()))  // ignore indent and \033m controller
             sum += word.size();
-
    return sum < width;
 }
 
@@ -5059,7 +5036,7 @@ h2_inline h2_string h2_lines::string() const
 h2_inline void h2_lines::sequence(size_t indent, size_t start)
 {
    for (size_t i = 0; i < size(); ++i) {
-      at(i) = gray(h2_string("%d. ", (int)(i + start))) + at(i);
+      at(i) = delta(h2_string("%d. ", (int)(i + start)), "dark gray") + at(i);
       if (indent) at(i).indent(indent);
    }
 }
@@ -5300,7 +5277,7 @@ static inline char* addr2line(unsigned long long addr)
    }
    if (!ret) return nullptr;
    if (O.os == 'm' ? !memcmp(buf, "0x", 2) : !!strstr(buf, "??:")) return nullptr;
-   for (int i = strlen(buf) - 1; 0 <= i && ::isspace(buf[i]); --i) buf[i] = '\0';  // strip tail
+   *(char*)strip_right(buf) = '\0';
 #endif
    return buf;
 }
@@ -5436,7 +5413,7 @@ h2_inline void h2_backtrace::print(size_t pad) const
    h2_vector<h2_string> stacks;
    print(stacks);
    h2_lines lines;
-   for (auto& c : stacks) lines.push_back(c.startswith("h2::") || c.contains(": h2::") ? gray(c) : h2_line(c));
+   for (auto& c : stacks) lines.push_back(c.startswith("h2::") || c.contains(": h2::") ? color(c, "dark gray") : h2_line(c));
    lines.sequence(pad);
    h2_console::printl(lines);
 }
@@ -5957,9 +5934,8 @@ struct h2_json_node : h2_libc {
 struct h2_json_lexical {
    static void new_lexis(h2_vector<h2_string>& lexical, const char* start, const int size)
    {
-      const char *left = start, *right = start + size;
-      for (; left < right && *left && ::isspace(*left);) left++;
-      for (; left < right - 1 && ::isspace(*(right - 1));) right--;
+      const char* left = strip_left(start, start + size);
+      const char* right = strip_right(left, start + size);
       lexical.push_back(h2_string(right - left, left));
    }
 
@@ -5977,7 +5953,7 @@ struct h2_json_lexical {
       const char* pending = nullptr;
       const char* p;
       int state = st_idle, stash_state = st_idle;
-      for (p = json_string; *p && json_length--; p++) {
+      for (p = json_string; *p && json_length--; ++p) {
          switch (state) {
             case st_idle:
                if (::isspace(*p)) {
@@ -6185,9 +6161,11 @@ struct h2_json_select {
 
    h2_json_select(const char* selector)
    {
-      const int st_idle = 0;
-      const int st_in_dot = 1;
-      const int st_in_bracket = 2;
+      enum {
+         st_idle,
+         st_in_dot,
+         st_in_bracket
+      };
       int state = 0;
       const char *s = nullptr, *p = selector;
       do {
@@ -6203,23 +6181,23 @@ struct h2_json_select {
                break;
             case st_in_dot:
                if (*p == '.') {  // end a part
-                  if (s < p) add(s, p - 1, true);
+                  if (s < p) add(s, p, true);
                   // restart a new part
                   state = st_in_dot;
                   s = p + 1;
                } else if (*p == '[') {  // end a part
-                  if (s < p) add(s, p - 1, true);
+                  if (s < p) add(s, p, true);
                   // restart a new part
                   state = st_in_bracket;
                   s = p + 1;
                } else if (*p == '\0') {
-                  if (s < p) add(s, p - 1, true);
+                  if (s < p) add(s, p, true);
                   state = st_idle;
                }
                break;
             case st_in_bracket:
                if (*p == ']') {
-                  if (s < p) add(s, p - 1, false);
+                  if (s < p) add(s, p, false);
                   state = st_idle;
                }
                break;
@@ -6227,20 +6205,20 @@ struct h2_json_select {
       } while (*p++);
    }
 
-   void add(const char* start, const char* end, bool only_key)
+   void add(const char* start, const char* end, bool only_key)  // [start, end)
    {
-      for (; start <= end && ::isspace(*start);) start++;  //strip left space
-      for (; start <= end && ::isspace(*end);) end--;      //strip right space
-      if (start <= end) {
+      start = strip_left(start, end);
+      end = strip_right(start, end);
+      if (start < end) {
          if (!only_key) {
-            if (strspn(start, "-0123456789") == (size_t)(end - start + 1)) {
+            if (strspn(start, "-0123456789") == (size_t)(end - start)) {
                values.push_back({atoi(start), ""});
                return;
-            } else if ((*start == '\"' && *end == '\"') || (*start == '\'' && *end == '\'')) {
-               start++, end--;
+            } else if ((*start == '\"' && *(end - 1) == '\"') || (*start == '\'' && *(end - 1) == '\'')) {
+               ++start, --end;
             }
          }
-         if (start <= end) values.push_back({0, h2_string(end - start + 1, start)});
+         if (start < end) values.push_back({0, h2_string(end - start, start)});
       }
    }
 };
@@ -7576,8 +7554,7 @@ h2_inline void h2_exempt::add_by_name(const char* fn)
 
 h2_inline void h2_exempt::add_by_fp(void* fp)
 {
-   I().fps[I().nfp++] = h2_cxa::follow_jmp(fp);
-   I().fps[I().nfp] = nullptr;
+   h2_array_append(I().fps, h2_cxa::follow_jmp(fp));
 }
 // source/except/h2_debug.cpp
 static inline bool in_debugging()
@@ -7999,7 +7976,7 @@ h2_inline h2_line h2_mocker_base::argument(int seq, const char* def) const
 {
    h2_line t;
    for (int i = 0; i < (int)argument_types.size(); ++i)
-      t += (i ? gray(", ") : "") + color(argument_types[i], seq == i ? "red,bold" : def);
+      t += gray(comma_if(i)) + color(argument_types[i], seq == i ? "red,bold" : def);
    return gray("(") + t + gray(")");
 }
 
@@ -8074,7 +8051,7 @@ struct h2_stdio {
             LIBC__write(fd, "\n", 1);  // fall printf/cout into new line from report title
             h2_report::I().backable = false;
          }
-         LIBC__write(fd == -20072009 ? fileno(stdout) : fd, buf, count);
+         LIBC__write(fd == -21371647 ? fileno(stdout) : fd, buf, count);
          if (fd == fileno(stdout) || fd == fileno(stderr))
             I().capture_length += count;
       }
@@ -8700,7 +8677,6 @@ h2_inline void h2_sock::check(const char* filine, const char* e, M1 from, M2 to,
    }
 }
 // source/core/h2_test.cpp
-
 static inline void __split_describe(const char* describe, char* name_buf, char* tags_buf)
 {
    strcpy(name_buf, describe);
@@ -8725,20 +8701,13 @@ static inline void __split_describe(const char* describe, char* name_buf, char* 
    strcpy(&name_buf[(size_t)(p - describe)], q + 1);
 }
 
-static inline int __split_tags(char* tags_buf, const char* tags[], size_t n)
-{
-   size_t count = 0;
-   for (char* t = strtok(tags_buf, " ,"); t; t = strtok(nullptr, " ,"))
-      if (count < n - 1) tags[count++] = t;
-   return count;
-}
-
 h2_inline h2_test::h2_test(const char* filine_, const char* file_, int line_, const char* describe_) : filine(filine_), file(h2_basefile(file_)), line(line_), describe(describe_)
 {
    if (describe) {
       __split_describe(describe, name_buf, tags_buf);
       name = strip_left(name_buf);
-      tags[__split_tags(tags_buf, tags, sizeof(tags) / sizeof(tags[0]))] = nullptr;
+      for (char* t = strtok(tags_buf, " ,"); t; t = strtok(nullptr, " ,"))
+         h2_array_append(tags, t);
    }
 }
 
@@ -9262,7 +9231,7 @@ struct h2_layout {
 
    static h2_lines split(const h2_lines& left_lines, const h2_lines& right_lines, const char* left_title, const char* right_title, size_t step, char scale, size_t width)
    {
-      size_t seq_width = number_strlen((unsigned long long)step * std::max(left_lines.size(), right_lines.size()), scale == 'x' ? 16 : 10);
+      size_t seq_width = number_strlen(step * std::max(left_lines.size(), right_lines.size()), scale == 'x' ? 16 : 10);
       size_t valid_width = width - (seq_width + 1 /* "|" */) - 1 /*|*/ - 4 /* spaces */;
 
       size_t left_width = std::max(left_lines.width(), strlen(left_title));
@@ -9275,8 +9244,8 @@ struct h2_layout {
       else
          left_width = right_width = valid_width / 2;
 
-      h2_line title = gray((step ? h2_string(seq_width + 2, ' ') : "") + h2_string(left_title).center(left_width)) + "   " + gray(h2_string(right_title).center(right_width));
-      h2_lines lines = {title};
+      h2_line title = (step ? h2_string(seq_width + 2, ' ') : "") + h2_string(left_title).center(left_width) + "   " + h2_string(right_title).center(right_width);
+      h2_lines lines = {title.brush("dark gray")};
 
       return lines += lines_merge(left_lines, right_lines, left_width, right_width, step, scale, seq_width);
    }
@@ -9620,7 +9589,7 @@ struct h2_fail_memory_leak : h2_fail_memory {
       for (auto& p : sizes) {
          sl += gray(comma_if(i++));
          if (O.verbose <= VerboseCompactPassed && n < i) {
-            sl += gray("..." + h2_stringify(sizes.size() - n));
+            sl += color("..." + h2_stringify(sizes.size() - n), "dark gray");
             break;
          }
          sl += h2_stringify(p.first);
@@ -9710,7 +9679,7 @@ struct h2_fail_symbol : h2_fail {
    {
       h2_console::printl(color(candidates.size() ? " Find multiple " : " Not found ", "yellow") + color(symbol, "bold,red"));
       for (size_t i = 0; i < candidates.size(); ++i)
-         h2_console::printl("  " + gray(h2_stringify(i) + ". ") + color(candidates[i], "yellow"));
+         h2_console::printl("  " + color(h2_stringify(i) + ". ", "dark gray") + color(candidates[i], "yellow"));
       if (explain.width()) h2_console::printl(explain);
    }
 };
@@ -10210,12 +10179,12 @@ h2_inline void h2_option::parse(int argc, const char** argv)
          case 'c': continue_assert = true; break;
          case 'd': debugger_trap = true; break;
          case 'e':
-            while ((t = get.extract_string())) h2_append(excludes, 128, t);
+            while ((t = get.extract_string())) h2_array_append(excludes, t);
             break;
          case 'f': only_last_failed = true; break;
          case 'F': get.extract_number(fold_json = 0); break;
          case 'i':
-            while ((t = get.extract_string())) h2_append(includes, 128, t);
+            while ((t = get.extract_string())) h2_array_append(includes, t);
             break;
          case 'l':
             while ((t = get.extract_string())) {

@@ -16,7 +16,7 @@ static inline char* addr2line(unsigned long long addr)
    }
    if (!ret) return nullptr;
    if (O.os == 'm' ? !memcmp(buf, "0x", 2) : !!strstr(buf, "??:")) return nullptr;
-   for (int i = strlen(buf) - 1; 0 <= i && ::isspace(buf[i]); --i) buf[i] = '\0';  // strip tail
+   *(char*)strip_right(buf) = '\0';
 #endif
    return buf;
 }
@@ -152,7 +152,7 @@ h2_inline void h2_backtrace::print(size_t pad) const
    h2_vector<h2_string> stacks;
    print(stacks);
    h2_lines lines;
-   for (auto& c : stacks) lines.push_back(c.startswith("h2::") || c.contains(": h2::") ? gray(c) : h2_line(c));
+   for (auto& c : stacks) lines.push_back(c.startswith("h2::") || c.contains(": h2::") ? color(c, "dark gray") : h2_line(c));
    lines.sequence(pad);
    h2_console::printl(lines);
 }

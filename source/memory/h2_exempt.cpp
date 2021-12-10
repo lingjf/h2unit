@@ -81,6 +81,5 @@ h2_inline void h2_exempt::add_by_name(const char* fn)
 
 h2_inline void h2_exempt::add_by_fp(void* fp)
 {
-   I().fps[I().nfp++] = h2_cxa::follow_jmp(fp);
-   I().fps[I().nfp] = nullptr;
+   h2_array_append(I().fps, h2_cxa::follow_jmp(fp));
 }

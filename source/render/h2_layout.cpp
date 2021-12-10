@@ -66,7 +66,7 @@ struct h2_layout {
 
    static h2_lines split(const h2_lines& left_lines, const h2_lines& right_lines, const char* left_title, const char* right_title, size_t step, char scale, size_t width)
    {
-      size_t seq_width = number_strlen((unsigned long long)step * std::max(left_lines.size(), right_lines.size()), scale == 'x' ? 16 : 10);
+      size_t seq_width = number_strlen(step * std::max(left_lines.size(), right_lines.size()), scale == 'x' ? 16 : 10);
       size_t valid_width = width - (seq_width + 1 /* "|" */) - 1 /*|*/ - 4 /* spaces */;
 
       size_t left_width = std::max(left_lines.width(), strlen(left_title));
@@ -79,8 +79,8 @@ struct h2_layout {
       else
          left_width = right_width = valid_width / 2;
 
-      h2_line title = gray((step ? h2_string(seq_width + 2, ' ') : "") + h2_string(left_title).center(left_width)) + "   " + gray(h2_string(right_title).center(right_width));
-      h2_lines lines = {title};
+      h2_line title = (step ? h2_string(seq_width + 2, ' ') : "") + h2_string(left_title).center(left_width) + "   " + h2_string(right_title).center(right_width);
+      h2_lines lines = {title.brush("dark gray")};
 
       return lines += lines_merge(left_lines, right_lines, left_width, right_width, step, scale, seq_width);
    }

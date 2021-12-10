@@ -1,4 +1,3 @@
-
 struct h2_runner {
    h2_singleton(h2_runner);
 
@@ -27,21 +26,13 @@ struct h2_runner {
    static void asserts();
 };
 
-#define __H2GlobalCallback(Scope, Q)                   \
-   namespace {                                         \
-      static struct Q {                                \
-         Q()                                           \
-         {                                             \
-            for (int i = 0; i < 1024; ++i) {           \
-               if (!h2::h2_runner::I().Scope[i]) {     \
-                  h2::h2_runner::I().Scope[i] = Scope; \
-                  break;                               \
-               }                                       \
-            }                                          \
-         }                                             \
-         static void Scope();                          \
-      } H2PP_UNIQUE();                                 \
-   }                                                   \
+#define __H2GlobalCallback(Scope, Q)                               \
+   namespace {                                                     \
+      static struct Q {                                            \
+         Q() { h2_array_append(h2::h2_runner::I().Scope, Scope); } \
+         static void Scope();                                      \
+      } H2PP_UNIQUE();                                             \
+   }                                                               \
    void Q::Scope()
 
 #define H2GlobalSetup() __H2GlobalCallback(global_setups, H2PP_UNIQUE())

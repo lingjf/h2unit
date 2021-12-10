@@ -312,7 +312,7 @@ struct h2_fail_memory_leak : h2_fail_memory {
       for (auto& p : sizes) {
          sl += gray(comma_if(i++));
          if (O.verbose <= VerboseCompactPassed && n < i) {
-            sl += gray("..." + h2_stringify(sizes.size() - n));
+            sl += color("..." + h2_stringify(sizes.size() - n), "dark gray");
             break;
          }
          sl += h2_stringify(p.first);
@@ -402,7 +402,7 @@ struct h2_fail_symbol : h2_fail {
    {
       h2_console::printl(color(candidates.size() ? " Find multiple " : " Not found ", "yellow") + color(symbol, "bold,red"));
       for (size_t i = 0; i < candidates.size(); ++i)
-         h2_console::printl("  " + gray(h2_stringify(i) + ". ") + color(candidates[i], "yellow"));
+         h2_console::printl("  " + color(h2_stringify(i) + ". ", "dark gray") + color(candidates[i], "yellow"));
       if (explain.width()) h2_console::printl(explain);
    }
 };

@@ -231,41 +231,6 @@ SUITE(h2_candidate)
    }
 }
 
-CASE(H2Foreach)
-{
-   int s = 0;
-#define FOO(x) s += x;
-   H2Foreach(FOO, (1, 2, 3))
-#undef FOO
-     OK(6, s);
-}
-
-SUITE(H2Fullmesh){
-  Case(direct){
-    int s = 0;
-#define FOO(x, y) s += x * y;
-H2Fullmesh(FOO, (1, 2, 3));
-#undef FOO
-OK(1 * 1 + 1 * 2 + 1 * 3 + 2 * 1 + 2 * 2 + 2 * 3 + 3 * 1 + 3 * 2 + 3 * 3, s);
-}
-
-Case(macro)
-{
-#define M123 1, 2, 3
-   int s = 0;
-#define FOO(x, y) s += x * y;
-   H2Fullmesh(FOO, (M123), (M123));
-#undef FOO
-   OK(1 * 1 + 1 * 2 + 1 * 3 + 2 * 1 + 2 * 2 + 2 * 3 + 3 * 1 + 3 * 2 + 3 * 3, s);
-}
-
-#define BAR(x, y) \
-   Case(generator x y) {}
-
-H2Fullmesh(BAR, (A, B, C), (1, 2, 3))
-#undef BAR
-}
-
 SUITE(get key value)
 {
    Case(unary)
@@ -289,58 +254,58 @@ SUITE(get key value)
    }
 }
 
-SUITE(numeric)
+CASE(not2n)
+{
+   OK(!h2::not2n(0));
+
+   for (int i = 0; i < 32; i++)
+      OK(!h2::not2n(1 << i));
+
+   OK(h2::not2n(3));
+   OK(h2::not2n(0x55));
+}
+
+CASE(mask2n)
+{
+   OK(0x0, h2::mask2n(0));
+   OK(0x1, h2::mask2n(1));
+   OK(0x3, h2::mask2n(2));
+   OK(0x3, h2::mask2n(3));
+   OK(0x7, h2::mask2n(4));
+   OK(0x7, h2::mask2n(5));
+   OK(0x7, h2::mask2n(6));
+   OK(0x7, h2::mask2n(7));
+   OK(0xF, h2::mask2n(8));
+   OK(0xF, h2::mask2n(9));
+   OK(0xF, h2::mask2n(10));
+   OK(0xF, h2::mask2n(11));
+   OK(0xF, h2::mask2n(12));
+   OK(0xF, h2::mask2n(13));
+   OK(0xF, h2::mask2n(14));
+   OK(0xF, h2::mask2n(15));
+   for (unsigned i = 16; i < 32; ++i) {
+      OK(0x1F, h2::mask2n(i));
+   }
+   for (unsigned i = 32; i < 64; ++i) {
+      OK(0x3F, h2::mask2n(i));
+   }
+   for (unsigned i = 64; i < 128; ++i) {
+      OK(0x7F, h2::mask2n(i));
+   }
+   for (unsigned i = 128; i < 256; ++i) {
+      OK(0xFF, h2::mask2n(i));
+   }
+   for (unsigned i = 0x7FFFFFF0U; i < 0x7FFFFFFFU; ++i) {
+      OK(0x7FFFFFFFU, h2::mask2n(i));
+   }
+   for (unsigned i = 0xFFFFFFF0U; i < 0xFFFFFFFFU; ++i) {
+      OK(0xFFFFFFFFU, h2::mask2n(i));
+   }
+}
+
+SUITE(hex2bytes)
 {
    unsigned char z1[1024];
-
-   Case(not2n)
-   {
-      OK(!h2::not2n(0));
-
-      for (int i = 0; i < 32; i++)
-         OK(!h2::not2n(1 << i));
-
-      OK(h2::not2n(3));
-      OK(h2::not2n(0x55));
-   }
-
-   Case(mask2n)
-   {
-      OK(0x0, h2::mask2n(0));
-      OK(0x1, h2::mask2n(1));
-      OK(0x3, h2::mask2n(2));
-      OK(0x3, h2::mask2n(3));
-      OK(0x7, h2::mask2n(4));
-      OK(0x7, h2::mask2n(5));
-      OK(0x7, h2::mask2n(6));
-      OK(0x7, h2::mask2n(7));
-      OK(0xF, h2::mask2n(8));
-      OK(0xF, h2::mask2n(9));
-      OK(0xF, h2::mask2n(10));
-      OK(0xF, h2::mask2n(11));
-      OK(0xF, h2::mask2n(12));
-      OK(0xF, h2::mask2n(13));
-      OK(0xF, h2::mask2n(14));
-      OK(0xF, h2::mask2n(15));
-      for (unsigned i = 16; i < 32; ++i) {
-         OK(0x1F, h2::mask2n(i));
-      }
-      for (unsigned i = 32; i < 64; ++i) {
-         OK(0x3F, h2::mask2n(i));
-      }
-      for (unsigned i = 64; i < 128; ++i) {
-         OK(0x7F, h2::mask2n(i));
-      }
-      for (unsigned i = 128; i < 256; ++i) {
-         OK(0xFF, h2::mask2n(i));
-      }
-      for (unsigned i = 0x7FFFFFF0U; i < 0x7FFFFFFFU; ++i) {
-         OK(0x7FFFFFFFU, h2::mask2n(i));
-      }
-      for (unsigned i = 0xFFFFFFF0U; i < 0xFFFFFFFFU; ++i) {
-         OK(0xFFFFFFFFU, h2::mask2n(i));
-      }
-   }
 
    Case(hex2byte)
    {
@@ -421,7 +386,7 @@ SUITE(index_th)
    }
 }
 
-SUITE(numeric number width)
+SUITE(number strlen)
 {
    Case(base 10 dec)
    {
@@ -444,6 +409,7 @@ SUITE(numeric number width)
       OK(9, h2::number_strlen(100000000, 10));
       OK(9, h2::number_strlen(999999999, 10));
    }
+
    Case(base 16 hex)
    {
       OK(1, h2::number_strlen(0x0, 16));
@@ -464,3 +430,60 @@ SUITE(numeric number width)
       OK(8, h2::number_strlen(0xFFFFFFFF, 16));
    }
 }
+
+CASE(array append)
+{
+   int a[10] = {0};
+
+   h2_array_append(a, 1);
+   OK(1, a[0]);
+   for (int i = 1; i < 10; i++) OK(0, a[i]);
+
+   h2_array_append(a, 2);
+   OK(1, a[0]);
+   OK(2, a[1]);
+   for (int i = 2; i < 10; i++) OK(0, a[i]);
+
+   h2_array_append(a, 3);
+   OK(1, a[0]);
+   OK(2, a[1]);
+   OK(3, a[2]);
+   for (int i = 3; i < 10; i++) OK(0, a[i]);
+}
+
+CASE(H2Foreach)
+{
+   int s = 0;
+#define FOO(x) s += x;
+   H2Foreach(FOO, (1, 2, 3))
+#undef FOO
+     OK(6, s);
+}
+
+SUITE(H2Fullmesh)
+{
+   Case(direct)
+   {
+      int s = 0;
+#define FOO(x, y) s += x * y;
+      H2Fullmesh(FOO, (1, 2, 3));
+#undef FOO
+      OK(1 * 1 + 1 * 2 + 1 * 3 + 2 * 1 + 2 * 2 + 2 * 3 + 3 * 1 + 3 * 2 + 3 * 3, s);
+   }
+
+   Case(macro)
+   {
+#define M123 1, 2, 3
+      int s = 0;
+#define FOO(x, y) s += x * y;
+      H2Fullmesh(FOO, (M123), (M123));
+#undef FOO
+      OK(1 * 1 + 1 * 2 + 1 * 3 + 2 * 1 + 2 * 2 + 2 * 3 + 3 * 1 + 3 * 2 + 3 * 3, s);
+   }
+}
+
+#define BAR(x, y) \
+   CASE(generator x y) {}
+
+H2Fullmesh(BAR, (A, B, C), (1, 2, 3))
+#undef BAR

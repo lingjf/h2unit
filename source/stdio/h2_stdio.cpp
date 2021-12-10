@@ -12,7 +12,7 @@ struct h2_stdio {
             LIBC__write(fd, "\n", 1);  // fall printf/cout into new line from report title
             h2_report::I().backable = false;
          }
-         LIBC__write(fd == -20072009 ? fileno(stdout) : fd, buf, count);
+         LIBC__write(fd == -21371647 ? fileno(stdout) : fd, buf, count);
          if (fd == fileno(stdout) || fd == fileno(stderr))
             I().capture_length += count;
       }

@@ -32,7 +32,7 @@ inline h2_line operator+(const h2_line& a, const h2_line& b)  // implicit conver
 
 static inline const h2_line color(const h2_line& line, const char* style) { return ("\033{" + h2_string(style) + "}") + line + "\033{reset}"; }
 static inline const h2_line delta(const h2_line& line, const char* style) { return ("\033{+" + h2_string(style) + "}") + line + ("\033{-" + h2_string(style) + "}"); }
-static inline const h2_line gray(const h2_line& line) { return delta(line, "dark gray"); }
+static inline const h2_line gray(const char* s) { return s && strlen(s) ? delta(s, "dark gray") : h2_line(); }
 
 ///// h2_lines
 struct h2_lines : h2_vector<h2_line> {

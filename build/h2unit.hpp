@@ -5,7 +5,7 @@
 #ifndef __H2UNIT_HPP__
 #define __H2UNIT_HPP__
 #define H2UNIT_VERSION 5.16
-#define H2UNIT_REVISION 2021-12-05 branches/v5
+#define H2UNIT_REVISION 2021-12-11 branches/v5
 #ifndef __H2_UNIT_HPP__
 #define __H2_UNIT_HPP__
 
@@ -645,12 +645,21 @@ struct h2_once {
    operator bool() { return !c++; }
 };
 
+#define h2_array_append(Array, a)                                      \
+   for (size_t i = 0; i < sizeof(Array) / sizeof(Array)[0] - 1; ++i) { \
+      if (!(Array)[i]) {                                               \
+         (Array)[i] = (a);                                             \
+         break;                                                        \
+      }                                                                \
+   }
+
 // #define M(...) func(#__VA_ARGS__, other)
 // Unix M() ==> func("", other) stringify empty __VA_ARGS__ to "" string
 // Windows M() ==> func(, other) stringify empty __VA_ARGS__ to empty
 // #define M(...) func(ss(#__VA_ARGS__), other)
 static inline const char* ss(const char* a = "") { return a ? a : ""; }
 static inline const size_t sn(const size_t a = 0) { return a; }
+static inline const char* comma_if(bool a, const char* t = ", ", const char* f = "") { return a ? t : f; }
 
 #define H2Foreach(Callback_x, ...) H2PP_FOREACH(, _H2ForeachMacro, (Callback_x), H2PP_REMOVE_PARENTHESES_IF(__VA_ARGS__))
 #define _H2ForeachMacro(_Args, i, x) H2PP_REMOVE_PARENTHESES(_Args)(x)
@@ -830,7 +839,7 @@ inline h2_line operator+(const h2_line& a, const h2_line& b)  // implicit conver
 
 static inline const h2_line color(const h2_line& line, const char* style) { return ("\033{" + h2_string(style) + "}") + line + "\033{reset}"; }
 static inline const h2_line delta(const h2_line& line, const char* style) { return ("\033{+" + h2_string(style) + "}") + line + ("\033{-" + h2_string(style) + "}"); }
-static inline const h2_line gray(const h2_line& line) { return delta(line, "dark gray"); }
+static inline const h2_line gray(const char* s) { return s && strlen(s) ? delta(s, "dark gray") : h2_line(); }
 
 ///// h2_lines
 struct h2_lines : h2_vector<h2_line> {
@@ -949,7 +958,7 @@ struct h2_stringify_impl<T, typename std::enable_if<h2_is_container<T>::value>::
    {
       h2_line line;
       for (auto it = a.begin(); it != a.end(); ++it)
-         line += (it != a.begin() ? gray(", ") : h2_line()) + h2_stringify_impl<typename T::value_type>::print(*it, represent);
+         line += gray(comma_if(it != a.begin())) + h2_stringify_impl<typename T::value_type>::print(*it, represent);
       return gray("[") + line + gray("]");
    }
 };
@@ -974,7 +983,7 @@ struct h2_stringify_impl<std::tuple<Args...>> {
    template <std::size_t I>
    static h2_line tuple_print(const std::tuple<Args...>& a, bool represent, std::integral_constant<std::size_t, I>)
    {
-      return tuple_print(a, represent, std::integral_constant<std::size_t, I - 1>()) + (1 < I ? gray(", ") : h2_line()) + h2_stringify_impl<typename std::decay<decltype(std::get<I - 1>(a))>::type>::print(std::get<I - 1>(a), represent);
+      return tuple_print(a, represent, std::integral_constant<std::size_t, I - 1>()) + gray(comma_if(1 < I)) + h2_stringify_impl<typename std::decay<decltype(std::get<I - 1>(a))>::type>::print(std::get<I - 1>(a), represent);
    }
 };
 
@@ -1049,7 +1058,7 @@ inline h2_line h2_stringify(T a, size_t n, bool represent)
    if (n == 0) return h2_stringify(a, represent);
    h2_line line;
    for (size_t i = 0; i < n; ++i)
-      line += (i ? gray(", ") : h2_line()) + h2_stringify(a[i], represent);
+      line += gray(comma_if(i)) + h2_stringify(a[i], represent);
    return gray("[") + line + gray("]");
 }
 // source/symbol/h2_nm.hpp
@@ -1296,7 +1305,6 @@ struct h2_suite : h2_test {
    };
 };
 // source/core/h2_runner.hpp
-
 struct h2_runner {
    h2_singleton(h2_runner);
 
@@ -1325,21 +1333,13 @@ struct h2_runner {
    static void asserts();
 };
 
-#define __H2GlobalCallback(Scope, Q)                   \
-   namespace {                                         \
-      static struct Q {                                \
-         Q()                                           \
-         {                                             \
-            for (int i = 0; i < 1024; ++i) {           \
-               if (!h2::h2_runner::I().Scope[i]) {     \
-                  h2::h2_runner::I().Scope[i] = Scope; \
-                  break;                               \
-               }                                       \
-            }                                          \
-         }                                             \
-         static void Scope();                          \
-      } H2PP_UNIQUE();                                 \
-   }                                                   \
+#define __H2GlobalCallback(Scope, Q)                               \
+   namespace {                                                     \
+      static struct Q {                                            \
+         Q() { h2_array_append(h2::h2_runner::I().Scope, Scope); } \
+         static void Scope();                                      \
+      } H2PP_UNIQUE();                                             \
+   }                                                               \
    void Q::Scope()
 
 #define H2GlobalSetup() __H2GlobalCallback(global_setups, H2PP_UNIQUE())
@@ -1619,23 +1619,23 @@ inline auto h2_matches_expection(const T& e, h2_mc c) -> typename std::enable_if
 template <typename T>
 inline auto h2_matches_expection(const T& e, h2_mc c) -> typename std::enable_if<!std::is_base_of<h2_matches, T>::value, h2_line>::type { return ncsc(h2_stringify(e, true), c); }
 
-#define H2_MATCHES_T2V2E(t_matchers)                                                                                                                    \
-   template <typename T>                                                                                                                                \
-   void t2v(h2_vector<h2_matcher<T>>& v_matchers, std::integral_constant<std::size_t, 0>) const {}                                                      \
-   template <typename T, std::size_t I>                                                                                                                 \
-   void t2v(h2_vector<h2_matcher<T>>& v_matchers, std::integral_constant<std::size_t, I>) const                                                         \
-   {                                                                                                                                                    \
-      t2v(v_matchers, std::integral_constant<std::size_t, I - 1>());                                                                                    \
-      v_matchers.push_back(h2_matcher_cast<T>(std::get<I - 1>(t_matchers)));                                                                            \
-   }                                                                                                                                                    \
-   template <typename T>                                                                                                                                \
-   void t2v(h2_vector<h2_matcher<T>>& v_matchers) const { return t2v(v_matchers, std::integral_constant<std::size_t, sizeof...(Matchers)>()); }         \
-   h2_line t2e(h2_mc c, std::integral_constant<std::size_t, 0>) const { return {}; }                                                                    \
-   template <std::size_t I>                                                                                                                             \
-   h2_line t2e(h2_mc c, std::integral_constant<std::size_t, I>) const                                                                                   \
-   {                                                                                                                                                    \
-      return t2e(c, std::integral_constant<size_t, I - 1>()) + (1 < I ? gray(", ") : h2_line()) + h2_matches_expection(std::get<I - 1>(t_matchers), c); \
-   }                                                                                                                                                    \
+#define H2_MATCHES_T2V2E(t_matchers)                                                                                                            \
+   template <typename T>                                                                                                                        \
+   void t2v(h2_vector<h2_matcher<T>>& v_matchers, std::integral_constant<std::size_t, 0>) const {}                                              \
+   template <typename T, std::size_t I>                                                                                                         \
+   void t2v(h2_vector<h2_matcher<T>>& v_matchers, std::integral_constant<std::size_t, I>) const                                                 \
+   {                                                                                                                                            \
+      t2v(v_matchers, std::integral_constant<std::size_t, I - 1>());                                                                            \
+      v_matchers.push_back(h2_matcher_cast<T>(std::get<I - 1>(t_matchers)));                                                                    \
+   }                                                                                                                                            \
+   template <typename T>                                                                                                                        \
+   void t2v(h2_vector<h2_matcher<T>>& v_matchers) const { return t2v(v_matchers, std::integral_constant<std::size_t, sizeof...(Matchers)>()); } \
+   h2_line t2e(h2_mc c, std::integral_constant<std::size_t, 0>) const { return {}; }                                                            \
+   template <std::size_t I>                                                                                                                     \
+   h2_line t2e(h2_mc c, std::integral_constant<std::size_t, I>) const                                                                           \
+   {                                                                                                                                            \
+      return t2e(c, std::integral_constant<size_t, I - 1>()) + gray(comma_if(1 < I)) + h2_matches_expection(std::get<I - 1>(t_matchers), c);    \
+   }                                                                                                                                            \
    h2_line t2e(h2_mc c) const { return t2e(c, std::integral_constant<std::size_t, sizeof...(Matchers)>()); }
 // source/matcher/h2_matcher.hpp
 template <typename T>
@@ -1978,8 +1978,7 @@ template <typename T, typename = void>
 struct h2_is_polymorphic_matcher_pair_matches : std::false_type {
 };
 template <typename T>
-struct h2_is_polymorphic_matcher_pair_matches<T,
-                                              typename std::enable_if<h2_is_polymorphic_matcher<T>::value && h2_is_pair_matches<typename T::matches_type>::value>::type> : std::true_type {
+struct h2_is_polymorphic_matcher_pair_matches<T, typename std::enable_if<h2_is_polymorphic_matcher<T>::value && h2_is_pair_matches<typename T::matches_type>::value>::type> : std::true_type {
 };
 
 template <typename Matcher>
@@ -3579,8 +3578,7 @@ struct h2_mocks {
 // source/memory/h2_exempt.hpp
 struct h2_exempt {
    h2_singleton(h2_exempt);
-   void* fps[10000];
-   int nfp = 0;
+   void* fps[4096]{nullptr};
    static void setup();
    static void add_by_fp(void* fp);
    static void add_by_name(const char* fn);

@@ -1,9 +1,8 @@
 struct h2_json_lexical {
    static void new_lexis(h2_vector<h2_string>& lexical, const char* start, const int size)
    {
-      const char *left = start, *right = start + size;
-      for (; left < right && *left && ::isspace(*left);) left++;
-      for (; left < right - 1 && ::isspace(*(right - 1));) right--;
+      const char* left = strip_left(start, start + size);
+      const char* right = strip_right(left, start + size);
       lexical.push_back(h2_string(right - left, left));
    }
 
@@ -21,7 +20,7 @@ struct h2_json_lexical {
       const char* pending = nullptr;
       const char* p;
       int state = st_idle, stash_state = st_idle;
-      for (p = json_string; *p && json_length--; p++) {
+      for (p = json_string; *p && json_length--; ++p) {
          switch (state) {
             case st_idle:
                if (::isspace(*p)) {

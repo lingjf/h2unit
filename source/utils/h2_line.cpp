@@ -55,7 +55,6 @@ h2_inline bool h2_line::enclosed(const char c) const
          b = word.back() == c;
       }
    }
-
    return f && b;
 }
 
@@ -89,9 +88,9 @@ h2_inline h2_line h2_line::gray_quote() const
          }
          i += c.width();
       }
-      if (h.size()) line += gray(h);
+      if (h.size()) line += delta(h, "dark gray");
       if (m.size()) line.push_back(m);
-      if (t.size()) line += gray(t);
+      if (t.size()) line += delta(t, "dark gray");
    }
 
    return line;
@@ -127,7 +126,7 @@ h2_inline h2_line h2_line::abbreviate(size_t width, size_t tail) const
          i += c.width();
       }
       if (h.size()) line2.push_back(h);
-      if (m.size()) line2 += gray(m);
+      if (m.size()) line2 += delta(m, "dark gray");
       if (t.size()) line2.push_back(t);
    }
 
@@ -172,7 +171,6 @@ h2_inline bool h2_lines::foldable(size_t width) const
       for (auto& word : line)
          if (!h2_blank(word.c_str()) && !h2_color::isctrl(word.c_str()))  // ignore indent and \033m controller
             sum += word.size();
-
    return sum < width;
 }
 
@@ -199,7 +197,7 @@ h2_inline h2_string h2_lines::string() const
 h2_inline void h2_lines::sequence(size_t indent, size_t start)
 {
    for (size_t i = 0; i < size(); ++i) {
-      at(i) = gray(h2_string("%d. ", (int)(i + start))) + at(i);
+      at(i) = delta(h2_string("%d. ", (int)(i + start)), "dark gray") + at(i);
       if (indent) at(i).indent(indent);
    }
 }
