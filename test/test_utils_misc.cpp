@@ -221,13 +221,16 @@ SUITE(h2_candidate)
       OK("single", h2::h2_candidate("sing", 3, "single", "double", "sample"));
       OK("single", h2::h2_candidate("singl", 3, "single", "double", "sample"));
       OK("single", h2::h2_candidate("single", 3, "single", "double", "sample"));
+   }
 
-      OK(NULL, h2::h2_candidate("z", 3, "single", "double", "sample"));
+   Case(invalid)
+   {
+      OK("invalid argument: \033[31mzs\033[0m, availables: \033[32msingle\033[0m | \033[32mdouble\033[0m | \033[32msample\033[0m", h2::h2_candidate("zs", 3, "single", "double", "sample"));
    }
 
    Case(ambiguous)
    {
-      OK("ambiguous argument: s, candidates: single | sample", h2::h2_candidate("s", 3, "single", "double", "sample"));
+      OK("ambiguous argument: \033[31ms\033[0m, candidates: \033[32msingle\033[0m | \033[32msample\033[0m", h2::h2_candidate("s", 3, "single", "double", "sample"));
    }
 }
 

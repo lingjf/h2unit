@@ -234,30 +234,6 @@ SUITE(option list)
       OK(0x10, option_suit.lists);
       OK(0x10, option_suite.lists);
    }
-
-   Case(ambiguous)
-   {
-      const char* argv[] = {"./a.out", "-l", "t"};
-
-      COUT("-l ambiguous argument: t, candidates: todo | tag\n")
-      {
-         c.parse(3, argv);
-      }
-
-      OK(0x1110, c.lists);
-   }
-
-   Case(invalid)
-   {
-      const char* argv[] = {"./a.out", "-l", "abc"};
-
-      COUT("-l invalid argument: abc, availables: suite | case | todo | tag\n")
-      {
-         c.parse(3, argv);
-      }
-
-      OK(0x1110, c.lists);
-   }
 }
 
 SUITE(option shuffle)
@@ -311,30 +287,6 @@ SUITE(option shuffle)
       const char* argv[] = {"./a.out", "-s", "n", "re"};
       c.parse(4, argv);
       OK(0x10100, c.shuffles);
-   }
-
-   Case(ambiguous)
-   {
-      const char* argv[] = {"./a.out", "-s", "r"};
-
-      COUT("-s ambiguous argument: r, candidates: random | reverse\n")
-      {
-         c.parse(3, argv);
-      }
-
-      OK(0x10, c.shuffles);
-   }
-
-   Case(invalid)
-   {
-      const char* argv[] = {"./a.out", "-s", "abc"};
-
-      COUT("-s invalid argument: abc, availables: random | name | file | reverse\n")
-      {
-         c.parse(3, argv);
-      }
-
-      OK(0x10, c.shuffles);
    }
 }
 
@@ -417,17 +369,5 @@ SUITE(option json source quote)
       const char* argv[] = {"./a.out", "-S", "\""};
       c.parse(3, argv);
       OK("\"", c.json_source_quote);
-   }
-
-   Case(invalid)
-   {
-      const char* argv[] = {"./a.out", "-S", "abc"};
-
-      COUT("-S invalid argument: abc, availables: \' | single | \" | double | \\\"\n")
-      {
-         c.parse(3, argv);
-      }
-
-      OK("\\\"", c.json_source_quote);
    }
 }

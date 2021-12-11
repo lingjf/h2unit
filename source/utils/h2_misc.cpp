@@ -139,24 +139,23 @@ static inline bool h2_in(const char* a, int n, ...)
 
 static inline const char* h2_candidate(const char* a, int n, ...)
 {
-   int count = 0;
-   const char* matches[32];
+   int c1 = 0, c2 = 0;
+   const char *totals[32], *matches[32];
 
    va_list ap;
    va_start(ap, n);
-   for (int i = 0; i < n; ++i) {
-      const char* b = va_arg(ap, const char*);
-      if (!strncasecmp(b, a, strlen(a))) matches[count++] = b;
+   for (; c1 < n; ++c1) {
+      totals[c1] = va_arg(ap, const char*);
+      if (!strncasecmp(totals[c1], a, strlen(a))) matches[c2++] = totals[c1];
    }
    va_end(ap);
 
-   if (count == 0) return nullptr;
-   if (count == 1) return matches[0];
+   if (c2 == 1) return matches[0];
 
    static char ss[1024];
-   sprintf(ss, "ambiguous argument: %s, candidates: ", a);
-   for (int i = 0; i < count; ++i)
-      sprintf(ss + strlen(ss), "%s%s", comma_if(i, " | "), matches[i]);
+   sprintf(ss, "%s argument: \033[31m%s\033[0m, %s: ", c2 ? "ambiguous" : "invalid", a, c2 ? "candidates" : "availables");
+   for (int i = 0; i < (c2 ? c2 : c1); ++i)
+      sprintf(ss + strlen(ss), "%s\033[32m%s\033[0m", comma_if(i, " | "), c2 ? matches[i] : totals[i]);
    return ss;
 }
 

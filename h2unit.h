@@ -4437,24 +4437,23 @@ static inline bool h2_in(const char* a, int n, ...)
 
 static inline const char* h2_candidate(const char* a, int n, ...)
 {
-   int count = 0;
-   const char* matches[32];
+   int c1 = 0, c2 = 0;
+   const char *totals[32], *matches[32];
 
    va_list ap;
    va_start(ap, n);
-   for (int i = 0; i < n; ++i) {
-      const char* b = va_arg(ap, const char*);
-      if (!strncasecmp(b, a, strlen(a))) matches[count++] = b;
+   for (; c1 < n; ++c1) {
+      totals[c1] = va_arg(ap, const char*);
+      if (!strncasecmp(totals[c1], a, strlen(a))) matches[c2++] = totals[c1];
    }
    va_end(ap);
 
-   if (count == 0) return nullptr;
-   if (count == 1) return matches[0];
+   if (c2 == 1) return matches[0];
 
    static char ss[1024];
-   sprintf(ss, "ambiguous argument: %s, candidates: ", a);
-   for (int i = 0; i < count; ++i)
-      sprintf(ss + strlen(ss), "%s%s", comma_if(i, " | "), matches[i]);
+   sprintf(ss, "%s argument: \033[31m%s\033[0m, %s: ", c2 ? "ambiguous" : "invalid", a, c2 ? "candidates" : "availables");
+   for (int i = 0; i < (c2 ? c2 : c1); ++i)
+      sprintf(ss + strlen(ss), "%s\033[32m%s\033[0m", comma_if(i, " | "), c2 ? matches[i] : totals[i]);
    return ss;
 }
 
@@ -10127,7 +10126,7 @@ static inline void usage()
             "\033[90m│\033[0m" " -\033[36mf\033[0m  "                               "\033[90m│\033[0m" "           "                                   "\033[90m│\033[0m" " Only test last \033[36mf\033[0mailed cases                                "                               "\033[90m│\033[0m\n" H2_USAGE_BR
             "\033[90m│\033[0m" " -\033[36mF\033[0m  "                               "\033[90m│\033[0m" "  \033[90m[\033[0mn=max\033[90m]\033[0m  "     "\033[90m│\033[0m" " \033[36mF\033[0mold json print, 0:unfold 1:short 2:same 3:single          "                               "\033[90m│\033[0m\n" H2_USAGE_BR
             "\033[90m│\033[0m" " -\033[36mi\033[0m\033[90m/\033[0m\033[36me\033[0m" "\033[90m│\033[0m" "\033[90m[\033[0mpattern .\033[90m]\033[0m"     "\033[90m│\033[0m" " \033[36mi\033[0mnclude\033[90m/\033[0m\033[36me\033[0mxclude case suite or file by substr wildcard      " "\033[90m│\033[0m\n" H2_USAGE_BR
-            "\033[90m│\033[0m" " -\033[36ml\033[0m  "                               "\033[90m│\033[0m" "  \033[90m[\033[0mtype .\033[90m]\033[0m "     "\033[90m│\033[0m" " \033[36ml\033[0mist suites cases and tags, type [suite case todo tag]     "                               "\033[90m│\033[0m\n" H2_USAGE_BR
+            "\033[90m│\033[0m" " -\033[36ml\033[0m  "                               "\033[90m│\033[0m" "  \033[90m[\033[0mtype .\033[90m]\033[0m "     "\033[90m│\033[0m" " \033[36ml\033[0mist suites cases and tags, type [suite case todo tags]    "                               "\033[90m│\033[0m\n" H2_USAGE_BR
             "\033[90m│\033[0m" " -\033[36mm\033[0m  "                               "\033[90m│\033[0m" "           "                                   "\033[90m│\033[0m" " Test cases without \033[36mm\033[0memory check                            "                               "\033[90m│\033[0m\n" H2_USAGE_BR
             "\033[90m│\033[0m" " -\033[36mo\033[0m  "                               "\033[90m│\033[0m" "  \033[90m[\033[0mpath\033[90m]\033[0m   "     "\033[90m│\033[0m" " \033[36mo\033[0mutput junit report, default is <executable>.junit.xml     "                               "\033[90m│\033[0m\n" H2_USAGE_BR
             "\033[90m│\033[0m" " -\033[36mp\033[0m  "                               "\033[90m│\033[0m" "           "                                   "\033[90m│\033[0m" " Disable test percentage \033[36mp\033[0mrogressing bar                    "                               "\033[90m│\033[0m\n" H2_USAGE_BR
@@ -10209,19 +10208,17 @@ h2_inline void h2_option::parse(int argc, const char** argv)
             break;
          case 'l':
             while ((t = get.extract_string())) {
-               const char* r = h2_candidate(t, 4, "suite", "case", "todo", "tag");
-               if (!r)
-                  ::printf("-l invalid argument: %s, availables: suite | case | todo | tag\n", t);
-               else if (!strcmp("suite", r))
+               const char* r = h2_candidate(t, 4, "suite", "case", "todo", "tags");
+               if (!strcmp("suite", r))
                   lists |= ListSuite;
                else if (!strcmp("case", r))
                   lists |= ListCase;
                else if (!strcmp("todo", r))
                   lists |= ListTodo;
-               else if (!strcmp("tag", r))
+               else if (!strcmp("tags", r))
                   lists |= ListTag;
                else
-                  ::printf("-l %s\n", r);
+                  ::printf("-l %s\n", r), exit(-1);
             }
             if (!lists) lists = ListSuite | ListCase | ListTodo;
             break;
@@ -10236,9 +10233,7 @@ h2_inline void h2_option::parse(int argc, const char** argv)
          case 's':
             while ((t = get.extract_string())) {
                const char* r = h2_candidate(t, 4, "random", "name", "file", "reverse");
-               if (!r)
-                  ::printf("-s invalid argument: %s, availables: random | name | file | reverse\n", t);
-               else if (!strcmp("random", r))
+               if (!strcmp("random", r))
                   shuffles |= ShuffleRandom;
                else if (!strcmp("name", r))
                   shuffles |= ShuffleName;
@@ -10247,7 +10242,7 @@ h2_inline void h2_option::parse(int argc, const char** argv)
                else if (!strcmp("reverse", r))
                   shuffles |= ShuffleReverse;
                else
-                  ::printf("-s %s\n", r);
+                  ::printf("-s %s\n", r), exit(-1);
             }
             if (!shuffles) shuffles = ShuffleRandom;
             break;
@@ -10255,16 +10250,14 @@ h2_inline void h2_option::parse(int argc, const char** argv)
             json_source_quote = "\\\"";
             if ((t = get.extract_string())) {
                const char* r = h2_candidate(t, 5, "\'", "single", "\"", "double", "\\\"");
-               if (!r)
-                  ::printf("-S invalid argument: %s, availables: \' | single | \" | double | \\\"\n", t);
-               else if (!strcmp("\'", r) || !strcmp("single", r))
+               if (!strcmp("\'", r) || !strcmp("single", r))
                   json_source_quote = "\'";
                else if (!strcmp("\"", r) || !strcmp("double", r))
                   json_source_quote = "\"";
                else if (!strcmp("\\\"", r))
                   json_source_quote = "\\\"";
                else
-                  ::printf("-S %s\n", r);
+                  ::printf("-S %s\n", r), exit(-1);
 
                if (!h2_in(json_source_quote, 3, "\'", "\"", "\\\"")) json_source_quote = "\\\"";
             }
