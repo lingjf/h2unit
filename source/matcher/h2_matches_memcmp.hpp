@@ -44,7 +44,7 @@ struct h2_matches_memcmp : h2_matches {
    }
    virtual h2_line expection(h2_mc c) const override
    {
-      return ncsc("Me()", c);
+      return c.pre() + "Me()";
    }
 };
 

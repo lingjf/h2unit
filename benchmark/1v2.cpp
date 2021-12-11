@@ -20,8 +20,8 @@ SUITE(1v2)
       char* es = (char*)malloc(1024 * 1024);
       char* as = (char*)malloc(1024 * 1024);
 
-      FILE* ef = fopen("./benchmark/e.txt", "r");
-      FILE* af = fopen("./benchmark/a.txt", "r");
+      FILE* ef = fopen("../benchmark/e.txt", "r");
+      FILE* af = fopen("../benchmark/a.txt", "r");
 
       auto el = fread(es, 1, 1024 * 1024, ef);
       auto al = fread(as, 1, 1024 * 1024, af);

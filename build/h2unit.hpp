@@ -5,7 +5,7 @@
 #ifndef __H2UNIT_HPP__
 #define __H2UNIT_HPP__
 #define H2UNIT_VERSION 5.16
-#define H2UNIT_REVISION 2021-12-11 branches/v5
+#define H2UNIT_REVISION 2021-12-12 branches/v5
 #ifndef __H2_UNIT_HPP__
 #define __H2_UNIT_HPP__
 
@@ -13,7 +13,7 @@
 #include <cstdlib>     /* malloc */
 #include <cstdint>     /* std::uintptr_t */
 #include <cstring>     /* strcpy, memcpy */
-#include <cmath>       /* fabs */
+#include <cmath>       /* fabs, NAN */
 #include <csetjmp>     /* setjmp, longjmp */
 #include <sstream>     /* std::basic_ostringstream */
 #include <string>      /* std::string */
@@ -793,7 +793,7 @@ struct h2_string : public std::basic_string<char, std::char_traits<char>, h2_all
    h2_string trim() const;
    h2_string squash(bool quote = false) const;
    h2_string tolower() const;
-   h2_string center(size_t width) const;
+   h2_string centre(size_t width) const;
    h2_vector<h2_string> disperse() const;
 };
 
@@ -1215,7 +1215,6 @@ struct h2_option {
    int verbose = VerboseNormal;
    const char* json_source_quote = "";
    char junit_path[256]{'\0'};
-   char tap_path[256]{'\0'};
    const char *includes[128]{nullptr}, *excludes[128]{nullptr};
 
    void parse(int argc, const char** argv);
@@ -1260,7 +1259,7 @@ struct h2_case : h2_test {
    jmp_buf fail_hole;
    h2_fail* fails = nullptr;
 
-   h2_case(const char* filine_, const char* file_, int line_, const char* describe_, int todo_) : h2_test(filine_, file_, line_, describe_), todo(todo_) {}
+   h2_case(const char* filine, const char* file, int line, const char* describe, int todo_) : h2_test(filine, file, line, describe), todo(todo_) {}
    void clear();
 
    void prev_setup();
@@ -1529,18 +1528,28 @@ struct h2_runner;
 struct h2_suite;
 struct h2_case;
 
-struct h2_report {
+struct h2_report_interface {
+   virtual void on_runner_start(h2_runner*) = 0;
+   virtual void on_runner_endup(h2_runner*) = 0;
+   virtual void on_suite_start(h2_suite*) = 0;
+   virtual void on_suite_endup(h2_suite*) = 0;
+   virtual void on_case_start(h2_suite*, h2_case*) = 0;
+   virtual void on_case_endup(h2_suite*, h2_case*) = 0;
+};
+
+struct h2_report : h2_report_interface {
    h2_singleton(h2_report);
    static void initialize();
 
    bool backable = false;
-   h2_list reports;
-   void on_runner_start(h2_runner* r);
-   void on_runner_endup(h2_runner* r);
-   void on_suite_start(h2_suite* s);
-   void on_suite_endup(h2_suite* s);
-   void on_case_start(h2_suite* s, h2_case* c);
-   void on_case_endup(h2_suite* s, h2_case* c);
+   h2_report_interface* reports[8]{nullptr};
+
+   virtual void on_runner_start(h2_runner* r) override;
+   virtual void on_runner_endup(h2_runner* r) override;
+   virtual void on_suite_start(h2_suite* s) override;
+   virtual void on_suite_endup(h2_suite* s) override;
+   virtual void on_case_start(h2_suite* s, h2_case* c) override;
+   virtual void on_case_endup(h2_suite* s, h2_case* c) override;
 };
 // source/matcher/h2_matches.hpp
 struct h2_mc {
@@ -1553,21 +1562,20 @@ struct h2_mc {
    h2_mc update_negative(bool target = false) const { return {n, target, case_insensitive, squash_whitespace, no_compare_operator}; }
    h2_mc update_caseless(bool target = false) const { return {n, negative, target, squash_whitespace, no_compare_operator}; }
    h2_mc update_spaceless(bool target = false) const { return {n, negative, case_insensitive, target, no_compare_operator}; }
+
+   h2_line pre(const char* ns = "!") const
+   {
+      h2_line t;
+      if (!no_compare_operator && negative) t.push_back(ns);
+      if (case_insensitive) t.push_back("~");
+      if (squash_whitespace) t.push_back("*");
+      return t;
+   }
 };
 
 struct h2_matches {
    virtual h2_line expection(h2_mc c) const = 0;
 };
-
-static inline h2_line ncsc(const h2_line& s, h2_mc c, const char* dsym = "!")
-{
-   h2_line t;
-   if (!c.no_compare_operator && c.negative) t.push_back(dsym);
-   if (c.case_insensitive) t.push_back("~");
-   if (c.squash_whitespace) t.push_back("*");
-   t += s;
-   return t;
-}
 
 struct h2_matches_any : h2_matches {
    template <typename A>
@@ -1622,7 +1630,7 @@ struct h2_matches_bool : h2_matches {
 template <typename T>
 inline auto h2_matches_expection(const T& e, h2_mc c) -> typename std::enable_if<std::is_base_of<h2_matches, T>::value, h2_line>::type { return e.expection(c); }
 template <typename T>
-inline auto h2_matches_expection(const T& e, h2_mc c) -> typename std::enable_if<!std::is_base_of<h2_matches, T>::value, h2_line>::type { return ncsc(h2_stringify(e, true), c); }
+inline auto h2_matches_expection(const T& e, h2_mc c) -> typename std::enable_if<!std::is_base_of<h2_matches, T>::value, h2_line>::type { return h2_stringify(e, true); }
 
 #define H2_MATCHES_T2V2E(t_matchers)                                                                                                            \
    template <typename T>                                                                                                                        \
@@ -1751,7 +1759,7 @@ struct h2_equation : h2_matches {
    }
    virtual h2_line expection(h2_mc c) const override
    {
-      return ncsc(h2_stringify(e, true), c.update_caseless(false), "≠");
+      return c.update_caseless(false).pre("≠") + h2_stringify(e, true);
    }
 };
 
@@ -1771,7 +1779,7 @@ struct h2_equation<E, typename std::enable_if<std::is_convertible<E, h2_string>:
    }
    virtual h2_line expection(h2_mc c) const override
    {
-      return ncsc(h2_stringify(c.squash_whitespace ? e.squash() : e, true), c, "≠");
+      return c.pre("≠") + h2_stringify(c.squash_whitespace ? e.squash() : e, true);
    }
 };
 
@@ -1797,7 +1805,7 @@ struct h2_equation<const char*> : h2_matches {
    virtual h2_line expection(h2_mc c) const override
    {
       if (!e) return h2_matches_null().expection(c);
-      return ncsc(h2_stringify(c.squash_whitespace ? h2_string(e).squash() : h2_string(e), true), c, "≠");
+      return c.pre("≠") + h2_stringify(c.squash_whitespace ? h2_string(e).squash() : h2_string(e), true);
    }
 };
 
@@ -1812,7 +1820,6 @@ struct h2_approximate {
 
    unsigned long long operator*(const double& epsilon) const
    {
-      if (epsilon == B) return 0;  // Eq(100.0) without epsilon in Eq
       return (unsigned long long)(fabs(epsilon) * A);
    }
 
@@ -1872,7 +1879,7 @@ struct h2_equation<E, typename std::enable_if<std::is_arithmetic<E>::value>::typ
          else  // absolute/margin
             t += "±" + h2_stringify(std::fabs(h2::h2_approximate::absolute_margin(epsilon)));
       }
-      return ncsc(t, c.update_caseless(false), "≠");
+      return c.update_caseless(false).pre("≠") + t;
    }
 };
 
@@ -1893,9 +1900,6 @@ auto _Eq(const T& expect, const long double = 0) -> typename std::enable_if<std:
 {
    return h2_polymorphic_matcher<h2_matches_bool>(h2_matches_bool(expect));
 }
-
-#define H3Eq(expect, ...) \
-   h2::_Eq(expect, h2::h2_approximate() * __VA_ARGS__ + h2::h2_approximate::B)
 
 #define H2Eq(expect, ...) H2PP_CAT(__H2Eq, H2PP_IS_EMPTY(__VA_ARGS__))(expect, __VA_ARGS__)
 #define __H2Eq1(expect, ...) h2::_Eq(expect, 0)
@@ -1972,7 +1976,7 @@ struct h2_pair_matches : h2_matches {
 
    virtual h2_line expection(h2_mc c) const override
    {
-      return ncsc(gray("(") + h2_matches_expection(k, c) + gray(", ") + h2_matches_expection(v, c) + gray(")"), c.update_caseless(false));
+      return c.update_caseless(false).pre() + gray("(") + h2_matches_expection(k, c) + gray(", ") + h2_matches_expection(v, c) + gray(")");
    }
 };
 
@@ -2054,7 +2058,7 @@ struct h2_has1_matches : h2_matches {
 
    virtual h2_line expection(h2_mc c) const override
    {
-      return ncsc("Has" + gray("(") + h2_matches_expection(m, c.update_negative(false)) + gray(")"), c.update_caseless(false));
+      return c.update_caseless(false).pre() + "Has" + gray("(") + h2_matches_expection(m, c.update_negative(false)) + gray(")");
    }
 };
 
@@ -2088,7 +2092,7 @@ struct h2_has2_matches : h2_matches {
       if (strcmp("HasValue", type)) t += h2_matches_expection(k, c.update_negative(false));
       if (!strcmp("Has", type)) t += ", ";
       if (strcmp("HasKey", type)) t += h2_matches_expection(v, c.update_negative(false));
-      return ncsc(type + gray("(") + t + gray(")"), c.update_caseless(false));
+      return c.update_caseless(false).pre() + type + gray("(") + t + gray(")");
    }
 };
 
@@ -2129,7 +2133,7 @@ struct h2_countof_matches : h2_matches {
 
    virtual h2_line expection(h2_mc c) const override
    {
-      return ncsc("CountOf" + gray("(") + h2_matches_expection(m, c.update_caseless(false).update_negative(false)) + gray(")"), c.update_caseless(false));
+      return c.update_caseless(false).pre() + "CountOf" + gray("(") + h2_matches_expection(m, c.update_caseless(false).update_negative(false)) + gray(")");
    }
 };
 
@@ -2200,7 +2204,7 @@ struct h2_listof_matches : h2_matches {
 
    virtual h2_line expection(h2_mc c) const override
    {
-      return ncsc("ListOf" + gray("(") + t2e(c.update_negative(false)) + gray(")"), c.update_caseless(false));
+      return c.update_caseless(false).pre() + gray("[") + t2e(c.update_negative(false)) + gray("]");
    }
 
    H2_MATCHES_T2V2E(t_matchers)
@@ -2293,7 +2297,7 @@ struct h2_and_matches : h2_matches {
       if (sr.has(" and ") || sr.has(" or ")) sr = gray("(") + sr + gray(")");
       h2_line s = sl + " and " + sr;
       if (c.negative) s = gray("(") + s + gray(")");
-      return ncsc(s, c.update_caseless(false));
+      return c.update_caseless(false).pre() + s;
    }
 };
 
@@ -2329,7 +2333,7 @@ struct h2_or_matches : h2_matches {
       if (sr.has(" or ")) sr = gray("(") + sr + gray(")");
       h2_line s = sl + " or " + sr;
       if (c.negative) s = gray("(") + s + gray(")");
-      return ncsc(s, c.update_caseless(false));
+      return c.update_caseless(false).pre() + s;
    }
 };
 
@@ -2362,7 +2366,7 @@ struct h2_allof_matches : h2_matches {
 
    virtual h2_line expection(h2_mc c) const override
    {
-      return ncsc("AllOf" + gray("(") + t2e(c.update_negative(false)) + gray(")"), c.update_caseless(false));
+      return c.update_caseless(false).pre() + "AllOf" + gray("(") + t2e(c.update_negative(false)) + gray(")");
    }
 
    H2_MATCHES_T2V2E(t_matchers)
@@ -2402,7 +2406,7 @@ struct h2_anyof_matches : h2_matches {
 
    virtual h2_line expection(h2_mc c) const override
    {
-      return ncsc("AnyOf" + gray("(") + t2e(c.update_negative(false)) + gray(")"), c.update_caseless(false));
+      return c.update_caseless(false).pre() + "AnyOf" + gray("(") + t2e(c.update_negative(false)) + gray(")");
    }
 
    H2_MATCHES_T2V2E(t_matchers)
@@ -2441,7 +2445,7 @@ struct h2_noneof_matches : h2_matches {
 
    virtual h2_line expection(h2_mc c) const override
    {
-      return ncsc("NoneOf" + gray("(") + t2e(c.update_negative(false)) + gray(")"), c.update_caseless(false));
+      return c.update_caseless(false).pre() + "NoneOf" + gray("(") + t2e(c.update_negative(false)) + gray(")");
    }
 
    H2_MATCHES_T2V2E(t_matchers)
@@ -2530,7 +2534,7 @@ struct h2_matches_ge : h2_matches {
    }
    virtual h2_line expection(h2_mc c) const override
    {
-      return ncsc((c.no_compare_operator ? "" : "≥") + h2_stringify(e, true), c.update_caseless(false));
+      return c.update_caseless(false).pre() + (c.no_compare_operator ? "" : "≥") + h2_stringify(e, true);
    }
 };
 
@@ -2547,7 +2551,7 @@ struct h2_matches_gt : h2_matches {
    }
    virtual h2_line expection(h2_mc c) const override
    {
-      return ncsc((c.no_compare_operator ? "" : ">") + h2_stringify(e), c.update_caseless(false));
+      return c.update_caseless(false).pre() + (c.no_compare_operator ? "" : ">") + h2_stringify(e);
    }
 };
 
@@ -2564,7 +2568,7 @@ struct h2_matches_le : h2_matches {
    }
    virtual h2_line expection(h2_mc c) const override
    {
-      return ncsc((c.no_compare_operator ? "" : "≤") + h2_stringify(e), c.update_caseless(false));
+      return c.update_caseless(false).pre() + (c.no_compare_operator ? "" : "≤") + h2_stringify(e);
    }
 };
 
@@ -2581,10 +2585,22 @@ struct h2_matches_lt : h2_matches {
    }
    virtual h2_line expection(h2_mc c) const override
    {
-      return ncsc((c.no_compare_operator ? "" : "<") + h2_stringify(e), c.update_caseless(false));
+      return c.update_caseless(false).pre() + (c.no_compare_operator ? "" : "<") + h2_stringify(e);
    }
 };
 
+#if __cplusplus >= 201402L || (defined _MSVC_LANG && _MSVC_LANG >= 201402L)
+template <typename T, typename E = typename h2_decay<T>::type>
+inline auto Nq(const T& expect) { return h2_polymorphic_matcher<h2_not_matches<E>>(h2_not_matches<E>(expect)); }
+template <typename T, typename E = typename h2_decay<T>::type>
+inline auto Ge(const T& expect) { return h2_polymorphic_matcher<h2_matches_ge<E>>(h2_matches_ge<E>(expect)); }
+template <typename T, typename E = typename h2_decay<T>::type>
+inline auto Gt(const T& expect) { return h2_polymorphic_matcher<h2_matches_gt<E>>(h2_matches_gt<E>(expect)); }
+template <typename T, typename E = typename h2_decay<T>::type>
+inline auto Le(const T& expect) { return h2_polymorphic_matcher<h2_matches_le<E>>(h2_matches_le<E>(expect)); }
+template <typename T, typename E = typename h2_decay<T>::type>
+inline auto Lt(const T& expect) { return h2_polymorphic_matcher<h2_matches_lt<E>>(h2_matches_lt<E>(expect)); }
+#else
 template <typename T, typename E = typename h2_decay<T>::type>
 inline h2_polymorphic_matcher<h2_not_matches<E>> Nq(const T& expect) { return h2_polymorphic_matcher<h2_not_matches<E>>(h2_not_matches<E>(expect)); }
 template <typename T, typename E = typename h2_decay<T>::type>
@@ -2595,6 +2611,7 @@ template <typename T, typename E = typename h2_decay<T>::type>
 inline h2_polymorphic_matcher<h2_matches_le<E>> Le(const T& expect) { return h2_polymorphic_matcher<h2_matches_le<E>>(h2_matches_le<E>(expect)); }
 template <typename T, typename E = typename h2_decay<T>::type>
 inline h2_polymorphic_matcher<h2_matches_lt<E>> Lt(const T& expect) { return h2_polymorphic_matcher<h2_matches_lt<E>>(h2_matches_lt<E>(expect)); }
+#endif
 // source/matcher/h2_matches_memcmp.hpp
 struct h2_memcmp_util {
    static bool bits_equal(const unsigned char* b1, const unsigned char* b2, size_t nbits);
@@ -2642,7 +2659,7 @@ struct h2_matches_memcmp : h2_matches {
    }
    virtual h2_line expection(h2_mc c) const override
    {
-      return ncsc("Me()", c);
+      return c.pre() + "Me()";
    }
 };
 
@@ -2761,20 +2778,20 @@ inline h2_matcher<T>::h2_matcher() { *this = h2_polymorphic_matcher<h2_matches_a
 
 template <typename T>
 inline h2_matcher<T>::h2_matcher(T value) { *this = _Eq(value); }
-// source/matcher/h2_customize.hpp
-#define __Matches_Common(message)                                                                \
-   template <typename A>                                                                         \
-   bool __matches(const A& a) const;                                                             \
-   template <typename A>                                                                         \
-   h2::h2_fail* matches(const A& a, h2::h2_mc c) const                                           \
-   {                                                                                             \
-      h2::h2_fail* fail = h2::h2_fail::new_unexpect(h2::ncsc("", c), h2::h2_stringify(a, true)); \
-      if (c.fit(__matches(a))) return nullptr;                                                   \
-      h2::h2_ostringstream t;                                                                    \
-      t << H2PP_REMOVE_PARENTHESES(message);                                                     \
-      fail->user_explain = t.str().c_str();                                                      \
-      return fail;                                                                               \
-   }                                                                                             \
+// source/matcher/h2_matcher_customize.hpp
+#define __Matches_Common(message)                                                        \
+   template <typename A>                                                                 \
+   bool __matches(const A& a) const;                                                     \
+   template <typename A>                                                                 \
+   h2::h2_fail* matches(const A& a, h2::h2_mc c) const                                   \
+   {                                                                                     \
+      h2::h2_fail* fail = h2::h2_fail::new_unexpect(c.pre(), h2::h2_stringify(a, true)); \
+      if (c.fit(__matches(a))) return nullptr;                                           \
+      h2::h2_ostringstream t;                                                            \
+      t << H2PP_REMOVE_PARENTHESES(message);                                             \
+      fail->user_explain = t.str().c_str();                                              \
+      return fail;                                                                       \
+   }                                                                                     \
    virtual h2::h2_line expection(h2::h2_mc c) const override { return ""; }
 
 #define H2MATCHER0(name, message)                                                    \
@@ -3735,9 +3752,48 @@ struct h2_sock : h2_once {
    ~h2_sock();
    static void clear();
    static void inject(const void* packet, size_t size, const char* attributes = "");  // from=1.2.3.4:5678, to=4.3.2.1:8765
-
+   static h2_packet* fetch();
+   static void failing(h2_fail* fail);
    template <typename M1 = h2_polymorphic_matcher<h2_matches_any>, typename M2 = h2_polymorphic_matcher<h2_matches_any>, typename M3 = h2_polymorphic_matcher<h2_matches_any>, typename M4 = h2_polymorphic_matcher<h2_matches_any>>
-   static void check(const char* filine, const char* e, M1 from = _, M2 to = _, M3 payload = _, M4 size = _);
+   static void check(const char* filine, const char* e, M1 from = _, M2 to = _, M3 payload = _, M4 size = _)
+   {
+      h2_fail* fail = nullptr;
+      h2_packet* p = h2_sock::fetch();
+      if (!p) {
+         h2_line t = "Outgoing packet miss Ptx(";
+         t.printf("green", "%s", e).printf("", ")");
+         fail = h2_fail::new_normal(t, filine);
+      } else {
+         h2_fail* fails = nullptr;
+         h2_fail* fail_from = h2_matcher_cast<const char*>(We(from)).matches(p->from.c_str());
+         if (fail_from) {
+            fail_from->explain = "from address";
+            h2_fail::append_subling(fails, fail_from);
+         }
+         h2_fail* fail_to = h2_matcher_cast<const char*>(We(to)).matches(p->to.c_str());
+         if (fail_to) {
+            fail_to->explain = "to address";
+            h2_fail::append_subling(fails, fail_to);
+         }
+         h2_fail* fail_payload = h2_matcher_cast<const unsigned char*>(payload).matches((unsigned char*)p->data.data());
+         if (fail_payload) {
+            fail_payload->explain = "payload";
+            h2_fail::append_subling(fails, fail_payload);
+         }
+         h2_fail* fail_size = h2_matcher_cast<const int>(size).matches(p->data.size());
+         if (fail_size) {
+            fail_size->explain = "payload length";
+            h2_fail::append_subling(fails, fail_size);
+         }
+         if (fails) {
+            h2_line t = "Outgoing packet unexpected Ptx(";
+            t.printf("green", "%s", e).printf("", ")");
+            fail = h2_fail::new_normal(t, filine);
+            h2_fail::append_child(fail, fails);
+         }
+      }
+      failing(fail);
+   }
 };
 
 #define __H2SOCK(Q) for (h2::h2_sock Q; Q;)

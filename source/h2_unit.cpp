@@ -158,6 +158,9 @@ namespace h2 {
 #include "assert/h2_timer.cpp"
 #include "render/h2_layout.cpp"
 #include "render/h2_failure.cpp"
+#include "render/h2_report_console.cpp"
+#include "render/h2_report_list.cpp"
+#include "render/h2_report_junit.cpp"
 #include "render/h2_report.cpp"
 #include "render/h2_option.cpp"
 }

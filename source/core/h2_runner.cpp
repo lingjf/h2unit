@@ -49,7 +49,7 @@ h2_inline void h2_runner::enumerate()
    if (O.progressing) h2_console::prints("dark gray", "Collecting ");
    h2_list_for_each_entry (s, i, suites, h2_suite, x) {
       if (O.progressing)
-         for (; dots <= i * dps; dots++) h2_console::prints("dark gray", ".");
+         for (; dots <= i * dps; ++dots) h2_console::prints("dark gray", ".");
 
       for (int i = 0; global_suite_setups[i]; ++i) global_suite_setups[i]();
       s->setup();
@@ -69,20 +69,19 @@ h2_inline void h2_runner::filter()
    }
 }
 
-template <typename T>
 struct shuffle_comparison {
    static int seq(h2_list* a, h2_list* b)
    {
-      return h2_list_entry(a, T, x)->seq - h2_list_entry(b, T, x)->seq;
+      return h2_list_entry(a, h2_test, x)->seq - h2_list_entry(b, h2_test, x)->seq;
    }
    static int name(h2_list* a, h2_list* b)
    {
-      return strcasecmp(h2_list_entry(a, T, x)->name, h2_list_entry(b, T, x)->name);
+      return strcasecmp(h2_list_entry(a, h2_test, x)->name, h2_list_entry(b, h2_test, x)->name);
    }
    static int file(h2_list* a, h2_list* b)
    {
-      int t = strcasecmp(h2_list_entry(a, T, x)->file, h2_list_entry(b, T, x)->file);
-      return t != 0 ? t : h2_list_entry(a, T, x)->line - h2_list_entry(b, T, x)->line;
+      int t = strcasecmp(h2_list_entry(a, h2_test, x)->file, h2_list_entry(b, h2_test, x)->file);
+      return t != 0 ? t : h2_list_entry(a, h2_test, x)->line - h2_list_entry(b, h2_test, x)->line;
    }
    static int cmp(h2_list* a, h2_list* b)
    {
@@ -96,9 +95,9 @@ struct shuffle_comparison {
 h2_inline void h2_runner::shuffle()
 {
    if ((lasts = sequence_last_order(suites))) {
-      suites.sort(shuffle_comparison<h2_suite>::seq);
+      suites.sort(shuffle_comparison::seq);
       h2_list_for_each_entry (s, suites, h2_suite, x)
-         s->cases.sort(shuffle_comparison<h2_case>::seq);
+         s->cases.sort(shuffle_comparison::seq);
       return;  // run in last order if last failed
    }
 
@@ -109,9 +108,9 @@ h2_inline void h2_runner::shuffle()
             h2_list_for_each_entry (c, s->cases, h2_case, x)
                s->seq = c->seq = ::rand();
 
-      suites.sort(shuffle_comparison<h2_suite>::cmp);
+      suites.sort(shuffle_comparison::cmp);
       h2_list_for_each_entry (s, suites, h2_suite, x)
-         s->cases.sort(shuffle_comparison<h2_case>::cmp);
+         s->cases.sort(shuffle_comparison::cmp);
    }
 }
 
@@ -128,6 +127,7 @@ h2_inline int h2_runner::main(int argc, const char** argv)
    h2_stdio::initialize();
    h2_dns::initialize();
 
+   stats.timecost = h2_now();
    for (int i = 0; global_setups[i]; ++i) global_setups[i]();
    enumerate();
    filter();
@@ -171,8 +171,9 @@ h2_inline int h2_runner::main(int argc, const char** argv)
       else if (lasts == 0)
          save_last_order(suites);
    }
+   stats.timecost = h2_now() - stats.timecost;
    h2_report::I().on_runner_endup(this);
-   for (int i = 0; global_cleanups[i]; i++) global_cleanups[i]();
+   for (int i = 0; global_cleanups[i]; ++i) global_cleanups[i]();
 
    h2_stubs::clear(stubs);
    h2_mocks::clear(mocks, false);

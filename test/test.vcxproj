@@ -56,9 +56,9 @@
     <ClCompile Include="test_matcher_cast_string1.cpp" />
     <ClCompile Include="test_matcher_cast_string2.cpp" />
     <ClCompile Include="test_matcher_cast_string3.cpp" />
-    <ClCompile Include="test_matcher_customize.cpp" />
     <ClCompile Include="test_matcher_matcher.cpp" />
     <ClCompile Include="test_matcher_matcher_cast.cpp" />
+    <ClCompile Include="test_matcher_matcher_customize.cpp" />
     <ClCompile Include="test_matcher_matches.cpp" />
     <ClCompile Include="test_matcher_matches_container.cpp" />
     <ClCompile Include="test_matcher_matches_equation.cpp" />

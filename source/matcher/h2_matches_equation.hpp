@@ -18,7 +18,7 @@ struct h2_equation : h2_matches {
    }
    virtual h2_line expection(h2_mc c) const override
    {
-      return ncsc(h2_stringify(e, true), c.update_caseless(false), "≠");
+      return c.update_caseless(false).pre("≠") + h2_stringify(e, true);
    }
 };
 
@@ -38,7 +38,7 @@ struct h2_equation<E, typename std::enable_if<std::is_convertible<E, h2_string>:
    }
    virtual h2_line expection(h2_mc c) const override
    {
-      return ncsc(h2_stringify(c.squash_whitespace ? e.squash() : e, true), c, "≠");
+      return c.pre("≠") + h2_stringify(c.squash_whitespace ? e.squash() : e, true);
    }
 };
 
@@ -64,7 +64,7 @@ struct h2_equation<const char*> : h2_matches {
    virtual h2_line expection(h2_mc c) const override
    {
       if (!e) return h2_matches_null().expection(c);
-      return ncsc(h2_stringify(c.squash_whitespace ? h2_string(e).squash() : h2_string(e), true), c, "≠");
+      return c.pre("≠") + h2_stringify(c.squash_whitespace ? h2_string(e).squash() : h2_string(e), true);
    }
 };
 
@@ -79,7 +79,6 @@ struct h2_approximate {
 
    unsigned long long operator*(const double& epsilon) const
    {
-      if (epsilon == B) return 0;  // Eq(100.0) without epsilon in Eq
       return (unsigned long long)(fabs(epsilon) * A);
    }
 
@@ -139,7 +138,7 @@ struct h2_equation<E, typename std::enable_if<std::is_arithmetic<E>::value>::typ
          else  // absolute/margin
             t += "±" + h2_stringify(std::fabs(h2::h2_approximate::absolute_margin(epsilon)));
       }
-      return ncsc(t, c.update_caseless(false), "≠");
+      return c.update_caseless(false).pre("≠") + t;
    }
 };
 
@@ -160,9 +159,6 @@ auto _Eq(const T& expect, const long double = 0) -> typename std::enable_if<std:
 {
    return h2_polymorphic_matcher<h2_matches_bool>(h2_matches_bool(expect));
 }
-
-#define H3Eq(expect, ...) \
-   h2::_Eq(expect, h2::h2_approximate() * __VA_ARGS__ + h2::h2_approximate::B)
 
 #define H2Eq(expect, ...) H2PP_CAT(__H2Eq, H2PP_IS_EMPTY(__VA_ARGS__))(expect, __VA_ARGS__)
 #define __H2Eq1(expect, ...) h2::_Eq(expect, 0)

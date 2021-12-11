@@ -97,7 +97,6 @@ h2_inline h2_string h2_string::unescape() const
    s.replace_all("\\t", "\t");
    s.replace_all("\\\"", "\"");
    s.replace_all("\\\\", "\\");
-   // todo: escape \u12ab
    return s;
 }
 
@@ -132,7 +131,7 @@ h2_inline h2_string h2_string::tolower() const
    return s;
 }
 
-h2_inline h2_string h2_string::center(size_t width) const
+h2_inline h2_string h2_string::centre(size_t width) const
 {
    if (width <= size()) return *this;
    size_t left = (width - size()) / 2, right = width - left - size();

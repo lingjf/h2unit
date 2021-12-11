@@ -79,7 +79,7 @@ struct h2_layout {
       else
          left_width = right_width = valid_width / 2;
 
-      h2_line title = (step ? h2_string(seq_width + 2, ' ') : "") + h2_string(left_title).center(left_width) + "   " + h2_string(right_title).center(right_width);
+      h2_line title = (step ? h2_string(seq_width + 2, ' ') : "") + h2_string(left_title).centre(left_width) + "   " + h2_string(right_title).centre(right_width);
       h2_lines lines = {title.brush("dark gray")};
 
       return lines += lines_merge(left_lines, right_lines, left_width, right_width, step, scale, seq_width);

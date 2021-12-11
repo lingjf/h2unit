@@ -277,24 +277,24 @@ SUITE(string)
       OK(a.equals("Hello World"));
    }
 
-   Case(center)
+   Case(centre)
    {
-      OK("ab", h2::h2_string("ab").center(2));
-      OK("ab ", h2::h2_string("ab").center(3));
-      OK(" ab ", h2::h2_string("ab").center(4));
-      OK(" ab  ", h2::h2_string("ab").center(5));
-      OK("  ab  ", h2::h2_string("ab").center(6));
+      OK("ab", h2::h2_string("ab").centre(2));
+      OK("ab ", h2::h2_string("ab").centre(3));
+      OK(" ab ", h2::h2_string("ab").centre(4));
+      OK(" ab  ", h2::h2_string("ab").centre(5));
+      OK("  ab  ", h2::h2_string("ab").centre(6));
 
-      OK("abc", h2::h2_string("abc").center(3));
-      OK("abc ", h2::h2_string("abc").center(4));
-      OK(" abc ", h2::h2_string("abc").center(5));
-      OK(" abc  ", h2::h2_string("abc").center(6));
+      OK("abc", h2::h2_string("abc").centre(3));
+      OK("abc ", h2::h2_string("abc").centre(4));
+      OK(" abc ", h2::h2_string("abc").centre(5));
+      OK(" abc  ", h2::h2_string("abc").centre(6));
    }
 
-   Case(center abnormal)
+   Case(centre abnormal)
    {
-      OK("", h2::h2_string("").center(0));
-      OK("abc", h2::h2_string("abc").center(2));
+      OK("", h2::h2_string("").centre(0));
+      OK("abc", h2::h2_string("abc").centre(2));
    }
 
    Case(concat)

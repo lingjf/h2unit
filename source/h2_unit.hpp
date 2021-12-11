@@ -5,7 +5,7 @@
 #include <cstdlib>     /* malloc */
 #include <cstdint>     /* std::uintptr_t */
 #include <cstring>     /* strcpy, memcpy */
-#include <cmath>       /* fabs */
+#include <cmath>       /* fabs, NAN */
 #include <csetjmp>     /* setjmp, longjmp */
 #include <sstream>     /* std::basic_ostringstream */
 #include <string>      /* std::string */
@@ -82,7 +82,7 @@ namespace h2 {
 #include "matcher/h2_matches_strcmp.hpp"      // matches, matcher, failure
 #include "matcher/h2_matches_pointee.hpp"     // matches, matcher, failure
 #include "matcher/h2_matcher.cpp"             //!matches, matcher, equation
-#include "matcher/h2_customize.hpp"           // matches, matcher, failure
+#include "matcher/h2_matcher_customize.hpp"   // matches, matcher, failure
 #include "stub/h2_fp.hpp"                     // nm, load
 #include "stub/h2_stubs.hpp"                  // -
 #include "stub/h2_temporary.hpp"              // -

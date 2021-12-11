@@ -34,7 +34,6 @@ struct h2_option {
    int verbose = VerboseNormal;
    const char* json_source_quote = "";
    char junit_path[256]{'\0'};
-   char tap_path[256]{'\0'};
    const char *includes[128]{nullptr}, *excludes[128]{nullptr};
 
    void parse(int argc, const char** argv);

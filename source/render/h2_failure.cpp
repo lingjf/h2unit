@@ -90,7 +90,7 @@ struct h2_fail_unexpect : h2_fail {
          e = h2_line(e_expression).abbreviate(10000, 3).brush("green");
       } else {
          e = h2_line(e_expression).abbreviate(O.verbose >= VerboseDetail ? 10000 : 120, 3).gray_quote().brush("cyan") + gray("==>") + expection.abbreviate(10000, 3).brush("green");
-      }  // https://unicode-table.com/en/sets/arrow-symbols/ (← →) (← →) (⇐ ⇒) (⟵ ⟶) ⟸ ⟹
+      }
 
       if (!represent.width()) {
          a = h2_line(a_expression).abbreviate(10000, 3).gray_quote().brush("bold,red");

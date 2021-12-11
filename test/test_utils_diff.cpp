@@ -1,37 +1,37 @@
 #include "../source/h2_unit.cpp"
 
-SUITE(fuzzy match)
+SUITE(similarity)
 {
    Case(edit distance)
    {
-      OK(0, h2::h2_fuzzy::levenshtein("a", "a", 1, 1, false));
-      OK(1, h2::h2_fuzzy::levenshtein("a", "b", 1, 1, false));
-      OK(2, h2::h2_fuzzy::levenshtein("a", "bc", 1, 2, false));
-      OK(3, h2::h2_fuzzy::levenshtein("abc", "xyz", 3, 3, false));
+      OK(0, h2::h2_similarity::levenshtein("a", "a", 1, 1, false));
+      OK(1, h2::h2_similarity::levenshtein("a", "b", 1, 1, false));
+      OK(2, h2::h2_similarity::levenshtein("a", "bc", 1, 2, false));
+      OK(3, h2::h2_similarity::levenshtein("abc", "xyz", 3, 3, false));
    }
 
    Case(absolute match)
    {
-      OK(1, h2::h2_fuzzy::similarity("", "", false));
-      OK(1, h2::h2_fuzzy::similarity("a", "a", false));
-      OK(1, h2::h2_fuzzy::similarity("ab", "ab", false));
-      OK(1, h2::h2_fuzzy::similarity("abc", "abc", false));
+      OK(1, h2::h2_similarity::estimate("", "", false));
+      OK(1, h2::h2_similarity::estimate("a", "a", false));
+      OK(1, h2::h2_similarity::estimate("ab", "ab", false));
+      OK(1, h2::h2_similarity::estimate("abc", "abc", false));
    }
 
    Case(absolute not match)
    {
-      OK(0, h2::h2_fuzzy::similarity("a", "b", false));
-      OK(0, h2::h2_fuzzy::similarity("abc", "xyz", false));
+      OK(0, h2::h2_similarity::estimate("a", "b", false));
+      OK(0, h2::h2_similarity::estimate("abc", "xyz", false));
    }
 
    Case(not match)
    {
-      OK(0.75, h2::h2_fuzzy::similarity("abcd", "abc1", false));
-      OK(0.75, h2::h2_fuzzy::similarity("abcd", "abce", false));
-      OK(0.5, h2::h2_fuzzy::similarity("abcd", "ab12", false));
-      OK(0.25, h2::h2_fuzzy::similarity("abcd", "a123", false));
-      OK(0.75, h2::h2_fuzzy::similarity("abcd", "1bcd", false));
-      OK(0.5, h2::h2_fuzzy::similarity("abcd", "12cd", false));
+      OK(0.75, h2::h2_similarity::estimate("abcd", "abc1", false));
+      OK(0.75, h2::h2_similarity::estimate("abcd", "abce", false));
+      OK(0.5, h2::h2_similarity::estimate("abcd", "ab12", false));
+      OK(0.25, h2::h2_similarity::estimate("abcd", "a123", false));
+      OK(0.75, h2::h2_similarity::estimate("abcd", "1bcd", false));
+      OK(0.5, h2::h2_similarity::estimate("abcd", "12cd", false));
    }
 }
 

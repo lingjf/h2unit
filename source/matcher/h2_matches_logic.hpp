@@ -44,7 +44,7 @@ struct h2_and_matches : h2_matches {
       if (sr.has(" and ") || sr.has(" or ")) sr = gray("(") + sr + gray(")");
       h2_line s = sl + " and " + sr;
       if (c.negative) s = gray("(") + s + gray(")");
-      return ncsc(s, c.update_caseless(false));
+      return c.update_caseless(false).pre() + s;
    }
 };
 
@@ -80,7 +80,7 @@ struct h2_or_matches : h2_matches {
       if (sr.has(" or ")) sr = gray("(") + sr + gray(")");
       h2_line s = sl + " or " + sr;
       if (c.negative) s = gray("(") + s + gray(")");
-      return ncsc(s, c.update_caseless(false));
+      return c.update_caseless(false).pre() + s;
    }
 };
 
@@ -113,7 +113,7 @@ struct h2_allof_matches : h2_matches {
 
    virtual h2_line expection(h2_mc c) const override
    {
-      return ncsc("AllOf" + gray("(") + t2e(c.update_negative(false)) + gray(")"), c.update_caseless(false));
+      return c.update_caseless(false).pre() + "AllOf" + gray("(") + t2e(c.update_negative(false)) + gray(")");
    }
 
    H2_MATCHES_T2V2E(t_matchers)
@@ -153,7 +153,7 @@ struct h2_anyof_matches : h2_matches {
 
    virtual h2_line expection(h2_mc c) const override
    {
-      return ncsc("AnyOf" + gray("(") + t2e(c.update_negative(false)) + gray(")"), c.update_caseless(false));
+      return c.update_caseless(false).pre() + "AnyOf" + gray("(") + t2e(c.update_negative(false)) + gray(")");
    }
 
    H2_MATCHES_T2V2E(t_matchers)
@@ -192,7 +192,7 @@ struct h2_noneof_matches : h2_matches {
 
    virtual h2_line expection(h2_mc c) const override
    {
-      return ncsc("NoneOf" + gray("(") + t2e(c.update_negative(false)) + gray(")"), c.update_caseless(false));
+      return c.update_caseless(false).pre() + "NoneOf" + gray("(") + t2e(c.update_negative(false)) + gray(")");
    }
 
    H2_MATCHES_T2V2E(t_matchers)

@@ -211,16 +211,15 @@ h2_inline bool h2_pattern::match(const char* pattern, const char* subject, bool 
    return wildcard_match(pattern, subject, caseless) || regex_match(pattern, subject, caseless);
 }
 // source/utils/h2_diff.cpp
-
-struct h2_fuzzy {
+struct h2_similarity {
    static size_t levenshtein(const char* s1, const char* s2, size_t n1, size_t n2, bool caseless)
    {
       h2_vector<size_t> col(n2 + 1), prevCol(n2 + 1);
-      for (h2_vector<size_t>::size_type i = 0; i < prevCol.size(); i++)
+      for (h2_vector<size_t>::size_type i = 0; i < prevCol.size(); ++i)
          prevCol[i] = (int)i;
-      for (size_t i = 0; i < n1; i++) {
+      for (size_t i = 0; i < n1; ++i) {
          col[0] = i + 1;
-         for (size_t j = 0; j < n2; j++) {
+         for (size_t j = 0; j < n2; ++j) {
             bool eq = caseless ? ::tolower(s1[i]) == ::tolower(s2[j]) : s1[i] == s2[j];
             col[j + 1] = std::min(std::min(1 + col[j], 1 + prevCol[1 + j]), prevCol[j] + (eq ? 0 : 1));
          }
@@ -230,7 +229,7 @@ struct h2_fuzzy {
    }
 
    // 1 absolute match, 0 absolute not match
-   static double similarity(const char* s1, const char* s2, bool caseless)
+   static double estimate(const char* s1, const char* s2, bool caseless)
    {
       size_t n1 = strlen(s1), n2 = strlen(s2);
       if (!n1 && !n2) return 1;
@@ -252,8 +251,8 @@ struct h2_LCS {
 
    void LCS_cacluate()
    {
-      for (size_t i = 1; i < s1.size() + 1; i++) {
-         for (size_t j = 1; j < s2.size() + 1; j++) {
+      for (size_t i = 1; i < s1.size() + 1; ++i) {
+         for (size_t j = 1; j < s2.size() + 1; ++j) {
             if (s1[i - 1].equals(s2[j - 1], caseless)) {
                m[i][j].c = m[i - 1][j - 1].c + 1;
                m[i][j].e = 1;
@@ -293,19 +292,19 @@ struct h2_LCS {
 
    std::pair<h2_vector<unsigned char>, h2_vector<unsigned char>> lcs()
    {
-      for (size_t i = 0; i < s1.size() + 1; i++) m.push_back(h2_vector<matrix>(s2.size() + 1));
+      for (size_t i = 0; i < s1.size() + 1; ++i) m.push_back(h2_vector<matrix>(s2.size() + 1));
       LCS_cacluate();
       LCS_traceback(s1.size(), s2.size());
 
       h2_vector<unsigned char> l1(s1.size()), l2(s2.size());
-      for (size_t i = 1; i < s1.size() + 1; i++) {
+      for (size_t i = 1; i < s1.size() + 1; ++i) {
          l1[i - 1] = 0;
-         for (size_t j = 1; j < s2.size() + 1; j++)
+         for (size_t j = 1; j < s2.size() + 1; ++j)
             if (m[i][j].p) l1[i - 1] = 1;
       }
-      for (size_t j = 1; j < s2.size() + 1; j++) {
+      for (size_t j = 1; j < s2.size() + 1; ++j) {
          l2[j - 1] = 0;
-         for (size_t i = 1; i < s1.size() + 1; i++)
+         for (size_t i = 1; i < s1.size() + 1; ++i)
             if (m[i][j].p) l2[j - 1] = 1;
       }
       return {l1, l2};
@@ -713,7 +712,6 @@ h2_inline h2_string h2_string::unescape() const
    s.replace_all("\\t", "\t");
    s.replace_all("\\\"", "\"");
    s.replace_all("\\\\", "\\");
-   // todo: escape \u12ab
    return s;
 }
 
@@ -748,7 +746,7 @@ h2_inline h2_string h2_string::tolower() const
    return s;
 }
 
-h2_inline h2_string h2_string::center(size_t width) const
+h2_inline h2_string h2_string::centre(size_t width) const
 {
    if (width <= size()) return *this;
    size_t left = (width - size()) / 2, right = width - left - size();
@@ -2363,11 +2361,11 @@ struct h2_json_match {
       } else if (e->type == h2_json_node::t_object && a->type == h2_json_node::t_object) {
          score += object_similarity(e, a, caseless);
       } else if (e->type == a->type) {
-         score += h2_fuzzy::similarity(e->value_string.c_str(), a->value_string.c_str(), caseless);
+         score += h2_similarity::estimate(e->value_string.c_str(), a->value_string.c_str(), caseless);
       } else {
       }
       if (e->key_string.size() || a->key_string.size()) {
-         score = score * 0.5 + 0.5 * h2_fuzzy::similarity(e->key_string.c_str(), a->key_string.c_str(), caseless);
+         score = score * 0.5 + 0.5 * h2_similarity::estimate(e->key_string.c_str(), a->key_string.c_str(), caseless);
       }
       return score;
    }
@@ -2565,8 +2563,8 @@ struct h2_json {
 // source/matcher/h2_matches_memcmp.cpp
 h2_inline bool h2_memcmp_util::bits_equal(const unsigned char* b1, const unsigned char* b2, size_t nbits)
 {
-   for (size_t k = 0; k < nbits; ++k) {
-      size_t i = k / 8, j = 7 - k % 8;
+   for (size_t n = 0; n < nbits; ++n) {
+      size_t i = n / 8, j = 7 - n % 8;
       if (((b1[i] >> j) & 1) != ((b2[i] >> j) & 1)) return false;
    }
    return true;
@@ -2575,7 +2573,7 @@ h2_inline bool h2_memcmp_util::bits_equal(const unsigned char* b1, const unsigne
 h2_inline bool h2_memcmp_util::is_hex_string(const char* s)
 {
    if (s[0] == '0' && ::tolower(s[1]) == 'x') return true;
-   for (const char* p = s; *p; p++)
+   for (const char* p = s; *p; ++p)
       if (!::isxdigit(*p) && !::isspace(*p))
          return false;
    return true;
@@ -2583,7 +2581,7 @@ h2_inline bool h2_memcmp_util::is_hex_string(const char* s)
 
 h2_inline bool h2_memcmp_util::is_bin_string(const char* s)
 {
-   for (const char* p = s; *p; p++)
+   for (const char* p = s; *p; ++p)
       if (*p != '0' && *p != '1' && !::isspace(*p))
          return false;
    return true;
@@ -2593,7 +2591,7 @@ h2_inline size_t h2_memcmp_util::bin_to_bits(const char* bin, unsigned char* byt
 {
    memset(bytes, 0, strlen(bin));
    size_t c = 0;
-   for (const char* p = bin; *p; p++) {
+   for (const char* p = bin; *p; ++p) {
       if (*p == ' ') continue;
       size_t i = c / 8, j = 7 - c % 8;
       ++c;
@@ -2614,7 +2612,7 @@ h2_inline h2_fail* h2_matches_regex::matches(const h2_string& a, h2_mc c) const
 }
 h2_inline h2_line h2_matches_regex::expection(h2_mc c) const
 {
-   return ncsc("Re" + gray("(") + h2_stringify(e) + gray(")"), c);
+   return c.pre() + "Re" + gray("(") + h2_stringify(e, true) + gray(")");
 }
 
 h2_inline h2_fail* h2_matches_wildcard::matches(const h2_string& a, h2_mc c) const
@@ -2626,7 +2624,7 @@ h2_inline h2_fail* h2_matches_wildcard::matches(const h2_string& a, h2_mc c) con
 }
 h2_inline h2_line h2_matches_wildcard::expection(h2_mc c) const
 {
-   return ncsc("We" + gray("(") + h2_stringify(e) + gray(")"), c);
+   return c.pre() + "We" + gray("(") + h2_stringify(e, true) + gray(")");
 }
 
 h2_inline h2_fail* h2_matches_strcmp::matches(const h2_string& a, h2_mc c) const
@@ -2638,7 +2636,7 @@ h2_inline h2_fail* h2_matches_strcmp::matches(const h2_string& a, h2_mc c) const
 }
 h2_inline h2_line h2_matches_strcmp::expection(h2_mc c) const
 {
-   return ncsc(h2_stringify(c.squash_whitespace ? e.squash() : e, true), c, "≠");
+   return c.pre("≠") + h2_stringify(c.squash_whitespace ? e.squash() : e, true);
 }
 
 h2_inline h2_fail* h2_matches_substr::matches(const h2_string& a, h2_mc c) const
@@ -2650,7 +2648,7 @@ h2_inline h2_fail* h2_matches_substr::matches(const h2_string& a, h2_mc c) const
 }
 h2_inline h2_line h2_matches_substr::expection(h2_mc c) const
 {
-   return ncsc("Substr" + gray("(") + h2_stringify(substring, true) + gray(")"), c);
+   return c.pre() + "Substr" + gray("(") + h2_stringify(substring, true) + gray(")");
 }
 
 h2_inline h2_fail* h2_matches_startswith::matches(const h2_string& a, h2_mc c) const
@@ -2662,7 +2660,7 @@ h2_inline h2_fail* h2_matches_startswith::matches(const h2_string& a, h2_mc c) c
 }
 h2_inline h2_line h2_matches_startswith::expection(h2_mc c) const
 {
-   return ncsc("StartsWith" + gray("(") + h2_stringify(prefix_string, true) + gray(")"), c);
+   return c.pre() + "StartsWith" + gray("(") + h2_stringify(prefix_string, true) + gray(")");
 }
 
 h2_inline h2_fail* h2_matches_endswith::matches(const h2_string& a, h2_mc c) const
@@ -2674,7 +2672,7 @@ h2_inline h2_fail* h2_matches_endswith::matches(const h2_string& a, h2_mc c) con
 }
 h2_inline h2_line h2_matches_endswith::expection(h2_mc c) const
 {
-   return ncsc("EndsWith" + gray("(") + h2_stringify(suffix_string, true) + gray(")"), c);
+   return c.pre() + "EndsWith" + gray("(") + h2_stringify(suffix_string, true) + gray(")");
 }
 
 h2_inline h2_fail* h2_matches_json::matches(const h2_string& a, h2_mc c) const
@@ -2688,7 +2686,7 @@ h2_inline h2_fail* h2_matches_json::matches(const h2_string& a, h2_mc c) const
 }
 h2_inline h2_line h2_matches_json::expection(h2_mc c) const
 {
-   return ncsc(h2_stringify(e), c, "≠");
+   return c.pre("≠") + h2_stringify(e);
 }
 // source/memory/h2_piece.cpp
 struct h2_piece : h2_libc {
@@ -4271,11 +4269,11 @@ h2_inline h2_cout::~h2_cout()
    }
 }
 // source/net/h2_dns.cpp
-struct h2_name : h2_libc {
+struct h2_domain : h2_libc {
    h2_list x, y;
    h2_string name;
    h2_vector<h2_string> resolves;
-   h2_name(const char* _hostname) : name(_hostname) {}
+   h2_domain(const char* _hostname) : name(_hostname) {}
 };
 
 struct h2_resolver {
@@ -4289,9 +4287,9 @@ struct h2_resolver {
       return 1 == inet_pton(AF_INET, str, &addr->sin_addr);
    }
 
-   h2_name* find(const char* hostname)
+   h2_domain* find(const char* hostname)
    {
-      h2_list_for_each_entry (p, dnses, h2_name, y)
+      h2_list_for_each_entry (p, dnses, h2_domain, y)
          if (p->name == "*" || p->name == hostname)
             return p;
       return nullptr;
@@ -4299,8 +4297,8 @@ struct h2_resolver {
 
    static int h2_stdcall getaddrinfo(const char* hostname, const char* servname, const struct addrinfo* hints, struct addrinfo** res)
    {
-      h2_name* name = I().find(hostname);
-      if (!name) return -1;
+      h2_domain* domain = I().find(hostname);
+      if (!domain) return -1;
 
       static struct addrinfo addrinfos[32];
       static struct sockaddr_in sockaddrs[32];
@@ -4308,14 +4306,14 @@ struct h2_resolver {
       memset(sockaddrs, 0, sizeof(sockaddrs));
 
       struct addrinfo** pp = res;
-      for (size_t i = 0; i < name->resolves.size(); ++i) {
+      for (size_t i = 0; i < domain->resolves.size(); ++i) {
          struct addrinfo* a = &addrinfos[i];
          struct sockaddr_in* b = &sockaddrs[i];
-         if (inet_addr(name->resolves[i].c_str(), b)) {
+         if (inet_addr(domain->resolves[i].c_str(), b)) {
             a->ai_addr = (struct sockaddr*)b;
             a->ai_addrlen = sizeof(struct sockaddr_in);
          } else
-            a->ai_canonname = (char*)name->resolves[i].c_str();
+            a->ai_canonname = (char*)domain->resolves[i].c_str();
          if (hints) {
             a->ai_family = hints->ai_family;
             a->ai_socktype = hints->ai_socktype;
@@ -4336,8 +4334,8 @@ struct h2_resolver {
 
    static struct hostent* h2_stdcall gethostbyname(char* hostname)
    {
-      h2_name* name = I().find(hostname);
-      if (!name) return nullptr;
+      h2_domain* domain = I().find(hostname);
+      if (!domain) return nullptr;
 
       static struct sockaddr_in sockaddrs[32];
       static char* h_aliases[32];
@@ -4353,12 +4351,12 @@ struct h2_resolver {
       memset(h_aliases, 0, sizeof(h_aliases));
       memset(h_addr_list, 0, sizeof(h_addr_list));
 
-      for (size_t i = 0, a = 0, c = 0; i < name->resolves.size(); ++i) {
+      for (size_t i = 0, a = 0, c = 0; i < domain->resolves.size(); ++i) {
          struct sockaddr_in* b = &sockaddrs[i];
-         if (inet_addr(name->resolves[i].c_str(), b))
+         if (inet_addr(domain->resolves[i].c_str(), b))
             h_addr_list[a++] = (char*)&b->sin_addr;
          else
-            h_aliases[c++] = (char*)name->resolves[i].c_str();
+            h_aliases[c++] = (char*)domain->resolves[i].c_str();
       }
       return &h;
    }
@@ -4380,7 +4378,7 @@ h2_inline void h2_dnses::add(h2_list& dnses, h2_list& name)
 
 h2_inline void h2_dnses::clear(h2_list& dnses)
 {
-   h2_list_for_each_entry (p, dnses, h2_name, x) {
+   h2_list_for_each_entry (p, dnses, h2_domain, x) {
       p->x.out();
       p->y.out();
       delete p;
@@ -4401,17 +4399,17 @@ h2_inline void h2_dns::setaddrinfo(int n, ...)
                hostname = p;
    va_end(a);
 
-   h2_name* name = new h2_name(hostname);
+   h2_domain* domain = new h2_domain(hostname);
    va_start(b, n);
    for (int i = 0; i < n; ++i)
       if ((p = va_arg(b, const char*)))
          if (strcmp(hostname, p))
-            name->resolves.push_back(p);
+            domain->resolves.push_back(p);
    va_end(b);
 
-   h2_resolver::I().dnses.push(name->y);
+   h2_resolver::I().dnses.push(domain->y);
    if (h2_runner::I().current_case)
-      h2_dnses::add(h2_runner::I().current_case->dnses, name->x);
+      h2_dnses::add(h2_runner::I().current_case->dnses, domain->x);
 }
 
 h2_inline void h2_dns::initialize()
@@ -4662,6 +4660,11 @@ struct h2_socket {
    }
 };
 
+h2_inline h2_packet* h2_sock::fetch()
+{
+   return h2_list_pop_entry(h2_socket::I().outgoing, h2_packet, x);
+}
+
 static inline void parse_iport(const char* s, char* iport)
 {
    for (const char* p = s; p && *p; ++p) {
@@ -4697,46 +4700,10 @@ h2_inline h2_sock::~h2_sock()
    h2_socket::I().stop();
 }
 
-template <typename M1, typename M2, typename M3, typename M4>
-h2_inline void h2_sock::check(const char* filine, const char* e, M1 from, M2 to, M3 payload, M4 size)
+h2_inline void h2_sock::failing(h2_fail* fail)
 {
    h2_runner::asserts();
-   h2_packet* p = h2_list_pop_entry(h2_socket::I().outgoing, h2_packet, x);;
-   if (!p) {
-      h2_line t = "Outgoing packet miss Ptx(";
-      t.printf("green", "%s", e).printf("", ")");
-      h2_runner::failing(h2_fail::new_normal(t, filine));
-      return;
-   }
-   h2_fail* fails = nullptr;
-   h2_fail* fail_from = h2_matcher_cast<const char*>(We(from)).matches(p->from.c_str());
-   if (fail_from) {
-      fail_from->explain = "from address";
-      h2_fail::append_subling(fails, fail_from);
-   }
-   h2_fail* fail_to = h2_matcher_cast<const char*>(We(to)).matches(p->to.c_str());
-   if (fail_to) {
-      fail_to->explain = "to address";
-      h2_fail::append_subling(fails, fail_to);
-   }
-   h2_fail* fail_payload = h2_matcher_cast<const unsigned char*>(payload).matches((unsigned char*)p->data.data());
-   if (fail_payload) {
-      fail_payload->explain = "payload";
-      h2_fail::append_subling(fails, fail_payload);
-   }
-   h2_fail* fail_size = h2_matcher_cast<const int>(size).matches(p->data.size());
-   if (fail_size) {
-      fail_size->explain = "payload length";
-      h2_fail::append_subling(fails, fail_size);
-   }
-
-   if (fails) {
-      h2_line t = "Outgoing packet unexpected Ptx(";
-      t.printf("green", "%s", e).printf("", ")");
-      h2_fail* fail = h2_fail::new_normal(t, filine);
-      h2_fail::append_child(fail, fails);
-      h2_runner::failing(fail);
-   }
+   h2_runner::failing(fail);
 }
 // source/core/h2_test.cpp
 static inline void __split_describe(const char* describe, char* name_buf, char* tags_buf)
@@ -4795,10 +4762,12 @@ h2_inline void h2_case::prev_setup()
 {
    failed = false;
    h2_memory::stack::push(filine);
+   stats.timecost = h2_now();
 }
 
 h2_inline void h2_case::post_cleanup()
 {
+   stats.timecost = h2_now() - stats.timecost;
    stats.footprint = h2_memory::stack::footprint();
    h2_dnses::clear(dnses);
    h2_stubs::clear(stubs);
@@ -4818,7 +4787,7 @@ h2_inline void h2_case::failing(h2_fail* fail, bool defer, bool append)
    }
 }
 // source/core/h2_suite.cpp
-h2_inline h2_suite::h2_suite(const char* filine_, const char* file_, int line_, const char* describe_, void (*test_code_)(h2_suite*, h2_case*)) : h2_test(filine_, file_, line_, describe_), test_code(test_code_)
+h2_inline h2_suite::h2_suite(const char* filine, const char* file, int line, const char* describe, void (*test_code_)(h2_suite*, h2_case*)) : h2_test(filine, file, line, describe), test_code(test_code_)
 {
    memset(cleanup_hole, 0, sizeof(jmp_buf));
    h2_runner::I().suites.push_back(x);
@@ -4832,10 +4801,12 @@ h2_inline void h2_suite::clear()
 h2_inline void h2_suite::setup()
 {
    h2_memory::stack::push(filine);
+   stats.timecost = h2_now();
 }
 
 h2_inline void h2_suite::cleanup()
 {
+   stats.timecost = h2_now() - stats.timecost;
    h2_stubs::clear(stubs);
    h2_mocks::clear(mocks, false);
    stats.footprint = h2_memory::stack::footprint();
@@ -4973,7 +4944,7 @@ h2_inline void h2_runner::enumerate()
    if (O.progressing) h2_console::prints("dark gray", "Collecting ");
    h2_list_for_each_entry (s, i, suites, h2_suite, x) {
       if (O.progressing)
-         for (; dots <= i * dps; dots++) h2_console::prints("dark gray", ".");
+         for (; dots <= i * dps; ++dots) h2_console::prints("dark gray", ".");
 
       for (int i = 0; global_suite_setups[i]; ++i) global_suite_setups[i]();
       s->setup();
@@ -4993,20 +4964,19 @@ h2_inline void h2_runner::filter()
    }
 }
 
-template <typename T>
 struct shuffle_comparison {
    static int seq(h2_list* a, h2_list* b)
    {
-      return h2_list_entry(a, T, x)->seq - h2_list_entry(b, T, x)->seq;
+      return h2_list_entry(a, h2_test, x)->seq - h2_list_entry(b, h2_test, x)->seq;
    }
    static int name(h2_list* a, h2_list* b)
    {
-      return strcasecmp(h2_list_entry(a, T, x)->name, h2_list_entry(b, T, x)->name);
+      return strcasecmp(h2_list_entry(a, h2_test, x)->name, h2_list_entry(b, h2_test, x)->name);
    }
    static int file(h2_list* a, h2_list* b)
    {
-      int t = strcasecmp(h2_list_entry(a, T, x)->file, h2_list_entry(b, T, x)->file);
-      return t != 0 ? t : h2_list_entry(a, T, x)->line - h2_list_entry(b, T, x)->line;
+      int t = strcasecmp(h2_list_entry(a, h2_test, x)->file, h2_list_entry(b, h2_test, x)->file);
+      return t != 0 ? t : h2_list_entry(a, h2_test, x)->line - h2_list_entry(b, h2_test, x)->line;
    }
    static int cmp(h2_list* a, h2_list* b)
    {
@@ -5020,9 +4990,9 @@ struct shuffle_comparison {
 h2_inline void h2_runner::shuffle()
 {
    if ((lasts = sequence_last_order(suites))) {
-      suites.sort(shuffle_comparison<h2_suite>::seq);
+      suites.sort(shuffle_comparison::seq);
       h2_list_for_each_entry (s, suites, h2_suite, x)
-         s->cases.sort(shuffle_comparison<h2_case>::seq);
+         s->cases.sort(shuffle_comparison::seq);
       return;  // run in last order if last failed
    }
 
@@ -5033,9 +5003,9 @@ h2_inline void h2_runner::shuffle()
             h2_list_for_each_entry (c, s->cases, h2_case, x)
                s->seq = c->seq = ::rand();
 
-      suites.sort(shuffle_comparison<h2_suite>::cmp);
+      suites.sort(shuffle_comparison::cmp);
       h2_list_for_each_entry (s, suites, h2_suite, x)
-         s->cases.sort(shuffle_comparison<h2_case>::cmp);
+         s->cases.sort(shuffle_comparison::cmp);
    }
 }
 
@@ -5052,6 +5022,7 @@ h2_inline int h2_runner::main(int argc, const char** argv)
    h2_stdio::initialize();
    h2_dns::initialize();
 
+   stats.timecost = h2_now();
    for (int i = 0; global_setups[i]; ++i) global_setups[i]();
    enumerate();
    filter();
@@ -5095,8 +5066,9 @@ h2_inline int h2_runner::main(int argc, const char** argv)
       else if (lasts == 0)
          save_last_order(suites);
    }
+   stats.timecost = h2_now() - stats.timecost;
    h2_report::I().on_runner_endup(this);
-   for (int i = 0; global_cleanups[i]; i++) global_cleanups[i]();
+   for (int i = 0; global_cleanups[i]; ++i) global_cleanups[i]();
 
    h2_stubs::clear(stubs);
    h2_mocks::clear(mocks, false);
@@ -5309,7 +5281,7 @@ struct h2_layout {
       else
          left_width = right_width = valid_width / 2;
 
-      h2_line title = (step ? h2_string(seq_width + 2, ' ') : "") + h2_string(left_title).center(left_width) + "   " + h2_string(right_title).center(right_width);
+      h2_line title = (step ? h2_string(seq_width + 2, ' ') : "") + h2_string(left_title).centre(left_width) + "   " + h2_string(right_title).centre(right_width);
       h2_lines lines = {title.brush("dark gray")};
 
       return lines += lines_merge(left_lines, right_lines, left_width, right_width, step, scale, seq_width);
@@ -5432,7 +5404,7 @@ struct h2_fail_unexpect : h2_fail {
          e = h2_line(e_expression).abbreviate(10000, 3).brush("green");
       } else {
          e = h2_line(e_expression).abbreviate(O.verbose >= VerboseDetail ? 10000 : 120, 3).gray_quote().brush("cyan") + gray("==>") + expection.abbreviate(10000, 3).brush("green");
-      }  // https://unicode-table.com/en/sets/arrow-symbols/ (← →) (← →) (⇐ ⇒) (⟵ ⟶) ⟸ ⟹
+      }
 
       if (!represent.width()) {
          a = h2_line(a_expression).abbreviate(10000, 3).gray_quote().brush("bold,red");
@@ -5766,165 +5738,12 @@ h2_inline h2_fail* h2_fail::new_overflow(const void* ptr, const size_t size, con
 h2_inline h2_fail* h2_fail::new_use_after_free(const void* ptr, const void* violate_ptr, const char* action, const h2_backtrace& bt_allocate, const h2_backtrace& bt_release, const h2_backtrace& bt_use) { return new h2_fail_use_after_free(ptr, violate_ptr, action, bt_allocate, bt_release, bt_use); }
 h2_inline h2_fail* h2_fail::new_exception(const h2_line& explain_, const char* type, const h2_backtrace& bt_throw, const char* filine_) { return new h2_fail_exception(explain_, type, bt_throw, filine_); }
 h2_inline h2_fail* h2_fail::new_symbol(const h2_string& symbol, const h2_vector<h2_string>& candidates, const h2_line& explain_) { return new h2_fail_symbol(symbol, candidates, explain_); };
-// source/render/h2_report.cpp
-struct h2_report_impl {
-   h2_list x;
-   int runner_cases = 0, runner_case_index = 0;
-
-   virtual void on_runner_start(h2_runner* r)
-   {
-      h2_list_for_each_entry (s, r->suites, h2_suite, x)
-         runner_cases += s->cases.count();
-      r->stats.timecost = h2_now();
-   }
-   virtual void on_runner_endup(h2_runner* r)
-   {
-      r->stats.timecost = h2_now() - r->stats.timecost;
-   }
-   virtual void on_suite_start(h2_suite* s)
-   {
-      s->stats.timecost = h2_now();
-   }
-   virtual void on_suite_endup(h2_suite* s)
-   {
-      s->stats.timecost = h2_now() - s->stats.timecost;
-   }
-   virtual void on_case_start(h2_suite* s, h2_case* c)
-   {
-      ++runner_case_index;
-      c->stats.timecost = h2_now();
-   }
-   virtual void on_case_endup(h2_suite* s, h2_case* c)
-   {
-      c->stats.timecost = h2_now() - c->stats.timecost;
-   }
-};
-
+// source/render/h2_report_console.cpp
 #define H2_UNITS(count, unit) ((count > 1) ? (unit "s") : unit)
 
-struct h2_report_list : h2_report_impl {
-   int suites = 0, cases = 0, todos = 0;
-   int unfiltered_suites = 0, unfiltered_cases = 0, unfiltered_todos = 0;
-   int suite_cases = 0, suite_todos = 0;
+struct h2_report_console : h2_report_interface {
+   int cases = 0, index = 0;
 
-   struct tag {
-      const char* name;
-      int suites, cases;
-   };
-
-   int tagc = 0, unfiltered_tagc = 0;
-   struct tag tags[4096], unfiltered_tags[4096];
-
-   static tag* get_tag(tag tags[], int& tagc, const char* name)
-   {
-      for (int i = 0; i < tagc; ++i)
-         if (!strcmp(name, tags[i].name)) return &tags[i];
-      return nullptr;
-   }
-   static tag* add_tag(tag tags[], int& tagc, const char* name)
-   {
-      tag* t = get_tag(tags, tagc, name);
-      if (t) return t;
-      if (tagc >= 4096) return nullptr;
-      t = &tags[tagc++];
-      t->name = name;
-      t->suites = t->cases = 0;
-      return t;
-   }
-   static void add_suite_tag(tag tags[], int& tagc, const char* name)
-   {
-      auto t = add_tag(tags, tagc, name);
-      if (t) t->suites++;
-   }
-   static void add_case_tag(tag tags[], int& tagc, const char* name)
-   {
-      auto t = add_tag(tags, tagc, name);
-      if (t) t->cases++;
-   }
-
-   void on_runner_endup(h2_runner* r) override
-   {
-      h2_report_impl::on_runner_endup(r);
-      if (O.lists & ListTag) {
-         for (int i = 0; i < unfiltered_tagc; ++i) {
-            h2_line line;
-            line.printf("dark gray", "TAG-%d. ", i).printf("bold,light purple", "%s ", unfiltered_tags[i].name);
-            if (unfiltered_tags[i].suites) line.printf("", " %d ", unfiltered_tags[i].suites).printf("dark gray", H2_UNITS(unfiltered_tags[i].suites, "suite"));
-            if (unfiltered_tags[i].cases) line.printf("", " %d ", unfiltered_tags[i].cases).printf("dark gray", H2_UNITS(unfiltered_tags[i].cases, "case"));
-            h2_console::printl(line);
-         }
-      }
-
-      h2_line line;
-      if (O.lists & ListSuite) line += gray(comma_if(line.width())) + color(h2_stringify(unfiltered_suites), "green") + " " + gray(H2_UNITS(unfiltered_suites, "suite"));
-      if (O.lists & ListCase) line += gray(comma_if(line.width())) + color(h2_stringify(unfiltered_cases), "green") + " " + gray(H2_UNITS(unfiltered_cases, "case"));
-      if (O.lists & ListTodo) line += gray(comma_if(line.width())) + color(h2_stringify(unfiltered_todos), "green") + " " + gray(H2_UNITS(unfiltered_todos, "todo"));
-      if (O.lists & ListTag) line += gray(comma_if(line.width())) + color(h2_stringify(unfiltered_tagc), "green") + " " + gray(H2_UNITS(unfiltered_tagc, "tag"));
-      if (O.lists & ListSuite && suites > unfiltered_suites) line.printf("dark gray", "%s%d filtered %s", comma_if(line.width()), suites - unfiltered_suites, H2_UNITS(suites - unfiltered_suites, "suite"));
-      if (O.lists & ListCase && cases > unfiltered_cases) line.printf("dark gray", "%s%d filtered %s", comma_if(line.width()), cases - unfiltered_cases, H2_UNITS(cases - unfiltered_cases, "case"));
-      if (O.lists & ListTodo && todos > unfiltered_todos) line.printf("dark gray", "%s%d filtered %s", comma_if(line.width()), todos - unfiltered_todos, H2_UNITS(todos - unfiltered_todos, "todo"));
-      if (O.lists & ListTag && tagc > unfiltered_tagc) line.printf("dark gray", "%s%d filtered %s", comma_if(line.width()), tagc - unfiltered_tagc, H2_UNITS(tagc - unfiltered_tagc, "tag"));
-      h2_console::printl("Listing " + line);
-   }
-   h2_line format_tags(const char* tags[])
-   {
-      h2_line line;
-      if (O.lists & ListTag)
-         for (int i = 0; tags[i]; ++i) line.printf("purple", " %s", tags[i]);
-      return line;
-   }
-   void on_suite_start(h2_suite* s) override
-   {
-      h2_report_impl::on_suite_start(s);
-      suite_cases = 0;
-      suite_todos = 0;
-      if (s->absent()) return;  // CASE
-      for (int i = 0; s->tags[i]; ++i) add_suite_tag(tags, tagc, s->tags[i]);
-      if (!s->filtered)
-         for (int i = 0; s->tags[i]; ++i) add_suite_tag(unfiltered_tags, unfiltered_tagc, s->tags[i]);
-      ++suites;
-      if (!s->filtered && O.lists & ListSuite) {
-         ++unfiltered_suites;
-         h2_line line;
-         line.printf("dark gray", "SUITE-%d. ", unfiltered_suites);
-         h2_console::printl(line + color(s->name, "bold,blue") + " " + gray(h2_basefile(s->filine)) + format_tags(s->tags));
-      }
-   }
-   void on_case_start(h2_suite* s, h2_case* c) override
-   {
-      h2_report_impl::on_case_start(s, c);
-      for (int i = 0; c->tags[i]; ++i) add_case_tag(tags, tagc, c->tags[i]);
-      if (!c->filtered)
-         for (int i = 0; c->tags[i]; ++i) add_case_tag(unfiltered_tags, unfiltered_tagc, c->tags[i]);
-
-      const char* type = nullptr;
-      if (c->todo) {
-         ++todos;
-         if (!c->filtered && O.lists & ListTodo) {
-            type = s->absent() ? "TODO" : "Todo";
-            ++unfiltered_todos, ++suite_todos;
-         }
-      } else {
-         ++cases;
-         if (!c->filtered && O.lists & ListCase) {
-            type = s->absent() ? "CASE" : "Case";
-            ++unfiltered_cases, ++suite_cases;
-         }
-      }
-
-      if (type) {
-         h2_line line;
-         if (O.lists & ListSuite)
-            line.printf("dark gray", " %s/%d-%d. ", type, suite_cases + suite_todos, unfiltered_cases + unfiltered_todos);
-         else
-            line.printf("dark gray", " %s-%d. ", type, unfiltered_cases + unfiltered_todos);
-
-         h2_console::printl(line + color(c->name, "cyan") + " " + gray(h2_basefile(c->filine)) + format_tags(c->tags));
-      }
-   }
-};
-
-struct h2_report_console : h2_report_impl {
    int nonzero_count(int a1 = 0, int a2 = 0, int a3 = 0, int a4 = 0, int a5 = 0, int a6 = 0)
    {
       return !!a1 + !!a2 + !!a3 + !!a4 + !!a5 + !!a6;
@@ -5953,7 +5772,7 @@ struct h2_report_console : h2_report_impl {
    void format_percentage(h2_line& bar)
    {
       bar.printf("dark gray", "[");
-      bar.printf("", "%3d%%", runner_cases ? (int)(runner_case_index * 100 / runner_cases) : 100);
+      bar.printf("", "%3d%%", cases ? (int)(index * 100 / cases) : 100);
       bar.printf("dark gray", "] ");
    }
    static const char* format_volume(long long footprint, char* s = (char*)alloca(128))
@@ -6009,9 +5828,13 @@ struct h2_report_console : h2_report_impl {
       }
       h2_console::printl(bar, false);
    }
+   void on_runner_start(h2_runner* r) override
+   {
+      h2_list_for_each_entry (s, r->suites, h2_suite, x)
+         cases += s->cases.count();
+   }
    void on_runner_endup(h2_runner* r) override
    {
-      h2_report_impl::on_runner_endup(r);
       print_bar(false, nullptr, nullptr, nullptr, nullptr, false);
 
       int n = nonzero_count(r->stats.failed, r->stats.todo, r->stats.filtered, r->stats.ignored);
@@ -6022,20 +5845,16 @@ struct h2_report_console : h2_report_impl {
       if (r->stats.todo) line += gray(", ") + color(h2_stringify(r->stats.todo), "yellow") + " todo";
       if (r->stats.filtered) line += gray(", ") + color(h2_stringify(r->stats.filtered), "blue") + " filtered";
       if (r->stats.ignored) line += gray(", ") + color(h2_stringify(r->stats.ignored), "blue") + " ignored";
-      if (0 < n) line += gray(") ") + h2_stringify(runner_cases);
-      line += H2_UNITS(runner_cases, " case") + gray(", ") + format_units(r->stats.asserts, " assert");
+      if (0 < n) line += gray(") ") + h2_stringify(cases);
+      line += H2_UNITS(cases, " case") + gray(", ") + format_units(r->stats.asserts, " assert");
       if (1 < r->rounds) line += gray(", ") + format_units(r->rounds, " round");
       line += gray(", ") + format_duration(r->stats.timecost);
 
       h2_console::printl(line);
    }
-   void on_suite_start(h2_suite* s) override
-   {
-      h2_report_impl::on_suite_start(s);
-   }
+   void on_suite_start(h2_suite* s) override {}
    void on_suite_endup(h2_suite* s) override
    {
-      h2_report_impl::on_suite_endup(s);
       if (O.verbose >= 9 && !(O.includes[0] || O.excludes[0])) {
          print_bar(true, nullptr, nullptr, nullptr, nullptr, false);
 
@@ -6057,13 +5876,12 @@ struct h2_report_console : h2_report_impl {
    }
    void on_case_start(h2_suite* s, h2_case* c) override
    {
-      h2_report_impl::on_case_start(s, c);
+      ++index;
       if (c->filtered || c->ignored || c->todo) return;
       print_bar(true, "light blue", "Testing", s, c, true);
    }
    void on_case_endup(h2_suite* s, h2_case* c) override
    {
-      h2_report_impl::on_case_endup(s, c);
       if (c->filtered || c->ignored) return;
       if (c->todo) {
          if (O.verbose >= VerboseDetail) print_bar(true, "yellow", s->absent() ? "TODO   " : "Todo   ", s, c, false);
@@ -6091,12 +5909,130 @@ struct h2_report_console : h2_report_impl {
       }
    }
 };
+// source/render/h2_report_list.cpp
+struct h2_report_list : h2_report_interface {
+   int suites = 0, cases = 0, todos = 0;
+   int unfiltered_suites = 0, unfiltered_cases = 0, unfiltered_todos = 0;
+   int suite_cases = 0, suite_todos = 0;
 
-struct h2_report_junit : h2_report_impl {
+   struct tag {
+      const char* name;
+      int suites = 0, cases = 0;
+   } tags[1024], unfiltered_tags[1024];
+   int tagc = 0, unfiltered_tagc = 0;
+
+   static tag* get_tag(tag tags[], int& tagc, const char* name)
+   {
+      for (int i = 0; i < tagc; ++i)
+         if (!strcmp(name, tags[i].name)) return &tags[i];
+      return nullptr;
+   }
+   static tag* add_tag(tag tags[], int& tagc, const char* name)
+   {
+      tag* t = get_tag(tags, tagc, name);
+      if (t) return t;
+      if (tagc >= 1024) return nullptr;
+      t = &tags[tagc++];
+      t->name = name;
+      return t;
+   }
+   static void add_suite_tag(tag tags[], int& tagc, const char* name)
+   {
+      auto t = add_tag(tags, tagc, name);
+      if (t) t->suites++;
+   }
+   static void add_case_tag(tag tags[], int& tagc, const char* name)
+   {
+      auto t = add_tag(tags, tagc, name);
+      if (t) t->cases++;
+   }
+
+   void on_runner_start(h2_runner* r) override {}
+   void on_runner_endup(h2_runner* r) override
+   {
+      if (O.lists & ListTag) {
+         for (int i = 0; i < unfiltered_tagc; ++i) {
+            h2_line line;
+            line.printf("dark gray", "TAG-%d. ", i).printf("bold,light purple", "%s ", unfiltered_tags[i].name);
+            if (unfiltered_tags[i].suites) line.printf("", " %d ", unfiltered_tags[i].suites).printf("dark gray", H2_UNITS(unfiltered_tags[i].suites, "suite"));
+            if (unfiltered_tags[i].cases) line.printf("", " %d ", unfiltered_tags[i].cases).printf("dark gray", H2_UNITS(unfiltered_tags[i].cases, "case"));
+            h2_console::printl(line);
+         }
+      }
+
+      h2_line line;
+      if (O.lists & ListSuite) line += gray(comma_if(line.width())) + color(h2_stringify(unfiltered_suites), "green") + " " + gray(H2_UNITS(unfiltered_suites, "suite"));
+      if (O.lists & ListCase) line += gray(comma_if(line.width())) + color(h2_stringify(unfiltered_cases), "green") + " " + gray(H2_UNITS(unfiltered_cases, "case"));
+      if (O.lists & ListTodo) line += gray(comma_if(line.width())) + color(h2_stringify(unfiltered_todos), "green") + " " + gray(H2_UNITS(unfiltered_todos, "todo"));
+      if (O.lists & ListTag) line += gray(comma_if(line.width())) + color(h2_stringify(unfiltered_tagc), "green") + " " + gray(H2_UNITS(unfiltered_tagc, "tag"));
+      if (O.lists & ListSuite && suites > unfiltered_suites) line.printf("dark gray", "%s%d filtered %s", comma_if(line.width()), suites - unfiltered_suites, H2_UNITS(suites - unfiltered_suites, "suite"));
+      if (O.lists & ListCase && cases > unfiltered_cases) line.printf("dark gray", "%s%d filtered %s", comma_if(line.width()), cases - unfiltered_cases, H2_UNITS(cases - unfiltered_cases, "case"));
+      if (O.lists & ListTodo && todos > unfiltered_todos) line.printf("dark gray", "%s%d filtered %s", comma_if(line.width()), todos - unfiltered_todos, H2_UNITS(todos - unfiltered_todos, "todo"));
+      if (O.lists & ListTag && tagc > unfiltered_tagc) line.printf("dark gray", "%s%d filtered %s", comma_if(line.width()), tagc - unfiltered_tagc, H2_UNITS(tagc - unfiltered_tagc, "tag"));
+      h2_console::printl("Listing " + line);
+   }
+   h2_line format_tags(const char* tags[])
+   {
+      h2_line line;
+      if (O.lists & ListTag)
+         for (int i = 0; tags[i]; ++i) line.printf("purple", " %s", tags[i]);
+      return line;
+   }
+   void on_suite_start(h2_suite* s) override
+   {
+      suite_cases = 0;
+      suite_todos = 0;
+      if (s->absent()) return;  // CASE
+      for (int i = 0; s->tags[i]; ++i) add_suite_tag(tags, tagc, s->tags[i]);
+      if (!s->filtered)
+         for (int i = 0; s->tags[i]; ++i) add_suite_tag(unfiltered_tags, unfiltered_tagc, s->tags[i]);
+      ++suites;
+      if (!s->filtered && O.lists & ListSuite) {
+         ++unfiltered_suites;
+         h2_line line;
+         line.printf("dark gray", "SUITE-%d. ", unfiltered_suites);
+         h2_console::printl(line + color(s->name, "bold,blue") + " " + gray(h2_basefile(s->filine)) + format_tags(s->tags));
+      }
+   }
+   void on_suite_endup(h2_suite* s) override {}
+   void on_case_start(h2_suite* s, h2_case* c) override
+   {
+      for (int i = 0; c->tags[i]; ++i) add_case_tag(tags, tagc, c->tags[i]);
+      if (!c->filtered)
+         for (int i = 0; c->tags[i]; ++i) add_case_tag(unfiltered_tags, unfiltered_tagc, c->tags[i]);
+
+      const char* type = nullptr;
+      if (c->todo) {
+         ++todos;
+         if (!c->filtered && O.lists & ListTodo) {
+            type = s->absent() ? "TODO" : "Todo";
+            ++unfiltered_todos, ++suite_todos;
+         }
+      } else {
+         ++cases;
+         if (!c->filtered && O.lists & ListCase) {
+            type = s->absent() ? "CASE" : "Case";
+            ++unfiltered_cases, ++suite_cases;
+         }
+      }
+
+      if (type) {
+         h2_line line;
+         if (O.lists & ListSuite)
+            line.printf("dark gray", " %s/%d-%d. ", type, suite_cases + suite_todos, unfiltered_cases + unfiltered_todos);
+         else
+            line.printf("dark gray", " %s-%d. ", type, unfiltered_cases + unfiltered_todos);
+
+         h2_console::printl(line + color(c->name, "cyan") + " " + gray(h2_basefile(c->filine)) + format_tags(c->tags));
+      }
+   }
+   void on_case_endup(h2_suite* s, h2_case* c) override {}
+};
+// source/render/h2_report_junit.cpp
+struct h2_report_junit : h2_report_interface {
    FILE* f;
    void on_runner_start(h2_runner* r) override
    {
-      h2_report_impl::on_runner_start(r);
       f = fopen(O.junit_path, "w");
       if (!f) return;
       fprintf(f, "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n");
@@ -6104,13 +6040,12 @@ struct h2_report_junit : h2_report_impl {
    }
    void on_suite_start(h2_suite* s) override
    {
-      h2_report_impl::on_suite_start(s);
       if (!f) return;
       fprintf(f, "<testsuite errors=\"0\" failures=\"%d\" hostname=\"localhost\" name=\"%s\" skipped=\"%d\" tests=\"%d\" time=\"%d\" timestamp=\"%s\">\n", s->stats.failed, s->name, s->stats.todo + s->stats.filtered, s->cases.count(), 0, "");
    }
+   void on_case_start(h2_suite* s, h2_case* c) override {}
    void on_case_endup(h2_suite* s, h2_case* c) override
    {
-      h2_report_impl::on_case_endup(s, c);
       if (!f) return;
       fprintf(f, "<testcase classname=\"%s\" name=\"%s\" status=\"%s\" time=\"%.3f\">\n", s->name, c->name, c->todo ? "TODO" : (c->filtered ? "Filtered" : (c->ignored ? "Ignored" : (c->failed ? "Failed" : "Passed"))), c->stats.timecost / 1000.0);
       if (c->failed) {
@@ -6123,45 +6058,39 @@ struct h2_report_junit : h2_report_impl {
    }
    void on_suite_endup(h2_suite* s) override
    {
-      h2_report_impl::on_suite_endup(s);
       if (!f) return;
       fprintf(f, "</testsuite>\n");
    }
    void on_runner_endup(h2_runner* r) override
    {
-      h2_report_impl::on_runner_endup(r);
       if (!f) return;
       fprintf(f, "</testsuites>\n");
       fclose(f);
    }
 };
-
-struct h2_report_tap : h2_report_impl {
-   /* */
-};
-
+// source/render/h2_report.cpp
 h2_inline void h2_report::initialize()
 {
-   static h2_report_list list_report;
-   static h2_report_console console_report;
-   static h2_report_junit junit_report;
-   static h2_report_tap tap_report;
    if (O.lists) {
-      I().reports.push_back(list_report.x);
+      static h2_report_list list_report;
+      h2_array_append(I().reports, &list_report);
    } else {
-      I().reports.push_back(console_report.x);
-      if (strlen(O.junit_path)) I().reports.push_back(junit_report.x);
-      if (strlen(O.tap_path)) I().reports.push_back(tap_report.x);
+      static h2_report_console console_report;
+      h2_array_append(I().reports, &console_report);
+      if (strlen(O.junit_path)) {
+         static h2_report_junit junit_report;
+         h2_array_append(I().reports, &junit_report);
+      }
    }
 }
 
 /* clang-format off */
-h2_inline void h2_report::on_runner_start(h2_runner* r) { h2_list_for_each_entry (p, reports, h2_report_impl, x) p->on_runner_start(r); }
-h2_inline void h2_report::on_runner_endup(h2_runner* r) { h2_list_for_each_entry (p, reports, h2_report_impl, x) p->on_runner_endup(r); }
-h2_inline void h2_report::on_suite_start(h2_suite* s) { h2_list_for_each_entry (p, reports, h2_report_impl, x) p->on_suite_start(s); }
-h2_inline void h2_report::on_suite_endup(h2_suite* s) { h2_list_for_each_entry (p, reports, h2_report_impl, x) p->on_suite_endup(s); }
-h2_inline void h2_report::on_case_start(h2_suite* s, h2_case* c) { h2_list_for_each_entry (p, reports, h2_report_impl, x) p->on_case_start(s, c); }
-h2_inline void h2_report::on_case_endup(h2_suite* s, h2_case* c) { h2_list_for_each_entry (p, reports, h2_report_impl, x) p->on_case_endup(s, c); }
+h2_inline void h2_report::on_runner_start(h2_runner* r) { for (int i = 0; reports[i]; ++i) reports[i]->on_runner_start(r); }
+h2_inline void h2_report::on_runner_endup(h2_runner* r) { for (int i = 0; reports[i]; ++i) reports[i]->on_runner_endup(r); }
+h2_inline void h2_report::on_suite_start(h2_suite* s) { for (int i = 0; reports[i]; ++i) reports[i]->on_suite_start(s); }
+h2_inline void h2_report::on_suite_endup(h2_suite* s) { for (int i = 0; reports[i]; ++i) reports[i]->on_suite_endup(s); }
+h2_inline void h2_report::on_case_start(h2_suite* s, h2_case* c) { for (int i = 0; reports[i]; ++i) reports[i]->on_case_start(s, c); }
+h2_inline void h2_report::on_case_endup(h2_suite* s, h2_case* c) { for (int i = 0; reports[i]; ++i) reports[i]->on_case_endup(s, c); }
 // source/render/h2_option.cpp
 /* clang-format off */
 static inline void usage()

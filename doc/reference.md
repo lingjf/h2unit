@@ -1159,7 +1159,6 @@ Case(check throw type a_exception and matcher string equal)
 
 *    Uncaught Exception 
      It will be detected and reported as failure.
-     Unfortunately conflict with `Memory Check` in MacOS, disable `Memory Check` (`-m` option) to enable `Uncaught Exception`, otherwise uncaught exception will cause terminate/crash.
 
 *    Thrown Exception 
      Any thrown exception can be detected and reported as failure if `-x` option is set.

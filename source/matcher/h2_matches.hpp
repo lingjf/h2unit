@@ -8,21 +8,20 @@ struct h2_mc {
    h2_mc update_negative(bool target = false) const { return {n, target, case_insensitive, squash_whitespace, no_compare_operator}; }
    h2_mc update_caseless(bool target = false) const { return {n, negative, target, squash_whitespace, no_compare_operator}; }
    h2_mc update_spaceless(bool target = false) const { return {n, negative, case_insensitive, target, no_compare_operator}; }
+
+   h2_line pre(const char* ns = "!") const
+   {
+      h2_line t;
+      if (!no_compare_operator && negative) t.push_back(ns);
+      if (case_insensitive) t.push_back("~");
+      if (squash_whitespace) t.push_back("*");
+      return t;
+   }
 };
 
 struct h2_matches {
    virtual h2_line expection(h2_mc c) const = 0;
 };
-
-static inline h2_line ncsc(const h2_line& s, h2_mc c, const char* dsym = "!")
-{
-   h2_line t;
-   if (!c.no_compare_operator && c.negative) t.push_back(dsym);
-   if (c.case_insensitive) t.push_back("~");
-   if (c.squash_whitespace) t.push_back("*");
-   t += s;
-   return t;
-}
 
 struct h2_matches_any : h2_matches {
    template <typename A>
@@ -77,7 +76,7 @@ struct h2_matches_bool : h2_matches {
 template <typename T>
 inline auto h2_matches_expection(const T& e, h2_mc c) -> typename std::enable_if<std::is_base_of<h2_matches, T>::value, h2_line>::type { return e.expection(c); }
 template <typename T>
-inline auto h2_matches_expection(const T& e, h2_mc c) -> typename std::enable_if<!std::is_base_of<h2_matches, T>::value, h2_line>::type { return ncsc(h2_stringify(e, true), c); }
+inline auto h2_matches_expection(const T& e, h2_mc c) -> typename std::enable_if<!std::is_base_of<h2_matches, T>::value, h2_line>::type { return h2_stringify(e, true); }
 
 #define H2_MATCHES_T2V2E(t_matchers)                                                                                                            \
    template <typename T>                                                                                                                        \

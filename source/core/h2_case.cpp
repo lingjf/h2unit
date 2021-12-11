@@ -11,10 +11,12 @@ h2_inline void h2_case::prev_setup()
 {
    failed = false;
    h2_memory::stack::push(filine);
+   stats.timecost = h2_now();
 }
 
 h2_inline void h2_case::post_cleanup()
 {
+   stats.timecost = h2_now() - stats.timecost;
    stats.footprint = h2_memory::stack::footprint();
    h2_dnses::clear(dnses);
    h2_stubs::clear(stubs);

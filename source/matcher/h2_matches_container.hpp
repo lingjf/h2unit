@@ -27,7 +27,7 @@ struct h2_pair_matches : h2_matches {
 
    virtual h2_line expection(h2_mc c) const override
    {
-      return ncsc(gray("(") + h2_matches_expection(k, c) + gray(", ") + h2_matches_expection(v, c) + gray(")"), c.update_caseless(false));
+      return c.update_caseless(false).pre() + gray("(") + h2_matches_expection(k, c) + gray(", ") + h2_matches_expection(v, c) + gray(")");
    }
 };
 
@@ -109,7 +109,7 @@ struct h2_has1_matches : h2_matches {
 
    virtual h2_line expection(h2_mc c) const override
    {
-      return ncsc("Has" + gray("(") + h2_matches_expection(m, c.update_negative(false)) + gray(")"), c.update_caseless(false));
+      return c.update_caseless(false).pre() + "Has" + gray("(") + h2_matches_expection(m, c.update_negative(false)) + gray(")");
    }
 };
 
@@ -143,7 +143,7 @@ struct h2_has2_matches : h2_matches {
       if (strcmp("HasValue", type)) t += h2_matches_expection(k, c.update_negative(false));
       if (!strcmp("Has", type)) t += ", ";
       if (strcmp("HasKey", type)) t += h2_matches_expection(v, c.update_negative(false));
-      return ncsc(type + gray("(") + t + gray(")"), c.update_caseless(false));
+      return c.update_caseless(false).pre() + type + gray("(") + t + gray(")");
    }
 };
 
@@ -184,7 +184,7 @@ struct h2_countof_matches : h2_matches {
 
    virtual h2_line expection(h2_mc c) const override
    {
-      return ncsc("CountOf" + gray("(") + h2_matches_expection(m, c.update_caseless(false).update_negative(false)) + gray(")"), c.update_caseless(false));
+      return c.update_caseless(false).pre() + "CountOf" + gray("(") + h2_matches_expection(m, c.update_caseless(false).update_negative(false)) + gray(")");
    }
 };
 
@@ -255,7 +255,7 @@ struct h2_listof_matches : h2_matches {
 
    virtual h2_line expection(h2_mc c) const override
    {
-      return ncsc("ListOf" + gray("(") + t2e(c.update_negative(false)) + gray(")"), c.update_caseless(false));
+      return c.update_caseless(false).pre() + gray("[") + t2e(c.update_negative(false)) + gray("]");
    }
 
    H2_MATCHES_T2V2E(t_matchers)

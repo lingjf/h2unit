@@ -1,4 +1,4 @@
-h2_inline h2_suite::h2_suite(const char* filine_, const char* file_, int line_, const char* describe_, void (*test_code_)(h2_suite*, h2_case*)) : h2_test(filine_, file_, line_, describe_), test_code(test_code_)
+h2_inline h2_suite::h2_suite(const char* filine, const char* file, int line, const char* describe, void (*test_code_)(h2_suite*, h2_case*)) : h2_test(filine, file, line, describe), test_code(test_code_)
 {
    memset(cleanup_hole, 0, sizeof(jmp_buf));
    h2_runner::I().suites.push_back(x);
@@ -12,10 +12,12 @@ h2_inline void h2_suite::clear()
 h2_inline void h2_suite::setup()
 {
    h2_memory::stack::push(filine);
+   stats.timecost = h2_now();
 }
 
 h2_inline void h2_suite::cleanup()
 {
+   stats.timecost = h2_now() - stats.timecost;
    h2_stubs::clear(stubs);
    h2_mocks::clear(mocks, false);
    stats.footprint = h2_memory::stack::footprint();

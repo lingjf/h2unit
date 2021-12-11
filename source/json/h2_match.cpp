@@ -71,11 +71,11 @@ struct h2_json_match {
       } else if (e->type == h2_json_node::t_object && a->type == h2_json_node::t_object) {
          score += object_similarity(e, a, caseless);
       } else if (e->type == a->type) {
-         score += h2_fuzzy::similarity(e->value_string.c_str(), a->value_string.c_str(), caseless);
+         score += h2_similarity::estimate(e->value_string.c_str(), a->value_string.c_str(), caseless);
       } else {
       }
       if (e->key_string.size() || a->key_string.size()) {
-         score = score * 0.5 + 0.5 * h2_fuzzy::similarity(e->key_string.c_str(), a->key_string.c_str(), caseless);
+         score = score * 0.5 + 0.5 * h2_similarity::estimate(e->key_string.c_str(), a->key_string.c_str(), caseless);
       }
       return score;
    }
