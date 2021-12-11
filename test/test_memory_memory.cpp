@@ -12,6 +12,12 @@ void parse_something2()
    if (buffer == NULL) { buffer = (char*)malloc(2000); }
 }
 
+void parse_something3()
+{
+   static char* buffer = NULL;
+   if (buffer == NULL) { buffer = (char*)malloc(3000); }
+}
+
 SUITE(leak)
 {
    void* p = malloc(32 * 864);
@@ -36,5 +42,24 @@ SUITE(leak)
       UNMEM("parse_something2");
 
       parse_something2();
+   }
+
+   Case(UNMEM by function name)
+   {
+      char t[256];
+      strcpy(t, "parse_something3");
+      UNMEM(t);
+
+      parse_something3();
+   }
+
+   Case(disable all function)
+   {
+      UNMEM()
+      {
+         parse_something1();
+         parse_something2();
+         parse_something3();
+      }
    }
 }

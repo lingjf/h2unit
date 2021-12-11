@@ -3622,8 +3622,12 @@ template <typename T>
 inline void h2_unmem(T f) { h2_exempt::add_by_fp(h2_numberfy<void*>(f)); }
 template <>
 inline void h2_unmem(const char* f) { h2_exempt::add_by_name(f); }
+template <>
+inline void h2_unmem(char* f) { h2_exempt::add_by_name((const char*)f); }
 
-#define H2UNMEM(f) h2::h2_unmem(f)
+#define H2UNMEM(...) H2PP_CAT(__H2UNMEM, H2PP_IS_EMPTY(__VA_ARGS__))(__VA_ARGS__)
+#define __H2UNMEM1(...) __H2BLOCK("unmem", H2PP_UNIQUE())
+#define __H2UNMEM0(...) h2::h2_unmem(__VA_ARGS__)
 // source/stdio/h2_stdio.hpp
 struct h2_cout : h2_once {
    const char* filine;
@@ -6873,7 +6877,7 @@ struct h2_leaky {
 
       h2_vector<std::pair<size_t, size_t>>::iterator find(size_t size)
       {
-         for (auto it = sizes.begin(); it != sizes.end(); it++)
+         for (auto it = sizes.begin(); it != sizes.end(); ++it)
             if (it->first == size)
                return it;
          return sizes.end();
@@ -6898,7 +6902,7 @@ struct h2_leaky {
 
    h2_vector<leak>::iterator find(const h2_backtrace& bt)
    {
-      for (auto it = leaks.begin(); it != leaks.end(); it++)
+      for (auto it = leaks.begin(); it != leaks.end(); ++it)
          if (it->bt == bt)
             return it;
       return leaks.end();

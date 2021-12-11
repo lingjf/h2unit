@@ -943,6 +943,15 @@ Others can use `UNMEM` to avoid.
    UNMEM(strtoull)
 ```
 
+Others can use `UNMEM()` with empty arguments to avoid all in following block.
+
+```C++
+   UNMEM()
+   {
+
+   }
+```
+
 ### Memory Faulty Injection
 [`BLOCK`](../source/h2_unit.hpp) can used to control the remain memory resource, it can makes malloc() fail with "out of memory" error. The following case will fail due to malloc() fail.
 ```C++
@@ -984,10 +993,19 @@ CASE(test ignore memory leak)
 ```C++
 CASE(test ignore memory leak)
 {
-   BLOCK(numem) {
+   BLOCK(unmem) {
       char *p = (char *)malloc(8);
    }
 }
+```
+
+same as
+
+```C++
+   UNMEM()
+   {
+
+   }
 ```
 
 ### Memory overflow

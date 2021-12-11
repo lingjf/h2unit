@@ -8,7 +8,7 @@ struct h2_leaky {
 
       h2_vector<std::pair<size_t, size_t>>::iterator find(size_t size)
       {
-         for (auto it = sizes.begin(); it != sizes.end(); it++)
+         for (auto it = sizes.begin(); it != sizes.end(); ++it)
             if (it->first == size)
                return it;
          return sizes.end();
@@ -33,7 +33,7 @@ struct h2_leaky {
 
    h2_vector<leak>::iterator find(const h2_backtrace& bt)
    {
-      for (auto it = leaks.begin(); it != leaks.end(); it++)
+      for (auto it = leaks.begin(); it != leaks.end(); ++it)
          if (it->bt == bt)
             return it;
       return leaks.end();
