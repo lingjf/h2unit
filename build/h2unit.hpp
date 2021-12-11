@@ -1049,6 +1049,11 @@ struct h2_stringify_impl<wchar_t> {
 };
 
 template <typename T>
+struct h2_stringify_impl<T, typename std::enable_if<std::is_base_of<std::exception, T>::value>::type> {
+   static h2_line print(const T& a, bool represent = false) { return h2_stringify_impl<const char*>::print(a.what(), represent); }
+};
+
+template <typename T>
 inline h2_line h2_stringify(const T& a, bool represent = false)
 {
    return h2_stringify_impl<T>::print(a, represent);
@@ -1102,6 +1107,7 @@ struct h2_backtrace {
    h2_backtrace(int shift_ = 0) : shift(shift_) {}
    h2_backtrace(const h2_backtrace&) = default;
    h2_backtrace& operator=(const h2_backtrace&) = default;
+   void clear() { count = 0; }
 
    bool operator==(const h2_backtrace&) const;
    static h2_backtrace& dump(int shift_);
@@ -1169,7 +1175,7 @@ struct h2_fail : h2_libc {
    static h2_fail* new_asymmetric_free(const void* ptr, const char* who_allocate, const char* who_release, const h2_backtrace& bt_allocate, const h2_backtrace& bt_release);
    static h2_fail* new_overflow(const void* ptr, const size_t size, const void* violate_ptr, const char* action, const h2_vector<unsigned char>& spot, const h2_backtrace& bt_allocate, const h2_backtrace& bt_trample);
    static h2_fail* new_use_after_free(const void* ptr, const void* violate_ptr, const char* action, const h2_backtrace& bt_allocate, const h2_backtrace& bt_release, const h2_backtrace& bt_use);
-   static h2_fail* new_exception(const char* explain, const char* type, const h2_backtrace& bt_throw);
+   static h2_fail* new_exception(const h2_line& explain, const char* type, const h2_backtrace& bt_throw, const char* filine = nullptr);
    static h2_fail* new_symbol(const h2_string& symbol, const h2_vector<h2_string>& candidates, const h2_line& explain = {});
 };
 // source/render/h2_option.hpp
@@ -1216,15 +1222,6 @@ struct h2_option {
 };
 
 static const h2_option& O = h2_option::I();  // for pretty
-// source/except/h2_debug.hpp
-#define h2_debug(shift, ...)                                            \
-   do {                                                                 \
-      if (!O.debugger_trap) {                                           \
-         ::printf(" " __VA_ARGS__);                                     \
-         ::printf(" %s : %d = %s\n", __FILE__, __LINE__, __FUNCTION__); \
-         h2_backtrace::dump(shift).print(3);                            \
-      }                                                                 \
-   } while (0)
 // source/core/h2_test.hpp
 struct h2_stats {
    int passed = 0, failed = 0, todo = 0, filtered = 0, ignored = 0;
@@ -3600,6 +3597,7 @@ struct h2_memory {
    static void initialize();
    static void finalize();
    static void hook(bool overrides = true);
+   static void try_free(void* ptr);
 
    struct stack {
       static void root();
@@ -3628,6 +3626,80 @@ inline void h2_unmem(char* f) { h2_exempt::add_by_name((const char*)f); }
 #define H2UNMEM(...) H2PP_CAT(__H2UNMEM, H2PP_IS_EMPTY(__VA_ARGS__))(__VA_ARGS__)
 #define __H2UNMEM1(...) __H2BLOCK("unmem", H2PP_UNIQUE())
 #define __H2UNMEM0(...) h2::h2_unmem(__VA_ARGS__)
+// source/except/h2_debug.hpp
+#define h2_debug(shift, ...)                                            \
+   do {                                                                 \
+      if (!O.debugger_trap) {                                           \
+         ::printf(" " __VA_ARGS__);                                     \
+         ::printf(" %s : %d = %s\n", __FILE__, __LINE__, __FUNCTION__); \
+         h2_backtrace::dump(shift).print(3);                            \
+      }                                                                 \
+   } while (0)
+// source/except/h2_exception.hpp
+using nothrow = std::integral_constant<int, 32717>;
+
+struct h2_exception {
+   h2_singleton(h2_exception);
+   jmp_buf catch_hole;
+   bool catching = false;
+   h2_backtrace last_bt;
+   void* thrown_exception;
+   std::type_info* type_info;
+   char last_type[1024];
+
+   static void initialize();
+
+   static h2_once try_catch();
+   static void try_catch_finally(h2_fail* fail, const char* what);
+
+   template <typename T, typename M>
+   static auto matches(T* a, M m) -> typename std::enable_if<std::is_base_of<std::exception, T>::value, h2_fail*>::type
+   {
+      return h2_matcher_cast<const char*>(m).matches(a->what(), {0});
+   }
+
+   template <typename T, typename M>
+   static auto matches(T* a, M m) -> typename std::enable_if<!std::is_base_of<std::exception, T>::value, h2_fail*>::type
+   {
+      return h2_matcher_cast<T>(m).matches(*a, {0});
+   }
+
+   template <typename T>
+   static auto what(T* a) -> typename std::enable_if<std::is_base_of<std::exception, T>::value, const char*>::type { return a->what(); }
+   template <typename T>
+   static auto what(T* a) -> typename std::enable_if<!std::is_base_of<std::exception, T>::value, const char*>::type { return nullptr; }
+
+   template <typename T, typename M>
+   static void check_catch(M m, const char* filine)
+   {
+      h2_fail* fail = nullptr;
+      if (std::is_same<nothrow, T>::value) {  // no throw check
+         if (h2_exception::I().thrown_exception)
+            fail = h2_fail::new_exception("was thrown but expect no throw", h2_exception::I().last_type, h2_exception::I().last_bt, filine);
+      } else {
+         if (!h2_exception::I().thrown_exception) {
+            fail = h2_fail::new_normal("expect exception " + color(h2_cxa::demangle(typeid(T).name()), "green") + " thrown but not", filine);
+         } else {
+            if (!(typeid(T) == *h2_exception::I().type_info)) {  // check type
+               fail = h2_fail::new_exception("was thrown but expect type is " + color(h2_cxa::demangle(typeid(T).name()), "green"), h2_exception::I().last_type, h2_exception::I().last_bt, filine);
+            } else {  // check value
+               fail = matches((T*)h2_exception::I().thrown_exception, m);
+               if (fail) {
+                  fail->filine = filine;
+                  h2_fail::append_child(fail, h2_fail::new_exception("was thrown", h2_exception::I().last_type, h2_exception::I().last_bt, filine));
+               }
+            }
+         }
+      }
+      try_catch_finally(fail, what((T*)h2_exception::I().thrown_exception));
+   }
+};
+
+#define __H2Catch0() for (auto _Q__ = h2::h2_exception::try_catch(); _Q__; h2::h2_exception::check_catch<nothrow>(_, H2_FILINE))
+#define __H2Catch1(type) for (auto _Q__ = h2::h2_exception::try_catch(); _Q__; h2::h2_exception::check_catch<type>(_, H2_FILINE))
+#define __H2Catch2(type, matcher) for (auto _Q__ = h2::h2_exception::try_catch(); _Q__; h2::h2_exception::check_catch<type>(matcher, H2_FILINE))
+/* clang-format off */
+#define H2Catch(...) H2PP_VARIADIC_CALL(__H2Catch, __VA_ARGS__) if (!::setjmp(h2::h2_exception::I().catch_hole))
 // source/stdio/h2_stdio.hpp
 struct h2_cout : h2_once {
    const char* filine;
@@ -3948,6 +4020,10 @@ struct h2_timer : h2_once {
 #define TODOSS_T H2TODOSS_T
 #endif
 
+#ifndef H2_NO_Catch
+#define Catch H2Catch
+#endif
+
 using h2::_;
 using h2::Any;
 #ifndef H2_NO_Eq
@@ -3983,6 +4059,7 @@ using h2::Has;
 using h2::HasKey;
 using h2::HasValue;
 using h2::Pair;
+using h2::nothrow;
 
 #if defined __cplusplus && !defined H2_NO_Redefine_private
 // clang11 bug, not works option: -fno-access-control -fno-no-access-control

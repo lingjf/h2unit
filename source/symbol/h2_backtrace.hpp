@@ -5,6 +5,7 @@ struct h2_backtrace {
    h2_backtrace(int shift_ = 0) : shift(shift_) {}
    h2_backtrace(const h2_backtrace&) = default;
    h2_backtrace& operator=(const h2_backtrace&) = default;
+   void clear() { count = 0; }
 
    bool operator==(const h2_backtrace&) const;
    static h2_backtrace& dump(int shift_);

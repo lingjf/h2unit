@@ -63,9 +63,7 @@ h2_inline void h2_exempt::setup()
 #if defined __GNUC__
    add_by_fp((void*)abi::__cxa_demangle);
    add_by_fp((void*)abi::__cxa_throw);
-#if !defined __clang__
-   add_by_fp((void*)::__cxa_allocate_exception);
-#endif
+   add_by_fp((void*)abi::__cxa_allocate_exception);
 #endif
 
    add_by_fp((void*)h2_pattern::regex_match);

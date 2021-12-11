@@ -38,6 +38,11 @@ h2_inline void h2_memory::hook(bool overrides)
    }
 }
 
+h2_inline void h2_memory::try_free(void* ptr)
+{
+   h2_stack::I().rel_piece(ptr);
+}
+
 h2_inline void h2_memory::stack::root()
 {
    h2_stack::I().push("", "root", H2_FILINE);

@@ -188,6 +188,11 @@ struct h2_stringify_impl<wchar_t> {
 };
 
 template <typename T>
+struct h2_stringify_impl<T, typename std::enable_if<std::is_base_of<std::exception, T>::value>::type> {
+   static h2_line print(const T& a, bool represent = false) { return h2_stringify_impl<const char*>::print(a.what(), represent); }
+};
+
+template <typename T>
 inline h2_line h2_stringify(const T& a, bool represent = false)
 {
    return h2_stringify_impl<T>::print(a, represent);

@@ -174,7 +174,7 @@ struct h2_piece : h2_libc {
    h2_fail* free(const char* who_release)
    {
       h2_fail* fail = check_double_free(h2_backtrace::dump(4));
-      if (!fail) fail = check_asymmetric_free(who_release);
+      if (!fail && who_release) fail = check_asymmetric_free(who_release);
       if (!fail) fail = check_snowfield();
       if (!fail) set_forbidden(0, page_ptr, page_size * (page_count + 1));
       return fail;

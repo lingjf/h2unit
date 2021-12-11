@@ -390,10 +390,10 @@ struct h2_fail_use_after_free : h2_fail_memory {
 struct h2_fail_exception : h2_fail {
    const char* type;
    const h2_backtrace bt_throw;
-   h2_fail_exception(const h2_line& explain_, const char* type_, const h2_backtrace& bt_throw_) : h2_fail(explain_, nullptr), type(type_), bt_throw(bt_throw_) {}
+   h2_fail_exception(const h2_line& explain_, const char* type_, const h2_backtrace& bt_throw_, const char* filine_) : h2_fail(explain_, filine_), type(type_), bt_throw(bt_throw_) {}
    void print(size_t si = 0, size_t ci = 0) override
    {
-      h2_console::printl(" exception " + color(type, "red") + " " + explain + " at backtrace:");
+      h2_console::printl(" exception " + color(type, "red") + " " + explain + locate() + " at backtrace:");
       bt_throw.print(3);
    }
 };
@@ -411,16 +411,16 @@ struct h2_fail_symbol : h2_fail {
    }
 };
 
-h2_inline h2_fail* h2_fail::new_normal(const h2_line& explain_, const char* file_) { return new h2_fail_normal(explain_, file_); }
+h2_inline h2_fail* h2_fail::new_normal(const h2_line& explain_, const char* filine_) { return new h2_fail_normal(explain_, filine_); }
 h2_inline h2_fail* h2_fail::new_unexpect(const h2_line& expection_, const h2_line& represent_, const h2_line& explain_) { return new h2_fail_unexpect(expection_, represent_, explain_); }
 h2_inline h2_fail* h2_fail::new_strcmp(const h2_string& e_value, const h2_string& a_value, bool caseless, const h2_line& expection_, const h2_line& explain_) { return new h2_fail_strcmp(e_value, a_value, caseless, expection_, explain_); }
 h2_inline h2_fail* h2_fail::new_strfind(const h2_string& e_value, const h2_string& a_value, const h2_line& expection_, const h2_line& explain_) { return new h2_fail_strfind(e_value, a_value, expection_, explain_); }
 h2_inline h2_fail* h2_fail::new_json(const h2_string& e_value, const h2_string& a_value, const h2_line& expection_, bool caseless, const h2_line& explain_) { return new h2_fail_json(e_value, a_value, expection_, caseless, explain_); }
 h2_inline h2_fail* h2_fail::new_memcmp(const unsigned char* e_value, const unsigned char* a_value, const size_t length, const size_t width) { return new h2_fail_memcmp(e_value, a_value, length, width); }
-h2_inline h2_fail* h2_fail::new_memory_leak(const void* ptr, const size_t size, const h2_vector<std::pair<size_t, size_t>>& sizes, const h2_backtrace& bt_allocate, const char* where, const char* file_) { return new h2_fail_memory_leak(ptr, size, sizes, bt_allocate, where, file_); }
+h2_inline h2_fail* h2_fail::new_memory_leak(const void* ptr, const size_t size, const h2_vector<std::pair<size_t, size_t>>& sizes, const h2_backtrace& bt_allocate, const char* where, const char* filine_) { return new h2_fail_memory_leak(ptr, size, sizes, bt_allocate, where, filine_); }
 h2_inline h2_fail* h2_fail::new_double_free(const void* ptr, const h2_backtrace& bt_allocate, const h2_backtrace& bt_release, const h2_backtrace& bt_double_free) { return new h2_fail_double_free(ptr, bt_allocate, bt_release, bt_double_free); }
 h2_inline h2_fail* h2_fail::new_asymmetric_free(const void* ptr, const char* who_allocate, const char* who_release, const h2_backtrace& bt_allocate, const h2_backtrace& bt_release) { return new h2_fail_asymmetric_free(ptr, who_allocate, who_release, bt_allocate, bt_release); }
 h2_inline h2_fail* h2_fail::new_overflow(const void* ptr, const size_t size, const void* violate_ptr, const char* action, const h2_vector<unsigned char>& spot, const h2_backtrace& bt_allocate, const h2_backtrace& bt_trample) { return new h2_fail_overflow(ptr, size, violate_ptr, action, spot, bt_allocate, bt_trample); }
 h2_inline h2_fail* h2_fail::new_use_after_free(const void* ptr, const void* violate_ptr, const char* action, const h2_backtrace& bt_allocate, const h2_backtrace& bt_release, const h2_backtrace& bt_use) { return new h2_fail_use_after_free(ptr, violate_ptr, action, bt_allocate, bt_release, bt_use); }
-h2_inline h2_fail* h2_fail::new_exception(const char* explain_, const char* type, const h2_backtrace& bt_throw) { return new h2_fail_exception(explain_, type, bt_throw); }
+h2_inline h2_fail* h2_fail::new_exception(const h2_line& explain_, const char* type, const h2_backtrace& bt_throw, const char* filine_) { return new h2_fail_exception(explain_, type, bt_throw, filine_); }
 h2_inline h2_fail* h2_fail::new_symbol(const h2_string& symbol, const h2_vector<h2_string>& candidates, const h2_line& explain_) { return new h2_fail_symbol(symbol, candidates, explain_); };

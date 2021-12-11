@@ -1110,6 +1110,53 @@ CASE(test performance)
 
 
 ## Capture C++ Exception
+
+### No thrown excepted
+[`Catch`](../source/h2_unit.hpp)([nothrow]){}: Fail if following block throw any exception.
+```C++
+CASE(no throw)
+{
+   Catch()
+   {
+      throw exception;
+   }
+}
+
+CASE(no throw)
+{
+   Catch(nothrow)
+   {
+      throw exception;
+   }
+}
+```
+
+### Check exception type
+[`Catch`](../source/h2_unit.hpp)(type){}: Fail if following block throw a exception, but type not matches.
+
+```C++
+Case(check throw type)
+{
+   Catch(const char*)
+   {
+      throw 42;
+   }
+}
+```
+
+### Check exception type and value
+[`Catch`](../source/h2_unit.hpp)(type, matcher]){}: Fail if following block throw a exception, but type or value not matches.
+
+```C++
+Case(check throw type a_exception and matcher string equal)
+{
+   Catch(a_exception, a_exception_matcher("hello"))
+   {
+      throw a_exception();
+   }
+}
+```
+
 *    Uncaught Exception 
      It will be detected and reported as failure.
      Unfortunately conflict with `Memory Check` in MacOS, disable `Memory Check` (`-m` option) to enable `Uncaught Exception`, otherwise uncaught exception will cause terminate/crash.

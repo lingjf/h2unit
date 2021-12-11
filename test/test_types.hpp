@@ -423,3 +423,11 @@ typedef int (*A_FunctionPointer)(int a, int b);
 extern const char* node_type_tostring(const int type);
 extern h2::h2_string node_tojson(h2::h2_json_node* node);
 extern h2::h2_string node_dump(h2::h2_json_node* node);
+
+class a_exception : public std::exception {
+ public:
+   virtual const char* what() const noexcept override
+   {
+      return "Test Exception";
+   }
+};

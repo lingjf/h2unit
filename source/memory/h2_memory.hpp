@@ -2,6 +2,7 @@ struct h2_memory {
    static void initialize();
    static void finalize();
    static void hook(bool overrides = true);
+   static void try_free(void* ptr);
 
    struct stack {
       static void root();

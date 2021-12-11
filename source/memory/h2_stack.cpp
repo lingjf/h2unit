@@ -58,4 +58,12 @@ struct h2_stack {
       }
       return nullptr;
    }
+
+   void rel_piece(const void* ptr)
+   {
+      h2_list_for_each_entry (p, blocks, h2_block, x) {
+         h2_piece* piece = p->host_piece(ptr);
+         if (piece) p->rel_piece(nullptr, piece);
+      }
+   }
 };

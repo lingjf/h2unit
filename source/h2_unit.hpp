@@ -65,7 +65,6 @@ namespace h2 {
 #include "symbol/h2_cxa.hpp"                  //
 #include "render/h2_failure.hpp"              //
 #include "render/h2_option.hpp"               //
-#include "except/h2_debug.hpp"                // option
 #include "core/h2_test.hpp"                   //
 #include "core/h2_case.hpp"                   // failure
 #include "core/h2_suite.hpp"                  // case
@@ -97,6 +96,8 @@ namespace h2 {
 #include "mock/h2_mock.hpp"                   //
 #include "memory/h2_exempt.hpp"               // -
 #include "memory/h2_memory.hpp"               // failure, fp
+#include "except/h2_debug.hpp"                // option
+#include "except/h2_exception.hpp"            //
 #include "stdio/h2_stdio.hpp"                 //
 #include "net/h2_dns.hpp"                     //
 #include "net/h2_socket.hpp"                  // stub, failure, matcher
@@ -279,6 +280,10 @@ namespace h2 {
 #define TODOSS_T H2TODOSS_T
 #endif
 
+#ifndef H2_NO_Catch
+#define Catch H2Catch
+#endif
+
 using h2::_;
 using h2::Any;
 #ifndef H2_NO_Eq
@@ -314,6 +319,7 @@ using h2::Has;
 using h2::HasKey;
 using h2::HasValue;
 using h2::Pair;
+using h2::nothrow;
 
 #if defined __cplusplus && !defined H2_NO_Redefine_private
 // clang11 bug, not works option: -fno-access-control -fno-no-access-control

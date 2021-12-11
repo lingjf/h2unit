@@ -2,18 +2,6 @@
 #include "test_cplusplus.hpp"
 #include "test_types.hpp"
 
-#include <vector>
-#include <deque>
-#include <array>
-#include <list>
-#include <forward_list>
-#include <set>
-#include <unordered_set>
-#include <map>
-#include <unordered_map>
-#include <tuple>
-#include <valarray>
-
 struct Stringify11 {
    int bar(int) { return 0; }
 };
@@ -495,6 +483,36 @@ SUITE(stringify simple)
       OK(ListOf(""), h2::h2_stringify(a1));
    }
 #endif
+}
+
+SUITE(stringify exception)
+{
+   Case(std::exception)
+   {
+      std::exception a1;
+      OK(ListOf(Substr("exception")), h2::h2_stringify(a1));
+   }
+
+   Case(std::bad_exception)
+   {
+      std::bad_exception a1;
+      OK(ListOf(Substr("exception")), h2::h2_stringify(a1));
+   }
+
+   Case(std::runtime_error)
+   {
+      UNMEM()
+      {
+         std::runtime_error a1("test1");
+         OK(ListOf("test1"), h2::h2_stringify(a1));
+      }
+   }
+
+   Case(a_exception)
+   {
+      a_exception a1;
+      OK(ListOf("Test Exception"), h2::h2_stringify(a1));
+   }
 }
 
 SUITE(stringify user)
