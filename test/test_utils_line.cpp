@@ -114,23 +114,6 @@ SUITE(h2_line)
       OK(e.width() == a.width());
    }
 
-   Case(enclosed)
-   {
-      h2::h2_line a1 = {"123"};
-      OK(!a1.enclosed('\"'));
-      h2::h2_line a2 = {"123", "456"};
-      OK(!a2.enclosed('\"'));
-      h2::h2_line a3 = {"123", "\033{red}", "456", "\033{reset}"};
-      OK(!a3.enclosed('\"'));
-
-      h2::h2_line b1 = {"\"123\""};
-      OK(b1.enclosed('\"'));
-      h2::h2_line b2 = {"\"123", "456\""};
-      OK(b2.enclosed('\"'));
-      h2::h2_line b3 = {"\"123", "\033{red}", "456\"", "\033{reset}"};
-      OK(b3.enclosed('\"'));
-   }
-
    Case(has)
    {
       h2::h2_line a = {"123", "\033{red}", "456", "\033{reset}"};
@@ -145,6 +128,69 @@ SUITE(h2_line)
       h2::h2_lines a = {{"12345"}};
       h2::h2_lines::samesizify(e, a);
       OK(e.size() == a.size());
+   }
+}
+
+SUITE(h2_line enclosed)
+{
+   Case(none)
+   {
+      h2::h2_line a1 = {"123"};
+      OK(!a1.enclosed('\"'));
+      h2::h2_line a2 = {"123", "456"};
+      OK(!a2.enclosed('\"'));
+      h2::h2_line a3 = {"123", "\033{red}", "456", "\033{reset}"};
+      OK(!a3.enclosed('\"'));
+   }
+
+   Case(double quote)
+   {
+      h2::h2_line b1 = {"\"123\""};
+      OK(b1.enclosed('\"'));
+      h2::h2_line b2 = {"\"123", "456\""};
+      OK(b2.enclosed('\"'));
+      h2::h2_line b3 = {"\"123", "\033{red}", "456\"", "\033{reset}"};
+      OK(b3.enclosed('\"'));
+   }
+
+   Case(single quote)
+   {
+      h2::h2_line b1 = {"\'123\'"};
+      OK(b1.enclosed('\''));
+      h2::h2_line b2 = {"\'123", "456\'"};
+      OK(b2.enclosed('\''));
+      h2::h2_line b3 = {"\'123", "\033{red}", "456\'", "\033{reset}"};
+      OK(b3.enclosed('\''));
+   }
+
+   Case(parentheses)
+   {
+      h2::h2_line b1 = {"(123)"};
+      OK(b1.enclosed('(', ')'));
+      h2::h2_line b2 = {"(123", "456)"};
+      OK(b2.enclosed('(', ')'));
+      h2::h2_line b3 = {"(123", "\033{red}", "456)", "\033{reset}"};
+      OK(b2.enclosed('(', ')'));
+   }
+
+   Case(braces)
+   {
+      h2::h2_line b1 = {"[123]"};
+      OK(b1.enclosed('[', ']'));
+      h2::h2_line b2 = {"[123", "456]"};
+      OK(b2.enclosed('[', ']'));
+      h2::h2_line b3 = {"[123", "\033{red}", "456]", "\033{reset}"};
+      OK(b2.enclosed('[', ']'));
+   }
+
+   Case(brace parenthesis)
+   {
+      h2::h2_line b1 = {"[123)"};
+      OK(b1.enclosed('[', ')'));
+      h2::h2_line b2 = {"[123", "456)"};
+      OK(b2.enclosed('[', ')'));
+      h2::h2_line b3 = {"[123", "\033{red}", "456)", "\033{reset}"};
+      OK(b2.enclosed('[', ')'));
    }
 }
 

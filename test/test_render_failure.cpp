@@ -1,37 +1,20 @@
 #include "../source/h2_unit.cpp"
 
-SUITE(failure utils)
+SUITE(is_synonym)
 {
-   h2::h2_string a_NULL = "NULL";
-   h2::h2_string a_nullptr = "nullptr";
-   h2::h2_string a_void = "((void *)0)";
-   h2::h2_string a___null = "__null";
-   h2::h2_string a_null = "(null)";
-   h2::h2_string a_nil = "(nil)";
-   h2::h2_string a_0 = "0";
-   h2::h2_string a_0x0 = "0x0";
-   h2::h2_string a_00000000 = "00000000";
-   h2::h2_string a_0000000000000000 = "0000000000000000";
-
-   h2::h2_string n_1NULL = "!NULL";
-   h2::h2_string n_1nullptr = "!nullptr";
-   h2::h2_string n_NotNULL = "Not(NULL)";
-   h2::h2_string n_Notnullptr = "Not(nullptr)";
-   h2::h2_string n_NqNULL = "Nq(NULL)";
-   h2::h2_string n_Nqnullptr = "Nq(nullptr)";
-
-   h2::h2_string true_true = "true";
-   h2::h2_string true_TRUE = "TRUE";
-   h2::h2_string true_True = "True";
-   h2::h2_string true_1 = "1";
-
-   h2::h2_string false_false = "false";
-   h2::h2_string false_FALSE = "FALSE";
-   h2::h2_string false_False = "False";
-   h2::h2_string false_0 = "0";
-
-   Case(is_synonym null)
+   Case(null)
    {
+      h2::h2_string a_NULL = "NULL";
+      h2::h2_string a_nullptr = "nullptr";
+      h2::h2_string a_void = "((void *)0)";
+      h2::h2_string a___null = "__null";
+      h2::h2_string a_null = "(null)";
+      h2::h2_string a_nil = "(nil)";
+      h2::h2_string a_0 = "0";
+      h2::h2_string a_0x0 = "0x0";
+      h2::h2_string a_00000000 = "00000000";
+      h2::h2_string a_0000000000000000 = "0000000000000000";
+
 #define NULL_SET \
    a_NULL,       \
      a_nullptr,  \
@@ -49,28 +32,53 @@ SUITE(failure utils)
 #undef TheCheck
    }
 
-   Case(is_synonym notnull)
+   Case(notnull)
    {
+      h2::h2_string n_1NULL = "!NULL";
+      h2::h2_string n_1nullptr = "!nullptr";
+      h2::h2_string n_NotNULL = "Not(NULL)";
+      h2::h2_string n_Notnullptr = "Not(nullptr)";
+      h2::h2_string n_NqNULL = "Nq(NULL)";
+      h2::h2_string n_Nqnullptr = "Nq(nullptr)";
+
 #define NOTNULL_SET n_1NULL, n_1nullptr, n_NotNULL, n_Notnullptr, n_NqNULL, n_Nqnullptr
 #define TheCheck(x, y) OK(h2::is_synonym(x, y));
       H2Fullmesh(TheCheck, (NOTNULL_SET));
 #undef TheCheck
    }
 
-   Case(is_synonym true)
+   Case(true)
    {
-#define TRUE_SET true_true, true_TRUE, true_True, true_1
+      h2::h2_string true_true = "true";
+      h2::h2_string true_TRUE = "TRUE";
+      h2::h2_string true_True = "True";
+      h2::h2_string true_1 = "1";
+
 #define TheCheck(x, y) OK(h2::is_synonym(x, y));
-      H2Fullmesh(TheCheck, (TRUE_SET));
+      H2Fullmesh(TheCheck, (true_true, true_TRUE, true_True, true_1));
 #undef TheCheck
    }
 
-   Case(is_synonym false)
+   Case(false)
    {
-#define FALSE_SET false_false, false_FALSE, false_False, false_0
+      h2::h2_string false_false = "false";
+      h2::h2_string false_FALSE = "FALSE";
+      h2::h2_string false_False = "False";
+      h2::h2_string false_0 = "0";
+
 #define TheCheck(x, y) OK(h2::is_synonym(x, y));
-      H2Fullmesh(TheCheck, (FALSE_SET));
+      H2Fullmesh(TheCheck, (false_false, false_FALSE, false_False, false_0));
 #undef TheCheck
+   }
+
+   Case(Eq)
+   {
+      OK(h2::is_synonym("Eq(6)", "6"));
+   }
+
+   Case(ListOf)
+   {
+      OK(h2::is_synonym("ListOf(1, 2, 3)", "[1, 2, 3]"));
    }
 }
 

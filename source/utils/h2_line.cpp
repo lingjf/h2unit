@@ -45,14 +45,15 @@ h2_inline h2_line& h2_line::brush(const char* style)
    return *this;
 }
 
-h2_inline bool h2_line::enclosed(const char c) const
+h2_inline bool h2_line::enclosed(char left, char right) const
 {
+   if (right == '\0') right = left;
    bool f = false, ff = false, b = false;
    for (auto& word : *this) {
       if (!h2_color::isctrl(word.c_str())) {
-         if (!ff) f = word.front() == c;
+         if (!ff) f = word.front() == left;
          ff = true;
-         b = word.back() == c;
+         b = word.back() == right;
       }
    }
    return f && b;
@@ -67,7 +68,7 @@ h2_inline bool h2_line::has(const char* word) const
 
 h2_inline h2_line h2_line::gray_quote() const
 {
-   if (!enclosed('\"') && !enclosed('\'')) return *this;
+   if (!enclosed('\"', '\"') && !enclosed('\'', '\'')) return *this;
 
    h2_line line;
    size_t i = 0, w = width();

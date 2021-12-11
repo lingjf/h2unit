@@ -12,9 +12,9 @@ struct h2_json_syntax {
    h2_string& filter_string(h2_string& s) const
    {
       if (s.enclosed('\"'))
-         s = s.unquote('\"');
+         s = s.unenclose('\"');
       else if (s.enclosed('\''))
-         s = s.unquote('\'');
+         s = s.unenclose('\'');
       s = s.unescape();
       return s;
    }
@@ -68,7 +68,7 @@ struct h2_json_syntax {
    {
       node.value_string = lexical[i++];
       if (node.value_string.enclosed('/'))
-         node.value_string = node.value_string.unquote('/');
+         node.value_string = node.value_string.unenclose('/');
       node.type = h2_json_node::t_pattern;
       return true;
    }

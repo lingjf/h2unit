@@ -185,8 +185,8 @@ SUITE(zero operator)
    {
       OK(_, 0);
       OK(_, 1);
-      OK(Any, 0);
-      OK(Any, 1);
+      OK(Any(), 0);
+      OK(Any(), 1);
    }
 
    Case(Is Null failure)

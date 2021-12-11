@@ -784,11 +784,12 @@ struct h2_string : public std::basic_string<char, std::char_traits<char>, h2_all
    bool contains(const h2_string& substr, bool caseless = false) const;
    bool startswith(const h2_string& prefix, bool caseless = false) const;
    bool endswith(const h2_string& suffix, bool caseless = false) const;
-   bool enclosed(const char c = '\"') const;
+
+   bool enclosed(char left = '\"', char right = '\0') const;
+   h2_string unenclose(char left = '\"', char right = '\0') const;
 
    h2_string escape(bool utf8 = false) const;
    h2_string unescape() const;
-   h2_string unquote(const char c = '\"') const;
    h2_string trim() const;
    h2_string squash(bool quote = false) const;
    h2_string tolower() const;
@@ -819,7 +820,7 @@ struct h2_line : h2_vector<h2_string> {
    h2_line& operator+=(const h2_line& line);
    h2_line& brush(const char* style);
 
-   bool enclosed(const char c) const;
+   bool enclosed(char left = '\"', char right = '\0') const;
    bool has(const char* word) const;
 
    h2_line gray_quote() const;
@@ -4659,9 +4660,16 @@ h2_inline bool h2_string::endswith(const h2_string& suffix, bool caseless) const
    return tolower().rfind(suffix.tolower()) == size() - suffix.size();
 }
 
-h2_inline bool h2_string::enclosed(const char c) const
+h2_inline bool h2_string::enclosed(char left, char right) const
 {
-   return front() == c && back() == c;
+   if (right == '\0') right = left;
+   return front() == left && back() == right;
+}
+
+h2_inline h2_string h2_string::unenclose(char left, char right) const
+{
+   if (!enclosed(left, right)) return *this;
+   return h2_string(size() - 2, c_str() + 1);
 }
 
 h2_inline h2_string h2_string::escape(bool utf8) const
@@ -4691,12 +4699,6 @@ h2_inline h2_string h2_string::unescape() const
    s.replace_all("\\\\", "\\");
    // todo: escape \u12ab
    return s;
-}
-
-h2_inline h2_string h2_string::unquote(const char c) const
-{
-   if (!enclosed(c)) return *this;
-   return h2_string(size() - 2, c_str() + 1);
 }
 
 h2_inline h2_string h2_string::trim() const
@@ -4895,14 +4897,15 @@ h2_inline h2_line& h2_line::brush(const char* style)
    return *this;
 }
 
-h2_inline bool h2_line::enclosed(const char c) const
+h2_inline bool h2_line::enclosed(char left, char right) const
 {
+   if (right == '\0') right = left;
    bool f = false, ff = false, b = false;
    for (auto& word : *this) {
       if (!h2_color::isctrl(word.c_str())) {
-         if (!ff) f = word.front() == c;
+         if (!ff) f = word.front() == left;
          ff = true;
-         b = word.back() == c;
+         b = word.back() == right;
       }
    }
    return f && b;
@@ -4917,7 +4920,7 @@ h2_inline bool h2_line::has(const char* word) const
 
 h2_inline h2_line h2_line::gray_quote() const
 {
-   if (!enclosed('\"') && !enclosed('\'')) return *this;
+   if (!enclosed('\"', '\"') && !enclosed('\'', '\'')) return *this;
 
    h2_line line;
    size_t i = 0, w = width();
@@ -6046,9 +6049,9 @@ struct h2_json_syntax {
    h2_string& filter_string(h2_string& s) const
    {
       if (s.enclosed('\"'))
-         s = s.unquote('\"');
+         s = s.unenclose('\"');
       else if (s.enclosed('\''))
-         s = s.unquote('\'');
+         s = s.unenclose('\'');
       s = s.unescape();
       return s;
    }
@@ -6102,7 +6105,7 @@ struct h2_json_syntax {
    {
       node.value_string = lexical[i++];
       if (node.value_string.enclosed('/'))
-         node.value_string = node.value_string.unquote('/');
+         node.value_string = node.value_string.unenclose('/');
       node.type = h2_json_node::t_pattern;
       return true;
    }
@@ -9341,18 +9344,22 @@ struct h2_fail_normal : h2_fail {
 
 static inline bool is_synonym(const h2_string& a, const h2_string& b)
 {
-   h2_string a1 = a.escape(), b1 = b.escape();
-   if (a1 == b1) return true;
+   h2_string _a = a.escape(), _b = b.escape();
+   if (_a == _b) return true;
 
 #define H2_NULL_SYNONYM "NULL", "nullptr", "null", "__null", "(null)", "(nil)", "((void *)0)", "0", "0x0", "00000000", "0000000000000000"
-#define H2_NOTNULL_SYNONYM "!NULL", "!nullptr", "Not(NULL)", "Not(nullptr)", "Nq(NULL)", "Nq(nullptr)"
-#define H2_TREE_SYNONYM "true", "TRUE", "True", "1"
+#define H2_NOTNULL_SYNONYM "!NULL", "!nullptr", "Not(NULL)", "Not(nullptr)", "Nq(NULL)", "Nq(nullptr)", "Not(0)", "Nq(0)"
+#define H2_TRUE_SYNONYM "true", "TRUE", "True", "1"
 #define H2_FALSE_SYNONYM "false", "FALSE", "False", "0"
 
-   if (h2_in(a1.c_str(), 11, H2_NULL_SYNONYM) && h2_in(b1.c_str(), 11, H2_NULL_SYNONYM)) return true;
-   if (h2_in(a1.c_str(), 6, H2_NOTNULL_SYNONYM) && h2_in(b1.c_str(), 6, H2_NOTNULL_SYNONYM)) return true;
-   if (h2_in(a1.c_str(), 4, H2_TREE_SYNONYM) && h2_in(b1.c_str(), 4, H2_TREE_SYNONYM)) return true;
-   if (h2_in(a1.c_str(), 4, H2_FALSE_SYNONYM) && h2_in(b1.c_str(), 4, H2_FALSE_SYNONYM)) return true;
+   if (h2_in(_a.c_str(), 11, H2_NULL_SYNONYM) && h2_in(_b.c_str(), 11, H2_NULL_SYNONYM)) return true;
+   if (h2_in(_a.c_str(), 8, H2_NOTNULL_SYNONYM) && h2_in(_b.c_str(), 8, H2_NOTNULL_SYNONYM)) return true;
+   if (h2_in(_a.c_str(), 4, H2_TRUE_SYNONYM) && h2_in(_b.c_str(), 4, H2_TRUE_SYNONYM)) return true;
+   if (h2_in(_a.c_str(), 4, H2_FALSE_SYNONYM) && h2_in(_b.c_str(), 4, H2_FALSE_SYNONYM)) return true;
+
+   if (_a == "Eq(" + _b + ")") return true;
+   if (_a == "ListOf(" + _b.unenclose('[', ']') + ")") return true;
+
    return false;
 }
 
@@ -9388,8 +9395,8 @@ struct h2_fail_unexpect : h2_fail {
    }
    void print_JE(h2_line& line)
    {
-      h2_line e = h2_line(e_expression.unquote('\"').unquote('\'')).abbreviate(O.verbose >= VerboseDetail ? 10000 : 30, 2).brush("cyan");
-      h2_line a = h2_line(a_expression.unquote('\"').unquote('\'')).abbreviate(O.verbose >= VerboseDetail ? 10000 : 30, 2).brush("bold,red");
+      h2_line e = h2_line(e_expression.unenclose('\"').unenclose('\'')).abbreviate(O.verbose >= VerboseDetail ? 10000 : 30, 2).brush("cyan");
+      h2_line a = h2_line(a_expression.unenclose('\"').unenclose('\'')).abbreviate(O.verbose >= VerboseDetail ? 10000 : 30, 2).brush("bold,red");
       line += "JE" + gray("(") + e + ", " + a + gray(")");
    }
    void print_Inner(h2_line& line)
@@ -9437,8 +9444,8 @@ struct h2_fail_strcmp : h2_fail_unexpect {
          h2_line e_line, a_line;
          h2_vector<h2_string> e_chars = e_value.disperse(), a_chars = a_value.disperse();
          auto lcs = h2_LCS(e_chars, a_chars, caseless).lcs();
-         for (size_t i = 0; i < lcs.first.size(); i++) e_line += fmt_char(e_chars[i], lcs.first[i], "green");
-         for (size_t i = 0; i < lcs.second.size(); i++) a_line += fmt_char(a_chars[i], lcs.second[i], "red");
+         for (size_t i = 0; i < lcs.first.size(); ++i) e_line += fmt_char(e_chars[i], lcs.first[i], "green");
+         for (size_t i = 0; i < lcs.second.size(); ++i) a_line += fmt_char(a_chars[i], lcs.second[i], "red");
          h2_console::printl(h2_layout::unified(e_line, a_line, "expect", "actual", h2_console::width()));
       }
    }

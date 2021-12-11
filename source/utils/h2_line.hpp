@@ -12,7 +12,7 @@ struct h2_line : h2_vector<h2_string> {
    h2_line& operator+=(const h2_line& line);
    h2_line& brush(const char* style);
 
-   bool enclosed(const char c) const;
+   bool enclosed(char left = '\"', char right = '\0') const;
    bool has(const char* word) const;
 
    h2_line gray_quote() const;

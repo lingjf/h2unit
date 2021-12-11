@@ -25,11 +25,12 @@ struct h2_string : public std::basic_string<char, std::char_traits<char>, h2_all
    bool contains(const h2_string& substr, bool caseless = false) const;
    bool startswith(const h2_string& prefix, bool caseless = false) const;
    bool endswith(const h2_string& suffix, bool caseless = false) const;
-   bool enclosed(const char c = '\"') const;
+
+   bool enclosed(char left = '\"', char right = '\0') const;
+   h2_string unenclose(char left = '\"', char right = '\0') const;
 
    h2_string escape(bool utf8 = false) const;
    h2_string unescape() const;
-   h2_string unquote(const char c = '\"') const;
    h2_string trim() const;
    h2_string squash(bool quote = false) const;
    h2_string tolower() const;

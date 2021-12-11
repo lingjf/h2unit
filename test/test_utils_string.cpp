@@ -8,6 +8,11 @@ SUITE(utf8len)
       OK(1, h2::utf8len("ab"));
    }
 
+   Case(symbol)
+   {
+      OK(3, h2::utf8len("┊"));
+   }
+
    Case(Chinese)
    {
       OK(3, h2::utf8len("中"));
@@ -18,6 +23,12 @@ SUITE(utf8len)
    {
       OK(3, h2::utf8len("い"));
       OK(3, h2::utf8len("いち"));
+   }
+
+   Case(korea)
+   {
+      OK(3, h2::utf8len("귀"));
+      OK(3, h2::utf8len("귀하"));
    }
 }
 
@@ -113,7 +124,7 @@ CASE(h2_string convertable)
 
 SUITE(string)
 {
-   Case(width)
+   Case(width ascii)
    {
       h2::h2_string a0 = "";
       OK(0, a0.width());
@@ -121,16 +132,36 @@ SUITE(string)
       OK(1, a1.width());
       h2::h2_string a2 = "ab";
       OK(2, a2.width());
+   }
 
-      h2::h2_string C1 = "中";
-      OK(2, C1.width());
-      h2::h2_string C2 = "中国";
-      OK(4, C2.width());
+   Case(width symbol)
+   {
+      h2::h2_string a1 = "┊";
+      OK(2, a1.width());
+   }
 
-      h2::h2_string j1 = "い";
-      OK(2, j1.width());
-      h2::h2_string j2 = "いち";
-      OK(4, j2.width());
+   Case(width Chinese)
+   {
+      h2::h2_string a1 = "中";
+      OK(2, a1.width());
+      h2::h2_string a2 = "中国";
+      OK(4, a2.width());
+   }
+
+   Case(width japanese)
+   {
+      h2::h2_string a1 = "い";
+      OK(2, a1.width());
+      h2::h2_string a2 = "いち";
+      OK(4, a2.width());
+   }
+
+   Case(width korea)
+   {
+      h2::h2_string a1 = "귀";
+      OK(2, a1.width());
+      h2::h2_string a2 = "귀하";
+      OK(4, a2.width());
    }
 
    Case(equals)
@@ -218,14 +249,6 @@ SUITE(string)
       OK(!a.endswith("Hello  World"));
    }
 
-   Case(enclosed)
-   {
-      h2::h2_string a1 = "abc";
-      OK(!a1.enclosed('\"'));
-      h2::h2_string a2 = "\"abc\"";
-      OK(a2.enclosed('\"'));
-   }
-
    Case(escape)
    {
       h2::h2_string a1 = "a\rb\nc";
@@ -236,15 +259,6 @@ SUITE(string)
    {
       h2::h2_string a1 = "a\\rb\\nc";
       OK("a\rb\nc", a1.unescape());
-   }
-
-   Case(unquote)
-   {
-      h2::h2_string a1 = "abc";
-      OK("abc", a1.unquote());
-
-      h2::h2_string a2 = "\"abc\"";
-      OK("abc", a2.unquote());
    }
 
    Case(replace_all)
@@ -324,6 +338,84 @@ SUITE(string)
       t.append("\0world\0", 7);
       OK(Me("hello\0world\0", 12), t.data());
       OK(12, t.length());
+   }
+}
+
+SUITE(string enclosed)
+{
+   Case(none)
+   {
+      h2::h2_string a1 = "abc";
+      OK(!a1.enclosed('\"'));
+   }
+
+   Case(double quote)
+   {
+      h2::h2_string a1 = "\"abc\"";
+      OK(a1.enclosed('\"'));
+   }
+
+   Case(single quote)
+   {
+      h2::h2_string a1 = "\'abc\'";
+      OK(a1.enclosed('\''));
+   }
+
+   Case(parentheses)
+   {
+      h2::h2_string a1 = "(abc)";
+      OK(a1.enclosed('(', ')'));
+   }
+
+   Case(braces)
+   {
+      h2::h2_string a1 = "[abc]";
+      OK(a1.enclosed('[', ']'));
+   }
+
+   Case(brace parenthesis)
+   {
+      h2::h2_string a1 = "[abc)";
+      OK(a1.enclosed('[', ')'));
+   }
+}
+
+SUITE(string unenclose)
+{
+   Case(none)
+   {
+      h2::h2_string a1 = "abc";
+      OK("abc", a1.unenclose('\"'));
+   }
+
+   Case(double quote)
+   {
+      h2::h2_string a1 = "\"abc\"";
+      OK("abc", a1.unenclose('\"'));
+   }
+
+   Case(single quote)
+   {
+      h2::h2_string a1 = "\'abc\'";
+      OK("abc", a1.unenclose('\''));
+   }
+
+   Case(parentheses)
+   {
+      h2::h2_string a1 = "(abc)";
+      OK("abc", a1.unenclose('(', ')'));
+   }
+
+   Case(braces)
+   {
+      h2::h2_string a1 = "[abc]";
+      OK("abc", a1.unenclose('[', ']'));
+   }
+
+   Case(brace parenthesis)
+   {
+      h2::h2_string a1 = "[abc)";
+      OK("abc", a1.unenclose('[', ')'));
    }
 }
 

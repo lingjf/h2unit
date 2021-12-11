@@ -60,9 +60,16 @@ h2_inline bool h2_string::endswith(const h2_string& suffix, bool caseless) const
    return tolower().rfind(suffix.tolower()) == size() - suffix.size();
 }
 
-h2_inline bool h2_string::enclosed(const char c) const
+h2_inline bool h2_string::enclosed(char left, char right) const
 {
-   return front() == c && back() == c;
+   if (right == '\0') right = left;
+   return front() == left && back() == right;
+}
+
+h2_inline h2_string h2_string::unenclose(char left, char right) const
+{
+   if (!enclosed(left, right)) return *this;
+   return h2_string(size() - 2, c_str() + 1);
 }
 
 h2_inline h2_string h2_string::escape(bool utf8) const
@@ -92,12 +99,6 @@ h2_inline h2_string h2_string::unescape() const
    s.replace_all("\\\\", "\\");
    // todo: escape \u12ab
    return s;
-}
-
-h2_inline h2_string h2_string::unquote(const char c) const
-{
-   if (!enclosed(c)) return *this;
-   return h2_string(size() - 2, c_str() + 1);
 }
 
 h2_inline h2_string h2_string::trim() const
