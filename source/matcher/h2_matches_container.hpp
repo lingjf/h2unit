@@ -279,15 +279,15 @@ inline h2_polymorphic_matcher<h2_has2_matches<EK, EV>> Has(const MK& mk, const M
    return h2_polymorphic_matcher<h2_has2_matches<EK, EV>>(h2_has2_matches<EK, EV>(mk, mv));
 }
 
-template <typename MK, typename EK = typename h2_decay<MK>::type>
-inline h2_polymorphic_matcher<h2_has2_matches<EK, decltype(Any)>> HasKey(const MK& mk)
+template <typename MK, typename EK = typename h2_decay<MK>::type, typename EV = h2_polymorphic_matcher<h2_matches_any>>
+inline h2_polymorphic_matcher<h2_has2_matches<EK, EV>> HasKey(const MK& mk)
 {
-   return h2_polymorphic_matcher<h2_has2_matches<EK, decltype(Any)>>(h2_has2_matches<EK, decltype(Any)>(mk, Any, "HasKey"));
+   return h2_polymorphic_matcher<h2_has2_matches<EK, EV>>(h2_has2_matches<EK, EV>(mk, _, "HasKey"));
 }
-template <typename MV, typename EV = typename h2_decay<MV>::type>
-inline h2_polymorphic_matcher<h2_has2_matches<decltype(Any), EV>> HasValue(const MV& mv)
+template <typename MV, typename EV = typename h2_decay<MV>::type, typename EK = h2_polymorphic_matcher<h2_matches_any>>
+inline h2_polymorphic_matcher<h2_has2_matches<EK, EV>> HasValue(const MV& mv)
 {
-   return h2_polymorphic_matcher<h2_has2_matches<decltype(Any), EV>>(h2_has2_matches<decltype(Any), EV>(Any, mv, "HasValue"));
+   return h2_polymorphic_matcher<h2_has2_matches<EK, EV>>(h2_has2_matches<EK, EV>(_, mv, "HasValue"));
 }
 
 template <typename Matcher>

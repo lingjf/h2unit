@@ -8,9 +8,14 @@ SUITE(Any)
       OK(_, 0);
       OK(_(), 1);
       OK(_()(), 42);
-      OK(Any, 0);
       OK(Any(), 1);
       OK(Any()(), 42);
+   }
+
+   Case(Always fail)
+   {
+      // OK(!Any(), true);
+      // OK(!Any(), false);
    }
 
    Case(MOCK)

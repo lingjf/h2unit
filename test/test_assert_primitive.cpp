@@ -79,9 +79,9 @@ SUITE(OK Primitive)
    Case(Any)
    {
       OK(_, 1);
-      OK(Any, "A");
+      OK(Any(), "A");
       OK((_), "A");
-      OK((Any), "A");
+      OK((Any()), "A");
    }
 
    Case(Je)

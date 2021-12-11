@@ -95,7 +95,7 @@ SUITE(h2_is_polymorphic_matcher_pair_matches)
       OK((h2::h2_is_polymorphic_matcher_pair_matches<decltype(m1)>::value));
    }
 
-   Case(Any)
+   Case(_)
    {
       OK(!(h2::h2_is_polymorphic_matcher_pair_matches<decltype(_)>::value));
    }

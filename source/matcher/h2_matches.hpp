@@ -26,8 +26,15 @@ static inline h2_line ncsc(const h2_line& s, h2_mc c, const char* dsym = "!")
 
 struct h2_matches_any : h2_matches {
    template <typename A>
-   h2_fail* matches(const A& a, h2_mc c) const { return nullptr; }
-   virtual h2_line expection(h2_mc c) const override { return "Any"; }
+   h2_fail* matches(const A& a, h2_mc c) const
+   {
+      if (c.fit(true)) return nullptr;
+      return h2_fail::new_unexpect(expection(c), h2_stringify(a, true));
+   }
+   virtual h2_line expection(h2_mc c) const override
+   {
+      return c.negative ? "!Any" : "Any";
+   }
 };
 
 struct h2_matches_null : h2_matches {

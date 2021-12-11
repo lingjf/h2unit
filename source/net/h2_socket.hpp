@@ -11,7 +11,7 @@ struct h2_sock : h2_once {
    static void inject(const void* packet, size_t size, const char* attributes = "");  // from=1.2.3.4:5678, to=4.3.2.1:8765
 
    template <typename M1 = h2_polymorphic_matcher<h2_matches_any>, typename M2 = h2_polymorphic_matcher<h2_matches_any>, typename M3 = h2_polymorphic_matcher<h2_matches_any>, typename M4 = h2_polymorphic_matcher<h2_matches_any>>
-   static void check(const char* filine, const char* e, M1 from = Any, M2 to = Any, M3 payload = Any, M4 size = Any);
+   static void check(const char* filine, const char* e, M1 from = _, M2 to = _, M3 payload = _, M4 size = _);
 };
 
 #define __H2SOCK(Q) for (h2::h2_sock Q; Q;)

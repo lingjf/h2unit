@@ -1573,8 +1573,15 @@ static inline h2_line ncsc(const h2_line& s, h2_mc c, const char* dsym = "!")
 
 struct h2_matches_any : h2_matches {
    template <typename A>
-   h2_fail* matches(const A& a, h2_mc c) const { return nullptr; }
-   virtual h2_line expection(h2_mc c) const override { return "Any"; }
+   h2_fail* matches(const A& a, h2_mc c) const
+   {
+      if (c.fit(true)) return nullptr;
+      return h2_fail::new_unexpect(expection(c), h2_stringify(a, true));
+   }
+   virtual h2_line expection(h2_mc c) const override
+   {
+      return c.negative ? "!Any" : "Any";
+   }
 };
 
 struct h2_matches_null : h2_matches {
@@ -1720,7 +1727,11 @@ struct h2_is_polymorphic_matcher<T,
 };
 
 const h2_polymorphic_matcher<h2_matches_any> _{h2_matches_any()};
-const h2_polymorphic_matcher<h2_matches_any> Any{h2_matches_any()};
+
+static inline h2_polymorphic_matcher<h2_matches_any> Any()
+{
+   return h2_polymorphic_matcher<h2_matches_any>(h2_matches_any());
+}
 // source/matcher/h2_matches_equation.hpp
 template <typename E, typename = void>
 struct h2_equation : h2_matches {
@@ -2215,15 +2226,15 @@ inline h2_polymorphic_matcher<h2_has2_matches<EK, EV>> Has(const MK& mk, const M
    return h2_polymorphic_matcher<h2_has2_matches<EK, EV>>(h2_has2_matches<EK, EV>(mk, mv));
 }
 
-template <typename MK, typename EK = typename h2_decay<MK>::type>
-inline h2_polymorphic_matcher<h2_has2_matches<EK, decltype(Any)>> HasKey(const MK& mk)
+template <typename MK, typename EK = typename h2_decay<MK>::type, typename EV = h2_polymorphic_matcher<h2_matches_any>>
+inline h2_polymorphic_matcher<h2_has2_matches<EK, EV>> HasKey(const MK& mk)
 {
-   return h2_polymorphic_matcher<h2_has2_matches<EK, decltype(Any)>>(h2_has2_matches<EK, decltype(Any)>(mk, Any, "HasKey"));
+   return h2_polymorphic_matcher<h2_has2_matches<EK, EV>>(h2_has2_matches<EK, EV>(mk, _, "HasKey"));
 }
-template <typename MV, typename EV = typename h2_decay<MV>::type>
-inline h2_polymorphic_matcher<h2_has2_matches<decltype(Any), EV>> HasValue(const MV& mv)
+template <typename MV, typename EV = typename h2_decay<MV>::type, typename EK = h2_polymorphic_matcher<h2_matches_any>>
+inline h2_polymorphic_matcher<h2_has2_matches<EK, EV>> HasValue(const MV& mv)
 {
-   return h2_polymorphic_matcher<h2_has2_matches<decltype(Any), EV>>(h2_has2_matches<decltype(Any), EV>(Any, mv, "HasValue"));
+   return h2_polymorphic_matcher<h2_has2_matches<EK, EV>>(h2_has2_matches<EK, EV>(_, mv, "HasValue"));
 }
 
 template <typename Matcher>
@@ -2748,7 +2759,7 @@ template <typename M>
 inline h2_polymorphic_matcher<h2_pointee_matches<M>> Pointee(M m) { return h2_polymorphic_matcher<h2_pointee_matches<M>>(h2_pointee_matches<M>(m)); }
 // source/matcher/h2_matcher.cpp
 template <typename T>
-inline h2_matcher<T>::h2_matcher() { *this = Any; }
+inline h2_matcher<T>::h2_matcher() { *this = h2_polymorphic_matcher<h2_matches_any>(h2_matches_any()); }
 
 template <typename T>
 inline h2_matcher<T>::h2_matcher(T value) { *this = _Eq(value); }
@@ -3649,7 +3660,7 @@ struct h2_sock : h2_once {
    static void inject(const void* packet, size_t size, const char* attributes = "");  // from=1.2.3.4:5678, to=4.3.2.1:8765
 
    template <typename M1 = h2_polymorphic_matcher<h2_matches_any>, typename M2 = h2_polymorphic_matcher<h2_matches_any>, typename M3 = h2_polymorphic_matcher<h2_matches_any>, typename M4 = h2_polymorphic_matcher<h2_matches_any>>
-   static void check(const char* filine, const char* e, M1 from = Any, M2 to = Any, M3 payload = Any, M4 size = Any);
+   static void check(const char* filine, const char* e, M1 from = _, M2 to = _, M3 payload = _, M4 size = _);
 };
 
 #define __H2SOCK(Q) for (h2::h2_sock Q; Q;)
