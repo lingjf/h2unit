@@ -54,7 +54,15 @@ SUITE(stdio)
       }
    }
 
-#if !(defined __CYGWIN__ || defined __MINGW32__ || defined __MINGW64__) // TODO: exempt memory leak in these platforms
+   Todo(std::wcout)
+   {
+      COUT("std::wcout! 42")
+      {
+         std::wcout << "std::wcout! " << 42;
+      }
+   }
+
+#if !(defined __CYGWIN__ || defined __MINGW32__ || defined __MINGW64__)  // TODO: exempt memory leak in these platforms
    Case(std::cerr)
    {
       COUT("std::cerr! 42")

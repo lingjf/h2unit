@@ -18,9 +18,17 @@ CASE(__cplusplus)
    // g++ -x c++ -std=c++2b -dM -E - </dev/null | grep __cplusplus
    // #define __cplusplus 202102L
 
-   // https://docs.microsoft.com/en-us/cpp/preprocessor/predefined-macros
    ::printf("__cplusplus = %s\n", H2PP_STR(__cplusplus));
 #if defined _MSC_VER
+   // __cplusplus always 199711L.
+   // _MSVC_LANG specifies the C++ language standard targeted by the compiler.
+   // The macro is the integer literal value 201402L by default,
+   // or when the /std:c++14 compiler option is specified.
+   // The macro is set to 201703L if the /std:c++17 compiler option is specified.
+   // The macro is set to 202002L if the /std:c++20 compiler option is specified.
+   // It's set to a higher, unspecified value when the /std:c++latest option is specified.
+   // Otherwise, the macro is undefined.
+   // https://docs.microsoft.com/en-us/cpp/preprocessor/predefined-macros
    ::printf("__cplusplus = %s\n", H2PP_STR(_MSVC_LANG));
 #endif
 }

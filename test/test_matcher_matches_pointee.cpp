@@ -56,14 +56,20 @@ SUITE(Pointee)
       OK(Pointee("String"), a3);
    }
 
-   Case(smart pointer)
+   Case(shared_ptr)
    {
       auto a1 = std::make_shared<int>(42);
       OK(Pointee(42), a1);
+   }
 
+   Case(unique_ptr)
+   {
       std::unique_ptr<int> a2(new int(42));
       OK(Pointee(42), a2);
+   }
 
+   Case(weak_ptr)
+   {
       // std::weak_ptr<int> a3(std::make_shared<int>(42));
       // OK(Pointee(42), a3);
    }

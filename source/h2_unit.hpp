@@ -315,7 +315,8 @@ using h2::HasKey;
 using h2::HasValue;
 using h2::Pair;
 
-#ifdef __cplusplus
+#if defined __cplusplus && !defined H2_NO_Redefine_private
+// clang11 bug, not works option: -fno-access-control -fno-no-access-control
 #define private public
 #define protected public
 #endif

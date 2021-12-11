@@ -32,7 +32,22 @@ If product code already defined SUITE Case..., define H2_NO_SUITE and using H2SU
 
 ## private member method accessibility
 
-In order to STUB/MOCK class private member function successfully, `private` `protected` token is substituted with `public` using MACRO definition by default if `h2unit.h/hpp`.
+In order to access/STUB/MOCK class private member function successfully.
+https://stackoverflow.com/questions/860923/unit-testing-with-fno-access-control
+
+### solution 1: substituted by MACRO
+
+`private` `protected` token is substituted with `public` using MACRO definition by default in `h2unit.h/hpp`.
+
+H2_NO_Redefine_private is used to disable above substitution.
+
+`private` `protected` substituted with `public` conflict with c++17 include <any>
+
+### solution 2: compiler option
+
+`-fno-access-control` GCC/clang compiler option.
+
+clang 11 on linux platform has a bug, `-fno-access-control` `-fno-no-access-control` not works.
 
 ## static function accessibility
 static function is unaccessible outside of source file. In order to STUB/MOCK such function successfully, there are two solutions:

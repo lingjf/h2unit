@@ -552,7 +552,7 @@ jobs:
       - name: ✨ run test with memory check
         run: LD_BIND_NOW=1 ./ci_test/a.out -swpvqo
 
-  cpp-linux:
+  cpp-gcc-linux:
     runs-on: ubuntu-latest
     env:
       CC: gcc-11
@@ -560,7 +560,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        cpp: [14, 17, 20, 23]
+        cpp: [11, 14, 17, 20, 23]
     name: c++${{matrix.cpp}}-gcc-linux
     steps:
       - uses: actions/checkout@v2
@@ -584,13 +584,38 @@ jobs:
       - name: ✨ run test
         run: ./ci_test/a.out -swpvqo -e pthread
 
-  cpp-macos:
+  cpp-clang-linux:
+    runs-on: ubuntu-latest
+    env:
+      CC: clang-12
+      CXX: clang++-12
+    strategy:
+      fail-fast: false
+      matrix:
+        cpp: [11, 14, 17, 20, 23]
+    name: c++${{matrix.cpp}}-clang-linux
+    steps:
+      - uses: actions/checkout@v2
+      - name: configure print
+        run: cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_STANDARD=${{matrix.cpp}} -B ci_print print
+      - name: build print
+        run: cmake --build ci_print --config Release
+      - name: 🔨 run print
+        run: LD_BIND_NOW=1 ./ci_print/a.out -e 'new[] free'
+      - name: configure test
+        run: cmake -DCMAKE_VERBOSE_MAKEFILE=ON -DCMAKE_CXX_STANDARD=${{matrix.cpp}} -B ci_test test
+      - name: 🏗️ build test
+        run: cmake --build ci_test -j2
+      - name: ✨ run test
+        run: LD_BIND_NOW=1 ./ci_test/a.out -swpvqo -e pthread
+
+  cpp-xcode-macos:
     runs-on: macos-11
     strategy:
       fail-fast: false
       matrix:
-        cpp: [14, 17, 20, 23]
-    name: c++${{matrix.cpp}}-clang-macos
+        cpp: [11, 14, 17, 20, 23]
+    name: c++${{matrix.cpp}}-xcode-macos
     steps:
       - uses: actions/checkout@v2
       - uses: maxim-lobanov/setup-xcode@v1
@@ -609,12 +634,12 @@ jobs:
       - name: ✨ run test
         run: ./ci_test/a.out -swpvqo -e pthread
 
-  cpp-windows:
+  cpp-msvc-windows:
     runs-on: windows-latest
     strategy:
       fail-fast: false
       matrix:
-        cpp: [14, 17, 20, 23]
+        cpp: [11, 14, 17, 20, 23]
     name: c++${{matrix.cpp}}-msvc-windows
     steps:
       - uses: actions/checkout@v2

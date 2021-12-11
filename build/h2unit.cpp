@@ -2847,8 +2847,10 @@ struct h2_piece : h2_libc {
    h2_fail* check_asymmetric_free(const char* who_release)
    {
       if (h2_in(who_allocate, 5, "malloc", "calloc", "realloc", "posix_memalign", "aligned_alloc") && h2_in(who_release, 1, "free")) return nullptr;
-      if (h2_in(who_allocate, 2, "new", "new nothrow") && h2_in(who_release, 2, "delete", "delete nothrow")) return nullptr;
-      if (h2_in(who_allocate, 2, "new[]", "new[] nothrow") && h2_in(who_release, 2, "delete[]", "delete[] nothrow")) return nullptr;
+      // if (h2_in(who_allocate, 2, "new", "new nothrow") && h2_in(who_release, 2, "delete", "delete nothrow")) return nullptr;
+      // if (h2_in(who_allocate, 2, "new[]", "new[] nothrow") && h2_in(who_release, 2, "delete[]", "delete[] nothrow")) return nullptr;
+      // some compiler new but delete[]
+      if (h2_in(who_allocate, 4, "new", "new nothrow", "new[]", "new[] nothrow") && h2_in(who_release, 4, "delete", "delete nothrow", "delete[]", "delete[] nothrow")) return nullptr;
 
       if (bt_allocate.in(h2_exempt::I().fps)) return nullptr;
       return h2_fail::new_asymmetric_free(user_ptr, who_allocate, who_release, bt_allocate, bt_release);

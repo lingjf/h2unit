@@ -102,8 +102,8 @@
     <ClCompile Include="test_symbol_cxa.cpp" />
     <ClCompile Include="test_symbol_load.cpp" />
     <ClCompile Include="test_symbol_nm.cpp" />
-    <ClCompile Include="test_syntax.cpp" />
-    <ClCompile Include="test_syntax_dup.cpp" />
+    <ClCompile Include="test_syntax_dup1.cpp" />
+    <ClCompile Include="test_syntax_dup2.cpp" />
     <ClCompile Include="test_types.cpp" />
     <ClCompile Include="test_utils_allocate.cpp" />
     <ClCompile Include="test_utils_color.cpp" />

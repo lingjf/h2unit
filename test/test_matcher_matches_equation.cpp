@@ -1,5 +1,6 @@
 #include "../source/h2_unit.cpp"
 #include <limits>
+#include <atomic>
 
 SUITE(equation matches)
 {
@@ -98,4 +99,15 @@ SUITE(approximate float)
       OK(Eq(100.0, 5 %), 98);
       OK(Eq(100.0, 5 %), 95);
    }
+}
+
+CASE(atomic)
+{
+   std::atomic<int> a1(0);
+   a1++;
+   --a1;
+   a1 += 1;
+   a1 -= 1;
+
+   OK(0, (int)a1);
 }

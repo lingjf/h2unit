@@ -55,6 +55,30 @@ SUITE(list)
       }
    }
 
+   Case(add_before)
+   {
+      root.add_before(h1.link);
+      root.add_before(h2.link);
+      root.add_before(h3.link);
+
+      h2_list_for_each_entry (p, i, root, list_host, link) {
+         OK(e123[i], p->a);
+      }
+   }
+
+   Case(add_after)
+   {
+      root.add_after(h1.link);
+      root.add_after(h2.link);
+      root.add_after(h3.link);
+
+      int i = 0;
+      h2_list_for_each_entry (p, root, list_host, link) {
+         OK(e321[i], p->a);
+         i++;
+      }
+   }
+
    Case(push and pop)
    {
       root.push(h1.link);
@@ -105,6 +129,12 @@ SUITE(list)
       }
    }
 
+   Case(count)
+   {
+      OK(3, root123.count());
+      OK(0, root.count());
+   }
+
    Case(reverse)
    {
       int i = 0;
@@ -112,6 +142,32 @@ SUITE(list)
          OK(e321[i], p->a);
          ++i;
       }
+   }
+
+   Case(pop entry)
+   {
+      root.push(h1.link);
+      root.push(h2.link);
+      root.push(h3.link);
+
+      list_host* a1 = h2_list_pop_entry(root, list_host, link);
+      OK((a1 == &h3));
+      list_host* a2 = h2_list_pop_entry(root, list_host, link);
+      OK((a2 == &h2));
+      list_host* a3 = h2_list_pop_entry(root, list_host, link);
+      OK((a3 == &h1));
+   }
+
+   Case(top entry and bottom entry)
+   {
+      root.push(h1.link);
+      root.push(h2.link);
+      root.push(h3.link);
+
+      list_host* a1 = h2_list_top_entry(root, list_host, link);
+      OK((a1 == &h3));
+      list_host* a3 = h2_list_bottom_entry(root, list_host, link);
+      OK((a3 == &h1));
    }
 }
 
