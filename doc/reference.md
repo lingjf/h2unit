@@ -386,6 +386,7 @@ CASE(case name)
 *    [`Le`](../source/h2_unit.hpp#L321)(expect) : matches if value <= expect 
 *    [`Lt`](../source/h2_unit.hpp#L321)(expect) : matches if value < expect 
 *    [`Me`](../source/h2_unit.hpp#L321)(buffer, [length], [width]) : matches if memory is same 
+*    [`Range`](../source/h2_unit.hpp#L321)([start,] end [, step]) : matches if value in range like python range style  
 *    [`Re`](../source/h2_unit.hpp#L321)(expect) : matches if value Regex equals expect 
 *    [`We`](../source/h2_unit.hpp#L321)(expect) : matches if value Wildcard equals expect 
 *    [`Je`](../source/h2_unit.hpp#L321)(expect) : matches if value JSON equals expect 
@@ -406,10 +407,10 @@ CASE(case name)
 *    [`Has`](../source/h2_unit.hpp#L321)(expect...) : matches if there are items in container(vector, set, map, ...) match every inner matcher
 *    [`CountOf`](../source/h2_unit.hpp#L321)(expect) : matches if container(array, vector, ...) item count matches inner matcher
 *    [`AvgOf`](../source/h2_unit.hpp#L321)(expect) : matches if average of items in container(vector, set, ...) match every inner matcher
-*    [`MaxOf`](../source/h2_unit.hpp#L321)(expect) : matches if maximum of items in container(vector, set, ...) match every inner matcher
-*    [`MinOf`](../source/h2_unit.hpp#L321)(expect) : matches if minimum of items in container(vector, set, ...) match every inner matcher
-*    [`MedianOf`](../source/h2_unit.hpp#L321)(expect) : matches if median of items in container(vector, set, ...) match every inner matcher
-*    [`MeanOf`](../source/h2_unit.hpp#L321)(expect) : matches if mean of items in container(vector, set, ...) match every inner matcher
+*    [`MaxOf`](../source/h2_unit.hpp#L321)(expect) : statistics matches if maximum of items in container(vector, set, ...) match every inner matcher
+*    [`MinOf`](../source/h2_unit.hpp#L321)(expect) : statistics matches if minimum of items in container(vector, set, ...) match every inner matcher
+*    [`MedianOf`](../source/h2_unit.hpp#L321)(expect) : statistics matches if median of items in container(vector, set, ...) match every inner matcher
+*    [`MeanOf`](../source/h2_unit.hpp#L321)(expect) : statistics matches if mean of items in container(vector, set, ...) match every inner matcher
 
 
 Matcher can be used in OK(expect, actual), for example:
@@ -469,6 +470,47 @@ CASE(has element in map)
    OK(HasValue(2), a);
 }
 ```
+
+### Statistics matcher
+
+```C++
+CASE(Statistics)
+{
+   int a1[] = {1, 2, 3};
+
+   OK(MaxOf(3), a1);
+   OK(MinOf(1), a1);
+   OK(AvgOf(2), a1);
+   OK(MeanOf(2), a1);
+   OK(MedianOf(2), a1);
+}
+```
+
+Following is sepecified actual array size, typically used in MOCK.
+
+```C++
+
+
+static int a_function(int a[])
+{
+   ...
+}
+
+CASE(Statistics)
+{
+   int a1[] = {1, 2, 3};
+
+   OK(MaxOf<3>(3), a1);
+   OK(MinOf<3>(1), a1);
+   OK(AvgOf<3>(2), a1);
+   OK(MeanOf<3>(2), a1);
+   OK(MedianOf<3>(2), a1);
+
+   MOCK(a_function, int(int*)).Once(MaxOf<3>(2)).Return(1);
+   OK(1, a_function(a1));
+}
+```
+
 
 ### Memory compare matcher (`Me`)
 Expection is described by buffer, length and width.
@@ -1183,4 +1225,3 @@ Case(check throw type a_exception and matcher string equal)
    ./a.out
    gcovr -r . -e 'test_*' --html --html-details -o coverage.html
 ```
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            

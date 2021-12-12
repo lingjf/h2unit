@@ -82,6 +82,7 @@ namespace h2 {
 #include "matcher/h2_matches_memcmp.hpp"      // matches, matcher, failure
 #include "matcher/h2_matches_strcmp.hpp"      // matches, matcher, failure
 #include "matcher/h2_matches_pointee.hpp"     // matches, matcher, failure
+#include "matcher/h2_matches_range.hpp"       // matches, matcher, failure
 #include "matcher/h2_matcher.cpp"             //!matches, matcher, equation
 #include "matcher/h2_matcher_customize.hpp"   // matches, matcher, failure
 #include "stub/h2_fp.hpp"                     // nm, load
@@ -298,6 +299,7 @@ using h2::Lt;
 #ifndef H2_NO_Me
 #define Me H2Me
 #endif
+using h2::Range;
 using h2::Re;
 using h2::We;
 using h2::Je;
