@@ -329,6 +329,8 @@ using h2::HasValue;
 using h2::Pair;
 using h2::nothrow;
 
+#include "matcher/h2_matcher_aux.hpp"
+
 #if defined __cplusplus && !defined H2_NO_Redefine_private
 // clang11 bug, not works option: -fno-access-control -fno-no-access-control
 #define private public

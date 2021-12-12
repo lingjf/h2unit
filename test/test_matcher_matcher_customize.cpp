@@ -1,34 +1,34 @@
 #include "../source/h2_unit.cpp"
 
-H2MATCHER(IsEven, ("is not Even"))
+H2MATCHER(Is_Even, ("is not Even"))
 {
    return a % 2 == 0;
 }
-H2MATCHER(IsEven2)
+H2MATCHER(Is_Even2)
 {
    return a % 2 == 0;
 }
-H2MATCHER(IsEven3, (""))
+H2MATCHER(Is_Even3, (""))
 {
    return a % 2 == 0;
 }
 
-H2MATCHER(Divable, expect, ("not divable"))
+H2MATCHER(Is_Divable, expect, ("not divable"))
 {
    return a % expect == 0;
 }
 
-H2MATCHER(Divable2, expect)
+H2MATCHER(Is_Divable2, expect)
 {
    return a % expect == 0;
 }
 
-H2MATCHER(Between, left, right, (a << " not in [" << left << ", " << right << "]"))
+H2MATCHER(Is_Between, left, right, (a << " not in [" << left << ", " << right << "]"))
 {
    return left <= a && a <= right;
 }
 
-H2MATCHER(InRange, start, stop, step, ("not in range"))
+H2MATCHER(In_Range, start, stop, step, ("not in range"))
 {
    for (int i = start; i < stop; i += step)
       if (i == a)
@@ -36,61 +36,61 @@ H2MATCHER(InRange, start, stop, step, ("not in range"))
    return false;
 }
 
-H2MATCHER(InRect, left, top, right, bottom, ("not in rect"))
+H2MATCHER(In_Rect, left, top, right, bottom, ("not in rect"))
 {
    return true;
 }
 
-H2MATCHER(InProtocol, ip1, port1, ip2, port2, proto, ("not in proto"))
+H2MATCHER(In_Protocol, ip1, port1, ip2, port2, proto, ("not in proto"))
 {
    return true;
 }
 
 SUITE(User Defined Matcher)
 {
-   Case(IsEven)
+   Case(Is_Even)
    {
-      OK(IsEven(), 2);
-      OK(IsEven2(), 2);
-      OK(IsEven3(), 2);
-      OK(!IsEven(), 1);
-      OK(!IsEven2(), 1);
-      OK(!IsEven3(), 1);
-      OK(IsEven(), 4);
-      OK(IsEven2(), 4);
-      OK(IsEven3(), 4);
-      OK(!IsEven(), 5);
-      OK(!IsEven2(), 5);
-      OK(!IsEven3(), 5);
+      OK(Is_Even(), 2);
+      OK(Is_Even2(), 2);
+      OK(Is_Even3(), 2);
+      OK(!Is_Even(), 1);
+      OK(!Is_Even2(), 1);
+      OK(!Is_Even3(), 1);
+      OK(Is_Even(), 4);
+      OK(Is_Even2(), 4);
+      OK(Is_Even3(), 4);
+      OK(!Is_Even(), 5);
+      OK(!Is_Even2(), 5);
+      OK(!Is_Even3(), 5);
    }
 
-   Case(Divable)
+   Case(Is_Divable)
    {
-      OK(Divable(3), 6);
-      OK(Divable2(3), 6);
-      OK(!Divable(3), 7);
-      OK(!Divable2(3), 7);
+      OK(Is_Divable(3), 6);
+      OK(Is_Divable2(3), 6);
+      OK(!Is_Divable(3), 7);
+      OK(!Is_Divable2(3), 7);
    }
 
-   Case(Between)
+   Case(Is_Between)
    {
-      OK(Between(1, 4), 2);
-      OK(!Between(1, 4), 5);
+      OK(Is_Between(1, 4), 2);
+      OK(!Is_Between(1, 4), 5);
    }
 
-   Case(InRange)
+   Case(In_Range)
    {
-      OK(InRange(1, 10, 2), 5);
-      OK(!InRange(1, 10, 2), 6);
+      OK(In_Range(1, 10, 2), 5);
+      OK(!In_Range(1, 10, 2), 6);
    }
 
-   Case(InRect)
+   Case(In_Rect)
    {
-      OK(InRect(1, 10, 2, 7), 0);
+      OK(In_Rect(1, 10, 2, 7), 0);
    }
 
-   Case(InProtocol)
+   Case(In_Protocol)
    {
-      OK(InProtocol(1, 10, 2, 7, 9), 0);
+      OK(In_Protocol(1, 10, 2, 7, 9), 0);
    }
 }
