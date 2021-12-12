@@ -97,6 +97,9 @@ struct h2_stringify_impl<T, typename std::enable_if<h2_is_container<T>::value>::
    static h2_line print(const T& a, bool represent = false)
    {
       h2_line line;
+      int count = 0;  // too large too print
+      for (auto it = a.begin(); it != a.end(); ++it)
+         if (++count > 100) return gray("[") + "..." + gray("]");
       for (auto it = a.begin(); it != a.end(); ++it)
          line += gray(comma_if(it != a.begin())) + h2_stringify_impl<typename T::value_type>::print(*it, represent);
       return gray("[") + line + gray("]");
@@ -196,13 +199,4 @@ template <typename T>
 inline h2_line h2_stringify(const T& a, bool represent = false)
 {
    return h2_stringify_impl<T>::print(a, represent);
-}
-template <typename T>
-inline h2_line h2_stringify(T a, size_t n, bool represent)
-{
-   if (n == 0) return h2_stringify(a, represent);
-   h2_line line;
-   for (size_t i = 0; i < n; ++i)
-      line += gray(comma_if(i)) + h2_stringify(a[i], represent);
-   return gray("[") + line + gray("]");
 }

@@ -106,6 +106,7 @@
     <ClCompile Include="test_syntax_dup2.cpp" />
     <ClCompile Include="test_types.cpp" />
     <ClCompile Include="test_utils_allocate.cpp" />
+    <ClCompile Include="test_utils_array.cpp" />
     <ClCompile Include="test_utils_color.cpp" />
     <ClCompile Include="test_utils_diff.cpp" />
     <ClCompile Include="test_utils_libc.cpp" />

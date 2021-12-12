@@ -1074,11 +1074,13 @@ SUITE(stringify Container adaptors)
    }
 }
 
-SUITE(array with count)
+SUITE(h2_array)
 {
-   Case(int)
+   int b[] = {1, 2, 3};
+
+   Case(3)
    {
-      int a1[] = {1, 2, 3};
+      h2::h2_array<int> a1(b, 3);
       OK(ListOf("\033{+dark gray}", "[", "\033{-dark gray}",
                 "1",
                 "\033{+dark gray}", ", ", "\033{-dark gray}",
@@ -1086,37 +1088,33 @@ SUITE(array with count)
                 "\033{+dark gray}", ", ", "\033{-dark gray}",
                 "3",
                 "\033{+dark gray}", "]", "\033{-dark gray}"),
-         h2::h2_stringify(a1, 3, false));
+         h2::h2_stringify(a1));
+
+      OK(ListOf("\033{+dark gray}", "[", "\033{-dark gray}",
+                "1",
+                "\033{+dark gray}", ", ", "\033{-dark gray}",
+                "2",
+                "\033{+dark gray}", ", ", "\033{-dark gray}",
+                "3",
+                "\033{+dark gray}", "]", "\033{-dark gray}"),
+         h2::h2_stringify(a1, true));
+
+      OK("[1, 2, 3]", h2::h2_stringify(a1).string());
    }
 
-   Case(valarray)
+   Case(0)
    {
-      std::valarray<std::string> a1(3);
-      a1[0] = "1";
-      a1[1] = "2";
-      a1[2] = "3";
+      h2::h2_array<int> a1(b, 0);
+      OK(ListOf("\033{+dark gray}", "[", "\033{-dark gray}",
+
+                "\033{+dark gray}", "]", "\033{-dark gray}"),
+         h2::h2_stringify(a1));
 
       OK(ListOf("\033{+dark gray}", "[", "\033{-dark gray}",
-                "1",
-                "\033{+dark gray}", ", ", "\033{-dark gray}",
-                "2",
-                "\033{+dark gray}", ", ", "\033{-dark gray}",
-                "3",
+
                 "\033{+dark gray}", "]", "\033{-dark gray}"),
-         h2::h2_stringify(a1, 3, false));
-      OK(ListOf("\033{+dark gray}", "[", "\033{-dark gray}",
-                "\033{+dark gray}", "\"", "\033{-dark gray}",
-                "1",
-                "\033{+dark gray}", "\"", "\033{-dark gray}",
-                "\033{+dark gray}", ", ", "\033{-dark gray}",
-                "\033{+dark gray}", "\"", "\033{-dark gray}",
-                "2",
-                "\033{+dark gray}", "\"", "\033{-dark gray}",
-                "\033{+dark gray}", ", ", "\033{-dark gray}",
-                "\033{+dark gray}", "\"", "\033{-dark gray}",
-                "3",
-                "\033{+dark gray}", "\"", "\033{-dark gray}",
-                "\033{+dark gray}", "]", "\033{-dark gray}"),
-         h2::h2_stringify(a1, 3, true));
+         h2::h2_stringify(a1, true));
+
+      OK("[]", h2::h2_stringify(a1).string());
    }
 }

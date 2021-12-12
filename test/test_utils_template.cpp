@@ -475,52 +475,63 @@ SUITE(is_container_adaptor)
    }
 }
 
+template <typename T, typename = void>
+struct h2_is_sizable : std::false_type {
+};
+
+template <typename T>
+struct h2_is_sizable<T,
+                     typename std::conditional<false,
+                                               h2::h2_valid_t<decltype(std::declval<T>().size())>,
+                                               void>::type> : public std::true_type {
+};
+
 SUITE(sizable)
 {
    Case(Fundamental types)
    {
-      OK(!(h2::h2_is_sizable<int>::value));
+      OK(!(h2_is_sizable<int>::value));
    }
 
    Case(Sequence containers)
    {
-      OK((h2::h2_is_sizable<std::array<int, 8>>::value));
-      OK((h2::h2_is_sizable<std::vector<int>>::value));
-      OK((h2::h2_is_sizable<std::deque<int>>::value));
-      OK((h2::h2_is_sizable<std::list<int>>::value));
-      OK(!(h2::h2_is_sizable<std::forward_list<int>>::value));
+      OK((h2_is_sizable<std::array<int, 8>>::value));
+      OK((h2_is_sizable<std::vector<int>>::value));
+      OK((h2_is_sizable<std::deque<int>>::value));
+      OK((h2_is_sizable<std::list<int>>::value));
+      OK(!(h2_is_sizable<std::forward_list<int>>::value));
 
-      OK((h2::h2_is_sizable<h2::h2_vector<int>>::value));
+      OK((h2_is_sizable<h2::h2_vector<int>>::value));
    }
 
    Case(Associative containers)
    {
-      OK((h2::h2_is_sizable<std::set<int>>::value));
-      OK((h2::h2_is_sizable<std::multiset<int>>::value));
-      OK((h2::h2_is_sizable<std::unordered_set<int>>::value));
-      OK((h2::h2_is_sizable<std::unordered_multiset<int>>::value));
-      OK((h2::h2_is_sizable<std::map<int, int>>::value));
-      OK((h2::h2_is_sizable<std::multimap<int, int>>::value));
-      OK((h2::h2_is_sizable<std::unordered_map<int, int>>::value));
-      OK((h2::h2_is_sizable<std::unordered_multimap<int, int>>::value));
+      OK((h2_is_sizable<std::set<int>>::value));
+      OK((h2_is_sizable<std::multiset<int>>::value));
+      OK((h2_is_sizable<std::unordered_set<int>>::value));
+      OK((h2_is_sizable<std::unordered_multiset<int>>::value));
+      OK((h2_is_sizable<std::map<int, int>>::value));
+      OK((h2_is_sizable<std::multimap<int, int>>::value));
+      OK((h2_is_sizable<std::unordered_map<int, int>>::value));
+      OK((h2_is_sizable<std::unordered_multimap<int, int>>::value));
    }
 
    Case(valarray)
    {
-      OK((h2::h2_is_sizable<std::valarray<int>>::value));
+      OK((h2_is_sizable<std::valarray<int>>::value));
    }
 
    Case(string)
    {
-      OK((h2::h2_is_sizable<std::string>::value));
-      OK((h2::h2_is_sizable<h2::h2_string>::value));
+      OK((h2_is_sizable<std::string>::value));
+      OK((h2_is_sizable<h2::h2_string>::value));
    }
 
    Case(Container adaptors)
    {
-      OK((h2::h2_is_sizable<std::stack<int>>::value));
-      OK((h2::h2_is_sizable<std::queue<int>>::value));
-      OK((h2::h2_is_sizable<std::priority_queue<int>>::value));
+      OK((h2_is_sizable<std::stack<int>>::value));
+      OK((h2_is_sizable<std::queue<int>>::value));
+      OK((h2_is_sizable<std::priority_queue<int>>::value));
    }
 }
 

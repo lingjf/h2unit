@@ -13,14 +13,14 @@ static inline h2_ostringstream& h2_je(h2_assert* d, h2_string e, h2_string a, h2
 }
 
 template <typename E, typename A>
-static inline h2_ostringstream& h2_ok2(h2_assert* d, E e, const A& a, size_t n, std::false_type, size_t z)
+static inline h2_ostringstream& h2_ok2(h2_assert* d, E e, const A& a, int n, std::false_type, int z)
 {
    h2_fail* fail = h2::h2_matcher_cast<typename h2_decay<A>::type>((typename h2_decay<E>::type)e).matches(a, {n});
    return d->stash(fail, "OK2");
 }
 
 template <typename E, typename A>
-static inline h2_ostringstream& h2_ok2(h2_assert* d, E e, const A a, size_t n, std::true_type, size_t z)
+static inline h2_ostringstream& h2_ok2(h2_assert* d, E e, const A a, int n, std::true_type, int z)
 {
    h2_fail* fail = h2::h2_matcher_cast<typename h2_decay<A>::type>((typename h2_decay<E>::type)e).matches((typename h2_decay<A>::type)a, {n > 0 ? n : z});
    return d->stash(fail, "OK2");

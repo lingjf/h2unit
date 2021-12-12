@@ -302,12 +302,14 @@ SUITE(Has primitive [api])
       int a1[] = {1, 2, 3};
       OK(Has(1), a1, 3);
       OK(Has(1), a1);
+      OK(Has<3>(1), a1);
       OK(Has(2), a1, 3);
       OK(Has(2), a1);
       OK(Has(3), a1, 3);
       OK(Has(3), a1);
       OK(!Has(4), a1, 3);
       OK(!Has(4), a1);
+      OK(!Has<3>(4), a1);
    }
 
    Case(Sequence containers / array / static contiguous array)
@@ -681,6 +683,450 @@ SUITE(CountOf primitive [api])
 
       h2::h2_string a2 = "abc";
       OK(CountOf(3), a2);
+   }
+}
+
+SUITE(MaxOf MinOf AvgOf MeanOf MedianOf primitive [api])
+{
+   Case(native array)
+   {
+      int a1[] = {1, 2, 3};
+      OK(MaxOf(3), a1);
+      OK(MinOf(1), a1);
+      OK(AvgOf(2), a1);
+      OK(MeanOf(2), a1);
+      OK(MedianOf(2), a1);
+
+      OK(MaxOf<3>(3), a1);
+      OK(MinOf<3>(1), a1);
+      OK(AvgOf<3>(2), a1);
+      OK(MeanOf<3>(2), a1);
+      OK(MedianOf<3>(2), a1);
+   }
+
+   Case(Sequence containers / array / static contiguous array)
+   {
+      std::array<int, 3> a1 = {1, 2, 3};
+      OK(MaxOf(3), a1);
+      OK(MaxOf(Gt(2) && Lt(4)), a1);
+      OK(MinOf(1), a1);
+      OK(MinOf(Gt(0) && Lt(2)), a1);
+      OK(AvgOf(2), a1);
+      OK(MeanOf(2), a1);
+      OK(MedianOf(2), a1);
+   }
+
+   Case(Sequence containers / vector / dynamic contiguous array)
+   {
+      std::vector<int> a0;
+      OK(!MaxOf(0), a0);
+      OK(!MinOf(0), a0);
+      OK(!AvgOf(0), a0);
+      OK(!MeanOf(0), a0);
+      OK(!MedianOf(0), a0);
+
+      std::vector<int> a1 = {1, 2, 3};
+      OK(MaxOf(3), a1);
+      OK(MinOf(1), a1);
+      OK(AvgOf(2), a1);
+      OK(MeanOf(2), a1);
+      OK(MedianOf(2), a1);
+   }
+
+   Case(Sequence containers / deque / double-ended queue)
+   {
+      std::deque<int> a0;
+      OK(!MaxOf(0), a0);
+      OK(!MinOf(0), a0);
+      OK(!AvgOf(0), a0);
+      OK(!MeanOf(0), a0);
+      OK(!MedianOf(0), a0);
+
+      std::deque<int> a1 = {1, 2, 3};
+      OK(MaxOf(3), a1);
+      OK(MinOf(1), a1);
+      OK(AvgOf(2), a1);
+      OK(MeanOf(2), a1);
+      OK(MedianOf(2), a1);
+   }
+
+   Case(Sequence containers / forward_list / singly-linked list)
+   {
+      std::forward_list<int> a0;
+      OK(!MaxOf(0), a0);
+      OK(!MinOf(0), a0);
+      OK(!AvgOf(0), a0);
+      OK(!MeanOf(0), a0);
+      OK(!MedianOf(0), a0);
+
+      std::forward_list<int> a1 = {1, 2, 3};
+      OK(MaxOf(3), a1);
+      OK(MinOf(1), a1);
+      OK(AvgOf(2), a1);
+      OK(MeanOf(2), a1);
+      OK(MedianOf(2), a1);
+   }
+
+   Case(Sequence containers / list / doubly-linked list)
+   {
+      std::list<int> a0;
+      OK(!MaxOf(0), a0);
+      OK(!MinOf(0), a0);
+      OK(!AvgOf(0), a0);
+      OK(!MeanOf(0), a0);
+      OK(!MedianOf(0), a0);
+
+      std::list<int> a1 = {1, 2, 3};
+      OK(MaxOf(3), a1);
+      OK(MinOf(1), a1);
+      OK(AvgOf(2), a1);
+      OK(MeanOf(2), a1);
+      OK(MedianOf(2), a1);
+   }
+
+   Case(Associative containers / set)
+   {
+      std::set<int> a0;
+      OK(!MaxOf(0), a0);
+      OK(!MinOf(0), a0);
+      OK(!AvgOf(0), a0);
+      OK(!MeanOf(0), a0);
+      OK(!MedianOf(0), a0);
+
+      std::set<int> a1 = {1, 2, 3};
+      OK(MaxOf(3), a1);
+      OK(MinOf(1), a1);
+      OK(AvgOf(2), a1);
+      OK(MeanOf(2), a1);
+      OK(MedianOf(2), a1);
+   }
+
+   Case(Associative containers / multiset)
+   {
+      std::multiset<int> a0;
+      OK(!MaxOf(0), a0);
+      OK(!MinOf(0), a0);
+      OK(!AvgOf(0), a0);
+      OK(!MeanOf(0), a0);
+      OK(!MedianOf(0), a0);
+
+      std::multiset<int> a1 = {1, 2, 3};
+      OK(MaxOf(3), a1);
+      OK(MinOf(1), a1);
+      OK(AvgOf(2), a1);
+      OK(MeanOf(2), a1);
+      OK(MedianOf(2), a1);
+   }
+
+   Case(Associative containers / unordered_set)
+   {
+      std::unordered_set<int> a0;
+      OK(!MaxOf(0), a0);
+      OK(!MinOf(0), a0);
+      OK(!AvgOf(0), a0);
+      OK(!MeanOf(0), a0);
+      OK(!MedianOf(0), a0);
+
+      std::unordered_set<int> a1 = {1, 2, 3};
+      OK(MaxOf(3), a1);
+      OK(MinOf(1), a1);
+      OK(AvgOf(2), a1);
+      OK(MedianOf(2), a1);
+   }
+
+   Case(Associative containers / map)
+   {
+      // no meaningful
+   }
+
+   Case(Associative containers / multimap)
+   {
+      // no meaningful
+   }
+
+   Case(Associative containers / unordered_multimap)
+   {
+      // no meaningful
+   }
+
+   Case(Container adaptors / stack)
+   {
+      std::stack<int> a1;
+      OK(!MaxOf(0), a1);
+      OK(!MinOf(0), a1);
+      OK(!AvgOf(0), a1);
+      OK(!MeanOf(0), a1);
+      OK(!MedianOf(0), a1);
+
+      a1.push(1);
+      a1.push(2);
+      a1.push(3);
+
+      OK(MaxOf(3), a1);
+      OK(MinOf(1), a1);
+      OK(AvgOf(2), a1);
+      OK(MeanOf(2), a1);
+      OK(MedianOf(2), a1);
+   }
+
+   Case(Container adaptors / queue)
+   {
+      std::queue<int> a1;
+      OK(!MaxOf(0), a1);
+      OK(!MinOf(0), a1);
+      OK(!AvgOf(0), a1);
+      OK(!MeanOf(0), a1);
+      OK(!MedianOf(0), a1);
+
+      a1.push(1);
+      a1.push(2);
+      a1.push(3);
+
+      OK(MaxOf(3), a1);
+      OK(MinOf(1), a1);
+      OK(AvgOf(2), a1);
+      OK(MeanOf(2), a1);
+      OK(MedianOf(2), a1);
+   }
+
+   Case(Container adaptors / priority_queue)
+   {
+      std::priority_queue<int> a1;
+      OK(!MaxOf(0), a1);
+      OK(!MinOf(0), a1);
+      OK(!AvgOf(0), a1);
+      OK(!MeanOf(0), a1);
+      OK(!MedianOf(0), a1);
+
+      a1.push(1);
+      a1.push(2);
+      a1.push(3);
+
+      OK(MaxOf(3), a1);
+      OK(MinOf(1), a1);
+      OK(AvgOf(2), a1);
+      OK(MeanOf(2), a1);
+      OK(MedianOf(2), a1);
+   }
+
+   Case(string)
+   {
+      std::string a0 = "";
+      OK(!MaxOf(0), a0);
+      OK(!MinOf(0), a0);
+      OK(!AvgOf(0), a0);
+      OK(!MeanOf(0), a0);
+      OK(!MedianOf(0), a0);
+
+      std::string a1 = "abc";
+      OK(MaxOf('c'), a1);
+      OK(MinOf('a'), a1);
+      OK(AvgOf('b'), a1);
+      OK(MeanOf('b'), a1);
+      OK(MedianOf('b'), a1);
+
+      h2::h2_string a2 = "abc";
+      OK(MaxOf('c'), a2);
+      OK(MinOf('a'), a2);
+      OK(AvgOf('b'), a2);
+      OK(MeanOf('b'), a2);
+      OK(MedianOf('b'), a2);
+   }
+}
+
+static int container_mock_f1(int a1[],
+                             std::array<int, 3>& a2,
+                             std::vector<int> a3,
+                             std::deque<int>& a4,
+                             std::forward_list<int> a5,
+                             std::list<int>& a6,
+                             std::set<int> s1,
+                             std::multiset<int>& s2,
+                             std::unordered_set<int> s3,
+                             std::map<int, int> m1,
+                             std::multimap<int, int>& m2,
+                             std::unordered_multimap<int, int> m3,
+                             std::stack<int> d1,
+                             std::queue<int>& d2,
+                             std::priority_queue<int> d3)
+{
+   return 0;
+}
+
+SUITE(container MOCK)
+{
+   int a1[3] = {1, 2, 3};
+   std::array<int, 3> a2 = {1, 2, 3};
+   std::vector<int> a3 = {1, 2, 3};
+   std::deque<int> a4 = {1, 2, 3};
+   std::forward_list<int> a5 = {1, 2, 3};
+   std::list<int> a6 = {1, 2, 3};
+
+   std::set<int> s1 = {1, 2, 3};
+   std::multiset<int> s2 = {1, 2, 3};
+   std::unordered_set<int> s3 = {1, 2, 3};
+
+   std::map<int, int> m1 = {{1, 111}, {2, 222}, {3, 333}};
+   std::multimap<int, int> m2 = {{1, 111}, {2, 222}, {3, 333}};
+   std::unordered_multimap<int, int> m3 = {{1, 111}, {2, 222}, {3, 333}};
+
+   std::stack<int> d1;
+   d1.push(1);
+   d1.push(2);
+   d1.push(3);
+
+   std::queue<int> d2;
+   d2.push(1);
+   d2.push(2);
+   d2.push(3);
+
+   std::priority_queue<int> d3;
+   d3.push(1);
+   d3.push(2);
+   d3.push(3);
+
+   Case(ListOf)
+   {
+      MOCK(container_mock_f1, int(int*,
+                                  std::array<int, 3>&,
+                                  std::vector<int>,
+                                  std::deque<int>&,
+                                  std::forward_list<int>, std::list<int>&,
+                                  std::set<int>,
+                                  std::multiset<int>&,
+                                  std::unordered_set<int>,
+                                  std::map<int, int>,
+                                  std::multimap<int, int>&,
+                                  std::unordered_multimap<int, int>,
+                                  std::stack<int>,
+                                  std::queue<int>&,
+                                  std::priority_queue<int>))
+        .Once(ListOf(1, 2, 3),
+              ListOf(1, 2, 3),
+              ListOf(1, 2, 3),
+              ListOf(1, 2, 3),
+              ListOf(1, 2, 3),
+              ListOf(1, 2, 3),
+              ListOf(1, 2, 3),
+              ListOf(1, 2, 3),
+              ListOf(Eq(1) || Eq(2) || Eq(3), Eq(1) || Eq(2) || Eq(3), Eq(1) || Eq(2) || Eq(3)),
+              ListOf(Pair(1, 111), Pair(2, 222), Pair(3, 333)),
+              ListOf(Pair(1, 111), Pair(2, 222), Pair(3, 333)),
+              _,
+              ListOf(1, 2, 3),
+              ListOf(1, 2, 3),
+              ListOf(1, 2, 3) || ListOf(1, 3, 2) || ListOf(2, 1, 3) || ListOf(2, 3, 1) || ListOf(3, 1, 2) || ListOf(3, 2, 1))
+        .Return(1);
+
+      OK(1, container_mock_f1(a1, a2, a3, a4, a5, a6, s1, s2, s3, m1, m2, m3, d1, d2, d3));
+   }
+
+   Case(Has)
+   {
+      MOCK(container_mock_f1, int(int*,
+                                  std::array<int, 3>&,
+                                  std::vector<int>,
+                                  std::deque<int>&,
+                                  std::forward_list<int>, std::list<int>&,
+                                  std::set<int>,
+                                  std::multiset<int>&,
+                                  std::unordered_set<int>,
+                                  std::map<int, int>,
+                                  std::multimap<int, int>&,
+                                  std::unordered_multimap<int, int>,
+                                  std::stack<int>,
+                                  std::queue<int>&,
+                                  std::priority_queue<int>))
+        .Once(Has<3>(2),
+              Has(2),
+              Has(2),
+              Has(2),
+              Has(2),
+              Has(2),
+              Has(2),
+              Has(2),
+              Has(2),
+              Has(2),
+              Has(2),
+              Has(2),
+              Has(2),
+              Has(2),
+              Has(2))
+        .Return(1);
+
+      OK(1, container_mock_f1(a1, a2, a3, a4, a5, a6, s1, s2, s3, m1, m2, m3, d1, d2, d3));
+   }
+
+   Case(CountOf)
+   {
+      MOCK(container_mock_f1, int(int*,
+                                  std::array<int, 3>&,
+                                  std::vector<int>,
+                                  std::deque<int>&,
+                                  std::forward_list<int>, std::list<int>&,
+                                  std::set<int>,
+                                  std::multiset<int>&,
+                                  std::unordered_set<int>,
+                                  std::map<int, int>,
+                                  std::multimap<int, int>&,
+                                  std::unordered_multimap<int, int>,
+                                  std::stack<int>,
+                                  std::queue<int>&,
+                                  std::priority_queue<int>))
+        .Once(_,
+              CountOf(3),
+              CountOf(3),
+              CountOf(3),
+              CountOf(3),
+              CountOf(3),
+              CountOf(3),
+              CountOf(3),
+              CountOf(3),
+              CountOf(3),
+              CountOf(3),
+              CountOf(3),
+              CountOf(3),
+              CountOf(3),
+              CountOf(3))
+        .Return(1);
+
+      OK(1, container_mock_f1(a1, a2, a3, a4, a5, a6, s1, s2, s3, m1, m2, m3, d1, d2, d3));
+   }
+
+   Case(MaxOf MinOf AvgOf MeanOf MedianOf)
+   {
+      MOCK(container_mock_f1, int(int*,
+                                  std::array<int, 3>&,
+                                  std::vector<int>,
+                                  std::deque<int>&,
+                                  std::forward_list<int>, std::list<int>&,
+                                  std::set<int>,
+                                  std::multiset<int>&,
+                                  std::unordered_set<int>,
+                                  std::map<int, int>,
+                                  std::multimap<int, int>&,
+                                  std::unordered_multimap<int, int>,
+                                  std::stack<int>,
+                                  std::queue<int>&,
+                                  std::priority_queue<int>))
+        .Once(MaxOf<3>(3) && MinOf<3>(1) && AvgOf<3>(2) && MeanOf<3>(2) && MedianOf<3>(2),
+              MaxOf(3) && MinOf(1) && AvgOf(2) && MeanOf(2) && MedianOf(2),
+              MaxOf(3) && MinOf(1) && AvgOf(2) && MeanOf(2) && MedianOf(2),
+              MaxOf(3) && MinOf(1) && AvgOf(2) && MeanOf(2) && MedianOf(2),
+              MaxOf(3) && MinOf(1) && AvgOf(2) && MeanOf(2) && MedianOf(2),
+              MaxOf(3) && MinOf(1) && AvgOf(2) && MeanOf(2) && MedianOf(2),
+              MaxOf(3) && MinOf(1) && AvgOf(2) && MeanOf(2) && MedianOf(2),
+              MaxOf(3) && MinOf(1) && AvgOf(2) && MeanOf(2) && MedianOf(2),
+              MaxOf(3) && MinOf(1) && AvgOf(2) && MeanOf(2) && MedianOf(2),
+              _,
+              _,
+              _,
+              MaxOf(3) && MinOf(1) && AvgOf(2) && MeanOf(2) && MedianOf(2),
+              MaxOf(3) && MinOf(1) && AvgOf(2) && MeanOf(2) && MedianOf(2),
+              MaxOf(3) && MinOf(1) && AvgOf(2) && MeanOf(2) && MedianOf(2))
+        .Return(1);
+
+      OK(1, container_mock_f1(a1, a2, a3, a4, a5, a6, s1, s2, s3, m1, m2, m3, d1, d2, d3));
    }
 }
 

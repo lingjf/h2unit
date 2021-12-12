@@ -154,17 +154,6 @@ struct h2_is_container_adaptor<T,
                                                          void>::type> : std::true_type {
 };
 
-template <typename T, typename = void>
-struct h2_is_sizable : std::false_type {
-};
-
-template <typename T>
-struct h2_is_sizable<T,
-                     typename std::conditional<false,
-                                               h2_valid_t<decltype(std::declval<T>().size())>,
-                                               void>::type> : public std::true_type {
-};
-
 template <typename ContainerAdaptor>
 const typename ContainerAdaptor::container_type& underlying_container(const ContainerAdaptor& ca)
 {

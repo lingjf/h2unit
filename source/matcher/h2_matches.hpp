@@ -1,10 +1,10 @@
 struct h2_mc {
-   size_t n;
+   int n;
    bool negative, case_insensitive, squash_whitespace, no_compare_operator;
-   h2_mc(size_t n_ = 0, bool negative_ = false, bool case_insensitive_ = false, bool squash_whitespace_ = false, bool no_compare_operator_ = false) : n(n_), negative(negative_), case_insensitive(case_insensitive_), squash_whitespace(squash_whitespace_), no_compare_operator(no_compare_operator_) {}
+   h2_mc(int n_ = -1, bool negative_ = false, bool case_insensitive_ = false, bool squash_whitespace_ = false, bool no_compare_operator_ = false) : n(n_), negative(negative_), case_insensitive(case_insensitive_), squash_whitespace(squash_whitespace_), no_compare_operator(no_compare_operator_) {}
 
    bool fit(bool result) const { return result == !negative; }
-   h2_mc update_n(size_t target = false) const { return {target, negative, case_insensitive, squash_whitespace, no_compare_operator}; }
+   h2_mc update_n(int target = false) const { return {target, negative, case_insensitive, squash_whitespace, no_compare_operator}; }
    h2_mc update_negative(bool target = false) const { return {n, target, case_insensitive, squash_whitespace, no_compare_operator}; }
    h2_mc update_caseless(bool target = false) const { return {n, negative, target, squash_whitespace, no_compare_operator}; }
    h2_mc update_spaceless(bool target = false) const { return {n, negative, case_insensitive, target, no_compare_operator}; }

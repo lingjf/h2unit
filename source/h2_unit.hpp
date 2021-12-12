@@ -48,6 +48,7 @@
 namespace h2 {
 #include "utils/h2_macro.hpp"                 //
 #include "utils/h2_macro.in.hpp"              //
+#include "utils/h2_array.hpp"                 //
 #include "utils/h2_template.hpp"              //
 #include "utils/h2_numberfy.hpp"              //
 #include "utils/h2_list.hpp"                  //
@@ -315,6 +316,11 @@ using h2::AnyOf;
 using h2::NoneOf;
 using h2::ListOf;
 using h2::CountOf;
+using h2::MaxOf;
+using h2::MinOf;
+using h2::AvgOf;
+#define MeanOf AvgOf
+using h2::MedianOf;
 using h2::Has;
 using h2::HasKey;
 using h2::HasValue;
