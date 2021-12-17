@@ -117,3 +117,16 @@ SUITE(logic sugar primitive)
       OK(NoneOf(1, Ge(3), Pair(2, 3)), 2);
    }
 }
+
+SUITE(Conditional primitive [api])
+{
+   Case(true)
+   {
+      OK(Conditional(true, 1, 2), 1);
+   }
+
+   Case(false)
+   {
+      OK(Conditional(false, 1, 2), 2);
+   }
+}

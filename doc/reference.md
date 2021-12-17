@@ -399,6 +399,7 @@ CASE(case name)
 *    [`Pointee`](../source/h2_unit.hpp#L321)(expect) : matches if point to value equals expect 
 *    [`!`](../source/h2_unit.hpp#L321) / [`Not`](../source/h2_unit.hpp#L321)(expect) : matches if not matches inner matcher, right operator must be Matcher, !3 is considered as normal semantics 
 *    [`&&`](../source/h2_unit.hpp#L321)(expect) : Logical AND of two matchers, left and right operator shoud at least one Matcher 
+*    [`Conditional`](../source/h2_unit.hpp#L321)(condition, expect1, expect2) : matches if value matches expect1 if condition is true, otherwise matches if value matches expect2
 *    [`||`](../source/h2_unit.hpp#L321)(expect) : Logical OR of two matchers 
 *    [`AllOf`](../source/h2_unit.hpp#L321)(expect...) : matches if value matches all of inner matchers, act as AND logical operator
 *    [`AnyOf`](../source/h2_unit.hpp#L321)(expect...) : matches if value matches any one of inner matchers, act as OR logical operator
@@ -1225,3 +1226,4 @@ Case(check throw type a_exception and matcher string equal)
    ./a.out
    gcovr -r . -e 'test_*' --html --html-details -o coverage.html
 ```
+

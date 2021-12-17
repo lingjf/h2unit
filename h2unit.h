@@ -2301,6 +2301,24 @@ struct h2_not_matches : h2_matches {
    }
 };
 
+template <typename MatcherT, typename MatcherF>
+struct h2_conditional_matches : h2_matches {
+   const bool cond;
+   const MatcherT mt;
+   const MatcherF mf;
+   explicit h2_conditional_matches(const bool cond_, const MatcherT& mt_, const MatcherF& mf_) : cond(cond_), mt(mt_), mf(mf_) {}
+
+   template <typename A>
+   h2_fail* matches(const A& a, h2_mc c) const
+   {
+      return cond ? h2_matcher_cast<A>(mt).matches(a, c) : h2_matcher_cast<A>(mf).matches(a, c);
+   }
+   virtual h2_line expection(h2_mc c) const override
+   {
+      return cond ? h2_matches_expection(mt, c) : h2_matches_expection(mf, c);
+   }
+};
+
 template <typename MatcherL, typename MatcherR>
 struct h2_and_matches : h2_matches {
    const MatcherL ml;
@@ -2489,6 +2507,12 @@ template <typename Matcher>
 inline h2_polymorphic_matcher<h2_not_matches<Matcher>> Not(Matcher m)
 {
    return h2_polymorphic_matcher<h2_not_matches<Matcher>>(h2_not_matches<Matcher>(m));
+}
+
+template <typename MatcherTrue, typename MatcherFalse>
+inline h2_polymorphic_matcher<h2_conditional_matches<MatcherTrue, MatcherFalse>> Conditional(bool cond, MatcherTrue true_expect, MatcherFalse false_expect)
+{
+   return h2_polymorphic_matcher<h2_conditional_matches<MatcherTrue, MatcherFalse>>(h2_conditional_matches<MatcherTrue, MatcherFalse>(cond, true_expect, false_expect));
 }
 
 template <typename... Matchers>
@@ -4154,6 +4178,7 @@ using h2::CaseLess;
 using h2::SpaceLess;
 using h2::Pointee;
 using h2::Not;
+using h2::Conditional;
 using h2::operator&&;
 using h2::operator||;
 using h2::AllOf;

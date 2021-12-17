@@ -311,6 +311,7 @@ using h2::CaseLess;
 using h2::SpaceLess;
 using h2::Pointee;
 using h2::Not;
+using h2::Conditional;
 using h2::operator&&;
 using h2::operator||;
 using h2::AllOf;
