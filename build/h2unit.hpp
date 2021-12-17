@@ -5,7 +5,7 @@
 #ifndef __H2UNIT_HPP__
 #define __H2UNIT_HPP__
 #define H2UNIT_VERSION 5.16
-#define H2UNIT_REVISION 2021-12-12 branches/v5
+#define H2UNIT_REVISION 2021-12-18 branches/v5
 #ifndef __H2_UNIT_HPP__
 #define __H2_UNIT_HPP__
 
@@ -4178,6 +4178,7 @@ H2MATCHER(IsEven) { return a % 2 == 0; }
 H2MATCHER(IsOdd) { return a % 2 != 0; }
 H2MATCHER(IsDivable, expect) { return a % expect == 0; }
 H2MATCHER(IsInteger) { return ::floor(a) == a; }
+H2MATCHER(IsNaN) { return std::isnan(a); }
 
 #if defined __cplusplus && !defined H2_NO_Redefine_private
 // clang11 bug, not works option: -fno-access-control -fno-no-access-control

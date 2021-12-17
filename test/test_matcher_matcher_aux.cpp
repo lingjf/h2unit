@@ -70,3 +70,11 @@ SUITE(IsInteger primitive [api])
       OK(!IsInteger(), -4.2);
    }
 }
+
+SUITE(IsNaN primitive [api])
+{
+   Case(positive integer)
+   {
+      OK(IsNaN(), NAN);
+   }
+}
