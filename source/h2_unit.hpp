@@ -78,13 +78,14 @@ namespace h2 {
 #include "matcher/h2_matcher_cast.hpp"        // matcher, equation
 #include "matcher/h2_matches_cast.hpp"        // matches, matcher, failure
 #include "matcher/h2_matches_container.hpp"   // matches, matcher, failure
-#include "matcher/h2_matches_logic.hpp"       // matches, matcher, failure
+#include "matcher/h2_matches_logic.hpp"       // container, matches, matcher, failure
 #include "matcher/h2_matches_inequation.hpp"  // matches, matcher, failure
 #include "matcher/h2_matches_memcmp.hpp"      // matches, matcher, failure
 #include "matcher/h2_matches_strcmp.hpp"      // matches, matcher, failure
+#include "matcher/h2_matches_json.hpp"        // matches, matcher, failure
 #include "matcher/h2_matches_pointee.hpp"     // matches, matcher, failure
-#include "matcher/h2_matches_range.hpp"       // matches, matcher, failure
 #include "matcher/h2_matches_member.hpp"      // matches, matcher, failure
+#include "matcher/h2_matches_range.hpp"       // matches, matcher, failure
 #include "matcher/h2_matcher.cpp"             //!matches, matcher, equation
 #include "matcher/h2_matcher_customize.hpp"   // matches, matcher, failure
 #include "stub/h2_fp.hpp"                     // nm, load
@@ -323,15 +324,16 @@ using h2::AllOf;
 using h2::AnyOf;
 using h2::NoneOf;
 using h2::ListOf;
+using h2::Every;
+using h2::Has;
+using h2::HasKey;
+using h2::HasValue;
 using h2::CountOf;
 using h2::MaxOf;
 using h2::MinOf;
 using h2::AvgOf;
 #define MeanOf AvgOf
 using h2::MedianOf;
-using h2::Has;
-using h2::HasKey;
-using h2::HasValue;
 using h2::Pair;
 using h2::nothrow;
 

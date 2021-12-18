@@ -1,80 +1,68 @@
-struct h2_matches_regex : h2_matches {
-   const h2_string e;
-   explicit h2_matches_regex(const h2_string& e_) : e(e_) {}
-   h2_fail* matches(const h2_string& a, h2_mc c) const;
-   virtual h2_line expection(h2_mc c) const override;
-};
-
-struct h2_matches_wildcard : h2_matches {
-   const h2_string e;
-   explicit h2_matches_wildcard(const h2_string& e_) : e(e_) {}
-   h2_fail* matches(const h2_string& a, h2_mc c) const;
-   virtual h2_line expection(h2_mc c) const override;
-};
-
 struct h2_matches_strcmp : h2_matches {
    const h2_string e;
    explicit h2_matches_strcmp(const h2_string& e_) : e(e_) {}
-   h2_fail* matches(const h2_string& a, h2_mc c) const;
-   virtual h2_line expection(h2_mc c) const override;
+   h2_fail* matches(const h2_string& a, C c) const;
+   virtual h2_line expection(C c) const override;
 };
 
-struct h2_matches_substr : h2_matches {
-   const h2_string substring;
-   explicit h2_matches_substr(const h2_string& substring_) : substring(substring_) {}
-   h2_fail* matches(const h2_string& a, h2_mc c) const;
-   virtual h2_line expection(h2_mc c) const override;
-};
-
-struct h2_matches_startswith : h2_matches {
-   const h2_string prefix_string;
-   explicit h2_matches_startswith(const h2_string& prefix_string_) : prefix_string(prefix_string_) {}
-   h2_fail* matches(const h2_string& a, h2_mc c) const;
-   virtual h2_line expection(h2_mc c) const override;
-};
-
-struct h2_matches_endswith : h2_matches {
-   const h2_string suffix_string;
-   explicit h2_matches_endswith(const h2_string& suffix_string_) : suffix_string(suffix_string_) {}
-   h2_fail* matches(const h2_string& a, h2_mc c) const;
-   virtual h2_line expection(h2_mc c) const override;
-};
-
-struct h2_matches_json : h2_matches {
+struct h2_matches_string : h2_matches {
+   const char* name;
    const h2_string e;
-   const h2_string selector;
-   explicit h2_matches_json(const h2_string& e_, const h2_string& selector_) : e(e_), selector(selector_) {}
-   h2_fail* matches(const h2_string& a, h2_mc c) const;
-   virtual h2_line expection(h2_mc c) const override;
+   explicit h2_matches_string(const char* name_, const h2_string& e_) : name(name_), e(e_) {}
+   virtual h2_line expection(C c) const override;
+};
+
+struct h2_matches_regex : h2_matches_string {
+   explicit h2_matches_regex(const h2_string& e_) : h2_matches_string("Re", e_) {}
+   h2_fail* matches(const h2_string& a, C c) const;
+};
+
+struct h2_matches_wildcard : h2_matches_string {
+   explicit h2_matches_wildcard(const h2_string& e_) : h2_matches_string("We", e_) {}
+   h2_fail* matches(const h2_string& a, C c) const;
+};
+
+struct h2_matches_substr : h2_matches_string {
+   explicit h2_matches_substr(const h2_string& substring) : h2_matches_string("Substr", substring) {}
+   h2_fail* matches(const h2_string& a, C c) const;
+};
+
+struct h2_matches_startswith : h2_matches_string {
+   explicit h2_matches_startswith(const h2_string& prefix_string) : h2_matches_string("StartsWith", prefix_string) {}
+   h2_fail* matches(const h2_string& a, C c) const;
+};
+
+struct h2_matches_endswith : h2_matches_string {
+   explicit h2_matches_endswith(const h2_string& suffix_string) : h2_matches_string("EndsWith", suffix_string) {}
+   h2_fail* matches(const h2_string& a, C c) const;
 };
 
 struct h2_caseless_matches : h2_matches {
    const h2_matcher<h2_string> m;
-   explicit h2_caseless_matches(const h2_matcher<h2_string>& matcher_) : m(matcher_) {}
+   explicit h2_caseless_matches(const h2_matcher<h2_string>& m_) : m(m_) {}
 
    template <typename A>
-   h2_fail* matches(const A& a, h2_mc c) const { return m.matches(a, c.update_caseless(true)); }
-   virtual h2_line expection(h2_mc c) const override { return m.expection(c.update_caseless(true)); }
+   h2_fail* matches(const A& a, C c) const { return m.matches(a, c.update_caseless(true)); }
+   virtual h2_line expection(C c) const override { return m.expection(c.update_caseless(true)); }
 };
 
 struct h2_spaceless_matches : h2_matches {
    const h2_matcher<h2_string> m;
-   explicit h2_spaceless_matches(const h2_matcher<h2_string>& matcher_) : m(matcher_) {}
+   explicit h2_spaceless_matches(const h2_matcher<h2_string>& m_) : m(m_) {}
 
    template <typename A>
-   h2_fail* matches(const A& a, h2_mc c) const { return m.matches(a, c.update_spaceless(true)); }
-   virtual h2_line expection(h2_mc c) const override { return m.expection(c.update_spaceless(true)); }
+   h2_fail* matches(const A& a, C c) const { return m.matches(a, c.update_spaceless(true)); }
+   virtual h2_line expection(C c) const override { return m.expection(c.update_spaceless(true)); }
 };
 
-inline h2_polymorphic_matcher<h2_matches_regex> Re(const h2_string& regex_pattern) { return h2_polymorphic_matcher<h2_matches_regex>(h2_matches_regex(regex_pattern)); }
-inline h2_polymorphic_matcher<h2_matches_wildcard> We(const h2_string& wildcard_pattern) { return h2_polymorphic_matcher<h2_matches_wildcard>(h2_matches_wildcard(wildcard_pattern)); }
-inline h2_polymorphic_matcher<h2_matches_strcmp> Se(const h2_string& expect) { return h2_polymorphic_matcher<h2_matches_strcmp>(h2_matches_strcmp(expect)); }
-inline h2_polymorphic_matcher<h2_matches_substr> Substr(const h2_string& substring) { return h2_polymorphic_matcher<h2_matches_substr>(h2_matches_substr(substring)); }
-inline h2_polymorphic_matcher<h2_matches_startswith> StartsWith(const h2_string& prefix_string) { return h2_polymorphic_matcher<h2_matches_startswith>(h2_matches_startswith(prefix_string)); }
-inline h2_polymorphic_matcher<h2_matches_endswith> EndsWith(const h2_string& suffix_string) { return h2_polymorphic_matcher<h2_matches_endswith>(h2_matches_endswith(suffix_string)); }
-inline h2_polymorphic_matcher<h2_matches_json> Je(const h2_string& expect, const h2_string& selector = "") { return h2_polymorphic_matcher<h2_matches_json>(h2_matches_json(expect, selector)); }
+inline auto Se(const h2_string& expect) -> h2_polymorphic_matcher<h2_matches_strcmp> { return h2_polymorphic_matcher<h2_matches_strcmp>(h2_matches_strcmp(expect)); }
+inline auto Re(const h2_string& regex_pattern) -> h2_polymorphic_matcher<h2_matches_regex> { return h2_polymorphic_matcher<h2_matches_regex>(h2_matches_regex(regex_pattern)); }
+inline auto We(const h2_string& wildcard_pattern) -> h2_polymorphic_matcher<h2_matches_wildcard> { return h2_polymorphic_matcher<h2_matches_wildcard>(h2_matches_wildcard(wildcard_pattern)); }
+inline auto Substr(const h2_string& substring) -> h2_polymorphic_matcher<h2_matches_substr> { return h2_polymorphic_matcher<h2_matches_substr>(h2_matches_substr(substring)); }
+inline auto StartsWith(const h2_string& prefix_string) -> h2_polymorphic_matcher<h2_matches_startswith> { return h2_polymorphic_matcher<h2_matches_startswith>(h2_matches_startswith(prefix_string)); }
+inline auto EndsWith(const h2_string& suffix_string) -> h2_polymorphic_matcher<h2_matches_endswith> { return h2_polymorphic_matcher<h2_matches_endswith>(h2_matches_endswith(suffix_string)); }
 
-template <typename M>
-inline h2_polymorphic_matcher<h2_caseless_matches> CaseLess(const M& m) { return h2_polymorphic_matcher<h2_caseless_matches>(h2_caseless_matches(h2_matcher<h2_string>(m))); }
-template <typename M>
-inline h2_polymorphic_matcher<h2_spaceless_matches> SpaceLess(const M& m) { return h2_polymorphic_matcher<h2_spaceless_matches>(h2_spaceless_matches(h2_matcher<h2_string>(m))); }
+template <typename T, typename P = h2_polymorphic_matcher<h2_caseless_matches>>
+inline P CaseLess(const T& expect) { return P(h2_caseless_matches(h2_matcher<h2_string>(expect))); }
+template <typename T, typename P = h2_polymorphic_matcher<h2_spaceless_matches>>
+inline P SpaceLess(const T& expect) { return P(h2_spaceless_matches(h2_matcher<h2_string>(expect))); }

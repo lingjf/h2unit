@@ -1,7 +1,7 @@
 template <typename T>
 struct h2_matcher_impl : h2_matches {
-   virtual h2_fail* matches(const T& a, h2_mc c) const = 0;
-   virtual h2_line expection(h2_mc c) const override { return ""; }
+   virtual h2_fail* matches(const T& a, C c) const = 0;
+   virtual h2_line expection(C c) const override { return ""; }
    virtual ~h2_matcher_impl() {}
 };
 
@@ -15,8 +15,8 @@ struct h2_matcher : h2_matches {
    h2_matcher(const h2_matcher&) = default;
    h2_matcher& operator=(const h2_matcher&) = default;
    virtual ~h2_matcher() {}
-   h2_fail* matches(const T& a, h2_mc c = {}) const { return impl->matches(a, c); }
-   virtual h2_line expection(h2_mc c = {}) const { return impl->expection(c); };
+   h2_fail* matches(const T& a, C c = {}) const { return impl->matches(a, c); }
+   virtual h2_line expection(C c = {}) const { return impl->expection(c); };
 };
 
 template <typename Matches>
@@ -53,17 +53,17 @@ struct h2_polymorphic_matcher : h2_matches {
       const Matches m;
       bool negative, case_insensitive, squash_whitespace;
       explicit internal_impl(const Matches& m_, bool negative_, bool case_insensitive_, bool squash_whitespace_) : m(m_), negative(negative_), case_insensitive(case_insensitive_), squash_whitespace(squash_whitespace_) {}
-      h2_fail* matches(const T& a, h2_mc c = {}) const override
+      h2_fail* matches(const T& a, C c = {}) const override
       {
          return m.matches(a, {c.n, negative != c.negative, case_insensitive || c.case_insensitive, squash_whitespace || c.squash_whitespace, c.no_compare_operator});
       }
-      h2_line expection(h2_mc c) const override
+      h2_line expection(C c) const override
       {
          return m.expection({c.n, negative != c.negative /*XOR ^*/, case_insensitive || c.case_insensitive, squash_whitespace || c.squash_whitespace, c.no_compare_operator});
       }
    };
 
-   virtual h2_line expection(h2_mc c = {}) const override
+   virtual h2_line expection(C c = {}) const override
    {
       return h2_matches_expection(m, {c.n, negative != c.negative, case_insensitive || c.case_insensitive, squash_whitespace || c.squash_whitespace, c.no_compare_operator});
    }
@@ -73,15 +73,8 @@ template <typename T, typename = void>
 struct h2_is_polymorphic_matcher : std::false_type {
 };
 template <typename T>
-struct h2_is_polymorphic_matcher<T,
-                                 typename std::conditional<false,
-                                                           h2_valid_t<typename T::matches_type>,
-                                                           void>::type> : std::true_type {
+struct h2_is_polymorphic_matcher<T, typename std::conditional<false, h2_valid_t<typename T::matches_type>, void>::type> : std::true_type {
 };
 
 const h2_polymorphic_matcher<h2_matches_any> _{h2_matches_any()};
-
-static inline h2_polymorphic_matcher<h2_matches_any> Any()
-{
-   return h2_polymorphic_matcher<h2_matches_any>(h2_matches_any());
-}
+static inline h2_polymorphic_matcher<h2_matches_any> Any() { return h2_polymorphic_matcher<h2_matches_any>(h2_matches_any()); }

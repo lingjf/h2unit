@@ -37,13 +37,6 @@ SUITE(strcmp matches)
       OK(nullptr != a.matches("ABC", {}));
    }
 
-   Case(Json)
-   {
-      h2::h2_matches_json a("[65]", "");
-      OK(nullptr == a.matches("[65]", {}));
-      OK(nullptr != a.matches("[66]", {}));
-   }
-
    Case(CaseLess)
    {
       h2::h2_caseless_matches a1(h2::h2_matcher<h2::h2_string>("A"));

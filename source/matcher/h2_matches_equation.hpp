@@ -3,12 +3,12 @@ struct h2_type_equation : h2_matches {
    explicit h2_type_equation() {}
 
    template <typename A>
-   h2_fail* matches(const A&, h2_mc c) const
+   h2_fail* matches(const A&, C c) const
    {
       if (c.fit(std::is_same<E, A>::value)) return nullptr;
       return h2_fail::new_unexpect(expection(c), h2_cxa::type_name<A>());
    }
-   virtual h2_line expection(h2_mc c) const override
+   virtual h2_line expection(C c) const override
    {
       return c.update_caseless(false).pre("≠") + h2_cxa::type_name<E>();
    }
@@ -20,19 +20,19 @@ struct h2_equation : h2_matches {
    explicit h2_equation(const E& e_, const long double = 0) : e(e_) {}
 
    template <typename A>
-   auto matches(const A& a, h2_mc c) const -> typename std::enable_if<!std::is_pointer<E>::value && !std::is_pointer<A>::value, h2_fail*>::type
+   auto matches(const A& a, C c) const -> typename std::enable_if<!std::is_pointer<E>::value && !std::is_pointer<A>::value, h2_fail*>::type
    {
       if (c.fit(a == e)) return nullptr;
       return h2_fail::new_unexpect(expection(c), h2_stringify(a, true));
    }
    template <typename A>
-   auto matches(const A& a, h2_mc c) const -> typename std::enable_if<std::is_pointer<E>::value || std::is_pointer<A>::value, h2_fail*>::type
+   auto matches(const A& a, C c) const -> typename std::enable_if<std::is_pointer<E>::value || std::is_pointer<A>::value, h2_fail*>::type
    {
       if (!e) return h2_matches_null().matches(a, c);
       if (c.fit((void*)a == (void*)e)) return nullptr;
       return h2_fail::new_unexpect(expection(c), h2_stringify(a, true));
    }
-   virtual h2_line expection(h2_mc c) const override
+   virtual h2_line expection(C c) const override
    {
       return c.update_caseless(false).pre("≠") + h2_stringify(e, true);
    }
@@ -44,7 +44,7 @@ struct h2_equation<E, typename std::enable_if<std::is_convertible<E, h2_string>:
    explicit h2_equation(const E& e_, const long double = 0) : e(e_) {}
 
    template <typename A>
-   h2_fail* matches(const A& a, h2_mc c) const
+   h2_fail* matches(const A& a, C c) const
    {
       h2_string _e = e, _a(a);
       if (c.squash_whitespace) _e = e.squash(), _a = _a.squash();
@@ -52,7 +52,7 @@ struct h2_equation<E, typename std::enable_if<std::is_convertible<E, h2_string>:
       // if (c.fit(h2_pattern::wildcard_match(_e.c_str(), _a.c_str(), c.case_insensitive))) return nullptr;
       return h2_fail::new_strcmp(_e, a, c.case_insensitive, expection(c));
    }
-   virtual h2_line expection(h2_mc c) const override
+   virtual h2_line expection(C c) const override
    {
       return c.pre("≠") + h2_stringify(c.squash_whitespace ? e.squash() : e, true);
    }
@@ -64,20 +64,20 @@ struct h2_equation<const char*> : h2_matches {
    explicit h2_equation(const char* e_, const long double = 0) : e(e_) {}
 
    template <typename A>
-   auto matches(const A& a, h2_mc c) const -> typename std::enable_if<std::is_convertible<A, h2_string>::value, h2_fail*>::type
+   auto matches(const A& a, C c) const -> typename std::enable_if<std::is_convertible<A, h2_string>::value, h2_fail*>::type
    {
       if (!e) return h2_matches_null().matches(a, c);
       h2_equation<h2_string> string_m(e);
       return string_m.matches(a, c);
    }
    template <typename A>
-   auto matches(const A& a, h2_mc c) const -> typename std::enable_if<!std::is_convertible<A, h2_string>::value, h2_fail*>::type
+   auto matches(const A& a, C c) const -> typename std::enable_if<!std::is_convertible<A, h2_string>::value, h2_fail*>::type
    {
       if (!e) return h2_matches_null().matches(a, c);
       if (c.fit((void*)a == (void*)e)) return nullptr;
       return h2_fail::new_unexpect(expection(c), h2_stringify(a, true));
    }
-   virtual h2_line expection(h2_mc c) const override
+   virtual h2_line expection(C c) const override
    {
       if (!e) return h2_matches_null().expection(c);
       return c.pre("≠") + h2_stringify(c.squash_whitespace ? h2_string(e).squash() : h2_string(e), true);
@@ -121,7 +121,7 @@ struct h2_equation<E, typename std::enable_if<std::is_arithmetic<E>::value>::typ
    explicit h2_equation(const E& e_, const long double epsilon_ = 0) : e(e_), epsilon(epsilon_) {}
 
    template <typename A>
-   auto matches(const A& a, h2_mc c) const -> typename std::enable_if<std::is_floating_point<E>::value || std::is_floating_point<A>::value, h2_fail*>::type
+   auto matches(const A& a, C c) const -> typename std::enable_if<std::is_floating_point<E>::value || std::is_floating_point<A>::value, h2_fail*>::type
    {
       // the machine epsilon has to be scaled to the magnitude of the values used
       // and multiplied by the desired precision in ULPs (units in the last place)
@@ -137,7 +137,7 @@ struct h2_equation<E, typename std::enable_if<std::is_arithmetic<E>::value>::typ
    }
 
    template <typename A>
-   auto matches(const A& a, h2_mc c) const -> typename std::enable_if<!std::is_floating_point<E>::value && !std::is_floating_point<A>::value, h2_fail*>::type
+   auto matches(const A& a, C c) const -> typename std::enable_if<!std::is_floating_point<E>::value && !std::is_floating_point<A>::value, h2_fail*>::type
    {
       bool result = h2_numberfy<std::uintptr_t>(e) == h2_numberfy<std::uintptr_t>(a);
       if (c.fit(result)) return nullptr;
@@ -145,7 +145,7 @@ struct h2_equation<E, typename std::enable_if<std::is_arithmetic<E>::value>::typ
          return h2_fail::new_unexpect(c.negative ? "!NULL" : "NULL", h2_stringify(a, true));
       return h2_fail::new_unexpect(expection(c), h2_stringify(a, true));
    }
-   virtual h2_line expection(h2_mc c) const override
+   virtual h2_line expection(C c) const override
    {
       h2_line t = h2_stringify(e);
       if (epsilon != 0) {
@@ -159,29 +159,17 @@ struct h2_equation<E, typename std::enable_if<std::is_arithmetic<E>::value>::typ
 };
 
 // template <typename T> const h2_polymorphic_matcher<h2_type_equation<T>> TypeEq(h2_type_equation<T>()); // variable template
-template <typename T>
-inline h2_polymorphic_matcher<h2_type_equation<T>> TypeEq()
-{
-   return h2_polymorphic_matcher<h2_type_equation<T>>(h2_type_equation<T>());
-}
+template <typename T, typename P = h2_polymorphic_matcher<h2_type_equation<T>>>
+inline P TypeEq() { return P(h2_type_equation<T>()); }
 
-template <typename T, typename E = typename h2_decay<T>::type>
-auto _Eq(const T& expect, const long double epsilon = 0) -> typename std::enable_if<!std::is_same<std::nullptr_t, E>::value && !std::is_same<bool, E>::value, h2_polymorphic_matcher<h2_equation<E>>>::type
-{
-   return h2_polymorphic_matcher<h2_equation<E>>(h2_equation<E>(expect, epsilon));
-}
+template <typename T, typename E = typename h2_decay<T>::type, typename P = h2_polymorphic_matcher<h2_equation<E>>>
+auto _Eq(const T& expect, const long double epsilon = 0) -> typename std::enable_if<!std::is_same<std::nullptr_t, E>::value && !std::is_same<bool, E>::value, P>::type { return P(h2_equation<E>(expect, epsilon)); }
 
-template <typename T, typename E = typename h2_decay<T>::type>
-auto _Eq(const T&, const long double = 0) -> typename std::enable_if<std::is_same<std::nullptr_t, E>::value, h2_polymorphic_matcher<h2_matches_null>>::type
-{
-   return h2_polymorphic_matcher<h2_matches_null>(h2_matches_null());
-}
+template <typename T, typename E = typename h2_decay<T>::type, typename P = h2_polymorphic_matcher<h2_matches_null>>
+auto _Eq(const T&, const long double = 0) -> typename std::enable_if<std::is_same<std::nullptr_t, E>::value, P>::type { return P(h2_matches_null()); }
 
-template <typename T, typename E = typename h2_decay<T>::type>
-auto _Eq(const T& expect, const long double = 0) -> typename std::enable_if<std::is_same<bool, E>::value, h2_polymorphic_matcher<h2_matches_bool>>::type
-{
-   return h2_polymorphic_matcher<h2_matches_bool>(h2_matches_bool(expect));
-}
+template <typename T, typename E = typename h2_decay<T>::type, typename P = h2_polymorphic_matcher<h2_matches_bool>>
+auto _Eq(const T& expect, const long double = 0) -> typename std::enable_if<std::is_same<bool, E>::value, P>::type { return P(h2_matches_bool(expect)); }
 
 #define H2Eq(expect, ...) H2PP_CAT(__H2Eq, H2PP_IS_EMPTY(__VA_ARGS__))(expect, __VA_ARGS__)
 #define __H2Eq1(expect, ...) h2::_Eq(expect, 0)

@@ -9,11 +9,9 @@ struct h2_memcmp_util {
 template <typename E>
 struct h2_matches_memcmp : h2_matches {
    const E buffer;
-   const size_t size;
-   const size_t length;
-   const size_t width;
+   const size_t size, length, width;
    explicit h2_matches_memcmp(const E buffer_, const size_t size_, const size_t length_, const size_t width_) : buffer(buffer_), size(size_), length(length_), width(width_) {}
-   h2_fail* matches(const void* a, h2_mc c) const
+   h2_fail* matches(const void* a, C c) const
    {
       unsigned char* e = (unsigned char*)buffer;
       size_t l = length, w = width;
@@ -38,21 +36,14 @@ struct h2_matches_memcmp : h2_matches {
          if (!l || !w) return h2_fail::new_normal(color("length", "red") + " not specified " + gray("in ") + color("Me(buffer, ", "cyan") + color("length", "red") + gray(", width") + color(")", "cyan"));
          result = h2_memcmp_util::bits_equal(e, (const unsigned char*)a, l * w);
       } while (0);
-
       if (c.fit(result)) return nullptr;
       return h2_fail::new_memcmp((const unsigned char*)e, (const unsigned char*)a, l, w);
    }
-   virtual h2_line expection(h2_mc c) const override
-   {
-      return c.pre() + "Me()";
-   }
+   virtual h2_line expection(C c) const override { return c.pre() + "Me()"; }
 };
 
-template <typename E, typename T = typename std::decay<E>::type>
-inline h2_polymorphic_matcher<h2_matches_memcmp<T>> _Me(const E buffer, const size_t size, const size_t length = 0, const size_t width = 0)
-{
-   return h2_polymorphic_matcher<h2_matches_memcmp<T>>(h2_matches_memcmp<T>((T)buffer, size, length, width));
-}
+template <typename T, typename E = typename std::decay<T>::type, typename P = h2_polymorphic_matcher<h2_matches_memcmp<E>>>
+inline P _Me(const T buffer, const size_t size, const size_t length = 0, const size_t width = 0) { return P(h2_matches_memcmp<E>((E)buffer, size, length, width)); }
 
 #define H2Me(buffer, ...) H2PP_CAT(__H2Me, H2PP_IS_EMPTY(__VA_ARGS__))(buffer, std::extent<decltype(buffer)>::value, __VA_ARGS__)
 #define __H2Me1(buffer, size, ...) h2::_Me(buffer, size)
