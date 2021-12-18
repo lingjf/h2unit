@@ -101,6 +101,21 @@ SUITE(approximate float)
    }
 }
 
+SUITE(type eq)
+{
+   Case(int)
+   {
+      int a = 1;
+      OK(TypeEq<int>(), a);
+   }
+
+   Case(std::string)
+   {
+      std::string a = "1";
+      OK(TypeEq<std::string>(), a);
+   }
+}
+
 CASE(atomic)
 {
    std::atomic<int> a1(0);

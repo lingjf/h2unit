@@ -1770,6 +1770,22 @@ static inline h2_polymorphic_matcher<h2_matches_any> Any()
    return h2_polymorphic_matcher<h2_matches_any>(h2_matches_any());
 }
 // source/matcher/h2_matches_equation.hpp
+template <typename E>
+struct h2_type_equation : h2_matches {
+   explicit h2_type_equation() {}
+
+   template <typename A>
+   h2_fail* matches(const A&, h2_mc c) const
+   {
+      if (c.fit(std::is_same<E, A>::value)) return nullptr;
+      return h2_fail::new_unexpect(expection(c), h2_cxa::type_name<A>());
+   }
+   virtual h2_line expection(h2_mc c) const override
+   {
+      return c.update_caseless(false).pre("≠") + h2_cxa::type_name<E>();
+   }
+};
+
 template <typename E, typename = void>
 struct h2_equation : h2_matches {
    const E e;
@@ -1913,6 +1929,13 @@ struct h2_equation<E, typename std::enable_if<std::is_arithmetic<E>::value>::typ
       return c.update_caseless(false).pre("≠") + t;
    }
 };
+
+// template <typename T> const h2_polymorphic_matcher<h2_type_equation<T>> TypeEq(h2_type_equation<T>()); // variable template
+template <typename T>
+inline h2_polymorphic_matcher<h2_type_equation<T>> TypeEq()
+{
+   return h2_polymorphic_matcher<h2_type_equation<T>>(h2_type_equation<T>());
+}
 
 template <typename T, typename E = typename h2_decay<T>::type>
 auto _Eq(const T& expect, const long double epsilon = 0) -> typename std::enable_if<!std::is_same<std::nullptr_t, E>::value && !std::is_same<bool, E>::value, h2_polymorphic_matcher<h2_equation<E>>>::type
@@ -4158,6 +4181,7 @@ using h2::Any;
 #ifndef H2_NO_Eq
 #define Eq H2Eq
 #endif
+using h2::TypeEq;
 using h2::Nq;
 using h2::Ge;
 using h2::Gt;

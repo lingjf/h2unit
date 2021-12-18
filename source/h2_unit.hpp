@@ -291,6 +291,7 @@ using h2::Any;
 #ifndef H2_NO_Eq
 #define Eq H2Eq
 #endif
+using h2::TypeEq;
 using h2::Nq;
 using h2::Ge;
 using h2::Gt;
