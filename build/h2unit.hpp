@@ -2000,6 +2000,28 @@ struct h2_matcher_cast_impl<T, h2_matcher<T>> {
 
 template <typename T, typename M>
 inline h2_matcher<T> h2_matcher_cast(const M& from) { return h2_matcher_cast_impl<T, M>::cast(from); }
+// source/matcher/h2_matches_cast.hpp
+template <typename Cast, typename Matcher>
+struct h2_castof_matches : h2_matches {
+   const Matcher m;
+   explicit h2_castof_matches(Matcher m_) : m(m_) {}
+
+   template <typename A>
+   h2_fail* matches(const A& a, h2_mc c) const
+   {
+      return h2_matcher_cast<Cast>(m).matches((Cast)a, c);
+   }
+   virtual h2_line expection(h2_mc c) const override
+   {
+      return h2_matches_expection(m, c);
+   }
+};
+
+template <typename D, typename T>
+inline h2_polymorphic_matcher<h2_castof_matches<D, T>> CastOf(T expect)
+{
+   return h2_polymorphic_matcher<h2_castof_matches<D, T>>(h2_castof_matches<D, T>(expect));
+}
 // source/matcher/h2_matches_container.hpp
 template <typename EK, typename EV>
 struct h2_pair_matches : h2_matches {
@@ -4201,6 +4223,7 @@ using h2::EndsWith;
 using h2::CaseLess;
 using h2::SpaceLess;
 using h2::Pointee;
+using h2::CastOf;
 using h2::Not;
 using h2::Conditional;
 using h2::operator&&;

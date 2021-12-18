@@ -398,6 +398,7 @@ CASE(case name)
 *    [`~`](../source/h2_unit.hpp#L321) / [`CaseLess`](../source/h2_unit.hpp#L321)(expect) : make inner matcher case-insensitive, right operator must be Matcher, `~"Hello World"` not works 
 *    [`*`](../source/h2_unit.hpp#L321) / [`SpaceLess`](../source/h2_unit.hpp#L321)(expect) : trim leading and trailing whitespace, squash several whitespaces into one space, right operator must be Matcher, `*"Hello World"` not works 
 *    [`Pointee`](../source/h2_unit.hpp#L321)(expect) : matches if point to value equals expect 
+*    [`CastOf`](../source/h2_unit.hpp#L321)<Type>(expect) : matches if value cast to Type and equals expect 
 *    [`!`](../source/h2_unit.hpp#L321) / [`Not`](../source/h2_unit.hpp#L321)(expect) : matches if not matches inner matcher, right operator must be Matcher, !3 is considered as normal semantics 
 *    [`&&`](../source/h2_unit.hpp#L321)(expect) : Logical AND of two matchers, left and right operator shoud at least one Matcher 
 *    [`Conditional`](../source/h2_unit.hpp#L321)(condition, expect1, expect2) : matches if value matches expect1 if condition is true, otherwise matches if value matches expect2

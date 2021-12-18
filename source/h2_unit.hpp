@@ -76,6 +76,7 @@ namespace h2 {
 #include "matcher/h2_matcher.hpp"             // matches, failure
 #include "matcher/h2_matches_equation.hpp"    //!matches
 #include "matcher/h2_matcher_cast.hpp"        // matcher, equation
+#include "matcher/h2_matches_cast.hpp"        // matches, matcher, failure
 #include "matcher/h2_matches_container.hpp"   // matches, matcher, failure
 #include "matcher/h2_matches_logic.hpp"       // matches, matcher, failure
 #include "matcher/h2_matches_inequation.hpp"  // matches, matcher, failure
@@ -311,6 +312,7 @@ using h2::EndsWith;
 using h2::CaseLess;
 using h2::SpaceLess;
 using h2::Pointee;
+using h2::CastOf;
 using h2::Not;
 using h2::Conditional;
 using h2::operator&&;
