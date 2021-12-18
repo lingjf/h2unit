@@ -23,6 +23,7 @@ template <typename Matches>
 struct h2_polymorphic_matcher : h2_matches {
    using matches_type = Matches;
    const Matches m;
+   int times = 1;
    bool negative = false, case_insensitive = false, squash_whitespace = false;
    explicit h2_polymorphic_matcher(const Matches& m_) : m(m_) {}
    h2_polymorphic_matcher& operator!()
@@ -40,32 +41,38 @@ struct h2_polymorphic_matcher : h2_matches {
       squash_whitespace = true;
       return *this;
    }
+   h2_polymorphic_matcher& operator*(int times_)
+   {
+      times = times_;
+      return *this;
+   }
    const h2_polymorphic_matcher& operator()() const { return *this; }  // Matcher/Mather() both works
 
    template <typename T>
    operator h2_matcher<T>() const
    {
-      return h2_matcher<T>(new internal_impl<const T&>(m, negative, case_insensitive, squash_whitespace), 0);
+      return h2_matcher<T>(new internal_impl<const T&>(m, times, negative, case_insensitive, squash_whitespace), 0);
    }
 
    template <typename T>
    struct internal_impl : h2_matcher_impl<T>, h2_libc {
       const Matches m;
+      int times;
       bool negative, case_insensitive, squash_whitespace;
-      explicit internal_impl(const Matches& m_, bool negative_, bool case_insensitive_, bool squash_whitespace_) : m(m_), negative(negative_), case_insensitive(case_insensitive_), squash_whitespace(squash_whitespace_) {}
+      explicit internal_impl(const Matches& m_, int times_, bool negative_, bool case_insensitive_, bool squash_whitespace_) : m(m_), times(times_), negative(negative_), case_insensitive(case_insensitive_), squash_whitespace(squash_whitespace_) {}
       h2_fail* matches(const T& a, C c = {}) const override
       {
-         return m.matches(a, {c.n, negative != c.negative, case_insensitive || c.case_insensitive, squash_whitespace || c.squash_whitespace, c.no_compare_operator});
+         return m.matches(a, {c.n, c.times * times, negative != c.negative, case_insensitive || c.case_insensitive, squash_whitespace || c.squash_whitespace, c.no_compare_operator});
       }
       h2_line expection(C c) const override
       {
-         return m.expection({c.n, negative != c.negative /*XOR ^*/, case_insensitive || c.case_insensitive, squash_whitespace || c.squash_whitespace, c.no_compare_operator});
+         return m.expection({c.n, c.times * times, negative != c.negative /*XOR ^*/, case_insensitive || c.case_insensitive, squash_whitespace || c.squash_whitespace, c.no_compare_operator});
       }
    };
 
    virtual h2_line expection(C c = {}) const override
    {
-      return h2_matches_expection(m, {c.n, negative != c.negative, case_insensitive || c.case_insensitive, squash_whitespace || c.squash_whitespace, c.no_compare_operator});
+      return h2_matches_expection(m, {c.n, c.times * times, negative != c.negative, case_insensitive || c.case_insensitive, squash_whitespace || c.squash_whitespace, c.no_compare_operator});
    }
 };
 

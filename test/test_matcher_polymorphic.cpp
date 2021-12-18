@@ -83,4 +83,13 @@ SUITE(h2_polymorphic_matcher)
       *a;
       OK(a.squash_whitespace);
    }
+
+   Case(times)
+   {
+      a * 2;
+      OK(2, a.times);
+
+      a * 42;
+      OK(42, a.times);
+   }
 }

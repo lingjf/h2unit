@@ -60,7 +60,7 @@ struct h2_0cp {
 template <typename E, typename A>
 static inline h2_ostringstream& h2_ok1(h2_assert* d, h2_2cp<E, A> c2)
 {
-   h2_fail* fail = h2::h2_matcher_cast<A>(c2.m).matches(c2.a, {0, false, false, false, true});
+   h2_fail* fail = h2::h2_matcher_cast<A>(c2.m).matches(c2.a, {-1, 1, false, false, false, true});
    return d->stash(fail, "OK2", c2.op);
 }
 

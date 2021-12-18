@@ -213,7 +213,7 @@ template <typename T, typename P = h2_polymorphic_matcher<h2_not_matches<T>>>
 inline P Not(T expect) { return P(h2_not_matches<T>(expect)); }
 
 template <typename T, typename F, typename P = h2_polymorphic_matcher<h2_conditional_matches<T, F>>>
-inline P Conditional(bool cond, T true_expect, F false_expect) { return P(h2_conditional_matches<T, F>(cond, true_expect, false_expect)); }
+inline P Conditional(bool cond, T t_expect, F f_expect) { return P(h2_conditional_matches<T, F>(cond, t_expect, f_expect)); }
 
 template <typename... T, typename M = h2_allof_matches<typename std::decay<const T&>::type...>, typename P = h2_polymorphic_matcher<M>>
 inline P AllOf(const T&... expects) { return P(M(expects...)); }

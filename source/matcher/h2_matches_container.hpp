@@ -82,11 +82,11 @@ struct h2_is_polymorphic_matcher_pair_matches<T, typename std::enable_if<h2_is_p
       return matches(h2_array<decltype(a[0])>(a, c.n == -1 ? (Un != 0x7fffffff ? Un : 5413722) : c.n), c);                                                                                      \
    }
 
-#define H2_MATCHES_CONTAINER2(Un, name)                                                                                                                  \
-   H2_MATCHES_CONTAINER1(Un)                                                                                                                             \
-   virtual h2_line expection(C c) const override                                                                                                         \
-   {                                                                                                                                                     \
-      return c.update_caseless(false).pre() + (name) + gray("(") + h2_matches_expection(m, c.update_caseless(false).update_negative(false)) + gray(")"); \
+#define H2_MATCHES_CONTAINER2(Un, name)                                                                                                                             \
+   H2_MATCHES_CONTAINER1(Un)                                                                                                                                        \
+   virtual h2_line expection(C c) const override                                                                                                                    \
+   {                                                                                                                                                                \
+      return c.update_caseless(false).pre() + (name) + gray("(") + h2_matches_expection(m, c.update_caseless(false).update_negative(false)) + gray(")") + c.post(); \
    }
 
 #define H2_MATCHES_STATS(value, prev_result)                                                                      \
@@ -148,12 +148,11 @@ struct h2_has1_matches : h2_matches {
          if (++count > Count) break;
          h2_fail* fail = h2_matcher_cast<typename std::decay<decltype(ia.first)>::type>(m).matches(ia.first, c.update_n(0).update_negative(false));
          if (!fail) {
-            found = 1;
-            break;
+            if (++found >= c.times) break;
          } else
             delete fail;
       }
-      if (c.fit(found)) return nullptr;
+      if (c.fit(found >= c.times)) return nullptr;
       return h2_fail::new_unexpect(expection(c), h2_stringify(a, true));
    }
 
@@ -165,12 +164,11 @@ struct h2_has1_matches : h2_matches {
          if (++count > Count) break;
          h2_fail* fail = h2_matcher_cast<typename A::value_type>(m).matches(ia, c.update_n(0).update_negative(false));
          if (!fail) {
-            found = 1;
-            break;
+            if (++found >= c.times) break;
          } else
             delete fail;
       }
-      if (c.fit(found)) return nullptr;
+      if (c.fit(found >= c.times)) return nullptr;
       return h2_fail::new_unexpect(expection(c), h2_stringify(a, true));
    }
 
@@ -193,7 +191,7 @@ struct h2_has2_matches : h2_has1_matches<0x7fffffff, P> {
       if (strcmp("HasValue", type)) t += h2_matches_expection(k, c.update_negative(false));
       if (!strcmp("Has", type)) t += ", ";
       if (strcmp("HasKey", type)) t += h2_matches_expection(v, c.update_negative(false));
-      return c.update_caseless(false).pre() + type + gray("(") + t + gray(")");
+      return c.update_caseless(false).pre() + type + gray("(") + t + gray(")") + c.post();
    }
 };
 

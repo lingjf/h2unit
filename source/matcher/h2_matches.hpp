@@ -1,13 +1,13 @@
 struct C {
-   int n;
+   int n, times;
    bool negative, case_insensitive, squash_whitespace, no_compare_operator;
-   C(int n_ = -1, bool negative_ = false, bool case_insensitive_ = false, bool squash_whitespace_ = false, bool no_compare_operator_ = false) : n(n_), negative(negative_), case_insensitive(case_insensitive_), squash_whitespace(squash_whitespace_), no_compare_operator(no_compare_operator_) {}
+   C(int n_ = -1, int times_ = 1, bool negative_ = false, bool case_insensitive_ = false, bool squash_whitespace_ = false, bool no_compare_operator_ = false) : n(n_), times(times_), negative(negative_), case_insensitive(case_insensitive_), squash_whitespace(squash_whitespace_), no_compare_operator(no_compare_operator_) {}
 
    bool fit(bool result) const { return result == !negative; }
-   C update_n(int target = false) const { return {target, negative, case_insensitive, squash_whitespace, no_compare_operator}; }
-   C update_negative(bool target = false) const { return {n, target, case_insensitive, squash_whitespace, no_compare_operator}; }
-   C update_caseless(bool target = false) const { return {n, negative, target, squash_whitespace, no_compare_operator}; }
-   C update_spaceless(bool target = false) const { return {n, negative, case_insensitive, target, no_compare_operator}; }
+   C update_n(int target = false) const { return {target, times, negative, case_insensitive, squash_whitespace, no_compare_operator}; }
+   C update_negative(bool target = false) const { return {n, times, target, case_insensitive, squash_whitespace, no_compare_operator}; }
+   C update_caseless(bool target = false) const { return {n, times, negative, target, squash_whitespace, no_compare_operator}; }
+   C update_spaceless(bool target = false) const { return {n, times, negative, case_insensitive, target, no_compare_operator}; }
 
    h2_line pre(const char* ns = "!") const
    {
@@ -17,6 +17,7 @@ struct C {
       if (squash_whitespace) t.push_back("*");
       return t;
    }
+   h2_line post() const { return times == 1 ? h2_line() : " * " + h2_stringify(times); }
 };
 
 struct h2_matches {

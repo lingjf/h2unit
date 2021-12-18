@@ -1599,15 +1599,15 @@ struct h2_report : h2_report_interface {
 };
 // source/matcher/h2_matches.hpp
 struct C {
-   int n;
+   int n, times;
    bool negative, case_insensitive, squash_whitespace, no_compare_operator;
-   C(int n_ = -1, bool negative_ = false, bool case_insensitive_ = false, bool squash_whitespace_ = false, bool no_compare_operator_ = false) : n(n_), negative(negative_), case_insensitive(case_insensitive_), squash_whitespace(squash_whitespace_), no_compare_operator(no_compare_operator_) {}
+   C(int n_ = -1, int times_ = 1, bool negative_ = false, bool case_insensitive_ = false, bool squash_whitespace_ = false, bool no_compare_operator_ = false) : n(n_), times(times_), negative(negative_), case_insensitive(case_insensitive_), squash_whitespace(squash_whitespace_), no_compare_operator(no_compare_operator_) {}
 
    bool fit(bool result) const { return result == !negative; }
-   C update_n(int target = false) const { return {target, negative, case_insensitive, squash_whitespace, no_compare_operator}; }
-   C update_negative(bool target = false) const { return {n, target, case_insensitive, squash_whitespace, no_compare_operator}; }
-   C update_caseless(bool target = false) const { return {n, negative, target, squash_whitespace, no_compare_operator}; }
-   C update_spaceless(bool target = false) const { return {n, negative, case_insensitive, target, no_compare_operator}; }
+   C update_n(int target = false) const { return {target, times, negative, case_insensitive, squash_whitespace, no_compare_operator}; }
+   C update_negative(bool target = false) const { return {n, times, target, case_insensitive, squash_whitespace, no_compare_operator}; }
+   C update_caseless(bool target = false) const { return {n, times, negative, target, squash_whitespace, no_compare_operator}; }
+   C update_spaceless(bool target = false) const { return {n, times, negative, case_insensitive, target, no_compare_operator}; }
 
    h2_line pre(const char* ns = "!") const
    {
@@ -1617,6 +1617,7 @@ struct C {
       if (squash_whitespace) t.push_back("*");
       return t;
    }
+   h2_line post() const { return times == 1 ? h2_line() : " * " + h2_stringify(times); }
 };
 
 struct h2_matches {
@@ -1703,6 +1704,7 @@ template <typename Matches>
 struct h2_polymorphic_matcher : h2_matches {
    using matches_type = Matches;
    const Matches m;
+   int times = 1;
    bool negative = false, case_insensitive = false, squash_whitespace = false;
    explicit h2_polymorphic_matcher(const Matches& m_) : m(m_) {}
    h2_polymorphic_matcher& operator!()
@@ -1720,32 +1722,38 @@ struct h2_polymorphic_matcher : h2_matches {
       squash_whitespace = true;
       return *this;
    }
+   h2_polymorphic_matcher& operator*(int times_)
+   {
+      times = times_;
+      return *this;
+   }
    const h2_polymorphic_matcher& operator()() const { return *this; }  // Matcher/Mather() both works
 
    template <typename T>
    operator h2_matcher<T>() const
    {
-      return h2_matcher<T>(new internal_impl<const T&>(m, negative, case_insensitive, squash_whitespace), 0);
+      return h2_matcher<T>(new internal_impl<const T&>(m, times, negative, case_insensitive, squash_whitespace), 0);
    }
 
    template <typename T>
    struct internal_impl : h2_matcher_impl<T>, h2_libc {
       const Matches m;
+      int times;
       bool negative, case_insensitive, squash_whitespace;
-      explicit internal_impl(const Matches& m_, bool negative_, bool case_insensitive_, bool squash_whitespace_) : m(m_), negative(negative_), case_insensitive(case_insensitive_), squash_whitespace(squash_whitespace_) {}
+      explicit internal_impl(const Matches& m_, int times_, bool negative_, bool case_insensitive_, bool squash_whitespace_) : m(m_), times(times_), negative(negative_), case_insensitive(case_insensitive_), squash_whitespace(squash_whitespace_) {}
       h2_fail* matches(const T& a, C c = {}) const override
       {
-         return m.matches(a, {c.n, negative != c.negative, case_insensitive || c.case_insensitive, squash_whitespace || c.squash_whitespace, c.no_compare_operator});
+         return m.matches(a, {c.n, c.times * times, negative != c.negative, case_insensitive || c.case_insensitive, squash_whitespace || c.squash_whitespace, c.no_compare_operator});
       }
       h2_line expection(C c) const override
       {
-         return m.expection({c.n, negative != c.negative /*XOR ^*/, case_insensitive || c.case_insensitive, squash_whitespace || c.squash_whitespace, c.no_compare_operator});
+         return m.expection({c.n, c.times * times, negative != c.negative /*XOR ^*/, case_insensitive || c.case_insensitive, squash_whitespace || c.squash_whitespace, c.no_compare_operator});
       }
    };
 
    virtual h2_line expection(C c = {}) const override
    {
-      return h2_matches_expection(m, {c.n, negative != c.negative, case_insensitive || c.case_insensitive, squash_whitespace || c.squash_whitespace, c.no_compare_operator});
+      return h2_matches_expection(m, {c.n, c.times * times, negative != c.negative, case_insensitive || c.case_insensitive, squash_whitespace || c.squash_whitespace, c.no_compare_operator});
    }
 };
 
@@ -2081,11 +2089,11 @@ struct h2_is_polymorphic_matcher_pair_matches<T, typename std::enable_if<h2_is_p
       return matches(h2_array<decltype(a[0])>(a, c.n == -1 ? (Un != 0x7fffffff ? Un : 5413722) : c.n), c);                                                                                      \
    }
 
-#define H2_MATCHES_CONTAINER2(Un, name)                                                                                                                  \
-   H2_MATCHES_CONTAINER1(Un)                                                                                                                             \
-   virtual h2_line expection(C c) const override                                                                                                         \
-   {                                                                                                                                                     \
-      return c.update_caseless(false).pre() + (name) + gray("(") + h2_matches_expection(m, c.update_caseless(false).update_negative(false)) + gray(")"); \
+#define H2_MATCHES_CONTAINER2(Un, name)                                                                                                                             \
+   H2_MATCHES_CONTAINER1(Un)                                                                                                                                        \
+   virtual h2_line expection(C c) const override                                                                                                                    \
+   {                                                                                                                                                                \
+      return c.update_caseless(false).pre() + (name) + gray("(") + h2_matches_expection(m, c.update_caseless(false).update_negative(false)) + gray(")") + c.post(); \
    }
 
 #define H2_MATCHES_STATS(value, prev_result)                                                                      \
@@ -2147,12 +2155,11 @@ struct h2_has1_matches : h2_matches {
          if (++count > Count) break;
          h2_fail* fail = h2_matcher_cast<typename std::decay<decltype(ia.first)>::type>(m).matches(ia.first, c.update_n(0).update_negative(false));
          if (!fail) {
-            found = 1;
-            break;
+            if (++found >= c.times) break;
          } else
             delete fail;
       }
-      if (c.fit(found)) return nullptr;
+      if (c.fit(found >= c.times)) return nullptr;
       return h2_fail::new_unexpect(expection(c), h2_stringify(a, true));
    }
 
@@ -2164,12 +2171,11 @@ struct h2_has1_matches : h2_matches {
          if (++count > Count) break;
          h2_fail* fail = h2_matcher_cast<typename A::value_type>(m).matches(ia, c.update_n(0).update_negative(false));
          if (!fail) {
-            found = 1;
-            break;
+            if (++found >= c.times) break;
          } else
             delete fail;
       }
-      if (c.fit(found)) return nullptr;
+      if (c.fit(found >= c.times)) return nullptr;
       return h2_fail::new_unexpect(expection(c), h2_stringify(a, true));
    }
 
@@ -2192,7 +2198,7 @@ struct h2_has2_matches : h2_has1_matches<0x7fffffff, P> {
       if (strcmp("HasValue", type)) t += h2_matches_expection(k, c.update_negative(false));
       if (!strcmp("Has", type)) t += ", ";
       if (strcmp("HasKey", type)) t += h2_matches_expection(v, c.update_negative(false));
-      return c.update_caseless(false).pre() + type + gray("(") + t + gray(")");
+      return c.update_caseless(false).pre() + type + gray("(") + t + gray(")") + c.post();
    }
 };
 
@@ -2564,7 +2570,7 @@ template <typename T, typename P = h2_polymorphic_matcher<h2_not_matches<T>>>
 inline P Not(T expect) { return P(h2_not_matches<T>(expect)); }
 
 template <typename T, typename F, typename P = h2_polymorphic_matcher<h2_conditional_matches<T, F>>>
-inline P Conditional(bool cond, T true_expect, F false_expect) { return P(h2_conditional_matches<T, F>(cond, true_expect, false_expect)); }
+inline P Conditional(bool cond, T t_expect, F f_expect) { return P(h2_conditional_matches<T, F>(cond, t_expect, f_expect)); }
 
 template <typename... T, typename M = h2_allof_matches<typename std::decay<const T&>::type...>, typename P = h2_polymorphic_matcher<M>>
 inline P AllOf(const T&... expects) { return P(M(expects...)); }
@@ -3967,7 +3973,7 @@ struct h2_0cp {
 template <typename E, typename A>
 static inline h2_ostringstream& h2_ok1(h2_assert* d, h2_2cp<E, A> c2)
 {
-   h2_fail* fail = h2::h2_matcher_cast<A>(c2.m).matches(c2.a, {0, false, false, false, true});
+   h2_fail* fail = h2::h2_matcher_cast<A>(c2.m).matches(c2.a, {-1, 1, false, false, false, true});
    return d->stash(fail, "OK2", c2.op);
 }
 
