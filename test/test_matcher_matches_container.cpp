@@ -148,7 +148,7 @@ SUITE(h2_listof_matches)
       T1 a2_ = T1(h2::h2_equation<int>(2));
       T1 a3_ = T1(h2::h2_equation<int>(3));
 
-      h2::h2_listof_matches<T1, T1, T1> a(a1_, a2_, a3_);
+      h2::h2_listof_matches<h2::h2_range<0x7fffffff, -1>, T1, T1, T1> a(a1_, a2_, a3_);
 
       int b1[] = {1, 2, 3};
       OK(nullptr == a.matches(b1, {}));
@@ -163,8 +163,10 @@ SUITE(ListOf primitive [api])
    Case(C/C++ generic array)
    {
       int a1[] = {1, 2, 3};
-      OK(ListOf(1, 2, 3), a1, 3);
       OK(ListOf(1, 2, 3), a1);
+
+      OK(ListOf(2, 3)(1, 3), a1);
+	  OK((ListOf<1, 3>(2, 3)), a1);
    }
 
    Case(Sequence containers / array / static contiguous array)
@@ -288,6 +290,13 @@ SUITE(Every primitive [api])
       int a1[] = {1, 2, 3};
       OK(Every(Ge(0)), a1);
       OK(!Every(Ge(3)), a1);
+
+      OK(Every(Lt(3))(2), a1);
+      OK(Every(Lt(3)) / 2, a1);
+      OK(Every(Lt(3))(0, 2), a1);
+	  
+	        OK(Every<2>(Lt(3)), a1);
+      OK((Every<0, 2>(Lt(3))), a1);
    }
 
    Case(Sequence containers / array / static contiguous array)
@@ -295,6 +304,13 @@ SUITE(Every primitive [api])
       std::array<int, 3> a1 = {1, 2, 3};
       OK(Every(Ge(0)), a1);
       OK(!Every(Ge(3)), a1);
+
+      OK(Every(Lt(3))(2), a1);
+      OK(Every(Lt(3)) / 2, a1);
+      OK(Every(Lt(3))(0, 2), a1);
+	  
+	        OK(Every<2>(Lt(3)), a1);
+      OK((Every<0, 2>(Lt(3))), a1);
    }
 
    Case(Sequence containers / vector / dynamic contiguous array)
@@ -302,6 +318,13 @@ SUITE(Every primitive [api])
       std::vector<int> a1 = {1, 2, 3};
       OK(Every(Ge(0)), a1);
       OK(!Every(Ge(3)), a1);
+
+      OK(Every(Lt(3))(2), a1);
+      OK(Every(Lt(3)) / 2, a1);
+      OK(Every(Lt(3))(0, 2), a1);
+	  
+	        OK(Every<2>(Lt(3)), a1);
+      OK((Every<0, 2>(Lt(3))), a1);
    }
 
    Case(Sequence containers / deque / double-ended queue)
@@ -309,6 +332,13 @@ SUITE(Every primitive [api])
       std::deque<int> a1 = {1, 2, 3};
       OK(Every(Ge(0)), a1);
       OK(!Every(Ge(3)), a1);
+
+      OK(Every(Lt(3))(2), a1);
+      OK(Every(Lt(3)) / 2, a1);
+      OK(Every(Lt(3))(0, 2), a1);
+	  
+	        OK(Every<2>(Lt(3)), a1);
+      OK((Every<0, 2>(Lt(3))), a1);
    }
 
    Case(Sequence containers / forward_list / singly-linked list)
@@ -316,6 +346,13 @@ SUITE(Every primitive [api])
       std::forward_list<int> a1 = {1, 2, 3};
       OK(Every(Ge(0)), a1);
       OK(!Every(Ge(3)), a1);
+
+      OK(Every(Lt(3))(2), a1);
+      OK(Every(Lt(3)) / 2, a1);
+      OK(Every(Lt(3))(0, 2), a1);
+	  
+	        OK(Every<2>(Lt(3)), a1);
+      OK((Every<0, 2>(Lt(3))), a1);
    }
 
    Case(Sequence containers / list / doubly-linked list)
@@ -323,6 +360,13 @@ SUITE(Every primitive [api])
       std::list<int> a1 = {1, 2, 3};
       OK(Every(Ge(0)), a1);
       OK(!Every(Ge(3)), a1);
+
+      OK(Every(Lt(3))(2), a1);
+      OK(Every(Lt(3)) / 2, a1);
+      OK(Every(Lt(3))(0, 2), a1);
+	  
+	        OK(Every<2>(Lt(3)), a1);
+      OK((Every<0, 2>(Lt(3))), a1);
    }
 
    Case(Associative containers / set)
@@ -330,6 +374,13 @@ SUITE(Every primitive [api])
       std::set<int> a1 = {1, 2, 3};
       OK(Every(Ge(0)), a1);
       OK(!Every(Ge(3)), a1);
+
+      OK(Every(Lt(3))(2), a1);
+      OK(Every(Lt(3)) / 2, a1);
+      OK(Every(Lt(3))(0, 2), a1);
+	  
+	        OK(Every<2>(Lt(3)), a1);
+      OK((Every<0, 2>(Lt(3))), a1);
    }
 
    Case(Associative containers / multiset)
@@ -337,6 +388,13 @@ SUITE(Every primitive [api])
       std::multiset<int> a1 = {1, 2, 3};
       OK(Every(Ge(0)), a1);
       OK(!Every(Ge(3)), a1);
+
+      OK(Every(Lt(3))(2), a1);
+      OK(Every(Lt(3)) / 2, a1);
+      OK(Every(Lt(3))(0, 2), a1);
+	  
+	        OK(Every<2>(Lt(3)), a1);
+      OK((Every<0, 2>(Lt(3))), a1);
    }
 
    Case(Associative containers / unordered_set)
@@ -344,6 +402,13 @@ SUITE(Every primitive [api])
       std::unordered_set<int> a1 = {1, 2, 3};
       OK(Every(Ge(0)), a1);
       OK(!Every(Ge(3)), a1);
+
+      OK(Every(Le(3))(2), a1);
+      OK(Every(Le(3)) / 2, a1);
+      OK(Every(Le(3))(0, 2), a1);
+	  
+	        OK(Every<2>(Le(3)), a1);
+      OK((Every<0, 2>(Le(3))), a1);
    }
 
    Case(Associative containers / map)
@@ -353,25 +418,66 @@ SUITE(Every primitive [api])
       OK(Every(Pair(Ge(0), Ge(100))), a1);
       OK(!Every(Pair(Ge(3), Ge(100))), a1);
 
+      OK(Every(Pair(Ge(0), Ge(100)))(2), a1);
+      OK(Every(Pair(Ge(0), Ge(100))) / 2, a1);
+      OK(Every(Pair(Ge(0), Ge(100)))(0, 2), a1);
+
       OK(Every(Ge(0), Ge(100)), a1);
+      OK(Every(Ge(0), Ge(100)) / 2, a1);
+      OK(Every(Ge(0), Ge(100))(0, 2), a1);
+	  
+	        OK(Every<2>(Pair(Ge(0), Ge(100))), a1);
+      OK((Every<0, 2>(Pair(Ge(0), Ge(100)))), a1);
+
+      OK(Every(Ge(0), Ge(100)), a1);
+      OK(Every<2>(Ge(0), Ge(100)), a1);
+      OK((Every<0, 2>(Ge(0), Ge(100))), a1);
    }
 
    Case(Associative containers / multimap)
    {
       std::multimap<int, int> a1 = {{1, 111}, {2, 222}, {3, 333}};
+
       OK(Every(Pair(Ge(0), Ge(100))), a1);
       OK(!Every(Pair(Ge(3), Ge(100))), a1);
 
+      OK(Every(Pair(Ge(0), Ge(100)))(2), a1);
+      OK(Every(Pair(Ge(0), Ge(100))) / 2, a1);
+      OK(Every(Pair(Ge(0), Ge(100)))(0, 2), a1);
+
       OK(Every(Ge(0), Ge(100)), a1);
+      OK(Every(Ge(0), Ge(100)) / 2, a1);
+      OK(Every(Ge(0), Ge(100))(0, 2), a1);
+	  
+	        OK(Every<2>(Pair(Ge(0), Ge(100))), a1);
+      OK((Every<0, 2>(Pair(Ge(0), Ge(100)))), a1);
+
+      OK(Every(Ge(0), Ge(100)), a1);
+      OK(Every<2>(Ge(0), Ge(100)), a1);
+      OK((Every<0, 2>(Ge(0), Ge(100))), a1);
    }
 
    Case(Associative containers / unordered_multimap)
    {
       std::unordered_multimap<int, int> a1 = {{1, 111}, {2, 222}, {3, 333}};
+
       OK(Every(Pair(Ge(0), Ge(100))), a1);
       OK(!Every(Pair(Ge(3), Ge(100))), a1);
 
+      OK(Every(Pair(Ge(0), Ge(100)))(2), a1);
+      OK(Every(Pair(Ge(0), Ge(100))) / 2, a1);
+      OK(Every(Pair(Ge(0), Ge(100)))(0, 2), a1);
+
       OK(Every(Ge(0), Ge(100)), a1);
+      OK(Every(Ge(0), Ge(100)) / 2, a1);
+      OK(Every(Ge(0), Ge(100))(0, 2), a1);
+	  
+	        OK(Every<2>(Pair(Ge(0), Ge(100))), a1);
+      OK((Every<0, 2>(Pair(Ge(0), Ge(100)))), a1);
+
+      OK(Every(Ge(0), Ge(100)), a1);
+      OK(Every<2>(Ge(0), Ge(100)), a1);
+      OK((Every<0, 2>(Ge(0), Ge(100))), a1);
    }
 
    Case(Container adaptors / stack)
@@ -383,6 +489,13 @@ SUITE(Every primitive [api])
 
       OK(Every(Ge(0)), a1);
       OK(!Every(Ge(3)), a1);
+
+      OK(Every(Lt(3))(2), a1);
+      OK(Every(Lt(3)) / 2, a1);
+      OK(Every(Lt(3))(0, 2), a1);
+	  
+	        OK(Every<2>(Lt(3)), a1);
+      OK((Every<0, 2>(Lt(3))), a1);
    }
 
    Case(Container adaptors / queue)
@@ -394,6 +507,13 @@ SUITE(Every primitive [api])
 
       OK(Every(Ge(0)), a1);
       OK(!Every(Ge(3)), a1);
+
+      OK(Every(Lt(3))(2), a1);
+      OK(Every(Lt(3)) / 2, a1);
+      OK(Every(Lt(3))(0, 2), a1);
+	  
+	        OK(Every<2>(Lt(3)), a1);
+      OK((Every<0, 2>(Lt(3))), a1);
    }
 
    Case(Container adaptors / priority_queue)
@@ -405,6 +525,10 @@ SUITE(Every primitive [api])
 
       OK(Every(Ge(0)), a1);
       OK(!Every(Ge(3)), a1);
+
+      OK(Every(Le(3))(2), a1);
+      OK(Every(Le(3)) / 2, a1);
+      OK(Every(Le(3))(0, 2), a1);
    }
 
    Case(string)
@@ -412,6 +536,12 @@ SUITE(Every primitive [api])
       std::string a1 = "abc";
       OK(Every(Ge('a')), a1);
       OK(!Every(Ge('c')), a1);
+      OK(Every(Lt('c'))(2), a1);
+      OK(Every(Lt('c')) / 2, a1);
+      OK(Every(Lt('c'))(0, 2), a1);
+	  
+	        OK(Every<2>(Lt('c')), a1);
+      OK((Every<0, 2>(Lt('c'))), a1);
    }
 }
 
@@ -434,16 +564,22 @@ SUITE(Has primitive [api])
    Case(C/C++ generic array)
    {
       int a1[] = {1, 2, 3};
-      OK(Has(1), a1, 3);
       OK(Has(1), a1);
-      OK(Has<3>(1), a1);
-      OK(Has(2), a1, 3);
+      OK(Has(1)(3), a1);
+      OK(Has(1) / 3, a1);
+      OK(Has(1)(0, 3), a1);
       OK(Has(2), a1);
-      OK(Has(3), a1, 3);
       OK(Has(3), a1);
-      OK(!Has(4), a1, 3);
       OK(!Has(4), a1);
-      OK(!Has<3>(4), a1);
+      OK(!Has(4)(3), a1);
+      OK(!Has(4) / 3, a1);
+      OK(!Has(4)(0, 3), a1);
+	  
+	        OK(Has<3>(1), a1);
+      OK((Has<0, 3>(1)), a1);
+	  
+	        OK(!Has<3>(4), a1);
+      OK(!(Has<0, 3>(4)), a1);
    }
 
    Case(Sequence containers / array / static contiguous array)
@@ -998,11 +1134,35 @@ SUITE(MaxOf MinOf AvgOf MeanOf MedianOf primitive [api])
       OK(MeanOf(2), a1);
       OK(MedianOf(2), a1);
 
-      OK(MaxOf<3>(3), a1);
+      OK(MaxOf(3) / 3, a1);
+      OK(MinOf(1) / 3, a1);
+      OK(AvgOf(2) / 3, a1);
+      OK(MeanOf(2) / 3, a1);
+      OK(MedianOf(2) / 3, a1);
+
+      OK(MaxOf(3)(3), a1);
+      OK(MinOf(1)(3), a1);
+      OK(AvgOf(2)(3), a1);
+      OK(MeanOf(2)(3), a1);
+      OK(MedianOf(2)(3), a1);
+
+      OK(MaxOf(3)(0, 3), a1);
+      OK(MinOf(1)(0, 3), a1);
+      OK(AvgOf(2)(0, 3), a1);
+      OK(MeanOf(2)(0, 3), a1);
+      OK(MedianOf(2)(0, 3), a1);
+	  
+	     OK(MaxOf<3>(3), a1);
       OK(MinOf<3>(1), a1);
       OK(AvgOf<3>(2), a1);
       OK(MeanOf<3>(2), a1);
       OK(MedianOf<3>(2), a1);
+
+      OK((MaxOf<0, 3>(3)), a1);
+      OK((MinOf<0, 3>(1)), a1);
+      OK((AvgOf<0, 3>(2)), a1);
+      OK((MeanOf<0, 3>(2)), a1);
+      OK((MedianOf<0, 3>(2)), a1);
    }
 
    Case(Sequence containers / array / static contiguous array)
@@ -1338,7 +1498,7 @@ SUITE(container MOCK)
                                   std::stack<int>,
                                   std::queue<int>&,
                                   std::priority_queue<int>))
-        .Once(Has<3>(2),
+        .Once(Has(2) / 3 && Has<3>(2),
               Has(2),
               Has(2),
               Has(2),
@@ -1410,7 +1570,7 @@ SUITE(container MOCK)
                                   std::stack<int>,
                                   std::queue<int>&,
                                   std::priority_queue<int>))
-        .Once(MaxOf<3>(3) && MinOf<3>(1) && AvgOf<3>(2) && MeanOf<3>(2) && MedianOf<3>(2),
+        .Once(MaxOf(3) / 3 && MinOf<3>(1) && AvgOf(2) / 3 && MeanOf<3>(2)  && MedianOf(2) / 3,
               MaxOf(3) && MinOf(1) && AvgOf(2) && MeanOf(2) && MedianOf(2),
               MaxOf(3) && MinOf(1) && AvgOf(2) && MeanOf(2) && MedianOf(2),
               MaxOf(3) && MinOf(1) && AvgOf(2) && MeanOf(2) && MedianOf(2),
@@ -1483,3 +1643,4 @@ SUITE(container bool problem)
       OK(Has(false), a1);
    }
 }
+

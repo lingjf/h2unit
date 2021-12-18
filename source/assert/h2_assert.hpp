@@ -13,16 +13,16 @@ static inline h2_ostringstream& h2_je(h2_assert* d, h2_string e, h2_string a, h2
 }
 
 template <typename E, typename A>
-static inline h2_ostringstream& h2_ok2(h2_assert* d, E e, const A& a, int n, std::false_type, int z)
+static inline h2_ostringstream& h2_ok2(h2_assert* d, E e, const A& a, std::false_type, int)
 {
-   h2_fail* fail = h2::h2_matcher_cast<typename h2_decay<A>::type>((typename h2_decay<E>::type)e).matches(a, {n});
+   h2_fail* fail = h2::h2_matcher_cast<typename h2_decay<A>::type>((typename h2_decay<E>::type)e).matches(a, {});
    return d->stash(fail, "OK2");
 }
 
 template <typename E, typename A>
-static inline h2_ostringstream& h2_ok2(h2_assert* d, E e, const A a, int n, std::true_type, int z)
+static inline h2_ostringstream& h2_ok2(h2_assert* d, E e, const A a, std::true_type, int n)
 {
-   h2_fail* fail = h2::h2_matcher_cast<typename h2_decay<A>::type>((typename h2_decay<E>::type)e).matches((typename h2_decay<A>::type)a, {n > 0 ? n : z});
+   h2_fail* fail = h2::h2_matcher_cast<typename h2_decay<A>::type>((typename h2_decay<E>::type)e).matches((typename h2_decay<A>::type)a, {n});
    return d->stash(fail, "OK2");
 }
 
@@ -60,7 +60,7 @@ struct h2_0cp {
 template <typename E, typename A>
 static inline h2_ostringstream& h2_ok1(h2_assert* d, h2_2cp<E, A> c2)
 {
-   h2_fail* fail = h2::h2_matcher_cast<A>(c2.m).matches(c2.a, {-1, 1, false, false, false, true});
+   h2_fail* fail = h2::h2_matcher_cast<A>(c2.m).matches(c2.a, {-1, true});
    return d->stash(fail, "OK2", c2.op);
 }
 
@@ -75,9 +75,8 @@ static inline h2_ostringstream& h2_ok1(h2_assert* d, h2_1cp<A> c1)
 #define H2OK(_1, ...) H2PP_CAT(__H2OK, H2PP_IS_EMPTY(__VA_ARGS__))(H2PP_UNIQUE(), #_1, (#__VA_ARGS__), _1, __VA_ARGS__)
 #define __H2OK1(Q, expression, _, actual, ...) \
    for (h2::h2_assert Q; Q; Q.failing("", expression, H2_FILINE)) h2::h2_ok1(&Q, h2::h2_0cp() > actual)
-#define __H2OK0(...) H2PP_PROXY(__H2OK2, (__VA_ARGS__))
-#define __H2OK2(Q, e_expression, a_expression, expect, actual, ...) \
-   for (h2::h2_assert Q; Q; Q.failing(e_expression, a_expression, H2_FILINE)) h2::h2_ok2(&Q, expect, actual, h2::sn(__VA_ARGS__), std::is_array<decltype(actual)>{}, std::extent<decltype(actual)>::value)
+#define __H2OK0(Q, e_expression, a_expression, expect, actual) \
+   for (h2::h2_assert Q; Q; Q.failing(e_expression, a_expression, H2_FILINE)) h2::h2_ok2(&Q, expect, actual, std::is_array<decltype(actual)>{}, std::extent<decltype(actual)>::value)
 
 #define H2JE(...) H2PP_VARIADIC_CALL(__H2JE, H2PP_UNIQUE(), __VA_ARGS__)
 #define __H2JE3(Q, expect, actual) \

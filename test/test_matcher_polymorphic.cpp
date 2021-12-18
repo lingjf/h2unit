@@ -92,4 +92,25 @@ SUITE(h2_polymorphic_matcher)
       a * 42;
       OK(42, a.times);
    }
+
+   Case(range(10, 20))
+   {
+      a(10, 20);
+      OK(10, a.range_start);
+      OK(20, a.range_end);
+   }
+
+   Case(range(20))
+   {
+      a(20);
+      OK(0, a.range_start);
+      OK(20, a.range_end);
+   }
+
+   Case(/20)
+   {
+      a / 20;
+      OK(0, a.range_start);
+      OK(20, a.range_end);
+   }
 }

@@ -1,13 +1,14 @@
 struct C {
-   int n, times;
-   bool negative, case_insensitive, squash_whitespace, no_compare_operator;
-   C(int n_ = -1, int times_ = 1, bool negative_ = false, bool case_insensitive_ = false, bool squash_whitespace_ = false, bool no_compare_operator_ = false) : n(n_), times(times_), negative(negative_), case_insensitive(case_insensitive_), squash_whitespace(squash_whitespace_), no_compare_operator(no_compare_operator_) {}
+   int array_size, range_start, range_end, times;
+   bool no_compare_operator, negative, case_insensitive, squash_whitespace;
+   C(int array_size_ = -1, bool no_compare_operator_ = false, bool negative_ = false, bool case_insensitive_ = false, bool squash_whitespace_ = false, int range_start_ = 0, int range_end_ = 5413722, int times_ = 1) : array_size(array_size_), range_start(range_start_), range_end(range_end_), times(times_), no_compare_operator(no_compare_operator_), negative(negative_), case_insensitive(case_insensitive_), squash_whitespace(squash_whitespace_) {}
 
+   bool in(const int i) const { return range_start <= i && i < range_end; }
    bool fit(bool result) const { return result == !negative; }
-   C update_n(int target = false) const { return {target, times, negative, case_insensitive, squash_whitespace, no_compare_operator}; }
-   C update_negative(bool target = false) const { return {n, times, target, case_insensitive, squash_whitespace, no_compare_operator}; }
-   C update_caseless(bool target = false) const { return {n, times, negative, target, squash_whitespace, no_compare_operator}; }
-   C update_spaceless(bool target = false) const { return {n, times, negative, case_insensitive, target, no_compare_operator}; }
+   C clear_size() const { return {-1, no_compare_operator, negative, case_insensitive, squash_whitespace, 0, 5413722, times}; }
+   C update_negative(bool target = false) const { return {array_size, no_compare_operator, target, case_insensitive, squash_whitespace, range_start, range_end, times}; }
+   C update_caseless(bool target = false) const { return {array_size, no_compare_operator, negative, target, squash_whitespace, range_start, range_end, times}; }
+   C update_spaceless(bool target = false) const { return {array_size, no_compare_operator, negative, case_insensitive, target, range_start, range_end, times}; }
 
    h2_line pre(const char* ns = "!") const
    {

@@ -33,8 +33,8 @@ struct h2_pair_matches : h2_matches {
    auto matches(const A& a, C c) const -> typename std::enable_if<h2_is_pair<typename std::decay<A>::type>::value, h2_fail*>::type
    {
       h2_fail* fails = nullptr;
-      h2_fail::append_subling(fails, h2_matcher_cast<typename std::decay<decltype(a.first)>::type>(k).matches(a.first, c.update_n(0).update_negative(false)));
-      h2_fail::append_subling(fails, h2_matcher_cast<typename std::decay<decltype(a.second)>::type>(v).matches(a.second, c.update_n(0).update_negative(false)));
+      h2_fail::append_subling(fails, h2_matcher_cast<typename std::decay<decltype(a.first)>::type>(k).matches(a.first, c.clear_size().update_negative(false)));
+      h2_fail::append_subling(fails, h2_matcher_cast<typename std::decay<decltype(a.second)>::type>(v).matches(a.second, c.clear_size().update_negative(false)));
       if (c.fit(!fails)) {
          if (fails) delete fails;
          return nullptr;
@@ -43,13 +43,11 @@ struct h2_pair_matches : h2_matches {
       h2_fail::append_child(fail, fails);
       return fail;
    }
-
    template <typename A>
    auto matches(const A& a, C c) const -> typename std::enable_if<!h2_is_pair<typename std::decay<A>::type>::value, h2_fail*>::type
    {
       return h2_fail::new_unexpect(expection(c), h2_stringify(a, true));
    }
-
    virtual h2_line expection(C c) const override
    {
       return c.update_caseless(false).pre() + gray("(") + h2_matches_expection(k, c) + gray(", ") + h2_matches_expection(v, c) + gray(")");
@@ -70,35 +68,36 @@ template <typename T>
 struct h2_is_polymorphic_matcher_pair_matches<T, typename std::enable_if<h2_is_polymorphic_matcher<T>::value && h2_is_pair_matches<typename T::matches_type>::value>::type> : std::true_type {
 };
 
-#define H2_MATCHES_CONTAINER1(Un)                                                                                                                                                               \
-   template <typename A>                                                                                                                                                                        \
-   auto matches(const A& a, C c) const->typename std::enable_if<h2_is_container_adaptor<typename std::decay<A>::type>::value, h2_fail*>::type                                                   \
-   {                                                                                                                                                                                            \
-      return matches(underlying_container(a), c);                                                                                                                                               \
-   }                                                                                                                                                                                            \
-   template <typename A>                                                                                                                                                                        \
-   auto matches(A a, C c) const->typename std::enable_if<!h2_is_iterable<typename std::decay<A>::type>::value && !h2_is_container_adaptor<typename std::decay<A>::type>::value, h2_fail*>::type \
-   {                                                                                                                                                                                            \
-      return matches(h2_array<decltype(a[0])>(a, c.n == -1 ? (Un != 0x7fffffff ? Un : 5413722) : c.n), c);                                                                                      \
+#define H2_MATCHES_CONTAINER1()                                                                                                                                                                                \
+   template <typename A>                                                                                                                                                                                       \
+   auto matches(const A& a, C c) const->typename std::enable_if<h2_is_container_adaptor<typename std::decay<A>::type>::value, h2_fail*>::type                                                                  \
+   {                                                                                                                                                                                                           \
+      return matches(underlying_container(a), c);                                                                                                                                                              \
+   }                                                                                                                                                                                                           \
+   template <typename A>                                                                                                                                                                                       \
+   auto matches(A a, C c) const->typename std::enable_if<!h2_is_iterable<typename std::decay<A>::type>::value && !h2_is_container_adaptor<typename std::decay<A>::type>::value, h2_fail*>::type                \
+   { /* native c/c++ array or pointer */                                                                                                                                                                       \
+      return matches(h2_array<decltype(a[0])>(a, c.array_size == -1 ? (c.range_end - c.range_start < Range::end - Range::start ? c.range_end - c.range_start : Range::end - Range::start) : c.array_size), c); \
    }
 
-#define H2_MATCHES_CONTAINER2(Un, name)                                                                                                                             \
-   H2_MATCHES_CONTAINER1(Un)                                                                                                                                        \
+#define H2_MATCHES_CONTAINER2(name)                                                                                                                                 \
+   H2_MATCHES_CONTAINER1()                                                                                                                                          \
    virtual h2_line expection(C c) const override                                                                                                                    \
    {                                                                                                                                                                \
       return c.update_caseless(false).pre() + (name) + gray("(") + h2_matches_expection(m, c.update_caseless(false).update_negative(false)) + gray(")") + c.post(); \
-   }
+   }                                                                                                                                                                \
+   bool range_in(const C& c, const int i) const { return c.in(i) && Range::in(i); }
 
-#define H2_MATCHES_STATS(value, prev_result)                                                                      \
-   bool result = (prev_result);                                                                                   \
-   if (result) {                                                                                                  \
-      h2_fail* fail = h2_matcher_cast<decltype(value)>(m).matches((value), c.update_n(0).update_negative(false)); \
-      if (fail) delete fail, result = false;                                                                      \
-   }                                                                                                              \
-   if (c.fit(result)) return nullptr;                                                                             \
+#define H2_MATCHES_STATS(value, prev_result)                                                                       \
+   bool result = (prev_result);                                                                                    \
+   if (result) {                                                                                                   \
+      h2_fail* fail = h2_matcher_cast<decltype(value)>(m).matches((value), c.clear_size().update_negative(false)); \
+      if (fail) delete fail, result = false;                                                                       \
+   }                                                                                                               \
+   if (c.fit(result)) return nullptr;                                                                              \
    return h2_fail::new_unexpect(expection(c), ((prev_result) ? h2_stringify(value) : h2_line()) + h2_stringify(a, true));
 
-template <int Count, typename Matcher>
+template <typename Range, typename Matcher>  // [Start, End)
 struct h2_every1_matches : h2_matches {
    Matcher m;
    explicit h2_every1_matches(const Matcher& m_) : m(m_) {}
@@ -107,11 +106,12 @@ struct h2_every1_matches : h2_matches {
    auto matches(const A& a, C c) const -> typename std::enable_if<h2_is_iterable<typename std::decay<A>::type>::value, h2_fail*>::type
    {
       h2_fail* fails = nullptr;
-      for (auto const& ia : a) {
-         h2_fail* fail = h2_matcher_cast<typename A::value_type>(m).matches(ia, c.update_n(0).update_negative(false));
-         h2_fail::append_subling(fails, fail);
-      }
-
+      int i = 0;
+      for (auto const& ia : a)
+         if (range_in(c, i++)) {
+            h2_fail* fail = h2_matcher_cast<typename A::value_type>(m).matches(ia, c.clear_size().update_negative(false));
+            h2_fail::append_subling(fails, fail);
+         }
       if (c.fit(!fails)) {
          if (fails) delete fails;
          return nullptr;
@@ -120,22 +120,21 @@ struct h2_every1_matches : h2_matches {
       h2_fail::append_child(fail, fails);
       return fail;
    }
-
-   H2_MATCHES_CONTAINER2(Count, "Every")
+   H2_MATCHES_CONTAINER2("Every")
 };
 
-template <int Count, typename EK, typename EV, typename M = h2_pair_matches<EK, EV>, typename P = h2_polymorphic_matcher<M>>
-struct h2_every2_matches : h2_every1_matches<Count, P> {
+template <typename Range, typename EK, typename EV, typename M = h2_pair_matches<EK, EV>, typename P = h2_polymorphic_matcher<M>>
+struct h2_every2_matches : h2_every1_matches<Range, P> {
    EK k;
    EV v;
-   explicit h2_every2_matches(const EK& k_, const EV& v_) : h2_every1_matches<Count, P>(P(M(k_, v_))), k(k_), v(v_) {}
+   explicit h2_every2_matches(const EK& k_, const EV& v_) : h2_every1_matches<Range, P>(P(M(k_, v_))), k(k_), v(v_) {}
    virtual h2_line expection(C c) const override
    {
       return c.update_caseless(false).pre() + "Every" + gray("(") + h2_matches_expection(k, c) + gray(", ") + h2_matches_expection(v, c) + gray(")");
    }
 };
 
-template <int Count, typename Matcher>
+template <typename Range, typename Matcher>
 struct h2_has1_matches : h2_matches {
    Matcher m;
    explicit h2_has1_matches(const Matcher& m_) : m(m_) {}
@@ -143,15 +142,15 @@ struct h2_has1_matches : h2_matches {
    template <typename A>
    auto __matches(const A& a, C c) const -> typename std::enable_if<h2_is_map<typename std::decay<A>::type>::value && !h2_is_polymorphic_matcher_pair_matches<Matcher>::value, h2_fail*>::type
    {  // HasKey scenario
-      int found = 0, count = 0;
-      for (auto const& ia : a) {
-         if (++count > Count) break;
-         h2_fail* fail = h2_matcher_cast<typename std::decay<decltype(ia.first)>::type>(m).matches(ia.first, c.update_n(0).update_negative(false));
-         if (!fail) {
-            if (++found >= c.times) break;
-         } else
-            delete fail;
-      }
+      int found = 0, i = 0;
+      for (auto const& ia : a)
+         if (range_in(c, i++)) {
+            h2_fail* fail = h2_matcher_cast<typename std::decay<decltype(ia.first)>::type>(m).matches(ia.first, c.clear_size().update_negative(false));
+            if (!fail) {
+               if (++found >= c.times) break;
+            } else
+               delete fail;
+         }
       if (c.fit(found >= c.times)) return nullptr;
       return h2_fail::new_unexpect(expection(c), h2_stringify(a, true));
    }
@@ -159,15 +158,15 @@ struct h2_has1_matches : h2_matches {
    template <typename A>
    auto __matches(const A& a, C c) const -> typename std::enable_if<!h2_is_map<typename std::decay<A>::type>::value || h2_is_polymorphic_matcher_pair_matches<Matcher>::value, h2_fail*>::type
    {  // Normal scenario
-      int found = 0, count = 0;
-      for (auto const& ia : a) {
-         if (++count > Count) break;
-         h2_fail* fail = h2_matcher_cast<typename A::value_type>(m).matches(ia, c.update_n(0).update_negative(false));
-         if (!fail) {
-            if (++found >= c.times) break;
-         } else
-            delete fail;
-      }
+      int found = 0, i = 0;
+      for (auto const& ia : a)
+         if (range_in(c, i++)) {
+            h2_fail* fail = h2_matcher_cast<typename A::value_type>(m).matches(ia, c.clear_size().update_negative(false));
+            if (!fail) {
+               if (++found >= c.times) break;
+            } else
+               delete fail;
+         }
       if (c.fit(found >= c.times)) return nullptr;
       return h2_fail::new_unexpect(expection(c), h2_stringify(a, true));
    }
@@ -175,15 +174,15 @@ struct h2_has1_matches : h2_matches {
    template <typename A>
    auto matches(const A& a, C c) const -> typename std::enable_if<h2_is_iterable<typename std::decay<A>::type>::value, h2_fail*>::type { return __matches(a, c); }
 
-   H2_MATCHES_CONTAINER2(Count, "Has")
+   H2_MATCHES_CONTAINER2("Has")
 };
 
 template <typename EK, typename EV, typename M = h2_pair_matches<EK, EV>, typename P = h2_polymorphic_matcher<M>>
-struct h2_has2_matches : h2_has1_matches<0x7fffffff, P> {
+struct h2_has2_matches : h2_has1_matches<h2_range<0, 5413722>, P> {
    const EK k;
    const EV v;
    const char* type;
-   explicit h2_has2_matches(const EK& k_, const EV& v_, const char* type_ = "Has") : h2_has1_matches<0x7fffffff, P>(P(M(k_, v_))), k(k_), v(v_), type(type_) {}
+   explicit h2_has2_matches(const EK& k_, const EV& v_, const char* type_ = "Has") : h2_has1_matches<h2_range<0, 5413722>, P>(P(M(k_, v_))), k(k_), v(v_), type(type_) {}
 
    virtual h2_line expection(C c) const override
    {
@@ -195,7 +194,7 @@ struct h2_has2_matches : h2_has1_matches<0x7fffffff, P> {
    }
 };
 
-template <typename... Matchers>
+template <typename Range, typename... Matchers>
 struct h2_listof_matches : h2_matches {
    h2_matcher_tuple<Matchers...> e;
    explicit h2_listof_matches(const Matchers&... matchers) : e(matchers...) {}
@@ -211,9 +210,9 @@ struct h2_listof_matches : h2_matches {
          h2_fail* fail = nullptr;
          size_t j = 0, count = 0;
          for (auto const& ia : a) {
-            if (j++ == i) {
+            if (j++ == i + (c.range_start > Range::start ? c.range_start : Range::start)) {
                ++count;
-               fail = matchers[i].matches(ia, c.update_n(0).update_negative(false));
+               fail = matchers[i].matches(ia, c.clear_size().update_negative(false));
                break;
             }
          }
@@ -229,16 +228,14 @@ struct h2_listof_matches : h2_matches {
       h2_fail::append_child(fail, fails);
       return fail;
    }
-
    virtual h2_line expection(C c) const override
    {
       return c.update_caseless(false).pre() + gray("[") + e.expection(c.update_negative(false)) + gray("]");
    }
-
-   H2_MATCHES_CONTAINER1(0x7fffffff)
+   H2_MATCHES_CONTAINER1()
 };
 
-template <typename Matcher>
+template <typename Matcher, typename Range = h2_range<0, 5413722>>
 struct h2_countof_matches : h2_matches {
    Matcher m;
    explicit h2_countof_matches(const Matcher& m_) : m(m_) {}
@@ -250,10 +247,10 @@ struct h2_countof_matches : h2_matches {
       for (auto it = a.cbegin(); it != a.cend(); ++it) count++;
       H2_MATCHES_STATS(count, true);
    }
-   H2_MATCHES_CONTAINER2(0x7fffffff, "CountOf")
+   H2_MATCHES_CONTAINER2("CountOf")
 };
 
-template <int Count, typename Matcher>
+template <typename Range, typename Matcher>
 struct h2_maxmin_matches : h2_matches {
    const bool is_max;
    Matcher m;
@@ -262,19 +259,19 @@ struct h2_maxmin_matches : h2_matches {
    template <typename A>
    auto matches(const A& a, C c) const -> typename std::enable_if<h2_is_iterable<typename std::decay<A>::type>::value, h2_fail*>::type
    {
-      int count = 0;
+      int i = 0, count = 0;
       typename A::value_type value;
-      for (auto const& ia : a) {  // std::max_element / std::max_element
-         if (++count > Count) break;
-         if (count == 1) value = ia;
-         if (is_max ? (ia > value) : (ia < value)) value = ia;
-      }
+      for (auto const& ia : a)  // std::max_element / std::max_element
+         if (range_in(c, i++)) {
+            if (++count == 1) value = ia;
+            if (is_max ? (ia > value) : (ia < value)) value = ia;
+         }
       H2_MATCHES_STATS(value, count != 0);
    }
-   H2_MATCHES_CONTAINER2(Count, is_max ? "MaxOf" : "MinOf")
+   H2_MATCHES_CONTAINER2(is_max ? "MaxOf" : "MinOf")
 };
 
-template <int Count, typename Matcher>
+template <typename Range, typename Matcher>
 struct h2_avg_matches : h2_matches {
    Matcher m;
    explicit h2_avg_matches(const Matcher& m_) : m(m_) {}
@@ -282,17 +279,16 @@ struct h2_avg_matches : h2_matches {
    template <typename A>
    auto matches(const A& a, C c) const -> typename std::enable_if<h2_is_iterable<typename std::decay<A>::type>::value, h2_fail*>::type
    {
-      double avg = 0, count = 0;
-      for (auto const& ia : a) {
-         if (++count > Count) break;
-         avg = (avg * (count - 1) + ia) / count;
-      }
-      H2_MATCHES_STATS(avg, count != 0);
+      double sum = 0, count = 0;
+      int i = 0;
+      for (auto const& ia : a)
+         if (range_in(c, i++)) sum += ia, ++count;
+      H2_MATCHES_STATS(count ? sum / count : 0, count != 0);
    }
-   H2_MATCHES_CONTAINER2(Count, "AvgOf")
+   H2_MATCHES_CONTAINER2("AvgOf")
 };
 
-template <int Count, typename Matcher>
+template <typename Range, typename Matcher>
 struct h2_median_matches : h2_matches {
    Matcher m;
    explicit h2_median_matches(const Matcher& m_) : m(m_) {}
@@ -301,27 +297,26 @@ struct h2_median_matches : h2_matches {
    auto matches(const A& a, C c) const -> typename std::enable_if<h2_is_iterable<typename std::decay<A>::type>::value, h2_fail*>::type
    {
       std::vector<typename A::value_type> b;
-      int count = 0;
-      for (auto const& ia : a) {
-         if (++count > Count) break;
-         for (auto it = b.begin();; ++it)  // std::sort(b.begin(), b.end());  // std::nth_element /// avoid include <algorithm> for compile time
-            if (it == b.end() || ia < *it) {
-               b.insert(it, ia);
-               break;
-            }
-      }
+      int i = 0;
+      for (auto const& ia : a)
+         if (range_in(c, i++))
+            for (auto it = b.begin();; ++it)  // std::sort(b.begin(), b.end());  // std::nth_element /// avoid include <algorithm> for compile time
+               if (it == b.end() || ia < *it) {
+                  b.insert(it, ia);
+                  break;
+               }
       double value = 0;
       if (b.size()) value = b.size() % 2 ? b[b.size() / 2] : (b[b.size() / 2] + b[b.size() / 2 + 1]) / 2;
       H2_MATCHES_STATS(value, b.size() != 0);
    }
-   H2_MATCHES_CONTAINER2(Count, "MedianOf")
+   H2_MATCHES_CONTAINER2("MedianOf")
 };
 
 template <typename TK, typename TV, typename EK = typename h2_decay<TK>::type, typename EV = typename h2_decay<TV>::type, typename P = h2_polymorphic_matcher<h2_pair_matches<EK, EV>>>
 inline P Pair(const TK& expect_key, const TV& expect_value) { return P(h2_pair_matches<EK, EV>(expect_key, expect_value)); }
 
-template <int Count = 0x7fffffff, typename T, typename E = typename std::decay<const T&>::type, typename P = h2_polymorphic_matcher<h2_has1_matches<Count, E>>>
-inline P Has(const T& expect) { return P(h2_has1_matches<Count, E>(expect)); }
+template <int Rs = 5413722, int Re = -1, typename T, typename E = typename std::decay<const T&>::type, typename P = h2_polymorphic_matcher<h2_has1_matches<h2_range<Rs, Re>, E>>>
+inline P Has(const T& expect) { return P(h2_has1_matches<h2_range<Rs, Re>, E>(expect)); }
 template <typename TK, typename TV, typename EK = typename h2_decay<TK>::type, typename EV = typename h2_decay<TV>::type, typename P = h2_polymorphic_matcher<h2_has2_matches<EK, EV>>>
 inline P Has(const TK& expect_key, const TV& expect_value) { return P(h2_has2_matches<EK, EV>(expect_key, expect_value)); }
 template <typename TK, typename EK = typename h2_decay<TK>::type, typename EV = h2_polymorphic_matcher<h2_matches_any>, typename P = h2_polymorphic_matcher<h2_has2_matches<EK, EV>>>
@@ -329,21 +324,21 @@ inline P HasKey(const TK& expect_key) { return P(h2_has2_matches<EK, EV>(expect_
 template <typename TV, typename EV = typename h2_decay<TV>::type, typename EK = h2_polymorphic_matcher<h2_matches_any>, typename P = h2_polymorphic_matcher<h2_has2_matches<EK, EV>>>
 inline P HasValue(const TV& expect_value) { return P(h2_has2_matches<EK, EV>(_, expect_value, "HasValue")); }
 
-template <typename... T, typename P = h2_polymorphic_matcher<h2_listof_matches<typename std::decay<const T&>::type...>>>
-inline P ListOf(const T&... expects) { return P(h2_listof_matches<typename std::decay<const T&>::type...>(expects...)); }
+template <int Rs = 5413722, int Re = -1, typename... T, typename P = h2_polymorphic_matcher<h2_listof_matches<h2_range<Rs, Re>, typename std::decay<const T&>::type...>>>
+inline P ListOf(const T&... expects) { return P(h2_listof_matches<h2_range<Rs, Re>, typename std::decay<const T&>::type...>(expects...)); }
 
-template <int Count = 0x7fffffff, typename T, typename E = typename std::decay<const T&>::type, typename P = h2_polymorphic_matcher<h2_every1_matches<Count, E>>>
-inline P Every(const T& expect) { return P(h2_every1_matches<Count, E>(expect)); }
-template <int Count = 0x7fffffff, typename T1, typename T2, typename E1 = typename std::decay<const T1&>::type, typename E2 = typename std::decay<const T2&>::type, typename P = h2_polymorphic_matcher<h2_every2_matches<Count, E1, E2>>>
-inline P Every(const T1& expect1, const T2& expect2) { return P(h2_every2_matches<Count, E1, E2>(expect1, expect2)); }
+template <int Rs = 5413722, int Re = -1, typename T, typename E = typename std::decay<const T&>::type, typename P = h2_polymorphic_matcher<h2_every1_matches<h2_range<Rs, Re>, E>>>
+inline P Every(const T& expect) { return P(h2_every1_matches<h2_range<Rs, Re>, E>(expect)); }
+template <int Rs = 5413722, int Re = -1, typename T1, typename T2, typename E1 = typename std::decay<const T1&>::type, typename E2 = typename std::decay<const T2&>::type, typename P = h2_polymorphic_matcher<h2_every2_matches<h2_range<Rs, Re>, E1, E2>>>
+inline P Every(const T1& expect1, const T2& expect2) { return P(h2_every2_matches<h2_range<Rs, Re>, E1, E2>(expect1, expect2)); }
 
 template <typename T, typename E = typename std::decay<const T&>::type, typename P = h2_polymorphic_matcher<h2_countof_matches<E>>>
 inline P CountOf(const T& expect) { return P(h2_countof_matches<E>(expect)); }
-template <int Count = 0x7fffffff, typename T, typename E = typename std::decay<const T&>::type, typename P = h2_polymorphic_matcher<h2_maxmin_matches<Count, E>>>
-inline P MaxOf(const T& expect) { return P(h2_maxmin_matches<Count, E>(true, expect)); }
-template <int Count = 0x7fffffff, typename T, typename E = typename std::decay<const T&>::type, typename P = h2_polymorphic_matcher<h2_maxmin_matches<Count, E>>>
-inline P MinOf(const T& expect) { return P(h2_maxmin_matches<Count, E>(false, expect)); }
-template <int Count = 0x7fffffff, typename T, typename E = typename std::decay<const T&>::type, typename P = h2_polymorphic_matcher<h2_avg_matches<Count, E>>>
-inline P AvgOf(const T& expect) { return P(h2_avg_matches<Count, E>(expect)); }
-template <int Count = 0x7fffffff, typename T, typename E = typename std::decay<const T&>::type, typename P = h2_polymorphic_matcher<h2_median_matches<Count, E>>>
-inline P MedianOf(const T& expect) { return P(h2_median_matches<Count, E>(expect)); }
+template <int Rs = 5413722, int Re = -1, typename T, typename E = typename std::decay<const T&>::type, typename P = h2_polymorphic_matcher<h2_maxmin_matches<h2_range<Rs, Re>, E>>>
+inline P MaxOf(const T& expect) { return P(h2_maxmin_matches<h2_range<Rs, Re>, E>(true, expect)); }
+template <int Rs = 5413722, int Re = -1, typename T, typename E = typename std::decay<const T&>::type, typename P = h2_polymorphic_matcher<h2_maxmin_matches<h2_range<Rs, Re>, E>>>
+inline P MinOf(const T& expect) { return P(h2_maxmin_matches<h2_range<Rs, Re>, E>(false, expect)); }
+template <int Rs = 5413722, int Re = -1, typename T, typename E = typename std::decay<const T&>::type, typename P = h2_polymorphic_matcher<h2_avg_matches<h2_range<Rs, Re>, E>>>
+inline P AvgOf(const T& expect) { return P(h2_avg_matches<h2_range<Rs, Re>, E>(expect)); }
+template <int Rs = 5413722, int Re = -1, typename T, typename E = typename std::decay<const T&>::type, typename P = h2_polymorphic_matcher<h2_median_matches<h2_range<Rs, Re>, E>>>
+inline P MedianOf(const T& expect) { return P(h2_median_matches<h2_range<Rs, Re>, E>(expect)); }

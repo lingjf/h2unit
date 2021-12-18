@@ -1,5 +1,56 @@
 #include "../source/h2_unit.cpp"
 
+SUITE(range util)
+{
+   Case(Range<>)
+   {
+      int start = h2::h2_range<5413722, -1>::start;
+      int end = h2::h2_range<5413722, -1>::end;
+      OK(0, start);
+      OK(5413722, end);
+
+      bool left = h2::h2_range<5413722, -1>::in(-8);
+      OK(false, left);
+
+      bool inside = h2::h2_range<5413722, -1>::in(100);
+      OK(true, inside);
+   }
+
+   Case(Range<3>)
+   {
+      int start = h2::h2_range<3, -1>::start;
+      int end = h2::h2_range<3, -1>::end;
+      OK(0, start);
+      OK(3, end);
+
+      bool left = h2::h2_range<3, -1>::in(-8);
+      OK(false, left);
+
+      bool inside = h2::h2_range<3, -1>::in(1);
+      OK(true, inside);
+
+      bool right = h2::h2_range<3, -1>::in(10);
+      OK(false, right);
+   }
+
+   Case(Range<1, 3>)
+   {
+      int start = h2::h2_range<1, 3>::start;
+      int end = h2::h2_range<1, 3>::end;
+      OK(1, start);
+      OK(3, end);
+
+      bool left = h2::h2_range<1, 3>::in(-8);
+      OK(false, left);
+
+      bool inside = h2::h2_range<1, 3>::in(2);
+      OK(true, inside);
+
+      bool right = h2::h2_range<1, 3>::in(10);
+      OK(false, right);
+   }
+}
+
 SUITE(range matches)
 {
    Case(start, end, step)

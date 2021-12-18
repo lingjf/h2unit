@@ -143,7 +143,7 @@ SUITE(option filter)
    {
       const char* argv[] = {"./a.out", "-i", "http"};
       c.parse(3, argv);
-      OK(ListOf("http"), c.includes, 1);
+      OK(ListOf("http"), c.includes);
       OK(0, counts(c.excludes));
    }
 
@@ -151,7 +151,7 @@ SUITE(option filter)
    {
       const char* argv[] = {"./a.out", "-i", "http", "-i", "tcp"};
       c.parse(5, argv);
-      OK(ListOf("http", "tcp"), c.includes, 2);
+      OK(ListOf("http", "tcp"), c.includes);
       OK(0, counts(c.excludes));
    }
 
@@ -159,7 +159,7 @@ SUITE(option filter)
    {
       const char* argv[] = {"./a.out", "-i", "http", "tcp*"};
       c.parse(4, argv);
-      OK(ListOf("http", "tcp*"), c.includes, 2);
+      OK(ListOf("http", "tcp*"), c.includes);
       OK(0, counts(c.excludes));
    }
 
@@ -167,7 +167,7 @@ SUITE(option filter)
    {
       const char* argv[] = {"./a.out", "-e", "http", "-e", "tcp"};
       c.parse(5, argv);
-      OK(ListOf("http", "tcp"), c.excludes, 2);
+      OK(ListOf("http", "tcp"), c.excludes);
       OK(0, counts(c.includes));
    }
 }

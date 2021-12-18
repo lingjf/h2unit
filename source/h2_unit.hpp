@@ -77,6 +77,7 @@ namespace h2 {
 #include "matcher/h2_matches_equation.hpp"    //!matches
 #include "matcher/h2_matcher_cast.hpp"        // matcher, equation
 #include "matcher/h2_matches_cast.hpp"        // matches, matcher, failure
+#include "matcher/h2_matches_range.hpp"       // matches, matcher, failure
 #include "matcher/h2_matches_container.hpp"   // matches, matcher, failure
 #include "matcher/h2_matches_logic.hpp"       // container, matches, matcher, failure
 #include "matcher/h2_matches_inequation.hpp"  // matches, matcher, failure
@@ -85,7 +86,6 @@ namespace h2 {
 #include "matcher/h2_matches_json.hpp"        // matches, matcher, failure
 #include "matcher/h2_matches_pointee.hpp"     // matches, matcher, failure
 #include "matcher/h2_matches_member.hpp"      // matches, matcher, failure
-#include "matcher/h2_matches_range.hpp"       // matches, matcher, failure
 #include "matcher/h2_matcher.cpp"             //!matches, matcher, equation
 #include "matcher/h2_matcher_customize.hpp"   // matches, matcher, failure
 #include "stub/h2_fp.hpp"                     // nm, load

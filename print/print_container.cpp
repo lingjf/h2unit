@@ -52,10 +52,4 @@ SUITE(Has)
       int a[] = {1, 2, 3};
       OK(Has(4), a);
    }
-
-   Case(C/C++ generic array sepecified size)
-   {
-      int a[] = {1, 2, 3};
-      OK(Has(2), a, 3);
-   }
 }

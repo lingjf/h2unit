@@ -6,7 +6,7 @@ struct h2_pointee_matches : h2_matches {
    template <typename A>
    h2_fail* matches(const A& a, C c) const
    {
-      return h2_matcher_cast<typename h2_pointee_type<A>::type>(m).matches(*a, c.update_n(0));
+      return h2_matcher_cast<typename h2_pointee_type<A>::type>(m).matches(*a, c.clear_size());
    }
    virtual h2_line expection(C c) const override
    {
