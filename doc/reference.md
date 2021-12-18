@@ -407,6 +407,7 @@ CASE(case name)
 *    [`AnyOf`](../source/h2_unit.hpp#L321)(expect...) : matches if value matches any one of inner matchers, act as OR logical operator
 *    [`NoneOf`](../source/h2_unit.hpp#L321)(expect...) : matches if value not matches all of inner matchers 
 *    [`ListOf`](../source/h2_unit.hpp#L321)(expect...) : matches if sequence container(array, vector, ...) item matches inner matchers 
+*    [`Every`](../source/h2_unit.hpp#L321)(expect) : matches if sequence container(array, vector, ...) items all matches inner matcher 
 *    [`Has`](../source/h2_unit.hpp#L321)(expect...) : matches if there are items in container(vector, set, map, ...) match every inner matcher
 *    [`CountOf`](../source/h2_unit.hpp#L321)(expect) : matches if container(array, vector, ...) item count matches inner matcher
 *    [`AvgOf`](../source/h2_unit.hpp#L321)(expect) : matches if average of items in container(vector, set, ...) match every inner matcher

@@ -2117,6 +2117,43 @@ struct h2_is_polymorphic_matcher_pair_matches<T, typename std::enable_if<h2_is_p
    return h2_fail::new_unexpect(expection(c), ((prev_result) ? h2_stringify(value) : h2_line()) + h2_stringify(a, true));
 
 template <int Count, typename Matcher>
+struct h2_every1_matches : h2_matches {
+   Matcher m;
+   explicit h2_every1_matches(const Matcher& m_) : m(m_) {}
+
+   template <typename A>
+   auto matches(const A& a, h2_mc c) const -> typename std::enable_if<h2_is_iterable<typename std::decay<A>::type>::value, h2_fail*>::type
+   {
+      h2_fail* fails = nullptr;
+      for (auto const& ia : a) {
+         h2_fail* fail = h2_matcher_cast<typename A::value_type>(m).matches(ia, c.update_n(0).update_negative(false));
+         h2_fail::append_subling(fails, fail);
+      }
+
+      if (c.fit(!fails)) {
+         if (fails) delete fails;
+         return nullptr;
+      }
+      h2_fail* fail = h2_fail::new_unexpect(expection(c), h2_stringify(a, true));
+      h2_fail::append_child(fail, fails);
+      return fail;
+   }
+
+   H2_MATCHES_CONTAINER2(Count, "Every")
+};
+
+template <int Count, typename EK, typename EV, typename M = h2_pair_matches<EK, EV>, typename P = h2_polymorphic_matcher<M>>
+struct h2_every2_matches : h2_every1_matches<Count, P> {
+   EK k;
+   EV v;
+   explicit h2_every2_matches(const EK& k_, const EV& v_) : h2_every1_matches<Count, P>(P(M(k_, v_))), k(k_), v(v_) {}
+   virtual h2_line expection(h2_mc c) const override
+   {
+      return c.update_caseless(false).pre() + "Every" + gray("(") + h2_matches_expection(k, c) + gray(", ") + h2_matches_expection(v, c) + gray(")");
+   }
+};
+
+template <int Count, typename Matcher>
 struct h2_has1_matches : h2_matches {
    Matcher m;
    explicit h2_has1_matches(const Matcher& m_) : m(m_) {}
@@ -2333,6 +2370,11 @@ inline h2_polymorphic_matcher<h2_has2_matches<EK, EV>> HasValue(const MV& mv) { 
 
 template <typename... Matchers>
 inline h2_polymorphic_matcher<h2_listof_matches<typename std::decay<const Matchers&>::type...>> ListOf(const Matchers&... matchers) { return h2_polymorphic_matcher<h2_listof_matches<typename std::decay<const Matchers&>::type...>>(h2_listof_matches<typename std::decay<const Matchers&>::type...>(matchers...)); }
+
+template <int Count = 0x7fffffff, typename Matcher>
+inline h2_polymorphic_matcher<h2_every1_matches<Count, typename std::decay<const Matcher&>::type>> Every(const Matcher& expect) { return h2_polymorphic_matcher<h2_every1_matches<Count, typename std::decay<const Matcher&>::type>>(h2_every1_matches<Count, typename std::decay<const Matcher&>::type>(expect)); }
+template <int Count = 0x7fffffff, typename MK, typename MV>
+inline h2_polymorphic_matcher<h2_every2_matches<Count, typename std::decay<const MK&>::type, typename std::decay<const MV&>::type>> Every(const MK& expect1, const MV& expect2) { return h2_polymorphic_matcher<h2_every2_matches<Count, typename std::decay<const MK&>::type, typename std::decay<const MV&>::type>>(h2_every2_matches<Count, typename std::decay<const MK&>::type, typename std::decay<const MV&>::type>(expect1, expect2)); }
 
 template <typename Matcher>
 inline h2_polymorphic_matcher<h2_countof_matches<typename std::decay<const Matcher&>::type>> CountOf(const Matcher& m) { return h2_polymorphic_matcher<h2_countof_matches<typename std::decay<const Matcher&>::type>>(h2_countof_matches<typename std::decay<const Matcher&>::type>(m)); }

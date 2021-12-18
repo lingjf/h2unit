@@ -281,6 +281,142 @@ SUITE(ListOf primitive [api])
    }
 }
 
+SUITE(Every primitive [api])
+{
+   Case(C/C++ generic array)
+   {
+      int a1[] = {1, 2, 3};
+      OK(Every(Ge(0)), a1);
+      OK(!Every(Ge(3)), a1);
+   }
+
+   Case(Sequence containers / array / static contiguous array)
+   {
+      std::array<int, 3> a1 = {1, 2, 3};
+      OK(Has(1), a1);
+      OK(Has(2), a1);
+      OK(Has(3), a1);
+      OK(!Has(4), a1);
+   }
+
+   Case(Sequence containers / vector / dynamic contiguous array)
+   {
+      std::vector<int> a1 = {1, 2, 3};
+      OK(Every(Ge(0)), a1);
+      OK(!Every(Ge(3)), a1);
+   }
+
+   Case(Sequence containers / deque / double-ended queue)
+   {
+      std::deque<int> a1 = {1, 2, 3};
+      OK(Every(Ge(0)), a1);
+      OK(!Every(Ge(3)), a1);
+   }
+
+   Case(Sequence containers / forward_list / singly-linked list)
+   {
+      std::forward_list<int> a1 = {1, 2, 3};
+      OK(Every(Ge(0)), a1);
+      OK(!Every(Ge(3)), a1);
+   }
+
+   Case(Sequence containers / list / doubly-linked list)
+   {
+      std::list<int> a1 = {1, 2, 3};
+      OK(Every(Ge(0)), a1);
+      OK(!Every(Ge(3)), a1);
+   }
+
+   Case(Associative containers / set)
+   {
+      std::set<int> a1 = {1, 2, 3};
+      OK(Every(Ge(0)), a1);
+      OK(!Every(Ge(3)), a1);
+   }
+
+   Case(Associative containers / multiset)
+   {
+      std::multiset<int> a1 = {1, 2, 3};
+      OK(Every(Ge(0)), a1);
+      OK(!Every(Ge(3)), a1);
+   }
+
+   Case(Associative containers / unordered_set)
+   {
+      std::unordered_set<int> a1 = {1, 2, 3};
+      OK(Every(Ge(0)), a1);
+      OK(!Every(Ge(3)), a1);
+   }
+
+   Case(Associative containers / map)
+   {
+      std::map<int, int> a1 = {{1, 111}, {2, 222}, {3, 333}};
+
+      OK(Every(Pair(Ge(0), Ge(100))), a1);
+      OK(!Every(Pair(Ge(3), Ge(100))), a1);
+
+      OK(Every(Ge(0), Ge(100)), a1);
+   }
+
+   Case(Associative containers / multimap)
+   {
+      std::multimap<int, int> a1 = {{1, 111}, {2, 222}, {3, 333}};
+      OK(Every(Pair(Ge(0), Ge(100))), a1);
+      OK(!Every(Pair(Ge(3), Ge(100))), a1);
+
+      OK(Every(Ge(0), Ge(100)), a1);
+   }
+
+   Case(Associative containers / unordered_multimap)
+   {
+      std::unordered_multimap<int, int> a1 = {{1, 111}, {2, 222}, {3, 333}};
+      OK(Every(Pair(Ge(0), Ge(100))), a1);
+      OK(!Every(Pair(Ge(3), Ge(100))), a1);
+
+      OK(Every(Ge(0), Ge(100)), a1);
+   }
+
+   Case(Container adaptors / stack)
+   {
+      std::stack<int> a1;
+      a1.push(1);
+      a1.push(2);
+      a1.push(3);
+
+      OK(Every(Ge(0)), a1);
+      OK(!Every(Ge(3)), a1);
+   }
+
+   Case(Container adaptors / queue)
+   {
+      std::queue<int> a1;
+      a1.push(1);
+      a1.push(2);
+      a1.push(3);
+
+      OK(Every(Ge(0)), a1);
+      OK(!Every(Ge(3)), a1);
+   }
+
+   Case(Container adaptors / priority_queue)
+   {
+      std::priority_queue<int> a1;
+      a1.push(1);
+      a1.push(2);
+      a1.push(3);
+
+      OK(Every(Ge(0)), a1);
+      OK(!Every(Ge(3)), a1);
+   }
+
+   Case(string)
+   {
+      std::string a1 = "abc";
+      OK(Every(Ge('a')), a1);
+      OK(!Every(Ge('c')), a1);
+   }
+}
+
 SUITE(h2_has1_matches)
 {
    Case()
