@@ -66,6 +66,7 @@
     <ClCompile Include="test_matcher_matches_equation.cpp" />
     <ClCompile Include="test_matcher_matches_inequation.cpp" />
     <ClCompile Include="test_matcher_matches_logic.cpp" />
+    <ClCompile Include="test_matcher_matches_member.cpp" />
     <ClCompile Include="test_matcher_matches_memcmp.cpp" />
     <ClCompile Include="test_matcher_matches_pointee.cpp" />
     <ClCompile Include="test_matcher_matches_range.cpp" />

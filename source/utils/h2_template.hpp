@@ -165,3 +165,18 @@ const typename ContainerAdaptor::container_type& underlying_container(const Cont
    };
    return AntiProtected::get(ca);
 }
+
+#if __cplusplus >= 201402L || (defined _MSVC_LANG && _MSVC_LANG >= 201402L)
+#define h2_index_sequence std::index_sequence
+#define h2_make_index_sequence std::make_index_sequence
+#else
+template <std::size_t...>
+struct h2_index_sequence {
+};
+template <std::size_t N, std::size_t... S>
+struct h2_make_index_sequence : h2_make_index_sequence<N - 1, N - 1, S...> {
+};
+template <std::size_t... S>
+struct h2_make_index_sequence<0, S...> : h2_index_sequence<S...> {
+};
+#endif

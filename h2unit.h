@@ -593,6 +593,21 @@ const typename ContainerAdaptor::container_type& underlying_container(const Cont
    };
    return AntiProtected::get(ca);
 }
+
+#if __cplusplus >= 201402L || (defined _MSVC_LANG && _MSVC_LANG >= 201402L)
+#define h2_index_sequence std::index_sequence
+#define h2_make_index_sequence std::make_index_sequence
+#else
+template <std::size_t...>
+struct h2_index_sequence {
+};
+template <std::size_t N, std::size_t... S>
+struct h2_make_index_sequence : h2_make_index_sequence<N - 1, N - 1, S...> {
+};
+template <std::size_t... S>
+struct h2_make_index_sequence<0, S...> : h2_index_sequence<S...> {
+};
+#endif
 // source/utils/h2_numberfy.hpp
 
 template <typename T, typename = void>
@@ -2907,6 +2922,56 @@ struct h2_range_matches : h2_matches {
 };
 
 inline h2_polymorphic_matcher<h2_range_matches> Range(const double& start, const double& end = -0.15048889911, const double& step = -0.15048889911) { return h2_polymorphic_matcher<h2_range_matches>(h2_range_matches(start, end, step)); }
+// source/matcher/h2_matches_member.hpp
+template <typename Matcher, typename Class, typename Data>
+struct h2_member_data_matches : h2_matches {
+   const Matcher m;
+   const Data Class::*data;
+   explicit h2_member_data_matches(Matcher m_, Data Class::*data_) : m(m_), data(data_) {}
+
+   template <typename A>
+   h2_fail* matches(const A& a, h2_mc c) const
+   {
+      return h2_matcher_cast<Data>(m).matches(h2_pointer_if(a)->*data, c);
+   }
+   virtual h2_line expection(h2_mc c) const override { return h2_matches_expection(m, c); }
+};
+
+template <typename Matcher, typename Class, typename Return, typename Method, typename... Args>
+struct h2_member_method_matches : h2_matches {
+   const Matcher m;
+   Method method;
+   std::tuple<Args...> args;
+   explicit h2_member_method_matches(Matcher m_, Method method_, Args... args_) : m(m_), method(method_), args(args_...) {}
+
+   template <typename A>
+   Return do_call(A& a) const { return do_call(a, h2_make_index_sequence<sizeof...(Args)>()); }
+   template <typename A, std::size_t... S>
+   Return do_call(A& a, h2_index_sequence<S...>) const { return (a.*method)(std::get<S>(args)...); }
+
+   template <typename A>
+   h2_fail* matches(const A& a, h2_mc c) const
+   {
+      auto p = (typename std::add_pointer<typename std::remove_pointer<typename std::decay<A>::type>::type>::type)h2_pointer_if(a);
+      return h2_matcher_cast<Return>(m).matches(do_call(*p), c);
+   }
+   virtual h2_line expection(h2_mc c) const override { return h2_matches_expection(m, c); }
+};
+
+template <typename T, typename Class, typename Data, typename E = typename std::decay<T>::type, typename P = h2_polymorphic_matcher<h2_member_data_matches<E, Class, Data>>>
+inline P Member(T expect, Data Class::*data) { return P(h2_member_data_matches<E, Class, Data>(expect, data)); }
+
+template <typename T, typename Class, typename Return, typename... Args, typename E = typename std::decay<T>::type, typename P = h2_polymorphic_matcher<h2_member_method_matches<E, Class, Return, Return (Class::*)(Args...), Args...>>>
+inline P Member(T expect, Return (Class::*method)(Args...), Args... args) { return P(h2_member_method_matches<E, Class, Return, Return (Class::*)(Args...), Args...>(expect, method, args...)); }
+template <typename T, typename Class, typename Return, typename... Args, typename E = typename std::decay<T>::type, typename P = h2_polymorphic_matcher<h2_member_method_matches<E, Class, Return, Return (Class::*)(Args...) const, Args...>>>
+inline P Member(T expect, Return (Class::*method)(Args...) const, Args... args) { return P(h2_member_method_matches<E, Class, Return, Return (Class::*)(Args...) const, Args...>(expect, method, args...)); }
+
+#if __cplusplus >= 201703L || (defined _MSVC_LANG && _MSVC_LANG >= 201703L)
+template <typename T, typename Class, typename Return, typename... Args, typename E = typename std::decay<T>::type, typename P = h2_polymorphic_matcher<h2_member_method_matches<E, Class, Return, Return (Class::*)(Args...) noexcept, Args...>>>
+inline P Member(T expect, Return (Class::*method)(Args...) noexcept, Args... args) { return P(h2_member_method_matches<E, Class, Return, Return (Class::*)(Args...) noexcept, Args...>(expect, method, args...)); }
+template <typename T, typename Class, typename Return, typename... Args, typename E = typename std::decay<T>::type, typename P = h2_polymorphic_matcher<h2_member_method_matches<E, Class, Return, Return (Class::*)(Args...) const noexcept, Args...>>>
+inline P Member(T expect, Return (Class::*method)(Args...) const noexcept, Args... args) { return P(h2_member_method_matches<E, Class, Return, Return (Class::*)(Args...) const noexcept, Args...>(expect, method, args...)); }
+#endif
 // source/matcher/h2_matcher.cpp
 template <typename T>
 inline h2_matcher<T>::h2_matcher() { *this = h2_polymorphic_matcher<h2_matches_any>(h2_matches_any()); }
@@ -4223,6 +4288,7 @@ using h2::EndsWith;
 using h2::CaseLess;
 using h2::SpaceLess;
 using h2::Pointee;
+using h2::Member;
 using h2::CastOf;
 using h2::Not;
 using h2::Conditional;

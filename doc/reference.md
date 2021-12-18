@@ -414,6 +414,7 @@ CASE(case name)
 *    [`MinOf`](../source/h2_unit.hpp#L321)(expect) : statistics matches if minimum of items in container(vector, set, ...) match every inner matcher
 *    [`MedianOf`](../source/h2_unit.hpp#L321)(expect) : statistics matches if median of items in container(vector, set, ...) match every inner matcher
 *    [`MeanOf`](../source/h2_unit.hpp#L321)(expect) : statistics matches if mean of items in container(vector, set, ...) match every inner matcher
+*    [`Member`](../source/h2_unit.hpp#L321)(&Class::member, expect) : matches if member in object match every inner matcher
 
 
 Matcher can be used in OK(expect, actual), for example:

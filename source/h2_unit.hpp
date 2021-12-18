@@ -84,6 +84,7 @@ namespace h2 {
 #include "matcher/h2_matches_strcmp.hpp"      // matches, matcher, failure
 #include "matcher/h2_matches_pointee.hpp"     // matches, matcher, failure
 #include "matcher/h2_matches_range.hpp"       // matches, matcher, failure
+#include "matcher/h2_matches_member.hpp"      // matches, matcher, failure
 #include "matcher/h2_matcher.cpp"             //!matches, matcher, equation
 #include "matcher/h2_matcher_customize.hpp"   // matches, matcher, failure
 #include "stub/h2_fp.hpp"                     // nm, load
@@ -312,6 +313,7 @@ using h2::EndsWith;
 using h2::CaseLess;
 using h2::SpaceLess;
 using h2::Pointee;
+using h2::Member;
 using h2::CastOf;
 using h2::Not;
 using h2::Conditional;
