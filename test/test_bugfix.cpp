@@ -98,3 +98,24 @@ SUITE(bugfix)
       // OK(30, 6.0); // OK(30==>3 , 6<==6.0)
    }
 }
+
+class CA {
+ public:
+   virtual int fx(int a, const char* b) = 0;
+};
+
+class CB : public CA {
+ public:
+   virtual int fx(int a, const char* b) { return 1; }
+};
+
+CASE(bugfix: mock/stub abstract class)
+{
+   CB b;
+   CA* a = dynamic_cast<CA*>(&b);
+
+#if !defined WIN32
+   STUBS(CA, fx, int, (int a, const char* b)) { return -1; };
+#endif
+   STUBS(a, CA, fx, int, (int a, const char* b)) { return -1; };
+}

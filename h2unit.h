@@ -5,7 +5,7 @@
 #ifndef __H2UNIT_H__
 #define __H2UNIT_H__
 #define H2UNIT_VERSION 5.16
-#define H2UNIT_REVISION 2021-12-18 branches/v5
+#define H2UNIT_REVISION 2021-12-19 branches/v5
 #ifndef __H2_UNIT_HPP__
 #define __H2_UNIT_HPP__
 
@@ -3202,12 +3202,17 @@ struct h2_fp<ClassType, ReturnType(ArgumentTypes...)> {
          h2_destructible<ClassType>(o);
          return t;
       }
-      char vtable_symbol[1024];
-      sprintf(vtable_symbol, "_ZTV%s", typeid(ClassType).name());  // mangle for "vtable for ClassType"
-      unsigned long long relative_vtable = h2_nm::get_mangle(vtable_symbol);
+      char symbol[1024];
+      // https://itanium-cxx-abi.github.io/cxx-abi/abi.html#mangling-special-vtables
+      sprintf(symbol, "_ZTV%s", typeid(ClassType).name());  // mangle for "vtable for ClassType"
+      unsigned long long relative_vtable = h2_nm::get_mangle(symbol);
       if (!relative_vtable) {
-         h2_runner::failing(h2_fail::new_symbol("vtable of " + h2_string(constructible_errors[(unsigned long long)o]) + h2_cxa::type_name<ClassType>(), {}, "  try: " + color("STUB/MOCK(", "yellow") + color("Object", "bold,red") + color(", Class, Method, ...)", "yellow")));
-         return nullptr;
+         sprintf(symbol, "_ZTI%s", typeid(ClassType).name());  // mangle for "typeinfo for ClassType" for abstract class
+         relative_vtable = h2_nm::get_mangle(symbol);
+         if (!relative_vtable) {
+            h2_runner::failing(h2_fail::new_symbol("vtable of " + h2_string(constructible_errors[(unsigned long long)o]) + h2_cxa::type_name<ClassType>(), {}, "  try: " + color("STUB/MOCK(", "yellow") + color("Object", "bold,red") + color(", Class, Method, ...)", "yellow")));
+            return nullptr;
+         }
       }
       return get_virtual_mfp((void**)h2_load::vtable_to_ptr(relative_vtable), f);
    }

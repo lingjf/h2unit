@@ -166,7 +166,7 @@ SUITE(ListOf primitive [api])
       OK(ListOf(1, 2, 3), a1);
 
       OK(ListOf(2, 3)(1, 3), a1);
-	  OK((ListOf<1, 3>(2, 3)), a1);
+      OK((ListOf<1, 3>(2, 3)), a1);
    }
 
    Case(Sequence containers / array / static contiguous array)
@@ -294,8 +294,8 @@ SUITE(Every primitive [api])
       OK(Every(Lt(3))(2), a1);
       OK(Every(Lt(3)) / 2, a1);
       OK(Every(Lt(3))(0, 2), a1);
-	  
-	        OK(Every<2>(Lt(3)), a1);
+
+      OK(Every<2>(Lt(3)), a1);
       OK((Every<0, 2>(Lt(3))), a1);
    }
 
@@ -308,8 +308,8 @@ SUITE(Every primitive [api])
       OK(Every(Lt(3))(2), a1);
       OK(Every(Lt(3)) / 2, a1);
       OK(Every(Lt(3))(0, 2), a1);
-	  
-	        OK(Every<2>(Lt(3)), a1);
+
+      OK(Every<2>(Lt(3)), a1);
       OK((Every<0, 2>(Lt(3))), a1);
    }
 
@@ -322,8 +322,8 @@ SUITE(Every primitive [api])
       OK(Every(Lt(3))(2), a1);
       OK(Every(Lt(3)) / 2, a1);
       OK(Every(Lt(3))(0, 2), a1);
-	  
-	        OK(Every<2>(Lt(3)), a1);
+
+      OK(Every<2>(Lt(3)), a1);
       OK((Every<0, 2>(Lt(3))), a1);
    }
 
@@ -336,8 +336,8 @@ SUITE(Every primitive [api])
       OK(Every(Lt(3))(2), a1);
       OK(Every(Lt(3)) / 2, a1);
       OK(Every(Lt(3))(0, 2), a1);
-	  
-	        OK(Every<2>(Lt(3)), a1);
+
+      OK(Every<2>(Lt(3)), a1);
       OK((Every<0, 2>(Lt(3))), a1);
    }
 
@@ -350,8 +350,8 @@ SUITE(Every primitive [api])
       OK(Every(Lt(3))(2), a1);
       OK(Every(Lt(3)) / 2, a1);
       OK(Every(Lt(3))(0, 2), a1);
-	  
-	        OK(Every<2>(Lt(3)), a1);
+
+      OK(Every<2>(Lt(3)), a1);
       OK((Every<0, 2>(Lt(3))), a1);
    }
 
@@ -364,8 +364,8 @@ SUITE(Every primitive [api])
       OK(Every(Lt(3))(2), a1);
       OK(Every(Lt(3)) / 2, a1);
       OK(Every(Lt(3))(0, 2), a1);
-	  
-	        OK(Every<2>(Lt(3)), a1);
+
+      OK(Every<2>(Lt(3)), a1);
       OK((Every<0, 2>(Lt(3))), a1);
    }
 
@@ -378,8 +378,8 @@ SUITE(Every primitive [api])
       OK(Every(Lt(3))(2), a1);
       OK(Every(Lt(3)) / 2, a1);
       OK(Every(Lt(3))(0, 2), a1);
-	  
-	        OK(Every<2>(Lt(3)), a1);
+
+      OK(Every<2>(Lt(3)), a1);
       OK((Every<0, 2>(Lt(3))), a1);
    }
 
@@ -392,8 +392,8 @@ SUITE(Every primitive [api])
       OK(Every(Lt(3))(2), a1);
       OK(Every(Lt(3)) / 2, a1);
       OK(Every(Lt(3))(0, 2), a1);
-	  
-	        OK(Every<2>(Lt(3)), a1);
+
+      OK(Every<2>(Lt(3)), a1);
       OK((Every<0, 2>(Lt(3))), a1);
    }
 
@@ -406,8 +406,8 @@ SUITE(Every primitive [api])
       OK(Every(Le(3))(2), a1);
       OK(Every(Le(3)) / 2, a1);
       OK(Every(Le(3))(0, 2), a1);
-	  
-	        OK(Every<2>(Le(3)), a1);
+
+      OK(Every<2>(Le(3)), a1);
       OK((Every<0, 2>(Le(3))), a1);
    }
 
@@ -425,8 +425,8 @@ SUITE(Every primitive [api])
       OK(Every(Ge(0), Ge(100)), a1);
       OK(Every(Ge(0), Ge(100)) / 2, a1);
       OK(Every(Ge(0), Ge(100))(0, 2), a1);
-	  
-	        OK(Every<2>(Pair(Ge(0), Ge(100))), a1);
+
+      OK(Every<2>(Pair(Ge(0), Ge(100))), a1);
       OK((Every<0, 2>(Pair(Ge(0), Ge(100)))), a1);
 
       OK(Every(Ge(0), Ge(100)), a1);
@@ -448,8 +448,8 @@ SUITE(Every primitive [api])
       OK(Every(Ge(0), Ge(100)), a1);
       OK(Every(Ge(0), Ge(100)) / 2, a1);
       OK(Every(Ge(0), Ge(100))(0, 2), a1);
-	  
-	        OK(Every<2>(Pair(Ge(0), Ge(100))), a1);
+
+      OK(Every<2>(Pair(Ge(0), Ge(100))), a1);
       OK((Every<0, 2>(Pair(Ge(0), Ge(100)))), a1);
 
       OK(Every(Ge(0), Ge(100)), a1);
@@ -471,8 +471,8 @@ SUITE(Every primitive [api])
       OK(Every(Ge(0), Ge(100)), a1);
       OK(Every(Ge(0), Ge(100)) / 2, a1);
       OK(Every(Ge(0), Ge(100))(0, 2), a1);
-	  
-	        OK(Every<2>(Pair(Ge(0), Ge(100))), a1);
+
+      OK(Every<2>(Pair(Ge(0), Ge(100))), a1);
       OK((Every<0, 2>(Pair(Ge(0), Ge(100)))), a1);
 
       OK(Every(Ge(0), Ge(100)), a1);
@@ -493,8 +493,8 @@ SUITE(Every primitive [api])
       OK(Every(Lt(3))(2), a1);
       OK(Every(Lt(3)) / 2, a1);
       OK(Every(Lt(3))(0, 2), a1);
-	  
-	        OK(Every<2>(Lt(3)), a1);
+
+      OK(Every<2>(Lt(3)), a1);
       OK((Every<0, 2>(Lt(3))), a1);
    }
 
@@ -511,8 +511,8 @@ SUITE(Every primitive [api])
       OK(Every(Lt(3))(2), a1);
       OK(Every(Lt(3)) / 2, a1);
       OK(Every(Lt(3))(0, 2), a1);
-	  
-	        OK(Every<2>(Lt(3)), a1);
+
+      OK(Every<2>(Lt(3)), a1);
       OK((Every<0, 2>(Lt(3))), a1);
    }
 
@@ -539,8 +539,8 @@ SUITE(Every primitive [api])
       OK(Every(Lt('c'))(2), a1);
       OK(Every(Lt('c')) / 2, a1);
       OK(Every(Lt('c'))(0, 2), a1);
-	  
-	        OK(Every<2>(Lt('c')), a1);
+
+      OK(Every<2>(Lt('c')), a1);
       OK((Every<0, 2>(Lt('c'))), a1);
    }
 }
@@ -574,11 +574,11 @@ SUITE(Has primitive [api])
       OK(!Has(4)(3), a1);
       OK(!Has(4) / 3, a1);
       OK(!Has(4)(0, 3), a1);
-	  
-	        OK(Has<3>(1), a1);
+
+      OK(Has<3>(1), a1);
       OK((Has<0, 3>(1)), a1);
-	  
-	        OK(!Has<3>(4), a1);
+
+      OK(!Has<3>(4), a1);
       OK(!(Has<0, 3>(4)), a1);
    }
 
@@ -1151,8 +1151,8 @@ SUITE(MaxOf MinOf AvgOf MeanOf MedianOf primitive [api])
       OK(AvgOf(2)(0, 3), a1);
       OK(MeanOf(2)(0, 3), a1);
       OK(MedianOf(2)(0, 3), a1);
-	  
-	     OK(MaxOf<3>(3), a1);
+
+      OK(MaxOf<3>(3), a1);
       OK(MinOf<3>(1), a1);
       OK(AvgOf<3>(2), a1);
       OK(MeanOf<3>(2), a1);
@@ -1570,7 +1570,7 @@ SUITE(container MOCK)
                                   std::stack<int>,
                                   std::queue<int>&,
                                   std::priority_queue<int>))
-        .Once(MaxOf(3) / 3 && MinOf<3>(1) && AvgOf(2) / 3 && MeanOf<3>(2)  && MedianOf(2) / 3,
+        .Once(MaxOf(3) / 3 && MinOf<3>(1) && AvgOf(2) / 3 && MeanOf<3>(2) && MedianOf(2) / 3,
               MaxOf(3) && MinOf(1) && AvgOf(2) && MeanOf(2) && MedianOf(2),
               MaxOf(3) && MinOf(1) && AvgOf(2) && MeanOf(2) && MedianOf(2),
               MaxOf(3) && MinOf(1) && AvgOf(2) && MeanOf(2) && MedianOf(2),
@@ -1643,4 +1643,3 @@ SUITE(container bool problem)
       OK(Has(false), a1);
    }
 }
-
