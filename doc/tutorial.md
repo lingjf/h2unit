@@ -24,14 +24,14 @@ int fibonacci_non_recurcive(int n) {
 
 ```C++
 // fibonacci.h
-extern int fibonacci(int n);
-extern int fibonacci_non_recurcive(int n);
+int fibonacci(int n);
+int fibonacci_non_recurcive(int n);
 ```
 
 ```C++
-// test.cpp
-#include "h2unit.h"
+// test_fibonacci.cpp
 #include "fibonacci.h"
+#include "h2unit.h"
 
 SUITE(fibonacci)
 {
@@ -62,8 +62,8 @@ SUITE(fibonacci)
 ```
 
 ```
-g++ -std=c++11 fibonacci.cpp test.cpp -o a.out
-./a.out -v
+g++ -std=c++11 fibonacci.cpp test_fibonacci.cpp -o a.out
+./a.out
 
 ```
 

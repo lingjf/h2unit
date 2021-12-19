@@ -1,7 +1,7 @@
 #include "../source/h2_unit.cpp"
 #include "test_types.hpp"
 
-CASE(cast string2)
+CASE(cast string2 [re])
 {
    STRING_DECL_LIST;
 

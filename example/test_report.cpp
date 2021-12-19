@@ -1,10 +1,14 @@
+#if defined H2UNIT && H2UNIT == 2
+#include "../build/h2unit.hpp"
+#else
 #include "../h2unit.h"
+#endif
 
 struct user_report : h2::h2_report_interface {
    FILE* f;
    void on_runner_start(h2::h2_runner* r) override
    {
-      f = fopen("user_report.txt", "w");
+      f = fopen("a.out.report.txt", "w");
       if (!f) return;
       fprintf(f, "on_runner_start\n");
    }

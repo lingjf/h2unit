@@ -46,7 +46,7 @@ SUITE(Matcher)
       OK(nullptr == h2::h2_matcher<std::string>(CaseLess("ABcd")).matches(AbCd));
    }
 
-   Case(Regex)
+   Case(Regex [re])
    {
       OK(nullptr == h2::h2_matcher<const char*>(Re("abc.*")).matches("abcdef"));
       OK(nullptr != h2::h2_matcher<const char*>(Re("A.*")).matches("abcdef"));

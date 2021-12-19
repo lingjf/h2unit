@@ -2,8 +2,7 @@ h2_inline void h2_case::clear()
 {
    h2_sock::clear();
    h2_memory::hook();
-   if (fails) delete fails;
-   fails = nullptr;
+   if (fails) delete fails, fails = nullptr;
    stats.clear();
 }
 

@@ -65,9 +65,9 @@ SUITE(stdio)
 #if !(defined __CYGWIN__ || defined __MINGW32__ || defined __MINGW64__)  // TODO: exempt memory leak in these platforms
    Case(std::cerr)
    {
-      COUT("std::cerr! 42")
+      COUT("std::cerr! 42\n")
       {
-         std::cerr << "std::cerr! " << 42;
+         std::cerr << "std::cerr! " << 42 << std::endl;
       }
    }
 #endif
@@ -89,10 +89,10 @@ SUITE(stdio)
          OK(strlen(e1), ret);
       }
 
-      const char* e2 = "fprintf stderr! 42";
+      const char* e2 = "fprintf stderr! 42\n";
       COUT(e2)
       {
-         ret = fprintf(stderr, "fprintf stderr! %d", 42);
+         ret = fprintf(stderr, "fprintf stderr! %d\n", 42);
          OK(strlen(e2), ret);
       }
    }
@@ -107,10 +107,10 @@ SUITE(stdio)
          OK(strlen(e1), ret);
       }
 
-      const char* e2 = "vfprintf stderr! 42";
+      const char* e2 = "vfprintf stderr! 42\n";
       COUT(e2)
       {
-         ret = my_fprintf(stderr, "vfprintf stderr! %d", 42);
+         ret = my_fprintf(stderr, "vfprintf stderr! %d\n", 42);
          OK(strlen(e2), ret);
       }
    }
@@ -154,20 +154,20 @@ SUITE(stdio)
          OK(Gt(0), ret);
       }
 
-      COUT("fputs stderr! 42")
+      COUT("fputs stderr! 42\n")
       {
-         ret = fputs("fputs stderr! 42", stderr);
+         ret = fputs("fputs stderr! 42\n", stderr);
          OK(Gt(0), ret);
       }
    }
 
    Case(fputs only stderr)
    {
-      COUT("fputs stderr! 42", stderr)
+      COUT("fputs stderr! 42\n", stderr)
       {
          ret = fputs("fputs stdout! 42", stdout);
          OK(Gt(0), ret);
-         ret = fputs("fputs stderr! 42", stderr);
+         ret = fputs("fputs stderr! 42\n", stderr);
          OK(Gt(0), ret);
       }
    }
@@ -181,7 +181,7 @@ SUITE(stdio)
          OK(strlen(e1), ret);
       }
 
-      const char* e2 = "fwrite stderr! 42";
+      const char* e2 = "fwrite stderr! 42\n";
       COUT(e2)
       {
          ret = fwrite(e2, 1, strlen(e2), stderr);

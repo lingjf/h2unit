@@ -1,5 +1,5 @@
 struct h2_suite : h2_test {
-   void (*test_code)(h2_suite*, h2_case*);
+   void (*test_fp)(h2_suite*, h2_case*);
    jmp_buf cleanup_hole;
    h2_list cases;
 

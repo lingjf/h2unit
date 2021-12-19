@@ -1,7 +1,7 @@
 #ifdef _MSC_VER
-#   ifndef _CRT_SECURE_NO_WARNINGS
-#      define _CRT_SECURE_NO_WARNINGS
-#   endif
+#ifndef _CRT_SECURE_NO_WARNINGS
+#define _CRT_SECURE_NO_WARNINGS
+#endif
 #endif
 
 #include <stdio.h>
@@ -47,7 +47,20 @@ const char* rectangle_tostring(rectangle_t* rectangle)
 const char* rectangle_tojson(rectangle_t* rectangle)
 {
    static char buffer[1024];
-   sprintf(buffer, "{\"width\": %d, \"height\": %d, \"corners\": [1,2,3,4],\"edges\": {}, \"name\": \"#123\"}", rectangle->width, rectangle->height);
+   sprintf(buffer, "{"
+                   "\"width\": %d,"
+                   "\"height\": %d,"
+                   "\"corners\": [1,2,3,4],"
+                   "\"edges\": {},"
+                   "\"name\": ["
+                   "\"circle\","
+                   "\"triangle\","
+                   "\"rectangle\","
+                   "\"ちょくせん\","
+                   "],"
+                   "\"score\": 100"
+                   "}",
+           rectangle->width, rectangle->height);
    return buffer;
 }
 

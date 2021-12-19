@@ -23,10 +23,14 @@
     <ClCompile Include="product_cpp.cpp" />
     <ClCompile Include="test_basic.cpp" />
     <ClCompile Include="test_compare.cpp" />
+    <ClCompile Include="test_exception.cpp" />
     <ClCompile Include="test_json.cpp" />
     <ClCompile Include="test_logic.cpp" />
+    <ClCompile Include="test_memcmp.cpp" />
     <ClCompile Include="test_memory.cpp" />
     <ClCompile Include="test_mock.cpp" />
+    <ClCompile Include="test_object.cpp" />
+    <ClCompile Include="test_report.cpp" />
     <ClCompile Include="test_stub.cpp" />
   </ItemGroup>
   <ItemGroup>

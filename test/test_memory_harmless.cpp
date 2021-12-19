@@ -152,7 +152,7 @@ SUITE(harmless)
    {
       /* Formatted input/output */
       printf("%g%5s%c", 1.0 / 3.0, " test ", ' ');
-      fprintf(stderr, "%g%5s%c", 1.0 / 3.0, " test ", ' ');
+      fprintf(stderr, "%g%5s%c\n", 1.0 / 3.0, " test ", ' ');
       sprintf(t, "%g%5s%c", 1.0 / 3.0, " test ", ' ');
       snprintf(t, 100, "%g%5s%c", 1.0 / 3.0, " test ", ' ');
       my_printf("%g%5s%c", 1.0 / 3.0, " test ", ' ');  // vprintf

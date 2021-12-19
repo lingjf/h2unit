@@ -130,6 +130,7 @@
     <ClCompile Include="test_utils_template.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="test_cplusplus.hpp" />
     <ClInclude Include="test_types.hpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">

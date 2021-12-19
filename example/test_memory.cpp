@@ -1,4 +1,3 @@
-#include "../h2unit.h"
 
 /*
  * h2unit can detect memory leak which is allocated by:
@@ -21,17 +20,42 @@ extern "C" {
 
 #include "product_cpp.h"
 
+#if defined H2UNIT && H2UNIT == 2
+#include "../build/h2unit.hpp"
+#else
+#include "../h2unit.h"
+#endif
+
 SUITE(Memory Leak)
 {
    /*
     * Memory leak detection on Test Case Level
     */
-   Case(test memory leak ok successful)
+   Case(test memory leak ok successful [pass])
    {
       free(malloc(8));
    }
 
-   Case(test memory leak failure)
+   Case(1 times leak [fail])
+   {
+      int* p = (int*)malloc(10);
+      *p = 0;
+   }
+
+   Case(20 times leak [fail])
+   {
+      for (int i = 0; i < 10; ++i) {
+         int* p = (int*)malloc(10);
+         *p = i;
+      }
+
+      for (int i = 0; i < 10; ++i) {
+         char* p = (char*)malloc(i + 1);
+         *p = i;
+      }
+   }
+
+   Case(test memory leak [fail])
    {
       char* s = (char*)malloc(10);
       strcpy(s, "1234567");
@@ -53,7 +77,7 @@ SUITE(Memory Leak)
    /*
     * Memory leak detection on User-Defined Block Level
     */
-   Case(test memory leak block failure)
+   Case(test memory leak block [fail])
    {
       void *c1, *c2, *c3, *c4;
 
@@ -80,7 +104,7 @@ SUITE(Memory Leak)
     * h2unit can modify the total memory resource to make malloc() failed.
     */
 
-   Case(malloc faulty injection successful)
+   Case(malloc faulty injection successful [pass])
    {
       BLOCK(limit = 10 /* in the block , available memory only 10 bytes */)
       {
@@ -92,7 +116,7 @@ SUITE(Memory Leak)
     * h2unit can modify fill of malloc.
     */
 
-   Case(filled malloc successful)
+   Case(filled malloc successful [pass])
    {
       /* in the block , malloc allocated space filled with 0xABCD */
       BLOCK(limit = 10000000, fill = 0xABCD)
@@ -103,7 +127,7 @@ SUITE(Memory Leak)
       }
    }
 
-   Case(exempt leak function)
+   Case(exempt leak function [pass])
    {
       UNMEM(rectangle_create);
 
@@ -112,27 +136,77 @@ SUITE(Memory Leak)
    }
 }
 
-SUITE(Memory Check)
+SUITE(Memory asymmetric allocate and free [fail])
 {
-   Case(asymmetric malloc and delete failure)
+   Case(malloc delete)
    {
       char* p = (char*)malloc(100);
       delete p;
    }
 
-   Case(double free failure)
+   Case(malloc "delete[]")
+   {
+      char* p = (char*)malloc(100);
+      delete[] p;
+   }
+
+   Case(new free)
+   {
+      char* p = (char*)new char;
+      free(p);
+   }
+
+   Case("new[]" free)
+   {
+      char* p = (char*)new char[100];
+      free(p);
+   }
+}
+
+SUITE(Ilegal Access [fail])
+{
+   int t;
+
+   Case(double free)
    {
       rectangle_t* p = rectangle_create(1, 2);
       rectangle_destroy(p);
       rectangle_destroy(p);
    }
 
-   Case(use after free failure)
+   Case(underflow)
+   {
+      char* p = (char*)malloc(6);
+      strcpy(p - 50, "underflow");
+      free(p);
+   }
+
+   Case(overflow)
+   {
+      int* p = (int*)malloc(6);
+      p[5] = 32717;
+      free(p);
+   }
+
+   Case(read after free)
    {
       rectangle_t* p = rectangle_create(1, 2);
       rectangle_destroy(p);
+      t = p->height;
+   }
 
-      int height = p->height;
-      p->height = height;
+   Case(write after free)
+   {
+      rectangle_t* p = rectangle_create(1, 2);
+      rectangle_destroy(p);
+      p->height = 42;
+   }
+
+   Case(readwrite after free)
+   {
+      rectangle_t* p = rectangle_create(1, 2);
+      rectangle_destroy(p);
+      t = p->height;
+      p->height = t;
    }
 }

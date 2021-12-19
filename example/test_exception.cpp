@@ -1,4 +1,8 @@
+#if defined H2UNIT && H2UNIT == 2
 #include "../build/h2unit.hpp"
+#else
+#include "../h2unit.h"
+#endif
 
 #if !defined __MINGW32__
 
@@ -20,7 +24,7 @@ void throw_a_integer(int a)
    throw a;
 }
 
-SUITE(exception)
+SUITE(exception [fail])
 {
    Case(integer)
    {
@@ -38,12 +42,12 @@ SUITE(exception)
    }
 }
 
-CASE(exception uncaught)
+CASE(exception uncaught [fail])
 {
    throw_a_integer(42);
 }
 
-CASE(exception)
+CASE(exception [pass])
 {
    try {
       throw_a_exception();
@@ -55,7 +59,14 @@ CASE(exception)
 
 SUITE(exception catch)
 {
-   Case(no throw)
+   Case(no throw [pass])
+   {
+      Catch()
+      {
+      }
+   }
+
+   Case(no throw [fail])
    {
       Catch()
       {
@@ -63,7 +74,7 @@ SUITE(exception catch)
       }
    }
 
-   Case(no throw)
+   Case(no throw [fail])
    {
       Catch(nothrow)
       {
@@ -71,7 +82,7 @@ SUITE(exception catch)
       }
    }
 
-   Case(check throw type)
+   Case(check throw type [fail])
    {
       Catch(const char*)
       {
@@ -79,14 +90,14 @@ SUITE(exception catch)
       }
    }
 
-   Case(check throw type)
+   Case(check throw type [fail])
    {
       Catch(const char*)
       {
       }
    }
 
-   Case(check throw type and matcher)
+   Case(check throw type and matcher [fail])
    {
       Catch(int, 16)
       {
@@ -94,7 +105,7 @@ SUITE(exception catch)
       }
    }
 
-   Case(check throw type a_exception)
+   Case(check throw type a_exception [pass])
    {
       Catch(a_exception)
       {
@@ -102,7 +113,7 @@ SUITE(exception catch)
       }
    }
 
-   Case(check throw type a_exception and matcher streq)
+   Case(check throw type a_exception and matcher streq [fail])
    {
       Catch(a_exception, "hello")
       {

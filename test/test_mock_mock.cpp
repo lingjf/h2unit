@@ -359,6 +359,11 @@ SUITE(mock by function name)
       OK(42, time(NULL));
    }
 
+   Todo(time)
+   {
+      MOCK(time, time_t(time_t*)).Once().Return((time_t)0);
+   }
+
    Case(foobar)
    {
       MOCK("foobar0", int()).Once().Return(1);

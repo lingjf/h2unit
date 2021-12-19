@@ -1,10 +1,15 @@
-#include "../h2unit.h"
 
 extern "C" {
 #include "product_c.h"
 }
 
 #include "product_cpp.h"
+
+#if defined H2UNIT && H2UNIT == 2
+#include "../build/h2unit.hpp"
+#else
+#include "../h2unit.h"
+#endif
 
 static int rectangle_area_fake(rectangle_t* rectangle)
 {
@@ -18,7 +23,7 @@ static int sum_rectangle_area_fake(int count, ...)
 
 SUITE(Stub function by fake function)
 {
-   Case(stub local extern function successful)
+   Case(stub local extern function successful [pass])
    {
       rectangle_t p1 = {2, 3};
       OK(6, rectangle_area(&p1));
@@ -31,7 +36,7 @@ SUITE(Stub function by fake function)
       /* include impl source file, then static function is accessible from here */
    }
 
-   Case(stub variable arguments function successful)
+   Case(stub variable arguments function successful [pass])
    {
       rectangle_t p1 = {1, 2};
       rectangle_t p2 = {2, 3};
@@ -60,14 +65,14 @@ static const char* Rect_print_fake(Rect* rect)
 
 SUITE(Stub member method)
 {
-   Case(normal member function successful)
+   Case(normal member function successful [pass])
    {
       STUB(Rect, move, int(int x, int y), Rect_move_fake);
       Rect rect(0, 0, 1, 1);
       OK(11, rect.move(1, 2));
    }
 
-   Case(virtual member function successful)
+   Case(virtual member function successful [pass])
    {
       STUB(Rect, print, const char*(), Rect_print_fake);
       Rect rect(0, 0, 1, 1);

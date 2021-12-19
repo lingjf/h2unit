@@ -2014,10 +2014,7 @@ struct tinyexpr {
       ps.start = ps.next = expression;
       lexical_token(&ps);
       syntax_tree* st = list(&ps);
-      if (ps.type != TOK_END) {
-         delete st;
-         return nullptr;
-      }
+      if (ps.type != TOK_END) delete st, st = nullptr;
       return st;
    }
 };
@@ -4738,8 +4735,7 @@ h2_inline void h2_case::clear()
 {
    h2_sock::clear();
    h2_memory::hook();
-   if (fails) delete fails;
-   fails = nullptr;
+   if (fails) delete fails, fails = nullptr;
    stats.clear();
 }
 
@@ -4772,7 +4768,7 @@ h2_inline void h2_case::failing(h2_fail* fail, bool defer, bool append)
    }
 }
 // source/core/h2_suite.cpp
-h2_inline h2_suite::h2_suite(const char* filine, const char* file, int line, const char* describe, void (*test_code_)(h2_suite*, h2_case*)) : h2_test(filine, file, line, describe), test_code(test_code_)
+h2_inline h2_suite::h2_suite(const char* filine, const char* file, int line, const char* describe, void (*test_fp_)(h2_suite*, h2_case*)) : h2_test(filine, file, line, describe), test_fp(test_fp_)
 {
    memset(cleanup_hole, 0, sizeof(jmp_buf));
    h2_runner::I().suites.push_back(x);
@@ -4800,7 +4796,7 @@ h2_inline void h2_suite::cleanup()
 
 h2_inline void h2_suite::enumerate()
 {
-   test_code(this, nullptr); /* enumerate case by static local h2_case variable inside of h2_suite_test_CmLn() */
+   test_fp(this, nullptr); /* enumerate case by static local h2_case variable inside of h2_suite_test_CmLn() */
 }
 
 h2_inline void h2_suite::test(h2_case* c)
@@ -4809,7 +4805,7 @@ h2_inline void h2_suite::test(h2_case* c)
    h2_exception::I().last_bt.clear();
    c->prev_setup();
    try {
-      test_code(this, c); /* include Setup(); c->post_setup() and c->prev_cleanup(); Cleanup() */
+      test_fp(this, c); /* include Setup(); c->post_setup() and c->prev_cleanup(); Cleanup() */
    } catch (...) {
       uncaught = true;
    }

@@ -48,7 +48,7 @@ SUITE(strcmp matches)
 
 SUITE(strcmp primitive)
 {
-   Case(Re)
+   Case(Re [re])
    {
       OK(Re("abc.*"), "abcdef");
       OK(!Re("A.*"), "abcdef");
@@ -63,7 +63,7 @@ SUITE(strcmp primitive)
 
 SUITE(strcmp CaseLess)
 {
-   Case(CaseLess)
+   Case(CaseLess [re])
    {
       OK(CaseLess("AbCd"), "abcd");
       OK(!CaseLess("AbCd"), "cba");
@@ -72,7 +72,7 @@ SUITE(strcmp CaseLess)
       OK(CaseLess(We("A*")), "abcdef");
    }
 
-   Case(CaseLess ~)
+   Case(CaseLess ~ [re])
    {
       // OK(~"AbCd", "abcd");
       OK(~Substr("AbCd"), "ABCD");
@@ -90,7 +90,7 @@ SUITE(strcmp SpaceLess)
       OK(SpaceLess("a b c"), " a \t \n  b      c   ");
    }
 
-   Case(explicit strcmp)
+   Case(explicit strcmp [re])
    {
       OK(SpaceLess(Se("a b c")), " a \t \n  b      c   ");
       OK(*(Se("a b c")), " a \t \n  b      c   ");

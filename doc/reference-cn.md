@@ -4,7 +4,7 @@
 
 ### h2unit.h/hpp/cpp
 
-`h2unit.h` is all in one file.
+`h2unit.h` 打包在一个头文件中.
 
 ```C++
 // test1.cpp
@@ -16,7 +16,7 @@ g++ -std=c++11 test1.cpp -o a.out
 ./a.out
 ```
 
-In order to speed up compilation, split h2unit.h into two files: `h2unit.hpp` and `h2unit.cpp`, and test file only include `h2unit.hpp`, `h2unit.cpp` as a seperated compile unit.
+为了加快编译速度, 将`h2unit.h`分为二个文件`h2unit.hpp`和`h2unit.cpp`,`h2unit.cpp`作为一个独立的编译单元,测试源文件只需包含(include)`h2unit.hpp`,编译测试源文件时不再重复编译`h2unit.cpp`内的内容。
 
 ```C++
 // test2.cpp
@@ -28,11 +28,13 @@ g++ -std=c++11 h2unit.cpp test2.cpp -o a.out
 ./a.out
 ```
 
+
 ### H2UNIT_IMPORT_MAIN
 
-On windows platform, define `H2UNIT_IMPORT_MAIN` in one of test source files to import main(), in others should not define it to avoid multiple definition.
+在MSVC中, 需要在一个测试源文件定义 `H2UNIT_IMPORT_MAIN` 显式地引入main()函数, 其它的测试源文件不要定义以避免多重定义函数的问题。
+`H2UNIT_IMPORT_MAIN` 需要定义在 `h2unit.h`, `h2unit.hpp` 之前。
 
-On Linux or macOS unix platform, `H2UNIT_IMPORT_MAIN` is not necessary with help of weak reference.
+在Linux macOS等类unix平台, 在弱引用(weak reference)的帮助下, 不必定义`H2UNIT_IMPORT_MAIN`。
 
 ```C++
 // test1.cpp
@@ -55,7 +57,7 @@ g++ -std=c++11 test1.cpp test2.cpp -o a.out
 
 ### H2CASE alias CASE
 
-`CASE` define a standalone test case outside `SUITE`. Case name is not requred quoted by double quotation marks `"`. Tags separated by space or comma and in braces[].
+`CASE` 定义了一个测试用例. 小括号内可以写用例名以及标签, 名字不必用双引号 `"` 括起来, 标签(Tags)用中括号`[]`起来,标签之间以逗号或者空格分割。
 
 ```C++
 #include "h2unit.h"
@@ -67,7 +69,7 @@ CASE(test case name [tag1 tag2 tag3])
 
 ### H2SUITE alias SUITE
 
-`SUITE` define a group of test cases.
+`SUITE` 定义了一个测试组. 小括号内可以写组名以及标签。
 
 ```C++
 #include "h2unit.h"
@@ -79,7 +81,7 @@ SUITE(suite name [tag1 tag2 tag3])
 
 ### H2Case alias Case
 
-`Case` define a test case inside `SUITE`. 
+`Case` 在`SUITE`测试组内定义一个测试用例. 小括号内可以写用例名以及标签。
 
 ```C++
 #include "h2unit.h"
@@ -94,7 +96,7 @@ SUITE(suite name)
 
 ### H2Setup alias Setup
 
-`Setup()` is executed before every test case.
+`Setup()` 每个测试用例开始测试之前的设置。
 
 Variables defined in Suite scope are shared by cases which can see them.
 
@@ -119,7 +121,7 @@ SUITE(suite name)
 
 ### H2Cleanup alias Cleanup
 
-`Cleanup()` is executed after every test case whatever success or fail.
+`Cleanup()` 每个测试用例测试结束后的清理。
 
 Each case is executed separately and begin from first of suite scope, shared variables are initialized, then shared code is executed until case section, after test code, `Cleanup()` is invoked to release resources.
 
@@ -141,6 +143,7 @@ SUITE(suite name)
     }
 }
 ```
+
 
 
 ### H2Todo alias Todo
@@ -381,7 +384,6 @@ CASE(case name)
 
 *    [`_`](../source/h2_unit.hpp#L321) / [`Any`](../source/h2_unit.hpp#L321) : matches any value 
 *    [`Eq`](../source/h2_unit.hpp#L321)(expect [, epsilon]) : matches if value equals expect (one of [strcmp wildcard] equals for string compare), float value near equals expect, default epsilon is 0.00001 and using margin, matches if in [expect-0.00001, expect+0.00001]. 0.1% matches if delta in 0.1% range of expect [99.9% expect, 100.1% expect]
-*    [`TypeEq`](../source/h2_unit.hpp#L321)<Type>() : matches if type of value is Type 
 *    [`Nq`](../source/h2_unit.hpp#L321)(expect) : matches if value not equals expect 
 *    [`Ge`](../source/h2_unit.hpp#L321)(expect) : matches if value >= expect 
 *    [`Gt`](../source/h2_unit.hpp#L321)(expect) : matches if value > expect 
@@ -398,12 +400,9 @@ CASE(case name)
 *    [`EndsWith`](../source/h2_unit.hpp#L321)(expect) : matches if value ends with expect 
 *    [`~`](../source/h2_unit.hpp#L321) / [`CaseLess`](../source/h2_unit.hpp#L321)(expect) : make inner matcher case-insensitive, right operator must be Matcher, `~"Hello World"` not works 
 *    [`*`](../source/h2_unit.hpp#L321) / [`SpaceLess`](../source/h2_unit.hpp#L321)(expect) : trim leading and trailing whitespace, squash several whitespaces into one space, right operator must be Matcher, `*"Hello World"` not works 
-*    [`Member`](../source/h2_unit.hpp#L321)(&Class::member, expect) : matches if member in object match every inner matcher
 *    [`Pointee`](../source/h2_unit.hpp#L321)(expect) : matches if point to value equals expect 
-*    [`CastOf`](../source/h2_unit.hpp#L321)<Type>(expect) : matches if value cast to Type and equals expect 
 *    [`!`](../source/h2_unit.hpp#L321) / [`Not`](../source/h2_unit.hpp#L321)(expect) : matches if not matches inner matcher, right operator must be Matcher, !3 is considered as normal semantics 
 *    [`&&`](../source/h2_unit.hpp#L321)(expect) : Logical AND of two matchers, left and right operator shoud at least one Matcher 
-*    [`Conditional`](../source/h2_unit.hpp#L321)(condition, expect1, expect2) : matches if value matches expect1 if condition is true, otherwise matches if value matches expect2
 *    [`||`](../source/h2_unit.hpp#L321)(expect) : Logical OR of two matchers 
 *    [`AllOf`](../source/h2_unit.hpp#L321)(expect...) : matches if value matches all of inner matchers, act as AND logical operator. Calculates the logical conjunction of multiple matchers. Evaluation is shortcut, so subsequent matchers are not called if an earlier matcher returns false.
 *    [`AnyOf`](../source/h2_unit.hpp#L321)(expect...) : matches if value matches any one of inner matchers, act as OR logical operator. Calculates the logical disjunction of multiple matchers. Evaluation is shortcut, so subsequent matchers are not called if an earlier matcher returns true.
@@ -492,9 +491,11 @@ CASE(Statistics)
 }
 ```
 
-Following is two way to sepecify actual array size, typically used in MOCK, also available in Container matcher (Has/Every/ListOf).
+Following is sepecified actual array size, typically used in MOCK.
 
 ```C++
+
+
 static int a_function(int a[])
 {
    ...
@@ -513,44 +514,8 @@ CASE(Statistics)
    MOCK(a_function, int(int*)).Once(MaxOf<3>(2)).Return(1);
    OK(1, a_function(a1));
 }
-
-CASE(Statistics)
-{
-   int a1[] = {1, 2, 3};
-
-   OK(MaxOf(3)/3, a1);
-   OK(MinOf(1)/3, a1);
-   OK(AvgOf(2)/3, a1);
-   OK(MeanOf(2)/3, a1);
-   OK(MedianOf(2)/3, a1);
-
-   MOCK(a_function, int(int*)).Once(MaxOf(2)/3).Return(1);
-   OK(1, a_function(a1));
-}
 ```
 
-### Member matcher (`Member`)
-Used to check member data or member function in object or pointer.
-
-```C++
-Class C {
-public:
-   int count;
-   int get(int x, int y) { return ...; }
-};
-
-CASE(Member data)
-{
-   C c;
-   OK(Member(100, &C::count), c);
-}
-
-CASE(Member function)
-{
-   C c;
-   OK(Member(100, &C::get, 1, 2), c);
-}
-```
 
 ### Memory compare matcher (`Me`)
 Expection is described by buffer, length and width.
@@ -1311,4 +1276,3 @@ H2Report(user_report);
 ```
 
 Then use H2Report to register it.
-

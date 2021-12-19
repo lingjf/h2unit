@@ -289,10 +289,7 @@ struct tinyexpr {
       ps.start = ps.next = expression;
       lexical_token(&ps);
       syntax_tree* st = list(&ps);
-      if (ps.type != TOK_END) {
-         delete st;
-         return nullptr;
-      }
+      if (ps.type != TOK_END) delete st, st = nullptr;
       return st;
    }
 };
