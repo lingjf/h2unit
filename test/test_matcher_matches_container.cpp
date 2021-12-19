@@ -1,7 +1,3 @@
-#if defined __clang__
-#pragma GCC diagnostic ignored "-Wrange-loop-analysis"
-#endif
-
 #include "../source/h2_unit.cpp"
 #include "test_cplusplus.hpp"
 
@@ -160,48 +156,48 @@ SUITE(h2_listof_matches)
 
 SUITE(ListOf primitive [api])
 {
+#define CHECK_LIST123(a)       \
+   OK(ListOf(1, 2, 3), a);     \
+   OK(!ListOf(1, 2, 7), a);    \
+   OK(ListOf(1, 2, 3) / 3, a); \
+   OK(ListOf(1, 2, 3)(3), a);  \
+   OK(ListOf(2, 3)(1, 3), a);  \
+   OK((ListOf<1, 3>(2, 3)), a);
+
    Case(C/C++ generic array)
    {
       int a1[] = {1, 2, 3};
-      OK(ListOf(1, 2, 3), a1);
-
-      OK(ListOf(2, 3)(1, 3), a1);
-      OK((ListOf<1, 3>(2, 3)), a1);
+      CHECK_LIST123(a1);
    }
 
    Case(Sequence containers / array / static contiguous array)
    {
       std::array<int, 3> a1 = {1, 2, 3};
-      OK(ListOf(1, 2, 3), a1);
-      OK(!ListOf(1, 2, 7), a1);
+      CHECK_LIST123(a1);
    }
 
    Case(Sequence containers / vector / dynamic contiguous array)
    {
       std::vector<int> a1 = {1, 2, 3};
-      OK(ListOf(1, 2, 3), a1);
-      OK(!ListOf(1, 2, 7), a1);
+      CHECK_LIST123(a1);
    }
 
    Case(Sequence containers / deque / double-ended queue)
    {
       std::deque<int> a1 = {1, 2, 3};
-      OK(ListOf(1, 2, 3), a1);
-      OK(!ListOf(1, 2, 7), a1);
+      CHECK_LIST123(a1);
    }
 
    Case(Sequence containers / forward_list / singly-linked list)
    {
       std::forward_list<int> a1 = {1, 2, 3};
-      OK(ListOf(1, 2, 3), a1);
-      OK(!ListOf(1, 2, 7), a1);
+      CHECK_LIST123(a1);
    }
 
    Case(Sequence containers / list / doubly-linked list)
    {
       std::list<int> a1 = {1, 2, 3};
-      OK(ListOf(1, 2, 3), a1);
-      OK(!ListOf(1, 2, 7), a1);
+      CHECK_LIST123(a1);
    }
 
    Case(Associative containers / set)
@@ -247,7 +243,7 @@ SUITE(ListOf primitive [api])
       a1.push(2);
       a1.push(3);
 
-      OK(ListOf(1, 2, 3), a1);
+      CHECK_LIST123(a1);
    }
 
    Case(Container adaptors / queue)
@@ -257,7 +253,7 @@ SUITE(ListOf primitive [api])
       a1.push(2);
       a1.push(3);
 
-      OK(ListOf(1, 2, 3), a1);
+      CHECK_LIST123(a1);
    }
 
    Case(Container adaptors / priority_queue)
@@ -285,199 +281,139 @@ SUITE(ListOf primitive [api])
 
 SUITE(Every primitive [api])
 {
+#define CHECK_EVERY123_UNSORT(a) \
+   OK(Every(Ge(0)), a1);         \
+   OK(!Every(Ge(3)), a1);        \
+   OK(Every(Le(3))(3), a1);      \
+   OK(Every(Le(3)) / 3, a1);     \
+   OK(Every(Le(3))(0, 3), a1);   \
+   OK(Every<3>(Le(3)), a1);      \
+   OK((Every<0, 3>(Le(3))), a1);
+
+#define CHECK_EVERY123(a)      \
+   CHECK_EVERY123_UNSORT(a);   \
+   OK(Every(Lt(3))(2), a1);    \
+   OK(Every(Lt(3)) / 2, a1);   \
+   OK(Every(Lt(3))(0, 2), a1); \
+   OK(Every<2>(Lt(3)), a1);    \
+   OK((Every<0, 2>(Lt(3))), a1);
+
    Case(C/C++ generic array)
    {
       int a1[] = {1, 2, 3};
-      OK(Every(Ge(0)), a1);
-      OK(!Every(Ge(3)), a1);
-
-      OK(Every(Lt(3))(2), a1);
-      OK(Every(Lt(3)) / 2, a1);
-      OK(Every(Lt(3))(0, 2), a1);
-
-      OK(Every<2>(Lt(3)), a1);
-      OK((Every<0, 2>(Lt(3))), a1);
+      CHECK_EVERY123(a1);
    }
 
    Case(Sequence containers / array / static contiguous array)
    {
       std::array<int, 3> a1 = {1, 2, 3};
-      OK(Every(Ge(0)), a1);
-      OK(!Every(Ge(3)), a1);
-
-      OK(Every(Lt(3))(2), a1);
-      OK(Every(Lt(3)) / 2, a1);
-      OK(Every(Lt(3))(0, 2), a1);
-
-      OK(Every<2>(Lt(3)), a1);
-      OK((Every<0, 2>(Lt(3))), a1);
+      CHECK_EVERY123(a1);
    }
 
    Case(Sequence containers / vector / dynamic contiguous array)
    {
       std::vector<int> a1 = {1, 2, 3};
-      OK(Every(Ge(0)), a1);
-      OK(!Every(Ge(3)), a1);
-
-      OK(Every(Lt(3))(2), a1);
-      OK(Every(Lt(3)) / 2, a1);
-      OK(Every(Lt(3))(0, 2), a1);
-
-      OK(Every<2>(Lt(3)), a1);
-      OK((Every<0, 2>(Lt(3))), a1);
+      CHECK_EVERY123(a1);
    }
 
    Case(Sequence containers / deque / double-ended queue)
    {
       std::deque<int> a1 = {1, 2, 3};
-      OK(Every(Ge(0)), a1);
-      OK(!Every(Ge(3)), a1);
-
-      OK(Every(Lt(3))(2), a1);
-      OK(Every(Lt(3)) / 2, a1);
-      OK(Every(Lt(3))(0, 2), a1);
-
-      OK(Every<2>(Lt(3)), a1);
-      OK((Every<0, 2>(Lt(3))), a1);
+      CHECK_EVERY123(a1);
    }
 
    Case(Sequence containers / forward_list / singly-linked list)
    {
       std::forward_list<int> a1 = {1, 2, 3};
-      OK(Every(Ge(0)), a1);
-      OK(!Every(Ge(3)), a1);
-
-      OK(Every(Lt(3))(2), a1);
-      OK(Every(Lt(3)) / 2, a1);
-      OK(Every(Lt(3))(0, 2), a1);
-
-      OK(Every<2>(Lt(3)), a1);
-      OK((Every<0, 2>(Lt(3))), a1);
+      CHECK_EVERY123(a1);
    }
 
    Case(Sequence containers / list / doubly-linked list)
    {
       std::list<int> a1 = {1, 2, 3};
-      OK(Every(Ge(0)), a1);
-      OK(!Every(Ge(3)), a1);
-
-      OK(Every(Lt(3))(2), a1);
-      OK(Every(Lt(3)) / 2, a1);
-      OK(Every(Lt(3))(0, 2), a1);
-
-      OK(Every<2>(Lt(3)), a1);
-      OK((Every<0, 2>(Lt(3))), a1);
+      CHECK_EVERY123(a1);
    }
 
    Case(Associative containers / set)
    {
       std::set<int> a1 = {1, 2, 3};
-      OK(Every(Ge(0)), a1);
-      OK(!Every(Ge(3)), a1);
-
-      OK(Every(Lt(3))(2), a1);
-      OK(Every(Lt(3)) / 2, a1);
-      OK(Every(Lt(3))(0, 2), a1);
-
-      OK(Every<2>(Lt(3)), a1);
-      OK((Every<0, 2>(Lt(3))), a1);
+      CHECK_EVERY123(a1);
    }
 
    Case(Associative containers / multiset)
    {
       std::multiset<int> a1 = {1, 2, 3};
-      OK(Every(Ge(0)), a1);
-      OK(!Every(Ge(3)), a1);
-
-      OK(Every(Lt(3))(2), a1);
-      OK(Every(Lt(3)) / 2, a1);
-      OK(Every(Lt(3))(0, 2), a1);
-
-      OK(Every<2>(Lt(3)), a1);
-      OK((Every<0, 2>(Lt(3))), a1);
+      CHECK_EVERY123(a1);
    }
 
    Case(Associative containers / unordered_set)
    {
       std::unordered_set<int> a1 = {1, 2, 3};
-      OK(Every(Ge(0)), a1);
-      OK(!Every(Ge(3)), a1);
 
-      OK(Every(Le(3))(2), a1);
-      OK(Every(Le(3)) / 2, a1);
-      OK(Every(Le(3))(0, 2), a1);
-
-      OK(Every<2>(Le(3)), a1);
-      OK((Every<0, 2>(Le(3))), a1);
+      CHECK_EVERY123_UNSORT(a1);
    }
+
+#define CHECK2_EVERY123_UNSORT(a)              \
+   OK(Every(Pair(Ge(0), Ge(100))), a);         \
+   OK(!Every(Pair(Ge(3), Ge(100))), a);        \
+                                               \
+   OK(Every(Pair(Ge(0), Ge(100)))(2), a);      \
+   OK(Every(Pair(Ge(0), Ge(100))) / 2, a);     \
+   OK(Every(Pair(Ge(0), Ge(100)))(0, 2), a);   \
+                                               \
+   OK(!Every(Pair(Ge(4), Ge(100)))(2), a);     \
+   OK(!Every(Pair(Ge(4), Ge(100))) / 2, a);    \
+   OK(!Every(Pair(Ge(4), Ge(100)))(0, 2), a);  \
+                                               \
+   OK(Every(Ge(0), Ge(100)), a);               \
+   OK(Every(Ge(0), Ge(100)) / 2, a);           \
+   OK(Every(Ge(0), Ge(100))(0, 2), a);         \
+                                               \
+   OK(Every<2>(Pair(Ge(0), Ge(100))), a);      \
+   OK((Every<0, 2>(Pair(Ge(0), Ge(100)))), a); \
+                                               \
+   OK(Every(Ge(0), Ge(100)), a);               \
+   OK(Every<2>(Ge(0), Ge(100)), a);            \
+   OK((Every<0, 2>(Ge(0), Ge(100))), a);
+
+#define CHECK2_EVERY123(a)                     \
+   CHECK2_EVERY123_UNSORT(a);                  \
+                                               \
+   OK(Every(Pair(Ge(1), Ge(111)))(2), a);      \
+   OK(Every(Pair(Ge(1), Ge(111))) / 2, a);     \
+   OK(Every(Pair(Ge(1), Ge(111)))(0, 2), a);   \
+                                               \
+   OK(Every(Ge(1), Ge(111)), a);               \
+   OK(Every(Ge(1), Ge(111)) / 2, a);           \
+   OK(Every(Ge(1), Ge(111))(0, 2), a);         \
+                                               \
+   OK(!Every(Ge(2), Ge(222)), a);              \
+   OK(!Every(Ge(2), Ge(222)) / 2, a);          \
+   OK(!Every(Ge(2), Ge(222))(0, 2), a);        \
+                                               \
+   OK(Every<2>(Pair(Ge(1), Ge(111))), a);      \
+   OK((Every<0, 2>(Pair(Ge(1), Ge(111)))), a); \
+                                               \
+   OK(Every(Ge(1), Ge(111)), a);               \
+   OK(Every<2>(Ge(1), Ge(111)), a);            \
+   OK((Every<0, 2>(Ge(1), Ge(111))), a);
 
    Case(Associative containers / map)
    {
       std::map<int, int> a1 = {{1, 111}, {2, 222}, {3, 333}};
-
-      OK(Every(Pair(Ge(0), Ge(100))), a1);
-      OK(!Every(Pair(Ge(3), Ge(100))), a1);
-
-      OK(Every(Pair(Ge(0), Ge(100)))(2), a1);
-      OK(Every(Pair(Ge(0), Ge(100))) / 2, a1);
-      OK(Every(Pair(Ge(0), Ge(100)))(0, 2), a1);
-
-      OK(Every(Ge(0), Ge(100)), a1);
-      OK(Every(Ge(0), Ge(100)) / 2, a1);
-      OK(Every(Ge(0), Ge(100))(0, 2), a1);
-
-      OK(Every<2>(Pair(Ge(0), Ge(100))), a1);
-      OK((Every<0, 2>(Pair(Ge(0), Ge(100)))), a1);
-
-      OK(Every(Ge(0), Ge(100)), a1);
-      OK(Every<2>(Ge(0), Ge(100)), a1);
-      OK((Every<0, 2>(Ge(0), Ge(100))), a1);
+      CHECK2_EVERY123(a1);
    }
 
    Case(Associative containers / multimap)
    {
       std::multimap<int, int> a1 = {{1, 111}, {2, 222}, {3, 333}};
-
-      OK(Every(Pair(Ge(0), Ge(100))), a1);
-      OK(!Every(Pair(Ge(3), Ge(100))), a1);
-
-      OK(Every(Pair(Ge(0), Ge(100)))(2), a1);
-      OK(Every(Pair(Ge(0), Ge(100))) / 2, a1);
-      OK(Every(Pair(Ge(0), Ge(100)))(0, 2), a1);
-
-      OK(Every(Ge(0), Ge(100)), a1);
-      OK(Every(Ge(0), Ge(100)) / 2, a1);
-      OK(Every(Ge(0), Ge(100))(0, 2), a1);
-
-      OK(Every<2>(Pair(Ge(0), Ge(100))), a1);
-      OK((Every<0, 2>(Pair(Ge(0), Ge(100)))), a1);
-
-      OK(Every(Ge(0), Ge(100)), a1);
-      OK(Every<2>(Ge(0), Ge(100)), a1);
-      OK((Every<0, 2>(Ge(0), Ge(100))), a1);
+      CHECK2_EVERY123(a1);
    }
 
    Case(Associative containers / unordered_multimap)
    {
       std::unordered_multimap<int, int> a1 = {{1, 111}, {2, 222}, {3, 333}};
-
-      OK(Every(Pair(Ge(0), Ge(100))), a1);
-      OK(!Every(Pair(Ge(3), Ge(100))), a1);
-
-      OK(Every(Pair(Ge(0), Ge(100)))(2), a1);
-      OK(Every(Pair(Ge(0), Ge(100))) / 2, a1);
-      OK(Every(Pair(Ge(0), Ge(100)))(0, 2), a1);
-
-      OK(Every(Ge(0), Ge(100)), a1);
-      OK(Every(Ge(0), Ge(100)) / 2, a1);
-      OK(Every(Ge(0), Ge(100))(0, 2), a1);
-
-      OK(Every<2>(Pair(Ge(0), Ge(100))), a1);
-      OK((Every<0, 2>(Pair(Ge(0), Ge(100)))), a1);
-
-      OK(Every(Ge(0), Ge(100)), a1);
-      OK(Every<2>(Ge(0), Ge(100)), a1);
-      OK((Every<0, 2>(Ge(0), Ge(100))), a1);
+      CHECK2_EVERY123_UNSORT(a1);
    }
 
    Case(Container adaptors / stack)
@@ -487,15 +423,7 @@ SUITE(Every primitive [api])
       a1.push(2);
       a1.push(3);
 
-      OK(Every(Ge(0)), a1);
-      OK(!Every(Ge(3)), a1);
-
-      OK(Every(Lt(3))(2), a1);
-      OK(Every(Lt(3)) / 2, a1);
-      OK(Every(Lt(3))(0, 2), a1);
-
-      OK(Every<2>(Lt(3)), a1);
-      OK((Every<0, 2>(Lt(3))), a1);
+      CHECK_EVERY123(a1);
    }
 
    Case(Container adaptors / queue)
@@ -505,15 +433,7 @@ SUITE(Every primitive [api])
       a1.push(2);
       a1.push(3);
 
-      OK(Every(Ge(0)), a1);
-      OK(!Every(Ge(3)), a1);
-
-      OK(Every(Lt(3))(2), a1);
-      OK(Every(Lt(3)) / 2, a1);
-      OK(Every(Lt(3))(0, 2), a1);
-
-      OK(Every<2>(Lt(3)), a1);
-      OK((Every<0, 2>(Lt(3))), a1);
+      CHECK_EVERY123(a1);
    }
 
    Case(Container adaptors / priority_queue)
@@ -523,12 +443,7 @@ SUITE(Every primitive [api])
       a1.push(2);
       a1.push(3);
 
-      OK(Every(Ge(0)), a1);
-      OK(!Every(Ge(3)), a1);
-
-      OK(Every(Le(3))(2), a1);
-      OK(Every(Le(3)) / 2, a1);
-      OK(Every(Le(3))(0, 2), a1);
+      CHECK_EVERY123_UNSORT(a1);
    }
 
    Case(string)
@@ -561,166 +476,173 @@ SUITE(h2_has2_matches)
 
 SUITE(Has primitive [api])
 {
+#define CHECK_HAS123_UNSORT(a) \
+   OK(Has(1), a);              \
+   OK(Has(2), a);              \
+   OK(Has(3), a);              \
+   OK(!Has(4), a);             \
+   OK(Has(1) / 3, a);          \
+   OK(!Has(4) / 3, a);         \
+   OK(Has(1)(3), a);           \
+   OK(!Has(4)(3), a);          \
+   OK(Has(1)(0, 3), a);        \
+   OK(!Has(4)(0, 3), a);       \
+   OK(Has<3>(1), a);           \
+   OK((Has<0, 3>(1)), a);      \
+   OK(!Has<3>(4), a);          \
+   OK(!(Has<0, 3>(4)), a);
+
+#define CHECK_HAS123(a)    \
+   CHECK_HAS123_UNSORT(a); \
+   OK(Has(1) / 2, a);      \
+   OK(!Has(3) / 2, a);     \
+   OK(Has(1)(2), a);       \
+   OK(!Has(3)(2), a);      \
+   OK(Has(1)(0, 2), a);    \
+   OK(!Has(3)(0, 2), a);   \
+   OK(Has<2>(1), a);       \
+   OK((Has<0, 2>(1)), a);  \
+   OK(!Has<2>(3), a);      \
+   OK(!(Has<0, 2>(3)), a);
+
    Case(C/C++ generic array)
    {
       int a1[] = {1, 2, 3};
-      OK(Has(1), a1);
-      OK(Has(1)(3), a1);
-      OK(Has(1) / 3, a1);
-      OK(Has(1)(0, 3), a1);
-      OK(Has(2), a1);
-      OK(Has(3), a1);
-      OK(!Has(4), a1);
-      OK(!Has(4)(3), a1);
-      OK(!Has(4) / 3, a1);
-      OK(!Has(4)(0, 3), a1);
-
-      OK(Has<3>(1), a1);
-      OK((Has<0, 3>(1)), a1);
-
-      OK(!Has<3>(4), a1);
-      OK(!(Has<0, 3>(4)), a1);
+      CHECK_HAS123(a1);
    }
 
    Case(Sequence containers / array / static contiguous array)
    {
       std::array<int, 3> a1 = {1, 2, 3};
-      OK(Has(1), a1);
-      OK(Has(2), a1);
-      OK(Has(3), a1);
-      OK(!Has(4), a1);
+      CHECK_HAS123(a1);
    }
 
    Case(Sequence containers / vector / dynamic contiguous array)
    {
       std::vector<int> a1 = {1, 2, 3};
-      OK(Has(1), a1);
-      OK(Has(2), a1);
-      OK(Has(3), a1);
-      OK(!Has(4), a1);
+      CHECK_HAS123(a1);
    }
 
    Case(Sequence containers / deque / double-ended queue)
    {
       std::deque<int> a1 = {1, 2, 3};
-      OK(Has(1), a1);
-      OK(Has(2), a1);
-      OK(Has(3), a1);
-      OK(!Has(4), a1);
+      CHECK_HAS123(a1);
    }
 
    Case(Sequence containers / forward_list / singly-linked list)
    {
       std::forward_list<int> a1 = {1, 2, 3};
-      OK(Has(1), a1);
-      OK(Has(2), a1);
-      OK(Has(3), a1);
-      OK(!Has(4), a1);
+      CHECK_HAS123(a1);
    }
 
    Case(Sequence containers / list / doubly-linked list)
    {
       std::list<int> a1 = {1, 2, 3};
-      OK(Has(1), a1);
-      OK(Has(2), a1);
-      OK(Has(3), a1);
-      OK(!Has(4), a1);
+      CHECK_HAS123(a1);
    }
 
    Case(Associative containers / set)
    {
       std::set<int> a1 = {1, 2, 3};
-      OK(Has(1), a1);
-      OK(Has(2), a1);
-      OK(Has(3), a1);
-      OK(!Has(4), a1);
+      CHECK_HAS123(a1);
    }
 
    Case(Associative containers / multiset)
    {
       std::multiset<int> a1 = {1, 2, 3};
-      OK(Has(1), a1);
-      OK(Has(2), a1);
-      OK(Has(3), a1);
-      OK(!Has(4), a1);
+      CHECK_HAS123(a1);
    }
 
    Case(Associative containers / unordered_set)
    {
       std::unordered_set<int> a1 = {1, 2, 3};
-      OK(Has(1), a1);
-      OK(Has(2), a1);
-      OK(Has(3), a1);
-      OK(!Has(4), a1);
+      CHECK_HAS123_UNSORT(a1);
    }
+
+#define CHECK2_HAS123_UNSORT(a)      \
+   OK(Has(Pair(1, 111)), a1);        \
+   OK(Has(Pair(2, 222)), a1);        \
+   OK(Has(Pair(3, 333)), a1);        \
+   OK(!Has(Pair(1, 444)), a1);       \
+   OK(!Has(Pair(4, 111)), a1);       \
+   OK(!Has(Pair(4, 444)), a1);       \
+   OK(Has(1, 111), a1);              \
+   OK(Has(2, 222), a1);              \
+   OK(Has(3, 333), a1);              \
+   OK(!Has(1, 444), a1);             \
+   OK(!Has(4, 111), a1);             \
+   OK(!Has(4, 444), a1);             \
+   OK(Has(1), a1);                   \
+   OK(Has(2), a1);                   \
+   OK(Has(3), a1);                   \
+   OK(!Has(4), a1);                  \
+   OK(Has(Pair(1, 111)) / 3, a1);    \
+   OK(Has(1, 111) / 3, a1);          \
+   OK(Has(1) / 3, a1);               \
+   OK(!Has(Pair(4, 444)) / 3, a1);   \
+   OK(!Has(4, 444) / 3, a1);         \
+   OK(!Has(4) / 3, a1);              \
+   OK(Has(Pair(1, 111))(3), a1);     \
+   OK(Has(1, 111)(3), a1);           \
+   OK(Has(1)(3), a1);                \
+   OK(!Has(Pair(4, 444))(3), a1);    \
+   OK(!Has(4, 444)(3), a1);          \
+   OK(!Has(4)(3), a1);               \
+   OK(Has(Pair(1, 111))(0, 3), a1);  \
+   OK(Has(1, 111)(0, 3), a1);        \
+   OK(Has(1)(0, 3), a1);             \
+   OK(!Has(Pair(4, 444))(0, 3), a1); \
+   OK(!Has(4, 444)(0, 3), a1);       \
+   OK(!Has(4)(0, 3), a1);            \
+   OK(Has<3>(Pair(1, 111)), a1);     \
+   OK(Has<3>(1), a1);                \
+   OK(!Has<3>(Pair(4, 444)), a1);    \
+   OK(!Has<3>(4), a1);
+
+#define CHECK2_HAS123(a)             \
+   CHECK2_HAS123_UNSORT(a);          \
+   OK(Has(Pair(1, 111)) / 2, a1);    \
+   OK(Has(1, 111) / 2, a1);          \
+   OK(Has(1) / 2, a1);               \
+   OK(!Has(Pair(3, 333)) / 2, a1);   \
+   OK(!Has(3, 333) / 2, a1);         \
+   OK(!Has(3) / 2, a1);              \
+   OK(Has(Pair(1, 111))(2), a1);     \
+   OK(Has(1, 111)(2), a1);           \
+   OK(Has(1)(2), a1);                \
+   OK(!Has(Pair(3, 333))(2), a1);    \
+   OK(!Has(3, 333)(2), a1);          \
+   OK(!Has(3)(2), a1);               \
+   OK(Has(Pair(1, 111))(0, 2), a1);  \
+   OK(Has(1, 111)(0, 2), a1);        \
+   OK(Has(1)(0, 2), a1);             \
+   OK(!Has(Pair(3, 333))(0, 2), a1); \
+   OK(!Has(3, 333)(0, 2), a1);       \
+   OK(!Has(3)(0, 2), a1);            \
+   OK(Has<2>(Pair(1, 111)), a1);     \
+   OK(Has<2>(1), a1);                \
+   OK(!Has<2>(Pair(3, 333)), a1);    \
+   OK(!Has<2>(3), a1);
 
    Case(Associative containers / map)
    {
       std::map<int, int> a1 = {{1, 111}, {2, 222}, {3, 333}};
-      OK(Has(Pair(1, 111)), a1);
-      OK(Has(Pair(2, 222)), a1);
-      OK(Has(Pair(3, 333)), a1);
-      OK(!Has(Pair(1, 444)), a1);
-      OK(!Has(Pair(4, 111)), a1);
-      OK(!Has(Pair(4, 444)), a1);
 
-      OK(Has(1, 111), a1);
-      OK(Has(2, 222), a1);
-      OK(Has(3, 333), a1);
-      OK(!Has(1, 444), a1);
-      OK(!Has(4, 111), a1);
-      OK(!Has(4, 444), a1);
-
-      OK(Has(1), a1);
-      OK(Has(2), a1);
-      OK(Has(3), a1);
-      OK(!Has(4), a1);
+      CHECK2_HAS123(a1);
    }
 
    Case(Associative containers / multimap)
    {
       std::multimap<int, int> a1 = {{1, 111}, {2, 222}, {3, 333}};
-      OK(Has(Pair(1, 111)), a1);
-      OK(Has(Pair(2, 222)), a1);
-      OK(Has(Pair(3, 333)), a1);
-      OK(!Has(Pair(1, 444)), a1);
-      OK(!Has(Pair(4, 111)), a1);
-      OK(!Has(Pair(4, 444)), a1);
 
-      OK(Has(1, 111), a1);
-      OK(Has(2, 222), a1);
-      OK(Has(3, 333), a1);
-      OK(!Has(1, 444), a1);
-      OK(!Has(4, 111), a1);
-      OK(!Has(4, 444), a1);
-
-      OK(Has(1), a1);
-      OK(Has(2), a1);
-      OK(Has(3), a1);
-      OK(!Has(4), a1);
+      CHECK2_HAS123(a1);
    }
 
    Case(Associative containers / unordered_multimap)
    {
       std::unordered_multimap<int, int> a1 = {{1, 111}, {2, 222}, {3, 333}};
-      OK(Has(Pair(1, 111)), a1);
-      OK(Has(Pair(2, 222)), a1);
-      OK(Has(Pair(3, 333)), a1);
-      OK(!Has(Pair(1, 444)), a1);
-      OK(!Has(Pair(4, 111)), a1);
-      OK(!Has(Pair(4, 444)), a1);
 
-      OK(Has(1, 111), a1);
-      OK(Has(2, 222), a1);
-      OK(Has(3, 333), a1);
-      OK(!Has(1, 444), a1);
-      OK(!Has(4, 111), a1);
-      OK(!Has(4, 444), a1);
-
-      OK(Has(1), a1);
-      OK(Has(2), a1);
-      OK(Has(3), a1);
-      OK(!Has(4), a1);
+      CHECK2_HAS123_UNSORT(a1);
    }
 
    Case(Container adaptors / stack)
@@ -730,10 +652,7 @@ SUITE(Has primitive [api])
       a1.push(2);
       a1.push(3);
 
-      OK(Has(1), a1);
-      OK(Has(2), a1);
-      OK(Has(3), a1);
-      OK(!Has(4), a1);
+      CHECK_HAS123(a1);
    }
 
    Case(Container adaptors / queue)
@@ -743,10 +662,7 @@ SUITE(Has primitive [api])
       a1.push(2);
       a1.push(3);
 
-      OK(Has(1), a1);
-      OK(Has(2), a1);
-      OK(Has(3), a1);
-      OK(!Has(4), a1);
+      CHECK_HAS123(a1);
    }
 
    Case(Container adaptors / priority_queue)
@@ -756,10 +672,7 @@ SUITE(Has primitive [api])
       a1.push(2);
       a1.push(3);
 
-      OK(Has(1), a1);
-      OK(Has(2), a1);
-      OK(Has(3), a1);
-      OK(!Has(4), a1);
+      CHECK_HAS123_UNSORT(a1);
    }
 
    Case(string)
@@ -807,52 +720,78 @@ SUITE(HasKey HasValue primitive)
 
 SUITE(Has*n primitive [api])
 {
+#define CHECK_HAS122_UNSORT(a)  \
+   OK(Has(1) * 1, a1);          \
+   OK(!Has(1) * 2, a1);         \
+   OK(Has(2) * 2, a1);          \
+   OK(Has(1) / 3 * 1, a1);      \
+   OK(!Has(1) / 3 * 2, a1);     \
+   OK(Has(2) / 3 * 2, a1);      \
+   OK(Has(1)(3) * 1, a1);       \
+   OK(!Has(1)(3) * 2, a1);      \
+   OK(Has(2)(3) * 2, a1);       \
+   OK(Has(1)(0, 3) * 1, a1);    \
+   OK(!Has(1)(0, 3) * 2, a1);   \
+   OK(Has(2)(0, 3) * 2, a1);    \
+   OK(Has<3>(1) * 1, a1);       \
+   OK(!Has<3>(1) * 2, a1);      \
+   OK(Has<3>(2) * 2, a1);       \
+   OK((Has<0, 3>(1)) * 1, a1);  \
+   OK(!(Has<0, 3>(1)) * 2, a1); \
+   OK((Has<0, 3>(2)) * 2, a1);
+
+#define CHECK_HAS122(a)         \
+   CHECK_HAS122_UNSORT(a);      \
+   OK(Has(1) / 2 * 1, a1);      \
+   OK(!Has(1) / 2 * 2, a1);     \
+   OK(Has(2) / 2 * 1, a1);      \
+   OK(Has(1)(2) * 1, a1);       \
+   OK(!Has(1)(2) * 2, a1);      \
+   OK(Has(2)(2) * 1, a1);       \
+   OK(Has(1)(0, 2) * 1, a1);    \
+   OK(!Has(1)(0, 2) * 2, a1);   \
+   OK(Has(2)(0, 2) * 1, a1);    \
+   OK(Has<2>(1) * 1, a1);       \
+   OK(!Has<2>(1) * 2, a1);      \
+   OK(Has<2>(2) * 1, a1);       \
+   OK((Has<0, 2>(1)) * 1, a1);  \
+   OK(!(Has<0, 2>(1)) * 2, a1); \
+   OK((Has<0, 2>(2)) * 1, a1);
+
    Case(C/C++ generic array)
    {
       int a1[] = {1, 2, 2};
-      OK(Has(1) * 1, a1);
-      OK(!Has(1) * 2, a1);
-      OK(Has(2) * 2, a1);
+      CHECK_HAS122(a1);
    }
 
    Case(Sequence containers / array / static contiguous array)
    {
       std::array<int, 3> a1 = {1, 2, 2};
-      OK(Has(1) * 1, a1);
-      OK(!Has(1) * 2, a1);
-      OK(Has(2) * 2, a1);
+      CHECK_HAS122(a1);
    }
 
    Case(Sequence containers / vector / dynamic contiguous array)
    {
       std::vector<int> a1 = {1, 2, 2};
-      OK(Has(1) * 1, a1);
-      OK(!Has(1) * 2, a1);
-      OK(Has(2) * 2, a1);
+      CHECK_HAS122(a1);
    }
 
    Case(Sequence containers / deque / double-ended queue)
    {
       std::deque<int> a1 = {1, 2, 2};
-      OK(Has(1) * 1, a1);
-      OK(!Has(1) * 2, a1);
-      OK(Has(2) * 2, a1);
+      CHECK_HAS122(a1);
    }
 
    Case(Sequence containers / forward_list / singly-linked list)
    {
       std::forward_list<int> a1 = {1, 2, 2};
-      OK(Has(1) * 1, a1);
-      OK(!Has(1) * 2, a1);
-      OK(Has(2) * 2, a1);
+      CHECK_HAS122(a1);
    }
 
    Case(Sequence containers / list / doubly-linked list)
    {
       std::list<int> a1 = {1, 2, 2};
-      OK(Has(1) * 1, a1);
-      OK(!Has(1) * 2, a1);
-      OK(Has(2) * 2, a1);
+      CHECK_HAS122(a1);
    }
 
    Case(Associative containers / set)
@@ -866,9 +805,7 @@ SUITE(Has*n primitive [api])
    Case(Associative containers / multiset)
    {
       std::multiset<int> a1 = {1, 2, 2};
-      OK(Has(1) * 1, a1);
-      OK(!Has(1) * 2, a1);
-      OK(Has(2) * 2, a1);
+      CHECK_HAS122(a1);
    }
 
    Case(Associative containers / unordered_set)
@@ -934,9 +871,7 @@ SUITE(Has*n primitive [api])
       a1.push(2);
       a1.push(2);
 
-      OK(Has(1) * 1, a1);
-      OK(!Has(1) * 2, a1);
-      OK(Has(2) * 2, a1);
+      CHECK_HAS122(a1);
    }
 
    Case(Container adaptors / queue)
@@ -946,9 +881,7 @@ SUITE(Has*n primitive [api])
       a1.push(2);
       a1.push(2);
 
-      OK(Has(1) * 1, a1);
-      OK(!Has(1) * 2, a1);
-      OK(Has(2) * 2, a1);
+      CHECK_HAS122(a1);
    }
 
    Case(Container adaptors / priority_queue)
@@ -958,9 +891,7 @@ SUITE(Has*n primitive [api])
       a1.push(2);
       a1.push(2);
 
-      OK(Has(1) * 1, a1);
-      OK(!Has(1) * 2, a1);
-      OK(Has(2) * 2, a1);
+      CHECK_HAS122(a1);
    }
 
    Case(string)
@@ -1125,174 +1056,123 @@ SUITE(CountOf primitive [api])
 
 SUITE(MaxOf MinOf AvgOf MeanOf MedianOf primitive [api])
 {
+#define CHECK_STATISTICS0(a) \
+   OK(!MaxOf(0), a);         \
+   OK(!MinOf(0), a);         \
+   OK(!AvgOf(0), a);         \
+   OK(!MeanOf(0), a);        \
+   OK(!MedianOf(0), a);
+
+#define CHECK_STATISTICS123(a) \
+   OK(MaxOf(3), a);            \
+   OK(MinOf(1), a);            \
+   OK(AvgOf(2), a);            \
+   OK(MeanOf(2), a);           \
+   OK(MedianOf(2), a);         \
+                               \
+   OK(MaxOf(3) / 3, a);        \
+   OK(MinOf(1) / 3, a);        \
+   OK(AvgOf(2) / 3, a);        \
+   OK(MeanOf(2) / 3, a);       \
+   OK(MedianOf(2) / 3, a);     \
+                               \
+   OK(MaxOf(3)(3), a);         \
+   OK(MinOf(1)(3), a);         \
+   OK(AvgOf(2)(3), a);         \
+   OK(MeanOf(2)(3), a);        \
+   OK(MedianOf(2)(3), a);      \
+                               \
+   OK(MaxOf(3)(0, 3), a);      \
+   OK(MinOf(1)(0, 3), a);      \
+   OK(AvgOf(2)(0, 3), a);      \
+   OK(MeanOf(2)(0, 3), a);     \
+   OK(MedianOf(2)(0, 3), a);   \
+                               \
+   OK(MaxOf<3>(3), a);         \
+   OK(MinOf<3>(1), a);         \
+   OK(AvgOf<3>(2), a);         \
+   OK(MeanOf<3>(2), a);        \
+   OK(MedianOf<3>(2), a);      \
+                               \
+   OK((MaxOf<0, 3>(3)), a);    \
+   OK((MinOf<0, 3>(1)), a);    \
+   OK((AvgOf<0, 3>(2)), a);    \
+   OK((MeanOf<0, 3>(2)), a);   \
+   OK((MedianOf<0, 3>(2)), a);
+
    Case(native array)
    {
       int a1[] = {1, 2, 3};
-      OK(MaxOf(3), a1);
-      OK(MinOf(1), a1);
-      OK(AvgOf(2), a1);
-      OK(MeanOf(2), a1);
-      OK(MedianOf(2), a1);
-
-      OK(MaxOf(3) / 3, a1);
-      OK(MinOf(1) / 3, a1);
-      OK(AvgOf(2) / 3, a1);
-      OK(MeanOf(2) / 3, a1);
-      OK(MedianOf(2) / 3, a1);
-
-      OK(MaxOf(3)(3), a1);
-      OK(MinOf(1)(3), a1);
-      OK(AvgOf(2)(3), a1);
-      OK(MeanOf(2)(3), a1);
-      OK(MedianOf(2)(3), a1);
-
-      OK(MaxOf(3)(0, 3), a1);
-      OK(MinOf(1)(0, 3), a1);
-      OK(AvgOf(2)(0, 3), a1);
-      OK(MeanOf(2)(0, 3), a1);
-      OK(MedianOf(2)(0, 3), a1);
-
-      OK(MaxOf<3>(3), a1);
-      OK(MinOf<3>(1), a1);
-      OK(AvgOf<3>(2), a1);
-      OK(MeanOf<3>(2), a1);
-      OK(MedianOf<3>(2), a1);
-
-      OK((MaxOf<0, 3>(3)), a1);
-      OK((MinOf<0, 3>(1)), a1);
-      OK((AvgOf<0, 3>(2)), a1);
-      OK((MeanOf<0, 3>(2)), a1);
-      OK((MedianOf<0, 3>(2)), a1);
+      CHECK_STATISTICS123(a1);
    }
 
    Case(Sequence containers / array / static contiguous array)
    {
       std::array<int, 3> a1 = {1, 2, 3};
-      OK(MaxOf(3), a1);
-      OK(MaxOf(Gt(2) && Lt(4)), a1);
-      OK(MinOf(1), a1);
-      OK(MinOf(Gt(0) && Lt(2)), a1);
-      OK(AvgOf(2), a1);
-      OK(MeanOf(2), a1);
-      OK(MedianOf(2), a1);
+      CHECK_STATISTICS123(a1);
    }
 
    Case(Sequence containers / vector / dynamic contiguous array)
    {
       std::vector<int> a0;
-      OK(!MaxOf(0), a0);
-      OK(!MinOf(0), a0);
-      OK(!AvgOf(0), a0);
-      OK(!MeanOf(0), a0);
-      OK(!MedianOf(0), a0);
+      CHECK_STATISTICS0(a0);
 
       std::vector<int> a1 = {1, 2, 3};
-      OK(MaxOf(3), a1);
-      OK(MinOf(1), a1);
-      OK(AvgOf(2), a1);
-      OK(MeanOf(2), a1);
-      OK(MedianOf(2), a1);
+      CHECK_STATISTICS123(a1);
    }
 
    Case(Sequence containers / deque / double-ended queue)
    {
       std::deque<int> a0;
-      OK(!MaxOf(0), a0);
-      OK(!MinOf(0), a0);
-      OK(!AvgOf(0), a0);
-      OK(!MeanOf(0), a0);
-      OK(!MedianOf(0), a0);
+      CHECK_STATISTICS0(a0);
 
       std::deque<int> a1 = {1, 2, 3};
-      OK(MaxOf(3), a1);
-      OK(MinOf(1), a1);
-      OK(AvgOf(2), a1);
-      OK(MeanOf(2), a1);
-      OK(MedianOf(2), a1);
+      CHECK_STATISTICS123(a1);
    }
 
    Case(Sequence containers / forward_list / singly-linked list)
    {
       std::forward_list<int> a0;
-      OK(!MaxOf(0), a0);
-      OK(!MinOf(0), a0);
-      OK(!AvgOf(0), a0);
-      OK(!MeanOf(0), a0);
-      OK(!MedianOf(0), a0);
+      CHECK_STATISTICS0(a0);
 
       std::forward_list<int> a1 = {1, 2, 3};
-      OK(MaxOf(3), a1);
-      OK(MinOf(1), a1);
-      OK(AvgOf(2), a1);
-      OK(MeanOf(2), a1);
-      OK(MedianOf(2), a1);
+      CHECK_STATISTICS123(a1);
    }
 
    Case(Sequence containers / list / doubly-linked list)
    {
       std::list<int> a0;
-      OK(!MaxOf(0), a0);
-      OK(!MinOf(0), a0);
-      OK(!AvgOf(0), a0);
-      OK(!MeanOf(0), a0);
-      OK(!MedianOf(0), a0);
+      CHECK_STATISTICS0(a0);
 
       std::list<int> a1 = {1, 2, 3};
-      OK(MaxOf(3), a1);
-      OK(MinOf(1), a1);
-      OK(AvgOf(2), a1);
-      OK(MeanOf(2), a1);
-      OK(MedianOf(2), a1);
+      CHECK_STATISTICS123(a1);
    }
 
    Case(Associative containers / set)
    {
       std::set<int> a0;
-      OK(!MaxOf(0), a0);
-      OK(!MinOf(0), a0);
-      OK(!AvgOf(0), a0);
-      OK(!MeanOf(0), a0);
-      OK(!MedianOf(0), a0);
+      CHECK_STATISTICS0(a0);
 
       std::set<int> a1 = {1, 2, 3};
-      OK(MaxOf(3), a1);
-      OK(MinOf(1), a1);
-      OK(AvgOf(2), a1);
-      OK(MeanOf(2), a1);
-      OK(MedianOf(2), a1);
+      CHECK_STATISTICS123(a1);
    }
 
    Case(Associative containers / multiset)
    {
       std::multiset<int> a0;
-      OK(!MaxOf(0), a0);
-      OK(!MinOf(0), a0);
-      OK(!AvgOf(0), a0);
-      OK(!MeanOf(0), a0);
-      OK(!MedianOf(0), a0);
+      CHECK_STATISTICS0(a0);
 
       std::multiset<int> a1 = {1, 2, 3};
-      OK(MaxOf(3), a1);
-      OK(MinOf(1), a1);
-      OK(AvgOf(2), a1);
-      OK(MeanOf(2), a1);
-      OK(MedianOf(2), a1);
+      CHECK_STATISTICS123(a1);
    }
 
    Case(Associative containers / unordered_set)
    {
       std::unordered_set<int> a0;
-      OK(!MaxOf(0), a0);
-      OK(!MinOf(0), a0);
-      OK(!AvgOf(0), a0);
-      OK(!MeanOf(0), a0);
-      OK(!MedianOf(0), a0);
+      CHECK_STATISTICS0(a0);
 
       std::unordered_set<int> a1 = {1, 2, 3};
-      OK(MaxOf(3), a1);
-      OK(MinOf(1), a1);
-      OK(AvgOf(2), a1);
-      OK(MedianOf(2), a1);
+      CHECK_STATISTICS123(a1);
    }
 
    Case(Associative containers / map)
@@ -1313,61 +1193,37 @@ SUITE(MaxOf MinOf AvgOf MeanOf MedianOf primitive [api])
    Case(Container adaptors / stack)
    {
       std::stack<int> a1;
-      OK(!MaxOf(0), a1);
-      OK(!MinOf(0), a1);
-      OK(!AvgOf(0), a1);
-      OK(!MeanOf(0), a1);
-      OK(!MedianOf(0), a1);
+      CHECK_STATISTICS0(a1);
 
       a1.push(1);
       a1.push(2);
       a1.push(3);
 
-      OK(MaxOf(3), a1);
-      OK(MinOf(1), a1);
-      OK(AvgOf(2), a1);
-      OK(MeanOf(2), a1);
-      OK(MedianOf(2), a1);
+      CHECK_STATISTICS123(a1);
    }
 
    Case(Container adaptors / queue)
    {
       std::queue<int> a1;
-      OK(!MaxOf(0), a1);
-      OK(!MinOf(0), a1);
-      OK(!AvgOf(0), a1);
-      OK(!MeanOf(0), a1);
-      OK(!MedianOf(0), a1);
+      CHECK_STATISTICS0(a1);
 
       a1.push(1);
       a1.push(2);
       a1.push(3);
 
-      OK(MaxOf(3), a1);
-      OK(MinOf(1), a1);
-      OK(AvgOf(2), a1);
-      OK(MeanOf(2), a1);
-      OK(MedianOf(2), a1);
+      CHECK_STATISTICS123(a1);
    }
 
    Case(Container adaptors / priority_queue)
    {
       std::priority_queue<int> a1;
-      OK(!MaxOf(0), a1);
-      OK(!MinOf(0), a1);
-      OK(!AvgOf(0), a1);
-      OK(!MeanOf(0), a1);
-      OK(!MedianOf(0), a1);
+      CHECK_STATISTICS0(a1);
 
       a1.push(1);
       a1.push(2);
       a1.push(3);
 
-      OK(MaxOf(3), a1);
-      OK(MinOf(1), a1);
-      OK(AvgOf(2), a1);
-      OK(MeanOf(2), a1);
-      OK(MedianOf(2), a1);
+      CHECK_STATISTICS123(a1);
    }
 
    Case(string)
@@ -1588,58 +1444,5 @@ SUITE(container MOCK)
         .Return(1);
 
       OK(1, container_mock_f1(a1, a2, a3, a4, a5, a6, s1, s2, s3, m1, m2, m3, d1, d2, d3));
-   }
-}
-
-SUITE(container bool problem)
-{
-   // https://isocpp.org/blog/2012/11/on-vectorbool
-
-   Case(C/C++ generic array)
-   {
-      bool a1[] = {true, false, true};
-      OK(ListOf(1, 0, 1), a1);
-      OK(CountOf(3), a1);
-      OK(Has(false), a1);
-   }
-
-   Case(vector)
-   {
-      std::vector<bool> a1 = {true, false, true};
-      OK(ListOf(1, 0, 1), a1);
-      OK(CountOf(3), a1);
-      OK(Has(false), a1);
-   }
-
-   Case(array)
-   {
-      std::array<bool, 3> a1 = {true, false, true};
-      OK(ListOf(1, 0, 1), a1);
-      OK(CountOf(3), a1);
-      OK(Has(false), a1);
-   }
-
-   Case(deque)
-   {
-      std::deque<bool> a1 = {true, false, true};
-      OK(ListOf(1, 0, 1), a1);
-      OK(CountOf(3), a1);
-      OK(Has(false), a1);
-   }
-
-   Case(forward_list)
-   {
-      std::forward_list<bool> a1 = {true, false, true};
-      OK(ListOf(1, 0, 1), a1);
-      OK(CountOf(3), a1);
-      OK(Has(false), a1);
-   }
-
-   Case(list)
-   {
-      std::list<bool> a1 = {true, false, true};
-      OK(ListOf(1, 0, 1), a1);
-      OK(CountOf(3), a1);
-      OK(Has(false), a1);
    }
 }

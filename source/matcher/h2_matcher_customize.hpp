@@ -2,7 +2,7 @@
    const char* matcher_name = name;                                                           \
    template <typename A> bool __matches(const A& a) const;                                    \
    template <typename A>                                                                      \
-   h2::h2_fail* matches(const A& a, h2::C c) const                                            \
+   h2::h2_fail* matches(const A& a, const h2::C& c) const                                     \
    {                                                                                          \
       h2::h2_fail* fail = h2::h2_fail::new_unexpect(expection(c), h2::h2_stringify(a, true)); \
       if (c.fit(__matches(a))) return nullptr;                                                \
@@ -11,7 +11,7 @@
       fail->user_explain = t.str().c_str();                                                   \
       return fail;                                                                            \
    }                                                                                          \
-   virtual h2::h2_line expection(h2::C c) const override { return c.pre() + matcher_name + h2::gray("(") + args + h2::gray(")"); }
+   virtual h2::h2_line expection(const h2::C& c) const override { return c.pre() + matcher_name + h2::gray("(") + args + h2::gray(")"); }
 
 #define H2MATCHER0(name, message)                                                                                                                   \
    struct h2_##name##_matches : h2::h2_matches {                                                                                                    \

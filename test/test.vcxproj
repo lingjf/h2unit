@@ -63,6 +63,7 @@
     <ClCompile Include="test_matcher_matches.cpp" />
     <ClCompile Include="test_matcher_matches_cast.cpp" />
     <ClCompile Include="test_matcher_matches_container.cpp" />
+    <ClCompile Include="test_matcher_matches_container_bool.cpp" />
     <ClCompile Include="test_matcher_matches_equation.cpp" />
     <ClCompile Include="test_matcher_matches_inequation.cpp" />
     <ClCompile Include="test_matcher_matches_json.cpp" />

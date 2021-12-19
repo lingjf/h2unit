@@ -14,13 +14,13 @@ struct h2_matcher_tuple {
    template <typename T>
    void matchers(h2_vector<h2_matcher<T>>& v_matchers) const { return __matchers(v_matchers, std::integral_constant<std::size_t, sizeof...(Matchers)>()); }
 
-   h2_line __expection(C c, std::integral_constant<std::size_t, 0>) const { return {}; }
+   h2_line __expection(const C& c, std::integral_constant<std::size_t, 0>) const { return {}; }
    template <std::size_t I>
-   h2_line __expection(C c, std::integral_constant<std::size_t, I>) const
+   h2_line __expection(const C& c, std::integral_constant<std::size_t, I>) const
    {
       return __expection(c, std::integral_constant<size_t, I - 1>()) + gray(comma_if(1 < I)) + h2_matches_expection(std::get<I - 1>(t_matchers), c);
    }
-   h2_line expection(C c) const { return __expection(c, std::integral_constant<std::size_t, sizeof...(Matchers)>()); }
+   h2_line expection(const C& c) const { return __expection(c, std::integral_constant<std::size_t, sizeof...(Matchers)>()); }
 };
 
 template <typename EK, typename EV>
@@ -30,7 +30,7 @@ struct h2_pair_matches : h2_matches {
    explicit h2_pair_matches(const EK& k_, const EV& v_) : k(k_), v(v_) {}
 
    template <typename A>
-   auto matches(const A& a, C c) const -> typename std::enable_if<h2_is_pair<typename std::decay<A>::type>::value, h2_fail*>::type
+   auto matches(const A& a, const C& c) const -> typename std::enable_if<h2_is_pair<typename std::decay<A>::type>::value, h2_fail*>::type
    {
       h2_fail* fails = nullptr;
       h2_fail::append_subling(fails, h2_matcher_cast<typename std::decay<decltype(a.first)>::type>(k).matches(a.first, c.clear_size().update_negative(false)));
@@ -44,11 +44,11 @@ struct h2_pair_matches : h2_matches {
       return fail;
    }
    template <typename A>
-   auto matches(const A& a, C c) const -> typename std::enable_if<!h2_is_pair<typename std::decay<A>::type>::value, h2_fail*>::type
+   auto matches(const A& a, const C& c) const -> typename std::enable_if<!h2_is_pair<typename std::decay<A>::type>::value, h2_fail*>::type
    {
       return h2_fail::new_unexpect(expection(c), h2_stringify(a, true));
    }
-   virtual h2_line expection(C c) const override
+   virtual h2_line expection(const C& c) const override
    {
       return c.update_caseless(false).pre() + gray("(") + h2_matches_expection(k, c) + gray(", ") + h2_matches_expection(v, c) + gray(")");
    }
@@ -66,19 +66,19 @@ struct h2_is_polymorphic_matcher_pair_matches<T, typename std::enable_if<h2_is_p
 
 #define H2_MATCHES_CONTAINER1()                                                                                                                                                                                \
    template <typename A>                                                                                                                                                                                       \
-   auto matches(const A& a, C c) const->typename std::enable_if<h2_is_container_adaptor<typename std::decay<A>::type>::value, h2_fail*>::type                                                                  \
+   auto matches(const A& a, const C& c) const->typename std::enable_if<h2_is_container_adaptor<typename std::decay<A>::type>::value, h2_fail*>::type                                                           \
    {                                                                                                                                                                                                           \
       return matches(underlying_container(a), c);                                                                                                                                                              \
    }                                                                                                                                                                                                           \
    template <typename A>                                                                                                                                                                                       \
-   auto matches(A a, C c) const->typename std::enable_if<!h2_is_iterable<typename std::decay<A>::type>::value && !h2_is_container_adaptor<typename std::decay<A>::type>::value, h2_fail*>::type                \
+   auto matches(A a, const C& c) const->typename std::enable_if<!h2_is_iterable<typename std::decay<A>::type>::value && !h2_is_container_adaptor<typename std::decay<A>::type>::value, h2_fail*>::type         \
    { /* native c/c++ array or pointer */                                                                                                                                                                       \
       return matches(h2_array<decltype(a[0])>(a, c.array_size == -1 ? (c.range_end - c.range_start < Range::end - Range::start ? c.range_end - c.range_start : Range::end - Range::start) : c.array_size), c); \
    }
 
 #define H2_MATCHES_CONTAINER2(name)                                                                                                                                 \
    H2_MATCHES_CONTAINER1()                                                                                                                                          \
-   virtual h2_line expection(C c) const override                                                                                                                    \
+   virtual h2_line expection(const C& c) const override                                                                                                             \
    {                                                                                                                                                                \
       return c.update_caseless(false).pre() + (name) + gray("(") + h2_matches_expection(m, c.update_caseless(false).update_negative(false)) + gray(")") + c.post(); \
    }                                                                                                                                                                \
@@ -99,7 +99,7 @@ struct h2_every1_matches : h2_matches {
    explicit h2_every1_matches(const Matcher& m_) : m(m_) {}
 
    template <typename A>
-   auto matches(const A& a, C c) const -> typename std::enable_if<h2_is_iterable<typename std::decay<A>::type>::value, h2_fail*>::type
+   auto matches(const A& a, const C& c) const -> typename std::enable_if<h2_is_iterable<typename std::decay<A>::type>::value, h2_fail*>::type
    {
       h2_fail* fails = nullptr;
       int i = 0;
@@ -124,7 +124,7 @@ struct h2_every2_matches : h2_every1_matches<Range, P> {
    EK k;
    EV v;
    explicit h2_every2_matches(const EK& k_, const EV& v_) : h2_every1_matches<Range, P>(P(M(k_, v_))), k(k_), v(v_) {}
-   virtual h2_line expection(C c) const override
+   virtual h2_line expection(const C& c) const override
    {
       return c.update_caseless(false).pre() + "Every" + gray("(") + h2_matches_expection(k, c) + gray(", ") + h2_matches_expection(v, c) + gray(")");
    }
@@ -136,7 +136,7 @@ struct h2_has1_matches : h2_matches {
    explicit h2_has1_matches(const Matcher& m_) : m(m_) {}
 
    template <typename A>
-   auto __matches(const A& a, C c) const -> typename std::enable_if<h2_is_map<typename std::decay<A>::type>::value && !h2_is_polymorphic_matcher_pair_matches<Matcher>::value, h2_fail*>::type
+   auto __matches(const A& a, const C& c) const -> typename std::enable_if<h2_is_map<typename std::decay<A>::type>::value && !h2_is_polymorphic_matcher_pair_matches<Matcher>::value, h2_fail*>::type
    {  // HasKey scenario
       int found = 0, i = 0;
       for (auto const& ia : a)
@@ -152,7 +152,7 @@ struct h2_has1_matches : h2_matches {
    }
 
    template <typename A>
-   auto __matches(const A& a, C c) const -> typename std::enable_if<!h2_is_map<typename std::decay<A>::type>::value || h2_is_polymorphic_matcher_pair_matches<Matcher>::value, h2_fail*>::type
+   auto __matches(const A& a, const C& c) const -> typename std::enable_if<!h2_is_map<typename std::decay<A>::type>::value || h2_is_polymorphic_matcher_pair_matches<Matcher>::value, h2_fail*>::type
    {  // Normal scenario
       int found = 0, i = 0;
       for (auto const& ia : a)
@@ -168,7 +168,7 @@ struct h2_has1_matches : h2_matches {
    }
 
    template <typename A>
-   auto matches(const A& a, C c) const -> typename std::enable_if<h2_is_iterable<typename std::decay<A>::type>::value, h2_fail*>::type { return __matches(a, c); }
+   auto matches(const A& a, const C& c) const -> typename std::enable_if<h2_is_iterable<typename std::decay<A>::type>::value, h2_fail*>::type { return __matches(a, c); }
 
    H2_MATCHES_CONTAINER2("Has")
 };
@@ -180,7 +180,7 @@ struct h2_has2_matches : h2_has1_matches<h2_range<0, 5413722>, P> {
    const char* type;
    explicit h2_has2_matches(const EK& k_, const EV& v_, const char* type_ = "Has") : h2_has1_matches<h2_range<0, 5413722>, P>(P(M(k_, v_))), k(k_), v(v_), type(type_) {}
 
-   virtual h2_line expection(C c) const override
+   virtual h2_line expection(const C& c) const override
    {
       h2_line t;
       if (strcmp("HasValue", type)) t += h2_matches_expection(k, c.update_negative(false));
@@ -196,7 +196,7 @@ struct h2_listof_matches : h2_matches {
    explicit h2_listof_matches(const Matchers&... matchers) : e(matchers...) {}
 
    template <typename A>
-   auto matches(const A& a, C c) const -> typename std::enable_if<h2_is_iterable<typename std::decay<A>::type>::value, h2_fail*>::type
+   auto matches(const A& a, const C& c) const -> typename std::enable_if<h2_is_iterable<typename std::decay<A>::type>::value, h2_fail*>::type
    {
       h2_vector<h2_matcher<typename A::value_type>> matchers;
       e.matchers(matchers);
@@ -224,7 +224,7 @@ struct h2_listof_matches : h2_matches {
       h2_fail::append_child(fail, fails);
       return fail;
    }
-   virtual h2_line expection(C c) const override
+   virtual h2_line expection(const C& c) const override
    {
       return c.update_caseless(false).pre() + gray("[") + e.expection(c.update_negative(false)) + gray("]");
    }
@@ -237,7 +237,7 @@ struct h2_countof_matches : h2_matches {
    explicit h2_countof_matches(const Matcher& m_) : m(m_) {}
 
    template <typename A>
-   auto matches(const A& a, C c) const -> typename std::enable_if<h2_is_iterable<typename std::decay<A>::type>::value, h2_fail*>::type
+   auto matches(const A& a, const C& c) const -> typename std::enable_if<h2_is_iterable<typename std::decay<A>::type>::value, h2_fail*>::type
    {
       size_t count = 0;  // std::forward_list no size()
       for (auto it = a.cbegin(); it != a.cend(); ++it) count++;
@@ -253,7 +253,7 @@ struct h2_maxmin_matches : h2_matches {
    explicit h2_maxmin_matches(const bool is_max_, const Matcher& m_) : is_max(is_max_), m(m_) {}
 
    template <typename A>
-   auto matches(const A& a, C c) const -> typename std::enable_if<h2_is_iterable<typename std::decay<A>::type>::value, h2_fail*>::type
+   auto matches(const A& a, const C& c) const -> typename std::enable_if<h2_is_iterable<typename std::decay<A>::type>::value, h2_fail*>::type
    {
       int i = 0, count = 0;
       typename A::value_type value;
@@ -273,7 +273,7 @@ struct h2_avg_matches : h2_matches {
    explicit h2_avg_matches(const Matcher& m_) : m(m_) {}
 
    template <typename A>
-   auto matches(const A& a, C c) const -> typename std::enable_if<h2_is_iterable<typename std::decay<A>::type>::value, h2_fail*>::type
+   auto matches(const A& a, const C& c) const -> typename std::enable_if<h2_is_iterable<typename std::decay<A>::type>::value, h2_fail*>::type
    {
       double sum = 0, count = 0;
       int i = 0;
@@ -290,7 +290,7 @@ struct h2_median_matches : h2_matches {
    explicit h2_median_matches(const Matcher& m_) : m(m_) {}
 
    template <typename A>
-   auto matches(const A& a, C c) const -> typename std::enable_if<h2_is_iterable<typename std::decay<A>::type>::value, h2_fail*>::type
+   auto matches(const A& a, const C& c) const -> typename std::enable_if<h2_is_iterable<typename std::decay<A>::type>::value, h2_fail*>::type
    {
       std::vector<typename A::value_type> b;
       int i = 0;

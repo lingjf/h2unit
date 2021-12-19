@@ -4,11 +4,11 @@ struct h2_castof_matches : h2_matches {
    explicit h2_castof_matches(Matcher m_) : m(m_) {}
 
    template <typename A>
-   h2_fail* matches(const A& a, C c) const
+   h2_fail* matches(const A& a, const C& c) const
    {
       return h2_matcher_cast<Cast>(m).matches((Cast)a, c);
    }
-   virtual h2_line expection(C c) const override
+   virtual h2_line expection(const C& c) const override
    {
       return h2_matches_expection(m, c);
    }

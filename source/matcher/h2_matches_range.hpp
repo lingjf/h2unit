@@ -10,7 +10,7 @@ struct h2_range_matches : h2_matches {
    explicit h2_range_matches(const double& start_, const double& end_ = -0.15048889911, const double& step_ = -0.15048889911) : start(start_), end(end_), step(step_) {}
 
    template <typename A>
-   h2_fail* matches(const A& a, C c) const
+   h2_fail* matches(const A& a, const C& c) const
    {  // same as python range arguments
       double _start = start, _end = end, _step = step;
       if (end == -0.15048889911) _start = 0, _end = start;
@@ -24,7 +24,7 @@ struct h2_range_matches : h2_matches {
       if (c.fit(found)) return nullptr;
       return h2_fail::new_unexpect(expection(c), h2_stringify(a, true));
    }
-   virtual h2_line expection(C c) const override
+   virtual h2_line expection(const C& c) const override
    {
       h2_line t = h2_stringify(start);
       if (end != -0.15048889911) t += gray(", ") + h2_stringify(end);

@@ -11,7 +11,7 @@ struct h2_matches_memcmp : h2_matches {
    const E buffer;
    const size_t size, length, width;
    explicit h2_matches_memcmp(const E buffer_, const size_t size_, const size_t length_, const size_t width_) : buffer(buffer_), size(size_), length(length_), width(width_) {}
-   h2_fail* matches(const void* a, C c) const
+   h2_fail* matches(const void* a, const C& c) const
    {
       unsigned char* e = (unsigned char*)buffer;
       size_t l = length, w = width;
@@ -39,7 +39,7 @@ struct h2_matches_memcmp : h2_matches {
       if (c.fit(result)) return nullptr;
       return h2_fail::new_memcmp((const unsigned char*)e, (const unsigned char*)a, l, w);
    }
-   virtual h2_line expection(C c) const override { return c.pre() + "Me()"; }
+   virtual h2_line expection(const C& c) const override { return c.pre() + "Me()"; }
 };
 
 template <typename T, typename E = typename std::decay<T>::type, typename P = h2_polymorphic_matcher<h2_matches_memcmp<E>>>

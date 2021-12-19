@@ -22,17 +22,17 @@ struct C {
 };
 
 struct h2_matches {
-   virtual h2_line expection(C c) const = 0;
+   virtual h2_line expection(const C& c) const = 0;
 };
 
 struct h2_matches_any : h2_matches {
    template <typename A>
-   h2_fail* matches(const A& a, C c) const
+   h2_fail* matches(const A& a, const C& c) const
    {
       if (c.fit(true)) return nullptr;
       return h2_fail::new_unexpect(expection(c), h2_stringify(a, true));
    }
-   virtual h2_line expection(C c) const override
+   virtual h2_line expection(const C& c) const override
    {
       return c.negative ? "!Any" : "Any";
    }
@@ -40,20 +40,20 @@ struct h2_matches_any : h2_matches {
 
 struct h2_matches_null : h2_matches {
    template <typename A>
-   auto matches(const A& a, C c) const -> typename std::enable_if<std::is_pointer<A>::value || h2_is_smart_ptr<A>::value || std::is_integral<A>::value, h2_fail*>::type
+   auto matches(const A& a, const C& c) const -> typename std::enable_if<std::is_pointer<A>::value || h2_is_smart_ptr<A>::value || std::is_integral<A>::value, h2_fail*>::type
    {
       bool result = !a;
       if (c.fit(result)) return nullptr;
       return h2_fail::new_unexpect(expection(c), h2_stringify(a, true));
    }
    template <typename A>
-   auto matches(const A& a, C c) const -> typename std::enable_if<!std::is_pointer<A>::value && !h2_is_smart_ptr<A>::value && !std::is_integral<A>::value, h2_fail*>::type
+   auto matches(const A& a, const C& c) const -> typename std::enable_if<!std::is_pointer<A>::value && !h2_is_smart_ptr<A>::value && !std::is_integral<A>::value, h2_fail*>::type
    {
       bool result = std::is_same<std::nullptr_t, typename std::decay<decltype(a)>::type>::value;
       if (c.fit(result)) return nullptr;
       return h2_fail::new_unexpect(expection(c), h2_stringify(a, true));
    }
-   virtual h2_line expection(C c) const override
+   virtual h2_line expection(const C& c) const override
    {
       return c.negative ? "!NULL" : "NULL";
    }
@@ -63,19 +63,19 @@ struct h2_matches_bool : h2_matches {
    const bool e;
    explicit h2_matches_bool(bool e_) : e(e_) {}
    template <typename A>
-   h2_fail* matches(const A& a, C c) const
+   h2_fail* matches(const A& a, const C& c) const
    {
       bool result = e ? !!a : !a;
       if (c.fit(result)) return nullptr;
       return h2_fail::new_unexpect(expection(c), h2_stringify(a, true));
    }
-   virtual h2_line expection(C c) const override
+   virtual h2_line expection(const C& c) const override
    {
       return (e ? c.negative : !c.negative) ? "false" : "true";
    }
 };
 
 template <typename T>
-inline auto h2_matches_expection(const T& e, C c) -> typename std::enable_if<std::is_base_of<h2_matches, T>::value, h2_line>::type { return e.expection(c); }
+inline auto h2_matches_expection(const T& e, const C& c) -> typename std::enable_if<std::is_base_of<h2_matches, T>::value, h2_line>::type { return e.expection(c); }
 template <typename T>
-inline auto h2_matches_expection(const T& e, C c) -> typename std::enable_if<!std::is_base_of<h2_matches, T>::value, h2_line>::type { return h2_stringify(e, true); }
+inline auto h2_matches_expection(const T& e, const C& c) -> typename std::enable_if<!std::is_base_of<h2_matches, T>::value, h2_line>::type { return h2_stringify(e, true); }
