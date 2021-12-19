@@ -18,8 +18,8 @@ SUITE(syntax)
 }
 SUITE(syntax)
 {
-   Setup() {}
-   Cleanup() {}
+   Setup(int a, int b) {}
+   Cleanup(1 2, 3) {}
 }
 SUITE(syntax)
 {
@@ -31,10 +31,10 @@ SUITE(syntax)
 
 SUITE(syntax D101)
 {
-   Setup()
+   Setup(a b)
    {
    }
-   Cleanup()
+   Cleanup("a b")
    {
    }
    Case(D101) {}

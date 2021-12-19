@@ -4,12 +4,9 @@ struct h2_stringify_impl {
 };
 
 #define H2_TOSTRING_ABLE(tostring)                                                                            \
-   template <typename T>                                                                                      \
-   struct h2_##tostring##_able {                                                                              \
-      template <typename U>                                                                                   \
-      static auto return_type(U* u) -> decltype(u->tostring());                                               \
-      template <typename U>                                                                                   \
-      static void return_type(...);                                                                           \
+   template <typename T> struct h2_##tostring##_able {                                                        \
+      template <typename U> static auto return_type(U* u) -> decltype(u->tostring());                         \
+      template <typename U> static void return_type(...);                                                     \
       static constexpr bool value = std::is_convertible<decltype(return_type<T>(nullptr)), h2_string>::value; \
    };
 
@@ -184,7 +181,4 @@ struct h2_stringify_impl<T, typename std::enable_if<std::is_base_of<std::excepti
 };
 
 template <typename T>
-inline h2_line h2_stringify(const T& a, bool represent = false)
-{
-   return h2_stringify_impl<T>::print(a, represent);
-}
+inline h2_line h2_stringify(const T& a, bool represent = false) { return h2_stringify_impl<T>::print(a, represent); }

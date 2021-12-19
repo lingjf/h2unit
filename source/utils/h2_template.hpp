@@ -1,3 +1,8 @@
+template <typename T>
+struct h2_type {
+   typedef T type;
+};
+
 template <typename T, typename = void>
 struct h2_is_smart_ptr : std::false_type {};
 template <typename T>
@@ -8,35 +13,23 @@ template <typename T>
 struct h2_is_smart_ptr<T, typename std::enable_if<std::is_same<typename std::remove_cv<T>::type, std::weak_ptr<typename T::element_type>>::value>::type> : std::true_type {};
 
 template <typename U, typename = void>
-struct h2_decay_impl {
-   typedef U type;
-};
+struct h2_decay_impl : h2_type<U> {};
 template <>
-struct h2_decay_impl<char*> {
-   typedef const char* type;
-};
+struct h2_decay_impl<char*> : h2_type<const char*> {};
 template <typename U>
-struct h2_decay_impl<U, typename std::enable_if<std::is_enum<U>::value>::type> {
-   typedef int type;
-};
+struct h2_decay_impl<U, typename std::enable_if<std::is_enum<U>::value>::type> : h2_type<int> {};
 template <typename T>
 struct h2_decay : h2_decay_impl<typename std::decay<T>::type> {};
 
-template <std::size_t I, typename T, typename... Args>
-struct h2_nth_type_impl {
-   using type = typename h2_nth_type_impl<I - 1, Args...>::type;
-};
-template <typename T, typename... Args>
-struct h2_nth_type_impl<0, T, Args...> {
-   using type = T;
-};
-template <std::size_t Index, typename... Args>
-struct h2_nth_type {
-   using type = typename h2_nth_type_impl<Index, Args..., int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int>::type;
-};
+template <std::size_t I, typename T, typename... S>
+struct h2_nth_type_impl : h2_type<typename h2_nth_type_impl<I - 1, S...>::type> {};
+template <typename T, typename... S>
+struct h2_nth_type_impl<0, T, S...> : h2_type<T> {};
+template <std::size_t I, typename... S>
+struct h2_nth_type : h2_type<typename h2_nth_type_impl<I, S..., int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int>::type> {};
 
-template <std::size_t Index, typename... Args>
-using h2_nth_decay = typename h2_decay<typename h2_nth_type<Index, Args...>::type>::type;
+template <std::size_t I, typename... S>
+using h2_nth_decay = typename h2_decay<typename h2_nth_type<I, S...>::type>::type;
 
 template <typename T, typename = void>
 struct h2_sizeof_pointee : std::integral_constant<std::size_t, sizeof(typename std::remove_pointer<T>::type)> {};
@@ -46,13 +39,9 @@ template <typename T>
 struct h2_sizeof_pointee<T, typename std::enable_if<h2_is_smart_ptr<T>::value>::type> : std::integral_constant<std::size_t, sizeof(typename T::element_type)> {};  // smart ptr not hold void*
 
 template <typename T>
-struct h2_pointee_type {
-   typedef typename T::element_type type;
-};
+struct h2_pointee_type : h2_type<typename T::element_type> {};
 template <typename T>
-struct h2_pointee_type<T*> {
-   typedef T type;
-};
+struct h2_pointee_type<T*> : h2_type<T> {};
 
 template <typename T>
 inline T* h2_pointer_if(T* a) { return a; }

@@ -75,7 +75,5 @@ struct h2_matches_bool : h2_matches {
    }
 };
 
-template <typename T>
-inline auto h2_matches_expection(const T& e, const C& c) -> typename std::enable_if<std::is_base_of<h2_matches, T>::value, h2_line>::type { return e.expection(c); }
-template <typename T>
-inline auto h2_matches_expection(const T& e, const C& c) -> typename std::enable_if<!std::is_base_of<h2_matches, T>::value, h2_line>::type { return h2_stringify(e, true); }
+template <typename T> inline auto h2_matches_expection(const T& e, const C& c) -> typename std::enable_if<std::is_base_of<h2_matches, T>::value, h2_line>::type { return e.expection(c); }
+template <typename T> inline auto h2_matches_expection(const T& e, const C& c) -> typename std::enable_if<!std::is_base_of<h2_matches, T>::value, h2_line>::type { return h2_stringify(e, true); }

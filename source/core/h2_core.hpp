@@ -5,8 +5,8 @@
    static h2::h2_suite H2PP_UNIQUE(si)(H2_FILINE, __FILE__, __LINE__, h2::ss(suite_describe), &suite_test); \
    static void suite_test(h2::h2_suite* suite_1_5_2_8_0_1_1_9_8, h2::h2_case* case_1_1_0_2_6_0_0_2_4)
 
-#define H2Setup() if (case_1_1_0_2_6_0_0_2_4)
-#define H2Cleanup() if (::setjmp(suite_1_5_2_8_0_1_1_9_8->cleanup_hole))
+#define H2Setup(...) if (case_1_1_0_2_6_0_0_2_4)
+#define H2Cleanup(...) if (::setjmp(suite_1_5_2_8_0_1_1_9_8->cleanup_hole))
 
 #define H2Todo(...) __H2Case(#__VA_ARGS__, H2PP_UNIQUE(ci), H2PP_UNIQUE(sc), H2PP_UNIQUE(cc), 1)
 #define H2Case(...) __H2Case(#__VA_ARGS__, H2PP_UNIQUE(ci), H2PP_UNIQUE(sc), H2PP_UNIQUE(cc), 0)
