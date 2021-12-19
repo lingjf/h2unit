@@ -55,18 +55,14 @@ struct h2_pair_matches : h2_matches {
 };
 
 template <typename T>
-struct h2_is_pair_matches : std::false_type {
-};
+struct h2_is_pair_matches : std::false_type {};
 template <typename MK, typename MV>
-struct h2_is_pair_matches<h2_pair_matches<MK, MV>> : std::true_type {
-};
+struct h2_is_pair_matches<h2_pair_matches<MK, MV>> : std::true_type {};
 
 template <typename T, typename = void>
-struct h2_is_polymorphic_matcher_pair_matches : std::false_type {
-};
+struct h2_is_polymorphic_matcher_pair_matches : std::false_type {};
 template <typename T>
-struct h2_is_polymorphic_matcher_pair_matches<T, typename std::enable_if<h2_is_polymorphic_matcher<T>::value && h2_is_pair_matches<typename T::matches_type>::value>::type> : std::true_type {
-};
+struct h2_is_polymorphic_matcher_pair_matches<T, typename std::enable_if<h2_is_polymorphic_matcher<T>::value && h2_is_pair_matches<typename T::matches_type>::value>::type> : std::true_type {};
 
 #define H2_MATCHES_CONTAINER1()                                                                                                                                                                                \
    template <typename A>                                                                                                                                                                                       \

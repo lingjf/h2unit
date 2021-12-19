@@ -78,11 +78,9 @@ struct h2_polymorphic_matcher : h2_matches {
 };
 
 template <typename T, typename = void>
-struct h2_is_polymorphic_matcher : std::false_type {
-};
+struct h2_is_polymorphic_matcher : std::false_type {};
 template <typename T>
-struct h2_is_polymorphic_matcher<T, typename std::conditional<false, h2_valid_t<typename T::matches_type>, void>::type> : std::true_type {
-};
+struct h2_is_polymorphic_matcher<T, typename std::conditional<false, h2_valid_t<typename T::matches_type>, void>::type> : std::true_type {};
 
 const h2_polymorphic_matcher<h2_matches_any> _{h2_matches_any()};
 static inline h2_polymorphic_matcher<h2_matches_any> Any() { return h2_polymorphic_matcher<h2_matches_any>(h2_matches_any()); }

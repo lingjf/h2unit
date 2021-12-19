@@ -427,17 +427,13 @@ struct h2_array {
 };
 // source/utils/h2_template.hpp
 template <typename T, typename = void>
-struct h2_is_smart_ptr : std::false_type {
-};
+struct h2_is_smart_ptr : std::false_type {};
 template <typename T>
-struct h2_is_smart_ptr<T, typename std::enable_if<std::is_same<typename std::remove_cv<T>::type, std::shared_ptr<typename T::element_type>>::value>::type> : std::true_type {
-};
+struct h2_is_smart_ptr<T, typename std::enable_if<std::is_same<typename std::remove_cv<T>::type, std::shared_ptr<typename T::element_type>>::value>::type> : std::true_type {};
 template <typename T>
-struct h2_is_smart_ptr<T, typename std::enable_if<std::is_same<typename std::remove_cv<T>::type, std::unique_ptr<typename T::element_type>>::value>::type> : std::true_type {
-};
+struct h2_is_smart_ptr<T, typename std::enable_if<std::is_same<typename std::remove_cv<T>::type, std::unique_ptr<typename T::element_type>>::value>::type> : std::true_type {};
 template <typename T>
-struct h2_is_smart_ptr<T, typename std::enable_if<std::is_same<typename std::remove_cv<T>::type, std::weak_ptr<typename T::element_type>>::value>::type> : std::true_type {
-};
+struct h2_is_smart_ptr<T, typename std::enable_if<std::is_same<typename std::remove_cv<T>::type, std::weak_ptr<typename T::element_type>>::value>::type> : std::true_type {};
 
 template <typename U, typename = void>
 struct h2_decay_impl {
@@ -452,9 +448,7 @@ struct h2_decay_impl<U, typename std::enable_if<std::is_enum<U>::value>::type> {
    typedef int type;
 };
 template <typename T>
-struct h2_decay {
-   using type = typename h2_decay_impl<typename std::decay<T>::type>::type;
-};
+struct h2_decay : h2_decay_impl<typename std::decay<T>::type> {};
 
 template <std::size_t I, typename T, typename... Args>
 struct h2_nth_type_impl {
@@ -473,14 +467,11 @@ template <std::size_t Index, typename... Args>
 using h2_nth_decay = typename h2_decay<typename h2_nth_type<Index, Args...>::type>::type;
 
 template <typename T, typename = void>
-struct h2_sizeof_pointee : std::integral_constant<std::size_t, sizeof(typename std::remove_pointer<T>::type)> {
-};
+struct h2_sizeof_pointee : std::integral_constant<std::size_t, sizeof(typename std::remove_pointer<T>::type)> {};
 template <typename T>
-struct h2_sizeof_pointee<T, typename std::enable_if<std::is_void<typename std::remove_pointer<T>::type>::value>::type> : std::integral_constant<std::size_t, 1> {
-};
+struct h2_sizeof_pointee<T, typename std::enable_if<std::is_void<typename std::remove_pointer<T>::type>::value>::type> : std::integral_constant<std::size_t, 1> {};
 template <typename T>
-struct h2_sizeof_pointee<T, typename std::enable_if<h2_is_smart_ptr<T>::value>::type> : std::integral_constant<std::size_t, sizeof(typename T::element_type)> {  // smart ptr not hold void*
-};
+struct h2_sizeof_pointee<T, typename std::enable_if<h2_is_smart_ptr<T>::value>::type> : std::integral_constant<std::size_t, sizeof(typename T::element_type)> {};  // smart ptr not hold void*
 
 template <typename T>
 struct h2_pointee_type {
@@ -499,19 +490,14 @@ template <typename T>
 inline auto h2_pointer_if(T& a) -> typename std::enable_if<!h2_is_smart_ptr<T>::value, T*>::type { return &a; }
 
 template <typename T>
-struct h2_is_pair : std::false_type {
-};
+struct h2_is_pair : std::false_type {};
 template <typename K, typename V>
-struct h2_is_pair<std::pair<K, V>> : std::true_type {
-};
+struct h2_is_pair<std::pair<K, V>> : std::true_type {};
 
-template <typename...>
-struct h2_valid_t {
-};
+template <typename...> struct h2_valid_t {};
 
 template <typename T, typename = void>
-struct h2_is_string : std::false_type {
-};
+struct h2_is_string : std::false_type {};
 
 template <typename T>
 struct h2_is_string<T,
@@ -525,12 +511,10 @@ struct h2_is_string<T,
                                                          decltype(std::declval<T>().end()),
                                                          decltype(std::declval<T>().cbegin()),
                                                          decltype(std::declval<T>().cend())>,
-                                              void>::type> : std::true_type {
-};
+                                              void>::type> : std::true_type {};
 
 template <typename T, typename = void>
-struct h2_is_iterable : std::false_type {
-};
+struct h2_is_iterable : std::false_type {};
 
 template <typename T>
 struct h2_is_iterable<T,
@@ -543,12 +527,10 @@ struct h2_is_iterable<T,
                                                            decltype(std::declval<T>().end()),
                                                            decltype(std::declval<T>().cbegin()),
                                                            decltype(std::declval<T>().cend())>,
-                                                void>::type> : std::true_type {
-};
+                                                void>::type> : std::true_type {};
 
 template <typename T, typename = void>
-struct h2_is_map : std::false_type {
-};
+struct h2_is_map : std::false_type {};
 
 template <typename T>
 struct h2_is_map<T,
@@ -562,16 +544,13 @@ struct h2_is_map<T,
                                                       decltype(std::declval<T>().end()),
                                                       decltype(std::declval<T>().cbegin()),
                                                       decltype(std::declval<T>().cend())>,
-                                           void>::type> : std::true_type {
-};
+                                           void>::type> : std::true_type {};
 
 template <typename T>
-struct h2_is_container : std::conditional<h2_is_iterable<T>::value && !h2_is_string<T>::value, std::true_type, std::false_type>::type {
-};
+struct h2_is_container : std::conditional<h2_is_iterable<T>::value && !h2_is_string<T>::value, std::true_type, std::false_type>::type {};
 
 template <typename T, typename = void>
-struct h2_is_container_adaptor : std::false_type {
-};
+struct h2_is_container_adaptor : std::false_type {};
 
 template <typename T>
 struct h2_is_container_adaptor<T,
@@ -579,17 +558,13 @@ struct h2_is_container_adaptor<T,
                                                          h2_valid_t<typename T::value_type,
                                                                     typename T::size_type,
                                                                     typename T::container_type>,
-                                                         void>::type> : std::true_type {
-};
+                                                         void>::type> : std::true_type {};
 
 template <typename ContainerAdaptor>
 const typename ContainerAdaptor::container_type& underlying_container(const ContainerAdaptor& ca)
 {
    struct AntiProtected : ContainerAdaptor {
-      static const typename ContainerAdaptor::container_type& get(const ContainerAdaptor& ca)
-      {
-         return ca.*&AntiProtected::c;
-      }
+      static const typename ContainerAdaptor::container_type& get(const ContainerAdaptor& ca) { return ca.*&AntiProtected::c; }
    };
    return AntiProtected::get(ca);
 }
@@ -598,15 +573,9 @@ const typename ContainerAdaptor::container_type& underlying_container(const Cont
 #define h2_index_sequence std::index_sequence
 #define h2_make_index_sequence std::make_index_sequence
 #else
-template <std::size_t...>
-struct h2_index_sequence {
-};
-template <std::size_t N, std::size_t... S>
-struct h2_make_index_sequence : h2_make_index_sequence<N - 1, N - 1, S...> {
-};
-template <std::size_t... S>
-struct h2_make_index_sequence<0, S...> : h2_index_sequence<S...> {
-};
+template <std::size_t...> struct h2_index_sequence {};
+template <std::size_t N, std::size_t... S> struct h2_make_index_sequence : h2_make_index_sequence<N - 1, N - 1, S...> {};
+template <std::size_t... S> struct h2_make_index_sequence<0, S...> : h2_index_sequence<S...> {};
 #endif
 // source/utils/h2_numberfy.hpp
 
@@ -789,24 +758,17 @@ class h2_allocator {
    void construct(pointer p, const T& val) { new ((T*)p) T(val); }
    void destroy(pointer p) { p->~T(); }
    size_type max_size() const { return size_t(-1); }
-   template <typename U>
-   struct rebind {
+   template <typename U> struct rebind {
       typedef h2_allocator<U> other;
    };
-   template <typename U>
-   h2_allocator(const h2_allocator<U>&) {}
-   template <typename U>
-   h2_allocator& operator=(const h2_allocator<U>&) { return *this; }
+   template <typename U> h2_allocator(const h2_allocator<U>&) {}
+   template <typename U> h2_allocator& operator=(const h2_allocator<U>&) { return *this; }
 };
 
-template <typename T>
-inline bool operator==(const h2_allocator<T>&, const h2_allocator<T>&) { return true; }
-template <typename T>
-inline bool operator!=(const h2_allocator<T>&, const h2_allocator<T>&) { return false; }
+template <typename T> inline bool operator==(const h2_allocator<T>&, const h2_allocator<T>&) { return true; }
+template <typename T> inline bool operator!=(const h2_allocator<T>&, const h2_allocator<T>&) { return false; }
 
-template <typename T>
-using h2_vector = std::vector<T, h2_allocator<T>>;
-
+template <typename T> using h2_vector = std::vector<T, h2_allocator<T>>;
 using h2_ostringstream = std::basic_ostringstream<char, std::char_traits<char>, h2_allocator<char>>;
 // source/utils/h2_string.hpp
 struct h2_string : public std::basic_string<char, std::char_traits<char>, h2_allocator<char>> {
@@ -940,34 +902,22 @@ struct h2_stringify_impl<T, typename std::enable_if<h2::h2_tostring_able<T>::val
       if (represent) return gray("\"") + print__tostring(a) + gray("\"");
       return print__tostring(a);
    }
-   template <typename U>
-   static auto print__tostring(const U& a) -> typename std::enable_if<h2::h2_tostring_able<U>::value, h2_string>::type { return const_cast<U&>(a).tostring(); }
-   template <typename U>
-   static auto print__tostring(const U& a) -> typename std::enable_if<!h2::h2_tostring_able<U>::value, h2_string>::type { return print__toString(a); }
-   template <typename U>
-   static auto print__toString(const U& a) -> typename std::enable_if<h2::h2_toString_able<U>::value, h2_string>::type { return const_cast<U&>(a).toString(); }
-   template <typename U>
-   static auto print__toString(const U& a) -> typename std::enable_if<!h2::h2_toString_able<U>::value, h2_string>::type { return print__Tostring(a); }
-   template <typename U>
-   static auto print__Tostring(const U& a) -> typename std::enable_if<h2::h2_Tostring_able<U>::value, h2_string>::type { return const_cast<U&>(a).toString(); }
-   template <typename U>
-   static auto print__Tostring(const U& a) -> typename std::enable_if<!h2::h2_Tostring_able<U>::value, h2_string>::type { return print__ToString(a); }
-   template <typename U>
-   static auto print__ToString(const U& a) -> typename std::enable_if<h2::h2_ToString_able<U>::value, h2_string>::type { return const_cast<U&>(a).ToString(); }
-   template <typename U>
-   static auto print__ToString(const U& a) -> typename std::enable_if<!h2::h2_ToString_able<U>::value, h2_string>::type { return print__to_string(a); }
-   template <typename U>
-   static auto print__to_string(const U& a) -> typename std::enable_if<h2::h2_to_string_able<U>::value, h2_string>::type { return const_cast<U&>(a).to_string(); }
-   template <typename U>
-   static auto print__to_string(const U& a) -> typename std::enable_if<!h2::h2_to_string_able<U>::value, h2_string>::type { return ""; }
+   template <typename U> static auto print__tostring(const U& a) -> typename std::enable_if<h2::h2_tostring_able<U>::value, h2_string>::type { return const_cast<U&>(a).tostring(); }
+   template <typename U> static auto print__tostring(const U& a) -> typename std::enable_if<!h2::h2_tostring_able<U>::value, h2_string>::type { return print__toString(a); }
+   template <typename U> static auto print__toString(const U& a) -> typename std::enable_if<h2::h2_toString_able<U>::value, h2_string>::type { return const_cast<U&>(a).toString(); }
+   template <typename U> static auto print__toString(const U& a) -> typename std::enable_if<!h2::h2_toString_able<U>::value, h2_string>::type { return print__Tostring(a); }
+   template <typename U> static auto print__Tostring(const U& a) -> typename std::enable_if<h2::h2_Tostring_able<U>::value, h2_string>::type { return const_cast<U&>(a).toString(); }
+   template <typename U> static auto print__Tostring(const U& a) -> typename std::enable_if<!h2::h2_Tostring_able<U>::value, h2_string>::type { return print__ToString(a); }
+   template <typename U> static auto print__ToString(const U& a) -> typename std::enable_if<h2::h2_ToString_able<U>::value, h2_string>::type { return const_cast<U&>(a).ToString(); }
+   template <typename U> static auto print__ToString(const U& a) -> typename std::enable_if<!h2::h2_ToString_able<U>::value, h2_string>::type { return print__to_string(a); }
+   template <typename U> static auto print__to_string(const U& a) -> typename std::enable_if<h2::h2_to_string_able<U>::value, h2_string>::type { return const_cast<U&>(a).to_string(); }
+   template <typename U> static auto print__to_string(const U& a) -> typename std::enable_if<!h2::h2_to_string_able<U>::value, h2_string>::type { return ""; }
 };
 
 template <typename T>
 struct h2_is_ostreamable {
-   template <typename U>
-   static auto test(U* u) -> decltype(std::declval<std::ostream&>() << *u, std::true_type());
-   template <typename U>
-   static auto test(...) -> std::false_type;
+   template <typename U> static auto test(U* u) -> decltype(std::declval<std::ostream&>() << *u, std::true_type());
+   template <typename U> static auto test(...) -> std::false_type;
    static constexpr bool value = decltype(test<T>(nullptr))::value;
 };
 
@@ -1766,11 +1716,9 @@ struct h2_polymorphic_matcher : h2_matches {
 };
 
 template <typename T, typename = void>
-struct h2_is_polymorphic_matcher : std::false_type {
-};
+struct h2_is_polymorphic_matcher : std::false_type {};
 template <typename T>
-struct h2_is_polymorphic_matcher<T, typename std::conditional<false, h2_valid_t<typename T::matches_type>, void>::type> : std::true_type {
-};
+struct h2_is_polymorphic_matcher<T, typename std::conditional<false, h2_valid_t<typename T::matches_type>, void>::type> : std::true_type {};
 
 const h2_polymorphic_matcher<h2_matches_any> _{h2_matches_any()};
 static inline h2_polymorphic_matcher<h2_matches_any> Any() { return h2_polymorphic_matcher<h2_matches_any>(h2_matches_any()); }
@@ -2107,18 +2055,14 @@ struct h2_pair_matches : h2_matches {
 };
 
 template <typename T>
-struct h2_is_pair_matches : std::false_type {
-};
+struct h2_is_pair_matches : std::false_type {};
 template <typename MK, typename MV>
-struct h2_is_pair_matches<h2_pair_matches<MK, MV>> : std::true_type {
-};
+struct h2_is_pair_matches<h2_pair_matches<MK, MV>> : std::true_type {};
 
 template <typename T, typename = void>
-struct h2_is_polymorphic_matcher_pair_matches : std::false_type {
-};
+struct h2_is_polymorphic_matcher_pair_matches : std::false_type {};
 template <typename T>
-struct h2_is_polymorphic_matcher_pair_matches<T, typename std::enable_if<h2_is_polymorphic_matcher<T>::value && h2_is_pair_matches<typename T::matches_type>::value>::type> : std::true_type {
-};
+struct h2_is_polymorphic_matcher_pair_matches<T, typename std::enable_if<h2_is_polymorphic_matcher<T>::value && h2_is_pair_matches<typename T::matches_type>::value>::type> : std::true_type {};
 
 #define H2_MATCHES_CONTAINER1()                                                                                                                                                                                \
    template <typename A>                                                                                                                                                                                       \
@@ -2918,8 +2862,7 @@ inline h2_matcher<T>::h2_matcher(T value) { *this = _Eq(value); }
 // source/matcher/h2_matcher_customize.hpp
 #define __Matches_Common(name, args, message)                                                 \
    const char* matcher_name = name;                                                           \
-   template <typename A>                                                                      \
-   bool __matches(const A& a) const;                                                          \
+   template <typename A> bool __matches(const A& a) const;                                    \
    template <typename A>                                                                      \
    h2::h2_fail* matches(const A& a, h2::C c) const                                            \
    {                                                                                          \
@@ -2938,21 +2881,17 @@ inline h2_matcher<T>::h2_matcher(T value) { *this = _Eq(value); }
       __Matches_Common(#name, "", message)                                                                                                          \
    };                                                                                                                                               \
    inline h2::h2_polymorphic_matcher<h2_##name##_matches> name() { return h2::h2_polymorphic_matcher<h2_##name##_matches>(h2_##name##_matches()); } \
-   template <typename A>                                                                                                                            \
-   bool h2_##name##_matches::__matches(const A& a) const
+   template <typename A> bool h2_##name##_matches::__matches(const A& a) const
 
-#define H2MATCHER1(name, e1, message)                                                                                                                                          \
-   template <typename E1>                                                                                                                                                      \
-   struct h2_##name##_matches : h2::h2_matches {                                                                                                                               \
-      const E1 e1;                                                                                                                                                             \
-      explicit h2_##name##_matches(const E1& _e1) : e1(_e1) {}                                                                                                                 \
-      __Matches_Common(#name, h2::h2_stringify(e1, true), message)                                                                                                             \
-   };                                                                                                                                                                          \
-   template <typename E1>                                                                                                                                                      \
-   inline h2::h2_polymorphic_matcher<h2_##name##_matches<E1>> name(const E1 _e1) { return h2::h2_polymorphic_matcher<h2_##name##_matches<E1>>(h2_##name##_matches<E1>(_e1)); } \
-   template <typename E1>                                                                                                                                                      \
-   template <typename A>                                                                                                                                                       \
-   bool h2_##name##_matches<E1>::__matches(const A& a) const
+#define H2MATCHER1(name, e1, message)                                                                                                                                                                 \
+   template <typename E1>                                                                                                                                                                             \
+   struct h2_##name##_matches : h2::h2_matches {                                                                                                                                                      \
+      const E1 e1;                                                                                                                                                                                    \
+      explicit h2_##name##_matches(const E1& _e1) : e1(_e1) {}                                                                                                                                        \
+      __Matches_Common(#name, h2::h2_stringify(e1, true), message)                                                                                                                                    \
+   };                                                                                                                                                                                                 \
+   template <typename E1> inline h2::h2_polymorphic_matcher<h2_##name##_matches<E1>> name(const E1 _e1) { return h2::h2_polymorphic_matcher<h2_##name##_matches<E1>>(h2_##name##_matches<E1>(_e1)); } \
+   template <typename E1> template <typename A> bool h2_##name##_matches<E1>::__matches(const A& a) const
 
 #define H2MATCHER2(name, e1, e2, message)                                                                                                                                                                     \
    template <typename E1, typename E2>                                                                                                                                                                        \
@@ -2964,9 +2903,7 @@ inline h2_matcher<T>::h2_matcher(T value) { *this = _Eq(value); }
    };                                                                                                                                                                                                         \
    template <typename E1, typename E2>                                                                                                                                                                        \
    inline h2::h2_polymorphic_matcher<h2_##name##_matches<E1, E2>> name(const E1 _e1, const E2 _e2) { return h2::h2_polymorphic_matcher<h2_##name##_matches<E1, E2>>(h2_##name##_matches<E1, E2>(_e1, _e2)); } \
-   template <typename E1, typename E2>                                                                                                                                                                        \
-   template <typename A>                                                                                                                                                                                      \
-   bool h2_##name##_matches<E1, E2>::__matches(const A& a) const
+   template <typename E1, typename E2> template <typename A> bool h2_##name##_matches<E1, E2>::__matches(const A& a) const
 
 #define H2MATCHER3(name, e1, e2, e3, message)                                                                                                                                                                                                \
    template <typename E1, typename E2, typename E3>                                                                                                                                                                                          \
@@ -2979,9 +2916,7 @@ inline h2_matcher<T>::h2_matcher(T value) { *this = _Eq(value); }
    };                                                                                                                                                                                                                                        \
    template <typename E1, typename E2, typename E3>                                                                                                                                                                                          \
    inline h2::h2_polymorphic_matcher<h2_##name##_matches<E1, E2, E3>> name(const E1 _e1, const E2 _e2, const E3 _e3) { return h2::h2_polymorphic_matcher<h2_##name##_matches<E1, E2, E3>>(h2_##name##_matches<E1, E2, E3>(_e1, _e2, _e3)); } \
-   template <typename E1, typename E2, typename E3>                                                                                                                                                                                          \
-   template <typename A>                                                                                                                                                                                                                     \
-   bool h2_##name##_matches<E1, E2, E3>::__matches(const A& a) const
+   template <typename E1, typename E2, typename E3> template <typename A> bool h2_##name##_matches<E1, E2, E3>::__matches(const A& a) const
 
 #define H2MATCHER4(name, e1, e2, e3, e4, message)                                                                                                                                                                                                                           \
    template <typename E1, typename E2, typename E3, typename E4>                                                                                                                                                                                                            \
@@ -2995,9 +2930,7 @@ inline h2_matcher<T>::h2_matcher(T value) { *this = _Eq(value); }
    };                                                                                                                                                                                                                                                                       \
    template <typename E1, typename E2, typename E3, typename E4>                                                                                                                                                                                                            \
    inline h2::h2_polymorphic_matcher<h2_##name##_matches<E1, E2, E3, E4>> name(const E1 _e1, const E2 _e2, const E3 _e3, const E4 _e4) { return h2::h2_polymorphic_matcher<h2_##name##_matches<E1, E2, E3, E4>>(h2_##name##_matches<E1, E2, E3, E4>(_e1, _e2, _e3, _e4)); } \
-   template <typename E1, typename E2, typename E3, typename E4>                                                                                                                                                                                                            \
-   template <typename A>                                                                                                                                                                                                                                                    \
-   bool h2_##name##_matches<E1, E2, E3, E4>::__matches(const A& a) const
+   template <typename E1, typename E2, typename E3, typename E4> template <typename A> bool h2_##name##_matches<E1, E2, E3, E4>::__matches(const A& a) const
 
 #define H2MATCHER5(name, e1, e2, e3, e4, e5, message)                                                                                                                                                                                                                                                      \
    template <typename E1, typename E2, typename E3, typename E4, typename E5>                                                                                                                                                                                                                              \
@@ -3012,9 +2945,7 @@ inline h2_matcher<T>::h2_matcher(T value) { *this = _Eq(value); }
    };                                                                                                                                                                                                                                                                                                      \
    template <typename E1, typename E2, typename E3, typename E4, typename E5>                                                                                                                                                                                                                              \
    inline h2::h2_polymorphic_matcher<h2_##name##_matches<E1, E2, E3, E4, E5>> name(const E1 _e1, const E2 _e2, const E3 _e3, const E4 _e4, const E5 _e5) { return h2::h2_polymorphic_matcher<h2_##name##_matches<E1, E2, E3, E4, E5>>(h2_##name##_matches<E1, E2, E3, E4, E5>(_e1, _e2, _e3, _e4, _e5)); } \
-   template <typename E1, typename E2, typename E3, typename E4, typename E5>                                                                                                                                                                                                                              \
-   template <typename A>                                                                                                                                                                                                                                                                                   \
-   bool h2_##name##_matches<E1, E2, E3, E4, E5>::__matches(const A& a) const
+   template <typename E1, typename E2, typename E3, typename E4, typename E5> template <typename A> bool h2_##name##_matches<E1, E2, E3, E4, E5>::__matches(const A& a) const
 
 #define _H2MATCHER_1(name) H2MATCHER0(name, (""))
 

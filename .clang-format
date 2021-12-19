@@ -21,7 +21,7 @@ AllowShortLoopsOnASingleLine: true
 AlwaysBreakAfterDefinitionReturnType: None
 AlwaysBreakAfterReturnType: None
 AlwaysBreakBeforeMultilineStrings: false
-AlwaysBreakTemplateDeclarations: false
+AlwaysBreakTemplateDeclarations: No
 BinPackArguments: true
 BinPackParameters: false
 BraceWrapping:
@@ -39,7 +39,7 @@ BraceWrapping:
   BeforeElse: false
   IndentBraces: false
   SplitEmptyFunction: true
-  SplitEmptyRecord: true
+  SplitEmptyRecord: false
   SplitEmptyNamespace: true
 
 BreakBeforeBinaryOperators: None
