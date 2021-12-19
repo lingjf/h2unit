@@ -64,14 +64,14 @@ namespace h2 {
 #include "symbol/h2_load.hpp"                 //
 #include "symbol/h2_backtrace.hpp"            // line
 #include "symbol/h2_cxa.hpp"                  //
-#include "render/h2_failure.hpp"              //
-#include "render/h2_option.hpp"               //
+#include "report/h2_failure.hpp"              //
+#include "option/h2_option.hpp"               //
 #include "core/h2_test.hpp"                   //
 #include "core/h2_case.hpp"                   // failure
 #include "core/h2_suite.hpp"                  // case
 #include "core/h2_runner.hpp"                 // failure
 #include "core/h2_core.hpp"                   // [macro]
-#include "render/h2_report.hpp"               //!runner, suite, case
+#include "report/h2_report.hpp"               //!runner, suite, case
 #include "matcher/h2_matches.hpp"             // failure
 #include "matcher/h2_matcher.hpp"             // matches, failure
 #include "matcher/h2_matches_equation.hpp"    //!matches

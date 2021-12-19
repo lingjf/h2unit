@@ -1231,3 +1231,49 @@ Case(check throw type a_exception and matcher string equal)
    gcovr -r . -e 'test_*' --html --html-details -o coverage.html
 ```
 
+## User defined report
+
+Derive a class from h2_report_interface, and implement following virtual function:
+
+   - on_runner_start
+   - on_runner_endup
+   - on_suite_start
+   - on_suite_endup
+   - on_case_start
+   - on_case_endup
+
+```C++
+   
+struct user_report : h2::h2_report_interface {
+   void on_runner_start(h2::h2_runner* r) override
+   {
+      ...
+   }
+   void on_runner_endup(h2::h2_runner* r) override
+   {
+      ...
+   }
+   void on_suite_start(h2::h2_suite* s) override
+   {
+      ...
+   }
+   void on_suite_endup(h2::h2_suite* s) override
+   {
+      ...
+   }
+   void on_case_start(h2::h2_suite* s, h2::h2_case* c) override
+   {
+      ...
+   }
+   void on_case_endup(h2::h2_suite* s, h2::h2_case* c) override
+   {
+      ...
+   }
+};
+
+H2Report(user_report);
+
+```
+
+Then use H2Report to register it.
+

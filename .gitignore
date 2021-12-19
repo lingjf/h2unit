@@ -11,6 +11,7 @@
 *.exe
 
 .last_order
+a.out.report.txt
 
 *.su
 *.idb

@@ -48,3 +48,36 @@ SUITE(report utils)
       OK("3 timex", h2::h2_report_console::format_units(3, " time", " timex"));
    }
 }
+
+struct a_report : h2::h2_report_interface {
+   FILE* f;
+   void on_runner_start(h2::h2_runner* r) override
+   {
+      f = fopen("a.out.report.txt", "w");
+      if (!f) return;
+      fprintf(f, "on_runner_start\n");
+   }
+   void on_runner_endup(h2::h2_runner*) override
+   {
+      fprintf(f, "on_runner_endup\n");
+      if (!f) fclose(f);
+   }
+   void on_suite_start(h2::h2_suite* s) override
+   {
+      fprintf(f, "on_suite_start : %s\n", s->name);
+   }
+   void on_suite_endup(h2::h2_suite* s) override
+   {
+      fprintf(f, "on_suite_start : %s\n", s->name);
+   }
+   void on_case_start(h2::h2_suite* s, h2::h2_case* c) override
+   {
+      fprintf(f, "on_case_start : %s\n", c->name);
+   }
+   void on_case_endup(h2::h2_suite* s, h2::h2_case* c) override
+   {
+      fprintf(f, "on_case_endup : %s\n", c->name);
+   }
+};
+
+H2Report(a_report);

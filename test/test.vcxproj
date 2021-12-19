@@ -90,11 +90,11 @@
     <ClCompile Include="test_mock_unmock.cpp" />
     <ClCompile Include="test_net_dns.cpp" />
     <ClCompile Include="test_net_socket.cpp" />
-    <ClCompile Include="test_render_console.cpp" />
-    <ClCompile Include="test_render_failure.cpp" />
-    <ClCompile Include="test_render_layout.cpp" />
-    <ClCompile Include="test_render_option.cpp" />
-    <ClCompile Include="test_render_report.cpp" />
+    <ClCompile Include="test_option_option.cpp" />
+    <ClCompile Include="test_report_failure.cpp" />
+    <ClCompile Include="test_report_layout.cpp" />
+    <ClCompile Include="test_report_report.cpp" />
+    <ClCompile Include="test_stdio_console.cpp" />
     <ClCompile Include="test_stdio_stdio.cpp" />
     <ClCompile Include="test_stub_e9.cpp" />
     <ClCompile Include="test_stub_fp.cpp" />

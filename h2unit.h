@@ -1180,7 +1180,7 @@ struct h2_cxa {
       return name;
    }
 };
-// source/render/h2_failure.hpp
+// source/report/h2_failure.hpp
 struct h2_fail : h2_libc {
    h2_fail *subling_next = nullptr, *child_next = nullptr;
 
@@ -1224,7 +1224,7 @@ struct h2_fail : h2_libc {
    static h2_fail* new_exception(const h2_line& explain, const char* type, const h2_backtrace& bt_throw, const char* filine = nullptr);
    static h2_fail* new_symbol(const h2_string& symbol, const h2_vector<h2_string>& candidates, const h2_line& explain = {});
 };
-// source/render/h2_option.hpp
+// source/option/h2_option.hpp
 
 static constexpr int VerboseQuiet = 0, VerboseCompactFailed = 1, VerboseCompactPassed = 2, VerboseNormal = 3, VerboseDetail = 4;
 static constexpr int ShuffleCode = 0x0, ShuffleRandom = 0x10, ShuffleName = 0x100, ShuffleFile = 0x1000, ShuffleReverse = 0x10000;
@@ -1569,7 +1569,7 @@ struct h2_runner {
    H2TODO(case_prefix, __VA_ARGS__) {}            \
    template <typename x, typename y>              \
    static void case_test()
-// source/render/h2_report.hpp
+// source/report/h2_report.hpp
 struct h2_runner;
 struct h2_suite;
 struct h2_case;
@@ -1587,6 +1587,10 @@ struct h2_report : h2_report_interface {
    h2_singleton(h2_report);
    static void initialize();
 
+   struct registor {
+      registor(h2_report_interface* report);
+   };
+
    bool backable = false;
    h2_report_interface* reports[8]{nullptr};
 
@@ -1597,6 +1601,8 @@ struct h2_report : h2_report_interface {
    virtual void on_case_start(h2_suite* s, h2_case* c) override;
    virtual void on_case_endup(h2_suite* s, h2_case* c) override;
 };
+
+#define H2Report(Class) static h2::h2_report::registor H2PP_UNIQUE(report)(new Class)
 // source/matcher/h2_matches.hpp
 struct C {
    int array_size, range_start, range_end, times;
@@ -5330,7 +5336,7 @@ h2_inline void h2_lines::samesizify(h2_lines& a, h2_lines& b)
    for (auto i = a.size(); i < size; ++i) a.push_back(h2_line());
    for (auto i = b.size(); i < size; ++i) b.push_back(h2_line());
 }
-// source/render/h2_console.cpp
+// source/stdio/h2_console.cpp
 struct h2_console {
    static size_t width()
    {
@@ -5377,6 +5383,178 @@ struct h2_console {
       for (auto& line : lines) printl(line, cr);
    }
 };
+// source/stdio/h2_stdio.cpp
+struct h2_stdio {
+   h2_singleton(h2_stdio);
+   h2_string* buffer;
+   bool stdout_capturable = false, stderr_capturable = false, syslog_capturable = false;
+   long long capture_length = 0;
+
+   static ssize_t write(int fd, const void* buf, size_t count)
+   {
+      if (O.verbose >= VerboseNormal || (fd != fileno(stdout) && fd != fileno(stderr))) {
+         h2::h2_stub_temporary_restore _((void*)LIBC__write);
+         if ((fd == fileno(stdout) || fd == fileno(stderr)) && h2_report::I().backable) {
+            LIBC__write(fd, "\n", 1);  // fall printf/cout into new line from report title
+            h2_report::I().backable = false;
+         }
+         LIBC__write(fd == -21371647 ? fileno(stdout) : fd, buf, count);
+         if (fd == fileno(stdout) || fd == fileno(stderr))
+            I().capture_length += count;
+      }
+      if ((I().stdout_capturable && fd == fileno(stdout)) || (I().stderr_capturable && fd == fileno(stderr)))
+         I().buffer->append((char*)buf, count);
+      return (ssize_t)count;
+   }
+
+   static int vfprintf(FILE* stream, const char* format, va_list ap)
+   {
+      char* alloca_str;
+      h2_sprintvf(alloca_str, format, ap);
+      return (int)write(fileno(stream), alloca_str, strlen(alloca_str));
+   }
+
+   static int fprintf(FILE* stream, const char* format, ...)
+   {
+      va_list a;
+      va_start(a, format);
+      int ret = vfprintf(stream, format, a);
+      va_end(a);
+      return ret;
+   }
+
+   static int fputc(int c, FILE* stream)
+   {
+      unsigned char t = c;
+      int ret = write(fileno(stream), &t, 1);
+      return ret == 1 ? c : EOF;
+   }
+
+   static int fputs(const char* s, FILE* stream)
+   {
+      return write(fileno(stream), s, strlen(s));
+   }
+
+   static size_t fwrite(const void* ptr, size_t size, size_t nitems, FILE* stream)
+   {
+      return write(fileno(stream), ptr, size * nitems);
+   }
+
+   static int printf(const char* format, ...)
+   {
+      va_list a;
+      va_start(a, format);
+      int ret = vfprintf(stdout, format, a);
+      va_end(a);
+      return ret;
+   }
+
+   static int vprintf(const char* format, va_list ap)
+   {
+      return vfprintf(stdout, format, ap);
+   }
+
+   static int putchar(int c)
+   {
+      unsigned char t = c;
+      write(fileno(stdout), &t, 1);
+      return c;
+   }
+
+   static int puts(const char* s)
+   {
+      write(fileno(stdout), s, strlen(s));
+      write(fileno(stdout), "\n", 1);
+      return 1;
+   }
+
+   static void vsyslog(int priority, const char* format, va_list ap)
+   {
+      if (!I().syslog_capturable) return;
+      char* alloca_str;
+      h2_sprintvf(alloca_str, format, ap);
+      I().buffer->append(alloca_str, strlen(alloca_str));
+   }
+
+   static void syslog(int priority, const char* format, ...)
+   {
+      va_list a;
+      va_start(a, format);
+      vsyslog(priority, format, a);
+      va_end(a);
+   }
+
+   static void initialize()
+   {
+      ::setbuf(stdout, 0);  // unbuffered
+      I().buffer = new h2_string();
+      static h2_list stubs;
+
+      h2_stubs::add(stubs, (void*)::printf, (void*)printf, "printf", H2_FILINE);
+      h2_stubs::add(stubs, (void*)::vprintf, (void*)vprintf, "vprintf", H2_FILINE);
+      h2_stubs::add(stubs, (void*)::putchar, (void*)putchar, "putchar", H2_FILINE);
+      h2_stubs::add(stubs, (void*)::puts, (void*)puts, "puts", H2_FILINE);
+      h2_stubs::add(stubs, (void*)::fprintf, (void*)fprintf, "fprintf", H2_FILINE);
+      // h2_stubs::add(stubs,(void*)::vfprintf, (void*)vfprintf,  "vfprintf",H2_FILINE);
+      h2_stubs::add(stubs, (void*)::fputc, (void*)fputc, "fputc", H2_FILINE);
+      h2_stubs::add(stubs, (void*)::putc, (void*)fputc, "fputc", H2_FILINE);
+      h2_stubs::add(stubs, (void*)::fputs, (void*)fputs, "fputs", H2_FILINE);
+      h2_stubs::add(stubs, (void*)::fwrite, (void*)fwrite, "fwrite", H2_FILINE);
+#if defined __GNUC__
+      struct streambuf : public std::streambuf {
+         FILE* f;
+         int sync() override { return 0; }
+         int overflow(int c) override { return (c != EOF) && h2_stdio::fputc(c, f), 0; }
+         streambuf(FILE* _f) : f(_f) { setp(nullptr, 0); }
+      };
+      static streambuf sb_out(stdout);
+      static streambuf sb_err(stderr);
+      std::cout.rdbuf(&sb_out); /* internal fwrite() called, but */
+      std::cerr.rdbuf(&sb_err);
+      std::clog.rdbuf(&sb_err); /* print to stderr */
+#endif
+      h2_stubs::add(stubs, (void*)LIBC__write, (void*)write, "write", H2_FILINE);
+#if !defined _WIN32
+      h2_stubs::add(stubs, (void*)::syslog, (void*)syslog, "syslog", H2_FILINE);
+      h2_stubs::add(stubs, (void*)::vsyslog, (void*)vsyslog, "vsyslog", H2_FILINE);
+#endif
+   }
+
+   void start_capture(bool stdout_capturable_, bool stderr_capturable_, bool syslog_capturable_)
+   {
+      stdout_capturable = stdout_capturable_;
+      stderr_capturable = stderr_capturable_;
+      syslog_capturable = syslog_capturable_;
+      buffer->clear();
+   }
+
+   const char* stop_capture()
+   {
+      stdout_capturable = stderr_capturable = syslog_capturable = false;
+      buffer->push_back('\0');
+      return buffer->c_str();
+   }
+};
+
+h2_inline h2_cout::h2_cout(h2_matcher<const char*> m_, const char* e_, const char* type_, const char* filine_) : filine(filine_), m(m_), e(e_), type(type_)
+{
+   bool all = !strlen(type);
+   h2_stdio::I().start_capture(all || get_keyvalue(type, "out"), all || get_keyvalue(type, "err"), all || get_keyvalue(type, "syslog"));
+}
+
+h2_inline h2_cout::~h2_cout()
+{
+   h2_runner::asserts();
+   h2_fail* fail = m.matches(h2_stdio::I().stop_capture(), 0);
+   if (fail) {
+      fail->filine = filine;
+      fail->assert_type = "OK";
+      fail->e_expression = e;
+      fail->a_expression = "";
+      fail->explain = "COUT";
+      h2_runner::failing(fail);
+   }
+}
 // source/symbol/h2_nm.cpp
 #if !defined _MSC_VER
 static inline void __nm(h2_list& symbols, bool demangle)
@@ -8336,178 +8514,6 @@ h2_inline h2_fail* h2_mocks::clear(h2_list& mocks, bool check)
    }
    return fails;
 }
-// source/stdio/h2_stdio.cpp
-struct h2_stdio {
-   h2_singleton(h2_stdio);
-   h2_string* buffer;
-   bool stdout_capturable = false, stderr_capturable = false, syslog_capturable = false;
-   long long capture_length = 0;
-
-   static ssize_t write(int fd, const void* buf, size_t count)
-   {
-      if (O.verbose >= VerboseNormal || (fd != fileno(stdout) && fd != fileno(stderr))) {
-         h2::h2_stub_temporary_restore _((void*)LIBC__write);
-         if ((fd == fileno(stdout) || fd == fileno(stderr)) && h2_report::I().backable) {
-            LIBC__write(fd, "\n", 1);  // fall printf/cout into new line from report title
-            h2_report::I().backable = false;
-         }
-         LIBC__write(fd == -21371647 ? fileno(stdout) : fd, buf, count);
-         if (fd == fileno(stdout) || fd == fileno(stderr))
-            I().capture_length += count;
-      }
-      if ((I().stdout_capturable && fd == fileno(stdout)) || (I().stderr_capturable && fd == fileno(stderr)))
-         I().buffer->append((char*)buf, count);
-      return (ssize_t)count;
-   }
-
-   static int vfprintf(FILE* stream, const char* format, va_list ap)
-   {
-      char* alloca_str;
-      h2_sprintvf(alloca_str, format, ap);
-      return (int)write(fileno(stream), alloca_str, strlen(alloca_str));
-   }
-
-   static int fprintf(FILE* stream, const char* format, ...)
-   {
-      va_list a;
-      va_start(a, format);
-      int ret = vfprintf(stream, format, a);
-      va_end(a);
-      return ret;
-   }
-
-   static int fputc(int c, FILE* stream)
-   {
-      unsigned char t = c;
-      int ret = write(fileno(stream), &t, 1);
-      return ret == 1 ? c : EOF;
-   }
-
-   static int fputs(const char* s, FILE* stream)
-   {
-      return write(fileno(stream), s, strlen(s));
-   }
-
-   static size_t fwrite(const void* ptr, size_t size, size_t nitems, FILE* stream)
-   {
-      return write(fileno(stream), ptr, size * nitems);
-   }
-
-   static int printf(const char* format, ...)
-   {
-      va_list a;
-      va_start(a, format);
-      int ret = vfprintf(stdout, format, a);
-      va_end(a);
-      return ret;
-   }
-
-   static int vprintf(const char* format, va_list ap)
-   {
-      return vfprintf(stdout, format, ap);
-   }
-
-   static int putchar(int c)
-   {
-      unsigned char t = c;
-      write(fileno(stdout), &t, 1);
-      return c;
-   }
-
-   static int puts(const char* s)
-   {
-      write(fileno(stdout), s, strlen(s));
-      write(fileno(stdout), "\n", 1);
-      return 1;
-   }
-
-   static void vsyslog(int priority, const char* format, va_list ap)
-   {
-      if (!I().syslog_capturable) return;
-      char* alloca_str;
-      h2_sprintvf(alloca_str, format, ap);
-      I().buffer->append(alloca_str, strlen(alloca_str));
-   }
-
-   static void syslog(int priority, const char* format, ...)
-   {
-      va_list a;
-      va_start(a, format);
-      vsyslog(priority, format, a);
-      va_end(a);
-   }
-
-   static void initialize()
-   {
-      ::setbuf(stdout, 0);  // unbuffered
-      I().buffer = new h2_string();
-      static h2_list stubs;
-
-      h2_stubs::add(stubs, (void*)::printf, (void*)printf, "printf", H2_FILINE);
-      h2_stubs::add(stubs, (void*)::vprintf, (void*)vprintf, "vprintf", H2_FILINE);
-      h2_stubs::add(stubs, (void*)::putchar, (void*)putchar, "putchar", H2_FILINE);
-      h2_stubs::add(stubs, (void*)::puts, (void*)puts, "puts", H2_FILINE);
-      h2_stubs::add(stubs, (void*)::fprintf, (void*)fprintf, "fprintf", H2_FILINE);
-      // h2_stubs::add(stubs,(void*)::vfprintf, (void*)vfprintf,  "vfprintf",H2_FILINE);
-      h2_stubs::add(stubs, (void*)::fputc, (void*)fputc, "fputc", H2_FILINE);
-      h2_stubs::add(stubs, (void*)::putc, (void*)fputc, "fputc", H2_FILINE);
-      h2_stubs::add(stubs, (void*)::fputs, (void*)fputs, "fputs", H2_FILINE);
-      h2_stubs::add(stubs, (void*)::fwrite, (void*)fwrite, "fwrite", H2_FILINE);
-#if defined __GNUC__
-      struct streambuf : public std::streambuf {
-         FILE* f;
-         int sync() override { return 0; }
-         int overflow(int c) override { return (c != EOF) && h2_stdio::fputc(c, f), 0; }
-         streambuf(FILE* _f) : f(_f) { setp(nullptr, 0); }
-      };
-      static streambuf sb_out(stdout);
-      static streambuf sb_err(stderr);
-      std::cout.rdbuf(&sb_out); /* internal fwrite() called, but */
-      std::cerr.rdbuf(&sb_err);
-      std::clog.rdbuf(&sb_err); /* print to stderr */
-#endif
-      h2_stubs::add(stubs, (void*)LIBC__write, (void*)write, "write", H2_FILINE);
-#if !defined _WIN32
-      h2_stubs::add(stubs, (void*)::syslog, (void*)syslog, "syslog", H2_FILINE);
-      h2_stubs::add(stubs, (void*)::vsyslog, (void*)vsyslog, "vsyslog", H2_FILINE);
-#endif
-   }
-
-   void start_capture(bool stdout_capturable_, bool stderr_capturable_, bool syslog_capturable_)
-   {
-      stdout_capturable = stdout_capturable_;
-      stderr_capturable = stderr_capturable_;
-      syslog_capturable = syslog_capturable_;
-      buffer->clear();
-   }
-
-   const char* stop_capture()
-   {
-      stdout_capturable = stderr_capturable = syslog_capturable = false;
-      buffer->push_back('\0');
-      return buffer->c_str();
-   }
-};
-
-h2_inline h2_cout::h2_cout(h2_matcher<const char*> m_, const char* e_, const char* type_, const char* filine_) : filine(filine_), m(m_), e(e_), type(type_)
-{
-   bool all = !strlen(type);
-   h2_stdio::I().start_capture(all || get_keyvalue(type, "out"), all || get_keyvalue(type, "err"), all || get_keyvalue(type, "syslog"));
-}
-
-h2_inline h2_cout::~h2_cout()
-{
-   h2_runner::asserts();
-   h2_fail* fail = m.matches(h2_stdio::I().stop_capture(), 0);
-   if (fail) {
-      fail->filine = filine;
-      fail->assert_type = "OK";
-      fail->e_expression = e;
-      fail->a_expression = "";
-      fail->explain = "COUT";
-      h2_runner::failing(fail);
-   }
-}
 // source/net/h2_dns.cpp
 struct h2_domain : h2_libc {
    h2_list x, y;
@@ -9439,7 +9445,7 @@ h2_inline h2_timer::~h2_timer()
       h2_runner::failing(h2_fail::new_normal(line, filine));
    }
 }
-// source/render/h2_layout.cpp
+// source/report/h2_layout.cpp
 struct h2_layout {
    static h2_lines line_break(const h2_line& line, size_t width)
    {
@@ -9551,7 +9557,7 @@ struct h2_layout {
       return lines += prefix_break(down_line, down_title_line, width);
    }
 };
-// source/render/h2_failure.cpp
+// source/report/h2_failure.cpp
 h2_inline void h2_fail::append_subling(h2_fail*& fail, h2_fail* nf)
 {
    if (!fail) {
@@ -9978,7 +9984,7 @@ h2_inline h2_fail* h2_fail::new_overflow(const void* ptr, const size_t size, con
 h2_inline h2_fail* h2_fail::new_use_after_free(const void* ptr, const void* violate_ptr, const char* action, const h2_backtrace& bt_allocate, const h2_backtrace& bt_release, const h2_backtrace& bt_use) { return new h2_fail_use_after_free(ptr, violate_ptr, action, bt_allocate, bt_release, bt_use); }
 h2_inline h2_fail* h2_fail::new_exception(const h2_line& explain_, const char* type, const h2_backtrace& bt_throw, const char* filine_) { return new h2_fail_exception(explain_, type, bt_throw, filine_); }
 h2_inline h2_fail* h2_fail::new_symbol(const h2_string& symbol, const h2_vector<h2_string>& candidates, const h2_line& explain_) { return new h2_fail_symbol(symbol, candidates, explain_); };
-// source/render/h2_report_console.cpp
+// source/report/h2_report_console.cpp
 #define H2_UNITS(count, unit) ((count > 1) ? (unit "s") : unit)
 
 struct h2_report_console : h2_report_interface {
@@ -10149,7 +10155,7 @@ struct h2_report_console : h2_report_interface {
       }
    }
 };
-// source/render/h2_report_list.cpp
+// source/report/h2_report_list.cpp
 struct h2_report_list : h2_report_interface {
    int suites = 0, cases = 0, todos = 0;
    int unfiltered_suites = 0, unfiltered_cases = 0, unfiltered_todos = 0;
@@ -10268,7 +10274,7 @@ struct h2_report_list : h2_report_interface {
    }
    void on_case_endup(h2_suite* s, h2_case* c) override {}
 };
-// source/render/h2_report_junit.cpp
+// source/report/h2_report_junit.cpp
 struct h2_report_junit : h2_report_interface {
    FILE* f;
    void on_runner_start(h2_runner* r) override
@@ -10308,21 +10314,18 @@ struct h2_report_junit : h2_report_interface {
       fclose(f);
    }
 };
-// source/render/h2_report.cpp
+// source/report/h2_report.cpp
 h2_inline void h2_report::initialize()
 {
    if (O.lists) {
-      static h2_report_list list_report;
-      h2_array_append(I().reports, &list_report);
+      h2_array_append(I().reports, new h2_report_list);
    } else {
-      static h2_report_console console_report;
-      h2_array_append(I().reports, &console_report);
-      if (strlen(O.junit_path)) {
-         static h2_report_junit junit_report;
-         h2_array_append(I().reports, &junit_report);
-      }
+      h2_array_append(I().reports, new h2_report_console);
+      if (strlen(O.junit_path)) h2_array_append(I().reports, new h2_report_junit);
    }
 }
+
+h2_inline h2_report::registor::registor(h2_report_interface* report) { h2_array_append(h2_report::I().reports, report); }
 
 /* clang-format off */
 h2_inline void h2_report::on_runner_start(h2_runner* r) { for (int i = 0; reports[i]; ++i) reports[i]->on_runner_start(r); }
@@ -10331,7 +10334,7 @@ h2_inline void h2_report::on_suite_start(h2_suite* s) { for (int i = 0; reports[
 h2_inline void h2_report::on_suite_endup(h2_suite* s) { for (int i = 0; reports[i]; ++i) reports[i]->on_suite_endup(s); }
 h2_inline void h2_report::on_case_start(h2_suite* s, h2_case* c) { for (int i = 0; reports[i]; ++i) reports[i]->on_case_start(s, c); }
 h2_inline void h2_report::on_case_endup(h2_suite* s, h2_case* c) { for (int i = 0; reports[i]; ++i) reports[i]->on_case_endup(s, c); }
-// source/render/h2_option.cpp
+// source/option/h2_option.cpp
 /* clang-format off */
 static inline void usage()
 {

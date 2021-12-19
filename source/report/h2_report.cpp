@@ -1,17 +1,14 @@
 h2_inline void h2_report::initialize()
 {
    if (O.lists) {
-      static h2_report_list list_report;
-      h2_array_append(I().reports, &list_report);
+      h2_array_append(I().reports, new h2_report_list);
    } else {
-      static h2_report_console console_report;
-      h2_array_append(I().reports, &console_report);
-      if (strlen(O.junit_path)) {
-         static h2_report_junit junit_report;
-         h2_array_append(I().reports, &junit_report);
-      }
+      h2_array_append(I().reports, new h2_report_console);
+      if (strlen(O.junit_path)) h2_array_append(I().reports, new h2_report_junit);
    }
 }
+
+h2_inline h2_report::registor::registor(h2_report_interface* report) { h2_array_append(h2_report::I().reports, report); }
 
 /* clang-format off */
 h2_inline void h2_report::on_runner_start(h2_runner* r) { for (int i = 0; reports[i]; ++i) reports[i]->on_runner_start(r); }

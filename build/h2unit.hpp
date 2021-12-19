@@ -1180,7 +1180,7 @@ struct h2_cxa {
       return name;
    }
 };
-// source/render/h2_failure.hpp
+// source/report/h2_failure.hpp
 struct h2_fail : h2_libc {
    h2_fail *subling_next = nullptr, *child_next = nullptr;
 
@@ -1224,7 +1224,7 @@ struct h2_fail : h2_libc {
    static h2_fail* new_exception(const h2_line& explain, const char* type, const h2_backtrace& bt_throw, const char* filine = nullptr);
    static h2_fail* new_symbol(const h2_string& symbol, const h2_vector<h2_string>& candidates, const h2_line& explain = {});
 };
-// source/render/h2_option.hpp
+// source/option/h2_option.hpp
 
 static constexpr int VerboseQuiet = 0, VerboseCompactFailed = 1, VerboseCompactPassed = 2, VerboseNormal = 3, VerboseDetail = 4;
 static constexpr int ShuffleCode = 0x0, ShuffleRandom = 0x10, ShuffleName = 0x100, ShuffleFile = 0x1000, ShuffleReverse = 0x10000;
@@ -1569,7 +1569,7 @@ struct h2_runner {
    H2TODO(case_prefix, __VA_ARGS__) {}            \
    template <typename x, typename y>              \
    static void case_test()
-// source/render/h2_report.hpp
+// source/report/h2_report.hpp
 struct h2_runner;
 struct h2_suite;
 struct h2_case;
@@ -1587,6 +1587,10 @@ struct h2_report : h2_report_interface {
    h2_singleton(h2_report);
    static void initialize();
 
+   struct registor {
+      registor(h2_report_interface* report);
+   };
+
    bool backable = false;
    h2_report_interface* reports[8]{nullptr};
 
@@ -1597,6 +1601,8 @@ struct h2_report : h2_report_interface {
    virtual void on_case_start(h2_suite* s, h2_case* c) override;
    virtual void on_case_endup(h2_suite* s, h2_case* c) override;
 };
+
+#define H2Report(Class) static h2::h2_report::registor H2PP_UNIQUE(report)(new Class)
 // source/matcher/h2_matches.hpp
 struct C {
    int array_size, range_start, range_end, times;

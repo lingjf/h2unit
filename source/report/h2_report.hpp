@@ -15,6 +15,10 @@ struct h2_report : h2_report_interface {
    h2_singleton(h2_report);
    static void initialize();
 
+   struct registor {
+      registor(h2_report_interface* report);
+   };
+
    bool backable = false;
    h2_report_interface* reports[8]{nullptr};
 
@@ -25,3 +29,5 @@ struct h2_report : h2_report_interface {
    virtual void on_case_start(h2_suite* s, h2_case* c) override;
    virtual void on_case_endup(h2_suite* s, h2_case* c) override;
 };
+
+#define H2Report(Class) static h2::h2_report::registor H2PP_UNIQUE(report)(new Class)
