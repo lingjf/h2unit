@@ -24,6 +24,7 @@
 * [Tutorial](doc/tutorial.md) - getting started
 * [Options](doc/options.md) - executable options
 * [Reference](doc/reference.md) - primitives manual
+* [Matcher](doc/matcher.md) - Matcher primitives manual
 * [Frequently asked questions](doc/faq.md)
 
 Example is a helpful manual document.

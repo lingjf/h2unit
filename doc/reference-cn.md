@@ -97,8 +97,7 @@ SUITE(suite name)
 ### H2Setup alias Setup
 
 `Setup()` 每个测试用例开始测试之前的设置。
-
-Variables defined in Suite scope are shared by cases which can see them.
+定义在SUITE{}内的变量以及代码,随测试用例被执行,测试用例前的代码在测试之前执行(同Setup), 测试用例之后的代码。
 
 ```C++
 #include "h2unit.h"
@@ -123,7 +122,7 @@ SUITE(suite name)
 
 `Cleanup()` 每个测试用例测试结束后的清理。
 
-Each case is executed separately and begin from first of suite scope, shared variables are initialized, then shared code is executed until case section, after test code, `Cleanup()` is invoked to release resources.
+每个测试用例都单独地从SUITE的开始执行。SUITE{}内在测试用例后的变量/代码在测试结束(无论成功失败)之后执行(同Cleanup)。
 
 ```C++
 #include "h2unit.h"
@@ -148,7 +147,7 @@ SUITE(suite name)
 
 ### H2Todo alias Todo
 
-`Todo` define a none-executable test case inside `SUITE`.
+在`SUITE`内定义一个TODO测试用例。
 
 ```C++
 #include "h2unit.h"
@@ -163,7 +162,7 @@ SUITE(suite name)
 
 ### H2TODO alias TODO
 
-`TODO` define a standalone none-executable test case outside `SUITE`.
+在`SUITE`外定义一个TODO测试用例。
 
 ```C++
 #include "h2unit.h"
@@ -172,10 +171,7 @@ TODO(case name)
 
 }
 ```
-
-All the test cases are registered to a global list automatically (C++ global object's constructor is invoked automatically before main). 
-
-It means user should not write extra code to register test cases.
+测试用例自动注册（使用全局对像的构造函数）,用户无需调用注册函数。
 
 ### Parameterized test
 #### Value-Parameterized test
@@ -382,265 +378,8 @@ CASE(case name)
 
 ## Matcher
 
-*    [`_`](../source/h2_unit.hpp#L321) / [`Any`](../source/h2_unit.hpp#L321) : matches any value 
-*    [`Eq`](../source/h2_unit.hpp#L321)(expect [, epsilon]) : matches if value equals expect (one of [strcmp wildcard] equals for string compare), float value near equals expect, default epsilon is 0.00001 and using margin, matches if in [expect-0.00001, expect+0.00001]. 0.1% matches if delta in 0.1% range of expect [99.9% expect, 100.1% expect]
-*    [`Nq`](../source/h2_unit.hpp#L321)(expect) : matches if value not equals expect 
-*    [`Ge`](../source/h2_unit.hpp#L321)(expect) : matches if value >= expect 
-*    [`Gt`](../source/h2_unit.hpp#L321)(expect) : matches if value > expect 
-*    [`Le`](../source/h2_unit.hpp#L321)(expect) : matches if value <= expect 
-*    [`Lt`](../source/h2_unit.hpp#L321)(expect) : matches if value < expect 
-*    [`Me`](../source/h2_unit.hpp#L321)(buffer, [length], [width]) : matches if memory is same 
-*    [`Range`](../source/h2_unit.hpp#L321)([start,] end [, step]) : matches if value in range like python range style  
-*    [`Re`](../source/h2_unit.hpp#L321)(expect) : matches if value Regex equals expect 
-*    [`We`](../source/h2_unit.hpp#L321)(expect) : matches if value Wildcard equals expect 
-*    [`Je`](../source/h2_unit.hpp#L321)(expect) : matches if value JSON equals expect 
-*    [`Se`](../source/h2_unit.hpp#L321)(expect) : matches if string strictly equals expect as strcmp() 
-*    [`Substr`](../source/h2_unit.hpp#L321)(expect) : matches if value has substr expect 
-*    [`StartsWith`](../source/h2_unit.hpp#L321)(expect) : matches if value starts with expect 
-*    [`EndsWith`](../source/h2_unit.hpp#L321)(expect) : matches if value ends with expect 
-*    [`~`](../source/h2_unit.hpp#L321) / [`CaseLess`](../source/h2_unit.hpp#L321)(expect) : make inner matcher case-insensitive, right operator must be Matcher, `~"Hello World"` not works 
-*    [`*`](../source/h2_unit.hpp#L321) / [`SpaceLess`](../source/h2_unit.hpp#L321)(expect) : trim leading and trailing whitespace, squash several whitespaces into one space, right operator must be Matcher, `*"Hello World"` not works 
-*    [`Pointee`](../source/h2_unit.hpp#L321)(expect) : matches if point to value equals expect 
-*    [`!`](../source/h2_unit.hpp#L321) / [`Not`](../source/h2_unit.hpp#L321)(expect) : matches if not matches inner matcher, right operator must be Matcher, !3 is considered as normal semantics 
-*    [`&&`](../source/h2_unit.hpp#L321)(expect) : Logical AND of two matchers, left and right operator shoud at least one Matcher 
-*    [`||`](../source/h2_unit.hpp#L321)(expect) : Logical OR of two matchers 
-*    [`AllOf`](../source/h2_unit.hpp#L321)(expect...) : matches if value matches all of inner matchers, act as AND logical operator. Calculates the logical conjunction of multiple matchers. Evaluation is shortcut, so subsequent matchers are not called if an earlier matcher returns false.
-*    [`AnyOf`](../source/h2_unit.hpp#L321)(expect...) : matches if value matches any one of inner matchers, act as OR logical operator. Calculates the logical disjunction of multiple matchers. Evaluation is shortcut, so subsequent matchers are not called if an earlier matcher returns true.
-*    [`NoneOf`](../source/h2_unit.hpp#L321)(expect...) : matches if value not matches all of inner matchers 
-*    [`ListOf`](../source/h2_unit.hpp#L321)(expect...) : matches if sequence container(array, vector, ...) items matches inner matchers 
-*    [`Every`](../source/h2_unit.hpp#L321)(expect) : matches if sequence container(array, vector, ...) items all matches inner matcher 
-*    [`Has`](../source/h2_unit.hpp#L321)(expect) : matches if there are items in container(vector, set, map, ...) match every inner matcher
-*    [`CountOf`](../source/h2_unit.hpp#L321)(expect) : matches if container(array, vector, ...) item count matches inner matcher
-*    [`AvgOf`](../source/h2_unit.hpp#L321)(expect) : matches if average of items in container(vector, set, ...) match every inner matcher
-*    [`MaxOf`](../source/h2_unit.hpp#L321)(expect) : statistics matches if maximum of items in container(vector, set, ...) match every inner matcher
-*    [`MinOf`](../source/h2_unit.hpp#L321)(expect) : statistics matches if minimum of items in container(vector, set, ...) match every inner matcher
-*    [`MedianOf`](../source/h2_unit.hpp#L321)(expect) : statistics matches if median of items in container(vector, set, ...) match every inner matcher
-*    [`MeanOf`](../source/h2_unit.hpp#L321)(expect) : statistics matches if mean of items in container(vector, set, ...) match every inner matcher
+goto [Matcher](matcher.md)
 
-
-Matcher can be used in OK(expect, actual), for example:
-```C++
-OK(Ge(1.4142), sqrt(2))
-```
-It asserts sqrt(2) result 1.41421356237 is greater or equal than 1.4142
-
-
-### Has element in container (`Has`)
-Check element existence in container using `Has`.
-
-Following sample is check if 2 exist in vector.
-```C++
-CASE(has element in vector)
-{
-   std::vector<int> a = {1, 2, 3};
-   OK(Has(2), a);
-}
-```
-
-Use two parameters in `Has` to check element existence in map container.
-```C++
-CASE(has element in map)
-{
-   std::map<std::string, int> a = {{"a": 1}, {"b": 2}, {"c": 3}};
-   OK(Has("b", 2), a);
-}
-```
-
-Also can use `Pair` to combine key and value.
-```C++
-CASE(has element in map)
-{
-   std::map<std::string, int> a = {{"a": 1}, {"b": 2}, {"c": 3}};
-   OK(Has(Pair("b", 2)), a);
-}
-```
-If only one parameter in `Has` to check key existence in map container.
-
-`HasKey` is other way to check key existence in map constructor.
-```C++
-CASE(has element in map)
-{
-   std::map<std::string, int> a = {{"a": 1}, {"b": 2}, {"c": 3}};
-   OK(Has("b"), a);
-   OK(HasKey("b"), a);
-}
-```
-
-If want to check value existence in map container, set first parameter to Any, or using `HasValue`.
-```C++
-CASE(has element in map)
-{
-   std::map<std::string, int> a = {{"a": 1}, {"b": 2}, {"c": 3}};
-   OK(Has(Any, 2), a);
-   OK(HasValue(2), a);
-}
-```
-
-### Statistics matcher
-
-```C++
-CASE(Statistics)
-{
-   int a1[] = {1, 2, 3};
-
-   OK(MaxOf(3), a1);
-   OK(MinOf(1), a1);
-   OK(AvgOf(2), a1);
-   OK(MeanOf(2), a1);
-   OK(MedianOf(2), a1);
-}
-```
-
-Following is sepecified actual array size, typically used in MOCK.
-
-```C++
-
-
-static int a_function(int a[])
-{
-   ...
-}
-
-CASE(Statistics)
-{
-   int a1[] = {1, 2, 3};
-
-   OK(MaxOf<3>(3), a1);
-   OK(MinOf<3>(1), a1);
-   OK(AvgOf<3>(2), a1);
-   OK(MeanOf<3>(2), a1);
-   OK(MedianOf<3>(2), a1);
-
-   MOCK(a_function, int(int*)).Once(MaxOf<3>(2)).Return(1);
-   OK(1, a_function(a1));
-}
-```
-
-
-### Memory compare matcher (`Me`)
-Expection is described by buffer, length and width.
-
-#### explicit width
-
-- `1` bit width, length is in bit unit.
-- `8` byte width, length is in byte unit.
-- `16` uint16 width (2 bytes), length is in uint16 unit.
-- `32` uint32 width (4 bytes), length is in uint32 unit.
-- `64` uint64 width (8 bytes), length is in uint64 unit.
-
-
-```C++
-CASE(memory compare bytes)
-{
-   unsigned char e[] = {0x8E, 0xC8, 0x8E, 0xC8, 0xF8};
-   unsigned char *a = ...
-   OK(Me(e, 5, 8), a);
-}
-
-CASE(memory compare ints)
-{
-   unsigned int e[] = {1, 2, 3, 4, 5};
-   unsigned char *a = ...
-   OK(Me(e, 5, 32), a);
-}
-```
-
-#### deduce width
-
-If width is not specified, deduce compare width by data type or string format.
-
-|  data type                |  width   |
-|  ----                     |  ----    |
-| [unsigned] char */[]      |  1 bytes |
-| [unsigned] short */[]     |  2 bytes |
-| [unsigned] int */[]       |  4 bytes |
-| [unsigned] long long */[] |  8 bytes |
-
-```C++
-CASE(memory compare)
-{
-   unsigned short e[] = {0x018E, 0x23C8, 0x458E, 670xC8, 0x89F8};
-   unsigned char *a = ...
-   OK(Me(e, 5), a); ==> memcmp(e, a, 5*8)
-}
-```
-
-If data type is not char*, and length is not specified, length is set to array size while data type is native array otherwise failed.
-
-
-If data type is char*, and length is also not specified, deduce compare width by string format.
-
-If buffer only contain '0' '1' ' ', width is considered 1, buffer is parsed to binary, length is set to count of '0' and '1'.
-
-```C++
-CASE(memory compare)
-{
-   const char* e = "1000 1110 1";
-   unsigned char *a = ...
-   OK(Me(e, 5), a); ==> bitcmp("100011101", a, 5)
-}
-```
-
-If data type is char*, and only contain hexidecimal characters, width is considered 8, buffer is parsed to bytes array, length is set to array size.
-
-```C++
-CASE(memory compare)
-{
-   const char* e = "8EC88EC8F8";
-   unsigned char *a = ...
-   OK(Me(e), a); ==> memcmp([0x8E, 0xC8, 0x8E, 0xC8, 0xF8], a, 5*8)
-
-   const char* e = "8Ep88EC8F8";
-   unsigned char *a = ...
-   OK(Me(e), a); ==> memcmp("8Ep88EC8F8", a, 10)
-}
-```
-
-### Array size
-
-OK(expect, actual, [size])
-
-the third argument in OK is used to specified array size which ptr point to,
-for STL containers and native array it is not necessary.
-
-```C++
-CASE(memory compare)
-{
-   int *a;
-   OK(Has(1, 3), a, 3);
-}
-```
-
-```C++
-CASE(memory compare)
-{
-   int a[] = {1, 2, 3};
-   OK(Has(1, 3), a);
-}
-```
-
-### User defined Matcher
-```C++
-MATCHER(InRange, left, right, (a << " not in [" << left << ", " << right << "]"))
-{
-   return left <= a && a <= right;
-}
-```
-Define a new Matcher named 'InRange', with 2 arguments left and right in constructor.
-In matcher body, specific `a` is actual value variable name.
-If matches fail, error message is result of 
-```C++
-std::cout << a << " not in [" << left << ", " << right << "]";
-```
-
-in following case, left is 1, right is 4, a is 5, error message is `"5 not in [1, 4]"`.
-
-```C++
-Case(test user defined matcher)
-{
-   OK(InRange(1, 4), 5);
-}
-```
 
 ## H2STUB alias STUB
 
@@ -1072,6 +811,60 @@ Writing out of allocated memory area[start, start+size], memory overflow/underfl
 Read/Write memory which already freed, will be detected.
 
 
+## Capture C++ Exception
+
+### No thrown excepted
+[`Catch`](../source/h2_unit.hpp)([nothrow]){}: Fail if following block throw any exception.
+```C++
+CASE(no throw)
+{
+   Catch()
+   {
+      throw exception;
+   }
+}
+
+CASE(no throw)
+{
+   Catch(nothrow)
+   {
+      throw exception;
+   }
+}
+```
+
+### Check exception type
+[`Catch`](../source/h2_unit.hpp)(type){}: Fail if following block throw a exception, but type not matches.
+
+```C++
+Case(check throw type)
+{
+   Catch(const char*)
+   {
+      throw 42;
+   }
+}
+```
+
+### Check exception type and value
+[`Catch`](../source/h2_unit.hpp)(type, matcher]){}: Fail if following block throw a exception, but type or value not matches.
+
+```C++
+Case(check throw type a_exception and matcher string equal)
+{
+   Catch(a_exception, a_exception_matcher("hello"))
+   {
+      throw a_exception();
+   }
+}
+```
+
+*    Uncaught Exception 
+     It will be detected and reported as failure.
+
+*    Thrown Exception 
+     Any thrown exception can be detected and reported as failure if `-x` option is set.
+
 ## Global Setup/Cleanup
 
 *    [`GlobalSetup`](../source/core/h2_core.hpp): Invoked before test case
@@ -1159,62 +952,6 @@ CASE(test performance)
    }
 }
 ```
-
-
-## Capture C++ Exception
-
-### No thrown excepted
-[`Catch`](../source/h2_unit.hpp)([nothrow]){}: Fail if following block throw any exception.
-```C++
-CASE(no throw)
-{
-   Catch()
-   {
-      throw exception;
-   }
-}
-
-CASE(no throw)
-{
-   Catch(nothrow)
-   {
-      throw exception;
-   }
-}
-```
-
-### Check exception type
-[`Catch`](../source/h2_unit.hpp)(type){}: Fail if following block throw a exception, but type not matches.
-
-```C++
-Case(check throw type)
-{
-   Catch(const char*)
-   {
-      throw 42;
-   }
-}
-```
-
-### Check exception type and value
-[`Catch`](../source/h2_unit.hpp)(type, matcher]){}: Fail if following block throw a exception, but type or value not matches.
-
-```C++
-Case(check throw type a_exception and matcher string equal)
-{
-   Catch(a_exception, a_exception_matcher("hello"))
-   {
-      throw a_exception();
-   }
-}
-```
-
-*    Uncaught Exception 
-     It will be detected and reported as failure.
-
-*    Thrown Exception 
-     Any thrown exception can be detected and reported as failure if `-x` option is set.
-
 
 ## Coverage
 
