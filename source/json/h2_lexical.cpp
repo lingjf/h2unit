@@ -23,22 +23,15 @@ struct h2_json_lexical {
       for (p = json_string; *p && json_length--; ++p) {
          switch (state) {
             case st_idle:
-               if (::isspace(*p)) {
-                  continue;
-               } else if (strchr("{:}[,]", *p)) {
-                  new_lexis(lexical, p, 1);
-               } else {
+               if (::isspace(*p)) continue;
+               else if (strchr("{:}[,]", *p)) new_lexis(lexical, p, 1);
+               else {
                   pending = p;
                   state = st_normal;
-                  if ('\"' == *p) {
-                     state = st_double_quote;
-                  } else if ('\'' == *p) {
-                     state = st_single_quote;
-                  } else if ('/' == *p) {
-                     state = st_pattern;
-                  } else if ('\\' == *p) {
-                     stash_state = state, state = st_escape;
-                  }
+                  if ('\"' == *p) state = st_double_quote;
+                  else if ('\'' == *p) state = st_single_quote;
+                  else if ('/' == *p) state = st_pattern;
+                  else if ('\\' == *p) stash_state = state, state = st_escape;
                }
                break;
             case st_escape:

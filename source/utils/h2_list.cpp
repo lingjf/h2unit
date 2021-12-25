@@ -56,7 +56,5 @@ h2_inline void h2_list::sort(int (*cmp)(h2_list*, h2_list*))
             break;
       q->add_before(p);
    }
-   while (!sorted.empty()) {
-      push_back(sorted.pop());
-   }
+   while (!sorted.empty()) push_back(sorted.pop());
 }

@@ -36,10 +36,8 @@ struct h2_layout {
          for (size_t j = 0; j < std::max(left_wrap_lines.size(), right_wrap_lines.size()); ++j) {
             h2_line line;
             if (step) {
-               if (j == 0)
-                  line.printf("dark gray", seq_fmt, step * i);
-               else
-                  line.indent(seq_width + 2);
+               if (j == 0) line.printf("dark gray", seq_fmt, step * i);
+               else line.indent(seq_width + 2);
             }
             line += j < left_wrap_lines.size() ? left_wrap_lines[j].brush("reset") : color(left_empty, "reset");
             line.printf("dark gray", j < left_wrap_lines.size() - 1 ? "\\│ " : " │ ");
@@ -56,10 +54,8 @@ struct h2_layout {
       h2_lines lines = line_break(line, width - title.width());
 
       for (size_t i = 0; i < lines.size(); ++i) {
-         if (i == 0)
-            lines[i] = title + lines[i];
-         else
-            lines[i].indent(title.width());
+         if (i == 0) lines[i] = title + lines[i];
+         else lines[i].indent(title.width());
       }
       return lines;
    }
@@ -72,12 +68,9 @@ struct h2_layout {
       size_t left_width = std::max(left_lines.width(), strlen(left_title));
       size_t right_width = std::max(right_lines.width(), strlen(right_title));
 
-      if (left_width < valid_width / 2)
-         right_width = std::min(valid_width - left_width, right_width);
-      else if (right_width < valid_width / 2)
-         left_width = std::min(valid_width - right_width, left_width);
-      else
-         left_width = right_width = valid_width / 2;
+      if (left_width < valid_width / 2) right_width = std::min(valid_width - left_width, right_width);
+      else if (right_width < valid_width / 2) left_width = std::min(valid_width - right_width, left_width);
+      else left_width = right_width = valid_width / 2;
 
       h2_line title = (step ? h2_string(seq_width + 2, ' ') : "") + h2_string(left_title).centre(left_width) + "   " + h2_string(right_title).centre(right_width);
       h2_lines lines = {title.brush("dark gray")};

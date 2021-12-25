@@ -110,10 +110,8 @@ struct h2_socket {
       const char* c = getsockname(socket, (char*)alloca(64), &a);
       ::bind(fd, (struct sockaddr*)&a, sizeof(a));
       I().sockets.push_back({fd, c, tcp->from.c_str()});
-      if (tcp->data.size())
-         I().incoming.push(tcp->x);
-      else
-         delete tcp;
+      if (tcp->data.size()) I().incoming.push(tcp->x);
+      else delete tcp;
 
       return fd;
    }
@@ -126,10 +124,8 @@ struct h2_socket {
          errno = EWOULDBLOCK;
          return -1;
       }
-      if (tcp->data.size())
-         I().incoming.push(tcp->x);
-      else
-         delete tcp;
+      if (tcp->data.size()) I().incoming.push(tcp->x);
+      else delete tcp;
       return 0;
    }
 

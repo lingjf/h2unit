@@ -93,16 +93,11 @@ h2_inline void h2_option::parse(int argc, const char** argv)
          case 'l':
             while ((t = get.extract_string())) {
                const char* r = h2_candidate(t, 4, "suite", "case", "todo", "tags");
-               if (!strcmp("suite", r))
-                  lists |= ListSuite;
-               else if (!strcmp("case", r))
-                  lists |= ListCase;
-               else if (!strcmp("todo", r))
-                  lists |= ListTodo;
-               else if (!strcmp("tags", r))
-                  lists |= ListTag;
-               else
-                  ::printf("-l %s\n", r), exit(-1);
+               if (!strcmp("suite", r)) lists |= ListSuite;
+               else if (!strcmp("case", r)) lists |= ListCase;
+               else if (!strcmp("todo", r)) lists |= ListTodo;
+               else if (!strcmp("tags", r)) lists |= ListTag;
+               else ::printf("-l %s\n", r), exit(-1);
             }
             if (!lists) lists = ListSuite | ListCase | ListTodo;
             break;
@@ -117,16 +112,11 @@ h2_inline void h2_option::parse(int argc, const char** argv)
          case 's':
             while ((t = get.extract_string())) {
                const char* r = h2_candidate(t, 4, "random", "name", "file", "reverse");
-               if (!strcmp("random", r))
-                  shuffles |= ShuffleRandom;
-               else if (!strcmp("name", r))
-                  shuffles |= ShuffleName;
-               else if (!strcmp("file", r))
-                  shuffles |= ShuffleFile;
-               else if (!strcmp("reverse", r))
-                  shuffles |= ShuffleReverse;
-               else
-                  ::printf("-s %s\n", r), exit(-1);
+               if (!strcmp("random", r)) shuffles |= ShuffleRandom;
+               else if (!strcmp("name", r)) shuffles |= ShuffleName;
+               else if (!strcmp("file", r)) shuffles |= ShuffleFile;
+               else if (!strcmp("reverse", r)) shuffles |= ShuffleReverse;
+               else ::printf("-s %s\n", r), exit(-1);
             }
             if (!shuffles) shuffles = ShuffleRandom;
             break;
@@ -134,14 +124,10 @@ h2_inline void h2_option::parse(int argc, const char** argv)
             json_source_quote = "\\\"";
             if ((t = get.extract_string())) {
                const char* r = h2_candidate(t, 5, "\'", "single", "\"", "double", "\\\"");
-               if (!strcmp("\'", r) || !strcmp("single", r))
-                  json_source_quote = "\'";
-               else if (!strcmp("\"", r) || !strcmp("double", r))
-                  json_source_quote = "\"";
-               else if (!strcmp("\\\"", r))
-                  json_source_quote = "\\\"";
-               else
-                  ::printf("-S %s\n", r), exit(-1);
+               if (!strcmp("\'", r) || !strcmp("single", r)) json_source_quote = "\'";
+               else if (!strcmp("\"", r) || !strcmp("double", r)) json_source_quote = "\"";
+               else if (!strcmp("\\\"", r)) json_source_quote = "\\\"";
+               else ::printf("-S %s\n", r), exit(-1);
 
                if (!h2_in(json_source_quote, 3, "\'", "\"", "\\\"")) json_source_quote = "\\\"";
             }

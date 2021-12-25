@@ -175,22 +175,16 @@ struct tinyexpr {
       } else if (ps->type == TOK_OPEN) {
          lexical_token(ps);
          st = list(ps);
-         if (ps->type != TOK_CLOSE) {
-            ps->type = TOK_ERROR;
-         } else {
-            lexical_token(ps);
-         }
+         if (ps->type != TOK_CLOSE) ps->type = TOK_ERROR;
+         else lexical_token(ps);
       } else if (ps->type == TOK_FUNCTION) {
          st = new syntax_tree(ps->function);
          lexical_token(ps);
          if (st->function->parameters == 0) {
             if (ps->type == TOK_OPEN) {
                lexical_token(ps);
-               if (ps->type != TOK_CLOSE) {
-                  ps->type = TOK_ERROR;
-               } else {
-                  lexical_token(ps);
-               }
+               if (ps->type != TOK_CLOSE) ps->type = TOK_ERROR;
+               else lexical_token(ps);
             }
          } else if (st->function->parameters == 1) {
             st->parameters[0] = power(ps);
@@ -204,11 +198,8 @@ struct tinyexpr {
                   st->parameters[i++] = expr(ps);
                   if (ps->type != TOK_COMMA) break;
                }
-               if (ps->type != TOK_CLOSE || i != st->function->parameters) {
-                  ps->type = TOK_ERROR;
-               } else {
-                  lexical_token(ps);
-               }
+               if (ps->type != TOK_CLOSE || i != st->function->parameters) ps->type = TOK_ERROR;
+               else lexical_token(ps);
             }
          }
       } else {

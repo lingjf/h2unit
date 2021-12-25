@@ -65,6 +65,16 @@ SUITE(backtrace extract)
       OK(0x131, offset);
    }
 
+   Case("./ci/a.out(_ZN2h26runner7executeEv+0x131)[0x55aa6bb840ef]")
+   {
+      const char* p = "./ci/a.out(_ZN2h26runner7executeEv+0x131)[0x55aa6bb840ef]";
+      bool ret = h2::backtrace_extract(p, mangled, &offset);
+
+      OK(ret);
+      OK("_ZN2h26runner7executeEv", mangled);
+      OK(0x131, offset);
+   }
+
    Case("./a.out(+0xb1887)[0x560c5ed06887]")
    {
       const char* p = "./a.out(+0xb1887)[0x560c5ed06887]";

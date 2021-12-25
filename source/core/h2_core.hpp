@@ -51,22 +51,18 @@
 
 #define H2CASES(case_prefix, ...) __H2CASES1(H2PP_UNIQUE(case_test_C), case_prefix, __VA_ARGS__)
 #define __H2CASES1(case_test, case_prefix, ...)                                                           \
-   template <typename T>                                                                                  \
-   static void case_test(T x);                                                                            \
+   template <typename T> static void case_test(T x);                                                      \
    H2PP_FOREACH(, __H2CASES_Callback, (case_test, case_prefix), H2PP_REMOVE_PARENTHESES_IF(__VA_ARGS__)); \
-   template <typename T>                                                                                  \
-   static void case_test(T x)
+   template <typename T> static void case_test(T x)
 #define __H2CASES2(case_test, case_prefix, i, x) \
    H2CASE(case_prefix i. x) { case_test(x); }
 #define __H2CASES_Callback(Pack, i, x) H2PP_PROXY(__H2CASES2, (H2PP_REMOVE_PARENTHESES(Pack), i, x))
 
 #define H2CASESS(case_prefix, ...) __H2CASESS1(H2PP_UNIQUE(case_test_C), case_prefix, __VA_ARGS__)
 #define __H2CASESS1(case_test, case_prefix, ...)                                \
-   template <typename Tx, typename Ty>                                          \
-   static void case_test(Tx x, Ty y);                                           \
+   template <typename Tx, typename Ty> static void case_test(Tx x, Ty y);       \
    H2PP_FULLMESH(, __H2CASESS_Callback, (case_test, case_prefix), __VA_ARGS__); \
-   template <typename Tx, typename Ty>                                          \
-   static void case_test(Tx x, Ty y)
+   template <typename Tx, typename Ty> static void case_test(Tx x, Ty y)
 #define __H2CASESS2(case_test, case_prefix, i, j, x, y) \
    H2CASE(case_prefix i.j. x, y) { case_test(x, y); }
 #define __H2CASESS_Callback(Pack, i, j, x, y) H2PP_PROXY(__H2CASESS2, (H2PP_REMOVE_PARENTHESES(Pack), i, j, x, y))
@@ -111,22 +107,18 @@
 
 #define H2CASES_T(case_prefix, ...) __H2CASES_T1(H2PP_UNIQUE(case_test_C), case_prefix, __VA_ARGS__)
 #define __H2CASES_T1(case_test, case_prefix, ...)                                                           \
-   template <typename x>                                                                                    \
-   static void case_test();                                                                                 \
+   template <typename x> static void case_test();                                                           \
    H2PP_FOREACH(, __H2CASES_T_Callback, (case_test, case_prefix), H2PP_REMOVE_PARENTHESES_IF(__VA_ARGS__)); \
-   template <typename x>                                                                                    \
-   static void case_test()
+   template <typename x> static void case_test()
 #define __H2CASES_T2(case_test, case_prefix, i, x) \
    H2CASE(case_prefix i. x) { case_test<x>(); }
 #define __H2CASES_T_Callback(Pack, i, x) H2PP_PROXY(__H2CASES_T2, (H2PP_REMOVE_PARENTHESES(Pack), i, x))
 
 #define H2CASESS_T(case_prefix, ...) __H2CASESS_T1(H2PP_UNIQUE(case_test_C), case_prefix, __VA_ARGS__)
 #define __H2CASESS_T1(case_test, case_prefix, ...)                                \
-   template <typename x, typename y>                                              \
-   static void case_test();                                                       \
+   template <typename x, typename y> static void case_test();                     \
    H2PP_FULLMESH(, __H2CASESS_T_Callback, (case_test, case_prefix), __VA_ARGS__); \
-   template <typename x, typename y>                                              \
-   static void case_test()
+   template <typename x, typename y> static void case_test()
 #define __H2CASESS_T2(case_test, case_prefix, i, j, x, y) \
    H2CASE(case_prefix i.j. x, y) { case_test<x, y>(); }
 #define __H2CASESS_T_Callback(Pack, i, j, x, y) H2PP_PROXY(__H2CASESS_T2, (H2PP_REMOVE_PARENTHESES(Pack), i, j, x, y))
@@ -143,33 +135,25 @@
          for (auto y = H2_YAn(__VA_ARGS__); false;)
 
 #define H2TODOS(case_prefix, ...) __H2TODOS(H2PP_UNIQUE(case_test_C), case_prefix, __VA_ARGS__)
-#define __H2TODOS(case_test, case_prefix, ...) \
-   template <typename T>                       \
-   static void case_test(T x);                 \
-   H2TODO(case_prefix, __VA_ARGS__) {}         \
-   template <typename T>                       \
-   static void case_test(T x)
+#define __H2TODOS(case_test, case_prefix, ...)       \
+   template <typename T> static void case_test(T x); \
+   H2TODO(case_prefix, __VA_ARGS__) {}               \
+   template <typename T> static void case_test(T x)
 
 #define H2TODOSS(case_prefix, ...) __H2TODOSS(H2PP_UNIQUE(case_test_C), case_prefix, __VA_ARGS__)
-#define __H2TODOSS(case_test, case_prefix, ...) \
-   template <typename Tx, typename Ty>          \
-   static void case_test(Tx x, Ty y);           \
-   H2TODO(case_prefix, __VA_ARGS__) {}          \
-   template <typename Tx, typename Ty>          \
-   static void case_test(Tx x, Ty y)
+#define __H2TODOSS(case_test, case_prefix, ...)                           \
+   template <typename Tx, typename Ty> static void case_test(Tx x, Ty y); \
+   H2TODO(case_prefix, __VA_ARGS__) {}                                    \
+   template <typename Tx, typename Ty> static void case_test(Tx x, Ty y)
 
 #define H2TODOS_T(case_prefix, ...) __H2TODOS_T(H2PP_UNIQUE(case_test_C), case_prefix, __VA_ARGS__)
-#define __H2TODOS_T(case_test, case_prefix, ...) \
-   template <typename x>                         \
-   static void case_test();                      \
-   H2TODO(case_prefix, __VA_ARGS__) {}           \
-   template <typename x>                         \
-   static void case_test()
+#define __H2TODOS_T(case_test, case_prefix, ...)  \
+   template <typename x> static void case_test(); \
+   H2TODO(case_prefix, __VA_ARGS__) {}            \
+   template <typename x> static void case_test()
 
 #define H2TODOSS_T(case_prefix, ...) __H2TODOSS_T(H2PP_UNIQUE(case_test_C), case_prefix, __VA_ARGS__)
-#define __H2TODOSS_T(case_test, case_prefix, ...) \
-   template <typename x, typename y>              \
-   static void case_test();                       \
-   H2TODO(case_prefix, __VA_ARGS__) {}            \
-   template <typename x, typename y>              \
-   static void case_test()
+#define __H2TODOSS_T(case_test, case_prefix, ...)             \
+   template <typename x, typename y> static void case_test(); \
+   H2TODO(case_prefix, __VA_ARGS__) {}                        \
+   template <typename x, typename y> static void case_test()

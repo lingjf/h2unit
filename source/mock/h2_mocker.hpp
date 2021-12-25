@@ -21,8 +21,7 @@ struct h2_mocker_base : h2_libc {
 
 namespace {
 
-template <int Counter, typename ClassType, typename Signature>
-class h2_mocker;
+template <int Counter, typename ClassType, typename Signature> class h2_mocker;
 
 template <int Counter, typename ClassType, typename ReturnType, typename... ArgumentTypes>
 class h2_mocker<Counter, ClassType, ReturnType(ArgumentTypes...)> : h2_mocker_base {
@@ -229,5 +228,4 @@ class h2_mocker<Counter, ClassType, ReturnType(ArgumentTypes...)> : h2_mocker_ba
          if (!a) a.mfp = f;
    }
 };
-
 }

@@ -11,14 +11,10 @@ struct h2_block_attributes {
          return hex2bytes(p + 2, bytes);
       } else {
          unsigned long long v = strtoull(p, nullptr, 10);
-         if (v <= 0xFFULL)
-            return *((unsigned char*)bytes) = (unsigned char)v, 1;
-         else if (v <= 0xFFFFULL)
-            return *((unsigned short*)bytes) = (unsigned short)v, 2;
-         else if (v <= 0xFFFFFFFFULL)
-            return *((unsigned int*)bytes) = (unsigned int)v, 4;
-         else
-            return *((unsigned long long*)bytes) = (unsigned long long)v, 8;
+         if (v <= 0xFFULL) return *((unsigned char*)bytes) = (unsigned char)v, 1;
+         else if (v <= 0xFFFFULL) return *((unsigned short*)bytes) = (unsigned short)v, 2;
+         else if (v <= 0xFFFFFFFFULL) return *((unsigned int*)bytes) = (unsigned int)v, 4;
+         else return *((unsigned long long*)bytes) = (unsigned long long)v, 8;
       }
    }
 

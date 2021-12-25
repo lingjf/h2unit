@@ -57,20 +57,14 @@ struct h2_piece : h2_libc {
 #if defined _WIN32
       DWORD old_permission, new_permission;
       new_permission = PAGE_NOACCESS;
-      if (permission & readable)
-         new_permission = PAGE_READONLY;
-      if (permission & writable)
-         new_permission = PAGE_READWRITE;
-      if (!VirtualProtect(forbidden_page, forbidden_size, new_permission, &old_permission))
-         h2_console::prints("yellow", "VirtualProtect failed %lu\n", GetLastError());
+      if (permission & readable) new_permission = PAGE_READONLY;
+      if (permission & writable) new_permission = PAGE_READWRITE;
+      if (!VirtualProtect(forbidden_page, forbidden_size, new_permission, &old_permission)) h2_console::prints("yellow", "VirtualProtect failed %lu\n", GetLastError());
 #else
       int new_permission = PROT_NONE;
-      if (permission & readable)
-         new_permission = PROT_READ;
-      if (permission & writable)
-         new_permission = PROT_READ | PROT_WRITE;
-      if (::mprotect(forbidden_page, forbidden_size, new_permission) != 0)
-         h2_console::prints("yellow", "mprotect failed %s\n", strerror(errno));
+      if (permission & readable) new_permission = PROT_READ;
+      if (permission & writable) new_permission = PROT_READ | PROT_WRITE;
+      if (::mprotect(forbidden_page, forbidden_size, new_permission) != 0) h2_console::prints("yellow", "mprotect failed %s\n", strerror(errno));
 #endif
    }
 
@@ -144,10 +138,8 @@ struct h2_piece : h2_libc {
 
    h2_fail* violate_fail()
    {
-      if (violate_after_free)
-         return h2_fail::new_use_after_free(user_ptr, violate_ptr, violate_action, bt_allocate, bt_release, violate_backtrace);
-      else
-         return h2_fail::new_overflow(user_ptr, user_size, violate_ptr, violate_action, h2_vector<unsigned char>(), bt_allocate, violate_backtrace);
+      if (violate_after_free) return h2_fail::new_use_after_free(user_ptr, violate_ptr, violate_action, bt_allocate, bt_release, violate_backtrace);
+      else return h2_fail::new_overflow(user_ptr, user_size, violate_ptr, violate_action, h2_vector<unsigned char>(), bt_allocate, violate_backtrace);
    }
 
    h2_fail* check_asymmetric_free(const char* who_release)

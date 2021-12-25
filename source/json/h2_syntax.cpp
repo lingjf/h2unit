@@ -11,10 +11,8 @@ struct h2_json_syntax {
 
    h2_string& filter_string(h2_string& s) const
    {
-      if (s.enclosed('\"'))
-         s = s.unenclose('\"');
-      else if (s.enclosed('\''))
-         s = s.unenclose('\'');
+      if (s.enclosed('\"')) s = s.unenclose('\"');
+      else if (s.enclosed('\'')) s = s.unenclose('\'');
       s = s.unescape();
       return s;
    }
@@ -67,8 +65,7 @@ struct h2_json_syntax {
    bool parse_pattern(h2_json_node& node)
    {
       node.value_string = lexical[i++];
-      if (node.value_string.enclosed('/'))
-         node.value_string = node.value_string.unenclose('/');
+      if (node.value_string.enclosed('/')) node.value_string = node.value_string.unenclose('/');
       node.type = h2_json_node::t_pattern;
       return true;
    }
@@ -95,10 +92,8 @@ struct h2_json_syntax {
          h2_json_node* new_node = new h2_json_node(n++);
          node.children.push_back(new_node->x);
          if (!parse_value(*new_node)) return false;
-         if (i < lexical.size() && lexical[i].equals(","))
-            i++;
-         else
-            break;
+         if (i < lexical.size() && lexical[i].equals(",")) i++;
+         else break;
       }
 
       if (!desire("]")) return false;
@@ -116,10 +111,8 @@ struct h2_json_syntax {
          if (!parse_key(*new_node)) return false;
          if (!desire(":")) return false;
          if (!parse_value(*new_node)) return false;
-         if (i < lexical.size() && lexical[i].equals(","))
-            ++i;
-         else
-            break;
+         if (i < lexical.size() && lexical[i].equals(",")) ++i;
+         else break;
       }
 
       if (!desire("}")) return false;

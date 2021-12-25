@@ -9,7 +9,7 @@ if sys.version_info > (3, 2):
     from datetime import timezone, timedelta
 
 
-h2unit_version = '5.16'
+h2unit_version = '5.17'
 
 
 build_dir = os.path.dirname(os.path.realpath(__file__))

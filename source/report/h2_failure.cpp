@@ -266,8 +266,7 @@ struct h2_fail_memcmp : h2_fail_unexpect {
       }
    }
 
-   template <typename T>
-   void print_ints(h2_lines& e_lines, h2_lines& a_lines, size_t bytes_per_row)
+   template <typename T> void print_ints(h2_lines& e_lines, h2_lines& a_lines, size_t bytes_per_row)
    {
       char fmt[32];
       sprintf(fmt, "%%s%%0%dX", (int)sizeof(T) * 2);

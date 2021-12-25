@@ -33,12 +33,6 @@ CASE(ss)
    OK("", h2::ss(nullptr));
 }
 
-CASE(sn)
-{
-   OK(42, h2::sn(42));
-   OK(0, h2::sn());
-}
-
 SUITE(blank)
 {
    Case(nullptr)

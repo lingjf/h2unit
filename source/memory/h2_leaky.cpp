@@ -23,8 +23,7 @@ struct h2_leaky {
       h2_fail* check(const char* where, const char* filine)
       {
          size_t s = 0;
-         for (auto& p : sizes)
-            s += p.first * p.second;
+         for (auto& p : sizes) s += p.first * p.second;
          return h2_fail::new_memory_leak(ptr, s, sizes, bt, where, filine);
       }
    };

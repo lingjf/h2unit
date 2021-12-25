@@ -5,8 +5,7 @@ struct h2_return : h2_libc {
    explicit h2_return(ReturnType _value) : value(_value){};
 };
 
-template <typename ClassType, typename Signature>
-struct h2_routine;
+template <typename ClassType, typename Signature> struct h2_routine;
 
 template <typename ClassType, typename ReturnType, typename... ArgumentTypes>
 struct h2_routine<ClassType, ReturnType(ArgumentTypes...)> {
@@ -21,12 +20,9 @@ struct h2_routine<ClassType, ReturnType(ArgumentTypes...)> {
 
    ReturnType operator()(ClassType* This, ArgumentTypes... arguments)
    {
-      if (mfp)
-         return mfp(This, arguments...);
-      else if (fp)
-         return fp(arguments...);
-      else if (ret)
-         return ret->value;
+      if (mfp) return mfp(This, arguments...);
+      else if (fp) return fp(arguments...);
+      else if (ret) return ret->value;
       /* never reach! make compiler happy. return uninitialized value is undefined behaviour, clang illegal instruction. */
       return ret->value;
    }
@@ -53,10 +49,8 @@ struct h2_routine<ClassType, void(ArgumentTypes...)> {
 
    void operator()(ClassType* This, ArgumentTypes... arguments)
    {
-      if (mfp)
-         mfp(This, arguments...);
-      else if (fp)
-         fp(arguments...);
+      if (mfp) mfp(This, arguments...);
+      else if (fp) fp(arguments...);
    }
    operator bool() const
    {

@@ -141,14 +141,10 @@ h2_inline int h2_runner::main(int argc, const char** argv)
          for (int i = 0; global_suite_setups[i]; ++i) global_suite_setups[i]();
          s->setup();
          h2_list_for_each_entry (c, s->cases, h2_case, x) {
-            if ((0 < O.break_after_fails && O.break_after_fails <= stats.failed) || (O.only_last_failed && !c->last_failed))
-               c->ignored = true;
-            if (c->ignored)
-               stats.ignored++, s->stats.ignored++;
-            else if (c->filtered)
-               stats.filtered++, s->stats.filtered++;
-            else if (c->todo)
-               stats.todo++, s->stats.todo++;
+            if ((0 < O.break_after_fails && O.break_after_fails <= stats.failed) || (O.only_last_failed && !c->last_failed)) c->ignored = true;
+            if (c->ignored) stats.ignored++, s->stats.ignored++;
+            else if (c->filtered) stats.filtered++, s->stats.filtered++;
+            else if (c->todo) stats.todo++, s->stats.todo++;
 
             current_case = c;
             h2_report::I().on_case_start(s, c);
@@ -166,10 +162,8 @@ h2_inline int h2_runner::main(int argc, const char** argv)
          h2_report::I().on_suite_endup(s);
          s->clear();
       }
-      if (stats.failed == 0)
-         drop_last_order();
-      else if (lasts == 0)
-         save_last_order(suites);
+      if (stats.failed == 0) drop_last_order();
+      else if (lasts == 0) save_last_order(suites);
    }
    stats.timecost = h2_now() - stats.timecost;
    h2_report::I().on_runner_endup(this);
@@ -184,33 +178,24 @@ h2_inline int h2_runner::main(int argc, const char** argv)
 h2_inline void h2_runner::stub(void* srcfp, void* dstfp, const char* srcfn, const char* filine)
 {
    if (!srcfp || !dstfp) return;
-   if (h2_runner::I().current_case)
-      h2_stubs::add(h2_runner::I().current_case->stubs, srcfp, dstfp, srcfn, filine);
-   else if (h2_runner::I().current_suite)
-      h2_stubs::add(h2_runner::I().current_suite->stubs, srcfp, dstfp, srcfn, filine);
-   else
-      h2_stubs::add(h2_runner::I().stubs, srcfp, dstfp, srcfn, filine);
+   if (h2_runner::I().current_case) h2_stubs::add(h2_runner::I().current_case->stubs, srcfp, dstfp, srcfn, filine);
+   else if (h2_runner::I().current_suite) h2_stubs::add(h2_runner::I().current_suite->stubs, srcfp, dstfp, srcfn, filine);
+   else h2_stubs::add(h2_runner::I().stubs, srcfp, dstfp, srcfn, filine);
 }
 
 h2_inline void h2_runner::unstub(void* srcfp)
 {
    if (!srcfp) return;
-   if (h2_runner::I().current_case)
-      h2_stubs::clear(h2_runner::I().current_case->stubs, srcfp);
-   else if (h2_runner::I().current_suite)
-      h2_stubs::clear(h2_runner::I().current_suite->stubs, srcfp);
-   else
-      h2_stubs::clear(h2_runner::I().stubs, srcfp);
+   if (h2_runner::I().current_case) h2_stubs::clear(h2_runner::I().current_case->stubs, srcfp);
+   else if (h2_runner::I().current_suite) h2_stubs::clear(h2_runner::I().current_suite->stubs, srcfp);
+   else h2_stubs::clear(h2_runner::I().stubs, srcfp);
 }
 
 h2_inline void h2_runner::mock(void* mocker)
 {
-   if (h2_runner::I().current_case)
-      h2_mocks::add(h2_runner::I().current_case->mocks, mocker);
-   else if (h2_runner::I().current_suite)
-      h2_mocks::add(h2_runner::I().current_suite->mocks, mocker);
-   else
-      h2_mocks::add(h2_runner::I().mocks, mocker);
+   if (h2_runner::I().current_case) h2_mocks::add(h2_runner::I().current_case->mocks, mocker);
+   else if (h2_runner::I().current_suite) h2_mocks::add(h2_runner::I().current_suite->mocks, mocker);
+   else h2_mocks::add(h2_runner::I().mocks, mocker);
 }
 
 h2_inline void h2_runner::failing(h2_fail* fail)

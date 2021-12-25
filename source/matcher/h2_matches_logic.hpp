@@ -186,8 +186,7 @@ struct h2_noneof_matches : h2_matches {
       h2_fail* fails = nullptr;
       for (size_t i = 0; i < matchers.size(); ++i) {
          h2_fail* fail = matchers[i].matches(a, c.update_negative(false));
-         if (fail)
-            delete fail;
+         if (fail) delete fail;
          else {
             fail = h2_fail::new_normal("should not match " + matchers[i].expection(c).brush("green"));
             fail->seqno = (int)i;
@@ -195,7 +194,7 @@ struct h2_noneof_matches : h2_matches {
          }
       }
       if (c.fit(!fails)) {
-         delete fails;
+         if (fails) delete fails;
          return nullptr;
       }
       h2_fail* fail = h2_fail::new_unexpect(expection(c), h2_stringify(a, true));

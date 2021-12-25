@@ -144,8 +144,7 @@ struct h2_has1_matches : h2_matches {
             h2_fail* fail = h2_matcher_cast<typename std::decay<decltype(ia.first)>::type>(m).matches(ia.first, c.clear_size().update_negative(false));
             if (!fail) {
                if (++found >= c.times) break;
-            } else
-               delete fail;
+            } else delete fail;
          }
       if (c.fit(found >= c.times)) return nullptr;
       return h2_fail::new_unexpect(expection(c), h2_stringify(a, true));
@@ -160,8 +159,7 @@ struct h2_has1_matches : h2_matches {
             h2_fail* fail = h2_matcher_cast<typename A::value_type>(m).matches(ia, c.clear_size().update_negative(false));
             if (!fail) {
                if (++found >= c.times) break;
-            } else
-               delete fail;
+            } else delete fail;
          }
       if (c.fit(found >= c.times)) return nullptr;
       return h2_fail::new_unexpect(expection(c), h2_stringify(a, true));

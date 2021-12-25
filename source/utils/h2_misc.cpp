@@ -159,13 +159,13 @@ static inline const char* h2_candidate(const char* a, int n, ...)
    return ss;
 }
 
-#define h2_sprintvf(str, fmt, ap)            \
-   va_list bp;                               \
-   va_copy(bp, ap);                          \
-   int len = vsnprintf(nullptr, 0, fmt, bp); \
-   str = (char*)alloca(len + 1);             \
-   va_end(bp);                               \
-   len = vsnprintf(str, len + 1, fmt, ap);
+#define h2_sprintvf(str, fmt, ap)             \
+   va_list bp;                                \
+   va_copy(bp, ap);                           \
+   int _len = vsnprintf(nullptr, 0, fmt, bp); \
+   str = (char*)alloca(_len + 1);             \
+   va_end(bp);                                \
+   _len = vsnprintf(str, _len + 1, fmt, ap);
 
 #define h2_sprintf(str, fmt)  \
    va_list ap;                \

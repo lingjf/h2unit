@@ -106,10 +106,8 @@ struct h2_report_list : h2_report_interface {
 
       if (type) {
          h2_line line;
-         if (O.lists & ListSuite)
-            line.printf("dark gray", " %s/%d-%d. ", type, suite_cases + suite_todos, unfiltered_cases + unfiltered_todos);
-         else
-            line.printf("dark gray", " %s-%d. ", type, unfiltered_cases + unfiltered_todos);
+         if (O.lists & ListSuite) line.printf("dark gray", " %s/%d-%d. ", type, suite_cases + suite_todos, unfiltered_cases + unfiltered_todos);
+         else line.printf("dark gray", " %s-%d. ", type, unfiltered_cases + unfiltered_todos);
 
          h2_console::printl(line + color(c->name, "cyan") + " " + gray(h2_basefile(c->filine)) + format_tags(c->tags));
       }

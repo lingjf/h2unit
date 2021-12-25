@@ -82,10 +82,8 @@ struct h2_resolver {
 
       for (size_t i = 0, a = 0, c = 0; i < domain->resolves.size(); ++i) {
          struct sockaddr_in* b = &sockaddrs[i];
-         if (inet_addr(domain->resolves[i].c_str(), b))
-            h_addr_list[a++] = (char*)&b->sin_addr;
-         else
-            h_aliases[c++] = (char*)domain->resolves[i].c_str();
+         if (inet_addr(domain->resolves[i].c_str(), b)) h_addr_list[a++] = (char*)&b->sin_addr;
+         else h_aliases[c++] = (char*)domain->resolves[i].c_str();
       }
       return &h;
    }

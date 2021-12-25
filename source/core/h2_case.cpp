@@ -27,10 +27,8 @@ h2_inline void h2_case::failing(h2_fail* fail, bool defer, bool append)
 {
    if (fail) {
       failed = true;
-      if (fails && !append)
-         delete fail;
-      else
-         h2_fail::append_subling(fails, fail);
+      if (fails && !append) delete fail;
+      else h2_fail::append_subling(fails, fail);
       if (!defer) ::longjmp(fail_hole, 1);
    }
 }

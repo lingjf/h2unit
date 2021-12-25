@@ -49,13 +49,12 @@ h2_inline bool h2_line::enclosed(char left, char right) const
 {
    if (right == '\0') right = left;
    bool f = false, ff = false, b = false;
-   for (auto& word : *this) {
+   for (auto& word : *this)
       if (!h2_color::isctrl(word.c_str())) {
          if (!ff) f = word.front() == left;
          ff = true;
          b = word.back() == right;
       }
-   }
    return f && b;
 }
 
@@ -80,13 +79,9 @@ h2_inline h2_line h2_line::gray_quote() const
       }
       h2_string h, m, t;
       for (auto& c : word.disperse()) {
-         if (i == 0) {
-            h.append(c.c_str());
-         } else if (i == w - 1) {
-            t.append(c.c_str());
-         } else {
-            m.append(c.c_str());
-         }
+         if (i == 0) h.append(c.c_str());
+         else if (i == w - 1) t.append(c.c_str());
+         else m.append(c.c_str());
          i += c.width();
       }
       if (h.size()) line += delta(h, "dark gray");
@@ -100,12 +95,9 @@ h2_inline h2_line h2_line::gray_quote() const
 h2_inline h2_line h2_line::abbreviate(size_t width, size_t tail) const
 {
    h2_line line1, line2;
-   for (auto& word : *this) {
-      if (h2_color::isctrl(word.c_str()))
-         line1.push_back(word);
-      else
-         line1.push_back(word.escape());
-   }
+   for (auto& word : *this)
+      if (h2_color::isctrl(word.c_str())) line1.push_back(word);
+      else line1.push_back(word.escape());
 
    size_t i = 0, line1_width = line1.width();
    if (line1_width <= width) return line1;
@@ -117,13 +109,9 @@ h2_inline h2_line h2_line::abbreviate(size_t width, size_t tail) const
       }
       h2_string h, m, t;
       for (auto& c : word.disperse()) {
-         if (i < width - 3 - tail) {
-            h.append(c.c_str());
-         } else if (i == width - 3 - tail) {
-            m = "...";
-         } else if (line1_width - tail <= i) {
-            t.append(c.c_str());
-         }
+         if (i < width - 3 - tail) h.append(c.c_str());
+         else if (i == width - 3 - tail) m = "...";
+         else if (line1_width - tail <= i) t.append(c.c_str());
          i += c.width();
       }
       if (h.size()) line2.push_back(h);

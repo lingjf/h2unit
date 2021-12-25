@@ -5,20 +5,11 @@ struct h2_once {
    operator bool() { return !c++; }
 };
 
-#define h2_array_append(Array, a)                                      \
-   for (size_t i = 0; i < sizeof(Array) / sizeof(Array)[0] - 1; ++i) { \
-      if (!(Array)[i]) {                                               \
-         (Array)[i] = (a);                                             \
-         break;                                                        \
-      }                                                                \
-   }
-
 // #define M(...) func(#__VA_ARGS__, other)
 // Unix M() ==> func("", other) stringify empty __VA_ARGS__ to "" string
 // Windows M() ==> func(, other) stringify empty __VA_ARGS__ to empty
 // #define M(...) func(ss(#__VA_ARGS__), other)
 static inline const char* ss(const char* a = "") { return a ? a : ""; }
-static inline const size_t sn(const size_t a = 0) { return a; }
 static inline const char* comma_if(bool a, const char* t = ", ", const char* f = "") { return a ? t : f; }
 
 #define H2Foreach(Callback_x, ...) H2PP_FOREACH(, _H2ForeachMacro, (Callback_x), H2PP_REMOVE_PARENTHESES_IF(__VA_ARGS__))
@@ -29,3 +20,4 @@ static inline const char* comma_if(bool a, const char* t = ", ", const char* f =
 
 /* clang-format off */
 #define h2_singleton(Class) static Class& I() { static Class i; return i; }
+#define h2_array_append(Array, a) for (size_t i = 0; i < sizeof(Array) / sizeof(Array)[0] - 1; ++i) if (!(Array)[i]) { (Array)[i] = (a); break; }

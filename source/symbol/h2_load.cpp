@@ -12,8 +12,7 @@ static inline long long get_load_vtable_offset()
    long long absolute_vtable = (long long)*(void***)&t;
    sprintf(vtable_symbol, "_ZTV%s", typeid(h2_vtable_test).name());  // mangled for "vtable for h2::h2_vtable_test"
    long long relative_vtable = (long long)h2_nm::get_mangle(vtable_symbol);
-   if (relative_vtable == 0)
-      h2_console::prints("yellow", "\nDon't find vtable for h2::h2_vtable_test %s\n", vtable_symbol);
+   if (relative_vtable == 0) h2_console::prints("yellow", "\nDon't find vtable for h2::h2_vtable_test %s\n", vtable_symbol);
    return absolute_vtable - relative_vtable;
 }
 

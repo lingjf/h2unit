@@ -2,11 +2,25 @@
 #include "test_cplusplus.hpp"
 #include "test_types.hpp"
 
-CASE(nth_type)
+SUITE(type)
 {
-   OK((std::is_same<char, typename h2::h2_nth_type<0, char, short, int>::type>::value));
-   OK((std::is_same<short, typename h2::h2_nth_type<1, char, short, int>::type>::value));
-   OK((std::is_same<int, typename h2::h2_nth_type<2, char, short, int>::type>::value));
+   Case(always true)
+   {
+      bool a1 = h2::h2_true_type<int>::value;
+      OK(a1);
+      bool a2 = h2::h2_true_type<int, double>::value;
+      OK(a2);
+      bool a3 = h2::h2_true_type<int, double, const char*>::value;
+      OK(a3);
+   }
+
+   Case(h2_type_identity)
+   {
+      OK((std::is_same<int, typename h2::h2_type_identity<int>::type>::value));
+      OK((std::is_same<const char*, typename h2::h2_type_identity<const char*>::type>::value));
+      OK((std::is_same<std::string, typename h2::h2_type_identity<std::string>::type>::value));
+      OK((std::is_same<std::vector<int>, typename h2::h2_type_identity<std::vector<int>>::type>::value));
+   }
 }
 
 SUITE(is smart pointer)
@@ -31,6 +45,65 @@ SUITE(is smart pointer)
       a1 = std::make_shared<int>(42);
 
       OK((h2::h2_is_smart_ptr<decltype(a1)>::value));
+   }
+}
+
+SUITE(decay)
+{
+   char t[1024];
+
+   Case(enum default)
+   {
+      enum A { A1 = -1,
+               A2,
+               A3 };
+
+      OK("int", h2::h2_cxa::demangle(typeid(typename h2::h2_decay<A>::type).name(), t));
+      OK("int", h2::h2_cxa::demangle(typeid(typename h2::h2_decay<decltype(A1)>::type).name(), t));
+      OK((std::is_same<int, typename h2::h2_decay<A>::type>::value));
+      OK((std::is_same<int, typename h2::h2_decay<decltype(A1)>::type>::value));
+   }
+
+   Case(enum int)
+   {
+      enum A : int { A1,
+                     A2,
+                     A3 };
+
+      OK("int", h2::h2_cxa::demangle(typeid(typename h2::h2_decay<A>::type).name(), t));
+      OK("int", h2::h2_cxa::demangle(typeid(typename h2::h2_decay<decltype(A1)>::type).name(), t));
+      OK((std::is_same<int, typename h2::h2_decay<A>::type>::value));
+      OK((std::is_same<int, typename h2::h2_decay<decltype(A1)>::type>::value));
+   }
+
+   Case(enum unsigned short)
+   {
+      enum A : unsigned short { A1,
+                                A2,
+                                A3 };
+
+      OK("unsigned short", h2::h2_cxa::demangle(typeid(typename h2::h2_decay<A>::type).name(), t));
+      OK("unsigned short", h2::h2_cxa::demangle(typeid(typename h2::h2_decay<decltype(A1)>::type).name(), t));
+      OK((std::is_same<unsigned short, typename h2::h2_decay<A>::type>::value));
+      OK((std::is_same<unsigned short, typename h2::h2_decay<decltype(A1)>::type>::value));
+   }
+}
+
+SUITE(nth_type)
+{
+   Case(1st)
+   {
+      OK((std::is_same<char, typename h2::h2_nth_type<0, char, short, int>::type>::value));
+   }
+
+   Case(2nd)
+   {
+      OK((std::is_same<short, typename h2::h2_nth_type<1, char, short, int>::type>::value));
+   }
+
+   Case(3rd)
+   {
+      OK((std::is_same<int, typename h2::h2_nth_type<2, char, short, int>::type>::value));
    }
 }
 
@@ -476,15 +549,9 @@ SUITE(is_container_adaptor)
 }
 
 template <typename T, typename = void>
-struct h2_is_sizable : std::false_type {
-};
-
+struct h2_is_sizable : std::false_type {};
 template <typename T>
-struct h2_is_sizable<T,
-                     typename std::conditional<false,
-                                               h2::h2_valid_t<decltype(std::declval<T>().size())>,
-                                               void>::type> : public std::true_type {
-};
+struct h2_is_sizable<T, typename std::enable_if<h2::h2_true_type<decltype(std::declval<T>().size())>::value>::type> : public std::true_type {};
 
 SUITE(sizable)
 {

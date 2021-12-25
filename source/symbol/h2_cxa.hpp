@@ -8,10 +8,8 @@ struct h2_cxa {
       strcpy(name, "");
       if (std::is_const<U>::value) strcat(name, "const ");
       strcat(name, demangle(typeid(U).name()));
-      if (std::is_lvalue_reference<T>::value)
-         strcat(name, "&");
-      else if (std::is_rvalue_reference<T>::value)
-         strcat(name, "&&");
+      if (std::is_lvalue_reference<T>::value) strcat(name, "&");
+      else if (std::is_rvalue_reference<T>::value) strcat(name, "&&");
       return name;
    }
 };

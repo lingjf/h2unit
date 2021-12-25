@@ -11,16 +11,12 @@ struct h2_report_console : h2_report_interface {
    {
       h2_line title;
       title.printf("dark gray", "┊ ");
-      if (strlen(case_name))
-         title.printf("", "%s ", case_name);
-      else
-         title.printf("dark gray", "case ");
+      if (strlen(case_name)) title.printf("", "%s ", case_name);
+      else title.printf("dark gray", "case ");
       if (suite_name) {
          title.printf("dark gray", "┊ ");
-         if (strlen(suite_name))
-            title.printf("", "%s ", suite_name);
-         else
-            title.printf("dark gray", "suite ");
+         if (strlen(suite_name)) title.printf("", "%s ", suite_name);
+         else title.printf("dark gray", "suite ");
       }
       if (file_line) {
          title.printf("dark gray", "┊ ");
@@ -36,26 +32,18 @@ struct h2_report_console : h2_report_interface {
    }
    static const char* format_volume(long long footprint, char* s = (char*)alloca(128))
    {
-      if (footprint < 1024LL)
-         sprintf(s, "%lld", footprint);
-      else if (footprint < 1024LL * 1024LL)
-         sprintf(s, "%.2gKB", footprint / 1024.0);
-      else if (footprint < 1024LL * 1024LL * 1024LL)
-         sprintf(s, "%.2gMB", footprint / (1024.0 * 1024.0));
-      else
-         sprintf(s, "%.2gGB", footprint / (1024.0 * 1024.0 * 1024.0));
+      if (footprint < 1024LL) sprintf(s, "%lld", footprint);
+      else if (footprint < 1024LL * 1024LL) sprintf(s, "%.2gKB", footprint / 1024.0);
+      else if (footprint < 1024LL * 1024LL * 1024LL) sprintf(s, "%.2gMB", footprint / (1024.0 * 1024.0));
+      else sprintf(s, "%.2gGB", footprint / (1024.0 * 1024.0 * 1024.0));
       return s;
    }
    static const char* format_duration(long long ms, char* s = (char*)alloca(128))
    {
-      if (ms < 100)
-         sprintf(s, "%lld milliseconds", ms);
-      else if (ms < 1000 * 60)
-         sprintf(s, "%.2g second%s", ms / 1000.0, ms == 1000 ? "" : "s");
-      else if (ms < 1000 * 60 * 60)
-         sprintf(s, "%.2g minute%s", ms / 60000.0, ms == 60000 ? "" : "s");
-      else
-         sprintf(s, "%.2g hour%s", ms / 3600000.0, ms == 3600000 ? "" : "s");
+      if (ms < 100) sprintf(s, "%lld milliseconds", ms);
+      else if (ms < 1000 * 60) sprintf(s, "%.2g second%s", ms / 1000.0, ms == 1000 ? "" : "s");
+      else if (ms < 1000 * 60 * 60) sprintf(s, "%.2g minute%s", ms / 60000.0, ms == 60000 ? "" : "s");
+      else sprintf(s, "%.2g hour%s", ms / 3600000.0, ms == 3600000 ? "" : "s");
       return s;
    }
    static const char* format_units(int count, const char* unit1, const char* unit2 = nullptr, char* s = (char*)alloca(128))
@@ -67,10 +55,8 @@ struct h2_report_console : h2_report_interface {
    void print_bar(bool percentage, const char* status_style, const char* status, h2_suite* s, h2_case* c, bool backable)
    {
       static long long last_capture_length = 0;
-      if (last_capture_length == h2_stdio::I().capture_length)
-         h2_console::prints("", "\33[2K\r"); /* clear line */
-      else
-         h2_console::prints("", "\n"); /* user output, new line */
+      if (last_capture_length == h2_stdio::I().capture_length) h2_console::prints("", "\33[2K\r"); /* clear line */
+      else h2_console::prints("", "\n"); /* user output, new line */
       last_capture_length = h2_stdio::I().capture_length;
       h2_report::I().backable = O.progressing && backable;
 
@@ -80,10 +66,8 @@ struct h2_report_console : h2_report_interface {
       if (status && status_style) bar.printf(status_style, "%s", status);
       if (s && c) bar += format_title(s->name, c->name, backable ? nullptr : h2_basefile(c->filine));
       if (backable) {
-         if (h2_console::width() > bar.width())
-            bar.padding(h2_console::width() - bar.width());
-         else
-            bar = bar.abbreviate(h2_console::width());
+         if (h2_console::width() > bar.width()) bar.padding(h2_console::width() - bar.width());
+         else bar = bar.abbreviate(h2_console::width());
       }
       h2_console::printl(bar, false);
    }

@@ -20,7 +20,7 @@ struct h2_matches_memcmp : h2_matches {
          if (!w && !l && std::is_convertible<E, h2_string>::value) { /* deduce by string format */
             l = strlen((const char*)buffer);
             w = 8;
-            if (!strcmp((const char*)buffer, (const char*)a)) break; /*result = true;*/
+            if (!strcmp((const char*)buffer, (const char*)a)) break;
             if (h2_memcmp_util::is_bin_string((const char*)buffer)) {
                e = (unsigned char*)alloca(l);
                l = h2_memcmp_util::bin_to_bits((const char*)buffer, e);

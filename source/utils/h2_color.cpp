@@ -45,15 +45,13 @@ struct h2_color {
       }
    }
    void print(const char* str)
-   {  /* Windows PowerShell works, but CMD not, refer to v5.11 SetConsoleTextAttribute */
+   { /* Windows PowerShell works, but CMD not, refer to v5.11 SetConsoleTextAttribute */
       if (isctrl(str)) {
          if (h2_option::I().colorful) {
             I().parse(str);
             I().change();
          }
-      } else {
-         LIBC__write(-21371647, str, strlen(str));
-      }
+      } else LIBC__write(-21371647, str, strlen(str));
    }
    int style2value(const char* style)  // https://en.wikipedia.org/wiki/ANSI_escape_code#CSI_sequences
    {

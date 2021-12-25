@@ -1,6 +1,5 @@
 namespace {
-template <int Counter, typename ClassType, typename Signature>
-struct h2_stuber;
+template <int Counter, typename ClassType, typename Signature> struct h2_stuber;
 template <int Counter, typename ClassType, typename ReturnType, typename... ArgumentTypes>
 struct h2_stuber<Counter, ClassType, ReturnType(ArgumentTypes...)> {
    h2_singleton(h2_stuber);

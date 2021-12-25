@@ -73,8 +73,7 @@ h2_inline void h2_exempt::add_by_name(const char* fn)
 {
    h2_symbol* res[16];
    int n = h2_nm::get_by_name(fn, res, 16);
-   for (int i = 0; i < n; ++i)
-      add_by_fp(h2_load::addr_to_ptr(res[i]->addr));
+   for (int i = 0; i < n; ++i) add_by_fp(h2_load::addr_to_ptr(res[i]->addr));
 }
 
 h2_inline void h2_exempt::add_by_fp(void* fp)

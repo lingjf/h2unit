@@ -11,12 +11,15 @@ AlignEscapedNewlines: Right
 AlignOperands: true
 AlignTrailingComments: true
 
+# Single line
 AllowAllParametersOfDeclarationOnNextLine: false
-AllowShortBlocksOnASingleLine: true
+AllowShortBlocksOnASingleLine: Always
 AllowShortCaseLabelsOnASingleLine: true
 AllowShortFunctionsOnASingleLine: All
-AllowShortIfStatementsOnASingleLine: true
+AllowShortIfStatementsOnASingleLine: AllIfsAndElse
 AllowShortLoopsOnASingleLine: true
+AllowShortEnumsOnASingleLine: true
+AllowShortLambdasOnASingleLine: All
 
 AlwaysBreakAfterDefinitionReturnType: None
 AlwaysBreakAfterReturnType: None
