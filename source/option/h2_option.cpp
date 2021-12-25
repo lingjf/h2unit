@@ -96,7 +96,7 @@ h2_inline void h2_option::parse(int argc, const char** argv)
                if (!strcmp("suite", r)) lists |= ListSuite;
                else if (!strcmp("case", r)) lists |= ListCase;
                else if (!strcmp("todo", r)) lists |= ListTodo;
-               else if (!strcmp("tags", r)) lists |= ListTag;
+               else if (!strcmp("tags", r)) lists |= ListTags;
                else ::printf("-l %s\n", r), exit(-1);
             }
             if (!lists) lists = ListSuite | ListCase | ListTodo;

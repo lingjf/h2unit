@@ -34,8 +34,8 @@ static inline bool h2_attach_debugger()
 {
 #if defined __linux || defined __APPLE__
    while (!in_debugging()) {
-      static h2_once one;
-      if (one) {
+      h2_once_if()
+      {
          char cmd[512];
          ::printf("\nEnter \033[33mpassword\033[0m for connecting \033[33m%s\033[0m. \n", O.os == 'L' ? "GDB" : "LLDB");
 #if defined __linux

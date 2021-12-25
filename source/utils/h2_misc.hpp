@@ -1,9 +1,10 @@
 #define H2_FILINE __FILE__ ":" H2PP_STR(__LINE__)
 
 struct h2_once {
-   unsigned long c = 0;
+   unsigned long long c = 0;
    operator bool() { return !c++; }
 };
+#define h2_once_if() for (static h2_once ___1_; ___1_;)
 
 // #define M(...) func(#__VA_ARGS__, other)
 // Unix M() ==> func("", other) stringify empty __VA_ARGS__ to "" string
@@ -11,6 +12,7 @@ struct h2_once {
 // #define M(...) func(ss(#__VA_ARGS__), other)
 static inline const char* ss(const char* a = "") { return a ? a : ""; }
 static inline const char* comma_if(bool a, const char* t = ", ", const char* f = "") { return a ? t : f; }
+static inline const char* quote_if(bool a, const char* t = "\"", const char* f = "") { return a ? t : f; }
 
 #define H2Foreach(Callback_x, ...) H2PP_FOREACH(, _H2ForeachMacro, (Callback_x), H2PP_REMOVE_PARENTHESES_IF(__VA_ARGS__))
 #define _H2ForeachMacro(_Args, i, x) H2PP_REMOVE_PARENTHESES(_Args)(x)

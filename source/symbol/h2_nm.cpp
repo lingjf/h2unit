@@ -27,8 +27,7 @@ static inline bool __leading_underscore(h2_list& symbols)
 static inline void nm(bool demangle, h2_list& symbols, bool& leading_underscore)
 {
    __nm(symbols, demangle);
-   static h2_once one;
-   if (one) leading_underscore = __leading_underscore(symbols);
+   h2_once_if() leading_underscore = __leading_underscore(symbols);
 }
 #endif
 

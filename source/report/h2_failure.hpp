@@ -1,7 +1,7 @@
 struct h2_fail : h2_libc {
    h2_fail *subling_next = nullptr, *child_next = nullptr;
 
-   const char* assert_type = "Inner";  // Inner(Mock, AllOf, &&, ||)
+   const char* assert_type = "In";  // In(Mock, AllOf, &&, ||)
    const char* assert_op = ",";
    h2_string e_expression, a_expression;
    h2_line explain;
@@ -24,8 +24,8 @@ struct h2_fail : h2_libc {
    virtual void print(FILE* fp) {}
 
    void foreach(std::function<void(h2_fail*, size_t, size_t)> cb, size_t si = 0, size_t ci = 0);
-   static void append_subling(h2_fail*& fail, h2_fail* nf);
-   static void append_child(h2_fail*& fail, h2_fail* nf);
+   static void append_subling(h2_fail*& fails, h2_fail* fail);
+   static void append_child(h2_fail*& fails, h2_fail* fail);
 
    static h2_fail* new_normal(const h2_line& explain, const char* filine = nullptr);
    static h2_fail* new_unexpect(const h2_line& expection = {}, const h2_line& represent = {}, const h2_line& explain = {});

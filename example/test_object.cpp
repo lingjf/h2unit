@@ -1,22 +1,11 @@
 
+#include "product_cpp.h"
+
 #if defined H2UNIT && H2UNIT == 2
 #include "../build/h2unit.hpp"
 #else
 #include "../h2unit.h"
 #endif
-
-class AObject {
- public:
-   int b = 42;
-
- private:
-   const char* normal_f1(int _1)
-   {
-      static char temp[256];
-      sprintf(temp, "normal_f1(%d)", _1);
-      return temp;
-   }
-};
 
 SUITE(ListOf)
 {
@@ -169,18 +158,18 @@ SUITE(specified subset of container)
    }
 }
 
-SUITE(Member [fail])
+SUITE(Member)
 {
-   AObject a;
+   Rect a(1, 1, 3, 3);
 
-   Case(data)
+   Case(data [fail])
    {
-      OK(Member(1024, &AObject::b), a);
+      OK(Member(30, &Rect::width), a);
    }
 
-   Case(function)
+   Case(function [pass])
    {
-      OK(Member("normal_f1(456)", &AObject::normal_f1, 123), a);
+      OK(Member("Rect", &Rect::print), a);
    }
 }
 

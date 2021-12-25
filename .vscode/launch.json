@@ -27,18 +27,6 @@
             "environment": [],
             "externalConsole": false,
             "MIMode": "lldb"
-        },
-        {
-            "name": "print",
-            "type": "cppdbg",
-            "request": "launch",
-            "program": "./print/a.out",
-            "args": ["-m"],
-            "stopAtEntry": false,
-            "cwd": "${workspaceFolder}",
-            "environment": [],
-            "externalConsole": false,
-            "MIMode": "lldb"
         }
     ]
 }

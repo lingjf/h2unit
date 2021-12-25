@@ -22,6 +22,14 @@ jobs:
         run: gcc -dM -E - < /dev/null
       - name: sysroot directory for headers and libraries
         run: g++ -E -v - < /dev/null
+      - name: bazel build
+        run: bazel build :all
+      - name: bazel run starter
+        run: ./bazel-bin/starter
+      - name: bazel run example h2unit.h
+        run: ./bazel-bin/example1
+      - name: bazel run example h2unit.hpp h2unit.cpp
+        run: ./bazel-bin/example2
       - name: configure example/debug
         run: cmake -DCMAKE_BUILD_TYPE=Debug -B debug_example example
       - name: build example/debug
@@ -57,7 +65,7 @@ jobs:
       - name: run test/debug without memory check
         run: cd debug_test && LD_BIND_NOW=1 ./a.out -s -p -m -v -q -te memory_check
       - name: ✨ run test/debug with memory check
-        run: cd debug_test && LD_BIND_NOW=1 ./a.out -swpvqo -r
+        run: cd debug_test && LD_BIND_NOW=1 ./a.out -swpvqo -r -e h2_once
       - name: configure test/release
         run: cmake -DCMAKE_VERBOSE_MAKEFILE=ON -DCMAKE_BUILD_TYPE=Release -B release_test test
       - name: 🏗️ build test/release
@@ -65,11 +73,11 @@ jobs:
       - name: run test/release without memory check
         run: cd release_test && LD_BIND_NOW=1 ./a.out -s -p -m -v -q -te memory_check
       - name: ✨ run test/release with memory check
-        run: cd release_test && LD_BIND_NOW=1 ./a.out -swpvqo -r
+        run: cd release_test && LD_BIND_NOW=1 ./a.out -swpvqo -r -e h2_once
       - name: install coverage tools
-        run: sudo pip3 install git+https://github.com/gcovr/gcovr.git
+        run: pip3 install gcovr
       - name: build and run example
-        run: make -C example
+        run: cd example && sh ./build.sh
       - name: show coverage report
         run: python -m json.tool ./example/coverage.json
 
@@ -121,7 +129,7 @@ jobs:
       - name: run test/debug without memory check
         run: cd debug_test && LD_BIND_NOW=1 ./a.out -s -p -m -v -q -te memory_check
       - name: ✨ run test/debug with memory check
-        run: cd debug_test && LD_BIND_NOW=1 ./a.out -swpvqo -r
+        run: cd debug_test && LD_BIND_NOW=1 ./a.out -swpvqo -r -e h2_once
       - name: configure test/release
         run: cmake -DCMAKE_VERBOSE_MAKEFILE=ON -DCMAKE_BUILD_TYPE=Release -B release_test test
       - name: 🏗️ build test/release
@@ -129,11 +137,12 @@ jobs:
       - name: run test/release without memory check
         run: cd release_test && LD_BIND_NOW=1 ./a.out -s -p -m -v -q -te memory_check
       - name: ✨ run test/release with memory check
-        run: cd release_test && LD_BIND_NOW=1 ./a.out -swpvqo -r
-      - name: install coverage tools
-        run: brew install lcov
-      - name: build and run example
-        run: make lcov -C example
+        run: cd release_test && LD_BIND_NOW=1 ./a.out -swpvqo -r -e h2_once
+      - uses: seanmiddleditch/gha-setup-ninja@master
+      - name: ninja build
+        run: cd example && ninja
+      - name: ninja run
+        run: cd example && ./a.out
 
   windows-msvc:
     name: ✨ windows-msvc
@@ -147,6 +156,14 @@ jobs:
         run: |
           echo '' > empty.cpp
           cl /EP /Zc:preprocessor /PD empty.cpp
+      - name: bazel build
+        run: bazel build --compilation_mode=dbg :all
+      - name: bazel run starter
+        run: ./bazel-bin/starter
+      - name: bazel run example h2unit.h
+        run: ./bazel-bin/example1
+      - name: bazel run example h2unit.hpp h2unit.cpp
+        run: ./bazel-bin/example2
       - name: configure example/debug
         run: cmake -DCMAKE_BUILD_TYPE=Debug -B debug_example example
       - name: build example/debug
@@ -184,7 +201,7 @@ jobs:
       - name: run test/debug without memory check
         run: cd debug_test && ./a.out.exe -s -p -m -v -q -te memory_check
       - name: ✨ run test/debug with memory check
-        run: cd debug_test && ./a.out.exe -swpvqo -r
+        run: cd debug_test && ./a.out.exe -swpvqo -r -e h2_once
       - name: configure test/release
         run: cmake -DCMAKE_VERBOSE_MAKEFILE=ON -DCMAKE_BUILD_TYPE=Release -B release_test test
       - name: cat test/release vcxproj
@@ -496,8 +513,6 @@ jobs:
         run: cd test && LD_BIND_NOW=1 ./a.out -s -p -m -v -q -te memory_check ${{matrix.sys}}
       - name: ✨ run test with memory check
         run: cd test && LD_BIND_NOW=1 ./a.out -swpvqo -te ${{matrix.sys}}
-      - name: build and run example
-        run: make run -C example -j2
 
   macos-xcode:
     runs-on: ${{matrix.os}}

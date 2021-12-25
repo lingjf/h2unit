@@ -19,11 +19,7 @@ H2_TOSTRING_ABLE(to_string);
 /* tostring() may not be mark const, remove cast const in T a; fix multi-tostring */
 template <typename T>
 struct h2_stringify_impl<T, typename std::enable_if<h2::h2_tostring_able<T>::value || h2::h2_toString_able<T>::value || h2::h2_Tostring_able<T>::value || h2::h2_ToString_able<T>::value || h2::h2_to_string_able<T>::value>::type> {
-   static h2_line print(const T& a, bool represent = false)
-   {
-      if (represent) return gray("\"") + print__tostring(a) + gray("\"");
-      return print__tostring(a);
-   }
+   static h2_line print(const T& a, bool represent = false) { return gray(quote_if(represent)) + print__tostring(a) + gray(quote_if(represent)); }
    template <typename U> static auto print__tostring(const U& a) -> typename std::enable_if<h2::h2_tostring_able<U>::value, h2_string>::type { return const_cast<U&>(a).tostring(); }
    template <typename U> static auto print__tostring(const U& a) -> typename std::enable_if<!h2::h2_tostring_able<U>::value, h2_string>::type { return print__toString(a); }
    template <typename U> static auto print__toString(const U& a) -> typename std::enable_if<h2::h2_toString_able<U>::value, h2_string>::type { return const_cast<U&>(a).toString(); }
@@ -63,9 +59,7 @@ struct h2_stringify_impl<T, typename std::enable_if<h2_is_ostreamable<T>::value>
    {
       h2_ostringstream oss;
       oss << a;
-      if (represent && std::is_convertible<U, h2_string>::value)
-         return gray("\"") + oss.str().c_str() + gray("\"");
-      return {oss.str().c_str()};
+      return gray(quote_if(represent && std::is_convertible<U, h2_string>::value)) + oss.str().c_str() + gray(quote_if(represent && std::is_convertible<U, h2_string>::value));
    }
 };
 
@@ -142,12 +136,7 @@ struct h2_stringify_impl<unsigned char> {  // https://en.cppreference.com/w/cpp/
 
 template <>
 struct h2_stringify_impl<char> {
-   static h2_line print(char a, bool represent)
-   {
-      h2_string str(1, a);
-      if (represent) return gray("'") + str + gray("'");
-      return {str};
-   }
+   static h2_line print(char a, bool represent) { return gray(quote_if(represent, "'")) + h2_string(1, a) + gray(quote_if(represent, "'")); }
 };
 
 template <typename T>

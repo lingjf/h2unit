@@ -7,11 +7,6 @@ struct h2_stuber<Counter, ClassType, ReturnType(ArgumentTypes...)> {
    const char* srcfn;
    const char* filine;
 
-   ReturnType (*dstfp)(ClassType*, ArgumentTypes...);
-   struct member_function_stub {  // wrap for calling conversions
-      ReturnType fx(ArgumentTypes... arguments) { return I().dstfp((ClassType*)this, std::forward<ArgumentTypes>(arguments)...); }
-   };
-
    static h2_stuber& I(void* srcfp, const char* srcfn, const char* filine)
    {
       I().srcfp = srcfp;
@@ -20,14 +15,25 @@ struct h2_stuber<Counter, ClassType, ReturnType(ArgumentTypes...)> {
       return I();
    }
 
-   void operator=(ReturnType (*dstfp_)(ClassType*, ArgumentTypes...))
+#if defined _WIN32 && (defined __i386__ || defined _M_IX86)
+   ReturnType (*dstfp_)(ClassType*, ArgumentTypes...);
+   struct member_calling_conversions_wrapper {
+      ReturnType fx(ArgumentTypes... arguments) { return I().dstfp_((ClassType*)this, std::forward<ArgumentTypes>(arguments)...); }
+   };
+   void operator=(ReturnType (*dstfp)(ClassType*, ArgumentTypes...))
    {
-#if defined _WIN32 && (defined __i386__ || defined _M_IX86)  // https://docs.microsoft.com/en-us/cpp/cpp/calling-conventions
-      dstfp = dstfp_;
-      h2_runner::stub(srcfp, h2_fp<member_function_stub, ReturnType(ArgumentTypes...)>::A(&member_function_stub::fx), srcfn, filine);
+      dstfp_ = dstfp;
+      h2_runner::stub(srcfp, h2_fp<member_calling_conversions_wrapper, ReturnType(ArgumentTypes...)>::A(&member_calling_conversions_wrapper::fx), srcfn, filine);
+   }
 #else
-      h2_runner::stub(srcfp, (void*)dstfp_, srcfn, filine);
+   void operator=(ReturnType (*dstfp)(ClassType*, ArgumentTypes...))  // captureless lambda implicit cast to function pointer
+   {
+      h2_runner::stub(srcfp, (void*)dstfp, srcfn, filine);
+   }
 #endif
+   void operator=(ReturnType (*dstfp)(ArgumentTypes...))  // stub normal function
+   {
+      h2_runner::stub(srcfp, (void*)dstfp, srcfn, filine);
    }
 };
 }

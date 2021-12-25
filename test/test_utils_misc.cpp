@@ -1,9 +1,10 @@
 #include "../source/h2_unit.cpp"
+using namespace::h2;
 
 /* clang-format off */
 CASE(file line)
 {
-   OK(EndsWith("test_utils_misc.cpp:6"), H2_FILINE);
+   OK(EndsWith("test_utils_misc.cpp:7"), H2_FILINE);
 }
 /* clang-format on */
 
@@ -15,15 +16,43 @@ CASE(type of __LINE__)
    OK(AnyOf("int", "long"), h2::h2_cxa::demangle(typeid(decltype(line)).name(), t));
 }
 
-CASE(once)
+SUITE(h2_once)
 {
-   h2::h2_once once;
-   bool a1 = once;
-   bool a2 = !once;
-   bool a3 = !once;
-   OK(a1);
-   OK(a2);
-   OK(a3);
+   Case(once)
+   {
+      h2::h2_once once;
+      bool a1 = once;
+      bool a2 = !once;
+      bool a3 = !once;
+      OK(a1);
+      OK(a2);
+      OK(a3);
+   }
+
+   Case(h2_once_if)
+   {
+      int a1 = 0;
+      h2_once_if() { ++a1; }
+
+      OK(1, a1);
+   }
+
+   Case(h2_once_if)
+   {
+      struct A {
+         int m = 0;
+         int test()
+         {
+            h2_once_if() { ++m; }
+            return m;
+         }
+      } a1;
+
+      OK(1, a1.test());
+      OK(1, a1.test());
+      OK(1, a1.test());
+      OK(1, a1.test());
+   }
 }
 
 CASE(ss)

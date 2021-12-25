@@ -1,0 +1,28 @@
+cflags = -Wall
+
+rule c
+  command = gcc $cflags -c $in -o $out
+
+rule cc
+  command = g++ $cflags -std=c++14 -c $in -o $out
+
+rule link
+  command = g++ $in -o $out && ../h2fix.sh $out
+
+build product_c.o: c product_c.c
+build product_cpp.o: cc product_cpp.cpp
+build test_basic.o: cc test_basic.cpp
+build test_compare.o: cc test_compare.cpp
+build test_exception.o: cc test_exception.cpp
+build test_json.o: cc test_json.cpp
+build test_logic.o: cc test_logic.cpp
+build test_memcmp.o: cc test_memcmp.cpp
+build test_memory.o: cc test_memory.cpp
+build test_mock.o: cc test_mock.cpp
+build test_object.o: cc test_object.cpp
+build test_report.o: cc test_report.cpp
+build test_stub.o: cc test_stub.cpp
+
+build a.out: link product_c.o product_cpp.o test_basic.o test_compare.o test_exception.o test_json.o test_logic.o test_memcmp.o test_memory.o test_mock.o test_object.o test_report.o test_stub.o
+
+default a.out

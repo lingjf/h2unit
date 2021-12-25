@@ -1,13 +1,19 @@
 # Frequently asked questions
 
 
-## mprotect failure
+## STUB failure
+
+### mprotect
 
 macOS (Mojave 10.14.6) macOS (Catalina 10.15.2) and later macOS mprotect fails, because [max_prot](https://stackoverflow.com/questions/60654834/using-mprotect-to-make-text-segment-writable-on-macos).
 
 ```Shell
    printf '\x07' | dd of=<executable> bs=1 seek=160 count=1 conv=notrunc
 ```
+
+### stack-protector
+Compile option with -fstack-protector will cause STUB fail, remove this option, or add -fno-stack-protector option
+
 
 ## unprotected commas
 
@@ -98,6 +104,9 @@ If function is overload function, arguments type should specified, i.e. C++ dema
    LD_BIND_NOW=1 ./a.out 
    gcc --Wl,z,now
 ```
+
+## backtrace symbol name
+add linker option -rdynamic 
 
 ## Variadic parameter function can't MOCK
 

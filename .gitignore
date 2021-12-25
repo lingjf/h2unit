@@ -29,6 +29,12 @@ CMakeFiles
 cmake_install.cmake
 Makefile
 
+# Bazel
+bazel-*
+
+# Ninja
+.ninja_*
+
 # Coverage
 *.gcda
 *.gcno

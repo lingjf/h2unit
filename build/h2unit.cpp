@@ -1111,7 +1111,7 @@ struct h2_stdio {
    h2_singleton(h2_stdio);
    h2_string* buffer;
    bool stdout_capturable = false, stderr_capturable = false, syslog_capturable = false;
-   long long capture_length = 0;
+   size_t capture_length = 0;
 
    static ssize_t write(int fd, const void* buf, size_t count)
    {
@@ -1122,11 +1122,9 @@ struct h2_stdio {
             h2_report::I().backable = false;
          }
          LIBC__write(fd == -21371647 ? fileno(stdout) : fd, buf, count);
-         if (fd == fileno(stdout) || fd == fileno(stderr))
-            I().capture_length += count;
+         if (fd == fileno(stdout) || fd == fileno(stderr)) I().capture_length += count;
       }
-      if ((I().stdout_capturable && fd == fileno(stdout)) || (I().stderr_capturable && fd == fileno(stderr)))
-         I().buffer->append((char*)buf, count);
+      if ((I().stdout_capturable && fd == fileno(stdout)) || (I().stderr_capturable && fd == fileno(stderr))) I().buffer->append((char*)buf, count);
       return (ssize_t)count;
    }
 
@@ -1308,8 +1306,7 @@ static inline bool __leading_underscore(h2_list& symbols)
 static inline void nm(bool demangle, h2_list& symbols, bool& leading_underscore)
 {
    __nm(symbols, demangle);
-   static h2_once one;
-   if (one) leading_underscore = __leading_underscore(symbols);
+   h2_once_if() leading_underscore = __leading_underscore(symbols);
 }
 #endif
 
@@ -1474,14 +1471,11 @@ static inline bool backtrace_extract(const char* line, char* mangle_name, unsign
    // MAC: `3   a.out  0x000000010e777f3d _ZN2h24unit6mallocEm + 45
    if (2 == ::sscanf(line, "%*s%*s%*s%s + %llu", mangle_name, displacement ? displacement : &_t)) return true;
 #else
-   static unsigned long long v1 = 0, v2 = 0, once = 0;
    // Linux: `./a.out(_ZN2h24unit7executeEv+0x131)[0x55aa6bb840ef]
-   if (2 == ::sscanf(line, "%*[^(]%*[^_a-zA-Z]%1023[^)+]+0x%llx", mangle_name, displacement ? displacement : &_t)) return (bool)++v2;
+   if (2 == ::sscanf(line, "%*[^(]%*[^_a-zA-Z]%1023[^)+]+0x%llx", mangle_name, displacement ? displacement : &_t)) return true;
    // Linux: `./a.out(+0xb1887)[0x560c5ed06887]
    mangle_name[0] = '\0';
-   if (1 == ::sscanf(line, "%*[^(]%*[^+]+0x%llx", displacement ? displacement : &_t)) return (bool)++v1;
-
-   if (!v2 && !once++) h2_console::prints("yellow", "\nAdd -rdynamic to linker options\n");
+   if (1 == ::sscanf(line, "%*[^(]%*[^+]+0x%llx", displacement ? displacement : &_t)) return true;
 #endif
    return false;
 }
@@ -1581,7 +1575,10 @@ h2_inline void h2_backtrace::print(h2_vector<h2_string>& stacks) const
       backtrace_extract(symbols[i], mangle_name);
       if (O.verbose >= VerboseDetail || O.os != 'm') p = addr2line(h2_load::ptr_to_addr(frames[i])); /* atos is slow */
       if (!p) p = h2_cxa::demangle(mangle_name, demangle_name);
-      if (!p || !strlen(p)) p = symbols[i];
+      if (!p || !strlen(p)) {
+         p = symbols[i];
+         h2_once_if() h2_console::prints("yellow", "\nAdd -g to compiler options, -rdynamic to linker options\n");
+      }
       stacks.push_back(p);
       if (!strcmp("main", mangle_name) || !strcmp("__libc_start_main", mangle_name)) break;
    }
@@ -3293,7 +3290,7 @@ struct h2_override {
       if (ptr) h2_runner::failing(h2_stack::I().rel_piece("delete[] nothrow", ptr));
    }
 };
-// source/memory/h2_override_stdlib.cpp
+
 struct h2_override_stdlib {
    h2_list stubs;
 
@@ -3330,7 +3327,7 @@ struct h2_override_stdlib {
    void reset() { h2_stubs::clear(stubs); }
 };
 #if defined __linux
-// source/memory/h2_override_linux.cpp
+// source/memory/platform/h2_override_linux.cpp
 // https://www.gnu.org/savannah-checkouts/gnu/libc/manual/html_node/Hooks-for-Malloc.html
 
 struct h2_override_platform {
@@ -3369,7 +3366,7 @@ struct h2_override_platform {
    }
 };
 #elif defined __APPLE__
-// source/memory/h2_override_macos.cpp
+// source/memory/platform/h2_override_macos.cpp
 // https://github.com/gperftools/gperftools/blob/master/src/libc_override.h
 
 #if defined(__APPLE__) && defined(MAC_OS_X_VERSION_10_6) && MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_6
@@ -3458,7 +3455,7 @@ struct h2_override_platform {
    }
 };
 #elif defined _MSC_VER
-// source/memory/h2_override_windows.cpp
+// source/memory/platform/h2_override_windows.cpp
 // https://github.com/microsoft/mimalloc
 // https://github.com/gperftools/gperftools
 
@@ -3472,46 +3469,37 @@ struct h2_override_platform {
 
    static void _free_base(void* ptr) { h2_override::free(ptr); }
    static void* _expand(void* memblock, size_t size) { return NULL; }
-   // When _DEBUG _CRTDBG_MAP_ALLOC (default undefined) is defined CRT maps all to _*_dbg, bug CRT Debug version enabled.
-#ifndef NDEBUG
-   static void _free_dbg(void* userData, int blockType)
-   {
-      h2_override::free(userData);
-   }
-   static void* _malloc_dbg(size_t size, int blockType, const char* filename, int linenumber) { return h2_override::malloc(size); }
-   static void* _realloc_dbg(void* userData, size_t newSize, int blockType, const char* filename, int linenumber) { return h2_override::realloc(userData, newSize); }
-   static void* _calloc_dbg(size_t num, size_t size, int blockType, const char* filename, int linenumber) { return h2_override::calloc(num, size); }
-   static size_t _msize_dbg(void* userData, int blockType) { return h2_override::size(userData); }
-   static void* _expand_dbg(void* userData, size_t newSize, int blockType, const char* filename, int linenumber) { return NULL; }
-#endif
-   static void* _aligned_malloc(size_t size, size_t alignment)
-   {
-      return h2_override::aligned_alloc(size, alignment);
-   }
+   static void* _aligned_malloc(size_t size, size_t alignment) { return h2_override::aligned_alloc(size, alignment); }
    static void _aligned_free(void* memblock) { h2_override::free(memblock); }
-
+   // When _DEBUG _CRTDBG_MAP_ALLOC (default undefined) is defined CRT maps all to _*_dbg, bug CRT Debug version enabled.
    void set()
    {
       h2_stubs::add(stubs, (void*)::_free_base, (void*)_free_base, "_free_base", H2_FILINE);
       h2_stubs::add(stubs, (void*)::_msize, (void*)h2_override::size, "_msize", H2_FILINE);
       h2_stubs::add(stubs, (void*)::_expand, (void*)_expand, "_expand", H2_FILINE);
-#ifndef NDEBUG
-      h2_stubs::add(stubs, (void*)::_free_dbg, (void*)_free_dbg, "_free_dbg", H2_FILINE);
-      // h2_stubs::add(stubs,(void*)::_malloc_dbg, (void*)_malloc_dbg, "_malloc_dbg", H2_FILINE);
-      // h2_stubs::add(stubs,(void*)::_realloc_dbg, (void*)_realloc_dbg, "_realloc_dbg", H2_FILINE);
-      // h2_stubs::add(stubs,(void*)::_calloc_dbg, (void*)_calloc_dbg, "_calloc_dbg", H2_FILINE);
-      // h2_stubs::add(stubs,(void*)::_expand_dbg, (void*)_expand_dbg, "_expand_dbg", H2_FILINE);
-#endif
       //// h2_stubs::add(stubs,(void*)::_calloc_crt, (void*)h2_override::calloc, "_calloc_crt", H2_FILINE);
       h2_stubs::add(stubs, (void*)::_aligned_malloc, (void*)_aligned_malloc, "_aligned_malloc", H2_FILINE);
       h2_stubs::add(stubs, (void*)::_aligned_free, (void*)_aligned_free, "_aligned_free", H2_FILINE);
       h2_stubs::add(stubs, (void*)::_strdup, (void*)h2_override_stdlib::strdup, "_strdup", H2_FILINE);  // strdup call to _strdup
+#ifndef NDEBUG
+      h2_stubs::add(stubs, (void*)::_free_dbg, (void*)free_dbg, "_free_dbg", H2_FILINE);
+      // h2_stubs::add(stubs,(void*)::_malloc_dbg, (void*)malloc_dbg, "_malloc_dbg", H2_FILINE);
+      // h2_stubs::add(stubs,(void*)::_realloc_dbg, (void*)realloc_dbg, "_realloc_dbg", H2_FILINE);
+      // h2_stubs::add(stubs,(void*)::_calloc_dbg, (void*)calloc_dbg, "_calloc_dbg", H2_FILINE);
+      // h2_stubs::add(stubs,(void*)::_expand_dbg, (void*)expand_dbg, "_expand_dbg", H2_FILINE);
+#endif
    }
+   static void free_dbg(void* userData, int blockType) { h2_override::free(userData); }
+   static void* malloc_dbg(size_t size, int blockType, const char* filename, int linenumber) { return h2_override::malloc(size); }
+   static void* realloc_dbg(void* userData, size_t newSize, int blockType, const char* filename, int linenumber) { return h2_override::realloc(userData, newSize); }
+   static void* calloc_dbg(size_t num, size_t size, int blockType, const char* filename, int linenumber) { return h2_override::calloc(num, size); }
+   static size_t msize_dbg(void* userData, int blockType) { return h2_override::size(userData); }
+   static void* expand_dbg(void* userData, size_t newSize, int blockType, const char* filename, int linenumber) { return NULL; }
 
    void reset() { h2_stubs::clear(stubs); }
 };
 #else  // +MinGW
-// source/memory/h2_override_cygwin.cpp
+// source/memory/platform/h2_override_cygwin.cpp
 struct h2_override_platform {
    h2_list stubs;
 
@@ -3729,8 +3717,8 @@ static inline bool h2_attach_debugger()
 {
 #if defined __linux || defined __APPLE__
    while (!in_debugging()) {
-      static h2_once one;
-      if (one) {
+      h2_once_if()
+      {
          char cmd[512];
          ::printf("\nEnter \033[33mpassword\033[0m for connecting \033[33m%s\033[0m. \n", O.os == 'L' ? "GDB" : "LLDB");
 #if defined __linux
@@ -5195,27 +5183,15 @@ struct h2_layout {
    }
 };
 // source/report/h2_failure.cpp
-h2_inline void h2_fail::append_subling(h2_fail*& fail, h2_fail* nf)
-{
-   if (!fail) {
-      fail = nf;
-   } else {
-      h2_fail** pp = &fail->subling_next;
-      while (*pp) pp = &(*pp)->subling_next;
-      *pp = nf;
-   }
-}
+#define H2_FAIL_APPEND(next)         \
+   if (fails) {                      \
+      h2_fail** pp = &fails->next;   \
+      while (*pp) pp = &(*pp)->next; \
+      *pp = fail;                    \
+   } else fails = fail
 
-h2_inline void h2_fail::append_child(h2_fail*& fail, h2_fail* nf)
-{
-   if (!fail) {
-      fail = nf;
-   } else {
-      h2_fail** pp = &fail->child_next;
-      while (*pp) pp = &(*pp)->child_next;
-      *pp = nf;
-   }
-}
+h2_inline void h2_fail::append_subling(h2_fail*& fails, h2_fail* fail) { H2_FAIL_APPEND(subling_next); }
+h2_inline void h2_fail::append_child(h2_fail*& fails, h2_fail* fail) { H2_FAIL_APPEND(child_next); }
 
 h2_inline h2_fail::~h2_fail()
 {
@@ -5265,7 +5241,6 @@ static inline bool is_synonym(const h2_string& a, const h2_string& b)
 
    if (_a == "Eq(" + _b + ")") return true;
    if (_a == "ListOf(" + _b.unenclose('[', ']') + ")") return true;
-
    return false;
 }
 
@@ -5305,7 +5280,7 @@ struct h2_fail_unexpect : h2_fail {
       h2_line a = h2_line(a_expression.unenclose('\"').unenclose('\'')).abbreviate(O.verbose >= VerboseDetail ? 10000 : 30, 2).brush("bold,red");
       line += "JE" + gray("(") + e + ", " + a + gray(")");
    }
-   void print_Inner(h2_line& line)
+   void print_In(h2_line& line)
    {
       if (0 <= seqno) line.printf("dark gray", "%d. ", seqno);
       if (expection.width()) {
@@ -5322,7 +5297,7 @@ struct h2_fail_unexpect : h2_fail {
    {
       h2_line line;
       line.indent(ci * 2 + 1);
-      if (!strcmp("Inner", assert_type)) print_Inner(line);
+      if (!strcmp("In", assert_type)) print_In(line);
       if (!strcmp("OK1", assert_type)) print_OK1(line);
       if (!strcmp("OK2", assert_type)) print_OK2(line);
       if (!strcmp("JE", assert_type)) print_JE(line);
@@ -5624,7 +5599,7 @@ h2_inline h2_fail* h2_fail::new_symbol(const h2_string& symbol, const h2_vector<
 #define H2_UNITS(count, unit) ((count > 1) ? (unit "s") : unit)
 
 struct h2_report_console : h2_report_interface {
-   int cases = 0, index = 0;
+   size_t cases = 0, index = 0, last_capture_length = 0;
 
    int nonzero_count(int a1 = 0, int a2 = 0, int a3 = 0, int a4 = 0, int a5 = 0, int a6 = 0)
    {
@@ -5677,9 +5652,8 @@ struct h2_report_console : h2_report_interface {
    }
    void print_bar(bool percentage, const char* status_style, const char* status, h2_suite* s, h2_case* c, bool backable)
    {
-      static long long last_capture_length = 0;
-      if (last_capture_length == h2_stdio::I().capture_length) h2_console::prints("", "\33[2K\r"); /* clear line */
-      else h2_console::prints("", "\n"); /* user output, new line */
+      const char* new_line = last_capture_length == h2_stdio::I().capture_length ? "\33[2K\r" /* clear line */ : /* user output */ "\n";
+      h2_console::prints("", new_line);
       last_capture_length = h2_stdio::I().capture_length;
       h2_report::I().backable = O.progressing && backable;
 
@@ -5696,8 +5670,7 @@ struct h2_report_console : h2_report_interface {
    }
    void on_runner_start(h2_runner* r) override
    {
-      h2_list_for_each_entry (s, r->suites, h2_suite, x)
-         cases += s->cases.count();
+      h2_list_for_each_entry (s, r->suites, h2_suite, x) cases += s->cases.count();
    }
    void on_runner_endup(h2_runner* r) override
    {
@@ -5816,7 +5789,7 @@ struct h2_report_list : h2_report_interface {
    void on_runner_start(h2_runner* r) override {}
    void on_runner_endup(h2_runner* r) override
    {
-      if (O.lists & ListTag) {
+      if (O.lists & ListTags) {
          for (int i = 0; i < unfiltered_tagc; ++i) {
             h2_line line;
             line.printf("dark gray", "TAG-%d. ", i).printf("bold,light purple", "%s ", unfiltered_tags[i].name);
@@ -5830,17 +5803,17 @@ struct h2_report_list : h2_report_interface {
       if (O.lists & ListSuite) line += gray(comma_if(line.width())) + color(h2_stringify(unfiltered_suites), "green") + " " + gray(H2_UNITS(unfiltered_suites, "suite"));
       if (O.lists & ListCase) line += gray(comma_if(line.width())) + color(h2_stringify(unfiltered_cases), "green") + " " + gray(H2_UNITS(unfiltered_cases, "case"));
       if (O.lists & ListTodo) line += gray(comma_if(line.width())) + color(h2_stringify(unfiltered_todos), "green") + " " + gray(H2_UNITS(unfiltered_todos, "todo"));
-      if (O.lists & ListTag) line += gray(comma_if(line.width())) + color(h2_stringify(unfiltered_tagc), "green") + " " + gray(H2_UNITS(unfiltered_tagc, "tag"));
+      if (O.lists & ListTags) line += gray(comma_if(line.width())) + color(h2_stringify(unfiltered_tagc), "green") + " " + gray(H2_UNITS(unfiltered_tagc, "tag"));
       if (O.lists & ListSuite && suites > unfiltered_suites) line.printf("dark gray", "%s%d filtered %s", comma_if(line.width()), suites - unfiltered_suites, H2_UNITS(suites - unfiltered_suites, "suite"));
       if (O.lists & ListCase && cases > unfiltered_cases) line.printf("dark gray", "%s%d filtered %s", comma_if(line.width()), cases - unfiltered_cases, H2_UNITS(cases - unfiltered_cases, "case"));
       if (O.lists & ListTodo && todos > unfiltered_todos) line.printf("dark gray", "%s%d filtered %s", comma_if(line.width()), todos - unfiltered_todos, H2_UNITS(todos - unfiltered_todos, "todo"));
-      if (O.lists & ListTag && tagc > unfiltered_tagc) line.printf("dark gray", "%s%d filtered %s", comma_if(line.width()), tagc - unfiltered_tagc, H2_UNITS(tagc - unfiltered_tagc, "tag"));
+      if (O.lists & ListTags && tagc > unfiltered_tagc) line.printf("dark gray", "%s%d filtered %s", comma_if(line.width()), tagc - unfiltered_tagc, H2_UNITS(tagc - unfiltered_tagc, "tag"));
       h2_console::printl("Listing " + line);
    }
    h2_line format_tags(const char* tags[])
    {
       h2_line line;
-      if (O.lists & ListTag)
+      if (O.lists & ListTags)
          for (int i = 0; tags[i]; ++i) line.printf("purple", " %s", tags[i]);
       return line;
    }
@@ -6051,7 +6024,7 @@ h2_inline void h2_option::parse(int argc, const char** argv)
                if (!strcmp("suite", r)) lists |= ListSuite;
                else if (!strcmp("case", r)) lists |= ListCase;
                else if (!strcmp("todo", r)) lists |= ListTodo;
-               else if (!strcmp("tags", r)) lists |= ListTag;
+               else if (!strcmp("tags", r)) lists |= ListTags;
                else ::printf("-l %s\n", r), exit(-1);
             }
             if (!lists) lists = ListSuite | ListCase | ListTodo;

@@ -126,15 +126,14 @@ namespace h2 {
 #include "memory/h2_block.cpp"
 #include "memory/h2_stack.cpp"
 #include "memory/h2_override.cpp"
-#include "memory/h2_override_stdlib.cpp"
 #if defined __linux
-#include "memory/h2_override_linux.cpp"
+#include "memory/platform/h2_override_linux.cpp"
 #elif defined __APPLE__
-#include "memory/h2_override_macos.cpp"
+#include "memory/platform/h2_override_macos.cpp"
 #elif defined _MSC_VER
-#include "memory/h2_override_windows.cpp"
+#include "memory/platform/h2_override_windows.cpp"
 #else  // +MinGW
-#include "memory/h2_override_cygwin.cpp"
+#include "memory/platform/h2_override_cygwin.cpp"
 #endif
 #include "memory/h2_memory.cpp"
 #include "memory/h2_exempt.cpp"

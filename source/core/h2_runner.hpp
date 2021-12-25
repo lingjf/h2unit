@@ -35,11 +35,11 @@ struct h2_runner {
    }                                                               \
    void Q::Scope()
 
-#define H2GlobalSetup() __H2GlobalCallback(global_setups, H2PP_UNIQUE())
-#define H2GlobalCleanup() __H2GlobalCallback(global_cleanups, H2PP_UNIQUE())
+#define H2GlobalSetup(...) __H2GlobalCallback(global_setups, H2PP_UNIQUE())
+#define H2GlobalCleanup(...) __H2GlobalCallback(global_cleanups, H2PP_UNIQUE())
 
-#define H2GlobalSuiteSetup() __H2GlobalCallback(global_suite_setups, H2PP_UNIQUE())
-#define H2GlobalSuiteCleanup() __H2GlobalCallback(global_suite_cleanups, H2PP_UNIQUE())
+#define H2GlobalSuiteSetup(...) __H2GlobalCallback(global_suite_setups, H2PP_UNIQUE())
+#define H2GlobalSuiteCleanup(...) __H2GlobalCallback(global_suite_cleanups, H2PP_UNIQUE())
 
-#define H2GlobalCaseSetup() __H2GlobalCallback(global_case_setups, H2PP_UNIQUE())
-#define H2GlobalCaseCleanup() __H2GlobalCallback(global_case_cleanups, H2PP_UNIQUE())
+#define H2GlobalCaseSetup(...) __H2GlobalCallback(global_case_setups, H2PP_UNIQUE())
+#define H2GlobalCaseCleanup(...) __H2GlobalCallback(global_case_cleanups, H2PP_UNIQUE())

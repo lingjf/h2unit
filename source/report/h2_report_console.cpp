@@ -1,7 +1,7 @@
 #define H2_UNITS(count, unit) ((count > 1) ? (unit "s") : unit)
 
 struct h2_report_console : h2_report_interface {
-   int cases = 0, index = 0;
+   size_t cases = 0, index = 0, last_capture_length = 0;
 
    int nonzero_count(int a1 = 0, int a2 = 0, int a3 = 0, int a4 = 0, int a5 = 0, int a6 = 0)
    {
@@ -54,9 +54,8 @@ struct h2_report_console : h2_report_interface {
    }
    void print_bar(bool percentage, const char* status_style, const char* status, h2_suite* s, h2_case* c, bool backable)
    {
-      static long long last_capture_length = 0;
-      if (last_capture_length == h2_stdio::I().capture_length) h2_console::prints("", "\33[2K\r"); /* clear line */
-      else h2_console::prints("", "\n"); /* user output, new line */
+      const char* new_line = last_capture_length == h2_stdio::I().capture_length ? "\33[2K\r" /* clear line */ : /* user output */ "\n";
+      h2_console::prints("", new_line);
       last_capture_length = h2_stdio::I().capture_length;
       h2_report::I().backable = O.progressing && backable;
 
@@ -73,8 +72,7 @@ struct h2_report_console : h2_report_interface {
    }
    void on_runner_start(h2_runner* r) override
    {
-      h2_list_for_each_entry (s, r->suites, h2_suite, x)
-         cases += s->cases.count();
+      h2_list_for_each_entry (s, r->suites, h2_suite, x) cases += s->cases.count();
    }
    void on_runner_endup(h2_runner* r) override
    {

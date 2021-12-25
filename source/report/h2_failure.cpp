@@ -1,24 +1,12 @@
-h2_inline void h2_fail::append_subling(h2_fail*& fail, h2_fail* nf)
-{
-   if (!fail) {
-      fail = nf;
-   } else {
-      h2_fail** pp = &fail->subling_next;
-      while (*pp) pp = &(*pp)->subling_next;
-      *pp = nf;
-   }
-}
+#define H2_FAIL_APPEND(next)         \
+   if (fails) {                      \
+      h2_fail** pp = &fails->next;   \
+      while (*pp) pp = &(*pp)->next; \
+      *pp = fail;                    \
+   } else fails = fail
 
-h2_inline void h2_fail::append_child(h2_fail*& fail, h2_fail* nf)
-{
-   if (!fail) {
-      fail = nf;
-   } else {
-      h2_fail** pp = &fail->child_next;
-      while (*pp) pp = &(*pp)->child_next;
-      *pp = nf;
-   }
-}
+h2_inline void h2_fail::append_subling(h2_fail*& fails, h2_fail* fail) { H2_FAIL_APPEND(subling_next); }
+h2_inline void h2_fail::append_child(h2_fail*& fails, h2_fail* fail) { H2_FAIL_APPEND(child_next); }
 
 h2_inline h2_fail::~h2_fail()
 {
@@ -68,7 +56,6 @@ static inline bool is_synonym(const h2_string& a, const h2_string& b)
 
    if (_a == "Eq(" + _b + ")") return true;
    if (_a == "ListOf(" + _b.unenclose('[', ']') + ")") return true;
-
    return false;
 }
 
@@ -108,7 +95,7 @@ struct h2_fail_unexpect : h2_fail {
       h2_line a = h2_line(a_expression.unenclose('\"').unenclose('\'')).abbreviate(O.verbose >= VerboseDetail ? 10000 : 30, 2).brush("bold,red");
       line += "JE" + gray("(") + e + ", " + a + gray(")");
    }
-   void print_Inner(h2_line& line)
+   void print_In(h2_line& line)
    {
       if (0 <= seqno) line.printf("dark gray", "%d. ", seqno);
       if (expection.width()) {
@@ -125,7 +112,7 @@ struct h2_fail_unexpect : h2_fail {
    {
       h2_line line;
       line.indent(ci * 2 + 1);
-      if (!strcmp("Inner", assert_type)) print_Inner(line);
+      if (!strcmp("In", assert_type)) print_In(line);
       if (!strcmp("OK1", assert_type)) print_OK1(line);
       if (!strcmp("OK2", assert_type)) print_OK2(line);
       if (!strcmp("JE", assert_type)) print_JE(line);

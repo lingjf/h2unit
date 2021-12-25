@@ -75,3 +75,39 @@ struct h2_override {
       if (ptr) h2_runner::failing(h2_stack::I().rel_piece("delete[] nothrow", ptr));
    }
 };
+
+struct h2_override_stdlib {
+   h2_list stubs;
+
+   static char* strdup(char* s)
+   {
+      char* ret = (char*)h2_override::malloc(strlen(s) + 1);
+      if (ret) strcpy(ret, s);
+      return ret;
+   }
+
+   void set()
+   {
+      h2_stubs::add(stubs, (void*)::free, (void*)h2_override::free, "free", H2_FILINE);
+      h2_stubs::add(stubs, (void*)::malloc, (void*)h2_override::malloc, "malloc", H2_FILINE);
+      h2_stubs::add(stubs, (void*)::realloc, (void*)h2_override::realloc, "realloc", H2_FILINE);
+      h2_stubs::add(stubs, (void*)::calloc, (void*)h2_override::calloc, "calloc", H2_FILINE);
+#if defined _POSIX_C_SOURCE && _POSIX_C_SOURCE >= 200112L
+      h2_stubs::add(stubs, (void*)::posix_memalign, (void*)h2_override::posix_memalign, "posix_memalign", H2_FILINE);
+#endif
+#if defined _ISOC11_SOURCE
+      h2_stubs::add(stubs, (void*)::aligned_alloc, (void*)h2_override::aligned_alloc, "aligned_alloc", H2_FILINE);
+#endif
+      // valloc pvalloc memalign deprecated
+      h2_stubs::add(stubs, (void*)((void* (*)(std::size_t))::operator new), (void*)((void* (*)(std::size_t))h2_override::operator new), "new", H2_FILINE);
+      h2_stubs::add(stubs, (void*)((void* (*)(std::size_t, const std::nothrow_t&))::operator new), (void*)((void* (*)(std::size_t, const std::nothrow_t&))h2_override::operator new), "new nothrow", H2_FILINE);
+      h2_stubs::add(stubs, (void*)((void* (*)(std::size_t))::operator new[]), (void*)((void* (*)(std::size_t))h2_override::operator new[]), "new[]", H2_FILINE);
+      h2_stubs::add(stubs, (void*)((void* (*)(std::size_t, const std::nothrow_t&))::operator new[]), (void*)((void* (*)(std::size_t, const std::nothrow_t&))h2_override::operator new[]), "new[] nothrow", H2_FILINE);
+      h2_stubs::add(stubs, (void*)((void (*)(void*))::operator delete), (void*)((void (*)(void*))h2_override::operator delete), "delete", H2_FILINE);
+      h2_stubs::add(stubs, (void*)((void (*)(void*, const std::nothrow_t&))::operator delete), (void*)((void (*)(void*, const std::nothrow_t&))h2_override::operator delete), "delete nothrow", H2_FILINE);
+      h2_stubs::add(stubs, (void*)((void (*)(void*))::operator delete[]), (void*)((void (*)(void*))h2_override::operator delete[]), "delete[]", H2_FILINE);
+      h2_stubs::add(stubs, (void*)((void (*)(void*, const std::nothrow_t&))::operator delete[]), (void*)((void (*)(void*, const std::nothrow_t&))h2_override::operator delete[]), "delete[] nothrow", H2_FILINE);
+   }
+
+   void reset() { h2_stubs::clear(stubs); }
+};

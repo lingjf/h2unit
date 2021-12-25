@@ -2,7 +2,7 @@ struct h2_stdio {
    h2_singleton(h2_stdio);
    h2_string* buffer;
    bool stdout_capturable = false, stderr_capturable = false, syslog_capturable = false;
-   long long capture_length = 0;
+   size_t capture_length = 0;
 
    static ssize_t write(int fd, const void* buf, size_t count)
    {
@@ -13,11 +13,9 @@ struct h2_stdio {
             h2_report::I().backable = false;
          }
          LIBC__write(fd == -21371647 ? fileno(stdout) : fd, buf, count);
-         if (fd == fileno(stdout) || fd == fileno(stderr))
-            I().capture_length += count;
+         if (fd == fileno(stdout) || fd == fileno(stderr)) I().capture_length += count;
       }
-      if ((I().stdout_capturable && fd == fileno(stdout)) || (I().stderr_capturable && fd == fileno(stderr)))
-         I().buffer->append((char*)buf, count);
+      if ((I().stdout_capturable && fd == fileno(stdout)) || (I().stderr_capturable && fd == fileno(stderr))) I().buffer->append((char*)buf, count);
       return (ssize_t)count;
    }
 

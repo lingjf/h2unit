@@ -58,15 +58,15 @@ struct h2_polymorphic_matcher : h2_matches {
       return *this;
    }
 #define H2_MATCHES_CONFIGURE c.array_size, c.no_compare_operator, negative != c.negative, /*XOR ^*/ case_insensitive || c.case_insensitive, squash_whitespace || c.squash_whitespace, range_start != -1 && range_end != -1 ? range_start : c.range_start, range_start != -1 && range_end != -1 ? range_end : c.range_end, c.times* times
-   template <typename T> struct internal_impl : h2_matcher_impl<T>, h2_libc {
+   template <typename T> struct matches_matcher : h2_matcher_impl<T>, h2_libc {
       const Matches m;
       int range_start, range_end, times;
       bool negative, case_insensitive, squash_whitespace;
-      explicit internal_impl(const Matches& m_, int range_start_, int range_end_, int times_, bool negative_, bool case_insensitive_, bool squash_whitespace_) : m(m_), range_start(range_start_), range_end(range_end_), times(times_), negative(negative_), case_insensitive(case_insensitive_), squash_whitespace(squash_whitespace_) {}
+      explicit matches_matcher(const Matches& m_, int range_start_, int range_end_, int times_, bool negative_, bool case_insensitive_, bool squash_whitespace_) : m(m_), range_start(range_start_), range_end(range_end_), times(times_), negative(negative_), case_insensitive(case_insensitive_), squash_whitespace(squash_whitespace_) {}
       h2_fail* matches(const T& a, const C& c = {}) const override { return m.matches(a, {H2_MATCHES_CONFIGURE}); }
       h2_line expection(const C& c) const override { return m.expection({H2_MATCHES_CONFIGURE}); }
    };
-   template <typename T> operator h2_matcher<T>() const { return h2_matcher<T>(new internal_impl<const T&>(m, range_start, range_end, times, negative, case_insensitive, squash_whitespace), 0); }
+   template <typename T> operator h2_matcher<T>() const { return h2_matcher<T>(new matches_matcher<const T&>(m, range_start, range_end, times, negative, case_insensitive, squash_whitespace), 0); }
    virtual h2_line expection(const C& c = {}) const override { return h2_matches_expection(m, {H2_MATCHES_CONFIGURE}); }
 };
 

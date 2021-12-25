@@ -1,0 +1,48 @@
+config_setting(
+    name = "windows",
+    constraint_values = ["@platforms//os:windows"],
+)
+
+cc_binary(
+    name = "starter",
+    srcs = glob(["h2unit.h", "starter/*.c", "starter/*.h", "starter/*.cpp"]),
+    defines = ["H2UNIT_IMPORT_MAIN"],
+    copts = select({
+        ":windows": [],
+        "//conditions:default": ["-fno-stack-protector"],
+    }),
+    linkopts = select({
+        ":windows": [],
+        "//conditions:default": ["-rdynamic"],
+    }),
+)
+
+cc_binary(
+    name = "example1",
+    srcs = glob(["h2unit.h", "example/*.c", "example/*.h", "example/*.cpp"]),
+    includes = ["./example"],
+    defines = ["H2UNIT=1"],
+    copts = select({
+        ":windows": [],
+        "//conditions:default": ["-fno-stack-protector"],
+    }),
+    linkopts = select({
+        ":windows": [],
+        "//conditions:default": ["-rdynamic"],
+    }),
+)
+
+cc_binary(
+    name = "example2",
+    srcs = glob(["build/h2unit.cpp", "build/h2unit.hpp", "example/*.c", "example/*.h", "example/*.cpp"]),
+    includes = ["./example"],
+    defines = ["H2UNIT=2"],
+    copts = select({
+        ":windows": [],
+        "//conditions:default": ["-fno-stack-protector"],
+    }),
+    linkopts = select({
+        ":windows": [],
+        "//conditions:default": ["-rdynamic"],
+    }),
+)
