@@ -5,23 +5,23 @@ struct h2_return : h2_libc {
    explicit h2_return(ReturnType _value) : value(_value){};
 };
 
-template <typename ClassType, typename Signature> struct h2_routine;
+template <typename Class, typename Signature> struct h2_routine;
 
-template <typename ClassType, typename ReturnType, typename... ArgumentTypes>
-struct h2_routine<ClassType, ReturnType(ArgumentTypes...)> {
-   ReturnType (*fp)(ArgumentTypes...) = nullptr;               // normal function pointer
-   ReturnType (*mfp)(ClassType*, ArgumentTypes...) = nullptr;  // member function pointer
+template <typename Class, typename ReturnType, typename... Args>
+struct h2_routine<Class, ReturnType(Args...)> {
+   ReturnType (*fp)(Args...) = nullptr;           // normal function pointer
+   ReturnType (*mfp)(Class*, Args...) = nullptr;  // member function pointer
    h2_shared_ptr<h2_return<ReturnType>> ret;
 
    h2_routine() {}
    h2_routine(ReturnType r) : ret(new h2_return<ReturnType>(r)) {}
-   h2_routine(ReturnType (*f)(ArgumentTypes...)) : fp(f) {}
-   h2_routine(ReturnType (*f)(ClassType*, ArgumentTypes...)) : mfp(f) {}
+   h2_routine(ReturnType (*f)(Args...)) : fp(f) {}
+   h2_routine(ReturnType (*f)(Class*, Args...)) : mfp(f) {}
 
-   ReturnType operator()(ClassType* This, ArgumentTypes... arguments)
+   ReturnType operator()(Class* This, Args... args)
    {
-      if (mfp) return mfp(This, arguments...);
-      else if (fp) return fp(arguments...);
+      if (mfp) return mfp(This, args...);
+      else if (fp) return fp(args...);
       else if (ret) return ret->value;
       /* never reach! make compiler happy. return uninitialized value is undefined behaviour, clang illegal instruction. */
       return ret->value;
@@ -38,19 +38,19 @@ struct h2_routine<ClassType, ReturnType(ArgumentTypes...)> {
    }
 };
 
-template <typename ClassType, typename... ArgumentTypes>
-struct h2_routine<ClassType, void(ArgumentTypes...)> {
-   void (*fp)(ArgumentTypes...) = nullptr;
-   void (*mfp)(ClassType*, ArgumentTypes...) = nullptr;
+template <typename Class, typename... Args>
+struct h2_routine<Class, void(Args...)> {
+   void (*fp)(Args...) = nullptr;
+   void (*mfp)(Class*, Args...) = nullptr;
 
    h2_routine() {}
-   h2_routine(void (*f)(ArgumentTypes...)) : fp(f) {}
-   h2_routine(void (*f)(ClassType*, ArgumentTypes...)) : mfp(f) {}
+   h2_routine(void (*f)(Args...)) : fp(f) {}
+   h2_routine(void (*f)(Class*, Args...)) : mfp(f) {}
 
-   void operator()(ClassType* This, ArgumentTypes... arguments)
+   void operator()(Class* This, Args... args)
    {
-      if (mfp) mfp(This, arguments...);
-      else if (fp) fp(arguments...);
+      if (mfp) mfp(This, args...);
+      else if (fp) fp(args...);
    }
    operator bool() const
    {

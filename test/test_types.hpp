@@ -98,6 +98,7 @@ class A_AbstractClass {
    const char* normal_f1(int x) { return sprintf(buffer, "A.normal_f1(%d)%c", x, a), buffer; }
    virtual const char* virtual_f1(int x) { return sprintf(buffer, "A.virtual_f1(%d)%c", x, a), buffer; }
    virtual const char* pure_f0() = 0;
+   const char* overload_f() { return sprintf(buffer, "A.overload_f0()%c", a), buffer; }
 };
 
 class B_DerivedClass : public A_AbstractClass {
@@ -113,6 +114,10 @@ class B_DerivedClass : public A_AbstractClass {
    const char* normal_f2(int x, int y) { return sprintf(buffer, "B.normal_f2(%d,%d)%c", x, y, b), buffer; }
    virtual const char* virtual_f2(int x, int y) { return sprintf(buffer, "B.virtual_f2(%d,%d)%c", x, y, b), buffer; }
    virtual const char* pure_f0() { return sprintf(buffer, "B.pure_f0()%c", b), buffer; }
+   const char* overload_f(int x) { return sprintf(buffer, "B.overload_f(%d)%c", x, b), buffer; }
+   const char* const_f(int x) const { return sprintf(buffer, "B.const_f(%d)%c", x, b), buffer; }
+   const char* noexcept_f(int x) noexcept { return sprintf(buffer, "B.noexcept_f(%d)%c", x, b), buffer; }
+   const char* const_noexcept_f(int x) const noexcept { return sprintf(buffer, "B.const_noexcept_f(%d)%c", x, b), buffer; }
 };
 
 class C_OverrideClass : public A_AbstractClass {
@@ -134,6 +139,9 @@ class C_OverrideClass : public A_AbstractClass {
    virtual const char* virtual_f2(int x, int y) { return sprintf(buffer, "C.virtual_f2(%d,%d)%c", x, y, c), buffer; }
 
    virtual const char* pure_f0() { return sprintf(buffer, "C.pure_f0()%c", c), buffer; }
+
+   const char* overload_f(int x, int y) { return sprintf(buffer, "C.overload_f(%d,%d)%c", x, y, c), buffer; }
+   const char* overload_f(int x, int y, int z) { return sprintf(buffer, "C.overload_f(%d,%d,%d)%c", x, y, z, c), buffer; }
 };
 
 class D_NoConstructorClass : public B_DerivedClass, public C_OverrideClass {
@@ -171,6 +179,7 @@ class E_NamespaceClass : public A_AbstractClass {
 
 static const char* A_normal_f1_fake(A_AbstractClass* This, int x) { return sprintf(buffer, "-A.normal_f1(%d)%c", x, This->a), buffer; }
 static const char* A_virtual_f1_fake(A_AbstractClass* This, int x) { return sprintf(buffer, "-A.virtual_f1(%d)%c", x, This->a), buffer; }
+static const char* A_overload_f0_fake(A_AbstractClass* This) { return sprintf(buffer, "-A.virtual_f()%c", This->a), buffer; }
 static const char* B_static_f1_fake(int x) { return sprintf(buffer, "-B.static_f1(%d)", x), buffer; }
 static const char* B_normal_f1_fake(B_DerivedClass* This, int x) { return sprintf(buffer, "-B.normal_f1(%d)%c", x, This->b), buffer; }
 static const char* B_normal_f2_fake(B_DerivedClass* This, int x, int y) { return sprintf(buffer, "-B.normal_f2(%d,%d)%c", x, y, This->b), buffer; }
@@ -178,6 +187,8 @@ static const char* B_virtual_f1_fake(B_DerivedClass* This, int x) { return sprin
 static const char* B_virtual_f2_fake(B_DerivedClass* This, int x, int y) { return sprintf(buffer, "-B.virtual_f2(%d,%d)%c", x, y, This->b), buffer; }
 static const char* C_normal_f1_fake(C_OverrideClass* This, int x) { return sprintf(buffer, "-C.normal_f1(%d)%c", x, This->c), buffer; }
 static const char* C_virtual_f1_fake(C_OverrideClass* This, int x) { return sprintf(buffer, "-C.virtual_f1(%d)%c", x, This->c), buffer; }
+static const char* C_overload_f2_fake(C_OverrideClass* This, int x, int y) { return sprintf(buffer, "-C.overload_f(%d,%d)%c", x, y, This->c), buffer; }
+static const char* C_overload_f3_fake(C_OverrideClass* This, int x, int y, int z) { return sprintf(buffer, "-C.overload_f(%d,%d,%d)%c", x, y, z, This->c), buffer; }
 static const char* D_virtual_f3_fake(D_NoConstructorClass* This, int x, int y, int z) { return sprintf(buffer, "-D.virtual_f3(%d,%d,%d)%c", x, y, z, This->d), buffer; }
 static const char* E_virtual_f1_fake(test_ns::E_NamespaceClass* This, int x) { return sprintf(buffer, "-E.virtual_f1(%d)%c", x, This->e), buffer; }
 

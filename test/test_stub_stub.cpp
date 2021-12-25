@@ -94,6 +94,50 @@ SUITE(stub member function)
       STUB(C_OverrideClass, normal_f1, const char*(int a), C_normal_f1_fake);
       OK("-C.normal_f1(1)c", c.normal_f1(1));
    }
+
+   Case(overload member function)
+   {
+      C_OverrideClass c;
+      // OK("A.overload_f()a", c.overload_f());
+      OK("C.overload_f(1,2)c", c.overload_f(1, 2));
+      OK("C.overload_f(1,2,3)c", c.overload_f(1, 2, 3));
+
+      // STUB(C_OverrideClass, overload_f, const char*(), A_overload_f0_fake);
+      // OK("-A.overload_f()a", c.overload_f());
+
+      STUB(C_OverrideClass, overload_f, const char*(int, int), C_overload_f2_fake);
+      OK("-C.overload_f(1,2)c", c.overload_f(1, 2));
+
+      STUB(C_OverrideClass, overload_f, const char*(int, int, int), C_overload_f3_fake);
+      OK("-C.overload_f(1,2,3)c", c.overload_f(1, 2, 3));
+   }
+
+   Case(const member function)
+   {
+      B_DerivedClass b;
+      OK("B.const_f(1)b", b.const_f(1));
+
+      STUB(B_DerivedClass, const_f, const char*(int a), B_normal_f1_fake);
+      OK("-B.normal_f1(1)b", b.const_f(1));
+   }
+
+   Case(noexcept member function)
+   {
+      B_DerivedClass b;
+      OK("B.noexcept_f(1)b", b.noexcept_f(1));
+
+      STUB(B_DerivedClass, noexcept_f, const char*(int a), B_normal_f1_fake);
+      OK("-B.normal_f1(1)b", b.noexcept_f(1));
+   }
+
+   Case(const_noexcept member function)
+   {
+      B_DerivedClass b;
+      OK("B.const_noexcept_f(1)b", b.const_noexcept_f(1));
+
+      STUB(B_DerivedClass, const_noexcept_f, const char*(int a), B_normal_f1_fake);
+      OK("-B.normal_f1(1)b", b.const_noexcept_f(1));
+   }
 }
 
 SUITE(stub virtual member function)

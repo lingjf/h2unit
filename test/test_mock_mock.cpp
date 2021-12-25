@@ -77,7 +77,7 @@ SUITE(mock function)
       OK(11, foobar2(1, "A"));
    }
 
-   Case(void return )
+   Case(void return)
    {
       MOCK(foobar21, void(int& a, char*)).Once(1, (char*)"A");
 
@@ -225,6 +225,38 @@ SUITE(mock member function)
    {
       MOCK(B_DerivedClass, normal_f2, const char*(int, int)).Once(1, 2).Return("+B.normal_f2");
       OK("+B.normal_f2", b.normal_f2(1, 2));
+   }
+
+   Case(const member function)
+   {
+      MOCK(B_DerivedClass, const_f, const char*(int)).Once(1, 2).Return("+B.const_f");
+      OK("+B.const_f", b.const_f(1));
+   }
+
+   Case(noexcept member function)
+   {
+      MOCK(B_DerivedClass, noexcept_f, const char*(int)).Once(1, 2).Return("+B.noexcept_f");
+      OK("+B.noexcept_f", b.noexcept_f(1));
+   }
+
+   Case(const noexcept member function)
+   {
+      MOCK(B_DerivedClass, const_noexcept_f, const char*(int)).Once(1, 2).Return("+B.const_noexcept_f");
+      OK("+B.const_noexcept_f", b.const_noexcept_f(1));
+   }
+
+   Case(overload member function)
+   {
+      C_OverrideClass c;
+
+      // MOCK(C_OverrideClass, overload_f, const char*()).Once().Return("+C.overload_f0");
+      // OK("+C.overload_f0", c.overload_f());
+
+      MOCK(C_OverrideClass, overload_f, const char*(int, int)).Once(1, 2).Return("+C.overload_f2");
+      OK("+C.overload_f2", c.overload_f(1, 2));
+
+      MOCK(C_OverrideClass, overload_f, const char*(int, int, int)).Once(1, 2, 3).Return("+C.overload_f3");
+      OK("+C.overload_f3", c.overload_f(1, 2, 3));
    }
 
    Case(virtual member function)

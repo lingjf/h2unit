@@ -2939,8 +2939,8 @@ static constexpr const char* const constructible_errors[] = {"", "abstract ", "n
 template <typename = void, typename = void>
 struct h2_fp {
    template <typename T>
-   static void* A(T fp) { return h2_numberfy<void*>(fp); }
-   static void* A(const char* fn)
+   static void* get(T fp) { return h2_numberfy<void*>(fp); }
+   static void* get(const char* fn)
    {
       h2_symbol* res[16];
       int n = h2_nm::get_by_name(fn, res, 16);
@@ -2952,17 +2952,23 @@ struct h2_fp {
    }
 };
 
-template <typename ReturnType, typename... ArgumentTypes>
-struct h2_fp<ReturnType(ArgumentTypes...)> {
-   static void* A(ReturnType (*fp)(ArgumentTypes...)) { return h2_numberfy<void*>(fp); }
-   static void* A(const char* fn) { return h2_fp<>::A(fn); }
+template <typename ReturnType, typename... Args>
+struct h2_fp<ReturnType(Args...)> {
+   static void* get(ReturnType (*fp)(Args...)) { return h2_numberfy<void*>(fp); }
+   static void* get(const char* fn) { return h2_fp<>::get(fn); }
 };
 
-template <typename ClassType, typename ReturnType, typename... ArgumentTypes>
-struct h2_fp<ClassType, ReturnType(ArgumentTypes...)> {
+template <typename Class, typename ReturnType, typename... Args>
+struct h2_fp<Class, ReturnType(Args...)> {
    // static member function
-   static void* A(ReturnType (*f)(ArgumentTypes...)) { return (void*)f; }
-   static void* B(ClassType* o, ReturnType (*f)(ArgumentTypes...)) { return (void*)f; }
+   static void* get(ReturnType (*f)(Args...)) { return (void*)f; }
+   static void* get(Class* o, ReturnType (*f)(Args...)) { return (void*)f; }
+
+   // normal member function, const-qualified member functions
+   static void* get(ReturnType (Class::*f)(Args...)) { return get1(h2_numberfy<void*>(f)); }
+   static void* get(ReturnType (Class::*f)(Args...) const) { return get1(h2_numberfy<void*>(f)); }
+   static void* get(Class* o, ReturnType (Class::*f)(Args...)) { return get2(o, h2_numberfy<void*>(f)); }
+   static void* get(Class* o, ReturnType (Class::*f)(Args...) const) { return get2(o, h2_numberfy<void*>(f)); }
 
 #if defined _MSC_VER
    // https://github.com/microsoft/Detours
@@ -2970,35 +2976,35 @@ struct h2_fp<ClassType, ReturnType(ArgumentTypes...)> {
    // &C::f2 ILT+410(??_9C$B7AA) 00007FF79872119F
    // follow_jmp &C::f1 C::`vcall'{0}' 00007FF798721F2C
    // follow_jmp &C::f2 C::`vcall'{8}' 00007FF798721F24
-   static void* A(ReturnType (ClassType::*f)(ArgumentTypes...))
+   static void* get1(void* f)
    {
       long offset;
-      if (!is_virtual_mfp(f, offset)) return h2_numberfy<void*>(f);
+      if (!is_virtual_mfp(f, offset)) return f;
 
-      ClassType* o = h2_constructible<ClassType>::O(alloca(sizeof(ClassType)));
+      Class* o = h2_constructible<Class>::O(alloca(sizeof(Class)));
       if (0 == (unsigned long long)o || 1 == (unsigned long long)o || 2 == (unsigned long long)o) {
-         h2_runner::failing(h2_fail::new_symbol("vtable of " + h2_string(constructible_errors[(unsigned long long)o]) + h2_cxa::type_name<ClassType>(), {}, "  try: " + color("STUB/MOCK(", "yellow") + color("Object", "bold,red") + color(", Class, Method, ...)", "yellow")));
+         h2_runner::failing(h2_fail::new_symbol("vtable of " + h2_string(constructible_errors[(unsigned long long)o]) + h2_cxa::type_name<Class>(), {}, "  try: " + color("STUB/MOCK(", "yellow") + color("Object", "bold,red") + color(", Class, Method, ...)", "yellow")));
          return nullptr;
       }
       void* t = get_virtual_mfp(o, offset);
-      h2_destructible<ClassType>(o);
+      h2_destructible<Class>(o);
       return t;
    }
-   static void* B(ClassType* o, ReturnType (ClassType::*f)(ArgumentTypes...))
+   static void* get2(Class* o, void* f)
    {
       long offset;
-      if (!is_virtual_mfp(f, offset)) return h2_numberfy<void*>(f);
+      if (!is_virtual_mfp(f, offset)) return f;
       return get_virtual_mfp(o, offset);
    }
 
-   static void* get_virtual_mfp(ClassType* o, long offset)
+   static void* get_virtual_mfp(Class* o, long offset)
    {
       void** vtable = *(void***)o;
       return vtable[offset / sizeof(void*)];
    }
-   static bool is_virtual_mfp(ReturnType (ClassType::*f)(ArgumentTypes...), long& offset)
+   static bool is_virtual_mfp(void* f, long& offset)
    {
-      h2_symbol* symbol = h2_nm::get_by_addr((unsigned long long)h2_cxa::follow_jmp(h2_numberfy<void*>(f)));
+      h2_symbol* symbol = h2_nm::get_by_addr((unsigned long long)h2_cxa::follow_jmp(f));
       if (!symbol) return false;
       char* p = strstr(symbol->name(), "::`vcall'{");
       if (!p) return false;  // not virtual member function
@@ -3007,48 +3013,48 @@ struct h2_fp<ClassType, ReturnType(ArgumentTypes...)> {
    }
 #else
    //  https://itanium-cxx-abi.github.io/cxx-abi/
-   //  &ClassType::Method has separate representations for non-virtual and virtual functions.
+   //  &Class::Method has separate representations for non-virtual and virtual functions.
    //  For non-virtual functions, it is the address of the function.
    //  For virtual functions, it is 1 plus the virtual table offset (in bytes) of the function.
    //  The least-significant bit therefore discriminates between virtual and non-virtual functions.
-   static void* A(ReturnType (ClassType::*f)(ArgumentTypes...))
+   static void* get1(void* f)
    {
-      if (!is_virtual_mfp(f)) return h2_numberfy<void*>(f);
-      ClassType* o = h2_constructible<ClassType>::O(alloca(sizeof(ClassType)));
+      if (!is_virtual_mfp(f)) return f;
+      Class* o = h2_constructible<Class>::O(alloca(sizeof(Class)));
       if (2 < (unsigned long long)o) {
          void* t = get_virtual_mfp(o, f);
-         h2_destructible<ClassType>(o);
+         h2_destructible<Class>(o);
          return t;
       }
       char symbol[1024];
       // https://itanium-cxx-abi.github.io/cxx-abi/abi.html#mangling-special-vtables
-      sprintf(symbol, "_ZTV%s", typeid(ClassType).name());  // mangle for "vtable for ClassType"
+      sprintf(symbol, "_ZTV%s", typeid(Class).name());  // mangle for "vtable for Class"
       unsigned long long relative_vtable = h2_nm::get_mangle(symbol);
       if (!relative_vtable) {
-         sprintf(symbol, "_ZTI%s", typeid(ClassType).name());  // mangle for "typeinfo for ClassType" for abstract class
+         sprintf(symbol, "_ZTI%s", typeid(Class).name());  // mangle for "typeinfo for Class" for abstract class
          relative_vtable = h2_nm::get_mangle(symbol);
          if (!relative_vtable) {
-            h2_runner::failing(h2_fail::new_symbol("vtable of " + h2_string(constructible_errors[(unsigned long long)o]) + h2_cxa::type_name<ClassType>(), {}, "  try: " + color("STUB/MOCK(", "yellow") + color("Object", "bold,red") + color(", Class, Method, ...)", "yellow")));
+            h2_runner::failing(h2_fail::new_symbol("vtable of " + h2_string(constructible_errors[(unsigned long long)o]) + h2_cxa::type_name<Class>(), {}, "  try: " + color("STUB/MOCK(", "yellow") + color("Object", "bold,red") + color(", Class, Method, ...)", "yellow")));
             return nullptr;
          }
       }
       return get_virtual_mfp((void**)h2_load::vtable_to_ptr(relative_vtable), f);
    }
-   static void* B(ClassType* o, ReturnType (ClassType::*f)(ArgumentTypes...))
+   static void* get2(Class* o, void* f)
    {
-      if (!is_virtual_mfp(f)) return h2_numberfy<void*>(f);
+      if (!is_virtual_mfp(f)) return f;
       return get_virtual_mfp(*(void***)o, f);
    }
 
-   static void* get_virtual_mfp(ClassType* o, ReturnType (ClassType::*f)(ArgumentTypes...))
+   static void* get_virtual_mfp(Class* o, void* f)
    {
       return get_virtual_mfp(*(void***)o, f);
    }
-   static void* get_virtual_mfp(void** vtable, ReturnType (ClassType::*f)(ArgumentTypes...))
+   static void* get_virtual_mfp(void** vtable, void* f)
    {
       return vtable[(h2_numberfy<unsigned long long>(f) & ~1ULL) / sizeof(void*)];
    }
-   static bool is_virtual_mfp(ReturnType (ClassType::*f)(ArgumentTypes...))
+   static bool is_virtual_mfp(void* f)
    {
       if (h2_numberfy<unsigned long long>(&h2_vtable_test::dummy) & 1)
          return (h2_numberfy<unsigned long long>(f) & 1) && (h2_numberfy<unsigned long long>(f) - 1) % sizeof(void*) == 0 && h2_numberfy<unsigned long long>(f) < 1000 * sizeof(void*);
@@ -3072,9 +3078,9 @@ struct h2_stub_temporary_restore : h2_once {
 };
 // source/stub/h2_stuber.hpp
 namespace {
-template <int Counter, typename ClassType, typename Signature> struct h2_stuber;
-template <int Counter, typename ClassType, typename ReturnType, typename... ArgumentTypes>
-struct h2_stuber<Counter, ClassType, ReturnType(ArgumentTypes...)> {
+template <int Counter, typename Class, typename Signature> struct h2_stuber;
+template <int Counter, typename Class, typename ReturnType, typename... Args>
+struct h2_stuber<Counter, Class, ReturnType(Args...)> {
    h2_singleton(h2_stuber);
    void* srcfp;
    const char* srcfn;
@@ -3089,61 +3095,61 @@ struct h2_stuber<Counter, ClassType, ReturnType(ArgumentTypes...)> {
    }
 
 #if defined _WIN32 && (defined __i386__ || defined _M_IX86)
-   ReturnType (*dstfp_)(ClassType*, ArgumentTypes...);
+   ReturnType (*dstfp_)(Class*, Args...);
    struct member_calling_conversions_wrapper {
-      ReturnType fx(ArgumentTypes... arguments) { return I().dstfp_((ClassType*)this, std::forward<ArgumentTypes>(arguments)...); }
+      ReturnType fx(Args... args) { return I().dstfp_((Class*)this, std::forward<Args>(args)...); }
    };
-   void operator=(ReturnType (*dstfp)(ClassType*, ArgumentTypes...))
+   void operator=(ReturnType (*dstfp)(Class*, Args...))
    {
       dstfp_ = dstfp;
-      h2_runner::stub(srcfp, h2_fp<member_calling_conversions_wrapper, ReturnType(ArgumentTypes...)>::A(&member_calling_conversions_wrapper::fx), srcfn, filine);
+      h2_runner::stub(srcfp, h2_fp<member_calling_conversions_wrapper, ReturnType(Args...)>::get(&member_calling_conversions_wrapper::fx), srcfn, filine);
    }
 #else
-   void operator=(ReturnType (*dstfp)(ClassType*, ArgumentTypes...))  // captureless lambda implicit cast to function pointer
+   void operator=(ReturnType (*dstfp)(Class*, Args...))  // captureless lambda implicit cast to function pointer
    {
       h2_runner::stub(srcfp, (void*)dstfp, srcfn, filine);
    }
 #endif
-   void operator=(ReturnType (*dstfp)(ArgumentTypes...))  // stub normal function
+   void operator=(ReturnType (*dstfp)(Args...))  // stub normal function
    {
       h2_runner::stub(srcfp, (void*)dstfp, srcfn, filine);
    }
 };
 }
 // source/stub/h2_stub.hpp
-// STUB(                          Source   , Destination )
-// STUB(                Function, Signature, Destination )
-// STUB(         Class, Method  , Signature, Destination )
-// STUB( Object, Class, Method  , Signature, Destination )
+// STUB(                          Source             , Destination )
+// STUB(                Function, ReturnType(Args...), Destination )
+// STUB(         Class, Method  , ReturnType(Args...), Destination )
+// STUB( Object, Class, Method  , ReturnType(Args...), Destination )
 #define H2STUB(...) H2PP_VARIADIC_CALL(__H2STUB_, __VA_ARGS__)
-#define __H2STUB_2(Source, Destination) h2::h2_runner::stub(h2::h2_fp<>::A(Source), (void*)Destination, #Source, H2_FILINE)
-#define __H2STUB_3(Function, Signature, Destination) h2::h2_runner::stub(h2::h2_fp<H2PP_REMOVE_PARENTHESES_IF(Signature)>::A(H2PP_REMOVE_PARENTHESES_IF(Function)), (void*)(Destination), #Function, H2_FILINE)
-#define __H2STUB_4(Class, Method, Signature, Destination) h2::h2_stuber<__COUNTER__, H2PP_REMOVE_PARENTHESES_IF(Class), H2PP_REMOVE_PARENTHESES_IF(Signature)>::I(h2::h2_fp<H2PP_REMOVE_PARENTHESES_IF(Class), H2PP_REMOVE_PARENTHESES_IF(Signature)>::A(&H2PP_REMOVE_PARENTHESES_IF(Class)::H2PP_REMOVE_PARENTHESES_IF(Method)), #Class "::" #Method, H2_FILINE) = Destination
-#define __H2STUB_5(Object, Class, Method, Signature, Destination) h2::h2_stuber<__COUNTER__, H2PP_REMOVE_PARENTHESES_IF(Class), H2PP_REMOVE_PARENTHESES_IF(Signature)>::I(h2::h2_fp<H2PP_REMOVE_PARENTHESES_IF(Class), H2PP_REMOVE_PARENTHESES_IF(Signature)>::B(h2::h2_pointer_if(Object), &H2PP_REMOVE_PARENTHESES_IF(Class)::H2PP_REMOVE_PARENTHESES_IF(Method)), #Class "::" #Method, H2_FILINE) = Destination
+#define __H2STUB_2(Source, Destination) h2::h2_runner::stub(h2::h2_fp<>::get(Source), (void*)Destination, #Source, H2_FILINE)
+#define __H2STUB_3(Function, Signature, Destination) h2::h2_runner::stub(h2::h2_fp<H2PP_REMOVE_PARENTHESES_IF(Signature)>::get(H2PP_REMOVE_PARENTHESES_IF(Function)), (void*)(Destination), #Function, H2_FILINE)
+#define __H2STUB_4(Class, Method, Signature, Destination) h2::h2_stuber<__COUNTER__, H2PP_REMOVE_PARENTHESES_IF(Class), H2PP_REMOVE_PARENTHESES_IF(Signature)>::I(h2::h2_fp<H2PP_REMOVE_PARENTHESES_IF(Class), H2PP_REMOVE_PARENTHESES_IF(Signature)>::get(&H2PP_REMOVE_PARENTHESES_IF(Class)::H2PP_REMOVE_PARENTHESES_IF(Method)), #Class "::" #Method, H2_FILINE) = Destination
+#define __H2STUB_5(Object, Class, Method, Signature, Destination) h2::h2_stuber<__COUNTER__, H2PP_REMOVE_PARENTHESES_IF(Class), H2PP_REMOVE_PARENTHESES_IF(Signature)>::I(h2::h2_fp<H2PP_REMOVE_PARENTHESES_IF(Class), H2PP_REMOVE_PARENTHESES_IF(Signature)>::get(h2::h2_pointer_if(Object), &H2PP_REMOVE_PARENTHESES_IF(Class)::H2PP_REMOVE_PARENTHESES_IF(Method)), #Class "::" #Method, H2_FILINE) = Destination
 
 #define H2UNSTUB(...) H2PP_VARIADIC_CALL(__H2UNSTUB_, __VA_ARGS__)
-#define __H2UNSTUB_1(Source) h2::h2_runner::unstub(h2::h2_fp<>::A(Source))
-#define __H2UNSTUB_2(Function, Signature) h2::h2_runner::unstub(h2::h2_fp<H2PP_REMOVE_PARENTHESES_IF(Signature)>::A(H2PP_REMOVE_PARENTHESES_IF(Function)))
-#define __H2UNSTUB_3(Class, Method, Signature) h2::h2_runner::unstub(h2::h2_fp<H2PP_REMOVE_PARENTHESES_IF(Class), H2PP_REMOVE_PARENTHESES_IF(Signature)>::A(&H2PP_REMOVE_PARENTHESES_IF(Class)::H2PP_REMOVE_PARENTHESES_IF(Method)))
-#define __H2UNSTUB_4(Object, Class, Method, Signature) h2::h2_runner::unstub(h2::h2_fp<H2PP_REMOVE_PARENTHESES_IF(Class), H2PP_REMOVE_PARENTHESES_IF(Signature)>::B(h2::h2_pointer_if(Object), &H2PP_REMOVE_PARENTHESES_IF(Class)::H2PP_REMOVE_PARENTHESES_IF(Method)))
+#define __H2UNSTUB_1(Source) h2::h2_runner::unstub(h2::h2_fp<>::get(Source))
+#define __H2UNSTUB_2(Function, Signature) h2::h2_runner::unstub(h2::h2_fp<H2PP_REMOVE_PARENTHESES_IF(Signature)>::get(H2PP_REMOVE_PARENTHESES_IF(Function)))
+#define __H2UNSTUB_3(Class, Method, Signature) h2::h2_runner::unstub(h2::h2_fp<H2PP_REMOVE_PARENTHESES_IF(Class), H2PP_REMOVE_PARENTHESES_IF(Signature)>::get(&H2PP_REMOVE_PARENTHESES_IF(Class)::H2PP_REMOVE_PARENTHESES_IF(Method)))
+#define __H2UNSTUB_4(Object, Class, Method, Signature) h2::h2_runner::unstub(h2::h2_fp<H2PP_REMOVE_PARENTHESES_IF(Class), H2PP_REMOVE_PARENTHESES_IF(Signature)>::get(h2::h2_pointer_if(Object), &H2PP_REMOVE_PARENTHESES_IF(Class)::H2PP_REMOVE_PARENTHESES_IF(Method)))
 
 // STUBS(                Function, ReturnType, Args ) { }
 // STUBS(         Class, Method  , ReturnType, Args ) { }
 // STUBS( Object, Class, Method  , ReturnType, Args ) { }
 #define H2UNSTUBS(...) H2PP_VARIADIC_CALL(__H2UNSTUBS_, __VA_ARGS__)
-#define __H2UNSTUBS_1(Source) h2::h2_runner::unstub(h2::h2_fp<>::A(Source))
-#define __H2UNSTUBS_3(Function, ReturnType, Args) h2::h2_runner::unstub(h2::h2_fp<H2PP_REMOVE_PARENTHESES_IF(ReturnType) Args>::A(H2PP_REMOVE_PARENTHESES_IF(Function)))
-#define __H2UNSTUBS_4(Class, Method, ReturnType, Args) h2::h2_runner::unstub(h2::h2_fp<H2PP_REMOVE_PARENTHESES_IF(Class), H2PP_REMOVE_PARENTHESES_IF(ReturnType) Args>::A(&H2PP_REMOVE_PARENTHESES_IF(Class)::H2PP_REMOVE_PARENTHESES_IF(Method)))
-#define __H2UNSTUBS_5(Object, Class, Method, ReturnType, Args) h2::h2_runner::unstub(h2::h2_fp<H2PP_REMOVE_PARENTHESES_IF(Class), H2PP_REMOVE_PARENTHESES_IF(ReturnType) Args>::B(h2::h2_pointer_if(Object), &H2PP_REMOVE_PARENTHESES_IF(Class)::H2PP_REMOVE_PARENTHESES_IF(Method)))
+#define __H2UNSTUBS_1(Source) h2::h2_runner::unstub(h2::h2_fp<>::get(Source))
+#define __H2UNSTUBS_3(Function, ReturnType, Args) h2::h2_runner::unstub(h2::h2_fp<H2PP_REMOVE_PARENTHESES_IF(ReturnType) Args>::get(H2PP_REMOVE_PARENTHESES_IF(Function)))
+#define __H2UNSTUBS_4(Class, Method, ReturnType, Args) h2::h2_runner::unstub(h2::h2_fp<H2PP_REMOVE_PARENTHESES_IF(Class), H2PP_REMOVE_PARENTHESES_IF(ReturnType) Args>::get(&H2PP_REMOVE_PARENTHESES_IF(Class)::H2PP_REMOVE_PARENTHESES_IF(Method)))
+#define __H2UNSTUBS_5(Object, Class, Method, ReturnType, Args) h2::h2_runner::unstub(h2::h2_fp<H2PP_REMOVE_PARENTHESES_IF(Class), H2PP_REMOVE_PARENTHESES_IF(ReturnType) Args>::get(h2::h2_pointer_if(Object), &H2PP_REMOVE_PARENTHESES_IF(Class)::H2PP_REMOVE_PARENTHESES_IF(Method)))
 
 #define H2STUBS(...) H2PP_VARIADIC_CALL(__H2STUBS_, __VA_ARGS__)
-#define __H2STUBS_3(Function, ReturnType, Args) h2::h2_stuber<__COUNTER__, std::false_type, H2PP_REMOVE_PARENTHESES_IF(ReturnType) Args>::I(h2::h2_fp<H2PP_REMOVE_PARENTHESES_IF(ReturnType) Args>::A(H2PP_REMOVE_PARENTHESES_IF(Function)), #Function, H2_FILINE) = [] Args -> ReturnType
+#define __H2STUBS_3(Function, ReturnType, Args) h2::h2_stuber<__COUNTER__, std::false_type, H2PP_REMOVE_PARENTHESES_IF(ReturnType) Args>::I(h2::h2_fp<H2PP_REMOVE_PARENTHESES_IF(ReturnType) Args>::get(H2PP_REMOVE_PARENTHESES_IF(Function)), #Function, H2_FILINE) = [] Args -> ReturnType
 #define __H2STUBS_4(Class, Method, ReturnType, Args) H2PP_CAT(__H2STUBS_4_, H2PP_IS_EMPTY Args)(Class, Method, ReturnType, Args)
-#define __H2STUBS_4_0(Class, Method, ReturnType, Args) h2::h2_stuber<__COUNTER__, H2PP_REMOVE_PARENTHESES_IF(Class), H2PP_REMOVE_PARENTHESES_IF(ReturnType) Args>::I(h2::h2_fp<H2PP_REMOVE_PARENTHESES_IF(Class), H2PP_REMOVE_PARENTHESES_IF(ReturnType) Args>::A(&H2PP_REMOVE_PARENTHESES_IF(Class)::H2PP_REMOVE_PARENTHESES_IF(Method)), #Class "::" #Method, H2_FILINE) = [](H2PP_REMOVE_PARENTHESES_IF(Class) * This, H2PP_REMOVE_PARENTHESES(Args)) -> H2PP_REMOVE_PARENTHESES_IF(ReturnType)
-#define __H2STUBS_4_1(Class, Method, ReturnType, Args) h2::h2_stuber<__COUNTER__, H2PP_REMOVE_PARENTHESES_IF(Class), H2PP_REMOVE_PARENTHESES_IF(ReturnType) Args>::I(h2::h2_fp<H2PP_REMOVE_PARENTHESES_IF(Class), H2PP_REMOVE_PARENTHESES_IF(ReturnType) Args>::A(&H2PP_REMOVE_PARENTHESES_IF(Class)::H2PP_REMOVE_PARENTHESES_IF(Method)), #Class "::" #Method, H2_FILINE) = [](H2PP_REMOVE_PARENTHESES_IF(Class) * This) -> H2PP_REMOVE_PARENTHESES_IF(ReturnType)
+#define __H2STUBS_4_0(Class, Method, ReturnType, Args) h2::h2_stuber<__COUNTER__, H2PP_REMOVE_PARENTHESES_IF(Class), H2PP_REMOVE_PARENTHESES_IF(ReturnType) Args>::I(h2::h2_fp<H2PP_REMOVE_PARENTHESES_IF(Class), H2PP_REMOVE_PARENTHESES_IF(ReturnType) Args>::get(&H2PP_REMOVE_PARENTHESES_IF(Class)::H2PP_REMOVE_PARENTHESES_IF(Method)), #Class "::" #Method, H2_FILINE) = [](H2PP_REMOVE_PARENTHESES_IF(Class) * This, H2PP_REMOVE_PARENTHESES(Args)) -> H2PP_REMOVE_PARENTHESES_IF(ReturnType)
+#define __H2STUBS_4_1(Class, Method, ReturnType, Args) h2::h2_stuber<__COUNTER__, H2PP_REMOVE_PARENTHESES_IF(Class), H2PP_REMOVE_PARENTHESES_IF(ReturnType) Args>::I(h2::h2_fp<H2PP_REMOVE_PARENTHESES_IF(Class), H2PP_REMOVE_PARENTHESES_IF(ReturnType) Args>::get(&H2PP_REMOVE_PARENTHESES_IF(Class)::H2PP_REMOVE_PARENTHESES_IF(Method)), #Class "::" #Method, H2_FILINE) = [](H2PP_REMOVE_PARENTHESES_IF(Class) * This) -> H2PP_REMOVE_PARENTHESES_IF(ReturnType)
 #define __H2STUBS_5(Object, Class, Method, ReturnType, Args) H2PP_CAT(__H2STUBS_5_, H2PP_IS_EMPTY Args)(Object, Class, Method, ReturnType, Args)
-#define __H2STUBS_5_0(Object, Class, Method, ReturnType, Args) h2::h2_stuber<__COUNTER__, H2PP_REMOVE_PARENTHESES_IF(Class), H2PP_REMOVE_PARENTHESES_IF(ReturnType) Args>::I(h2::h2_fp<H2PP_REMOVE_PARENTHESES_IF(Class), H2PP_REMOVE_PARENTHESES_IF(ReturnType) Args>::B(h2::h2_pointer_if(Object), &H2PP_REMOVE_PARENTHESES_IF(Class)::H2PP_REMOVE_PARENTHESES_IF(Method)), #Class "::" #Method, H2_FILINE) = [](H2PP_REMOVE_PARENTHESES_IF(Class) * This, H2PP_REMOVE_PARENTHESES(Args)) -> H2PP_REMOVE_PARENTHESES_IF(ReturnType)
-#define __H2STUBS_5_1(Object, Class, Method, ReturnType, Args) h2::h2_stuber<__COUNTER__, H2PP_REMOVE_PARENTHESES_IF(Class), H2PP_REMOVE_PARENTHESES_IF(ReturnType) Args>::I(h2::h2_fp<H2PP_REMOVE_PARENTHESES_IF(Class), H2PP_REMOVE_PARENTHESES_IF(ReturnType) Args>::B(h2::h2_pointer_if(Object), &H2PP_REMOVE_PARENTHESES_IF(Class)::H2PP_REMOVE_PARENTHESES_IF(Method)), #Class "::" #Method, H2_FILINE) = [](H2PP_REMOVE_PARENTHESES_IF(Class) * This) -> H2PP_REMOVE_PARENTHESES_IF(ReturnType)
+#define __H2STUBS_5_0(Object, Class, Method, ReturnType, Args) h2::h2_stuber<__COUNTER__, H2PP_REMOVE_PARENTHESES_IF(Class), H2PP_REMOVE_PARENTHESES_IF(ReturnType) Args>::I(h2::h2_fp<H2PP_REMOVE_PARENTHESES_IF(Class), H2PP_REMOVE_PARENTHESES_IF(ReturnType) Args>::get(h2::h2_pointer_if(Object), &H2PP_REMOVE_PARENTHESES_IF(Class)::H2PP_REMOVE_PARENTHESES_IF(Method)), #Class "::" #Method, H2_FILINE) = [](H2PP_REMOVE_PARENTHESES_IF(Class) * This, H2PP_REMOVE_PARENTHESES(Args)) -> H2PP_REMOVE_PARENTHESES_IF(ReturnType)
+#define __H2STUBS_5_1(Object, Class, Method, ReturnType, Args) h2::h2_stuber<__COUNTER__, H2PP_REMOVE_PARENTHESES_IF(Class), H2PP_REMOVE_PARENTHESES_IF(ReturnType) Args>::I(h2::h2_fp<H2PP_REMOVE_PARENTHESES_IF(Class), H2PP_REMOVE_PARENTHESES_IF(ReturnType) Args>::get(h2::h2_pointer_if(Object), &H2PP_REMOVE_PARENTHESES_IF(Class)::H2PP_REMOVE_PARENTHESES_IF(Method)), #Class "::" #Method, H2_FILINE) = [](H2PP_REMOVE_PARENTHESES_IF(Class) * This) -> H2PP_REMOVE_PARENTHESES_IF(ReturnType)
 // source/mock/h2_routine.hpp
 template <typename ReturnType>
 struct h2_return : h2_libc {
@@ -3152,23 +3158,23 @@ struct h2_return : h2_libc {
    explicit h2_return(ReturnType _value) : value(_value){};
 };
 
-template <typename ClassType, typename Signature> struct h2_routine;
+template <typename Class, typename Signature> struct h2_routine;
 
-template <typename ClassType, typename ReturnType, typename... ArgumentTypes>
-struct h2_routine<ClassType, ReturnType(ArgumentTypes...)> {
-   ReturnType (*fp)(ArgumentTypes...) = nullptr;               // normal function pointer
-   ReturnType (*mfp)(ClassType*, ArgumentTypes...) = nullptr;  // member function pointer
+template <typename Class, typename ReturnType, typename... Args>
+struct h2_routine<Class, ReturnType(Args...)> {
+   ReturnType (*fp)(Args...) = nullptr;           // normal function pointer
+   ReturnType (*mfp)(Class*, Args...) = nullptr;  // member function pointer
    h2_shared_ptr<h2_return<ReturnType>> ret;
 
    h2_routine() {}
    h2_routine(ReturnType r) : ret(new h2_return<ReturnType>(r)) {}
-   h2_routine(ReturnType (*f)(ArgumentTypes...)) : fp(f) {}
-   h2_routine(ReturnType (*f)(ClassType*, ArgumentTypes...)) : mfp(f) {}
+   h2_routine(ReturnType (*f)(Args...)) : fp(f) {}
+   h2_routine(ReturnType (*f)(Class*, Args...)) : mfp(f) {}
 
-   ReturnType operator()(ClassType* This, ArgumentTypes... arguments)
+   ReturnType operator()(Class* This, Args... args)
    {
-      if (mfp) return mfp(This, arguments...);
-      else if (fp) return fp(arguments...);
+      if (mfp) return mfp(This, args...);
+      else if (fp) return fp(args...);
       else if (ret) return ret->value;
       /* never reach! make compiler happy. return uninitialized value is undefined behaviour, clang illegal instruction. */
       return ret->value;
@@ -3185,19 +3191,19 @@ struct h2_routine<ClassType, ReturnType(ArgumentTypes...)> {
    }
 };
 
-template <typename ClassType, typename... ArgumentTypes>
-struct h2_routine<ClassType, void(ArgumentTypes...)> {
-   void (*fp)(ArgumentTypes...) = nullptr;
-   void (*mfp)(ClassType*, ArgumentTypes...) = nullptr;
+template <typename Class, typename... Args>
+struct h2_routine<Class, void(Args...)> {
+   void (*fp)(Args...) = nullptr;
+   void (*mfp)(Class*, Args...) = nullptr;
 
    h2_routine() {}
-   h2_routine(void (*f)(ArgumentTypes...)) : fp(f) {}
-   h2_routine(void (*f)(ClassType*, ArgumentTypes...)) : mfp(f) {}
+   h2_routine(void (*f)(Args...)) : fp(f) {}
+   h2_routine(void (*f)(Class*, Args...)) : mfp(f) {}
 
-   void operator()(ClassType* This, ArgumentTypes... arguments)
+   void operator()(Class* This, Args... args)
    {
-      if (mfp) mfp(This, arguments...);
-      else if (fp) fp(arguments...);
+      if (mfp) mfp(This, args...);
+      else if (fp) fp(args...);
    }
    operator bool() const
    {
@@ -3235,10 +3241,10 @@ struct h2_checkin { /* 考勤 ; 函数被调次数期望 */
    static h2_checkin Between(int left, int right) { return h2_checkin(left, right, "Between"); }
 };
 // source/mock/h2_tuple.hpp
-template <typename MatcherTuple, typename ArgumentTypeTuple>
-inline h2_fail* __tuple_matches(MatcherTuple& matchers, ArgumentTypeTuple& arguments, std::integral_constant<std::size_t, 0>) { return nullptr; }
-template <typename MatcherTuple, typename ArgumentTypeTuple, std::size_t I>
-inline h2_fail* __tuple_matches(MatcherTuple& matchers, ArgumentTypeTuple& arguments, std::integral_constant<std::size_t, I>)
+template <typename MatcherTuple, typename ArgumentTuple>
+inline h2_fail* __tuple_matches(MatcherTuple& matchers, ArgumentTuple& arguments, std::integral_constant<std::size_t, 0>) { return nullptr; }
+template <typename MatcherTuple, typename ArgumentTuple, std::size_t I>
+inline h2_fail* __tuple_matches(MatcherTuple& matchers, ArgumentTuple& arguments, std::integral_constant<std::size_t, I>)
 {
    h2_fail* fails = __tuple_matches(matchers, arguments, std::integral_constant<std::size_t, I - 1>());
    h2_fail* fail = std::get<I - 1>(matchers).matches(std::get<I - 1>(arguments));
@@ -3247,24 +3253,24 @@ inline h2_fail* __tuple_matches(MatcherTuple& matchers, ArgumentTypeTuple& argum
    h2_runner::asserts();
    return fails;
 }
-template <typename MatcherTuple, typename ArgumentTypeTuple>
-inline h2_fail* tuple_matches(MatcherTuple& matchers, ArgumentTypeTuple& arguments)
+template <typename MatcherTuple, typename ArgumentTuple>
+inline h2_fail* tuple_matches(MatcherTuple& matchers, ArgumentTuple& arguments)
 {
-   return __tuple_matches(matchers, arguments, std::integral_constant<std::size_t, std::tuple_size<ArgumentTypeTuple>::value>());
+   return __tuple_matches(matchers, arguments, std::integral_constant<std::size_t, std::tuple_size<ArgumentTuple>::value>());
 }
 
-template <typename ArgumentTypeTuple>
+template <typename ArgumentTuple>
 inline void __tuple_types(h2_vector<h2_string>& names, std::integral_constant<std::size_t, 0>) {}
-template <typename ArgumentTypeTuple, std::size_t I>
+template <typename ArgumentTuple, std::size_t I>
 inline void __tuple_types(h2_vector<h2_string>& names, std::integral_constant<std::size_t, I>)
 {
-   __tuple_types<ArgumentTypeTuple>(names, std::integral_constant<std::size_t, I - 1>());
-   names.push_back(h2_cxa::type_name<typename std::tuple_element<I - 1, ArgumentTypeTuple>::type>());
+   __tuple_types<ArgumentTuple>(names, std::integral_constant<std::size_t, I - 1>());
+   names.push_back(h2_cxa::type_name<typename std::tuple_element<I - 1, ArgumentTuple>::type>());
 }
-template <typename ArgumentTypeTuple>
+template <typename ArgumentTuple>
 inline void tuple_types(h2_vector<h2_string>& names)
 {
-   return __tuple_types<ArgumentTypeTuple>(names, std::integral_constant<std::size_t, std::tuple_size<ArgumentTypeTuple>::value>());
+   return __tuple_types<ArgumentTuple>(names, std::integral_constant<std::size_t, std::tuple_size<ArgumentTuple>::value>());
 }
 // source/mock/h2_mocker.hpp
 struct h2_mocker_base : h2_libc {
@@ -3290,38 +3296,37 @@ struct h2_mocker_base : h2_libc {
 
 namespace {
 
-template <int Counter, typename ClassType, typename Signature> class h2_mocker;
+template <int Counter, typename Class, typename Signature> class h2_mocker;
+template <int Counter, typename Class, typename ReturnType, typename... Args>
+class h2_mocker<Counter, Class, ReturnType(Args...)> : h2_mocker_base {
+   using ArgumentTuple = std::tuple<Args...>;
 
-template <int Counter, typename ClassType, typename ReturnType, typename... ArgumentTypes>
-class h2_mocker<Counter, ClassType, ReturnType(ArgumentTypes...)> : h2_mocker_base {
-   using ArgumentTypeTuple = std::tuple<ArgumentTypes...>;
-
-#define H2_Typedef_Matcher(__, i) h2_matcher<h2_nth_decay<i, ArgumentTypes...>>
+#define H2_Typedef_Matcher(__, i) h2_matcher<h2_nth_decay<i, Args...>>
    using MatcherTuple = std::tuple<H2PP_REPEAT((, ), H2_Typedef_Matcher, , 20)>;
 #undef H2_Typedef_Matcher
 
    h2_vector<MatcherTuple> matcher_array;
-   h2_vector<h2_routine<ClassType, ReturnType(ArgumentTypes...)>> routine_array;
-   h2_routine<ClassType, ReturnType(ArgumentTypes...)> original;
+   h2_vector<h2_routine<Class, ReturnType(Args...)>> routine_array;
+   h2_routine<Class, ReturnType(Args...)> original;
 
-   static ReturnType function_stub(ClassType* This, ArgumentTypes... arguments)
+   static ReturnType function_stub(Class* This, Args... args)
    {
-      int index = I().matches(std::forward<ArgumentTypes>(arguments)...);
+      int index = I().matches(std::forward<Args>(args)...);
       h2::h2_stub_temporary_restore t(I().srcfp);
       if (index == -1 || !I().routine_array[index])
-         return I().original(This, std::forward<ArgumentTypes>(arguments)...);
-      return I().routine_array[index](This, std::forward<ArgumentTypes>(arguments)...);
+         return I().original(This, std::forward<Args>(args)...);
+      return I().routine_array[index](This, std::forward<Args>(args)...);
    }
 
    struct member_function_stub {  // wrap for calling conversions
-      ReturnType fx(ArgumentTypes... arguments) { return function_stub((ClassType*)this, std::forward<ArgumentTypes>(arguments)...); }
+      ReturnType fx(Args... args) { return function_stub((Class*)this, std::forward<Args>(args)...); }
    };
 
-   static ReturnType normal_function_stub(ArgumentTypes... arguments) { return function_stub(nullptr, std::forward<ArgumentTypes>(arguments)...); }
+   static ReturnType normal_function_stub(Args... args) { return function_stub(nullptr, std::forward<Args>(args)...); }
 
-   int matches(ArgumentTypes... arguments)
+   int matches(Args... args)
    {
-      ArgumentTypeTuple at = std::forward_as_tuple(std::forward<ArgumentTypes>(arguments)...);
+      ArgumentTuple at = std::forward_as_tuple(std::forward<Args>(args)...);
       int checkin_offset = -1;
       for (int i = checkin_index; i < (int)checkin_array.size(); ++i) {
          h2_fail* fails = tuple_matches(matcher_array[i], at);
@@ -3368,19 +3373,19 @@ class h2_mocker<Counter, ClassType, ReturnType(ArgumentTypes...)> : h2_mocker_ba
       if (!i) {
          i = new h2_mocker();
          h2_cxa::type_name<ReturnType>(i->return_type, sizeof(i->return_type));
-         tuple_types<ArgumentTypeTuple>(i->argument_types);
+         tuple_types<ArgumentTuple>(i->argument_types);
       }
       return *i;
    }
 
    static h2_mocker& I(void* srcfp, const char* srcfn, const char* filine)
    {
-      if (std::is_same<std::false_type, ClassType>::value) {
+      if (std::is_same<std::false_type, Class>::value) {
          I().dstfp = (void*)normal_function_stub;
-         I().original.fp = (ReturnType(*)(ArgumentTypes...))srcfp;
+         I().original.fp = (ReturnType(*)(Args...))srcfp;
       } else {
-         I().dstfp = h2::h2_fp<member_function_stub, ReturnType(ArgumentTypes...)>::A(&member_function_stub::fx);
-         I().original.mfp = (ReturnType(*)(ClassType*, ArgumentTypes...))srcfp;
+         I().dstfp = h2::h2_fp<member_function_stub, ReturnType(Args...)>::get(&member_function_stub::fx);
+         I().original.mfp = (ReturnType(*)(Class*, Args...))srcfp;
       }
       I().srcfp = srcfp;
       I().srcfn = srcfn;
@@ -3396,14 +3401,14 @@ class h2_mocker<Counter, ClassType, ReturnType(ArgumentTypes...)> : h2_mocker_ba
       return *this;
    }
 
-#define H2_Default_Matcher(__, i) h2_matcher<h2_nth_decay<i, ArgumentTypes...>> _##i = {}
-#define H2_Forward_Matcher(__, i) std::forward<h2_matcher<h2_nth_decay<i, ArgumentTypes...>>>(_##i)
+#define H2_Default_Matcher(__, i) h2_matcher<h2_nth_decay<i, Args...>> _##i = {}
+#define H2_Forward_Matcher(__, i) std::forward<h2_matcher<h2_nth_decay<i, Args...>>>(_##i)
 
    h2_mocker& Once(H2PP_REPEAT((, ), H2_Default_Matcher, , 20))
    {
       checkin_array.push_back(h2_checkin::Once());
       matcher_array.push_back(std::forward_as_tuple(H2PP_REPEAT((, ), H2_Forward_Matcher, , 20)));
-      routine_array.push_back(h2_routine<ClassType, ReturnType(ArgumentTypes...)>());
+      routine_array.push_back(h2_routine<Class, ReturnType(Args...)>());
       return *this;
    }
 
@@ -3411,7 +3416,7 @@ class h2_mocker<Counter, ClassType, ReturnType(ArgumentTypes...)> : h2_mocker_ba
    {
       checkin_array.push_back(h2_checkin::Twice());
       matcher_array.push_back(std::forward_as_tuple(H2PP_REPEAT((, ), H2_Forward_Matcher, , 20)));
-      routine_array.push_back(h2_routine<ClassType, ReturnType(ArgumentTypes...)>());
+      routine_array.push_back(h2_routine<Class, ReturnType(Args...)>());
       return *this;
    }
 
@@ -3419,7 +3424,7 @@ class h2_mocker<Counter, ClassType, ReturnType(ArgumentTypes...)> : h2_mocker_ba
    {
       checkin_array.push_back(h2_checkin::Times(count));
       matcher_array.push_back(std::forward_as_tuple(H2PP_REPEAT((, ), H2_Forward_Matcher, , 20)));
-      routine_array.push_back(h2_routine<ClassType, ReturnType(ArgumentTypes...)>());
+      routine_array.push_back(h2_routine<Class, ReturnType(Args...)>());
       return *this;
    }
 
@@ -3427,7 +3432,7 @@ class h2_mocker<Counter, ClassType, ReturnType(ArgumentTypes...)> : h2_mocker_ba
    {
       checkin_array.push_back(h2_checkin::Any());
       matcher_array.push_back(std::forward_as_tuple(H2PP_REPEAT((, ), H2_Forward_Matcher, , 20)));
-      routine_array.push_back(h2_routine<ClassType, ReturnType(ArgumentTypes...)>());
+      routine_array.push_back(h2_routine<Class, ReturnType(Args...)>());
       return *this;
    }
 
@@ -3435,7 +3440,7 @@ class h2_mocker<Counter, ClassType, ReturnType(ArgumentTypes...)> : h2_mocker_ba
    {
       checkin_array.push_back(h2_checkin::Atleast(count));
       matcher_array.push_back(std::forward_as_tuple(H2PP_REPEAT((, ), H2_Forward_Matcher, , 20)));
-      routine_array.push_back(h2_routine<ClassType, ReturnType(ArgumentTypes...)>());
+      routine_array.push_back(h2_routine<Class, ReturnType(Args...)>());
       return *this;
    }
 
@@ -3443,7 +3448,7 @@ class h2_mocker<Counter, ClassType, ReturnType(ArgumentTypes...)> : h2_mocker_ba
    {
       checkin_array.push_back(h2_checkin::Atmost(count));
       matcher_array.push_back(std::forward_as_tuple(H2PP_REPEAT((, ), H2_Forward_Matcher, , 20)));
-      routine_array.push_back(h2_routine<ClassType, ReturnType(ArgumentTypes...)>());
+      routine_array.push_back(h2_routine<Class, ReturnType(Args...)>());
       return *this;
    }
 
@@ -3451,7 +3456,7 @@ class h2_mocker<Counter, ClassType, ReturnType(ArgumentTypes...)> : h2_mocker_ba
    {
       checkin_array.push_back(h2_checkin::Between(left, right));
       matcher_array.push_back(std::forward_as_tuple(H2PP_REPEAT((, ), H2_Forward_Matcher, , 20)));
-      routine_array.push_back(h2_routine<ClassType, ReturnType(ArgumentTypes...)>());
+      routine_array.push_back(h2_routine<Class, ReturnType(Args...)>());
       return *this;
    }
 
@@ -3465,17 +3470,17 @@ class h2_mocker<Counter, ClassType, ReturnType(ArgumentTypes...)> : h2_mocker_ba
 #undef H2_Default_Matcher
 #undef H2_Forward_Matcher
 
-#define H2_Th_Matcher(__, i)                                              \
-   h2_mocker& Th##i(h2_matcher<h2_nth_decay<i, ArgumentTypes...>> e = {}) \
-   {                                                                      \
-      if (checkin_array.empty()) Any();                                   \
-      std::get<i>(matcher_array.back()) = e;                              \
-      return *this;                                                       \
+#define H2_Th_Matcher(__, i)                                     \
+   h2_mocker& Th##i(h2_matcher<h2_nth_decay<i, Args...>> e = {}) \
+   {                                                             \
+      if (checkin_array.empty()) Any();                          \
+      std::get<i>(matcher_array.back()) = e;                     \
+      return *this;                                              \
    }
    H2PP_REPEAT(, H2_Th_Matcher, , 20);
 #undef H2_Th_Matcher
 
-   h2_mocker& Return(h2_routine<ClassType, ReturnType(ArgumentTypes...)> r)
+   h2_mocker& Return(h2_routine<Class, ReturnType(Args...)> r)
    {
       if (checkin_array.empty()) Any();
       if (!routine_array.empty()) routine_array.pop_back();
@@ -3483,14 +3488,14 @@ class h2_mocker<Counter, ClassType, ReturnType(ArgumentTypes...)> : h2_mocker_ba
       return *this;
    }
 
-   void operator=(ReturnType (*f)(ArgumentTypes...))
+   void operator=(ReturnType (*f)(Args...))
    {
       if (checkin_array.empty()) Any();
       for (auto& a : routine_array)
          if (!a) a.fp = f;
    }
 
-   void operator=(ReturnType (*f)(ClassType*, ArgumentTypes...))
+   void operator=(ReturnType (*f)(Class*, Args...))
    {
       if (checkin_array.empty()) Any();
       for (auto& a : routine_array)
@@ -3504,25 +3509,25 @@ struct h2_mocks {
    static h2_fail* clear(h2_list& mocks, bool check);
 };
 // source/mock/h2_mock.hpp
-// MOCK(                Function, Signature )
-// MOCK(         Class, Method  , Signature )
-// MOCK( Object, Class, Method  , Signature )
+// MOCK(                Function, ReturnType(Args...) )
+// MOCK(         Class, Method  , ReturnType(Args...) )
+// MOCK( Object, Class, Method  , ReturnType(Args...) )
 #define H2MOCK(...) H2PP_VARIADIC_CALL(__H2MOCK_, __VA_ARGS__)
-#define __H2MOCK_2(Function, Signature) h2::h2_mocker<__COUNTER__, std::false_type, H2PP_REMOVE_PARENTHESES_IF(Signature)>::I(h2::h2_fp<H2PP_REMOVE_PARENTHESES_IF(Signature)>::A(Function), #Function, H2_FILINE)
-#define __H2MOCK_3(Class, Method, Signature) h2::h2_mocker<__COUNTER__, H2PP_REMOVE_PARENTHESES_IF(Class), H2PP_REMOVE_PARENTHESES_IF(Signature)>::I(h2::h2_fp<H2PP_REMOVE_PARENTHESES_IF(Class), H2PP_REMOVE_PARENTHESES_IF(Signature)>::A(&H2PP_REMOVE_PARENTHESES_IF(Class)::H2PP_REMOVE_PARENTHESES_IF(Method)), #Class "::" #Method, H2_FILINE)
-#define __H2MOCK_4(Object, Class, Method, Signature) h2::h2_mocker<__COUNTER__, H2PP_REMOVE_PARENTHESES_IF(Class), H2PP_REMOVE_PARENTHESES_IF(Signature)>::I(h2::h2_fp<H2PP_REMOVE_PARENTHESES_IF(Class), H2PP_REMOVE_PARENTHESES_IF(Signature)>::B(h2::h2_pointer_if(Object), &H2PP_REMOVE_PARENTHESES_IF(Class)::H2PP_REMOVE_PARENTHESES_IF(Method)), #Class "::" #Method, H2_FILINE)
+#define __H2MOCK_2(Function, Signature) h2::h2_mocker<__COUNTER__, std::false_type, H2PP_REMOVE_PARENTHESES_IF(Signature)>::I(h2::h2_fp<H2PP_REMOVE_PARENTHESES_IF(Signature)>::get(Function), #Function, H2_FILINE)
+#define __H2MOCK_3(Class, Method, Signature) h2::h2_mocker<__COUNTER__, H2PP_REMOVE_PARENTHESES_IF(Class), H2PP_REMOVE_PARENTHESES_IF(Signature)>::I(h2::h2_fp<H2PP_REMOVE_PARENTHESES_IF(Class), H2PP_REMOVE_PARENTHESES_IF(Signature)>::get(&H2PP_REMOVE_PARENTHESES_IF(Class)::H2PP_REMOVE_PARENTHESES_IF(Method)), #Class "::" #Method, H2_FILINE)
+#define __H2MOCK_4(Object, Class, Method, Signature) h2::h2_mocker<__COUNTER__, H2PP_REMOVE_PARENTHESES_IF(Class), H2PP_REMOVE_PARENTHESES_IF(Signature)>::I(h2::h2_fp<H2PP_REMOVE_PARENTHESES_IF(Class), H2PP_REMOVE_PARENTHESES_IF(Signature)>::get(h2::h2_pointer_if(Object), &H2PP_REMOVE_PARENTHESES_IF(Class)::H2PP_REMOVE_PARENTHESES_IF(Method)), #Class "::" #Method, H2_FILINE)
 
-// MOCKS(                Function, ReturnType, Args, Inspection ) { }
-// MOCKS(         Class, Method  , ReturnType, Args, Inspection ) { }
-// MOCKS( Object, Class, Method  , ReturnType, Args, Inspection ) { }
+// MOCKS(                Function, ReturnType, (Args...), Inspection ) { }
+// MOCKS(         Class, Method  , ReturnType, (Args...), Inspection ) { }
+// MOCKS( Object, Class, Method  , ReturnType, (Args...), Inspection ) { }
 #define H2MOCKS(...) H2PP_VARIADIC_CALL(__H2MOCKS_, __VA_ARGS__)
-#define __H2MOCKS_4(Function, ReturnType, Args, Inspection) h2::h2_mocker<__COUNTER__, std::false_type, H2PP_REMOVE_PARENTHESES_IF(ReturnType) Args>::I(h2::h2_fp<H2PP_REMOVE_PARENTHESES_IF(ReturnType) Args>::A(Function), #Function, H2_FILINE).Inspection = [] Args -> H2PP_REMOVE_PARENTHESES_IF(ReturnType)
+#define __H2MOCKS_4(Function, ReturnType, Args, Inspection) h2::h2_mocker<__COUNTER__, std::false_type, H2PP_REMOVE_PARENTHESES_IF(ReturnType) Args>::I(h2::h2_fp<H2PP_REMOVE_PARENTHESES_IF(ReturnType) Args>::get(Function), #Function, H2_FILINE).Inspection = [] Args -> H2PP_REMOVE_PARENTHESES_IF(ReturnType)
 #define __H2MOCKS_5(Class, Method, ReturnType, Args, Inspection) H2PP_CAT(__H2MOCKS_5_, H2PP_IS_EMPTY Args)(Class, Method, ReturnType, Args, Inspection)
-#define __H2MOCKS_5_0(Class, Method, ReturnType, Args, Inspection) h2::h2_mocker<__COUNTER__, H2PP_REMOVE_PARENTHESES_IF(Class), H2PP_REMOVE_PARENTHESES_IF(ReturnType) Args>::I(h2::h2_fp<H2PP_REMOVE_PARENTHESES_IF(Class), H2PP_REMOVE_PARENTHESES_IF(ReturnType) Args>::A(&H2PP_REMOVE_PARENTHESES_IF(Class)::H2PP_REMOVE_PARENTHESES_IF(Method)), #Class "::" #Method, H2_FILINE).Inspection = [](H2PP_REMOVE_PARENTHESES_IF(Class) * This, H2PP_REMOVE_PARENTHESES(Args)) -> H2PP_REMOVE_PARENTHESES_IF(ReturnType)
-#define __H2MOCKS_5_1(Class, Method, ReturnType, Args, Inspection) h2::h2_mocker<__COUNTER__, H2PP_REMOVE_PARENTHESES_IF(Class), H2PP_REMOVE_PARENTHESES_IF(ReturnType) Args>::I(h2::h2_fp<H2PP_REMOVE_PARENTHESES_IF(Class), H2PP_REMOVE_PARENTHESES_IF(ReturnType) Args>::A(&H2PP_REMOVE_PARENTHESES_IF(Class)::H2PP_REMOVE_PARENTHESES_IF(Method)), #Class "::" #Method, H2_FILINE).Inspection = [](H2PP_REMOVE_PARENTHESES_IF(Class) * This) -> H2PP_REMOVE_PARENTHESES_IF(ReturnType)
+#define __H2MOCKS_5_0(Class, Method, ReturnType, Args, Inspection) h2::h2_mocker<__COUNTER__, H2PP_REMOVE_PARENTHESES_IF(Class), H2PP_REMOVE_PARENTHESES_IF(ReturnType) Args>::I(h2::h2_fp<H2PP_REMOVE_PARENTHESES_IF(Class), H2PP_REMOVE_PARENTHESES_IF(ReturnType) Args>::get(&H2PP_REMOVE_PARENTHESES_IF(Class)::H2PP_REMOVE_PARENTHESES_IF(Method)), #Class "::" #Method, H2_FILINE).Inspection = [](H2PP_REMOVE_PARENTHESES_IF(Class) * This, H2PP_REMOVE_PARENTHESES(Args)) -> H2PP_REMOVE_PARENTHESES_IF(ReturnType)
+#define __H2MOCKS_5_1(Class, Method, ReturnType, Args, Inspection) h2::h2_mocker<__COUNTER__, H2PP_REMOVE_PARENTHESES_IF(Class), H2PP_REMOVE_PARENTHESES_IF(ReturnType) Args>::I(h2::h2_fp<H2PP_REMOVE_PARENTHESES_IF(Class), H2PP_REMOVE_PARENTHESES_IF(ReturnType) Args>::get(&H2PP_REMOVE_PARENTHESES_IF(Class)::H2PP_REMOVE_PARENTHESES_IF(Method)), #Class "::" #Method, H2_FILINE).Inspection = [](H2PP_REMOVE_PARENTHESES_IF(Class) * This) -> H2PP_REMOVE_PARENTHESES_IF(ReturnType)
 #define __H2MOCKS_6(Object, Class, Method, ReturnType, Args, Inspection) H2PP_CAT(__H2MOCKS_6_, H2PP_IS_EMPTY Args)(Object, Class, Method, ReturnType, Args, Inspection)
-#define __H2MOCKS_6_0(Object, Class, Method, ReturnType, Args, Inspection) h2::h2_mocker<__COUNTER__, H2PP_REMOVE_PARENTHESES_IF(Class), H2PP_REMOVE_PARENTHESES_IF(ReturnType) Args>::I(h2::h2_fp<H2PP_REMOVE_PARENTHESES_IF(Class), H2PP_REMOVE_PARENTHESES_IF(ReturnType) Args>::B(h2::h2_pointer_if(Object), &H2PP_REMOVE_PARENTHESES_IF(Class)::H2PP_REMOVE_PARENTHESES_IF(Method)), #Class "::" #Method, H2_FILINE).Inspection = [](H2PP_REMOVE_PARENTHESES_IF(Class) * This, H2PP_REMOVE_PARENTHESES(Args)) -> H2PP_REMOVE_PARENTHESES_IF(ReturnType)
-#define __H2MOCKS_6_1(Object, Class, Method, ReturnType, Args, Inspection) h2::h2_mocker<__COUNTER__, H2PP_REMOVE_PARENTHESES_IF(Class), H2PP_REMOVE_PARENTHESES_IF(ReturnType) Args>::I(h2::h2_fp<H2PP_REMOVE_PARENTHESES_IF(Class), H2PP_REMOVE_PARENTHESES_IF(ReturnType) Args>::B(h2::h2_pointer_if(Object), &H2PP_REMOVE_PARENTHESES_IF(Class)::H2PP_REMOVE_PARENTHESES_IF(Method)), #Class "::" #Method, H2_FILINE).Inspection = [](H2PP_REMOVE_PARENTHESES_IF(Class) * This) -> H2PP_REMOVE_PARENTHESES_IF(ReturnType)
+#define __H2MOCKS_6_0(Object, Class, Method, ReturnType, Args, Inspection) h2::h2_mocker<__COUNTER__, H2PP_REMOVE_PARENTHESES_IF(Class), H2PP_REMOVE_PARENTHESES_IF(ReturnType) Args>::I(h2::h2_fp<H2PP_REMOVE_PARENTHESES_IF(Class), H2PP_REMOVE_PARENTHESES_IF(ReturnType) Args>::get(h2::h2_pointer_if(Object), &H2PP_REMOVE_PARENTHESES_IF(Class)::H2PP_REMOVE_PARENTHESES_IF(Method)), #Class "::" #Method, H2_FILINE).Inspection = [](H2PP_REMOVE_PARENTHESES_IF(Class) * This, H2PP_REMOVE_PARENTHESES(Args)) -> H2PP_REMOVE_PARENTHESES_IF(ReturnType)
+#define __H2MOCKS_6_1(Object, Class, Method, ReturnType, Args, Inspection) h2::h2_mocker<__COUNTER__, H2PP_REMOVE_PARENTHESES_IF(Class), H2PP_REMOVE_PARENTHESES_IF(ReturnType) Args>::I(h2::h2_fp<H2PP_REMOVE_PARENTHESES_IF(Class), H2PP_REMOVE_PARENTHESES_IF(ReturnType) Args>::get(h2::h2_pointer_if(Object), &H2PP_REMOVE_PARENTHESES_IF(Class)::H2PP_REMOVE_PARENTHESES_IF(Method)), #Class "::" #Method, H2_FILINE).Inspection = [](H2PP_REMOVE_PARENTHESES_IF(Class) * This) -> H2PP_REMOVE_PARENTHESES_IF(ReturnType)
 // source/memory/h2_exempt.hpp
 struct h2_exempt {
    h2_singleton(h2_exempt);
