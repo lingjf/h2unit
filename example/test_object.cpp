@@ -164,13 +164,28 @@ SUITE(Member)
 
    Case(data [fail])
    {
-      OK(Member(30, &Rect::width), a);
+      OK(Member(30, Rect, width), a);
    }
 
-   Case(function [pass])
+#if __cplusplus >= 201402L || (defined _MSVC_LANG && _MSVC_LANG >= 201402L)
+   Case(function 0 [pass])
    {
-      OK(Member("Rect", &Rect::print), a);
+      OK(Member("Rect", Rect, print), a);
+      OK(Member("Rect", Rect, print, ()), a);
    }
+
+   Case(function 1 [pass])
+   {
+      OK(Member(0, Shape, move, 2), a);
+      OK(Member(0, Shape, move, (2)), a);
+   }
+
+   Case(function 2 [fail])
+   {
+      OK(Member(42, Shape, move, 2, (int)2LL), a);
+      OK(Member(42, Shape, move, (2, (int)2LL)), a);
+   }
+#endif
 }
 
 /*

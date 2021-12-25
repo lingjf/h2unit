@@ -266,23 +266,133 @@ SUITE(macro)
       int H2PP_UNIQUE(prefix) = 1;
    }
 
-   Case(H2PP_VARIADIC_CALL)
+   Case(H2PP_NCALL n=0)
+   {
+#define N0A0__0() 100
+#define N0A0__1() 101
+      int n0a0 = H2PP_NCALL(N0A0__, 0);
+      OK(101, n0a0);
+#undef N0A0__0
+#undef N0A0__1
+
+#define N0A1__0(_1) (_1) * 100
+#define N0A1__1(_1) (_1) * 101
+      int n0a1 = H2PP_NCALL(N0A1__, 0, 1);
+      OK((1) * 100, n0a1);
+#undef N0A1__0
+#undef N0A1__1
+   }
+
+   Case(H2PP_NCALL n=1)
+   {
+#define N1A0__0() 100
+#define N1A0__1() 101
+      int n1a0 = H2PP_NCALL(N1A0__, 1);
+      OK(100, n1a0);
+#undef N1A0__0
+#undef N1A0__1
+
+#define N1A1__0(_1) (_1) * 100
+#define N1A1__1(_1) (_1) * 101
+      int n1a1 = H2PP_NCALL(N1A1__, 1, 1);
+      OK((1) * 101, n1a1);
+#undef N1A1__0
+#undef N1A1__1
+
+#define N1A2__0(_1, _2) (_1 + _2) * 100
+#define N1A2__1(_1, _2) (_1 + _2) * 101
+      int n1a2 = H2PP_NCALL(N1A2__, 1, 1, 2);
+      OK((1 + 2) * 100, n1a2);
+#undef N1A2__0
+#undef N1A2__1
+   }
+
+   Case(H2PP_NCALL n=2)
+   {
+#define N2A0__0() 100
+#define N2A0__1() 101
+      int n2a0 = H2PP_NCALL(N2A0__, 2);
+      OK(100, n2a0);
+#undef N2A0__0
+#undef N2A0__1
+
+#define N2A1__0(_1) (_1) * 100
+#define N2A1__1(_1) (_1) * 101
+      int n2a1 = H2PP_NCALL(N2A1__, 2, 1);
+      OK((1) * 100, n2a1);
+#undef N2A1__0
+#undef N2A1__1
+
+#define N2A2__0(_1, _2) (_1 + _2) * 100
+#define N2A2__1(_1, _2) (_1 + _2) * 101
+      int n2a2 = H2PP_NCALL(N2A2__, 2, 1, 2);
+      OK((1 + 2) * 101, n2a2);
+#undef N2A2__0
+#undef N2A2__1
+
+#define N2A3__0(_1, _2, _3) (_1 + _2 + _3) * 100
+#define N2A3__1(_1, _2, _3) (_1 + _2 + _3) * 101
+      int n2a3 = H2PP_NCALL(N2A3__, 2, 1, 2, 3);
+      OK((1 + 2 + 3) * 100, n2a3);
+#undef N2A3__0
+#undef N2A3__1
+   }
+
+   Case(H2PP_NCALL n=3)
+   {
+#define N3A0__0() 100
+#define N3A0__1() 101
+      int n3a0 = H2PP_NCALL(N3A0__, 3);
+      OK(100, n3a0);
+#undef N3A0__0
+#undef N3A0__1
+
+#define N3A1__0(_1) (_1) * 100
+#define N3A1__1(_1) (_1) * 101
+      int n3a1 = H2PP_NCALL(N3A1__, 3, 1);
+      OK((1) * 100, n3a1);
+#undef N3A1__0
+#undef N3A1__1
+
+#define N3A2__0(_1, _2) (_1 + _2) * 100
+#define N3A2__1(_1, _2) (_1 + _2) * 101
+      int n3a2 = H2PP_NCALL(N3A2__, 3, 1, 2);
+      OK((1 + 2) * 100, n3a2);
+#undef N3A2__0
+#undef N3A2__1
+
+#define N3A3__0(_1, _2, _3) (_1 + _2 + _3) * 100
+#define N3A3__1(_1, _2, _3) (_1 + _2 + _3) * 101
+      int n3a3 = H2PP_NCALL(N3A3__, 3, 1, 2, 3);
+      OK((1 + 2 + 3) * 101, n3a3);
+#undef N3A3__0
+#undef N3A3__1
+
+#define N3A4__0(_1, _2, _3, _4) (_1 + _2 + _3 + _4) * 100
+#define N3A4__1(_1, _2, _3, _4) (_1 + _2 + _3 + _4) * 101
+      int n3a4 = H2PP_NCALL(N3A4__, 3, 1, 2, 3, 4);
+      OK((1 + 2 + 3 + 4) * 100, n3a4);
+#undef N3A4__0
+#undef N3A4__1
+   }
+
+   Case(H2PP_VCALL)
    {
 #define M0() 0
 #define M1(_1) _1
 #define M2(_1, _2) _1 + _2
 #define M3(_1, _2, _3) _1 + _2 + _3
 
-      int n0 = H2PP_VARIADIC_CALL(M);
+      int n0 = H2PP_VCALL(M);
       OK(0, n0);
 
-      int n1 = H2PP_VARIADIC_CALL(M, 1);
+      int n1 = H2PP_VCALL(M, 1);
       OK(1, n1);
 
-      int n2 = H2PP_VARIADIC_CALL(M, 1, 2);
+      int n2 = H2PP_VCALL(M, 1, 2);
       OK(1 + 2, n2);
 
-      int n3 = H2PP_VARIADIC_CALL(M, 1, 2, 3);
+      int n3 = H2PP_VCALL(M, 1, 2, 3);
       OK(1 + 2 + 3, n3);
 
 #undef M0

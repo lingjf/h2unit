@@ -314,7 +314,9 @@ using h2::EndsWith;
 using h2::CaseLess;
 using h2::SpaceLess;
 using h2::Pointee;
-using h2::Member;
+#ifndef H2_NO_Member
+#define Member(expect, Class, member, ...) H2Member(expect, Class, member, __VA_ARGS__)
+#endif
 using h2::CastOf;
 using h2::Not;
 using h2::Conditional;

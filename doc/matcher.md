@@ -21,7 +21,7 @@
 *    [`EndsWith`](../source/h2_unit.hpp#L321)(expect) : matches if value ends with expect 
 *    [`~`](../source/h2_unit.hpp#L321) / [`CaseLess`](../source/h2_unit.hpp#L321)(expect) : make inner matcher case-insensitive, right operator must be Matcher, `~"Hello World"` not works 
 *    [`*`](../source/h2_unit.hpp#L321) / [`SpaceLess`](../source/h2_unit.hpp#L321)(expect) : trim leading and trailing whitespace, squash several whitespaces into one space, right operator must be Matcher, `*"Hello World"` not works 
-*    [`Member`](../source/h2_unit.hpp#L321)(expect, &Class::member, [arg1, arg2]) : matches if member in object match every inner matcher
+*    [`Member`](../source/h2_unit.hpp#L321)(expect, Class, member, [arg1, arg2, ...]) : matches if member in object match inner matcher
 *    [`Pointee`](../source/h2_unit.hpp#L321)(expect) : matches if point to value equals expect 
 *    [`CastOf`](../source/h2_unit.hpp#L321)<Type>(expect) : matches if value cast to Type and equals expect 
 *    [`!`](../source/h2_unit.hpp#L321) / [`Not`](../source/h2_unit.hpp#L321)(expect) : matches if not matches inner matcher, right operator must be Matcher, !3 is considered as normal semantics 
@@ -213,22 +213,24 @@ public:
 CASE(Member data)
 {
    C c;
-   OK(Member(100, &C::count), c);
+   OK(Member(100, C, count), c);
 }
 ```
 
-Member(Matcher, &Class::member)
+`Member(Matcher, Class, member)`
 
-#### member data
+#### member method
 ```C++
 CASE(Member function)
 {
    C c;
-   OK(Member(100, &C::get, 1, 2), c);
+   OK(Member(100, C, get, 1, 2), c);
+   OK(Member(100, C, get, (1, 2)), c);
 }
 ```
 
-Member(Matcher, &Class::function, arg1, arg2, ...)
+`Member(Matcher, Class/BaseClass, method, (type1)arg1, (type2)arg2, ...)`
+`Member(Matcher, Class/BaseClass, method, ((type1)arg1, (type2)arg2, ...))`
 
 ### Memory compare matcher (`Me`)
 Expection is described by buffer, length and width.

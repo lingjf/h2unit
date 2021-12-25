@@ -1,6 +1,6 @@
 #define h2_list_entry(ptr, type, link) ((type*)((char*)(ptr) - (char*)(&(((type*)(1))->link)) + 1))
 
-#define h2_list_for_each_entry(...) H2PP_VARIADIC_CALL(__h2_list_for_each_entry, H2PP_UNIQUE(t), __VA_ARGS__)
+#define h2_list_for_each_entry(...) H2PP_VCALL(__h2_list_for_each_entry, H2PP_UNIQUE(t), __VA_ARGS__)
 #define __h2_list_for_each_entry5(t, p, head, type, link) \
    for (type* p = h2_list_entry((head).next, type, link), *t = h2_list_entry(p->link.next, type, link); &p->link != &(head); p = t, t = h2_list_entry(t->link.next, type, link))
 #define __h2_list_for_each_entry6(t, p, i, head, type, link) \

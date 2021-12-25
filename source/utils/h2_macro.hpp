@@ -81,7 +81,8 @@
 #define _H2PP_NARG_0(...) H2PP_ARG_COUNT(__VA_ARGS__)
 #define _H2PP_NARG_1(...) 0
 
-#define H2PP_VARIADIC_CALL(_Macro, ...) H2PP_RESCAN(H2PP_CAT2(_Macro, H2PP_NARG(__VA_ARGS__)) (__VA_ARGS__))
+#define H2PP_NCALL(_Macro, N, ...) H2PP_RESCAN(H2PP_CAT2(_Macro, H2PP_EQ(N, H2PP_NARG(__VA_ARGS__))) (__VA_ARGS__))
+#define H2PP_VCALL(_Macro, ...) H2PP_RESCAN(H2PP_CAT2(_Macro, H2PP_NARG(__VA_ARGS__)) (__VA_ARGS__))
 
 #define H2PP_HEAD(...) H2PP_CAT2(_H2PP_HEAD_, H2PP_IS_EMPTY(__VA_ARGS__)) ((__VA_ARGS__))
 #define _H2PP_HEAD_0(MSVC_Workaround) H2PP_RESCAN(_H2PP_HEAD_0_R MSVC_Workaround)

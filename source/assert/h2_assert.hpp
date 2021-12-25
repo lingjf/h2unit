@@ -78,7 +78,7 @@ static inline h2_ostringstream& h2_ok1(h2_assert* d, h2_1cp<A> c1)
 #define __H2OK0(Q, e_expression, a_expression, expect, actual) \
    for (h2::h2_assert Q; Q; Q.failing(e_expression, a_expression, H2_FILINE)) h2::h2_ok2(&Q, expect, actual, std::is_array<decltype(actual)>{}, std::extent<decltype(actual)>::value)
 
-#define H2JE(...) H2PP_VARIADIC_CALL(__H2JE, H2PP_UNIQUE(), __VA_ARGS__)
+#define H2JE(...) H2PP_VCALL(__H2JE, H2PP_UNIQUE(), __VA_ARGS__)
 #define __H2JE3(Q, expect, actual) \
    for (h2::h2_assert Q; Q; Q.failing(#expect, #actual, H2_FILINE)) h2::h2_je(&Q, expect, actual, "")
 #define __H2JE4(Q, expect, actual, selector) \
