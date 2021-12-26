@@ -213,24 +213,34 @@ public:
 CASE(Member data)
 {
    C c;
-   OK(Member(100, C, count), c);
+   OK(Member(100, &C::count), c);
 }
 ```
 
-`Member(Matcher, Class, member)`
+`Member(Matcher, &Class::member)`
 
 #### member method
 ```C++
 CASE(Member function)
 {
    C c;
-   OK(Member(100, C, get, 1, 2), c);
-   OK(Member(100, C, get, (1, 2)), c);
+   OK(Member(100, &C::get, 1, 2), c);
+   OK(Member(100, &C::get, (1, 2)), c);
 }
 ```
 
-`Member(Matcher, Class/BaseClass, method, (type1)arg1, (type2)arg2, ...)`
-`Member(Matcher, Class/BaseClass, method, ((type1)arg1, (type2)arg2, ...))`
+`Member(Matcher, &Class::method, (type1)arg1, (type2)arg2, ...)`
+`Member(Matcher, &Class::method, ((type1)arg1, (type2)arg2, ...))`
+
+If argument is reference, use std::ref()
+```C++
+CASE(Member function with reference argument)
+{
+   C c;
+   int n = 2;
+   OK(Member(100, &C::get, 1, std::ref(n)), c);
+}
+```
 
 ### Memory compare matcher (`Me`)
 Expection is described by buffer, length and width.
@@ -333,3 +343,4 @@ Case(test user defined matcher)
    OK(Between(1, 4), 5);
 }
 ```
+

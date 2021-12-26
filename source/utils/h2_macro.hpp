@@ -56,8 +56,12 @@
 #define _H2PP_IF_1(...) __VA_ARGS__
 #define _H2PP_IF_0(...)
 
+// the first argument starts with something in parentheses
 #define H2PP_IS_BEGIN_PARENTHESIS(...) H2PP_IS_PROBE(_H2PP_IS_BEGIN_PARENTHESIS_PROBE __VA_ARGS__)
 #define _H2PP_IS_BEGIN_PARENTHESIS_PROBE(...) H2PP_PROBE()
+
+// only one argument and it is enclosed in parentheses
+#define H2PP_IS_PARENTHESIS(...) H2PP_IF_ELSE(H2PP_IS_BEGIN_PARENTHESIS(__VA_ARGS__), H2PP_IS_EMPTY(H2PP_EMPTY __VA_ARGS__), 0)
 
 #define H2PP_REMOVE_PARENTHESES(...) _H2PP_REMOVE_PARENTHESES __VA_ARGS__
 #define _H2PP_REMOVE_PARENTHESES(...) __VA_ARGS__

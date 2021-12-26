@@ -161,8 +161,19 @@ SUITE(macro)
       OK(1, H2PP_IS_BEGIN_PARENTHESIS((a)));
       OK(1, H2PP_IS_BEGIN_PARENTHESIS((a, b)));
       OK(1, H2PP_IS_BEGIN_PARENTHESIS(()));
+      OK(1, H2PP_IS_BEGIN_PARENTHESIS((int)0));
+      OK(1, H2PP_IS_BEGIN_PARENTHESIS((a, b), 1));
+   }
 
-      /* OK(1 , H2PP_IS_BEGIN_PARENTHESIS((a, b), 1)) ; // compile error */
+   Case(H2PP_IS_PARENTHESIS)
+   {
+      OK(0, H2PP_IS_PARENTHESIS());
+      OK(0, H2PP_IS_PARENTHESIS(a));
+      OK(1, H2PP_IS_PARENTHESIS((a)));
+      OK(1, H2PP_IS_PARENTHESIS((a, b)));
+      OK(1, H2PP_IS_PARENTHESIS(()));
+      OK(0, H2PP_IS_PARENTHESIS((int)0));
+      OK(0, H2PP_IS_PARENTHESIS((a, b), 1));
    }
 
    Case(H2PP_REMOVE_PARENTHESES)

@@ -90,37 +90,37 @@ SUITE(Member Data)
    C7 c7;
    Case(object)
    {
-      OK(Member('a', C7, a), c7);
-      OK(Member(42, C7, b), c7);
-      OK(Member("c", C7, c), c7);
+      OK(Member('a', &C7::a), c7);
+      OK(Member(42, &C7::b), c7);
+      OK(Member("c", &C7::c), c7);
    }
 
    Case(addr)
    {
-      OK(Member('a', C7, a), &c7);
-      OK(Member(42, C7, b), &c7);
-      OK(Member("c", C7, c), &c7);
+      OK(Member('a', &C7::a), &c7);
+      OK(Member(42, &C7::b), &c7);
+      OK(Member("c", &C7::c), &c7);
    }
 
    Case(ref)
    {
       C7& b = c7;
-      OK(Member('a', C7, a), b);
-      OK(Member(42, C7, b), b);
-      OK(Member("c", C7, c), b);
+      OK(Member('a', &C7::a), b);
+      OK(Member(42, &C7::b), b);
+      OK(Member("c", &C7::c), b);
    }
 
    Case(ptr)
    {
       C7* b = &c7;
-      OK(Member('a', C7, a), b);
-      OK(Member(42, C7, b), b);
-      OK(Member("c", C7, c), b);
+      OK(Member('a', &C7::a), b);
+      OK(Member(42, &C7::b), b);
+      OK(Member("c", &C7::c), b);
    }
 
    Case(combine)
    {
-      OK(Member('a', C7, a) && Member(42, C7, b) && Member("c", C7, c), c7);
+      OK(Member('a', &C7::a) && Member(42, &C7::b) && Member("c", &C7::c), c7);
    }
 }
 
@@ -128,99 +128,110 @@ SUITE(Member Data)
 
 SUITE(Member Method)
 {
+   A5 a5;
    C7 c7;
 
    Case(normal0)
    {
-      OK(Member("C7::f0", C7, f), c7);
-      OK(Member("C7::f0", C7, f, ()), c7);
+      OK(Member("C7::f0", &C7::f), c7);
+      OK(Member("C7::f0", &C7::f, ()), c7);
    }
 
    Case(normal0 const)
    {
-      OK(Member("C7::fc0", C7, fc), c7);
+      OK(Member("C7::fc0", &C7::fc), c7);
    }
 
    Case(normal0 noexcept)
    {
-      OK(Member("C7::fx0", C7, fx), c7);
+      OK(Member("C7::fx0", &C7::fx), c7);
    }
 
    Case(normal0 const noexcept)
    {
-      OK(Member("C7::fcx0", C7, fcx), c7);
+      OK(Member("C7::fcx0", &C7::fcx), c7);
    }
 
    Case(virtual0)
    {
-      OK(Member("C7::v0", A7, v), c7);
-      OK(Member("C7::v0", B7, v), c7);
-      OK(Member("C7::v0", C7, v), c7);
+      OK(Member("C7::v0", &A7::v), c7);
+      OK(Member("C7::v0", &B7::v), c7);
+      OK(Member("C7::v0", &C7::v), c7);
    }
 
    Case(virtual0 noexcept)
    {
-      OK(Member("C7::vx0", C7, vx), c7);
+      OK(Member("C7::vx0", &C7::vx), c7);
    }
 
    Case(virtual0 const)
    {
-      OK(Member("C7::vc0", C7, vc), c7);
+      OK(Member("C7::vc0", &C7::vc), c7);
    }
 
    Case(virtual0 const)
    {
-      OK(Member("C7::vcx0", C7, vcx), c7);
+      OK(Member("C7::vcx0", &C7::vcx), c7);
    }
 
    Case(static0)
    {
-      // OK(Member("C7::s0", C7, s), c7);
+      // OK(Member("C7::s0", &C7::s), c7);
    }
 
    Case(normal1)
    {
-      OK(Member("A7::f1", A7, f, 0), c7);
-      OK(Member("A7::f1", A7, f, (0)), c7);
+      OK(Member("A7::f1", &A7::f, 0), c7);
+      OK(Member("A7::f1", &A7::f, (0)), c7);
+      OK(Member("A7::f1", &A7::f, (int)0), c7);
    }
 
    Case(virtual1)
    {
-      OK(Member("C7::v1", C7, v, 0), c7);
-      OK(Member("C7::v1", C7, v, (0)), c7);
+      OK(Member("C7::v1", &C7::v, 0), c7);
+      OK(Member("C7::v1", &C7::v, (0)), c7);
    }
 
    Case(normal2)
    {
-      OK(Member("B7::f2", B7, f, 0, "1"), c7);
-      OK(Member("B7::f2", B7, f, (0, "1")), c7);
+      OK(Member("B7::f2", &B7::f, 0, "1"), c7);
+      OK(Member("B7::f2", &B7::f, (0, "1")), c7);
    }
 
    Case(virtual2)
    {
-      OK(Member("C7::v2", C7, v, 0, "1"), c7);
-      OK(Member("C7::v2", C7, v, (0, "1")), c7);
+      OK(Member("C7::v2", &C7::v, 0, "1"), c7);
+      OK(Member("C7::v2", &C7::v, (0, "1")), c7);
    }
 
    Case(normal3)
    {
-      OK(Member("C7::f3", C7, f, 0, "1", 3.14), c7);
-      OK(Member("C7::f3", C7, f, (0, "1", 3.14)), c7);
+      OK(Member("C7::f3", &C7::f, 0, "1", 3.14), c7);
+      OK(Member("C7::f3", &C7::f, (0, "1", 3.14)), c7);
    }
 
    Case(virtual3)
    {
-      OK(Member("C7::v3", C7, v, 0, "1", 3.14), c7);
-      OK(Member("C7::v3", C7, v, (0, "1", 3.14)), c7);
+      OK(Member("C7::v3", &C7::v, 0, "1", 3.14), c7);
+      OK(Member("C7::v3", &C7::v, (0, "1", 3.14)), c7);
+   }
+
+   Case(reference)
+   {
+      OK(Member("a", &C7::gr, std::ref(a5)), c7);
+
+      // A5& r5 = a5;
+      // OK(Member("a", &C7::gr, r5), c7);
    }
 
    Case(ptr)
    {
       C7* b = &c7;
-      OK(Member("C7::f0", C7, f), b);
-      OK(Member("A7::f1", A7, f, 0), b);
-      OK(Member("B7::f2", B7, f, 0, "1"), b);
-      OK(Member("C7::f3", C7, f, 0, "1", 3.14), b);
+      OK(Member("C7::f0", &C7::f), b);
+      OK(Member("A7::f1", &A7::f, 0), b);
+      OK(Member("B7::f2", &B7::f, 0, "1"), b);
+      OK(Member("C7::f3", &C7::f, 0, "1", 3.14), b);
+      OK(Member("a", &C7::gr, std::ref(a5)), b);
    }
 }
 
@@ -229,24 +240,30 @@ SUITE(Member copy arguments)
    C7 c7;
    A5 a5;
 
-   Case(cpp)
+   Case(invoke)
    {
       OK("ab", c7.ga(a5));
       OK("ab", c7.gc(a5));
       OK("a", c7.gr(a5));
    }
 
+   Case(decltype)
+   {
+      decltype(std::make_tuple(1, a5)) a;
+      OK("a", std::get<1>(a).s);
+   }
+
    Case(variable)
    {
-      OK(Member("ab", C7, ga, a5), c7);
-      OK(Member("ab", C7, gc, a5), c7);
-      // OK(Member(100, C7, gr, a5)), c7);
+      OK(Member("abbbbbbbbb", &C7::ga, a5), c7);
+      OK(Member("abbbbbbbbb", &C7::gc, a5), c7);
+      OK(Member("a", &C7::gr, std::ref(a5)), c7);
    }
 
    Case(temporary)
    {
-      OK(Member("acbbbb", C7, ga, A5()), c7);
-      OK(Member("acbbbb", C7, gc, A5()), c7);
+      OK(Member("acbbbbbbbb", &C7::ga, A5()), c7);
+      OK(Member("acbbbbbbbb", &C7::gc, A5()), c7);
    }
 }
 
