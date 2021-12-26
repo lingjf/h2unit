@@ -9,7 +9,7 @@ struct h2_matcher_cast_impl {
    }
 
    template <bool Ignore1, bool Ignore2>
-   static h2_matcher<T> do_cast(const M& from, std::true_type, std::integral_constant<bool, Ignore1>, std::integral_constant<bool, Ignore2>) { return _Eq(from); }
+   static h2_matcher<T> do_cast(const M& from, std::true_type, std::integral_constant<bool, Ignore1>, std::integral_constant<bool, Ignore2>) { return Equals(from); }
 
    template <bool Ignore>
    static h2_matcher<T> do_cast(const M& from, std::false_type, std::true_type, std::integral_constant<bool, Ignore>) { return from; }
@@ -17,7 +17,7 @@ struct h2_matcher_cast_impl {
    template <typename To>
    static To implicit_cast(To x) { return x; }
    static h2_matcher<T> do_cast(const M& from, std::false_type, std::false_type, std::true_type) { return h2_matcher<T>(implicit_cast<T>(from)); }
-   static h2_matcher<T> do_cast(const M& from, std::false_type, std::false_type, std::false_type) { return _Eq(from); }
+   static h2_matcher<T> do_cast(const M& from, std::false_type, std::false_type, std::false_type) { return Equals(from); }
 };
 
 template <typename T, typename U>

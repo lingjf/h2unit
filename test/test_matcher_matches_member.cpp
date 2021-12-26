@@ -1,11 +1,32 @@
 #include "../source/h2_unit.cpp"
 
 /*
-   In C++ terminology, 
-      overriding (relating to virtual methods in a class hierarchy); 
+   In C++ terminology,
+      overriding (relating to virtual methods in a class hierarchy);
       overloading (related to a function having the same name but taking different parameters);
       overwrite have hiding of names (via explicit declaration of the same name in a nested declarative region or scope);
 */
+
+static char c7gs[256];
+
+class A5 {
+ public:
+   char s[256]{'\0'};
+   A5()
+   {
+      strcat(s, "a");
+   }
+   A5(const A5& a5)
+   {
+      strcpy(s, a5.s);
+      strcat(s, "b");
+   }
+   A5(A5&& a5)
+   {
+      strcpy(s, a5.s);
+      strcat(s, "c");
+   }
+};
 
 class A7 {
  public:
@@ -51,6 +72,10 @@ class C7 : public B7 {
 
    const char* f(int _1, const char* _2, double _3) { return "C7::f3"; }
    virtual const char* v(int _1, const char* _2, double _3) { return "C7::v3"; }
+
+   const char* ga(A5 a5) { return strcpy(c7gs, a5.s), c7gs; }
+   const char* gc(const A5 a5) { return strcpy(c7gs, a5.s), c7gs; }
+   const char* gr(A5& a5) { return strcpy(c7gs, a5.s), c7gs; }
 };
 
 SUITE(matches member)
@@ -196,6 +221,32 @@ SUITE(Member Method)
       OK(Member("A7::f1", A7, f, 0), b);
       OK(Member("B7::f2", B7, f, 0, "1"), b);
       OK(Member("C7::f3", C7, f, 0, "1", 3.14), b);
+   }
+}
+
+SUITE(Member copy arguments)
+{
+   C7 c7;
+   A5 a5;
+
+   Case(cpp)
+   {
+      OK("ab", c7.ga(a5));
+      OK("ab", c7.gc(a5));
+      OK("a", c7.gr(a5));
+   }
+
+   Case(variable)
+   {
+      OK(Member("ab", C7, ga, a5), c7);
+      OK(Member("ab", C7, gc, a5), c7);
+      // OK(Member(100, C7, gr, a5)), c7);
+   }
+
+   Case(temporary)
+   {
+      OK(Member("acbbbb", C7, ga, A5()), c7);
+      OK(Member("acbbbb", C7, gc, A5()), c7);
    }
 }
 

@@ -163,14 +163,14 @@ template <typename T, typename P = h2_polymorphic_matcher<h2_type_equation<T>>>
 inline P TypeEq() { return P(h2_type_equation<T>()); }
 
 template <typename T, typename E = typename h2_decay<T>::type, typename P = h2_polymorphic_matcher<h2_equation<E>>>
-auto _Eq(const T& expect, const long double epsilon = 0) -> typename std::enable_if<!std::is_same<std::nullptr_t, E>::value && !std::is_same<bool, E>::value, P>::type { return P(h2_equation<E>(expect, epsilon)); }
+auto Equals(const T& expect, const long double epsilon = 0) -> typename std::enable_if<!std::is_same<std::nullptr_t, E>::value && !std::is_same<bool, E>::value, P>::type { return P(h2_equation<E>(expect, epsilon)); }
 
 template <typename T, typename E = typename h2_decay<T>::type, typename P = h2_polymorphic_matcher<h2_matches_null>>
-auto _Eq(const T&, const long double = 0) -> typename std::enable_if<std::is_same<std::nullptr_t, E>::value, P>::type { return P(h2_matches_null()); }
+auto Equals(const T&, const long double = 0) -> typename std::enable_if<std::is_same<std::nullptr_t, E>::value, P>::type { return P(h2_matches_null()); }
 
 template <typename T, typename E = typename h2_decay<T>::type, typename P = h2_polymorphic_matcher<h2_matches_bool>>
-auto _Eq(const T& expect, const long double = 0) -> typename std::enable_if<std::is_same<bool, E>::value, P>::type { return P(h2_matches_bool(expect)); }
+auto Equals(const T& expect, const long double = 0) -> typename std::enable_if<std::is_same<bool, E>::value, P>::type { return P(h2_matches_bool(expect)); }
 
-#define H2Eq(expect, ...) H2PP_CAT(__H2Eq, H2PP_IS_EMPTY(__VA_ARGS__))(expect, __VA_ARGS__)
-#define __H2Eq1(expect, ...) h2::_Eq(expect, 0)
-#define __H2Eq0(expect, ...) h2::_Eq(expect, h2::h2_approximate() * __VA_ARGS__ + h2::h2_approximate::B)
+#define H2Eq(expect, ...) H2PP_CAT(H2Eq_, H2PP_IS_EMPTY(__VA_ARGS__))(expect, __VA_ARGS__)
+#define H2Eq_1(expect, ...) h2::Equals(expect, 0)
+#define H2Eq_0(expect, ...) h2::Equals(expect, h2::h2_approximate() * __VA_ARGS__ + h2::h2_approximate::B)

@@ -75,7 +75,7 @@ h2_inline h2_string h2_string::unenclose(char left, char right) const
 h2_inline h2_string h2_string::escape(bool utf8) const
 {
    h2_string s;
-   for (auto& c : *this) {
+   for (auto& c : *this)
       switch (c) {
          case '\n': s.append(utf8 ? "␍" : "\\n"); break;
          case '\r': s.append(utf8 ? "␊" : "\\r"); break;
@@ -83,7 +83,6 @@ h2_inline h2_string h2_string::escape(bool utf8) const
          case '\0': s.append(utf8 ? "␀" : "\0"); break;
          default: s.push_back(c); break;
       }
-   }
    return s;
 }
 

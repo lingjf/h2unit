@@ -292,7 +292,7 @@ namespace h2 {
 using h2::_;
 using h2::Any;
 #ifndef H2_NO_Eq
-#define Eq H2Eq
+#define Eq(expect, ...) H2Eq(expect, __VA_ARGS__)
 #endif
 using h2::TypeEq;
 using h2::Nq;
@@ -301,7 +301,7 @@ using h2::Gt;
 using h2::Le;
 using h2::Lt;
 #ifndef H2_NO_Me
-#define Me H2Me
+#define Me(expect, ...) H2Me(expect, __VA_ARGS__)
 #endif
 using h2::Range;
 using h2::Re;

@@ -39,7 +39,7 @@ struct h2_1cp {
    U a;
    explicit h2_1cp(U u) : a(u) {}
    template <typename V, typename A = typename h2_decay<V>::type>
-   h2_2cp<decltype(_Eq((E)a)), A> operator==(const V& v) const { return {_Eq((E)a), (A)v, "=="}; }
+   h2_2cp<decltype(Equals((E)a)), A> operator==(const V& v) const { return {Equals((E)a), (A)v, "=="}; }
    template <typename V, typename A = typename h2_decay<V>::type>
    h2_2cp<decltype(Nq((E)a)), A> operator!=(const V& v) const { return {Nq((E)a), (A)v, "!="}; }
    template <typename V, typename A = typename h2_decay<V>::type>
@@ -72,14 +72,14 @@ static inline h2_ostringstream& h2_ok1(h2_assert* d, h2_1cp<A> c1)
    return d->stash(fail, "OK1");
 }
 
-#define H2OK(_1, ...) H2PP_CAT(__H2OK, H2PP_IS_EMPTY(__VA_ARGS__))(H2PP_UNIQUE(), #_1, (#__VA_ARGS__), _1, __VA_ARGS__)
-#define __H2OK1(Q, expression, _, actual, ...) \
+#define H2OK(_1, ...) H2PP_CAT(H2OK_, H2PP_IS_EMPTY(__VA_ARGS__))(H2PP_UNIQUE(), #_1, (#__VA_ARGS__), _1, __VA_ARGS__)
+#define H2OK_1(Q, expression, _, actual, ...) \
    for (h2::h2_assert Q; Q; Q.failing("", expression, H2_FILINE)) h2::h2_ok1(&Q, h2::h2_0cp() > actual)
-#define __H2OK0(Q, e_expression, a_expression, expect, actual) \
+#define H2OK_0(Q, e_expression, a_expression, expect, actual) \
    for (h2::h2_assert Q; Q; Q.failing(e_expression, a_expression, H2_FILINE)) h2::h2_ok2(&Q, expect, actual, std::is_array<decltype(actual)>{}, std::extent<decltype(actual)>::value)
 
-#define H2JE(...) H2PP_VCALL(__H2JE, H2PP_UNIQUE(), __VA_ARGS__)
-#define __H2JE3(Q, expect, actual) \
+#define H2JE(...) H2PP_VCALL(H2JE_, H2PP_UNIQUE(), __VA_ARGS__)
+#define H2JE_3(Q, expect, actual) \
    for (h2::h2_assert Q; Q; Q.failing(#expect, #actual, H2_FILINE)) h2::h2_je(&Q, expect, actual, "")
-#define __H2JE4(Q, expect, actual, selector) \
+#define H2JE_4(Q, expect, actual, selector) \
    for (h2::h2_assert Q; Q; Q.failing(#expect, #actual, H2_FILINE)) h2::h2_je(&Q, expect, actual, selector)

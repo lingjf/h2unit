@@ -77,7 +77,7 @@ SUITE(mocks function)
       OK(11, foobar2(1, "A"));
    }
 
-   Case(void return )
+   Case(void return)
    {
       MOCKS(foobar21, void, (int& a, char*), Once(1, (char*)"A")){};
 

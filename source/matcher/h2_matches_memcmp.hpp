@@ -43,8 +43,8 @@ struct h2_matches_memcmp : h2_matches {
 };
 
 template <typename T, typename E = typename std::decay<T>::type, typename P = h2_polymorphic_matcher<h2_matches_memcmp<E>>>
-inline P _Me(const T buffer, const size_t size, const size_t length = 0, const size_t width = 0) { return P(h2_matches_memcmp<E>((E)buffer, size, length, width)); }
+inline P Memcmp(const T buffer, const size_t size, const size_t length = 0, const size_t width = 0) { return P(h2_matches_memcmp<E>((E)buffer, size, length, width)); }
 
-#define H2Me(buffer, ...) H2PP_CAT(__H2Me, H2PP_IS_EMPTY(__VA_ARGS__))(buffer, std::extent<decltype(buffer)>::value, __VA_ARGS__)
-#define __H2Me1(buffer, size, ...) h2::_Me(buffer, size)
-#define __H2Me0(buffer, size, ...) h2::_Me(buffer, size, __VA_ARGS__)
+#define H2Me(buffer, ...) H2PP_CAT(H2Me_, H2PP_IS_EMPTY(__VA_ARGS__))(buffer, std::extent<decltype(buffer)>::value, __VA_ARGS__)
+#define H2Me_1(buffer, size, ...) h2::Memcmp(buffer, size)
+#define H2Me_0(buffer, size, ...) h2::Memcmp(buffer, size, __VA_ARGS__)

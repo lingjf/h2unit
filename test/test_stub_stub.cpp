@@ -6,6 +6,11 @@ static int foobar2_stub(int a, const char* b)
    return -22;
 }
 
+static void foobar21_stub(int& a, char* b)
+{
+   a = -21;
+}
+
 SUITE(stub function)
 {
    Case(simple)
@@ -46,6 +51,20 @@ SUITE(stub function)
 
       STUB(test_ns::foobar2, foobar2_fake);
       OK(-2, test_ns::foobar2(0, "1"));
+   }
+
+   Case(reference)
+   {
+      int a1 = 42;
+      char a2[1024];
+   
+      foobar21(a1, a2);
+      OK(42, a1);
+
+      STUB(foobar21, foobar21_stub);
+      foobar21(a1, a2);
+
+      OK(-21, a1);
    }
 }
 
