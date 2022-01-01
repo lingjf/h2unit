@@ -5,7 +5,7 @@ SUITE(matches configure)
    Case(default)
    {
       h2::C c;
-      OK(-1, c.array_size);
+      OK(-1, c.dimension);
       OK(0, c.range_start);
       OK(5413722, c.range_end);
       OK(1, c.times);

@@ -46,6 +46,10 @@ class Rect : public Shape {
    {
       return "Rect";
    }
+
+   int serialize(unsigned char* buffer, int length);
+
+   void dump(const char* filename);
 };
 
 #endif

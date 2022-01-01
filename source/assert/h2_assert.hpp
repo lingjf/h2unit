@@ -20,9 +20,9 @@ static inline h2_ostringstream& h2_ok2(h2_assert* d, E e, const A& a, std::false
 }
 
 template <typename E, typename A>
-static inline h2_ostringstream& h2_ok2(h2_assert* d, E e, const A a, std::true_type, int n)
+static inline h2_ostringstream& h2_ok2(h2_assert* d, E e, const A a, std::true_type, int dimension)
 {
-   h2_fail* fail = h2::h2_matcher_cast<typename h2_decay<A>::type>((typename h2_decay<E>::type)e).matches((typename h2_decay<A>::type)a, {n});
+   h2_fail* fail = h2::h2_matcher_cast<typename h2_decay<A>::type>((typename h2_decay<E>::type)e).matches((typename h2_decay<A>::type)a, {dimension});
    return d->stash(fail, "OK2");
 }
 

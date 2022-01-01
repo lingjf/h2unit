@@ -17,6 +17,8 @@ struct h2_string : public std::basic_string<char, std::char_traits<char>, h2_all
    h2_string& operator+=(const char* s) { return append(s), *this; }
    h2_string& operator+=(const char c) { return push_back(c), *this; }
 
+   operator unsigned char*() const { return (unsigned char*)data(); }
+
    h2_string& sprintf(const char* fmt, ...);
    h2_string& replace_all(const char* from, const char* to);
 

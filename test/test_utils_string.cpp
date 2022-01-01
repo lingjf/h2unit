@@ -164,6 +164,17 @@ SUITE(string)
       OK(4, a2.width());
    }
 
+   Case(operator)
+   {
+      h2::h2_string a = "Hello World";
+
+      unsigned char* a1 = (unsigned char*)a;
+      OK(Me("Hello World"), a1);
+
+      const unsigned char* a2 = (const unsigned char*)a;
+      OK(Me("Hello World"), a2);
+   }
+
    Case(equals)
    {
       h2::h2_string a = "Hello World";

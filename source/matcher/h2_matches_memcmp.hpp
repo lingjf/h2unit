@@ -9,42 +9,44 @@ struct h2_memcmp_util {
 template <typename E>
 struct h2_matches_memcmp : h2_matches {
    const E buffer;
-   const size_t size, length, width;
-   explicit h2_matches_memcmp(const E buffer_, const size_t size_, const size_t length_, const size_t width_) : buffer(buffer_), size(size_), length(length_), width(width_) {}
+   const size_t dimension, size, width;
+   explicit h2_matches_memcmp(const E buffer_, const size_t dimension_, const size_t size_, const size_t width_) : buffer(buffer_), dimension(dimension_), size(size_), width(width_) {}
    h2_fail* matches(const void* a, const C& c) const
    {
       unsigned char* e = (unsigned char*)buffer;
-      size_t l = length, w = width;
+      const char* b = (const char*)e;
+      size_t z = size, w = width;
       bool result = true;
       do {
-         if (!w && !l && std::is_convertible<E, h2_string>::value) { /* deduce by string format */
-            l = strlen((const char*)buffer);
+         if (!w && !z && std::is_convertible<E, h2_string>::value) { /* deduce by string format */
+            z = strlen(b);
             w = 8;
-            if (!strcmp((const char*)buffer, (const char*)a)) break;
-            if (h2_memcmp_util::is_bin_string((const char*)buffer)) {
-               e = (unsigned char*)alloca(l);
-               l = h2_memcmp_util::bin_to_bits((const char*)buffer, e);
+            if (!strcmp(b, (const char*)a)) break;
+            if (h2_memcmp_util::is_bin_string(b)) {
+               e = (unsigned char*)alloca(z);
+               z = h2_memcmp_util::bin_to_bits(b, e);
                w = 1;
-            } else if (h2_memcmp_util::is_hex_string((const char*)buffer)) {
-               e = (unsigned char*)alloca(l);
-               l = h2_memcmp_util::hex_to_bytes((const char*)buffer, e);
+            } else if (h2_memcmp_util::is_hex_string(b)) {
+               e = (unsigned char*)alloca(z);
+               z = h2_memcmp_util::hex_to_bytes(b, e);
                w = 8;
             }
          }
          if (!w) w = h2_sizeof_pointee<E>::value * 8; /* deduce by data type */
-         if (!l) l = size;                            /* deduce by array size */
-         if (!l || !w) return h2_fail::new_normal(color("length", "red") + " not specified " + gray("in ") + color("Me(buffer, ", "cyan") + color("length", "red") + gray(", width") + color(")", "cyan"));
-         result = h2_memcmp_util::bits_equal(e, (const unsigned char*)a, l * w);
+         if (!z) z = dimension;                       /* deduce by array dimension */
+         if (!z || !w) return h2_fail::new_normal(color("size", "red") + " not specified " + gray("in ") + color("Me(buffer, ", "cyan") + color("size", "red") + gray(", width") + color(")", "cyan"));
+         result = h2_memcmp_util::bits_equal(e, (const unsigned char*)a, z * w);
       } while (0);
       if (c.fit(result)) return nullptr;
-      return h2_fail::new_memcmp((const unsigned char*)e, (const unsigned char*)a, l, w);
+      return h2_fail::new_memcmp(e, (const unsigned char*)a, z, w);
    }
    virtual h2_line expection(const C& c) const override { return c.pre() + "Me()"; }
 };
 
 template <typename T, typename E = typename std::decay<T>::type, typename P = h2_polymorphic_matcher<h2_matches_memcmp<E>>>
-inline P Memcmp(const T buffer, const size_t size, const size_t length = 0, const size_t width = 0) { return P(h2_matches_memcmp<E>((E)buffer, size, length, width)); }
+inline P Memcmp(const T buffer, const size_t dimension, const size_t size = 0, const size_t width = 0) { return P(h2_matches_memcmp<E>((E)buffer, dimension, size, width)); }
+inline auto Memcmp(const h2_string& buffer, const size_t dimension) -> h2_polymorphic_matcher<h2_matches_memcmp<h2_string>> { return h2_polymorphic_matcher<h2_matches_memcmp<h2_string>>(h2_matches_memcmp<h2_string>(buffer, dimension, buffer.size(), 8)); }
 
 #define H2Me(buffer, ...) H2PP_CAT(H2Me_, H2PP_IS_EMPTY(__VA_ARGS__))(buffer, std::extent<decltype(buffer)>::value, __VA_ARGS__)
-#define H2Me_1(buffer, size, ...) h2::Memcmp(buffer, size)
-#define H2Me_0(buffer, size, ...) h2::Memcmp(buffer, size, __VA_ARGS__)
+#define H2Me_1(buffer, dimension, ...) h2::Memcmp(buffer, dimension)
+#define H2Me_0(buffer, dimension, ...) h2::Memcmp(buffer, dimension, __VA_ARGS__)

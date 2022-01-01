@@ -57,7 +57,7 @@ struct h2_polymorphic_matcher : h2_matches {
       range_start = 0, range_end = end;
       return *this;
    }
-#define H2_MATCHES_CONFIGURE c.array_size, c.no_compare_operator, negative != c.negative, /*XOR ^*/ case_insensitive || c.case_insensitive, squash_whitespace || c.squash_whitespace, range_start != -1 && range_end != -1 ? range_start : c.range_start, range_start != -1 && range_end != -1 ? range_end : c.range_end, c.times* times
+#define H2_MATCHES_CONFIGURE c.dimension, c.no_compare_operator, negative != c.negative, /*XOR ^*/ case_insensitive || c.case_insensitive, squash_whitespace || c.squash_whitespace, range_start != -1 && range_end != -1 ? range_start : c.range_start, range_start != -1 && range_end != -1 ? range_end : c.range_end, c.times* times
    template <typename T> struct matches_matcher : h2_matcher_impl<T>, h2_libc {
       const Matches m;
       int range_start, range_end, times;

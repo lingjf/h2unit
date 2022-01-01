@@ -1118,3 +1118,4 @@ SUITE(h2_array)
       OK("[]", h2::h2_stringify(a1).string());
    }
 }
+

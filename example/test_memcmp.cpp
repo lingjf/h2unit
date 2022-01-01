@@ -1,3 +1,10 @@
+
+extern "C" {
+#include "product_c.h"
+}
+
+#include "product_cpp.h"
+
 #if defined H2UNIT && H2UNIT == 2
 #include "../build/h2unit.hpp"
 #else
@@ -86,5 +93,16 @@ SUITE(memory compares)
    {
       MOCK(foo, int(int, const char*)).Once(1, Me("abcdefghijKlmnopqrszuvwxyz1234567890"));
       foo(1, "abcdefghijklmnopqrszuvwxyz1234567890");
+   }
+
+   Case(load expection from File)
+   {
+      Rect p1 = {0, 0, 1, 1};
+      p1.dump("_temp_p1.model");
+
+      unsigned char data[1024];
+      p1.serialize(data, sizeof(data));
+
+      OK(Me(File("_temp_p1.model")), data);
    }
 }

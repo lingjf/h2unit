@@ -10,7 +10,7 @@
 *    [`Gt`](../source/h2_unit.hpp#L321)(expect) : matches if value > expect 
 *    [`Le`](../source/h2_unit.hpp#L321)(expect) : matches if value <= expect 
 *    [`Lt`](../source/h2_unit.hpp#L321)(expect) : matches if value < expect 
-*    [`Me`](../source/h2_unit.hpp#L321)(buffer, [length], [width]) : matches if memory is same 
+*    [`Me`](../source/h2_unit.hpp#L321)(buffer, [size], [width]) : matches if memory is same 
 *    [`Range`](../source/h2_unit.hpp#L321)([start,] end [, step]) : matches if value in range like python range style  
 *    [`Re`](../source/h2_unit.hpp#L321)(expect) : matches if value Regex equals expect 
 *    [`We`](../source/h2_unit.hpp#L321)(expect) : matches if value Wildcard equals expect 
@@ -245,15 +245,15 @@ CASE(Member function with reference argument)
 ```
 
 ### Memory compare matcher (`Me`)
-Expection is described by buffer, length and width.
+Expection is described by buffer, size and width.
 
 #### explicit width
 
-- `1` bit width, length is in bit unit.
-- `8` byte width, length is in byte unit.
-- `16` uint16 width (2 bytes), length is in uint16 unit.
-- `32` uint32 width (4 bytes), length is in uint32 unit.
-- `64` uint64 width (8 bytes), length is in uint64 unit.
+- `1` bit width, size is in bit unit.
+- `8` byte width, size is in byte unit.
+- `16` uint16 width (2 bytes), size is in uint16 unit.
+- `32` uint32 width (4 bytes), size is in uint32 unit.
+- `64` uint64 width (8 bytes), size is in uint64 unit.
 
 
 ```C++
@@ -292,12 +292,12 @@ CASE(memory compare)
 }
 ```
 
-If data type is not char*, and length is not specified, length is set to array size while data type is native array otherwise failed.
+If data type is not char*, and size is not specified, size is set to array dimension while data type is native array otherwise failed.
 
 
-If data type is char*, and length is also not specified, deduce compare width by string format.
+If data type is char*, and size is also not specified, deduce compare width by string format.
 
-If buffer only contain '0' '1' ' ', width is considered 1, buffer is parsed to binary, length is set to count of '0' and '1'.
+If buffer only contain '0' '1' ' ', width is considered 1, buffer is parsed to binary, size is set to count of '0' and '1'.
 
 ```C++
 CASE(memory compare)
@@ -308,7 +308,7 @@ CASE(memory compare)
 }
 ```
 
-If data type is char*, and only contain hexidecimal characters, width is considered 8, buffer is parsed to bytes array, length is set to array size.
+If data type is char*, and only contain hexidecimal characters, width is considered 8, buffer is parsed to bytes array, size is set to array dimension.
 
 ```C++
 CASE(memory compare)
@@ -320,6 +320,17 @@ CASE(memory compare)
    const char* e = "8Ep88EC8F8";
    unsigned char *a = ...
    OK(Me(e), a); ==> memcmp("8Ep88EC8F8", a, 10)
+}
+```
+
+### Matcher auxiliary
+`File` load large expection data from file.
+
+```C++
+CASE(Read expection from file)
+{
+   OK(Substr(File("expect1.txt")), a_string);
+   OK(Me(File("expect2.dat")), a_buffer);
 }
 ```
 

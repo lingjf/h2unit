@@ -1,5 +1,47 @@
 #include "../source/h2_unit.cpp"
 
+struct Gf {
+   const char* path;
+   size_t len = 0;
+   size_t ret = 0;
+
+   Gf(const char* filename, unsigned char* data, size_t size) : path(filename), len(size)
+   {
+      FILE* filp = ::fopen(path, "wb");
+      if (filp) {
+         ret = fwrite(data, 1, len, filp);
+         fclose(filp);
+      }
+   }
+
+   ~Gf()
+   {
+      ::remove(path);
+   }
+};
+
+SUITE(File primitive [api])
+{
+   Case(strcmp)
+   {
+      Gf f1("_temp_full.txt", (unsigned char*)"hello h2unit!", 13);
+      OK(File("_temp_full.txt"), "hello h2unit!");
+      OK(Se(File("_temp_full.txt")), "hello h2unit!");
+
+      Gf f2("_temp_sub.txt", (unsigned char*)"hello", 5);
+      OK(Substr(File("_temp_sub.txt")), "hello h2unit!");
+
+      Gf f3("_temp_wildcard.txt", (unsigned char*)"hello?h*!", 9);
+      OK(We(File("_temp_wildcard.txt")), "hello h2unit!");
+   }
+
+   Case(memcmp)
+   {
+      Gf f1("_temp_bytes.dat", (unsigned char*)"hello\0h2unit!\0", 14);
+      OK(Me(File("_temp_bytes.dat")), "hello\0h2unit!\0");
+   }
+}
+
 SUITE(IsEven IsOdd primitive [api])
 {
    Case(zero)

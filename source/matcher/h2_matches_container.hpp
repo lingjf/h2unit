@@ -64,16 +64,16 @@ struct h2_is_polymorphic_matcher_pair_matches : std::false_type {};
 template <typename T>
 struct h2_is_polymorphic_matcher_pair_matches<T, typename std::enable_if<h2_is_polymorphic_matcher<T>::value && h2_is_pair_matches<typename T::matches_type>::value>::type> : std::true_type {};
 
-#define H2_MATCHES_CONTAINER1()                                                                                                                                                                                \
-   template <typename A>                                                                                                                                                                                       \
-   auto matches(const A& a, const C& c) const->typename std::enable_if<h2_is_container_adaptor<typename std::decay<A>::type>::value, h2_fail*>::type                                                           \
-   {                                                                                                                                                                                                           \
-      return matches(underlying_container(a), c);                                                                                                                                                              \
-   }                                                                                                                                                                                                           \
-   template <typename A>                                                                                                                                                                                       \
-   auto matches(A a, const C& c) const->typename std::enable_if<!h2_is_iterable<typename std::decay<A>::type>::value && !h2_is_container_adaptor<typename std::decay<A>::type>::value, h2_fail*>::type         \
-   { /* native c/c++ array or pointer */                                                                                                                                                                       \
-      return matches(h2_array<decltype(a[0])>(a, c.array_size == -1 ? (c.range_end - c.range_start < Range::end - Range::start ? c.range_end - c.range_start : Range::end - Range::start) : c.array_size), c); \
+#define H2_MATCHES_CONTAINER1()                                                                                                                                                                              \
+   template <typename A>                                                                                                                                                                                     \
+   auto matches(const A& a, const C& c) const->typename std::enable_if<h2_is_container_adaptor<typename std::decay<A>::type>::value, h2_fail*>::type                                                         \
+   {                                                                                                                                                                                                         \
+      return matches(underlying_container(a), c);                                                                                                                                                            \
+   }                                                                                                                                                                                                         \
+   template <typename A>                                                                                                                                                                                     \
+   auto matches(A a, const C& c) const->typename std::enable_if<!h2_is_iterable<typename std::decay<A>::type>::value && !h2_is_container_adaptor<typename std::decay<A>::type>::value, h2_fail*>::type       \
+   { /* native c/c++ array or pointer */                                                                                                                                                                     \
+      return matches(h2_array<decltype(a[0])>(a, c.dimension == -1 ? (c.range_end - c.range_start < Range::end - Range::start ? c.range_end - c.range_start : Range::end - Range::start) : c.dimension), c); \
    }
 
 #define H2_MATCHES_CONTAINER2(name)                                                                                                                                 \

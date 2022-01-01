@@ -738,6 +738,8 @@ struct h2_string : public std::basic_string<char, std::char_traits<char>, h2_all
    h2_string& operator+=(const char* s) { return append(s), *this; }
    h2_string& operator+=(const char c) { return push_back(c), *this; }
 
+   operator unsigned char*() const { return (unsigned char*)data(); }
+
    h2_string& sprintf(const char* fmt, ...);
    h2_string& replace_all(const char* from, const char* to);
 
@@ -1474,16 +1476,16 @@ struct h2_report : h2_report_interface {
 #define H2Report(Class) static h2::h2_report::registor H2PP_UNIQUE(report)(new Class)
 // source/matcher/h2_matches.hpp
 struct C {
-   int array_size, range_start, range_end, times;
+   int dimension, range_start, range_end, times;
    bool no_compare_operator, negative, case_insensitive, squash_whitespace;
-   C(int array_size_ = -1, bool no_compare_operator_ = false, bool negative_ = false, bool case_insensitive_ = false, bool squash_whitespace_ = false, int range_start_ = 0, int range_end_ = 5413722, int times_ = 1) : array_size(array_size_), range_start(range_start_), range_end(range_end_), times(times_), no_compare_operator(no_compare_operator_), negative(negative_), case_insensitive(case_insensitive_), squash_whitespace(squash_whitespace_) {}
+   C(int array_size_ = -1, bool no_compare_operator_ = false, bool negative_ = false, bool case_insensitive_ = false, bool squash_whitespace_ = false, int range_start_ = 0, int range_end_ = 5413722, int times_ = 1) : dimension(array_size_), range_start(range_start_), range_end(range_end_), times(times_), no_compare_operator(no_compare_operator_), negative(negative_), case_insensitive(case_insensitive_), squash_whitespace(squash_whitespace_) {}
 
    bool in(const int i) const { return range_start <= i && i < range_end; }
    bool fit(bool result) const { return result == !negative; }
    C clear_size() const { return {-1, no_compare_operator, negative, case_insensitive, squash_whitespace, 0, 5413722, times}; }
-   C update_negative(bool target = false) const { return {array_size, no_compare_operator, target, case_insensitive, squash_whitespace, range_start, range_end, times}; }
-   C update_caseless(bool target = false) const { return {array_size, no_compare_operator, negative, target, squash_whitespace, range_start, range_end, times}; }
-   C update_spaceless(bool target = false) const { return {array_size, no_compare_operator, negative, case_insensitive, target, range_start, range_end, times}; }
+   C update_negative(bool target = false) const { return {dimension, no_compare_operator, target, case_insensitive, squash_whitespace, range_start, range_end, times}; }
+   C update_caseless(bool target = false) const { return {dimension, no_compare_operator, negative, target, squash_whitespace, range_start, range_end, times}; }
+   C update_spaceless(bool target = false) const { return {dimension, no_compare_operator, negative, case_insensitive, target, range_start, range_end, times}; }
 
    h2_line pre(const char* ns = "!") const
    {
@@ -1612,7 +1614,7 @@ struct h2_polymorphic_matcher : h2_matches {
       range_start = 0, range_end = end;
       return *this;
    }
-#define H2_MATCHES_CONFIGURE c.array_size, c.no_compare_operator, negative != c.negative, /*XOR ^*/ case_insensitive || c.case_insensitive, squash_whitespace || c.squash_whitespace, range_start != -1 && range_end != -1 ? range_start : c.range_start, range_start != -1 && range_end != -1 ? range_end : c.range_end, c.times* times
+#define H2_MATCHES_CONFIGURE c.dimension, c.no_compare_operator, negative != c.negative, /*XOR ^*/ case_insensitive || c.case_insensitive, squash_whitespace || c.squash_whitespace, range_start != -1 && range_end != -1 ? range_start : c.range_start, range_start != -1 && range_end != -1 ? range_end : c.range_end, c.times* times
    template <typename T> struct matches_matcher : h2_matcher_impl<T>, h2_libc {
       const Matches m;
       int range_start, range_end, times;
@@ -1974,16 +1976,16 @@ struct h2_is_polymorphic_matcher_pair_matches : std::false_type {};
 template <typename T>
 struct h2_is_polymorphic_matcher_pair_matches<T, typename std::enable_if<h2_is_polymorphic_matcher<T>::value && h2_is_pair_matches<typename T::matches_type>::value>::type> : std::true_type {};
 
-#define H2_MATCHES_CONTAINER1()                                                                                                                                                                                \
-   template <typename A>                                                                                                                                                                                       \
-   auto matches(const A& a, const C& c) const->typename std::enable_if<h2_is_container_adaptor<typename std::decay<A>::type>::value, h2_fail*>::type                                                           \
-   {                                                                                                                                                                                                           \
-      return matches(underlying_container(a), c);                                                                                                                                                              \
-   }                                                                                                                                                                                                           \
-   template <typename A>                                                                                                                                                                                       \
-   auto matches(A a, const C& c) const->typename std::enable_if<!h2_is_iterable<typename std::decay<A>::type>::value && !h2_is_container_adaptor<typename std::decay<A>::type>::value, h2_fail*>::type         \
-   { /* native c/c++ array or pointer */                                                                                                                                                                       \
-      return matches(h2_array<decltype(a[0])>(a, c.array_size == -1 ? (c.range_end - c.range_start < Range::end - Range::start ? c.range_end - c.range_start : Range::end - Range::start) : c.array_size), c); \
+#define H2_MATCHES_CONTAINER1()                                                                                                                                                                              \
+   template <typename A>                                                                                                                                                                                     \
+   auto matches(const A& a, const C& c) const->typename std::enable_if<h2_is_container_adaptor<typename std::decay<A>::type>::value, h2_fail*>::type                                                         \
+   {                                                                                                                                                                                                         \
+      return matches(underlying_container(a), c);                                                                                                                                                            \
+   }                                                                                                                                                                                                         \
+   template <typename A>                                                                                                                                                                                     \
+   auto matches(A a, const C& c) const->typename std::enable_if<!h2_is_iterable<typename std::decay<A>::type>::value && !h2_is_container_adaptor<typename std::decay<A>::type>::value, h2_fail*>::type       \
+   { /* native c/c++ array or pointer */                                                                                                                                                                     \
+      return matches(h2_array<decltype(a[0])>(a, c.dimension == -1 ? (c.range_end - c.range_start < Range::end - Range::start ? c.range_end - c.range_start : Range::end - Range::start) : c.dimension), c); \
    }
 
 #define H2_MATCHES_CONTAINER2(name)                                                                                                                                 \
@@ -2574,45 +2576,47 @@ struct h2_memcmp_util {
 template <typename E>
 struct h2_matches_memcmp : h2_matches {
    const E buffer;
-   const size_t size, length, width;
-   explicit h2_matches_memcmp(const E buffer_, const size_t size_, const size_t length_, const size_t width_) : buffer(buffer_), size(size_), length(length_), width(width_) {}
+   const size_t dimension, size, width;
+   explicit h2_matches_memcmp(const E buffer_, const size_t dimension_, const size_t size_, const size_t width_) : buffer(buffer_), dimension(dimension_), size(size_), width(width_) {}
    h2_fail* matches(const void* a, const C& c) const
    {
       unsigned char* e = (unsigned char*)buffer;
-      size_t l = length, w = width;
+      const char* b = (const char*)e;
+      size_t z = size, w = width;
       bool result = true;
       do {
-         if (!w && !l && std::is_convertible<E, h2_string>::value) { /* deduce by string format */
-            l = strlen((const char*)buffer);
+         if (!w && !z && std::is_convertible<E, h2_string>::value) { /* deduce by string format */
+            z = strlen(b);
             w = 8;
-            if (!strcmp((const char*)buffer, (const char*)a)) break;
-            if (h2_memcmp_util::is_bin_string((const char*)buffer)) {
-               e = (unsigned char*)alloca(l);
-               l = h2_memcmp_util::bin_to_bits((const char*)buffer, e);
+            if (!strcmp(b, (const char*)a)) break;
+            if (h2_memcmp_util::is_bin_string(b)) {
+               e = (unsigned char*)alloca(z);
+               z = h2_memcmp_util::bin_to_bits(b, e);
                w = 1;
-            } else if (h2_memcmp_util::is_hex_string((const char*)buffer)) {
-               e = (unsigned char*)alloca(l);
-               l = h2_memcmp_util::hex_to_bytes((const char*)buffer, e);
+            } else if (h2_memcmp_util::is_hex_string(b)) {
+               e = (unsigned char*)alloca(z);
+               z = h2_memcmp_util::hex_to_bytes(b, e);
                w = 8;
             }
          }
          if (!w) w = h2_sizeof_pointee<E>::value * 8; /* deduce by data type */
-         if (!l) l = size;                            /* deduce by array size */
-         if (!l || !w) return h2_fail::new_normal(color("length", "red") + " not specified " + gray("in ") + color("Me(buffer, ", "cyan") + color("length", "red") + gray(", width") + color(")", "cyan"));
-         result = h2_memcmp_util::bits_equal(e, (const unsigned char*)a, l * w);
+         if (!z) z = dimension;                       /* deduce by array dimension */
+         if (!z || !w) return h2_fail::new_normal(color("size", "red") + " not specified " + gray("in ") + color("Me(buffer, ", "cyan") + color("size", "red") + gray(", width") + color(")", "cyan"));
+         result = h2_memcmp_util::bits_equal(e, (const unsigned char*)a, z * w);
       } while (0);
       if (c.fit(result)) return nullptr;
-      return h2_fail::new_memcmp((const unsigned char*)e, (const unsigned char*)a, l, w);
+      return h2_fail::new_memcmp(e, (const unsigned char*)a, z, w);
    }
    virtual h2_line expection(const C& c) const override { return c.pre() + "Me()"; }
 };
 
 template <typename T, typename E = typename std::decay<T>::type, typename P = h2_polymorphic_matcher<h2_matches_memcmp<E>>>
-inline P Memcmp(const T buffer, const size_t size, const size_t length = 0, const size_t width = 0) { return P(h2_matches_memcmp<E>((E)buffer, size, length, width)); }
+inline P Memcmp(const T buffer, const size_t dimension, const size_t size = 0, const size_t width = 0) { return P(h2_matches_memcmp<E>((E)buffer, dimension, size, width)); }
+inline auto Memcmp(const h2_string& buffer, const size_t dimension) -> h2_polymorphic_matcher<h2_matches_memcmp<h2_string>> { return h2_polymorphic_matcher<h2_matches_memcmp<h2_string>>(h2_matches_memcmp<h2_string>(buffer, dimension, buffer.size(), 8)); }
 
 #define H2Me(buffer, ...) H2PP_CAT(H2Me_, H2PP_IS_EMPTY(__VA_ARGS__))(buffer, std::extent<decltype(buffer)>::value, __VA_ARGS__)
-#define H2Me_1(buffer, size, ...) h2::Memcmp(buffer, size)
-#define H2Me_0(buffer, size, ...) h2::Memcmp(buffer, size, __VA_ARGS__)
+#define H2Me_1(buffer, dimension, ...) h2::Memcmp(buffer, dimension)
+#define H2Me_0(buffer, dimension, ...) h2::Memcmp(buffer, dimension, __VA_ARGS__)
 // source/matcher/h2_matches_strcmp.hpp
 struct h2_matches_strcmp : h2_matches {
    const h2_string e;
@@ -3801,9 +3805,9 @@ static inline h2_ostringstream& h2_ok2(h2_assert* d, E e, const A& a, std::false
 }
 
 template <typename E, typename A>
-static inline h2_ostringstream& h2_ok2(h2_assert* d, E e, const A a, std::true_type, int n)
+static inline h2_ostringstream& h2_ok2(h2_assert* d, E e, const A a, std::true_type, int dimension)
 {
-   h2_fail* fail = h2::h2_matcher_cast<typename h2_decay<A>::type>((typename h2_decay<E>::type)e).matches((typename h2_decay<A>::type)a, {n});
+   h2_fail* fail = h2::h2_matcher_cast<typename h2_decay<A>::type>((typename h2_decay<E>::type)e).matches((typename h2_decay<A>::type)a, {dimension});
    return d->stash(fail, "OK2");
 }
 
@@ -4107,6 +4111,19 @@ using h2::Pair;
 using h2::nothrow;
 
 // source/matcher/h2_matcher_aux.hpp
+static inline h2::h2_string File(const char* filename)  // slurp
+{
+   FILE* f = fopen(filename, "rb");
+   if (!f) return "";
+   fseek(f, 0, SEEK_END);
+   auto l = ftell(f);
+   fseek(f, 0, SEEK_SET);
+   h2::h2_string s(l, ' ');
+   fread((char*)s.data(), 1, l, f);
+   ((char*)s.data())[l] = '\0';
+   fclose(f);
+   return s;
+}
 
 H2MATCHER(IsEven) { return a % 2 == 0; }
 H2MATCHER(IsOdd) { return a % 2 != 0; }

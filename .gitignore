@@ -10,9 +10,6 @@
 *.map
 *.exe
 
-.last_order
-a.out.report.txt
-
 *.su
 *.idb
 *.pdb
@@ -22,6 +19,11 @@ a.out.report.txt
 
 .DS_Store
 *.dSYM/
+
+# Run
+.last_order
+a.out.report.txt
+_temp_*
 
 # CMake
 CMakeCache.txt
