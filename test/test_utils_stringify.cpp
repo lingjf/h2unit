@@ -73,66 +73,66 @@ CASE(tostring able)
    OK(!ret);
 }
 
-SUITE(ostream able)
+SUITE(stream able)
 {
    bool ret;
    Case(arithmetic type)
    {
-      ret = h2::h2_is_ostreamable<char>::value;
-      OK(ret);
-      ret = h2::h2_is_ostreamable<signed char>::value;
-      OK(ret);
-      ret = h2::h2_is_ostreamable<unsigned char>::value;
-      OK(ret);
-      ret = h2::h2_is_ostreamable<uint8_t>::value;
-      OK(ret);
+      ret = h2::h2_is_streamable<char>::value;
+      OK(!ret);
+      ret = h2::h2_is_streamable<signed char>::value;
+      OK(!ret);
+      ret = h2::h2_is_streamable<unsigned char>::value;
+      OK(!ret);
+      ret = h2::h2_is_streamable<uint8_t>::value;
+      OK(!ret);
 
-      ret = h2::h2_is_ostreamable<short int>::value;
-      OK(ret);
-      ret = h2::h2_is_ostreamable<unsigned short int>::value;
-      OK(ret);
+      ret = h2::h2_is_streamable<short int>::value;
+      OK(!ret);
+      ret = h2::h2_is_streamable<unsigned short int>::value;
+      OK(!ret);
 
-      ret = h2::h2_is_ostreamable<int>::value;
-      OK(ret);
-      ret = h2::h2_is_ostreamable<unsigned int>::value;
-      OK(ret);
+      ret = h2::h2_is_streamable<int>::value;
+      OK(!ret);
+      ret = h2::h2_is_streamable<unsigned int>::value;
+      OK(!ret);
 
-      ret = h2::h2_is_ostreamable<long int>::value;
-      OK(ret);
-      ret = h2::h2_is_ostreamable<unsigned long int>::value;
-      OK(ret);
+      ret = h2::h2_is_streamable<long int>::value;
+      OK(!ret);
+      ret = h2::h2_is_streamable<unsigned long int>::value;
+      OK(!ret);
 
-      ret = h2::h2_is_ostreamable<long long int>::value;
-      OK(ret);
-      ret = h2::h2_is_ostreamable<unsigned long long int>::value;
-      OK(ret);
+      ret = h2::h2_is_streamable<long long int>::value;
+      OK(!ret);
+      ret = h2::h2_is_streamable<unsigned long long int>::value;
+      OK(!ret);
    }
 
    Case(void)
    {
-      ret = h2::h2_is_ostreamable<void>::value;
+      ret = h2::h2_is_streamable<void>::value;
       OK(!ret);
    }
 
    Case(void*)
    {
-      ret = h2::h2_is_ostreamable<void*>::value;
+      ret = h2::h2_is_streamable<void*>::value;
       OK(ret);
    }
 
    Case(user type)
    {
-      ret = h2::h2_is_ostreamable<Stringify11>::value;
+      ret = h2::h2_is_streamable<Stringify11>::value;
       OK(!ret);
-      ret = h2::h2_is_ostreamable<Stringify12>::value;
+      ret = h2::h2_is_streamable<Stringify12>::value;
       OK(!ret);
-      ret = h2::h2_is_ostreamable<Stringify13>::value;
+      ret = h2::h2_is_streamable<Stringify13>::value;
       OK(!ret);
-      ret = h2::h2_is_ostreamable<Stringify21>::value;
+      ret = h2::h2_is_streamable<Stringify21>::value;
       OK(ret);
-      ret = h2::h2_is_ostreamable<Stringify22>::value;
+      ret = h2::h2_is_streamable<Stringify22>::value;
       OK(ret);
-      ret = h2::h2_is_ostreamable<Stringify23>::value;
+      ret = h2::h2_is_streamable<Stringify23>::value;
       OK(ret);
    }
 
@@ -142,10 +142,10 @@ SUITE(ostream able)
       // basic_ostream& operator<<(std::nullptr_t); (since C++ 17)
 
 #if __cplusplus >= 201703L || (defined _MSVC_LANG && _MSVC_LANG >= 201703L)
-      ret = h2::h2_is_ostreamable<std::nullptr_t>::value;
+      ret = h2::h2_is_streamable<std::nullptr_t>::value;
       // OK(ret);
 #else
-      ret = h2::h2_is_ostreamable<std::nullptr_t>::value;
+      ret = h2::h2_is_streamable<std::nullptr_t>::value;
       // OK(!ret);
 #endif
    }
@@ -228,27 +228,27 @@ SUITE(stringify simple)
       OK(ListOf("1"), h2::h2_stringify<double>(1.0));
       OK(ListOf("10"), h2::h2_stringify<double>(10.0));
 
-      OK(ListOf("3.14"), h2::h2_stringify<double>(3.14));
-      OK(ListOf("3.14"), h2::h2_stringify<double>(3.14, true));
-      OK(ListOf("3.14"), h2::h2_stringify<double>(3.140));
-      OK(ListOf("3.141593"), h2::h2_stringify<double>(3.1415926));
-      OK(ListOf("3.141593"), h2::h2_stringify<double>(3.1415926, true));
+      OK(ListOf(We("3.14*")), h2::h2_stringify<double>(3.14));
+      OK(ListOf(We("3.14*")), h2::h2_stringify<double>(3.14, true));
+      OK(ListOf(We("3.14*")), h2::h2_stringify<double>(3.140));
+      OK(ListOf(We("3.14159*")), h2::h2_stringify<double>(3.1415926));
+      OK(ListOf(We("3.14159*")), h2::h2_stringify<double>(3.1415926, true));
    }
 
    Case(-double)
    {
-      OK(ListOf("-3.14"), h2::h2_stringify<double>(-3.14));
-      OK(ListOf("-3.14"), h2::h2_stringify<double>(-3.14, true));
-      OK(ListOf("-3.141593"), h2::h2_stringify<double>(-3.1415926));
-      OK(ListOf("-3.141593"), h2::h2_stringify<double>(-3.1415926, true));
+      OK(ListOf(We("-3.14*")), h2::h2_stringify<double>(-3.14));
+      OK(ListOf(We("-3.14*")), h2::h2_stringify<double>(-3.14, true));
+      OK(ListOf(We("-3.14159*")), h2::h2_stringify<double>(-3.1415926));
+      OK(ListOf(We("-3.14159*")), h2::h2_stringify<double>(-3.1415926, true));
    }
 
    Case(+double)
    {
-      OK(ListOf("3.14"), h2::h2_stringify<double>(+3.14));
-      OK(ListOf("3.14"), h2::h2_stringify<double>(+3.14, true));
-      OK(ListOf("3.141593"), h2::h2_stringify<double>(+3.1415926));
-      OK(ListOf("3.141593"), h2::h2_stringify<double>(+3.1415926, true));
+      OK(ListOf(We("3.14*")), h2::h2_stringify<double>(+3.14));
+      OK(ListOf(We("3.14*")), h2::h2_stringify<double>(+3.14, true));
+      OK(ListOf(We("3.14159*")), h2::h2_stringify<double>(+3.1415926));
+      OK(ListOf(We("3.14159*")), h2::h2_stringify<double>(+3.1415926, true));
    }
 
    Case(bool)
@@ -298,13 +298,13 @@ SUITE(stringify simple)
 
    Case(float)
    {
-      OK(ListOf("3.14"), h2::h2_stringify<float>(3.14));
+      OK(ListOf(We("3.14*")), h2::h2_stringify<float>(3.14));
    }
 
    Case(long double)
    {
 #if !(defined WIN32 && defined __clang__)  //! failed at msys2-clang64
-      OK(ListOf("3.14"), h2::h2_stringify<long double>(3.14));
+      OK(ListOf(We("3.14159*")), h2::h2_stringify<long double>(3.1415926));
 #endif
    }
 
@@ -327,7 +327,7 @@ SUITE(stringify simple)
    Case(signed char)
    {
       signed char a = 'A';
-      OK(ListOf("65"), h2::h2_stringify<signed char>(a));
+      OK(ListOf(Eq("A") || Eq("65")), h2::h2_stringify<signed char>(a));
    }
 
    Case(char*)
@@ -422,7 +422,7 @@ SUITE(stringify simple)
       const int a1 = 42;
       const double a2 = 3.14;
       OK(ListOf("42"), h2::h2_stringify(a1));
-      OK(ListOf("3.14"), h2::h2_stringify(a2));
+      OK(ListOf(We("3.14*")), h2::h2_stringify(a2));
    }
 
    Case(reference)
@@ -434,8 +434,8 @@ SUITE(stringify simple)
 
       double a2 = 3.14;
       double& r2 = a2;
-      OK(ListOf("3.14"), h2::h2_stringify(a2));
-      OK(ListOf("3.14"), h2::h2_stringify(r2));
+      OK(ListOf(We("3.14*")), h2::h2_stringify(a2));
+      OK(ListOf(We("3.14*")), h2::h2_stringify(r2));
    }
 
    Case(wchar_t)
@@ -617,7 +617,7 @@ SUITE(stringify complex)
                 "\033{+dark gray}", "(", "\033{-dark gray}",
                 "pai",
                 "\033{+dark gray}", ", ", "\033{-dark gray}",
-                "3.14",
+                We("3.14*"),
                 "\033{+dark gray}", ")", "\033{-dark gray}",
                 "\033{+dark gray}", ")", "\033{-dark gray}"),
          (h2::h2_stringify<std::tuple<const char*, int, std::pair<std::string, double>>>(a3)));
@@ -633,7 +633,7 @@ SUITE(stringify complex)
                 "pai",
                 "\033{+dark gray}", "\"", "\033{-dark gray}",
                 "\033{+dark gray}", ", ", "\033{-dark gray}",
-                "3.14",
+                We("3.14*"),
                 "\033{+dark gray}", ")", "\033{-dark gray}",
                 "\033{+dark gray}", ")", "\033{-dark gray}"),
          (h2::h2_stringify<std::tuple<const char*, int, std::pair<std::string, double>>>(a3, true)));
@@ -1118,3 +1118,4 @@ SUITE(h2_array)
       OK("[]", h2::h2_stringify(a1).string());
    }
 }
+

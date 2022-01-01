@@ -346,7 +346,7 @@ SUITE(mock template member function)
       MOCK((G_TemplateClass<int, int>), (normal_f2<int, int>), const char*(int a, int b)).Return("+G.normal_f2");
       OK("+G.normal_f2", (g.normal_f2<int, int>(0, 0)));
 #if !defined WIN32  // Suck when member return Object
-      MOCK((G_TemplateClass<int, int>), (virtual_f2<int, int>), (std::pair<const char*, double>)(int a, int b)).Return(std::make_pair("+G.virtual_f2", 0.0));
+      MOCK((G_TemplateClass<int, int>), (virtual_f2<int, int>), (std::pair<const char*, double>(int a, int b))).Return(std::make_pair("+G.virtual_f2", 0.0));
       OK(Pair("+G.virtual_f2", 0.0), (g.virtual_f2<int, int>(0, 0)));
 #endif
    }

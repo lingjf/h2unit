@@ -508,7 +508,7 @@ jobs:
       - name: configure test
         run: cd test && cmake -DCMAKE_VERBOSE_MAKEFILE=ON .
       - name: 🏗️ build test
-        run: cd test && make -j2
+        run: cd test && make 
       - name: run test without memory check
         run: cd test && LD_BIND_NOW=1 ./a.out -s -p -m -v -q -te memory_check ${{matrix.sys}}
       - name: ✨ run test with memory check

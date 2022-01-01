@@ -5,7 +5,7 @@
 #ifndef __H2UNIT_HPP__
 #define __H2UNIT_HPP__
 #define H2UNIT_VERSION 5.17
-#define H2UNIT_REVISION 2021-12-26 branches/v5
+#define H2UNIT_REVISION 2022-01-01 branches/v5
 #ifndef __H2_UNIT_HPP__
 #define __H2_UNIT_HPP__
 
@@ -23,6 +23,11 @@
 #include <functional>  /* std::function */
 #include <utility>     /* std::forward, std::pair */
 #include <type_traits> /* std::true_type */
+
+#if defined _MSC_VER || defined __CYGWIN__
+#include <iomanip> /* std::fixed, std::setprecision */
+#include <limits>  /* std::numeric_limits */
+#endif
 
 #if defined _MSC_VER
 #include <malloc.h> /* _alloca _msize _expand */
@@ -123,7 +128,7 @@ namespace h2 {
 #define H2PP_REMOVE_PARENTHESES(...) _H2PP_REMOVE_PARENTHESES __VA_ARGS__
 #define _H2PP_REMOVE_PARENTHESES(...) __VA_ARGS__
 
-#define H2PP_REMOVE_PARENTHESES_IF(...) H2PP_CAT2(_H2PP_REMOVE_PARENTHESES_IF_, H2PP_IS_BEGIN_PARENTHESIS(__VA_ARGS__)) (__VA_ARGS__)
+#define H2PP_REMOVE_PARENTHESES_IF(...) H2PP_CAT2(_H2PP_REMOVE_PARENTHESES_IF_, H2PP_IS_PARENTHESIS(__VA_ARGS__)) (__VA_ARGS__)
 #define _H2PP_REMOVE_PARENTHESES_IF_1(...) H2PP_REMOVE_PARENTHESES(__VA_ARGS__)
 #define _H2PP_REMOVE_PARENTHESES_IF_0(...) __VA_ARGS__
 
@@ -716,20 +721,20 @@ using h2_ostringstream = std::basic_ostringstream<char, std::char_traits<char>, 
 // source/utils/h2_string.hpp
 struct h2_string : public std::basic_string<char, std::char_traits<char>, h2_allocator<char>> {
    h2_string() : basic_string() {}
-   h2_string(const h2_string& s) : basic_string(s.c_str()) {}
-   h2_string(const std::string& s) : basic_string(s.c_str()) {}
+   h2_string(const h2_string& s) : basic_string(s.data(), s.size()) {}
+   h2_string(const std::string& s) : basic_string(s.data(), s.size()) {}
    template <typename... T>
    h2_string(const char* fmt, T... t) : basic_string() { sizeof...(T) ? sprintf(fmt, t...) : assign(fmt ? fmt : "(null)"); }
    h2_string(size_t n, const char* s) : basic_string(s, n) {}
    h2_string(size_t n, const char c) : basic_string(n, c) {}
 
-   h2_string& operator=(const h2_string& s) { return assign(s.c_str()), *this; }
-   h2_string& operator=(const std::string& s) { return assign(s.c_str()), *this; }
+   h2_string& operator=(const h2_string& s) { return assign(s.data(), s.size()), *this; }
+   h2_string& operator=(const std::string& s) { return assign(s.data(), s.size()), *this; }
    h2_string& operator=(const char* s) { return assign(s ? s : "(null)"), *this; }
    h2_string& operator=(const char c) { return assign(1, c), *this; }
 
-   h2_string& operator+=(const h2_string& s) { return append(s.c_str()), *this; }
-   h2_string& operator+=(const std::string& s) { return append(s.c_str()), *this; }
+   h2_string& operator+=(const h2_string& s) { return append(s.data(), s.size()), *this; }
+   h2_string& operator+=(const std::string& s) { return append(s.data(), s.size()), *this; }
    h2_string& operator+=(const char* s) { return append(s), *this; }
    h2_string& operator+=(const char c) { return push_back(c), *this; }
 
@@ -851,33 +856,39 @@ struct h2_stringify_impl<T, typename std::enable_if<h2::h2_tostring_able<T>::val
 };
 
 template <typename T>
-struct h2_is_ostreamable {
+struct h2_is_streamable {  // exclude number
    template <typename U> static auto test(U* u) -> decltype(std::declval<std::ostream&>() << *u, std::true_type());
    template <typename U> static auto test(...) -> std::false_type;
-   static constexpr bool value = decltype(test<T>(nullptr))::value;
+   static constexpr bool value = decltype(test<T>(nullptr))::value && !std::is_arithmetic<T>::value;
 };
 
 template <typename T>
-struct h2_stringify_impl<T, typename std::enable_if<h2_is_ostreamable<T>::value>::type> {
-   static h2_line print(const T& a, bool represent = false) { return ostream_print(a, represent); }
-
-   template <typename U>
-   static auto ostream_print(const U& a, bool) -> typename std::enable_if<std::is_arithmetic<U>::value, h2_line>::type
+struct h2_stringify_impl<T, typename std::enable_if<h2_is_streamable<T>::value>::type> {
+   static h2_line print(const T& a, bool represent = false)
    {
+      h2_ostringstream oss;
+      oss << a;
+      represent = represent && std::is_convertible<T, h2_string>::value;
+      return gray(quote_if(represent)) + oss.str().c_str() + gray(quote_if(represent));
+   }
+};
+
+template <typename T>
+struct h2_stringify_impl<T, typename std::enable_if<std::is_arithmetic<T>::value>::type> {
+   static h2_line print(const T& a, bool = false)
+   {
+#if defined _MSC_VER || defined __CYGWIN__  // std::to_string issue
+      h2_ostringstream oss;
+      oss << std::fixed << std::setprecision(std::numeric_limits<T>::digits10 + 1) << a;
+      auto str = oss.str();
+#else
       auto str = std::to_string(a);
+#endif
       if (str.find_first_of('.') != std::string::npos) {
          str.erase(str.find_last_not_of("0") + 1);
          str.erase(str.find_last_not_of(".") + 1);
       }
-      return {str.c_str()};
-   }
-
-   template <typename U>
-   static auto ostream_print(const U& a, bool represent) -> typename std::enable_if<!std::is_arithmetic<U>::value, h2_line>::type
-   {
-      h2_ostringstream oss;
-      oss << a;
-      return gray(quote_if(represent && std::is_convertible<U, h2_string>::value)) + oss.str().c_str() + gray(quote_if(represent && std::is_convertible<U, h2_string>::value));
+      return str.c_str();
    }
 };
 
@@ -1310,7 +1321,7 @@ struct h2_runner {
 #define _H2_An(...) H2PP_CAT2(_H2_An1_, H2PP_IS_EMPTY(__VA_ARGS__)) ((__VA_ARGS__))
 #define _H2_An1_1(...) 0
 #define _H2_An1_0(MSVC_Workaround) _H2_An1 MSVC_Workaround
-#define _H2_An1(a, ...) H2PP_CAT2(_H2_An2_, H2PP_IS_BEGIN_PARENTHESIS(a)) (a)
+#define _H2_An1(a, ...) H2PP_CAT2(_H2_An2_, H2PP_IS_PARENTHESIS(a)) (a)
 #define _H2_An2_0(a) a
 #define _H2_An2_1(a) H2PP_DEFER(_H2_An2)() a
 #define _H2_An2() _H2_An
@@ -2855,27 +2866,27 @@ inline h2_matcher<T>::h2_matcher(T value) { *this = Equals(value); }
 
 #define H2MATCHER_1(name) H2MATCHER0(name, (""))
 
-#define H2MATCHER_2(name, t) H2PP_CAT(H2MATCHER_2_, H2PP_IS_BEGIN_PARENTHESIS(t))(name, t)
+#define H2MATCHER_2(name, t) H2PP_CAT(H2MATCHER_2_, H2PP_IS_PARENTHESIS(t))(name, t)
 #define H2MATCHER_2_0(name, e1) H2MATCHER1(name, e1, (""))
 #define H2MATCHER_2_1(name, message) H2MATCHER0(name, message)
 
-#define H2MATCHER_3(name, e1, t) H2PP_CAT(H2MATCHER_3_, H2PP_IS_BEGIN_PARENTHESIS(t))(name, e1, t)
+#define H2MATCHER_3(name, e1, t) H2PP_CAT(H2MATCHER_3_, H2PP_IS_PARENTHESIS(t))(name, e1, t)
 #define H2MATCHER_3_0(name, e1, e2) H2MATCHER2(name, e1, e2, (""))
 #define H2MATCHER_3_1(name, e1, message) H2MATCHER1(name, e1, message)
 
-#define H2MATCHER_4(name, e1, e2, t) H2PP_CAT(H2MATCHER_4_, H2PP_IS_BEGIN_PARENTHESIS(t))(name, e1, e2, t)
+#define H2MATCHER_4(name, e1, e2, t) H2PP_CAT(H2MATCHER_4_, H2PP_IS_PARENTHESIS(t))(name, e1, e2, t)
 #define H2MATCHER_4_0(name, e1, e2, e3) H2MATCHER3(name, e1, e2, e3, (""))
 #define H2MATCHER_4_1(name, e1, e2, message) H2MATCHER2(name, e1, e2, message)
 
-#define H2MATCHER_5(name, e1, e2, e3, t) H2PP_CAT(H2MATCHER_5_, H2PP_IS_BEGIN_PARENTHESIS(t))(name, e1, e2, e3, t)
+#define H2MATCHER_5(name, e1, e2, e3, t) H2PP_CAT(H2MATCHER_5_, H2PP_IS_PARENTHESIS(t))(name, e1, e2, e3, t)
 #define H2MATCHER_5_0(name, e1, e2, e3, e4) H2MATCHER4(name, e1, e2, e3, e4, (""))
 #define H2MATCHER_5_1(name, e1, e2, e3, message) H2MATCHER3(name, e1, e2, e3, message)
 
-#define H2MATCHER_6(name, e1, e2, e3, e4, t) H2PP_CAT(H2MATCHER_6_, H2PP_IS_BEGIN_PARENTHESIS(t))(name, e1, e2, e3, e4, t)
+#define H2MATCHER_6(name, e1, e2, e3, e4, t) H2PP_CAT(H2MATCHER_6_, H2PP_IS_PARENTHESIS(t))(name, e1, e2, e3, e4, t)
 #define H2MATCHER_6_0(name, e1, e2, e3, e4, e5) H2MATCHER5(name, e1, e2, e3, e4, e5, (""))
 #define H2MATCHER_6_1(name, e1, e2, e3, e4, message) H2MATCHER4(name, e1, e2, e3, e4, message)
 
-#define H2MATCHER_7(name, e1, e2, e3, e4, e5, t) H2PP_CAT(H2MATCHER_7_, H2PP_IS_BEGIN_PARENTHESIS(t))(name, e1, e2, e3, e4, e5, t)
+#define H2MATCHER_7(name, e1, e2, e3, e4, e5, t) H2PP_CAT(H2MATCHER_7_, H2PP_IS_PARENTHESIS(t))(name, e1, e2, e3, e4, e5, t)
 #define H2MATCHER_7_0(name, e1, e2, e3, e4, e5, e6)
 #define H2MATCHER_7_1(name, e1, e2, e3, e4, e5, message) H2MATCHER5(name, e1, e2, e3, e4, e5, message)
 

@@ -40,7 +40,7 @@
 #define _H2_An(...) H2PP_CAT2(_H2_An1_, H2PP_IS_EMPTY(__VA_ARGS__)) ((__VA_ARGS__))
 #define _H2_An1_1(...) 0
 #define _H2_An1_0(MSVC_Workaround) _H2_An1 MSVC_Workaround
-#define _H2_An1(a, ...) H2PP_CAT2(_H2_An2_, H2PP_IS_BEGIN_PARENTHESIS(a)) (a)
+#define _H2_An1(a, ...) H2PP_CAT2(_H2_An2_, H2PP_IS_PARENTHESIS(a)) (a)
 #define _H2_An2_0(a) a
 #define _H2_An2_1(a) H2PP_DEFER(_H2_An2)() a
 #define _H2_An2() _H2_An

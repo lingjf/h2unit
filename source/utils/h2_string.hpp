@@ -1,19 +1,19 @@
 struct h2_string : public std::basic_string<char, std::char_traits<char>, h2_allocator<char>> {
    h2_string() : basic_string() {}
-   h2_string(const h2_string& s) : basic_string(s.c_str()) {}
-   h2_string(const std::string& s) : basic_string(s.c_str()) {}
+   h2_string(const h2_string& s) : basic_string(s.data(), s.size()) {}
+   h2_string(const std::string& s) : basic_string(s.data(), s.size()) {}
    template <typename... T>
    h2_string(const char* fmt, T... t) : basic_string() { sizeof...(T) ? sprintf(fmt, t...) : assign(fmt ? fmt : "(null)"); }
    h2_string(size_t n, const char* s) : basic_string(s, n) {}
    h2_string(size_t n, const char c) : basic_string(n, c) {}
 
-   h2_string& operator=(const h2_string& s) { return assign(s.c_str()), *this; }
-   h2_string& operator=(const std::string& s) { return assign(s.c_str()), *this; }
+   h2_string& operator=(const h2_string& s) { return assign(s.data(), s.size()), *this; }
+   h2_string& operator=(const std::string& s) { return assign(s.data(), s.size()), *this; }
    h2_string& operator=(const char* s) { return assign(s ? s : "(null)"), *this; }
    h2_string& operator=(const char c) { return assign(1, c), *this; }
 
-   h2_string& operator+=(const h2_string& s) { return append(s.c_str()), *this; }
-   h2_string& operator+=(const std::string& s) { return append(s.c_str()), *this; }
+   h2_string& operator+=(const h2_string& s) { return append(s.data(), s.size()), *this; }
+   h2_string& operator+=(const std::string& s) { return append(s.data(), s.size()), *this; }
    h2_string& operator+=(const char* s) { return append(s), *this; }
    h2_string& operator+=(const char c) { return push_back(c), *this; }
 

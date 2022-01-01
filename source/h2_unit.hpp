@@ -16,6 +16,11 @@
 #include <utility>     /* std::forward, std::pair */
 #include <type_traits> /* std::true_type */
 
+#if defined _MSC_VER || defined __CYGWIN__
+#include <iomanip> /* std::fixed, std::setprecision */
+#include <limits>  /* std::numeric_limits */
+#endif
+
 #if defined _MSC_VER
 #include <malloc.h> /* _alloca _msize _expand */
 #define alloca _alloca

@@ -330,6 +330,23 @@ SUITE(string)
 
    Case(append)
    {
+      std::string t;
+      t.append("hello");
+
+      // using std::string as byte buffer
+      t.append("\0world\0", 7);
+      OK(Me("hello\0world\0", 12), t.data());
+      OK(12, t.length());  // legacy
+      OK(12, t.size());
+
+      std::string t2 = t;
+      OK(Me("hello\0world\0", 12), t2.data());
+      OK(12, t2.length());  // legacy
+      OK(12, t2.size());
+   }
+
+   Case(append)
+   {
       h2::h2_string t;
       t.append("hello");
       OK(t.equals("hello"));
@@ -338,6 +355,12 @@ SUITE(string)
       t.append("\0world\0", 7);
       OK(Me("hello\0world\0", 12), t.data());
       OK(12, t.length());
+      OK(12, t.size());
+
+      h2::h2_string t2 = t;
+      OK(Me("hello\0world\0", 12), t2.data());
+      OK(12, t2.length());
+      OK(12, t2.size());
    }
 }
 

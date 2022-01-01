@@ -33,33 +33,39 @@ struct h2_stringify_impl<T, typename std::enable_if<h2::h2_tostring_able<T>::val
 };
 
 template <typename T>
-struct h2_is_ostreamable {
+struct h2_is_streamable {  // exclude number
    template <typename U> static auto test(U* u) -> decltype(std::declval<std::ostream&>() << *u, std::true_type());
    template <typename U> static auto test(...) -> std::false_type;
-   static constexpr bool value = decltype(test<T>(nullptr))::value;
+   static constexpr bool value = decltype(test<T>(nullptr))::value && !std::is_arithmetic<T>::value;
 };
 
 template <typename T>
-struct h2_stringify_impl<T, typename std::enable_if<h2_is_ostreamable<T>::value>::type> {
-   static h2_line print(const T& a, bool represent = false) { return ostream_print(a, represent); }
-
-   template <typename U>
-   static auto ostream_print(const U& a, bool) -> typename std::enable_if<std::is_arithmetic<U>::value, h2_line>::type
+struct h2_stringify_impl<T, typename std::enable_if<h2_is_streamable<T>::value>::type> {
+   static h2_line print(const T& a, bool represent = false)
    {
+      h2_ostringstream oss;
+      oss << a;
+      represent = represent && std::is_convertible<T, h2_string>::value;
+      return gray(quote_if(represent)) + oss.str().c_str() + gray(quote_if(represent));
+   }
+};
+
+template <typename T>
+struct h2_stringify_impl<T, typename std::enable_if<std::is_arithmetic<T>::value>::type> {
+   static h2_line print(const T& a, bool = false)
+   {
+#if defined _MSC_VER || defined __CYGWIN__  // std::to_string issue
+      h2_ostringstream oss;
+      oss << std::fixed << std::setprecision(std::numeric_limits<T>::digits10 + 1) << a;
+      auto str = oss.str();
+#else
       auto str = std::to_string(a);
+#endif
       if (str.find_first_of('.') != std::string::npos) {
          str.erase(str.find_last_not_of("0") + 1);
          str.erase(str.find_last_not_of(".") + 1);
       }
-      return {str.c_str()};
-   }
-
-   template <typename U>
-   static auto ostream_print(const U& a, bool represent) -> typename std::enable_if<!std::is_arithmetic<U>::value, h2_line>::type
-   {
-      h2_ostringstream oss;
-      oss << a;
-      return gray(quote_if(represent && std::is_convertible<U, h2_string>::value)) + oss.str().c_str() + gray(quote_if(represent && std::is_convertible<U, h2_string>::value));
+      return str.c_str();
    }
 };
 

@@ -77,27 +77,27 @@
 
 #define H2MATCHER_1(name) H2MATCHER0(name, (""))
 
-#define H2MATCHER_2(name, t) H2PP_CAT(H2MATCHER_2_, H2PP_IS_BEGIN_PARENTHESIS(t))(name, t)
+#define H2MATCHER_2(name, t) H2PP_CAT(H2MATCHER_2_, H2PP_IS_PARENTHESIS(t))(name, t)
 #define H2MATCHER_2_0(name, e1) H2MATCHER1(name, e1, (""))
 #define H2MATCHER_2_1(name, message) H2MATCHER0(name, message)
 
-#define H2MATCHER_3(name, e1, t) H2PP_CAT(H2MATCHER_3_, H2PP_IS_BEGIN_PARENTHESIS(t))(name, e1, t)
+#define H2MATCHER_3(name, e1, t) H2PP_CAT(H2MATCHER_3_, H2PP_IS_PARENTHESIS(t))(name, e1, t)
 #define H2MATCHER_3_0(name, e1, e2) H2MATCHER2(name, e1, e2, (""))
 #define H2MATCHER_3_1(name, e1, message) H2MATCHER1(name, e1, message)
 
-#define H2MATCHER_4(name, e1, e2, t) H2PP_CAT(H2MATCHER_4_, H2PP_IS_BEGIN_PARENTHESIS(t))(name, e1, e2, t)
+#define H2MATCHER_4(name, e1, e2, t) H2PP_CAT(H2MATCHER_4_, H2PP_IS_PARENTHESIS(t))(name, e1, e2, t)
 #define H2MATCHER_4_0(name, e1, e2, e3) H2MATCHER3(name, e1, e2, e3, (""))
 #define H2MATCHER_4_1(name, e1, e2, message) H2MATCHER2(name, e1, e2, message)
 
-#define H2MATCHER_5(name, e1, e2, e3, t) H2PP_CAT(H2MATCHER_5_, H2PP_IS_BEGIN_PARENTHESIS(t))(name, e1, e2, e3, t)
+#define H2MATCHER_5(name, e1, e2, e3, t) H2PP_CAT(H2MATCHER_5_, H2PP_IS_PARENTHESIS(t))(name, e1, e2, e3, t)
 #define H2MATCHER_5_0(name, e1, e2, e3, e4) H2MATCHER4(name, e1, e2, e3, e4, (""))
 #define H2MATCHER_5_1(name, e1, e2, e3, message) H2MATCHER3(name, e1, e2, e3, message)
 
-#define H2MATCHER_6(name, e1, e2, e3, e4, t) H2PP_CAT(H2MATCHER_6_, H2PP_IS_BEGIN_PARENTHESIS(t))(name, e1, e2, e3, e4, t)
+#define H2MATCHER_6(name, e1, e2, e3, e4, t) H2PP_CAT(H2MATCHER_6_, H2PP_IS_PARENTHESIS(t))(name, e1, e2, e3, e4, t)
 #define H2MATCHER_6_0(name, e1, e2, e3, e4, e5) H2MATCHER5(name, e1, e2, e3, e4, e5, (""))
 #define H2MATCHER_6_1(name, e1, e2, e3, e4, message) H2MATCHER4(name, e1, e2, e3, e4, message)
 
-#define H2MATCHER_7(name, e1, e2, e3, e4, e5, t) H2PP_CAT(H2MATCHER_7_, H2PP_IS_BEGIN_PARENTHESIS(t))(name, e1, e2, e3, e4, e5, t)
+#define H2MATCHER_7(name, e1, e2, e3, e4, e5, t) H2PP_CAT(H2MATCHER_7_, H2PP_IS_PARENTHESIS(t))(name, e1, e2, e3, e4, e5, t)
 #define H2MATCHER_7_0(name, e1, e2, e3, e4, e5, e6)
 #define H2MATCHER_7_1(name, e1, e2, e3, e4, e5, message) H2MATCHER5(name, e1, e2, e3, e4, e5, message)
 
