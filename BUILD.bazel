@@ -46,3 +46,9 @@ cc_binary(
         "//conditions:default": ["-rdynamic"],
     }),
 )
+
+cc_binary(
+    name = "template_function_argument_deduction",
+    srcs = glob(["conformance/template_function_argument_deduction.cpp"]),
+    copts = ["-std=c++14"],
+)

@@ -2728,6 +2728,23 @@ struct h2_member_data_matches : h2_matches {
 template <typename T, typename Class, typename Data, typename E = typename std::decay<T>::type, typename P = h2_polymorphic_matcher<h2_member_data_matches<E, Class, Data>>>
 inline P Member_member(T expect, Data Class::*data) { return P(h2_member_data_matches<E, Class, Data>(expect, data)); }
 
+template <typename T, typename U = typename std::remove_reference<T>::type>
+struct mfp_decay {  // std::decay drop reference, std::make_tuple (template function argument deduce) also drop reference, use foreach macro
+   template <typename R> struct __reference_wrapper : std::false_type {
+      typedef R underlying_type;
+   };
+   template <typename R> struct __reference_wrapper<std::reference_wrapper<R>> : std::true_type {
+      typedef R& underlying_type;
+   };
+   typedef typename std::conditional<__reference_wrapper<T>::value,
+                                     typename __reference_wrapper<T>::underlying_type,
+                                     typename std::conditional<std::is_array<U>::value,
+                                                               typename std::remove_extent<U>::type*,
+                                                               typename std::conditional<std::is_function<U>::value,
+                                                                                         typename std::add_pointer<U>::type,
+                                                                                         T>::type>::type>::type type;
+};
+
 #if __cplusplus >= 201402L || (defined _MSVC_LANG && _MSVC_LANG >= 201402L)  // Return type deduction / auto
 // h2_apply => std::apply since C++17
 template <typename A, typename M, typename T, std::size_t... S>
@@ -2750,8 +2767,7 @@ struct h2_member_method_matches : h2_matches {
    virtual h2_line expection(const C& c) const override { return h2_matches_expection(m, c); }
 };
 
-template <typename...> struct mfp {};  // mfp improve std::mem_fn for overloading
-template <typename... Args> struct mfp<std::tuple<Args...>> {
+template <typename... Args> struct mfp {  // mfp improve std::mem_fn for overloading
    template <typename Class, typename ReturnType> static auto get(ReturnType (Class::*f)(Args...)) { return f; }
    template <typename Class, typename ReturnType> static auto get(ReturnType (Class::*f)(Args...) const) { return f; }
 };
@@ -2774,12 +2790,13 @@ inline P Member_member(T expect, ReturnType (Class::*method)() const noexcept) {
 
 #define H2Member(expect, member, ...) H2PP_RESCAN(H2PP_CAT2(H2Member_, H2PP_IS_EMPTY(__VA_ARGS__))(expect, member, __VA_ARGS__))
 #define H2Member_1(expect, member, ...) h2::Member_member(expect, member)
-// #define H2Member_0(expect, Class, member, ...) h2::Member_method(expect, h2::mfp<decltype(std::make_tuple(__VA_ARGS__))>::get(&Class::member), std::make_tuple(__VA_ARGS__))  // without arguments braced
+// #define H2Member_0(expect, Class, member, ...) h2::Member_method(expect, h2::mfp<H2PP_FOREACH((, ), __H2MfpDecay, , __VA_ARGS__)>::get(member), std::tuple<H2PP_FOREACH((, ), __H2MfpDecay, , __VA_ARGS__)>(__VA_ARGS__))  // without arguments braced
 #define H2Member_0(...) H2PP_NCALL(H2Member_0_, 3, __VA_ARGS__)
-#define H2Member_0_0(expect, member, ...) h2::Member_method(expect, h2::mfp<decltype(std::make_tuple(__VA_ARGS__))>::get(member), std::make_tuple(__VA_ARGS__))
+#define H2Member_0_0(expect, member, ...) h2::Member_method(expect, h2::mfp<H2PP_FOREACH((, ), __H2MfpDecay, , __VA_ARGS__)>::get(member), std::tuple<H2PP_FOREACH((, ), __H2MfpDecay, , __VA_ARGS__)>(__VA_ARGS__))
 #define H2Member_0_1(expect, member, ...) H2PP_RESCAN(H2PP_CAT2(H2Member_0_1_, H2PP_IS_PARENTHESIS(__VA_ARGS__))(expect, member, __VA_ARGS__))
-#define H2Member_0_1_0(expect, member, ...) h2::Member_method(expect, h2::mfp<decltype(std::make_tuple(__VA_ARGS__))>::get(member), std::make_tuple(__VA_ARGS__))
-#define H2Member_0_1_1(expect, member, ...) h2::Member_method(expect, h2::mfp<decltype(std::make_tuple __VA_ARGS__)>::get(member), std::make_tuple __VA_ARGS__)
+#define H2Member_0_1_0(expect, member, ...) h2::Member_method(expect, h2::mfp<H2PP_FOREACH((, ), __H2MfpDecay, , __VA_ARGS__)>::get(member), std::tuple<H2PP_FOREACH((, ), __H2MfpDecay, , __VA_ARGS__)>(__VA_ARGS__))
+#define H2Member_0_1_1(expect, member, ...) h2::Member_method(expect, h2::mfp<H2PP_FOREACH((, ), __H2MfpDecay, , H2PP_REMOVE_PARENTHESES(__VA_ARGS__))>::get(member), std::tuple<H2PP_FOREACH((, ), __H2MfpDecay, , H2PP_REMOVE_PARENTHESES(__VA_ARGS__))> __VA_ARGS__)
+#define __H2MfpDecay(Dummy, i, x) h2::mfp_decay<decltype(x)>::type
 // source/matcher/h2_matcher.cpp
 template <typename T>
 inline h2_matcher<T>::h2_matcher() { *this = h2_polymorphic_matcher<h2_matches_any>(h2_matches_any()); }

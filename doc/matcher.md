@@ -232,13 +232,15 @@ CASE(Member function)
 `Member(Matcher, &Class::method, (type1)arg1, (type2)arg2, ...)`
 `Member(Matcher, &Class::method, ((type1)arg1, (type2)arg2, ...))`
 
-If argument is reference, use std::ref()
+If argument is reference, use std::ref() or use reference variable
 ```C++
 CASE(Member function with reference argument)
 {
    C c;
    int n = 2;
    OK(Member(100, &C::get, 1, std::ref(n)), c);
+   int& m = n;
+   OK(Member(100, &C::get, 1, m), c);
 }
 ```
 

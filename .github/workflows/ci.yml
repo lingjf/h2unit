@@ -30,6 +30,8 @@ jobs:
         run: ./bazel-bin/example1
       - name: bazel run example h2unit.hpp h2unit.cpp
         run: ./bazel-bin/example2
+      - name: bazel run conformance
+        run: ./bazel-bin/template_function_argument_deduction
       - name: configure example/debug
         run: cmake -DCMAKE_BUILD_TYPE=Debug -B debug_example example
       - name: build example/debug
@@ -164,6 +166,8 @@ jobs:
         run: ./bazel-bin/example1
       - name: bazel run example h2unit.hpp h2unit.cpp
         run: ./bazel-bin/example2
+      - name: bazel run conformance
+        run: ./bazel-bin/template_function_argument_deduction
       - name: configure example/debug
         run: cmake -DCMAKE_BUILD_TYPE=Debug -B debug_example example
       - name: build example/debug

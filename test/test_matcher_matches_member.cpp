@@ -80,9 +80,59 @@ class C7 : public B7 {
 
 SUITE(matches member)
 {
-   Case(h2_member_matches)
+   Case(h2_member_data_matches)
    {
    }
+
+   Case(h2_member_method_matches)
+   {
+   }
+}
+
+CASE(mfp_decay)
+{
+   int a1 = 1;
+   OK((std::is_same<int, typename h2::mfp_decay<decltype(a1)>::type>::value));
+   int* a2 = &a1;
+   OK((std::is_same<int*, typename h2::mfp_decay<decltype(a2)>::type>::value));
+   int& a3 = a1;
+   OK((std::is_same<int&, typename h2::mfp_decay<decltype(a3)>::type>::value));
+   int&& a4 = 2;
+   OK((std::is_same<int&&, typename h2::mfp_decay<decltype(a4)>::type>::value));
+
+   int const a5 = 1;
+   OK((std::is_same<const int, typename h2::mfp_decay<decltype(a5)>::type>::value));
+   int const* a6 = &a5;
+   OK((std::is_same<const int*, typename h2::mfp_decay<decltype(a6)>::type>::value));
+   int const& a7 = a5;
+   OK((std::is_same<const int&, typename h2::mfp_decay<decltype(a7)>::type>::value));
+   int const&& a8 = 2;
+   OK((std::is_same<const int&&, typename h2::mfp_decay<decltype(a8)>::type>::value));
+
+   int* const a9 = nullptr;
+   OK((std::is_same<int* const, typename h2::mfp_decay<decltype(a9)>::type>::value));
+   int const* const a10 = nullptr;
+   OK((std::is_same<const int* const, typename h2::mfp_decay<decltype(a10)>::type>::value));
+
+   C7 c7;
+   OK((std::is_same<C7, typename h2::mfp_decay<decltype(c7)>::type>::value));
+   C7* c8;
+   OK((std::is_same<C7*, typename h2::mfp_decay<decltype(c8)>::type>::value));
+   C7& c9 = c7;
+   OK((std::is_same<C7&, typename h2::mfp_decay<decltype(c9)>::type>::value));
+   const C7 c10;
+   OK((std::is_same<const C7, typename h2::mfp_decay<decltype(c10)>::type>::value));
+   const C7* c11;
+   OK((std::is_same<const C7*, typename h2::mfp_decay<decltype(c11)>::type>::value));
+   const C7& c12 = c10;
+   OK((std::is_same<const C7&, typename h2::mfp_decay<decltype(c12)>::type>::value));
+   const C7* const c13 = nullptr;
+   OK((std::is_same<const C7* const, typename h2::mfp_decay<decltype(c13)>::type>::value));
+
+   OK((std::is_same<int&, typename h2::mfp_decay<decltype(std::ref(a1))>::type>::value));
+   OK((std::is_same<C7&, typename h2::mfp_decay<decltype(std::ref(c7))>::type>::value));
+
+   // std::cout << h2::h2_cxa::type_name<typename h2::mfp_decay<decltype(c13)>::type>() << std::endl;
 }
 
 SUITE(Member Data)
@@ -125,6 +175,12 @@ SUITE(Member Data)
 }
 
 #if __cplusplus >= 201402L || (defined _MSVC_LANG && _MSVC_LANG >= 201402L)
+
+CASE(mfp)
+{
+   OK(!(std::is_same<decltype(std::mem_fn(&C7::ga)), decltype(h2::mfp<A5>::get(&C7::ga))>::value));
+   OK(!(std::is_same<decltype(std::mem_fn(&C7::gr)), decltype(h2::mfp<A5&>::get(&C7::gr))>::value));
+}
 
 SUITE(Member Method)
 {
@@ -220,8 +276,8 @@ SUITE(Member Method)
    {
       OK(Member("a", &C7::gr, std::ref(a5)), c7);
 
-      // A5& r5 = a5;
-      // OK(Member("a", &C7::gr, r5), c7);
+      A5& r5 = a5;
+      OK(Member("a", &C7::gr, r5), c7);
    }
 
    Case(ptr)
