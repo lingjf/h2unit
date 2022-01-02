@@ -46,16 +46,20 @@ struct h2_block : h2_libc {
          if (p->violate_times)
             h2_fail::append_subling(fails, p->violate_fail());
 
-      if (fails) return fails;
-
+      if (fails) {
+         if (O.as_waring_memory_violate) fails->warning = true;
+         return fails;
+      }
       h2_leaky leaky;
       h2_list_for_each_entry (p, pieces, h2_piece, x)
          if (!attributes.noleak && !p->free_times)
             leaky.add(p->user_ptr, p->user_size, p->bt_allocate);
 
       fails = leaky.check(where, filine);
-      if (fails) return fails;
-
+      if (fails) {
+         if (O.as_waring_memory_leak) fails->warning = true;
+         return fails;
+      }
       /* why not chain fails in subling? report one fail ignore more for clean.
          when fail, memory may be in used, don't free and keep it for robust */
       h2_list_for_each_entry (p, pieces, h2_piece, x) {

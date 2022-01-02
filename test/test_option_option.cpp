@@ -24,7 +24,14 @@ SUITE(h2_option)
       OK(!c.debugger_trap);
       OK(!c.quit_exit_code);
       OK(0, c.break_after_fails);
-      OK(!c.exception_as_fail);
+
+      OK(0, c.as_waring_exception);
+      OK(0, c.as_waring_uncaught);
+      OK(0, c.as_waring_memory_leak);
+      OK(0, c.as_waring_memory_violate);
+      OK(0, c.as_waring_memory_double_free);
+      OK(0, c.as_waring_memory_asymmetric_free);
+
       OK(!c.tags_filter);
       OK(0, c.lists);
       OK(1, c.run_rounds);

@@ -3,7 +3,7 @@ struct h2_exception_handler {
    static void RaiseException(DWORD dwExceptionCode, DWORD dwExceptionFlags, DWORD nNumberOfArguments, const ULONG_PTR* lpArguments)
    {
       h2_exception::I().last_bt = h2_backtrace::dump(1);
-      if (O.exception_as_fail) h2_runner::failing(h2_fail::new_exception("was thrown", "", h2_exception::I().last_bt));
+      if (O.as_waring_exception) h2_runner::failing(h2_fail::new_exception("was thrown", "", h2_exception::I().last_bt, true));
       h2::h2_stub_temporary_restore t((void*)::RaiseException);
       ::RaiseException(dwExceptionCode, dwExceptionFlags, nNumberOfArguments, lpArguments);
    }
@@ -15,7 +15,7 @@ struct h2_exception_handler {
       h2_exception::I().last_bt = h2_backtrace::dump(1);
       h2_cxa::demangle(type_info->name(), h2_exception::I().last_type);
       if (h2_exception::I().catching) ::longjmp(h2_exception::I().catch_hole, 1);
-      if (O.exception_as_fail) h2_runner::failing(h2_fail::new_exception("was thrown", h2_exception::I().last_type, h2_exception::I().last_bt));
+      if (O.as_waring_exception) h2_runner::failing(h2_fail::new_exception("was thrown", h2_exception::I().last_type, h2_exception::I().last_bt, true));
       h2::h2_stub_temporary_restore t((void*)abi::__cxa_throw);
       abi::__cxa_throw(thrown_exception, type_info, dest);
    }

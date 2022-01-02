@@ -28,4 +28,10 @@
       * `4` normal
       * `5` details
 *    `-w` Console output, *black-white* color style
-*    `-x` Thrown *exception* is considered as failure
+*    `-W` [type...] Configure failure as *warning* 
+      * `exception` consider thrown exception as warning
+      * `uncaught` consider uncaught exception as warning
+      * `leak` consider memory leak as warning
+      * `violate` consider memory violate access as warning
+      * `double_free` consider memory double free as warning
+      * `asymmetric_free` consider memory asymmetric free as warning

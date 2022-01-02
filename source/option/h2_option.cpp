@@ -7,6 +7,7 @@ static inline void usage()
             "\033[90m│\033[0m" " -\033[36mb\033[0m  "                               "\033[90m│\033[0m" "   \033[90m[\033[0mn=1\033[90m]\033[0m   "     "\033[90m│\033[0m" " \033[36mb\033[0mreak test once n (default 1) cases failed                 "                               "\033[90m│\033[0m\n" H2_USAGE_BR
             "\033[90m│\033[0m" " -\033[36mc\033[0m  "                               "\033[90m│\033[0m" "           "                                   "\033[90m│\033[0m" " \033[36mc\033[0montinue asserts even if failure occurred                  "                               "\033[90m│\033[0m\n" H2_USAGE_BR
             "\033[90m│\033[0m" " -\033[36md\033[0m  "                               "\033[90m│\033[0m" "           "                                   "\033[90m│\033[0m" " \033[36md\033[0mebug with gdb once failure occurred                       "                               "\033[90m│\033[0m\n" H2_USAGE_BR
+            "\033[90m│\033[0m" " -\033[36mE\033[0m  "                               "\033[90m│\033[0m" "  \033[90m[\033[0mtype=f\033[90m]\033[0m "     "\033[90m│\033[0m" " Thrown \033[36mE\033[0mxception is considered as failure or warning       "                               "\033[90m│\033[0m\n" H2_USAGE_BR
             "\033[90m│\033[0m" " -\033[36mf\033[0m  "                               "\033[90m│\033[0m" "           "                                   "\033[90m│\033[0m" " Only test last \033[36mf\033[0mailed cases                                "                               "\033[90m│\033[0m\n" H2_USAGE_BR
             "\033[90m│\033[0m" " -\033[36mF\033[0m  "                               "\033[90m│\033[0m" "  \033[90m[\033[0mn=max\033[90m]\033[0m  "     "\033[90m│\033[0m" " \033[36mF\033[0mold json print, 0:unfold 1:short 2:same 3:single          "                               "\033[90m│\033[0m\n" H2_USAGE_BR
             "\033[90m│\033[0m" " -\033[36mi\033[0m\033[90m/\033[0m\033[36me\033[0m" "\033[90m│\033[0m" "\033[90m[\033[0mpattern .\033[90m]\033[0m"     "\033[90m│\033[0m" " \033[36mi\033[0mnclude\033[90m/\033[0m\033[36me\033[0mxclude case suite or file by substr wildcard      " "\033[90m│\033[0m\n" H2_USAGE_BR
@@ -21,7 +22,7 @@ static inline void usage()
             "\033[90m│\033[0m" " -\033[36mt\033[0m  "                               "\033[90m│\033[0m" "           "                                   "\033[90m│\033[0m" " \033[36mt\033[0mags include/exclude filter                                "                               "\033[90m│\033[0m\n" H2_USAGE_BR
             "\033[90m│\033[0m" " -\033[36mv\033[0m  "                               "\033[90m│\033[0m" "  \033[90m[\033[0mn=max\033[90m]\033[0m  "     "\033[90m│\033[0m" " \033[36mv\033[0merbose, 0:quiet 1/2/3:compact 4:normal 5:details          "                               "\033[90m│\033[0m\n" H2_USAGE_BR
             "\033[90m│\033[0m" " -\033[36mw\033[0m  "                               "\033[90m│\033[0m" "           "                                   "\033[90m│\033[0m" " Console output in black-\033[36mw\033[0mhite color style                  "                               "\033[90m│\033[0m\n" H2_USAGE_BR
-            "\033[90m│\033[0m" " -\033[36mx\033[0m  "                               "\033[90m│\033[0m" "           "                                   "\033[90m│\033[0m" " Thrown e\033[36mx\033[0mception is considered as failure                  "                               "\033[90m│\033[0m\n"
+            "\033[90m│\033[0m" " -\033[36mW\033[0m  "                               "\033[90m│\033[0m" "  \033[90m[\033[0mtype .\033[90m]\033[0m "     "\033[90m│\033[0m" " Configure failure as \033[36mW\033[0marning, exception, leak, ...         "                               "\033[90m│\033[0m\n"
             "\033[90m└─────┴───────────┴────────────────────────────────────────────────────────────┘\033[0m\n");
 }
 /* clang-format on */
@@ -135,7 +136,18 @@ h2_inline void h2_option::parse(int argc, const char** argv)
          case 't': tags_filter = true; break;
          case 'v': get.extract_number(verbose = 8); break;
          case 'w': colorful = !colorful; break;
-         case 'x': exception_as_fail = true; break;
+         case 'W':
+            while ((t = get.extract_string())) {
+               const char* r = h2_candidate(t, 5, "exception", "uncaught", "leak", "violate", "asymmetric_free");
+               if (!strcmp("exception", r)) as_waring_exception = true;
+               else if (!strcmp("uncaught", r)) as_waring_uncaught = true;
+               else if (!strcmp("leak", r)) as_waring_memory_leak = true;
+               else if (!strcmp("violate", r)) as_waring_memory_violate = true;
+               else if (!strcmp("double_free", r)) as_waring_memory_double_free = true;
+               else if (!strcmp("asymmetric_free", r)) as_waring_memory_asymmetric_free = true;
+               else ::printf("-W %s\n", r), exit(-1);
+            }
+            break;
          case 'h':
          case '?': usage(); exit(0);
       }

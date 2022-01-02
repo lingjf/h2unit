@@ -872,7 +872,7 @@ Case(check throw type a_exception and matcher string equal)
      It will be detected and reported as failure.
 
 *    Thrown Exception 
-     Any thrown exception can be detected and reported as failure if `-x` option is set.
+     Any thrown exception can be detected and reported as failure or warning if `-E` option is set.
 
 ## Global Setup/Cleanup
 

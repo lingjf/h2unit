@@ -1109,7 +1109,7 @@ struct h2_fail : h2_libc {
    static h2_fail* new_asymmetric_free(const void* ptr, const char* who_allocate, const char* who_release, const h2_backtrace& bt_allocate, const h2_backtrace& bt_release);
    static h2_fail* new_overflow(const void* ptr, const size_t size, const void* violate_ptr, const char* action, const h2_vector<unsigned char>& spot, const h2_backtrace& bt_allocate, const h2_backtrace& bt_trample);
    static h2_fail* new_use_after_free(const void* ptr, const void* violate_ptr, const char* action, const h2_backtrace& bt_allocate, const h2_backtrace& bt_release, const h2_backtrace& bt_use);
-   static h2_fail* new_exception(const h2_line& explain, const char* type, const h2_backtrace& bt_throw, const char* filine = nullptr);
+   static h2_fail* new_exception(const h2_line& explain, const char* type, const h2_backtrace& bt_throw, bool as_warning, const char* filine = nullptr);
    static h2_fail* new_symbol(const h2_string& symbol, const h2_vector<h2_string>& candidates, const h2_line& explain = {});
 };
 // source/option/h2_option.hpp
@@ -1137,10 +1137,15 @@ struct h2_option {
    bool only_last_failed = false;
    bool memory_check = true;
    bool continue_assert = false;
-   bool exception_as_fail = false;
    bool debugger_trap = false;
    bool quit_exit_code = false;
    bool tags_filter = false;
+   bool as_waring_exception = false;
+   bool as_waring_uncaught = false;
+   bool as_waring_memory_leak = false;
+   bool as_waring_memory_violate = false;
+   bool as_waring_memory_double_free = false;
+   bool as_waring_memory_asymmetric_free = false;
    int break_after_fails = 0;
    int run_rounds = 1;
    int fold_json = FoldMax;
@@ -3674,18 +3679,18 @@ struct h2_exception {
       h2_fail* fail = nullptr;
       if (std::is_same<nothrow, T>::value) {  // no throw check
          if (h2_exception::I().thrown_exception)
-            fail = h2_fail::new_exception("was thrown but expect no throw", h2_exception::I().last_type, h2_exception::I().last_bt, filine);
+            fail = h2_fail::new_exception("was thrown but expect no throw", h2_exception::I().last_type, h2_exception::I().last_bt, false, filine);
       } else {
          if (!h2_exception::I().thrown_exception) {
             fail = h2_fail::new_normal("expect exception " + color(h2_cxa::demangle(typeid(T).name()), "green") + " thrown but not", filine);
          } else {
             if (!(typeid(T) == *h2_exception::I().type_info)) {  // check type
-               fail = h2_fail::new_exception("was thrown but expect type is " + color(h2_cxa::demangle(typeid(T).name()), "green"), h2_exception::I().last_type, h2_exception::I().last_bt, filine);
+               fail = h2_fail::new_exception("was thrown but expect type is " + color(h2_cxa::demangle(typeid(T).name()), "green"), h2_exception::I().last_type, h2_exception::I().last_bt, false, filine);
             } else {  // check value
                fail = matches((T*)h2_exception::I().thrown_exception, m);
                if (fail) {
                   fail->filine = filine;
-                  h2_fail::append_child(fail, h2_fail::new_exception("was thrown", h2_exception::I().last_type, h2_exception::I().last_bt, filine));
+                  h2_fail::append_child(fail, h2_fail::new_exception("was thrown", h2_exception::I().last_type, h2_exception::I().last_bt, false, filine));
                }
             }
          }

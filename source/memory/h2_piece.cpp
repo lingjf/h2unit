@@ -133,6 +133,7 @@ struct h2_piece : h2_libc {
       h2_fail* fail = nullptr;
       fail = check_snowfield(user_ptr + user_size, page_ptr + page_size * page_count);
       if (!fail) fail = check_snowfield(page_ptr, user_ptr);
+      if (fail && O.as_waring_memory_violate) fail->warning = true;
       return fail;
    }
 
@@ -151,7 +152,9 @@ struct h2_piece : h2_libc {
       if (h2_in(who_allocate, 4, "new", "new nothrow", "new[]", "new[] nothrow") && h2_in(who_release, 4, "delete", "delete nothrow", "delete[]", "delete[] nothrow")) return nullptr;
 
       if (bt_allocate.in(h2_exempt::I().fps)) return nullptr;
-      return h2_fail::new_asymmetric_free(user_ptr, who_allocate, who_release, bt_allocate, bt_release);
+      auto fail = h2_fail::new_asymmetric_free(user_ptr, who_allocate, who_release, bt_allocate, bt_release);
+      if (O.as_waring_memory_asymmetric_free) fail->warning = true;
+      return fail;
    }
 
    h2_fail* check_double_free(h2_backtrace& bt)
@@ -160,7 +163,9 @@ struct h2_piece : h2_libc {
          bt_release = bt;
          return nullptr;
       }
-      return h2_fail::new_double_free(user_ptr, bt_allocate, bt_release, bt);
+      auto fail = h2_fail::new_double_free(user_ptr, bt_allocate, bt_release, bt);
+      if (O.as_waring_memory_double_free) fail->warning = true;
+      return fail;
    }
 
    h2_fail* free(const char* who_release)

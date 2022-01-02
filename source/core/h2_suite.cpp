@@ -39,7 +39,7 @@ h2_inline void h2_suite::test(h2_case* c)
    } catch (...) {
       uncaught = true;
    }
-   if (uncaught) c->failing(h2_fail::new_exception("was thrown but uncaught", h2_exception::I().last_type, h2_exception::I().last_bt), true, O.continue_assert);
+   if (uncaught) c->failing(h2_fail::new_exception("was thrown but uncaught", h2_exception::I().last_type, h2_exception::I().last_bt, O.as_waring_uncaught), true, O.continue_assert);
    c->post_cleanup();
 }
 

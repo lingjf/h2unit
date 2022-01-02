@@ -22,10 +22,15 @@ struct h2_option {
    bool only_last_failed = false;
    bool memory_check = true;
    bool continue_assert = false;
-   bool exception_as_fail = false;
    bool debugger_trap = false;
    bool quit_exit_code = false;
    bool tags_filter = false;
+   bool as_waring_exception = false;
+   bool as_waring_uncaught = false;
+   bool as_waring_memory_leak = false;
+   bool as_waring_memory_violate = false;
+   bool as_waring_memory_double_free = false;
+   bool as_waring_memory_asymmetric_free = false;
    int break_after_fails = 0;
    int run_rounds = 1;
    int fold_json = FoldMax;
