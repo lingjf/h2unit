@@ -2824,7 +2824,7 @@ struct h2_piece : h2_libc {
       page_count = (size_t)::ceil(user_size_plus / (double)page_size);
 
 #if defined _WIN32
-      page_ptr = (unsigned char*)VirtualAlloc(NULL, page_size * (page_count + 1), MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
+      page_ptr = (unsigned char*)VirtualAlloc(NULL, page_size * (page_count + 1), MEM_COMMIT, PAGE_READWRITE);
       if (page_ptr == NULL) h2_console::prints("yellow", "VirtualAlloc failed at %s:%d\n", __FILE__, __LINE__), abort();
 #else
       page_ptr = (unsigned char*)::mmap(nullptr, page_size * (page_count + 1), PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0);
@@ -2839,7 +2839,7 @@ struct h2_piece : h2_libc {
    ~h2_piece()
    {
 #if defined _WIN32
-      VirtualFree(page_ptr, 0, MEM_DECOMMIT | MEM_RELEASE);
+      VirtualFree(page_ptr, 0, MEM_RELEASE);
 #else
       ::munmap(page_ptr, page_size * (page_count + 1));
 #endif
@@ -5034,8 +5034,12 @@ static inline void __split_compare(const char* expression, const char* op, h2_st
    }
 }
 
-h2_inline h2_ostringstream& h2_assert::stash(h2_fail* fail, const char* assert_type, const char* assert_op)
+h2_inline h2_ostringstream& h2_assert::stash(h2_fail* fail, const char* assert_type, const h2_line& expection, const h2_line& represent, const char* assert_op)
 {
+   if (oppose) {
+      if (fail) delete fail, fail = nullptr;
+      else fail = h2_fail::new_unexpect(expection, represent);
+   }
    h2_runner::asserts();
    fails = fail;
    if (fail && fail->subling_next) {
@@ -5247,12 +5251,14 @@ struct h2_fail_unexpect : h2_fail {
    h2_line expection, represent;
    int c = 0;
    h2_fail_unexpect(const h2_line& expection_ = {}, const h2_line& represent_ = {}, const h2_line& explain_ = {}, const char* file_ = nullptr) : h2_fail(explain_, file_), expection(expection_), represent(represent_) {}
-   void print_OK1(h2_line& line)
+   void print_OK1(const char* type, h2_line& line)
    {
       h2_line a = h2_line(a_expression).gray_quote().brush("cyan");
-      line += "OK" + gray("(") + a + gray(")") + " is " + color("false", "bold,red");
+      line += type + gray("(") + a + gray(")");
+      if (!is_synonym(a_expression, represent.string()))
+         line += " is " + represent.abbreviate(10000, 3).brush("bold,red");
    }
-   void print_OK2(h2_line& line)
+   void print_OK2(const char* type, h2_line& line)
    {
       h2_line e, a;
       if (!expection.width()) {
@@ -5271,7 +5277,7 @@ struct h2_fail_unexpect : h2_fail {
          a = represent.abbreviate(10000, 3).brush("bold,red") + gray("<==") + h2_line(a_expression).abbreviate(O.verbose >= VerboseDetail ? 10000 : 120, 3).gray_quote().brush("cyan");
       }
 
-      line += "OK" + gray("(") + e + " " + assert_op + " " + a + gray(")");
+      line += type + gray("(") + e + " " + assert_op + " " + a + gray(")");
    }
    void print_JE(h2_line& line)
    {
@@ -5297,8 +5303,10 @@ struct h2_fail_unexpect : h2_fail {
       h2_line line;
       line.indent(ci * 2 + 1);
       if (!strcmp("In", assert_type)) print_In(line);
-      if (!strcmp("OK1", assert_type)) print_OK1(line);
-      if (!strcmp("OK2", assert_type)) print_OK2(line);
+      if (!strcmp("OK1", assert_type)) print_OK1("OK", line);
+      if (!strcmp("KO1", assert_type)) print_OK1("KO", line);
+      if (!strcmp("OK2", assert_type)) print_OK2("OK", line);
+      if (!strcmp("KO2", assert_type)) print_OK2("KO", line);
       if (!strcmp("JE", assert_type)) print_JE(line);
       if (explain.width()) line += comma_if(c++, ", ", " ") + explain;
       if (user_explain.size()) line += {comma_if(c++, ", ", " "), user_explain};
@@ -5630,17 +5638,17 @@ struct h2_report_console : h2_report_interface {
    static const char* format_volume(long long footprint, char* s = (char*)alloca(128))
    {
       if (footprint < 1024LL) sprintf(s, "%lld", footprint);
-      else if (footprint < 1024LL * 1024LL) sprintf(s, "%.2gKB", footprint / 1024.0);
-      else if (footprint < 1024LL * 1024LL * 1024LL) sprintf(s, "%.2gMB", footprint / (1024.0 * 1024.0));
-      else sprintf(s, "%.2gGB", footprint / (1024.0 * 1024.0 * 1024.0));
+      else if (footprint < 1024LL * 1024LL) sprintf(s, "%.1fKB", footprint / 1024.0);
+      else if (footprint < 1024LL * 1024LL * 1024LL) sprintf(s, "%.2fMB", footprint / (1024.0 * 1024.0));
+      else sprintf(s, "%.3fGB", footprint / (1024.0 * 1024.0 * 1024.0));
       return s;
    }
    static const char* format_duration(long long ms, char* s = (char*)alloca(128))
    {
       if (ms < 100) sprintf(s, "%lld milliseconds", ms);
-      else if (ms < 1000 * 60) sprintf(s, "%.2g second%s", ms / 1000.0, ms == 1000 ? "" : "s");
-      else if (ms < 1000 * 60 * 60) sprintf(s, "%.2g minute%s", ms / 60000.0, ms == 60000 ? "" : "s");
-      else sprintf(s, "%.2g hour%s", ms / 3600000.0, ms == 3600000 ? "" : "s");
+      else if (ms < 1000 * 60) sprintf(s, "%.1f second%s", ms / 1000.0, ms == 1000 ? "" : "s");
+      else if (ms < 1000 * 60 * 60) sprintf(s, "%.2f minute%s", ms / 60000.0, ms == 60000 ? "" : "s");
+      else sprintf(s, "%.3f hour%s", ms / 3600000.0, ms == 3600000 ? "" : "s");
       return s;
    }
    static const char* format_units(int count, const char* unit1, const char* unit2 = nullptr, char* s = (char*)alloca(128))
@@ -5669,7 +5677,8 @@ struct h2_report_console : h2_report_interface {
    }
    void on_runner_start(h2_runner* r) override
    {
-      h2_list_for_each_entry (s, r->suites, h2_suite, x) cases += s->cases.count();
+      h2_list_for_each_entry (s, r->suites, h2_suite, x)
+         cases += s->cases.count();
    }
    void on_runner_endup(h2_runner* r) override
    {

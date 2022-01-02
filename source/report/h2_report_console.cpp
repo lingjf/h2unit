@@ -33,17 +33,17 @@ struct h2_report_console : h2_report_interface {
    static const char* format_volume(long long footprint, char* s = (char*)alloca(128))
    {
       if (footprint < 1024LL) sprintf(s, "%lld", footprint);
-      else if (footprint < 1024LL * 1024LL) sprintf(s, "%.2gKB", footprint / 1024.0);
-      else if (footprint < 1024LL * 1024LL * 1024LL) sprintf(s, "%.2gMB", footprint / (1024.0 * 1024.0));
-      else sprintf(s, "%.2gGB", footprint / (1024.0 * 1024.0 * 1024.0));
+      else if (footprint < 1024LL * 1024LL) sprintf(s, "%.1fKB", footprint / 1024.0);
+      else if (footprint < 1024LL * 1024LL * 1024LL) sprintf(s, "%.2fMB", footprint / (1024.0 * 1024.0));
+      else sprintf(s, "%.3fGB", footprint / (1024.0 * 1024.0 * 1024.0));
       return s;
    }
    static const char* format_duration(long long ms, char* s = (char*)alloca(128))
    {
       if (ms < 100) sprintf(s, "%lld milliseconds", ms);
-      else if (ms < 1000 * 60) sprintf(s, "%.2g second%s", ms / 1000.0, ms == 1000 ? "" : "s");
-      else if (ms < 1000 * 60 * 60) sprintf(s, "%.2g minute%s", ms / 60000.0, ms == 60000 ? "" : "s");
-      else sprintf(s, "%.2g hour%s", ms / 3600000.0, ms == 3600000 ? "" : "s");
+      else if (ms < 1000 * 60) sprintf(s, "%.1f second%s", ms / 1000.0, ms == 1000 ? "" : "s");
+      else if (ms < 1000 * 60 * 60) sprintf(s, "%.2f minute%s", ms / 60000.0, ms == 60000 ? "" : "s");
+      else sprintf(s, "%.3f hour%s", ms / 3600000.0, ms == 3600000 ? "" : "s");
       return s;
    }
    static const char* format_units(int count, const char* unit1, const char* unit2 = nullptr, char* s = (char*)alloca(128))
@@ -72,7 +72,8 @@ struct h2_report_console : h2_report_interface {
    }
    void on_runner_start(h2_runner* r) override
    {
-      h2_list_for_each_entry (s, r->suites, h2_suite, x) cases += s->cases.count();
+      h2_list_for_each_entry (s, r->suites, h2_suite, x)
+         cases += s->cases.count();
    }
    void on_runner_endup(h2_runner* r) override
    {

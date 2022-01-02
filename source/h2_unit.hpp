@@ -151,6 +151,10 @@ namespace h2 {
 #define OK H2OK
 #endif
 
+#ifndef H2_NO_KO
+#define KO H2KO
+#endif
+
 #ifndef H2_NO_JE
 #define JE H2JE
 #endif

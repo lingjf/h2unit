@@ -258,6 +258,9 @@ CASESS_T(name, (short,int,long), (u8,u16,u32))  // (short,int,long)x(u8,u16,u32)
 *    [`OK`](../source/assert/h2_assert.hpp)(lhs <= rhs) : compare the lhs and rhs value, support six operator(< <= > >= == !=).
 *    [`OK`](../source/assert/h2_assert.hpp)(expect, actual) : check the actual value matches with expect value.
 
+### H2KO alias KO
+*    [`KO`](../source/assert/h2_assert.hpp)(...) : opposite of OK, fail if successful OK.
+
 ```C++
 Case(case name)
 {

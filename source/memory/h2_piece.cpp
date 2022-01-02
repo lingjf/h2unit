@@ -28,7 +28,7 @@ struct h2_piece : h2_libc {
       page_count = (size_t)::ceil(user_size_plus / (double)page_size);
 
 #if defined _WIN32
-      page_ptr = (unsigned char*)VirtualAlloc(NULL, page_size * (page_count + 1), MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
+      page_ptr = (unsigned char*)VirtualAlloc(NULL, page_size * (page_count + 1), MEM_COMMIT, PAGE_READWRITE);
       if (page_ptr == NULL) h2_console::prints("yellow", "VirtualAlloc failed at %s:%d\n", __FILE__, __LINE__), abort();
 #else
       page_ptr = (unsigned char*)::mmap(nullptr, page_size * (page_count + 1), PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0);
@@ -43,7 +43,7 @@ struct h2_piece : h2_libc {
    ~h2_piece()
    {
 #if defined _WIN32
-      VirtualFree(page_ptr, 0, MEM_DECOMMIT | MEM_RELEASE);
+      VirtualFree(page_ptr, 0, MEM_RELEASE);
 #else
       ::munmap(page_ptr, page_size * (page_count + 1));
 #endif

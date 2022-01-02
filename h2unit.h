@@ -5,7 +5,7 @@
 #ifndef __H2UNIT_H__
 #define __H2UNIT_H__
 #define H2UNIT_VERSION 5.17
-#define H2UNIT_REVISION 2022-01-01 branches/v5
+#define H2UNIT_REVISION 2022-01-02 branches/v5
 #ifndef __H2_UNIT_HPP__
 #define __H2_UNIT_HPP__
 
@@ -3784,31 +3784,32 @@ struct h2_sock : h2_once {
 #define Pij(Packet_, Size_, ...) h2::h2_sock::inject(Packet_, Size_, h2::ss(#__VA_ARGS__))
 // source/assert/h2_assert.hpp
 struct h2_assert : h2_once {
+   bool oppose;
    h2_fail* fails = nullptr;
    h2_ostringstream oss;
-   h2_ostringstream& stash(h2_fail* fail, const char* assert_type, const char* assert_op = ",");
+   h2_assert(bool oppose_) : oppose(oppose_) {}
+   h2_ostringstream& stash(h2_fail* fail, const char* assert_type, const h2_line& expection, const h2_line& represent, const char* assert_op = ",");
    void failing(const char* e_expression, const char* a_expression, const char* filine);
 };
 
 static inline h2_ostringstream& h2_je(h2_assert* d, h2_string e, h2_string a, h2_string selector)
 {
    h2::h2_matcher<h2_string> m = Je(e, selector);
-   h2_fail* fail = m.matches(a);
-   return d->stash(fail, "JE");
+   return d->stash(m.matches(a), "JE", {}, {});
 }
 
 template <typename E, typename A>
 static inline h2_ostringstream& h2_ok2(h2_assert* d, E e, const A& a, std::false_type, int)
 {
-   h2_fail* fail = h2::h2_matcher_cast<typename h2_decay<A>::type>((typename h2_decay<E>::type)e).matches(a, {});
-   return d->stash(fail, "OK2");
+   auto m = h2_matcher_cast<typename h2_decay<A>::type>((typename h2_decay<E>::type)e);
+   return d->stash(m.matches(a, {}), d->oppose ? "KO2" : "OK2", m.expection({}), h2_stringify(a, true));
 }
 
 template <typename E, typename A>
 static inline h2_ostringstream& h2_ok2(h2_assert* d, E e, const A a, std::true_type, int dimension)
 {
-   h2_fail* fail = h2::h2_matcher_cast<typename h2_decay<A>::type>((typename h2_decay<E>::type)e).matches((typename h2_decay<A>::type)a, {dimension});
-   return d->stash(fail, "OK2");
+   auto m = h2_matcher_cast<typename h2_decay<A>::type>((typename h2_decay<E>::type)e);
+   return d->stash(m.matches((typename h2_decay<A>::type)a, {dimension}), d->oppose ? "KO2" : "OK2", m.expection({dimension}), h2_stringify(a, true));
 }
 
 template <typename M, typename A>
@@ -3845,8 +3846,8 @@ struct h2_0cp {
 template <typename E, typename A>
 static inline h2_ostringstream& h2_ok1(h2_assert* d, h2_2cp<E, A> c2)
 {
-   h2_fail* fail = h2::h2_matcher_cast<A>(c2.m).matches(c2.a, {-1, true});
-   return d->stash(fail, "OK2", c2.op);
+   auto m = h2_matcher_cast<A>(c2.m);
+   return d->stash(m.matches(c2.a, {-1, true}), d->oppose ? "KO2" : "OK2", m.expection({-1, true}), h2_stringify(c2.a, true), c2.op);
 }
 
 template <typename A>
@@ -3854,20 +3855,26 @@ static inline h2_ostringstream& h2_ok1(h2_assert* d, h2_1cp<A> c1)
 {
    h2_fail* fail = nullptr;
    if (!c1.a) fail = h2_fail::new_unexpect("true", h2_stringify(c1.a, true));
-   return d->stash(fail, "OK1");
+   return d->stash(fail, d->oppose ? "KO1" : "OK1", "", h2_stringify(c1.a, true));
 }
 
 #define H2OK(_1, ...) H2PP_CAT(H2OK_, H2PP_IS_EMPTY(__VA_ARGS__))(H2PP_UNIQUE(), #_1, (#__VA_ARGS__), _1, __VA_ARGS__)
 #define H2OK_1(Q, expression, _, actual, ...) \
-   for (h2::h2_assert Q; Q; Q.failing("", expression, H2_FILINE)) h2::h2_ok1(&Q, h2::h2_0cp() > actual)
+   for (h2::h2_assert Q(false); Q; Q.failing("", expression, H2_FILINE)) h2::h2_ok1(&Q, h2::h2_0cp() > actual)
 #define H2OK_0(Q, e_expression, a_expression, expect, actual) \
-   for (h2::h2_assert Q; Q; Q.failing(e_expression, a_expression, H2_FILINE)) h2::h2_ok2(&Q, expect, actual, std::is_array<decltype(actual)>{}, std::extent<decltype(actual)>::value)
+   for (h2::h2_assert Q(false); Q; Q.failing(e_expression, a_expression, H2_FILINE)) h2::h2_ok2(&Q, expect, actual, std::is_array<decltype(actual)>{}, std::extent<decltype(actual)>::value)
+
+#define H2KO(_1, ...) H2PP_CAT(H2KO_, H2PP_IS_EMPTY(__VA_ARGS__))(H2PP_UNIQUE(), #_1, (#__VA_ARGS__), _1, __VA_ARGS__)
+#define H2KO_1(Q, expression, _, actual, ...) \
+   for (h2::h2_assert Q(true); Q; Q.failing("", expression, H2_FILINE)) h2::h2_ok1(&Q, h2::h2_0cp() > actual)
+#define H2KO_0(Q, e_expression, a_expression, expect, actual) \
+   for (h2::h2_assert Q(true); Q; Q.failing(e_expression, a_expression, H2_FILINE)) h2::h2_ok2(&Q, expect, actual, std::is_array<decltype(actual)>{}, std::extent<decltype(actual)>::value)
 
 #define H2JE(...) H2PP_VCALL(H2JE_, H2PP_UNIQUE(), __VA_ARGS__)
 #define H2JE_3(Q, expect, actual) \
-   for (h2::h2_assert Q; Q; Q.failing(#expect, #actual, H2_FILINE)) h2::h2_je(&Q, expect, actual, "")
+   for (h2::h2_assert Q(false); Q; Q.failing(#expect, #actual, H2_FILINE)) h2::h2_je(&Q, expect, actual, "")
 #define H2JE_4(Q, expect, actual, selector) \
-   for (h2::h2_assert Q; Q; Q.failing(#expect, #actual, H2_FILINE)) h2::h2_je(&Q, expect, actual, selector)
+   for (h2::h2_assert Q(false); Q; Q.failing(#expect, #actual, H2_FILINE)) h2::h2_je(&Q, expect, actual, selector)
 // source/assert/h2_timer.hpp
 struct h2_timer : h2_once {
    const char* filine;
@@ -3915,6 +3922,10 @@ struct h2_timer : h2_once {
 
 #ifndef H2_NO_OK
 #define OK H2OK
+#endif
+
+#ifndef H2_NO_KO
+#define KO H2KO
 #endif
 
 #ifndef H2_NO_JE
@@ -6959,7 +6970,7 @@ struct h2_piece : h2_libc {
       page_count = (size_t)::ceil(user_size_plus / (double)page_size);
 
 #if defined _WIN32
-      page_ptr = (unsigned char*)VirtualAlloc(NULL, page_size * (page_count + 1), MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
+      page_ptr = (unsigned char*)VirtualAlloc(NULL, page_size * (page_count + 1), MEM_COMMIT, PAGE_READWRITE);
       if (page_ptr == NULL) h2_console::prints("yellow", "VirtualAlloc failed at %s:%d\n", __FILE__, __LINE__), abort();
 #else
       page_ptr = (unsigned char*)::mmap(nullptr, page_size * (page_count + 1), PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0);
@@ -6974,7 +6985,7 @@ struct h2_piece : h2_libc {
    ~h2_piece()
    {
 #if defined _WIN32
-      VirtualFree(page_ptr, 0, MEM_DECOMMIT | MEM_RELEASE);
+      VirtualFree(page_ptr, 0, MEM_RELEASE);
 #else
       ::munmap(page_ptr, page_size * (page_count + 1));
 #endif
@@ -9169,8 +9180,12 @@ static inline void __split_compare(const char* expression, const char* op, h2_st
    }
 }
 
-h2_inline h2_ostringstream& h2_assert::stash(h2_fail* fail, const char* assert_type, const char* assert_op)
+h2_inline h2_ostringstream& h2_assert::stash(h2_fail* fail, const char* assert_type, const h2_line& expection, const h2_line& represent, const char* assert_op)
 {
+   if (oppose) {
+      if (fail) delete fail, fail = nullptr;
+      else fail = h2_fail::new_unexpect(expection, represent);
+   }
    h2_runner::asserts();
    fails = fail;
    if (fail && fail->subling_next) {
@@ -9382,12 +9397,14 @@ struct h2_fail_unexpect : h2_fail {
    h2_line expection, represent;
    int c = 0;
    h2_fail_unexpect(const h2_line& expection_ = {}, const h2_line& represent_ = {}, const h2_line& explain_ = {}, const char* file_ = nullptr) : h2_fail(explain_, file_), expection(expection_), represent(represent_) {}
-   void print_OK1(h2_line& line)
+   void print_OK1(const char* type, h2_line& line)
    {
       h2_line a = h2_line(a_expression).gray_quote().brush("cyan");
-      line += "OK" + gray("(") + a + gray(")") + " is " + color("false", "bold,red");
+      line += type + gray("(") + a + gray(")");
+      if (!is_synonym(a_expression, represent.string()))
+         line += " is " + represent.abbreviate(10000, 3).brush("bold,red");
    }
-   void print_OK2(h2_line& line)
+   void print_OK2(const char* type, h2_line& line)
    {
       h2_line e, a;
       if (!expection.width()) {
@@ -9406,7 +9423,7 @@ struct h2_fail_unexpect : h2_fail {
          a = represent.abbreviate(10000, 3).brush("bold,red") + gray("<==") + h2_line(a_expression).abbreviate(O.verbose >= VerboseDetail ? 10000 : 120, 3).gray_quote().brush("cyan");
       }
 
-      line += "OK" + gray("(") + e + " " + assert_op + " " + a + gray(")");
+      line += type + gray("(") + e + " " + assert_op + " " + a + gray(")");
    }
    void print_JE(h2_line& line)
    {
@@ -9432,8 +9449,10 @@ struct h2_fail_unexpect : h2_fail {
       h2_line line;
       line.indent(ci * 2 + 1);
       if (!strcmp("In", assert_type)) print_In(line);
-      if (!strcmp("OK1", assert_type)) print_OK1(line);
-      if (!strcmp("OK2", assert_type)) print_OK2(line);
+      if (!strcmp("OK1", assert_type)) print_OK1("OK", line);
+      if (!strcmp("KO1", assert_type)) print_OK1("KO", line);
+      if (!strcmp("OK2", assert_type)) print_OK2("OK", line);
+      if (!strcmp("KO2", assert_type)) print_OK2("KO", line);
       if (!strcmp("JE", assert_type)) print_JE(line);
       if (explain.width()) line += comma_if(c++, ", ", " ") + explain;
       if (user_explain.size()) line += {comma_if(c++, ", ", " "), user_explain};
@@ -9765,17 +9784,17 @@ struct h2_report_console : h2_report_interface {
    static const char* format_volume(long long footprint, char* s = (char*)alloca(128))
    {
       if (footprint < 1024LL) sprintf(s, "%lld", footprint);
-      else if (footprint < 1024LL * 1024LL) sprintf(s, "%.2gKB", footprint / 1024.0);
-      else if (footprint < 1024LL * 1024LL * 1024LL) sprintf(s, "%.2gMB", footprint / (1024.0 * 1024.0));
-      else sprintf(s, "%.2gGB", footprint / (1024.0 * 1024.0 * 1024.0));
+      else if (footprint < 1024LL * 1024LL) sprintf(s, "%.1fKB", footprint / 1024.0);
+      else if (footprint < 1024LL * 1024LL * 1024LL) sprintf(s, "%.2fMB", footprint / (1024.0 * 1024.0));
+      else sprintf(s, "%.3fGB", footprint / (1024.0 * 1024.0 * 1024.0));
       return s;
    }
    static const char* format_duration(long long ms, char* s = (char*)alloca(128))
    {
       if (ms < 100) sprintf(s, "%lld milliseconds", ms);
-      else if (ms < 1000 * 60) sprintf(s, "%.2g second%s", ms / 1000.0, ms == 1000 ? "" : "s");
-      else if (ms < 1000 * 60 * 60) sprintf(s, "%.2g minute%s", ms / 60000.0, ms == 60000 ? "" : "s");
-      else sprintf(s, "%.2g hour%s", ms / 3600000.0, ms == 3600000 ? "" : "s");
+      else if (ms < 1000 * 60) sprintf(s, "%.1f second%s", ms / 1000.0, ms == 1000 ? "" : "s");
+      else if (ms < 1000 * 60 * 60) sprintf(s, "%.2f minute%s", ms / 60000.0, ms == 60000 ? "" : "s");
+      else sprintf(s, "%.3f hour%s", ms / 3600000.0, ms == 3600000 ? "" : "s");
       return s;
    }
    static const char* format_units(int count, const char* unit1, const char* unit2 = nullptr, char* s = (char*)alloca(128))
@@ -9804,7 +9823,8 @@ struct h2_report_console : h2_report_interface {
    }
    void on_runner_start(h2_runner* r) override
    {
-      h2_list_for_each_entry (s, r->suites, h2_suite, x) cases += s->cases.count();
+      h2_list_for_each_entry (s, r->suites, h2_suite, x)
+         cases += s->cases.count();
    }
    void on_runner_endup(h2_runner* r) override
    {

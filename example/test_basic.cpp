@@ -83,7 +83,7 @@ SUITE(Second Demo)
 CASE(standalone case [fail])
 {
    bool result = true;
-   OK(!result);
+   KO(result);
 }
 
 TODO(alive for ever)

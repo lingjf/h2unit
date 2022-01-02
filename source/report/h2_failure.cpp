@@ -63,12 +63,14 @@ struct h2_fail_unexpect : h2_fail {
    h2_line expection, represent;
    int c = 0;
    h2_fail_unexpect(const h2_line& expection_ = {}, const h2_line& represent_ = {}, const h2_line& explain_ = {}, const char* file_ = nullptr) : h2_fail(explain_, file_), expection(expection_), represent(represent_) {}
-   void print_OK1(h2_line& line)
+   void print_OK1(const char* type, h2_line& line)
    {
       h2_line a = h2_line(a_expression).gray_quote().brush("cyan");
-      line += "OK" + gray("(") + a + gray(")") + " is " + color("false", "bold,red");
+      line += type + gray("(") + a + gray(")");
+      if (!is_synonym(a_expression, represent.string()))
+         line += " is " + represent.abbreviate(10000, 3).brush("bold,red");
    }
-   void print_OK2(h2_line& line)
+   void print_OK2(const char* type, h2_line& line)
    {
       h2_line e, a;
       if (!expection.width()) {
@@ -87,7 +89,7 @@ struct h2_fail_unexpect : h2_fail {
          a = represent.abbreviate(10000, 3).brush("bold,red") + gray("<==") + h2_line(a_expression).abbreviate(O.verbose >= VerboseDetail ? 10000 : 120, 3).gray_quote().brush("cyan");
       }
 
-      line += "OK" + gray("(") + e + " " + assert_op + " " + a + gray(")");
+      line += type + gray("(") + e + " " + assert_op + " " + a + gray(")");
    }
    void print_JE(h2_line& line)
    {
@@ -113,8 +115,10 @@ struct h2_fail_unexpect : h2_fail {
       h2_line line;
       line.indent(ci * 2 + 1);
       if (!strcmp("In", assert_type)) print_In(line);
-      if (!strcmp("OK1", assert_type)) print_OK1(line);
-      if (!strcmp("OK2", assert_type)) print_OK2(line);
+      if (!strcmp("OK1", assert_type)) print_OK1("OK", line);
+      if (!strcmp("KO1", assert_type)) print_OK1("KO", line);
+      if (!strcmp("OK2", assert_type)) print_OK2("OK", line);
+      if (!strcmp("KO2", assert_type)) print_OK2("KO", line);
       if (!strcmp("JE", assert_type)) print_JE(line);
       if (explain.width()) line += comma_if(c++, ", ", " ") + explain;
       if (user_explain.size()) line += {comma_if(c++, ", ", " "), user_explain};

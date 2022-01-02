@@ -49,6 +49,12 @@ cc_binary(
 
 cc_binary(
     name = "template_function_argument_deduction",
-    srcs = glob(["conformance/template_function_argument_deduction.cpp"]),
+    srcs = glob(["conformance/template_function_argument_deduction.cpp", "conformance/__common.hpp"]),
+    copts = ["-std=c++14"],
+)
+
+cc_binary(
+    name = "floating_point_precision",
+    srcs = glob(["conformance/floating_point_precision.cpp","conformance/__common.hpp"]),
     copts = ["-std=c++14"],
 )

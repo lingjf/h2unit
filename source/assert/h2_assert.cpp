@@ -33,8 +33,12 @@ static inline void __split_compare(const char* expression, const char* op, h2_st
    }
 }
 
-h2_inline h2_ostringstream& h2_assert::stash(h2_fail* fail, const char* assert_type, const char* assert_op)
+h2_inline h2_ostringstream& h2_assert::stash(h2_fail* fail, const char* assert_type, const h2_line& expection, const h2_line& represent, const char* assert_op)
 {
+   if (oppose) {
+      if (fail) delete fail, fail = nullptr;
+      else fail = h2_fail::new_unexpect(expection, represent);
+   }
    h2_runner::asserts();
    fails = fail;
    if (fail && fail->subling_next) {

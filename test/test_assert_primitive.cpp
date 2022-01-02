@@ -1,6 +1,6 @@
 #include "../source/h2_unit.cpp"
 
-SUITE(OK Primitive)
+SUITE(OK Primitive [api])
 {
    Case(unary)
    {
@@ -111,5 +111,52 @@ SUITE(JE Primitive)
    Case(selector empty)
    {
       OK(!Je("hello world", ".say"), "{'name': \"hello world\", 'age': [18, 20]}");
+   }
+}
+
+SUITE(KO Primitive [api])
+{
+   Case(unary)
+   {
+      KO(!1);
+      KO(0);
+      KO(false);
+      KO((std::is_same<long long, long int>::value));
+   }
+
+   Case(compare integer)
+   {
+      KO(1 != 1);
+      KO(1 == 2);
+      KO(1 > 2);
+      KO(1 >= 2);
+   }
+
+   Case(compare string)
+   {
+      KO("abc" != "abc");
+      KO("abc" == "xyz");
+   }
+
+   Case(compare pointer)
+   {
+      const char* a1 = "def";
+      KO(NULL == a1);
+      KO(a1 == NULL);
+
+      const char* a2 = nullptr;
+      KO(NULL != a2);
+      KO(a2 != NULL);
+   }
+
+   Case(dual)
+   {
+      KO(1, 2);
+      KO(false, (std::is_same<long, long int>::value));
+   }
+
+   Case(Je)
+   {
+      KO(Je("{'name': /hello.*world/, 'age': 18}"), "{'Name': \"hello world\", 'age': 18}");
    }
 }
