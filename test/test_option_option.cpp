@@ -29,7 +29,7 @@ SUITE(h2_option)
       OK(0, c.lists);
       OK(1, c.run_rounds);
       OK(5, c.fold_json);
-      OK(3, c.verbose);
+      OK(4, c.verbose);
       OK("", c.json_source_quote);
    }
 

@@ -152,7 +152,9 @@ h2_inline int h2_runner::main(int argc, const char** argv)
                for (int i = 0; global_case_setups[i]; ++i) global_case_setups[i]();
                s->test(c);
                for (int i = 0; global_case_cleanups[i]; ++i) global_case_cleanups[i]();
-               c->failed ? (stats.failed++, s->stats.failed++) : (stats.passed++, s->stats.passed++);
+               if (c->failed) stats.failed++, s->stats.failed++;
+               else if (c->warning) stats.warning++, s->stats.warning++;
+               else stats.passed++, s->stats.passed++;
             }
             h2_report::I().on_case_endup(s, c);
             c->clear();

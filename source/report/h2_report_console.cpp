@@ -79,11 +79,12 @@ struct h2_report_console : h2_report_interface {
    {
       print_bar(false, nullptr, nullptr, nullptr, nullptr, false);
 
-      int n = nonzero_count(r->stats.failed, r->stats.todo, r->stats.filtered, r->stats.ignored);
+      int n = nonzero_count(r->stats.failed, r->stats.warning, r->stats.todo, r->stats.filtered, r->stats.ignored);
       h2_line line = (0 < r->stats.failed) ? color("Failure ", "bold,red") : color("Success ", "bold,green");
       if (0 < n) line += gray("(");
       line += color(h2_stringify(r->stats.passed), "green") + " passed";  // always print
       if (r->stats.failed) line += gray(", ") + color(h2_stringify(r->stats.failed), "red") + " failed";
+      if (r->stats.warning) line += gray(", ") + color(h2_stringify(r->stats.warning), "cyan") + " warning";
       if (r->stats.todo) line += gray(", ") + color(h2_stringify(r->stats.todo), "yellow") + " todo";
       if (r->stats.filtered) line += gray(", ") + color(h2_stringify(r->stats.filtered), "blue") + " filtered";
       if (r->stats.ignored) line += gray(", ") + color(h2_stringify(r->stats.ignored), "blue") + " ignored";
@@ -100,10 +101,11 @@ struct h2_report_console : h2_report_interface {
       if (O.verbose >= 9 && !(O.includes[0] || O.excludes[0])) {
          print_bar(true, nullptr, nullptr, nullptr, nullptr, false);
 
-         int n = nonzero_count(s->stats.passed, s->stats.failed, s->stats.todo, s->stats.filtered, s->stats.ignored);
+         int n = nonzero_count(s->stats.passed, s->stats.warning, s->stats.failed, s->stats.todo, s->stats.filtered, s->stats.ignored);
          h2_line line;
          if (s->stats.passed) line += gray(comma_if(line.width())) + h2_stringify(s->stats.passed) + " passed";
          if (s->stats.failed) line += gray(comma_if(line.width())) + h2_stringify(s->stats.failed) + " failed";
+         if (s->stats.warning) line += gray(comma_if(line.width())) + h2_stringify(s->stats.warning) + " warning";
          if (s->stats.todo) line += gray(comma_if(line.width())) + h2_stringify(s->stats.todo) + " todo";
          if (s->stats.filtered) line += gray(comma_if(line.width())) + h2_stringify(s->stats.filtered) + " filtered";
          if (s->stats.ignored) line += gray(comma_if(line.width())) + h2_stringify(s->stats.ignored) + " ignored";
@@ -132,6 +134,15 @@ struct h2_report_console : h2_report_interface {
             print_bar(true, "bold,red", "Failed ", s, c, false);
             h2_console::prints("", "\n");
             if (O.verbose >= VerboseNormal && c->fails) {
+               c->fails->foreach([](h2_fail* fail, size_t si, size_t ci) { fail->print(si, ci); });
+               h2_console::prints("", "\n");
+            }
+         }
+      } else if (c->warning) {
+         if (O.verbose >= VerboseCompactWarning) {
+            print_bar(true, "bold,cyan", "Warning", s, c, false);
+            h2_console::prints("", "\n");
+            if (O.verbose > VerboseNormal && c->fails) {
                c->fails->foreach([](h2_fail* fail, size_t si, size_t ci) { fail->print(si, ci); });
                h2_console::prints("", "\n");
             }

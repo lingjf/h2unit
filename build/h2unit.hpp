@@ -1071,6 +1071,7 @@ struct h2_cxa {
 struct h2_fail : h2_libc {
    h2_fail *subling_next = nullptr, *child_next = nullptr;
 
+   bool warning = false;
    const char* assert_type = "In";  // In(Mock, AllOf, &&, ||)
    const char* assert_op = ",";
    h2_string e_expression, a_expression;
@@ -1113,7 +1114,7 @@ struct h2_fail : h2_libc {
 };
 // source/option/h2_option.hpp
 
-static constexpr int VerboseQuiet = 0, VerboseCompactFailed = 1, VerboseCompactPassed = 2, VerboseNormal = 3, VerboseDetail = 4;
+static constexpr int VerboseQuiet = 0, VerboseCompactFailed = 1, VerboseCompactWarning = 2, VerboseCompactPassed = 3, VerboseNormal = 4, VerboseDetail = 5;
 static constexpr int ShuffleCode = 0x0, ShuffleRandom = 0x10, ShuffleName = 0x100, ShuffleFile = 0x1000, ShuffleReverse = 0x10000;
 static constexpr int ListNone = 0x0, ListSuite = 0x10, ListCase = 0x100, ListTodo = 0x1000, ListTags = 0x10000;
 static constexpr int FoldUnFold = 0, FoldShort = 1, FoldSame = 2, FoldSingle = 3, FoldMax = 5;
@@ -1156,11 +1157,11 @@ struct h2_option {
 static const h2_option& O = h2_option::I();  // for pretty
 // source/core/h2_test.hpp
 struct h2_stats {
-   int passed = 0, failed = 0, todo = 0, filtered = 0, ignored = 0;
+   int passed = 0, failed = 0, warning = 0, todo = 0, filtered = 0, ignored = 0;
    int asserts = 0;
    long long footprint = 0;
    long long timecost = 0;
-   void clear() { passed = 0, failed = 0, todo = 0, filtered = 0, ignored = 0, asserts = 0, footprint = 0, timecost = 0; }
+   void clear() { passed = failed = warning = todo = filtered = ignored = 0, asserts = 0, footprint = 0, timecost = 0; }
 };
 
 struct h2_test {
@@ -1188,7 +1189,7 @@ struct h2_test {
 // source/core/h2_case.hpp
 struct h2_case : h2_test {
    bool todo = false;
-   bool ignored = false, failed = false, last_failed = false;
+   bool ignored = false, failed = false, last_failed = false, warning = false;
    jmp_buf fail_hole;
    h2_fail* fails = nullptr;
 
@@ -3783,6 +3784,17 @@ struct h2_sock : h2_once {
 #define Ptx(...) h2::h2_sock::check(H2_FILINE, h2::ss(#__VA_ARGS__), __VA_ARGS__)
 #define Pij(Packet_, Size_, ...) h2::h2_sock::inject(Packet_, Size_, h2::ss(#__VA_ARGS__))
 // source/assert/h2_assert.hpp
+struct h2_warning {
+   h2_singleton(h2_warning);
+   bool warning = false;
+   bool swap(bool new_warning)
+   {
+      bool old_warning = I().warning;
+      I().warning = new_warning;
+      return old_warning;
+   }
+};
+
 struct h2_assert : h2_once {
    bool oppose;
    h2_fail* fails = nullptr;
@@ -3875,6 +3887,8 @@ static inline h2_ostringstream& h2_ok1(h2_assert* d, h2_1cp<A> c1)
    for (h2::h2_assert Q(false); Q; Q.failing(#expect, #actual, H2_FILINE)) h2::h2_je(&Q, expect, actual, "")
 #define H2JE_4(Q, expect, actual, selector) \
    for (h2::h2_assert Q(false); Q; Q.failing(#expect, #actual, H2_FILINE)) h2::h2_je(&Q, expect, actual, selector)
+
+#define H2Warning if (!h2::h2_warning::I().swap(true))
 // source/assert/h2_timer.hpp
 struct h2_timer : h2_once {
    const char* filine;
@@ -3930,6 +3944,10 @@ struct h2_timer : h2_once {
 
 #ifndef H2_NO_JE
 #define JE H2JE
+#endif
+
+#ifndef H2_NO_Warning
+#define Warning H2Warning
 #endif
 
 #ifndef H2_NO_MOCK

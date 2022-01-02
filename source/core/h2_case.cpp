@@ -8,7 +8,7 @@ h2_inline void h2_case::clear()
 
 h2_inline void h2_case::prev_setup()
 {
-   failed = false;
+   failed = warning = false;
    h2_memory::stack::push(filine);
    stats.timecost = h2_now();
 }
@@ -26,9 +26,10 @@ h2_inline void h2_case::post_cleanup()
 h2_inline void h2_case::failing(h2_fail* fail, bool defer, bool append)
 {
    if (fail) {
-      failed = true;
+      if (fail->warning) warning = true;
+      else failed = true;
       if (fails && !append) delete fail;
       else h2_fail::append_subling(fails, fail);
-      if (!defer) ::longjmp(fail_hole, 1);
+      if (!defer && !fail->warning) ::longjmp(fail_hole, 1);
    }
 }

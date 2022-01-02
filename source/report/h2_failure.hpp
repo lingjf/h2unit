@@ -1,6 +1,7 @@
 struct h2_fail : h2_libc {
    h2_fail *subling_next = nullptr, *child_next = nullptr;
 
+   bool warning = false;
    const char* assert_type = "In";  // In(Mock, AllOf, &&, ||)
    const char* assert_op = ",";
    h2_string e_expression, a_expression;

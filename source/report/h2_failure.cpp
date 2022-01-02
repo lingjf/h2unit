@@ -176,6 +176,7 @@ struct h2_fail_json : h2_fail_unexpect {
 
       h2_lines e_lines, a_lines;
       h2_fail_unexpect::print(si, ci);
+      if (e_value.width() < 16 || a_value.width() < 16) return;  // TLDR
       if (!h2_blank(O.json_source_quote) || !h2_json::diff(e_value, a_value, e_lines, a_lines, caseless)) {
          e_lines = h2_json::dump(e_value);
          a_lines = h2_json::dump(a_value);

@@ -1,3 +1,14 @@
+struct h2_warning {
+   h2_singleton(h2_warning);
+   bool warning = false;
+   bool swap(bool new_warning)
+   {
+      bool old_warning = I().warning;
+      I().warning = new_warning;
+      return old_warning;
+   }
+};
+
 struct h2_assert : h2_once {
    bool oppose;
    h2_fail* fails = nullptr;
@@ -90,3 +101,5 @@ static inline h2_ostringstream& h2_ok1(h2_assert* d, h2_1cp<A> c1)
    for (h2::h2_assert Q(false); Q; Q.failing(#expect, #actual, H2_FILINE)) h2::h2_je(&Q, expect, actual, "")
 #define H2JE_4(Q, expect, actual, selector) \
    for (h2::h2_assert Q(false); Q; Q.failing(#expect, #actual, H2_FILINE)) h2::h2_je(&Q, expect, actual, selector)
+
+#define H2Warning if (!h2::h2_warning::I().swap(true))

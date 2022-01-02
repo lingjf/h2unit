@@ -261,12 +261,15 @@ CASESS_T(name, (short,int,long), (u8,u16,u32))  // (short,int,long)x(u8,u16,u32)
 ### H2KO alias KO
 *    [`KO`](../source/assert/h2_assert.hpp)(...) : opposite of OK, fail if successful OK.
 
+Add `Warning` before `OK`/`KO` to report failure as warning.
+
 ```C++
 Case(case name)
 {
     OK(a);
     OK(a < b);
     OK(e , a);
+    Warning OK(e , a);
 }
 ```
 

@@ -54,7 +54,9 @@ h2_inline h2_ostringstream& h2_assert::stash(h2_fail* fail, const char* assert_t
 
 h2_inline void h2_assert::failing(const char* e_expression, const char* a_expression, const char* filine)
 {
+   bool as_warning = h2_warning::I().swap(false);
    if (fails) {
+      fails->warning = as_warning;
       fails->user_explain = oss.str().c_str();
       fails->filine = filine;
       fails->e_expression = e_expression;

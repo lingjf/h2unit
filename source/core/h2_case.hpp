@@ -1,6 +1,6 @@
 struct h2_case : h2_test {
    bool todo = false;
-   bool ignored = false, failed = false, last_failed = false;
+   bool ignored = false, failed = false, last_failed = false, warning = false;
    jmp_buf fail_hole;
    h2_fail* fails = nullptr;
 

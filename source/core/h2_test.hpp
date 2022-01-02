@@ -1,9 +1,9 @@
 struct h2_stats {
-   int passed = 0, failed = 0, todo = 0, filtered = 0, ignored = 0;
+   int passed = 0, failed = 0, warning = 0, todo = 0, filtered = 0, ignored = 0;
    int asserts = 0;
    long long footprint = 0;
    long long timecost = 0;
-   void clear() { passed = 0, failed = 0, todo = 0, filtered = 0, ignored = 0, asserts = 0, footprint = 0, timecost = 0; }
+   void clear() { passed = failed = warning = todo = filtered = ignored = 0, asserts = 0, footprint = 0, timecost = 0; }
 };
 
 struct h2_test {

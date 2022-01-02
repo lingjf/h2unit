@@ -1071,6 +1071,7 @@ struct h2_cxa {
 struct h2_fail : h2_libc {
    h2_fail *subling_next = nullptr, *child_next = nullptr;
 
+   bool warning = false;
    const char* assert_type = "In";  // In(Mock, AllOf, &&, ||)
    const char* assert_op = ",";
    h2_string e_expression, a_expression;
@@ -1113,7 +1114,7 @@ struct h2_fail : h2_libc {
 };
 // source/option/h2_option.hpp
 
-static constexpr int VerboseQuiet = 0, VerboseCompactFailed = 1, VerboseCompactPassed = 2, VerboseNormal = 3, VerboseDetail = 4;
+static constexpr int VerboseQuiet = 0, VerboseCompactFailed = 1, VerboseCompactWarning = 2, VerboseCompactPassed = 3, VerboseNormal = 4, VerboseDetail = 5;
 static constexpr int ShuffleCode = 0x0, ShuffleRandom = 0x10, ShuffleName = 0x100, ShuffleFile = 0x1000, ShuffleReverse = 0x10000;
 static constexpr int ListNone = 0x0, ListSuite = 0x10, ListCase = 0x100, ListTodo = 0x1000, ListTags = 0x10000;
 static constexpr int FoldUnFold = 0, FoldShort = 1, FoldSame = 2, FoldSingle = 3, FoldMax = 5;
@@ -1156,11 +1157,11 @@ struct h2_option {
 static const h2_option& O = h2_option::I();  // for pretty
 // source/core/h2_test.hpp
 struct h2_stats {
-   int passed = 0, failed = 0, todo = 0, filtered = 0, ignored = 0;
+   int passed = 0, failed = 0, warning = 0, todo = 0, filtered = 0, ignored = 0;
    int asserts = 0;
    long long footprint = 0;
    long long timecost = 0;
-   void clear() { passed = 0, failed = 0, todo = 0, filtered = 0, ignored = 0, asserts = 0, footprint = 0, timecost = 0; }
+   void clear() { passed = failed = warning = todo = filtered = ignored = 0, asserts = 0, footprint = 0, timecost = 0; }
 };
 
 struct h2_test {
@@ -1188,7 +1189,7 @@ struct h2_test {
 // source/core/h2_case.hpp
 struct h2_case : h2_test {
    bool todo = false;
-   bool ignored = false, failed = false, last_failed = false;
+   bool ignored = false, failed = false, last_failed = false, warning = false;
    jmp_buf fail_hole;
    h2_fail* fails = nullptr;
 
@@ -3783,6 +3784,17 @@ struct h2_sock : h2_once {
 #define Ptx(...) h2::h2_sock::check(H2_FILINE, h2::ss(#__VA_ARGS__), __VA_ARGS__)
 #define Pij(Packet_, Size_, ...) h2::h2_sock::inject(Packet_, Size_, h2::ss(#__VA_ARGS__))
 // source/assert/h2_assert.hpp
+struct h2_warning {
+   h2_singleton(h2_warning);
+   bool warning = false;
+   bool swap(bool new_warning)
+   {
+      bool old_warning = I().warning;
+      I().warning = new_warning;
+      return old_warning;
+   }
+};
+
 struct h2_assert : h2_once {
    bool oppose;
    h2_fail* fails = nullptr;
@@ -3875,6 +3887,8 @@ static inline h2_ostringstream& h2_ok1(h2_assert* d, h2_1cp<A> c1)
    for (h2::h2_assert Q(false); Q; Q.failing(#expect, #actual, H2_FILINE)) h2::h2_je(&Q, expect, actual, "")
 #define H2JE_4(Q, expect, actual, selector) \
    for (h2::h2_assert Q(false); Q; Q.failing(#expect, #actual, H2_FILINE)) h2::h2_je(&Q, expect, actual, selector)
+
+#define H2Warning if (!h2::h2_warning::I().swap(true))
 // source/assert/h2_timer.hpp
 struct h2_timer : h2_once {
    const char* filine;
@@ -3930,6 +3944,10 @@ struct h2_timer : h2_once {
 
 #ifndef H2_NO_JE
 #define JE H2JE
+#endif
+
+#ifndef H2_NO_Warning
+#define Warning H2Warning
 #endif
 
 #ifndef H2_NO_MOCK
@@ -8800,7 +8818,7 @@ h2_inline void h2_case::clear()
 
 h2_inline void h2_case::prev_setup()
 {
-   failed = false;
+   failed = warning = false;
    h2_memory::stack::push(filine);
    stats.timecost = h2_now();
 }
@@ -8818,10 +8836,11 @@ h2_inline void h2_case::post_cleanup()
 h2_inline void h2_case::failing(h2_fail* fail, bool defer, bool append)
 {
    if (fail) {
-      failed = true;
+      if (fail->warning) warning = true;
+      else failed = true;
       if (fails && !append) delete fail;
       else h2_fail::append_subling(fails, fail);
-      if (!defer) ::longjmp(fail_hole, 1);
+      if (!defer && !fail->warning) ::longjmp(fail_hole, 1);
    }
 }
 // source/core/h2_suite.cpp
@@ -9085,7 +9104,9 @@ h2_inline int h2_runner::main(int argc, const char** argv)
                for (int i = 0; global_case_setups[i]; ++i) global_case_setups[i]();
                s->test(c);
                for (int i = 0; global_case_cleanups[i]; ++i) global_case_cleanups[i]();
-               c->failed ? (stats.failed++, s->stats.failed++) : (stats.passed++, s->stats.passed++);
+               if (c->failed) stats.failed++, s->stats.failed++;
+               else if (c->warning) stats.warning++, s->stats.warning++;
+               else stats.passed++, s->stats.passed++;
             }
             h2_report::I().on_case_endup(s, c);
             c->clear();
@@ -9201,7 +9222,9 @@ h2_inline h2_ostringstream& h2_assert::stash(h2_fail* fail, const char* assert_t
 
 h2_inline void h2_assert::failing(const char* e_expression, const char* a_expression, const char* filine)
 {
+   bool as_warning = h2_warning::I().swap(false);
    if (fails) {
+      fails->warning = as_warning;
       fails->user_explain = oss.str().c_str();
       fails->filine = filine;
       fails->e_expression = e_expression;
@@ -9510,6 +9533,7 @@ struct h2_fail_json : h2_fail_unexpect {
 
       h2_lines e_lines, a_lines;
       h2_fail_unexpect::print(si, ci);
+      if (e_value.width() < 16 || a_value.width() < 16) return;  // TLDR
       if (!h2_blank(O.json_source_quote) || !h2_json::diff(e_value, a_value, e_lines, a_lines, caseless)) {
          e_lines = h2_json::dump(e_value);
          a_lines = h2_json::dump(a_value);
@@ -9830,11 +9854,12 @@ struct h2_report_console : h2_report_interface {
    {
       print_bar(false, nullptr, nullptr, nullptr, nullptr, false);
 
-      int n = nonzero_count(r->stats.failed, r->stats.todo, r->stats.filtered, r->stats.ignored);
+      int n = nonzero_count(r->stats.failed, r->stats.warning, r->stats.todo, r->stats.filtered, r->stats.ignored);
       h2_line line = (0 < r->stats.failed) ? color("Failure ", "bold,red") : color("Success ", "bold,green");
       if (0 < n) line += gray("(");
       line += color(h2_stringify(r->stats.passed), "green") + " passed";  // always print
       if (r->stats.failed) line += gray(", ") + color(h2_stringify(r->stats.failed), "red") + " failed";
+      if (r->stats.warning) line += gray(", ") + color(h2_stringify(r->stats.warning), "cyan") + " warning";
       if (r->stats.todo) line += gray(", ") + color(h2_stringify(r->stats.todo), "yellow") + " todo";
       if (r->stats.filtered) line += gray(", ") + color(h2_stringify(r->stats.filtered), "blue") + " filtered";
       if (r->stats.ignored) line += gray(", ") + color(h2_stringify(r->stats.ignored), "blue") + " ignored";
@@ -9851,10 +9876,11 @@ struct h2_report_console : h2_report_interface {
       if (O.verbose >= 9 && !(O.includes[0] || O.excludes[0])) {
          print_bar(true, nullptr, nullptr, nullptr, nullptr, false);
 
-         int n = nonzero_count(s->stats.passed, s->stats.failed, s->stats.todo, s->stats.filtered, s->stats.ignored);
+         int n = nonzero_count(s->stats.passed, s->stats.warning, s->stats.failed, s->stats.todo, s->stats.filtered, s->stats.ignored);
          h2_line line;
          if (s->stats.passed) line += gray(comma_if(line.width())) + h2_stringify(s->stats.passed) + " passed";
          if (s->stats.failed) line += gray(comma_if(line.width())) + h2_stringify(s->stats.failed) + " failed";
+         if (s->stats.warning) line += gray(comma_if(line.width())) + h2_stringify(s->stats.warning) + " warning";
          if (s->stats.todo) line += gray(comma_if(line.width())) + h2_stringify(s->stats.todo) + " todo";
          if (s->stats.filtered) line += gray(comma_if(line.width())) + h2_stringify(s->stats.filtered) + " filtered";
          if (s->stats.ignored) line += gray(comma_if(line.width())) + h2_stringify(s->stats.ignored) + " ignored";
@@ -9883,6 +9909,15 @@ struct h2_report_console : h2_report_interface {
             print_bar(true, "bold,red", "Failed ", s, c, false);
             h2_console::prints("", "\n");
             if (O.verbose >= VerboseNormal && c->fails) {
+               c->fails->foreach([](h2_fail* fail, size_t si, size_t ci) { fail->print(si, ci); });
+               h2_console::prints("", "\n");
+            }
+         }
+      } else if (c->warning) {
+         if (O.verbose >= VerboseCompactWarning) {
+            print_bar(true, "bold,cyan", "Warning", s, c, false);
+            h2_console::prints("", "\n");
+            if (O.verbose > VerboseNormal && c->fails) {
                c->fails->foreach([](h2_fail* fail, size_t si, size_t ci) { fail->print(si, ci); });
                h2_console::prints("", "\n");
             }
@@ -10038,7 +10073,7 @@ struct h2_report_junit : h2_report_interface {
    void on_case_endup(h2_suite* s, h2_case* c) override
    {
       if (!f) return;
-      fprintf(f, "<testcase classname=\"%s\" name=\"%s\" status=\"%s\" time=\"%.3f\">\n", s->name, c->name, c->todo ? "TODO" : (c->filtered ? "Filtered" : (c->ignored ? "Ignored" : (c->failed ? "Failed" : "Passed"))), c->stats.timecost / 1000.0);
+      fprintf(f, "<testcase classname=\"%s\" name=\"%s\" status=\"%s\" time=\"%.3f\">\n", s->name, c->name, c->todo ? "TODO" : (c->filtered ? "Filtered" : (c->ignored ? "Ignored" : (c->failed ? "Failed" : (c->warning ? "Warning" : "Passed")))), c->stats.timecost / 1000.0);
       if (c->failed) {
          fprintf(f, "<failure message=\"%s:", c->filine);
          if (c->fails) c->fails->foreach([&](h2_fail* fail, size_t si, size_t ci) {fprintf(f, "{newline}"); fail->print(f); });
@@ -10101,7 +10136,7 @@ static inline void usage()
             "\033[90m│\033[0m" " -\033[36ms\033[0m  "                               "\033[90m│\033[0m" "\033[90m[\033[0mtype=rand\033[90m]\033[0m"     "\033[90m│\033[0m" " \033[36ms\033[0mhuffle cases random/alphabet/reverse if no last failed    "                               "\033[90m│\033[0m\n" H2_USAGE_BR
             "\033[90m│\033[0m" " -\033[36mS\033[0m  "                               "\033[90m│\033[0m" " \033[90m[\033[0mtype=\\\"\033[90m]\033[0m "   "\033[90m│\033[0m" " JSON C/C++ \033[36mS\033[0mource code, type [\\\'/single \\\"/double \\\\\\\"]    "                       "\033[90m│\033[0m\n" H2_USAGE_BR
             "\033[90m│\033[0m" " -\033[36mt\033[0m  "                               "\033[90m│\033[0m" "           "                                   "\033[90m│\033[0m" " \033[36mt\033[0mags include/exclude filter                                "                               "\033[90m│\033[0m\n" H2_USAGE_BR
-            "\033[90m│\033[0m" " -\033[36mv\033[0m  "                               "\033[90m│\033[0m" "  \033[90m[\033[0mn=max\033[90m]\033[0m  "     "\033[90m│\033[0m" " \033[36mv\033[0merbose, 0:quiet 1/2:compact 3:normal 4:details            "                               "\033[90m│\033[0m\n" H2_USAGE_BR
+            "\033[90m│\033[0m" " -\033[36mv\033[0m  "                               "\033[90m│\033[0m" "  \033[90m[\033[0mn=max\033[90m]\033[0m  "     "\033[90m│\033[0m" " \033[36mv\033[0merbose, 0:quiet 1/2/3:compact 4:normal 5:details          "                               "\033[90m│\033[0m\n" H2_USAGE_BR
             "\033[90m│\033[0m" " -\033[36mw\033[0m  "                               "\033[90m│\033[0m" "           "                                   "\033[90m│\033[0m" " Console output in black-\033[36mw\033[0mhite color style                  "                               "\033[90m│\033[0m\n" H2_USAGE_BR
             "\033[90m│\033[0m" " -\033[36mx\033[0m  "                               "\033[90m│\033[0m" "           "                                   "\033[90m│\033[0m" " Thrown e\033[36mx\033[0mception is considered as failure                  "                               "\033[90m│\033[0m\n"
             "\033[90m└─────┴───────────┴────────────────────────────────────────────────────────────┘\033[0m\n");

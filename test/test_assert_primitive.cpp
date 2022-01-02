@@ -160,3 +160,17 @@ SUITE(KO Primitive [api])
       KO(Je("{'name': /hello.*world/, 'age': 18}"), "{'Name': \"hello world\", 'age': 18}");
    }
 }
+
+SUITE(Warning Primitive [api])
+{
+   Case(warning OK)
+   {
+      Warning OK(1);
+      Warning OK("abc" != "xyz");
+   }
+
+   Case(warning JE)
+   {
+      Warning JE("[1]", "[1]");
+   }
+}

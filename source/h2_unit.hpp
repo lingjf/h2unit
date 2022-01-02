@@ -159,6 +159,10 @@ namespace h2 {
 #define JE H2JE
 #endif
 
+#ifndef H2_NO_Warning
+#define Warning H2Warning
+#endif
+
 #ifndef H2_NO_MOCK
 #define MOCK H2MOCK
 #endif

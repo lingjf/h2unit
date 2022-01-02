@@ -80,10 +80,13 @@ SUITE(Second Demo)
  * CASE act SUITE plus Case, without setup and cleanup.
  */
 
-CASE(standalone case [fail])
+CASE(standalone case [warn])
 {
    bool result = true;
-   KO(result);
+
+   Warning OK(!result);
+
+   KO(!result);
 }
 
 TODO(alive for ever)
