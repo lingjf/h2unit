@@ -1,31 +1,45 @@
-/* clang-format off */
-static inline void usage()
+static inline int usage(const char* option)
 {
-   ::printf(" \033[90mhttps://github.com/lingjf/\033[0m\033[32mh2unit\033[0m \033[90mv\033[0m%s \033[90m%s\033[0m\n", H2PP_STR(H2UNIT_VERSION), H2PP_STR(H2UNIT_REVISION));
+   if (option && (!strcmp("i", option) || !strcmp("e", option))) {
+      return ::printf("\033[36m-i/e pattern\033[0m: include in file:line, suite name, case name, suite tags, case tags\n"
+                      "\033[36m-i/e file=pattern\033[0m: include in file:line\n"
+                      "\033[36m-i/e suite=pattern\033[0m: include in suite name\n"
+                      "\033[36m-i/e case=pattern\033[0m: include in case name\n"
+                      "\033[36m-i/e tags=pattern\033[0m: include in suite tags or case tags\n");
+   }
+   if (option && !strcmp("W", option)) {
+      return ::printf("\033[36mexception\033[0m: consider thrown exception as warning\n"
+                      "\033[36muncaught\033[0m: consider uncaught exception as warning\n"
+                      "\033[36mleak\033[0m: consider memory leak as warning\n"
+                      "\033[36mviolate\033[0m: consider memory violate access as warning\n"
+                      "\033[36mdouble_free\033[0m: consider memory double free as warning\n"
+                      "\033[36masymmetric_free\033[0m: consider memory asymmetric free as warning\n");
+   }
+   ::printf(" \033[32mh₂unit\033[0m \033[90mv\033[0m%s  \033[90m%s\033[0m  \033[90m%s\033[0m\n", H2PP_STR(H2UNIT_VERSION), H2PP_STR(H2UNIT_DATE), H2PP_STR(H2UNIT_REVISION));
+   /* clang-format off */
 #define H2_USAGE_BR "\033[90m├─────┼───────────┼────────────────────────────────────────────────────────────┤\033[0m\n"
-   ::printf("\033[90m┌─────┬───────────┬────────────────────────────────────────────────────────────┐\033[0m\n"
-            "\033[90m│\033[0m" " -\033[36mb\033[0m  "                               "\033[90m│\033[0m" "   \033[90m[\033[0mn=1\033[90m]\033[0m   "     "\033[90m│\033[0m" " \033[36mb\033[0mreak test once n (default 1) cases failed                 "                               "\033[90m│\033[0m\n" H2_USAGE_BR
-            "\033[90m│\033[0m" " -\033[36mc\033[0m  "                               "\033[90m│\033[0m" "           "                                   "\033[90m│\033[0m" " \033[36mc\033[0montinue asserts even if failure occurred                  "                               "\033[90m│\033[0m\n" H2_USAGE_BR
-            "\033[90m│\033[0m" " -\033[36md\033[0m  "                               "\033[90m│\033[0m" "           "                                   "\033[90m│\033[0m" " \033[36md\033[0mebug with gdb once failure occurred                       "                               "\033[90m│\033[0m\n" H2_USAGE_BR
-            "\033[90m│\033[0m" " -\033[36mE\033[0m  "                               "\033[90m│\033[0m" "  \033[90m[\033[0mtype=f\033[90m]\033[0m "     "\033[90m│\033[0m" " Thrown \033[36mE\033[0mxception is considered as failure or warning       "                               "\033[90m│\033[0m\n" H2_USAGE_BR
-            "\033[90m│\033[0m" " -\033[36mf\033[0m  "                               "\033[90m│\033[0m" "           "                                   "\033[90m│\033[0m" " Only test last \033[36mf\033[0mailed cases                                "                               "\033[90m│\033[0m\n" H2_USAGE_BR
-            "\033[90m│\033[0m" " -\033[36mF\033[0m  "                               "\033[90m│\033[0m" "  \033[90m[\033[0mn=max\033[90m]\033[0m  "     "\033[90m│\033[0m" " \033[36mF\033[0mold json print, 0:unfold 1:short 2:same 3:single          "                               "\033[90m│\033[0m\n" H2_USAGE_BR
-            "\033[90m│\033[0m" " -\033[36mi\033[0m\033[90m/\033[0m\033[36me\033[0m" "\033[90m│\033[0m" "\033[90m[\033[0mpattern .\033[90m]\033[0m"     "\033[90m│\033[0m" " \033[36mi\033[0mnclude\033[90m/\033[0m\033[36me\033[0mxclude case suite or file by substr wildcard      " "\033[90m│\033[0m\n" H2_USAGE_BR
-            "\033[90m│\033[0m" " -\033[36ml\033[0m  "                               "\033[90m│\033[0m" "  \033[90m[\033[0mtype .\033[90m]\033[0m "     "\033[90m│\033[0m" " \033[36ml\033[0mist suites cases and tags, type [suite case todo tags]    "                               "\033[90m│\033[0m\n" H2_USAGE_BR
-            "\033[90m│\033[0m" " -\033[36mm\033[0m  "                               "\033[90m│\033[0m" "           "                                   "\033[90m│\033[0m" " Test cases without \033[36mm\033[0memory check                            "                               "\033[90m│\033[0m\n" H2_USAGE_BR
-            "\033[90m│\033[0m" " -\033[36mo\033[0m  "                               "\033[90m│\033[0m" "  \033[90m[\033[0mpath\033[90m]\033[0m   "     "\033[90m│\033[0m" " \033[36mo\033[0mutput junit report, default is <executable>.junit.xml     "                               "\033[90m│\033[0m\n" H2_USAGE_BR
-            "\033[90m│\033[0m" " -\033[36mp\033[0m  "                               "\033[90m│\033[0m" "           "                                   "\033[90m│\033[0m" " Disable test percentage \033[36mp\033[0mrogressing bar                    "                               "\033[90m│\033[0m\n" H2_USAGE_BR
-            "\033[90m│\033[0m" " -\033[36mq\033[0m  "                               "\033[90m│\033[0m" "           "                                   "\033[90m│\033[0m" " \033[36mq\033[0muit exit code as failed cases count                       "                               "\033[90m│\033[0m\n" H2_USAGE_BR
-            "\033[90m│\033[0m" " -\033[36mr\033[0m  "                               "\033[90m│\033[0m" "   \033[90m[\033[0mn=2\033[90m]\033[0m   "     "\033[90m│\033[0m" " Repeat test n (default 2) \033[36mr\033[0mounds                           "                               "\033[90m│\033[0m\n" H2_USAGE_BR
-            "\033[90m│\033[0m" " -\033[36ms\033[0m  "                               "\033[90m│\033[0m" "\033[90m[\033[0mtype=rand\033[90m]\033[0m"     "\033[90m│\033[0m" " \033[36ms\033[0mhuffle cases random/alphabet/reverse if no last failed    "                               "\033[90m│\033[0m\n" H2_USAGE_BR
-            "\033[90m│\033[0m" " -\033[36mS\033[0m  "                               "\033[90m│\033[0m" " \033[90m[\033[0mtype=\\\"\033[90m]\033[0m "   "\033[90m│\033[0m" " JSON C/C++ \033[36mS\033[0mource code, type [\\\'/single \\\"/double \\\\\\\"]    "                       "\033[90m│\033[0m\n" H2_USAGE_BR
-            "\033[90m│\033[0m" " -\033[36mt\033[0m  "                               "\033[90m│\033[0m" "           "                                   "\033[90m│\033[0m" " \033[36mt\033[0mags include/exclude filter                                "                               "\033[90m│\033[0m\n" H2_USAGE_BR
-            "\033[90m│\033[0m" " -\033[36mv\033[0m  "                               "\033[90m│\033[0m" "  \033[90m[\033[0mn=max\033[90m]\033[0m  "     "\033[90m│\033[0m" " \033[36mv\033[0merbose, 0:quiet 1/2/3:compact 4:normal 5:details          "                               "\033[90m│\033[0m\n" H2_USAGE_BR
-            "\033[90m│\033[0m" " -\033[36mw\033[0m  "                               "\033[90m│\033[0m" "           "                                   "\033[90m│\033[0m" " Console output in black-\033[36mw\033[0mhite color style                  "                               "\033[90m│\033[0m\n" H2_USAGE_BR
-            "\033[90m│\033[0m" " -\033[36mW\033[0m  "                               "\033[90m│\033[0m" "  \033[90m[\033[0mtype .\033[90m]\033[0m "     "\033[90m│\033[0m" " Configure failure as \033[36mW\033[0marning, exception, leak, ...         "                               "\033[90m│\033[0m\n"
-            "\033[90m└─────┴───────────┴────────────────────────────────────────────────────────────┘\033[0m\n");
+   return ::printf("\033[90m┌─────┬───────────┬────────────────────────────────────────────────────────────┐\033[0m\n"
+                   "\033[90m│\033[0m" " -\033[36mb\033[0m  "                               "\033[90m│\033[0m" "   \033[90m[\033[0mn=1\033[90m]\033[0m   "     "\033[90m│\033[0m" " \033[36mb\033[0mreak test once n (default 1) cases failed                 "                               "\033[90m│\033[0m\n" H2_USAGE_BR
+                   "\033[90m│\033[0m" " -\033[36mc\033[0m  "                               "\033[90m│\033[0m" "           "                                   "\033[90m│\033[0m" " \033[36mc\033[0montinue asserts even if failure occurred                  "                               "\033[90m│\033[0m\n" H2_USAGE_BR
+                   "\033[90m│\033[0m" " -\033[36mC\033[0m  "                               "\033[90m│\033[0m" "           "                                   "\033[90m│\033[0m" " Console output in black-white \033[36mC\033[0molor style                  "                               "\033[90m│\033[0m\n" H2_USAGE_BR
+                   "\033[90m│\033[0m" " -\033[36md\033[0m  "                               "\033[90m│\033[0m" "           "                                   "\033[90m│\033[0m" " \033[36md\033[0mebug with gdb/lldb once failure occurred                  "                               "\033[90m│\033[0m\n" H2_USAGE_BR
+                   "\033[90m│\033[0m" " -\033[36mf\033[0m  "                               "\033[90m│\033[0m" "           "                                   "\033[90m│\033[0m" " Only test last \033[36mf\033[0mailed cases                                "                               "\033[90m│\033[0m\n" H2_USAGE_BR
+                   "\033[90m│\033[0m" " -\033[36mF\033[0m  "                               "\033[90m│\033[0m" "  \033[90m[\033[0mn=max\033[90m]\033[0m  "     "\033[90m│\033[0m" " \033[36mF\033[0mold json print, 0:unfold 1:short 2:same 3:single          "                               "\033[90m│\033[0m\n" H2_USAGE_BR
+                   "\033[90m│\033[0m" " -\033[36mi\033[0m\033[90m/\033[0m\033[36me\033[0m" "\033[90m│\033[0m" "\033[90m[\033[0mpattern .\033[90m]\033[0m"     "\033[90m│\033[0m" " \033[36mi\033[0mnclude\033[90m/\033[0m\033[36me\033[0mxclude by case suite file or tags, -h i...        " "\033[90m│\033[0m\n" H2_USAGE_BR
+                   "\033[90m│\033[0m" " -\033[36ml\033[0m  "                               "\033[90m│\033[0m" "  \033[90m[\033[0mtype .\033[90m]\033[0m "     "\033[90m│\033[0m" " \033[36ml\033[0mist suites cases and tags, type [suite case todo tags]    "                               "\033[90m│\033[0m\n" H2_USAGE_BR
+                   "\033[90m│\033[0m" " -\033[36mm\033[0m  "                               "\033[90m│\033[0m" "           "                                   "\033[90m│\033[0m" " Test cases without \033[36mm\033[0memory check                            "                               "\033[90m│\033[0m\n" H2_USAGE_BR
+                   "\033[90m│\033[0m" " -\033[36mo\033[0m  "                               "\033[90m│\033[0m" "  \033[90m[\033[0mpath\033[90m]\033[0m   "     "\033[90m│\033[0m" " \033[36mo\033[0mutput junit report, default is <executable>.junit.xml     "                               "\033[90m│\033[0m\n" H2_USAGE_BR
+                   "\033[90m│\033[0m" " -\033[36mp\033[0m  "                               "\033[90m│\033[0m" "           "                                   "\033[90m│\033[0m" " Disable test percentage \033[36mp\033[0mrogressing bar                    "                               "\033[90m│\033[0m\n" H2_USAGE_BR
+                   "\033[90m│\033[0m" " -\033[36mr\033[0m  "                               "\033[90m│\033[0m" "   \033[90m[\033[0mn=2\033[90m]\033[0m   "     "\033[90m│\033[0m" " Repeat test n (default 2) \033[36mr\033[0mounds                           "                               "\033[90m│\033[0m\n" H2_USAGE_BR
+                   "\033[90m│\033[0m" " -\033[36ms\033[0m  "                               "\033[90m│\033[0m" "\033[90m[\033[0mtype=rand\033[90m]\033[0m"     "\033[90m│\033[0m" " \033[36ms\033[0mhuffle cases random/alphabet/reverse if no last failed    "                               "\033[90m│\033[0m\n" H2_USAGE_BR
+                   "\033[90m│\033[0m" " -\033[36mS\033[0m  "                               "\033[90m│\033[0m" " \033[90m[\033[0mtype=\\\"\033[90m]\033[0m "   "\033[90m│\033[0m" " JSON C/C++ \033[36mS\033[0mource code, type [\\\'/single \\\"/double \\\\\\\"]    "                       "\033[90m│\033[0m\n" H2_USAGE_BR
+                   "\033[90m│\033[0m" " -\033[36mv\033[0m  "                               "\033[90m│\033[0m" "  \033[90m[\033[0mn=max\033[90m]\033[0m  "     "\033[90m│\033[0m" " \033[36mv\033[0merbose, 0:quiet 1/2/3:compact 4:normal 5:details          "                               "\033[90m│\033[0m\n" H2_USAGE_BR
+                   "\033[90m│\033[0m" " -\033[36mx\033[0m  "                               "\033[90m│\033[0m" "           "                                   "\033[90m│\033[0m" " e\033[36mx\033[0mit code as failed cases count                            "                               "\033[90m│\033[0m\n" H2_USAGE_BR
+                   "\033[90m│\033[0m" " -\033[36mW\033[0m  "                               "\033[90m│\033[0m" "  \033[90m[\033[0mtype .\033[90m]\033[0m "     "\033[90m│\033[0m" " Configure failure as \033[36mW\033[0marning, exception, leak, -h W...     "                               "\033[90m│\033[0m\n" H2_USAGE_BR
+                   "\033[90m│\033[0m" " -\033[36mh\033[0m\033[90m/\033[0m\033[36m?\033[0m" "\033[90m│\033[0m" "  \033[90m[\033[0moption\033[90m]\033[0m "     "\033[90m│\033[0m" " https://github.com/lingjf/h2unit/.../document/option.md    "                                              "\033[90m│\033[0m\n"
+                   "\033[90m└─────┴───────────┴────────────────────────────────────────────────────────────┘\033[0m\n");
+   /* clang-format on */
 }
-/* clang-format on */
 
 struct getopt {
    int argc;
@@ -77,19 +91,41 @@ h2_inline void h2_option::parse(int argc, const char** argv)
    getopt get(argc - 1, argv + 1);
    get.arguments(args);
 
+   char t2[64];
    for (const char* t;;) {
       switch (get.next_option()) {
          case '\0': return;
          case 'b': get.extract_number(break_after_fails = 1); break;
          case 'c': continue_assert = true; break;
+         case 'C': colorful = !colorful; break;
          case 'd': debugger_trap = true; break;
          case 'e':
-            while ((t = get.extract_string())) h2_array_append(excludes, t);
+            while ((t = get.extract_string())) {
+               const char* eq = strchr(t, '=');
+               if (eq) {
+                  const char* r = h2_candidate(strcpyn(t2, t, eq - t), 4, "file", "suite", "case", "tags");
+                  if (!strcmp("file", r)) h2_array_append(file_excludes, eq + 1);
+                  else if (!strcmp("suite", r)) h2_array_append(suite_excludes, eq + 1);
+                  else if (!strcmp("case", r)) h2_array_append(case_excludes, eq + 1);
+                  else if (!strcmp("tags", r)) h2_array_append(tags_excludes, eq + 1);
+                  else ::printf("-e %s\n", r), exit(-1);
+               } else h2_array_append(excludes, t);
+            }
             break;
          case 'f': only_last_failed = true; break;
          case 'F': get.extract_number(fold_json = 0); break;
          case 'i':
-            while ((t = get.extract_string())) h2_array_append(includes, t);
+            while ((t = get.extract_string())) {
+               const char* eq = strchr(t, '=');
+               if (eq) {
+                  const char* r = h2_candidate(strcpyn(t2, t, eq - t), 4, "file", "suite", "case", "tags");
+                  if (!strcmp("file", r)) h2_array_append(file_includes, eq + 1);
+                  else if (!strcmp("suite", r)) h2_array_append(suite_includes, eq + 1);
+                  else if (!strcmp("case", r)) h2_array_append(case_includes, eq + 1);
+                  else if (!strcmp("tags", r)) h2_array_append(tags_includes, eq + 1);
+                  else ::printf("-i %s\n", r), exit(-1);
+               } else h2_array_append(includes, t);
+            }
             break;
          case 'l':
             while ((t = get.extract_string())) {
@@ -108,7 +144,6 @@ h2_inline void h2_option::parse(int argc, const char** argv)
             if ((t = get.extract_string())) strcpy(junit_path, t);
             break;
          case 'p': progressing = !progressing; break;
-         case 'q': quit_exit_code = true; break;
          case 'r': get.extract_number(run_rounds = 2); break;
          case 's':
             while ((t = get.extract_string())) {
@@ -133,9 +168,8 @@ h2_inline void h2_option::parse(int argc, const char** argv)
                if (!h2_in(json_source_quote, 3, "\'", "\"", "\\\"")) json_source_quote = "\\\"";
             }
             break;
-         case 't': tags_filter = true; break;
          case 'v': get.extract_number(verbose = 8); break;
-         case 'w': colorful = !colorful; break;
+         case 'x': exit_with_fails = true; break;
          case 'W':
             while ((t = get.extract_string())) {
                const char* r = h2_candidate(t, 5, "exception", "uncaught", "leak", "violate", "asymmetric_free");
@@ -149,7 +183,7 @@ h2_inline void h2_option::parse(int argc, const char** argv)
             }
             break;
          case 'h':
-         case '?': usage(); exit(0);
+         case '?': usage(get.extract_string()); exit(0);
       }
    }
 }

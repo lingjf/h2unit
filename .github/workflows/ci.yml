@@ -39,9 +39,9 @@ jobs:
       - name: 🔨 run example/debug
         run: ./debug_example/a.out
       - name: 🔨 run example/debug pass
-        run: ./debug_example/a.out -ti pass
+        run: ./debug_example/a.out -i tag=pass
       - name: 🔨 run example/debug fail
-        run: ./debug_example/a.out -ti fail
+        run: ./debug_example/a.out -i tag=fail
       - name: show example/debug help
         run: ./debug_example/a.out -h
       - name: list example/debug cases
@@ -53,9 +53,9 @@ jobs:
       - name: 🔨 run example/release
         run: ./release_example/a.out
       - name: 🔨 run example/release pass
-        run: ./release_example/a.out -ti pass
+        run: ./release_example/a.out -i tag=pass
       - name: 🔨 run example/release fail
-        run: ./release_example/a.out -ti fail
+        run: ./release_example/a.out -i tag=fail
       - name: show example/release help
         run: ./release_example/a.out -h
       - name: list example/release cases
@@ -65,17 +65,17 @@ jobs:
       - name: 🏗️ build test/debug
         run: cmake --build debug_test -j2
       - name: run test/debug without memory check
-        run: cd debug_test && LD_BIND_NOW=1 ./a.out -s -p -m -v -q -te memory_check
+        run: cd debug_test && LD_BIND_NOW=1 ./a.out -s -p -m -v -x -e tag=memory_check
       - name: ✨ run test/debug with memory check
-        run: cd debug_test && LD_BIND_NOW=1 ./a.out -swpvqo -r -e h2_once
+        run: cd debug_test && LD_BIND_NOW=1 ./a.out -sCpvxo -r -e h2_once
       - name: configure test/release
         run: cmake -DCMAKE_VERBOSE_MAKEFILE=ON -DCMAKE_BUILD_TYPE=Release -B release_test test
       - name: 🏗️ build test/release
         run: cmake --build release_test -j2
       - name: run test/release without memory check
-        run: cd release_test && LD_BIND_NOW=1 ./a.out -s -p -m -v -q -te memory_check
+        run: cd release_test && LD_BIND_NOW=1 ./a.out -s -p -m -v -x -e tag=memory_check
       - name: ✨ run test/release with memory check
-        run: cd release_test && LD_BIND_NOW=1 ./a.out -swpvqo -r -e h2_once
+        run: cd release_test && LD_BIND_NOW=1 ./a.out -sCpvxo -r -e h2_once
       - name: install coverage tools
         run: pip3 install gcovr
       - name: build and run example
@@ -103,9 +103,9 @@ jobs:
       - name: 🔨 run example/debug
         run: ./debug_example/a.out
       - name: 🔨 run example/debug pass
-        run: ./debug_example/a.out -ti pass
+        run: ./debug_example/a.out -i tag=pass
       - name: 🔨 run example/debug fail
-        run: ./debug_example/a.out -ti fail
+        run: ./debug_example/a.out -i tag=fail
       - name: show example/debug help
         run: ./debug_example/a.out -h
       - name: list example/debug cases
@@ -117,9 +117,9 @@ jobs:
       - name: 🔨 run example/release
         run: ./release_example/a.out
       - name: 🔨 run example/release pass
-        run: ./release_example/a.out -ti pass
+        run: ./release_example/a.out -i tag=pass
       - name: 🔨 run example/release fail
-        run: ./release_example/a.out -ti fail
+        run: ./release_example/a.out -i tag=fail
       - name: show example/release help
         run: ./release_example/a.out -h
       - name: list example/release cases
@@ -129,17 +129,17 @@ jobs:
       - name: 🏗️ build test/debug
         run: cmake --build debug_test -j2
       - name: run test/debug without memory check
-        run: cd debug_test && LD_BIND_NOW=1 ./a.out -s -p -m -v -q -te memory_check
+        run: cd debug_test && LD_BIND_NOW=1 ./a.out -s -p -m -v -x -e tag=memory_check
       - name: ✨ run test/debug with memory check
-        run: cd debug_test && LD_BIND_NOW=1 ./a.out -swpvqo -r -e h2_once
+        run: cd debug_test && LD_BIND_NOW=1 ./a.out -sCpvxo -r -e h2_once
       - name: configure test/release
         run: cmake -DCMAKE_VERBOSE_MAKEFILE=ON -DCMAKE_BUILD_TYPE=Release -B release_test test
       - name: 🏗️ build test/release
         run: cmake --build release_test -j2
       - name: run test/release without memory check
-        run: cd release_test && LD_BIND_NOW=1 ./a.out -s -p -m -v -q -te memory_check
+        run: cd release_test && LD_BIND_NOW=1 ./a.out -s -p -m -v -x -e tag=memory_check
       - name: ✨ run test/release with memory check
-        run: cd release_test && LD_BIND_NOW=1 ./a.out -swpvqo -r -e h2_once
+        run: cd release_test && LD_BIND_NOW=1 ./a.out -sCpvxo -r -e h2_once
       - uses: seanmiddleditch/gha-setup-ninja@master
       - name: ninja build
         run: cd example && ninja
@@ -175,9 +175,9 @@ jobs:
       - name: 🔨 run example/debug
         run: ./debug_example/Debug/a.out.exe
       - name: 🔨 run example/debug pass
-        run: ./debug_example/Debug/a.out.exe -ti pass
+        run: ./debug_example/Debug/a.out.exe -i tag=pass
       - name: 🔨 run example/debug fail
-        run: ./debug_example/Debug/a.out.exe -ti fail
+        run: ./debug_example/Debug/a.out.exe -i tag=fail
       - name: show example/debug help
         run: ./debug_example/Debug/a.out.exe -h
       - name: list example/debug cases
@@ -189,9 +189,9 @@ jobs:
       - name: 🔨 run example/release
         run: ./release_example/Release/a.out.exe
       - name: 🔨 run example/release pass
-        run: ./release_example/Release/a.out.exe -ti pass
+        run: ./release_example/Release/a.out.exe -i tag=pass
       - name: 🔨 run example/release fail
-        run: ./release_example/Release/a.out.exe -ti fail
+        run: ./release_example/Release/a.out.exe -i tag=fail
       - name: show example/release help
         run: ./release_example/Release/a.out.exe -h
       - name: list example/release cases
@@ -203,9 +203,9 @@ jobs:
       - name: 🏗️ build test/debug
         run: cmake --build debug_test -j $env:NUMBER_OF_PROCESSORS
       - name: run test/debug without memory check
-        run: cd debug_test && ./a.out.exe -s -p -m -v -q -te memory_check
+        run: cd debug_test && ./a.out.exe -s -p -m -v -x -e tag=memory_check
       - name: ✨ run test/debug with memory check
-        run: cd debug_test && ./a.out.exe -swpvqo -r -e h2_once
+        run: cd debug_test && ./a.out.exe -sCpvxo -r -e h2_once
       - name: configure test/release
         run: cmake -DCMAKE_VERBOSE_MAKEFILE=ON -DCMAKE_BUILD_TYPE=Release -B release_test test
       - name: cat test/release vcxproj
@@ -213,9 +213,9 @@ jobs:
       - name: 🏗️ build test/release
         run: cmake --build release_test --config Release -j $env:NUMBER_OF_PROCESSORS
       - name: run test/release without memory check
-        run: cd release_test && ./a.out.exe -p -m -te memory_check # fails
+        run: cd release_test && ./a.out.exe -m -e tag=memory_check # fails
       - name: ✨ run test/release with memory check
-        run: cd release_test && ./a.out.exe -wpo # fails
+        run: cd release_test && ./a.out.exe # fails
 
   msys2:
     runs-on: windows-latest
@@ -260,9 +260,9 @@ jobs:
       - name: 🏗️ build test
         run: cmake --build ci_test -j2
       - name: run test without memory check
-        run: ./ci_test/a.out -s -p -m -v -q -te memory_check
+        run: ./ci_test/a.out -s -p -m -v -x -e tag=memory_check
       - name: ✨ run test with memory check
-        run: ./ci_test/a.out -swpvqo
+        run: ./ci_test/a.out -sCpvxo
 
   msvc:
     runs-on: windows-latest
@@ -297,9 +297,9 @@ jobs:
       - name: 🏗️ build test
         run: cd test && cmake --build . -j $env:NUMBER_OF_PROCESSORS
       - name: run test without memory check
-        run: cd test && ./a.out.exe -s -p -m -v -q -te memory_check
+        run: cd test && ./a.out.exe -s -p -m -v -x -e tag=memory_check
       - name: ✨ run test with memory check
-        run: cd test && ./a.out.exe -swpvqo
+        run: cd test && ./a.out.exe -sCpvxo
 
   msbuild:
     runs-on: windows-latest
@@ -339,9 +339,9 @@ jobs:
       - name: 🏗️ build test
         run: cd test && msbuild test.vcxproj /property:Configuration=Debug /property:Platform=${{matrix.platform}} -maxcpucount:1
       - name: run test without memory check
-        run: cd test && ./test.exe -s -p -m -v -q -te memory_check
+        run: cd test && ./test.exe -s -p -m -v -x -e tag=memory_check
       - name: ✨ run test with memory check
-        run: cd test && ./test.exe -swpvqo
+        run: cd test && ./test.exe -sCpvxo
 
   linux-qemu:
     runs-on: ubuntu-latest
@@ -377,9 +377,9 @@ jobs:
       - name: 🏗️ build test
         run: cmake --build ci_test -j2
       - name: run test without memory check
-        run: qemu-${{matrix.arch}} -L /usr/${{matrix.arch}}-linux-gnu -E LD_BIND_NOW=1 ./ci_test/a.out -s -p -m -v -q -te memory_check
+        run: qemu-${{matrix.arch}} -L /usr/${{matrix.arch}}-linux-gnu -E LD_BIND_NOW=1 ./ci_test/a.out -s -p -m -v -x -e tag=memory_check
       - name: ✨ run test with memory check
-        run: qemu-${{matrix.arch}} -L /usr/${{matrix.arch}}-linux-gnu -E LD_BIND_NOW=1 ./ci_test/a.out -swpvqo
+        run: qemu-${{matrix.arch}} -L /usr/${{matrix.arch}}-linux-gnu -E LD_BIND_NOW=1 ./ci_test/a.out -sCpvxo
 
   linux-m32:
     runs-on: ubuntu-latest
@@ -412,9 +412,9 @@ jobs:
       - name: 🏗️ build test
         run: cmake --build ci_test -j2
       - name: run test without memory check
-        run: LD_BIND_NOW=1 ./ci_test/a.out -s -p -m -v -q -te memory_check
+        run: LD_BIND_NOW=1 ./ci_test/a.out -s -p -m -v -x -e tag=memory_check
       - name: ✨ run test with memory check
-        run: LD_BIND_NOW=1 ./ci_test/a.out -swpvqo
+        run: LD_BIND_NOW=1 ./ci_test/a.out -sCpvxo
 
   linux-x86_64:
     runs-on: ${{matrix.os}}
@@ -469,9 +469,9 @@ jobs:
       - name: 🏗️ build test
         run: cmake --build ci_test -j2
       - name: run test without memory check
-        run: LD_BIND_NOW=1 ./ci_test/a.out -s -p -m -v -q -te memory_check
+        run: LD_BIND_NOW=1 ./ci_test/a.out -s -p -m -v -x -e tag=memory_check
       - name: ✨ run test with memory check
-        run: LD_BIND_NOW=1 ./ci_test/a.out -swpvqo
+        run: LD_BIND_NOW=1 ./ci_test/a.out -sCpvxo
 
   wsl:
     runs-on: windows-latest
@@ -514,9 +514,9 @@ jobs:
       - name: 🏗️ build test
         run: cd test && make
       - name: run test without memory check
-        run: cd test && LD_BIND_NOW=1 ./a.out -s -p -m -v -q -te memory_check ${{matrix.sys}}
+        run: cd test && LD_BIND_NOW=1 ./a.out -s -p -m -v -x -e tag=memory_check tag=${{matrix.sys}}
       - name: ✨ run test with memory check
-        run: cd test && LD_BIND_NOW=1 ./a.out -swpvqo -te ${{matrix.sys}}
+        run: cd test && LD_BIND_NOW=1 ./a.out -sCpvxo -e tag=${{matrix.sys}}
 
   macos-xcode:
     runs-on: ${{matrix.os}}
@@ -555,9 +555,9 @@ jobs:
       - name: 🏗️ build test
         run: cmake --build ci_test -j2
       - name: run test without memory check
-        run: LD_BIND_NOW=1 ./ci_test/a.out -s -p -m -v -q -te memory_check
+        run: LD_BIND_NOW=1 ./ci_test/a.out -s -p -m -v -x -e tag=memory_check
       - name: ✨ run test with memory check
-        run: LD_BIND_NOW=1 ./ci_test/a.out -swpvqo
+        run: LD_BIND_NOW=1 ./ci_test/a.out -sCpvxo
 
   cpp-gcc-linux:
     runs-on: ubuntu-latest
@@ -589,7 +589,7 @@ jobs:
       - name: 🏗️ build test
         run: cmake --build ci_test -j2
       - name: ✨ run test
-        run: ./ci_test/a.out -swpvqo -e pthread
+        run: ./ci_test/a.out -sCpvxo -e pthread
 
   cpp-clang-linux:
     runs-on: ubuntu-latest
@@ -614,7 +614,7 @@ jobs:
       - name: 🏗️ build test
         run: cmake --build ci_test -j2
       - name: ✨ run test
-        run: LD_BIND_NOW=1 ./ci_test/a.out -swpvqo -e pthread
+        run: LD_BIND_NOW=1 ./ci_test/a.out -sCpvxo -e pthread
 
   cpp-xcode-macos:
     runs-on: macos-11
@@ -639,7 +639,7 @@ jobs:
       - name: 🏗️ build test
         run: cmake --build ci_test -j2
       - name: ✨ run test
-        run: ./ci_test/a.out -swpvqo -e pthread
+        run: ./ci_test/a.out -sCpvxo -e pthread
 
   cpp-msvc-windows:
     runs-on: windows-latest
@@ -661,4 +661,4 @@ jobs:
       - name: 🏗️ build test
         run: cmake --build ci_test -j2
       - name: ✨ run test
-        run: ./ci_test/a.out.exe -swpvqo -e pthread
+        run: ./ci_test/a.out.exe -sCpvxo -e pthread

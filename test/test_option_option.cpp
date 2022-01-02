@@ -22,7 +22,7 @@ SUITE(h2_option)
       OK(c.memory_check);
       OK(!c.continue_assert);
       OK(!c.debugger_trap);
-      OK(!c.quit_exit_code);
+      OK(!c.exit_with_fails);
       OK(0, c.break_after_fails);
 
       OK(0, c.as_waring_exception);
@@ -32,7 +32,6 @@ SUITE(h2_option)
       OK(0, c.as_waring_memory_double_free);
       OK(0, c.as_waring_memory_asymmetric_free);
 
-      OK(!c.tags_filter);
       OK(0, c.lists);
       OK(1, c.run_rounds);
       OK(5, c.fold_json);
@@ -63,7 +62,7 @@ SUITE(h2_option)
 
    Case(colorful)
    {
-      const char* argv[] = {"./a.out", "-w"};
+      const char* argv[] = {"./a.out", "-C"};
       c.parse(2, argv);
       OK(!c.colorful);
    }
@@ -133,13 +132,6 @@ SUITE(h2_option)
       c.parse(3, argv);
       OK("jenkins.xml", c.junit_path);
    }
-
-   Case(tags -t)
-   {
-      const char* argv[] = {"./a.out", "-t", ""};
-      c.parse(3, argv);
-      OK(c.tags_filter);
-   }
 }
 
 SUITE(option filter)
@@ -176,6 +168,38 @@ SUITE(option filter)
       c.parse(5, argv);
       OK(ListOf("http", "tcp"), c.excludes);
       OK(0, counts(c.includes));
+   }
+
+   Case(file include)
+   {
+      const char* argv[] = {"./a.out", "-i", "file=http.cpp", "-i", "f=tcp.cpp"};
+      c.parse(5, argv);
+      OK(ListOf("http.cpp", "tcp.cpp"), c.file_includes);
+      OK(0, counts(c.excludes));
+   }
+
+   Case(suite include)
+   {
+      const char* argv[] = {"./a.out", "-i", "suite=httpd", "su=tcpd"};
+      c.parse(4, argv);
+      OK(ListOf("httpd", "tcpd"), c.suite_includes);
+      OK(0, counts(c.excludes));
+   }
+
+   Case(case include)
+   {
+      const char* argv[] = {"./a.out", "-i", "case=httpd", "cas=tcpd"};
+      c.parse(4, argv);
+      OK(ListOf("httpd", "tcpd"), c.case_includes);
+      OK(0, counts(c.excludes));
+   }
+
+   Case(tags include)
+   {
+      const char* argv[] = {"./a.out", "-i", "tags=httpd", "t=tcpd"};
+      c.parse(4, argv);
+      OK(ListOf("httpd", "tcpd"), c.tags_includes);
+      OK(0, counts(c.excludes));
    }
 }
 

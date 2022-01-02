@@ -23,7 +23,7 @@ def get_date_time():
 
 
 def get_git_commit_hash():
-    return subprocess.check_output(['git', 'rev-parse', '--short', 'HEAD']).decode('ascii').strip()
+    return subprocess.check_output(['git', 'rev-parse', 'HEAD']).decode('ascii').strip()
 
 
 def get_git_branch_tag():
@@ -35,10 +35,7 @@ def get_git_branch_tag():
 
 
 def get_revision():
-    revision = get_date_time() + ' ' + get_git_branch_tag()
-    if len(sys.argv) > 1 and sys.argv[1] == 'release':
-        return revision + ':' + get_git_commit_hash()
-    return revision
+    return get_git_branch_tag() + '/' + get_git_commit_hash()
 
 
 def copy_line(line, f):
@@ -79,6 +76,7 @@ f_h2unit_h.write('/* Apache Licence 2.0 */\n\n')
 f_h2unit_h.write('#ifndef __H2UNIT_H__' + '\n')
 f_h2unit_h.write('#define __H2UNIT_H__' + '\n')
 f_h2unit_h.write('#define H2UNIT_VERSION ' + h2unit_version + '\n')
+f_h2unit_h.write('#define H2UNIT_DATE ' + get_date_time() + '\n')
 f_h2unit_h.write('#define H2UNIT_REVISION ' + get_revision() + '\n')
 with open(os.path.join(build_dir, '../source/h2_unit.cpp'), 'r') as f_h2_unit_cpp:
     merge_files(f_h2_unit_cpp, f_h2unit_h, True)
@@ -92,6 +90,7 @@ f_h2unit_hpp.write('/* Apache Licence 2.0 */\n\n')
 f_h2unit_hpp.write('#ifndef __H2UNIT_HPP__' + '\n')
 f_h2unit_hpp.write('#define __H2UNIT_HPP__' + '\n')
 f_h2unit_hpp.write('#define H2UNIT_VERSION ' + h2unit_version + '\n')
+f_h2unit_hpp.write('#define H2UNIT_DATE ' + get_date_time() + '\n')
 f_h2unit_hpp.write('#define H2UNIT_REVISION ' + get_revision() + '\n')
 with open(os.path.join(build_dir, '../source/h2_unit.hpp'), 'r') as f_h2_unit_hpp:
     merge_files(f_h2_unit_hpp, f_h2unit_hpp, False)

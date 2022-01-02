@@ -22,4 +22,4 @@ static inline const char* quote_if(bool a, const char* t = "\"", const char* f =
 
 /* clang-format off */
 #define h2_singleton(Class) static Class& I() { static Class i; return i; }
-#define h2_array_append(Array, a) for (size_t i = 0; i < sizeof(Array) / sizeof(Array)[0] - 1; ++i) if (!(Array)[i]) { (Array)[i] = (a); break; }
+#define h2_array_append(Array, a) do { for (size_t i = 0; i < sizeof(Array) / sizeof(Array)[0] - 1; ++i) if (!(Array)[i]) { (Array)[i] = (a); break; } } while (0)

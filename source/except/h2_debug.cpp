@@ -37,7 +37,7 @@ static inline bool h2_attach_debugger()
       h2_once_if()
       {
          char cmd[512];
-         ::printf("\nEnter \033[33mpassword\033[0m for connecting \033[33m%s\033[0m. \n", O.os == 'L' ? "GDB" : "LLDB");
+         ::printf("\nEnter \033[33mpassword\033[0m for connecting \033[33m%s\033[0m. \n", O.os == OsMacOS ? "GDB" : "LLDB");
 #if defined __linux
          sprintf(cmd, "sudo gdb --silent -ex cont --pid=%d", (int)getpid());
 #elif defined __APPLE__

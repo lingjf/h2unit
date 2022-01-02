@@ -1,3 +1,7 @@
+#if defined __GNUC__ || defined __clang__
+#pragma GCC diagnostic ignored "-Wunused-variable"
+#pragma GCC diagnostic ignored "-Wunused-function"
+#endif
 #include "../source/h2_unit.cpp"
 
 static const char* empty_set[128] = {nullptr};
@@ -110,71 +114,159 @@ SUITE(filter suite [yes])
 {
    h2::h2_test s1("httpd.cpp:123", "httpd.cpp", 123, "this is asuite [hello world]");
 
-   Case(both empty)
+   static const char* array_not[] = {"not", nullptr};
+
+   Case(all empty)
    {
-      OK(!h2::__filter(&s1, nullptr, empty_set, empty_set, false));
+      OK(!h2::__filter(&s1, nullptr, empty_set, empty_set, empty_set, empty_set, empty_set, empty_set, empty_set, empty_set, empty_set, empty_set));
    }
 
-   Case(both empty by tag)
+   Case(all by file)
    {
-      OK(!h2::__filter(&s1, nullptr, empty_set, empty_set, true));
+      OK(!h2::__filter(&s1, nullptr, array_httpd, empty_set, empty_set, empty_set, empty_set, empty_set, empty_set, empty_set, empty_set, empty_set));
+      OK(h2::__filter(&s1, nullptr, empty_set, array_httpd, empty_set, empty_set, empty_set, empty_set, empty_set, empty_set, empty_set, empty_set));
+
+      OK(h2::__filter(&s1, nullptr, array_not, empty_set, empty_set, empty_set, empty_set, empty_set, empty_set, empty_set, empty_set, empty_set));
+      OK(!h2::__filter(&s1, nullptr, empty_set, array_not, empty_set, empty_set, empty_set, empty_set, empty_set, empty_set, empty_set, empty_set));
    }
 
-   Case(included by file)
+   Case(all by file line)
    {
-      OK(!h2::__filter(&s1, nullptr, array_httpd, array_world, false));
+      OK(!h2::__filter(&s1, nullptr, array_cpp123, empty_set, empty_set, empty_set, empty_set, empty_set, empty_set, empty_set, empty_set, empty_set));
+      OK(h2::__filter(&s1, nullptr, empty_set, array_cpp123, empty_set, empty_set, empty_set, empty_set, empty_set, empty_set, empty_set, empty_set));
    }
 
-   Case(included by file line)
+   Case(all by name)
    {
-      OK(!h2::__filter(&s1, nullptr, array_cpp123, array_world, false));
+      OK(!h2::__filter(&s1, nullptr, array_asuite, empty_set, empty_set, empty_set, empty_set, empty_set, empty_set, empty_set, empty_set, empty_set));
+      OK(h2::__filter(&s1, nullptr, empty_set, array_asuite, empty_set, empty_set, empty_set, empty_set, empty_set, empty_set, empty_set, empty_set));
    }
 
-   Case(included by name)
+   Case(all by tag)
    {
-      OK(!h2::__filter(&s1, nullptr, array_asuite, array_world, false));
+      OK(!h2::__filter(&s1, nullptr, array_hello, empty_set, empty_set, empty_set, empty_set, empty_set, empty_set, empty_set, empty_set, empty_set));
+      OK(h2::__filter(&s1, nullptr, empty_set, array_hello, empty_set, empty_set, empty_set, empty_set, empty_set, empty_set, empty_set, empty_set));
    }
 
-   Case(included by tag)
-   {
-      OK(!h2::__filter(&s1, nullptr, array_hello, empty_set, true));
-   }
-
-   Case(not both)
-   {
-      OK(h2::__filter(&s1, nullptr, array_hello, array_world, false));
-   }
-
-   Case(excluded by file)
-   {
-      OK(h2::__filter(&s1, nullptr, array_hello, array_httpd, false));
-   }
-
-   Case(excluded by file line)
-   {
-      OK(h2::__filter(&s1, nullptr, array_hello, array_cpp123, false));
-   }
-
-   Case(excluded by name)
-   {
-      OK(h2::__filter(&s1, nullptr, array_hello, array_asuite, false));
-   }
-
-   Case(excluded by tag)
-   {
-      OK(h2::__filter(&s1, nullptr, empty_set, array_hello, true));
-   }
-
-   Case(included by wildcard)
+   Case(all by wildcard)
    {
       const char* array_HTTP_tcp[] = {"http*", "tcp", nullptr};
-      const char* array_HELLO_world[] = {"he?lo", "world", nullptr};
       const char* array_SUITE_tcp[] = {"*suite*", "tcp", nullptr};
-      const char* array_udp_tcp[] = {"udp", "tcp", nullptr};
+      const char* array_HELLO_world[] = {"he?lo", "world", nullptr};
 
-      OK(!h2::__filter(&s1, nullptr, array_HTTP_tcp, array_HELLO_world, false));
-      OK(!h2::__filter(&s1, nullptr, array_SUITE_tcp, array_HELLO_world, false));
-      OK(!h2::__filter(&s1, nullptr, array_HELLO_world, array_udp_tcp, true));
+      OK(!h2::__filter(&s1, nullptr, array_HTTP_tcp, empty_set, empty_set, empty_set, empty_set, empty_set, empty_set, empty_set, empty_set, empty_set));
+      OK(h2::__filter(&s1, nullptr, empty_set, array_HTTP_tcp, empty_set, empty_set, empty_set, empty_set, empty_set, empty_set, empty_set, empty_set));
+
+      OK(!h2::__filter(&s1, nullptr, array_SUITE_tcp, empty_set, empty_set, empty_set, empty_set, empty_set, empty_set, empty_set, empty_set, empty_set));
+      OK(h2::__filter(&s1, nullptr, empty_set, array_SUITE_tcp, empty_set, empty_set, empty_set, empty_set, empty_set, empty_set, empty_set, empty_set));
+
+      OK(!h2::__filter(&s1, nullptr, array_HELLO_world, empty_set, empty_set, empty_set, empty_set, empty_set, empty_set, empty_set, empty_set, empty_set));
+      OK(h2::__filter(&s1, nullptr, empty_set, array_HELLO_world, empty_set, empty_set, empty_set, empty_set, empty_set, empty_set, empty_set, empty_set));
+   }
+
+   Case(by file)
+   {
+      OK(!h2::__filter(&s1, nullptr,
+                       empty_set, empty_set,    // all
+                       array_httpd, empty_set,  // file
+                       empty_set, empty_set,    // suite
+                       empty_set, empty_set,    // case
+                       empty_set, empty_set     // tags
+                       ));
+
+      OK(h2::__filter(&s1, nullptr,
+                      empty_set, empty_set,    // all
+                      empty_set, array_httpd,  // file
+                      empty_set, empty_set,    // suite
+                      empty_set, empty_set,    // case
+                      empty_set, empty_set     // tags
+                      ));
+
+      OK(h2::__filter(&s1, nullptr,
+                      empty_set, empty_set,  // all
+                      array_not, empty_set,  // file
+                      empty_set, empty_set,  // suite
+                      empty_set, empty_set,  // case
+                      empty_set, empty_set   // tags
+                      ));
+
+      OK(!h2::__filter(&s1, nullptr,
+                       empty_set, empty_set,  // all
+                       empty_set, array_not,  // file
+                       empty_set, empty_set,  // suite
+                       empty_set, empty_set,  // case
+                       empty_set, empty_set   // tags
+                       ));
+   }
+
+   Case(by suite)
+   {
+      OK(!h2::__filter(&s1, nullptr,
+                       empty_set, empty_set,     // all
+                       empty_set, empty_set,     // file
+                       array_asuite, empty_set,  // suite
+                       empty_set, empty_set,     // case
+                       empty_set, empty_set      // tags
+                       ));
+
+      OK(h2::__filter(&s1, nullptr,
+                      empty_set, empty_set,     // all
+                      empty_set, empty_set,     // file
+                      empty_set, array_asuite,  // suite
+                      empty_set, empty_set,     // case
+                      empty_set, empty_set      // tags
+                      ));
+
+      OK(h2::__filter(&s1, nullptr,
+                      empty_set, empty_set,  // all
+                      empty_set, empty_set,  // file
+                      array_not, empty_set,  // suite
+                      empty_set, empty_set,  // case
+                      empty_set, empty_set   // tags
+                      ));
+
+      OK(!h2::__filter(&s1, nullptr,
+                       empty_set, empty_set,  // all
+                       empty_set, empty_set,  // file
+                       empty_set, array_not,  // suite
+                       empty_set, empty_set,  // case
+                       empty_set, empty_set   // tags
+                       ));
+   }
+
+   Case(by tags)
+   {
+      OK(!h2::__filter(&s1, nullptr,
+                       empty_set, empty_set,   // all
+                       empty_set, empty_set,   // file
+                       empty_set, empty_set,   // suite
+                       empty_set, empty_set,   // case
+                       array_hello, empty_set  // tags
+                       ));
+
+      OK(h2::__filter(&s1, nullptr,
+                      empty_set, empty_set,   // all
+                      empty_set, empty_set,   // file
+                      empty_set, empty_set,   // suite
+                      empty_set, empty_set,   // case
+                      empty_set, array_hello  // tags
+                      ));
+
+      OK(h2::__filter(&s1, nullptr,
+                      empty_set, empty_set,  // all
+                      empty_set, empty_set,  // file
+                      empty_set, empty_set,  // suite
+                      empty_set, empty_set,  // case
+                      array_not, empty_set   // tags
+                      ));
+
+      OK(!h2::__filter(&s1, nullptr,
+                       empty_set, empty_set,  // all
+                       empty_set, empty_set,  // file
+                       empty_set, empty_set,  // suite
+                       empty_set, empty_set,  // case
+                       empty_set, array_not   // tags
+                       ));
    }
 }
 
@@ -183,85 +275,254 @@ SUITE(filter case [yes])
    h2::h2_test s1("httpd.cpp:123", "httpd.cpp", 123, "this is asuite [hello server]");
    h2::h2_test c1("httpd.cpp:456", "httpd.cpp", 456, "this is acase [hello listen]");
 
-   Case(both empty)
+   Case(all empty)
    {
-      OK(!h2::__filter(&s1, &c1, empty_set, empty_set, false));
+      OK(!h2::__filter(&s1, &c1,
+                       empty_set, empty_set,  // all
+                       empty_set, empty_set,  // file
+                       empty_set, empty_set,  // suite
+                       empty_set, empty_set,  // case
+                       empty_set, empty_set   // tags
+                       ));
    }
 
-   Case(both empty by tag)
+   Case(all by file)
    {
-      OK(!h2::__filter(&s1, &c1, empty_set, empty_set, true));
+      OK(!h2::__filter(&s1, &c1,
+                       array_httpd, empty_set,  // all
+                       empty_set, empty_set,    // file
+                       empty_set, empty_set,    // suite
+                       empty_set, empty_set,    // case
+                       empty_set, empty_set     // tags
+                       ));
+
+      OK(h2::__filter(&s1, &c1,
+                      empty_set, array_httpd,  // all
+                      empty_set, empty_set,    // file
+                      empty_set, empty_set,    // suite
+                      empty_set, empty_set,    // case
+                      empty_set, empty_set     // tags
+                      ));
    }
 
-   Case(included by file)
+   Case(all by suite file line)
    {
-      OK(!h2::__filter(&s1, &c1, array_httpd, array_world, false));
+      OK(!h2::__filter(&s1, &c1,
+                       array_cpp123, empty_set,  // all
+                       empty_set, empty_set,     // file
+                       empty_set, empty_set,     // suite
+                       empty_set, empty_set,     // case
+                       empty_set, empty_set      // tags
+                       ));
+
+      OK(h2::__filter(&s1, &c1,
+                      empty_set, array_cpp123,  // all
+                      empty_set, empty_set,     // file
+                      empty_set, empty_set,     // suite
+                      empty_set, empty_set,     // case
+                      empty_set, empty_set      // tags
+                      ));
    }
 
-   Case(included by file line)
-   {
-      OK(h2::__filter(&s1, &c1, array_cpp123, array_world, false));
-   }
-
-   Case(included by case file line)
+   Case(all by case file line)
    {
       const char* array_cpp456[] = {"cpp:456", nullptr};
 
-      OK(!h2::__filter(&s1, &c1, array_cpp456, array_world, false));
+      OK(!h2::__filter(&s1, &c1,
+                       array_cpp456, empty_set,  // all
+                       empty_set, empty_set,     // file
+                       empty_set, empty_set,     // suite
+                       empty_set, empty_set,     // case
+                       empty_set, empty_set      // tags
+                       ));
+
+      OK(h2::__filter(&s1, &c1,
+                      empty_set, array_cpp456,  // all
+                      empty_set, empty_set,     // file
+                      empty_set, empty_set,     // suite
+                      empty_set, empty_set,     // case
+                      empty_set, empty_set      // tags
+                      ));
    }
 
-   Case(included by suite name)
+   Case(all by suite name)
    {
-      OK(!h2::__filter(&s1, &c1, array_asuite, array_world, false));
+      OK(!h2::__filter(&s1, &c1,
+                       array_asuite, empty_set,  // all
+                       empty_set, empty_set,     // file
+                       empty_set, empty_set,     // suite
+                       empty_set, empty_set,     // case
+                       empty_set, empty_set      // tags
+                       ));
+
+      OK(h2::__filter(&s1, &c1,
+                      empty_set, array_asuite,  // all
+                      empty_set, empty_set,     // file
+                      empty_set, empty_set,     // suite
+                      empty_set, empty_set,     // case
+                      empty_set, empty_set      // tags
+                      ));
    }
 
-   Case(included by case name)
+   Case(all by case name)
    {
-      OK(!h2::__filter(&s1, &c1, array_acase, array_world, false));
+      OK(!h2::__filter(&s1, &c1,
+                       array_acase, empty_set,  // all
+                       empty_set, empty_set,    // file
+                       empty_set, empty_set,    // suite
+                       empty_set, empty_set,    // case
+                       empty_set, empty_set     // tags
+                       ));
+
+      OK(h2::__filter(&s1, &c1,
+                      empty_set, array_acase,  // all
+                      empty_set, empty_set,    // file
+                      empty_set, empty_set,    // suite
+                      empty_set, empty_set,    // case
+                      empty_set, empty_set     // tags
+                      ));
    }
 
-   Case(included by suite tag)
+   Case(all by suite tag)
    {
       const char* array_server[] = {"server", nullptr};
-      OK(!h2::__filter(&s1, &c1, array_server, empty_set, true));
+
+      OK(!h2::__filter(&s1, &c1,
+                       array_server, empty_set,  // all
+                       empty_set, empty_set,     // file
+                       empty_set, empty_set,     // suite
+                       empty_set, empty_set,     // case
+                       empty_set, empty_set      // tags
+                       ));
+
+      OK(h2::__filter(&s1, &c1,
+                      empty_set, array_server,  // all
+                      empty_set, empty_set,     // file
+                      empty_set, empty_set,     // suite
+                      empty_set, empty_set,     // case
+                      empty_set, empty_set      // tags
+                      ));
    }
 
-   Case(included by case tag)
+   Case(all by case tag)
    {
       const char* array_listen[] = {"listen", nullptr};
 
-      OK(!h2::__filter(&s1, &c1, array_listen, empty_set, true));
+      OK(!h2::__filter(&s1, &c1,
+                       array_listen, empty_set,  // all
+                       empty_set, empty_set,     // file
+                       empty_set, empty_set,     // suite
+                       empty_set, empty_set,     // case
+                       empty_set, empty_set      // tags
+                       ));
+
+      OK(h2::__filter(&s1, &c1,
+                      empty_set, array_listen,  // all
+                      empty_set, empty_set,     // file
+                      empty_set, empty_set,     // suite
+                      empty_set, empty_set,     // case
+                      empty_set, empty_set      // tags
+                      ));
    }
 
-   Case(not both)
+   Case(by case file line)
    {
-      OK(h2::__filter(&s1, &c1, array_hello, array_world, false));
+      const char* array_cpp456[] = {"cpp:456", nullptr};
+
+      OK(!h2::__filter(&s1, &c1,
+                       empty_set, empty_set,     // all
+                       array_cpp456, empty_set,  // file
+                       empty_set, empty_set,     // suite
+                       empty_set, empty_set,     // case
+                       empty_set, empty_set      // tags
+                       ));
+
+      OK(h2::__filter(&s1, &c1,
+                      empty_set, empty_set,     // all
+                      empty_set, array_cpp456,  // file
+                      empty_set, empty_set,     // suite
+                      empty_set, empty_set,     // case
+                      empty_set, empty_set      // tags
+                      ));
    }
 
-   Case(excluded by case file)
+   Case(by suite name)
    {
-      OK(h2::__filter(&s1, &c1, array_hello, array_httpd, false));
+      OK(!h2::__filter(&s1, &c1,
+                       empty_set, empty_set,     // all
+                       empty_set, empty_set,     // file
+                       array_asuite, empty_set,  // suite
+                       empty_set, empty_set,     // case
+                       empty_set, empty_set      // tags
+                       ));
+
+      OK(h2::__filter(&s1, &c1,
+                      empty_set, empty_set,     // all
+                      empty_set, empty_set,     // file
+                      empty_set, array_asuite,  // suite
+                      empty_set, empty_set,     // case
+                      empty_set, empty_set      // tags
+                      ));
    }
 
-   Case(excluded by suite tag)
+   Case(by case name)
+   {
+      OK(!h2::__filter(&s1, &c1,
+                       empty_set, empty_set,    // all
+                       empty_set, empty_set,    // file
+                       empty_set, empty_set,    // suite
+                       array_acase, empty_set,  // case
+                       empty_set, empty_set     // tags
+                       ));
+
+      OK(h2::__filter(&s1, &c1,
+                      empty_set, empty_set,    // all
+                      empty_set, empty_set,    // file
+                      empty_set, empty_set,    // suite
+                      empty_set, array_acase,  // case
+                      empty_set, empty_set     // tags
+                      ));
+   }
+
+   Case(by suite tag)
    {
       const char* array_server[] = {"server", nullptr};
 
-      OK(h2::__filter(&s1, &c1, array_httpd, array_server, true));
+      OK(!h2::__filter(&s1, &c1,
+                       empty_set, empty_set,    // all
+                       empty_set, empty_set,    // file
+                       empty_set, empty_set,    // suite
+                       empty_set, empty_set,    // case
+                       array_server, empty_set  // tags
+                       ));
+
+      OK(h2::__filter(&s1, &c1,
+                      empty_set, empty_set,    // all
+                      empty_set, empty_set,    // file
+                      empty_set, empty_set,    // suite
+                      empty_set, empty_set,    // case
+                      empty_set, array_server  // tags
+                      ));
    }
 
-   Case(excluded by case tag)
+   Case(by case tag)
    {
       const char* array_listen[] = {"listen", nullptr};
 
-      OK(h2::__filter(&s1, &c1, array_httpd, array_listen, true));
+      OK(!h2::__filter(&s1, &c1,
+                       empty_set, empty_set,    // all
+                       empty_set, empty_set,    // file
+                       empty_set, empty_set,    // suite
+                       empty_set, empty_set,    // case
+                       array_listen, empty_set  // tags
+                       ));
+
+      OK(h2::__filter(&s1, &c1,
+                      empty_set, empty_set,    // all
+                      empty_set, empty_set,    // file
+                      empty_set, empty_set,    // suite
+                      empty_set, empty_set,    // case
+                      empty_set, array_listen  // tags
+                      ));
    }
-}
-
-CASE(filter [yes])
-{
-   h2::h2_test s1("httpd.cpp:123", "httpd.cpp", 123, "this is asuite [hello server]");
-   h2::h2_test c1("httpd.cpp:456", "httpd.cpp", 456, "this is acase [hello listen]");
-
-   OK(!h2::__filter(&s1, &c1, empty_includes, empty_excludes, false));
 }

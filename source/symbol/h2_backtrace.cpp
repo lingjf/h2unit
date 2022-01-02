@@ -15,7 +15,7 @@ static inline char* addr2line(unsigned long long addr)
       ::pclose(f);
    }
    if (!ret) return nullptr;
-   if (O.os == 'm' ? !memcmp(buf, "0x", 2) : !!strstr(buf, "??:")) return nullptr;
+   if (O.os == OsMacOS ? !memcmp(buf, "0x", 2) : !!strstr(buf, "??:")) return nullptr;
    *(char*)strip_right(buf) = '\0';
 #endif
    return buf;
@@ -132,7 +132,7 @@ h2_inline void h2_backtrace::print(h2_vector<h2_string>& stacks) const
    for (int i = shift; i < count; ++i) {
       char *p = nullptr, mangle_name[1024] = "", demangle_name[1024] = "";
       backtrace_extract(symbols[i], mangle_name);
-      if (O.verbose >= VerboseDetail || O.os != 'm') p = addr2line(h2_load::ptr_to_addr(frames[i])); /* atos is slow */
+      if (O.verbose >= VerboseDetail || O.os != OsMacOS) p = addr2line(h2_load::ptr_to_addr(frames[i])); /* atos is slow */
       if (!p) p = h2_cxa::demangle(mangle_name, demangle_name);
       if (!p || !strlen(p)) {
          p = symbols[i];

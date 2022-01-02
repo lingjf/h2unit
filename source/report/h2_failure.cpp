@@ -72,13 +72,16 @@ struct h2_fail_unexpect : h2_fail {
    }
    void print_OK2(const char* type, h2_line& line)
    {
+      static const char* R_Arrows[] = {"==>", "»", "⇛", "⟹  ", "⇒ "};  // →►
+      static const char* L_Arrows[] = {"<==", "«", "⇚", "⟸  ", "⇐ "};  // ←◄
+      static constexpr int Arrow = 3;
       h2_line e, a;
       if (!expection.width()) {
          e = h2_line(e_expression).abbreviate(10000, 3).gray_quote().brush("green");
       } else if (is_synonym(e_expression, expection.string())) {
          e = h2_line(e_expression).abbreviate(10000, 3).brush("green");
       } else {
-         e = h2_line(e_expression).abbreviate(O.verbose >= VerboseDetail ? 10000 : 120, 3).gray_quote().brush("cyan") + gray("==>") + expection.abbreviate(10000, 3).brush("green");
+         e = h2_line(e_expression).abbreviate(O.verbose >= VerboseDetail ? 10000 : 120, 3).gray_quote().brush("cyan") + gray(R_Arrows[Arrow]) + expection.abbreviate(10000, 3).brush("green");
       }
 
       if (!represent.width()) {
@@ -86,7 +89,7 @@ struct h2_fail_unexpect : h2_fail {
       } else if (is_synonym(a_expression, represent.string()) || !a_expression.length()) {
          a = represent.abbreviate(10000, 3).brush("bold,red");
       } else {
-         a = represent.abbreviate(10000, 3).brush("bold,red") + gray("<==") + h2_line(a_expression).abbreviate(O.verbose >= VerboseDetail ? 10000 : 120, 3).gray_quote().brush("cyan");
+         a = represent.abbreviate(10000, 3).brush("bold,red") + gray(L_Arrows[Arrow]) + h2_line(a_expression).abbreviate(O.verbose >= VerboseDetail ? 10000 : 120, 3).gray_quote().brush("cyan");
       }
 
       line += type + gray("(") + e + " " + assert_op + " " + a + gray(")");

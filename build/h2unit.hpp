@@ -5,7 +5,8 @@
 #ifndef __H2UNIT_HPP__
 #define __H2UNIT_HPP__
 #define H2UNIT_VERSION 5.17
-#define H2UNIT_REVISION 2022-01-02 branches/v5
+#define H2UNIT_DATE 2022-01-02
+#define H2UNIT_REVISION branches/v5/9b29b4d30ff8a25bf1c579e0b260ac68e123ef78
 #ifndef __H2_UNIT_HPP__
 #define __H2_UNIT_HPP__
 
@@ -637,7 +638,7 @@ static inline const char* quote_if(bool a, const char* t = "\"", const char* f =
 
 /* clang-format off */
 #define h2_singleton(Class) static Class& I() { static Class i; return i; }
-#define h2_array_append(Array, a) for (size_t i = 0; i < sizeof(Array) / sizeof(Array)[0] - 1; ++i) if (!(Array)[i]) { (Array)[i] = (a); break; }
+#define h2_array_append(Array, a) do { for (size_t i = 0; i < sizeof(Array) / sizeof(Array)[0] - 1; ++i) if (!(Array)[i]) { (Array)[i] = (a); break; } } while (0)
 // source/utils/h2_libc.hpp
 struct h2_libc {
    static void* malloc(size_t size);
@@ -1113,7 +1114,7 @@ struct h2_fail : h2_libc {
    static h2_fail* new_symbol(const h2_string& symbol, const h2_vector<h2_string>& candidates, const h2_line& explain = {});
 };
 // source/option/h2_option.hpp
-
+static constexpr int OsLinux = 0x11, OsMacOS = 0x12, OsWindows = 0x20;
 static constexpr int VerboseQuiet = 0, VerboseCompactFailed = 1, VerboseCompactWarning = 2, VerboseCompactPassed = 3, VerboseNormal = 4, VerboseDetail = 5;
 static constexpr int ShuffleCode = 0x0, ShuffleRandom = 0x10, ShuffleName = 0x100, ShuffleFile = 0x1000, ShuffleReverse = 0x10000;
 static constexpr int ListNone = 0x0, ListSuite = 0x10, ListCase = 0x100, ListTodo = 0x1000, ListTags = 0x10000;
@@ -1123,11 +1124,11 @@ struct h2_option {
    h2_singleton(h2_option);
 
 #if defined __linux
-   static constexpr char os = 'L';
+   static constexpr int os = OsLinux;
 #elif defined __APPLE__
-   static constexpr char os = 'm';
+   static constexpr int os = OsMacOS;
 #elif defined _WIN32 || defined __CYGWIN__  // +MinGW
-   static constexpr char os = 'W';
+   static constexpr int os = OsWindows;
 #endif
 
    char args[256];
@@ -1138,8 +1139,7 @@ struct h2_option {
    bool memory_check = true;
    bool continue_assert = false;
    bool debugger_trap = false;
-   bool quit_exit_code = false;
-   bool tags_filter = false;
+   bool exit_with_fails = false;
    bool as_waring_exception = false;
    bool as_waring_uncaught = false;
    bool as_waring_memory_leak = false;
@@ -1155,6 +1155,10 @@ struct h2_option {
    const char* json_source_quote = "";
    char junit_path[256]{'\0'};
    const char *includes[128]{nullptr}, *excludes[128]{nullptr};
+   const char *file_includes[128]{nullptr}, *file_excludes[128]{nullptr};
+   const char *suite_includes[128]{nullptr}, *suite_excludes[128]{nullptr};
+   const char *case_includes[128]{nullptr}, *case_excludes[128]{nullptr};
+   const char *tags_includes[128]{nullptr}, *tags_excludes[128]{nullptr};
 
    void parse(int argc, const char** argv);
 };

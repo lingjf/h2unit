@@ -1,3 +1,5 @@
+# h₂unit
+
 <a id="top"></a>
 [![Release](https://img.shields.io/github/release/lingjf/h2unit.svg)](https://github.com/lingjf/h2unit/releases)
 [![CI](https://github.com/lingjf/h2unit/actions/workflows/ci.yml/badge.svg)](https://github.com/lingjf/h2unit/actions/workflows/ci.yml)
@@ -14,18 +16,18 @@
 [![Arch](https://img.shields.io/badge/arch-x86_amd64_aarch64-blue.svg)]()
 
 
-## What's h2unit
+## What's h₂unit
 
-*H2UNIT* is a [xUnit](https://en.wikipedia.org/wiki/XUnit) unit test framework for C/C++, a light-weight framework as light as chemical hydrogen.
+*H₂UNIT* is a [xUnit](https://en.wikipedia.org/wiki/XUnit) unit test framework for C/C++, a light-weight framework as light as chemical hydrogen.
 
 
 ## How to use it
 
-* [Tutorial](doc/tutorial.md) - getting started
-* [Options](doc/options.md) - executable options
-* [Reference](doc/reference.md) - primitives manual
-* [Matcher](doc/matcher.md) - Matcher primitives manual
-* [Frequently asked questions](doc/faq.md)
+* [Tutorial](document/tutorial.md) - getting started
+* [Options](document/options.md) - executable options
+* [Reference](document/reference.md) - primitives manual
+* [Matcher](document/matcher.md) - Matcher primitives manual
+* [Frequently asked questions](document/faq.md)
 
 Example is a helpful manual document.
 
@@ -110,7 +112,7 @@ Expect foobar called with *a* equals *1*, *b* equals *"A"* *1 time* in this case
 ### 3. JSON Compare
 
 
-![run result](doc/.assets/json_compare.png)
+![run result](document/.assets/json_compare.png)
 
 
 ### 4. Matcher

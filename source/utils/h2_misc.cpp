@@ -29,6 +29,13 @@ static inline unsigned mask2n(unsigned x)
    return x;
 }
 
+static inline char* strcpyn(char* dst, const char* src, size_t len)
+{
+   strncpy(dst, src, len);
+   dst[len] = '\0';
+   return dst;
+}
+
 static inline const char* strip_left(const char* left, const char* right = nullptr)  // [left, right)
 {
    while ((right ? left < right : true) && *left && ::isspace(*left)) ++left;
