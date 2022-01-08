@@ -5,8 +5,8 @@
 #ifndef __H2UNIT_H__
 #define __H2UNIT_H__
 #define H2UNIT_VERSION 5.17
-#define H2UNIT_DATE 2022-01-02
-#define H2UNIT_REVISION branches/v5/9b29b4d30ff8a25bf1c579e0b260ac68e123ef78
+#define H2UNIT_DATE 2022-01-08
+#define H2UNIT_REVISION branches/v5/5a55c718bc22ba52bd4500997b2df18939996efa
 #ifndef __H2_UNIT_HPP__
 #define __H2_UNIT_HPP__
 
@@ -645,6 +645,8 @@ struct h2_libc {
    static void free(void* ptr);
    static void* operator new(std::size_t size) { return malloc(size); }
    static void operator delete(void* ptr) { free(ptr); }
+
+   static int write(int fd, const void* buf, size_t count);
 };
 // source/utils/h2_shared_ptr.hpp
 template <typename T>
@@ -4193,6 +4195,7 @@ H2MATCHER(IsNaN) { return std::isnan(a); }
 
 #if defined __linux || defined __APPLE__  // -MSVC -Cygwin -MinGW
 #include <execinfo.h>                     /* backtrace, backtrace_symbols */
+#include <sys/syscall.h>                  /* syscall */
 #endif
 
 #if defined __GLIBC__
@@ -4247,12 +4250,6 @@ H2MATCHER(IsNaN) { return std::isnan(a); }
 #if defined __APPLE__
 #include <AvailabilityMacros.h>
 #include <malloc/malloc.h> /* malloc_zone_t */
-#endif
-
-#if defined _WIN32  // +MinGW
-#define LIBC__write ::_write
-#else
-#define LIBC__write ::write
 #endif
 
 #if defined _MSC_VER
@@ -4790,6 +4787,27 @@ h2_inline void h2_libc::free(void* ptr)
    if (!O.memory_check) return ::free(ptr);
    if (ptr) h2_libc_malloc::I().free(ptr);
 }
+
+#if defined _WIN32  // +MinGW
+#define H2_LIBC_WRITE ::_write
+#else
+#define H2_LIBC_WRITE ::write
+#endif
+
+#if defined _WIN32 || defined __CYGWIN__  // +MinGW
+#define H2_LIBC_STDOUT -21371647
+#else
+#define H2_LIBC_STDOUT fileno(stdout)
+#endif
+
+h2_inline int h2_libc::write(int fd, const void* buf, size_t count)
+{
+#if defined __linux || defined __APPLE__
+   return ::syscall(SYS_write, fd, buf, count);
+#else
+   return H2_LIBC_WRITE(fd, buf, count);  // +Cygwin
+#endif
+}
 // source/utils/h2_string.cpp
 static inline size_t utf8len(const char* s)
 {
@@ -4976,7 +4994,7 @@ struct h2_color {
          if (current[i][0] != '\0')
             p += sprintf(p, "%d;", style2value(current[i]));
       *(p - 1) = 'm';
-      LIBC__write(-21371647, a, (size_t)(p - a));
+      h2_libc::write(H2_LIBC_STDOUT, a, (size_t)(p - a));
    }
    void parse(const char* style)
    {
@@ -4998,7 +5016,7 @@ struct h2_color {
             I().parse(str);
             I().change();
          }
-      } else LIBC__write(-21371647, str, strlen(str));
+      } else h2_libc::write(H2_LIBC_STDOUT, str, strlen(str));
    }
    int style2value(const char* style)  // https://en.wikipedia.org/wiki/ANSI_escape_code#CSI_sequences
    {
@@ -5295,12 +5313,14 @@ struct h2_stdio {
    static ssize_t write(int fd, const void* buf, size_t count)
    {
       if (O.verbose >= VerboseNormal || (fd != fileno(stdout) && fd != fileno(stderr))) {
-         h2::h2_stub_temporary_restore _((void*)LIBC__write);
+#if defined _WIN32 || defined __CYGWIN__  // +MinGW
+         h2::h2_stub_temporary_restore _((void*)H2_LIBC_WRITE);
+#endif  // Linux/macOS low level IO is syscall
          if ((fd == fileno(stdout) || fd == fileno(stderr)) && h2_report::I().backable) {
-            LIBC__write(fd, "\n", 1);  // fall printf/cout into new line from report title
+            h2_libc::write(fd, "\n", 1);  // fall printf/cout into new line from report title
             h2_report::I().backable = false;
          }
-         LIBC__write(fd == -21371647 ? fileno(stdout) : fd, buf, count);
+         h2_libc::write(fd == -21371647 ? fileno(stdout) : fd, buf, count);
          if (fd == fileno(stdout) || fd == fileno(stderr)) I().capture_length += count;
       }
       if ((I().stdout_capturable && fd == fileno(stdout)) || (I().stderr_capturable && fd == fileno(stderr))) I().buffer->append((char*)buf, count);
@@ -5413,7 +5433,7 @@ struct h2_stdio {
       std::cerr.rdbuf(&sb_err);
       std::clog.rdbuf(&sb_err); /* print to stderr */
 #endif
-      h2_stubs::add(stubs, (void*)LIBC__write, (void*)write, "write", H2_FILINE);
+      h2_stubs::add(stubs, (void*)H2_LIBC_WRITE, (void*)write, "write", H2_FILINE);
 #if !defined _WIN32
       h2_stubs::add(stubs, (void*)::syslog, (void*)syslog, "syslog", H2_FILINE);
       h2_stubs::add(stubs, (void*)::vsyslog, (void*)vsyslog, "vsyslog", H2_FILINE);
@@ -5448,7 +5468,7 @@ h2_inline h2_cout::~h2_cout()
    h2_fail* fail = m.matches(h2_stdio::I().stop_capture(), 0);
    if (fail) {
       fail->filine = filine;
-      fail->assert_type = "OK";
+      fail->assert_type = "OK2";
       fail->e_expression = e;
       fail->a_expression = "";
       fail->explain = "COUT";

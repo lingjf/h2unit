@@ -29,7 +29,7 @@ struct h2_color {
          if (current[i][0] != '\0')
             p += sprintf(p, "%d;", style2value(current[i]));
       *(p - 1) = 'm';
-      LIBC__write(-21371647, a, (size_t)(p - a));
+      h2_libc::write(H2_LIBC_STDOUT, a, (size_t)(p - a));
    }
    void parse(const char* style)
    {
@@ -51,7 +51,7 @@ struct h2_color {
             I().parse(str);
             I().change();
          }
-      } else LIBC__write(-21371647, str, strlen(str));
+      } else h2_libc::write(H2_LIBC_STDOUT, str, strlen(str));
    }
    int style2value(const char* style)  // https://en.wikipedia.org/wiki/ANSI_escape_code#CSI_sequences
    {

@@ -7,7 +7,7 @@ on:
 
 jobs:
 
-  linux-gcc:
+  a-linux-gcc:
     name: ✨ linux-gcc
     runs-on: ubuntu-latest
     steps:
@@ -83,7 +83,7 @@ jobs:
       - name: show coverage report
         run: python -m json.tool ./example/coverage.json
 
-  macos-clang:
+  a-macos-clang:
     name: ✨ macos-clang
     runs-on: macos-latest
     steps:
@@ -146,7 +146,7 @@ jobs:
       - name: ninja run
         run: cd example && ./a.out
 
-  windows-msvc:
+  a-windows-msvc:
     name: ✨ windows-msvc
     runs-on: windows-latest
     steps:
@@ -217,7 +217,7 @@ jobs:
       - name: ✨ run test/release with memory check
         run: cd release_test && ./a.out.exe # fails
 
-  msys2:
+  b-msys2:
     runs-on: windows-latest
     strategy:
       fail-fast: false
@@ -343,7 +343,7 @@ jobs:
       - name: ✨ run test with memory check
         run: cd test && ./test.exe -sCpvxo
 
-  linux-qemu:
+  b-linux-qemu:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -473,7 +473,7 @@ jobs:
       - name: ✨ run test with memory check
         run: LD_BIND_NOW=1 ./ci_test/a.out -sCpvxo
 
-  wsl:
+  b-wsl:
     runs-on: windows-latest
     strategy:
       fail-fast: false
@@ -662,3 +662,40 @@ jobs:
         run: cmake --build ci_test -j2
       - name: ✨ run test
         run: ./ci_test/a.out.exe -sCpvxo -e pthread
+
+  docker:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # https://hub.docker.com/_/gcc
+          - {image: "gcc", ver: "5", cc: 'gcc', cxx: 'g++'}
+          - {image: "gcc", ver: "6", cc: 'gcc', cxx: 'g++'}
+          - {image: "gcc", ver: "7", cc: 'gcc', cxx: 'g++'}
+          - {image: "gcc", ver: "8", cc: 'gcc', cxx: 'g++'}
+          - {image: "gcc", ver: "9", cc: 'gcc', cxx: 'g++'}
+          - {image: "gcc", ver: "10", cc: 'gcc', cxx: 'g++'}
+          - {image: "gcc", ver: "11", cc: 'gcc', cxx: 'g++'}
+          # https://hub.docker.com/r/silkeh/clang
+          - {image: "silkeh/clang", ver: "4", cc: 'clang', cxx: 'clang++'}
+          - {image: "silkeh/clang", ver: "5", cc: 'clang', cxx: 'clang++'}
+          - {image: "silkeh/clang", ver: "6", cc: 'clang', cxx: 'clang++'}
+          - {image: "silkeh/clang", ver: "7", cc: 'clang', cxx: 'clang++'}
+          - {image: "silkeh/clang", ver: "8", cc: 'clang', cxx: 'clang++'}
+          - {image: "silkeh/clang", ver: "9", cc: 'clang', cxx: 'clang++'}
+          - {image: "silkeh/clang", ver: "10", cc: 'clang', cxx: 'clang++'}
+          - {image: "silkeh/clang", ver: "11", cc: 'clang', cxx: 'clang++'}
+          - {image: "silkeh/clang", ver: "12", cc: 'clang', cxx: 'clang++'}
+          - {image: "silkeh/clang", ver: "latest", cc: 'clang', cxx: 'clang++'}
+    name: docker-${{matrix.cc}}-${{matrix.ver}}
+    container:
+      image: ${{matrix.image}}:${{matrix.ver}}
+    steps:
+      - uses: actions/checkout@v2
+      - name: ${{matrix.cxx}} version
+        run: ${{matrix.cxx}} --version
+      - name: build starter
+        run: cd starter && ${{matrix.cxx}} -std=c++11 -I.. fibonacci.cpp test_fibonacci.cpp
+      - name: 🔨 run starter
+        run: ./starter/a.out
