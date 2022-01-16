@@ -174,6 +174,7 @@ h2_inline int h2_runner::main(int argc, const char** argv)
    h2_stubs::clear(stubs);
    h2_mocks::clear(mocks, false);
    h2_memory::finalize();
+   h2_stdio::finalize();
    return O.exit_with_fails ? stats.failed : 0;
 }
 

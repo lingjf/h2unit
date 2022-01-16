@@ -5,8 +5,8 @@
 #ifndef __H2UNIT_HPP__
 #define __H2UNIT_HPP__
 #define H2UNIT_VERSION 5.17
-#define H2UNIT_DATE 2022-01-08
-#define H2UNIT_REVISION branches/v5/5a55c718bc22ba52bd4500997b2df18939996efa
+#define H2UNIT_DATE 2022-01-16
+#define H2UNIT_REVISION branches/v5/c5a1deb0c82bcd46f9459266dee49f117e728102
 #ifndef __H2_UNIT_HPP__
 #define __H2_UNIT_HPP__
 

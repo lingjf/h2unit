@@ -7,7 +7,7 @@ on:
 
 jobs:
 
-  a-linux-gcc:
+  linux-gcc:
     name: ✨ linux-gcc
     runs-on: ubuntu-latest
     steps:
@@ -76,6 +76,12 @@ jobs:
         run: cd release_test && LD_BIND_NOW=1 ./a.out -s -p -m -v -x -e tag=memory_check
       - name: ✨ run test/release with memory check
         run: cd release_test && LD_BIND_NOW=1 ./a.out -sCpvxo -r -e h2_once
+      - name: configure testing
+        run: cd testing && cmake .
+      - name: 🏗️ build testing
+        run: cd testing && cmake --build . -j2
+      - name: run testing
+        run: cd testing && python test.py
       - name: install coverage tools
         run: pip3 install gcovr
       - name: build and run example
@@ -83,7 +89,7 @@ jobs:
       - name: show coverage report
         run: python -m json.tool ./example/coverage.json
 
-  a-macos-clang:
+  macos-clang:
     name: ✨ macos-clang
     runs-on: macos-latest
     steps:
@@ -140,13 +146,19 @@ jobs:
         run: cd release_test && LD_BIND_NOW=1 ./a.out -s -p -m -v -x -e tag=memory_check
       - name: ✨ run test/release with memory check
         run: cd release_test && LD_BIND_NOW=1 ./a.out -sCpvxo -r -e h2_once
+      - name: configure testing
+        run: cd testing && cmake .
+      - name: 🏗️ build testing
+        run: cd testing && cmake --build . -j2
+      - name: run testing
+        run: cd testing && python test.py
       - uses: seanmiddleditch/gha-setup-ninja@master
       - name: ninja build
         run: cd example && ninja
       - name: ninja run
         run: cd example && ./a.out
 
-  a-windows-msvc:
+  windows-msvc:
     name: ✨ windows-msvc
     runs-on: windows-latest
     steps:
@@ -217,7 +229,7 @@ jobs:
       - name: ✨ run test/release with memory check
         run: cd release_test && ./a.out.exe # fails
 
-  b-msys2:
+  msys2:
     runs-on: windows-latest
     strategy:
       fail-fast: false
@@ -343,7 +355,7 @@ jobs:
       - name: ✨ run test with memory check
         run: cd test && ./test.exe -sCpvxo
 
-  b-linux-qemu:
+  linux-qemu:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -473,7 +485,7 @@ jobs:
       - name: ✨ run test with memory check
         run: LD_BIND_NOW=1 ./ci_test/a.out -sCpvxo
 
-  b-wsl:
+  wsl:
     runs-on: windows-latest
     strategy:
       fail-fast: false
@@ -669,14 +681,15 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # https://hub.docker.com/_/gcc
-          - {image: "gcc", ver: "5", cc: 'gcc', cxx: 'g++'}
-          - {image: "gcc", ver: "6", cc: 'gcc', cxx: 'g++'}
-          - {image: "gcc", ver: "7", cc: 'gcc', cxx: 'g++'}
-          - {image: "gcc", ver: "8", cc: 'gcc', cxx: 'g++'}
-          - {image: "gcc", ver: "9", cc: 'gcc', cxx: 'g++'}
-          - {image: "gcc", ver: "10", cc: 'gcc', cxx: 'g++'}
-          - {image: "gcc", ver: "11", cc: 'gcc', cxx: 'g++'}
+          # https://hub.docker.com/r/rikorose/gcc-cmake
+          - {image: "rikorose/gcc-cmake", ver: "gcc-5", cc: 'gcc', cxx: 'g++'}
+          - {image: "rikorose/gcc-cmake", ver: "gcc-6", cc: 'gcc', cxx: 'g++'}
+          - {image: "rikorose/gcc-cmake", ver: "gcc-7", cc: 'gcc', cxx: 'g++'}
+          - {image: "rikorose/gcc-cmake", ver: "gcc-8", cc: 'gcc', cxx: 'g++'}
+          - {image: "rikorose/gcc-cmake", ver: "gcc-9", cc: 'gcc', cxx: 'g++'}
+          - {image: "rikorose/gcc-cmake", ver: "gcc-10", cc: 'gcc', cxx: 'g++'}
+          - {image: "rikorose/gcc-cmake", ver: "gcc-11", cc: 'gcc', cxx: 'g++'}
+          - {image: "rikorose/gcc-cmake", ver: "latest", cc: 'gcc', cxx: 'g++'}
           # https://hub.docker.com/r/silkeh/clang
           - {image: "silkeh/clang", ver: "4", cc: 'clang', cxx: 'clang++'}
           - {image: "silkeh/clang", ver: "5", cc: 'clang', cxx: 'clang++'}
@@ -695,7 +708,15 @@ jobs:
       - uses: actions/checkout@v2
       - name: ${{matrix.cxx}} version
         run: ${{matrix.cxx}} --version
-      - name: build starter
-        run: cd starter && ${{matrix.cxx}} -std=c++11 -I.. fibonacci.cpp test_fibonacci.cpp
-      - name: 🔨 run starter
-        run: ./starter/a.out
+      - name: configure example
+        run: cmake -DCMAKE_BUILD_TYPE=Release -B ci_example example
+      - name: build example
+        run: cmake --build ci_example --config Release
+      - name: 🔨 run example
+        run: LD_BIND_NOW=1 ./ci_example/a.out
+      - name: configure test
+        run: cmake -DCMAKE_VERBOSE_MAKEFILE=ON -B ci_test test
+      - name: 🏗️ build test
+        run: cmake --build ci_test -j2
+      - name: ✨ run test
+        run: LD_BIND_NOW=1 ./ci_test/a.out -sCpvxo -e pthread

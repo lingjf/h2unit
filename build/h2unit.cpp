@@ -1102,6 +1102,13 @@ struct h2_console {
       return s_width;
    }
 
+   static void show_cursor(bool show)
+   {
+#if !defined _WIN32
+      h2_color::I().print(show ? "\033[?25h" : "\033[?25l");
+#endif
+   }
+
    static void prints(const char* style, const char* format, ...)
    {
       if (style && strlen(style)) {
@@ -1231,6 +1238,7 @@ struct h2_stdio {
 
    static void initialize()
    {
+      if (O.progressing) h2_console::show_cursor(false);
       ::setbuf(stdout, 0);  // unbuffered
       I().buffer = new h2_string();
       static h2_list stubs;
@@ -1263,6 +1271,11 @@ struct h2_stdio {
       h2_stubs::add(stubs, (void*)::syslog, (void*)syslog, "syslog", H2_FILINE);
       h2_stubs::add(stubs, (void*)::vsyslog, (void*)vsyslog, "vsyslog", H2_FILINE);
 #endif
+   }
+
+   static void finalize()
+   {
+      if (O.progressing) h2_console::show_cursor(true);
    }
 
    void start_capture(bool stdout_capturable_, bool stderr_capturable_, bool syslog_capturable_)
@@ -3814,7 +3827,13 @@ struct h2_crash {
          return;
       }
       h2_debug(0, "");
+      h2_console::show_cursor(true);
       abort();
+   }
+
+   static void control_c_handler(int sig, siginfo_t* si, void* unused)
+   {
+      if (sig == SIGINT) h2_console::show_cursor(true);
    }
 
    static void install()
@@ -3826,6 +3845,11 @@ struct h2_crash {
 
       if (sigaction(SIGSEGV, &action, nullptr) == -1) perror("Register SIGSEGV handler failed");
       if (sigaction(SIGBUS, &action, nullptr) == -1) perror("Register SIGBUS handler failed");
+
+      action.sa_sigaction = control_c_handler;
+      action.sa_flags = SA_SIGINFO;
+      sigemptyset(&action.sa_mask);
+      if (sigaction(SIGINT, &action, nullptr) == -1) perror("Register SIGINT handler failed");
    }
 #endif
 };
@@ -4998,6 +5022,7 @@ h2_inline int h2_runner::main(int argc, const char** argv)
    h2_stubs::clear(stubs);
    h2_mocks::clear(mocks, false);
    h2_memory::finalize();
+   h2_stdio::finalize();
    return O.exit_with_fails ? stats.failed : 0;
 }
 
@@ -5714,10 +5739,7 @@ struct h2_report_console : h2_report_interface {
       if (percentage && O.progressing) format_percentage(bar);
       if (status && status_style) bar.printf(status_style, "%s", status);
       if (s && c) bar += format_title(s->name, c->name, backable ? nullptr : h2_basefile(c->filine));
-      if (backable) {
-         if (h2_console::width() > bar.width()) bar.padding(h2_console::width() - bar.width());
-         else bar = bar.abbreviate(h2_console::width());
-      }
+      if (backable && h2_console::width() <= bar.width()) bar = bar.abbreviate(h2_console::width());
       h2_console::printl(bar, false);
    }
    void on_runner_start(h2_runner* r) override

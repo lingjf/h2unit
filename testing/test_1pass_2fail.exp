@@ -1,0 +1,8 @@
+[?25l[0;90mCollecting [0m[0;90m.[0m[2K[2K[0;90m[[0m 33%[0;90m] [0m[0;94mTesting[0m[0;90m┊ [0mfibonacci 5 [0;90m┊ [0mfibonacci [2K[0;90m[[0m 66%[0;90m] [0m[0;94mTesting[0m[0;90m┊ [0mfibonacci 6 [0;90m┊ [0mfibonacci [2K[0;90m[[0m 66%[0;90m] [0m[0;1;31mFailed [0m[0;90m┊ [0mfibonacci 6 [0;90m┊ [0mfibonacci [0;90m┊ [0mtest_1pass_2fail.cpp:12 
+ OK[0;90m([0m[0;32m11[0m , [0;1;31m13[0m[0;90m⟸  [0m[0;36mfibonacci(6)[0m[0;90m)[0m[0;90m at [0mtest_1pass_2fail.cpp:14
+
+[2K[0;90m[[0m100%[0;90m] [0m[0;94mTesting[0m[0;90m┊ [0mfibonacci 7 [0;90m┊ [0mfibonacci [2K[0;90m[[0m100%[0;90m] [0m[0;1;31mFailed [0m[0;90m┊ [0mfibonacci 7 [0;90m┊ [0mfibonacci [0;90m┊ [0mtest_1pass_2fail.cpp:17 
+ OK[0;90m([0m[0;32m23[0m , [0;1;31m21[0m[0;90m⟸  [0m[0;36mfibonacci(7)[0m[0;90m)[0m[0;90m at [0mtest_1pass_2fail.cpp:19
+
+[2K[0;1;31mFailure [0m[0;90m([0m[0;32m1[0m passed[0;90m, [0m[0;31m2[0m failed[0;90m) [0m3 cases[0;90m, [0m3 asserts[0;90m, [0m19 milliseconds
+[?25h

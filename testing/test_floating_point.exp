@@ -1,0 +1,11 @@
+[?25l[0;90mCollecting [0m[0;90m.[0m[2K[2K[0;90m[[0m 33%[0;90m] [0m[0;94mTesting[0m[0;90m┊ [0mfibonacci 4 [0;90m┊ [0mfibonacci [2K[0;90m[[0m 33%[0;90m] [0m[0;1;31mFailed [0m[0;90m┊ [0mfibonacci 4 [0;90m┊ [0mfibonacci [0;90m┊ [0mtest_floating_point.cpp:7 
+ OK[0;90m([0m[0;32mEq(1.41)[0m , [0;1;31m5[0m[0;90m⟸  [0m[0;36mfibonacci(4)[0m[0;90m)[0m[0;90m at [0mtest_floating_point.cpp:9
+
+[2K[0;90m[[0m 66%[0;90m] [0m[0;94mTesting[0m[0;90m┊ [0mfibonacci 5 [0;90m┊ [0mfibonacci [2K[0;90m[[0m 66%[0;90m] [0m[0;1;31mFailed [0m[0;90m┊ [0mfibonacci 5 [0;90m┊ [0mfibonacci [0;90m┊ [0mtest_floating_point.cpp:12 
+ OK[0;90m([0m[0;36mEq(1.41, 1%)[0m[0;90m⟹  [0m[0;32m1.41±1%[0m , [0;1;31m8[0m[0;90m⟸  [0m[0;36mfibonacci(5)[0m[0;90m)[0m[0;90m at [0mtest_floating_point.cpp:14
+
+[2K[0;90m[[0m100%[0;90m] [0m[0;94mTesting[0m[0;90m┊ [0mfibonacci 6 [0;90m┊ [0mfibonacci [2K[0;90m[[0m100%[0;90m] [0m[0;1;31mFailed [0m[0;90m┊ [0mfibonacci 6 [0;90m┊ [0mfibonacci [0;90m┊ [0mtest_floating_point.cpp:17 
+ OK[0;90m([0m[0;36mEq(1.4142135, 0.000001)[0m[0;90m⟹  [0m[0;32m1.414214±0.000001[0m , [0;1;31m13[0m[0;90m⟸  [0m[0;36mfibonacci(6)[0m[0;90m)[0m[0;90m at [0mtest_floating_point.cpp:19
+
+[2K[0;1;31mFailure [0m[0;90m([0m[0;32m0[0m passed[0;90m, [0m[0;31m3[0m failed[0;90m) [0m3 cases[0;90m, [0m3 asserts[0;90m, [0m23 milliseconds
+[?25h

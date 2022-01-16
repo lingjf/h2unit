@@ -29,7 +29,13 @@ struct h2_crash {
          return;
       }
       h2_debug(0, "");
+      h2_console::show_cursor(true);
       abort();
+   }
+
+   static void control_c_handler(int sig, siginfo_t* si, void* unused)
+   {
+      if (sig == SIGINT) h2_console::show_cursor(true);
    }
 
    static void install()
@@ -41,6 +47,11 @@ struct h2_crash {
 
       if (sigaction(SIGSEGV, &action, nullptr) == -1) perror("Register SIGSEGV handler failed");
       if (sigaction(SIGBUS, &action, nullptr) == -1) perror("Register SIGBUS handler failed");
+
+      action.sa_sigaction = control_c_handler;
+      action.sa_flags = SA_SIGINFO;
+      sigemptyset(&action.sa_mask);
+      if (sigaction(SIGINT, &action, nullptr) == -1) perror("Register SIGINT handler failed");
    }
 #endif
 };

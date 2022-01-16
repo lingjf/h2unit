@@ -100,6 +100,7 @@ struct h2_stdio {
 
    static void initialize()
    {
+      if (O.progressing) h2_console::show_cursor(false);
       ::setbuf(stdout, 0);  // unbuffered
       I().buffer = new h2_string();
       static h2_list stubs;
@@ -132,6 +133,11 @@ struct h2_stdio {
       h2_stubs::add(stubs, (void*)::syslog, (void*)syslog, "syslog", H2_FILINE);
       h2_stubs::add(stubs, (void*)::vsyslog, (void*)vsyslog, "vsyslog", H2_FILINE);
 #endif
+   }
+
+   static void finalize()
+   {
+      if (O.progressing) h2_console::show_cursor(true);
    }
 
    void start_capture(bool stdout_capturable_, bool stderr_capturable_, bool syslog_capturable_)
