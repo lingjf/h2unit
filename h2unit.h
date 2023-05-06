@@ -5,8 +5,8 @@
 #ifndef __H2UNIT_H__
 #define __H2UNIT_H__
 #define H2UNIT_VERSION 5.17
-#define H2UNIT_DATE 2022-01-16
-#define H2UNIT_REVISION branches/v5/c5a1deb0c82bcd46f9459266dee49f117e728102
+#define H2UNIT_DATE 2023-05-06
+#define H2UNIT_REVISION branches/v5/520162fd68bb0201271d0b2e1b6840df948824bc
 #ifndef __H2_UNIT_HPP__
 #define __H2_UNIT_HPP__
 
@@ -5413,7 +5413,7 @@ struct h2_stdio {
 
    static void initialize()
    {
-      if (O.progressing) h2_console::show_cursor(false);
+      h2_console::show_cursor(false);
       ::setbuf(stdout, 0);  // unbuffered
       I().buffer = new h2_string();
       static h2_list stubs;
@@ -5450,7 +5450,7 @@ struct h2_stdio {
 
    static void finalize()
    {
-      if (O.progressing) h2_console::show_cursor(true);
+      h2_console::show_cursor(true);
    }
 
    void start_capture(bool stdout_capturable_, bool stderr_capturable_, bool syslog_capturable_)
@@ -8009,6 +8009,7 @@ struct h2_crash {
    static void control_c_handler(int sig, siginfo_t* si, void* unused)
    {
       if (sig == SIGINT) h2_console::show_cursor(true);
+      exit(-1);
    }
 
    static void install()

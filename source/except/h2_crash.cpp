@@ -36,6 +36,7 @@ struct h2_crash {
    static void control_c_handler(int sig, siginfo_t* si, void* unused)
    {
       if (sig == SIGINT) h2_console::show_cursor(true);
+      exit(-1);
    }
 
    static void install()

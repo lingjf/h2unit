@@ -1238,7 +1238,7 @@ struct h2_stdio {
 
    static void initialize()
    {
-      if (O.progressing) h2_console::show_cursor(false);
+      h2_console::show_cursor(false);
       ::setbuf(stdout, 0);  // unbuffered
       I().buffer = new h2_string();
       static h2_list stubs;
@@ -1275,7 +1275,7 @@ struct h2_stdio {
 
    static void finalize()
    {
-      if (O.progressing) h2_console::show_cursor(true);
+      h2_console::show_cursor(true);
    }
 
    void start_capture(bool stdout_capturable_, bool stderr_capturable_, bool syslog_capturable_)
@@ -3834,6 +3834,7 @@ struct h2_crash {
    static void control_c_handler(int sig, siginfo_t* si, void* unused)
    {
       if (sig == SIGINT) h2_console::show_cursor(true);
+      exit(-1);
    }
 
    static void install()
