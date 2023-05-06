@@ -5,8 +5,8 @@
 #ifndef __H2UNIT_H__
 #define __H2UNIT_H__
 #define H2UNIT_VERSION 5.17
-#define H2UNIT_DATE 2023-05-06
-#define H2UNIT_REVISION branches/v5/520162fd68bb0201271d0b2e1b6840df948824bc
+#define H2UNIT_DATE 2023-05-07
+#define H2UNIT_REVISION branches/v5/06161883f246c63500f1df3bb9fb071e6845cf55
 #ifndef __H2_UNIT_HPP__
 #define __H2_UNIT_HPP__
 
@@ -7550,7 +7550,7 @@ struct h2_override_stdlib {
 #if defined __linux
 // source/memory/platform/h2_override_linux.cpp
 // https://www.gnu.org/savannah-checkouts/gnu/libc/manual/html_node/Hooks-for-Malloc.html
-
+// since libc-2.34 __malloc_hook was removed.
 struct h2_override_platform {
    static void free_hook(void* __ptr, const void* caller) { h2_override::free(__ptr); }
    static void* malloc_hook(size_t __size, const void* caller) { return h2_override::malloc(__size); }
@@ -7564,26 +7564,26 @@ struct h2_override_platform {
 
    h2_override_platform()
    {
-      saved__free_hook = __free_hook;
-      saved__malloc_hook = __malloc_hook;
-      saved__realloc_hook = __realloc_hook;
-      saved__memalign_hook = __memalign_hook;
+      // saved__free_hook = __free_hook;
+      // saved__malloc_hook = __malloc_hook;
+      // saved__realloc_hook = __realloc_hook;
+      // saved__memalign_hook = __memalign_hook;
    }
 
    void set()
    {
-      __free_hook = free_hook;
-      __malloc_hook = malloc_hook;
-      __realloc_hook = realloc_hook;
-      __memalign_hook = memalign_hook;
+      // __free_hook = free_hook;
+      // __malloc_hook = malloc_hook;
+      // __realloc_hook = realloc_hook;
+      // __memalign_hook = memalign_hook;
    }
 
    void reset()
    {
-      __free_hook = saved__free_hook;
-      __malloc_hook = saved__malloc_hook;
-      __realloc_hook = saved__realloc_hook;
-      __memalign_hook = saved__memalign_hook;
+      // __free_hook = saved__free_hook;
+      // __malloc_hook = saved__malloc_hook;
+      // __realloc_hook = saved__realloc_hook;
+      // __memalign_hook = saved__memalign_hook;
    }
 };
 #elif defined __APPLE__
