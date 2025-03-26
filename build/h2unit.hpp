@@ -5,8 +5,8 @@
 #ifndef __H2UNIT_HPP__
 #define __H2UNIT_HPP__
 #define H2UNIT_VERSION 5.17
-#define H2UNIT_DATE 2022-01-02
-#define H2UNIT_REVISION branches/v5/9b29b4d30ff8a25bf1c579e0b260ac68e123ef78
+#define H2UNIT_DATE 2025-03-26
+#define H2UNIT_REVISION branches/master/5a55c718bc22ba52bd4500997b2df18939996efa
 #ifndef __H2_UNIT_HPP__
 #define __H2_UNIT_HPP__
 
@@ -645,6 +645,8 @@ struct h2_libc {
    static void free(void* ptr);
    static void* operator new(std::size_t size) { return malloc(size); }
    static void operator delete(void* ptr) { free(ptr); }
+
+   static int write(int fd, const void* buf, size_t count);
 };
 // source/utils/h2_shared_ptr.hpp
 template <typename T>

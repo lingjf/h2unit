@@ -1,3 +1,5 @@
+#!/bin/bash
+
 gcc -Wall -g -fprofile-arcs -ftest-coverage -c -o product_c.o product_c.c
 g++ -Wall -g -fprofile-arcs -ftest-coverage -c -o product_cpp.o product_cpp.cpp
 g++ -Wall -g -c -std=c++11 -o test_basic.o test_basic.cpp
@@ -26,7 +28,8 @@ g++ -rdynamic -Wall -g -fprofile-arcs -ftest-coverage -o a.out \
     test_report.o               \
     test_stub.o
 
-if [[ `uname` == 'Darwin' ]]; then ../h2fix.sh ./a.out ; fi
+# if at macOS
+../h2fix.sh ./a.out
 
 ./a.out
 

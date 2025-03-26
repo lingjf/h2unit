@@ -1,0 +1,5 @@
+[?25l[0;90mCollecting [0m[0;90m.[0m[2K[2K[0;90m[[0m100%[0;90m] [0m[0;94mTesting[0m[0;90m┊ [0mfibonacci 5 [0;90m┊ [0mfibonacci [2K[0;90m[[0m100%[0;90m] [0m[0;1;31mFailed [0m[0;90m┊ [0mfibonacci 5 [0;90m┊ [0mfibonacci [0;90m┊ [0mtest_1fail.cpp:7 
+ OK[0;90m([0m[0;32m7[0m , [0;1;31m8[0m[0;90m⟸  [0m[0;36mfibonacci(5)[0m[0;90m)[0m[0;90m at [0mtest_1fail.cpp:9
+
+[2K[0;1;31mFailure [0m[0;90m([0m[0;32m0[0m passed[0;90m, [0m[0;31m1[0m failed[0;90m) [0m1 case[0;90m, [0m1 assert[0;90m, [0m9 milliseconds
+[?25h

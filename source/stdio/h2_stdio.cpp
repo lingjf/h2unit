@@ -7,12 +7,14 @@ struct h2_stdio {
    static ssize_t write(int fd, const void* buf, size_t count)
    {
       if (O.verbose >= VerboseNormal || (fd != fileno(stdout) && fd != fileno(stderr))) {
-         h2::h2_stub_temporary_restore _((void*)LIBC__write);
+#if defined _WIN32 || defined __CYGWIN__  // +MinGW
+         h2::h2_stub_temporary_restore _((void*)H2_LIBC_WRITE);
+#endif  // Linux/macOS low level IO is syscall
          if ((fd == fileno(stdout) || fd == fileno(stderr)) && h2_report::I().backable) {
-            LIBC__write(fd, "\n", 1);  // fall printf/cout into new line from report title
+            h2_libc::write(fd, "\n", 1);  // fall printf/cout into new line from report title
             h2_report::I().backable = false;
          }
-         LIBC__write(fd == -21371647 ? fileno(stdout) : fd, buf, count);
+         h2_libc::write(fd == -21371647 ? fileno(stdout) : fd, buf, count);
          if (fd == fileno(stdout) || fd == fileno(stderr)) I().capture_length += count;
       }
       if ((I().stdout_capturable && fd == fileno(stdout)) || (I().stderr_capturable && fd == fileno(stderr))) I().buffer->append((char*)buf, count);
@@ -98,6 +100,7 @@ struct h2_stdio {
 
    static void initialize()
    {
+      h2_console::show_cursor(false);
       ::setbuf(stdout, 0);  // unbuffered
       I().buffer = new h2_string();
       static h2_list stubs;
@@ -125,11 +128,16 @@ struct h2_stdio {
       std::cerr.rdbuf(&sb_err);
       std::clog.rdbuf(&sb_err); /* print to stderr */
 #endif
-      h2_stubs::add(stubs, (void*)LIBC__write, (void*)write, "write", H2_FILINE);
+      h2_stubs::add(stubs, (void*)H2_LIBC_WRITE, (void*)write, "write", H2_FILINE);
 #if !defined _WIN32
       h2_stubs::add(stubs, (void*)::syslog, (void*)syslog, "syslog", H2_FILINE);
       h2_stubs::add(stubs, (void*)::vsyslog, (void*)vsyslog, "vsyslog", H2_FILINE);
 #endif
+   }
+
+   static void finalize()
+   {
+      h2_console::show_cursor(true);
    }
 
    void start_capture(bool stdout_capturable_, bool stderr_capturable_, bool syslog_capturable_)
@@ -160,7 +168,7 @@ h2_inline h2_cout::~h2_cout()
    h2_fail* fail = m.matches(h2_stdio::I().stop_capture(), 0);
    if (fail) {
       fail->filine = filine;
-      fail->assert_type = "OK";
+      fail->assert_type = "OK2";
       fail->e_expression = e;
       fail->a_expression = "";
       fail->explain = "COUT";

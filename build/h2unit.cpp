@@ -20,6 +20,7 @@
 
 #if defined __linux || defined __APPLE__  // -MSVC -Cygwin -MinGW
 #include <execinfo.h>                     /* backtrace, backtrace_symbols */
+#include <sys/syscall.h>                  /* syscall */
 #endif
 
 #if defined __GLIBC__
@@ -74,12 +75,6 @@
 #if defined __APPLE__
 #include <AvailabilityMacros.h>
 #include <malloc/malloc.h> /* malloc_zone_t */
-#endif
-
-#if defined _WIN32  // +MinGW
-#define LIBC__write ::_write
-#else
-#define LIBC__write ::write
 #endif
 
 #if defined _MSC_VER
@@ -617,6 +612,27 @@ h2_inline void h2_libc::free(void* ptr)
    if (!O.memory_check) return ::free(ptr);
    if (ptr) h2_libc_malloc::I().free(ptr);
 }
+
+#if defined _WIN32  // +MinGW
+#define H2_LIBC_WRITE ::_write
+#else
+#define H2_LIBC_WRITE ::write
+#endif
+
+#if defined _WIN32 || defined __CYGWIN__  // +MinGW
+#define H2_LIBC_STDOUT -21371647
+#else
+#define H2_LIBC_STDOUT fileno(stdout)
+#endif
+
+h2_inline int h2_libc::write(int fd, const void* buf, size_t count)
+{
+#if defined __linux || defined __APPLE__
+   return ::syscall(SYS_write, fd, buf, count);
+#else
+   return H2_LIBC_WRITE(fd, buf, count);  // +Cygwin
+#endif
+}
 // source/utils/h2_string.cpp
 static inline size_t utf8len(const char* s)
 {
@@ -803,7 +819,7 @@ struct h2_color {
          if (current[i][0] != '\0')
             p += sprintf(p, "%d;", style2value(current[i]));
       *(p - 1) = 'm';
-      LIBC__write(-21371647, a, (size_t)(p - a));
+      h2_libc::write(H2_LIBC_STDOUT, a, (size_t)(p - a));
    }
    void parse(const char* style)
    {
@@ -825,7 +841,7 @@ struct h2_color {
             I().parse(str);
             I().change();
          }
-      } else LIBC__write(-21371647, str, strlen(str));
+      } else h2_libc::write(H2_LIBC_STDOUT, str, strlen(str));
    }
    int style2value(const char* style)  // https://en.wikipedia.org/wiki/ANSI_escape_code#CSI_sequences
    {
@@ -1086,6 +1102,13 @@ struct h2_console {
       return s_width;
    }
 
+   static void show_cursor(bool show)
+   {
+#if !defined _WIN32
+      h2_color::I().print(show ? "\033[?25h" : "\033[?25l");
+#endif
+   }
+
    static void prints(const char* style, const char* format, ...)
    {
       if (style && strlen(style)) {
@@ -1122,12 +1145,14 @@ struct h2_stdio {
    static ssize_t write(int fd, const void* buf, size_t count)
    {
       if (O.verbose >= VerboseNormal || (fd != fileno(stdout) && fd != fileno(stderr))) {
-         h2::h2_stub_temporary_restore _((void*)LIBC__write);
+#if defined _WIN32 || defined __CYGWIN__  // +MinGW
+         h2::h2_stub_temporary_restore _((void*)H2_LIBC_WRITE);
+#endif  // Linux/macOS low level IO is syscall
          if ((fd == fileno(stdout) || fd == fileno(stderr)) && h2_report::I().backable) {
-            LIBC__write(fd, "\n", 1);  // fall printf/cout into new line from report title
+            h2_libc::write(fd, "\n", 1);  // fall printf/cout into new line from report title
             h2_report::I().backable = false;
          }
-         LIBC__write(fd == -21371647 ? fileno(stdout) : fd, buf, count);
+         h2_libc::write(fd == -21371647 ? fileno(stdout) : fd, buf, count);
          if (fd == fileno(stdout) || fd == fileno(stderr)) I().capture_length += count;
       }
       if ((I().stdout_capturable && fd == fileno(stdout)) || (I().stderr_capturable && fd == fileno(stderr))) I().buffer->append((char*)buf, count);
@@ -1213,6 +1238,7 @@ struct h2_stdio {
 
    static void initialize()
    {
+      h2_console::show_cursor(false);
       ::setbuf(stdout, 0);  // unbuffered
       I().buffer = new h2_string();
       static h2_list stubs;
@@ -1240,11 +1266,16 @@ struct h2_stdio {
       std::cerr.rdbuf(&sb_err);
       std::clog.rdbuf(&sb_err); /* print to stderr */
 #endif
-      h2_stubs::add(stubs, (void*)LIBC__write, (void*)write, "write", H2_FILINE);
+      h2_stubs::add(stubs, (void*)H2_LIBC_WRITE, (void*)write, "write", H2_FILINE);
 #if !defined _WIN32
       h2_stubs::add(stubs, (void*)::syslog, (void*)syslog, "syslog", H2_FILINE);
       h2_stubs::add(stubs, (void*)::vsyslog, (void*)vsyslog, "vsyslog", H2_FILINE);
 #endif
+   }
+
+   static void finalize()
+   {
+      h2_console::show_cursor(true);
    }
 
    void start_capture(bool stdout_capturable_, bool stderr_capturable_, bool syslog_capturable_)
@@ -1275,7 +1306,7 @@ h2_inline h2_cout::~h2_cout()
    h2_fail* fail = m.matches(h2_stdio::I().stop_capture(), 0);
    if (fail) {
       fail->filine = filine;
-      fail->assert_type = "OK";
+      fail->assert_type = "OK2";
       fail->e_expression = e;
       fail->a_expression = "";
       fail->explain = "COUT";
@@ -3344,7 +3375,7 @@ struct h2_override_stdlib {
 #if defined __linux
 // source/memory/platform/h2_override_linux.cpp
 // https://www.gnu.org/savannah-checkouts/gnu/libc/manual/html_node/Hooks-for-Malloc.html
-
+// since libc-2.34 __malloc_hook was removed.
 struct h2_override_platform {
    static void free_hook(void* __ptr, const void* caller) { h2_override::free(__ptr); }
    static void* malloc_hook(size_t __size, const void* caller) { return h2_override::malloc(__size); }
@@ -3358,26 +3389,26 @@ struct h2_override_platform {
 
    h2_override_platform()
    {
-      saved__free_hook = __free_hook;
-      saved__malloc_hook = __malloc_hook;
-      saved__realloc_hook = __realloc_hook;
-      saved__memalign_hook = __memalign_hook;
+      // saved__free_hook = __free_hook;
+      // saved__malloc_hook = __malloc_hook;
+      // saved__realloc_hook = __realloc_hook;
+      // saved__memalign_hook = __memalign_hook;
    }
 
    void set()
    {
-      __free_hook = free_hook;
-      __malloc_hook = malloc_hook;
-      __realloc_hook = realloc_hook;
-      __memalign_hook = memalign_hook;
+      // __free_hook = free_hook;
+      // __malloc_hook = malloc_hook;
+      // __realloc_hook = realloc_hook;
+      // __memalign_hook = memalign_hook;
    }
 
    void reset()
    {
-      __free_hook = saved__free_hook;
-      __malloc_hook = saved__malloc_hook;
-      __realloc_hook = saved__realloc_hook;
-      __memalign_hook = saved__memalign_hook;
+      // __free_hook = saved__free_hook;
+      // __malloc_hook = saved__malloc_hook;
+      // __realloc_hook = saved__realloc_hook;
+      // __memalign_hook = saved__memalign_hook;
    }
 };
 #elif defined __APPLE__
@@ -3796,7 +3827,14 @@ struct h2_crash {
          return;
       }
       h2_debug(0, "");
+      h2_console::show_cursor(true);
       abort();
+   }
+
+   static void control_c_handler(int sig, siginfo_t* si, void* unused)
+   {
+      if (sig == SIGINT) h2_console::show_cursor(true);
+      exit(-1);
    }
 
    static void install()
@@ -3808,6 +3846,11 @@ struct h2_crash {
 
       if (sigaction(SIGSEGV, &action, nullptr) == -1) perror("Register SIGSEGV handler failed");
       if (sigaction(SIGBUS, &action, nullptr) == -1) perror("Register SIGBUS handler failed");
+
+      action.sa_sigaction = control_c_handler;
+      action.sa_flags = SA_SIGINFO;
+      sigemptyset(&action.sa_mask);
+      if (sigaction(SIGINT, &action, nullptr) == -1) perror("Register SIGINT handler failed");
    }
 #endif
 };
@@ -4980,6 +5023,7 @@ h2_inline int h2_runner::main(int argc, const char** argv)
    h2_stubs::clear(stubs);
    h2_mocks::clear(mocks, false);
    h2_memory::finalize();
+   h2_stdio::finalize();
    return O.exit_with_fails ? stats.failed : 0;
 }
 
@@ -5696,10 +5740,7 @@ struct h2_report_console : h2_report_interface {
       if (percentage && O.progressing) format_percentage(bar);
       if (status && status_style) bar.printf(status_style, "%s", status);
       if (s && c) bar += format_title(s->name, c->name, backable ? nullptr : h2_basefile(c->filine));
-      if (backable) {
-         if (h2_console::width() > bar.width()) bar.padding(h2_console::width() - bar.width());
-         else bar = bar.abbreviate(h2_console::width());
-      }
+      if (backable && h2_console::width() <= bar.width()) bar = bar.abbreviate(h2_console::width());
       h2_console::printl(bar, false);
    }
    void on_runner_start(h2_runner* r) override
@@ -5914,6 +5955,21 @@ struct h2_report_list : h2_report_interface {
 // source/report/h2_report_junit.cpp
 struct h2_report_junit : h2_report_interface {
    FILE* f;
+   char* xml_escape(const char* str, char* escaped_str) {
+      char* p = escaped_str;
+      for (const char* s = str; *s != '\0'; s++) {
+         switch (*s) {
+            case '&': strcpy(p, "&amp;"); p += 5; break;
+            case '<': strcpy(p, "&lt;"); p += 4; break;
+            case '>': strcpy(p, "&gt;"); p += 4; break;
+            case '"': strcpy(p, "&quot;"); p += 6; break;
+            case '\'': strcpy(p, "&apos;"); p += 6; break;
+            default: *p++ = *s; break;
+         }
+      }
+      *p = '\0';
+      return escaped_str;
+   }
    void on_runner_start(h2_runner* r) override
    {
       f = fopen(O.junit_path, "w");
@@ -5924,13 +5980,15 @@ struct h2_report_junit : h2_report_interface {
    void on_suite_start(h2_suite* s) override
    {
       if (!f) return;
-      fprintf(f, "<testsuite errors=\"0\" failures=\"%d\" hostname=\"localhost\" name=\"%s\" skipped=\"%d\" tests=\"%d\" time=\"%d\" timestamp=\"%s\">\n", s->stats.failed, s->name, s->stats.todo + s->stats.filtered, s->cases.count(), 0, "");
+      char temp1[1024];
+      fprintf(f, "<testsuite errors=\"0\" failures=\"%d\" hostname=\"localhost\" name=\"%s\" skipped=\"%d\" tests=\"%d\" time=\"%d\" timestamp=\"%s\">\n", s->stats.failed, xml_escape(s->name, temp1), s->stats.todo + s->stats.filtered, s->cases.count(), 0, "");
    }
    void on_case_start(h2_suite* s, h2_case* c) override {}
    void on_case_endup(h2_suite* s, h2_case* c) override
    {
       if (!f) return;
-      fprintf(f, "<testcase classname=\"%s\" name=\"%s\" status=\"%s\" time=\"%.3f\">\n", s->name, c->name, c->todo ? "TODO" : (c->filtered ? "Filtered" : (c->ignored ? "Ignored" : (c->failed ? "Failed" : (c->warning ? "Warning" : "Passed")))), c->stats.timecost / 1000.0);
+      char temp1[1024], temp2[1024];
+      fprintf(f, "<testcase classname=\"%s\" name=\"%s\" status=\"%s\" time=\"%.3f\">\n", xml_escape(s->name, temp1), xml_escape(c->name, temp2), c->todo ? "TODO" : (c->filtered ? "Filtered" : (c->ignored ? "Ignored" : (c->failed ? "Failed" : (c->warning ? "Warning" : "Passed")))), c->stats.timecost / 1000.0);
       if (c->failed) {
          fprintf(f, "<failure message=\"%s:", c->filine);
          if (c->fails) c->fails->foreach([&](h2_fail* fail, size_t si, size_t ci) {fprintf(f, "{newline}"); fail->print(f); });

@@ -49,7 +49,7 @@ char c = '\0';
 int n = 0;
 bool exclude = false;
 
-bool filter(size_t i, size_t j = 0)
+bool filter(int i, int j = 0)
 {
    if (i > 0 && (c == 'a' || c == 'A')) {
       if (n == i) {

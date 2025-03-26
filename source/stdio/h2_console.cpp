@@ -18,6 +18,13 @@ struct h2_console {
       return s_width;
    }
 
+   static void show_cursor(bool show)
+   {
+#if !defined _WIN32
+      h2_color::I().print(show ? "\033[?25h" : "\033[?25l");
+#endif
+   }
+
    static void prints(const char* style, const char* format, ...)
    {
       if (style && strlen(style)) {

@@ -124,3 +124,24 @@ h2_inline void h2_libc::free(void* ptr)
    if (!O.memory_check) return ::free(ptr);
    if (ptr) h2_libc_malloc::I().free(ptr);
 }
+
+#if defined _WIN32  // +MinGW
+#define H2_LIBC_WRITE ::_write
+#else
+#define H2_LIBC_WRITE ::write
+#endif
+
+#if defined _WIN32 || defined __CYGWIN__  // +MinGW
+#define H2_LIBC_STDOUT -21371647
+#else
+#define H2_LIBC_STDOUT fileno(stdout)
+#endif
+
+h2_inline int h2_libc::write(int fd, const void* buf, size_t count)
+{
+#if defined __linux || defined __APPLE__
+   return ::syscall(SYS_write, fd, buf, count);
+#else
+   return H2_LIBC_WRITE(fd, buf, count);  // +Cygwin
+#endif
+}

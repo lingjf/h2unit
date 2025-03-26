@@ -1,3 +1,4 @@
+# amalgamate
 
 import os
 import sys

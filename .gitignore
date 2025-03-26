@@ -13,7 +13,7 @@
 *.su
 *.idb
 *.pdb
-*.exp
+# *.exp
 
 .vscode/
 
@@ -24,6 +24,8 @@
 .last_order
 a.out.report.txt
 _temp_*
+*.act
+gen_expected.sh
 
 # CMake
 CMakeCache.txt

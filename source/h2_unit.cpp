@@ -16,6 +16,7 @@
 
 #if defined __linux || defined __APPLE__  // -MSVC -Cygwin -MinGW
 #include <execinfo.h>                     /* backtrace, backtrace_symbols */
+#include <sys/syscall.h>                  /* syscall */
 #endif
 
 #if defined __GLIBC__
@@ -70,12 +71,6 @@
 #if defined __APPLE__
 #include <AvailabilityMacros.h>
 #include <malloc/malloc.h> /* malloc_zone_t */
-#endif
-
-#if defined _WIN32  // +MinGW
-#define LIBC__write ::_write
-#else
-#define LIBC__write ::write
 #endif
 
 #if defined _MSC_VER

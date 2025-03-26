@@ -64,10 +64,7 @@ struct h2_report_console : h2_report_interface {
       if (percentage && O.progressing) format_percentage(bar);
       if (status && status_style) bar.printf(status_style, "%s", status);
       if (s && c) bar += format_title(s->name, c->name, backable ? nullptr : h2_basefile(c->filine));
-      if (backable) {
-         if (h2_console::width() > bar.width()) bar.padding(h2_console::width() - bar.width());
-         else bar = bar.abbreviate(h2_console::width());
-      }
+      if (backable && h2_console::width() <= bar.width()) bar = bar.abbreviate(h2_console::width());
       h2_console::printl(bar, false);
    }
    void on_runner_start(h2_runner* r) override
