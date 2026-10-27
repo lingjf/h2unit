@@ -117,7 +117,12 @@ SUITE(Fundamental types)  // https://en.cppreference.com/w/cpp/language/types
       OK(!(std::is_integral<std::nullptr_t>::value));
       OK(!(std::is_arithmetic<std::nullptr_t>::value));
 
+#if __cplusplus > 202002L || (defined _MSVC_LANG && _MSVC_LANG > 202002L)
+      // P2166R1 removes construction of std::string from nullptr in C++23.
+      OK(!(std::is_convertible<std::nullptr_t, std::string>::value));
+#else
       OK((std::is_convertible<std::nullptr_t, std::string>::value));
+#endif
       OK(!(std::is_convertible<std::nullptr_t, int>::value));
 
       // implicitly converted to any pointer and pointer to member type

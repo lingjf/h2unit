@@ -70,6 +70,9 @@
 
 #if defined __APPLE__
 #include <AvailabilityMacros.h>
+#include <mach-o/dyld.h>
+#include <mach-o/loader.h>
+#include <mach-o/nlist.h>
 #include <malloc/malloc.h> /* malloc_zone_t */
 #endif
 

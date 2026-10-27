@@ -5,13 +5,17 @@ struct h2_overrides {
 
    void set()
    {
+#if !defined __APPLE__
       stdlib.set();
+#endif
       platform.set();
    }
    void reset()
    {
       platform.reset();
+#if !defined __APPLE__
       stdlib.reset();
+#endif
    }
 };
 

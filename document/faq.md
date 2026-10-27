@@ -5,11 +5,33 @@
 
 ### mprotect
 
-macOS (Mojave 10.14.6) macOS (Catalina 10.15.2) and later macOS mprotect fails, because [max_prot](https://stackoverflow.com/questions/60654834/using-mprotect-to-make-text-segment-writable-on-macos).
+macOS maps the executable's `__TEXT` segment without write permission. Apple
+Silicon also enforces W^X, so changing a code page directly to
+`PROT_READ | PROT_WRITE | PROT_EXEC` fails.
+
+h2unit handles this in two parts:
+
+1. `h2fix.sh` adds write permission to `__TEXT.maxprot` in the Mach-O header
+   and then ad-hoc signs the executable. The header must be changed before
+   signing; editing it afterwards invalidates the signature and macOS kills
+   the process at launch.
+2. The STUB runtime switches the target code page to `RW`, writes the jump,
+   and immediately restores `RX`.
+
+CMake, Ninja, the shell example, and the starter Makefile run `h2fix.sh`
+automatically on macOS. For a custom build, run it after linking:
 
 ```Shell
-   printf '\x07' | dd of=<executable> bs=1 seek=160 count=1 conv=notrunc
+   ../h2fix.sh <executable>
 ```
+
+Do not use the old fixed-offset `printf | dd` command. It invalidates the
+code signature on Apple Silicon.
+
+On Apple Silicon, dyld shared-cache code pages used by libc/libc++ are
+immutable. Imported DNS and socket functions are redirected through the main
+executable's `__got` pointer instead. Other system-library STUB attempts are
+skipped when no patchable main-image pointer exists.
 
 ### stack-protector
 Compile option with -fstack-protector will cause STUB fail, remove this option, or add -fno-stack-protector option
