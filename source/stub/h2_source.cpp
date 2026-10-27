@@ -2,20 +2,80 @@ struct h2_source : h2_libc {
    h2_list x;
    unsigned char origin_opcode[32];
    void* source_fp;
+   bool patchable = true;
+   bool patch_pointer = false;
    int reference_count = 0;
-   h2_source(void* source_fp_, const char* srcfn, const char* filine) : source_fp(source_fp_)
+   h2_source(void* source_fp_, const char* srcfn, const char* filine)
+      :
+#if defined __APPLE__
+        source_fp(h2_e9_source_address(source_fp_, srcfn))
+#else
+        source_fp(source_fp_)
+#endif
    {
-      if (!h2_e9_save(source_fp, origin_opcode)) {
-         h2_console::prints("yellow", "STUB %s by %s() failed %s\n", srcfn, O.os == OsWindows ? "VirtualProtect" : "mprotect", filine);
-         if (O.os == OsMacOS) h2_console::prints("", "try: "), h2_console::prints("green", "printf '\\x07' | dd of=%s bs=1 seek=160 count=1 conv=notrunc\n", O.path);
-         if (O.os == OsLinux) h2_console::prints("", "try: "), h2_console::prints("green", "objcopy --writable-text %s\n", O.path);
+#if defined __APPLE__
+      // dyld shared-cache code pages are immutable. Imported DNS functions are
+      // redirected through the main executable's GOT; other unsupported probes
+      // are skipped instead of calling mprotect on the shared cache.
+      patchable = h2_e9_in_main_executable(source_fp_) || source_fp != source_fp_;
+      patch_pointer = source_fp != source_fp_;
+#endif
+      if (patchable) {
+         bool saved = true;
+#if defined __APPLE__
+         if (patch_pointer) saved = h2_e9_save_pointer(source_fp, origin_opcode);
+         else
+#endif
+            saved = h2_e9_save(source_fp, origin_opcode);
+         if (!saved) {
+            patchable = false;
+            h2_console::prints("yellow", "STUB %s by %s() failed %s\n", srcfn, O.os == OsWindows ? "VirtualProtect" : "mprotect", filine);
+            if (O.os == OsMacOS) h2_console::prints("", "try: "), h2_console::prints("green", "../h2fix.sh %s\n", O.path);
+            if (O.os == OsLinux) h2_console::prints("", "try: "), h2_console::prints("green", "objcopy --writable-text %s\n", O.path);
+         }
       }
    }
-   ~h2_source() { h2_e9_reset(source_fp, origin_opcode); }
-   void set(void* dstfp) { h2_e9_set(source_fp, dstfp); }
-   void save(unsigned char opcode[32]) { h2_e9_save(source_fp, opcode); }
-   void reset(unsigned char opcode[32]) { h2_e9_reset(source_fp, opcode); }
-   void reset() { h2_e9_reset(source_fp, origin_opcode); }
+   ~h2_source()
+   {
+      if (!patchable) return;
+#if defined __APPLE__
+      if (patch_pointer) h2_e9_reset_pointer(source_fp, origin_opcode);
+      else
+#endif
+         h2_e9_reset(source_fp, origin_opcode);
+   }
+   bool set(void* dstfp)
+   {
+      if (!patchable) return false;
+#if defined __APPLE__
+      if (patch_pointer) return h2_e9_set_pointer(source_fp, dstfp);
+#endif
+      return h2_e9_set(source_fp, dstfp);
+   }
+   bool save(unsigned char opcode[32])
+   {
+      if (!patchable) return false;
+#if defined __APPLE__
+      if (patch_pointer) return h2_e9_save_pointer(source_fp, opcode);
+#endif
+      return h2_e9_save(source_fp, opcode);
+   }
+   bool reset(unsigned char opcode[32])
+   {
+      if (!patchable) return false;
+#if defined __APPLE__
+      if (patch_pointer) return h2_e9_reset_pointer(source_fp, opcode);
+#endif
+      return h2_e9_reset(source_fp, opcode);
+   }
+   bool reset()
+   {
+      if (!patchable) return false;
+#if defined __APPLE__
+      if (patch_pointer) return h2_e9_reset_pointer(source_fp, origin_opcode);
+#endif
+      return h2_e9_reset(source_fp, origin_opcode);
+   }
 };
 
 struct h2_sources {
