@@ -8249,7 +8249,7 @@ static inline bool h2_e9_got_symbol(const char* symbol)
 static inline void* h2_e9_source_address(void* source_fp, const char* source_name)
 {
    if (h2_e9_in_main_executable(source_fp)) return source_fp;
-#if defined __arm64__ || defined __aarch64__
+#if defined __x86_64__ || defined __arm64__ || defined __aarch64__
    void* pointer = nullptr;
    if (h2_e9_got_symbol(source_name)) pointer = h2_e9_import_pointer(source_name);
    if (pointer) return pointer;
